@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+  - "tools/*"
+  # artkit is tracked (§26 #1) but kept OUT of the workspace: it pulls native sharp and
+  # needs the external codex CLI, so it installs/runs on demand (cd tools/artkit). Other
+  # tools (e.g. schema-validate) stay in-workspace for CI.
+  - "!tools/artkit"

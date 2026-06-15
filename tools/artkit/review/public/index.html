@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dimension Drifters — Art Review</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="menuBtn" class="icon-btn only-mobile" aria-label="Toggle explorer">☰</button>
+      <div class="brand">DIMENSION DRIFTERS <span>Art Review</span></div>
+      <div class="search-wrap">
+        <span class="search-ico" aria-hidden="true">⌕</span>
+        <input id="search" type="search" placeholder="Search assets…  ( / )" autocomplete="off" aria-label="Search assets" />
+      </div>
+      <div class="progress" id="progress" title="Locked / total"></div>
+      <button id="refresh" class="icon-btn" title="Reload (R)" aria-label="Reload">⟳</button>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" id="sidebar" aria-label="Object explorer">
+        <div class="side-section">
+          <div class="side-title">Status</div>
+          <div id="statusFilters" class="seg" role="group" aria-label="Status filter"></div>
+        </div>
+        <div class="side-section">
+          <div class="side-title">Sort</div>
+          <select id="sort" class="select" aria-label="Sort">
+            <option value="cat">Category</option>
+            <option value="name">Name (A–Z)</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+        <div class="side-section grow">
+          <div class="side-title">Categories</div>
+          <nav id="catTree" class="tree" aria-label="Categories"></nav>
+        </div>
+        <div class="side-foot" id="sideFoot"></div>
+      </aside>
+
+      <main class="content" id="content">
+        <div class="toolbar">
+          <div id="crumbs" class="crumbs"></div>
+          <div id="count" class="count"></div>
+        </div>
+        <div id="grid" class="grid"></div>
+        <div id="empty" class="empty" hidden></div>
+      </main>
+    </div>
+
+    <!-- Asset detail -->
+    <div id="modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2 id="mTitle"></h2>
+            <div class="mmeta"><span id="mCat" class="chip"></span><span id="mTags" class="tags"></span></div>
+          </div>
+          <div class="modal-nav">
+            <button id="mPrev" class="icon-btn" title="Previous (←)">‹</button>
+            <button id="mNext" class="icon-btn" title="Next (→)">›</button>
+            <button id="mClose" class="icon-btn" title="Close (Esc)">✕</button>
+          </div>
+        </div>
+        <div class="hint">Click a candidate to zoom · press <kbd>1</kbd>–<kbd>9</kbd> to pick · <kbd>R</kbd> re-roll</div>
+        <div id="mCandidates" class="candidates"></div>
+        <label class="lbl" for="mPrompt">Prompt</label>
+        <textarea id="mPrompt" rows="5" spellcheck="false"></textarea>
+        <div class="actions">
+          <button id="mSave" class="btn">Save prompt</button>
+          <button id="mReroll" class="btn warn">Re-roll 5 ↻</button>
+          <a id="mOpen" class="btn ghost" target="_blank" rel="noopener">Open ref ↗</a>
+          <span id="mStatus" class="status" role="status"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" hidden><img id="lbImg" alt="" /></div>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

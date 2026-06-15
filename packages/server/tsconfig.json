@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    // Explicit (not just inherited) so tsx/esbuild emit legacy decorators for the
+    // @colyseus/schema state imported from @dd/shared. Required by @colyseus/schema v3.
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@dd/artkit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Dimension Drifters fork of the artkit card-art pipeline (engine reused; DD style.json authored fresh, NOT WT's Lythero). Codex-driven reference + card-art generation. Tracked per §26 retro #1. Intentionally OUTSIDE the pnpm workspace — install/run on demand (pulls native sharp, needs the codex CLI).",
+  "scripts": {
+    "art": "node orchestrate.mjs",
+    "art:promote": "node orchestrate.mjs --promote=1",
+    "fix:alpha": "node guards/fix-checkerboard.mjs --all"
+  },
+  "dependencies": {
+    "sharp": "^0.33.0"
+  }
+}

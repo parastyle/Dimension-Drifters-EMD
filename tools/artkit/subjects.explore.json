@@ -1,0 +1,441 @@
+[
+  {
+    "id": "x-sword-buzzsaw",
+    "name": "Buzzcutter",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a brutal greatsword whose blade is a spinning circular saw of jagged teeth, oil-stained steel, a chainsaw pull-cord on the wrapped grip. The saw teeth carry a faint plasma-lime edge-tint baked into the metal (NO flying sparks).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#9CFF3B"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-sword-coffin",
+    "name": "Reaper's Lid",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a coffin-shaped slab greatsword, iron-bound dark wood, a cross of bent nails, a faint dull-teal tint in the seam (any glow is engine VFX).",
+    "palette": {
+      "primary": "#5b4636",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-sword-neon-katana",
+    "name": "Voltedge",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a sleek black katana with a sharp cyber-cyan edge, fine circuitry etched into the steel, a cyber-cyan wrapped grip.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "1H"
+    ]
+  },
+  {
+    "id": "x-sword-anchor",
+    "name": "Drowned Anchor",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a massive rusted ship's anchor swung as a sword, barnacle-crusted and slick with a dull-teal brine sheen on the metal, heavy chain wrapped round the shank (NO falling drips).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-sword-bone",
+    "name": "Wyrmtooth",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a jagged greatsword carved from a single fossilized fang, hairline cracks showing ember-orange deep in the bone, a stacked-vertebra grip.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-sword-railspike",
+    "name": "Spike Driver",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a colossal railroad spike sharpened into a crude cleaver-sword, soot-black iron, a sledgehammer grip bound in wire.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-gun-revolver-cannon",
+    "name": "Hand Cannon",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): an oversized six-shooter the size of a forearm, fat cylinder, octagonal barrel, brass fittings, a heavy hammer cocked back (muzzle dark, NO glow/flash).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "gun",
+      "1H"
+    ]
+  },
+  {
+    "id": "x-gun-coffin-shotgun",
+    "name": "Pallbearer",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a sawn-off double-barrel shotgun built into a small iron coffin-box receiver, nail-studded stock, the twin bores dark and cold (NO smoke).",
+    "palette": {
+      "primary": "#5b4636",
+      "accent": "#9E3B36"
+    },
+    "tags": [
+      "weapon",
+      "gun",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-gun-gatling",
+    "name": "Lead Storm",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a hand-cranked gatling cluster of six stubby barrels on a brass drum, an ammo belt coiled beneath the barrels. The muzzles are cold clean metal — NO smoke, NO heat, NO glow, NO emission of any kind.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "weapon",
+      "gun",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-gun-nailgun",
+    "name": "Carpenter",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a jury-rigged pneumatic nail-gun, a pressure tank, a looping hose, a magazine of rusty spikes (NO steam/hiss).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "weapon",
+      "gun",
+      "1H"
+    ]
+  },
+  {
+    "id": "x-gun-ricochet-pistol",
+    "name": "Bankshot",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a sleek snub revolver with a mirror-polished cyber-cyan barrel and trick sights, faint ricochet-arc etchings in the metal.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "weapon",
+      "gun",
+      "1H"
+    ]
+  },
+  {
+    "id": "x-launcher-dynamite",
+    "name": "Boomstick Battery",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a bundled three-tube dynamite launcher lashed to a plank stock, lit fuses, an ember-orange glow inside the tube mouths (NO flying sparks).",
+    "palette": {
+      "primary": "#C49A5A",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "launcher",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-launcher-coffin-mortar",
+    "name": "Gravedigger's Mortar",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a stubby wide-mouthed iron mortar shaped like a tiny upright coffin, a fat shell loaded in the mouth (NO smoke).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#9E3B36"
+    },
+    "tags": [
+      "weapon",
+      "launcher",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-launcher-firework",
+    "name": "Festival of Lead",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a cluster of mismatched firework tubes bound to a brass frame, braided fuses, a hot-magenta and plasma-lime glow at the tube mouths (NO flying sparks).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#FF3BD4"
+    },
+    "tags": [
+      "weapon",
+      "launcher",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-staff-skull-totem",
+    "name": "Boothill Totem",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a tall gnarled staff topped with a stacked totem of three grinning cattle-skulls, an ember-orange glow set deep in the hollow eye sockets (integral glow, NO flame plume).",
+    "palette": {
+      "primary": "#5b4636",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-staff-cactus-bloom",
+    "name": "Bloomspire",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a living cactus-staff bristling with spines, crowned by one huge vivid hot-magenta desert bloom.",
+    "palette": {
+      "primary": "#6E7042",
+      "accent": "#FF3BD4"
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-staff-lightning-rod",
+    "name": "Stormcaller",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): an iron lightning-rod staff wound with copper coils, a glass orb at the tip glowing cyber-cyan from within (the orb glows, but NO lightning/arcs emitting from it — those are engine VFX).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-staff-sun-disc",
+    "name": "Sundowner",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, flat side-on, FACING RIGHT (business end — blade tip / muzzle / staff head — to the RIGHT, grip/handle/stock on the LEFT): a long black staff bearing a great hammered-brass sun-disc with ember-orange picked out in its etched rays.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-staff-lantern",
+    "name": "Wisp Lantern",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "Weapon, MULTI-PART laid out in ONE image (for size parity), flat side-on, facing right: (1) a crooked iron staff with an EMPTY open hook at the top-right end and a wrapped grip bottom-left; AND (2) drawn SEPARATELY beside it with a clear flat-green GAP between them — NOT hanging on the hook — a matching iron cage-lantern with a hang-ring on top (dark barred cage, hollow interior). BOTH parts at the SAME scale and style so they read as one weapon; they get sliced apart at the gap and the cage is rigged as a pendulum in-engine. NO wisp, NO glow (engine VFX).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#B14BFF"
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "2H"
+    ]
+  },
+  {
+    "id": "x-char-gunslinger",
+    "name": "The Deadeye",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A limbless ranged gunslinger drifter, generated EMPTY-HANDED: a lean charcoal body in a long duster, a wide flat-brim hat, a bandolier across the chest, one sharp cyber-cyan eye, detached blob hands + boot-feet with gaps.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "character",
+      "player"
+    ]
+  },
+  {
+    "id": "x-char-witch",
+    "name": "The Hex",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A limbless caster witch-drifter, EMPTY-HANDED: a hunched body wrapped in a tattered arc-violet shawl, a crooked wide-brim witch-hat fused with a small skull, one glowing violet eye, detached blob hands + feet with gaps.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#B14BFF"
+    },
+    "tags": [
+      "character",
+      "player"
+    ]
+  },
+  {
+    "id": "x-char-tank",
+    "name": "The Bulwark",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A limbless heavy tank-drifter, EMPTY-HANDED: a huge barrel body plated in riveted iron a tiny grim eye, massive detached fist-blobs and stout detached boot-feet, gaps.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "character",
+      "player"
+    ]
+  },
+  {
+    "id": "x-char-trickster",
+    "name": "The Jester",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A limbless trickster-drifter, EMPTY-HANDED: a slim crooked body in a patched ringmaster coat, a battered top hat, a sly grin and one ember-orange eye, detached blob hands + pointed boot-feet, gaps.",
+    "palette": {
+      "primary": "#9E3B36",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "character",
+      "player"
+    ]
+  },
+  {
+    "id": "x-boss-sandworm",
+    "name": "The Maw",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A colossal armored desert sandworm boss: a thick segmented charcoal-and-rust armored worm-body curling upward, a circular fanged maw at the head with a deep ember-orange gullet (a solid bright shape, NOT a glow that blooms outward). PURE BLOB build — a limbless worm with NO detached hands and NO detached feet, just the segmented body. Gigantic, bold simple shapes, same detail level as a character. NO dust, NO particles, NO emissions.",
+    "palette": {
+      "primary": "#5b4636",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "boss"
+    ]
+  },
+  {
+    "id": "x-boss-train",
+    "name": "IRON PROPHET",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A possessed chrome locomotive boss reared up on coal-black wheel-legs: a furnace-face roaring plasma-lime fire, a cowcatcher jaw, twin smokestack horns. Gigantic, bold simple shapes, original silhouette.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#9CFF3B"
+    },
+    "tags": [
+      "enemy",
+      "boss"
+    ]
+  },
+  {
+    "id": "x-boss-godhand",
+    "name": "The Last Judge",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A towering multi-armed gunslinger-god boss: a robed limbless body with four detached massive revolver-fists orbiting it (its limbless hands — solid objects, NOT particles), ember-orange glow inside the gun-barrels and one arc-violet eye. NO hovering particles or floating shells around him. Off-screen tall, bold simple shapes.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#B14BFF"
+    },
+    "tags": [
+      "enemy",
+      "boss"
+    ]
+  },
+  {
+    "id": "x-mob-skull-lantern",
+    "name": "Jack-o-Boothill",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A floating limbless skull-lantern mob: a grinning cattle-skull hollowed into a lantern with ember-orange flame inside, two tiny detached bone-blob hands, drifting. Bold simple shape.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "mob"
+    ]
+  },
+  {
+    "id": "x-mob-tumbleweed",
+    "name": "Tanglethorn",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A rolling tumbleweed-golem mob: a snarl of dry thorny brush bound around a hidden grinning core, two stubby detached root-feet. Bold simple shape (NO dust trail/cloud — that's engine VFX).",
+    "palette": {
+      "primary": "#6E7042",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "enemy",
+      "mob"
+    ]
+  },
+  {
+    "id": "x-mob-vulture",
+    "name": "Carrion",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A hunched limbless vulture mob: ragged charcoal feathers, a bald wrinkled head, a cruel hooked beak, two detached talon-foot-blobs, a beady ember-orange eye. Side-on, bold simple shape.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "enemy",
+      "mob"
+    ]
+  },
+  {
+    "id": "x-mob-scrap-scorpion",
+    "name": "Rattletail",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "A small scrap-metal scorpion mob: welded rusted plates, a coiled spring-tail tipped with a glowing dull-teal venom barb, skittering detached claw-blobs. Bold simple shape.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "enemy",
+      "mob"
+    ]
+  }
+]

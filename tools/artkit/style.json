@@ -1,0 +1,87 @@
+{
+  "_comment": "Dimension Drifters canon art style for the artkit pipeline. EXECUTABLE form of master spec §28 (Art Style — Full Spec; the former standalone art bible was merged there). If they disagree, one is wrong; reconcile against §28. prompts.mjs injects styleBlock + outline/shading + avoidList + render rules into every ticket. DD does NOT inherit WT's 'Lythero Cartoon Bold' (kept only as style.reference-wt.json, schema reference).",
+  "_source": "DIMENSION_DRIFTERS_MASTER_SPEC.md §28",
+  "activeProfile": "dd-arcade-grit",
+  "styleBlock": "STYLE ANCHOR (match the LOOK, never copy content): The Behemoth / Castle Crashers' BOLD, CHUNKY, SIMPLE flat-cel SHAPES + thick confident outlines + instantly-readable silhouettes, FUSED with Darkest Dungeon's GRIM mood — heavy grimy ink, spot-blacks, a desaturated dark palette, comic-horror weight. The target is Behemoth's bold readable chunkiness rendered grim and gritty like Darkest Dungeon. Rough indie-arcade combat art — chunky, imperfect silhouettes; gritty dark-comic attitude; thick, slightly UNEVEN hand-drawn outlines; simple flat cel shading; minimal highlights; flat readable forms; weird, body-first identity. HD, NOT pixel art. AVOID a polished toy-collectible / mascot-merch look. The screen is deliberately DARK and DESATURATED (characters, enemies, arenas) so high-saturation NEON weapon VFX is the star — the light show is the color. CONSTRUCTION: everything is LIMBLESS (no arms, no full legs, no realistic anatomy, EVER). PLAYERS use the FULL build — a compact body + TWO detached floating blob hands + TWO detached floating feet. ENEMIES are also limbless but their build VARIES by creature — pick what fits its nature: FULL (body + 2 hands + 2 feet, for grounded walkers); HANDS-ONLY (body + 2 hands, NO feet, for floating/hovering things); or PURE BLOB (body only, NO hands and NO feet, for the simplest drifting/oozing/rolling creatures). Whatever detached parts DO exist follow the blob rules: hands are simple single-piece oval/bean/mitten shapes — NO fingers, claws, knuckles, or thumb — placed OUTSIDE the body silhouette with a visible gap, never over the body; feet are separate objects below the body with gaps, never touched/covered/tucked by the body. (Enemies never hold the arsenal, so omitting hands/feet is fine — only players need the weapon-holding hands.) The subject's own description states which build it uses. PALETTE — pull every colour from this set, max 6-8 meaningful colours per asset: base/neutral charcoal #22252B, gunmetal #3A4049, steel #5A6472, off-white #E8E4D8, bone #CFC6AE; earth/accent rust #A8482E, tan #C49A5A, olive #6E7042, muted-red #9E3B36, dull-teal #3C6E6A; neon/VFX (weapon fire, impacts, glows — additive + bloom) hot-magenta #FF3BD4, cyber-cyan #33E6FF, plasma-lime #9CFF3B, ember-orange #FF8A2B, arc-violet #B14BFF. DETAIL is UNIFORM across every asset at the player-character baseline (a few interior details, full flat cel, ~4-6 colours) — NEVER maximized. Bosses are bigger in SCALE, NOT more detailed; an over-rendered asset looks LOWER quality and noisier than its neighbours and breaks cohesion. Every design is ORIGINAL and trademark-distinct (never a copy of an existing game/character).",
+  "outlineGuidance": "ONE uniform heavy black outline, ~3-4px at a 1080-tall canvas, slightly uneven / hand-drawn — NOT vector-clean, and NOT variable-weight-used-as-detail. Simple interior linework only.",
+  "shadingGuidance": "Flat cel ONLY: base colour + ONE shadow band + AT MOST ONE highlight per colour region (≤3 tones per region). NO gradients, NO soft/airbrushed rendering, NO ambient occlusion. Shadows are decisive flat shapes.",
+  "referenceFamily": "ANCHOR: The Behemoth / Castle Crashers (bold chunky simple flat-cel shapes, thick confident outlines, silhouette-first readability) FUSED with Darkest Dungeon (grim grimy ink, spot-blacks, desaturated dark palette, comic-horror weight, dramatic flat lighting). Match the RENDERING LANGUAGE only — outline weight, cel discipline, palette, proportions. NEVER copy either game's characters, designs, or content; DD keeps its own limbless construction + original roster (§18). Neon-on-dark VFX stays the single loud element.",
+  "avoidList": [
+    "fingers, claws, articulated/segmented hands, knuckles, thumbs",
+    "arms or full legs; realistic anatomy",
+    "polished toy / collectible / mascot-merch look",
+    "clean anime style; soft anime cel-TV shading",
+    "pixel art / low-res sprite aesthetic",
+    "World Tournament 'Lythero Cartoon Bold' canon — DD is its OWN look",
+    "gradients, airbrushed/soft shading, ambient occlusion",
+    "text, labels, UI, watermark, logos, or signatures in the image",
+    "any card frame / HUD / stat icons",
+    "background scene, floor plane, or cast shadow on the background",
+    "gradient or textured background",
+    "the chroma-key colour (#00ff00 / near-green) bleeding into the subject",
+    "any copy of an existing game/character; any real brand or human likeness"
+  ],
+  "identityRefRenderRules": [
+    "Subject ONLY — NO background scene, NO floor/ground plane, NO cast shadow on the background.",
+    "Render on a PERFECTLY FLAT, FULLY-OPAQUE chroma-key background, exact #00ff00 — one uniform colour, no gradient/texture/lighting variation. NEVER use #00ff00 or near-green anywhere in the subject. (A downstream tested colour-key removes it to transparency — never ask for true alpha.)",
+    "Canvas: 1920x1080 for full character/enemy sprites; a SQUARE 1024x1024 canvas for weapons / props / objects. Center the subject with generous padding; the full body plus WHATEVER detached parts it has visible (players: 2 hands + 2 feet; enemies: per their build — full / hands-only / pure-blob), with clear GAPS of flat green between any separated parts.",
+    "WEAPONS / PROPS ONLY: render in a FLAT, ORTHOGRAPHIC, FULL SIDE-PROFILE (broadside) view — the ENTIRE weapon laid flat in the 2D plane facing the camera, long axis running across the frame, both ends fully visible. ABSOLUTELY NO perspective, NO foreshortening, NO 3/4 angle, NO tilt into depth, NO barrel/blade pointing toward or away from camera. It must read as a clean flat 2D game-item icon (as if held side-on in hand or orbiting).",
+    "WEAPON ORIENTATION (consistent across EVERY weapon): the weapon FACES RIGHT. The business end — blade TIP, spear/pick/spike POINT, gun/cannon/launcher MUZZLE, axe/cleaver edge, staff HEAD/crown/orb — points to the RIGHT. The grip / handle / haft / stock / pommel sits on the LEFT. (A renderer mirrors it for left-facing use; author every weapon pointing RIGHT.)",
+    "Characters & enemies: a clear SIDE-PROFILE pose FACING RIGHT — true Vampire-Survivors side view (spec §5). The subject looks ACROSS the frame; it must NOT face, posture, or pose toward the viewer/camera. (A subtle turn of the head is fine, but the body reads side-on, not front-facing.) Generated EMPTY-HANDED (weapons are separate assets).",
+    "ABSOLUTELY NO ground shadow, NO floor, NO contact shadow, NO ground oval, NO surface of any kind beneath or behind the subject — flat #00ff00 runs uninterrupted right up to the feet. (Shadows are added in-engine, never baked into the sprite.)",
+    "ZERO VFX ON THE SPRITE — the ENGINE renders ALL light, glow, and particles at runtime (spec §14). NO smoke, steam, fire/flame, sparks, airborne embers, dust, motion/speed trails, drips, splashes, lightning/arcs, energy beams/auras, hovering particles, shell halos, heat-haze/shimmer, muzzle/impact flashes, OR radiating/blooming glow of ANY kind. The sprite is the PLAIN, SOLID, MATTE object form. A character's iconic eye or a hot sigil/edge may be drawn as a SMALL solid BRIGHT-COLOURED SHAPE (it reads 'lit' purely by colour contrast) — but it must NOT bloom, radiate rays, emit, or cast light into the space around it. A baked emission freezes WRONG the instant the object moves/swings. WHEN UNSURE, LEAVE IT OFF. (Tough-enemy 'glow' is an engine layer, NEVER in the sprite.)",
+    "UNIFORM detail on EVERY asset — match the player-character baseline: a clean bold silhouette, a few interior details, full flat cel, ~4-6 colours. Bosses and uniques are BIGGER in SCALE but are NOT more detailed than a normal character. An over-detailed asset reads as LOWER quality and breaks cohesion — NEVER exceed the character baseline; detail does not scale with importance, only size does.",
+    "Neutral, even lighting (this is the canonical 'what is it' reference; dramatic light comes at card-art time). One subject per image. No text/labels/UI/watermark."
+  ],
+  "cardartRenderRules": [
+    "SINGLE cohesive render anchored to the locked identity-ref (Image 1) — NOT a composite — so palette, lighting, and atmosphere are designed together. (Pass 2 of the two-pass card pipeline, spec §14.)",
+    "Subject at its most dramatic beat — a weapon mid-swing/fire trailing its signature NEON VFX; a character/enemy mid-signature-move with blob hands/feet flung in motion. Implies MOTION, not a portrait.",
+    "Subject occupies the middle 55-70% of the frame on a rule-of-thirds vertical; ONE dominant key light + a BRIGHT NEON RIM light separating the subject from the background (the #1 pop trick).",
+    "Card art may use a touch more rendering than the in-world sprite (it is stared at in the inventory) — but STILL the same flat-cel discipline (no gradients, no noise) and the same character-baseline detail level; richness comes from lighting + pose + background, NOT from cramming in more interior detail.",
+    "Derive the subject palette from the identity-ref image; the background uses COMPLEMENTARY tones at LOWER saturation so the subject stays the loudest, most-saturated element. Subject has sharper linework + harder cel than the softer background.",
+    "Square 1024x1024 card render. NO card frame, stat text, rarity border, or UI — those are composited later."
+  ],
+  "vfxRenderRules": [
+    "This asset is a VFX EFFECT SKIN — NOT a character, weapon, or prop. The character/weapon render rules DO NOT apply. This asset SHOULD depict the effect MID-ACTION (motion, eruption, dust, debris, energy, light), frozen at its single most dramatic instant.",
+    "Render on a PERFECTLY FLAT, FULLY-OPAQUE chroma-key background, exact #00ff00 — one uniform colour, no gradient/texture. NEVER use #00ff00 or near-green anywhere in the effect. (A downstream colour-key removes it to transparency — never ask for true alpha.)",
+    "MATCH THE GAME'S ART STYLE (style canon above): bold chunky flat-cel shapes, thick slightly-uneven black outlines, simple cel shading, the locked palette, grimy Darkest-Dungeon weight. The effect must read as part of THIS game — never a stock/photoreal particle.",
+    "PALETTE + MATERIAL come from the SOURCE WEAPON (Image 1): the effect shares the weapon's colours and material (e.g. a granite weapon throws GREY STONE debris). The effect is the impact/energy THIS weapon produces — do NOT draw the weapon itself, only the effect.",
+    "ORIENTATION (ALWAYS — the VFX has a fixed orientation just like weapons face right): render from the game's TOP-DOWN, slightly-high 3/4 view (Vampire-Survivors perspective). The effect sits on the GROUND PLANE as a WIDER-THAN-TALL elliptical footprint, with debris/energy erupting UPWARD and a touch toward the camera. Clear 'up' = top of frame = away from camera. It must lie FLAT on the arena floor when composited — NOT a front-on icon, NOT a pure side view, NOT isometric.",
+    "ONE single centered effect, generous transparent padding. NO weapon, NO character, NO hand, NO arena/scenery, NO text / UI / frame / watermark.",
+    "NO GROUND. Do NOT draw any earth/dirt/soil/rock FLOOR, disc, mound, crater fill, or terrain patch under or around the effect. The effect composites ON TOP of the real arena floor at runtime, so a baked ground patch would show as a wrong solid blob. Render ONLY the erupting slabs/shards + flung debris + dust/energy, floating on the flat #00ff00 chroma with nothing beneath them. (Thin dark CRACK LINES are fine — they read as cracks in whatever floor is underneath — but NO filled ground.)",
+    "UNIFORM LOW DETAIL — match the CHARACTER BASELINE (§28.6), do NOT maximize. A FEW big, bold, chunky shapes with full flat cel shading and ~4-6 colours. NOT realistic, NOT finely rendered, NOT a dense pile of tiny rubble/gravel/cracks. Think roughly 6-12 LARGE readable slabs/shards, not a hundred small stones; simple interior linework only. Over-detail reads as LOWER quality and breaks cohesion with the chunky character art.",
+    "Additive neon glow is allowed where it fits (effects are the light show, §14), but keep the silhouette bold + legible."
+  ],
+  "_palette": {
+    "base": { "charcoal": "#22252B", "gunmetal": "#3A4049", "steel": "#5A6472", "offwhite": "#E8E4D8", "bone": "#CFC6AE" },
+    "earth": { "rust": "#A8482E", "tan": "#C49A5A", "olive": "#6E7042", "mutedRed": "#9E3B36", "dullTeal": "#3C6E6A" },
+    "neon": { "hotMagenta": "#FF3BD4", "cyberCyan": "#33E6FF", "plasmaLime": "#9CFF3B", "emberOrange": "#FF8A2B", "arcViolet": "#B14BFF" },
+    "rarity": { "common": "#9AA0A6", "uncommon": "#5FD17A", "rare": "#4AA3FF", "reallyRare": "#7B5BFF", "legendary": "#FFB23B", "ultimate": "#FF5D5D", "cursed": "#A45CFF" }
+  },
+  "_dimensionOverrides": {
+    "wild-west": "Dusty, sun-bleached, occult-frontier. Dressing in tan/rust/bone/olive against charcoal shadow; weapon VFX stays full neon so it pops against the dust. Silhouette vocabulary: hats, dusters, skeletal / cactus / automaton forms. Reads gritty-Western, NOT cartoon-cowboy."
+  },
+  "_chromaKey": "#00ff00",
+  "bgArchetypes": [
+    { "id": "energy-burst", "description": "A radial energy burst centered behind the subject — concentric rings of light, motion lines streaking from center, tinted to the subject's neon accent. The subject is the explosive epicenter." },
+    { "id": "shattered-pane", "description": "A shattered-glass effect frozen mid-break — fractured shards radiating from the subject, refracting complementary colors at lower saturation." },
+    { "id": "vortex", "description": "A swirling vortex/maelstrom rotating around the subject — concentric spiral lines, motion blur, subject at the calm eye." },
+    { "id": "spotlight-stage", "description": "Pure-black backdrop with one or two intense stage spotlights from above-back, the subject on a circular pool of light. Duel/showdown vibe." },
+    { "id": "radial-rays", "description": "Bold radial rays of color behind the subject (manga sunburst), alternating thick-thin lines in two complementary low-sat colors." },
+    { "id": "elemental-wave", "description": "A massive cresting wave of the subject's signature power filling the background (fire, dust, shock, toxin — match the subject), frozen at its peak." },
+    { "id": "neon-grid", "description": "A retro-arcade neon grid receding to a vanishing point over a deep charcoal void." },
+    { "id": "single-color-void", "description": "A pure flat field of ONE desaturated complementary color — the subject the only thing in frame. Ultra-minimal comic-cover energy." },
+    { "id": "stormcloud-lightning", "description": "Towering stormclouds, lightning forks frozen mid-strike behind the subject, dramatic backlight." },
+    { "id": "ember-storm", "description": "Glowing embers of the subject's accent color filling the frame, motion-blurred upward, deep charcoal void behind." },
+    { "id": "geometric-blocks", "description": "Bold flat geometric color-block composition — overlapping triangles/circles/rectangles in the lower-sat complementary palette." },
+    { "id": "dust-mesa", "description": "A Wild-West dust haze over a flat mesa horizon at blood-dusk, low-sat tan/rust sky, the subject kicking up grit. (M0 dimension flavor.)" },
+    { "id": "swirling-fog", "description": "Dense swirling fog tinted complementary, one bright pool of light from above ringing the subject." },
+    { "id": "molten-flow", "description": "Slow-flowing liquid ribbons (lava, ink, plasma) cascading across the frame, tinted to the accent." },
+    { "id": "manga-screentone", "description": "Black-and-white manga screentone backdrop — halftone dots, hard speed lines from the subject. Subject stays full-color; bg monochrome-tinted to the accent." },
+    {
+      "id": "elaborate-scene",
+      "description": "A FULL elaborate painted scene fitting THIS subject's dimension — a SPECIFIC vivid place (saloon ablaze, desert canyon at blood-sunset, neon-lit ghost town, mineshaft, dust colosseum). Depth + atmosphere but saturation/contrast LOWER than the subject so it still pops. The variety-injection archetype."
+    }
+  ],
+  "elaborateSceneWeight": 10
+}

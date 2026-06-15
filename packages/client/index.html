@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dimension Drifters — Netcode POC</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1a1320;
+        font-family: system-ui, sans-serif;
+      }
+      /* Full-viewport host for the Phaser canvas. RESIZE mode measures THIS element,
+         so it must always equal the window — fixes the canvas filling only a corner. */
+      #game-root {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+      #game-root canvas {
+        display: block;
+      }
+      #hud {
+        position: fixed;
+        top: 8px;
+        left: 10px;
+        z-index: 1;
+        color: #cdbfe0;
+        font-size: 13px;
+        line-height: 1.5;
+        pointer-events: none;
+        text-shadow: 0 1px 2px #000;
+      }
+      #hud b {
+        color: #4fd1c5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-root"></div>
+    <div id="hud">
+      <div><b>Dimension Drifters</b> — netcode handshake POC</div>
+      <div>WASD to move · open a 2nd tab to see co-op sync · <span id="status">connecting…</span></div>
+      <div id="debug" style="color: #8a7aa0">loop: —</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

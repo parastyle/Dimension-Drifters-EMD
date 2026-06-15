@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>VFX engine test</title>
+<style>
+  body { margin: 0; background: #0c0a07; color: #e8e2d4; font: 13px system-ui, sans-serif; }
+  #stage { width: 420px; height: 420px; margin: 16px; border: 1px solid #332d22; background:
+    repeating-linear-gradient(0deg, transparent 0 47px, #1a1812 47px 48px),
+    repeating-linear-gradient(90deg, transparent 0 47px, #1a1812 47px 48px), #0e0c08; position: relative; }
+  #log { margin: 8px 16px; white-space: pre-wrap; color: #8aa; font: 11px ui-monospace, monospace; }
+  button { background: #2c2a22; color: #f0ead8; border: 1px solid #4a4636; border-radius: 6px; padding: 6px 11px; margin: 0 16px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<button id="next">next weapon</button> <span id="which"></span>
+<div id="log"></div>
+<script src="/phaser.min.js"></script>
+<script src="vfx-layers.js"></script>
+<script src="vfx-engine.js"></script>
+<script>
+const log = (m) => { document.getElementById("log").textContent += m + "\n"; };
+window.addEventListener("error", (e) => log("ERROR: " + e.message));
+log("Phaser " + (window.Phaser ? Phaser.VERSION : "MISSING") + " · VFXEngine " + (window.VFXEngine ? "ok" : "MISSING"));
+
+function defaultSuite(weaponId) {
+  const preset = window.VFXLAYERS.PRESETS[weaponId];
+  const suite = {};
+  for (const [lid, layer] of Object.entries(window.VFXLAYERS.LAYERS)) {
+    const pre = preset && preset.layers ? preset.layers[lid] : null;
+    const params = {};
+    for (const pp of layer.params) params[pp.key] = (pre && pre.params && pre.params[pp.key] != null) ? pre.params[pp.key] : pp.def;
+    suite[lid] = { on: !!(pre && pre.on), params };
+  }
+  return suite;
+}
+
+const weapons = [
+  ["driftblade", "vfx-slash-driftblade"],
+  ["x-gun-gatling", "x-gun-gatling"],
+  ["x-staff-lightning-rod", "x-staff-lightning-rod"],
+  ["x-launcher-firework", "x-launcher-firework"],
+];
+let idx = 0;
+const pv = VFXEngine.makePreview(document.getElementById("stage"));
+window.pv = pv;
+function show() {
+  const [id, subj] = weapons[idx];
+  document.getElementById("which").textContent = id;
+  log("→ " + id);
+  pv.setSuite(defaultSuite(id), 0);
+  pv.setHero("/art/" + subj + "/candidate-1.keyed.png");
+  pv.replay();
+}
+document.getElementById("next").onclick = () => { idx = (idx + 1) % weapons.length; show(); };
+setTimeout(show, 300);
+</script>
+</body>
+</html>

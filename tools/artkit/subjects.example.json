@@ -1,0 +1,26 @@
+[
+  {
+    "id": "rusty-cleaver",
+    "name": "Rusty Cleaver",
+    "prompt": "A heavy, pitted butcher's cleaver scavenged from a frontier town — broad rust-mottled blade with a chipped edge, sweat-darkened wrapped-cord handle, a single bright nick where it's been honed. Crude, brutal, dependable.",
+    "palette": { "primary": "#8a4b2f", "accent": "#d8c27a" },
+    "tags": ["melee", "sword", "close", "physical", "1H", "M", "STR", "wild-west"],
+    "cardartAction": "swung in a heavy downward arc, rust flaking off the edge, a gritty impact spark at the blade tip"
+  },
+  {
+    "id": "coffin-lid",
+    "name": "Coffin Lid",
+    "prompt": "A splintered wooden coffin lid hefted as an improvised shield-weapon — long hexagonal plank, iron nail-heads, a faded painted cross worn to a ghost, one cracked corner. Heavy, defensive, grim.",
+    "palette": { "primary": "#5b4636", "accent": "#9fb0a3" },
+    "tags": ["melee", "slab", "close", "physical", "2H", "L", "on-swap-block", "STR", "CON", "wild-west"],
+    "cardartAction": "slammed forward edge-on as a guard, splinters and dust bursting off the impact face"
+  },
+  {
+    "id": "branding-iron",
+    "name": "Branding Iron",
+    "prompt": "A long black wrought-iron branding rod, the business end a glowing molten-orange sigil, heat-haze shimmering off the metal, the haft wrapped in scorched leather. Cross-class INT melee — magic by way of red-hot iron.",
+    "palette": { "primary": "#2b2b2e", "accent": "#ff7a1f" },
+    "tags": ["melee", "rod", "mid", "fire", "1H", "M", "INT", "cross-class", "wild-west"],
+    "cardartAction": "thrust forward, the white-hot sigil flaring and leaving a searing after-glow trail in the air"
+  }
+]

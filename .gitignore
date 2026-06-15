@@ -1,0 +1,26 @@
+# §26 retro #1: NOTHING load-bearing goes here. Only disposable output.
+# The artkit pipeline, data, and tools all live TRACKED in the repo.
+node_modules/
+dist/
+*.log
+.DS_Store
+.tmp-bin/
+
+# artkit GENERATED SCRATCH (regenerable; ~1GB of Codex candidates). The promoted/sliced assets the
+# GAME uses are copied into packages/client/public/ (tracked) — out/ itself is not committed.
+tools/artkit/out/
+# Codex CLI working dirs + run logs/reports (may hold session/auth data) — never commit.
+tools/artkit/.artkit-tmp/
+.artkit-tmp/
+
+# scratch capture/preview files from verification runs
+tmp-*.png
+tmp-*.jpg
+tmp-*.jpeg
+# reference images dropped in for comparison (not source)
+/example card*.png
+
+# editor / OS noise
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db

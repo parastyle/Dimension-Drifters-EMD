@@ -1,0 +1,724 @@
+# DIMENSION DRIFTERS — MASTER SPEC
+**Working title** (not final). Clean-sheet co-op reboot. Prior Dimension Drifters design is void — **name only** survives.
+
+> **THIS IS THE GAME BIBLE — THE SINGLE SOURCE OF TRUTH.**
+> It is a *living* document, updated every session with all canon decisions. "Living" ≠ "unlocked": `[LOCKED]` items are canon until explicitly changed here. Any decision made anywhere (chat, coding session, playtest) must be written back into this file or it does not exist. If code and this doc disagree, that's a bug in one of them — reconcile immediately.
+
+**Doc version:** v0.44 · **Last updated:** 2026-06-15 · **Owner:** product owner (Mike)
+**Status:** Living design bible. Consolidates the full design session.
+**Legend:** `[LOCKED]` = decided/canon. `[PROPOSED]` = drafted by Claude, awaiting sign-off. `[OPEN]` = undecided.
+**Update protocol:** bump version + date on every edit; record reversals in §25; never silently overwrite a `[LOCKED]` item — supersede it with a logged note.
+
+---
+
+## 0. How to Read This
+Sections 1–22 are the design. §23 is the M0 vertical slice (the first build target). §24 is pending/next specs. §25 is the decision/changelog (incl. reversed decisions, so we don't relitigate). §26 is engineering practices (hard-won from the WT retro). **§27 is repo structure, conventions & build order — start there for coding.**
+
+---
+
+## 1. Vision `[LOCKED]`
+A free-roam online co-op **bullet-heaven** where up to 10 friends drift between dimensions — one big themed arena per stage — surviving escalating hordes, looting hand-crafted weapons, and cycling them in combat from an arsenal that orbits behind them. Survive the run and salvage your haul into card packs that unlock more weapons and characters. Die and lose it. **No permanent power.** Discovery is the progression.
+
+**One-line pitch:** Vampire Survivors perspective, Megabonk run structure, true online co-op, and an active right-click weapon-cycling arsenal nobody else has.
+
+**Market bet:** Online co-op is the most-demanded missing feature in the survivors genre. We pay the netcode cost competitors dodge; the RMB arsenal supplies the active layer the genre lacks.
+
+---
+
+## 2. Design Pillars `[LOCKED]`
+1. **Co-op is the game.** Every system answers "is this fun with 9 friends?" Veterans and day-one players are mechanically equal — horizontal progression only.
+2. **Weapons are the content, the loot, and the art budget.** Hand-authored with care; custom VFX, AoE, speed, damage per weapon. High volume (Gungeon-scale). Everything else on screen is deliberately cheap.
+3. **Active hands in a passive genre.** LMB signature + RMB arsenal cycling means the player is always deciding, never just walking. **100% of damage comes from LMB + RMB. Zero passive/auto-attack damage.**
+4. **Risk makes loot real.** Salvage banks only if you survive. Death has teeth.
+5. **The multiverse is the excuse.** Any theme, weapon, or character is valid. Dimensions justify eclecticism; lore never blocks content.
+
+**Core design laws:**
+- **Drop rate must comfortably exceed break rate.** Durability creates flow, never hoarding. The fantasy is "spend freely, more is coming." (BotW durability-discourse lesson.)
+- **Card packs are earnable-only, never purchasable with real money.** Gacha *feel* on earned currency; no real-money gacha on a premium Steam title.
+
+---
+
+## 3. Tech Stack `[LOCKED]`
+| Layer | Choice | Notes |
+|---|---|---|
+| Engine | **Phaser 4** (TypeScript) | SpriteGPULayer (huge sprite counts, single draw call); built-in glow/bloom/pixelate filters. v4 closed the horde-performance gap that previously disqualified Phaser. |
+| Shell | **Electron** | Single V8 runtime; Steam via steamworks.js. (Accepted cost: ships a Chromium runtime.) |
+| Multiplayer | **Colyseus** (authoritative server) | Colyseus Cloud from **$15/mo**; runs on any Node host. At ~3k copies, peak concurrency fits one modest node; bandwidth within included allowances. |
+| Steam social | **Steam lobby / rich-presence bridge** | Native right-click → Join Game works with Colyseus: Steam carries the room ID, Colyseus does the connection. Lobby-as-social-layer + Colyseus-as-transport is the clean pattern. |
+| Tooling | pnpm, Biome, Vitest | House standard, matches existing Phaser projects. |
+| Workflow | Three-role: product owner / Claude (specs) / Codex (implementation) | Phaser = highest AI autonomy (pure text, no editor blindness). |
+
+**Why Phaser over Godot/Unity (recorded rationale):** Phaser buys development velocity (pure-TS, max Codex autonomy) + ecosystem consolidation. Godot/Unity would buy a lean native binary + free Steam-P2P hosting + zero server ops + longevity. Decision: Phaser, accepting the Electron tax and the ~$15–50/mo Colyseus cost. (Reconsider only if "lean native, nothing to operate, outlives me" becomes the priority.)
+
+**Pinned versions `[LOCKED — first coding session, 2026-06-13]`:** Phaser **4.1.0** (stable on npm `latest`, not beta — validates the §3 bet), Colyseus **0.16.5** server + **colyseus.js 0.16.22** client (matched 0.16 pair — there is **no 0.17 JS client published yet**; 0.16 already ships **StateView** for §4 Tier-1 area-of-interest, so it fully covers M0), `@colyseus/schema` **3.x** (dedupes to one instance across shared/server/client), `@colyseus/ws-transport` 0.16, Node **24**, pnpm **9.12**, TypeScript **5.9** (strict), Biome **2.5**, Vitest **2.x**, Vite **6**. *(Upgrade the Colyseus pair to 0.17 once a matching `colyseus.js` ships.)*
+
+**Repo structure, engineering conventions, and the M0 build order live in §27 — read it before the first coding session.**
+
+---
+
+## 4. Netcode Model `[LOCKED]`
+RoR2-style host-authoritative PvE sync (no determinism — explicitly not pursued; replays/ghosts/dailies are out of scope and not wanted). Colyseus runs the sim server-side (no peer "host" to migrate).
+
+**Three-tier sync model `[PROPOSED — recommended for §157]`** (bounds bandwidth; aligns with the §13 difficulty philosophy):
+- **Tier 1 — hard sync** (full authoritative state, **area-of-interest filtered via Colyseus StateView** so each client only gets entities near its camera): players, **tough enemies**, bosses, loot drops, run state. Few and high-stakes. *(StateView is not optimized for big datasets — kept deliberately small.)*
+- **Tier 2 — soft sync** (server broadcasts spawn seed + spawn points + **death confirmations**; clients simulate horde movement locally): the **horde trash**. Keeps hundreds of trash mobs off the per-tick state stream. Server stays authoritative on damage dealt + deaths.
+- **Tier 3 — no sync** (pure client sim): bullets/projectiles/VFX.
+
+**Other netcode params `[LOCKED]`:**
+- **Server tick rate: 20Hz** (bullets are client-sim'd, so 20Hz is plenty; client-side interpolation/extrapolation smooths it).
+- **Client-authoritative self-damage:** you get hit on your own screen. Correct UX for bullet hell; acceptable for friends-first PvE.
+- **Light server sanity checks** where free (movement-speed/position bounds) — cheap anti-cheat, not a full authoritative re-sim.
+- **Cross-region play enabled** (client-side self-damage hides a lot of latency, which makes this viable).
+- **Procedural arenas server-seeded:** Colyseus rolls the seed, every client builds the identical arena.
+- **Reconnect grace = whole run;** **checkpoint at dimension transitions** (a server hiccup drops the squad back to the last portal, not a total loss).
+- **Rejoin behavior:** a returning player respawns **at the squad's location with run progression intact** (stats/arsenal/level), favoring player UX without costly mid-dimension arena reconstruction — lean on the dimension-transition checkpoints. (Detail in SPEC-04.)
+- **No mid-run drop-in for *new* players** — lobby + reconnect only (see §22).
+
+---
+
+## 5. Players, Camera, World `[LOCKED]`
+- Up to **10 players** per session (ceiling subject to load testing).
+- **Free roam:** independent cameras on one large arena per stage. No shared-screen tether — texture is "drift together/apart," mind yourself.
+- **Camera:** VS-style top-down with **slight dynamic pull** when hordes thicken.
+- **Perspective:** Vampire Survivors exactly — top-down maps, **side-profile characters**.
+- Per-player enemy density bubbles; spawn pressure scales with player count and proximity. **Stragglers who wander off alone hit quiet zones** — splitting from the squad is a real risk/reward (less action, less pressure, but no backup).
+- **Encounter variety (Megabonk-style):** the director mixes encounter types — **"horde time"** (hundreds on screen), **tough-pocket** (a few genuinely tanky enemies), and **mixed** (both at once). Peak crowd can reach **hundreds of enemies per player** — sets the performance budget (Phaser 4 SpriteGPULayer + pooling are load-bearing here).
+- Arena **does not scale** with player count — it's big regardless.
+- **No friendly fire.** **Body collision respected by all objects** (players block each other — needs prediction care at 10 players).
+
+---
+
+## 6. Run Structure `[LOCKED]`
+- **Run length:** ~50 min for a full 3-dimension chain (~one dimension every several minutes; extract earlier to bank sooner).
+- **Per-dimension loop (Megabonk-style):** timed escalation → in-run XP leveling → **boss spawns at the timer mark** → defeating it opens the **extraction portal**; difficulty escalates with depth. **Boss cadence matches Megabonk exactly** (periodic escalating boss-tier spawns through each dimension, culminating in the dimension's themed main boss as the extraction gate). *(Exact timing pinned in SPEC-02 against the Megabonk reference.)*
+- **Ignoring the boss:** escalation **continues** — you cannot farm safely forever.
+- **The chain = the greed loop:** extract at the portal (bank your salvage) or push to the next dimension at higher difficulty.
+- **Portal entry:** anyone who steps on a portal **brings the whole squad**.
+- **No "win" screen.** Endless depth with stacking difficulty modifiers (elite density, enemy affixes). **Leaderboard = deepest chain reached.**
+- **Secret OP boss** exists, gated behind certain in-map requirements — **post-launch add.**
+
+**Difficulty scaling `[LOCKED]`:** scales with player count **and** chain depth, but **not by multiplying the horde**:
+- **More players → more *tough* enemies (scaled × player count).** Horde-trash count and boss count do **not** multiply with players.
+- Instead, **horde enemies and bosses gain HP (spongier) to equalize their death rate** against more players' combined DPS.
+- Consequence by design: **more players never trivializes a run, and an underperforming player becomes genuine deadweight** (their presence raised difficulty but didn't add enough DPS).
+- **No HP cap on non-boss enemies — "sponge-hell" is acceptable** (dodging is the fun). This also bounds the netcode entity count (toughs are few; see §4 Tier 1).
+
+**HP, regen & revive `[LOCKED]`:**
+- **Always-on health regen** (regenerates continuously, in or out of combat). Additional healing comes from **RMB-weapon lifesteal or augmented-LMB lifesteal** (e.g., Twin Bowie Fangs, parry-heal augments).
+- **Revive returns the player at 30% HP.**
+- Base HP + CON-scaling and the exact regen rate are tuning numbers (SPEC-02).
+
+**Death & revive:**
+- A downed player is **dead until a rez mechanic is used** on them.
+- **Rez is a weapon effect** (revival is loot — squad comp includes "who's carrying a rez weapon"; the Gravedigger's Spade is the M0 melee carrier).
+- **No rez available → dead until the next dimension** (brutal, intended).
+- Downed players **drop nothing**; their arsenal stays with them through rez; they **spectate-follow** the squad while dead.
+- **If you die but the squad extracts, your salvage is saved by the squad.**
+
+---
+
+## 7. Classes & Signatures `[LOCKED]`
+Three classes, each with an **exclusive signature on LMB that levels during the run**, and class **leans** (tendencies, not locks — weapons/upgrades let players form their own roles):
+
+| Class | Lean | Signature (LMB) |
+|---|---|---|
+| **Melee** | Balanced AoE / DPS / Tank | **Parry** |
+| **Ranged** | Single-target DPS | **Dodge roll** |
+| **Caster** | AoE damage / buff / debuff | **Offensive spell** (starter: **Fireball**) |
+
+- **Signatures are class-locked and always-on**, regardless of what's in the RMB arsenal. Melee always has parry, ranged always roll, caster always spell.
+- **Movement:** flat move speed + **fixed mobility on the signature** (no stamina/sprint layer).
+- Signature **asymmetry is intentional** (melee/ranged signatures are defensive-utility; caster's is offensive). How they diverge depends entirely on the upgrade trees.
+
+**Signature upgrade direction `[LOCKED]`:** choices matter; picks can **unlock further picks**; effects **scale with stats** (e.g., fire-wave-on-parry scales INT). Signature nodes unlock **every 5 levels**, chosen in the same window as stat allocation (§12).
+
+---
+
+## 8. Parry System (Melee Signature) `[LOCKED]`
+- **Everything active and instanced is parryable** — all melee/contact attacks (non-projectiles) AND projectiles. **Only DoTs and AoE zone effects cannot be parried.**
+- **Timing is tight.** Binary: you parry or you whiff — **no graded/partial parry.**
+- **Miss penalty:** a short **parry delay (cooldown).** No stagger/self-vulnerability.
+- **Base effect:** small **knockback to the parrier** + **i-frames** that negate that attack. That's it — all offense comes from augments.
+
+**Telegraph language (hard visual rules) `[LOCKED]`:**
+- **Universal rule: white = parryable.** One learnable cue across all sources.
+- **Location-based telegraphing is the primary player aid:** a melee enemy **leaps to a near-locked distance from its target before starting a combo** — a spatial "get ready, I'm on you" tell. Spacing itself signals the incoming attack, before the white flash.
+- **Melee tell:** the enemy gradually glows white, peaking at **fully white for the millisecond parry window**, plus a **narrowing rhythm-game ring**.
+- **Ranged tell:** parryable projectiles carry the same **white-glint core** and a **shrinking ring** that tightens as the shot nears your hitbox (constant velocity = the shot is its own timing cue). Scatter pellets each read parryable-white.
+- **Unparryable** DoTs/zones never use white — they speak **red/orange danger** (wind-up flash + ground decal).
+
+**Parry augment pool (M0) `[LOCKED]`** — base parry = knockback + i-frames. Augments are a **flat, mix-and-matchable pool** (NOT branch-gated): you pick **one augment per signature level (every 5th)**, freely combining across flavors. With a **per-run level cap of 30, that's 6 augment picks** per run. Augments **stack and synergize** rather than gate each other (e.g., taking multiple projectile augments adds projectiles; Emberguard + Brand combo). The three flavors are organizing tags, not exclusive branches:
+- **Riposte tag (STR/DEX):** *Counterblade* (parry fires a projectile) · *Twin Fang* (+1 parry projectile, stacks) · *Hair-Trigger* (consecutive parries within a window add a projectile each)
+- **Aegis tag (CON):** *Iron Stance* (wider window + bigger knockback) · *Second Wind* (parry heals a CON-scaled sliver) · *Bulwark* (parry grants a 1.5s absorb shield)
+- **Hex tag (INT, cross-class spice):** *Emberguard* (**fire wave on parry**, cone, INT-scaled) · *Brand* (parried enemies Marked +dmg) · *Conflagration* (fire wave leaves a burning zone; combos with Brand)
+
+Pool (9) > picks (6), so every run builds a different custom parry. Pool expands post-M0.
+
+*(Ranged dodge-roll tree and caster spell tree: `[OPEN]`, post-M0. Earlier sketches: roll → bomb-trail / roll-over debuff; spell → standard VS-style escalation.)*
+
+---
+
+## 9. Arsenal System (RMB) `[LOCKED]`
+- **The selected weapon is held in the character's hand(s);** the detached blob hands are the anchor for the held weapon. The arsenal beyond the held weapon is shown via the **card carousel** (below), not in the world.
+  - **`[DEPRECATED 2026-06-15]` — weapons physically orbiting the character** (the old "2 orbiting + 1 held = 3 rendered in-world" idea). Disregarded for now; the bottom-center **card carousel already communicates the arsenal** without the in-world clutter/render cost. May be revisited *much* later if there's a reason — until then, only the held weapon renders in-world.
+- **RMB fires the selected weapon.** When its charges deplete, it enters cooldown and the arsenal **auto-cycles to the next**.
+- **Manual cycle** (EQ / scroll) lets you choose the next weapon yourself.
+- **Bottom-center card carousel** mirrors the arsenal; **each weapon has a card** for at-a-glance clarity. **Durability/charge readout lives on the card.**
+- **Everything aims at the cursor** — the hit cone + swing-bias point at the cursor (melee swings/slams included). **Held pose is UPRIGHT** (weapon blade-up at rest; the swing chops toward the aim, 2H = both hands on the haft, dual = a blade per hand) — locked 2026-06-14 from playtest (v0.24). The weapon no longer rotates to track the cursor at rest; only the swing + hit-cone are cursor-directed.
+- **On-swap effects are a first-class category** (e.g., Coffin Lid grants a brief block when held/swapped to). "On-swap-in" procs reinforce the core cycling loop.
+- **Unarmed fallback: fists.** With no usable weapon (everything broken, nothing in reach), the character fights with **fists** (weak melee) — you're never fully defenseless.
+
+---
+
+## 10. Weapon Framework `[LOCKED]`
+Hand-designed weapons on a data-driven framework. **No procedural weapon generation.** Volume target: ~**40–60 per class (120–180 total)** for launch.
+
+**Weapon = a data definition referencing three things:**
+1. **Gameplay behavior block** (from a shared library: movers, on-hit effects, AoE shapes)
+2. **VFX mechanic** (see §14)
+3. **Art skin** (Codex-generated)
+
+Plus tuned fields: damage, **knockback value (per LMB/RMB attack; default 0, tunable up)**, attack speed, AoE shape/size, scaling grades, stat requirements, charges, durability, cooldown, on-swap effect, rarity, affixes, SFX/card refs. An **escape hatch** custom script (~1 in 5 weapons) covers truly unique mechanics. Target authoring cost: **one weapon per afternoon** (design brief → Codex scaffold → VFX pass → playtest).
+
+**Authoring approach `[LOCKED]`:**
+- **Proving-ground-first:** build M0's 10 melee weapons against a draft schema, *then* generalize — surfaces schema gaps cheaply before committing.
+- **Behavior-block library v1:** seed the ~8–10 primitives the M0 ten need (movers, on-hit effects, AoE shapes) and grow organically. *(Interpreting the "grow" answer; flag if you meant a full upfront library.)*
+- **Orchestrator doc — `WEAPON_AUTHORING.md`:** a strict repeatable template for Codex (design brief → data definition → behavior-block pick → VFX-mechanic pick → art prompt → playtest checklist), so weapon creation is an assembly line. *(Product owner providing an orchestrator doc to base this on.)*
+- **Telemetry baked in from day one:** weapon pick rates, break rates, salvage flows, death causes — balance is data-driven, not vibes.
+
+**Weapon tag taxonomy `[LOCKED]`** — every weapon carries structured tags from creation (kept as running metadata across the whole library). Two kinds:
+
+*Mechanical tags (drive engine behavior):*
+- **Grip:** `1H` (one blob hand, other free) / `2H` (both hands) / `dual` (matched pair, one per hand, one arsenal slot) / `mounted` (floating/shoulder, hands free). **Drives the hand-rig anchoring.**
+- **Size class:** `S` / `M` / `L` / `XL` — drives sprite generation canvas, held-position offset, and the **on-screen length convention** below. 1H trends S–M, 2H trends L; bigger = slower/heavier.
+  - **Weapon length `[LOCKED 2026-06-15]`: the ART BOX does NOT set in-game size — `displayLength` does.** Every weapon sprite is normalised to its canvas, then drawn at on-screen length = `displayLength` px (`setScale(displayLength / part.w)`). So a really long sword is THREE things together: (1) a big `displayLength`; (2) art drawn **long-and-thin** (a slender silhouette spanning the canvas's long axis with empty margins — never "fill the box"), so it *reads* as reach and the trimmed aspect matches; (3) the size-class band. **Bands (px, tuning):** `S`≈55 · `M`≈90 · `L`≈140 · `XL`≈200–360 (a Masamune-class nodachi sits at the top, ~320). Reach/`range` scales with the visual length. The pre-size step targets ≈2× `displayLength` so long blades stay crisp. *(Demo: the `driftblade` — displayLength 320 vs the cleaver's 76.)*
+- **Delivery:** `melee-arc` / `melee-slam` / `projectile` / `spread` / `hitscan` / `beam-channel` / `placed-aoe` / `orbital` / `thrown-return`.
+- **Fire mode:** `tap-charge` (spend a charge/click) / `hold-channel` (charge per sec) / `burst` / `auto`.
+- **Element:** `physical` / `fire` / `shock` / `toxic` / `arcane` / … (hooks affixes + future resistances).
+
+*Descriptive tags (drive filtering / pools / logic):*
+- **Class pool:** `melee` / `ranged` / `caster` (soft-locked by stat-gate, not a hard wall).
+- **Family:** sword/axe/hammer/spear/whip/fist · pistol/rifle/shotgun/bow/thrown · wand/staff/orb/tome — the anchor for VFX-mechanic + art-prompt reuse ("40 sword mechanics → 200 swords").
+- **Range band:** `close` / `mid` / `long`.
+- **Scaling tags:** which of STR/DEX/INT/CON/LUK it scales (mirrors the letter grades, for queries).
+- **Theme/dimension:** for set-collection unlocks and dimension-flavored drops. (Rarity is its own field.)
+
+*Examples:* Tombstone Greatsword → `2H, L, melee-arc, tap-charge, physical | melee/sword/close, STR`. Twin Bowie Fangs → `dual, S, melee-arc, auto, physical | melee/fist-blade/close, DEX·STR`. Lasso Chain → `1H, M, melee-arc(utility-pull), tap-charge, physical | melee/whip/mid, DEX`.
+
+
+**Scaling & requirements (Elden Ring model) `[LOCKED]`:**
+- Weapons scale on the **five attributes** via **letter grades S/A/B/C/D/E**, shown on the card.
+- **A weapon can scale on multiple attributes simultaneously.**
+- **Soft-lock = stat-gated, not class-gated.** Anyone can wield anything **if they meet the stat requirements**; off-class just means worse scaling letters. **Weapons whose requirements you don't yet meet sit in the side bag until your stats catch up** mid-run.
+
+**Three-layer use model `[LOCKED]`:**
+- **Charges** = uses per cycle before cooldown.
+- **Cooldown** = recovery after charges deplete (each cooldown cycle ticks durability).
+- **Durability** = how many cooldown cycles before the weapon **breaks**.
+- **Manually swapping a weapon out also sends it to cooldown** — no rapid-cycle cheese.
+- **Charge refill conditions are per-weapon** (timer, kills, etc.).
+- **Huge variance** across weapons (1-charge nuke ↔ high-charge workhorse).
+- **Weapons do not level up during a run** — power comes from rarity, affixes, and your build.
+
+**Wooden starter weapon `[LOCKED]`:** one per class (sword/bow/staff). Low cooldown, weak damage/AoE, **lots of durability/charges**. **Zero stat requirements** (usable from level 1 at the 1/1/1/1/1 start). **Start-only — never appears in the in-run drop pool**, you only have it by starting with it. It can still break; the universal floor below it is fists (§9).
+
+**Bags & repair `[LOCKED]`:**
+- **Broken bag:** broken weapons persist here for salvage at extraction.
+- **Side bag:** weapons you can't yet meet requirements for; auto-usable once stats catch up; unused ones salvage at extraction.
+- **Repair** happens mid-run at traveling shops (costs Gems). Travelers **fully repair any weapon** (the whole thing), including the wooden starter.
+- Remaining durability **does not** affect salvage value.
+
+**Rarity tiers `[LOCKED]` (7):** Common → Uncommon → Rare → Really Rare → Legendary → Ultimate → **Cursed**. Rarity affects **both numbers and effects**.
+- **Cursed = high-variance gamble tier:** great-but-dangerous *or* straight-up a dud (bad tradeoffs / "sucks to have"). Roguelike troll-jackpot. **Cursed is shown before pickup via a ghostly-purple cue** — a knowing gamble, not a hidden one.
+- **No pity system** — rarity is pure chance.
+
+**Affixes (Terraria-style) `[LOCKED]`:**
+- **Exactly ONE affix per weapon, always — rarity does not change affix count** (precisely how Terraria prefixes work). Rarity drives the weapon's own numbers/effects, not how many affixes it carries.
+- The affix touches cooldown, durability, charges, attack size, etc.
+- **The affix rolls on drop;** travelers **reroll** that single affix (the "reforge").
+- *(Supersedes the earlier "slots scale with rarity" answer — product owner clarified to the single-affix Terraria model.)*
+
+---
+
+## 11. Stats & Attributes `[LOCKED]`
+- **Five attributes:** **STR, DEX, INT, CON, LUK.** (STR melee, DEX ranged/finesse, INT caster/elemental + signature scaling like fire-wave parry, CON survivability, LUK rarity/luck effects.)
+- **Stats are per-run only** — reset every run. Preserves the no-permanent-power law.
+
+---
+
+## 12. Leveling `[LOCKED]`
+- **XP is squad-shared** (everyone levels together regardless of position).
+- **3 points per level:** 1 auto to your **class attribute**, 1 auto to your **character's specific requirement attribute**, and **1 flex** (your choice). The flex point is the build-identity lever (e.g., a melee dumping flex into INT for a fire-wave-parry build).
+- **Level-up window:** on level, the character enters an **invincible, untargeted state** with **5 seconds to pick** — pick in time or you exit it (and can die). This is the only in-combat breather. **Pause exists but is consensus-based: it only pauses once every player confirms** (no unilateral pause in online co-op).
+- **Signature nodes unlock every 5 levels**, chosen inside that same 5-second window. Most levels = quick stat allocation; every 5th = also a signature pick.
+- **Per-run level cap: 30 `[LOCKED]`** → **6 signature-augment picks** per run (one every 5 levels) and 90 stat points total (30 of them flex).
+- **Starting stat spread: 1/1/1/1/1 `[LOCKED]`.** Everyone starts minimal; the wooden starter has 0 stat requirements so it's usable from level 1 regardless of class.
+- **PROPOSED/OPEN:** the XP curve shape to reach level 30 over a full 3-deep run.
+
+---
+
+## 13. Loot & Economy `[LOCKED]`
+**In-run drops:**
+- **Any enemy can drop weapons;** tier affects drop rate and rarity.
+- **Loot is shared** in co-op.
+- **No guaranteed weapon drops except bosses.** (Uniques/minibosses: no guarantee.)
+- **Pickup:** press **Spacebar**. The drop telegraphs **type + rarity via visual cues but not exactly which weapon** — identity revealed on grab (mystery dopamine, zero popup friction). Cursed reads as **ghostly purple** before pickup. **Dropped weapons persist on the ground until grabbed — no auto-vacuum, no timed despawn; you either pick it or leave it.** (May litter the arena at horde scale — a readability item for the HUD/VFX pass.)
+- **Currency: Gems `[LOCKED]`.** Pickups are various gems, all **fungible into a single "Gems" pool.** Vacuum pickup on proximity (radius is a real lever at 10-player free-roam). Gems are **run-only.**
+- **Difficulty scales with player count** — more spawns *and* higher HP; **loot volume scales too.**
+- **No arsenal cap** (for now).
+
+**Salvage & meta `[LOCKED]`:**
+- Weapons extracted alive **salvage into tiered parts** (scaled by rarity). **Parts map 1:1 to the 7 rarities** `[PROPOSED names]`: Common→**Scrap**, Uncommon→**Grit**, Rare→**Ore**, Really Rare→**Crystal**, Legendary→**Prism**, Ultimate→**Quintessence**, Cursed→**Hexmatter** (a volatile wildcard part — see below).
+- **Leftover Gems convert to a universal "all-conversion" part** at extraction (mild spend pressure, no total waste). *(Universal part name TBD — candidate: "Flux.")*
+- **Meta unlock = opening card packs.** Cards represent weapons or characters. **Packs are bought with parts only (never real money).**
+  - Packs are **per weapon family** (sword pack, pistol pack, wand pack, …); characters appear in packs depending on their type. **3 cards per pack.**
+  - **Flat pack price.** **Per-card rarity is pure chance (no rarity pity), but every X opens carries a guarantee** (e.g., a guaranteed new card or a guaranteed higher rarity). *(X + exact guarantee = TBD tuning.)*
+  - **Duplicates** re-salvage for **reduced value**, **but collecting X of certain cards unlocks specific characters/weapons** (set-collection redemption — the no-pity safety valve). *(Thresholds intentionally left to mid-development tuning.)*
+  - **Hexmatter (Cursed parts):** volatile wildcard — proposed use is gambling into cursed/any-family pulls. Design TBD.
+- **No permanent upgrades. No stat meta. Ever.** Progression is horizontal: more options, zero power creep. Duplicate finds are always valid salvage.
+
+---
+
+## 14. VFX Architecture `[LOCKED]`
+**One composition engine, two layers** (unifies with the weapon framework — same philosophy):
+- **Effect mechanics** — reusable, art-agnostic *behaviors*: "chain of N explosions scaled to AoE," "projectile repeated in a spread arc," "afterglow trail on swing," "hold-beam, one charge/sec," "gas cloud." Authored once. Sprite-driven ones get their motion/cluster/scale animated **by Claude in Phaser**; amorphous ones (gas, beams, fields) are **Phaser-native** particles/shaders.
+- **Art skins** — the look (explosion sprite, bullet sprite, afterglow, swing streak): **Codex image-gen** (leveraging effectively unlimited Codex tokens).
+
+**Division of labor:** Codex = static art; Claude = motion/behavior; Phaser-native = amorphous effects. **~40 mechanics × reskins → ~200 weapons.** The **~40 VFX mechanics are defined up front** as the creative palette (not grown ad hoc) — they're the reuse multiplier. Behavior blocks (gameplay) grow; VFX mechanics (the art-reuse templates) are planned as a full 40-strong set.
+
+**Layer palette + per-weapon presets `[BUILT 2026-06-15 — v0.40]`:** the "~40 mechanics" are now a concrete library — `tools/weaponsmith/public/vfx-layers.js` holds **~28 toggleable engine LAYERS** spanning all four weapon classes (melee: slash-arc/twin-slash/edge-trail/thrust-streak/cleave-flash/saw-sparks; ranged: muzzle-flash/tracer/pellet-spread/shell-eject/barrel-spin; launcher: lob-arc/fire-burst + shared shockwave/debris; caster: charge-glow/beam/arc-bolt/sigil-ring/aura-pulse/ember-rain; shared ground: dust-cloud/spin-trail/throw-dust/impact-flash; plus the Codex **hero-skin** layer). A weapon's VFX = **a PRESET** = which layers are on + their params (my per-weapon recommendation), pre-set in the Weaponsmith and toggleable/tunable. **PRESETS authored for all 30 catalog weapons.** Same render code feeds the Weaponsmith preview and (target) the game. Growing this to the planned 40 + porting the renderer into the live game are tracked (BACKLOG).
+
+**Card-art pipeline `[LOCKED]`:** two-pass, keeps card and in-world sprite consistent — (1) Codex generates the **weapon as an image** (the in-world sprite); (2) that image is used as a **reference to generate a second image at card dimensions** (the card art); (3) UI/frame/stat layers are composited over the card. Card art and in-world sprite are **distinct derived assets**, not the same image reused.
+
+**Tooling — forked from `artkit` (from World Tournament) `[PROPOSED]`:** the two-pass flow is already built as a game-agnostic pipeline (Codex CLI + `sharp`, `subjects.json` manifest + `style.json` art-direction, `orchestrate.mjs` with a candidate→promote curation step). Plan: **fork it, swap in a Dimension Drifters `style.json`** (see §18 — DD does NOT inherit WT's "Lythero Cartoon Bold" style), keep the engine. Enhancements for DD: **generate `subjects.json` from weapon data + tags** (§10) so art and gameplay share one source of truth; make `style.json` one DD master style with **per-dimension theme/palette overrides** per subject. The candidate→promote pick is the per-weapon quality gate. *(Working from a description of artkit, not the files yet — refine on receipt.)*
+- **VFX is fully decoupled from the authoritative sim** — it can desync harmlessly and never affects gameplay truth.
+- **Style cohesion:** a **global palette + style descriptor** every Codex effect prompt inherits (same discipline as the character prompt doc), so 200 weapons stay visually unified.
+- **Ground-effect VFX bake NO floor `[LOCKED 2026-06-14]`:** any effect that erupts from / sits on the arena floor (quakes, craters, pools, decals) is generated as **only the active elements** — erupting slabs/shards, flung debris, dust, energy — floating on the flat #00ff00 chroma with **nothing beneath them**. It composites **on top of** the real arena floor at runtime, so a baked dirt/earth/rock disc would render as a wrong solid blob over the actual floor. Thin dark **crack lines** are allowed (they read as cracks in whatever floor is underneath) but are never filled with a ground color. This is the floor-effect corollary to "no baked ground-shadow on sprites" (§18) and lives in `artkit` `vfxRenderRules`.
+
+**SOTA 2D techniques to bring (validate against Phaser 4 in prototyping) `[LOCKED — direction]`:** normal-mapped **2D dynamic lighting** (neon explosions light the arena — sells the "light show" identity), additive-blend neon + bloom, **hit-stop + screen-shake + chromatic aberration** on impact, heat-haze/displacement post-FX per dimension, GPU particles via SpriteGPULayer. Mandate: leverage every SOTA technique drivable autonomously.
+
+---
+
+## 15. Enemies `[LOCKED]` + Wild West roster `[LOCKED]`
+**Construction:** all enemies use the **same limbless detached-parts language** as players, even when non-human. **Build varies per creature `[LOCKED 2026-06-14]`:** **full** (body + 2 hands + 2 feet, grounded walkers), **hands-only** (body + 2 hands, no feet — floaters/hoverers), or **pure blob** (body only, no hands/feet — simplest drifting/oozing creatures). Players are always full; enemies don't hold the arsenal so they can drop hands/feet. Detail in §28.3.
+
+**Tier ladder:** Normal → **Tough** → **Unique/miniboss** → **Boss**. Consistent visual language (size/glow/etc.) for Normal/Tough/Boss; **Uniques are unique.**
+
+**Behavioral archetypes `[LOCKED]`:** Rusher (melee), Spitter (parryable ranged), Zoner (unparryable AoE puddle), Swarm (weak/fast), plus **Toughs that do Dark Souls-style melee combos and/or scatter shots.** Uniques get scripted mini-bullet-hell mechanics. **Melee combo-ers leap to a near-locked distance before their combo** (the spatial parry tell, §8).
+
+**Tough visual scale `[LOCKED]`:** VS-style **size parity** — a Tough reads as a bigger/glowier version of its normal kin (scaled silhouette + tier glow), not bespoke art. **The tier glow is an in-engine effect layer rendered over the sprite at runtime — NOT painted into the sprite art** (§28.4). Uniques are bespoke.
+
+**Attack patterns:** **data-driven module library** (Enter the Gungeon-style) — movement/spawn modules composed per enemy; new enemies remix modules with new art. Same authoring philosophy as weapons.
+
+**Wild West M0 roster `[LOCKED]` (limbless, legally original):**
+- **Critter** (Rusher) — coyote-blob, fast lunge, parryable contact
+- **Boothill** (Spitter) — limbless six-gun skeleton, single parryable slug at constant velocity
+- **Pricklepulp** (Zoner) — original cactus-creature (cactuar-*inspired*, distinct), **unparryable** spine/poison puddle (red)
+- **Mote Swarm** (Swarm) — tiny buzzard motes, weak/fast pressure
+- **Ronin** (Tough/combo) — cowboy-samurai, multi-hit melee chain, every swing parryable-white
+- **Gatlin** (Tough/scatter) — heavy drifter, parryable scatter spread
+
+---
+
+## 16. Bosses `[LOCKED]` + OLD RUST `[LOCKED]`
+- Arena-wide bullet patterns, **multi-phase**. **HP-sponge is acceptable** ("players will have enough fun dodging").
+- **Boss scale ranges widely — up to absolutely gigantic.** Some bosses are so big the model doesn't fit on screen (e.g., the squad fights just its **feet/legs** while the body looms off-frame). Scale is a design tool, not a constraint.
+- Boss spawns at the per-dimension timer mark; killing it opens extraction.
+- **Optional boss portals:** entering is a contract — **you can't leave until the boss is dead or you are.** Optional bosses can drop weapons.
+- All boss designs **legally original/non-infringing.**
+
+**Wild West boss — "OLD RUST, the Last Lawman" `[LOCKED]`:** chrome-skulled automaton in a tattered duster, star badge fused to an exposed chrome ribcage, minigun arm + heavy punch (original silhouette, **no Terminator DNA**). Phases (8–10p scalable):
+- **P1:** paces the arena, minigun **bullet-walls** with weave-gaps; individual slugs parryable-white.
+- **P2 (<50%):** telegraphed **red punch-slam shockwaves** (unparryable) between minigun sweeps.
+- **P3 (<20%, enrage):** overheats — constant spin + spawns Mote adds; heat-haze intensifies (DPS check).
+
+---
+
+## 17. Dimensions & Environments `[LOCKED]`
+- **One big themed room per stage** = one dimension. Different dimension = different theme (any character/weapon justified).
+- **Procedurally generated stages are mandatory**, Megabonk-ish: open field with scattered obstacles/POIs (server-seeded for sync).
+- **Environmental hazards** per dimension. **Hazards damage everything — enemies and players alike** — so kiting hordes into hazards is real skill expression. *(Specific Wild West hazards — e.g., dynamite barrels, quicksand, runaway minecart, cactus patches — `[OPEN]`, to confirm.)*
+- **Stage set 1: Wild West.** Strong neon-VFX contrast, readable silhouettes (hats/dusters/skeletons/cacti), good hazard language.
+- **Start with one stage set** and expand from there.
+
+---
+
+## 18. Art Direction `[LOCKED]`
+- **HD cel-shaded, NOT pixel art.** (Per the character prompt doc: 1080p canvas, thick outlines, rough indie-arcade comic attitude.)
+- **Characters:** limbless — compact body + **detached floating blob hands and feet** (no fingers/arms/legs). Built per `character-style-prompts.md`: Codex generates on **#00ff00 chroma key → transparent PNG**.
+- **Animation: procedural only** — bob, lean, squash, white-flash, independent hand/foot drift. **No frame animation for characters.** The detached hands also anchor weapons without rigging.
+- **Visual budget concentrated in weapon VFX** against readable arenas.
+- **Originality mandate:** all characters/enemies/bosses trademark-distinct and non-suable.
+- **Card-art pipeline (see §14):** two-pass — weapon sprite → reference-driven card render at card dimensions → composite UI/frame. Run via a **fork of the `artkit` pipeline** (Codex CLI + `sharp`). **Global palette + style descriptor locked in §28 (the full art spec) and its executable `tools/artkit/style.json`.** **CRITICAL: DD does NOT inherit World Tournament's "Lythero Cartoon Bold" canon style** — DD's look is its own (rough indie-arcade, gritty dark-comic, limbless, HD cel-shaded). Reuse artkit's engine, author DD's own style.
+
+---
+
+## 19. Audio `[LOCKED]`
+- Lightweight for now; per-dimension tracks (West twang, etc.). Placeholder/AI for dev, **manually tweaked by product owner later.**
+
+---
+
+## 20. UX / HUD & Controls `[LOCKED]` (full layout = separate deliverable)
+- **On-screen elements:** arsenal (1 held + 2 orbiting), bottom-center card carousel, durability/charge pips (on card), HP, level, flex-stat readout, Gems, **minimap + ping wheel + teammate off-screen indicators**, parry rings.
+- **Game-feel layer (from M0):** **screen shake + damage numbers** yes. **Hit-stop: Hades model — short, weight-scaled freeze (heavier/charged hits freeze longer), gated to impactful hits, kills, and parries — NOT per-hit** (per-hit hit-stop feels mushy at horde scale).
+- **Controls:** twin-stick-style cursor aim; **optional aim-assist/snap** for controller players (Steam = heavy controller base).
+- **Run seed: fully hidden** (no shareable-seed bragging).
+- **Pause: consensus only** — pauses once every player confirms (no unilateral pause online).
+- **No post-hit i-frames in v1** beyond the parry/roll signatures; overlapping damage is fully punishing. (i-frame mechanics may be revisited later.)
+- HUD is **its own deliverable(s)** — dedicated layout pass forthcoming (priorities: always-visible vs contextual, decluttering at 10 players, ground-litter readability).
+
+---
+
+## 21. Meta / Progression / Hub `[LOCKED]`
+- **Pre-run lobby/hub** in the style of **Wizard of Legend 1.** Contains: **pack opening, shooting training dummies (see below), variant/loadout select, squad ready-up**; the squad **walks into a portal together** to start. **Onboarding = the hub's shooting dummies** (no separate tutorial dimension planned).
+- **Character variants** = the default three classes, each shipping with **1 base + 1 variant at launch.** A variant has **a unique baked-in passive augment that exists nowhere else** (not in the level-up pool) plus some base-stat differences — unlocked via packs/set-collection. (Cheap content multiplier; more variants trickle post-launch.)
+- **Shooting training dummies in the hub `[LOCKED]`:** one or two **Overwatch-style dummies that shoot back**, so players can practice parry timing, dodge, and arsenal cycling against real telegraphed attacks before queueing.
+- All meta progression is horizontal (no power creep).
+
+---
+
+## 22. Multiplayer / Session `[LOCKED]`
+- **1–10 players. Solo play is supported** (difficulty scaling bottoms out at one player).
+- **Cross-region play enabled** (latency masked by client-side self-damage).
+- **Matchmaking/joining only in the pre-run lobby + reconnects** — **no mid-run drop-in** for new players (simplifies netcode).
+- **Reconnect grace = whole run;** dimension-transition checkpoints protect against server hiccups (see §4).
+- **Public open lobbies** supported at launch (plus friend/invite parties via Steam Join Game).
+- **Moderation v1:** host kick + AFK timeout — nothing fancier.
+
+---
+
+## 23. Vertical Slice — Milestone 0 ("Prove the Game") `[LOCKED]`
+**Goal:** one complete run loop, co-op, with the arsenal feeling great. Everything else is fakeable.
+
+**In scope:**
+1. **Melee class, one character.** Parry signature + the mix-and-match augment pool (§8).
+2. **~10 hand-authored melee weapons** on the data framework (proving-ground-first); full VFX pass on ≥5; card art for all.
+3. **Arsenal system complete:** 1 held + 2 orbiting, charges/durability/cooldown, auto-cycle, manual cycle, card carousel.
+4. **One Wild West arena** (procedural), 6 enemy types (§15) + boss OLD RUST (§16).
+5. **Megabonk run:** timer escalation, XP level-ups (augment picks + stat allocation), boss → extraction, salvage banking on survival, loss on death.
+6. **Colyseus co-op:** 2–4 players (10-player ceiling validated later), free roam, independent cameras, lobby join (dev join-by-code acceptable; Steam bridge stubbed). Three-tier sync (§4).
+7. **Salvage → pack stub:** parts currency, one unlockable weapon + one unlockable character variant, to prove the loop.
+8. **Game-feel from day one:** hit-stop (Hades model), shake, damage numbers, parry white-language + rings.
+9. **Telemetry baked in:** weapon pick/break rates, salvage flows, death causes.
+
+**Out of scope for M0:** ranged & caster classes, 10-player load, full Steam rich presence, multiple dimensions, meta UI polish, audio identity, balance depth.
+
+**M0 exit criterion:** two people on different machines complete a full run together, fight over who salvages what, and immediately queue another. **If the arsenal cycling isn't the thing they talk about, redesign before M1.**
+
+---
+
+## 24. Pending Approvals & Next Specs
+> **Live task tracking lives in [`BACKLOG.md`](./BACKLOG.md)** — the single task board (Open / In-progress / Next / Done, with IDs). This §24 holds the *design-pending narrative*; BACKLOG.md holds the *work items*. Keep them in sync.
+
+**M0 design surface is locked.** SPEC-01 inputs: (a) **orchestrator doc — RECEIVED 2026-06-13** (artkit.zip + usage); engine forked into `tools/artkit/`. (b) **art-style doc — RECEIVED 2026-06-13, now consolidated into §28** (the former `WEAPON_ART_STYLE.md` was merged + deleted — single source of truth). DD `style.json` finalized from §28; codex generation **live** (golden-anchor pilot first per §28.6/§28.9). **Both SPEC-01 art blockers cleared.** The code half (weapon-definition schema + behavior-block library v1, proving-ground-first §10) is also unblocked. Remaining art TODO: product-owner promotes the pilot candidates, then fleet the rest.
+
+**One item still awaiting explicit confirm:**
+- **§4 three-tier sync model** — recommended and `[PROPOSED]`; confirm to fully lock §4.
+
+*(Approved this session: parry augment pool §8, Wild West roster §15, boss OLD RUST §16, level cap 30 §12, single-affix model §10, Gravedigger's Spade #10 §25, 1/1/1/1/1 start §12, fists fallback §9, always-on regen + 30% revive §6, full repair §10, hazards-hurt-all §17, quiet-zone stragglers §5, Megabonk boss cadence §6, sponge-hell + player-count difficulty philosophy §6, 20Hz/cross-region/whole-run-reconnect/checkpoints §4, solo support §22, Hades hit-stop §20, proving-ground-first authoring §10, 40 VFX mechanics up front §14, card-art two-pass pipeline §14, telemetry from day one §10/§23.)*
+
+**Open / undecided (non-blocking, future rounds):**
+- Ranged dodge-roll tree; caster spell tree (post-M0)
+- Final title
+- Per-weapon use-model baselines, charge-refill rules per weapon
+- XP curve shape to level 30; base HP + CON scaling + regen rate (tuning, SPEC-02)
+- Specific Wild West hazards list (§17)
+- HUD layout deliverable(s)
+- Economy tuning (deliberately deferred to mid-development): exact pack price, pack-open guarantee (X + reward), set-collection thresholds, Hexmatter/Cursed-parts use, universal-part name
+- Parts-tier names — `[PROPOSED]` Scrap/Grit/Ore/Crystal/Prism/Quintessence/Hexmatter (awaiting confirm)
+- Behavior-block library: confirm "seed-and-grow" reading (§10)
+- **Parked, no plans yet:** cosmetics layer; daily/weekly seeded modifiers
+- Onboarding beyond hub dummies (none planned)
+
+**Docs queued to write:**
+- ~~`WEAPON_ART_STYLE.md`~~ — **DONE & consolidated into §28** (art bible deleted; §28 is canon). DD `style.json` finalized from §28; `#00ff00` chroma-key guard (`guards/chroma-key.mjs`) + reference-image anchoring done.
+- `WEAPON_AUTHORING.md` (Codex orchestrator/assembly line — data → behavior → artkit-for-art → playtest). **Unblocked** (orchestrator received); draftable now. *(Could also fold into the master spec rather than a separate doc — per the no-parallel-docs directive.)*
+- **SPEC-01 Weapon Framework** (data schema, behavior-block library v1, 40-mechanic VFX registry, rarity/affix/scaling/use-model, authoring workflow). Code half unblocked.
+
+**Nothing outstanding to receive from product owner** for art (style doc received + consolidated; pilot in progress).
+
+**Next spec docs to write:**
+- **SPEC-01 Weapon Framework:** data schema, behavior-block library v1, VFX mechanic registry, rarity/affix/scaling/use-model tables, authoring workflow.
+- **SPEC-02 Run & Co-op Rules:** exact escalation curve, revive details, drop ownership, scaling per player count, late-join/reconnect.
+- **SPEC-03 Content Plan:** weapon counts per class, character-variant roadmap, dimension lineup beyond Wild West.
+- **SPEC-04 Netcode Detail:** Colyseus room schema, snapshot/reconnect, interest management at 10 players, load-test plan.
+- **HUD layout deliverable(s).**
+
+---
+
+## 25. Decision Log / Changelog (so we don't relitigate)
+
+**Scaling grades made real + card redesign (full-bleed art, icons, damage equation) — 2026-06-15 (v0.44) `[BUILT]` (§10/§9):** Mike dropped two reference cards from another project (`example card*.png`) — full-bleed art with the object up top, info **overlaid** on the lower third, **iconography not words**, plus a request for **stat-scaling grades** and **damage as an equation** `base + (stats × coeff) = total`. (1) **Scaling grades are now real in the sim `[BUILT]`:** added `WeaponDef.scalingGrades?: Partial<Record<Attr, Grade>>` (§10 S/A/B/C/D/E) + `GRADE_DMG_COEFF` (S .10 · A .08 · B .06 · C .045 · D .03 · E .015 per point; B = the legacy 0.06) + pure `weaponDamageMult(def, attrs)`; the server swing/thrown now use **`base × (1 + Σ gradeCoeff(grade)·(attr−1))`** per weapon instead of the flat STR-only `deriveStats().power`. Graded the 4 coded weapons (cleaver STR B, greatsword STR A, driftblade DEX B/STR C, bowie DEX B/STR D). DEX still also shortens cooldown (finesse = two benefits). Shared rebuilt; server typechecks. (2) **Card redesign `[mocked, pending in-game port]`:** matches the references — **full-bleed card art** (cover-fit, rounded), a **size badge** (top-left) + **grip pill** (top-right), an **overlaid gradient panel** with name + subtitle, the **damage EQUATION** color-coded (base white + bonus green = total gold, live off real stats), **scaling-grade chips** (colour by grade), and an **icon stat row** (drawn ↔ reach / ⏱ speed / ◎ AoE — no words). Built as an SVG-over-art mock (`tools/artkit/card-mock.mjs`) for sign-off, then **ported into the in-game Phaser card** (`ArenaScene.buildCard`, replacing the v0.37 windowed card): the full-bleed art is baked into a per-card rounded texture (canvas `roundRect` clip — masks don't follow the carousel's container transforms, a texture does), with the panel/border/badges/name/equation/chips/icons as Phaser objects on top; the **damage equation + charges badge update live** in `updateCarousel` (equation from `weaponDamageMult` + the player's live attrs; icons are drawn vectors). **Mike's calls:** the corner badge holds **charges/durability** (live remaining on the held card; hidden on weapons without charges until durability lands), and **card art was regenerated FULL-BLEED PORTRAIT** — `buildCardartTicket` now asks for **1024×1536, full-bleed, subject upper-centre, lower third kept calm** for the overlay; the 4 weapons re-genned + copied to `packages/client/public/cards/`. Client typechecks (in-game render not yet live-playtested — verified via the mock with the new art).
+
+**Parry = a BLOCK/BRACE stance, no VFX yet — 2026-06-15 (v0.43) `[BUILT]` (§8):** Mike: the parry should read as a **block/brace that moves the hands + held weapon**, and **needs no VFX yet** — on-parry effects arrive later when players **level up and pick parry augments** (§8/§12). So the old parry-pulse cosmetic (the white + cyan expanding ring, white body flash, camera shake, hit-stop) is **removed**, replaced by a pure **brace POSE** on `SpriteRig`: `triggerBrace(timeMs)` snaps the rig into a guard for ~the i-frame window (`PARRY_IFRAMES` 0.45s) — the **weapon rotates from upright to a near-horizontal raised block**, **both hands draw forward + up into a guard** (2H back-hand rides the horizontal haft), and the **body dips + squashes** slightly; quick snap-in, hold, ease-out, blended over the existing procedural `animate()` (same pattern as the swing). `ArenaScene.sendParry` now just sends `parry` + triggers the brace (server still grants the i-frames + knockback). Client typechecks. *(The parry-augment VFX layer — drawn from the §8 every-5-levels signature pool — plugs in here later.)*
+
+**Weaponsmith preview → live Phaser/WebGL engine (WYSIWYG VFX) — 2026-06-15 (v0.42) `[BUILT]`:** Mike's call on the VFX-quality fork: **rebuild the preview on the same engine the game uses** ("what you author = what ships") rather than keep approximating in canvas-2D. Built `tools/weaponsmith/public/vfx-engine.js` — a Phaser 4 / WebGL preview with **real additive blending, GPU particle emitters, and a post-process GLOW filter** (`camera.filters.internal.addGlow` — Phaser 4's new Filters system; the 3.60 `postFX.addBloom` is gone). The server serves the Phaser UMD build at `/phaser.min.js`. The engine is driven by the SAME shared PRESET suite (`vfx-layers.js`) — each enabled layer maps to a native renderer: slash family + area-glows = additive Graphics, sparks/muzzle/tracer/debris/dust/embers/petals = pooled particle emitters, hero = an Image, rotation = a container transform. Integrated into the real tool (`app.js`): a **single persistent engine whose canvas is re-parented** into the stage on each render (no WebGL-context leak), with live updates pushed on toggle/slider/rotate/candidate-pick; **falls back to the canvas-2D loop** if Phaser is unavailable. Verified in-browser across swords/guns/staffs (WebGL canvas captured via `preserveDrawingBuffer`); fixed a hero-texture race (frame now applies the latest *desired* texture once loaded, so rapid weapon-switches never show stale art). **Status — Phase 1:** the engine renders + glows + is integrated; remaining (CODE-8) = **true threshold bloom** (tune/extend the Filters chain beyond the single Glow), port the long-tail particle layers (lob-arc/spin-trail/saw/barrel/shell variants), real **mesh-ribbon** slash trails (vs the current additive crescent), normal-mapped 2D light (§28.16), and then **share this exact engine module with the live ArenaScene** so authored suites play in-world.
+
+**VFX quality pass + face-right VFX + smith rotation + fixes — 2026-06-15 (v0.41) `[BUILT]`:** Playtest feedback batch. (1) **Bowie "1 grid candidate" root-caused + fixed:** `orchestrate.mjs` asked Codex for **all N candidates in ONE exec** (`harvestNames: candidate-1..N`); the model packed the 4 takes into a single 2×2 tiled image, so only `candidate-1` (the grid) harvested. Fix: **VFX now generate ONE image per exec** (a fresh Codex chat each, distinct variant hints) → guaranteed N separate files; plus an explicit **anti-grid instruction** ("single standalone image, never a grid/montage/contact-sheet") in the ticket. (2) **VFX are now prompted to FACE RIGHT like everything else `[LOCKED]`:** the reference ticket previously skipped the face-right orientation rule for VFX (forced top-down). Now a `vfxOrientation` field drives it — default **`"right"`** (directional effects: slashes/sprays/beams render flat side-on, leading edge pointing RIGHT, mirror if left), with **`"ground"`** as opt-in for top-down slam/pool effects (quake-tombstone tagged ground). The SOURCE art is always authored facing right; the new smith **rotation tool** re-aims it per swing. (3) **Weaponsmith VFX rotation tool:** rotate the composed effect in **15° increments** (⟲ −15° / value° / +15° ⟳ / reset), saved per weapon (`assignments.json.rot`), applied as a whole-composition rotation in the preview (and target game). (4) **Driftblade is now 2-HANDED** (an XL nodachi this long needs both hands; `twoHanded:true`, grip tag 2H). (5) **VFX quality pass — sleek slash "speed lines":** the homebrewed canvas layers looked flat/bad because they were hard solid strokes. New **additive-blended glow** standard — `globalCompositeOperation:"lighter"` + soft `shadowBlur` bloom + gradient/tapered geometry. Added **`blade-trail`** (the marquee slash: a tapered crescent that sweeps with the swing, a hot white leading edge, a soft bloom pass, and thin trailing concentric **speed-line** streaks), routed the finesse swords (driftblade/neon-katana/rattler/bone) to it; restyled `edge-trail` + `twin-slash` to additive glow. **Honest scope note:** this is the canvas-2D *authoring* preview improved a lot — but it's still a 2D approximation. True in-game fidelity (real bloom post-FX, GPU particle trails, normal-mapped lighting per §14/§28) wants the **engine** doing it, which is the open direction (see CODE-8 / the VFX-engine question) — the canvas preview should ideally be replaced by the same Phaser renderer the game uses so authored = shipped.
+
+**Whole arsenal into the Weaponsmith + VFX layer palette — 2026-06-15 (v0.40) `[BUILT]`:** Playtest note — "lots of weapons don't have a hero VFX; the category called *Weapon* is confusing — by *weapons* I mean everything: guns, swords, staffs, launchers." Root cause: the Weaponsmith parsed its roster from `weapons.ts`, which only holds the **4 gameplay-coded** weapons, so the other ~26 (with art already generated) never appeared. **Reframed + fixed `[refereed decision]`: the weapon ROSTER is the art catalog, not `weapons.ts`.** The smith now sources **every subject tagged `"weapon"`** across both catalogs (`subjects.json` 11 Wild West melee + `subjects.explore.json` 19 — 6 swords, 5 guns, 3 launchers, 5 staffs) = **30 weapons**, grouped by class in the sidebar; gameplay stats from `weapons.ts` merge in where they exist (`coded` flag). Hero candidates default to each weapon's **own sliced art** (which exists, ×4–9 each) — a bespoke `vfx-*` skin is an optional override (only the first 4 have one). (2) **VFX layer palette generalised to all four classes** (§14 build-note): `vfx-layers.js` grew from the melee-only set to **~28 layers** adding ranged (muzzle-flash/tracer/pellet-spread/shell-eject/barrel-spin), launcher (lob-arc/fire-burst), and caster (charge-glow/beam/arc-bolt/sigil-ring/aura-pulse/ember-rain) mechanics. (3) **A tailored PRESET designed (LLM-reasoned) for all 30 weapons** — e.g. gatling = barrel-spin+tracer+shell-eject+muzzle, lightning-rod = charge-glow+arc-bolt+sigil-ring+aura, firework = lob-arc+fire-burst+ember-rain. All 30 verified rendering in-browser across every class (zero draw errors; guns/staffs/launchers/swords compose cleanly over their hero art). **Parity notes (logged):** the 26 explore weapons remain the `x-`-prefixed **exploratory batch (v0.13), not yet M0 canon** — surfaced for VFX authoring, but they still lack full §10 structured tags + `WeaponDef` gameplay stats (backfill on promotion to canon). The §14 *target* single-source-of-truth (codegen `subjects.json` ← weapon registry, INFRA-2) is unchanged; today the art catalog is the de-facto roster of record and `weapons.ts` is the gameplay-wired subset. The layer renderer still lives only in the Weaponsmith preview — porting it into the live game (one shared module feeding both) is the follow-on. Bowie's bespoke `vfx-twinslash-bowie` still has only 1 candidate (a grid) — rerollable in-tool.
+
+**Weapon length / "really long swords" — 2026-06-15 (v0.39) `[BUILT]`:** Playtest q — weapons "max out their art box and look the same size." Clarified + locked the model (§10 size class): **the art box does NOT set in-game size — `displayLength` does** (`setScale(displayLength / part.w)`). A long sword = (1) big `displayLength`, (2) art drawn **long-and-thin** (not box-filling), (3) the size-class length band (S≈55 · M≈90 · L≈140 · XL≈200–360). Supporting fixes: `harvest-install` now **scales the pre-size texture target to ≈2× the weapon's `displayLength`** (reads it from `weapons.ts`; long blades stay crisp instead of upscaling soft), and reach/`range` tracks the visual length. **Demo weapon `driftblade`** added — a Masamune-homage nodachi (original design), `displayLength` 320 (vs the cleaver's 76), `range` 280, size XL, drawn long-and-thin; Codex art + card art generated, sliced/pre-sized to a 640px texture, wired into the roster. *(Parser fix: `harvest-install`/Weaponsmith weapon regex now also reads bare object keys like `driftblade:`.)*
+
+**Sprite aspect-ratio fix + orbiting-weapons deprecated — 2026-06-15 (v0.38) `[BUILT + decision]`:** (1) **Sprites now keep their painted aspect ratio.** Playtest catch — tough/boss enemies rendered **vertically elongated** (and some sprites scrunched). Root cause: `SpriteRig.animate` set `root.scaleX = facing` every frame, clobbering the uniform `setRigScale(mult)` and leaving `scaleY = mult` → a vertical stretch. Fix: store the rig scale (`baseScale`) and re-apply it to **both axes** each frame; the facing flip is now a pure horizontal **mirror**. Also made the quake hero VFX scale uniform (dropped its 0.82 foreshorten). Locked the general rule in §28.4: **hand-drawn art is only ever scaled by one factor on both axes; non-uniform scaling is forbidden except as a gentle squash-stretch animation.** (2) **Orbiting weapons DEPRECATED** (§9): the "2 orbiting + 1 held rendered in-world" idea is shelved — the **card carousel already shows the arsenal** without the in-world clutter/cost. Only the held weapon renders in-world; revisit much later if ever.
+
+**Card carousel → fanned infographic hand — 2026-06-15 (v0.37) `[BUILT]`:** Redesigned the §9 carousel from a flat row into a **fanned hand of full cards**. The **held weapon's card is centered, upright, and enlarged**; the others fan to the sides (prev left / next right per §9), smaller + rotated tangent to the arc, behind. Each card is a proper **infographic centred on the art** (§14/§28.5): rounded accent-bordered frame, the Codex **card art** in a framed window up top, a name banner, then **stat rows** (DAMAGE / REACH or RANGE / SPEED or PIERCE / QUAKE-AoE), a **live charge readout** (`◆◆◇` / `⟳ RELOADING` / `● READY`) on the held card, and a family·element·scaling **tag footer**. Per-weapon accent colour (`WEAPON_ACCENT`) stands in until rarity-tinted frames land with loot (§13). Bigger + readable + pleasing, per playtest ask. *(Still POC: rarity frame/border art, gem/charges-on-card icons, smooth tween between selections.)*
+
+**§6 player-count difficulty scaling — 2026-06-15 (v0.36) `[BUILT]`:** Parity pass (post-audit). Implemented the LOCKED §6 mechanism: difficulty scales by **player count, not by multiplying the horde** — each extra player makes every enemy **spongier** (`enemyHpScale`: +60%/extra player, equalising death rate vs combined DPS) and **raises the tough rate** (`toughChance` now takes player count: +8pp/extra player), incl. the boss (HP-sponge × players). Pure/seedable helpers in `shared`. **At 1 player both are 1.0 — solo testing unchanged** (parity-safe). Still missing from §6: more *toughs* literally scaling in count with players (have HP+rate; count cap unchanged), and the rez-or-dead death model (still POC auto-respawn).
+
+**Weapon polish + card carousel + per-weapon VFX — 2026-06-15 (v0.35) `[BUILT, POC]`:** Playtest fixes + the §9 carousel; CDP-verified. (1) **Greatsword slam targets the CURSOR** (§9 "everything aims at the cursor") — the quake epicenter is the cursor position **clamped to `QUAKE_REACH` (260px)** from the character, server-authoritative (`CombatState.targetX/Y` from the attack msg) + matching client VFX. (2) **Character renders OVER the quake VFX** — quake VFX dropped to a low ground depth (was on top). (3) **Thrown cleaver enlarged** (~2× the blade + glow — was too small). (4) **VFX for every approved weapon:** greatsword = quake (Codex hero); **Bowie Fangs = a slash-arc** on swing (dual = two crossing arcs, `spawnSlash`); cleaver = spinning blade + amber impact splat. (5) **§9 card carousel in-game** — bottom-center, one card per arsenal weapon; held card is raised + green-bordered with a charge/ready readout (`◆◆◆` / `▲ held` / `⟳`); **card faces are real two-pass Codex card art** (`tools/artkit/out/<id>/cardart.png` → cut to `public/cards/<id>.png`, texture `card-<id>`), falling back to the in-world sprite. Card art generated for all 3 weapons (§14/§28.5 two-pass: weapon sprite → card-dim render — distinct, more-illustrated derived asset). **Still POC + a parity gap (logged):** card-art quality is a first pass (candidate→promote curation TODO); no UI frame/rarity border on cards yet; bowie/cleaver have engine slash VFX but no bespoke Codex hero skins. **§9 auto-cycle DIVERGENCE:** §9 says a weapon whose charges deplete enters cooldown AND the arsenal **auto-cycles to the next**; the cleaver currently **refills in place** instead. Correct fix needs per-weapon charge persistence (charges refill even while not equipped) + the real 1-held/2-orbiting arsenal — lands with the §9 arsenal build (CODE-5).
+
+**Greatsword VFX wired + Cleaver → thrown weapon — 2026-06-15 (v0.34) `[BUILT, POC]`:** Two weapons authored start-to-finish; CDP-verified. (1) **Tombstone (gravekeeper) Greatsword earthquake VFX wired in** — the Codex hero skin Mike picked + tuned in the **Weaponsmith** (`candidate-8`, mechanic `quake-erupt`, params radius 1.46 / dust 1 / debris 40 / low flash+shake) is **baked into the weapon** (`WeaponDef.quake.vfx`) and replaces the procedural golden ring: the keyed candidate is cut + pre-sized to a game-res texture (`public/vfx/quake-tombstone.png`), preloaded, and `spawnQuakeHero` erupts it (scale-in + fade) with engine dust/debris/flash/shake per the saved params (§14 hero-skin + engine-overlay model). Procedural ring kept as fallback for quake weapons without a skin. This closes the Weaponsmith → game loop (authored in the tool → baked into weapon data → rendered). (2) **Rusty Cleaver is now a THROWN weapon** (§10 delivery `thrown`): RMB hurls a spinning cleaver at the cursor (the real weapon sprite, `ProjectileState.kind="cleaver"`, `hostile=false`). Uses the **§10 charge model** Mike chose — **3 charges**, each throw spends one, deplete → **refill cooldown** (1.5s) → refills all; charges/maxCharges synced to a HUD pip readout (`◆◇`). The throw is a **friendly piercing projectile** (pierce 2, STR-scaled damage, grants squad XP on kill) — `ProjectileState.hostile` now splits enemy-spit (hits players) from player-throws (hits enemies) in `stepProjectiles`. Tags updated → `thrown / mid / family:thrown`. **Still POC:** durability/break + travelers-repair (§10 third layer), the held cleaver staying visible while a throw is airborne (visual abstraction), a throw-specific arm animation (currently reuses the chop).
+
+**Parity-audit fixes: §12 attribute model + zoner + extraction — 2026-06-14 (v0.33) `[BUILT]`:** A full audit of the session's work against the LOCKED spec found several divergences; Mike ruled on each (all CDP-verified after). (1) **Leveling reworked to the §11/§12 attribute model** (replaces the v0.31 Vampire-Survivors card draft — *superseded*). Five attributes **STR/DEX/INT/CON/LUK** on `PlayerState` (start 1/1/1/1/1); each level grants **+1 class-attr (STR) + +1 requirement-attr (CON) auto + 1 FLEX** the player spends in an **invincible, frozen 5-second window** (`flexPending`/`flexTimer`; on timeout the flex auto-banks into the class attr). **Level cap 30**, **XP is squad-shared** (every kill levels all players in lockstep). Derived stats are pure (`deriveStats`): STR→melee dmg, DEX→attack speed, CON→maxHP+regen; INT/LUK allocate now, take effect with signatures/loot. Client shows a 5-attribute pick window + attribute HUD readout. *(Signature-augment node every 5 levels per §8 is the next layer — not yet built; the old `upgrades.ts` pool was deleted.)* (2) **Zoner puddle corrected to spec:** now **UNPARRYABLE** (parry i-frames no longer skip the DoT — only the §12 level-window invincibility does) and recoloured **red/orange** danger (was acid-green) per §8/§15. (3) **Extraction reframed** from "VICTORY / RUN COMPLETE" to **"Extracted — salvage banked"** per §6 "no win screen / greed loop" (real salvage banking + push-deeper land with §13). (4) **Move speed stays flat** — the attribute model has no move-speed stat, so the v0.31 "Swift Boots" upgrade was dropped (Mike OK'd move-speed upgrades in principle; a DEX/AGI move-scaling can be added later). **Still divergent (acknowledged, deferred):** netcode tiers (projectiles/zones are server-synced not §4 Tier-3 client-sim; client-auth self-damage) — deferred to the AoI/load-test pass; player-count difficulty scaling (§6) vs my time-ramp toughs; boss multi-phase + bespoke art (§16); rez-or-dead death model (§6, still POC auto-respawn).
+
+**Enemy variety: zoner puddles + tough tier — 2026-06-14 (v0.32) `[BUILT, POC]` (zoner colour/parry corrected in v0.33):** Two §15 enemy mechanics, no new art needed, both server-authoritative + CDP-verified. (1) **Zoner puddles (Pricklepulp):** the `zoner` archetype drops a lingering **corrosive puddle** under itself every `ZONER_DROP_INTERVAL` as it moves (`ZoneState` map); standing in one DoTs you (`ZONE_DPS`, parry-/draft-negated), and it expires at `ZONE_TTL`. Area-denial gameplay — "don't stand there." Client renders a **bright neon-acid pool** (saturated fill + lime rim, readable against the dust per §28.7 — the first-pass alpha was too faint and was bumped). (2) **Tough tier (§15 "bigger/glowier size-parity of kin, NOT bespoke"):** each non-swarm spawn rolls `tough` with a probability ramping over the run (`toughChance`); a tough enemy **scales up** (`TOUGH_SCALE`, reusing the same sprite), gains an additive **glow** (`SpriteRig.addGlow`), and gets ×`TOUGH_HP_MULT`/×`TOUGH_DAMAGE_MULT` HP+damage and ×`TOUGH_XP_MULT` XP (applied to contact, spit, and kill-XP). `EnemyState.tough` syncs the render. Verified: 12 puddles spawned+rendered, 5 tough concurrent at elapsed 70s, screenshots confirm both. **Still POC:** bespoke Ronin/Gatlin tough behaviors (combo-dash / scatter-burst) beyond the generic tough buff; tough collision radius still kin-sized (forgiving hitbox).
+
+**Upgrade-card draft (§12 pick-1-of-3) — 2026-06-14 (v0.31) `[SUPERSEDED by v0.33]`:** *(The parity audit found this Vampire-Survivors card-draft was a divergence from the LOCKED §11/§12 attribute model; reworked to attributes in v0.33. Kept for history.)* Leveling is now a **choice**, not an auto-buff. On each level-up the server queues a draft; `offerDrafts` sets `PlayerState.pendingUpgrades` = 3 distinct ids (`pickUpgrades`, pure/seedable, from `shared/upgrades.ts`). While a player has pending cards they are **frozen + invulnerable** (movement/contact/projectile all skip them) so the pick is safe in co-op — only that player pauses, the run continues for everyone else. Client renders a dim **"LEVEL UP — choose an upgrade"** overlay with 3 colour-bordered cards (drawn from the same `UPGRADES` source); clicking sends `chooseUpgrade`, the server applies the stat and clears pending (next queued draft offered next tick). POC pool (6, stat-based): **Vitality** +25 maxHP+heal, **Power** +12% dmg, **Swift Boots** +10% move, **Field Medic** +3 regen, **Haste** +12% atk-speed, **Prospector** +30% XP — each a real `PlayerState` stat (`power/speedMul/regenBonus/haste/xpMul`) applied in the authoritative sim. Verified live (CDP): farm → draft offered [regen,swift,vitality] → overlay rendered → picked regen → `regenBonus 0→3`, pending cleared, overlay torn down. **Still POC:** weapon-evolution/synergy cards, rarity weighting, reroll/banish, per-class pools (§12).
+
+**Run loop: spitter projectiles + leveling + boss/extraction — 2026-06-14 (v0.30) `[BUILT, POC]`:** Three features that turn the survival slice into a complete M0 run loop, all server-authoritative + verified live via CDP. (1) **Enemy ranged attacks (§15 spitter):** `boothill` now KITES (holds `preferredRange`, `stepEnemyKite`) and fires server-owned **projectiles** (new `ProjectileState` map; dead-reckoned on the client from x/y/vx/vy — the §4 Tier-3 "bullets" feel, kept server-owned for honest damage at M0 counts). Damage applied on the tick; **dodgeable AND parry-negated** (i-frames pass them through). Neon-green spit w/ trail so it reads as a THREAT vs the olive scrub (§28.7). (2) **Leveling (§12):** kills grant XP (`xpValue` per kind), `xpToNextLevel` geometric curve; level-up = +10 maxHp & heal-full every level, +8% damage (`power`) every 2nd — POC **auto-buffs** (the "pick 1 of 3" upgrade draft is a later layer). XP bar + level badge + gold "LEVEL UP!" VFX. (3) **Boss + extraction (§16):** **OLD RUST** spawns at `BOSS_SPAWN_SECONDS` (or **B** to summon now — debug); a tanky, slow, heavy-spitting boss rendered as a **2.7× scaled `boothill`** (bigger not more detailed, §28.6 — bespoke boss art TODO) with a top-screen boss health bar + approach banner. Defeat it → an **extraction portal** opens where it fell → step in → **VICTORY** screen, run complete (R to restart). Verified: spitters fire + a moving player dodges (0 hits); kills → level 1→5 + power ×1.16; boss 420→0 HP → portal → extracted. *(Bugfix: `clearEnemiesNear` now never despawns the boss on a nearby respawn.)* **Still POC:** upgrade-card draft (§12), bespoke boss art + multi-phase boss (§16), enemy projectiles as real Tier-3 client-sim, co-op-shared leveling balance.
+
+**Weaponsmith authoring tool + VFX Lab — 2026-06-14 (v0.29) `[BUILT, MVP]`:** Realized the §14 `WEAPON_AUTHORING` orchestrator as an actual app (`tools/weaponsmith/`, dependency-free Node server → `localhost:5050`). MVP = **VFX pick-and-choose**: pick a weapon (roster parsed from `weapons.ts`) → browse its Codex VFX candidates → **pick the art skin** → **assign an engine VFX *mechanic*** from a registry (quake-erupt / nova-pulse / procedural-slabs / voronoi-fracture) → **tune params with a live canvas preview** → **reroll** (edit the prompt, a real in-app button that shells out to `artkit/orchestrate.mjs`) → **save** image/mechanic/params/**notes** to `assignments.json`. Key design decision locked here: **"which image" (Codex art skin) is separated from "how it works" (reusable mechanic + params)** — the §14 *~40 mechanics × skins → ~200 weapons* multiplier, surfaced as the tool's two-step UI. Corollary locked: **the hero/signature VFX layer is always Codex art (legitimacy); amorphous layers (flash/dust/debris/shake/haze) stay engine-native** (§14) — i.e. pathway #10's composition. Built alongside an **Earthquake VFX Lab** (`tools/artkit/out/vfx-quake-tombstone/vfx-lab.html`) that renders 9 of the 10 §14 VFX *pathways* live (all but #5 GPU-shader) so the canonical pathway can be chosen by eye (→ BACKLOG **DEC-4**). The mechanic registry (`public/vfx-mechanics.js`) is the shared render layer feeding both the Lab and the tool's preview. **Still MVP:** full mechanic set, codegen of `weapons.ts`+`subjects.json` from a weapon registry (INFRA-2), stats/affix/rarity editing, and wiring the chosen VFX back into the live game — all logged under INFRA-6.
+
+**HD→game-res sprite pre-size (anti-alias fix) — 2026-06-14 (v0.28) `[BUILT]`:** Playtest report — "HD weapons look pixelated and janky in-game." Root cause: the rig drew ~1150–1900px Codex masters at ~84px (body) / ≤124px (weapon) — an ~8–18× runtime minify with no mipmaps → classic minification aliasing, worst while the weapon rotates to aim. Fix (best-practice, §28.4): **`harvest-install.mjs` now bakes a game-res derived sprite** at ~2× the on-screen footprint (char body→168px, weapon longest→256px) with a Lanczos resample, and **scales the manifest geometry by the same factor** so the rig renders byte-identical from a smaller, cleaner texture (full-res master kept in `out/<id>/parts/`). Runtime config adds `mipmapFilter: LINEAR_MIPMAP_LINEAR` (trilinear — kills rotate/downscale shimmer) + `antialiasGL` (MSAA edges) alongside the existing `antialias`. Re-installed all 8 subjects (drifter ×0.26, weapons ×0.21–0.23); verified live via CDP zoom-in — edges clean, rig size/position unchanged. *(rusty-cleaver's scratch source had been cleaned from `out/`; reconstructed it from the installed full-res asset before re-install.)*
+
+**Ground-effect VFX bake no floor — 2026-06-14 (v0.27) `[LOCKED]`:** Playtest catch on the earthquake-VFX contact sheet — the chunky rock-slab candidates had a **baked brown dirt disc** under the slabs, which would composite as a wrong solid blob on top of the real arena floor. Locked the floor-effect corollary to "no baked ground-shadow on sprites" (§18): **floor-erupting/floor-sitting VFX (quakes, craters, pools, decals) bake ONLY the active elements** — erupting slabs/shards, flung debris, dust, energy — on flat #00ff00 chroma with nothing beneath; thin dark crack lines allowed (never filled with ground color). Encoded in §14 and in `artkit` `vfxRenderRules` (a NO-GROUND rule) + the quake subject prompt; the 9 earthquake candidates were regenerated ground-less.
+
+**Master-doc alignment pass + VFX pipeline `kind:"vfx"` — 2026-06-14 (v0.26) `[BUILT]`:** Reconciled the biggest code↔spec divergences flagged in the audit. (1) **Control model (§7/§9):** weapon firing moved from LMB → **RMB**; **LMB is now the melee Parry signature** — base effect = brief **i-frames** (negate contact damage) + **knockback** of nearby enemies + cooldown + a parry-pulse VFX (the §8 telegraph/white-tells + augment pool still come later; no parryable enemy attacks yet, so for now it's a defensive button). RMB context-menu suppressed. (2) **Enemy body collision (§5):** added enemy↔enemy separation + enemies pushed out of living players (one-way; players stay authoritative) — fixes the spawn-pile stacking. (3) **Hit-stop (§20/§23.8):** short visual freeze gated to impactful events (earthquake, parry) — deliberately NOT per-trash-kill (horde pacing; matches "not per-hit"). (4) **Weapon tag taxonomy (§10):** the 3 weapons now carry full structured tags (grip/size/delivery/fireMode/element/class/family/range/scaling). (5) **§9 reconciled** to the locked upright-hold decision. (6) **artkit `kind:"vfx"`** path added (`vfxRenderRules` in `style.json` + prompt branch): VFX assets use the **source weapon as the reference image** (inherit its palette/material), a specific "what effect this weapon makes" prompt, and a **fixed top-down ground-plane ORIENTATION** — instead of grayscale-then-tint. **Still divergent (deferred, logged):** full parry system (§8), the real arsenal charges/durability/orbiting/carousel (§9/§10), Tier-2 horde sync (§4), server-seeded procedural arena (§17), player-count/tough difficulty scaling (§6).
+
+**Feet polish + 2-handed stance + earthquake greatsword — 2026-06-14 (v0.25) `[BUILT]`:** (1) **Feet** got a small forward/back stride + toe pivot on the walk (was a pure vertical bob). (2) **Two-handed stance** (`WeaponDef.twoHanded`): a 2H weapon is gripped by BOTH hands — the back hand sits up the haft from the front grip and follows the swing angle; weapon renders above the body with both hands over it. Applied to the **Tombstone Greatsword** (and any future 2H sword via the flag). (3) **Earthquake** on the greatsword (`WeaponDef.quake { radius, damage }`): each swing, *beyond* the forward arc, deals **AoE damage to every enemy within 185px** of the player, with a client VFX (§14/§20) — an expanding golden ground shockwave + dust + debris + a heavy screen shake. Verified live: 2-hand grip (hands 35px apart on the haft), quake ring renders, AoE hit a dummy at 152px (−8) but spared ones at 231/270px (arc aimed away to isolate the radial damage). *('Gravekeeper greatsword' read as the Tombstone Greatsword — the only 2H greatsword in the roster.)*
+
+**Weapon-hold redesign (upright + hand-over-hilt + dual-wield) — 2026-06-14 (v0.24) `[BUILT]`:** Playtest feedback on the weapon render. (1) **Melee weapons now held UPRIGHT** (blade up, slight forward tilt) at rest instead of pointing at the cursor — on a swing they wind back then **chop forward** through the arc. Feels like a held melee weapon, not a laser pointer. (2) **Weapon overlays the body but tucks UNDER the hand** — weapon pieces live INSIDE the rig container, ordered by an explicit per-equip **z-stack** (feet → body → weapon → hand) so each blade renders above the torso while the hand covers the grip. (Initial `moveBelow` attempt was a no-op for the dual back-knife — it landed below the body; the explicit stack fixed it.) (3) **Dual-wield** (`WeaponDef.dual`, Twin Bowie Fangs uses sprite parts 1 & 2): a knife in EACH hand; the back hand + its knife are lifted in front of the body so both blades read. (4) Front-hand reach shortened when armed so the weapon tucks against the body. Verified live (CDP screenshots): cleaver/greatsword upright with hand on grip, bowie shows two knives. **Aim-while-moving fix:** the "can't move mouse while WASD" report turned out to be GAME-specific (product owner can hold keys + move the mouse fine outside the app, so not OS/touchpad — my first guess was wrong). Cause: Phaser's pointer pipeline dropped mouse movement that *began* while a movement key was held. Fix: read the cursor straight off the DOM via a **capture-phase `window` pointermove/mousemove listener** (`pointerScreen`), used for aim instead of Phaser's `activePointer`. A `mouseMoves` counter in the debug HUD confirms events arrive.
+
+**Testing Grounds mode (§21 hub dummies) — 2026-06-14 (v0.23) `[BUILT]`:** A **T**-key toggle into a training mode for trying weapons: spawn director off, swarm cleared, players reset to center. Places **3 stationary dummies** (a new `dummy` enemy kind — speed 0, 0 contact damage, high HP that **RESETS when depleted** so it persists for repeated hits) + **weapon pickups on the ground** (one per roster weapon) that **equip on walk-over** (server proximity check). `ArenaState.mode` + a `PickupState`/`pickups` map are synced; the client renders pickups (weapon sprite + name on a ground ring, bobbing) and a mode banner. Fixed the client enemy-rig to map kind→sprite via `ENEMY_KINDS[kind].sprite` (so the `dummy` kind renders as the pricklepulp sprite). Verified live: toggle spawns 3 dummies + 3 pickups; walking onto a pickup swapped the equipped weapon (cleaver → greatsword). Prototypes the §21 hub training dummies (which will later shoot back). POC: dummies are cacti stand-ins (no bespoke dummy art), single shared room mode (not a separate hub stage yet).
+
+**Weapon framework v0 (held + swung) + difficulty pass — 2026-06-14 (v0.22) `[BUILT]`:** First real slice of the §10 weapon framework, replacing the fists placeholder (build-order §27.3 step 4 now genuinely underway). (1) **Data-driven `WeaponDef` + `WEAPONS` roster** in `shared` (damage / range / halfArc / cooldown + display params); `PlayerState.weapon` synced. The server swing uses the equipped weapon's stats; a `cycleWeapon` message rotates the roster. (2) **3 weapons integrated end-to-end as real art-in-hand:** Rusty Cleaver (balanced 1H), Tombstone Greatsword (slow/heavy, big arc), Twin Bowie Fangs (fast). Installed via `harvest-install --kind=weapon` (tight cropped sprite; weapons need chroma-keying before slicing). (3) **Weapon rendered in the front hand** (the §18 weapon anchor) — aim-rotated, flipY when facing left, with a procedural **swing animation** (raised → eased sweep → settle) triggered on attack; the client mirrors the weapon cooldown locally so the swing fires in sync (cosmetic). **Q** cycles, name shown in HUD. (4) **Difficulty toned down** for playtesting: spawn interval 1.9→0.65s over 240s (was 1.3→0.3/150s), enemy contact damage ~40% lower, MAX_ENEMIES 120→80, regen 4→6. Verified live (CDP): cleaver equipped + held + swinging, HUD correct, 60fps, ~7 enemies early. **Still POC:** dual-wield render (bowie shows 1 of its 2 blades), durability / charges / 2-orbiting arsenal (§9), parry signature (step 5), other-player swing sync — all TODO.
+
+**Render-loop fix (forceSetTimeOut) + playtest restart QoL — 2026-06-14 (v0.21) `[BUILT]`:** (1) **Fixed the recurring "arena renders but nothing spawns / no player on load" class of bug for good** (§26 lesson). Root cause: Phaser drove its loop with `requestAnimationFrame`, which the OS/compositor PARKS whenever a window isn't actively presented — an unfocused/occluded browser tab OR an Electron window launched from a background process (frame counter froze ~16, `loop:—`, while Colyseus stayed connected). Fix = drive the loop with **`fps:{ forceSetTimeOut:true, smoothStep:false }`** (`packages/client/src/main.ts`) so it ticks off setTimeout, plus Electron Chromium switches **`disable-renderer-backgrounding` + `disable-background-timer-throttling` + `disable-backgrounding-occluded-windows`** (`packages/desktop/main.cjs`). Verified: a background-launched window now runs the loop with no focus. The old "keep the window focused" workaround is retired. (2) **Playtest QoL:** a **Restart Run** control (top-right button + **R** key → server `restart` message) wipes the horde, resets the run clock + spawn director, and revives everyone fresh; and **respawn now clears enemies within `RESPAWN_CLEAR_RADIUS` (320px) of the spawn point** so you don't instantly die in the pile that coalesced while downed. Both server-authoritative. (Tuning placeholder; real §6 death rules — rez-or-dead — still come with the run loop.)
+
+**First Wild West level — sliced-procedural rig + enemies + survival loop — 2026-06-14 (v0.20) `[BUILT]`:** Built the M0 first level as a playable POC (build-order §27.3 step 6 + slices of 4/9). (1) **Harvest-slice tool** (`tools/artkit/guards/slice.mjs`, INFRA-6) cuts a keyed character/weapon PNG into its flat-green-gap-separated parts by connected-component labeling — zero hand-cutting (§26 #2); geometry auto-classifies builds (full / hands-only / pure-blob, §28.3). (2) **Sliced-procedural rig** (`packages/client/.../SpriteRig.ts`) renders the real art per §18 — body + detached hands/feet driven by procedural bob/lean/squash/independent-drift, side-profile facing flip, front-hand cursor-reach (the weapon anchor §9); NO frame animation. Drifter + Critter/Mote/Pricklepulp/Boothill wired in via `harvest-install.mjs` (INFRA-4 — typed `manifest.ts` + `public/sprites/`). (3) **Wild West arena** (§17, §28.7 palette — dust-mesa + seeded scrub/rock scatter; server-seeded procedural + collidable obstacles still TODO). (4) **Enemies + spawn director** (§15): `EnemyState` Tier-1 sync, data-driven roster + pure chase AI in `shared`, ring-spawn escalation (§6). (5) **Survival loop**: a **"fists" placeholder melee** that explicitly stands in for the §10 weapon framework (build-order step 4, deferred), enemy contact damage, always-on regen (§6), death → downed → POC respawn, plus damage numbers + white hit-flash + screen shake (§20 game-feel, step 9 partial — hit-stop/telemetry still TODO). **Build-order divergence (refereed):** did step 6 (enemies) before step 4 (weapon framework) so the level is playable now — fists are a labelled placeholder, the real arsenal replaces them. Verified live (preview): slices reassemble cleanly, all builds render, enemies spawn + chase, fists kill (11 kills/test), HP/death/respawn cycle. **All tuning is placeholder** (current balance = kite-to-survive; solo-stationary gets overwhelmed by design). Pending: real weapon framework (§10), boss OLD RUST + extraction (§16/§6 = step 7), enemy-enemy separation, Tier-2 horde + SpriteGPULayer/pooling before scale (§4/§5), spawn/damage tuning.
+
+**Articulated parts = ONE image, gap-separated — 2026-06-14 (v0.19) `[LOCKED]`:** Corrects the v0.18 split. Product owner caught that authoring an articulated weapon's pieces as **separate art subjects** (separate generations) loses **size parity and visual cohesion** — independent generations drift in scale, lighting, line-weight and palette. Fix (§28.11): an articulated/multi-part weapon is **GENERATED AS ONE IMAGE** with the pieces laid out side-by-side, separated by clear flat-green gaps (never overlapping), then **sliced apart at the gaps** for in-engine rigging — so all parts share one scale/style/lighting pass. **NEVER** generate parts as separate independent images (loses parity); **NEVER** hand-cut through overlapping art (§26 #2). The split `x-staff-lantern-cage` subject is **deleted**; **Wisp Lantern reverted to a single `x-staff-lantern` subject** = staff (empty hook) + matching cage-lantern drawn beside it with a green gap, both at the same scale, sliceable, cage rigged as a pendulum in-engine (SPEC-01). A **harvest-slice tool** (cut one image into part-sprites at the green gaps) is the open INFRA item. Prompt updated WITHOUT re-running (product owner re-runs in the UI).
+
+**Articulated parts + full prompt VFX-scrub — 2026-06-14 (v0.18) `[LOCKED]`:** (1) **Articulated/multi-part weapons** (hinged lantern, flail, chain, spinning saw) are authored as **separate sprite pieces rigged in-engine** — never one baked sprite, never hand-cut (§28.11). The static base gets an empty mount-point. **Wisp Lantern split** into `x-staff-lantern` (staff + empty hook) + `x-staff-lantern-cage` (pendulum), ready to re-run pre-separated; in-engine pendulum rig comes with SPEC-01. (2) **Scrubbed every weapon prompt** of radiating-emission language (seeping/pulsing/radiance/humming/swirling glows → static colour/tint) so re-runs are VFX-clean. Prompts updated WITHOUT re-running (product owner re-runs per-asset in the UI).
+
+**Weapon facing-right + absolute no-VFX — 2026-06-14 (v0.17) `[LOCKED]`:** Two follow-ups from review: (1) **All weapons FACE RIGHT** — business end (blade tip/muzzle/point/staff-head) points right, grip/handle/stock left (§28.4, `style.json`). (2) **Tightened the VFX rule to ABSOLUTE** — the model kept sneaking emissions in despite "no heat shimmer," so the sprite now carries ZERO VFX (no smoke/glow/bloom/emission at all; engine does everything, §14); an iconic eye/sigil may be a small solid bright shape but must not bloom. The Maw redone as a **pure-blob worm (no hands)** without dust; Lead Storm + the flagged weapons re-rolled with both rules.
+
+**Sprites are AT REST — no baked VFX — 2026-06-14 (v0.16) `[LOCKED]`:** Pilot review caught transient VFX painted into sprites (hovering particles on The Last Judge, smoke on Pallbearer/Carpenter/Gravedigger's Mortar, lightning on Stormcaller, sparks on Buzzcutter, a fixed drip on Drowned Anchor, dust trail on Tanglethorn, baked tier-glow on toughs). Rule (§28.4, `style.json` identityRefRenderRules): the in-world sprite is the object AT REST — NO emitted/transient VFX (smoke/sparks/dust/drips/lightning/trails/auras/hovering-particles/heat-haze/tier-glow); those are **engine VFX (§14)** added at runtime (a baked particle freezes wrong when the object moves). Integral material glow (glowing eye, molten edge, lit orb) is fine. **Tier-glow is an engine layer, not sprite art** (§15). Card art is exempt (static showcase). Offending prompts cleaned + assets re-rolled.
+
+**Variable enemy construction — 2026-06-14 (v0.15) `[LOCKED]`:** Enemies no longer all use the full body+2hands+2feet build. Three builds (§28.3, §15): **full** (grounded walkers), **hands-only** (floaters/hoverers, e.g. the liked skull-lantern), **pure blob** (simplest creatures, no hands/feet). Players stay full (they hold the arsenal). Applied to M0 roster: Boothill → hands-only (hovering skeleton), Pricklepulp + Mote → pure blobs; Ronin/Gatlin/Critter stay full. `style.json` construction rule updated.
+
+**Task tracking adopted — 2026-06-14 (v0.14) `[LOCKED]`:** Added **`BACKLOG.md`** as the single task board (Open/In-progress/Next/Done, ID'd), pointed to from §24. Deliberately ONE tracker, in-repo, no external system — avoids the §26 #9 doc-sprawl trap (design canon stays in this spec; BACKLOG holds work items; art status lives in the review UI). Flagged a real backlog risk: **repo has no git commits yet** (INFRA-5).
+
+**Golden anchors locked + style-test batch + art-review UI — 2026-06-14 (v0.13) `[LOCKED]`:** With reference-image consistency proven, product owner locked the first golden anchors: **Drifter #3, Rusty Cleaver #1, Critter #2, OLD RUST #3** (`out/<id>/identity-ref.png`) — weapons anchor to the Cleaver, characters/enemies/bosses to the Drifter. Added **weapon flat-side-view rule** (§28.4) after a perspective-angled cleaver. Generated a **30-asset style-test batch** (`subjects.explore.json` — 6 swords, 5 guns, 3 launchers, 5 staffs, 4 characters, 3 bosses, 4 mobs; all `x-`-prefixed, exploratory, NOT yet M0 canon), ×5 candidates each, image-anchored. Built a **professional art-review web UI** (`tools/artkit/review/` — dependency-free node server + SPA: browse-by-category, view candidates, promote→identity-ref, edit prompt, re-roll; auto-refresh). `orchestrate.mjs` now takes `SUBJECTS=<manifest>`; `prompts.mjs`/`orchestrate.mjs` support `styleRef` (reference-image gen). Note: artkit `out/` is generated scratch (gitignored); promoted `identity-ref.png` anchors are the assets to keep — wire into `assets/` at fleet time.
+
+**Art bible consolidated into the master spec — 2026-06-14 (v0.12) `[LOCKED]`:** Per product-owner directive ("don't diverge into art Bible + master doc; append to master, delete the bible"), the standalone `WEAPON_ART_STYLE.md` is **merged into new §28 (Art Style — Full Spec) and DELETED.** The master spec is now the single source of truth for visuals too (no parallel docs — §26 #9). `tools/artkit/style.json` is the executable form, pointing at §28. §18 stays the high-level summary; §28 is the full detail.
+
+**Art-direction structure: named anchor + reference-image gen — 2026-06-13 (v0.11) `[LOCKED]`:** Pilot art read inconsistent (everything was generated *blind from text*). Product owner's call: add structure via a **named style anchor** + reference-image generation. (a) **Style anchor = The Behemoth / Castle Crashers (bold chunky flat-cel shapes) × Darkest Dungeon (grim grimy ink, spot-blacks, desaturated dark palette)** — baked into `style.json` styleBlock + the art bible §1 (v0.4). **Match the rendering language only, never either game's content** (§18 originality mandate holds; referee-confirmed). (b) **Reference-IMAGE generation** wired into artkit (`subjects.json.styleRef` → `orchestrate.mjs`/`prompts.mjs` attach a golden anchor as Image 1 so the look propagates — the art bible's §6.3 "single biggest AI-consistency lever," previously unused). **Drifter candidate #3 promoted** as the first golden anchor (`out/drifter/identity-ref.png`). Re-rolling Critter + OLD RUST anchored to it to validate cohesion before fleeting; weapon anchor (a Cleaver pick) TBD.
+
+**M0 art-pilot feedback — 3 reconciliations — 2026-06-13 (v0.10) `[LOCKED]`:** First codex pilot (4 anchors) surfaced 3 art-doc conflicts, resolved by product owner; `WEAPON_ART_STYLE.md`→v0.3 + `style.json` updated, anchors regenerating:
+- **Side-profile pose (not front-¾):** master spec §5 ("side-profile characters, Vampire Survivors exactly") **wins** over the art bible §3's old "front three-quarter" (which traced to `character-style-prompts.md`). Characters/enemies face RIGHT, across the frame, never posturing at the camera.
+- **Uniform detail, no detail-scaling:** the art bible §6.2 Low/Med/High tiers are **dropped**. Detail does NOT scale with importance — only SIZE does. Every sprite (incl. bosses) sits at the player-character baseline; the over-intricate pilot boss looked *lower* quality than the clean character. Bosses scale by SCALE only (§16 gigantic still holds — big, not busy).
+- **No baked ground-shadow/floor on sprites:** removed the art bible §3 "oval ground shadow" (it conflicted with §4 "no floor"). Shadows are in-engine only; flat #00ff00 to the feet.
+
+**Art bible received + art pipeline live — 2026-06-13 (v0.9) `[LOCKED]`:** Product owner delivered **`WEAPON_ART_STYLE.md`** (the art-style doc — §24's 2nd blocker, now canonical: rough indie-arcade gritty dark-comic, HD-not-pixel, limbless construction, exact palette hexes §2, **`#00ff00` chroma-key**, LOD detail tiers §6, Wild-West override §7, golden-anchor pilot→approve→fleet §6.3/§9). Reconciled into the executable **`tools/artkit/style.json`** (superseding the DRAFT v0): added the palette, LOD render rules, `1920×1080` character / `1024²` weapon canvases, two-pass card rules. Built **`subjects.json`** for all 18 M0 assets (Drifter + 10 melee weapons + 6 enemies + OLD RUST), tier+dimension per subject. Wrote the DD **`#00ff00` chroma-key guard** (`guards/chroma-key.mjs`, replaces WT's checkerboard guard). Fixed a space-in-path bug in `lib/codex.mjs` (quoted shell args — "Dimension Drifters v2" was splitting the codex `-C`). Kicked off codex generation, **golden-anchor pilot first** (Drifter/Rusty Cleaver/Critter/OLD RUST × 5 candidates) per the bible's own freeze-then-fleet rule — product owner promotes, then fleet the remaining 14.
+
+**artkit forked + orchestrator received — 2026-06-13 (v0.8) `[LOCKED]`:** Product owner supplied the `artkit.zip` + its usage = the **orchestrator doc** (one of §24's two blocking docs — now in hand). Forked the **engine** into tracked **`tools/artkit/`** (orchestrate.mjs, lib/codex+prompts, guards/fix-checkerboard, package.json, subjects.example.json, README.engine.md) per §26 #1. **Did NOT inherit WT's "Lythero Cartoon Bold"** — quarantined as `style.reference-wt.json` (schema reference only, §18). Authored DD's own `style.json` **DRAFT v0** from §18/§14 (gritty indie-arcade dark-comic, HD cel-shaded, limbless, **`#00ff00` chroma-key** not transparency). subjects.example.json reseeded with DD M0 weapons. artkit kept **out of the pnpm workspace** (pulls native sharp + needs codex CLI → install/run on demand). WT example PNGs intentionally left behind (their canon art). **Still pending for SPEC-01 art:** the **art-style doc** (to finalize `style.json` / write `WEAPON_ART_STYLE.md`) + a DD `#00ff00` chroma-key guard + `subjects.json`-from-weapon-data wiring. Code half of SPEC-01 (weapon schema + behavior blocks) is now unblocked (art uses placeholders, §27).
+
+**Step 3 player-core — 2026-06-13 (v0.7) `[LOCKED]`:** §27.3 step 3 done. (1) **Procedural limbless character** (§18) in `packages/client/src/entities/PlayerBlob.ts`: body + detached floating blob hands/feet + eye, all procedural (bob, squash/stretch, lean, independent hand/foot drift, walk shuffle, side-profile facing) — no frame animation. (2) **Cursor aim** (§9): local player faces the cursor and the front hand (future weapon anchor) reaches toward it; crosshair cursor. (3) **Body collision** (§5): `resolveBodyCollisions` pure fn in `shared` (unit-tested, §26 #4), applied authoritatively in the server tick after movement integration. Rendering is state-driven reconciliation + interpolation; animation is client-cosmetic (decoupled per §14). Verified live in Electron (3 characters rendering + bob/foot animating). Also added Electron `disable-features=CalculateNativeWinOcclusion` so a covered window keeps simulating (production-correct: don't pause an authoritative-server multiplayer client on alt-tab). Known: a *minimized* window still pauses (Chromium treats minimized as hidden) — acceptable.
+
+**Electron shell built — 2026-06-13 (v0.6) `[LOCKED]`:** Added `packages/desktop` (Electron, §3 canon now real) hosting the Phaser client in a dedicated window with `backgroundThrottling: false`. Run via `pnpm dev:desktop`. **Root-cause finding that drove this:** the recurring "no player object on load" was NOT a netcode/render bug — it was **Chrome pausing `requestAnimationFrame` for hidden/occluded windows**, freezing the Phaser loop (which creates/draws blobs) while the Colyseus connection stayed healthy. Proven on the real browser via Claude-in-Chrome, then proven fixed in Electron via CDP: loop runs full-speed even while the window is **minimized** (`visibilityState: visible`). Lesson reinforced (§26): **develop/verify in the production runtime** — the headless/background browser harness was actively misleading. Browser mode still works but requires a focused window (README dev gotcha).
+
+**Reference projects added — 2026-06-13 (v0.5) `[LOCKED]`:** Logged four MIT repos as study-don't-adopt references in §27.4 (Phaser4 template, Colyseus handshake tutorial, Phaser Discord monorepo template, Reldens). Verified real/MIT. Conclusion: scaffolding refs already superseded by our own scaffold; **Reldens (room-transition architecture) is the forward-value mine for the dimension chain**; Colyseus tutorial for prediction/reconnect. None adopted — mine for patterns only (retro #5).
+
+**First coding session — 2026-06-13 (v0.4) `[LOCKED]`:**
+- **Repo scaffolded & verified.** pnpm monorepo on disk: `packages/shared·server·client`, `tools/·data/·assets/·tests/`, TS strict, Biome 2.5, Vitest, non-bypassable CI gate (typecheck + lint + test + build), `.github/workflows/ci.yml`. Git initialized. §27 marked ADOPTED.
+- **Version pins recorded in §3** (Phaser 4.1.0 stable; Colyseus 0.16 matched pair; etc.).
+- **`shared` ships tsc-compiled `dist`, consumed everywhere; relative imports use `.js`; authoritative sim is pure functions in `shared`.** Full rationale in §27.2 ("Decisions locked in the first coding session"). Root cause: `@colyseus/schema` v3 needs legacy decorators only `tsc` emits.
+- **Build order §27.3 steps 1 (scaffold) + 2 (netcode handshake POC) complete.** 20Hz server-authoritative blob, multi-client **Tier-1** sync, interpolation, independent free-roam camera. Headless 2-client smoke test passes.
+- **Still open / unchanged:** §4 three-tier sync model awaits product-owner confirm — the POC deliberately implements **Tier 1 only** to inform that call. SPEC-01 (weapons) remains paused pending the two incoming docs (§24).
+
+**Approved melee weapons (M0), #1–10 `[LOCKED]`:** Rusty Cleaver, Coffin Lid (on-swap block — the loved on-swap precedent), Lasso Chain, Rattler Sabre, Prospector's Pickaxe, Dynamite Bat, Branding Iron (INT melee, cross-class), Twin Bowie Fangs, Tombstone Greatsword, **Gravedigger's Spade (unique, rez carrier).**
+
+**Reversed / superseded decisions (do not revive):**
+- **3D → 2D.** Briefly explored full-3D Megabonk-lane + Unity/Fusion 2 + KCC/Projectiles scaffold; **reverted to 2D Phaser** at product-owner direction.
+- **Determinism / Rust+Bevy+GGRS / rollback → dropped.** Replays, ghost players, seeded dailies explicitly **not wanted.**
+- **Godot / Unity → not chosen.** Phaser 4 selected (autonomy + consolidation), accepting Electron + Colyseus cost.
+- **Relics → cut** (too complicated).
+- **RoR2 blue-portal vendor → cut;** shops are **Megabonk traveling wanderers** (0–2 per stage, revealed stock, shop-under-pressure, can repair).
+- **Permanent collection / permanent upgrades → rejected.** Unlock-pool model only; horizontal progression.
+- **Undertaker's Bell → moved to caster pool** (it was a caster weapon, not a unique melee).
+- **Procedural weapon generation → rejected.** Hand-authored on a framework instead.
+- **Graded/partial parry → rejected.** Binary parry.
+- **Co-op parry-for-teammates → rejected.** Everyone minds themselves.
+- **Affix slots scaling with rarity → reversed.** Now **exactly one affix per weapon, rarity-independent** (Terraria prefix model); travelers reforge the single affix.
+- **Branch-gated parry tree → reversed.** Augments are a **flat mix-and-match pool** (pick 6 of 9, freely combinable), not exclusive branches.
+
+---
+
+## 26. Engineering Practices & Hard-Won Lessons `[LOCKED]`
+*Distilled from the World Tournament retro (6 weeks, 518 commits — same dev, same stack, same artkit pipeline). These are guardrails, applied from day one of DD.*
+
+1. **Nothing load-bearing in `.gitignore`.** WT's whole art pipeline lived untracked in `.tmp-bin` — the named root cause of "background removal changes every week." **The forked `artkit` lives tracked in `tools/`, with tests.** Scratch dirs hold truly disposable output only.
+2. **Never ask the image model for true alpha.** WT fought transparency five ways (magenta-key → "render transparent" → checkerboard → flood-fill → halos), producing 12 wasted regen passes. DD's method is already correct (`character-style-prompts.md`): **render on `#00ff00`, key it out with a deterministic global color-key pinned in ONE tested function.** Never fight the tool's limitation by hand.
+3. **One source of truth per concept.** WT's dual v1/v2 card schema was a permanent bug class (a stat edit that only touched the v1 shape). DD: **single weapon schema; `subjects.json` generated from weapon data; JSON-schema validation in CI** so malformed weapons fail the build, not the playtest.
+4. **Test the hot path first; new mechanic ⇒ new test.** WT's most complex every-wave module shipped with zero tests. DD: cover the **combat/charge/durability/damage eval + netcode sync** before stacking mechanics on them. Build a **seedable sim-test harness** (seed + inputs → assert state) for regression — the *principle* behind WT's praised replay-determinism harness, **without** committing to player-facing replays (DD has no determinism).
+5. **Freeze before fleet.** WT generated 900 cards + 533 VFX before the mechanic vocabulary was final, then regenerated. DD: **M0 locks the weapon schema + the 40-mechanic VFX vocabulary before any mass weapon authoring.** This is the whole reason M0 exists.
+6. **Pilot → approve → fleet for any batch >~10 assets.** WT adopted this late; one VFX pilot saved 531 bad generations. This *is* artkit's candidate→promote step — **mandatory** for DD art batches.
+7. **Quality gates in CI, not local hooks.** WT's pre-commit lint hook got skipped; 28 violations piled up. DD: **typecheck + lint + tests + schema-validate + build run in CI on every push**, non-bypassable.
+8. **Build quality guards into the pipeline from day one** — alpha/scale/orientation checks at art-harvest time, not reactive patches after each visible break.
+9. **Few living docs, pruned on supersession.** WT had 40+ docs, 23 ADRs, ~4 overlapping roadmaps, 9 marked superseded. DD: **this master spec is the single source of truth** (with the §25 supersession log); a short SPEC-01..04 set; prune/log rather than accrete.
+
+**The throughline:** WT's exhaustion came from *untracked or duplicated sources of truth* and *fighting tool limitations by hand* — not from lack of capability (its engine architecture was sound). DD's defense is discipline: version-control the pipeline, one source of truth per concept, freeze-then-fleet, and CI gates.
+
+---
+
+## 27. Project Structure, Conventions & Build Order `[ADOPTED — first coding session 2026-06-13; refine as needed]`
+*The coding-session starting point. Structure conforms to §26 (tracked tooling, one source of truth, CI gates). Scaffolded and verified in the first coding session; the layout below is now real on disk.*
+
+### 27.1 Repo layout — pnpm monorepo (single source of truth for shared types)
+```
+dimension-drifters/
+├─ packages/
+│  ├─ shared/         # SINGLE SOURCE OF TRUTH for cross-cutting types:
+│  │                  #   Colyseus Schema state, weapon-definition schema + tags (§10),
+│  │                  #   rarity/attribute enums, behavior-block & VFX-mechanic IDs.
+│  │                  #   Imported by BOTH client and server. No duplicated shapes (retro #3).
+│  ├─ server/         # Colyseus authoritative sim: rooms, three-tier sync (§4),
+│  │                  #   spawn director, run/wave state, damage authority, RNG seeds.
+│  ├─ client/         # Phaser 4 game (rendering, input, client-sim bullets, VFX, HUD).
+│  └─ desktop/        # Electron shell (main.cjs) — hosts the client in a dedicated window
+│                     #   with backgroundThrottling:false. The Steam build target (§3).
+├─ tools/
+│  ├─ artkit/         # TRACKED fork of artkit (retro #1 — never in scratch). Codex+sharp.
+│  │                  #   DD style.json (NOT WT's). subjects.json generated from weapon data.
+│  └─ schema-validate/# JSON-schema validator for weapon/enemy data (runs in CI, retro #3).
+├─ data/              # Hand-authored weapon/enemy/dimension definitions (validated in CI).
+├─ assets/            # Generated + final art (sprites, card art, VFX frames).
+├─ tests/             # Vitest; hot-path first (§26 #4): combat/charge/durability eval, sync.
+└─ .github/workflows/ # CI gates (retro #7): typecheck + lint + test + schema-validate + build.
+```
+`.tmp-bin/` (or similar) holds **only** disposable output — nothing load-bearing (retro #1).
+
+### 27.2 Tooling conventions
+- **pnpm workspaces** (monorepo), **TypeScript strict mode**, **Biome** (lint+format), **Vitest** (tests).
+- **Shared types in `packages/shared`** consumed by client + server — one definition, never duplicated.
+- **Colyseus Schema** defines authoritative state; **StateView** for area-of-interest (§4 Tier 1).
+- **Electron** wraps the client for the Steam build; **steamworks.js** for Steam social (§3).
+- **CI gates non-bypassable** (retro #7). **Pilot→approve→fleet** for any art batch >~10 (retro #6 / artkit candidate→promote).
+- **Telemetry hooks from day one** (§23.9): weapon pick/break rates, salvage flows, death causes.
+
+**Decisions locked in the first coding session `[LOCKED — 2026-06-13]`:**
+- **`shared` is a tsc-COMPILED package; everyone consumes its `dist`** (not its `.ts` source). Reason: `@colyseus/schema` v3 requires **legacy** (`experimentalDecorators`) decorators, which **esbuild/tsx/Vite cannot emit** — only `tsc` does. Compiling `shared` with `tsc` keeps esbuild out of the decorator path entirely (server runs via `tsx` on its own decorator-free source; client/tests import the compiled `dist`). The root `dev`/`typecheck`/`test` scripts build `shared` first; `pnpm -r build` is topologically ordered.
+- **All relative imports carry `.js` extensions** (e.g. `./constants.js`) so the compiled `dist` is valid Node ESM. Valid in TS source under `moduleResolution: Bundler`; accepted by tsx/Vite/Vitest too.
+- **Authoritative sim logic lives in `shared` as PURE functions** (first one: `stepPlayerMovement`). The server tick and future **client prediction run the identical function**, so they cannot diverge — one source of truth for the sim (§26 #3), and the §4 anti-cheat magnitude/bounds clamp lives there for free.
+- **Movement = server-authoritative + client interpolation, no prediction yet.** Prediction is added once the baseline feel is judged; it will reuse `stepPlayerMovement`.
+
+### 27.3 M0 build order (suggested first-session sequence)
+1. ✅ **DONE (2026-06-13).** **Scaffold the monorepo** (shared/server/client, pnpm, TS strict, Biome, Vitest, CI skeleton). Git initialized.
+2. ✅ **DONE (2026-06-13).** **Netcode handshake:** Colyseus room + Phaser client connect; one blob with **server-authoritative position** moving for 2 clients (validates the three-tier model's Tier 1 + interpolation). 20Hz tick, free-roam camera, send-on-change input. Verified by a headless 2-client smoke test (authoritative move ≈ MOVE_SPEED; both clients agree on position). *POC implements **Tier 1 only** — informs the §4 three-tier confirm. No StateView AoI yet (fine at 2–4 players; required before 10-player load test).*
+3. ✅ **DONE (2026-06-13).** **Player core:** limbless procedural character (bob/lean/squash/hand+foot drift/walk/facing, §18), server-authoritative body collision (§5, unit-tested), cursor aim (§9), free-roam camera. Verified live in Electron.
+4. 🟡 **STARTED (2026-06-14, v0.22).** **Weapon framework v0 (proving-ground, §10):** weapon-definition schema in `shared`, the ~8–10 seed behavior-blocks, the held+orbit arsenal (charges/durability/cooldown/auto-cycle/manual-cycle), fists fallback. Author the 10 melee weapons against it. *Done: data-driven `WeaponDef`/`WEAPONS` + synced `PlayerState.weapon`; server swing uses weapon stats; **3 weapons integrated end-to-end (real art held in hand + procedural swing animation), Q cycles**. TODO: behavior-block library, charges/durability, the 2-orbiting arsenal + card carousel (§9), dual-wield render, the full 10-weapon roster.*
+5. **Parry signature** + the mix-and-match augment pool (§8) + white parry-language + leap-distance tells.
+6. ✅ **DONE (2026-06-14, POC).** **Enemies + spawn director (§5/§15):** 4 of 6 Wild West archetypes wired (Critter/Mote/Pricklepulp/Boothill; Ronin/Gatlin toughs TODO), data-driven roster + pure chase AI in `shared`, ring-spawn escalation (§6). *Full Tier-1 sync (POC); Tier-2 soft-synced horde + tough scaling + per-archetype behavior (spitter/zoner) still TODO. Sliced-procedural sprite rig + harvest-slice tool (§28.11) landed here.* Verified live.
+7. **Run loop (§6):** timer escalation, level-up 5s window (stats + augments), boss OLD RUST → extraction, salvage banking / death. *(Run timer + death/respawn started; boss + extraction + level-ups TODO.)*
+8. **Loot + economy stub (§13):** drops, Gems, salvage→parts, a single pack-open to prove the meta loop.
+9. 🟡 **STARTED (2026-06-14).** **Game-feel pass (§20):** Hades hit-stop, shake, damage numbers, VFX. Telemetry verified. *Damage numbers + white hit-flash + screen shake done; hit-stop, weapon VFX, and telemetry still TODO.*
+10. **Hit M0 exit criterion (§23):** two machines, full run, fight over salvage, immediately re-queue.
+
+Art can use placeholders until the DD `style.json` + artkit fork are ready (§14/§18) — **don't block code on final art** (retro #5/#8: freeze systems first, fleet-generate art after).
+
+### 27.4 Reference projects — study, don't adopt `[LOCKED — 2026-06-13]`
+There is **no drop-in match** (no Phaser 4 + Colyseus + survivors-co-op boilerplate exists). These are repos to **mine for patterns, never bolt on** — adopting a framework wholesale is the retro-#5 trap. Anything borrowed is committed into our tracked repo as our own code (retro #1). *Caveat: most Phaser+Colyseus boilerplates are Phaser 3; their Colyseus halves port (renderer-agnostic) but their render code is stale — we are Phaser 4.* All verified MIT, 2026-06-13.
+
+| Repo | What it is | Mine it for | When |
+|---|---|---|---|
+| `phaserjs/template-vite-ts` | Official Phaser 4 + Vite + TS template | Config sanity-check only — **we already scaffolded the equivalent (steps 1–2 done)** | — (done) |
+| `colyseus/tutorial-phaser` | Official Phaser+Colyseus handshake tutorial | **Client prediction, interpolation buffering, reconnection** (the netcode layers we haven't built yet) | adding prediction/reconnect (§4, SPEC-04) |
+| `phaserjs/discord-multiplayer-template` | Official Phaser+Colyseus monorepo (client/server pkgs) | Cross-check room-lifecycle / client↔server wiring | as needed |
+| `damian-pastorini/reldens` | Mature Node+Colyseus+Phaser MMORPG platform (563★, active 2026) | **The real mine: multi-room / room-transition architecture = our dimension chain (§6) + transition checkpoints (§4).** MMORPG-shaped (MySQL/admin/persistence) → mine *selectively* | run-loop / dimension transitions (§6), SPEC-04 |
+
+**Bottom line:** none replace the build; they de-risk specific later steps. Reldens is the highest forward-value (dimension transitions); the Colyseus tutorial is next (prediction/reconnect). The scaffolding templates are already superseded by our own scaffold.
+
+---
+
+## 28. Art Style — Full Spec `[LOCKED]`
+*Consolidated 2026-06-14 from the former standalone `WEAPON_ART_STYLE.md` (now deleted — no parallel docs; this is the single source of truth for visuals). Every AI art prompt inherits this section; `tools/artkit/style.json` is its executable form. If a generation and this section disagree, one is wrong. (§18 is the high-level summary; §28 is the full detail.)*
+
+> **CRITICAL — DD HAS ITS OWN LOOK.** DD's aesthetic is defined entirely here. Reuse shared *tooling*, never another project's *look*. If a generation reads as polished/clean/cute rather than rough and gritty, it's wrong.
+
+### 28.1 Core aesthetic + style anchor
+**Rough indie-arcade combat art.** Chunky, imperfect silhouettes; gritty dark-comic attitude; thick, slightly uneven outlines; simple flat cel shading; minimal highlights; flat readable forms; weird, body-first identity. **HD, NOT pixel art.** No polished toy/mascot look. The screen is dark + desaturated (characters, enemies, arenas) so high-saturation **neon weapon VFX is the star** — the light show is the color.
+
+**Style anchor `[LOCKED]` — match the LOOK, never the content:** **The Behemoth / Castle Crashers'** bold, chunky, simple flat-cel shapes + thick confident outlines + silhouette-first readability, **fused with Darkest Dungeon's** grim mood — grimy heavy ink, spot-blacks, desaturated dark palette, comic-horror weight. Target = Behemoth's bold readable chunkiness rendered grim and gritty like Darkest Dungeon. Reference the **rendering language only** (outline weight, cel discipline, palette, proportions); NEVER either game's characters/designs — DD's limbless construction + original roster keep us trademark-distinct (§18). **Consistency is enforced by reference-IMAGE generation:** once a golden anchor per class is approved (first: the Drifter), every sibling is generated with that image attached so the look propagates (§28.6), not just text.
+
+**One-line prompt seed:** *"rough indie-arcade game art, BOLD CHUNKY simple flat-cel shapes (Behemoth/Castle-Crashers readability) rendered GRIM and gritty (Darkest Dungeon ink + desaturated dark palette), chunky imperfect silhouette, thick uneven outline, minimal highlights, HD not pixel art, limbless original design"*
+
+### 28.2 Global palette
+Desaturated dark base (characters/enemies/arenas) so high-saturation neon (VFX, rarity) pops.
+- **Base/neutral:** Charcoal `#22252B` · Gunmetal `#3A4049` · Steel `#5A6472` · Off-white `#E8E4D8` · Bone `#CFC6AE`
+- **Earth/accent (dressing):** Rust `#A8482E` · Tan `#C49A5A` · Olive `#6E7042` · Muted red `#9E3B36` · Dull teal `#3C6E6A`
+- **Neon/VFX (additive, bloom):** Hot magenta `#FF3BD4` · Cyber cyan `#33E6FF` · Plasma lime `#9CFF3B` · Ember orange `#FF8A2B` · Arc violet `#B14BFF`
+- **Rarity cues (pickup glow + card frame):** Common `#9AA0A6` · Uncommon `#5FD17A` · Rare `#4AA3FF` · Really Rare `#7B5BFF` · Legendary `#FFB23B` · Ultimate `#FF5D5D` · **Cursed `#A45CFF`** (ghostly-purple, shown before pickup — §13).
+
+### 28.3 Construction rules (characters & enemies — incl. non-human, §15)
+- **Limbless, always** — no arms, full legs, or realistic anatomy, ever. **Build VARIES `[LOCKED]`:**
+  - **PLAYERS** use the **FULL** build: compact body + 2 detached floating blob hands + 2 detached floating feet (the hands hold the arsenal, §9).
+  - **ENEMIES** pick the build that fits the creature: **FULL** (body + 2 hands + 2 feet — grounded walkers, e.g. Ronin, Gatlin); **HANDS-ONLY** (body + 2 hands, NO feet — floating/hovering things, e.g. a hovering six-gun skeleton, a skull-lantern); **PURE BLOB** (body only, NO hands or feet — the simplest drifting/oozing/rolling creatures, e.g. a mote, a squat cactus). Enemies never hold the arsenal, so omitting hands/feet is fine. Each subject states its build.
+- **Hands** (when present): single-piece oval/bean/mitten shapes — NO fingers/claws/knuckles/thumb — placed OUTSIDE the body silhouette with a visible gap; never over the body.
+- **Feet** (when present): separate objects below the body, with gaps; the body never touches/covers/tucks them.
+- **Pose:** clear **SIDE-PROFILE facing right** (Vampire-Survivors side view, §5) — looking ACROSS the frame, never posturing at the camera.
+- **NO ground shadow / floor / contact shadow on the sprite** — flat chroma to the feet; shadows are in-engine.
+- **Originality mandate** (§18): every design trademark-distinct.
+- Generate characters **empty-handed** — the held weapon is a separate asset (§9).
+
+### 28.4 Technical output standard (pinned; never ask the model for true alpha — §26 #2)
+- **Render on a flat, opaque chroma-key field, default `#00ff00`** — one uniform colour, no shadow/gradient/texture/floor/lighting variation. NEVER use the chroma colour in the subject.
+- **Key it out deterministically** (one tested colour-key fn → transparent PNG) in tracked `tools/` (`guards/chroma-key.mjs`), never scratch.
+- **Canvas:** 1920×1080 for full character/enemy sprites; square 1024×1024 for weapons/props. Center with generous padding; full body + detached hands + feet with clear gaps.
+- **Weapons/props pose `[LOCKED]`:** rendered FLAT, ORTHOGRAPHIC, FULL SIDE-PROFILE (broadside) — entire weapon in-plane, long axis across the frame, both ends visible; NO perspective/foreshortening/3-4 tilt/pointing into depth. Reads as a clean flat 2D item (held side-on or orbiting). **Orientation `[LOCKED 2026-06-14]`: every weapon FACES RIGHT** — business end (blade tip / muzzle / point / staff-head/orb) points RIGHT, grip/handle/haft/stock on the LEFT. Consistent across all weapons (engine mirrors for left-facing use).
+- **Sprite is the object AT REST `[LOCKED]` — ZERO VFX:** the in-world sprite is the plain SOLID MATTE form. The **engine renders ALL light, glow, and particles at runtime (§14)** — the sprite has **none**: no smoke, steam, fire, sparks, embers, dust, motion trails, drips, splashes, lightning/arcs, energy beams/auras, hovering particles, shell halos, heat-haze, muzzle/impact flashes, or radiating/blooming glow of **any** kind. An iconic eye or hot sigil/edge may be a SMALL solid bright-coloured **shape** (reads "lit" by contrast) but must not bloom or radiate into surrounding space. A baked emission freezes wrong the instant the object moves/swings — when unsure, leave it OFF. **Tough-tier glow is an engine layer, never sprite art** (§15). *Exception: **card art** is a static showcase and MAY depict VFX/motion (§28.6 cardartRenderRules).*
+- One subject per image. No text/UI/watermark/background scene. Quality guards at harvest (alpha/scale/orientation — §26 #8).
+- **Sprites scale UNIFORMLY — never stretch hand-drawn art `[LOCKED 2026-06-15]`:** a sprite is only ever resized by a **single scale factor applied to BOTH axes**, preserving its painted aspect ratio at every size. Independent width/height (`scaleX ≠ scaleY`, `setSize`, fitting to a non-matching box) is **forbidden** for any hand-drawn asset — stretched/squashed art "looks like shit" (a tall enemy made wide, a wide weapon made tall). The **facing flip is a pure horizontal MIRROR** (`scaleX *= -1`), not a stretch. The pre-size step (below) resizes width and height by the **same factor**. The ONLY exception is an explicit, gentle, area-preserving **squash-&-stretch ANIMATION** (e.g. an idle breathing bob), never a static size change. *(Root cause of the v0.37 "elongated tough enemy" bug: a per-frame `scaleX = facing` clobbered a uniform rig-scale, leaving `scaleY` larger → vertical stretch. Fixed by storing the rig scale and re-applying it to both axes.)*
+- **HD master → game-res derived sprite `[LOCKED 2026-06-14]`:** the Codex master is ~1000–1900px, but the rig draws sprites at ~84px (character body) / ≤124px (weapon). Shipping the full-res texture and minifying ~8–18× at runtime (no mipmaps) makes HD art **shimmer/alias** ("janky", worst while a weapon rotates to aim). Fix at install (`harvest-install.mjs` pre-size step): bake a derived sprite at **~2× its on-screen footprint** (character body→168px, weapon longest side→256px) with a **Lanczos** resample, and **scale the manifest geometry by the same factor** so the rig math (`scale = TARGET_BODY_H/body.h`; `pos = ox·scale`) is unchanged. The full-res master stays in `out/<id>/parts/`; only the derived sprite ships. Runtime backs it up with `antialias` (linear), `mipmapFilter: LINEAR_MIPMAP_LINEAR` (trilinear, kills rotate shimmer), and `antialiasGL` (MSAA edges) in the Phaser render config. *(Same "distinct derived asset" discipline as card-art vs in-world sprite, §14.)*
+
+### 28.5 Asset-type specs
+- **Character sprite** — §28.3 + §28.4. Identity via silhouette + palette + orbit behavior (§7).
+- **Enemy sprite** — same limbless construction. Tiers: Normal = base; **Tough = bigger/glowier size-parity of its kin** (not bespoke); Unique = bespoke; Boss = can be gigantic (§16).
+- **Weapon in-world sprite** — bold readable silhouette that reads small; canvas/scale driven by grip + size-class tags (§10); weapon only.
+- **Weapon card art (two-pass, §14):** (1) weapon sprite → (2) reference-driven second render at card dims → (3) composite UI/frame + rarity colour (§28.2). Distinct derived assets, kept consistent by the reference pass.
+- **VFX skins** — palette-locked to the §28.2 neon set; additive + bloom. Static sprite parts only; motion/cluster/scale in Phaser (§14); amorphous effects are Phaser-native.
+
+### 28.6 Level of detail — UNIFORM at the character baseline
+*Detail is calibrated to display size, never maximized — an over-rendered asset looks noisier than its neighbours and breaks cohesion.*
+- **Three hard, auditable specs (every prompt + harvest check):** outline ~3–4px at 1080-tall canvas, uniform weight; flat cel only (base + 1 shadow + optional 1 highlight, ≤3 tones/region; no gradients/airbrush/AO); **≤6–8 colours/asset** from the §28.2 palette.
+- **UNIFORM detail `[LOCKED]`:** detail does NOT scale with importance — only SIZE does. Every sprite (trash, player, tough, weapon, **boss**) sits at the player-character baseline. Bosses are **bigger, not more detailed** (the M0 pilot's over-intricate boss read worse than the clean character). *(Card art may carry slightly more rendering — via lighting/pose/background, not interior detail.)* Supersedes the old Low/Med/High tiers.
+- **Golden-anchor set (the consistency engine):** approve one exemplar per class, then **every subsequent generation uses that golden asset as a reference image** so the look propagates (reference-image generation — the single biggest AI-consistency lever; wired into artkit via `subjects.json.styleRef`).
+- **Display-size targets:** trash ~32–48px · character ~64–96px · weapon ~32–64px · boss large→gigantic · card art ≥512px.
+- **Harvest normalization (day one, §26 #8):** scale-normalize · palette-quantize to §28.2 · outline/alpha/orientation checks at ingest; failures rejected, not patched.
+
+### 28.7 Per-dimension palette overrides
+One master style; each dimension passes a palette/theme override so the look is cohesive but each dimension is distinct.
+- **Wild West** — dusty, sun-bleached, occult-frontier. Dressing in tan/rust/bone/olive against charcoal shadow; weapon VFX stays full neon against the dust. Silhouettes: hats, dusters, skeletal/cactus/automaton. Gritty-Western, not cartoon-cowboy. *(Future dimensions add their block here.)*
+
+### 28.8 Negative prompts (reject)
+no fingers/claws/articulated hands · no arms or full legs · no realistic anatomy · no polished toy/collectible/mascot look · no clean anime · no pixel art · no text/UI/watermark/labels · no background scene or floor plane · no gradient/textured background · no chroma colour bleeding into the subject · no copy of any existing game/character (incl. the style-anchor games' content).
+
+### 28.9 Cohesion & curation
+- Every prompt inherits §28.1 + §28.2 + the relevant §28.5 asset spec + §28.7 dimension override + the golden-anchor reference image (§28.6).
+- **Pilot → approve → fleet** (§26 #6): generate candidates, product owner promotes one, *then* fleet. Never mass-generate before this section + the golden anchors are frozen (§26 #5).
+- Rarity colours (§28.2) used consistently on pickup glows + card frames.
+
+### 28.11 Articulated / multi-part assets `[LOCKED 2026-06-14]`
+Anything that must MOVE independently in-game — a hinged/swinging lantern, a flail head on a chain, a spinning saw-blade, a chain or whip, a pendulum — ships as **separate sprite pieces rigged/animated in-engine** (Phaser), but is **GENERATED AS ONE IMAGE** so the pieces share scale, style, lighting, and proportion (size parity + cohesion). The pieces are laid out in that single image **separated by clear flat-green gaps** (NOT overlapping, NOT assembled) — exactly like the limbless characters' detached hands/feet — then **sliced apart at the gaps** (clean, no occlusion). Rules:
+- **One artkit subject per articulated weapon** → one image containing the static base (with an empty **mount-point**, e.g. a staff with an empty hook) AND each moving part, drawn side-by-side at the SAME scale with green gaps between them.
+- A **harvest slice step** (§28.6 — TODO) cuts the image into named part-sprites at the gaps; the weapon's data definition lists the parts + joints/motion; the engine assembles + animates them at runtime.
+- **NEVER** generate the parts as separate independent images (loses size parity), and **NEVER** hand-cut through overlapping art (occlusion gaps + ragged edges — §26 #2).
+- Same convention as characters (body + 2 hands + 2 feet in one gap-separated image, sliceable). Examples: **Wisp Lantern** = one image of `staff (with hook)` + detached `cage` → pendulum. **Buzzcutter** = `frame/handle` + `saw-blade` → spin. **Lasso Chain** = `haft` + `chain segments`.
+
+### 28.10 artkit integration
+This section is the human-readable spec; **`tools/artkit/style.json` is its executable form** (styleBlock, palette, render rules, negatives, per-dimension overrides). `subjects.json` is authored from / eventually generated from the weapon/character data + tags (§10) so art and gameplay share one source of truth. Reference-image anchoring: `subjects.json.styleRef` → a golden anchor attached as Image 1 (§28.6).
+
+---
+
+*End of master spec. Update this file as decisions land; bump version/date; keep the §25 changelog current.*

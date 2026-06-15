@@ -1,0 +1,2 @@
+# data/ — hand-authored weapon/enemy/dimension definitions (§27.1).
+# Validated in CI against the JSON schema once SPEC-01 lands (§26 retro #3).

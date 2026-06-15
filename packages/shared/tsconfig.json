@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "lib": ["ES2022"],
+    // Explicit (not just inherited) so esbuild/tsx pick up legacy decorators for the
+    // @colyseus/schema @type() classes in this package. @colyseus/schema v3 requires them.
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false
+  },
+  "include": ["src"]
+}

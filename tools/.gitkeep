@@ -1,0 +1,3 @@
+# tools/ — TRACKED tooling (§26 retro #1; §27.1).
+# Forked artkit (Codex + sharp art pipeline) and schema-validate land here.
+# Nothing load-bearing ever lives in .gitignore'd scratch dirs.

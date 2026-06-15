@@ -1,0 +1,31 @@
+[
+  {
+    "id": "vfx-quake-tombstone",
+    "name": "Tombstone Greatsword — Earthquake Slam VFX",
+    "kind": "vfx",
+    "vfxOrientation": "ground",
+    "styleRef": "out/tombstone-greatsword/identity-ref.png",
+    "prompt": "The ground-slam EARTHQUAKE effect the weapon in Image 1 (a heavy granite tombstone greatsword) makes when hammered straight DOWN. Frozen at its peak: a rough RING of just a FEW BIG, BOLD, CHUNKY angular rock slabs — roughly 6 to 10 LARGE, simple, readable shards (NOT a dense pile of small rubble, gravel, or pebbles) — tilting UP and erupting outward around a central impact point, with a few chunks of flung debris and a little dust. Heavy, grim, weighty. Grey granite slabs to match the weapon, with desaturated dust. CRITICAL: render ONLY the erupting slabs, flung debris, and dust — there is NO solid ground, NO brown dirt disc, NO earth mound, NO crater fill, and NO terrain patch beneath or around them. The slabs and debris float on the empty flat #00ff00 chroma with NOTHING underneath them, because this composites on TOP of the real arena floor at runtime; a baked ground patch would show as a wrong solid blob. Thin dark CRACK LINES radiating from the center are fine (they read as cracks in whatever floor is underneath), but do NOT fill them with any ground color. SIMPLE flat-cel shapes, thick black outlines, MINIMAL interior detail — match the chunky, bold, LOW-detail look of the game's character art; do NOT render it realistically or finely."
+  },
+  {
+    "id": "vfx-cleave-cleaver",
+    "name": "Rusty Cleaver — impact cleave-gash",
+    "kind": "vfx",
+    "styleRef": "out/rusty-cleaver/identity-ref.png",
+    "prompt": "The brutal CLEAVE-GASH the weapon in Image 1 (a heavy rusty meat-cleaver) makes the instant it hits — a single short, thick, CRUDE rusty-steel slash-gash arc, chunky and violent, a few orange sparks and flecks of rust flung off. Frozen at impact. Rusty steel + dark orange palette to match the weapon. SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail; do NOT draw the cleaver itself."
+  },
+  {
+    "id": "vfx-slash-driftblade",
+    "name": "Driftblade — long slash crescent",
+    "kind": "vfx",
+    "styleRef": "out/driftblade/identity-ref.png",
+    "prompt": "The long, elegant SLASH-ARC the weapon in Image 1 (an impossibly long thin nodachi) makes on a swing — a single CLEAN, THIN, VERY LONG silver crescent edge-trail sweeping through the air, sharp and precise, a few drifting silver motes trailing it. Frozen mid-swing. THIN and graceful (NOT chunky), bright mirror-steel with a faint cool glow. SIMPLE flat-cel, thin bright stroke, MINIMAL detail; do NOT draw the sword itself."
+  },
+  {
+    "id": "vfx-twinslash-bowie",
+    "name": "Twin Bowie Fangs — twin slash X",
+    "kind": "vfx",
+    "styleRef": "out/twin-bowie-fangs/identity-ref.png",
+    "prompt": "The TWIN crossing SLASH the weapon in Image 1 (a matched pair of curved fang knives) makes — TWO fast crescent slashes crossing in an X, glowing cyber-CYAN edges, with a fine spray of red blood-mist between them. Quick and sharp, frozen mid-flurry. Bone+steel with bright cyan accents. SIMPLE flat-cel, MINIMAL detail; do NOT draw the knives themselves."
+  }
+]

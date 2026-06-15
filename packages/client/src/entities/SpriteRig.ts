@@ -1,0 +1,363 @@
+import type { WeaponDef } from "@dd/shared";
+import Phaser from "phaser";
+import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
+
+/** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
+const TARGET_BODY_H = 84;
+
+export interface RigAnim {
+  /** Movement direction this frame (≈0 length when idle). */
+  moveX: number;
+  moveY: number;
+  /** Aim direction toward the cursor (local player only). */
+  aimX: number;
+  aimY: number;
+  isSelf: boolean;
+}
+
+/**
+ * Sliced-procedural character/enemy rig (§18, §28.11). Renders a subject's harvest-sliced
+ * parts (body + detached hands/feet, cut by tools/artkit/guards/slice.mjs) as separate
+ * sprites in a container, then drives them with PURELY PROCEDURAL animation — bob, squash,
+ * lean, independent hand/foot drift, walk shuffle, side-profile facing flip, and the front
+ * hand reaching toward the cursor (the weapon anchor, §9). No frame animation (§18).
+ *
+ * Cosmetic + client-side only: decoupled from the authoritative sim (§14), so it can desync
+ * harmlessly. The container position is driven by synced state; everything inside is flavour.
+ * Works for any build — hands-only floaters and pure blobs just have fewer parts.
+ */
+export class SpriteRig {
+  readonly root: Phaser.GameObjects.Container;
+  private readonly scene: Phaser.Scene;
+  private readonly scale: number;
+  /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
+   *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
+  private baseScale = 1;
+  private readonly body: Phaser.GameObjects.Image;
+  private readonly hands: {
+    img: Phaser.GameObjects.Image;
+    ox: number;
+    oy: number;
+    front: boolean;
+  }[] = [];
+  private readonly feet: { img: Phaser.GameObjects.Image; ox: number; oy: number }[] = [];
+  private readonly parts: Phaser.GameObjects.Image[] = [];
+  private readonly label?: Phaser.GameObjects.Text;
+  private readonly phase: number;
+  private facing = 1;
+  /** Held weapon piece(s) — one per hand (dual-wield = two). Live INSIDE the container so the
+   *  hand renders over the hilt and the facing-flip applies automatically. */
+  private weapons: {
+    img: Phaser.GameObjects.Image;
+    hand: { img: Phaser.GameObjects.Image; ox: number; oy: number };
+  }[] = [];
+  private weaponDef?: WeaponDef;
+  private swingStart = -1e9;
+  private braceStart = -1e9;
+
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    isSelf: boolean,
+    id: string,
+    spriteId: string,
+  ) {
+    const manifest = SPRITES[spriteId as keyof typeof SPRITES] as SpriteManifest | undefined;
+    if (!manifest) throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
+    this.scene = scene;
+    this.scale = TARGET_BODY_H / manifest.body.h;
+
+    // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
+    // hand is the one on the side the art faces (right = +x); the other tucks behind.
+    const make = (role: string): Phaser.GameObjects.Image | undefined => {
+      const part = manifest.parts.find((p) => p.role === role);
+      if (!part) return undefined;
+      const img = scene.add.image(
+        part.ox * this.scale,
+        part.oy * this.scale,
+        `${spriteId}:${role}`,
+      );
+      img.setOrigin(0.5).setScale(this.scale);
+      this.parts.push(img);
+      return img;
+    };
+
+    // Hands + feet first; the body is resolved separately so it always lands mid-stack
+    // (and so we never double-create it from the parts loop).
+    for (const p of manifest.parts) {
+      if (p.role.startsWith("hand")) {
+        const img = make(p.role);
+        if (img)
+          this.hands.push({ img, ox: p.ox * this.scale, oy: p.oy * this.scale, front: p.ox >= 0 });
+      } else if (p.role.startsWith("foot")) {
+        const img = make(p.role);
+        if (img) this.feet.push({ img, ox: p.ox * this.scale, oy: p.oy * this.scale });
+      }
+    }
+    const bodyImg = make("body");
+    if (!bodyImg) throw new Error(`SpriteRig: "${spriteId}" has no body part`);
+    this.body = bodyImg;
+
+    const order: Phaser.GameObjects.GameObject[] = [];
+    for (const f of this.feet) order.push(f.img);
+    for (const h of this.hands) if (!h.front) order.push(h.img);
+    order.push(this.body);
+    for (const h of this.hands) if (h.front) order.push(h.img);
+
+    this.label = isSelf
+      ? scene.add
+          .text(0, -TARGET_BODY_H * 0.62 - 12, "you", { fontSize: "12px", color: "#E8E4D8" })
+          .setOrigin(0.5)
+      : undefined;
+    if (this.label) order.push(this.label);
+
+    this.root = scene.add.container(x, y, order);
+
+    // Per-rig phase offset so a crowd doesn't bob in lockstep. Derived from id (stable).
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000;
+    this.phase = h / 1000;
+  }
+
+  setPosition(x: number, y: number): void {
+    this.root.setPosition(x, y);
+  }
+
+  /** Top-down draw order: lower on screen renders in front. */
+  setDepth(d: number): void {
+    this.root.setDepth(d);
+  }
+
+  /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
+   *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
+  setRigScale(mult: number): void {
+    this.baseScale = mult;
+    this.root.setScale(mult);
+  }
+
+  /** Add a pulsing glow behind the body — the §15 "tough = glowier" tell. Lives in the container
+   *  so it scales + moves with the rig. */
+  addGlow(color: number): void {
+    const glow = this.scene.add
+      .ellipse(0, -TARGET_BODY_H * 0.35, TARGET_BODY_H * 1.9, TARGET_BODY_H * 1.9, color, 0.3)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.root.addAt(glow, 0); // behind every part
+    this.scene.tweens.add({
+      targets: glow,
+      scale: 1.18,
+      alpha: 0.5,
+      duration: 620,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+  }
+
+  /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
+   *  parts). Each piece is held UPRIGHT in its hand, pivoting at the grip, and is inserted just
+   *  BELOW that hand in the container so the hand overlays the hilt. */
+  equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
+    for (const w of this.weapons) w.img.destroy();
+    this.weapons = [];
+    this.weaponDef = def;
+
+    const frontHand = this.hands.find((h) => h.front);
+    const backHand = this.hands.find((h) => !h.front);
+    const attach = (
+      part: SpriteManifest["parts"][number] | undefined,
+      hand: typeof frontHand,
+    ): Phaser.GameObjects.Image | undefined => {
+      if (!part || !hand) return undefined;
+      const img = this.scene.add.image(hand.img.x, hand.img.y, `${spriteId}:${part.role}`);
+      img.setOrigin(def.gripFrac, 0.5).setScale(def.displayLength / part.w);
+      this.root.add(img);
+      this.weapons.push({ img, hand });
+      return img;
+    };
+    const frontWpn = attach(manifest.parts[0], frontHand);
+    const backWpn =
+      def.dual && manifest.parts.length >= 2 ? attach(manifest.parts[1], backHand) : undefined;
+
+    // Explicit z-stack (bottom→top): each weapon overlays the BODY but tucks UNDER its hand.
+    // Single-wield keeps the back hand behind the body; dual brings it forward so both read.
+    const stack: Phaser.GameObjects.GameObject[] = [];
+    for (const f of this.feet) stack.push(f.img);
+    if (def.twoHanded) {
+      // 2H: one weapon, BOTH hands gripping it above the body.
+      stack.push(this.body);
+      if (frontWpn) stack.push(frontWpn);
+      if (backHand) stack.push(backHand.img);
+      if (frontHand) stack.push(frontHand.img);
+    } else if (def.dual) {
+      stack.push(this.body);
+      if (backWpn) stack.push(backWpn);
+      if (backHand) stack.push(backHand.img);
+      if (frontWpn) stack.push(frontWpn);
+      if (frontHand) stack.push(frontHand.img);
+    } else {
+      if (backHand) stack.push(backHand.img);
+      stack.push(this.body);
+      if (frontWpn) stack.push(frontWpn);
+      if (frontHand) stack.push(frontHand.img);
+    }
+    if (this.label) stack.push(this.label);
+    for (const obj of stack) this.root.bringToTop(obj);
+  }
+
+  /** Start a swing animation (the actual damage is server-authoritative). */
+  triggerSwing(timeMs: number): void {
+    this.swingStart = timeMs;
+  }
+
+  /** Start a parry BRACE pose (§8) — raise the weapon to a horizontal block, draw the hands up into
+   *  a guard, and dip into a brace, held ~the i-frame window. Purely a STANCE (no VFX yet; on-parry
+   *  effects arrive with the level-up parry augments). */
+  triggerBrace(timeMs: number): void {
+    this.braceStart = timeMs;
+  }
+
+  /** Brief white impact flash on every part (§20 hit feedback). */
+  flash(ms = 80): void {
+    for (const p of this.parts) p.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    this.scene.time.delayedCall(ms, () => {
+      for (const p of this.parts) p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    });
+  }
+
+  get x(): number {
+    return this.root.x;
+  }
+
+  get y(): number {
+    return this.root.y;
+  }
+
+  destroy(): void {
+    for (const w of this.weapons) w.img.destroy();
+    this.root.destroy();
+  }
+
+  animate(timeMs: number, anim: RigAnim): void {
+    const t = timeMs / 1000 + this.phase;
+    const moving = Math.hypot(anim.moveX, anim.moveY) > 0.02;
+    const s = this.scale;
+
+    // Facing: toward the cursor for the local player, else toward movement. Mirror the whole
+    // container; per-part offsets/aim are computed in local space so the flip stays coherent.
+    const dirX = anim.isSelf ? anim.aimX : anim.moveX;
+    if (Math.abs(dirX) > 0.05) this.facing = dirX >= 0 ? 1 : -1;
+    // UNIFORM scale on both axes (baseScale), facing = a pure horizontal MIRROR — never a stretch,
+    // so the hand-painted art keeps its aspect ratio at any size (§28.4).
+    this.root.scaleX = this.facing * this.baseScale;
+    this.root.scaleY = this.baseScale;
+    if (this.label) this.label.scaleX = this.facing; // keep text readable through the flip
+
+    // Bob + squash/stretch on the body (scale multiplies the base part scale).
+    const bob = Math.sin(t * 6);
+    this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
+    this.body.scaleX = s * (1 + bob * 0.04);
+    this.body.scaleY = s * (1 - bob * 0.06);
+    this.body.rotation = moving ? anim.moveX * 0.16 : 0;
+
+    // Parry BRACE (§8): a quick snap into a guard, hold through the i-frame window, ease out. Folds
+    // into the weapon angle + hand positions below so the whole body reads as a block.
+    let brace = 0;
+    {
+      const bel = timeMs - this.braceStart;
+      const bdur = 450; // ≈ PARRY_IFRAMES (0.45s)
+      if (bel >= 0 && bel < bdur) {
+        const tt = bel / bdur;
+        brace = tt < 0.18 ? tt / 0.18 : tt > 0.7 ? 1 - (tt - 0.7) / 0.3 : 1;
+      }
+    }
+    if (brace > 0) {
+      this.body.y += brace * s * 7; // dip into the brace
+      this.body.scaleY = s * (1 - bob * 0.06 - brace * 0.05); // slight squash
+    }
+
+    // Weapon swing angle — upright at rest, wind-up + chop on swing. Computed BEFORE the hands
+    // so a two-handed grip can place the back hand on the haft.
+    let weaponAngle = 0;
+    if (this.weaponDef && this.weapons.length > 0) {
+      const def = this.weaponDef;
+      const REST = -Math.PI / 2 + 0.16;
+      weaponAngle = REST + Math.sin(t * 2.6) * 0.04;
+      const el = timeMs - this.swingStart;
+      const dur = def.cooldown * 470;
+      if (el >= 0 && el < dur) {
+        const tt = el / dur;
+        const windup = REST - 0.6;
+        const end = REST + def.swingArc;
+        weaponAngle =
+          tt < 0.18
+            ? REST + (windup - REST) * (tt / 0.18)
+            : windup + (end - windup) * (1 - (1 - (tt - 0.18) / 0.82) ** 2);
+      }
+    }
+    // Brace overrides the swing: raise the weapon toward a near-horizontal block (business end up).
+    if (brace > 0) {
+      const guard = -0.2; // near-horizontal, tipped slightly up = a raised guard
+      weaponAngle += (guard - weaponAngle) * brace;
+    }
+
+    // Hands drift independently; the front hand reaches toward the cursor. Reach is SHORT when
+    // holding a weapon so the weapon stays tucked against the body (not floating far out).
+    const reach = TARGET_BODY_H * (this.weapons.length > 0 ? 0.1 : 0.28);
+    for (const hnd of this.hands) {
+      const drift = Math.sin(t * 4.5 + (hnd.front ? 0 : 1)) * s * 8;
+      if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
+        hnd.img.x = hnd.ox + anim.aimX * this.facing * reach;
+        hnd.img.y = hnd.oy + anim.aimY * reach + drift;
+      } else {
+        hnd.img.x = hnd.ox;
+        hnd.img.y = hnd.oy + drift;
+      }
+      // Brace: draw both hands forward + up into a guard in front of the body.
+      if (brace > 0) {
+        const bx = TARGET_BODY_H * 0.16;
+        const by = hnd.oy - TARGET_BODY_H * 0.08;
+        hnd.img.x += (bx - hnd.img.x) * brace;
+        hnd.img.y += (by - hnd.img.y) * brace;
+      }
+    }
+
+    // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
+    if (this.weaponDef?.twoHanded) {
+      const front = this.hands.find((h) => h.front);
+      const back = this.hands.find((h) => !h.front);
+      if (front && back) {
+        const haft = TARGET_BODY_H * 0.42;
+        back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
+        back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
+        back.img.rotation = 0;
+      }
+    }
+
+    // Feet: alternating walk when moving (lift + a small forward/back stride + a toe pivot),
+    // gentle float when idle. A touch more life than a pure vertical bob.
+    for (let i = 0; i < this.feet.length; i++) {
+      const ft = this.feet[i];
+      if (!ft) continue;
+      if (moving) {
+        const ph = t * 11 + i * Math.PI; // legs out of phase
+        ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16;
+        ft.img.x = ft.ox + Math.cos(ph) * s * 7; // stride
+        ft.img.rotation = Math.cos(ph) * 0.14; // slight pivot
+      } else {
+        ft.img.y = ft.oy + Math.sin(t * 3 + i) * s * 4;
+        ft.img.x = ft.ox;
+        ft.img.rotation = 0;
+      }
+    }
+
+    // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
+    for (let i = 0; i < this.weapons.length; i++) {
+      const w = this.weapons[i];
+      if (!w) continue;
+      const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
+      w.img.setPosition(w.hand.img.x, w.hand.img.y);
+      w.img.rotation = weaponAngle + off;
+    }
+  }
+}

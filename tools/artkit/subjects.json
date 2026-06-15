@@ -1,0 +1,413 @@
+[
+  {
+    "id": "drifter",
+    "name": "The Drifter",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "The Drifter — the player's limbless melee character, generated EMPTY-HANDED. A compact charcoal-and-rust body shaped like a hunched gunslinger torso under a wide tattered duster collar and a low-brimmed, dust-bleached hat shadowing one bold expressive eye. EXACTLY TWO detached oval blob hands (no more, no third hand), one floating clear of each side, TWO detached blob feet below in scuffed boots — EVERY detached part sits fully OUTSIDE the body silhouette with a clear flat-green gap around it; NEVER a third hand, NEVER a hand fused to / tucked against / overlapping the coat or body. A gritty frontier drifter, weird and body-first — NOT a cartoon cowboy. MEDIUM detail: clear silhouette, a few interior details, full flat cel, ~4-6 colours.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "character",
+      "player",
+      "melee",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "rusty-cleaver",
+    "name": "Rusty Cleaver",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite (no character): a heavy, pitted butcher's cleaver scavenged from a frontier town — broad rust-mottled blade with a chipped edge, sweat-darkened wrapped-cord handle, a single bright honed nick. Crude, brutal, dependable. MEDIUM detail, ~4-6 colours. Faces RIGHT: blade EDGE/point to the RIGHT, wrapped-cord handle on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#8a4b2f",
+      "accent": "#d8c27a"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "sword",
+      "close",
+      "physical",
+      "1H",
+      "M",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "swung in a heavy downward arc, rust flaking off the edge, a gritty ember-orange impact spark at the blade tip"
+  },
+  {
+    "id": "coffin-lid",
+    "name": "Coffin Lid",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a splintered wooden coffin lid hefted as an improvised shield-weapon — long hexagonal plank, iron nail-heads, a faded painted cross worn to a ghost, one cracked corner. Heavy, defensive, grim. MEDIUM detail. Flat side-profile, long axis running LEFT-to-RIGHT; consistent broadside orientation.",
+    "palette": {
+      "primary": "#5b4636",
+      "accent": "#9fb0a3"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "slab",
+      "close",
+      "physical",
+      "2H",
+      "L",
+      "STR",
+      "CON",
+      "wild-west"
+    ],
+    "cardartAction": "slammed forward edge-on as a guard, splinters and dust bursting off the impact face",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "lasso-chain",
+    "name": "Lasso Chain",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a coiled rawhide lasso fused to a length of rusted iron chain — looped rope transitioning into heavy oxidized links, a worn leather hand-grip at the throw end. A whip-pull weapon. MEDIUM detail. Faces RIGHT: leather hand-grip on the LEFT, chain/lash end trailing to the RIGHT; flat side-profile.",
+    "palette": {
+      "primary": "#A8482E",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "whip",
+      "mid",
+      "physical",
+      "1H",
+      "M",
+      "DEX",
+      "wild-west"
+    ],
+    "cardartAction": "mid-crack, the chain snapping forward in a taut arc with a dust trail off the links",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "rattler-sabre",
+    "name": "Rattler Sabre",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a curved cavalry sabre whose blade is etched like rattlesnake scales, a fanged rattlesnake-head pommel, a dull-teal venom sheen along the honed edge. Fast finesse cutter. MEDIUM detail. Faces RIGHT: blade TIP to the RIGHT, fanged pommel/grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "sword",
+      "close",
+      "physical",
+      "1H",
+      "M",
+      "DEX",
+      "wild-west"
+    ],
+    "cardartAction": "whipped in a fast slashing arc, a cyber-cyan edge-trail and venom mist streaking off the tip",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "prospectors-pickaxe",
+    "name": "Prospector's Pickaxe",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a heavy iron prospector's pickaxe — one spike, one adze, an ore-flecked head, a dust-caked oak haft bound with wire. A brutal mining tool turned weapon. MEDIUM detail. Faces RIGHT: pick spike/head to the RIGHT, oak haft/grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "pick",
+      "close",
+      "physical",
+      "1H",
+      "M",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "swung overhead into a downward pick-strike, rock chips and ember-orange sparks bursting on impact",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "dynamite-bat",
+    "name": "Dynamite Bat",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a splintered wooden bat with sticks of red dynamite lashed to the barrel by twine, a stubby lit fuse with a glowing ember-orange tip (NO flying sparks). An improvised explosive bludgeon. Faces RIGHT: dynamite/barrel business end to the RIGHT, bat grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#C49A5A",
+      "accent": "#9E3B36"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "club",
+      "close",
+      "fire",
+      "2H",
+      "L",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "mid-swing with the fuse blazing and a ember-orange shockwave just beginning to bloom off the barrel",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "branding-iron",
+    "name": "Branding Iron",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a long black wrought-iron branding rod, the business end a glowing molten-orange sigil (integral red-hot glow IN the metal, NO heat-haze/shimmer emitting off it), the haft wrapped in scorched leather. Cross-class INT melee — magic by way of red-hot iron. MEDIUM detail. Faces RIGHT: glowing sigil head to the RIGHT, wrapped haft/grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "rod",
+      "mid",
+      "fire",
+      "1H",
+      "M",
+      "INT",
+      "cross-class",
+      "wild-west"
+    ],
+    "cardartAction": "thrust forward, the white-hot sigil flaring and leaving a searing ember-orange after-glow brand in the air",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "twin-bowie-fangs",
+    "name": "Twin Bowie Fangs",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a matched pair of curved bowie knives with bone handles and fang-shaped blades, presented as one paired weapon (one per hand). Quick dual finesse blades. MEDIUM detail. Both knives face RIGHT: blade TIPS to the RIGHT, bone handles on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#5A6472"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "fist-blade",
+      "close",
+      "physical",
+      "dual",
+      "S",
+      "DEX",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "crossed mid-slash in an X, twin cyber-cyan edge-trails and a fine blood-mist arc",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "tombstone-greatsword",
+    "name": "Tombstone Greatsword",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a colossal two-handed greatsword forged in the shape of a cracked granite tombstone — a chiselled grave-marker blade with a faded R.I.P., a rebar cross-guard, a wrapped-leather grip. Slow, heavy, huge. MEDIUM detail (large size class). Faces RIGHT: tombstone blade TIP to the RIGHT, wrapped grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#CFC6AE"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "sword",
+      "close",
+      "physical",
+      "2H",
+      "L",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "heaved in a slow ground-cleaving arc, a shockwave of dust and gravel erupting along the strike",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "gravediggers-spade",
+    "name": "Gravedigger's Spade",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: a long iron grave-digging spade, its edge honed to a blade, dirt-caked, with a faint sickly dull-teal tint worked into the haft (its necromantic glow is engine VFX, not painted) (the squad's rez carrier). A unique, grim melee tool. MEDIUM detail. Faces RIGHT: spade blade/head to the RIGHT, haft/grip on the LEFT; flat side-profile.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "spade",
+      "close",
+      "physical",
+      "2H",
+      "L",
+      "STR",
+      "unique",
+      "rez",
+      "wild-west"
+    ],
+    "cardartAction": "planted and wrenched upward, a dull-teal spectral wisp and grave-dirt spiralling up from the blade",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  },
+  {
+    "id": "critter",
+    "name": "Critter",
+    "tier": "low",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Critter — a fast coyote-blob rusher enemy, limbless construction. A small, mangy desert-coyote made of one chunky charcoal-and-tan body lump with a snarling muzzle and one eye, TWO tiny detached paw-blobs, TWO detached foot-blobs, clear gaps. A lean, hungry, lunging side-on silhouette. Reads as a clean bold shape at small swarm size — kept simple by SILHOUETTE, at the same flat-cel detail level as a normal character (do not over-render).",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "enemy",
+      "rusher",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "boothill",
+    "name": "Boothill",
+    "tier": "low",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Boothill — a limbless six-gun skeleton spitter enemy, empty-handed, HANDS-ONLY build (NO feet — it hovers). A bleached-bone ribcage-and-skull body in a ragged duster scrap and busted hat, one glowing eye-socket, TWO detached rounded bone hand-blobs (smooth bone mitts, NO fingers), and NO detached feet — it floats above the ground. A grim outlaw revenant.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#22252B"
+    },
+    "tags": [
+      "enemy",
+      "spitter",
+      "ranged",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "pricklepulp",
+    "name": "Pricklepulp",
+    "tier": "low",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Pricklepulp — an ORIGINAL cactus-creature zoner enemy (cactus-inspired but distinct, NOT a cactuar). A PURE BLOB build: a dumpy olive-green barrel-cactus body bristling with short red-tipped spines and one squinting eye — NO detached hands and NO detached feet, it just squats and oozes. Bold readable silhouette.",
+    "palette": {
+      "primary": "#6E7042",
+      "accent": "#9E3B36"
+    },
+    "tags": [
+      "enemy",
+      "zoner",
+      "aoe",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "mote-swarm",
+    "name": "Mote",
+    "tier": "low",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Mote — a single buzzard-mote swarm unit. A PURE BLOB build: a tiny dark charcoal winged body-blob (fist-sized) with one glowing pinprick ember eye and ragged feather nubs — NO detached hands and NO detached feet. Weak and fast, designed to read as ONE clean bold shape in a cloud of many.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "swarm",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "ronin",
+    "name": "Ronin",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Ronin — a TOUGH cowboy-samurai melee-combo enemy, limbless construction, generated empty-handed. A broad armored body fusing a frontier duster with lacquered samurai plate and a straw-and-steel hat, one fierce eye, TWO heavy detached gauntlet-blobs (rounded, no fingers), TWO detached armored foot-blobs, clear gaps. A bigger, scaled-up tough-tier presence (the tier glow is added in-engine, NOT painted into the sprite). A multi-hit duelist silhouette.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "combo",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "gatlin",
+    "name": "Gatlin",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Gatlin — a TOUGH heavy-drifter scatter enemy, limbless construction. A hulking barrel-chested charcoal body draped in a bullet-belt and torn poncho, a cluster of stubby gun-barrels fused into one shoulder, one grim eye, TWO huge detached fist-blobs, TWO planted detached foot-blobs, clear gaps. A bigger, scaled-up tough-tier presence (the tier glow is added in-engine, NOT painted into the sprite). A wide bruiser silhouette.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#A8482E"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "scatter",
+      "wild-west"
+    ]
+  },
+  {
+    "id": "old-rust",
+    "name": "OLD RUST, the Last Lawman",
+    "tier": "high",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "OLD RUST, the Last Lawman — the Wild West main boss, an ORIGINAL silhouette with NO Terminator DNA. A chrome-skulled automaton in a tattered grey duster and a battered top hat, a tarnished sheriff star on a SIMPLE chrome ribcage cage, ember-orange glow in the eye-sockets. One arm ends in a chunky clustered gun-barrel, the other in a big blocky iron fist. Limbless-adjacent: detached chrome fist-blobs and heavy detached foot-blobs with clear gaps. Built from BOLD SIMPLE SHAPES at the SAME clean flat-cel and detail level as a normal character — menace comes from SCALE and a strong silhouette, NOT from busy mechanical intricacy. Gigantic, looming, rusted-lawman dread.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "boss",
+      "unique",
+      "wild-west"
+    ],
+    "cardartAction": "mid-rampage — minigun arm spun up spraying ember-orange tracer-fire, iron piston-fist cocked back, heat-haze and dust exploding around its boots"
+  },
+  {
+    "id": "driftblade",
+    "name": "Driftblade",
+    "tier": "medium",
+    "dimension": "wild-west",
+    "prompt": "Weapon-only in-world sprite: an impossibly LONG, THIN single-edged nodachi (great-katana). A slender mirror-bright steel blade that runs the ENTIRE width of the frame as a long thin line, with a small dark cloth-wrapped handle and a round iron tsuba guard on the FAR LEFT and a needle point on the FAR RIGHT. EMPHASIZE extreme length and a very NARROW blade — lots of empty space above and below it. Weathered wild-west drifter steel with faint rust freckles. Flat orthographic full side-profile, blade TIP to the RIGHT, handle on the LEFT. Original design, NOT Sephiroth or Final Fantasy. An XL reach weapon.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#5A6472"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "sword",
+      "mid",
+      "physical",
+      "2H",
+      "XL",
+      "DEX",
+      "STR",
+      "wild-west"
+    ],
+    "cardartAction": "one impossibly long horizontal slash, a thin silver edge-trail spanning the whole card, drifting petals",
+    "styleRef": "out/rusty-cleaver/identity-ref.png"
+  }
+]
