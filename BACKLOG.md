@@ -2,7 +2,7 @@
 **The single task tracker.** Design canon lives in `DIMENSION_DRIFTERS_MASTER_SPEC.md` (the bible); this file tracks *work* against it. Master spec §24 points here. Keep both in sync — when an item lands, tick it here AND log the decision in the spec's §25.
 
 **Conventions:** IDs are `PREFIX-n` (`DEC` decision, `CODE` engine/game, `ART` assets, `DOC` specs, `INFRA` tooling/CI). Status: **🔴 Open · 🟡 In progress · ✅ Done.** Most-actionable at top.
-**Updated:** 2026-06-15 · matches master spec v0.44.
+**Updated:** 2026-06-15 · matches master spec v0.45.
 
 ---
 
@@ -38,7 +38,9 @@
 - **DOC-2** SPEC-02 (Run & Co-op), SPEC-03 (Content Plan), SPEC-04 (Netcode Detail) — or fold into master spec.
 - **DOC-3** HUD layout deliverable (§20).
 - **INFRA-4** 🟡 Wire promoted anchors into the tracked client. *(Pipeline built — `harvest-install.mjs` slices + copies to `packages/client/public/sprites/` + generates typed `manifest.ts`; Drifter + Critter/Mote/Pricklepulp/Boothill installed. Remaining: weapons, the rest of the roster, and INFRA-1 scale/palette normalization.)*
-- **INFRA-5** **First git commit** — repo is initialized but has **no commits yet**. Commit the M0 foundation when Mike's ready (commit only on request).
+- **INFRA-5** 🟡 **First git commit DONE** (`e178c1b`, 2026-06-15) — M0 foundation + the session committed; `out/` scratch + `.artkit-tmp/` gitignored. **Remaining: PUSH** — `gh` isn't authenticated and no remote is set; Mike runs `gh auth login` (then `gh repo create … --source=. --push`) or supplies a repo URL, then push.
+- **CODE-11** 🔴 **Bespoke Codex VFX "hero" art per weapon** (§14, ruled 2026-06-15) — the weapon-sprite-as-hero is interim; generate a painted effect skin (slash/blast/spray) for each weapon as `vfx-*` subjects. Batch after the in-game VFX port (CODE-8). Pairs with CODE-9.
+- **CODE-12** 🔴 **Attack-speed scaling stat source is OPEN** (ruled 2026-06-15) — DEX is now damage-only, so attack speed is flat weapon cooldown with no attribute driving it. Pick a source (a future AGI/SPD, or none) when balancing.
 
 ## ✅ Done
 - **CODE/ART** **Really-long-sword support + sprite aspect fix (v0.38–v0.39, §10/§28.4)** — **`displayLength` is the size dial, not the art box**; size-class length bands (S≈55…XL≈200–360); pre-size texture target scales to ≈2× displayLength (long blades stay crisp); demo **Driftblade** (Masamune-homage nodachi, displayLength 320, Codex art+card, sliced to 640px) — renders genuinely long. **Sprites now keep painted aspect ratio** (fixed the rig-scale-clobber that elongated toughs; uniform-scale rule locked §28.4). **Orbiting weapons deprecated** (§9). CDP-verified.
