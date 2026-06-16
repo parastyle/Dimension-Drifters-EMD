@@ -41,6 +41,14 @@ import { WEAPON_VFX } from "../vfx/weapon-vfx.generated.js";
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
 
+/** Blend two 0xRRGGBB colours by `t` (0 = c1, 1 = c2). Used for the muzzle-flash hot inner streak. */
+function blendHex(c1: number, c2: number, t: number): number {
+  const r = Math.round(((c1 >> 16) & 0xff) * (1 - t) + ((c2 >> 16) & 0xff) * t);
+  const g = Math.round(((c1 >> 8) & 0xff) * (1 - t) + ((c2 >> 8) & 0xff) * t);
+  const b = Math.round((c1 & 0xff) * (1 - t) + (c2 & 0xff) * t);
+  return (r << 16) | (g << 8) | b;
+}
+
 /** Jagged polyline between two WORLD points — the world-space twin of vfx-render's local arc-bolt jag.
  *  Walks along the segment, offsetting each interior node perpendicular by ±(segLen × jag). */
 function boltPoints(
@@ -167,6 +175,23 @@ export class ArenaScene extends Phaser.Scene {
     driftblade: 0x6f8bff,
     "x-sword-neon-katana": 0x5dcaa5,
     "x-sword-bone": 0xff7a3c,
+    "x-gun-revolver-cannon": 0xffb24a,
+    "x-gun-coffin-shotgun": 0xff8a3c,
+    "x-gun-gatling": 0xfff0a0,
+    "x-gun-nailgun": 0xd6dde6,
+    "x-gun-ricochet-pistol": 0x5dd6ff,
+  };
+  /** §9 per-bullet-kind visual config — colour + muzzle-flash size + trail style. Each gun's `bulletKind`
+   *  (server-synced on `ProjectileState.kind`) keys this, so each gun looks distinct without extra sync. */
+  private static readonly GUN_FX: Record<
+    string,
+    { color: number; size: number; style: string; trail: number; trailW: number }
+  > = {
+    slug: { color: 0xffb24a, size: 23, style: "heavy", trail: 26, trailW: 9 }, // revolver: fat hot slug
+    pellet: { color: 0xff6a2a, size: 19, style: "boom", trail: 16, trailW: 6 }, // shotgun: red-hot buckshot
+    tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
+    nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
+    ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
   };
   private readonly debugEl = document.getElementById("debug");
 
@@ -700,25 +725,59 @@ export class ArenaScene extends Phaser.Scene {
   private syncProjectiles(): void {
     if (!this.room) return;
     const state = this.room.state.projectiles;
+    const flashedShooters = new Set<string>(); // one muzzle flash per shooter per frame (= per shot)
     state.forEach((pr, id) => {
       if (this.projectiles.has(id)) return;
-      const container =
-        pr.kind === "cleaver"
+      const fx = ArenaScene.GUN_FX[pr.kind];
+      const container = fx
+        ? this.makeBullet(pr)
+        : pr.kind === "cleaver"
           ? this.makeThrownCleaver(pr)
           : pr.kind === "magma"
             ? this.makeMagma(pr)
             : this.makeSpit(pr);
       container.setData("kind", pr.kind);
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
+      if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
       this.projectiles.set(id, container);
+      // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
+      if (fx && this.room) {
+        let shooter: string | null = null;
+        let best = 140;
+        this.room.state.players.forEach((p, pid) => {
+          const d = Math.hypot(p.x - pr.x, p.y - pr.y);
+          if (d < best) {
+            best = d;
+            shooter = pid;
+          }
+        });
+        if (shooter && !flashedShooters.has(shooter)) {
+          flashedShooters.add(shooter);
+          const p = this.room.state.players.get(shooter);
+          if (p) {
+            const ang = Math.atan2(pr.vy, pr.vx);
+            this.spawnMuzzleFlash(
+              p.x + Math.cos(ang) * 34,
+              p.y + Math.sin(ang) * 34,
+              ang,
+              fx.size,
+              fx.color,
+              fx.style,
+            );
+          }
+        }
+      }
     });
     for (const id of [...this.projectiles.keys()]) {
       if (!state.has(id)) {
         const c = this.projectiles.get(id);
         if (c) {
+          const k = c.getData("kind") as string;
           const er = (c.getData("explodeR") as number) ?? 0;
-          if (c.getData("kind") === "magma" && er > 0) this.spawnExplosion(c.x, c.y, er);
-          else this.spawnSplat(c.x, c.y, c.getData("kind"));
+          if (k === "magma" && er > 0) this.spawnExplosion(c.x, c.y, er);
+          else if (ArenaScene.GUN_FX[k])
+            this.spawnBulletImpact(c.x, c.y, k, (c.getData("ang") as number) ?? 0);
+          else this.spawnSplat(c.x, c.y, k);
         }
         c?.destroy();
         this.projectiles.delete(id);
@@ -807,6 +866,250 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Sine.inOut",
     });
     return c;
+  }
+
+  /** Resolve a bullet-kind's visual config, with a safe default for any unmapped kind. */
+  private gunFx(kind: string): {
+    color: number;
+    size: number;
+    style: string;
+    trail: number;
+    trailW: number;
+  } {
+    return (
+      ArenaScene.GUN_FX[kind] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 }
+    );
+  }
+
+  /** §9 GUN bullet — a distinct in-flight look per `bulletKind` (slug/pellet/tracer/nail/ricochet): a
+   *  velocity-aligned additive trail + a hot core (or a metallic dart for nails, an electric ring for
+   *  ricochets). Server-authoritative (the bullet you see is the bullet that hits, §14 WYSIWYG). */
+  private makeBullet(pr: {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    kind: string;
+  }): Phaser.GameObjects.Container {
+    const fx = this.gunFx(pr.kind);
+    const ang = Math.atan2(pr.vy, pr.vx);
+    const ADD = Phaser.BlendModes.ADD;
+    const items: Phaser.GameObjects.GameObject[] = [];
+    const trail = this.add
+      .ellipse(
+        -Math.cos(ang) * fx.trail * 0.5,
+        -Math.sin(ang) * fx.trail * 0.5,
+        fx.trail,
+        fx.trailW,
+        fx.color,
+        0.5,
+      )
+      .setRotation(ang)
+      .setBlendMode(ADD);
+    items.push(trail);
+    if (pr.kind === "nail") {
+      // metallic dart — a thin steel rectangle aligned to flight + a white tip
+      items.push(this.add.rectangle(0, 0, 18, 2.6, 0xeef2f6).setRotation(ang));
+      items.push(this.add.circle(0, 0, 1.8, 0xffffff));
+    } else if (pr.kind === "tracer") {
+      // streak of light — a velocity-aligned hot capsule (reads opposite to the stubby pellet)
+      items.push(this.add.rectangle(0, 0, 15, 3, fx.color).setRotation(ang).setBlendMode(ADD));
+      items.push(this.add.circle(0, 0, 2, 0xffffff).setBlendMode(ADD));
+    } else if (pr.kind === "pellet") {
+      // buckshot — a small DENSE lead ball: dark rim under a tight hot core (reads heavy/stubby)
+      items.push(this.add.circle(0, 0, 4, 0x140a06, 0.5));
+      items.push(this.add.circle(0, 0, 3, blendHex(fx.color, 0x806040, 0.45)));
+      items.push(this.add.circle(0, 0, 1.6, 0xffe6c4));
+    } else {
+      const big = pr.kind === "slug";
+      items.push(this.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
+      items.push(this.add.circle(0, 0, big ? 3.4 : 2.2, 0xffffff));
+      if (pr.kind === "ricochet")
+        items.push(this.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
+    }
+    return this.add.container(pr.x, pr.y, items).setDepth(99000);
+  }
+
+  /** §9 per-gun MUZZLE FLASH — the shaped 8-prong caged-fire star (the same geometry as the engine
+   *  `drawMuzzleFlash`) drawn at the barrel, sized + tinted per gun, with a hot core + white centre, then
+   *  faded out fast. Cheap (one Graphics + a tween) so it survives the gatling's fire rate. */
+  private spawnMuzzleFlash(
+    x: number,
+    y: number,
+    ang: number,
+    size: number,
+    color: number,
+    style = "heavy",
+  ): void {
+    const hot = blendHex(color, 0xffffff, 0.55);
+    const TAU = Math.PI * 2;
+    const g = this.add.graphics().setDepth(99500).setBlendMode(Phaser.BlendModes.ADD);
+    // "boom" (shotgun) splays the side prongs into a fat cone over a big soft blast disc; "punch" stays tight.
+    if (style === "boom") g.fillStyle(color, 0.26).fillCircle(0, 0, size * 1.15);
+    const side = style === "boom" ? 1.45 : 0.95;
+    const prongs: [number, number, number][] = [
+      [0, style === "punch" ? 2.9 : 2.5, 0.22],
+      [-0.46, 1.6, 0.16],
+      [0.46, 1.6, 0.16],
+      [-side, 0.95, 0.12],
+      [side, 0.95, 0.12],
+      [Math.PI, 0.6, 0.12],
+      [Math.PI - 0.7, 0.5, 0.1],
+      [Math.PI + 0.7, 0.5, 0.1],
+    ];
+    for (const [a, lm, wm] of prongs) {
+      const len = size * lm;
+      const w = size * wm;
+      const tx = Math.cos(a) * len;
+      const ty = Math.sin(a) * len;
+      const n = a + Math.PI / 2;
+      g.fillStyle(color, 0.5);
+      g.fillTriangle(Math.cos(n) * w, Math.sin(n) * w, -Math.cos(n) * w, -Math.sin(n) * w, tx, ty);
+      g.fillStyle(hot, 0.55);
+      g.fillTriangle(
+        Math.cos(n) * w * 0.45,
+        Math.sin(n) * w * 0.45,
+        -Math.cos(n) * w * 0.45,
+        -Math.sin(n) * w * 0.45,
+        Math.cos(a) * len * 0.7,
+        Math.sin(a) * len * 0.7,
+      );
+    }
+    g.fillStyle(hot, 0.9).fillCircle(0, 0, size * 0.32);
+    g.fillStyle(0xffffff, 0.95).fillCircle(0, 0, size * 0.17);
+    // "spark" (ricochet) — a few thin electric streaks crackle out from the muzzle.
+    if (style === "spark") {
+      for (let i = 0; i < 5; i++) {
+        const a = Math.random() * TAU;
+        const L = size * (0.8 + Math.random() * 0.9);
+        g.lineStyle(1.4, color, 0.85);
+        g.beginPath();
+        g.moveTo(Math.cos(a) * size * 0.3, Math.sin(a) * size * 0.3);
+        g.lineTo(Math.cos(a) * L, Math.sin(a) * L);
+        g.strokePath();
+      }
+    }
+    // "rapid" (gatling) — small per-shot rotation jitter so a held stream flickers instead of stacking.
+    const jitter = style === "rapid" ? (Math.random() - 0.5) * 0.5 : 0;
+    g.setPosition(x, y).setRotation(ang + jitter);
+    // "heavy" (revolver) — a dark recoil-smoke puff drifts up-barrel under the flash.
+    if (style === "heavy") {
+      const smoke = this.add
+        .circle(
+          x + Math.cos(ang) * size * 0.5,
+          y + Math.sin(ang) * size * 0.5,
+          size * 0.5,
+          0x2a2018,
+          0.4,
+        )
+        .setDepth(99450);
+      this.tweens.add({
+        targets: smoke,
+        scale: 2,
+        alpha: 0,
+        x: smoke.x + Math.cos(ang) * 16,
+        y: smoke.y + Math.sin(ang) * 16 - 6,
+        duration: 340,
+        onComplete: () => smoke.destroy(),
+      });
+    }
+    const grow = style === "boom" ? 1.55 : 1.3;
+    this.tweens.add({
+      targets: g,
+      alpha: 0,
+      scaleX: grow,
+      scaleY: grow,
+      duration: style === "rapid" ? 70 : style === "boom" ? 135 : 105,
+      ease: "Quad.out",
+      onComplete: () => g.destroy(),
+    });
+  }
+
+  /** §9 bullet IMPACT — a per-gun hit effect where a bullet died (hit / wall / max range): the slug
+   *  THUMPS with a dust ring, buckshot is a cheap flash, nails STICK + ping, ricochets crackle cyan,
+   *  tracers spark + scorch. `ang` = the bullet's travel angle (for oriented effects). */
+  private spawnBulletImpact(x: number, y: number, kind: string, ang = 0): void {
+    const fx = this.gunFx(kind);
+    const ADD = Phaser.BlendModes.ADD;
+    const flash = (r: number, sc: number, dur: number) => {
+      const f = this.add.circle(x, y, r, 0xfff0d0, 0.9).setBlendMode(ADD).setDepth(99400);
+      this.tweens.add({
+        targets: f,
+        scale: sc,
+        alpha: 0,
+        duration: dur,
+        onComplete: () => f.destroy(),
+      });
+    };
+    if (kind === "pellet") {
+      flash(5, 1.8, 120); // cheap — a 7-pellet volley shouldn't spawn 35 objects
+      return;
+    }
+    if (kind === "nail") {
+      flash(5, 1.6, 110);
+      const dart = this.add.rectangle(x, y, 9, 2, 0xd6dde6, 0.95).setRotation(ang).setDepth(98500);
+      this.tweens.add({ targets: dart, alpha: 0, duration: 420, onComplete: () => dart.destroy() });
+      return;
+    }
+    if (kind === "ricochet") {
+      flash(6, 2, 130);
+      for (let i = 0; i < 4; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = this.add
+          .rectangle(x, y, 12, 1.6, 0x5dd6ff, 0.95)
+          .setRotation(a)
+          .setBlendMode(ADD)
+          .setDepth(99400);
+        this.tweens.add({
+          targets: s,
+          x: x + Math.cos(a) * 18,
+          y: y + Math.sin(a) * 18,
+          alpha: 0,
+          duration: 150,
+          onComplete: () => s.destroy(),
+        });
+      }
+      return;
+    }
+    // slug (heavy thump + dust ring) and default (tracer): flash + radial sparks + lingering scorch.
+    const heavy = kind === "slug";
+    flash(heavy ? 9 : 7, heavy ? 2.8 : 2.1, 160);
+    if (heavy) {
+      const dust = this.add
+        .circle(x, y, 5, 0x6b5a44, 0)
+        .setStrokeStyle(2, 0x6b5a44, 0.5)
+        .setDepth(98200);
+      this.tweens.add({
+        targets: dust,
+        scale: 3,
+        alpha: 0,
+        duration: 280,
+        onComplete: () => dust.destroy(),
+      });
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = this.add
+        .rectangle(x, y, 11, 2, fx.color, 0.9)
+        .setRotation(a)
+        .setBlendMode(ADD)
+        .setDepth(99400);
+      this.tweens.add({
+        targets: s,
+        x: x + Math.cos(a) * 16,
+        y: y + Math.sin(a) * 16,
+        alpha: 0,
+        duration: 170,
+        onComplete: () => s.destroy(),
+      });
+    }
+    const scorch = this.add.circle(x, y, 4, 0x161009, 0.5).setDepth(98000);
+    this.tweens.add({
+      targets: scorch,
+      alpha: 0,
+      duration: 1100,
+      onComplete: () => scorch.destroy(),
+    });
   }
 
   /** Fiery AoE explosion where a magma ball died — a flash + a shockwave ring expanding to EXACTLY the
@@ -1244,11 +1547,11 @@ export class ArenaScene extends Phaser.Scene {
     if (!self?.alive || self.flexPending > 0) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
-    // Thrown weapons need a charge — don't animate/fire when empty (server gates it too, §10).
-    if (weapon?.thrown && self.charges <= 0) return;
-    this.localAtkCd = weapon?.cooldown ?? 0.3;
+    // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
+    if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
+    this.localAtkCd = weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3;
     const rig = this.blobs.get(selfId);
-    rig?.triggerSwing(this.time.now);
+    if (!weapon?.gun) rig?.triggerSwing(this.time.now); // guns don't melee-swing — the shot is the muzzle flash
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
@@ -1265,6 +1568,11 @@ export class ArenaScene extends Phaser.Scene {
       );
       this.spawnQuake(ep.x, ep.y, weapon.quake);
       this.hitStop(130);
+    } else if (weapon?.gun) {
+      // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
+      // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
+      // The muzzle flash + bullet render off the server-spawned projectile (syncProjectiles).
+      this.cameras.main.shake(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
     } else if (weapon && !weapon.thrown) {
       // Plain melee swing → the weapon's authored swing VFX (§14).
       this.spawnSlash(rig?.x ?? self.x, rig?.y ?? self.y, this.selfAim, weapon);
@@ -1584,19 +1892,29 @@ export class ArenaScene extends Phaser.Scene {
       );
 
     this.restartBtn.setPosition(this.screenW() - 14, 14);
-    // Weapon name + (for thrown weapons) a charge readout — filled/empty pips, or "reloading…".
+    // Weapon name + an ammo readout: filled/empty pips for small mags (thrown/revolver), a numeric
+    // "loaded/mag" for big-magazine guns (gatling/nailgun), or "reloading…" while empty.
     let charges = "";
     if (self && self.maxCharges > 0) {
-      charges =
-        self.charges > 0
-          ? `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`
-          : "   ⟳ reloading…";
+      if (self.charges <= 0) charges = "   ⟳ reloading…";
+      else if (self.maxCharges > 10) charges = `   ▮ ${self.charges}/${self.maxCharges}`;
+      else
+        charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
     }
     this.weaponText
       .setPosition(barX, xpY - 24)
       .setText(
         self ? `⚔ ${WEAPONS[self.weapon]?.name ?? self.weapon}${charges}   ·   Q to cycle` : "",
       );
+    // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else green.
+    if (self && self.maxCharges > 0) {
+      const lowAt = Math.max(1, Math.ceil(self.maxCharges * 0.25));
+      this.weaponText.setColor(
+        self.charges <= 0 ? "#ff5d5d" : self.charges <= lowAt ? "#ff8a2b" : "#9cff3b",
+      );
+    } else {
+      this.weaponText.setColor("#9cff3b");
+    }
 
     const training = this.room?.state.mode === "training";
     this.modeText
@@ -1702,6 +2020,15 @@ export class ArenaScene extends Phaser.Scene {
         x + s * 0.7,
         y + s * 0.05,
       );
+    } else if (kind === "shot") {
+      // a bullet: a pointed slug with a motion streak (gun damage source)
+      g.fillCircle(x + s * 0.55, y, s * 0.5);
+      g.fillTriangle(x + s * 1.05, y, x + s * 0.55, y - s * 0.5, x + s * 0.55, y + s * 0.5);
+      g.lineStyle(1.6, color, 0.7);
+      g.beginPath();
+      g.moveTo(x - s, y);
+      g.lineTo(x + s * 0.05, y);
+      g.strokePath();
     } else if (kind === "quake") {
       for (let i = 1; i <= 3; i++) {
         g.lineStyle(1.5, color, 1 - i * 0.16);

@@ -139,6 +139,51 @@ export interface WeaponDef {
       scalingGrades?: Partial<Record<Attr, Grade>>;
     };
   };
+  /**
+   * §9/§10/§15 GUN delivery — RMB fires bullets down-barrel on a fire-rate cadence, spending AMMO from a
+   * magazine that RELOADS when empty (the charges/maxCharges readout doubles as the ammo counter). Each
+   * gun has its own bullet feel + muzzle flash (`bulletKind`/`muzzle`). Server-authoritative projectiles
+   * (WYSIWYG): the bullet you see is the bullet that hits. Per §14 size/spread/blast are FIXED; only
+   * damage scales (its own `scalingGrades`).
+   */
+  gun?: {
+    /** Damage per bullet (per pellet for spread guns), before scaling. */
+    damage: number;
+    /** Bullet speed, px/sec. */
+    projectileSpeed: number;
+    /** Travel distance before a bullet expires, px. */
+    range: number;
+    /** Seconds between shots (the fire-rate cooldown). */
+    fireRate: number;
+    /** Bullets per trigger pull — >1 = a shotgun SPREAD volley (one ammo spends all pellets). Default 1. */
+    pellets?: number;
+    /** Cone half-angle (radians): pellet spread for shotguns, or muzzle inaccuracy for autos. Default 0. */
+    spread?: number;
+    /** Enemies a single bullet cuts through before dying (default 1). */
+    pierce?: number;
+    /** Wall RICOCHETS before the bullet expires (reflects off arena edges). Default 0. */
+    bounces?: number;
+    /** Magazine size — shots (trigger pulls) before a reload. Mirrors `maxCharges`. */
+    magazine: number;
+    /** Reload time, sec, when the magazine empties. */
+    reloadSeconds: number;
+    /** Client bullet visual: "slug" | "pellet" | "tracer" | "nail" | "ricochet". */
+    bulletKind: string;
+    /** Client muzzle-flash style: "heavy" | "boom" | "rapid" | "punch" | "spark". */
+    muzzle: string;
+    /** Muzzle/bullet tint (hex). Omitted → a default hot orange. */
+    muzzleColor?: number;
+    /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
+    recoil?: number;
+    /** Per-source scaling (§14 WYSIWYG) — the bullet's grades; omitted = the weapon's edge grades. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
+    /** AoE on bullet death (explosive rounds). Omitted → bullets don't blast. */
+    explode?: {
+      radius: number;
+      damage: number;
+      scalingGrades?: Partial<Record<Attr, Grade>>;
+    };
+  };
   /** §10 structured tag taxonomy (metadata, kept from creation; drives art/VFX reuse + filters). */
   tags: {
     grip: "1H" | "2H" | "dual" | "mounted";
@@ -280,7 +325,22 @@ export interface DamageSource {
  */
 export function weaponDamageSources(def: WeaponDef): DamageSource[] {
   const out: DamageSource[] = [];
-  if (def.thrown) {
+  if (def.gun) {
+    out.push({
+      label: "shot",
+      base: def.gun.damage,
+      grades: def.gun.scalingGrades ?? def.scalingGrades,
+      count: def.gun.pellets ?? 1,
+    });
+    if (def.gun.explode) {
+      out.push({
+        label: "blast",
+        base: def.gun.explode.damage,
+        grades: def.gun.explode.scalingGrades ?? def.gun.scalingGrades ?? def.scalingGrades,
+        count: def.gun.pellets ?? 1,
+      });
+    }
+  } else if (def.thrown) {
     out.push({
       label: "throw",
       base: def.thrown.damage,
@@ -697,6 +757,213 @@ export const WEAPONS: Record<string, WeaponDef> = {
       family: "sword",
       rangeBand: "close",
       scaling: ["STR", "DEX", "INT"],
+    },
+  },
+
+  // ── GUNS (§9/§15 ranged) — RMB fires bullets on a fire-rate cadence, spending ammo from a magazine
+  // that reloads when empty. Each has its own bullet feel + muzzle flash. ─────────────────────────────
+  "x-gun-revolver-cannon": {
+    id: "x-gun-revolver-cannon",
+    name: "Revolver Cannon",
+    scalingGrades: { dex: "C", str: "C" },
+    requirements: { dex: 5 },
+    durability: 70,
+    damage: 5, // pistol-whip fallback (point-blank); the gun block does the work
+    range: 72,
+    halfArc: 0.5,
+    cooldown: 0.5,
+    displayLength: 94,
+    swingArc: 1.1,
+    gripFrac: 0.16,
+    vfxRadius: 64,
+    gun: {
+      damage: 18, // a heavy slug — the decisive single-target hitter (its whole identity vs the autos)
+      projectileSpeed: 900,
+      range: 640,
+      fireRate: 0.5, // slow, deliberate
+      pierce: 1,
+      magazine: 6, // six-shooter
+      reloadSeconds: 1.4,
+      bulletKind: "slug",
+      muzzle: "heavy",
+      muzzleColor: 0xffb24a,
+      recoil: 0.004, // a meaty THUMP
+      scalingGrades: { dex: "C", str: "C" },
+    },
+    tags: {
+      grip: "1H",
+      size: "M",
+      delivery: "projectile",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "ranged",
+      family: "pistol",
+      rangeBand: "long",
+      scaling: ["DEX", "STR"],
+    },
+  },
+  "x-gun-coffin-shotgun": {
+    id: "x-gun-coffin-shotgun",
+    name: "Coffin Shotgun",
+    scalingGrades: { str: "C", dex: "C" },
+    requirements: { str: 6 },
+    durability: 60,
+    damage: 6,
+    range: 80,
+    halfArc: 0.6,
+    cooldown: 0.7,
+    displayLength: 120,
+    swingArc: 1.2,
+    gripFrac: 0.14,
+    vfxRadius: 72,
+    gun: {
+      damage: 5, // per pellet — devastating up close, falls off with the spread
+      projectileSpeed: 720,
+      range: 360, // short-ranged
+      fireRate: 0.7,
+      pellets: 7, // a cone of buckshot
+      spread: 0.34, // ~±19°
+      pierce: 1,
+      magazine: 2, // double-barrel
+      reloadSeconds: 1.6,
+      bulletKind: "pellet",
+      muzzle: "boom",
+      muzzleColor: 0xff6a2a,
+      recoil: 0.0035, // BOOM
+      scalingGrades: { str: "C", dex: "C" },
+    },
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "spread",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "ranged",
+      family: "shotgun",
+      rangeBand: "close",
+      scaling: ["STR", "DEX"],
+    },
+  },
+  "x-gun-gatling": {
+    id: "x-gun-gatling",
+    name: "Gatling",
+    scalingGrades: { dex: "B" },
+    requirements: { dex: 10, str: 6 },
+    durability: 90,
+    damage: 4,
+    range: 76,
+    halfArc: 0.5,
+    cooldown: 0.4,
+    displayLength: 140,
+    swingArc: 1.0,
+    gripFrac: 0.12,
+    vfxRadius: 58,
+    gun: {
+      damage: 3, // tiny per-shot, but a torrent
+      projectileSpeed: 780,
+      range: 560,
+      fireRate: 0.08, // rapid auto
+      spread: 0.11, // sprays a bit — walk it onto the target
+      pierce: 1,
+      magazine: 50,
+      reloadSeconds: 2.4, // long reload is the cost of the torrent
+      bulletKind: "tracer",
+      muzzle: "rapid",
+      muzzleColor: 0xfff0a0,
+      recoil: 0.0006, // a faint buzz — held steady so you can walk the stream onto targets
+      scalingGrades: { dex: "B" },
+    },
+    tags: {
+      grip: "2H",
+      size: "XL",
+      delivery: "projectile",
+      fireMode: "auto",
+      element: "physical",
+      classPool: "ranged",
+      family: "gun",
+      rangeBand: "mid",
+      scaling: ["DEX"],
+    },
+  },
+  "x-gun-nailgun": {
+    id: "x-gun-nailgun",
+    name: "Nailgun",
+    scalingGrades: { dex: "C", str: "C" },
+    requirements: { str: 4, dex: 4 },
+    durability: 80,
+    damage: 4,
+    range: 74,
+    halfArc: 0.5,
+    cooldown: 0.3,
+    displayLength: 104,
+    swingArc: 1.1,
+    gripFrac: 0.14,
+    vfxRadius: 50,
+    gun: {
+      damage: 5,
+      projectileSpeed: 1000,
+      range: 600,
+      fireRate: 0.16, // brisk
+      pierce: 3, // nails skewer a line of enemies
+      magazine: 16,
+      reloadSeconds: 1.3,
+      bulletKind: "nail",
+      muzzle: "punch",
+      muzzleColor: 0xd6dde6,
+      recoil: 0.0012,
+      scalingGrades: { dex: "C", str: "C" },
+    },
+    tags: {
+      grip: "1H",
+      size: "M",
+      delivery: "projectile",
+      fireMode: "auto",
+      element: "physical",
+      classPool: "ranged",
+      family: "nailgun",
+      rangeBand: "mid",
+      scaling: ["DEX", "STR"],
+    },
+  },
+  "x-gun-ricochet-pistol": {
+    id: "x-gun-ricochet-pistol",
+    name: "Ricochet Pistol",
+    scalingGrades: { dex: "C", luk: "C" },
+    requirements: { dex: 7 },
+    durability: 75,
+    damage: 4,
+    range: 70,
+    halfArc: 0.5,
+    cooldown: 0.34,
+    displayLength: 88,
+    swingArc: 1.1,
+    gripFrac: 0.16,
+    vfxRadius: 56,
+    gun: {
+      damage: 8,
+      projectileSpeed: 840,
+      range: 1000, // long-lived so it can bounce and keep hunting
+      fireRate: 0.34,
+      pierce: 2, // tags a couple targets as it caroms
+      bounces: 3, // caroms off the arena walls
+      magazine: 8,
+      reloadSeconds: 1.2,
+      bulletKind: "ricochet",
+      muzzle: "spark",
+      muzzleColor: 0x5dd6ff,
+      recoil: 0.002,
+      scalingGrades: { dex: "C", luk: "C" },
+    },
+    tags: {
+      grip: "1H",
+      size: "S",
+      delivery: "projectile",
+      fireMode: "tap-charge",
+      element: "shock",
+      classPool: "ranged",
+      family: "pistol",
+      rangeBand: "long",
+      scaling: ["DEX", "LUK"],
     },
   },
 };

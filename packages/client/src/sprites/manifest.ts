@@ -392,6 +392,136 @@ export const SPRITES = {
       },
     ],
   },
+  "x-gun-coffin-shotgun": {
+    id: "x-gun-coffin-shotgun",
+    kind: "weapon",
+    canvas: {
+      w: 277,
+      h: 277,
+    },
+    body: {
+      cx: 149.06,
+      cy: 135.39,
+      w: 256,
+      h: 103,
+    },
+    parts: [
+      {
+        role: "part-1",
+        file: "part-1.png",
+        w: 256,
+        h: 103,
+        cx: 149.06,
+        cy: 135.39,
+        ox: 0,
+        oy: 0,
+      },
+    ],
+  },
+  "x-gun-gatling": {
+    id: "x-gun-gatling",
+    kind: "weapon",
+    canvas: {
+      w: 319,
+      h: 319,
+    },
+    body: {
+      cx: 164.08,
+      cy: 149.81,
+      w: 280,
+      h: 186,
+    },
+    parts: [
+      {
+        role: "part-1",
+        file: "part-1.png",
+        w: 280,
+        h: 186,
+        cx: 164.08,
+        cy: 149.81,
+        ox: 0,
+        oy: 0,
+      },
+    ],
+  },
+  "x-gun-nailgun": {
+    id: "x-gun-nailgun",
+    kind: "weapon",
+    canvas: {
+      w: 272,
+      h: 272,
+    },
+    body: {
+      cx: 127.02,
+      cy: 127.67,
+      w: 256,
+      h: 137,
+    },
+    parts: [
+      {
+        role: "part-1",
+        file: "part-1.png",
+        w: 256,
+        h: 137,
+        cx: 127.02,
+        cy: 127.67,
+        ox: 0,
+        oy: 0,
+      },
+    ],
+  },
+  "x-gun-revolver-cannon": {
+    id: "x-gun-revolver-cannon",
+    kind: "weapon",
+    canvas: {
+      w: 283,
+      h: 283,
+    },
+    body: {
+      cx: 132.86,
+      cy: 124.95,
+      w: 256,
+      h: 136,
+    },
+    parts: [
+      {
+        role: "part-1",
+        file: "part-1.png",
+        w: 256,
+        h: 136,
+        cx: 132.86,
+        cy: 124.95,
+        ox: 0,
+        oy: 0,
+      },
+    ],
+  },
+  "x-gun-ricochet-pistol": {
+    id: "x-gun-ricochet-pistol",
+    kind: "weapon",
+    canvas: {
+      w: 279,
+      h: 279,
+    },
+    body: {
+      cx: 126.44,
+      cy: 119.76,
+      w: 256,
+      h: 154,
+    },
+    parts: [
+      {
+        role: "part-1",
+        file: "part-1.png",
+        w: 256,
+        h: 154,
+        cx: 126.44,
+        cy: 119.76,
+        ox: 0,
+        oy: 0,
+      },
+    ],
+  },
   "x-sword-anchor": {
     id: "x-sword-anchor",
     kind: "weapon",

@@ -127,6 +127,11 @@ export class GameRoom extends Room<ArenaState> {
       pierce: number;
       hit: Set<string>;
       explode?: { radius: number; damage: number };
+      /** §9 ricochet rounds: wall bounces left before the bullet expires. */
+      bounces?: number;
+      /** §9 ricochet: original pierce + per-leg lifetime, re-armed each carom so it keeps hunting. */
+      pierceMax?: number;
+      legTtl?: number;
     }
   >();
   /** Per-zoner puddle-drop cooldown (sec), keyed by enemy id; pruned with the enemy. */
@@ -581,22 +586,39 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
       if (!c) return;
-      c.cd = Math.max(0, c.cd - dt);
+      // Allow ONE tick of negative so an accumulating cooldown (guns, below) carries its sub-tick
+      // remainder across the 20Hz grid — otherwise a 0.08s fire-rate quantises to 0.10s (a silent ~20%
+      // DPS loss on fast autos). Resetting weapons (melee/thrown) clamp to 0 effectively (they set `= cd`).
+      c.cd = Math.max(-dt, c.cd - dt);
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
-      // (Re)initialise the charge readout when the equipped weapon changes (§9/§10).
+      // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
+      // magazine as ammo; thrown weapons use charges; both share charges/maxCharges + the reload timer.
       if (c.lastWeapon !== player.weapon) {
         c.lastWeapon = player.weapon;
+        c.cd = 0; // clear the previous weapon's leftover cooldown so the new one can act immediately
         c.reloadCd = 0;
-        const max = weapon?.thrown?.charges ?? 0;
+        const max = weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
         player.charges = max;
         player.maxCharges = max;
       }
 
       const canAct = player.alive && player.flexPending <= 0 && c.attacking && c.cd <= 0;
-      if (weapon?.thrown) {
+      if (weapon?.gun) {
+        // §9 GUN: fire-rate-gated bullets that spend ammo; on empty, RELOAD (refill the magazine).
+        if (player.charges <= 0 && c.reloadCd > 0) {
+          c.reloadCd -= dt;
+          if (c.reloadCd <= 0) player.charges = player.maxCharges;
+        }
+        if (canAct && player.charges > 0) {
+          this.fireGun(player, c, weapon);
+          player.charges -= 1;
+          c.cd += weapon.gun.fireRate; // ACCUMULATE (not assign) so the sub-tick remainder carries (exact cadence)
+          if (player.charges <= 0) c.reloadCd = weapon.gun.reloadSeconds;
+        }
+      } else if (weapon?.thrown) {
         // Refill all charges once a depleted weapon's cooldown elapses (§10 three-layer model).
         if (player.charges <= 0 && c.reloadCd > 0) {
           c.reloadCd -= dt;
@@ -890,6 +912,7 @@ export class GameRoom extends Room<ArenaState> {
     pierce = 1,
     ttl = PROJECTILE_TTL,
     explode?: { radius: number; damage: number },
+    bounces = 0,
   ): void {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -904,7 +927,57 @@ export class GameRoom extends Room<ArenaState> {
     pr.vy = (dy / len) * speed;
     pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
     this.state.projectiles.set(pr.id, pr);
-    this.projectileMeta.set(pr.id, { ttl, damage, hostile, pierce, hit: new Set(), explode });
+    this.projectileMeta.set(pr.id, {
+      ttl,
+      damage,
+      hostile,
+      pierce,
+      hit: new Set(),
+      explode,
+      bounces,
+      pierceMax: pierce,
+      legTtl: ttl,
+    });
+  }
+
+  /** §9/§15 fire a GUN — spend one ammo to launch `pellets` friendly bullets down-barrel (a cone for
+   *  shotguns / a touch of inaccuracy for autos), each WYSIWYG-scaled, piercing/bouncing/exploding per
+   *  the gun's block. Ammo + reload are handled by the caller (mirrors the thrown charge model). */
+  private fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+    const g = weapon.gun;
+    if (!g) return;
+    const dmg = g.damage * effectiveDamageMult(weapon, g.scalingGrades, player);
+    const explode = g.explode
+      ? {
+          radius: g.explode.radius,
+          damage:
+            g.explode.damage *
+            effectiveDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player),
+        }
+      : undefined;
+    const pellets = Math.max(1, g.pellets ?? 1);
+    const spread = g.spread ?? 0;
+    const baseAng = Math.atan2(c.aimY, c.aimX);
+    const ttl = g.range / g.projectileSpeed;
+    for (let i = 0; i < pellets; i++) {
+      // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
+      const ang =
+        pellets > 1
+          ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
+          : baseAng + (Math.random() - 0.5) * 2 * spread;
+      this.fireProjectile(
+        { x: player.x, y: player.y },
+        { x: player.x + Math.cos(ang), y: player.y + Math.sin(ang) },
+        g.projectileSpeed,
+        dmg,
+        false,
+        g.bulletKind,
+        g.pierce ?? 1,
+        ttl,
+        explode,
+        g.bounces ?? 0,
+      );
+    }
   }
 
   /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */
@@ -1086,16 +1159,28 @@ export class GameRoom extends Room<ArenaState> {
       pr.y += pr.vy * dt;
       const meta = this.projectileMeta.get(id);
       if (meta) meta.ttl -= dt;
-      if (
-        !meta ||
-        meta.ttl <= 0 ||
-        pr.x < 0 ||
-        pr.x > ARENA_WIDTH ||
-        pr.y < 0 ||
-        pr.y > ARENA_HEIGHT
-      ) {
+      if (!meta || meta.ttl <= 0) {
         doomed.push(id);
         return;
+      }
+      const oob = pr.x < 0 || pr.x > ARENA_WIDTH || pr.y < 0 || pr.y > ARENA_HEIGHT;
+      if (oob) {
+        // §9 ricochet rounds CAROM off the arena walls; everything else expires at the edge. On each
+        // carom the round RE-ARMS — fresh pierce, cleared hit-set (can re-tag enemies), refreshed life —
+        // so it actually "keeps hunting" down the new leg.
+        if ((meta.bounces ?? 0) > 0) {
+          meta.bounces = (meta.bounces ?? 0) - 1;
+          if (pr.x < 0 || pr.x > ARENA_WIDTH) pr.vx = -pr.vx;
+          if (pr.y < 0 || pr.y > ARENA_HEIGHT) pr.vy = -pr.vy;
+          pr.x = clamp(pr.x, 0, ARENA_WIDTH);
+          pr.y = clamp(pr.y, 0, ARENA_HEIGHT);
+          meta.hit.clear();
+          meta.pierce = meta.pierceMax ?? meta.pierce;
+          meta.ttl += meta.legTtl ?? 0;
+        } else {
+          doomed.push(id);
+          return;
+        }
       }
       if (meta.hostile) {
         let hit = false;
@@ -1138,7 +1223,8 @@ export class GameRoom extends Room<ArenaState> {
         });
         for (const eid of kills) this.state.enemies.delete(eid);
         if (xpGained > 0) this.grantXp(xpGained);
-        if (meta.pierce <= 0) doomed.push(id);
+        // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
+        if (meta.pierce <= 0 && (meta.bounces ?? 0) <= 0) doomed.push(id);
       }
     });
     for (const id of doomed) {

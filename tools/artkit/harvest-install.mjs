@@ -155,7 +155,13 @@ if (existsSync(manifestTs)) {
   const m = readFileSync(manifestTs, "utf8").match(/export const SPRITES\s*=\s*(\{[\s\S]*\})\s*as const satisfies/);
   if (m) {
     try {
-      existing = JSON.parse(m[1]);
+      // The generated manifest is a TS object literal (unquoted keys, trailing commas) — NOT valid JSON.
+      // Normalise to JSON before parsing so an incremental install MERGES with (doesn't clobber) the
+      // previously-installed subjects. (Bug fix: a bare JSON.parse here silently dropped every prior sprite.)
+      const json = m[1]
+        .replace(/([{,]\s*)([A-Za-z_][\w-]*)\s*:/g, '$1"$2":') // quote unquoted keys
+        .replace(/,(\s*[}\]])/g, "$1"); // strip trailing commas
+      existing = JSON.parse(json);
     } catch {
       existing = {};
     }

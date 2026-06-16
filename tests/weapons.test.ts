@@ -214,6 +214,55 @@ describe("requirement enforcement (§11 damage penalty)", () => {
   });
 });
 
+describe("guns (§9/§15 ranged)", () => {
+  const GUN_IDS = [
+    "x-gun-revolver-cannon",
+    "x-gun-coffin-shotgun",
+    "x-gun-gatling",
+    "x-gun-nailgun",
+    "x-gun-ricochet-pistol",
+  ];
+
+  it("every gun has a complete gun block + a bullet/muzzle style", () => {
+    for (const id of GUN_IDS) {
+      const g = WEAPONS[id]?.gun;
+      expect(g, id).toBeTruthy();
+      expect(g?.damage).toBeGreaterThan(0);
+      expect(g?.projectileSpeed).toBeGreaterThan(0);
+      expect(g?.range).toBeGreaterThan(0);
+      expect(g?.fireRate).toBeGreaterThan(0);
+      expect(g?.magazine).toBeGreaterThan(0);
+      expect(g?.reloadSeconds).toBeGreaterThan(0);
+      expect(typeof g?.bulletKind).toBe("string");
+      expect(typeof g?.muzzle).toBe("string");
+    }
+  });
+
+  it("the §9 card shows a 'shot' source whose pellet count matches the gun", () => {
+    for (const id of GUN_IDS) {
+      const def = WEAPONS[id];
+      const src = weaponDamageSources(def as never);
+      expect(src[0]?.label).toBe("shot");
+      expect(src[0]?.base).toBe(def?.gun?.damage);
+      expect(src[0]?.count).toBe(def?.gun?.pellets ?? 1);
+    }
+  });
+
+  it("each gun is mechanically distinct (spread shotgun, fast gatling, piercing nailgun, bouncing pistol)", () => {
+    expect(WEAPONS["x-gun-coffin-shotgun"]?.gun?.pellets ?? 1).toBeGreaterThan(1); // a volley
+    expect(WEAPONS["x-gun-gatling"]?.gun?.fireRate).toBeLessThan(
+      WEAPONS["x-gun-revolver-cannon"]?.gun?.fireRate as number,
+    ); // gatling out-cycles the revolver
+    expect(WEAPONS["x-gun-nailgun"]?.gun?.pierce ?? 1).toBeGreaterThan(1); // skewers a line
+    expect(WEAPONS["x-gun-ricochet-pistol"]?.gun?.bounces ?? 0).toBeGreaterThan(0); // caroms
+  });
+
+  it("guns are reachable — requirements are met at a maxed stat spread", () => {
+    const maxed = at({ str: 30, dex: 30, int: 30, con: 30, luk: 30 });
+    for (const id of GUN_IDS) expect(requirementPenalty(WEAPONS[id] as never, maxed)).toBe(1);
+  });
+});
+
 describe("GRADE_DMG_COEFF ordering", () => {
   it("is strictly decreasing S>A>B>C>D>E", () => {
     const order: Array<keyof typeof GRADE_DMG_COEFF> = ["S", "A", "B", "C", "D", "E"];
