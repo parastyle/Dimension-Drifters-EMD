@@ -32,13 +32,10 @@ export const M0_CLASS_ATTR: Attr = "str";
 export const M0_REQ_ATTR: Attr = "con";
 
 /** Per-point attribute scaling (tuning). All relative to the 1/1/1/1/1 start (§12). */
-export const STR_DMG_PER = 0.06; // legacy flat STR (superseded by per-weapon §10 grades)
 export const CON_HP_PER = 8; // +8 max HP per CON over 1
 export const CON_REGEN_PER = 0.7; // +0.7 HP/sec regen per CON over 1
 
 export interface DerivedStats {
-  /** Legacy melee damage multiplier (STR). Superseded by per-weapon `weaponDamageMult` (§10 grades). */
-  power: number;
   /** Max HP (CON). */
   maxHp: number;
   /** HP/sec regen (CON). */
@@ -47,13 +44,12 @@ export interface DerivedStats {
 
 /**
  * Derive the live SURVIVABILITY stats from a player's attributes. PURE.
- * DAMAGE moved to per-weapon §10 grades (`weaponDamageMult`); DEX is now DAMAGE-ONLY for finesse
- * weapons (realigned 2026-06-15) — attack-SPEED is flat weapon cooldown (a speed stat source is OPEN).
- * `power` kept for back-compat but no longer drives weapon damage.
+ * DAMAGE is per-weapon §10 grades (`weaponDamageMult` in weapons.ts) — STR/DEX scale damage THERE,
+ * not here. Attack-SPEED is flat weapon cooldown (a speed-stat source is OPEN). This derives only the
+ * CON survivability stats.
  */
-export function deriveStats(a: { str: number; con: number }): DerivedStats {
+export function deriveStats(a: { con: number }): DerivedStats {
   return {
-    power: 1 + STR_DMG_PER * (a.str - 1),
     maxHp: PLAYER_MAX_HP + CON_HP_PER * (a.con - 1),
     regen: PLAYER_REGEN + CON_REGEN_PER * (a.con - 1),
   };

@@ -117,6 +117,10 @@ export const BOSS_SPAWN_SECONDS = 120;
 /** Greatsword slam (§9 "everything aims at the cursor"): the quake erupts at the CURSOR, but no
  *  farther than this from the character — you slam where you aim, within reach. (tuning) */
 export const QUAKE_REACH = 260;
+/** Chain lightning (§10 on-hit proc): a single hop cannot exceed this even if a weapon over-tunes its
+ *  own `chainLightning.range`. Server + client both clamp to it so the predicted bolt path matches the
+ *  authoritative chain. (Global safety cap, analogous to QUAKE_REACH.) */
+export const CHAIN_MAX_RANGE = 320;
 /** Step within this radius of the open extraction portal to complete the run. (tuning) */
 export const EXTRACT_RADIUS = 90;
 

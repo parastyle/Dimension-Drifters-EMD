@@ -51,6 +51,8 @@ export class EnemyState extends Schema {
   @type("number") hp = 0;
   /** Tough tier (§15): bigger/glowier/buffed kin. Client renders the glow + scale-up. */
   @type("boolean") tough = false;
+  /** §15 duelist combo: increments on each melee swing so the client triggers a swing animation. */
+  @type("number") atkSeq = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */
@@ -82,10 +84,14 @@ export class ProjectileState extends Schema {
   /** Velocity, px/sec (synced so the client can extrapolate between snapshots). */
   @type("number") vx = 0;
   @type("number") vy = 0;
-  /** Visual kind — keys the client's projectile renderer ("spit" enemy, "cleaver" thrown weapon). */
+  /** Visual kind — keys the client's projectile renderer ("spit" enemy, "cleaver" thrown weapon,
+   *  "magma" exploding scatter shot). */
   @type("string") kind = "spit";
   /** true = enemy attack (hits players); false = player throw (hits enemies). */
   @type("boolean") hostile = true;
+  /** §14 WYSIWYG: if > 0, this projectile detonates an AoE of this px radius on death — the client
+   *  renders an explosion of EXACTLY this size so the visual matches the server hitbox. 0 = no blast. */
+  @type("number") explodeR = 0;
 }
 
 export class ArenaState extends Schema {

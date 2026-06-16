@@ -20,6 +20,13 @@ export interface WeaponDef {
   cooldown: number;
   /** On-screen length of the weapon sprite, px (drives scale). */
   displayLength: number;
+  /**
+   * FIXED in-world VFX size — the swing effect's radius (px). Static per weapon, authored in the
+   * Weaponsmith; it is the one scalar (`S.R`) the renderer scales every layer from. §14 ruling: attack/
+   * VFX size NEVER scales with level, attribute, or augment — only DAMAGE does (§10 `weaponDamageMult`).
+   * Omitted → {@link VFX_RADIUS_DEFAULT}. (Quake/AoE *hero* sizing is separate — see `quake.vfx.radius`.)
+   */
+  vfxRadius?: number;
   /** Visual sweep of the swing animation (radians). */
   swingArc: number;
   /** Where the grip sits along the sprite length (0 = left tip) — the in-hand pivot. */
@@ -46,6 +53,8 @@ export interface WeaponDef {
     refillSeconds: number;
     /** Enemies a single throw can cut through before vanishing. */
     pierce: number;
+    /** Per-source scaling (§14 WYSIWYG) — this projectile's own grades; omitted = the weapon's edge grades. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
   };
   /**
    * Earthquake on swing: AoE damage to every enemy within `radius` px of the player. `vfx` is the
@@ -55,14 +64,78 @@ export interface WeaponDef {
   quake?: {
     radius: number;
     damage: number;
+    /** Per-source scaling (§14 WYSIWYG) — the quake's own grades; omitted = the weapon's edge grades. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
     vfx?: {
       image: string;
-      /** Visual scale of the hero sprite relative to the AoE diameter. */
+      /** §14 WYSIWYG: the painted hero's on-screen size relative to the damage hitbox. **1.0 = the visual
+       *  edge EXACTLY matches the AoE radius (the default — what you see is what hits).** >1 overhangs the
+       *  hitbox, <1 sits inside it; only deviate to account for transparent padding baked into the art. */
       radius: number;
       flash: number;
       dust: number;
       debris: number;
       shake: number;
+    };
+  };
+  /**
+   * §10 on-hit behavior block — CHAIN LIGHTNING. When the forward arc connects, a bolt leaps from the
+   * struck enemy to the nearest not-yet-hit enemies, up to `jumps` times; link n does
+   * `damage × falloff^n × power` (power = §10 grades). `range` caps each hop (px, center-to-center),
+   * itself clamped by the global {@link CHAIN_MAX_RANGE}. Gameplay params are server-authoritative; the
+   * nested `vfx` is the client cosmetic (teal jagged bolt). Per the §14 ruling, DAMAGE scales with power
+   * but `jumps`/`range`/the VFX are FIXED — never scaled by level/stat/augment (like quake's radius).
+   */
+  chainLightning?: {
+    /** Extra enemies the bolt leaps to after the struck enemy. */
+    jumps: number;
+    /** Max distance per hop, px (center-to-center). A hop fails if no unhit enemy is within range. */
+    range: number;
+    /** Base damage of the first link, before falloff + §10 power. */
+    damage: number;
+    /** Per-link damage multiplier; link n does `damage × falloff^n`. 1 = no falloff. */
+    falloff: number;
+    /** Per-source scaling (§14 WYSIWYG) — the bolt's own grades; omitted = the weapon's edge grades. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
+    vfx?: {
+      /** lerpHue index 0..1 → bolt tint (0.5 ≈ teal/cyan, the sword accent). */
+      color: number;
+      /** Jag amplitude (perpendicular jitter as a fraction of segment length). */
+      jag: number;
+      /** Bolt lifetime, ms (flicker + fade). */
+      life: number;
+    };
+  };
+  /**
+   * §10/§14 on-swing SCATTER SHOT — flings `count` REAL server projectiles in a cone toward aim, each
+   * a WYSIWYG damage source (the magma you see is the magma that hits). Each projectile deals `damage`
+   * on a direct hit and, on death (impact / `range` / arena edge), detonates an `explode` AoE. Promotes
+   * the old cosmetic-only `magma-scatter` VFX into a real mechanic (Wyrmtooth). Per §14 the cone/size/
+   * radius are FIXED — only the damage scales (independently, via each source's own `scalingGrades`).
+   */
+  scatter?: {
+    /** Projectiles flung per swing. */
+    count: number;
+    /** Cone half-angle (radians) the projectiles spread across, centred on aim. */
+    spread: number;
+    /** Projectile speed, px/sec. */
+    speed: number;
+    /** Travel distance before a projectile expires (and explodes), px. */
+    range: number;
+    /** Direct-hit damage per projectile (before this source's scaling). */
+    damage: number;
+    /** Enemies a single projectile damages before it dies + explodes (default 1 → one direct hit). */
+    pierce?: number;
+    /** Per-source scaling (§14 WYSIWYG) — the projectile's own grades; omitted = the weapon's edge grades. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
+    /** AoE detonation when a projectile dies (the "explosion"). Omitted → projectiles don't blast. */
+    explode?: {
+      /** Blast radius, px (FIXED — §14; the client renders an explosion of exactly this size). */
+      radius: number;
+      /** AoE damage (before this source's scaling). */
+      damage: number;
+      /** Per-source scaling — the blast's own grades; omitted = the SCATTER source's grades. */
+      scalingGrades?: Partial<Record<Attr, Grade>>;
     };
   };
   /** §10 structured tag taxonomy (metadata, kept from creation; drives art/VFX reuse + filters). */
@@ -83,6 +156,22 @@ export interface WeaponDef {
    * defaults to `{ str: "B" }` (the legacy flat STR scaling), so ungraded weapons are unchanged.
    */
   scalingGrades?: Partial<Record<Attr, Grade>>;
+  /**
+   * §11 minimum attribute requirements to wield the weapon (Elden-Ring style). Shown on the §9 card
+   * (red when the player hasn't met them). POC ENFORCEMENT (v0.64, pending Mike's ruling): wielding
+   * under-requirement is allowed but scales every damage source by {@link requirementPenalty} (−12%/point
+   * short, floored at 25%). NOTE: this DIVERGES from the §10 LOCKED "side bag" model (unmet-req weapons
+   * sit unusable until stats catch up) — chosen because the current build is a cycle-everything sandbox
+   * with no side-bag/inventory yet, and a penalty keeps every weapon testable. Revisit when §13 inventory
+   * lands. Omitted → no requirement.
+   */
+  requirements?: Partial<Record<Attr, number>>;
+  /**
+   * §10 max DURABILITY — melee weapons wear with use (vs `thrown` weapons, which spend charges). The
+   * card shows it; the depletion/break/repair MECHANIC is not built yet (display scaffolding). Omitted
+   * → the weapon doesn't track durability (e.g. casters/thrown).
+   */
+  durability?: number;
 }
 
 /** Damage-scaling letter grade (§10). */
@@ -100,22 +189,156 @@ export const GRADE_DMG_COEFF: Record<Grade, number> = {
 
 const DEFAULT_GRADES: Partial<Record<Attr, Grade>> = { str: "B" };
 
-/** Damage multiplier from a weapon's scaling grades at the given attributes. PURE. (final = base × this) */
-export function weaponDamageMult(def: WeaponDef, attrs: Record<Attr, number>): number {
-  const grades = def.scalingGrades ?? DEFAULT_GRADES;
+/** Damage multiplier from an explicit set of scaling grades at the given attributes. PURE.
+ *  (final = base × this). Undefined grades → the legacy flat `{ str: "B" }`. */
+export function damageMultFromGrades(
+  grades: Partial<Record<Attr, Grade>> | undefined,
+  attrs: Record<Attr, number>,
+): number {
+  const g = grades ?? DEFAULT_GRADES;
   let m = 1;
-  for (const k of Object.keys(grades) as Attr[]) {
-    const g = grades[k];
-    if (g) m += GRADE_DMG_COEFF[g] * ((attrs[k] ?? 1) - 1);
+  for (const k of Object.keys(g) as Attr[]) {
+    const gr = g[k];
+    if (gr) m += GRADE_DMG_COEFF[gr] * ((attrs[k] ?? 1) - 1);
   }
   return m;
 }
+
+/** Damage multiplier from a weapon's PRIMARY (edge) scaling grades. PURE. (final = base × this) */
+export function weaponDamageMult(def: WeaponDef, attrs: Record<Attr, number>): number {
+  return damageMultFromGrades(def.scalingGrades, attrs);
+}
+
+/**
+ * Per-SOURCE damage multiplier (§10/§14 WYSIWYG damage). A weapon's edge and each of its VFX/behavior
+ * damage sources can scale off DIFFERENT attributes — e.g. Wyrmtooth's blade scales STR/DEX while its
+ * magma + explosion scale INT. A source supplies its own `scalingGrades`; when omitted it INHERITS the
+ * weapon's edge grades (so existing single-source weapons are unchanged). PURE.
+ */
+export function sourceDamageMult(
+  weapon: WeaponDef,
+  sourceGrades: Partial<Record<Attr, Grade>> | undefined,
+  attrs: Record<Attr, number>,
+): number {
+  return damageMultFromGrades(sourceGrades ?? weapon.scalingGrades, attrs);
+}
+
+/** §11 damage penalty per attribute POINT below a weapon's requirement (Elden-Ring style). */
+export const REQ_PENALTY_PER_POINT = 0.12;
+/** §11 floor on the requirement penalty — a badly under-statted weapon still hits this fraction (it's
+ *  WIELDABLE, just weak), so a freshly-grabbed drop is never a dead stick. */
+export const REQ_PENALTY_FLOOR = 0.25;
+
+/** Total attribute shortfall vs a weapon's §11 requirements — Σ max(0, need − have) across attrs. PURE.
+ *  0 = every requirement met (or the weapon has none). */
+export function requirementShortfall(def: WeaponDef, attrs: Record<Attr, number>): number {
+  let short = 0;
+  for (const [k, need] of Object.entries(def.requirements ?? {}) as [Attr, number][]) {
+    short += Math.max(0, need - (attrs[k] ?? 1));
+  }
+  return short;
+}
+
+/** §11 DAMAGE multiplier from unmet requirements (POC enforcement v0.64, pending Mike's ruling vs the §10
+ *  LOCKED "side bag" model): wielding a weapon below its requirements is allowed but PENALISES damage —
+ *  `1 − PER_POINT × shortfall`, floored at REQ_PENALTY_FLOOR. 1.0 when fully met (or no requirements).
+ *  Applies to EVERY damage source of the weapon (the whole thing is too heavy/complex for you). PURE. */
+export function requirementPenalty(def: WeaponDef, attrs: Record<Attr, number>): number {
+  const short = requirementShortfall(def, attrs);
+  if (short <= 0) return 1;
+  return Math.max(REQ_PENALTY_FLOOR, 1 - REQ_PENALTY_PER_POINT * short);
+}
+
+/** §10/§11/§14 EFFECTIVE per-source damage multiplier: the source's attribute scaling × the weapon's
+ *  requirement penalty. The single multiplier the server applies to every damage instance AND the card
+ *  shows, so the displayed equation is always the real damage dealt (WYSIWYG). PURE. */
+export function effectiveDamageMult(
+  weapon: WeaponDef,
+  sourceGrades: Partial<Record<Attr, Grade>> | undefined,
+  attrs: Record<Attr, number>,
+): number {
+  return sourceDamageMult(weapon, sourceGrades, attrs) * requirementPenalty(weapon, attrs);
+}
+
+/** One of a weapon's damage instances (for the §9 card's multi-source equation display). */
+export interface DamageSource {
+  /** Short label, e.g. "hit" / "throw" / "quake" / "chain" / "magma" / "blast". */
+  label: string;
+  /** Base damage before scaling. */
+  base: number;
+  /** This source's scaling grades (already resolved — inherits the weapon's edge grades where blocks omit them). */
+  grades: Partial<Record<Attr, Grade>> | undefined;
+  /** How many times the source lands per use (e.g. scatter fires `count` projectiles). 1 = single. */
+  count: number;
+}
+
+/**
+ * Enumerate a weapon's distinct damage sources (§14 WYSIWYG) so the card can show each scaling line
+ * independently — the blade, the magma, the quake, etc. PURE. The primary line is the throw (thrown
+ * weapons) or the melee hit (everyone else); behavior blocks add their own lines.
+ */
+export function weaponDamageSources(def: WeaponDef): DamageSource[] {
+  const out: DamageSource[] = [];
+  if (def.thrown) {
+    out.push({
+      label: "throw",
+      base: def.thrown.damage,
+      grades: def.thrown.scalingGrades ?? def.scalingGrades,
+      count: 1,
+    });
+  } else {
+    out.push({ label: "hit", base: def.damage, grades: def.scalingGrades, count: 1 });
+  }
+  if (def.quake) {
+    out.push({
+      label: "quake",
+      base: def.quake.damage,
+      grades: def.quake.scalingGrades ?? def.scalingGrades,
+      count: 1,
+    });
+  }
+  if (def.chainLightning) {
+    out.push({
+      label: "chain",
+      base: def.chainLightning.damage,
+      grades: def.chainLightning.scalingGrades ?? def.scalingGrades,
+      count: 1,
+    });
+  }
+  if (def.scatter) {
+    const sc = def.scatter;
+    out.push({
+      label: "magma",
+      base: sc.damage,
+      grades: sc.scalingGrades ?? def.scalingGrades,
+      count: sc.count,
+    });
+    if (sc.explode) {
+      out.push({
+        label: "blast",
+        base: sc.explode.damage,
+        grades: sc.explode.scalingGrades ?? sc.scalingGrades ?? def.scalingGrades,
+        count: sc.count,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Default fixed VFX radius (px) when a weapon omits `vfxRadius`. Calibrated for WYSIWYG with the
+ * Weaponsmith preview: 74 = TARGET_BODY_H(84) × the smith's S.R/charH ratio (0.30/0.34 ≈ 0.882), so an
+ * un-authored swing reads the same on-screen size in the smith and in-world. (Holds while the arena
+ * camera stays at zoom 1.0 — world px == screen px.)
+ */
+export const VFX_RADIUS_DEFAULT = 74;
 
 export const WEAPONS: Record<string, WeaponDef> = {
   "rusty-cleaver": {
     id: "rusty-cleaver",
     name: "Rusty Cleaver",
     scalingGrades: { str: "B" },
+    requirements: { str: 3 },
     damage: 4,
     range: 118,
     halfArc: 0.85,
@@ -148,6 +371,8 @@ export const WEAPONS: Record<string, WeaponDef> = {
     id: "tombstone-greatsword",
     name: "Tombstone Greatsword",
     scalingGrades: { str: "A" },
+    requirements: { str: 10 },
+    durability: 90,
     damage: 11,
     range: 156,
     halfArc: 1.0,
@@ -157,12 +382,15 @@ export const WEAPONS: Record<string, WeaponDef> = {
     gripFrac: 0.1,
     twoHanded: true,
     // Quake AoE (gameplay) + the Codex earthquake VFX authored in the Weaponsmith (candidate-8).
+    // §14 WYSIWYG "hits as big as it looks": the damage radius now matches the painted erupt's extent
+    // (grown 185→270), and `vfx.radius: 1.0` locks the visual to the hitbox (visual diameter = 2×radius),
+    // so the erupt you see IS the area that damages. (Was 1.46 → the visual overhung the hitbox.)
     quake: {
-      radius: 185,
+      radius: 270,
       damage: 8,
       vfx: {
         image: "vfx-quake-tombstone",
-        radius: 1.46,
+        radius: 1.0,
         flash: 0.12,
         dust: 1,
         debris: 40,
@@ -188,9 +416,16 @@ export const WEAPONS: Record<string, WeaponDef> = {
     id: "driftblade",
     name: "Driftblade",
     scalingGrades: { dex: "B", str: "C" },
+    requirements: { dex: 8, str: 5 },
+    durability: 80,
     damage: 9,
-    range: 280,
-    halfArc: 0.6,
+    // §14 WYSIWYG: the long nodachi visually sweeps a WIDE arc, so the hitbox matches the swing — the
+    // blade and its slash VFX are ONE damage source (no 2nd part like Wyrmtooth's magma). The cone was a
+    // narrow ±0.6 rad / 280px and missed dummies the blade visibly crossed; widened to ±1.0 rad and the
+    // blade's reach (~300), and `vfxRadius` grown to 150 so the slash effect spans the hitbox (= what hits).
+    range: 300,
+    halfArc: 1.0,
+    vfxRadius: 150,
     cooldown: 0.62,
     displayLength: 320,
     swingArc: 2.3,
@@ -231,6 +466,209 @@ export const WEAPONS: Record<string, WeaponDef> = {
       family: "fist-blade",
       rangeBand: "close",
       scaling: ["DEX", "STR"],
+    },
+  },
+  // ── Explore swords wired into the Testing Grounds (CODE-9, 2026-06-15). Stats are first-pass by
+  // archetype (tunable); displayLength matches the value authored in the Weaponsmith. VFX in-world is
+  // the generic slash for now (the bespoke painted/engine VFX live in the forge until CODE-8 unifies). ──
+  "x-sword-buzzsaw": {
+    id: "x-sword-buzzsaw",
+    name: "Buzzcutter",
+    scalingGrades: { str: "C", dex: "C" },
+    damage: 3.5,
+    range: 122,
+    halfArc: 1.1, // wide, grinding arc
+    cooldown: 0.22, // fast, multi-hit saw
+    displayLength: 100,
+    swingArc: 2.8,
+    gripFrac: 0.14,
+    twoHanded: true,
+    tags: {
+      grip: "2H",
+      size: "M",
+      delivery: "melee-arc",
+      fireMode: "auto",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "close",
+      scaling: ["STR", "DEX"],
+    },
+  },
+  "x-sword-anchor": {
+    id: "x-sword-anchor",
+    name: "Drowned Anchor",
+    scalingGrades: { str: "A" },
+    damage: 14, // heavy, slow haymaker
+    range: 172,
+    halfArc: 1.1,
+    cooldown: 0.95,
+    displayLength: 165,
+    swingArc: 3.1,
+    gripFrac: 0.1,
+    twoHanded: true,
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "melee-slam",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "close",
+      scaling: ["STR"],
+    },
+  },
+  "rattler-sabre": {
+    id: "rattler-sabre",
+    name: "Rattler Sabre",
+    scalingGrades: { dex: "B", str: "D" },
+    damage: 5,
+    range: 132,
+    halfArc: 0.7,
+    cooldown: 0.3,
+    displayLength: 100,
+    swingArc: 2.4,
+    gripFrac: 0.12,
+    tags: {
+      grip: "1H",
+      size: "M",
+      delivery: "melee-arc",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "close",
+      scaling: ["DEX", "STR"],
+    },
+  },
+  "x-sword-coffin": {
+    id: "x-sword-coffin",
+    name: "Reaper's Lid",
+    scalingGrades: { str: "A" },
+    damage: 13,
+    range: 166,
+    halfArc: 1.05,
+    cooldown: 0.9,
+    displayLength: 200,
+    swingArc: 3.0,
+    gripFrac: 0.1,
+    twoHanded: true,
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "melee-slam",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "close",
+      scaling: ["STR"],
+    },
+  },
+  "x-sword-railspike": {
+    id: "x-sword-railspike",
+    name: "Spike Driver",
+    scalingGrades: { str: "B", dex: "C" },
+    damage: 6,
+    range: 112,
+    halfArc: 0.8,
+    cooldown: 0.34, // inter-throw cadence
+    displayLength: 65,
+    swingArc: 2.4,
+    gripFrac: 0.12,
+    // Thrown (§10): hurl a heavy piercing spike — fewer charges, harder hit than the cleaver.
+    thrown: { speed: 720, range: 560, damage: 12, charges: 2, refillSeconds: 2, pierce: 3 },
+    tags: {
+      grip: "2H",
+      size: "M",
+      delivery: "thrown",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "thrown",
+      rangeBand: "mid",
+      scaling: ["STR", "DEX"],
+    },
+  },
+  "x-sword-neon-katana": {
+    id: "x-sword-neon-katana",
+    name: "Voltedge",
+    scalingGrades: { dex: "A" },
+    requirements: { dex: 12 },
+    durability: 70,
+    damage: 5.5,
+    range: 138,
+    halfArc: 0.62, // tight, precise cut
+    cooldown: 0.28,
+    displayLength: 125,
+    swingArc: 2.3,
+    gripFrac: 0.12,
+    // §10 on-hit proc (forge note): "jagged lightning on target, chain to 3 nearest, teal". The arc hit
+    // seeds a bolt that leaps to 3 other nearby enemies for decaying damage. (Damage scales with DEX
+    // grades via power; jumps/range/VFX are fixed per §14.)
+    chainLightning: {
+      jumps: 3,
+      range: 240, // ~1.7× the melee range — electric reach, not infinite (clamped by CHAIN_MAX_RANGE)
+      damage: 4, // a touch under the 5.5 arc — the chain is bonus spread, not the main hit
+      falloff: 0.7, // link dmg 4 / 2.8 / 1.96 — visibly decaying, still meaningful
+      vfx: { color: 0.5, jag: 0.3, life: 180 }, // teal (sword accent), moderate jag, quick flicker
+    },
+    tags: {
+      grip: "1H",
+      size: "M",
+      delivery: "melee-arc",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "mid",
+      scaling: ["DEX"],
+    },
+  },
+  "x-sword-bone": {
+    id: "x-sword-bone",
+    name: "Wyrmtooth",
+    // §14 WYSIWYG multi-source: the BLADE (edge) is a physical STR/DEX cut; the magma it flings + their
+    // explosions are an INT-scaled caster source (so an INT build leans on the meteors, a STR/DEX build
+    // on the blade). The blade scales STR C / DEX C.
+    scalingGrades: { str: "C", dex: "C" },
+    requirements: { str: 6, int: 5 },
+    durability: 85,
+    damage: 10,
+    range: 150,
+    halfArc: 1.0,
+    cooldown: 0.72,
+    displayLength: 120,
+    swingArc: 3.0,
+    gripFrac: 0.1,
+    twoHanded: true,
+    // Scatter shot (forge note: "magma balls shot out in a cluster on swing, each its own entity"):
+    // 6 real magma projectiles fan out toward aim, each dealing an INT-scaled direct hit and then
+    // exploding into an INT-scaled fiery AoE on impact/expiry. Cone/speed/range/blast radius are FIXED
+    // (§14) — only the damage scales (off INT, independent of the STR/DEX blade).
+    scatter: {
+      count: 6,
+      spread: 0.5, // ~±29° fan
+      speed: 360,
+      range: 230,
+      damage: 5, // per-ball direct hit (× INT B)
+      scalingGrades: { int: "B" },
+      explode: {
+        radius: 56, // FIXED blast size (§14); the client renders an explosion of exactly this px radius
+        damage: 6, // AoE per blast (× INT B); inherits the scatter's INT grades
+      },
+    },
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "melee-arc",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "sword",
+      rangeBand: "close",
+      scaling: ["STR", "DEX", "INT"],
     },
   },
 };

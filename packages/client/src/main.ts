@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { RENDER_DPR } from "./render-dpr.js";
 import { ArenaScene } from "./scenes/ArenaScene.js";
 
 const game = new Phaser.Game({
@@ -7,11 +8,14 @@ const game = new Phaser.Game({
   backgroundColor: "#1a1320",
   scene: [ArenaScene],
   scale: {
-    // Fill the #game-root host (which is pinned to the full viewport). RESIZE keeps the
-    // canvas === window so the free-roam camera shows a window-sized slice of the arena.
-    mode: Phaser.Scale.RESIZE,
-    width: "100%",
-    height: "100%",
+    // §28 crispness: the DRAWING BUFFER is the window size × RENDER_DPR (so it matches the physical
+    // display), but the canvas is DISPLAYED at the CSS window size (`zoom = 1/RENDER_DPR`). RESIZE mode
+    // would force the buffer back to 1× CSS, so we size manually (NONE) and re-resize on window changes.
+    // ArenaScene zooms the world camera by RENDER_DPR so the visible slice is unchanged — just sharper.
+    mode: Phaser.Scale.NONE,
+    width: window.innerWidth * RENDER_DPR,
+    height: window.innerHeight * RENDER_DPR,
+    zoom: 1 / RENDER_DPR,
   },
   // Drive the game loop with setTimeout instead of requestAnimationFrame. rAF is parked by
   // the OS/compositor whenever a window isn't being presented (unfocused, occluded, or
@@ -33,6 +37,11 @@ const game = new Phaser.Game({
     antialiasGL: true, // MSAA on the framebuffer — smooths rotated sprite edges
     roundPixels: false, // sub-pixel placement so motion stays smooth, not steppy
   },
+});
+
+// Keep the buffer at window × RENDER_DPR as the window resizes (NONE mode doesn't auto-fit).
+window.addEventListener("resize", () => {
+  game.scale.resize(window.innerWidth * RENDER_DPR, window.innerHeight * RENDER_DPR);
 });
 
 // Debug handle — lets us inspect scale/camera state from the console. Harmless to ship.

@@ -29,6 +29,16 @@ const SUBJECTS_VFX = join(ARTKIT, "subjects.vfx.json");
 // gameplay stats; those get merged in. This is why the smith shows all 30, not just the coded 4.
 const SUBJECT_FILES = [join(ARTKIT, "subjects.json"), join(ARTKIT, "subjects.explore.json")];
 const WEAPONS_TS = join(REPO, "packages", "shared", "src", "weapons.ts");
+// §14 fixed VFX size default — single-sourced from weapons.ts (VFX_RADIUS_DEFAULT), so the smith slider
+// seeds the same default the game uses. Falls back to 74 if the file can't be read.
+const VFX_RADIUS_DEFAULT = (() => {
+  try {
+    const m = readFileSync(WEAPONS_TS, "utf8").match(/VFX_RADIUS_DEFAULT\s*=\s*(\d+)/);
+    return m ? Number(m[1]) : 74;
+  } catch {
+    return 74;
+  }
+})();
 const ASSIGN = join(ROOT, "assignments.json");
 const PUBLIC = join(ROOT, "public");
 const PORT = Number(process.env.PORT) || 5050;
@@ -60,6 +70,8 @@ function readWeaponStats() {
       damage: grab("damage"),
       range: grab("range"),
       cooldown: grab("cooldown"),
+      displayLength: grab("displayLength"), // §10 — the on-screen size dial
+      vfxRadius: grab("vfxRadius"), // §14 — the fixed in-world VFX size (px)
       twoHanded: /twoHanded:\s*true/.test(body),
       dual: /dual:\s*true/.test(body),
       thrown: /thrown:\s*\{/.test(body),
@@ -81,10 +93,47 @@ function readWeapons() {
       const tags = Array.isArray(s.tags) ? s.tags : [];
       if (!tags.includes("weapon") || seen.has(s.id)) continue;
       seen.add(s.id);
-      const cls = WEAPON_CLASSES.find((c) => tags.includes(c)) || (tags.includes("melee") ? "melee" : "weapon");
+      const cls =
+        WEAPON_CLASSES.find((c) => tags.includes(c)) ||
+        (tags.includes("melee") ? "melee" : "weapon");
       const grip = ["dual", "2H", "1H", "mounted"].find((g) => tags.includes(g)) || "1H";
-      const family = tags.find((t) => !["weapon", "melee", "ranged", "caster", "close", "mid", "long", "1H", "2H", "dual", "mounted", "S", "M", "L", "XL", "physical", "fire", "wild-west", "cross-class", "unique", "rez", cls].includes(t)) || cls;
-      weapons.push({ id: s.id, name: s.name || s.id, cls, grip, family, tags, ...(stats[s.id] || {}) });
+      const family =
+        tags.find(
+          (t) =>
+            ![
+              "weapon",
+              "melee",
+              "ranged",
+              "caster",
+              "close",
+              "mid",
+              "long",
+              "1H",
+              "2H",
+              "dual",
+              "mounted",
+              "S",
+              "M",
+              "L",
+              "XL",
+              "physical",
+              "fire",
+              "wild-west",
+              "cross-class",
+              "unique",
+              "rez",
+              cls,
+            ].includes(t),
+        ) || cls;
+      weapons.push({
+        id: s.id,
+        name: s.name || s.id,
+        cls,
+        grip,
+        family,
+        tags,
+        ...(stats[s.id] || {}),
+      });
     }
   }
   // Group by class for a tidy sidebar: swords, guns, staffs, launchers, then anything else.
@@ -93,21 +142,10 @@ function readWeapons() {
   return weapons;
 }
 
-// Bespoke VFX hero skins authored for the first four weapons (matches vfx-layers.js presets).
-const SUBJECT_MAP = {
-  "rusty-cleaver": "vfx-cleave-cleaver",
-  driftblade: "vfx-slash-driftblade",
-  "tombstone-greatsword": "vfx-quake-tombstone",
-  "twin-bowie-fangs": "vfx-twinslash-bowie",
-};
-// Hero candidates come from: a saved override → a bespoke vfx-* skin → the weapon's OWN art. Most of
-// the 30 weapons have no bespoke VFX skin yet, so they show their own sprite candidates (which exist).
+// ONE naming convention: a weapon's painted-VFX subject is ALWAYS `vfx-<weaponId>` (the dir under
+// artkit out/). Whether painted art exists yet is a separate check (candidate count > 0).
 function vfxSubjectFor(weaponId) {
-  const a = readJSON(ASSIGN, {});
-  if (a[weaponId]?.vfxSubject) return a[weaponId].vfxSubject;
-  if (SUBJECT_MAP[weaponId]) return SUBJECT_MAP[weaponId];
-  if (existsSync(join(ARTKIT_OUT, `vfx-${weaponId}`, "sheets"))) return `vfx-${weaponId}`;
-  return weaponId; // fall back to the weapon's own sliced art candidates
+  return `vfx-${weaponId}`;
 }
 
 function listCandidates(vfxSubject) {
@@ -242,11 +280,32 @@ const server = createServer(async (req, res) => {
       if (!w) return json(res, { error: "unknown weapon" }, 404);
       const vfx = vfxSubjectFor(id);
       const a = readJSON(ASSIGN, {});
+      const ownArt = listCandidates(id); // the weapon's OWN sprite candidates (for the showcase)
+      const cands = listCandidates(vfx); // painted-VFX candidates (empty until authored)
+      // §14 V2: guns + casters are ENGINE-ONLY for now (no painted Codex VFX). Melee/launchers paint.
+      const engineOnly = w.cls === "gun" || w.cls === "staff";
+      const paintedVfx = cands.length > 0; // painted effect art has actually been generated
       return json(res, {
         ...w,
         vfxSubject: vfx,
-        candidates: listCandidates(vfx),
+        candidates: cands,
         prompt: subjectPrompt(vfx),
+        weaponArt: ownArt[0] ? `/art/${id}/${ownArt[0]}` : null,
+        engineOnly,
+        paintedVfx,
+        // Effective on-screen size (§10): a tool override wins, else the coded value, else a M default.
+        displayLength: a[id]?.displayLength ?? w.displayLength ?? 90,
+        // Effective fixed VFX size (§14): tool override → coded value → calibrated default (74).
+        vfxRadius: a[id]?.vfxRadius ?? w.vfxRadius ?? VFX_RADIUS_DEFAULT,
+        // §10 delivery: thrown (RMB hurls a spinning projectile) vs melee swing. Tool override wins,
+        // else the coded value. Lets us mark explore weapons (e.g. Spike Driver) thrown before they're coded.
+        thrown: a[id]?.thrown ?? w.thrown ?? false,
+        // Scatter-shot source (CODE-14): a dissected painted cluster → spritesheet (slice-scatter.mjs).
+        // Present only when out/<vfx>/scatter/meta.json exists; the `magma-scatter` layer flings it.
+        scatter: (() => {
+          const m = readJSON(join(ARTKIT_OUT, vfx, "scatter", "meta.json"), null);
+          return m ? { url: `/scatter/${vfx}/sheet.png`, ...m } : null;
+        })(),
         assigned: a[id] || null,
       });
     }
@@ -277,21 +336,77 @@ const server = createServer(async (req, res) => {
         suite: b.suite ?? a[b.weaponId]?.suite ?? null,
         // VFX rotation in degrees (15° increments), applied to the whole composed effect.
         rot: b.rot ?? a[b.weaponId]?.rot ?? 0,
+        // §10 on-screen size (displayLength px). The canonical value for coded weapons lives in
+        // weapons.ts; this is the tool's authored/override value (sync to weapons.ts when settled).
+        displayLength: b.displayLength ?? a[b.weaponId]?.displayLength ?? undefined,
+        // §14 fixed VFX size (px). undefined = inherit the coded value / default.
+        vfxRadius: b.vfxRadius ?? a[b.weaponId]?.vfxRadius ?? undefined,
+        // §10 delivery override (thrown vs melee). undefined = inherit the coded value.
+        thrown: b.thrown ?? a[b.weaponId]?.thrown ?? undefined,
         notes: b.notes ?? a[b.weaponId]?.notes ?? "",
         updatedAt: new Date().toISOString().slice(0, 19),
       };
       writeJSON(ASSIGN, a);
       return json(res, { ok: true, assigned: a[b.weaponId] });
     }
+    // ---- V2 authoring: the user's two prompts (painted / engine) + per-panel edit notes. Saved so
+    // Claude can read them, audit the painted prompt, generate, and build the engine VFX. ----
+    if (p === "/api/author" && req.method === "POST") {
+      const b = await body(req);
+      if (!b.weaponId) return json(res, { error: "weaponId required" }, 400);
+      const a = readJSON(ASSIGN, {});
+      const prev = a[b.weaponId]?.author || {};
+      a[b.weaponId] = {
+        ...(a[b.weaponId] || {}),
+        // Living "what the weapon does" description (§24 abilities). Claude keeps it current as it builds
+        // behavior; the user can edit it to refine/request. Top-level (an output doc, not a redo note).
+        description: b.description ?? a[b.weaponId]?.description ?? "",
+        author: {
+          painted: b.painted ?? prev.painted ?? "",
+          engine: b.engine ?? prev.engine ?? "",
+          // Abilities/mechanics REQUEST in the user's words ("make the meteors explode") — Claude reads
+          // this, implements the mechanic (weapons.ts behavior block + server resolve + VFX), updates the
+          // description, then clears it. Disjoint from cosmetic `engine` VFX (v0.51 mechanics boundary).
+          mechanics: b.mechanics ?? prev.mechanics ?? "",
+          // per-panel redo notes: { painted, engine, combined }
+          edits: { ...(prev.edits || {}), ...(b.edits || {}) },
+          // 'pending' = the user hit Save & request and is waiting on Claude to act. Omitting it PRESERVES
+          // the prior state (so a plain description-save doesn't clear a pending mechanics request).
+          pending: b.pending ?? prev.pending ?? false,
+          updatedAt: new Date().toISOString().slice(0, 19),
+        },
+      };
+      writeJSON(ASSIGN, a);
+      return json(res, { ok: true, author: a[b.weaponId].author });
+    }
     // ---- serve a chosen Codex candidate image ----
     if (p.startsWith("/art/")) {
       const [, , subject, file] = p.split("/");
       return serveFile(res, join(ARTKIT_OUT, subject, "sheets", file));
     }
+    // scatter-shot spritesheet (CODE-14): /scatter/<vfxSubject>/sheet.png → out/<subject>/scatter/
+    if (p.startsWith("/scatter/")) {
+      const [, , subject, file] = p.split("/");
+      return serveFile(res, join(ARTKIT_OUT, subject, "scatter", file));
+    }
+    // ---- serve the CANONICAL VFX core (vfx-render.js + vfx-layers.js) from the client package, so the
+    // smith preview and the live game run the EXACT SAME renderer (§14 CODE-8 — one source of truth). ----
+    if (p === "/vfx-render.js" || p === "/vfx-layers.js") {
+      return serveFile(res, join(REPO, "packages", "client", "src", "vfx", p.replace(/^\//, "")));
+    }
     // ---- serve the Phaser UMD build (the WYSIWYG preview uses the SAME engine as the game) ----
     if (p === "/phaser.min.js") {
       const candidates = [
-        join(REPO, "node_modules", ".pnpm", "phaser@4.1.0", "node_modules", "phaser", "dist", "phaser.min.js"),
+        join(
+          REPO,
+          "node_modules",
+          ".pnpm",
+          "phaser@4.1.0",
+          "node_modules",
+          "phaser",
+          "dist",
+          "phaser.min.js",
+        ),
         join(REPO, "node_modules", "phaser", "dist", "phaser.min.js"),
       ];
       const hit = candidates.find((c) => existsSync(c));

@@ -1,0 +1,411 @@
+{
+  "generated": "2026-06-16",
+  "source": "design-50-characters workflow (8 agents)",
+  "count": 50,
+  "summary": {
+    "total": 50,
+    "byArchetype": "Western/outlaw 7 (gunslinger, bounty hunter, desperado, charlatan, bandit, preacher, cardsharp); Fantasy-knight/warrior 7 (plate tank, shieldmaiden, crusader, sellsword, fallen paladin, berserker, errant duelist); Sci-fi trooper 8 (powered-armor, hardlight op, drone-jockey, street-runner, void marine, infiltrator, heavy gunner, medic); Mage/caster 7 (sorcerer, hex-witch, seer, blood-mage, alchemist, rune-scribe, pyromancer); Samurai/wuxia 7 (ronin, monk, fox duelist, storm-fist, jade dancer, drunken master, oni enforcer, pilgrim healer); Ranger/hunter 7 (trapper, assassin, beast-tracker, swamp poacher, plague doctor, forest warden, crow rogue); Monster/non-human 7 (revenant, beast-kin, golem, elemental, eldritch cultist, plant-folk)"
+  },
+  "characters": [
+    {
+      "name": "Cordell \"Coldsnap\" Vane",
+      "archetype": "Drifter / wandering gunslinger",
+      "theme": "Lone trail-worn gunfighter — the baseline outlaw silhouette",
+      "palette": "Dust-bowl neutrals: weathered tan duster, faded indigo shirt, gunmetal grey iron, oxblood-leather accents, pale alkali-bleached highlights",
+      "artBrief": "A lean upright humanoid in a long wind-tattered duster coat that flares behind in a hard angular silhouette, wide-brim slouch hat tilted low over a shadowed face, one detached hand hanging loose and curled beside a holstered revolver, the other resting flat. Flat hand-painted CEL art, bold readable outline, side-profile facing right. Materials: cracked oxblood leather, sun-faded indigo cotton, dull gunmetal. Palette of dust-bowl tans, faded blue, and bleached alkali highlights.",
+      "flavor": "A quiet road-ghost who never draws first and never misses second."
+    },
+    {
+      "name": "Magdalene \"The Ledger\" Crowe",
+      "archetype": "Bounty hunter",
+      "theme": "Methodical manhunter who collects faces and folds them into her coat",
+      "palette": "Deep charcoal-black coat, bone-white wanted-poster paper, cold steel-blue, brass buckle gold, blood-rust red trim",
+      "artBrief": "A tall imposing humanoid in a heavy double-breasted charcoal coat bristling with rolled wanted-posters tucked into bandolier loops, a flat-crowned black hat, a tin star pinned crooked at the chest, one detached hand gripping a coiled rope-and-shackle, the other open and waiting. Flat hand-painted CEL art, bold blocky silhouette, side-profile facing right. Materials: oiled black wool, brass buckles, yellowed paper, cold blued steel. Palette of charcoal-black, bone-white, steel-blue, and rust-red accents.",
+      "flavor": "She does not want you dead — dead pays half — but she will settle."
+    },
+    {
+      "name": "\"Buzzard\" Jeptha Hale",
+      "archetype": "Desperado / hardened outlaw",
+      "theme": "Brutish wanted man held together by scars, spite, and ammunition",
+      "palette": "Mud-brown rawhide, dried-blood maroon, tarnished brass cartridges, sweathered olive, dirty bone",
+      "artBrief": "A broad heavy-shouldered humanoid hunched forward in a sleeveless rawhide vest crossed by overstuffed cartridge bandoliers, a battered derby hat crammed low, a thick neck and barrel chest making a bulky aggressive silhouette, one detached hand a clenched scarred fist, the other dragging a sawed-off shotgun. Flat hand-painted CEL art, heavy menacing outline, side-profile facing right. Materials: greasy rawhide, tarnished brass, scarred bone. Palette of mud-brown, dried-blood maroon, brass, and dirty bone.",
+      "flavor": "Posters describe him as 'large, angry, and owed money.'"
+    },
+    {
+      "name": "Doctor Phineas Quill, Esq.",
+      "archetype": "Snake-oil charlatan",
+      "theme": "Silver-tongued huckster peddling miracle tonics from a coat full of bottles",
+      "palette": "Mustard-gold frock coat, bottle-green glass, copper labels, plum waistcoat, sickly chartreuse tonic glow",
+      "artBrief": "A spindly upright humanoid in a too-long mustard frock coat lined with rows of glowing bottle-green tonic vials, a tall battered top hat, a string tie and plum brocade waistcoat, posture leaning in mid-pitch with arms wide, one detached hand brandishing a luminous bottle aloft, the other tipping the hat. Flat hand-painted CEL art, slinky theatrical silhouette, side-profile facing right. Materials: worn velvet, clinking glass, tarnished copper, gilt buttons. Palette of mustard-gold, bottle-green, plum, copper, and a sickly chartreuse tonic glow.",
+      "flavor": "Two drops cures anything — three drops cures you of everything."
+    },
+    {
+      "name": "The Bandida \"La Sombra\"",
+      "archetype": "Masked bandit",
+      "theme": "Veiled stagecoach robber who is a shape in the dust before she is a person",
+      "palette": "Dusk-violet serape, ash-grey kerchief, blackened iron, deep teal shadow, faded poncho-stripe accents",
+      "artBrief": "A lithe upright humanoid wrapped in a striped serape thrown over one shoulder, the lower face hidden by a tied bandana and the eyes shadowed under a low flat hat, a wide poncho hem making a triangular drifting silhouette, one detached hand thumbing back a blackened revolver hammer, the other holding the serape edge like a cape. Flat hand-painted CEL art, soft-edged mysterious outline, side-profile facing right. Materials: woven wool serape, dusty cotton kerchief, blackened iron. Palette of dusk-violet, ash-grey, blackened iron, and deep teal shadow.",
+      "flavor": "Witnesses agree only on the color of the smoke she left behind."
+    },
+    {
+      "name": "Elias \"Parson\" Thorne",
+      "archetype": "Gunslinging preacher / repentant outlaw",
+      "theme": "Hellfire revivalist who buries his sins under a Bible and two pistols",
+      "palette": "Funeral-black coat, ash-grey shirt, bone-white collar, weathered-silver cross, ember-orange page-edge glow",
+      "artBrief": "A gaunt severe humanoid in a buttoned funeral-black preacher's coat with a stiff bone-white collar, a flat parson's hat, a long silhouette broken by a thick clasped Bible hung on a chain and twin holsters beneath the coattails, posture rigidly upright, one detached hand pressing the Bible to his chest, the other hovering over a pistol grip. Flat hand-painted CEL art, austere vertical silhouette, side-profile facing right. Materials: dull black broadcloth, starched linen, tarnished silver, brittle gilt-edged paper. Palette of funeral-black, ash-grey, bone-white, weathered silver, and an ember-orange glow at the book's edge.",
+      "flavor": "He'll pray over your grave — he just wants to dig it himself."
+    },
+    {
+      "name": "\"Quickfinger\" Odette Lacroix",
+      "archetype": "Cardsharp gunslinger / riverboat grifter",
+      "theme": "Gambler-duelist who wins twice — once at the table, once at ten paces",
+      "palette": "Emerald-green satin, gold-leaf trim, ivory-and-black playing-card motif, garnet-red ribbon, brass derringer sheen",
+      "artBrief": "A statuesque upright humanoid in a fitted emerald riverboat-gambler's frock coat with gold-leaf brocade and a fanned bustle hem, a small tilted feathered hat, a sleek confident lean with the hip cocked, one detached hand fanning a spread of playing cards, the other concealing a tiny brass derringer at the cuff. Flat hand-painted CEL art, sleek hourglass silhouette, side-profile facing right. Materials: liquid emerald satin, gold thread, ivory card-faces, brass. Palette of emerald-green, gold-leaf, ivory-and-black, garnet-red, and warm brass.",
+      "flavor": "The house always wins — and tonight, she is the house."
+    },
+    {
+      "name": "Sir Galloway the Unbending",
+      "archetype": "Plate Knight (tank)",
+      "theme": "Towering full-plate paragon — the immovable wall of the squad",
+      "palette": "Burnished steel-silver plate, deep royal-blue tabard, brass trim, warm white plume",
+      "artBrief": "Side-profile facing right, broad rectangular silhouette wider at the pauldrons than anywhere else; a hulking suit of full plate armor with a great barrel chest, a closed bucket-helm with a narrow vision slit and a single tall white plume, oversized rounded pauldrons and a kite shield slung on the back. Detached gauntleted fists and sabaton feet float in the Drifter rig. Flat cel-painted in burnished steel-silver with hammered highlights, a deep royal-blue tabard hanging to the knees, brass rivets and trim, hard rim-light on every plate edge.",
+      "flavor": "A knight so encased in steel he hasn't shown his face in twenty years and refuses to take a backward step."
+    },
+    {
+      "name": "Greta Ironbraid",
+      "archetype": "Shieldmaiden",
+      "theme": "Fierce northern shield-line warrior — the anchor of the wall",
+      "palette": "Oiled tan leather and chainmail grey, ox-blood red trim, weathered round-shield wood, copper-blonde braid",
+      "artBrief": "Side-profile facing right, a strong compact silhouette broken by a huge round wooden shield gripped forward; a shieldmaiden in a riveted chainmail shirt over oiled tan leather, a winged or horn-accented helm with a long copper-blonde battle-braid spilling out the back, a short axe in the off-hand. Detached fists (one clutching the shield boss) and booted feet in the Drifter rig. Flat cel art, chainmail-grey rings, ox-blood red painted shield rim with a sun-burst boss, weathered timber and leather textures.",
+      "flavor": "Holds the line where braver souls broke and run, and dares the horde to test her wall."
+    },
+    {
+      "name": "Brother Cassian, the Ashen Crusader",
+      "archetype": "Crusader / zealot",
+      "theme": "Holy warrior worn thin by a long campaign — faith hardened into fury",
+      "palette": "Sun-bleached bone-white tabard, dull grey mail, crimson cross, soot and dried-blood staining",
+      "artBrief": "Side-profile facing right, tall lean silhouette draped in a long flowing surcoat; a crusader in a hooded mail coif over grey chain, a bleached bone-white tabard bearing a bold crimson cross now smeared with soot and old blood, a longsword pointed earthward like a planted standard. Detached mailed fists and worn boots in the Drifter rig. Flat cel-painted, sun-bleached cloth with grime-shaded folds, dull desaturated grey mail, one searing crimson cross as the focal accent, a faint warm holy rim-glow.",
+      "flavor": "Marched a thousand miles for a cause he no longer remembers, and kills now out of habit and prayer."
+    },
+    {
+      "name": "Dunkel the Coinblade",
+      "archetype": "Sellsword / mercenary",
+      "theme": "Mismatched freelance killer — loyal only to the next purse",
+      "palette": "Mismatched brown leathers, dull iron, a single looted gold pauldron, faded teal scarf",
+      "artBrief": "Side-profile facing right, a deliberately asymmetric, scrappy silhouette — one heavy looted pauldron, the other shoulder bare; a sellsword in patched brown leather and a half-buttoned gambeson, a battered open-faced kettle helm, a faded teal scarf knotted at the throat, a notched falchion slung lazily at the hip. Detached half-gloved fists and mismatched boots in the Drifter rig. Flat cel art, warm earthy leather tones, one gleaming looted gold pauldron breaking the palette, dull scratched iron, casual cocky posture.",
+      "flavor": "Fights for whoever pays best and grumbles about hazard rates the entire battle."
+    },
+    {
+      "name": "Sir Mordrane, the Hollow Oath",
+      "archetype": "Fallen paladin",
+      "theme": "Corrupted holy knight — once radiant armor now blackened and cursed",
+      "palette": "Blackened tarnished plate, sickly green-gold tarnish, dead-purple cloth, cold ember-cyan glow",
+      "artBrief": "Side-profile facing right, a once-noble plate silhouette now drooping and broken-edged, a tattered cape trailing low; a fallen paladin in blackened, corroded full plate streaked with sickly green-gold tarnish, a dented helm with a cracked face-plate leaking cold ember-cyan light from the eye-slit, a chipped greatsword wreathed in faint dark vapor. Detached gauntleted fists and sabatons in the Drifter rig. Flat cel-painted, near-black tarnished metal with toxic green-gold corrosion in the crevices, a dead-purple ragged cape, an eerie cyan inner glow as the only cold light.",
+      "flavor": "Kept his vow to never fall in battle — death simply chose to ignore it."
+    },
+    {
+      "name": "Hrothgar Snowfang",
+      "archetype": "Mountain berserker",
+      "theme": "Half-naked highland fury — raw muscle and frostbite over armor",
+      "palette": "Wind-burnt ruddy skin, grey wolf-pelt, weathered iron, woad-blue warpaint, frost-white fur",
+      "artBrief": "Side-profile facing right, a massive top-heavy silhouette of bare muscled torso, hunched and forward-leaning; a mountain berserker stripped to the waist with a shaggy grey wolf-pelt cloak and hood whose snout crowns his head, a thick braided beard, woad-blue warpaint streaks, and a huge two-handed iron axe hauled over one shoulder. Detached bare fists and fur-wrapped feet in the Drifter rig. Flat cel art, wind-burnt ruddy skin with warm shadow, frost-white and grey fur, weathered cold iron, bold woad-blue paint as the accent.",
+      "flavor": "Climbed down from the peaks for a fight and won't climb back until everything stops moving."
+    },
+    {
+      "name": "Dame Veyra of the Thornwatch",
+      "archetype": "Errant knight / duelist",
+      "theme": "Elegant lightly-armored swordswoman — speed and finesse over plate",
+      "palette": "Forest-green and silver, blackened fluted accents, rose-gold filigree, ivory plume",
+      "artBrief": "Side-profile facing right, a slim elegant silhouette with a poised forward lunge stance; an errant knight in fitted three-quarter armor — fluted breastplate and vambraces only, the rest supple forest-green cloth and tall riding boots — a feathered sallet helm with the visor raised and an ivory plume, a long slender rapier-like estoc extended ahead. Detached gauntleted fists (one fine-fingered on the hilt) and pointed boots in the Drifter rig. Flat cel art, polished silver and blackened fluting, deep forest-green cloth, delicate rose-gold filigree as the accent, clean confident lighting.",
+      "flavor": "Treats every brawl as a duel and every duel as a chance to be insufferably graceful about it."
+    },
+    {
+      "name": "Bastion Vance",
+      "archetype": "Powered-armor trooper",
+      "theme": "Heavy mil-spec exosuit juggernaut — the immovable frontline anchor",
+      "palette": "gunmetal #3A4049 body, steel #5A6472 plate, off-white #E8E4D8 trim, cyber-cyan #33E6FF visor slit",
+      "artBrief": "Side-profile facing right, same Drifter rig: a hulking blocky charcoal-gunmetal powered-armor torso with overlapping steel shoulder pauldrons and a thick segmented chest plate, topped by a heavy rounded combat helmet whose single narrow cyber-cyan visor slit glows as one flat bright shape; TWO huge detached rounded gauntlet hand-blobs and TWO broad detached armored boot-blobs planted wide, clear flat-green gaps around every part. Materials read as matte plated metal with one decisive shadow band; bold immovable wide-stance silhouette, flat cel, ~5 colours.",
+      "flavor": "A wall of plated steel who plants his boots and dares the swarm to move him."
+    },
+    {
+      "name": "Halcyon-7",
+      "archetype": "Hardlight operative",
+      "theme": "Sleek photon-construct duelist whose gear is half solid, half projected light",
+      "palette": "charcoal #22252B undersuit, steel #5A6472 frame, arc-violet #B14BFF hardlight panels, off-white #E8E4D8 seams",
+      "artBrief": "Side-profile facing right, Drifter proportions: a slim charcoal undersuit body wrapped in thin steel exo-strips, with a smooth visorless helm bearing one solid arc-violet eye-band; floating detached hand-blobs and feet-blobs are part matte steel, part flat arc-violet 'hardlight' panels read purely by colour contrast (no glow rays). Crisp angular plating with chamfered edges, one shadow band, clear gaps; poised forward-leaning duelist silhouette, flat cel, ~5 colours.",
+      "flavor": "Half operative, half projection — she only fully exists when she's mid-strike."
+    },
+    {
+      "name": "Skitch Wren",
+      "archetype": "Drone-jockey",
+      "theme": "Scrappy tinkerer rig festooned with a detached escort drone and antenna clutter",
+      "palette": "olive #6E7042 jumpsuit, gunmetal #3A4049 harness, tan #C49A5A straps, plasma-lime #9CFF3B drone eye",
+      "artBrief": "Side-profile facing right, same rig: a wiry olive-drab jumpsuit body under a cluttered gunmetal utility harness packed with canisters and a stubby antenna, headgear is a snug strapped flight-cap with a single round goggle lens over one bold eye; TWO detached glove hand-blobs (one raised as if commanding), TWO scuffed detached boot-blobs, and hovering just clear of the body a tiny separate disc-drone blob with one flat plasma-lime eye. Worn fabric and patched metal, one shadow band, clear gaps; busy-but-readable tinkerer silhouette, flat cel, ~6 colours.",
+      "flavor": "Never goes anywhere without his drone — and trusts it more than people."
+    },
+    {
+      "name": "Neon Mirage",
+      "archetype": "Neon street-runner",
+      "theme": "Fast acrobatic urban parkour courier built for speed and flash",
+      "palette": "charcoal #22252B bodysuit, gunmetal #3A4049 pads, hot-magenta #FF3BD4 accents, off-white #E8E4D8 wrap",
+      "artBrief": "Side-profile facing right, Drifter rig: a lean charcoal street-runner bodysuit with slim gunmetal knee-and-elbow pads and a streamlined low-profile aero-helm trailing a short wrapped scarf, one bold eye behind a thin hot-magenta visor strip (flat shape, no bloom); TWO sleek detached hand-blobs in fingerless grip-wraps and TWO light detached runner-shoe blobs caught mid-sprint, clear gaps. Taut fabric with magenta seam accents, one shadow band; dynamic forward-coiled sprinting silhouette, flat cel, ~5 colours.",
+      "flavor": "If the package has to be across the city in five minutes, you call her."
+    },
+    {
+      "name": "Deepfall Korr",
+      "archetype": "Void marine",
+      "theme": "Hard-vacuum boarding marine in a sealed pressure suit built for the dark between worlds",
+      "palette": "steel #5A6472 hardsuit, charcoal #22252B joints, ember-orange #FF8A2B beacon, bone #CFC6AE markings",
+      "artBrief": "Side-profile facing right, same proportions: a bulky sealed steel pressure-hardsuit torso with ribbed accordion neck-and-joint seals and a small life-support backpack hump, a domed bowl helmet with one wide ember-orange beacon eye glowing as a flat solid shape; TWO thick detached gauntlet hand-blobs and TWO heavy mag-boot blobs, clear flat-green gaps. Scuffed bone-stencilled hull markings over matte steel, one decisive shadow band; grounded heavy-trudge silhouette, flat cel, ~6 colours.",
+      "flavor": "He breathes recycled air and fears nothing the vacuum can throw at him."
+    },
+    {
+      "name": "Sable Cipher",
+      "archetype": "Cyber infiltrator",
+      "theme": "Stealth netrunner-assassin all matte black with a fiber-optic data-trail aesthetic",
+      "palette": "charcoal #22252B stealthsuit, gunmetal #3A4049 panels, cyber-cyan #33E6FF circuit lines, steel #5A6472 buckles",
+      "artBrief": "Side-profile facing right, Drifter rig: a near-silhouette charcoal stealthsuit body with subtle gunmetal segmented panels, a sleek faceless infiltrator hood-mask broken only by thin flat cyber-cyan circuit lines and one cyan optic-eye; TWO slender detached hand-blobs in tight tactical gloves (one extended as if jacking in), TWO quiet detached soft-soled boot blobs, clear gaps. Matte dark fabric over hidden plating, single shadow band, sparse cyan line-accents read as 'lit' by contrast; low crouched predatory silhouette, flat cel, ~4 colours.",
+      "flavor": "You won't see her until your own systems are already hers."
+    },
+    {
+      "name": "Grix Boltcaster",
+      "archetype": "Hardlight heavy gunner",
+      "theme": "Squat ordnance specialist wearing an oversized stabilizer rig and energy-cell backpack",
+      "palette": "gunmetal #3A4049 rig, rust #A8482E plating, tan #C49A5A webbing, ember-orange #FF8A2B cell glow",
+      "artBrief": "Side-profile facing right, same rig: a short barrel-shaped gunmetal heavy-gunner body fronted by an oversized articulated stabilizer chest-brace and a blocky energy-cell backpack, headgear a riveted half-helm with a thick downturned brow and one squinting bold eye, a small ember-orange cell-port reading as a flat lit shape; TWO chunky detached recoil-gauntlet hand-blobs and TWO splayed detached stabilizer-foot blobs braced wide, clear gaps. Rust-streaked plate over gunmetal, one shadow band; squat heavy braced silhouette, flat cel, ~6 colours.",
+      "flavor": "Built low and wide so the recoil never knocks him off his feet."
+    },
+    {
+      "name": "Vesper Lux",
+      "archetype": "Cyber medic-support trooper",
+      "theme": "Field support operative with a backpack triage rig and a calmer, upright bearing",
+      "palette": "off-white #E8E4D8 suit, steel #5A6472 plate, dull-teal #3C6E6A cross panels, charcoal #22252B undersuit",
+      "artBrief": "Side-profile facing right, Drifter proportions: an upright off-white-and-steel support-trooper torso with clean segmented plating, a dull-teal flat cross panel on the chest, and a compact triage backpack with a folded support arm stowed at the shoulder; rounded smooth helm with a soft visor band over one calm bold eye, a small dull-teal indicator reading as a flat lit shape; TWO tidy detached glove hand-blobs and TWO steady detached boot-blobs, clear flat-green gaps. Matte bone-white panels with one shadow band; composed steady upright silhouette, flat cel, ~5 colours.",
+      "flavor": "The steady hand at your back who keeps the squad on its feet."
+    },
+    {
+      "name": "Vellichor the Ash-Robed",
+      "archetype": "Robed Sorcerer",
+      "theme": "Burnt-out arcane scholar who spends magic like a dying ember",
+      "palette": "Charcoal-grey robes, ember-orange trim, smoldering coal-red glow, bone-white accents",
+      "artBrief": "Tall narrow silhouette wrapped in heavy floor-length charcoal robes that taper to a frayed hem, a deep cowl swallowing the face into shadow with two ember-orange pinprick eyes; detached gloved hands cradle a single floating coal that bleeds smoke, robe edges trimmed in glowing ember-orange runework against bone-white piping. Flat CEL shading, side-profile facing right, bold readable Behemoth-x-Darkest-Dungeon silhouette.",
+      "flavor": "He rations his spells like a man counting his last breaths, certain each casting shortens his life."
+    },
+    {
+      "name": "Mawkin Sourgrin the Hex-Witch",
+      "archetype": "Hex-Witch",
+      "theme": "Swamp-crone who curses with grins, warts, and bottled spite",
+      "palette": "Sickly moss-green, bruise-purple, jaundiced yellow eyes, rusted iron buckles",
+      "artBrief": "Hunched-forward silhouette under a comically tall crook-tipped witch hat, a beaky warted profile with one jaundiced yellow eye and a wide stitched grin; layered ragged moss-green and bruise-purple shawls bristle with dangling charms and bottled hexes, detached hands stir a tiny floating cauldron while clawed feet hook talon-like. Flat hand-painted CEL art, bold spiky readable silhouette, side-profile facing right.",
+      "flavor": "She bottles grudges like preserves and uncorks them on whoever forgot to thank her."
+    },
+    {
+      "name": "Iridia of the Nine Veils",
+      "archetype": "Astral Seer",
+      "theme": "Blindfolded prophet who walks star-charts instead of ground",
+      "palette": "Deep indigo and midnight-blue, starlight silver-white, cosmic teal glow, pale gold leaf",
+      "artBrief": "Serene flowing silhouette in trailing indigo veils that drift like nebulae, head crowned by a thin gold halo-ring and eyes bound in a star-flecked silver blindfold; detached hands hover open with a small orbiting constellation between the palms, robe scattered with pale gold star-leaf and a faint cosmic-teal aura at the hem. Flat CEL shading, elegant readable silhouette, side-profile facing right, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "She sees every future but the one she is standing in, which makes conversation difficult."
+    },
+    {
+      "name": "Corvane the Crimson Draught",
+      "archetype": "Blood-Mage",
+      "theme": "Aristocratic vein-tapper who pays for power in pints",
+      "palette": "Oxblood crimson, pale corpse-grey skin, black leather, glinting silver lancets",
+      "artBrief": "Lean upright silhouette in a high-collared oxblood coat slit to show pale corpse-grey skin laced with dark vein-lines, a sharp gaunt profile with a single hungry red eye; detached hands trail thin ribbons of floating blood drawn from rows of silver lancets strapped across the chest, black-leather wraps and a dripping crimson sash at the waist. Flat hand-painted CEL art, bold readable silhouette, side-profile facing right.",
+      "flavor": "Every spell costs him something, and he is generous with his own blood until he runs short, then yours."
+    },
+    {
+      "name": "Tinker-Magnus Brasswick",
+      "archetype": "Clockwork Alchemist",
+      "theme": "Tinkering gear-mage who brews spells in pressurized glass",
+      "palette": "Antique brass, verdigris copper-green, amber potion-glow, soot-black rubber",
+      "artBrief": "Boxy gear-laden silhouette in a brass-buttoned soot-black coat, head encased in a riveted copper diving-helm with one round amber-lit goggle eye and a coiled exhaust pipe; a backpack of bubbling amber alembics vents steam, detached gauntleted hands grip a pressurized glass flask, verdigris-green plating and ticking gear-cogs studding the shoulders. Flat CEL shading, chunky readable silhouette, side-profile facing right, Behemoth-x-Darkest-Dungeon style.",
+      "flavor": "He insists magic is just chemistry no one has properly measured yet, and the explosions are data."
+    },
+    {
+      "name": "Old Quill Grathmar the Rune-Scribe",
+      "archetype": "Rune-Scribe",
+      "theme": "Ink-stained loremaster who writes spells onto the air",
+      "palette": "Parchment-cream and ink-black, gold-leaf glyphs, deep teal mantle, oxidized bronze",
+      "artBrief": "Stooped scholarly silhouette draped in a parchment-cream robe printed edge-to-edge with ink-black glyphs and a heavy deep-teal mantle, an old bespectacled profile with one squinting eye; detached ink-stained hands write a glowing gold-leaf rune that hangs in the air, a floating bronze inkwell and a quill the size of a sword tucked behind the back. Flat hand-painted CEL art, bold readable silhouette, side-profile facing right.",
+      "flavor": "He believes the world is a manuscript and he is merely correcting its typos with lethal punctuation."
+    },
+    {
+      "name": "Pyra Cinderhowl the Flame-Caster",
+      "archetype": "Hex-Witch (Pyromancer)",
+      "theme": "Wild fire-witch who treats arson as honest expression",
+      "palette": "Scorched black and ash-grey, molten orange-red core, ember-gold sparks, smoke-purple haze",
+      "artBrief": "Wild jagged silhouette in scorched-black robes torn into flame-licked tatters that seem to flicker upward, a fierce upturned profile with molten orange-red cracks glowing through the skin and one blazing ember-gold eye; detached hands juggle a writhing fireball, wisps of smoke-purple haze trailing from singed hair and the hem dissolving into floating ember sparks. Flat hand-painted CEL art, bold spiky readable silhouette, side-profile facing right.",
+      "flavor": "She does not so much cast fire as let it out for a walk and apologize to no one."
+    },
+    {
+      "name": "Sōjiro the Wayward Blade",
+      "archetype": "Wandering Ronin",
+      "theme": "Masterless swordsman of the rain-soaked roads",
+      "palette": "Storm-grey and faded indigo, with rust-red sash accents and weathered straw-tan",
+      "artBrief": "A lean upright humanoid in side-profile facing right, draped in a tattered storm-grey kimono and a wide conical straw kasa hat that breaks the silhouette with a low diagonal brim; one detached hand rests on a chipped katana at the hip while the other trails a frayed indigo sash. Flat hand-painted CEL art, bold readable outline, weathered straw-tan and rust-red accents over muted indigo, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "A masterless drifter who sells his blade only to those the world has already wronged."
+    },
+    {
+      "name": "Brother Tendo of the Still Bell",
+      "archetype": "Shrine Monk",
+      "theme": "Mountain ascetic who fights with prayer-beads and patience",
+      "palette": "Saffron and burnt ochre robes, charcoal undertones, with brass-gold beads and jade-green prayer cloth",
+      "artBrief": "A broad, grounded humanoid in side-profile facing right, swathed in heavy saffron-and-ochre monk robes that pool into a wide stable base, bald rounded head bowed forward; one detached hand grips a long brass-tipped staff, the other loops a string of oversized jade prayer-beads. Flat hand-painted CEL art, thick confident outline, warm saffron over charcoal shadow with brass-gold and jade highlights, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "Serene to the point of stillness, he answers violence with one perfectly timed strike."
+    },
+    {
+      "name": "Yuki the Hollow Smile",
+      "archetype": "Kitsune-Masked Duelist",
+      "theme": "Fox-masked killer who turns every fight into a dance",
+      "palette": "Bone-white and lacquer-black, with vermillion fox-mask markings and a single crimson cord",
+      "artBrief": "A slim, poised humanoid in side-profile facing right whose silhouette is crowned by a grinning white kitsune fox mask with sharp upturned ears and vermillion brushstrokes; a lacquer-black short-sleeved gi cinched by a crimson cord, detached hands held in a loose dueling guard with twin tantō. Flat hand-painted CEL art, crisp bold outline, bone-white and lacquer-black with vermillion mask accents, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "Behind the laughing fox is a duelist who has never once been seen to blink."
+    },
+    {
+      "name": "Raijin Kō, the Storm Fist",
+      "archetype": "Storm Fist Adept",
+      "theme": "Thunder-channeling brawler crackling with raw chi",
+      "palette": "Deep thundercloud blue-violet, electric cyan, and bronze, with white lightning-fork tattoos",
+      "artBrief": "A powerfully muscled humanoid in side-profile facing right, bare-chested under an open thundercloud-blue haori with the sleeves torn off, hair swept upward as if static-charged; detached fists wrapped in bronze knuckle-bindings that spit small cyan sparks, white lightning-fork tattoos crawling up the forearms. Flat hand-painted CEL art, heavy dynamic outline, blue-violet and electric cyan over bronze skin tones, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "Each of his punches lands a heartbeat before the thunder catches up."
+    },
+    {
+      "name": "Mei-Ling of the Jade Ribbon",
+      "archetype": "Jade Dancer",
+      "theme": "Whirling silk-and-fan combatant whose grace is a weapon",
+      "palette": "Jade-green and pale celadon silks, with gold-leaf trim and a sweep of lotus-pink",
+      "artBrief": "A graceful upright humanoid in side-profile facing right, mid-poised on the ball of one detached foot, wrapped in flowing jade-green and celadon silks that ribbon out behind her to widen the silhouette; one detached hand snaps open a gold-trimmed war-fan, the other lifts a trailing lotus-pink streamer. Flat hand-painted CEL art, elegant flowing outline, jade-green and celadon with gold-leaf and lotus-pink accents, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "Her dance is beautiful right up until the fan's hidden edge finds your throat."
+    },
+    {
+      "name": "Old Gen, the Drunken Crane",
+      "archetype": "Wandering Master",
+      "theme": "Stumbling gourd-drinking elder hiding lethal precision",
+      "palette": "Earthy umber and moss-green rags, with a sun-bleached gourd and faded red waist-rope",
+      "artBrief": "A wiry, stoop-backed elder humanoid in side-profile facing right, leaning at a deceptive tipsy angle, long white wisp-beard trailing past a patched moss-green and umber robe; one detached hand dangles a sun-bleached drinking gourd on a cord, the other curls into a loose crane-beak fingertip pose. Flat hand-painted CEL art, loose characterful outline, earthy umber and moss-green with faded-red rope and bone-white beard, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "He sways like a drunk and strikes like a crane, and the wine is mostly an excuse."
+    },
+    {
+      "name": "Kuro-Oni, the Demon Mask",
+      "archetype": "Oni-Masked Enforcer",
+      "theme": "Heavy-armored temple guardian wearing a wrathful demon mask",
+      "palette": "Blackened iron and deep oxblood lacquer, with brass studs and a horned crimson oni mask",
+      "artBrief": "A hulking, top-heavy humanoid in side-profile facing right, shoulders broadened by blackened iron lamellar plates and a horned crimson oni mask with bared brass fangs that dominates the silhouette; detached hands grip a long iron-banded tetsubō club resting against the shoulder. Flat hand-painted CEL art, massive bold outline, blackened iron and oxblood lacquer with brass studs and crimson mask, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "The temple's last wall against the dark, and he has never let it through."
+    },
+    {
+      "name": "Asha the Ash-Walker",
+      "archetype": "Shrine Pilgrim Healer",
+      "theme": "Barefoot wandering pilgrim trading blessings and bandages",
+      "palette": "Dusty cream and pale sage wraps, with a wide woven satchel of cinnabar-red and incense-smoke grey",
+      "artBrief": "A slender, calm humanoid in side-profile facing right, head wrapped in a soft cream travel-cloth, body bound in layered pale-sage pilgrim wraps with a wide woven cinnabar-red satchel slung across the chest; one detached hand carries a smoking brass incense-censer on a chain, the other holds a folded paper talisman, detached bare feet ashen from the road. Flat hand-painted CEL art, gentle clean outline, dusty cream and pale sage with cinnabar-red satchel and incense-smoke grey, Behemoth-x-Darkest-Dungeon look.",
+      "flavor": "She walks from shrine to shrine mending what the warriors leave broken behind them."
+    },
+    {
+      "name": "Snarekeeper Vossel",
+      "archetype": "Trapper / snare-rigger",
+      "theme": "A grizzled backwoods trapper draped in the spoils of his trade, festooned with hanging iron jaw-traps and coiled snare-wire, who reads the ground better than any map.",
+      "palette": "Tobacco-brown waxed leather, oxidized iron grey, frost-bitten bone white, dull moss green accents, with a single rust-orange lantern glow.",
+      "artBrief": "Side-profile facing right, full upright humanoid on the Drifter rig with detached hands and feet — a stooped, broad-shouldered trapper whose silhouette bristles with jagged iron jaw-traps and looping snare-wire dangling from a heavy fur-trimmed coat, a coil of wire gripped in one detached hand. Flat hand-painted CEL art: matte tobacco-brown waxed leather and worn pelts, oxidized iron-grey traps catching a thin cold rim-light, a battered tin lantern at the hip throwing one warm rust-orange spark; bold readable silhouette spiked by hanging metal teeth.",
+      "flavor": "He never chases — he just waits for the world to step where he told it to."
+    },
+    {
+      "name": "The Hollow Mask",
+      "archetype": "Masked assassin / silent killer",
+      "theme": "A faceless contract-killer wrapped in shadow-cloth, every line of the silhouette engineered for silence, identifiable only by the blank porcelain mask and twin curved daggers.",
+      "palette": "Ink-black and charcoal layered cloth, ash-grey wraps, bone-pale porcelain mask, a single bloodless crimson sash, cold steel highlights.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a lean, coiled assassin in tight wrapped shadow-cloth, hood drawn low over a smooth featureless porcelain mask that catches a sliver of moonlight, twin curved daggers held low and reversed in detached hands, a thin crimson sash trailing back. Flat hand-painted CEL art: deep ink-black and charcoal layered fabrics with crisp ash-grey edge highlights, the pale mask the single bright focal point, cold steel glints on the blades; a knife-sharp, narrow, predatory silhouette.",
+      "flavor": "You will not hear the question, only feel the answer."
+    },
+    {
+      "name": "Bryda Houndcall",
+      "archetype": "Beast-tracker / houndmaster ranger",
+      "theme": "A wild-eyed beast-tracker bonded to her pack, antler-horned and pelt-cloaked, who hunts by scent and signal-horn across the deep wilds.",
+      "palette": "Earthy tan and umber hides, deep forest green wool, weathered antler ivory, leather-strap browns, with a flash of amber from a hunting horn.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a rangy beast-tracker in a layered hide cloak crowned with a salvaged antler headdress, a curved amber hunting-horn raised toward her lips in one detached hand and a coiled hound-leash in the other, quiver of bone-tipped darts at her back. Flat hand-painted CEL art: warm earthy tans, umber pelts and deep forest-green wool, weathered antler-ivory horns and a glowing amber horn as the warm focal accent; broad antlered silhouette reading instantly as a wilderness tracker.",
+      "flavor": "Her pack finds you long before she ever needs to look up."
+    },
+    {
+      "name": "Mirelurk Caine",
+      "archetype": "Swamp poacher / bog-stalker",
+      "theme": "A muck-caked swamp poacher who melts into the bog, hung with eel-traps, fishing gigs and bottled lures, reeking of stagnant water and patience.",
+      "palette": "Sickly bog-green and silt-brown, waterlogged grey canvas, slime-glistening highlights, tarnished hook-iron, with a faint bioluminescent teal lure-glow.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a hunched, dripping swamp poacher in a tattered waterlogged canvas wrap and a wide drooping reed hat, a barbed three-pronged fishing gig in one detached hand and a netted catch of eel-traps slung over the shoulder, glass lure-vials at the belt. Flat hand-painted CEL art: sickly bog-green and silt-brown muck with slick wet highlights, tarnished hook-iron, and a faint bioluminescent teal glow leaking from a bottled lure; a low, lumpen, weed-draped silhouette that reads as part man, part swamp.",
+      "flavor": "The bog hides him, and he hides everything else."
+    },
+    {
+      "name": "Doctor Quillane",
+      "archetype": "Plague doctor / contagion-hunter",
+      "theme": "A grim plague doctor who hunts the diseased and the cursed, beaked mask stuffed with bitter herbs, dispensing both cure and poison from the same satchel.",
+      "palette": "Tar-black waxed robe, brass-and-bone mask fittings, dried-blood maroon trim, bottle-glass green vials, with a sallow candle-yellow eye-glow.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a tall gaunt plague doctor in a floor-length tar-black waxed robe and wide flat-brimmed hat, a long curved brass-tipped bird-beak mask with glassy round eye-lenses, a fuming censer swinging from one detached hand and a leather vial-satchel of bottle-green tinctures at the hip. Flat hand-painted CEL art: matte tar-black robe with dried-blood maroon trim, brass and bone mask fittings catching cold light, bottle-glass green vials and a sallow candle-yellow glint behind the lenses; an imposing, narrow, beaked silhouette dripping menace.",
+      "flavor": "He cannot tell you which vial is the cure — that is rather the point."
+    },
+    {
+      "name": "Warden Ashlock",
+      "archetype": "Forest warden / sentinel ranger",
+      "theme": "A stoic forest warden sworn to the deep woods, armored in bark-lacquer and living moss, who answers trespass with a longbow drawn from generations of green silence.",
+      "palette": "Deep pine and olive greens, bark-brown lacquered plate, lichen sage-grey, weathered bronze, with golden dappled-leaf light accents.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a broad, grounded forest warden in bark-lacquered plate overgrown with creeping moss and lichen, a tall recurved longbow held upright in one detached hand and an arrow nocked in the other, a leaf-mantle cloak draped over the shoulders. Flat hand-painted CEL art: deep pine and olive greens over bark-brown lacquered armor, sage-grey lichen and weathered bronze fittings, with warm golden dappled-leaf light flecking the surface; a stout, rooted, sentinel silhouette crowned by the curve of the great bow.",
+      "flavor": "The trees told her you were coming, and the trees do not forgive."
+    },
+    {
+      "name": "Crowmantle Sel",
+      "archetype": "Masked rogue / scavenger-trickster",
+      "theme": "A feather-cloaked scavenger-rogue with a crow-beaked mask, light-fingered and quick-footed, who picks battlefields and pockets with equal ease.",
+      "palette": "Glossy blue-black feathers, bruised-purple cloth, tarnished silver trinkets, slate grey leather, with a sly glint of stolen gold.",
+      "artBrief": "Side-profile facing right, Drifter rig with detached hands and feet — a slight, perched-looking rogue draped in a glossy blue-black feather cloak with a sharp crow-beaked half-mask, fingers spread mid-pilfer in one detached hand while the other palms a tarnished silver trinket, pouches and dangling baubles jingling at the belt. Flat hand-painted CEL art: iridescent blue-black feathers over bruised-purple cloth and slate-grey leather, tarnished silver charms and a sly glint of stolen gold; a hunched, beaked, feather-fringed silhouette that reads as half-bird, half-thief.",
+      "flavor": "She didn't take it — it simply chose a better owner."
+    },
+    {
+      "name": "Gravewake",
+      "archetype": "Undead revenant",
+      "theme": "A hanged outlaw who clawed back up the rope — a gallows-born revenant who fights with the calm of someone who has already died once.",
+      "palette": "Bone #CFC6AE body and off-white #E8E4D8 wraps over charcoal #22252B shadow, with a single dull-teal #3C6E6A grave-glow eye and frayed rust #A8482E noose.",
+      "artBrief": "Same Drifter rig and flat-cel look: a gaunt upright revenant on a bold readable side-profile facing right — a desiccated bone-and-off-white torso half-wrapped in grimy grave-shrouds, a frayed severed noose still cinched at the neck trailing a stub of rope, and a slack jaw under a single sunken dull-teal pinprick eye. EXACTLY two detached bean-shaped bone hands (no fingers) floating clear of each side and two detached bare bone feet below, each with a flat-green gap; charcoal spot-blacks in the eye-hollows and rib-shadows. Palette: bone #CFC6AE and off-white #E8E4D8 against charcoal #22252B, lone dull-teal #3C6E6A glow, rust #A8482E rope.",
+      "flavor": "Death already collected his debt, so he swings without a shred of fear left to lose."
+    },
+    {
+      "name": "Snarlfang",
+      "archetype": "Beast-kin",
+      "theme": "A hulking wolf-kin scavenger raised by the pack — a feral, loping brawler who reads the hunt by scent and instinct.",
+      "palette": "Gunmetal #3A4049 pelt with steel #5A6472 highlights, tan #C49A5A muzzle and ear-tufts, muted-red #9E3B36 leather harness, plasma-lime #9CFF3B feral eye.",
+      "artBrief": "Same Drifter rig and flat-cel look: a broad-shouldered wolf-kin in bold side-profile facing right — a chunky gunmetal-grey furred torso with a jutting tan muzzle, pricked notched ears, a bristling shoulder-ruff, and one narrowed plasma-lime eye; a muted-red strap-harness with bone trophies crosses the chest. EXACTLY two detached rounded paw-mitt hands (no claws or fingers, just fur-tufted blobs) floating at each side and two detached hind-paw feet below, all with clear flat-green gaps; flat cel shadow bands in the pelt, charcoal spot-blacks under the ruff. Palette: gunmetal #3A4049 and steel #5A6472 fur, tan #C49A5A muzzle, muted-red #9E3B36 leather, plasma-lime #9CFF3B eye.",
+      "flavor": "Talks in growls, hunts by nose, and has never once lost a trail."
+    },
+    {
+      "name": "Cogwarden",
+      "archetype": "Living construct / golem",
+      "theme": "A salvaged automaton sentinel built from scrap-plate and a furnace heart — a tireless, slow-stomping iron guardian that simply does not stop.",
+      "palette": "Gunmetal #3A4049 plate over charcoal #22252B joints, steel #5A6472 rivets and bolts, rust #A8482E weathering, ember-orange #FF8A2B furnace-slit glow.",
+      "artBrief": "Same Drifter rig and flat-cel look: a blocky iron construct in bold side-profile facing right — a heavy riveted gunmetal barrel-torso of bolted scrap plates, a flat anvil-shaped head with a single horizontal ember-orange furnace-slit eye, and a stubby smokestack collar (no smoke drawn). EXACTLY two detached chunky steel mitten-hands (smooth blocks, no fingers) floating clear at each side and two detached blocky stomp-foot plates below, all with clear flat-green gaps; rust-streaked cel shadow bands, charcoal spot-blacks in the seams. Palette: gunmetal #3A4049 plate, charcoal #22252B joints, steel #5A6472 rivets, rust #A8482E weathering, lone ember-orange #FF8A2B furnace glow.",
+      "flavor": "Built to guard one gate forever; the gate is long gone, so now it guards you."
+    },
+    {
+      "name": "Cinderpyre",
+      "archetype": "Elemental avatar",
+      "theme": "A living ember-spirit bound in a cracked stone shell — a flame avatar that walks slow and burns from within, never spilling its fire.",
+      "palette": "Charcoal #22252B cracked-stone shell with gunmetal #3A4049 plates, ember-orange #FF8A2B molten core-cracks, tan #C49A5A ash-dusting along the edges.",
+      "artBrief": "Same Drifter rig and flat-cel look: an elemental avatar in bold side-profile facing right — a hunched charcoal volcanic-rock torso fissured with bright ember-orange molten cracks read as flat solid shapes (no glow, no flame, no sparks), one ember-orange slit eye, and a jagged broken-stone crown for a head. EXACTLY two detached cracked-stone bean hands (no fingers) floating clear at each side and two detached blocky rock feet below, all with flat-green gaps; tan ash-dust on the upper edges, charcoal spot-blacks deep in the fissures. Palette: charcoal #22252B and gunmetal #3A4049 stone shell, ember-orange #FF8A2B molten cracks, tan #C49A5A ash.",
+      "flavor": "Speaks rarely, and every word leaves a scorch mark on the floor."
+    },
+    {
+      "name": "Hollowmaw",
+      "archetype": "Eldritch cultist",
+      "theme": "A hooded zealot who traded his face to a thing between the stars — a robed devotee whispering rites no one else can hear.",
+      "palette": "Charcoal #22252B and gunmetal #3A4049 robes, off-white #E8E4D8 bone-mask, arc-violet #B14BFF eldritch sigil and eye-glow, dull-teal #3C6E6A tarnished trim.",
+      "artBrief": "Same Drifter rig and flat-cel look: an eldritch cultist in bold side-profile facing right — a tall hunched figure in heavy charcoal layered robes with a deep pointed hood that swallows the head in shadow, a pale off-white segmented bone half-mask with a single arc-violet sigil-eye, and a dull-teal tarnished chest-clasp. EXACTLY two detached pale bean hands (no fingers) emerging from wide sleeves and floating clear at each side, and two detached cloth-wrapped feet below, all with flat-green gaps; deep charcoal spot-blacks inside the hood, flat cel shadow on the robe folds. Palette: charcoal #22252B and gunmetal #3A4049 robes, off-white #E8E4D8 mask, lone arc-violet #B14BFF sigil-glow, dull-teal #3C6E6A trim.",
+      "flavor": "He is not praying to you, but the thing he prays to is always listening."
+    },
+    {
+      "name": "Thornroot",
+      "archetype": "Plant-folk",
+      "theme": "A wandering bramble-warden grown from old battlefield soil — a slow, rooted plant-folk that drinks the sun and outlasts everything.",
+      "palette": "Olive #6E7042 bark-body, charcoal #22252B knots and shadow, tan #C49A5A dry-stalk fibres, muted-red #9E3B36 thorn-tips and a single bloom, plasma-lime #9CFF3B new-growth eye.",
+      "artBrief": "Same Drifter rig and flat-cel look: a plant-folk warden in bold side-profile facing right — a stout olive-green bark-and-vine torso wrapped in tan dry-stalk fibres, a crown of jagged leaves and bramble for a head with a single plasma-lime bud-eye, and short muted-red thorns ridging the spine. EXACTLY two detached gnarled root-knuckle hands (rounded wooden blobs, no fingers) floating clear at each side and two detached splayed root-cluster feet below, all with flat-green gaps; charcoal spot-black knots, a lone muted-red bloom on the shoulder, flat cel shadow bands on the bark. Palette: olive #6E7042 bark, charcoal #22252B knots, tan #C49A5A fibres, muted-red #9E3B36 thorns and bloom, plasma-lime #9CFF3B eye.",
+      "flavor": "Patient as a season, and every wound it takes just sprouts something meaner."
+    }
+  ]
+}

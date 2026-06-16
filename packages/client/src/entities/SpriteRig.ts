@@ -4,6 +4,10 @@ import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 
 /** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
 const TARGET_BODY_H = 84;
+/** Vertical "look" toward the cursor (local player): how far the torso leans + the held weapon tilts
+ *  with the aim's up/down. Subtle by design — "to some degree". (tuning) */
+const BODY_LOOK_LEAN = 0.14;
+const WEAPON_LOOK_TILT = 0.6;
 
 export interface RigAnim {
   /** Movement direction this frame (≈0 length when idle). */
@@ -253,12 +257,17 @@ export class SpriteRig {
     this.root.scaleY = this.baseScale;
     if (this.label) this.label.scaleX = this.facing; // keep text readable through the flip
 
+    // Vertical "look" toward the cursor — local player only (others have no synced aim). aimY is screen
+    // space (−up / +down) and is NOT touched by the facing mirror, so it leans correctly both ways.
+    const lookY = anim.isSelf ? Math.max(-1, Math.min(1, anim.aimY)) : 0;
+
     // Bob + squash/stretch on the body (scale multiplies the base part scale).
     const bob = Math.sin(t * 6);
     this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
     this.body.scaleX = s * (1 + bob * 0.04);
     this.body.scaleY = s * (1 - bob * 0.06);
-    this.body.rotation = moving ? anim.moveX * 0.16 : 0;
+    // Body leans back looking up, forward looking down (+ the existing movement lean).
+    this.body.rotation = (moving ? anim.moveX * 0.16 : 0) + lookY * BODY_LOOK_LEAN;
 
     // Parry BRACE (§8): a quick snap into a guard, hold through the i-frame window, ease out. Folds
     // into the weapon angle + hand positions below so the whole body reads as a block.
@@ -281,17 +290,18 @@ export class SpriteRig {
     let weaponAngle = 0;
     if (this.weaponDef && this.weapons.length > 0) {
       const def = this.weaponDef;
-      const REST = -Math.PI / 2 + 0.16;
-      weaponAngle = REST + Math.sin(t * 2.6) * 0.04;
+      // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
+      const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
+      weaponAngle = restA + Math.sin(t * 2.6) * 0.04; // gentle idle sway
       const el = timeMs - this.swingStart;
       const dur = def.cooldown * 470;
       if (el >= 0 && el < dur) {
         const tt = el / dur;
-        const windup = REST - 0.6;
-        const end = REST + def.swingArc;
+        const windup = restA - 0.6;
+        const end = restA + def.swingArc;
         weaponAngle =
           tt < 0.18
-            ? REST + (windup - REST) * (tt / 0.18)
+            ? restA + (windup - restA) * (tt / 0.18)
             : windup + (end - windup) * (1 - (1 - (tt - 0.18) / 0.82) ** 2);
       }
     }

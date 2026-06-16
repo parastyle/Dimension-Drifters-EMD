@@ -5,6 +5,10 @@ import {
   ATTRS,
   type Attr,
   BOSS_SPAWN_SECONDS,
+  CHAIN_MAX_RANGE,
+  type ChainCandidate,
+  clampQuakeEpicenter,
+  coneAngles,
   DEFAULT_WEAPON,
   DUMMY_HP,
   deriveStats,
@@ -12,6 +16,7 @@ import {
   ENEMY_RADIUS,
   EnemyState,
   EXTRACT_RADIUS,
+  effectiveDamageMult,
   enemyHpScale,
   inMeleeArc,
   LEVEL_CAP,
@@ -42,6 +47,7 @@ import {
   RESPAWN_SECONDS,
   resolveBodyCollisions,
   SPAWN_RING,
+  selectChainTargets,
   spawnInterval,
   stepEnemyChase,
   stepEnemyKite,
@@ -55,7 +61,6 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
-  weaponDamageMult,
   xpToNextLevel,
   ZONE_DPS,
   ZONE_RADIUS,
@@ -109,23 +114,43 @@ export class GameRoom extends Room<ArenaState> {
   private readonly combat = new Map<string, CombatState>();
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
   private readonly enemyFireCd = new Map<string, number>();
-  /** Server-side projectile metadata not worth syncing. Keyed by projectile id. */
+  /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
+   *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
     string,
-    { ttl: number; damage: number; hostile: boolean; pierce: number; hit: Set<string> }
+    {
+      ttl: number;
+      damage: number;
+      hostile: boolean;
+      pierce: number;
+      hit: Set<string>;
+      explode?: { radius: number; damage: number };
+    }
   >();
   /** Per-zoner puddle-drop cooldown (sec), keyed by enemy id; pruned with the enemy. */
   private readonly zonerDropCd = new Map<string, number>();
   /** Per-zone remaining lifetime (sec), keyed by zone id. */
   private readonly zoneMeta = new Map<string, number>();
-  /** Spawn-director accumulator + monotonic enemy/projectile/zone id counters. */
+  /** §15 duelist (ronin) combo state per enemy id: phase + timer + swings left. Pruned with the enemy. */
+  private readonly comboState = new Map<
+    string,
+    { phase: "idle" | "windup" | "swing" | "recover"; t: number; hits: number }
+  >();
+  /** Spawn-director accumulator + monotonic enemy/projectile/zone/pickup id counters. */
   private spawnAccum = 0;
   private enemySeq = 0;
   private projectileSeq = 0;
   private zoneSeq = 0;
+  private pickupSeq = 0;
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
   private bossSpawned = false;
   private bossId: string | null = null;
+  /** Co-op host = the first player to join (reassigned if they leave). Run-wide commands
+   *  (restart / toggle-training / spawn-boss) are host-only so one client can't wipe the shared run. */
+  private hostId: string | null = null;
+  private isHost(client: Client): boolean {
+    return this.hostId === null || client.sessionId === this.hostId;
+  }
 
   override onCreate(): void {
     this.setState(new ArenaState());
@@ -149,6 +174,16 @@ export class GameRoom extends Room<ArenaState> {
         c.attacking = true;
         c.aimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
         c.aimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
+        // Trust nothing off the wire: NORMALIZE aim to a unit vector. It feeds the melee-arc direction
+        // and the thrown-projectile velocity directly, so a non-unit (or zero) aim would warp reach/speed.
+        const aimLen = Math.hypot(c.aimX, c.aimY);
+        if (aimLen > 1e-4) {
+          c.aimX /= aimLen;
+          c.aimY /= aimLen;
+        } else {
+          c.aimX = 1;
+          c.aimY = 0;
+        }
         // Cursor world target (defaults to just ahead of the player along aim).
         c.targetX = Number.isFinite(message?.tx)
           ? (message.tx as number)
@@ -195,15 +230,20 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     // Toggle the Testing Grounds (§21): stop spawns, swap the swarm for dummies + weapon pickups.
-    this.onMessage("toggleTraining", () => this.toggleTraining());
+    // Run-wide → host-only (a non-host can't yank everyone into/out of training).
+    this.onMessage("toggleTraining", (client) => {
+      if (this.isHost(client)) this.toggleTraining();
+    });
 
     // Restart the run (playtest QoL): wipe the horde, reset the clock, revive everyone fresh.
-    // Any player can call it — co-op shares one run.
-    this.onMessage("restart", () => this.restartRun());
+    // Host-only — co-op shares one run, so one client must not be able to reset everyone's progress.
+    this.onMessage("restart", (client) => {
+      if (this.isHost(client)) this.restartRun();
+    });
 
-    // Debug/playtest: summon the boss now instead of waiting for the timed spawn (B key).
-    this.onMessage("spawnBoss", () => {
-      if (this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
+    // Debug/playtest: summon the boss now instead of waiting for the timed spawn (B key). Host-only.
+    this.onMessage("spawnBoss", (client) => {
+      if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
     });
 
     // §12 level-up window: the player spends their FLEX point on an attribute.
@@ -217,6 +257,9 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
+    // Pin the patch (state-broadcast) rate to the sim tick explicitly — otherwise it sits at the
+    // Colyseus default (50ms) and silently diverges from the sim if TICK_MS ever changes.
+    this.setPatchRate(TICK_MS);
   }
 
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
@@ -396,6 +439,7 @@ export class GameRoom extends Room<ArenaState> {
     player.x = ARENA_WIDTH / 2 + (Math.random() * 200 - 100);
     player.y = ARENA_HEIGHT / 2 + (Math.random() * 200 - 100);
     this.state.players.set(client.sessionId, player);
+    if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, { dx: 0, dy: 0 });
     this.combat.set(client.sessionId, {
       aimX: 1,
@@ -417,11 +461,18 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.delete(client.sessionId);
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
+    // Host left → hand off to whoever's still here (or null if the room's now empty).
+    if (client.sessionId === this.hostId) {
+      const next = this.state.players.keys().next();
+      this.hostId = next.done ? null : next.value;
+    }
     console.log(`[room ${this.roomId}] -leave ${client.sessionId} (${this.clients.length} online)`);
   }
 
   private update(deltaMs: number): void {
-    const dt = deltaMs / 1000;
+    // Clamp the step so one GC/CPU stall can't produce a giant dt (point-sampled projectiles would
+    // tunnel + enemies teleport). Cap at ~2.5 ticks; a longer stall is absorbed as a brief slow-mo.
+    const dt = Math.min(deltaMs, TICK_MS * 2.5) / 1000;
 
     // 1. Integrate each LIVING player's authoritative movement from their latest input.
     //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
@@ -514,10 +565,11 @@ export class GameRoom extends Room<ArenaState> {
       c.attacking = false;
     });
 
-    // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15).
+    // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
+    // (kind.melee) move + attack in stepDuelists, so they're skipped here.
     this.state.enemies.forEach((enemy) => {
       const kind = ENEMY_KINDS[enemy.kind];
-      if (!kind) return;
+      if (!kind || kind.melee) return;
       const target = nearestPoint(enemy, bodies);
       const next = kind.ranged
         ? stepEnemyKite(
@@ -532,6 +584,8 @@ export class GameRoom extends Room<ArenaState> {
       enemy.y = next.y;
     });
 
+    // 5.1 Duelists (ronin): close in, telegraph, then string a melee COMBO (§15).
+    this.stepDuelists(dt, bodies);
     // 5.2 Spitters fire projectiles at the nearest player on a cooldown (§15 ranged threat).
     this.stepSpitters(dt, bodies);
     // 5.3 Advance projectiles + apply hits (server-authoritative damage).
@@ -602,40 +656,80 @@ export class GameRoom extends Room<ArenaState> {
         else {
           kills.add(eid);
           xpGained += (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+          this.maybeDropWeapon(enemy); // §13 ronin sword drop
           // Boss down → open the extraction portal where it fell (§16).
           if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
         }
       }
     };
 
-    const power = weaponDamageMult(weapon, player); // §10 per-weapon attribute scaling grades
+    // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE (forward arc) uses the weapon's
+    // own grades; the VFX/behavior sources below (chain, quake, …) carry their own grades and may scale
+    // off DIFFERENT attributes (e.g. an INT-scaling magma burst on a STR/DEX blade).
+    const edgePower = effectiveDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
 
-    // Forward arc.
+    // Forward arc — also capture the nearest struck enemy as the chain-lightning SEED, and remember
+    // every arc-hit enemy so the chain leaps to OTHER enemies (not ones the cut already hit).
+    const struckArc = new Set<string>();
+    let seedX = 0;
+    let seedY = 0;
+    let seedFound = false;
+    let seedBestD = Infinity;
     this.state.enemies.forEach((enemy, eid) => {
       if (inMeleeArc(player, c.aimX, c.aimY, enemy, weapon.range, weapon.halfArc)) {
-        hit(enemy, eid, weapon.damage * power);
+        hit(enemy, eid, weapon.damage * edgePower);
+        struckArc.add(eid);
+        const d = (enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2;
+        if (d < seedBestD) {
+          seedBestD = d;
+          seedX = enemy.x;
+          seedY = enemy.y;
+          seedFound = true;
+        }
       }
     });
 
-    // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor);
-    // AoE damage to everything within radius of that epicenter (§14 VFX matches on the client).
-    if (weapon.quake) {
-      let ex = c.targetX;
-      let ey = c.targetY;
-      const adx = ex - player.x;
-      const ady = ey - player.y;
-      const adist = Math.hypot(adx, ady);
-      if (adist > QUAKE_REACH) {
-        ex = player.x + (adx / adist) * QUAKE_REACH;
-        ey = player.y + (ady / adist) * QUAKE_REACH;
-      }
-      const r2 = weapon.quake.radius * weapon.quake.radius;
+    // Chain lightning (§10 on-hit proc): leap from the seed to the nearest UNHIT enemy, up to `jumps`
+    // times; link n does damage × falloff^n × power. Target SELECTION is the shared `selectChainTargets`
+    // (the client re-runs the identical pick for the bolt VFX — they cannot diverge). Damage routes
+    // through hit() (dedupe/XP/portal for free).
+    if (weapon.chainLightning && seedFound) {
+      const cl = weapon.chainLightning;
+      const clPower = effectiveDamageMult(weapon, cl.scalingGrades, player); // §14 source grades × §11 req penalty
+      const candidates: ChainCandidate[] = [];
       this.state.enemies.forEach((enemy, eid) => {
-        const dx = enemy.x - ex;
-        const dy = enemy.y - ey;
-        if (dx * dx + dy * dy <= r2) hit(enemy, eid, (weapon.quake?.damage ?? 0) * power);
+        if (!kills.has(eid)) candidates.push({ id: eid, x: enemy.x, y: enemy.y });
+      });
+      const links = selectChainTargets(
+        { x: seedX, y: seedY },
+        candidates,
+        cl.jumps,
+        Math.min(cl.range, CHAIN_MAX_RANGE),
+        struckArc, // arc-hit enemies are not chain targets
+      );
+      links.forEach((t, n) => {
+        const enemy = this.state.enemies.get(t.id);
+        if (enemy) hit(enemy, t.id, cl.damage * cl.falloff ** n * clPower);
       });
     }
+
+    // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor);
+    // AoE damage to everything within radius of that epicenter (§14 VFX matches on the client via the
+    // SAME shared clampQuakeEpicenter).
+    if (weapon.quake) {
+      const qPower = effectiveDamageMult(weapon, weapon.quake.scalingGrades, player); // §14 source grades × §11 req penalty
+      const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
+      const r2 = weapon.quake.radius * weapon.quake.radius;
+      this.state.enemies.forEach((enemy, eid) => {
+        const dx = enemy.x - ep.x;
+        const dy = enemy.y - ep.y;
+        if (dx * dx + dy * dy <= r2) hit(enemy, eid, (weapon.quake?.damage ?? 0) * qPower);
+      });
+    }
+
+    // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
+    // Fired as live projectiles (server-authoritative) — they advance + detonate in stepProjectiles.
+    if (weapon.scatter) this.fireScatter(player, c, weapon);
 
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
@@ -714,7 +808,20 @@ export class GameRoom extends Room<ArenaState> {
       const target = nearestPoint(enemy, bodies);
       if (target && Math.hypot(target.x - enemy.x, target.y - enemy.y) <= ranged.range) {
         const dmg = ranged.damage * (enemy.tough ? TOUGH_DAMAGE_MULT : 1);
-        this.fireProjectile(enemy, target, ranged.projectileSpeed, dmg);
+        if (ranged.spread && ranged.spread.count > 1) {
+          // §15 Gatlin shotgun: fan a cone of pellets toward the target in one volley.
+          const base = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+          for (const ang of coneAngles(base, ranged.spread.count, ranged.spread.arc)) {
+            this.fireProjectile(
+              enemy,
+              { x: enemy.x + Math.cos(ang), y: enemy.y + Math.sin(ang) },
+              ranged.projectileSpeed,
+              dmg,
+            );
+          }
+        } else {
+          this.fireProjectile(enemy, target, ranged.projectileSpeed, dmg);
+        }
         this.enemyFireCd.set(id, ranged.cooldown);
       } else {
         // No target in range — stay primed so it fires the instant a player steps into range.
@@ -732,6 +839,7 @@ export class GameRoom extends Room<ArenaState> {
     kind = "spit",
     pierce = 1,
     ttl = PROJECTILE_TTL,
+    explode?: { radius: number; damage: number },
   ): void {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -744,15 +852,16 @@ export class GameRoom extends Room<ArenaState> {
     pr.y = from.y;
     pr.vx = (dx / len) * speed;
     pr.vy = (dy / len) * speed;
+    pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
     this.state.projectiles.set(pr.id, pr);
-    this.projectileMeta.set(pr.id, { ttl, damage, hostile, pierce, hit: new Set() });
+    this.projectileMeta.set(pr.id, { ttl, damage, hostile, pierce, hit: new Set(), explode });
   }
 
   /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */
   private throwWeapon(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const t = weapon.thrown;
     if (!t) return;
-    const dmg = t.damage * weaponDamageMult(weapon, player); // §10 per-weapon scaling grades
+    const dmg = t.damage * effectiveDamageMult(weapon, t.scalingGrades, player); // §14 source grades × §11 req penalty
     const ttl = t.range / t.speed;
     this.fireProjectile(
       { x: player.x, y: player.y },
@@ -764,6 +873,158 @@ export class GameRoom extends Room<ArenaState> {
       t.pierce,
       ttl,
     );
+  }
+
+  /** §14 scatter shot — fling `count` REAL magma projectiles in a cone toward aim. Each is a WYSIWYG
+   *  damage source: an INT-scaled direct hit plus, on death, an INT-scaled explosion (both baked here
+   *  from the player's attributes at swing time). Cone/speed/range/blast radius are FIXED (§14). */
+  private fireScatter(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+    const sc = weapon.scatter;
+    if (!sc) return;
+    const ballDmg = sc.damage * effectiveDamageMult(weapon, sc.scalingGrades, player);
+    const pierce = sc.pierce ?? 1;
+    // The blast inherits the scatter's grades unless it overrides them; bake its damage once here.
+    const explode = sc.explode
+      ? {
+          radius: sc.explode.radius,
+          damage:
+            sc.explode.damage *
+            effectiveDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player),
+        }
+      : undefined;
+    const baseAng = Math.atan2(c.aimY, c.aimX);
+    for (let i = 0; i < sc.count; i++) {
+      // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
+      // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
+      const spread = sc.count > 1 ? (i / (sc.count - 1) - 0.5) * 2 * sc.spread : 0;
+      const ang = baseAng + spread + (Math.random() - 0.5) * 0.12;
+      const spd = sc.speed * (0.85 + Math.random() * 0.3);
+      this.fireProjectile(
+        { x: player.x, y: player.y },
+        { x: player.x + Math.cos(ang), y: player.y + Math.sin(ang) },
+        spd,
+        ballDmg,
+        false,
+        "magma",
+        pierce,
+        sc.range / spd, // expire after travelling ~range (then explode)
+        explode,
+      );
+    }
+  }
+
+  /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
+   *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
+  private detonate(x: number, y: number, radius: number, damage: number): void {
+    const r2 = radius * radius;
+    const kills: string[] = [];
+    let xpGained = 0;
+    this.state.enemies.forEach((enemy, eid) => {
+      const dx = enemy.x - x;
+      const dy = enemy.y - y;
+      if (dx * dx + dy * dy > r2) return;
+      enemy.hp -= damage;
+      if (enemy.hp <= 0) {
+        if (enemy.kind === "dummy") {
+          enemy.hp = DUMMY_HP;
+        } else {
+          if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
+          xpGained += (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+          this.maybeDropWeapon(enemy); // §13 ronin sword drop
+          kills.push(eid);
+        }
+      }
+    });
+    for (const eid of kills) this.state.enemies.delete(eid);
+    if (xpGained > 0) this.grantXp(xpGained);
+  }
+
+  /** §15 duelists (ronin): close to `melee.approach`, telegraph `windup`, then swing `hits` times (each
+   *  an arc hit toward the nearest player), then `recover`. Movement + the combo state machine. */
+  private stepDuelists(dt: number, bodies: Vec2[]): void {
+    for (const id of [...this.comboState.keys()]) {
+      if (!this.state.enemies.has(id)) this.comboState.delete(id);
+    }
+    this.state.enemies.forEach((enemy, id) => {
+      const kind = ENEMY_KINDS[enemy.kind];
+      const m = kind?.melee;
+      if (!m) return;
+      const target = nearestPoint(enemy, bodies);
+      let st = this.comboState.get(id);
+      if (!st) {
+        st = { phase: "idle", t: 0, hits: 0 };
+        this.comboState.set(id, st);
+      }
+      const dist = target
+        ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
+        : Number.POSITIVE_INFINITY;
+      // Move toward the target only while idle + out of reach; hold position through the combo.
+      if (st.phase === "idle" && target && dist > m.approach) {
+        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed, dt);
+        enemy.x = next.x;
+        enemy.y = next.y;
+      }
+      st.t -= dt;
+      if (st.phase === "idle") {
+        if (target && dist <= m.approach) {
+          st.phase = "windup";
+          st.t = m.windup;
+        }
+      } else if (st.phase === "windup") {
+        if (st.t <= 0) {
+          st.phase = "swing";
+          st.hits = m.hits;
+          this.duelistSwing(enemy, target, m);
+          st.hits -= 1;
+          st.t = m.swingGap;
+        }
+      } else if (st.phase === "swing") {
+        if (st.t <= 0) {
+          if (st.hits > 0) {
+            this.duelistSwing(enemy, target, m);
+            st.hits -= 1;
+            st.t = m.swingGap;
+          } else {
+            st.phase = "recover";
+            st.t = m.recover;
+          }
+        }
+      } else if (st.t <= 0) {
+        st.phase = "idle"; // recover done
+      }
+    });
+  }
+
+  /** One duelist swing: bump `atkSeq` (client animates) + arc-damage players in front (parry dodges). */
+  private duelistSwing(
+    enemy: EnemyState,
+    target: Vec2 | null,
+    m: { range: number; halfArc: number; damage: number },
+  ): void {
+    enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+    const aimX = target ? target.x - enemy.x : 1;
+    const aimY = target ? target.y - enemy.y : 0;
+    const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
+    this.state.players.forEach((player) => {
+      if (!player.alive || player.flexPending > 0) return;
+      if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry i-frames dodge it
+      if (inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) {
+        player.hp -= m.damage * dmgMul;
+      }
+    });
+  }
+
+  /** §13 weapon drop: when a wielding enemy dies, roll its `dropWeapon` chance → spawn a grabbable pickup. */
+  private maybeDropWeapon(enemy: EnemyState): void {
+    const kind = ENEMY_KINDS[enemy.kind];
+    if (!kind?.wieldsWeapon || !kind.dropWeapon) return;
+    if (Math.random() > kind.dropWeapon) return;
+    const pk = new PickupState();
+    pk.id = `drop${this.pickupSeq++}`;
+    pk.weapon = kind.wieldsWeapon;
+    pk.x = enemy.x;
+    pk.y = enemy.y;
+    this.state.pickups.set(pk.id, pk);
   }
 
   /** Advance every projectile, expire at TTL/arena edge. HOSTILE projectiles hit players (parry-/
@@ -819,6 +1080,7 @@ export class GameRoom extends Room<ArenaState> {
                 if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
                 xpGained +=
                   (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+                this.maybeDropWeapon(enemy); // §13 ronin sword drop
                 kills.push(eid);
               }
             }
@@ -830,6 +1092,10 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
     for (const id of doomed) {
+      const pr = this.state.projectiles.get(id);
+      const meta = this.projectileMeta.get(id);
+      // Detonate exploding projectiles (magma scatter) at their death position — §14 WYSIWYG.
+      if (pr && meta?.explode) this.detonate(pr.x, pr.y, meta.explode.radius, meta.explode.damage);
       this.state.projectiles.delete(id);
       this.projectileMeta.delete(id);
     }

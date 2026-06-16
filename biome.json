@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/dist", "!**/node_modules", "!assets", "!.tmp-bin", "!tools/artkit"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!assets",
+      "!.tmp-bin",
+      "!tools/artkit",
+      "!tools/weaponsmith/assignments.json"
+    ]
   },
   "formatter": {
     "enabled": true,

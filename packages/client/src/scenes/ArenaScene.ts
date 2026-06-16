@@ -2,28 +2,80 @@ import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   type ArenaState,
+  type Attr,
+  CHAIN_MAX_RANGE,
+  type ChainCandidate,
+  clampQuakeEpicenter,
+  type DamageSource,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
+  damageMultFromGrades,
   ENEMY_KINDS,
   EXTRACT_RADIUS,
+  inMeleeArc,
   LEVELUP_WINDOW_SECONDS,
   PARRY_COOLDOWN,
   type PlayerState,
   QUAKE_REACH,
   ROOM_NAME,
+  requirementPenalty,
+  selectChainTargets,
   TOUGH_SCALE,
+  VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
-  weaponDamageMult,
+  weaponDamageSources,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { SpriteRig } from "../entities/SpriteRig.js";
+import { RENDER_DPR } from "../render-dpr.js";
+import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
+import { VfxPlayer } from "../vfx/VfxPlayer.js";
+import { WEAPON_VFX } from "../vfx/weapon-vfx.generated.js";
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
+
+/** Jagged polyline between two WORLD points — the world-space twin of vfx-render's local arc-bolt jag.
+ *  Walks along the segment, offsetting each interior node perpendicular by ±(segLen × jag). */
+function boltPoints(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  jag: number,
+): Array<{ x: number; y: number }> {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const len = Math.hypot(dx, dy) || 1;
+  const px = -dy / len; // perpendicular unit
+  const py = dx / len;
+  const steps = Math.max(4, (len / 22) | 0); // ~22px segments
+  const pts: Array<{ x: number; y: number }> = [{ x: x0, y: y0 }];
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const off = (Math.random() - 0.5) * len * jag * 0.4;
+    pts.push({ x: x0 + dx * t + px * off, y: y0 + dy * t + py * off });
+  }
+  pts.push({ x: x1, y: y1 });
+  return pts;
+}
+function strokeBolt(g: Phaser.GameObjects.Graphics, pts: Array<{ x: number; y: number }>): void {
+  if (pts.length === 0) return;
+  g.beginPath();
+  let started = false;
+  for (const p of pts) {
+    if (started) g.lineTo(p.x, p.y);
+    else {
+      g.moveTo(p.x, p.y);
+      started = true;
+    }
+  }
+  g.strokePath();
+}
 
 /**
  * Player-core scene (build order §27.3 step 3, building on step 2's netcode).
@@ -37,6 +89,8 @@ export class ArenaScene extends Phaser.Scene {
   private room?: Room<ArenaState>;
   private readonly blobs = new Map<string, SpriteRig>();
   private readonly enemies = new Map<string, SpriteRig>();
+  /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
+  private vfxPlayer!: VfxPlayer;
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<"W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B", Phaser.Input.Keyboard.Key>;
@@ -53,6 +107,8 @@ export class ArenaScene extends Phaser.Scene {
   private frozenUntil = 0;
   private deltaSec = 0;
   private readonly enemyHp = new Map<string, number>();
+  /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
+  private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
@@ -82,19 +138,27 @@ export class ArenaScene extends Phaser.Scene {
   private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
-  // §9 bottom-center card carousel — a fanned hand; held card centered/enlarged with full stats.
+  // §9 card carousel — held card big with full stats. Each card holds its LIVE elements (one equation
+  // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
+  // from the player's current attributes every frame so the numbers track levelling.
   private carousel: {
     id: string;
     container: Phaser.GameObjects.Container;
-    readout: Phaser.GameObjects.Text;
-    eq: Phaser.GameObjects.Text; // live damage equation: base + bonus = total
-    badge: Phaser.GameObjects.Text; // live charges in the corner badge
+    /** One live "base + bonus = total" line per damage source (blade / magma / quake / …). */
+    sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
+    /** Min-requirement tokens, recoloured green/red vs the player's live attributes. */
+    reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
+    /** Charges (thrown, live) or durability (melee, static for now) readout. */
+    resource: Phaser.GameObjects.Text;
   }[] = [];
   /** Per-weapon accent colour for card frames (rarity tinting lands with the loot system). */
   private static readonly WEAPON_ACCENT: Record<string, number> = {
     "rusty-cleaver": 0xff8a2b,
     "tombstone-greatsword": 0x9cff3b,
     "twin-bowie-fangs": 0x6fd6ff,
+    driftblade: 0x6f8bff,
+    "x-sword-neon-katana": 0x5dcaa5,
+    "x-sword-bone": 0xff7a3c,
   };
   private readonly debugEl = document.getElementById("debug");
 
@@ -111,12 +175,17 @@ export class ArenaScene extends Phaser.Scene {
     }
     // Weapon VFX hero skins (§14 Codex art, authored in the Weaponsmith). Game-res, pre-sized.
     this.load.image("vfx-quake-tombstone", "vfx/quake-tombstone.png");
-    // Weapon card art (§14 two-pass / §28.5) for the §9 carousel — one per arsenal weapon.
-    for (const id of WEAPON_IDS) this.load.image(`card-${id}`, `cards/${id}.png`);
+    // Weapon card art (§14 two-pass / §28.5) for the §9 carousel — ONLY ids with bespoke art on disk
+    // (CARD_ART_IDS, regenerated by gen-card-manifest). Others fall back to the sprite/icon card, so we
+    // never queue 404s that flood the console and bury real errors.
+    for (const id of CARD_ART_IDS) this.load.image(`card-${id}`, `cards/${id}.png`);
+    // Authored per-weapon VFX assets — painted hero skins + scatter sheets (§14 CODE-8).
+    VfxPlayer.preloadAssets(this);
   }
 
   create(): void {
     this.drawArena();
+    this.vfxPlayer = new VfxPlayer(this);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
@@ -143,16 +212,29 @@ export class ArenaScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
     this.cameras.main.setBackgroundColor("#17140f"); // dark earth beyond the arena
+    // §28 hi-DPI: the camera viewport == the DPR-scaled drawing buffer; zooming by RENDER_DPR keeps the
+    // visible world area identical (worldView stays the CSS size) but renders it at device resolution.
+    // origin (0,0) so screen-space UI maps 1:1 to CSS coords (no centre-pivot shift); UI uses screenW/H.
+    this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
 
-    // RESIZE scale mode: keep the camera viewport equal to the canvas, else the camera
-    // renders into only part of the canvas (the "game stuck in a corner" bug).
+    // Keep the camera viewport == the canvas buffer as it resizes, re-applying the hi-DPI zoom.
     this.scale.on("resize", (size: Phaser.Structs.Size) => {
       this.cameras.main.setSize(size.width, size.height);
+      this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
     });
 
     this.buildHud();
     this.buildCarousel();
     void this.connect();
+  }
+
+  /** Screen-space UI width/height in CSS px (§28 hi-DPI). The camera viewport is the DPR-scaled buffer,
+   *  so UI anchored to the screen edges must use `viewport / RENDER_DPR` — i.e. the visible CSS size. */
+  private screenW(): number {
+    return this.cameras.main.width / RENDER_DPR;
+  }
+  private screenH(): number {
+    return this.cameras.main.height / RENDER_DPR;
   }
 
   /** Screen-space HUD: HP bar + downed overlay (§20). Fixed to the camera (scrollFactor 0). */
@@ -268,36 +350,81 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(false);
   }
 
-  /** Render weapon pickups lying in the Testing Grounds (weapon sprite + name, bobbing). */
+  /** Render weapon pickups — a FANCY faux-3D display: the weapon spins on its vertical axis (scaleX
+   *  through 0 = a 3D-ish turn), floats with a rarity-tinted glow + light beam + ground halo, and throws
+   *  a bright SHINE glint each time it rotates to face the player. (True polygonal 3D would need a
+   *  separate renderer + clash with the flat art; this reads as the fancy-shiny pickup Mike wants.) */
   private syncPickups(): void {
     if (!this.room) return;
+    const TAU = Math.PI * 2;
+    const ADD = Phaser.BlendModes.ADD;
     const state = this.room.state.pickups;
     state.forEach((pk, id) => {
       if (this.pickups.has(id)) return;
       const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
       const part = manifest?.parts[0];
       const def = WEAPONS[pk.weapon];
-      const ring = this.add
-        .ellipse(0, 14, 78, 30, 0x33e6ff, 0.16)
-        .setStrokeStyle(2, 0x33e6ff, 0.55);
+      const accent = ArenaScene.WEAPON_ACCENT[pk.weapon] ?? 0xffd479;
+      const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
+      const baseScale = part ? 72 / part.w : 1;
+
+      const beam = this.add.rectangle(0, -10, 34, 104, accent, 0.08).setBlendMode(ADD); // pedestal light
+      const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
+      const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
       const img = part
-        ? this.add.image(0, 0, `${pk.weapon}:${part.role}`).setScale(64 / part.w)
-        : this.add.rectangle(0, 0, 50, 12, 0xffffff);
+        ? this.add.image(0, 0, `${pk.weapon}:${part.role}`).setScale(baseScale)
+        : this.add.rectangle(0, 0, 50, 12, accent);
+      const shine = part
+        ? this.add
+            .image(0, 0, `${pk.weapon}:${part.role}`)
+            .setScale(baseScale)
+            .setTint(0xffffff)
+            .setTintMode(Phaser.TintModes.FILL)
+            .setBlendMode(ADD)
+            .setAlpha(0)
+        : null;
       const label = this.add
-        .text(0, 30, def?.name ?? pk.weapon, {
-          fontSize: "12px",
-          color: "#e8e4d8",
+        .text(0, 42, def?.name ?? pk.weapon, {
+          fontSize: "11px",
+          color: accentHex,
           fontStyle: "bold",
         })
         .setOrigin(0.5);
-      const container = this.add.container(pk.x, pk.y, [ring, img, label]).setDepth(2);
+      const spinner = this.add.container(0, 0, shine ? [glow, img, shine] : [glow, img]);
+      const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
+
       this.tweens.add({
-        targets: img,
-        y: -12,
-        duration: 850,
+        targets: spinner,
+        y: -14,
+        duration: 900,
         yoyo: true,
         repeat: -1,
         ease: "Sine.inOut",
+      });
+      this.tweens.add({
+        targets: halo,
+        scaleX: 1.14,
+        scaleY: 1.14,
+        alpha: 0.34,
+        duration: 1100,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.inOut",
+      });
+      this.tweens.addCounter({
+        from: 0,
+        to: TAU,
+        duration: 1700,
+        repeat: -1,
+        onUpdate: (tw) => {
+          const c = Math.cos(tw.getValue() ?? 0);
+          img.scaleX = baseScale * c; // faux-3D Y-axis spin (squashes through edge-on)
+          glow.setScale(0.85 + 0.2 * Math.abs(c), 1);
+          if (shine) {
+            shine.scaleX = baseScale * c;
+            shine.setAlpha(Math.max(0, c) ** 5 * 0.75); // bright glint as it turns to face you
+          }
+        },
       });
       this.pickups.set(id, container);
     });
@@ -412,7 +539,7 @@ export class ArenaScene extends Phaser.Scene {
     const isSelf = id === this.room?.sessionId;
     this.blobs.set(id, new SpriteRig(this, player.x, player.y, isSelf, id, PLAYER_SPRITE));
     this.prevPos.set(id, { x: player.x, y: player.y });
-    if (isSelf) this.cameras.main.centerOn(player.x, player.y);
+    if (isSelf) this.centerCam(player.x, player.y);
   }
 
   private removeBlob(id: string): void {
@@ -471,8 +598,20 @@ export class ArenaScene extends Phaser.Scene {
         if (kind?.renderScale) rig.setRigScale(kind.renderScale);
         else if (enemy.tough) rig.setRigScale(TOUGH_SCALE);
         if (enemy.tough) rig.addGlow(0xff5d3b);
+        // §15 duelist (ronin): visibly WIELD its sword (held-sprite on the enemy rig).
+        if (kind?.wieldsWeapon) {
+          const wdef = WEAPONS[kind.wieldsWeapon];
+          const wman = SPRITES[kind.wieldsWeapon as keyof typeof SPRITES];
+          if (wdef && wman) rig.equipWeapon(kind.wieldsWeapon, wdef, wman);
+        }
         this.enemies.set(id, rig);
         this.enemyPrev.set(id, { x: enemy.x, y: enemy.y });
+        this.enemyAtk.set(id, enemy.atkSeq);
+      }
+      // Trigger a swing animation each time the server bumps the duelist's atkSeq (combo hit).
+      if (enemy.atkSeq !== this.enemyAtk.get(id)) {
+        this.enemyAtk.set(id, enemy.atkSeq);
+        this.enemies.get(id)?.triggerSwing(this.time.now);
       }
     });
     for (const id of [...this.enemies.keys()]) {
@@ -484,6 +623,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemies.delete(id);
         this.enemyPrev.delete(id);
         this.enemyHp.delete(id);
+        this.enemyAtk.delete(id);
       }
     }
   }
@@ -524,14 +664,24 @@ export class ArenaScene extends Phaser.Scene {
     const state = this.room.state.projectiles;
     state.forEach((pr, id) => {
       if (this.projectiles.has(id)) return;
-      const container = pr.kind === "cleaver" ? this.makeThrownCleaver(pr) : this.makeSpit(pr);
+      const container =
+        pr.kind === "cleaver"
+          ? this.makeThrownCleaver(pr)
+          : pr.kind === "magma"
+            ? this.makeMagma(pr)
+            : this.makeSpit(pr);
       container.setData("kind", pr.kind);
+      container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       this.projectiles.set(id, container);
     });
     for (const id of [...this.projectiles.keys()]) {
       if (!state.has(id)) {
         const c = this.projectiles.get(id);
-        if (c) this.spawnSplat(c.x, c.y, c.getData("kind"));
+        if (c) {
+          const er = (c.getData("explodeR") as number) ?? 0;
+          if (c.getData("kind") === "magma" && er > 0) this.spawnExplosion(c.x, c.y, er);
+          else this.spawnSplat(c.x, c.y, c.getData("kind"));
+        }
         c?.destroy();
         this.projectiles.delete(id);
       }
@@ -572,6 +722,112 @@ export class ArenaScene extends Phaser.Scene {
       : this.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
     const glow = this.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
     return this.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
+  }
+
+  /** Magma scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered
+   *  with the AUTHORED PAINTED magma-ball art (a random frame of the scatter sheet) so the projectile you
+   *  see IS the painted ball. A hot additive glow + motion-blur trail sell the molten flight; the ball
+   *  tumbles. Falls back to a procedural ember only if the scatter texture isn't loaded. */
+  private makeMagma(pr: {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+  }): Phaser.GameObjects.Container {
+    const ang = Math.atan2(pr.vy, pr.vx);
+    const trail = this.add
+      .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, 0xff5a1e, 0.4)
+      .setRotation(ang)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const glow = this.add.circle(0, 0, 17, 0xff6a22, 0.5).setBlendMode(Phaser.BlendModes.ADD);
+    // The painted magma ball (the authored scatter art) — the real projectile rendered as its own art.
+    const sc = WEAPON_VFX["x-sword-bone"]?.scatter;
+    const key = sc ? `scatter:${sc.url}` : null;
+    let ball: Phaser.GameObjects.GameObject;
+    if (key && this.textures.exists(key)) {
+      const frame = Math.floor(Math.random() * (sc?.count ?? 1));
+      const img = this.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? 249));
+      this.tweens.add({
+        targets: img,
+        angle: 360,
+        duration: 900 + Math.random() * 500,
+        repeat: -1,
+        ease: "Linear",
+      });
+      ball = img;
+    } else {
+      ball = this.add.circle(0, 0, 7, 0xff8a2b); // fallback ember
+    }
+    const c = this.add.container(pr.x, pr.y, [trail, glow, ball]).setDepth(99000);
+    this.tweens.add({
+      targets: glow,
+      scale: 1.4,
+      alpha: 0.28,
+      duration: 140,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+    return c;
+  }
+
+  /** Fiery AoE explosion where a magma ball died — a flash + a shockwave ring expanding to EXACTLY the
+   *  blast radius (the server hitbox) + a hot footprint disc + flung sparks. §14 WYSIWYG: visual = hitbox. */
+  private spawnExplosion(x: number, y: number, radius: number): void {
+    const flash = this.add
+      .circle(x, y, radius * 0.5, 0xffe6b0, 0.9)
+      .setDepth(99002)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets: flash,
+      scale: 1.6,
+      alpha: 0,
+      duration: 220,
+      ease: "Quad.easeOut",
+      onComplete: () => flash.destroy(),
+    });
+    const ring = this.add
+      .circle(x, y, radius)
+      .setStrokeStyle(4, 0xff8a2b, 0.95)
+      .setScale(0.2)
+      .setDepth(99002)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets: ring,
+      scale: 1,
+      alpha: 0,
+      duration: 300,
+      ease: "Quad.easeOut",
+      onComplete: () => ring.destroy(),
+    });
+    const disc = this.add
+      .circle(x, y, radius, 0xff5a1e, 0.32)
+      .setDepth(99001)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets: disc,
+      alpha: 0,
+      scale: 1.05,
+      duration: 260,
+      ease: "Quad.easeOut",
+      onComplete: () => disc.destroy(),
+    });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
+      const spark = this.add
+        .circle(x, y, 2.5, 0xffd9a0, 0.9)
+        .setDepth(99002)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({
+        targets: spark,
+        x: x + Math.cos(a) * radius * 1.1,
+        y: y + Math.sin(a) * radius * 1.1,
+        alpha: 0,
+        duration: 240 + Math.random() * 120,
+        ease: "Quad.easeOut",
+        onComplete: () => spark.destroy(),
+      });
+    }
   }
 
   /** Dead-reckon each projectile along its velocity, gently corrected toward the server position
@@ -674,7 +930,6 @@ export class ArenaScene extends Phaser.Scene {
   /** Boss health bar + approach banner + victory screen (§16). */
   private updateRunState(): void {
     if (!this.room) return;
-    const cam = this.cameras.main;
     // Locate the boss (if any) and total its max HP from the roster.
     let boss: { hp: number } | undefined;
     this.room.state.enemies.forEach((e) => {
@@ -683,10 +938,10 @@ export class ArenaScene extends Phaser.Scene {
     const bossMax = ENEMY_KINDS["old-rust"]?.hp ?? 420;
     const present = !!boss;
     if (present && boss) {
-      this.bossBarBg.setPosition(cam.width / 2, 40).setVisible(true);
-      this.bossBarFill.setPosition(cam.width / 2 - 258, 48).setVisible(true);
+      this.bossBarBg.setPosition(this.screenW() / 2, 40).setVisible(true);
+      this.bossBarFill.setPosition(this.screenW() / 2 - 258, 48).setVisible(true);
       this.bossBarFill.width = 516 * Math.max(0, Math.min(1, boss.hp / bossMax));
-      this.bossText.setPosition(cam.width / 2, 38).setVisible(true);
+      this.bossText.setPosition(this.screenW() / 2, 38).setVisible(true);
     } else {
       this.bossBarBg.setVisible(false);
       this.bossBarFill.setVisible(false);
@@ -703,14 +958,18 @@ export class ArenaScene extends Phaser.Scene {
     // Victory screen.
     const won = this.room.state.outcome === "victory";
     this.victoryText.setVisible(won);
-    if (won) this.victoryText.setPosition(cam.width / 2, cam.height / 2);
+    if (won) this.victoryText.setPosition(this.screenW() / 2, this.screenH() / 2);
   }
 
   /** A big transient centered banner that fades (boss approach, etc.). */
   private flashBanner(msg: string, color: string): void {
     const cam = this.cameras.main;
     const t = this.add
-      .text(cam.width / 2, cam.height / 2 - 80, msg, { fontSize: "32px", color, fontStyle: "bold" })
+      .text(this.screenW() / 2, this.screenH() / 2 - 80, msg, {
+        fontSize: "32px",
+        color,
+        fontStyle: "bold",
+      })
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100003);
@@ -747,7 +1006,7 @@ export class ArenaScene extends Phaser.Scene {
   private static readonly ATTR_INFO: Record<string, { name: string; desc: string; color: number }> =
     {
       str: { name: "STR", desc: "+ melee damage", color: 0xff8a2b },
-      dex: { name: "DEX", desc: "+ attack speed", color: 0x6fd6ff },
+      dex: { name: "DEX", desc: "+ finesse/ranged dmg", color: 0x6fd6ff },
       int: { name: "INT", desc: "+ spell / signature power", color: 0xb07bd6 },
       con: { name: "CON", desc: "+ max HP & regen", color: 0x9cff3b },
       luk: { name: "LUK", desc: "+ luck & rarity", color: 0xffd479 },
@@ -755,11 +1014,10 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Build the dim overlay + 5 attribute buttons for the §12 flex-point pick. */
   private buildLevelWindow(self: PlayerState): void {
-    const cam = this.cameras.main;
-    const cx = cam.width / 2;
-    const cy = cam.height / 2;
+    const cx = this.screenW() / 2;
+    const cy = this.screenH() / 2;
     const dim = this.add
-      .rectangle(cx, cy, cam.width, cam.height, 0x05040a, 0.66)
+      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.66)
       .setScrollFactor(0)
       .setDepth(100010)
       .setInteractive();
@@ -874,7 +1132,20 @@ export class ArenaScene extends Phaser.Scene {
     const id = this.room?.sessionId;
     if (!id) return;
     const self = this.blobs.get(id);
-    if (self) this.cameras.main.centerOn(self.x, self.y);
+    if (self) this.centerCam(self.x, self.y);
+  }
+
+  /** Center the camera on (x,y) — ZOOM-AWARE + arena-clamped. Phaser's `centerOn` divides by the
+   *  viewport not the zoom, so under the §28 hi-DPI camera zoom it offsets the player by a fraction of
+   *  the screen; we scroll by the visible WORLD half-extent (`width / zoom / 2`) instead. */
+  private centerCam(x: number, y: number): void {
+    const cam = this.cameras.main;
+    const halfW = cam.width / cam.zoom / 2;
+    const halfH = cam.height / cam.zoom / 2;
+    cam.setScroll(
+      Math.max(0, Math.min(ARENA_WIDTH - halfW * 2, x - halfW)),
+      Math.max(0, Math.min(ARENA_HEIGHT - halfH * 2, y - halfH)),
+    );
   }
 
   /** Drive each character's procedural animation from its render-velocity + the cursor aim. */
@@ -932,7 +1203,7 @@ export class ArenaScene extends Phaser.Scene {
     this.localAtkCd = Math.max(0, this.localAtkCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self || !self.alive || self.flexPending > 0) return;
+    if (!self?.alive || self.flexPending > 0) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     // Thrown weapons need a charge — don't animate/fire when empty (server gates it too, §10).
@@ -947,23 +1218,21 @@ export class ArenaScene extends Phaser.Scene {
     const cwx = px + cam.scrollX;
     const cwy = py + cam.scrollY;
     if (weapon?.quake) {
-      // Epicenter = cursor, clamped to QUAKE_REACH from the character (matches the server).
-      const sx = rig?.x ?? self.x;
-      const sy = rig?.y ?? self.y;
-      let ex = cwx;
-      let ey = cwy;
-      const dx = ex - sx;
-      const dy = ey - sy;
-      const dd = Math.hypot(dx, dy);
-      if (dd > QUAKE_REACH) {
-        ex = sx + (dx / dd) * QUAKE_REACH;
-        ey = sy + (dy / dd) * QUAKE_REACH;
-      }
-      this.spawnQuake(ex, ey, weapon.quake);
+      // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp the
+      // server uses, so the VFX lands exactly on the damage AoE.
+      const ep = clampQuakeEpicenter(
+        { x: rig?.x ?? self.x, y: rig?.y ?? self.y },
+        { x: cwx, y: cwy },
+        QUAKE_REACH,
+      );
+      this.spawnQuake(ep.x, ep.y, weapon.quake);
       this.hitStop(130);
     } else if (weapon && !weapon.thrown) {
-      // Plain melee swing (e.g. the dual Bowie Fangs) → a slash-arc VFX (§14).
+      // Plain melee swing → the weapon's authored swing VFX (§14).
       this.spawnSlash(rig?.x ?? self.x, rig?.y ?? self.y, this.selfAim, weapon);
+      // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
+      if (weapon.chainLightning)
+        this.spawnChain(rig?.x ?? self.x, rig?.y ?? self.y, this.selfAim, weapon);
     }
     this.room.send("attack", { aimX: this.selfAim.x, aimY: this.selfAim.y, tx: cwx, ty: cwy });
   }
@@ -976,7 +1245,7 @@ export class ArenaScene extends Phaser.Scene {
     this.localParryCd = Math.max(0, this.localParryCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self || !self.alive || self.flexPending > 0) return;
+    if (!self?.alive || self.flexPending > 0) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
     this.room.send("parry");
@@ -1191,7 +1460,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     const cam = this.cameras.main;
     const toast = this.add
-      .text(cam.width / 2, cam.height / 2 - 120, "LEVEL UP!", {
+      .text(this.screenW() / 2, this.screenH() / 2 - 120, "LEVEL UP!", {
         fontSize: "30px",
         color: "#ffd479",
         fontStyle: "bold",
@@ -1201,7 +1470,7 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100003);
     this.tweens.add({
       targets: toast,
-      y: cam.height / 2 - 150,
+      y: this.screenH() / 2 - 150,
       alpha: 0,
       duration: 900,
       ease: "Cubic.easeOut",
@@ -1245,12 +1514,11 @@ export class ArenaScene extends Phaser.Scene {
 
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */
   private updateHud(): void {
-    const cam = this.cameras.main;
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
 
     const barX = 20;
-    const barY = cam.height - 24;
+    const barY = this.screenH() - 24;
     const xpY = barY - 15;
     this.hpBarBg.setPosition(barX, barY);
     this.hpBarFill.setPosition(barX + 2, barY);
@@ -1277,7 +1545,7 @@ export class ArenaScene extends Phaser.Scene {
           : "",
       );
 
-    this.restartBtn.setPosition(cam.width - 14, 14);
+    this.restartBtn.setPosition(this.screenW() - 14, 14);
     // Weapon name + (for thrown weapons) a charge readout — filled/empty pips, or "reloading…".
     let charges = "";
     if (self && self.maxCharges > 0) {
@@ -1294,7 +1562,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const training = this.room?.state.mode === "training";
     this.modeText
-      .setPosition(cam.width / 2, 12)
+      .setPosition(this.screenW() / 2, 12)
       .setText(
         training
           ? "⛶ TESTING GROUNDS — walk onto a weapon to equip · swing at the dummies · T to exit"
@@ -1304,7 +1572,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const downed = !!self && !self.alive;
     this.deathText.setVisible(downed);
-    if (downed) this.deathText.setPosition(cam.width / 2, cam.height / 2);
+    if (downed) this.deathText.setPosition(this.screenW() / 2, this.screenH() / 2);
   }
 
   /** §9 card carousel: one full infographic card per arsenal weapon (art + stats), fanned at the
@@ -1322,57 +1590,6 @@ export class ArenaScene extends Phaser.Scene {
     D: 0x6f8bff,
     E: 0x9a9484,
   };
-
-  /** The bottom ICON stat row for a weapon — iconography, no words (§9/§10). */
-  private weaponStatRows(def?: WeaponDef): { icon: string; value: string }[] {
-    if (!def) return [];
-    const r: { icon: string; value: string }[] = [];
-    if (def.thrown) {
-      r.push({ icon: "reach", value: String(def.thrown.range) });
-      r.push({ icon: "speed", value: `${def.cooldown}s` });
-      r.push({ icon: "pierce", value: String(def.thrown.pierce) });
-    } else {
-      r.push({ icon: "reach", value: String(def.range) });
-      r.push({ icon: "speed", value: `${def.cooldown}s` });
-      if (def.quake) r.push({ icon: "aoe", value: String(def.quake.radius) });
-    }
-    return r.slice(0, 3);
-  }
-
-  /** Draw a small vector stat icon into `g` at (x,y), radius ~s (matches the card mock). */
-  private drawStatIcon(
-    g: Phaser.GameObjects.Graphics,
-    kind: string,
-    x: number,
-    y: number,
-    s: number,
-    color: number,
-  ): void {
-    g.lineStyle(1.6, color, 1);
-    if (kind === "reach") {
-      g.lineBetween(x - s, y, x + s, y);
-      g.lineBetween(x - s, y, x - s + s * 0.4, y - s * 0.4);
-      g.lineBetween(x - s, y, x - s + s * 0.4, y + s * 0.4);
-      g.lineBetween(x + s, y, x + s - s * 0.4, y - s * 0.4);
-      g.lineBetween(x + s, y, x + s - s * 0.4, y + s * 0.4);
-    } else if (kind === "speed") {
-      g.strokeCircle(x, y + s * 0.1, s * 0.8);
-      g.lineBetween(x, y + s * 0.1, x, y - s * 0.35);
-      g.lineBetween(x, y + s * 0.1, x + s * 0.45, y + s * 0.1);
-    } else if (kind === "aoe") {
-      g.fillStyle(color, 0.3).fillCircle(x, y, s * 0.35);
-      g.lineStyle(1.6, color, 0.6).strokeCircle(x, y, s * 0.78);
-    } else if (kind === "pierce") {
-      g.lineBetween(x - s, y, x + s, y);
-      g.lineBetween(x + s, y, x + s - s * 0.5, y - s * 0.4);
-      g.lineBetween(x + s, y, x + s - s * 0.5, y + s * 0.4);
-    } else {
-      // damage dagger
-      g.fillStyle(color, 0.25).fillTriangle(x, y - s, x + s * 0.34, y + s * 0.5, x - s * 0.34, y + s * 0.5);
-      g.lineBetween(x, y + s * 0.5, x, y + s);
-      g.lineBetween(x - s * 0.45, y + s * 0.62, x + s * 0.45, y + s * 0.62);
-    }
-  }
 
   /** Bake the FULL-BLEED card art (cover-fit + rounded clip) into a per-card texture so it transforms
    *  cleanly with the carousel (masks don't follow container transforms). Returns the texture key. */
@@ -1397,6 +1614,21 @@ export class ArenaScene extends Phaser.Scene {
       const dw = src.width * sc;
       const dh = src.height * sc;
       ctx.drawImage(src, (W - dw) / 2, Math.min(0, (H - dh) * 0.12), dw, dh); // bias to the top
+    } else if (this.textures.exists(`${id}:part-1`)) {
+      // No dedicated card art yet → show the installed weapon sprite (contain-fit, upper area) on a
+      // dark ground. Keeps newly-wired weapons (explore swords) legible until bespoke card art lands.
+      ctx.fillStyle = "#15120d";
+      ctx.fillRect(0, 0, W, H);
+      const src = this.textures.get(`${id}:part-1`).getSourceImage() as CanvasImageSource & {
+        width: number;
+        height: number;
+      };
+      const availW = W * 0.86;
+      const availH = H * 0.5;
+      const sc = Math.min(availW / src.width, availH / src.height);
+      const dw = src.width * sc;
+      const dh = src.height * sc;
+      ctx.drawImage(src, (W - dw) / 2, H * 0.07 + (availH - dh) / 2, dw, dh);
     } else {
       ctx.fillStyle = "#15120d";
       ctx.fillRect(0, 0, W, H);
@@ -1405,162 +1637,259 @@ export class ArenaScene extends Phaser.Scene {
     return key;
   }
 
-  /** Build one card: full-bleed art + overlaid info panel (name, subtitle, damage EQUATION, scaling
-   *  grade chips, icon stat row), a corner CHARGES badge + grip pill. Matches the redesign mock. */
+  /** Tiny vector icons for the §9 card (icon-driven — no word labels, §9). Drawn into `g`, centred at
+   *  (x,y), fitting roughly a 2·s box, in the given colour. */
+  private drawIcon(
+    g: Phaser.GameObjects.Graphics,
+    kind: string,
+    x: number,
+    y: number,
+    s: number,
+    color: number,
+  ): void {
+    g.lineStyle(1.7, color, 1).fillStyle(color, 1);
+    if (kind === "hit") {
+      g.beginPath();
+      g.arc(x - s * 0.3, y + s * 0.6, s * 1.5, -Math.PI * 0.58, -Math.PI * 0.04);
+      g.strokePath(); // a slash arc
+    } else if (kind === "throw") {
+      g.beginPath();
+      g.arc(x, y, s * 0.95, Math.PI * 0.35, Math.PI * 1.95);
+      g.strokePath();
+      g.fillTriangle(
+        x + s * 0.85,
+        y - s * 0.6,
+        x + s * 1.35,
+        y - s * 0.25,
+        x + s * 0.7,
+        y + s * 0.05,
+      );
+    } else if (kind === "quake") {
+      for (let i = 1; i <= 3; i++) {
+        g.lineStyle(1.5, color, 1 - i * 0.16);
+        g.beginPath();
+        g.arc(x, y + s * 0.5, s * 0.42 * i, Math.PI * 1.12, Math.PI * 1.88);
+        g.strokePath();
+      }
+    } else if (kind === "chain") {
+      g.beginPath();
+      g.moveTo(x + s * 0.4, y - s);
+      g.lineTo(x - s * 0.35, y);
+      g.lineTo(x + s * 0.15, y);
+      g.lineTo(x - s * 0.4, y + s);
+      g.strokePath(); // lightning bolt
+    } else if (kind === "magma") {
+      g.fillCircle(x + s * 0.25, y + s * 0.25, s * 0.6); // meteor head
+      g.lineStyle(1.5, color, 0.8);
+      g.beginPath();
+      g.moveTo(x - s * 0.7, y - s * 0.7);
+      g.lineTo(x, y);
+      g.strokePath(); // trail
+    } else if (kind === "blast") {
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        g.beginPath();
+        g.moveTo(x + Math.cos(a) * s * 0.38, y + Math.sin(a) * s * 0.38);
+        g.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
+        g.strokePath();
+      }
+    } else if (kind === "str") {
+      g.beginPath();
+      g.moveTo(x - s * 0.75, y + s * 0.15);
+      g.lineTo(x, y - s * 0.75);
+      g.lineTo(x + s * 0.75, y + s * 0.15);
+      g.strokePath();
+      g.beginPath();
+      g.moveTo(x - s * 0.75, y + s * 0.75);
+      g.lineTo(x, y - s * 0.15);
+      g.lineTo(x + s * 0.75, y + s * 0.75);
+      g.strokePath(); // double up-chevron (power)
+    } else if (kind === "dex") {
+      g.beginPath();
+      g.moveTo(x - s * 0.85, y + s * 0.85);
+      g.lineTo(x + s * 0.85, y - s * 0.85);
+      g.strokePath();
+      g.beginPath();
+      g.moveTo(x + s * 0.15, y - s * 0.85);
+      g.lineTo(x + s * 0.85, y - s * 0.85);
+      g.lineTo(x + s * 0.85, y - s * 0.15);
+      g.strokePath(); // slim arrow (finesse)
+    } else if (kind === "int") {
+      g.fillTriangle(x, y - s, x - s * 0.32, y, x + s * 0.32, y);
+      g.fillTriangle(x, y + s, x - s * 0.32, y, x + s * 0.32, y);
+      g.fillTriangle(x - s, y, x, y - s * 0.32, x, y + s * 0.32);
+      g.fillTriangle(x + s, y, x, y - s * 0.32, x, y + s * 0.32); // 4-point sparkle (arcane)
+    } else if (kind === "con" || kind === "durability") {
+      g.beginPath();
+      g.moveTo(x, y - s);
+      g.lineTo(x + s * 0.82, y - s * 0.45);
+      g.lineTo(x + s * 0.6, y + s * 0.65);
+      g.lineTo(x, y + s);
+      g.lineTo(x - s * 0.6, y + s * 0.65);
+      g.lineTo(x - s * 0.82, y - s * 0.45);
+      g.closePath();
+      g.strokePath(); // shield
+    } else if (kind === "luk") {
+      const p: number[] = [];
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const r = i % 2 ? s * 0.42 : s;
+        p.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      g.beginPath();
+      g.moveTo(p[0] as number, p[1] as number);
+      for (let i = 2; i < p.length; i += 2) g.lineTo(p[i] as number, p[i + 1] as number);
+      g.closePath();
+      g.strokePath(); // star (luck)
+    } else if (kind === "req") {
+      g.strokeRoundedRect(x - s * 0.75, y - s * 0.05, s * 1.5, s, 2);
+      g.beginPath();
+      g.arc(x, y - s * 0.05, s * 0.48, Math.PI, 0);
+      g.strokePath(); // padlock
+    } else if (kind === "charges") {
+      g.fillTriangle(x, y - s, x + s * 0.7, y, x - s * 0.7, y);
+      g.fillTriangle(x, y + s, x + s * 0.7, y, x - s * 0.7, y); // diamond pip
+    }
+  }
+
+  /** Build one card: full-bleed art + a §5 tooltip slab — name + tag subtitle are the ONLY text; the
+   *  damage sources, scaling, requirements and charges/durability are ICON-driven (§9). */
   private buildCard(id: string): {
     id: string;
     container: Phaser.GameObjects.Container;
-    readout: Phaser.GameObjects.Text;
-    eq: Phaser.GameObjects.Text;
-    badge: Phaser.GameObjects.Text;
+    sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
+    reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
+    resource: Phaser.GameObjects.Text;
   } {
     const def = WEAPONS[id];
     const W = 212;
     const H = 296;
     const R = 14;
+    const ART_FRAC = 0.34; // top third is the painted art; the rest is the §5 tooltip slab
     const accent = ArenaScene.WEAPON_ACCENT[id] ?? 0xb9975b;
     const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
     const o: Phaser.GameObjects.GameObject[] = [];
     const L = -W / 2;
     const T = -H / 2;
+    const padL = L + 13;
+    const padR = -L - 13;
+    const mk = (
+      x: number,
+      ty: number,
+      size: number,
+      color: string,
+      str: string,
+      ox = 0,
+      bold = false,
+    ): Phaser.GameObjects.Text =>
+      this.add
+        .text(x, ty, str, { fontSize: `${size}px`, color, fontStyle: bold ? "bold" : "normal" })
+        .setOrigin(ox, 0);
 
-    // Full-bleed art (baked rounded texture) + a bottom gradient panel for legibility.
+    // §5 layout: full-bleed painted art up top, a dark tooltip slab over the lower section.
     o.push(this.add.image(0, 0, this.bakeCardArt(id, W, H, R)));
     const panel = this.add.graphics();
-    panel
-      .fillGradientStyle(0x0a0805, 0x0a0805, 0x070503, 0x070503, 0, 0, 0.92, 0.97)
-      .fillRect(L, T + H * 0.44, W, H * 0.56);
+    panel.fillStyle(0x0a0805, 0.93).fillRect(L, T + H * ART_FRAC, W, H * (1 - ART_FRAC));
     o.push(panel);
 
-    // Border.
+    // Accent (rarity) frame.
     const frame = this.add.graphics();
     frame.lineStyle(3, accent, 0.92).strokeRoundedRect(L + 1.5, T + 1.5, W - 3, H - 3, R);
     frame.lineStyle(1, 0x000000, 0.4).strokeRoundedRect(L + 5, T + 5, W - 10, H - 10, R - 4);
     o.push(frame);
 
-    // Top-left CHARGES badge (live on the held card; static max otherwise; hidden if no charges).
-    const hasCharges = !!def?.thrown;
-    const badgeBg = this.add.graphics();
-    if (hasCharges) {
-      badgeBg.fillStyle(0x0c0a07, 0.82).fillCircle(L + 24, T + 24, 16);
-      badgeBg.lineStyle(2, accent, 1).strokeCircle(L + 24, T + 24, 16);
-    }
-    o.push(badgeBg);
-    const badge = this.add
-      .text(L + 24, T + 24, hasCharges ? String(def?.thrown?.charges ?? "") : "", {
-        fontSize: "15px",
-        color: "#f0ead8",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
-    o.push(badge);
+    let y = T + H * ART_FRAC + 8;
 
-    // Top-right grip pill.
-    const grip = def?.dual ? "DUAL" : def?.twoHanded ? "2-HAND" : "1H";
-    const pillBg = this.add.graphics();
-    pillBg.fillStyle(0x0c0a07, 0.8).fillRoundedRect(W / 2 - 64, T + 12, 52, 20, 10);
-    pillBg.lineStyle(1, accent, 0.6).strokeRoundedRect(W / 2 - 64, T + 12, 52, 20, 10);
-    o.push(pillBg);
-    o.push(
-      this.add
-        .text(W / 2 - 38, T + 22, grip, { fontSize: "10px", color: accentHex, fontStyle: "bold" })
-        .setOrigin(0.5),
-    );
-
-    // Name + subtitle.
-    const nameY = T + H * 0.6;
-    o.push(
-      this.add
-        .text(L + 12, nameY, def?.name ?? id, { fontSize: "18px", color: "#f6efe0", fontStyle: "bold" })
-        .setOrigin(0, 0),
-    );
-    const sub = def ? `${def.tags.family} · ${def.tags.element}`.toUpperCase() : "";
-    o.push(this.add.text(L + 12, nameY + 22, sub, { fontSize: "10px", color: "#b9b3a3" }).setOrigin(0, 0));
+    // Name (rarity-tinted) + subtitle (grip · family · element).
+    o.push(mk(padL, y, 17, accentHex, def?.name ?? id, 0, true));
+    y += 23;
+    const grip = def?.dual ? "dual" : def?.twoHanded ? "2-hand" : "1-hand";
+    const sub = def ? `${grip} · ${def.tags.family} · ${def.tags.element}` : "";
+    o.push(mk(padL, y, 10, "#b9b3a3", sub));
+    y += 15;
     const div = this.add.graphics();
-    div.lineStyle(1, accent, 0.35).lineBetween(L + 12, nameY + 38, W / 2 - 12, nameY + 38);
+    div.lineStyle(1, accent, 0.3).lineBetween(padL, y, padR, y);
     o.push(div);
+    y += 9;
 
-    // Damage EQUATION (live): a dagger icon + "base + bonus = total".
-    const eqIcon = this.add.graphics();
-    this.drawStatIcon(eqIcon, "dmg", L + 22, nameY + 58, 9, 0xff8a2b);
-    o.push(eqIcon);
-    const eq = this.add
-      .text(L + 38, nameY + 49, "", { fontSize: "17px", color: "#ffd479", fontStyle: "bold" })
-      .setOrigin(0, 0);
-    o.push(eq);
+    // ICON-DRIVEN (§9): one damage-type ICON per §14 source + its live "base + bonus = total" — no words.
+    const icons = this.add.graphics();
+    o.push(icons);
+    const sources: { text: Phaser.GameObjects.Text; src: DamageSource }[] = [];
+    for (const src of (def ? weaponDamageSources(def) : []).slice(0, 4)) {
+      this.drawIcon(icons, src.label, padL + 6, y + 7, 6, accent);
+      if (src.count > 1) o.push(mk(padL + 15, y + 1, 10, "#8f897a", `×${src.count}`));
+      const eqText = mk(padR, y, 13, "#ffd479", "", 1, true);
+      sources.push({ text: eqText, src });
+      o.push(eqText);
+      y += 18;
+    }
+    y += 6;
 
-    // Scaling grade chips (static).
+    // Scaling: an ATTRIBUTE ICON + its grade letter (colour = grade) per scaling attribute.
     const grades = def?.scalingGrades ?? { str: "B" };
-    let cx = L + 12;
-    const chipY = H / 2 - 80;
-    for (const [attr, g] of Object.entries(grades) as [string, string][]) {
+    let cx = padL;
+    for (const [attr, g] of Object.entries(grades) as [Attr, string][]) {
       const col = ArenaScene.GRADE_COL[g] ?? 0x9a9484;
-      const cw = 48;
+      const cw = 40;
       const chip = this.add.graphics();
-      chip.fillStyle(0x000000, 0.45).fillRoundedRect(cx, chipY, cw, 19, 5);
-      chip.lineStyle(1, col, 0.7).strokeRoundedRect(cx, chipY, cw, 19, 5);
+      chip.fillStyle(0x000000, 0.4).fillRoundedRect(cx, y, cw, 18, 5);
+      chip.lineStyle(1, col, 0.7).strokeRoundedRect(cx, y, cw, 18, 5);
       o.push(chip);
+      this.drawIcon(icons, attr, cx + 11, y + 9, 6, 0xcfc6ae);
       o.push(
         this.add
-          .text(cx + 7, chipY + 9.5, attr.toUpperCase(), { fontSize: "10px", color: "#cfc6ae" })
-          .setOrigin(0, 0.5),
-      );
-      o.push(
-        this.add
-          .text(cx + cw - 7, chipY + 9.5, g, {
-            fontSize: "12px",
+          .text(cx + cw - 7, y + 9, g, {
+            fontSize: "13px",
             color: `#${col.toString(16).padStart(6, "0")}`,
             fontStyle: "bold",
           })
           .setOrigin(1, 0.5),
       );
-      cx += cw + 7;
+      cx += cw + 6;
+    }
+    y += 25;
+
+    // Minimum requirements: a PADLOCK + (attribute icon · number) per requirement. The NUMBER recolours
+    // green/red met/unmet vs the player's live attributes (updateCarousel).
+    const reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[] = [];
+    const reqEntries = Object.entries(def?.requirements ?? {}) as [Attr, number][];
+    if (reqEntries.length > 0) {
+      this.drawIcon(icons, "req", padL + 6, y + 6, 6, 0x8f897a);
+      let rx = padL + 22;
+      for (const [attr, need] of reqEntries) {
+        this.drawIcon(icons, attr, rx + 5, y + 6, 6, 0xb9b3a3);
+        const tk = mk(rx + 14, y, 12, "#cfc6ae", String(need), 0, true);
+        reqTokens.push({ text: tk, attr, need });
+        o.push(tk);
+        rx += 44;
+      }
     }
 
-    // Icon stat row (static).
-    const stats = this.weaponStatRows(def);
-    const colW = W / Math.max(1, stats.length);
-    const rowY = H / 2 - 38;
-    const icons = this.add.graphics();
-    for (let i = 0; i < stats.length; i++) {
-      const st = stats[i];
-      if (!st) continue;
-      const sx = L + colW * (i + 0.5);
-      this.drawStatIcon(icons, st.icon, sx, rowY, 9, 0xcfc6ae);
-      o.push(
-        this.add
-          .text(sx, rowY + 20, st.value, { fontSize: "13px", color: "#f0ead8", fontStyle: "bold" })
-          .setOrigin(0.5, 0),
-      );
-    }
-    o.push(icons);
+    // Charges (thrown, live) or durability (melee) — an ICON + a live number, anchored at the card bottom.
+    const resY = H / 2 - 22;
+    this.drawIcon(icons, def?.thrown ? "charges" : "durability", padL + 6, resY + 6, 6, accent);
+    const resource = mk(padL + 17, resY, 12, accentHex, "", 0, true);
+    o.push(resource);
 
-    // Live charge/ready readout (held card only) — small, bottom edge.
-    const readout = this.add
-      .text(0, H / 2 - 16, "", { fontSize: "11px", color: accentHex, fontStyle: "bold" })
-      .setOrigin(0.5, 0);
-    o.push(readout);
-
-    // Crisp text — Phaser Text defaults to resolution 1, which blurs on high-DPI displays and when
-    // the carousel scales cards. Render the text atlases at device resolution (min 2×).
+    // Crisp text — Phaser Text defaults to resolution 1, which blurs on high-DPI + when scaled.
     const res = Math.max(2, Math.ceil(window.devicePixelRatio || 1));
     for (const obj of o) if (obj instanceof Phaser.GameObjects.Text) obj.setResolution(res);
 
     const container = this.add.container(0, 0, o).setScrollFactor(0).setDepth(100000);
-    return { id, container, readout, eq, badge };
+    return { id, container, sources, reqTokens, resource };
   }
 
   /** Fan the hand at the bottom: held card centered/upright/big with live charges; others smaller,
    *  rotated, fanned to the sides (prev left / next right, §9). */
   private updateCarousel(): void {
     if (!this.room || this.carousel.length === 0) return;
-    const cam = this.cameras.main;
     const self = this.room.state.players.get(this.room.sessionId);
     const ids = WEAPON_IDS;
     const n = ids.length;
     const si = Math.max(0, ids.indexOf(self?.weapon ?? ids[0] ?? ""));
-    const cx = cam.width / 2;
-    const selY = cam.height - 170;
+    const cx = this.screenW() / 2;
+    const selY = this.screenH() - 170;
     const arcR = 700;
     const step = 0.26;
     for (const card of this.carousel) {
@@ -1579,56 +1908,135 @@ export class ArenaScene extends Phaser.Scene {
       card.container.setDepth(100000 + (isSel ? 100 : 30 - Math.abs(off)));
 
       const def = WEAPONS[card.id];
-      // Live damage EQUATION off the player's real attributes (§10 base × scaling grades).
-      if (def && self) {
-        const base = def.thrown ? def.thrown.damage : def.damage;
-        const mult = weaponDamageMult(def, {
-          str: self.str,
-          dex: self.dex,
-          int: self.int,
-          con: self.con,
-          luk: self.luk,
-        });
-        const total = Math.round(base * mult);
-        card.eq.setText(`${base} + ${total - base} = ${total}`);
+      const attrs: Record<Attr, number> = {
+        str: self?.str ?? 1,
+        dex: self?.dex ?? 1,
+        int: self?.int ?? 1,
+        con: self?.con ?? 1,
+        luk: self?.luk ?? 1,
+      };
+      // Show REAL (sub-integer) damage so every stat point visibly moves the number (§12). Each §14
+      // source scales off ITS OWN grades — so pumping INT grows Wyrmtooth's magma but not its blade.
+      const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+      // §11 unmet requirements PENALISE every source's damage (the enforcement rule) — fold it into the
+      // shown total so the card is WYSIWYG, and tint the equation amber when the weapon is under-statted.
+      const pen = def ? requirementPenalty(def, attrs) : 1;
+      for (const s of card.sources) {
+        const mult = damageMultFromGrades(s.src.grades, attrs) * pen;
+        const total = s.src.base * mult;
+        s.text.setText(`${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`);
+        s.text.setColor(pen < 1 ? "#ffb24a" : "#ffd479");
       }
-      // Corner charges badge: live remaining on the held card, static max otherwise.
+      // Requirements: green when met by the player's live attributes, red when unmet.
+      for (const tk of card.reqTokens) {
+        tk.text.setColor((attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a");
+      }
+      // Resource value (the icon conveys charges-vs-durability): live charges, or the durability number.
       if (def?.thrown) {
-        card.badge.setText(String(isSel && self ? self.charges : def.thrown.charges));
+        const cur = isSel && self ? self.charges : def.thrown.charges;
+        card.resource.setText(`${cur} / ${def.thrown.charges}`);
+      } else if (def?.durability) {
+        card.resource.setText(String(def.durability));
+      } else {
+        card.resource.setText("");
       }
-      // Ready/reload readout (held card only).
-      let txt = "";
-      if (isSel && self) {
-        if (self.maxCharges > 0) {
-          txt = self.charges > 0 ? "● READY" : "⟳ RELOADING";
-        } else txt = "● READY";
-      }
-      card.readout.setText(txt).setVisible(isSel);
     }
   }
 
-  /** Melee swing slash (§14): a bright crescent sweeping through the swing arc (dual = two). */
+  /** Chain-lightning VFX (§10 on-hit proc, §14 client-predicted): a jagged teal bolt from the weapon
+   *  through the struck enemy and on to the nearest unhit enemies — mirroring the server's chain so the
+   *  visual matches the damage. Cosmetic only; the server (`weapon.chainLightning`) owns all damage. */
+  private spawnChain(
+    sx: number,
+    sy: number,
+    aim: { x: number; y: number },
+    weapon: WeaponDef,
+  ): void {
+    const cl = weapon.chainLightning;
+    if (!cl || !this.room) return;
+    const vfx = cl.vfx ?? { color: 0.5, jag: 0.3, life: 180 };
+    const VR = (globalThis as { VFXRENDER?: { lerpHue?: (h: number) => number } }).VFXRENDER;
+    const col = VR?.lerpHue ? VR.lerpHue(vfx.color) : 0x6fd6ff; // 0.5 → teal (sword accent)
+    const enemies = this.room.state.enemies;
+    const posOf = (id: string, ex: number, ey: number) => {
+      const rig = this.enemies.get(id); // smoothed render position if present
+      return { x: rig?.x ?? ex, y: rig?.y ?? ey };
+    };
+    // Build candidates + find the SEED (nearest arc-hit enemy); mark every arc-hit so the chain leaps to
+    // OTHERS. Target selection uses the SAME shared `selectChainTargets` the server runs (no divergence).
+    const candidates: ChainCandidate[] = [];
+    const used = new Set<string>();
+    let seedX = sx;
+    let seedY = sy;
+    let seedFound = false;
+    let seedBestD = Infinity;
+    enemies.forEach((e, id) => {
+      const p = posOf(id, e.x, e.y);
+      candidates.push({ id, x: p.x, y: p.y });
+      if (inMeleeArc({ x: sx, y: sy }, aim.x, aim.y, p, weapon.range, weapon.halfArc)) {
+        used.add(id);
+        const d = (p.x - sx) ** 2 + (p.y - sy) ** 2;
+        if (d < seedBestD) {
+          seedBestD = d;
+          seedX = p.x;
+          seedY = p.y;
+          seedFound = true;
+        }
+      }
+    });
+    if (!seedFound) return; // nothing struck → no chain bolt (the swing's own electric layer still plays)
+
+    const links = selectChainTargets(
+      { x: seedX, y: seedY },
+      candidates,
+      cl.jumps,
+      Math.min(cl.range, CHAIN_MAX_RANGE),
+      used,
+    );
+
+    // weapon → struck target → each chain link. Re-jagged every frame = a crackling bolt; bloom glows it.
+    const nodes = [
+      { x: sx, y: sy },
+      { x: seedX, y: seedY },
+      ...links.map((l) => ({ x: l.x, y: l.y })),
+    ];
+    const g = this.add.graphics();
+    this.vfxPlayer.bloomRoot.add(g);
+    const t0 = this.time.now;
+    this.tweens.addCounter({
+      from: 1,
+      to: 0,
+      duration: vfx.life,
+      onUpdate: (tw) => {
+        const a = tw.getValue() ?? 0;
+        const flick = 0.55 + 0.45 * Math.sin((this.time.now - t0) * 0.09);
+        g.clear();
+        for (let i = 0; i < nodes.length - 1; i++) {
+          const a0 = nodes[i];
+          const b0 = nodes[i + 1];
+          if (!a0 || !b0) continue;
+          const pts = boltPoints(a0.x, a0.y, b0.x, b0.y, vfx.jag);
+          g.lineStyle(3, col, a * flick);
+          strokeBolt(g, pts);
+          g.lineStyle(1, 0xffffff, a * flick * 0.9); // hot white core
+          strokeBolt(g, pts);
+        }
+      },
+      onComplete: () => g.destroy(),
+    });
+  }
+
+  /** Melee swing VFX (§14, CODE-8): play the weapon's AUTHORED suite (painted hero + engine layers) via
+   *  the shared renderer at the strike point, oriented to aim. Un-authored weapons get a default slash.
+   *  The effect sits at ~60% of the swing reach so the arc reads where the weapon connects. */
   private spawnSlash(x: number, y: number, aim: { x: number; y: number }, weapon: WeaponDef): void {
     const ang = Math.atan2(aim.y, aim.x);
-    const r = (weapon.range ?? 100) * 0.7;
-    const arcs = weapon.dual ? [-0.35, 0.35] : [0];
-    for (const off of arcs) {
-      const a0 = Phaser.Math.RadToDeg(ang - weapon.halfArc + off);
-      const a1 = Phaser.Math.RadToDeg(ang + weapon.halfArc + off);
-      const slash = this.add
-        .arc(x, y, r, a0, a1, false)
-        .setClosePath(false)
-        .setStrokeStyle(5, 0xeafcff, 0.92)
-        .setDepth(99000);
-      this.tweens.add({
-        targets: slash,
-        scale: 1.18,
-        alpha: 0,
-        duration: 170,
-        ease: "Cubic.easeOut",
-        onComplete: () => slash.destroy(),
-      });
-    }
+    const reach = (weapon.range ?? 100) * 0.6; // WHERE the effect sits along the swing (placement, not size)
+    const sx = x + Math.cos(ang) * reach;
+    const sy = y + Math.sin(ang) * reach;
+    // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
+    // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
+    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT);
   }
 
   /** Live on-screen readout so the game loop's health is visible without a dev console. */

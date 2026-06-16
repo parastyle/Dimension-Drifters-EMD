@@ -1,6 +1,6 @@
 [
   {
-    "id": "vfx-quake-tombstone",
+    "id": "vfx-tombstone-greatsword",
     "name": "Tombstone Greatsword — Earthquake Slam VFX",
     "kind": "vfx",
     "vfxOrientation": "ground",
@@ -8,24 +8,74 @@
     "prompt": "The ground-slam EARTHQUAKE effect the weapon in Image 1 (a heavy granite tombstone greatsword) makes when hammered straight DOWN. Frozen at its peak: a rough RING of just a FEW BIG, BOLD, CHUNKY angular rock slabs — roughly 6 to 10 LARGE, simple, readable shards (NOT a dense pile of small rubble, gravel, or pebbles) — tilting UP and erupting outward around a central impact point, with a few chunks of flung debris and a little dust. Heavy, grim, weighty. Grey granite slabs to match the weapon, with desaturated dust. CRITICAL: render ONLY the erupting slabs, flung debris, and dust — there is NO solid ground, NO brown dirt disc, NO earth mound, NO crater fill, and NO terrain patch beneath or around them. The slabs and debris float on the empty flat #00ff00 chroma with NOTHING underneath them, because this composites on TOP of the real arena floor at runtime; a baked ground patch would show as a wrong solid blob. Thin dark CRACK LINES radiating from the center are fine (they read as cracks in whatever floor is underneath), but do NOT fill them with any ground color. SIMPLE flat-cel shapes, thick black outlines, MINIMAL interior detail — match the chunky, bold, LOW-detail look of the game's character art; do NOT render it realistically or finely."
   },
   {
-    "id": "vfx-cleave-cleaver",
+    "id": "vfx-rusty-cleaver",
     "name": "Rusty Cleaver — impact cleave-gash",
     "kind": "vfx",
     "styleRef": "out/rusty-cleaver/identity-ref.png",
     "prompt": "The brutal CLEAVE-GASH the weapon in Image 1 (a heavy rusty meat-cleaver) makes the instant it hits — a single short, thick, CRUDE rusty-steel slash-gash arc, chunky and violent, a few orange sparks and flecks of rust flung off. Frozen at impact. Rusty steel + dark orange palette to match the weapon. SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail; do NOT draw the cleaver itself."
   },
   {
-    "id": "vfx-slash-driftblade",
+    "id": "vfx-driftblade",
     "name": "Driftblade — long slash crescent",
     "kind": "vfx",
     "styleRef": "out/driftblade/identity-ref.png",
     "prompt": "The long, elegant SLASH-ARC the weapon in Image 1 (an impossibly long thin nodachi) makes on a swing — a single CLEAN, THIN, VERY LONG silver crescent edge-trail sweeping through the air, sharp and precise, a few drifting silver motes trailing it. Frozen mid-swing. THIN and graceful (NOT chunky), bright mirror-steel with a faint cool glow. SIMPLE flat-cel, thin bright stroke, MINIMAL detail; do NOT draw the sword itself."
   },
   {
-    "id": "vfx-twinslash-bowie",
+    "id": "vfx-twin-bowie-fangs",
     "name": "Twin Bowie Fangs — twin slash X",
     "kind": "vfx",
     "styleRef": "out/twin-bowie-fangs/identity-ref.png",
     "prompt": "The TWIN crossing SLASH the weapon in Image 1 (a matched pair of curved fang knives) makes — TWO fast crescent slashes crossing in an X, glowing cyber-CYAN edges, with a fine spray of red blood-mist between them. Quick and sharp, frozen mid-flurry. Bone+steel with bright cyan accents. SIMPLE flat-cel, MINIMAL detail; do NOT draw the knives themselves."
+  },
+  {
+    "id": "vfx-x-gun-gatling",
+    "name": "Lead Storm (gatling) — muzzle storm",
+    "kind": "vfx",
+    "styleRef": "out/x-gun-gatling/identity-ref.png",
+    "prompt": "The roaring MUZZLE-STORM the weapon in Image 1 (a six-barrel hand-cranked gatling gun) unleashes when it fires, sweeping to the RIGHT — a dense horizontal cone of overlapping yellow-white muzzle FLASHES with long streaking TRACER lines shooting to the RIGHT, hot smoke wisps curling off, a couple of bright brass shell-casing glints tumbling. Loud, rapid, violent. Cordite yellow-white core + smoke grey. Render ONLY the muzzle blast, tracers, smoke and shells — NO gun, NO barrels. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail; match the game's chunky bold low-detail art."
+  },
+  {
+    "id": "vfx-x-staff-lightning-rod",
+    "name": "Stormcaller (lightning rod) — forked bolt",
+    "kind": "vfx",
+    "styleRef": "out/x-staff-lightning-rod/identity-ref.png",
+    "prompt": "The forked LIGHTNING BOLT the weapon in Image 1 (an iron lightning-rod staff wound with copper) calls down, striking to the RIGHT — a single jagged electric blue-white lightning arc to the RIGHT with a few branching sub-forks, a crackling white-hot core, a soft electric-blue glow, and a scatter of bright sparks. Sharp, fast, electric. Electric blue-white with a hint of copper. Render ONLY the bolt, glow and sparks — NO staff. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail; match the game's chunky bold low-detail art."
+  },
+  {
+    "id": "vfx-x-launcher-firework",
+    "name": "Festival of Lead (firework) — burst",
+    "kind": "vfx",
+    "styleRef": "out/x-launcher-firework/identity-ref.png",
+    "prompt": "The exploding FIREWORK BURST the weapon in Image 1 (a cluster firework launcher) fires — a big colorful radial STARBURST of magenta, cyan and gold sparks with trailing comet-streaks blooming outward from a bright white core flash, a few curls of colored smoke. Festive, chaotic, celebratory. Saturated magenta / cyan / gold on the empty chroma. Render ONLY the burst, streaks and smoke — NO launcher, NO tubes. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail; match the game's chunky bold low-detail art."
+  },
+  {
+    "id": "vfx-x-sword-buzzsaw",
+    "name": "Buzzcutter (buzzsaw) — saw-spray",
+    "kind": "vfx",
+    "styleRef": "out/x-sword-buzzsaw/identity-ref.png",
+    "prompt": "The grinding SAW-SPRAY the weapon in Image 1 (a greatsword whose blade is a spinning circular saw) throws as it sweeps to the RIGHT — a fierce fan of hot orange SPARKS and shredded steel flecks spraying off a blurred spinning-blade arc that sweeps to the RIGHT, with a faint motion-blur ring of teeth. Aggressive, industrial, hot. Hot orange sparks + steel grey. Render ONLY the spark-spray and blur arc — NO sword. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail; match the game's chunky bold low-detail art."
+  },
+  {
+    "id": "vfx-rattler-sabre",
+    "name": "Rattler Sabre — striking snake ghost",
+    "kind": "vfx",
+    "styleRef": "out/rattler-sabre/identity-ref.png",
+    "prompt": "The striking SNAKE-GHOST the weapon in Image 1 (a rattlesnake-etched cavalry sabre) projects on a swing — a translucent SPECTRAL rattlesnake LUNGING to the RIGHT, jaws open with bared fangs, a coiled ghostly body trailing back to the LEFT, a faint venom-teal glow. Frozen mid-strike, facing RIGHT. Ghostly semi-transparent teal-green. Render ONLY the snake apparition — NO sabre, NO weapon. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail; match the game's chunky bold low-detail art."
+  },
+  {
+    "id": "vfx-x-sword-coffin",
+    "name": "Reaper's Lid (coffin sword) — grave-hands",
+    "kind": "vfx",
+    "vfxOrientation": "ground",
+    "styleRef": "out/x-sword-coffin/identity-ref.png",
+    "prompt": "The GRAVE-HANDS the weapon in Image 1 (a coffin-slab greatsword) raises — a rough RING of skeletal BONE ARMS and clawed hands thrusting UP out of the ground around a central point, seen from ABOVE, grasping upward. Roughly 6 to 9 bony arms in a loose circle. Grim, bone-white and grey. CRITICAL: render ONLY the bone arms and hands — there is NO ground, NO dirt, NO grave mounds, NO soil disc beneath or around them; they erupt from the empty flat #00ff00 chroma with NOTHING underneath, because this composites on TOP of the real arena floor at runtime (a baked ground patch would show as a wrong solid blob). Thin dark CRACK LINES radiating from the center are fine but never filled with a ground color. SIMPLE flat-cel shapes, thick black outlines, MINIMAL interior detail."
+  },
+  {
+    "id": "vfx-x-sword-bone",
+    "name": "Wyrmtooth (bone sword) — magma scatter (multi-part)",
+    "kind": "vfx",
+    "styleRef": "out/x-sword-bone/identity-ref.png",
+    "prompt": "A SCATTER of SEVEN separate MAGMA BALLS the weapon in Image 1 (a fossilized-fang bone greatsword) flings — render seven INDIVIDUAL round molten-magma balls (glowing orange-red lava spheres, dark cracked-rock crust, bright hot cores), laid out SEPARATELY across the frame with CLEAR flat-green #00ff00 GAPS between every ball (the balls must NOT touch or overlap each other — each one is sliced out as its own projectile sprite). NO trails, NO motion streaks, NO flames, NO connecting effects — ONLY the discrete round balls. Molten orange-red with black crust. SIMPLE flat-cel, thick black outlines, MINIMAL interior detail."
   }
 ]

@@ -1,0 +1,1629 @@
+[
+ {
+  "id": "cw-aegis-mono-edge",
+  "name": "Aegis Mono-Edge",
+  "prompt": "A flawless mirror-white longsword whose single molecule-thin edge catches the light as a hair-fine line of pure blue, its hilt seamless and cold to the touch. A pristine sword, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-solarflare-greatblade",
+  "name": "Solarflare Greatblade",
+  "prompt": "A gleaming two-handed greatsword sheathed in a roaring corona of caged plasma, gold filigree channels glowing white-hot along a blade that hums with contained sun-fire. A ornate sword, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-hardlight-sabre",
+  "name": "Hardlight Sabre",
+  "prompt": "A slim emitter-hilt of polished chrome projects a translucent cyan blade of solidified light that flickers crisply into existence with each precise, weightless cut. A pristine sword, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-tempest-gauntlets",
+  "name": "Tempest Gauntlets",
+  "prompt": "A matched pair of sleek armored energy gauntlets that crackle with arcs of blue lightning across knuckle-mounted emitters, snapping out a flurry of shock-charged blows. A pristine fist-blade, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "fist-blade",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-glacier-tech-glaive",
+  "name": "Glacier Tech-Glaive",
+  "prompt": "An elegant long-hafted glaive of brushed platinum tipped with a sculpted cryo-blade that sheds curling frost-vapor, its sweeping reach freezing the air it carves through. A ornate glaive, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "glaive",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-pulsehammer-maul",
+  "name": "Pulsehammer Maul",
+  "prompt": "A massive industrial fusion-maul, its scorched titanium head ringed with vent-slits that flare orange and unleash a concussive shockwave on every earth-cracking slam. A battle-worn maul, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "maul",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-voidrazor-daggers",
+  "name": "Voidrazor Daggers",
+  "prompt": "Twin obsidian-black tech-daggers whose mono-edges drink the light, trailing wisps of purple void-static as they flicker in a blindingly fast dual-wield dance. A arcane fist-blade, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "fist-blade",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-halcyon-phaseblade",
+  "name": "Halcyon Phaseblade",
+  "prompt": "An immaculate ceremonial tech-katana of seamless ivory alloy, its mono-edge shimmering with a faint golden phase-field that makes each draw-cut whisper-clean and surgical. A pristine sword, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-caustic-tech-spear",
+  "name": "Caustic Tech-Spear",
+  "prompt": "A scuffed gunmetal energy-spear with a long thrusting reach, its emitter-tip injecting a hissing bead of luminous green toxin that bleeds down the haft's grooves. A worn spear, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-nova-warhammer",
+  "name": "Nova Warhammer",
+  "prompt": "A regal gold-and-white plasma warhammer crowned with a radiant arcane core, its gem-set head detonating a brilliant burst of starlight at the apex of each overhead crush. A ornate maul, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "maul",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-stormcleaver-mono-axe",
+  "name": "Stormcleaver Mono-Axe",
+  "prompt": "A gleaming bright-steel war-axe with a wide mono-edged blade lined in arcing electric-blue conduits, snapping out a crackling discharge with every wide, heavy swing. A pristine axe, future-tech melee theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "axe",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-dawncleaver",
+  "name": "Dawncleaver",
+  "prompt": "A flawless mirror-bright knightly longsword with a cruciform gold-inlaid guard that catches sunlight like a struck bell. A pristine sword, knightly steel theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-graveiron-greatsword",
+  "name": "Graveiron Greatsword",
+  "prompt": "A massive notch-edged greatsword of dark pitted iron, its leather-wrapped ricasso sweat-stained and its fuller crusted with old rust. A battle-worn sword, campaign-worn warblade theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-riverbend-falchion-pair",
+  "name": "Riverbend Falchion Pair",
+  "prompt": "A matched pair of broad single-edged falchions with weathered horn grips and bellied edges that flash in tight overlapping arcs. A worn falchion, whirling close-work blades theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "falchion",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-seraph-s-bardiche",
+  "name": "Seraph's Bardiche",
+  "prompt": "A broad crescent-bladed war-axe chased with filigree and a winged angel motif, its haft banded in polished brass that gleams like an altar piece. A ornate axe, cathedral-guard axe theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "axe",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-splitbeard-hatchet",
+  "name": "Splitbeard Hatchet",
+  "prompt": "A compact bearded one-hand axe with a chipped grey edge and a sweat-darkened ash haft worn smooth by gripping hands. A worn axe, stout bearded hatchet theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "axe",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-sanctus-mace",
+  "name": "Sanctus Mace",
+  "prompt": "A flawless six-flanged steel mace with a silver-chased grip and a domed pommel that shines without a single dent, every flange honed to a clean ridge. A pristine mace, templar champion theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "mace",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-thunderfall-warhammer",
+  "name": "Thunderfall Warhammer",
+  "prompt": "An immense square-headed warhammer engraved with storm-lines and capped in blued steel, its head so heavy each strike lands like a tolling thunderclap. A ornate warhammer, falling-tower maul theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "warhammer",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-lance-of-the-silver-vigil",
+  "name": "Lance of the Silver Vigil",
+  "prompt": "A long bright-steel spear with a slender leaf-shaped head and a banner-loop at the socket, perfectly balanced for a clean piercing lunge. A pristine spear, watchtower-order spear theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-glaivewing-halberd",
+  "name": "Glaivewing Halberd",
+  "prompt": "A tall ceremonial halberd crowning a crescent axe, a needle spike, and a back-hook all in etched silvered steel, sweeping in wide commanding arcs. A ornate halberd, palace-guard polearm theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "halberd",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-heaven-s-folded-moon",
+  "name": "Heaven's Folded Moon",
+  "prompt": "A flawless mirror-polished katana with a silver crescent-moon tsuba and a snow-white silk-wrapped hilt, its edge so clean it seems to cut the light itself. A pristine katana, imperial-bushido theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "katana",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-ashfall-nodachi",
+  "name": "Ashfall Nodachi",
+  "prompt": "An enormous field-sword scarred with notches and soot, its overlong blade trailing a faint smolder of embers as it carves a wide horizontal sweep. A battle-worn nodachi, ronin-wanderer theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "nodachi",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-jade-serpent-jian",
+  "name": "Jade Serpent Jian",
+  "prompt": "A gleaming straight double-edged jian inlaid with jade scales and a tasselled pommel, threading precise arcane thrusts that shimmer like coiling green light. A ornate jian, celestial-sage theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "jian",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-tiger-stripe-dao",
+  "name": "Tiger-Stripe Dao",
+  "prompt": "A heavy single-edged saber with a chipped, oil-darkened blade and a brass disc-guard worn smooth, built for brutal hacking cleaves. A battle-worn dao, frontier-soldier theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "dao",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-frostpetal-naginata",
+  "name": "Frostpetal Naginata",
+  "prompt": "A long polearm topped with a gleaming curved blade etched in falling-cherry-blossom frostwork, its sweeping reach leaving a trail of glittering rime. A pristine naginata, temple-guardian theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "naginata",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-thunder-oni-tetsubo",
+  "name": "Thunder-Oni Tetsubo",
+  "prompt": "A massive iron-studded war-club, its knuckled spikes pitted and rust-streaked, crashing down in earth-shaking overhead slams that spit blue sparks. A worn kanabo, demon-brute theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "kanabo",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-gilded-crane-sai",
+  "name": "Gilded Crane Sai",
+  "prompt": "A matched pair of pronged truncheons plated in polished gold with crane-engraved shafts, darting in rapid dual-handed stabs and parries. A ornate sai, courtyard-defender theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sai",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-pilgrim-s-oaken-bo",
+  "name": "Pilgrim's Oaken Bo",
+  "prompt": "A long road-smoothed hardwood staff banded with tarnished iron caps, sweeping in broad two-handed arcs with quiet, grounded discipline. A worn bo, wandering-monk theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "bo",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-twin-lotus-butterfly-swords",
+  "name": "Twin Lotus Butterfly Swords",
+  "prompt": "A gleaming pair of short broad-bladed hudiedao with brass D-guards and lotus-etched spines, flashing through tight scissoring dual-blade flurries. A pristine butterfly-swords, southern-master theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "butterfly-swords",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-venomtide-returning-dao",
+  "name": "Venomtide Returning Dao",
+  "prompt": "A balanced throwing-saber slick with green poison residue and a knotted return-cord stud, hurled spinning at a foe before snapping back to the hand. A battle-worn dao, river-pirate theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "dao",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-coronation-edge",
+  "name": "Coronation Edge",
+  "prompt": "A gilded ceremonial longsword whose mirror-bright blade is etched with the royal blazon and whose crossguard blooms into filigreed gold laurels. A ornate sword, royal-ceremonial theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-throne-ward-greatblade",
+  "name": "Throne-Ward Greatblade",
+  "prompt": "An immaculate two-handed parade greatsword of polished white steel, its broad fuller inlaid with a sapphire-set scrollwork that has never seen a scratch. A pristine sword, palace-regalia theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-prismward-aegis-mace",
+  "name": "Prismward Aegis-Mace",
+  "prompt": "A flanged ceremonial mace grown from a single flawless crystal, each facet refracting cold light into a shimmer of frost as it falls. A pristine mace, crystalline theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "mace",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-twin-regent-stilettos",
+  "name": "Twin Regent Stilettos",
+  "prompt": "A matched pair of slender gold-chased court stilettos, jeweled pommels flashing as they cross in a glittering flurry of cuts. A ornate fist-blade, gilded-court theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "fist-blade",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-solemnity-the-gemforged-partisan",
+  "name": "Solemnity, the Gemforged Partisan",
+  "prompt": "A tall ceremonial guard's partisan whose mirror-polished head is socketed with a ring of cut rubies that trail a holy gleam through each sweeping reach. A ornate spear, gemforged theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-cinderfang-maul",
+  "name": "Cinderfang Maul",
+  "prompt": "A blackened iron warhammer whose cracked head glows molten orange in its seams, leaving a smear of embers in the air on every brutal downswing. A battle-worn maul, infernal theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "maul",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-glaciem-spire",
+  "name": "Glaciem Spire",
+  "prompt": "An elegant lance carved from a single shaft of eternal blue ice, its faceted point trailing crystalline frost-motes and rimed with delicate filigree. A ornate spear, frost theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-marrowsplit",
+  "name": "Marrowsplit",
+  "prompt": "A broad cleaving axe whose head is a single fused jawbone, teeth still socketed along the edge and the haft wrapped in cracked yellow sinew that flexes with every chop. A battle-worn axe, bone theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "axe",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-glasswidow-s-edge",
+  "name": "Glasswidow's Edge",
+  "prompt": "A pair of mirror-polished obsidian shortblades, each chipped to a glassy black razor that throws back the light, balanced for blink-fast paired slashes. A pristine dagger, obsidian theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "dagger",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-menhir-maul",
+  "name": "Menhir Maul",
+  "prompt": "A monolithic standing-stone hammer lashed to a thick timber haft, its weathered grey face carved with spiral glyphs that catch grit and shadow as it falls. A worn maul, stone theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "maul",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-heartwood-reaver",
+  "name": "Heartwood Reaver",
+  "prompt": "A long greatsword grown rather than forged, its blade a single length of hardened heartwood veined with living amber sap that pulses faintly green along the cutting edge. A organic sword, living-wood theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-tidecaller-s-trident",
+  "name": "Tidecaller's Trident",
+  "prompt": "An elegant three-pronged spear of branching rose-and-white coral, each tine flared into a fan of fluted barbs that gleam wet as if just lifted from the reef. A ornate spear, coral theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-gorehorn-goad",
+  "name": "Gorehorn Goad",
+  "prompt": "A heavy boar-tusk lance bound to a hide-wrapped shaft, the ivory horn scarred and amber-stained from countless gorings, built to drive forward in brutal thrusts. A battle-worn spear, beast-forged theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "spear",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-wraithedge-twins",
+  "name": "Wraithedge Twins",
+  "prompt": "A matched pair of jagged shadow-iron punch daggers, their pitted blades fading into smoky nothingness at the tips as they slash in a blur. A worn fist-blade, void / shadow theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "fist-blade",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-seraph-s-verdict",
+  "name": "Seraph's Verdict",
+  "prompt": "A gleaming, flawless longsword of polished white-gold that radiates a soft halo of light, its mirror-bright edge humming with sanctified warmth. A pristine sword, celestial / holy theme.",
+  "tags": [
+   "weapon",
+   "melee",
+   "sword",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-vael-9-railspear",
+  "name": "Vael-9 Railspear",
+  "prompt": "A long, mirror-white anti-materiel railgun with twin parallel rails sheathed in a gleaming ceramic shell, its capacitor coils glowing pale blue as it winds up a single hypervelocity slug. A pristine railgun, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "railgun",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-halcyon-coilrifle",
+  "name": "Halcyon Coilrifle",
+  "prompt": "An elegant gauss marksman rifle plated in brushed rose-gold with filigree-etched coil rings stacked down the barrel, humming with a clean magnetic whine before each precise shot. A ornate gauss-rifle, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "gauss-rifle",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-sunfleck-plasma-pistol",
+  "name": "Sunfleck Plasma Pistol",
+  "prompt": "A compact, gleaming-white sidearm with a glassy amber containment bulb at the muzzle that spits a fat bolt of fiery plasma with a soft thermal pop. A pristine plasma-pistol, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "plasma-pistol",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-aurora-beam-lance",
+  "name": "Aurora Beam Lance",
+  "prompt": "A slender, polished-chrome lance that projects a continuous lance of cold violet light, its focusing prism crowned with a halo of frost-blue emitter fins. A pristine beam-lance, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "beam-lance",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-hornet-smart-smg",
+  "name": "Hornet Smart-SMG",
+  "prompt": "A stubby, scuffed gunmetal machine pistol with a chittering targeting eye on top, hosing out a fast auto-stream of self-correcting smart rounds. A battle-worn smart-smg, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "smart-smg",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-twin-voltaire-carbines",
+  "name": "Twin Voltaire Carbines",
+  "prompt": "A matched pair of sleek pearl-white energy carbines that crackle with arcs of blue lightning, fired akimbo in alternating shock bursts. A pristine energy-carbine, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "energy-carbine",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-tempest-scattergun",
+  "name": "Tempest Scattergun",
+  "prompt": "A broad-mouthed energy shotgun with a faded steel-grey casing and a wide emitter throat that belches a fan of superheated plasma motes at close range. A worn plasma-shotgun, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "plasma-shotgun",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-sentinel-gauss-bastion",
+  "name": "Sentinel Gauss Bastion",
+  "prompt": "A tripod-mounted heavy gauss cannon in immaculate arctic-white armor, its enormous coil throat winding up to drive auto-fed magnetic slugs across the whole arena. A pristine gauss-cannon, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "gauss-cannon",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-glasswing-beam-carbine",
+  "name": "Glasswing Beam Carbine",
+  "prompt": "A gracefully tapered carbine of translucent aquamarine glass-alloy with gilt vein-tracery, sustaining a thin holy-gold ray as long as the trigger is held. A ornate energy-carbine, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "energy-carbine",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-wasp-toxin-repeater",
+  "name": "Wasp Toxin Repeater",
+  "prompt": "A grime-streaked olive-drab smart-SMG fitted with a sloshing green reservoir, dumping bursts of corrosive toxin darts that streak in on locked targets. A battle-worn smart-smg, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "smart-smg",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-nullspike-railpistol",
+  "name": "Nullspike Railpistol",
+  "prompt": "A jewel-precise one-handed railgun pistol of polished obsidian-and-silver, its short rails tearing open a sliver of void that hurls a humming dark-matter slug. A pristine railgun, future-tech ranged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "railgun",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-arbalest-of-the-iron-vow",
+  "name": "Arbalest of the Iron Vow",
+  "prompt": "A heavy steel arbalest of mirror-bright plates and a polished walnut stock, its windlass crank gleaming like fresh-forged armor as it punches a single bolt clean through a line of foes. A pristine crossbow, knightly siege-crossbow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "crossbow",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-hartwood-longbow",
+  "name": "Hartwood Longbow",
+  "prompt": "A tall, hand-rubbed yew warbow gone amber-brown with use, its waxed string and antler nocks loosing a long, arcing shaft that drops onto distant targets. A worn longbow, ranger's warbow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "longbow",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-hailfang-repeater",
+  "name": "Hailfang Repeater",
+  "prompt": "A boxy, lever-fed repeating crossbow scarred from a hundred skirmishes, rattling out a stuttering hail of short bolts as fast as the wielder can pump its rigid arm. A battle-worn crossbow, repeating crossbow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "crossbow",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-bandolier-of-whispering-axes",
+  "name": "Bandolier of Whispering Axes",
+  "prompt": "A pair of matched throwing hatchets with etched silver bits and leather-wrapped hafts that hum end-over-end through the air and come whirling back to the hand. A ornate throwing-axe, spinning thrown hatchets theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "throwing-axe",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-sunspear-javelins",
+  "name": "Sunspear Javelins",
+  "prompt": "A clutch of slender gold-tipped javelins that blaze with holy light the instant they leave the grip, each cast streaking like a sunbeam to spear a single far enemy. A pristine javelin, blessed throwing spears theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "javelin",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-hagoromo-yumi",
+  "name": "Hagoromo Yumi",
+  "prompt": "A towering gloss-black asymmetric yumi bound in pale rattan rings, its arrow leaving a faint ribbon of white feather-down as it looses with a deep resonant snap. A pristine yumi-longbow, asymmetric lacquered war-bow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "yumi-longbow",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-sunfeather-daikyu",
+  "name": "Sunfeather Daikyu",
+  "prompt": "A radiant gold-leafed daikyu engraved with chrysanthemum filigree whose nocked shaft bursts into a streaking ember-arrow that trails fire across the field. A ornate yumi-longbow, gold-leaf longbow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "yumi-longbow",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-sparrowfall-kunai",
+  "name": "Sparrowfall Kunai",
+  "prompt": "A pair of nicked, oil-darkened kunai gripped between the fingers and hurled in rapid blurring volleys that thud home with a wet metallic bite. A battle-worn kunai-thrower, weighted iron throwing-blades theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "kunai-thrower",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-venomwheel-shuriken",
+  "name": "Venomwheel Shuriken",
+  "prompt": "A dull grey bandolier of eight-pointed shuriken slick with green resin, loosed in a hissing fan that scatters across a wide arc and leaves victims dripping toxin. A worn shuriken-thrower, poison-tipped throwing stars theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "shuriken-thrower",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-tessen-of-the-falling-petal",
+  "name": "Tessen of the Falling Petal",
+  "prompt": "A lacquered war fan painted with cherry blossoms over gleaming iron ribs that flares open with a sharp clack to fling a crescent of cutting wind in a sweeping spread. A ornate war-fan, iron-ribbed war fan theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "war-fan",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-sunburst-dueling-pistol",
+  "name": "Sunburst Dueling Pistol",
+  "prompt": "An exquisite gold-filigreed flintlock dueling pistol, its mirror-bored barrel and engraved lockplate spitting a single clean, sunlit shot. A ornate pistol, gilded flintlock theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "pistol",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-palace-longrifle-ceremonial",
+  "name": "Palace Longrifle Ceremonial",
+  "prompt": "A pristine ivory-stocked honor-guard longrifle chased in silver scrollwork, delivering a flawless long-range shot with regal precision. A pristine rifle, palace-regalia theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "rifle",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-royal-volley-coachgun",
+  "name": "Royal Volley Coachgun",
+  "prompt": "A gleaming double-barreled ceremonial coachgun with engraved gold breech and pearl inlay, scattering a bright fan of polished shot. A ornate shotgun, royal-ceremonial theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "shotgun",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-lustrous-court-longbow",
+  "name": "Lustrous Court Longbow",
+  "prompt": "A flawless laminated court longbow lacquered to a high gloss and tipped in gold, loosing crystalline arrows that streak clean across the arena. A pristine bow, gilded theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "bow",
+   "physical"
+  ]
+ },
+ {
+  "id": "cw-stormcaller-repeater",
+  "name": "Stormcaller Repeater",
+  "prompt": "A sleek brass-and-cobalt lever rifle whose coiled barrel crackles with arcing blue current, spitting hitscan lightning-bolts with a thunderclap report. A ornate rifle, storm / shock theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "rifle",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-umbral-quietus",
+  "name": "Umbral Quietus",
+  "prompt": "A pair of obsidian flintlocks wreathed in writhing shadow, firing slugs of compressed darkness that drink the light around their muzzles. A arcane pistol, void / shadow theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "pistol",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-viperbloom-scattergun",
+  "name": "Viperbloom Scattergun",
+  "prompt": "A grotesque shotgun grown from a hollowed serpent-spine, belching a wide spray of hissing green venom-darts from its dripping fanged maw. A organic shotgun, toxic-venom theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "shotgun",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-prism-lance",
+  "name": "Prism Lance",
+  "prompt": "A gleaming bow grown from a single shard of clear quartz, its limbs refracting light into thin rainbows and loosing hardened crystal slivers in a tight, glinting line. A pristine bow, crystal theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "bow",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-sporeburst-censer",
+  "name": "Sporeburst Censer",
+  "prompt": "A bulbous puffball mounted on a stubby living-wood handle that, when flung, ruptures mid-air into a spreading cone of glowing toxic spores. A organic thrown, fungal theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "thrown",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-chitin-spitter",
+  "name": "Chitin Spitter",
+  "prompt": "A living hand-cannon of hardened insect carapace that contracts and spits clusters of barbed chitin darts in a quick scattering volley, twitching faintly as it reloads. A organic gun, beast-forged theme.",
+  "tags": [
+   "weapon",
+   "ranged",
+   "gun",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-aurora-singularity",
+  "name": "Aurora Singularity",
+  "prompt": "A flawless mirror-chrome sphere haloed by a silent ring of violet event-horizon light, so polished it reflects the arena warped and inside-out. A pristine gravity-orb, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "gravity-orb",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-veil-piercer-holo-focus",
+  "name": "Veil-Piercer Holo-Focus",
+  "prompt": "A gold-filigreed disc afloat above the palm, casting a stacked tower of luminous concentric rings that channel into a thin sapphire beam. A ornate holo-focus, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "holo-focus",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-cinder-loom-plasma-scepter",
+  "name": "Cinder-Loom Plasma Scepter",
+  "prompt": "A slender platinum rod crowned with a fixed crystalline brazier where a contained sun churns, throwing a flickering corona of white-orange heat. A pristine plasma-scepter, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "plasma-scepter",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-glacier-codex",
+  "name": "Glacier Codex",
+  "prompt": "A levitating book of frosted glass pages bound in chrome, its open spread scrolling pale-blue glyphs that crystallize into mist as they turn. A arcane data-tome, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "data-tome",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-hivemind-nanite-emitter",
+  "name": "Hivemind Nanite Emitter",
+  "prompt": "A scuffed gunmetal vent-array clamped to the forearm, its grilles weeping a faint green haze of microscopic machines that hangs and creeps in the air. A battle-worn nanite-emitter, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "nanite-emitter",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-stormvault-energy-core-staff",
+  "name": "Stormvault Energy-Core Staff",
+  "prompt": "A tall white-ceramic stave with a caged blue fusion core suspended at its head, arcs of static crawling up the seamless shaft to a fixed prong tip. A pristine energy-core-stave, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "energy-core-stave",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-reliquary-of-last-light",
+  "name": "Reliquary of Last Light",
+  "prompt": "An ornate cathedral-cut reliquary of white gold and stained crystal, a fixed halo of golden light suspended in its hollow that pours out a warm radiant ray. A ornate holo-focus, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "holo-focus",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-twin-quanta-foci",
+  "name": "Twin Quanta Foci",
+  "prompt": "A matched pair of palm-sized iridescent prisms, each humming with a caged spark, firing rapid twinned darts of crackling violet light in alternation. A pristine holo-focus, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "holo-focus",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-embergate-energy-core-staff",
+  "name": "Embergate Energy-Core Staff",
+  "prompt": "A blackened obsidian-composite stave scored with heat-cracks, its molten amber core glowing dully behind a soot-clouded containment lens. A worn energy-core-stave, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "energy-core-stave",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-null-spire-gravity-orb",
+  "name": "Null-Spire Gravity Orb",
+  "prompt": "A spotless ivory-plated orb braced on a shoulder mount, its central black aperture exhaling a steady ribbon of dimming, light-eating darkness. A pristine gravity-orb, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "gravity-orb",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-permafrost-data-tome",
+  "name": "Permafrost Data-Tome",
+  "prompt": "A sealed slab of blue-veined crystal etched with running runic code, snapping open just long enough to spit one precise, glittering needle of cold. A arcane data-tome, future-tech caster theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "data-tome",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-stormcaller-runestaff",
+  "name": "Stormcaller Runestaff",
+  "prompt": "A black ashwood stave crowned with a floating, rune-carved crystal that crackles violet sparks, unleashing a sustained lance of forked lightning down the line of sight. A arcane staff, runic lightning stave theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "staff",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-tome-of-cinders",
+  "name": "Tome of Cinders",
+  "prompt": "A scorched leather grimoire with brass-bound, ember-rimmed pages that flips itself open to vomit a fan of roaring flame across everything ahead. A battle-worn tome, fire-conjuring grimoire theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "tome",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-scepter-of-the-hallowed-dawn",
+  "name": "Scepter of the Hallowed Dawn",
+  "prompt": "A flawless white-gold scepter set with a radiant sunstone that hovers above the haft, hurling glowing orbs of holy light that burst on impact. A pristine scepter, blessed radiant scepter theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "scepter",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-reliquary-of-the-frozen-saint",
+  "name": "Reliquary of the Frozen Saint",
+  "prompt": "An ornate silver reliquary casket rimed in everlasting frost, its tiny glass window weeping cold mist as it conjures a creeping field of killing ice on the ground. A ornate reliquary, holy frost-relic casket theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "reliquary",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-plaguebearer-s-censer",
+  "name": "Plaguebearer's Censer",
+  "prompt": "A corroded brass censer crusted with green resin and clinging fungus that swings open on rigid hinges to belch a billowing cloud of corrosive spores around the caster. A organic reliquary, toxic incense reliquary theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "reliquary",
+   "toxic"
+  ]
+ },
+ {
+  "id": "cw-voidpiercer-wand",
+  "name": "Voidpiercer Wand",
+  "prompt": "A slim obsidian wand tipped with a pulsing sliver of starless dark, drilling a thin, humming beam of pure void straight through anything caught in its line. A arcane wand, void-channeling relic wand theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "wand",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-thunderscript-ofuda",
+  "name": "Thunderscript Ofuda",
+  "prompt": "A fan of crackling vermilion talisman slips inscribed with glowing kanji that the caster flicks to the ground, where they flare and erupt in a snapping lattice of blue-white lightning. A arcane ofuda-talisman, lightning sutra-strips theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "ofuda-talisman",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-hollow-lantern-ofuda",
+  "name": "Hollow Lantern Ofuda",
+  "prompt": "A bundle of ash-grey warding papers bound to a black willow handle that, held aloft, pours forth a wavering ribbon of devouring void-shadow that gnaws at whatever it touches. A arcane ofuda-talisman, void-sealing wards theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "ofuda-talisman",
+   "void"
+  ]
+ },
+ {
+  "id": "cw-frostbloom-mai-gi",
+  "name": "Frostbloom Maiōgi",
+  "prompt": "An immaculate pearl-and-silver dance fan that, swept in a slow arc, breathes out a glittering cone of frost crystals that rimes everything in its path with ice. A pristine war-fan, silver dance-fan theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "war-fan",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-hundred-blessing-juzu",
+  "name": "Hundred-Blessing Juzu",
+  "prompt": "A looped strand of polished ivory prayer beads warm with golden inner light that, clasped between the palms, projects a steady radiant beam of holy fire that burns the unclean. A pristine prayer-bead-focus, sacred prayer beads theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "prayer-bead-focus",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-onyx-mala-of-ruin",
+  "name": "Onyx Mala of Ruin",
+  "prompt": "A heavy obsidian mala strung with a single violet relic-bead that the caster casts forward to plant a glowing arcane glyph on the ground, blooming into a silent purple blast. A arcane prayer-bead-focus, obsidian rosary theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "prayer-bead-focus",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-vermilion-charm-wand",
+  "name": "Vermilion Charm-Wand",
+  "prompt": "A red-lacquered peachwood wand crowned with a fluttering gold-flecked paper streamer that hums and spits a thin unbroken lance of fire from its glowing tip while held aloft. A ornate paper-charm-wand, streamer fire-wand theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "paper-charm-wand",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-diadem-orb-of-aurelius",
+  "name": "Diadem Orb of Aurelius",
+  "prompt": "A floating diadem-set crystal orb haloed in golden rings, channeling a steady radiant beam of focused arcane light. A arcane orb, crystalline theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "orb",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-sceptre-of-the-gilded-court",
+  "name": "Sceptre of the Gilded Court",
+  "prompt": "A regal gold sceptre crowned with a luminous sapphire that calls down a placed circle of holy radiance, its jeweled head gleaming like a crown jewel. A ornate wand, royal-ceremonial theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "wand",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-pyreheart-sigil",
+  "name": "Pyreheart Sigil",
+  "prompt": "A floating ember-cored orb caged in molten brass rings that channels a roaring, sustained jet of hellfire wherever its bearer points. A arcane orb, infernal theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "orb",
+   "fire"
+  ]
+ },
+ {
+  "id": "cw-dawnspire-scepter",
+  "name": "Dawnspire Scepter",
+  "prompt": "An immaculate ivory staff crowned with a radiant sunburst gem that calls down a blinding column of holy light onto a marked patch of ground. A pristine staff, celestial / holy theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "staff",
+   "holy"
+  ]
+ },
+ {
+  "id": "cw-rimeweaver-wand",
+  "name": "Rimeweaver Wand",
+  "prompt": "A slender silver wand tipped with a snowflake of living frost that exhales a continuous, freezing beam of glittering cold mist. A ornate wand, frost theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "wand",
+   "frost"
+  ]
+ },
+ {
+  "id": "cw-tempest-codex",
+  "name": "Tempest Codex",
+  "prompt": "A levitating storm-grimoire bound in crackling clouds that, on command, drops a churning thunderhead to electrify a circle of the battlefield. A arcane tome, storm / shock theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "tome",
+   "shock"
+  ]
+ },
+ {
+  "id": "cw-geode-heart",
+  "name": "Geode Heart",
+  "prompt": "A fist-sized cracked geode held aloft, its amethyst-lined hollow channeling a steady violet beam of focused arcane light from the glowing crystals within. A arcane orb, crystal theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "orb",
+   "arcane"
+  ]
+ },
+ {
+  "id": "cw-ashen-idol",
+  "name": "Ashen Idol",
+  "prompt": "A gilded ancestor-skull totem inlaid with polished obsidian eyes that, when planted, erupts a circle of consecrated white flame around the caster's feet. A ornate totem, bone theme.",
+  "tags": [
+   "weapon",
+   "caster",
+   "totem",
+   "holy"
+  ]
+ },
+ {
+  "id": "cc-cordell-coldsnap-vane",
+  "name": "Cordell \"Coldsnap\" Vane",
+  "prompt": "A lean upright humanoid in a long wind-tattered duster coat that flares behind in a hard angular silhouette, wide-brim slouch hat tilted low over a shadowed face, one detached hand hanging loose and curled beside a holstered revolver, the other resting flat. Flat hand-painted CEL art, bold readable outline, side-profile facing right. Materials: cracked oxblood leather, sun-faded indigo cotton, dull gunmetal. Palette of dust-bowl tans, faded blue, and bleached alkali highlights. Palette: Dust-bowl neutrals: weathered tan duster, faded indigo shirt, gunmetal grey iron, oxblood-leather accents, pale alkali-bleached highlights.",
+  "tags": [
+   "character",
+   "Drifter / wandering gunslinger"
+  ]
+ },
+ {
+  "id": "cc-magdalene-the-ledger-crowe",
+  "name": "Magdalene \"The Ledger\" Crowe",
+  "prompt": "A tall imposing humanoid in a heavy double-breasted charcoal coat bristling with rolled wanted-posters tucked into bandolier loops, a flat-crowned black hat, a tin star pinned crooked at the chest, one detached hand gripping a coiled rope-and-shackle, the other open and waiting. Flat hand-painted CEL art, bold blocky silhouette, side-profile facing right. Materials: oiled black wool, brass buckles, yellowed paper, cold blued steel. Palette of charcoal-black, bone-white, steel-blue, and rust-red accents. Palette: Deep charcoal-black coat, bone-white wanted-poster paper, cold steel-blue, brass buckle gold, blood-rust red trim.",
+  "tags": [
+   "character",
+   "Bounty hunter"
+  ]
+ },
+ {
+  "id": "cc-buzzard-jeptha-hale",
+  "name": "\"Buzzard\" Jeptha Hale",
+  "prompt": "A broad heavy-shouldered humanoid hunched forward in a sleeveless rawhide vest crossed by overstuffed cartridge bandoliers, a battered derby hat crammed low, a thick neck and barrel chest making a bulky aggressive silhouette, one detached hand a clenched scarred fist, the other dragging a sawed-off shotgun. Flat hand-painted CEL art, heavy menacing outline, side-profile facing right. Materials: greasy rawhide, tarnished brass, scarred bone. Palette of mud-brown, dried-blood maroon, brass, and dirty bone. Palette: Mud-brown rawhide, dried-blood maroon, tarnished brass cartridges, sweathered olive, dirty bone.",
+  "tags": [
+   "character",
+   "Desperado / hardened outlaw"
+  ]
+ },
+ {
+  "id": "cc-doctor-phineas-quill-esq",
+  "name": "Doctor Phineas Quill, Esq.",
+  "prompt": "A spindly upright humanoid in a too-long mustard frock coat lined with rows of glowing bottle-green tonic vials, a tall battered top hat, a string tie and plum brocade waistcoat, posture leaning in mid-pitch with arms wide, one detached hand brandishing a luminous bottle aloft, the other tipping the hat. Flat hand-painted CEL art, slinky theatrical silhouette, side-profile facing right. Materials: worn velvet, clinking glass, tarnished copper, gilt buttons. Palette of mustard-gold, bottle-green, plum, copper, and a sickly chartreuse tonic glow. Palette: Mustard-gold frock coat, bottle-green glass, copper labels, plum waistcoat, sickly chartreuse tonic glow.",
+  "tags": [
+   "character",
+   "Snake-oil charlatan"
+  ]
+ },
+ {
+  "id": "cc-the-bandida-la-sombra",
+  "name": "The Bandida \"La Sombra\"",
+  "prompt": "A lithe upright humanoid wrapped in a striped serape thrown over one shoulder, the lower face hidden by a tied bandana and the eyes shadowed under a low flat hat, a wide poncho hem making a triangular drifting silhouette, one detached hand thumbing back a blackened revolver hammer, the other holding the serape edge like a cape. Flat hand-painted CEL art, soft-edged mysterious outline, side-profile facing right. Materials: woven wool serape, dusty cotton kerchief, blackened iron. Palette of dusk-violet, ash-grey, blackened iron, and deep teal shadow. Palette: Dusk-violet serape, ash-grey kerchief, blackened iron, deep teal shadow, faded poncho-stripe accents.",
+  "tags": [
+   "character",
+   "Masked bandit"
+  ]
+ },
+ {
+  "id": "cc-elias-parson-thorne",
+  "name": "Elias \"Parson\" Thorne",
+  "prompt": "A gaunt severe humanoid in a buttoned funeral-black preacher's coat with a stiff bone-white collar, a flat parson's hat, a long silhouette broken by a thick clasped Bible hung on a chain and twin holsters beneath the coattails, posture rigidly upright, one detached hand pressing the Bible to his chest, the other hovering over a pistol grip. Flat hand-painted CEL art, austere vertical silhouette, side-profile facing right. Materials: dull black broadcloth, starched linen, tarnished silver, brittle gilt-edged paper. Palette of funeral-black, ash-grey, bone-white, weathered silver, and an ember-orange glow at the book's edge. Palette: Funeral-black coat, ash-grey shirt, bone-white collar, weathered-silver cross, ember-orange page-edge glow.",
+  "tags": [
+   "character",
+   "Gunslinging preacher / repentant outlaw"
+  ]
+ },
+ {
+  "id": "cc-quickfinger-odette-lacroix",
+  "name": "\"Quickfinger\" Odette Lacroix",
+  "prompt": "A statuesque upright humanoid in a fitted emerald riverboat-gambler's frock coat with gold-leaf brocade and a fanned bustle hem, a small tilted feathered hat, a sleek confident lean with the hip cocked, one detached hand fanning a spread of playing cards, the other concealing a tiny brass derringer at the cuff. Flat hand-painted CEL art, sleek hourglass silhouette, side-profile facing right. Materials: liquid emerald satin, gold thread, ivory card-faces, brass. Palette of emerald-green, gold-leaf, ivory-and-black, garnet-red, and warm brass. Palette: Emerald-green satin, gold-leaf trim, ivory-and-black playing-card motif, garnet-red ribbon, brass derringer sheen.",
+  "tags": [
+   "character",
+   "Cardsharp gunslinger / riverboat grifter"
+  ]
+ },
+ {
+  "id": "cc-sir-galloway-the-unbending",
+  "name": "Sir Galloway the Unbending",
+  "prompt": "Side-profile facing right, broad rectangular silhouette wider at the pauldrons than anywhere else; a hulking suit of full plate armor with a great barrel chest, a closed bucket-helm with a narrow vision slit and a single tall white plume, oversized rounded pauldrons and a kite shield slung on the back. Detached gauntleted fists and sabaton feet float in the Drifter rig. Flat cel-painted in burnished steel-silver with hammered highlights, a deep royal-blue tabard hanging to the knees, brass rivets and trim, hard rim-light on every plate edge. Palette: Burnished steel-silver plate, deep royal-blue tabard, brass trim, warm white plume.",
+  "tags": [
+   "character",
+   "Plate Knight (tank)"
+  ]
+ },
+ {
+  "id": "cc-greta-ironbraid",
+  "name": "Greta Ironbraid",
+  "prompt": "Side-profile facing right, a strong compact silhouette broken by a huge round wooden shield gripped forward; a shieldmaiden in a riveted chainmail shirt over oiled tan leather, a winged or horn-accented helm with a long copper-blonde battle-braid spilling out the back, a short axe in the off-hand. Detached fists (one clutching the shield boss) and booted feet in the Drifter rig. Flat cel art, chainmail-grey rings, ox-blood red painted shield rim with a sun-burst boss, weathered timber and leather textures. Palette: Oiled tan leather and chainmail grey, ox-blood red trim, weathered round-shield wood, copper-blonde braid.",
+  "tags": [
+   "character",
+   "Shieldmaiden"
+  ]
+ },
+ {
+  "id": "cc-brother-cassian-the-ashen-crusader",
+  "name": "Brother Cassian, the Ashen Crusader",
+  "prompt": "Side-profile facing right, tall lean silhouette draped in a long flowing surcoat; a crusader in a hooded mail coif over grey chain, a bleached bone-white tabard bearing a bold crimson cross now smeared with soot and old blood, a longsword pointed earthward like a planted standard. Detached mailed fists and worn boots in the Drifter rig. Flat cel-painted, sun-bleached cloth with grime-shaded folds, dull desaturated grey mail, one searing crimson cross as the focal accent, a faint warm holy rim-glow. Palette: Sun-bleached bone-white tabard, dull grey mail, crimson cross, soot and dried-blood staining.",
+  "tags": [
+   "character",
+   "Crusader / zealot"
+  ]
+ },
+ {
+  "id": "cc-dunkel-the-coinblade",
+  "name": "Dunkel the Coinblade",
+  "prompt": "Side-profile facing right, a deliberately asymmetric, scrappy silhouette — one heavy looted pauldron, the other shoulder bare; a sellsword in patched brown leather and a half-buttoned gambeson, a battered open-faced kettle helm, a faded teal scarf knotted at the throat, a notched falchion slung lazily at the hip. Detached half-gloved fists and mismatched boots in the Drifter rig. Flat cel art, warm earthy leather tones, one gleaming looted gold pauldron breaking the palette, dull scratched iron, casual cocky posture. Palette: Mismatched brown leathers, dull iron, a single looted gold pauldron, faded teal scarf.",
+  "tags": [
+   "character",
+   "Sellsword / mercenary"
+  ]
+ },
+ {
+  "id": "cc-sir-mordrane-the-hollow-oath",
+  "name": "Sir Mordrane, the Hollow Oath",
+  "prompt": "Side-profile facing right, a once-noble plate silhouette now drooping and broken-edged, a tattered cape trailing low; a fallen paladin in blackened, corroded full plate streaked with sickly green-gold tarnish, a dented helm with a cracked face-plate leaking cold ember-cyan light from the eye-slit, a chipped greatsword wreathed in faint dark vapor. Detached gauntleted fists and sabatons in the Drifter rig. Flat cel-painted, near-black tarnished metal with toxic green-gold corrosion in the crevices, a dead-purple ragged cape, an eerie cyan inner glow as the only cold light. Palette: Blackened tarnished plate, sickly green-gold tarnish, dead-purple cloth, cold ember-cyan glow.",
+  "tags": [
+   "character",
+   "Fallen paladin"
+  ]
+ },
+ {
+  "id": "cc-hrothgar-snowfang",
+  "name": "Hrothgar Snowfang",
+  "prompt": "Side-profile facing right, a massive top-heavy silhouette of bare muscled torso, hunched and forward-leaning; a mountain berserker stripped to the waist with a shaggy grey wolf-pelt cloak and hood whose snout crowns his head, a thick braided beard, woad-blue warpaint streaks, and a huge two-handed iron axe hauled over one shoulder. Detached bare fists and fur-wrapped feet in the Drifter rig. Flat cel art, wind-burnt ruddy skin with warm shadow, frost-white and grey fur, weathered cold iron, bold woad-blue paint as the accent. Palette: Wind-burnt ruddy skin, grey wolf-pelt, weathered iron, woad-blue warpaint, frost-white fur.",
+  "tags": [
+   "character",
+   "Mountain berserker"
+  ]
+ },
+ {
+  "id": "cc-dame-veyra-of-the-thornwatch",
+  "name": "Dame Veyra of the Thornwatch",
+  "prompt": "Side-profile facing right, a slim elegant silhouette with a poised forward lunge stance; an errant knight in fitted three-quarter armor — fluted breastplate and vambraces only, the rest supple forest-green cloth and tall riding boots — a feathered sallet helm with the visor raised and an ivory plume, a long slender rapier-like estoc extended ahead. Detached gauntleted fists (one fine-fingered on the hilt) and pointed boots in the Drifter rig. Flat cel art, polished silver and blackened fluting, deep forest-green cloth, delicate rose-gold filigree as the accent, clean confident lighting. Palette: Forest-green and silver, blackened fluted accents, rose-gold filigree, ivory plume.",
+  "tags": [
+   "character",
+   "Errant knight / duelist"
+  ]
+ },
+ {
+  "id": "cc-bastion-vance",
+  "name": "Bastion Vance",
+  "prompt": "Side-profile facing right, same Drifter rig: a hulking blocky charcoal-gunmetal powered-armor torso with overlapping steel shoulder pauldrons and a thick segmented chest plate, topped by a heavy rounded combat helmet whose single narrow cyber-cyan visor slit glows as one flat bright shape; TWO huge detached rounded gauntlet hand-blobs and TWO broad detached armored boot-blobs planted wide, clear flat-green gaps around every part. Materials read as matte plated metal with one decisive shadow band; bold immovable wide-stance silhouette, flat cel, ~5 colours. Palette: gunmetal #3A4049 body, steel #5A6472 plate, off-white #E8E4D8 trim, cyber-cyan #33E6FF visor slit.",
+  "tags": [
+   "character",
+   "Powered-armor trooper"
+  ]
+ },
+ {
+  "id": "cc-halcyon-7",
+  "name": "Halcyon-7",
+  "prompt": "Side-profile facing right, Drifter proportions: a slim charcoal undersuit body wrapped in thin steel exo-strips, with a smooth visorless helm bearing one solid arc-violet eye-band; floating detached hand-blobs and feet-blobs are part matte steel, part flat arc-violet 'hardlight' panels read purely by colour contrast (no glow rays). Crisp angular plating with chamfered edges, one shadow band, clear gaps; poised forward-leaning duelist silhouette, flat cel, ~5 colours. Palette: charcoal #22252B undersuit, steel #5A6472 frame, arc-violet #B14BFF hardlight panels, off-white #E8E4D8 seams.",
+  "tags": [
+   "character",
+   "Hardlight operative"
+  ]
+ },
+ {
+  "id": "cc-skitch-wren",
+  "name": "Skitch Wren",
+  "prompt": "Side-profile facing right, same rig: a wiry olive-drab jumpsuit body under a cluttered gunmetal utility harness packed with canisters and a stubby antenna, headgear is a snug strapped flight-cap with a single round goggle lens over one bold eye; TWO detached glove hand-blobs (one raised as if commanding), TWO scuffed detached boot-blobs, and hovering just clear of the body a tiny separate disc-drone blob with one flat plasma-lime eye. Worn fabric and patched metal, one shadow band, clear gaps; busy-but-readable tinkerer silhouette, flat cel, ~6 colours. Palette: olive #6E7042 jumpsuit, gunmetal #3A4049 harness, tan #C49A5A straps, plasma-lime #9CFF3B drone eye.",
+  "tags": [
+   "character",
+   "Drone-jockey"
+  ]
+ },
+ {
+  "id": "cc-neon-mirage",
+  "name": "Neon Mirage",
+  "prompt": "Side-profile facing right, Drifter rig: a lean charcoal street-runner bodysuit with slim gunmetal knee-and-elbow pads and a streamlined low-profile aero-helm trailing a short wrapped scarf, one bold eye behind a thin hot-magenta visor strip (flat shape, no bloom); TWO sleek detached hand-blobs in fingerless grip-wraps and TWO light detached runner-shoe blobs caught mid-sprint, clear gaps. Taut fabric with magenta seam accents, one shadow band; dynamic forward-coiled sprinting silhouette, flat cel, ~5 colours. Palette: charcoal #22252B bodysuit, gunmetal #3A4049 pads, hot-magenta #FF3BD4 accents, off-white #E8E4D8 wrap.",
+  "tags": [
+   "character",
+   "Neon street-runner"
+  ]
+ },
+ {
+  "id": "cc-deepfall-korr",
+  "name": "Deepfall Korr",
+  "prompt": "Side-profile facing right, same proportions: a bulky sealed steel pressure-hardsuit torso with ribbed accordion neck-and-joint seals and a small life-support backpack hump, a domed bowl helmet with one wide ember-orange beacon eye glowing as a flat solid shape; TWO thick detached gauntlet hand-blobs and TWO heavy mag-boot blobs, clear flat-green gaps. Scuffed bone-stencilled hull markings over matte steel, one decisive shadow band; grounded heavy-trudge silhouette, flat cel, ~6 colours. Palette: steel #5A6472 hardsuit, charcoal #22252B joints, ember-orange #FF8A2B beacon, bone #CFC6AE markings.",
+  "tags": [
+   "character",
+   "Void marine"
+  ]
+ },
+ {
+  "id": "cc-sable-cipher",
+  "name": "Sable Cipher",
+  "prompt": "Side-profile facing right, Drifter rig: a near-silhouette charcoal stealthsuit body with subtle gunmetal segmented panels, a sleek faceless infiltrator hood-mask broken only by thin flat cyber-cyan circuit lines and one cyan optic-eye; TWO slender detached hand-blobs in tight tactical gloves (one extended as if jacking in), TWO quiet detached soft-soled boot blobs, clear gaps. Matte dark fabric over hidden plating, single shadow band, sparse cyan line-accents read as 'lit' by contrast; low crouched predatory silhouette, flat cel, ~4 colours. Palette: charcoal #22252B stealthsuit, gunmetal #3A4049 panels, cyber-cyan #33E6FF circuit lines, steel #5A6472 buckles.",
+  "tags": [
+   "character",
+   "Cyber infiltrator"
+  ]
+ },
+ {
+  "id": "cc-grix-boltcaster",
+  "name": "Grix Boltcaster",
+  "prompt": "Side-profile facing right, same rig: a short barrel-shaped gunmetal heavy-gunner body fronted by an oversized articulated stabilizer chest-brace and a blocky energy-cell backpack, headgear a riveted half-helm with a thick downturned brow and one squinting bold eye, a small ember-orange cell-port reading as a flat lit shape; TWO chunky detached recoil-gauntlet hand-blobs and TWO splayed detached stabilizer-foot blobs braced wide, clear gaps. Rust-streaked plate over gunmetal, one shadow band; squat heavy braced silhouette, flat cel, ~6 colours. Palette: gunmetal #3A4049 rig, rust #A8482E plating, tan #C49A5A webbing, ember-orange #FF8A2B cell glow.",
+  "tags": [
+   "character",
+   "Hardlight heavy gunner"
+  ]
+ },
+ {
+  "id": "cc-vesper-lux",
+  "name": "Vesper Lux",
+  "prompt": "Side-profile facing right, Drifter proportions: an upright off-white-and-steel support-trooper torso with clean segmented plating, a dull-teal flat cross panel on the chest, and a compact triage backpack with a folded support arm stowed at the shoulder; rounded smooth helm with a soft visor band over one calm bold eye, a small dull-teal indicator reading as a flat lit shape; TWO tidy detached glove hand-blobs and TWO steady detached boot-blobs, clear flat-green gaps. Matte bone-white panels with one shadow band; composed steady upright silhouette, flat cel, ~5 colours. Palette: off-white #E8E4D8 suit, steel #5A6472 plate, dull-teal #3C6E6A cross panels, charcoal #22252B undersuit.",
+  "tags": [
+   "character",
+   "Cyber medic-support trooper"
+  ]
+ },
+ {
+  "id": "cc-vellichor-the-ash-robed",
+  "name": "Vellichor the Ash-Robed",
+  "prompt": "Tall narrow silhouette wrapped in heavy floor-length charcoal robes that taper to a frayed hem, a deep cowl swallowing the face into shadow with two ember-orange pinprick eyes; detached gloved hands cradle a single floating coal that bleeds smoke, robe edges trimmed in glowing ember-orange runework against bone-white piping. Flat CEL shading, side-profile facing right, bold readable Behemoth-x-Darkest-Dungeon silhouette. Palette: Charcoal-grey robes, ember-orange trim, smoldering coal-red glow, bone-white accents.",
+  "tags": [
+   "character",
+   "Robed Sorcerer"
+  ]
+ },
+ {
+  "id": "cc-mawkin-sourgrin-the-hex-witch",
+  "name": "Mawkin Sourgrin the Hex-Witch",
+  "prompt": "Hunched-forward silhouette under a comically tall crook-tipped witch hat, a beaky warted profile with one jaundiced yellow eye and a wide stitched grin; layered ragged moss-green and bruise-purple shawls bristle with dangling charms and bottled hexes, detached hands stir a tiny floating cauldron while clawed feet hook talon-like. Flat hand-painted CEL art, bold spiky readable silhouette, side-profile facing right. Palette: Sickly moss-green, bruise-purple, jaundiced yellow eyes, rusted iron buckles.",
+  "tags": [
+   "character",
+   "Hex-Witch"
+  ]
+ },
+ {
+  "id": "cc-iridia-of-the-nine-veils",
+  "name": "Iridia of the Nine Veils",
+  "prompt": "Serene flowing silhouette in trailing indigo veils that drift like nebulae, head crowned by a thin gold halo-ring and eyes bound in a star-flecked silver blindfold; detached hands hover open with a small orbiting constellation between the palms, robe scattered with pale gold star-leaf and a faint cosmic-teal aura at the hem. Flat CEL shading, elegant readable silhouette, side-profile facing right, Behemoth-x-Darkest-Dungeon look. Palette: Deep indigo and midnight-blue, starlight silver-white, cosmic teal glow, pale gold leaf.",
+  "tags": [
+   "character",
+   "Astral Seer"
+  ]
+ },
+ {
+  "id": "cc-corvane-the-crimson-draught",
+  "name": "Corvane the Crimson Draught",
+  "prompt": "Lean upright silhouette in a high-collared oxblood coat slit to show pale corpse-grey skin laced with dark vein-lines, a sharp gaunt profile with a single hungry red eye; detached hands trail thin ribbons of floating blood drawn from rows of silver lancets strapped across the chest, black-leather wraps and a dripping crimson sash at the waist. Flat hand-painted CEL art, bold readable silhouette, side-profile facing right. Palette: Oxblood crimson, pale corpse-grey skin, black leather, glinting silver lancets.",
+  "tags": [
+   "character",
+   "Blood-Mage"
+  ]
+ },
+ {
+  "id": "cc-tinker-magnus-brasswick",
+  "name": "Tinker-Magnus Brasswick",
+  "prompt": "Boxy gear-laden silhouette in a brass-buttoned soot-black coat, head encased in a riveted copper diving-helm with one round amber-lit goggle eye and a coiled exhaust pipe; a backpack of bubbling amber alembics vents steam, detached gauntleted hands grip a pressurized glass flask, verdigris-green plating and ticking gear-cogs studding the shoulders. Flat CEL shading, chunky readable silhouette, side-profile facing right, Behemoth-x-Darkest-Dungeon style. Palette: Antique brass, verdigris copper-green, amber potion-glow, soot-black rubber.",
+  "tags": [
+   "character",
+   "Clockwork Alchemist"
+  ]
+ },
+ {
+  "id": "cc-old-quill-grathmar-the-rune-scribe",
+  "name": "Old Quill Grathmar the Rune-Scribe",
+  "prompt": "Stooped scholarly silhouette draped in a parchment-cream robe printed edge-to-edge with ink-black glyphs and a heavy deep-teal mantle, an old bespectacled profile with one squinting eye; detached ink-stained hands write a glowing gold-leaf rune that hangs in the air, a floating bronze inkwell and a quill the size of a sword tucked behind the back. Flat hand-painted CEL art, bold readable silhouette, side-profile facing right. Palette: Parchment-cream and ink-black, gold-leaf glyphs, deep teal mantle, oxidized bronze.",
+  "tags": [
+   "character",
+   "Rune-Scribe"
+  ]
+ },
+ {
+  "id": "cc-pyra-cinderhowl-the-flame-caster",
+  "name": "Pyra Cinderhowl the Flame-Caster",
+  "prompt": "Wild jagged silhouette in scorched-black robes torn into flame-licked tatters that seem to flicker upward, a fierce upturned profile with molten orange-red cracks glowing through the skin and one blazing ember-gold eye; detached hands juggle a writhing fireball, wisps of smoke-purple haze trailing from singed hair and the hem dissolving into floating ember sparks. Flat hand-painted CEL art, bold spiky readable silhouette, side-profile facing right. Palette: Scorched black and ash-grey, molten orange-red core, ember-gold sparks, smoke-purple haze.",
+  "tags": [
+   "character",
+   "Hex-Witch (Pyromancer)"
+  ]
+ },
+ {
+  "id": "cc-s-jiro-the-wayward-blade",
+  "name": "Sōjiro the Wayward Blade",
+  "prompt": "A lean upright humanoid in side-profile facing right, draped in a tattered storm-grey kimono and a wide conical straw kasa hat that breaks the silhouette with a low diagonal brim; one detached hand rests on a chipped katana at the hip while the other trails a frayed indigo sash. Flat hand-painted CEL art, bold readable outline, weathered straw-tan and rust-red accents over muted indigo, Behemoth-x-Darkest-Dungeon look. Palette: Storm-grey and faded indigo, with rust-red sash accents and weathered straw-tan.",
+  "tags": [
+   "character",
+   "Wandering Ronin"
+  ]
+ },
+ {
+  "id": "cc-brother-tendo-of-the-still-bell",
+  "name": "Brother Tendo of the Still Bell",
+  "prompt": "A broad, grounded humanoid in side-profile facing right, swathed in heavy saffron-and-ochre monk robes that pool into a wide stable base, bald rounded head bowed forward; one detached hand grips a long brass-tipped staff, the other loops a string of oversized jade prayer-beads. Flat hand-painted CEL art, thick confident outline, warm saffron over charcoal shadow with brass-gold and jade highlights, Behemoth-x-Darkest-Dungeon look. Palette: Saffron and burnt ochre robes, charcoal undertones, with brass-gold beads and jade-green prayer cloth.",
+  "tags": [
+   "character",
+   "Shrine Monk"
+  ]
+ },
+ {
+  "id": "cc-yuki-the-hollow-smile",
+  "name": "Yuki the Hollow Smile",
+  "prompt": "A slim, poised humanoid in side-profile facing right whose silhouette is crowned by a grinning white kitsune fox mask with sharp upturned ears and vermillion brushstrokes; a lacquer-black short-sleeved gi cinched by a crimson cord, detached hands held in a loose dueling guard with twin tantō. Flat hand-painted CEL art, crisp bold outline, bone-white and lacquer-black with vermillion mask accents, Behemoth-x-Darkest-Dungeon look. Palette: Bone-white and lacquer-black, with vermillion fox-mask markings and a single crimson cord.",
+  "tags": [
+   "character",
+   "Kitsune-Masked Duelist"
+  ]
+ },
+ {
+  "id": "cc-raijin-k-the-storm-fist",
+  "name": "Raijin Kō, the Storm Fist",
+  "prompt": "A powerfully muscled humanoid in side-profile facing right, bare-chested under an open thundercloud-blue haori with the sleeves torn off, hair swept upward as if static-charged; detached fists wrapped in bronze knuckle-bindings that spit small cyan sparks, white lightning-fork tattoos crawling up the forearms. Flat hand-painted CEL art, heavy dynamic outline, blue-violet and electric cyan over bronze skin tones, Behemoth-x-Darkest-Dungeon look. Palette: Deep thundercloud blue-violet, electric cyan, and bronze, with white lightning-fork tattoos.",
+  "tags": [
+   "character",
+   "Storm Fist Adept"
+  ]
+ },
+ {
+  "id": "cc-mei-ling-of-the-jade-ribbon",
+  "name": "Mei-Ling of the Jade Ribbon",
+  "prompt": "A graceful upright humanoid in side-profile facing right, mid-poised on the ball of one detached foot, wrapped in flowing jade-green and celadon silks that ribbon out behind her to widen the silhouette; one detached hand snaps open a gold-trimmed war-fan, the other lifts a trailing lotus-pink streamer. Flat hand-painted CEL art, elegant flowing outline, jade-green and celadon with gold-leaf and lotus-pink accents, Behemoth-x-Darkest-Dungeon look. Palette: Jade-green and pale celadon silks, with gold-leaf trim and a sweep of lotus-pink.",
+  "tags": [
+   "character",
+   "Jade Dancer"
+  ]
+ },
+ {
+  "id": "cc-old-gen-the-drunken-crane",
+  "name": "Old Gen, the Drunken Crane",
+  "prompt": "A wiry, stoop-backed elder humanoid in side-profile facing right, leaning at a deceptive tipsy angle, long white wisp-beard trailing past a patched moss-green and umber robe; one detached hand dangles a sun-bleached drinking gourd on a cord, the other curls into a loose crane-beak fingertip pose. Flat hand-painted CEL art, loose characterful outline, earthy umber and moss-green with faded-red rope and bone-white beard, Behemoth-x-Darkest-Dungeon look. Palette: Earthy umber and moss-green rags, with a sun-bleached gourd and faded red waist-rope.",
+  "tags": [
+   "character",
+   "Wandering Master"
+  ]
+ },
+ {
+  "id": "cc-kuro-oni-the-demon-mask",
+  "name": "Kuro-Oni, the Demon Mask",
+  "prompt": "A hulking, top-heavy humanoid in side-profile facing right, shoulders broadened by blackened iron lamellar plates and a horned crimson oni mask with bared brass fangs that dominates the silhouette; detached hands grip a long iron-banded tetsubō club resting against the shoulder. Flat hand-painted CEL art, massive bold outline, blackened iron and oxblood lacquer with brass studs and crimson mask, Behemoth-x-Darkest-Dungeon look. Palette: Blackened iron and deep oxblood lacquer, with brass studs and a horned crimson oni mask.",
+  "tags": [
+   "character",
+   "Oni-Masked Enforcer"
+  ]
+ },
+ {
+  "id": "cc-asha-the-ash-walker",
+  "name": "Asha the Ash-Walker",
+  "prompt": "A slender, calm humanoid in side-profile facing right, head wrapped in a soft cream travel-cloth, body bound in layered pale-sage pilgrim wraps with a wide woven cinnabar-red satchel slung across the chest; one detached hand carries a smoking brass incense-censer on a chain, the other holds a folded paper talisman, detached bare feet ashen from the road. Flat hand-painted CEL art, gentle clean outline, dusty cream and pale sage with cinnabar-red satchel and incense-smoke grey, Behemoth-x-Darkest-Dungeon look. Palette: Dusty cream and pale sage wraps, with a wide woven satchel of cinnabar-red and incense-smoke grey.",
+  "tags": [
+   "character",
+   "Shrine Pilgrim Healer"
+  ]
+ },
+ {
+  "id": "cc-snarekeeper-vossel",
+  "name": "Snarekeeper Vossel",
+  "prompt": "Side-profile facing right, full upright humanoid on the Drifter rig with detached hands and feet — a stooped, broad-shouldered trapper whose silhouette bristles with jagged iron jaw-traps and looping snare-wire dangling from a heavy fur-trimmed coat, a coil of wire gripped in one detached hand. Flat hand-painted CEL art: matte tobacco-brown waxed leather and worn pelts, oxidized iron-grey traps catching a thin cold rim-light, a battered tin lantern at the hip throwing one warm rust-orange spark; bold readable silhouette spiked by hanging metal teeth. Palette: Tobacco-brown waxed leather, oxidized iron grey, frost-bitten bone white, dull moss green accents, with a single rust-orange lantern glow..",
+  "tags": [
+   "character",
+   "Trapper / snare-rigger"
+  ]
+ },
+ {
+  "id": "cc-the-hollow-mask",
+  "name": "The Hollow Mask",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a lean, coiled assassin in tight wrapped shadow-cloth, hood drawn low over a smooth featureless porcelain mask that catches a sliver of moonlight, twin curved daggers held low and reversed in detached hands, a thin crimson sash trailing back. Flat hand-painted CEL art: deep ink-black and charcoal layered fabrics with crisp ash-grey edge highlights, the pale mask the single bright focal point, cold steel glints on the blades; a knife-sharp, narrow, predatory silhouette. Palette: Ink-black and charcoal layered cloth, ash-grey wraps, bone-pale porcelain mask, a single bloodless crimson sash, cold steel highlights..",
+  "tags": [
+   "character",
+   "Masked assassin / silent killer"
+  ]
+ },
+ {
+  "id": "cc-bryda-houndcall",
+  "name": "Bryda Houndcall",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a rangy beast-tracker in a layered hide cloak crowned with a salvaged antler headdress, a curved amber hunting-horn raised toward her lips in one detached hand and a coiled hound-leash in the other, quiver of bone-tipped darts at her back. Flat hand-painted CEL art: warm earthy tans, umber pelts and deep forest-green wool, weathered antler-ivory horns and a glowing amber horn as the warm focal accent; broad antlered silhouette reading instantly as a wilderness tracker. Palette: Earthy tan and umber hides, deep forest green wool, weathered antler ivory, leather-strap browns, with a flash of amber from a hunting horn..",
+  "tags": [
+   "character",
+   "Beast-tracker / houndmaster ranger"
+  ]
+ },
+ {
+  "id": "cc-mirelurk-caine",
+  "name": "Mirelurk Caine",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a hunched, dripping swamp poacher in a tattered waterlogged canvas wrap and a wide drooping reed hat, a barbed three-pronged fishing gig in one detached hand and a netted catch of eel-traps slung over the shoulder, glass lure-vials at the belt. Flat hand-painted CEL art: sickly bog-green and silt-brown muck with slick wet highlights, tarnished hook-iron, and a faint bioluminescent teal glow leaking from a bottled lure; a low, lumpen, weed-draped silhouette that reads as part man, part swamp. Palette: Sickly bog-green and silt-brown, waterlogged grey canvas, slime-glistening highlights, tarnished hook-iron, with a faint bioluminescent teal lure-glow..",
+  "tags": [
+   "character",
+   "Swamp poacher / bog-stalker"
+  ]
+ },
+ {
+  "id": "cc-doctor-quillane",
+  "name": "Doctor Quillane",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a tall gaunt plague doctor in a floor-length tar-black waxed robe and wide flat-brimmed hat, a long curved brass-tipped bird-beak mask with glassy round eye-lenses, a fuming censer swinging from one detached hand and a leather vial-satchel of bottle-green tinctures at the hip. Flat hand-painted CEL art: matte tar-black robe with dried-blood maroon trim, brass and bone mask fittings catching cold light, bottle-glass green vials and a sallow candle-yellow glint behind the lenses; an imposing, narrow, beaked silhouette dripping menace. Palette: Tar-black waxed robe, brass-and-bone mask fittings, dried-blood maroon trim, bottle-glass green vials, with a sallow candle-yellow eye-glow..",
+  "tags": [
+   "character",
+   "Plague doctor / contagion-hunter"
+  ]
+ },
+ {
+  "id": "cc-warden-ashlock",
+  "name": "Warden Ashlock",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a broad, grounded forest warden in bark-lacquered plate overgrown with creeping moss and lichen, a tall recurved longbow held upright in one detached hand and an arrow nocked in the other, a leaf-mantle cloak draped over the shoulders. Flat hand-painted CEL art: deep pine and olive greens over bark-brown lacquered armor, sage-grey lichen and weathered bronze fittings, with warm golden dappled-leaf light flecking the surface; a stout, rooted, sentinel silhouette crowned by the curve of the great bow. Palette: Deep pine and olive greens, bark-brown lacquered plate, lichen sage-grey, weathered bronze, with golden dappled-leaf light accents..",
+  "tags": [
+   "character",
+   "Forest warden / sentinel ranger"
+  ]
+ },
+ {
+  "id": "cc-crowmantle-sel",
+  "name": "Crowmantle Sel",
+  "prompt": "Side-profile facing right, Drifter rig with detached hands and feet — a slight, perched-looking rogue draped in a glossy blue-black feather cloak with a sharp crow-beaked half-mask, fingers spread mid-pilfer in one detached hand while the other palms a tarnished silver trinket, pouches and dangling baubles jingling at the belt. Flat hand-painted CEL art: iridescent blue-black feathers over bruised-purple cloth and slate-grey leather, tarnished silver charms and a sly glint of stolen gold; a hunched, beaked, feather-fringed silhouette that reads as half-bird, half-thief. Palette: Glossy blue-black feathers, bruised-purple cloth, tarnished silver trinkets, slate grey leather, with a sly glint of stolen gold..",
+  "tags": [
+   "character",
+   "Masked rogue / scavenger-trickster"
+  ]
+ },
+ {
+  "id": "cc-gravewake",
+  "name": "Gravewake",
+  "prompt": "Same Drifter rig and flat-cel look: a gaunt upright revenant on a bold readable side-profile facing right — a desiccated bone-and-off-white torso half-wrapped in grimy grave-shrouds, a frayed severed noose still cinched at the neck trailing a stub of rope, and a slack jaw under a single sunken dull-teal pinprick eye. EXACTLY two detached bean-shaped bone hands (no fingers) floating clear of each side and two detached bare bone feet below, each with a flat-green gap; charcoal spot-blacks in the eye-hollows and rib-shadows. Palette: bone #CFC6AE and off-white #E8E4D8 against charcoal #22252B, lone dull-teal #3C6E6A glow, rust #A8482E rope. Palette: Bone #CFC6AE body and off-white #E8E4D8 wraps over charcoal #22252B shadow, with a single dull-teal #3C6E6A grave-glow eye and frayed rust #A8482E noose..",
+  "tags": [
+   "character",
+   "Undead revenant"
+  ]
+ },
+ {
+  "id": "cc-snarlfang",
+  "name": "Snarlfang",
+  "prompt": "Same Drifter rig and flat-cel look: a broad-shouldered wolf-kin in bold side-profile facing right — a chunky gunmetal-grey furred torso with a jutting tan muzzle, pricked notched ears, a bristling shoulder-ruff, and one narrowed plasma-lime eye; a muted-red strap-harness with bone trophies crosses the chest. EXACTLY two detached rounded paw-mitt hands (no claws or fingers, just fur-tufted blobs) floating at each side and two detached hind-paw feet below, all with clear flat-green gaps; flat cel shadow bands in the pelt, charcoal spot-blacks under the ruff. Palette: gunmetal #3A4049 and steel #5A6472 fur, tan #C49A5A muzzle, muted-red #9E3B36 leather, plasma-lime #9CFF3B eye. Palette: Gunmetal #3A4049 pelt with steel #5A6472 highlights, tan #C49A5A muzzle and ear-tufts, muted-red #9E3B36 leather harness, plasma-lime #9CFF3B feral eye..",
+  "tags": [
+   "character",
+   "Beast-kin"
+  ]
+ },
+ {
+  "id": "cc-cogwarden",
+  "name": "Cogwarden",
+  "prompt": "Same Drifter rig and flat-cel look: a blocky iron construct in bold side-profile facing right — a heavy riveted gunmetal barrel-torso of bolted scrap plates, a flat anvil-shaped head with a single horizontal ember-orange furnace-slit eye, and a stubby smokestack collar (no smoke drawn). EXACTLY two detached chunky steel mitten-hands (smooth blocks, no fingers) floating clear at each side and two detached blocky stomp-foot plates below, all with clear flat-green gaps; rust-streaked cel shadow bands, charcoal spot-blacks in the seams. Palette: gunmetal #3A4049 plate, charcoal #22252B joints, steel #5A6472 rivets, rust #A8482E weathering, lone ember-orange #FF8A2B furnace glow. Palette: Gunmetal #3A4049 plate over charcoal #22252B joints, steel #5A6472 rivets and bolts, rust #A8482E weathering, ember-orange #FF8A2B furnace-slit glow..",
+  "tags": [
+   "character",
+   "Living construct / golem"
+  ]
+ },
+ {
+  "id": "cc-cinderpyre",
+  "name": "Cinderpyre",
+  "prompt": "Same Drifter rig and flat-cel look: an elemental avatar in bold side-profile facing right — a hunched charcoal volcanic-rock torso fissured with bright ember-orange molten cracks read as flat solid shapes (no glow, no flame, no sparks), one ember-orange slit eye, and a jagged broken-stone crown for a head. EXACTLY two detached cracked-stone bean hands (no fingers) floating clear at each side and two detached blocky rock feet below, all with flat-green gaps; tan ash-dust on the upper edges, charcoal spot-blacks deep in the fissures. Palette: charcoal #22252B and gunmetal #3A4049 stone shell, ember-orange #FF8A2B molten cracks, tan #C49A5A ash. Palette: Charcoal #22252B cracked-stone shell with gunmetal #3A4049 plates, ember-orange #FF8A2B molten core-cracks, tan #C49A5A ash-dusting along the edges..",
+  "tags": [
+   "character",
+   "Elemental avatar"
+  ]
+ },
+ {
+  "id": "cc-hollowmaw",
+  "name": "Hollowmaw",
+  "prompt": "Same Drifter rig and flat-cel look: an eldritch cultist in bold side-profile facing right — a tall hunched figure in heavy charcoal layered robes with a deep pointed hood that swallows the head in shadow, a pale off-white segmented bone half-mask with a single arc-violet sigil-eye, and a dull-teal tarnished chest-clasp. EXACTLY two detached pale bean hands (no fingers) emerging from wide sleeves and floating clear at each side, and two detached cloth-wrapped feet below, all with flat-green gaps; deep charcoal spot-blacks inside the hood, flat cel shadow on the robe folds. Palette: charcoal #22252B and gunmetal #3A4049 robes, off-white #E8E4D8 mask, lone arc-violet #B14BFF sigil-glow, dull-teal #3C6E6A trim. Palette: Charcoal #22252B and gunmetal #3A4049 robes, off-white #E8E4D8 bone-mask, arc-violet #B14BFF eldritch sigil and eye-glow, dull-teal #3C6E6A tarnished trim..",
+  "tags": [
+   "character",
+   "Eldritch cultist"
+  ]
+ },
+ {
+  "id": "cc-thornroot",
+  "name": "Thornroot",
+  "prompt": "Same Drifter rig and flat-cel look: a plant-folk warden in bold side-profile facing right — a stout olive-green bark-and-vine torso wrapped in tan dry-stalk fibres, a crown of jagged leaves and bramble for a head with a single plasma-lime bud-eye, and short muted-red thorns ridging the spine. EXACTLY two detached gnarled root-knuckle hands (rounded wooden blobs, no fingers) floating clear at each side and two detached splayed root-cluster feet below, all with flat-green gaps; charcoal spot-black knots, a lone muted-red bloom on the shoulder, flat cel shadow bands on the bark. Palette: olive #6E7042 bark, charcoal #22252B knots, tan #C49A5A fibres, muted-red #9E3B36 thorns and bloom, plasma-lime #9CFF3B eye. Palette: Olive #6E7042 bark-body, charcoal #22252B knots and shadow, tan #C49A5A dry-stalk fibres, muted-red #9E3B36 thorn-tips and a single bloom, plasma-lime #9CFF3B new-growth eye..",
+  "tags": [
+   "character",
+   "Plant-folk"
+  ]
+ }
+]

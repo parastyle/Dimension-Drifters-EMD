@@ -23,8 +23,9 @@ import type { Vec2 } from "./movement.js";
 export interface EnemyKind {
   /** Sprite manifest id (matches an installed harvest-sliced sprite). */
   sprite: string;
-  /** Behavioral archetype (§15). `dummy` = stationary training target (§21); `boss` = §16 OLD RUST. */
-  archetype: "rusher" | "swarm" | "zoner" | "spitter" | "tough" | "dummy" | "boss";
+  /** Behavioral archetype (§15). `dummy` = stationary training target (§21); `boss` = §16 OLD RUST;
+   *  `duelist` = a melee swordsman that closes, telegraphs, then strings a COMBO (see `melee`). */
+  archetype: "rusher" | "swarm" | "zoner" | "spitter" | "tough" | "duelist" | "dummy" | "boss";
   /** Render-size multiplier (§28.6: bosses/toughs are BIGGER, not more detailed). Default 1. */
   renderScale?: number;
   /** Move speed, px/sec. */
@@ -52,7 +53,35 @@ export interface EnemyKind {
     damage: number;
     /** Projectile speed (px/sec). */
     projectileSpeed: number;
+    /**
+     * §15 SCATTER spread (Gatlin): fire `count` projectiles fanned across `arc` radians (TOTAL cone,
+     * centred on the aim) in one volley instead of a single shot — a shotgun burst. Each pellet does the
+     * `damage` above. Absent / `count` ≤ 1 → a single aimed shot.
+     */
+    spread?: {
+      count: number;
+      arc: number;
+    };
   };
+  /**
+   * §15 melee DUELIST combo: instead of pure contact-DPS, the enemy closes to `approach`, telegraphs
+   * for `windup` sec, then strings `hits` arc swings (`swingGap` apart), then `recover`s before it can
+   * start another. Each swing damages players within `range`/`halfArc` of the aim toward its target.
+   */
+  melee?: {
+    approach: number;
+    range: number;
+    halfArc: number;
+    damage: number;
+    hits: number;
+    windup: number;
+    swingGap: number;
+    recover: number;
+  };
+  /** §9/§15 the enemy visibly WIELDS this weapon id (held-sprite on its rig, swung on each combo hit). */
+  wieldsWeapon?: string;
+  /** §13 on death, CHANCE [0..1] to DROP `wieldsWeapon` as a grabbable pickup. */
+  dropWeapon?: number;
 }
 
 /** Wild West M0 roster wired for the first level (§15). */
@@ -124,6 +153,56 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       cooldown: 1.6,
       damage: 13,
       projectileSpeed: 320,
+    },
+  },
+  // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
+  // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
+  // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig
+  // (humanoid w/ hands); bespoke ronin art lands via CODE-21.
+  ronin: {
+    sprite: "boothill",
+    archetype: "duelist",
+    renderScale: 1.18,
+    speed: 156,
+    hp: 36,
+    radius: 22,
+    contactDamage: 0, // attacks via the combo, not by touch
+    weight: 0.7, // rare — a special threat, not horde filler
+    xpValue: 9,
+    wieldsWeapon: "x-sword-neon-katana",
+    dropWeapon: 0.35,
+    melee: {
+      approach: 116,
+      range: 132,
+      halfArc: 0.95,
+      damage: 13,
+      hits: 3,
+      windup: 0.42,
+      swingGap: 0.26,
+      recover: 1.1,
+    },
+  },
+  // §15 SCATTER tough — GATLIN, a heavy drifter (§15 "Tough/scatter — parryable scatter spread"). Slow
+  // and bulky, it KITES to its preferred range and lets loose a 5-pellet SHOTGUN cone (the `spread` block)
+  // on a long cooldown — punishes standing in a line, rewards flanking. Some contact threat (it's beefy)
+  // but the volley is the danger. POC art = the boothill rig (bespoke full-build Gatlin art via CODE-21).
+  gatlin: {
+    sprite: "boothill",
+    archetype: "spitter", // reuses the kite + fire framework; `spread` turns the shot into a burst
+    renderScale: 1.5,
+    speed: 92, // slow heavy drifter
+    hp: 48,
+    radius: 28,
+    contactDamage: 5,
+    weight: 0.6, // rare special threat, like the ronin
+    xpValue: 11,
+    ranged: {
+      range: 460,
+      preferredRange: 300,
+      cooldown: 2.6, // a slow, heavy volley
+      damage: 6, // per pellet
+      projectileSpeed: 320,
+      spread: { count: 5, arc: 0.85 }, // 5-pellet cone, ~49° wide
     },
   },
   // Training dummy (§21) — stationary, harmless, lots of HP (resets on depletion). weight 0 =
@@ -216,8 +295,9 @@ export function stepEnemyKite(
   };
 }
 
-/** Is `target` within `range` of `origin` AND within `halfArc` radians of the aim dir? Pure
- *  (the §8 placeholder hit test for the fists swing). Point-blank always counts. */
+/** Is `target` within `range` of `origin` AND within `halfArc` radians of the aim dir? Pure — the core
+ *  melee-arc hit test for EVERY weapon swing (server-authoritative; `range`/`halfArc` come from the
+ *  WeaponDef). Point-blank always counts. */
 export function inMeleeArc(
   origin: Vec2,
   aimX: number,
@@ -234,6 +314,18 @@ export function inMeleeArc(
   const aimLen = Math.hypot(aimX, aimY) || 1;
   const dot = (dx * aimX + dy * aimY) / (dist * aimLen);
   return dot >= Math.cos(halfArc);
+}
+
+/** Evenly-spaced fan of `count` angles spanning `arc` radians (TOTAL), centred on `baseAngle`. PURE —
+ *  the deterministic geometry behind a §15 scatter spread (Gatlin's shotgun) and any cone volley. `count`
+ *  ≤ 1 → just `[baseAngle]`; `count` 2+ spreads from `baseAngle − arc/2` to `baseAngle + arc/2`. */
+export function coneAngles(baseAngle: number, count: number, arc: number): number[] {
+  if (count <= 1) return [baseAngle];
+  const out: number[] = [];
+  for (let i = 0; i < count; i++) {
+    out.push(baseAngle + (i / (count - 1) - 0.5) * arc);
+  }
+  return out;
 }
 
 /** Probability [0,1] that a freshly-spawned enemy is TOUGH — ramps with run time AND player count

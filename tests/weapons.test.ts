@@ -1,0 +1,224 @@
+import {
+  type Attr,
+  damageMultFromGrades,
+  effectiveDamageMult,
+  GRADE_DMG_COEFF,
+  REQ_PENALTY_FLOOR,
+  REQ_PENALTY_PER_POINT,
+  requirementPenalty,
+  requirementShortfall,
+  sourceDamageMult,
+  WEAPONS,
+  weaponDamageMult,
+  weaponDamageSources,
+} from "@dd/shared";
+import { describe, expect, it } from "vitest";
+
+const at = (o: Partial<Record<Attr, number>>): Record<Attr, number> => ({
+  str: 1,
+  dex: 1,
+  int: 1,
+  con: 1,
+  luk: 1,
+  ...o,
+});
+
+describe("weaponDamageMult (§10 scaling grades)", () => {
+  it("is 1.0 at the 1/1/1/1/1 baseline for any weapon", () => {
+    for (const w of Object.values(WEAPONS)) {
+      expect(weaponDamageMult(w, at({}))).toBeCloseTo(1, 6);
+    }
+  });
+
+  it("scales a B-grade STR weapon by 0.06 per point over 1 (rusty-cleaver)", () => {
+    const cleaver = WEAPONS["rusty-cleaver"];
+    expect(cleaver?.scalingGrades).toEqual({ str: "B" });
+    expect(weaponDamageMult(cleaver as never, at({ str: 2 }))).toBeCloseTo(
+      1 + GRADE_DMG_COEFF.B,
+      6,
+    );
+    expect(weaponDamageMult(cleaver as never, at({ str: 11 }))).toBeCloseTo(
+      1 + GRADE_DMG_COEFF.B * 10,
+      6,
+    );
+  });
+
+  it("an A-grade weapon scales harder than a B-grade weapon at the same attr", () => {
+    const a = weaponDamageMult(WEAPONS["tombstone-greatsword"] as never, at({ str: 10 })); // STR A
+    const b = weaponDamageMult(WEAPONS["rusty-cleaver"] as never, at({ str: 10 })); // STR B
+    expect(a).toBeGreaterThan(b);
+    expect(GRADE_DMG_COEFF.A).toBeGreaterThan(GRADE_DMG_COEFF.B);
+  });
+
+  it("sums multiple graded attributes (driftblade dex:B + str:C)", () => {
+    const d = WEAPONS.driftblade;
+    expect(d?.scalingGrades).toEqual({ dex: "B", str: "C" });
+    const m = weaponDamageMult(d as never, at({ dex: 3, str: 5 }));
+    expect(m).toBeCloseTo(1 + GRADE_DMG_COEFF.B * 2 + GRADE_DMG_COEFF.C * 4, 6);
+  });
+
+  it("an ungraded attribute does not affect damage", () => {
+    const cleaver = WEAPONS["rusty-cleaver"]; // only STR is graded
+    expect(weaponDamageMult(cleaver as never, at({ dex: 30, luk: 30 }))).toBeCloseTo(1, 6);
+  });
+
+  it("falls back to the legacy { str: 'B' } default when scalingGrades is omitted", () => {
+    const def = { id: "x", name: "x" } as never; // no scalingGrades
+    expect(weaponDamageMult(def, at({ str: 6 }))).toBeCloseTo(1 + GRADE_DMG_COEFF.B * 5, 6);
+  });
+});
+
+describe("sourceDamageMult (§14 WYSIWYG per-source scaling)", () => {
+  // A STR/DEX blade (the "edge") with INT-scaling VFX sources, à la Wyrmtooth's magma/explosion.
+  const blade = { scalingGrades: { str: "C", dex: "C" } } as never;
+
+  it("a source with NO grades inherits the weapon's edge grades", () => {
+    const attrs = at({ str: 8, dex: 4 });
+    expect(sourceDamageMult(blade, undefined, attrs)).toBeCloseTo(
+      weaponDamageMult(blade, attrs),
+      6,
+    );
+  });
+
+  it("a source's OWN grades scale off a DIFFERENT attribute than the edge", () => {
+    // Edge scales STR/DEX, this source scales INT only.
+    const intSource = { int: "B" } as const;
+    // High STR/DEX, baseline INT → the edge scales up, the INT source stays at 1.0.
+    const big = at({ str: 11, dex: 11, int: 1 });
+    expect(weaponDamageMult(blade, big)).toBeGreaterThan(1);
+    expect(sourceDamageMult(blade, intSource, big)).toBeCloseTo(1, 6);
+    // High INT, baseline STR/DEX → the INT source scales, the edge stays at 1.0.
+    const smart = at({ str: 1, dex: 1, int: 6 });
+    expect(sourceDamageMult(blade, intSource, smart)).toBeCloseTo(1 + GRADE_DMG_COEFF.B * 5, 6);
+    expect(weaponDamageMult(blade, smart)).toBeCloseTo(1, 6);
+  });
+
+  it("makes INT a live damage attribute (it drives a B-grade source)", () => {
+    expect(sourceDamageMult(blade, { int: "B" }, at({ int: 4 }))).toBeGreaterThan(1);
+  });
+});
+
+describe("Wyrmtooth multi-source (§14 WYSIWYG scatter + explosion)", () => {
+  const w = WEAPONS["x-sword-bone"];
+
+  it("blade scales STR/DEX while the magma + explosion scale INT", () => {
+    expect(w?.scalingGrades).toEqual({ str: "C", dex: "C" });
+    expect(w?.scatter?.scalingGrades).toEqual({ int: "B" });
+    expect(w?.scatter?.explode).toBeTruthy();
+  });
+
+  it("the magma source scales off INT, independent of the blade's STR/DEX", () => {
+    const smart = at({ int: 6 }); // INT pumped, STR/DEX at baseline
+    expect(sourceDamageMult(w as never, w?.scatter?.scalingGrades, smart)).toBeCloseTo(
+      1 + GRADE_DMG_COEFF.B * 5,
+      6,
+    );
+    expect(weaponDamageMult(w as never, smart)).toBeCloseTo(1, 6); // blade unmoved by INT
+  });
+
+  it("the explosion omits its own grades, so the server inherits the scatter's INT scaling", () => {
+    expect(w?.scatter?.explode?.scalingGrades).toBeUndefined();
+    expect(w?.scatter?.explode?.radius).toBeGreaterThan(0); // a real, fixed blast (§14)
+  });
+});
+
+describe("weaponDamageSources (§9 card multi-source)", () => {
+  it("enumerates Wyrmtooth's blade + magma + blast, each with its own scaling", () => {
+    const s = weaponDamageSources(WEAPONS["x-sword-bone"] as never);
+    expect(s.map((x) => x.label)).toEqual(["hit", "magma", "blast"]);
+    const magma = s.find((x) => x.label === "magma");
+    expect(magma?.count).toBe(6);
+    expect(magma?.grades).toEqual({ int: "B" }); // INT-scaled, independent of the STR/DEX blade
+  });
+
+  it("a plain melee weapon has a single 'hit' source", () => {
+    const s = weaponDamageSources({ damage: 7, scalingGrades: { str: "B" } } as never);
+    expect(s).toHaveLength(1);
+    expect(s[0]?.label).toBe("hit");
+  });
+
+  it("a thrown weapon's primary source is the throw", () => {
+    expect(weaponDamageSources(WEAPONS["rusty-cleaver"] as never)[0]?.label).toBe("throw");
+  });
+});
+
+describe("damageMultFromGrades (the scaling primitive)", () => {
+  it("scales a single graded attribute by its coefficient per point over 1", () => {
+    expect(damageMultFromGrades({ int: "B" }, at({ int: 6 }))).toBeCloseTo(
+      1 + GRADE_DMG_COEFF.B * 5,
+      6,
+    );
+  });
+
+  it("falls back to the legacy { str: 'B' } default when grades are undefined", () => {
+    expect(damageMultFromGrades(undefined, at({ str: 3 }))).toBeCloseTo(
+      1 + GRADE_DMG_COEFF.B * 2,
+      6,
+    );
+  });
+});
+
+describe("requirement enforcement (§11 damage penalty)", () => {
+  // A weapon needing STR 6 / INT 5, scaling off a B-grade edge so we can separate scaling from penalty.
+  const w = { scalingGrades: { str: "B" }, requirements: { str: 6, int: 5 } } as never;
+
+  it("no shortfall and penalty 1.0 when every requirement is met", () => {
+    const attrs = at({ str: 6, int: 5 });
+    expect(requirementShortfall(w, attrs)).toBe(0);
+    expect(requirementPenalty(w, attrs)).toBe(1);
+  });
+
+  it("a weapon with no requirements never penalises", () => {
+    const plain = { scalingGrades: { str: "B" } } as never;
+    expect(requirementPenalty(plain, at({ str: 1 }))).toBe(1);
+    expect(requirementShortfall(plain, at({}))).toBe(0);
+  });
+
+  it("sums the shortfall across attributes", () => {
+    // STR 4 (−2) + INT 2 (−3) = 5 short.
+    expect(requirementShortfall(w, at({ str: 4, int: 2 }))).toBe(5);
+  });
+
+  it("penalises 12% per point short, applied to every damage source", () => {
+    const attrs = at({ str: 5, int: 5 }); // 1 short on STR only
+    expect(requirementShortfall(w, attrs)).toBe(1);
+    expect(requirementPenalty(w, attrs)).toBeCloseTo(1 - REQ_PENALTY_PER_POINT, 6);
+    // effectiveDamageMult = scaling × penalty (here scaling at str:5 = 1 + 0.06*4).
+    const scaling = 1 + GRADE_DMG_COEFF.B * 4;
+    expect(effectiveDamageMult(w, undefined, attrs)).toBeCloseTo(
+      scaling * (1 - REQ_PENALTY_PER_POINT),
+      6,
+    );
+  });
+
+  it("floors at REQ_PENALTY_FLOOR for a badly under-statted weapon (still wieldable, never 0)", () => {
+    const attrs = at({ str: 1, int: 1 }); // 5 + 4 = 9 short → would be 1 - 1.08 < floor
+    expect(requirementPenalty(w, attrs)).toBe(REQ_PENALTY_FLOOR);
+    expect(effectiveDamageMult(w, undefined, attrs)).toBeGreaterThan(0);
+  });
+
+  it("raising the deficient attribute monotonically lifts the penalty toward 1.0", () => {
+    const p3 = requirementPenalty(w, at({ str: 3, int: 5 }));
+    const p4 = requirementPenalty(w, at({ str: 4, int: 5 }));
+    const p6 = requirementPenalty(w, at({ str: 6, int: 5 }));
+    expect(p4).toBeGreaterThan(p3);
+    expect(p6).toBe(1);
+  });
+
+  it("every shipped weapon meets its own requirements at a reasonable end-game stat spread", () => {
+    // Sanity: requirements authored on real weapons are reachable (no impossible gate).
+    const maxed = at({ str: 30, dex: 30, int: 30, con: 30, luk: 30 });
+    for (const weap of Object.values(WEAPONS)) {
+      expect(requirementPenalty(weap, maxed)).toBe(1);
+    }
+  });
+});
+
+describe("GRADE_DMG_COEFF ordering", () => {
+  it("is strictly decreasing S>A>B>C>D>E", () => {
+    const order: Array<keyof typeof GRADE_DMG_COEFF> = ["S", "A", "B", "C", "D", "E"];
+    for (let i = 1; i < order.length; i++) {
+      expect(GRADE_DMG_COEFF[order[i - 1]]).toBeGreaterThan(GRADE_DMG_COEFF[order[i]]);
+    }
+  });
+});
