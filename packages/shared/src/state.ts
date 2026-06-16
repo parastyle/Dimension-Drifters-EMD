@@ -19,6 +19,9 @@ export class PlayerState extends Schema {
   @type("boolean") alive = true;
   /** Equipped weapon id (keys WEAPONS + the sprite manifest). */
   @type("string") weapon = "rusty-cleaver";
+  /** §7 chosen CHARACTER skin (keys the sprite manifest) — cosmetic; cycled with the C key. Synced so
+   *  teammates see who you're playing. Defaults to the Drifter. */
+  @type("string") character = "drifter";
   /** §12 leveling (synced for the HUD). XP is squad-shared, so all players level in lockstep. */
   @type("number") level = 1;
   /** Current XP toward the next level. */

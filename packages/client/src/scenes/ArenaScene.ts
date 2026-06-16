@@ -5,6 +5,7 @@ import {
   type Attr,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  characterName,
   clampQuakeEpicenter,
   type DamageSource,
   DEFAULT_PORT,
@@ -103,7 +104,10 @@ export class ArenaScene extends Phaser.Scene {
   private vfxPlayer!: VfxPlayer;
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
-  private keys!: Record<"W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B", Phaser.Input.Keyboard.Key>;
+  private keys!: Record<
+    "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C",
+    Phaser.Input.Keyboard.Key
+  >;
   private lastSent = { dx: Number.NaN, dy: Number.NaN };
   private selfAim = { x: 1, y: 0 };
   /** Pointer position read straight off the DOM (robust aim — bypasses Phaser's input pipeline,
@@ -120,6 +124,8 @@ export class ArenaScene extends Phaser.Scene {
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
+  /** §7 last-rendered character skin per player — recreate the rig when it changes (C-key swap). */
+  private readonly charOf = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
@@ -222,8 +228,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,T,B") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,T,B,C") as Record<
+      "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C",
       Phaser.Input.Keyboard.Key
     >;
     this.input.setDefaultCursor("crosshair");
@@ -582,7 +588,12 @@ export class ArenaScene extends Phaser.Scene {
 
   private addBlob(player: PlayerState, id: string): void {
     const isSelf = id === this.room?.sessionId;
-    this.blobs.set(id, new SpriteRig(this, player.x, player.y, isSelf, id, PLAYER_SPRITE));
+    const charId =
+      player.character && SPRITES[player.character as keyof typeof SPRITES]
+        ? player.character
+        : PLAYER_SPRITE;
+    this.blobs.set(id, new SpriteRig(this, player.x, player.y, isSelf, id, charId));
+    this.charOf.set(id, player.character);
     this.prevPos.set(id, { x: player.x, y: player.y });
     if (isSelf) this.centerCam(player.x, player.y);
   }
@@ -592,6 +603,7 @@ export class ArenaScene extends Phaser.Scene {
     this.blobs.delete(id);
     this.prevPos.delete(id);
     this.equipped.delete(id);
+    this.charOf.delete(id);
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -620,6 +632,7 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon");
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
+    if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
 
     this.sendInput();
     this.syncBlobs();
@@ -1448,6 +1461,11 @@ export class ArenaScene extends Phaser.Scene {
     const players = this.room.state.players;
     players.forEach((player, id) => {
       if (!this.blobs.has(id)) this.addBlob(player, id);
+      // §7 character swap (C key) — rebuild the rig with the new skin (re-equips next frame).
+      else if (this.charOf.get(id) !== player.character) {
+        this.removeBlob(id);
+        this.addBlob(player, id);
+      }
     });
     for (const id of [...this.blobs.keys()]) {
       if (!players.has(id)) this.removeBlob(id);
@@ -1917,12 +1935,13 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     const training = this.room?.state.mode === "training";
+    const who = self ? ` · C: swap character (${characterName(self.character)})` : "";
     this.modeText
       .setPosition(this.screenW() / 2, 12)
       .setText(
         training
-          ? "⛶ TESTING GROUNDS — walk onto a weapon to equip · swing at the dummies · T to exit"
-          : "Survive until OLD RUST, then extract · B: summon boss now · T: Testing Grounds",
+          ? `⛶ TESTING GROUNDS — walk onto a weapon to equip · swing at the dummies · T to exit${who}`
+          : `Survive until OLD RUST, then extract · B: boss · T: Testing Grounds${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 

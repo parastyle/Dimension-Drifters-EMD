@@ -30,6 +30,7 @@ import {
   MOVE_SPEED,
   type MoveInput,
   nearestPoint,
+  nextCharacter,
   nextWeapon,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
@@ -237,6 +238,12 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("cycleWeapon", (client) => {
       const player = this.state.players.get(client.sessionId);
       if (player) player.weapon = nextWeapon(player.weapon);
+    });
+
+    // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
+    this.onMessage("cycleCharacter", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (player) player.character = nextCharacter(player.character);
     });
 
     // §9/§13 R-TAP = DROP the held weapon on the floor (grabbable) in front of you; you fall back to
