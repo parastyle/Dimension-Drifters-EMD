@@ -12,6 +12,7 @@ import {
   damageMultFromGrades,
   ENEMY_KINDS,
   EXTRACT_RADIUS,
+  FISTS_WEAPON,
   inMeleeArc,
   LEVELUP_WINDOW_SECONDS,
   PARRY_COOLDOWN,
@@ -19,6 +20,7 @@ import {
   QUAKE_REACH,
   ROOM_NAME,
   requirementPenalty,
+  SALVAGE_HOLD_SECONDS,
   selectChainTargets,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
@@ -138,6 +140,12 @@ export class ArenaScene extends Phaser.Scene {
   private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
+  // §9/§13 drop & salvage (R): tap = drop the held weapon, HOLD = salvage it. `rHold` = seconds R has
+  // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
+  private rHold = 0;
+  private rSalvaged = false;
+  private dropBar?: Phaser.GameObjects.Graphics;
+  private dropBarLabel?: Phaser.GameObjects.Text;
   // §9 card carousel — held card big with full stats. Each card holds its LIVE elements (one equation
   // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
   // from the player's current attributes every frame so the numbers track levelling.
@@ -274,7 +282,7 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0, 1)
       .setDepth(100002);
     this.deathText = this.add
-      .text(0, 0, "DOWNED — respawning…\n(press R to restart the run)", {
+      .text(0, 0, "DOWNED — respawning…\n(click Restart Run, top-right)", {
         fontSize: "26px",
         color: "#FF5D5D",
         fontStyle: "bold",
@@ -285,9 +293,9 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100002)
       .setVisible(false);
 
-    // Playtest control: restart the run (also bound to the R key). Top-right corner.
+    // Playtest control: restart the run. Top-right corner (R is now drop/salvage, §9/§13).
     this.restartBtn = this.add
-      .text(0, 0, "⟳ Restart Run (R)", {
+      .text(0, 0, "⟳ Restart Run", {
         fontSize: "14px",
         color: "#E8E4D8",
         backgroundColor: "#3a4049",
@@ -298,6 +306,15 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100002)
       .setInteractive({ useHandCursor: true });
     this.restartBtn.on("pointerdown", () => this.room?.send("restart"));
+
+    // §9/§13 drop/salvage hold bar — fills while R is held; release before full = drop, full = salvage.
+    this.dropBar = this.add.graphics().setScrollFactor(0).setDepth(100003).setVisible(false);
+    this.dropBarLabel = this.add
+      .text(0, 0, "", { fontSize: "12px", color: "#ffe7a8", fontStyle: "bold", align: "center" })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100003)
+      .setVisible(false);
 
     // Equipped-weapon readout (sits just above the HP bar).
     this.weaponText = this.add
@@ -448,6 +465,9 @@ export class ArenaScene extends Phaser.Scene {
       if (def && manifest) {
         rig.equipWeapon(player.weapon, def, manifest);
         this.equipped.set(id, player.weapon);
+      } else if (def) {
+        rig.unequip(def); // §9 fists / any weapon with no held sprite → empty hands
+        this.equipped.set(id, player.weapon);
       }
     });
   }
@@ -553,7 +573,25 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
 
     this.deltaSec = deltaMs / 1000;
-    if (Phaser.Input.Keyboard.JustDown(this.keys.R)) this.room?.send("restart");
+    // §9/§13 R: TAP = drop the held weapon on the floor (grabbable); HOLD = salvage it into the bag.
+    // (Restart the run is now the on-screen button, top-right.)
+    const selfP = this.room.state.players.get(this.room.sessionId);
+    const canDrop = !!selfP && selfP.alive && selfP.weapon !== FISTS_WEAPON;
+    if (this.keys.R.isDown && canDrop) {
+      this.rHold += this.deltaSec;
+      if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
+        this.room.send("salvageWeapon");
+        this.rSalvaged = true;
+      }
+    }
+    if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
+      if (!this.rSalvaged && this.rHold > 0.02 && this.rHold < SALVAGE_HOLD_SECONDS) {
+        this.room.send("dropWeapon"); // a quick tap = drop
+      }
+      this.rHold = 0;
+      this.rSalvaged = false;
+    }
+    this.updateDropBar(canDrop);
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon");
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
@@ -1878,6 +1916,36 @@ export class ArenaScene extends Phaser.Scene {
 
     const container = this.add.container(0, 0, o).setScrollFactor(0).setDepth(100000);
     return { id, container, sources, reqTokens, resource };
+  }
+
+  /** §9/§13 draw the drop/salvage HOLD bar while R is held — a bar above the card carousel filling
+   *  0→1 over SALVAGE_HOLD_SECONDS. Release before full = DROP the weapon; hold to full = SALVAGE it. */
+  private updateDropBar(canDrop: boolean): void {
+    const bar = this.dropBar;
+    const label = this.dropBarLabel;
+    if (!bar || !label) return;
+    const holding = canDrop && this.keys.R.isDown && this.rHold > 0.02;
+    if (!holding) {
+      bar.setVisible(false);
+      label.setVisible(false);
+      return;
+    }
+    const frac = Math.min(1, this.rHold / SALVAGE_HOLD_SECONDS);
+    const w = 180;
+    const h = 12;
+    const x = this.screenW() / 2 - w / 2;
+    const y = this.screenH() - 132;
+    const done = frac >= 1;
+    bar.clear();
+    bar.fillStyle(0x000000, 0.55).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
+    bar.fillStyle(0x2a2a2a, 1).fillRoundedRect(x, y, w, h, 4);
+    bar.fillStyle(done ? 0xff5a4a : 0xffb24a, 1).fillRoundedRect(x, y, w * frac, h, 4);
+    bar.setVisible(true);
+    label
+      .setText(done ? "SALVAGED" : "hold: SALVAGE · release: DROP")
+      .setColor(done ? "#ff8a5a" : "#ffe7a8")
+      .setPosition(this.screenW() / 2, y - 12)
+      .setVisible(true);
   }
 
   /** Fan the hand at the bottom: held card centered/upright/big with live charges; others smaller,

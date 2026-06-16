@@ -39,6 +39,9 @@ export class PlayerState extends Schema {
   /** Thrown-weapon charges remaining + max (§9/§10 charge readout). 0/0 = not a thrown weapon. */
   @type("number") charges = 0;
   @type("number") maxCharges = 0;
+  /** §13 salvage-bag stub: count of weapons salvaged (hold-drop). The real parts economy (§13) isn't
+   *  built yet — this just tallies + drives the HUD readout so the hold-to-salvage action has feedback. */
+  @type("number") salvaged = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

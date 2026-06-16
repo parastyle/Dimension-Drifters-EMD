@@ -10,6 +10,7 @@ import {
   clampQuakeEpicenter,
   coneAngles,
   DEFAULT_WEAPON,
+  DROP_GRACE_SECONDS,
   DUMMY_HP,
   deriveStats,
   ENEMY_KINDS,
@@ -18,6 +19,7 @@ import {
   EXTRACT_RADIUS,
   effectiveDamageMult,
   enemyHpScale,
+  FISTS_WEAPON,
   inMeleeArc,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
@@ -136,6 +138,9 @@ export class GameRoom extends Room<ArenaState> {
     string,
     { phase: "idle" | "windup" | "swing" | "recover"; t: number; hits: number }
   >();
+  /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
+   *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
+  private readonly pickupGrace = new Map<string, number>();
   /** Spawn-director accumulator + monotonic enemy/projectile/zone/pickup id counters. */
   private spawnAccum = 0;
   private enemySeq = 0;
@@ -227,6 +232,37 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("cycleWeapon", (client) => {
       const player = this.state.players.get(client.sessionId);
       if (player) player.weapon = nextWeapon(player.weapon);
+    });
+
+    // §9/§13 R-TAP = DROP the held weapon on the floor (grabbable) in front of you; you fall back to
+    // FISTS (§9). The drop gets a brief grace so it doesn't snap straight back to you (DROP_GRACE_SECONDS).
+    this.onMessage("dropWeapon", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive || player.weapon === FISTS_WEAPON) return;
+      const c = this.combat.get(client.sessionId);
+      const ax = c?.aimX ?? 1;
+      const ay = c?.aimY ?? 0;
+      const pk = new PickupState();
+      pk.id = `drop${this.pickupSeq++}`;
+      pk.weapon = player.weapon;
+      pk.x = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
+      pk.y = clamp(
+        player.y + ay * PICKUP_RADIUS * 1.6,
+        PICKUP_RADIUS,
+        ARENA_HEIGHT - PICKUP_RADIUS,
+      );
+      this.state.pickups.set(pk.id, pk);
+      this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
+      player.weapon = FISTS_WEAPON;
+    });
+
+    // §13 R-HOLD = SALVAGE the held weapon into the salvage bag (consumed, no pickup) → fall back to
+    // FISTS. The parts economy (§13) isn't built yet, so this just tallies `salvaged` for HUD feedback.
+    this.onMessage("salvageWeapon", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive || player.weapon === FISTS_WEAPON) return;
+      player.salvaged += 1;
+      player.weapon = FISTS_WEAPON;
     });
 
     // Toggle the Testing Grounds (§21): stop spawns, swap the swarm for dummies + weapon pickups.
@@ -515,17 +551,31 @@ export class GameRoom extends Room<ArenaState> {
         if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
         this.checkExtraction(bodies);
       }
-    } else {
-      // Testing Grounds: walk over a weapon pickup to equip it.
-      this.state.players.forEach((player) => {
-        if (!player.alive) return;
-        this.state.pickups.forEach((pk) => {
-          const dx = pk.x - player.x;
-          const dy = pk.y - player.y;
-          if (dx * dx + dy * dy <= PICKUP_RADIUS * PICKUP_RADIUS) player.weapon = pk.weapon;
-        });
-      });
     }
+
+    // 3b. Walk over a weapon pickup to equip it (BOTH modes — §13/§21). The Testing-Grounds GALLERY
+    // pickups (`pk*`) PERSIST so you can keep cycling; player/enemy DROPS (`drop*`) are CONSUMED on grab
+    // and honour their grace window (a just-dropped weapon can't snap straight back to the dropper).
+    for (const [pid, t] of this.pickupGrace) {
+      const left = t - dt;
+      if (left <= 0 || !this.state.pickups.has(pid)) this.pickupGrace.delete(pid);
+      else this.pickupGrace.set(pid, left);
+    }
+    this.state.players.forEach((player) => {
+      if (!player.alive) return;
+      this.state.pickups.forEach((pk, pid) => {
+        if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
+        const dx = pk.x - player.x;
+        const dy = pk.y - player.y;
+        if (dx * dx + dy * dy <= PICKUP_RADIUS * PICKUP_RADIUS) {
+          player.weapon = pk.weapon;
+          if (pid.startsWith("drop")) {
+            this.state.pickups.delete(pid); // a dropped weapon is consumed on grab; the gallery isn't
+            this.pickupGrace.delete(pid);
+          }
+        }
+      });
+    });
 
     // 4. Resolve attacks (cooldown-gated). Melee weapons swing; thrown weapons hurl a charge.
     this.state.players.forEach((player, id) => {

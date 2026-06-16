@@ -59,6 +59,11 @@ export const RESPAWN_CLEAR_RADIUS = 320;
 export const DUMMY_HP = 250;
 export const DUMMY_RADIUS = 30;
 export const PICKUP_RADIUS = 46;
+/** §9/§13 drop & salvage: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
+ *  drop at your feet doesn't snap straight back. */
+export const DROP_GRACE_SECONDS = 0.7;
+/** §13 hold-to-salvage: seconds the drop key must be HELD before the held weapon salvages (tap = drop). */
+export const SALVAGE_HOLD_SECONDS = 0.6;
 
 /**
  * "Fists" placeholder melee — a stand-in so the level is playable before the real weapon

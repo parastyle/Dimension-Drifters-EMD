@@ -4,6 +4,7 @@
  * uses to render + animate the weapon in hand. PURE data (no engine/network types). Replaces
  * the hardcoded "fists" placeholder; fists remain as the empty-handed fallback.
  */
+import { FISTS_COOLDOWN, FISTS_DAMAGE, FISTS_HALF_ARC, FISTS_RANGE } from "./constants.js";
 import type { Attr } from "./leveling.js";
 
 export interface WeaponDef {
@@ -334,6 +335,33 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
 export const VFX_RADIUS_DEFAULT = 74;
 
 export const WEAPONS: Record<string, WeaponDef> = {
+  // §9 unarmed fallback — what you hold after DROPPING/SALVAGING a weapon, or when everything's broken.
+  // No sprite (empty hands), no requirements, weak short arc. Excluded from WEAPON_IDS (never in the
+  // Q-cycle or the Testing-Grounds gallery).
+  fists: {
+    id: "fists",
+    name: "Fists",
+    scalingGrades: { str: "C" },
+    damage: FISTS_DAMAGE,
+    range: FISTS_RANGE,
+    halfArc: FISTS_HALF_ARC,
+    cooldown: FISTS_COOLDOWN,
+    displayLength: 1,
+    swingArc: 1.8,
+    gripFrac: 0.5,
+    vfxRadius: 40,
+    tags: {
+      grip: "1H",
+      size: "S",
+      delivery: "melee-arc",
+      fireMode: "auto",
+      element: "physical",
+      classPool: "melee",
+      family: "fist",
+      rangeBand: "close",
+      scaling: ["STR"],
+    },
+  },
   "rusty-cleaver": {
     id: "rusty-cleaver",
     name: "Rusty Cleaver",
@@ -673,7 +701,10 @@ export const WEAPONS: Record<string, WeaponDef> = {
   },
 };
 
-export const WEAPON_IDS = Object.keys(WEAPONS);
+/** The §9 unarmed-fallback weapon id (empty hands). Not part of the arsenal cycle/gallery. */
+export const FISTS_WEAPON = "fists";
+/** Cycleable arsenal (Q-cycle + Testing-Grounds gallery) — every weapon EXCEPT the fists fallback. */
+export const WEAPON_IDS = Object.keys(WEAPONS).filter((id) => id !== FISTS_WEAPON);
 export const DEFAULT_WEAPON = "rusty-cleaver";
 
 /** Next weapon in the roster (RMB/cycle), wrapping around. */

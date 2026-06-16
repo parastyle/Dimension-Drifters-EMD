@@ -237,6 +237,14 @@ export class SpriteRig {
     return this.root.y;
   }
 
+  /** Drop to EMPTY HANDS (the §9 fists fallback) — clears any held weapon sprite but keeps `def` so the
+   *  unarmed swing still animates with the fists range/arc. Used when a weapon is dropped/salvaged. */
+  unequip(def: WeaponDef): void {
+    for (const w of this.weapons) w.img.destroy();
+    this.weapons = [];
+    this.weaponDef = def;
+  }
+
   destroy(): void {
     for (const w of this.weapons) w.img.destroy();
     this.root.destroy();
