@@ -148,6 +148,8 @@ export class ArenaScene extends Phaser.Scene {
    *  the baked floor graphics. Built once the seeds arrive. */
   private arenaMap?: ArenaMap;
   private floorBuilt = false;
+  /** §17 Codex tile textures (gen-tiles.mjs) that failed to load (absent on disk) — fall back to flat fill. */
+  private readonly tilesMissing = new Set<string>();
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
   private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
@@ -239,6 +241,20 @@ export class ArenaScene extends Phaser.Scene {
     for (const id of CARD_ART_IDS) this.load.image(`card-${id}`, `cards/${id}.png`);
     // Authored per-weapon VFX assets — painted hero skins + scatter sheets (§14 CODE-8).
     VfxPlayer.preloadAssets(this);
+    // §17 Codex SEAMLESS terrain tiles (tools/artkit/gen-tiles.mjs). Optional — if a file is absent the
+    // dev server returns index.html, which fails to decode; `loaderror` flags it so the floor falls back
+    // to the flat fill instead of TileSpriting a broken stub.
+    this.load.image("tile-ground", "tiles/ground.jpg");
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      if (file.key.startsWith("tile-")) this.tilesMissing.add(file.key);
+    });
+  }
+
+  /** §17 a Codex tile texture is usable only if it loaded AND isn't a missing-file stub. */
+  private hasTile(key: string): boolean {
+    if (this.tilesMissing.has(key) || !this.textures.exists(key)) return false;
+    const w = this.textures.get(key).getSourceImage()?.width ?? 0;
+    return w > 8;
   }
 
   create(): void {
@@ -537,10 +553,22 @@ export class ArenaScene extends Phaser.Scene {
     // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
     // (-14, so the telegraph stays visible over litter) · rail(-12).
     this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 0x2a2620).setDepth(-20);
-    this.add
-      .grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5)
-      .setDepth(-19);
-    // Arena boundary — a rusted rail.
+    if (this.hasTile("tile-ground")) {
+      // §17 PAINTED ground — a SEAMLESS Codex dust tile (gen-tiles.mjs), GPU-tiled across the arena PLUS a
+      // wide margin so 4K/ultrawide viewports always show ground, never the void. One draw, scrolls free.
+      const margin = 3200;
+      const ts = this.add
+        .tileSprite(cx, cy, ARENA_WIDTH + margin * 2, ARENA_HEIGHT + margin * 2, "tile-ground")
+        .setDepth(-19);
+      ts.tileScaleX = 0.5;
+      ts.tileScaleY = 0.5;
+    } else {
+      // Fallback (no tile art installed yet): the low-contrast earthy grid.
+      this.add
+        .grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5)
+        .setDepth(-19);
+    }
+    // Arena boundary — a rusted rail (marks the playable bound; the ground extends past it on big screens).
     this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT).setStrokeStyle(6, 0xa8482e).setDepth(-12);
   }
 
@@ -575,7 +603,10 @@ export class ArenaScene extends Phaser.Scene {
       gy < map.rows &&
       map.tiles[gy * map.cols + gx] !== TILE_PIT;
 
-    const g = this.add.graphics().setDepth(-14); // above the litter so the rim telegraph stays visible
+    // PIT FILL — the warm-black void (the §17 "absence" read). The painted GROUND tile fills the floor;
+    // pits stay a clean flat void — it reads better than a busy texture, and a near-black pit tile is
+    // visually indistinguishable from this anyway.
+    const g = this.add.graphics().setDepth(-14); // pit void + rim + spawn, above the ground + the litter
     g.fillStyle(0x0d0a10, 1);
     for (let y = 0; y < map.rows; y++)
       for (let x = 0; x < map.cols; x++)
@@ -1663,11 +1694,16 @@ export class ArenaScene extends Phaser.Scene {
    *  the screen; we scroll by the visible WORLD half-extent (`width / zoom / 2`) instead. */
   private centerCam(x: number, y: number): void {
     const cam = this.cameras.main;
-    const halfW = cam.width / cam.zoom / 2;
-    const halfH = cam.height / cam.zoom / 2;
+    const viewW = cam.width / cam.zoom;
+    const viewH = cam.height / cam.zoom;
+    // Follow + arena-clamp, but on a viewport LARGER than the arena (4K / ultrawide) the clamp would pin
+    // the arena to a corner — instead CENTRE it (a negative scroll), so the playfield sits middle-screen
+    // and the painted ground margin fills the surround.
+    const axis = (target: number, view: number, world: number): number =>
+      view >= world ? (world - view) / 2 : Math.max(0, Math.min(world - view, target));
     cam.setScroll(
-      Math.max(0, Math.min(ARENA_WIDTH - halfW * 2, x - halfW)),
-      Math.max(0, Math.min(ARENA_HEIGHT - halfH * 2, y - halfH)),
+      axis(x - viewW / 2, viewW, ARENA_WIDTH),
+      axis(y - viewH / 2, viewH, ARENA_HEIGHT),
     );
   }
 
