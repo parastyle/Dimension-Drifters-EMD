@@ -106,7 +106,9 @@ const CLASS_LABEL = {
   gun: "▤ Guns",
   launcher: "◎ Launchers",
   staff: "✦ Staffs",
-  melee: "✦ Melee",
+  melee: "⚒ Melee",
+  ranged: "➹ Ranged",
+  caster: "✷ Casters",
   weapon: "Weapons",
 };
 async function loadList() {
