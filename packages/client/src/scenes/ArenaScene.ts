@@ -48,6 +48,7 @@ import Phaser from "phaser";
 import { SpriteRig } from "../entities/SpriteRig.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
+import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { WEAPON_VFX } from "../vfx/weapon-vfx.generated.js";
@@ -245,8 +246,11 @@ export class ArenaScene extends Phaser.Scene {
     // dev server returns index.html, which fails to decode; `loaderror` flags it so the floor falls back
     // to the flat fill instead of TileSpriting a broken stub.
     this.load.image("tile-ground", "tiles/ground.jpg");
+    // §17 P4 Codex DECAL prop-pack (gen-decals.mjs) — painted ground litter, scattered in `scatterDecor`.
+    for (const id of DECAL_IDS) this.load.image(id, `decals/${id}.png`);
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (file.key.startsWith("tile-")) this.tilesMissing.add(file.key);
+      if (file.key.startsWith("tile-") || file.key.startsWith("decal-"))
+        this.tilesMissing.add(file.key);
     });
   }
 
@@ -682,26 +686,44 @@ export class ArenaScene extends Phaser.Scene {
       if (isPitAtPx(map, dx, dy)) continue; // keep the haze centre off the void (matches "kept OFF the pits")
       this.add.ellipse(dx, dy, w, h, 0xc49a5a).setAlpha(a).setDepth(-16);
     }
-    for (let i = 0; i < 90; i++) {
-      const x = between(60, ARENA_WIDTH - 60);
-      const y = between(60, ARENA_HEIGHT - 60);
-      if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit
-      if (rng.next() < 0.4) {
-        const r = between(10, 20);
-        this.add
-          .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
-          .setStrokeStyle(3, 0x22251b)
-          .setDepth(-15);
-      } else {
-        const r = between(12, 30);
-        this.add
-          .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
-          .setAlpha(0.5)
-          .setDepth(-15);
-        this.add
-          .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
-          .setStrokeStyle(3, 0x22252b)
-          .setDepth(-15);
+    // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
+    // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal
+    // "tile-bombing"). Falls back to the procedural rock/scrub shapes if the pack isn't installed.
+    const decals = DECAL_IDS.filter((id) => this.textures.exists(id));
+    if (decals.length > 0) {
+      for (let i = 0; i < 70; i++) {
+        const x = between(60, ARENA_WIDTH - 60);
+        const y = between(60, ARENA_HEIGHT - 60);
+        const id = decals[Math.floor(rng.next() * decals.length)] ?? decals[0];
+        const sc = between(0.4, 0.82);
+        const rot = rng.next() * Math.PI * 2;
+        const flip = rng.next() < 0.5;
+        if (isPitAtPx(map, x, y) || !id) continue;
+        const img = this.add.image(x, y, id).setScale(sc).setRotation(rot).setDepth(-15);
+        if (flip) img.setFlipX(true);
+      }
+    } else {
+      for (let i = 0; i < 90; i++) {
+        const x = between(60, ARENA_WIDTH - 60);
+        const y = between(60, ARENA_HEIGHT - 60);
+        if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit
+        if (rng.next() < 0.4) {
+          const r = between(10, 20);
+          this.add
+            .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
+            .setStrokeStyle(3, 0x22251b)
+            .setDepth(-15);
+        } else {
+          const r = between(12, 30);
+          this.add
+            .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
+            .setAlpha(0.5)
+            .setDepth(-15);
+          this.add
+            .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
+            .setStrokeStyle(3, 0x22252b)
+            .setDepth(-15);
+        }
       }
     }
   }
