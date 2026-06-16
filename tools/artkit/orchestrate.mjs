@@ -62,6 +62,30 @@ const sheetsDir = (id) => join(dir(id), "sheets");
 const candPath = (id, n) => join(sheetsDir(id), `candidate-${n}.png`);
 const tmpFor = (id) => { const d = join(TMP, id); mkdirSync(d, { recursive: true }); return d; };
 
+// §28.3 "loose reference model": curated APPROVED, on-model character anchors (the purest pill-grunt
+// builds). A character with no explicit styleRef borrows 1–2 of these as its build/proportion/style
+// reference each generation, so new characters keep the locked proportions + detail. The prompt forbids
+// copying their costume — they govern FORM ONLY. (Sampling 2 averages out any single design's signature
+// so the output isn't a clone; re-run the pool here as more characters get approved.)
+const CHAR_ANCHORS = [
+  "drifter",
+  "x-char-gunslinger",
+  "x-char-tank",
+  "cc-buzzard-jeptha-hale",
+  "cc-cogwarden",
+  "cc-yuki-the-hollow-smile",
+];
+const isCharacterSubject = (s) =>
+  s.kind === "character" || /^(cc-|x-char-)/.test(s.id) || (s.tags || []).includes("character");
+function pickCharAnchors(id) {
+  const pool = CHAR_ANCHORS.filter((a) => a !== id && existsSync(refPath(a)));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, 1 + Math.floor(Math.random() * 2)).map((a) => refPath(a)); // 1 or 2
+}
+
 /** One subject through whichever phase it needs next. Returns a status word. */
 async function runSubject(subject) {
   const id = subject.id;
@@ -81,11 +105,21 @@ async function runSubject(subject) {
       }
     } else {
       const tmp = tmpFor(id);
-      // Optional house-style anchor image (subjects.json `styleRef`) → reference-image gen.
+      // Reference-image-driven gen. An explicit subjects.json `styleRef` wins; otherwise a CHARACTER
+      // borrows 1–2 approved on-model anchors (the "loose reference model") to keep proportions + detail.
       const styleRef = subject.styleRef ? join(ROOT, subject.styleRef) : null;
       const styleRefOk = styleRef ? existsSync(styleRef) : false;
       if (subject.styleRef && !styleRefOk) log(`WARN ${id} styleRef missing: ${subject.styleRef}`);
-      const images = styleRefOk ? [styleRef] : undefined;
+      let images = styleRefOk ? [styleRef] : undefined;
+      let anchored = styleRefOk;
+      if (!styleRefOk && subject.kind !== "vfx" && isCharacterSubject(subject)) {
+        const anchors = pickCharAnchors(id);
+        if (anchors.length) {
+          images = anchors;
+          anchored = true;
+          log(`P0 ${id} — char build anchors: ${anchors.length}`);
+        }
+      }
 
       if (subject.kind === "vfx") {
         // VFX: generate ONE image PER exec (each its own fresh Codex chat). This guarantees N
@@ -103,7 +137,7 @@ async function runSubject(subject) {
         for (let i = 1; i <= CANDIDATES; i++) {
           log(`P0 ${id} — VFX candidate ${i}/${CANDIDATES} (separate exec)`);
           const code = await runCodexExec({
-            prompt: buildReferenceTicket(subject, style, 1, styleRefOk, variants[(i - 1) % variants.length]),
+            prompt: buildReferenceTicket(subject, style, 1, anchored, variants[(i - 1) % variants.length]),
             images,
             cwd: ROOT,
             label: `ref-${id}-${i}`,
@@ -116,9 +150,9 @@ async function runSubject(subject) {
         }
         if (made === 0) return "fail-ref";
       } else {
-        log(`P0 ${id} — generating ${CANDIDATES} reference candidates${styleRefOk ? " (style-anchored)" : ""}`);
+        log(`P0 ${id} — generating ${CANDIDATES} reference candidates${anchored ? " (style-anchored)" : ""}`);
         const code = await runCodexExec({
-          prompt: buildReferenceTicket(subject, style, CANDIDATES, styleRefOk),
+          prompt: buildReferenceTicket(subject, style, CANDIDATES, anchored),
           images,
           cwd: ROOT,
           label: `ref-${id}`,

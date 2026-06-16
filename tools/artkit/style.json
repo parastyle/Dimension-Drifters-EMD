@@ -19,9 +19,15 @@
     "background scene, floor plane, or cast shadow on the background",
     "gradient or textured background",
     "the chroma-key colour (#00ff00 / near-green) bleeding into the subject",
-    "any copy of an existing game/character; any real brand or human likeness"
+    "any copy of an existing game/character; any real brand or human likeness",
+    "a visible HUMAN FACE or facial features — eyes-with-whites, nose, mouth, lips, teeth, skin, eyebrows, expression. The face is HIDDEN (hat-brim / hood / helmet / mask) or a dark void with AT MOST one or two small glowing DOT-eyes — never human features.",
+    "ANYTHING held, gripped, carried, wielded, or worn in the hands — weapons, guns, shields, staves, tools, books, items. The hands are ALWAYS EMPTY (weapons are separate assets).",
+    "capes, cloaks, or fabric BILLOWING / flaring / streaming / trailing out behind the body; flowing tails or scarves caught in wind (any worn cloth hugs the body and ends in a clean hem).",
+    "dynamic / action / running / lunging / leaping / crouching / flying / mid-motion / dramatically-posed stances — the subject stands UPRIGHT and planted on both feet.",
+    "realistic body proportions, a defined waist, an hourglass or muscular torso, long limbs — the body is ONE rounded pill/capsule, never anatomical."
   ],
   "identityRefRenderRules": [
+    "CHARACTER BUILD LAW — the \"pill grunt\" (NON-NEGOTIABLE, the single most important character rule): a character is a ROUNDED CAPSULE — ONE smooth egg/pill/cone torso (NO waist, NO realistic chest/abs/muscle/anatomy), with detached BLOB MITTEN-hands (no fingers) and chunky boots floating with clear flat-green gaps. It stands UPRIGHT, PLANTED, weight on both feet, side-on facing RIGHT, in a NEUTRAL STANDING stance — NEVER a dynamic / action / running / lunging / leaping / crouching pose. The hands are ALWAYS EMPTY (weapons are separate assets). The HEAD is FACELESS: an iconic hat / hood / helmet / mask carries the ENTIRE identity, and beneath/within it the face is a DARK VOID showing AT MOST one or two small glowing DOT-eyes (or a flat mask) — NO mouth, NO nose, NO human facial features, NO expression (think Madness Combat grunts / the Drifter, Deadeye, Buzzard, Cogwarden, Deepfall, Yuki). NO cape and NO billowing fabric — robes/ponchos hug the body and end in a clean ragged hem. One bold accent-glow colour at most.",
     "Subject ONLY — NO background scene, NO floor/ground plane, NO cast shadow on the background.",
     "Render on a PERFECTLY FLAT, FULLY-OPAQUE chroma-key background, exact #00ff00 — one uniform colour, no gradient/texture/lighting variation. NEVER use #00ff00 or near-green anywhere in the subject. (A downstream tested colour-key removes it to transparency — never ask for true alpha.)",
     "Canvas: 1920x1080 for full character/enemy sprites; a SQUARE 1024x1024 canvas for weapons / props / objects. Center the subject with generous padding; the full body plus WHATEVER detached parts it has visible (players: 2 hands + 2 feet; enemies: per their build — full / hands-only / pure-blob), with clear GAPS of flat green between any separated parts.",
@@ -53,31 +59,102 @@
     "Additive neon glow is allowed where it fits (effects are the light show, §14), but keep the silhouette bold + legible."
   ],
   "_palette": {
-    "base": { "charcoal": "#22252B", "gunmetal": "#3A4049", "steel": "#5A6472", "offwhite": "#E8E4D8", "bone": "#CFC6AE" },
-    "earth": { "rust": "#A8482E", "tan": "#C49A5A", "olive": "#6E7042", "mutedRed": "#9E3B36", "dullTeal": "#3C6E6A" },
-    "neon": { "hotMagenta": "#FF3BD4", "cyberCyan": "#33E6FF", "plasmaLime": "#9CFF3B", "emberOrange": "#FF8A2B", "arcViolet": "#B14BFF" },
-    "rarity": { "common": "#9AA0A6", "uncommon": "#5FD17A", "rare": "#4AA3FF", "reallyRare": "#7B5BFF", "legendary": "#FFB23B", "ultimate": "#FF5D5D", "cursed": "#A45CFF" }
+    "base": {
+      "charcoal": "#22252B",
+      "gunmetal": "#3A4049",
+      "steel": "#5A6472",
+      "offwhite": "#E8E4D8",
+      "bone": "#CFC6AE"
+    },
+    "earth": {
+      "rust": "#A8482E",
+      "tan": "#C49A5A",
+      "olive": "#6E7042",
+      "mutedRed": "#9E3B36",
+      "dullTeal": "#3C6E6A"
+    },
+    "neon": {
+      "hotMagenta": "#FF3BD4",
+      "cyberCyan": "#33E6FF",
+      "plasmaLime": "#9CFF3B",
+      "emberOrange": "#FF8A2B",
+      "arcViolet": "#B14BFF"
+    },
+    "rarity": {
+      "common": "#9AA0A6",
+      "uncommon": "#5FD17A",
+      "rare": "#4AA3FF",
+      "reallyRare": "#7B5BFF",
+      "legendary": "#FFB23B",
+      "ultimate": "#FF5D5D",
+      "cursed": "#A45CFF"
+    }
   },
   "_dimensionOverrides": {
     "wild-west": "Dusty, sun-bleached, occult-frontier. Dressing in tan/rust/bone/olive against charcoal shadow; weapon VFX stays full neon so it pops against the dust. Silhouette vocabulary: hats, dusters, skeletal / cactus / automaton forms. Reads gritty-Western, NOT cartoon-cowboy."
   },
   "_chromaKey": "#00ff00",
   "bgArchetypes": [
-    { "id": "energy-burst", "description": "A radial energy burst centered behind the subject — concentric rings of light, motion lines streaking from center, tinted to the subject's neon accent. The subject is the explosive epicenter." },
-    { "id": "shattered-pane", "description": "A shattered-glass effect frozen mid-break — fractured shards radiating from the subject, refracting complementary colors at lower saturation." },
-    { "id": "vortex", "description": "A swirling vortex/maelstrom rotating around the subject — concentric spiral lines, motion blur, subject at the calm eye." },
-    { "id": "spotlight-stage", "description": "Pure-black backdrop with one or two intense stage spotlights from above-back, the subject on a circular pool of light. Duel/showdown vibe." },
-    { "id": "radial-rays", "description": "Bold radial rays of color behind the subject (manga sunburst), alternating thick-thin lines in two complementary low-sat colors." },
-    { "id": "elemental-wave", "description": "A massive cresting wave of the subject's signature power filling the background (fire, dust, shock, toxin — match the subject), frozen at its peak." },
-    { "id": "neon-grid", "description": "A retro-arcade neon grid receding to a vanishing point over a deep charcoal void." },
-    { "id": "single-color-void", "description": "A pure flat field of ONE desaturated complementary color — the subject the only thing in frame. Ultra-minimal comic-cover energy." },
-    { "id": "stormcloud-lightning", "description": "Towering stormclouds, lightning forks frozen mid-strike behind the subject, dramatic backlight." },
-    { "id": "ember-storm", "description": "Glowing embers of the subject's accent color filling the frame, motion-blurred upward, deep charcoal void behind." },
-    { "id": "geometric-blocks", "description": "Bold flat geometric color-block composition — overlapping triangles/circles/rectangles in the lower-sat complementary palette." },
-    { "id": "dust-mesa", "description": "A Wild-West dust haze over a flat mesa horizon at blood-dusk, low-sat tan/rust sky, the subject kicking up grit. (M0 dimension flavor.)" },
-    { "id": "swirling-fog", "description": "Dense swirling fog tinted complementary, one bright pool of light from above ringing the subject." },
-    { "id": "molten-flow", "description": "Slow-flowing liquid ribbons (lava, ink, plasma) cascading across the frame, tinted to the accent." },
-    { "id": "manga-screentone", "description": "Black-and-white manga screentone backdrop — halftone dots, hard speed lines from the subject. Subject stays full-color; bg monochrome-tinted to the accent." },
+    {
+      "id": "energy-burst",
+      "description": "A radial energy burst centered behind the subject — concentric rings of light, motion lines streaking from center, tinted to the subject's neon accent. The subject is the explosive epicenter."
+    },
+    {
+      "id": "shattered-pane",
+      "description": "A shattered-glass effect frozen mid-break — fractured shards radiating from the subject, refracting complementary colors at lower saturation."
+    },
+    {
+      "id": "vortex",
+      "description": "A swirling vortex/maelstrom rotating around the subject — concentric spiral lines, motion blur, subject at the calm eye."
+    },
+    {
+      "id": "spotlight-stage",
+      "description": "Pure-black backdrop with one or two intense stage spotlights from above-back, the subject on a circular pool of light. Duel/showdown vibe."
+    },
+    {
+      "id": "radial-rays",
+      "description": "Bold radial rays of color behind the subject (manga sunburst), alternating thick-thin lines in two complementary low-sat colors."
+    },
+    {
+      "id": "elemental-wave",
+      "description": "A massive cresting wave of the subject's signature power filling the background (fire, dust, shock, toxin — match the subject), frozen at its peak."
+    },
+    {
+      "id": "neon-grid",
+      "description": "A retro-arcade neon grid receding to a vanishing point over a deep charcoal void."
+    },
+    {
+      "id": "single-color-void",
+      "description": "A pure flat field of ONE desaturated complementary color — the subject the only thing in frame. Ultra-minimal comic-cover energy."
+    },
+    {
+      "id": "stormcloud-lightning",
+      "description": "Towering stormclouds, lightning forks frozen mid-strike behind the subject, dramatic backlight."
+    },
+    {
+      "id": "ember-storm",
+      "description": "Glowing embers of the subject's accent color filling the frame, motion-blurred upward, deep charcoal void behind."
+    },
+    {
+      "id": "geometric-blocks",
+      "description": "Bold flat geometric color-block composition — overlapping triangles/circles/rectangles in the lower-sat complementary palette."
+    },
+    {
+      "id": "dust-mesa",
+      "description": "A Wild-West dust haze over a flat mesa horizon at blood-dusk, low-sat tan/rust sky, the subject kicking up grit. (M0 dimension flavor.)"
+    },
+    {
+      "id": "swirling-fog",
+      "description": "Dense swirling fog tinted complementary, one bright pool of light from above ringing the subject."
+    },
+    {
+      "id": "molten-flow",
+      "description": "Slow-flowing liquid ribbons (lava, ink, plasma) cascading across the frame, tinted to the accent."
+    },
+    {
+      "id": "manga-screentone",
+      "description": "Black-and-white manga screentone backdrop — halftone dots, hard speed lines from the subject. Subject stays full-color; bg monochrome-tinted to the accent."
+    },
     {
       "id": "elaborate-scene",
       "description": "A FULL elaborate painted scene fitting THIS subject's dimension — a SPECIFIC vivid place (saloon ablaze, desert canyon at blood-sunset, neon-lit ghost town, mineshaft, dust colosseum). Depth + atmosphere but saturation/contrast LOWER than the subject so it still pops. The variety-injection archetype."

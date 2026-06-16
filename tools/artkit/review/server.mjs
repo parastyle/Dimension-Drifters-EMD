@@ -25,7 +25,7 @@ const OUT = join(ROOT, "out");
 const PUBLIC = join(HERE, "public");
 const PORT = Number(process.env.PORT || 8190);
 const HOST = process.env.HOST || "127.0.0.1";
-const MANIFESTS = ["subjects.json", "subjects.explore.json"];
+const MANIFESTS = ["subjects.json", "subjects.explore.json", "subjects.concepts.json"];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
