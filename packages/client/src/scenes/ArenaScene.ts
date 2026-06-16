@@ -6,6 +6,7 @@ import {
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
+  characterScale,
   clampQuakeEpicenter,
   type DamageSource,
   DEFAULT_PORT,
@@ -592,7 +593,9 @@ export class ArenaScene extends Phaser.Scene {
       player.character && SPRITES[player.character as keyof typeof SPRITES]
         ? player.character
         : PLAYER_SPRITE;
-    this.blobs.set(id, new SpriteRig(this, player.x, player.y, isSelf, id, charId));
+    const rig = new SpriteRig(this, player.x, player.y, isSelf, id, charId);
+    rig.setRigScale(characterScale(charId)); // §7 bump small-footprint skins so none read as tiny
+    this.blobs.set(id, rig);
     this.charOf.set(id, player.character);
     this.prevPos.set(id, { x: player.x, y: player.y });
     if (isSelf) this.centerCam(player.x, player.y);
