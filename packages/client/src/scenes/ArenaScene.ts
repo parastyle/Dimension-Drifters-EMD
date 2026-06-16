@@ -1,6 +1,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  type ArenaMap,
   type ArenaState,
   type Attr,
   CHAIN_MAX_RANGE,
@@ -8,6 +9,7 @@ import {
   characterName,
   characterScale,
   clampQuakeEpicenter,
+  classifyPitRegions,
   type DamageSource,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
@@ -15,15 +17,25 @@ import {
   ENEMY_KINDS,
   EXTRACT_RADIUS,
   FISTS_WEAPON,
+  generateArena,
+  gunMuzzleReach,
   inMeleeArc,
+  isPitAtPx,
+  JUMP_AIRTIME,
+  JUMP_HOP_HEIGHT,
   LEVELUP_WINDOW_SECONDS,
+  MAP_SPAWN_CLEAR_TILES,
+  makeRng,
+  mixSeeds,
   PARRY_COOLDOWN,
+  PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
   selectChainTargets,
+  TILE_PIT,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
@@ -106,7 +118,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
-    "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C",
+    "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
   private lastSent = { dx: Number.NaN, dy: Number.NaN };
@@ -132,6 +144,12 @@ export class ArenaScene extends Phaser.Scene {
   private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered zoner puddles (§15 area denial). */
   private readonly zones = new Map<string, Phaser.GameObjects.Container>();
+  /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
+   *  the baked floor graphics. Built once the seeds arrive. */
+  private arenaMap?: ArenaMap;
+  private floorBuilt = false;
+  /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
+  private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
   private modeText!: Phaser.GameObjects.Text;
   private hpBarBg!: Phaser.GameObjects.Rectangle;
@@ -229,8 +247,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,T,B,C") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,T,B,C,SPACE") as Record<
+      "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C" | "SPACE",
       Phaser.Input.Keyboard.Key
     >;
     this.input.setDefaultCursor("crosshair");
@@ -513,55 +531,166 @@ export class ArenaScene extends Phaser.Scene {
   private drawArena(): void {
     const cx = ARENA_WIDTH / 2;
     const cy = ARENA_HEIGHT / 2;
+    // Base ground bed + low-contrast grid (map-independent). The §17 procedural PITS, the rim telegraph,
+    // the spawn safe-ring + seeded decor are baked in `buildArenaFloor` once the server's map seeds sync.
+    // The whole floor stack lives at NEGATIVE depths so it always renders behind the entities (which use
+    // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
+    // (-14, so the telegraph stays visible over litter) · rail(-12).
+    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 0x2a2620).setDepth(-20);
+    this.add
+      .grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5)
+      .setDepth(-19);
+    // Arena boundary — a rusted rail.
+    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT).setStrokeStyle(6, 0xa8482e).setDepth(-12);
+  }
 
-    // Ground bed — dusty dark earth.
-    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 0x2a2620);
-    // Low-contrast earthy grid so movement reads without stealing focus from the neon VFX.
-    this.add.grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5);
+  /** §17 once the server's seeds arrive, regenerate the IDENTICAL map client-side + bake the floor once. */
+  private maybeBuildFloor(): void {
+    if (this.floorBuilt || !this.room) return;
+    const s = this.room.state;
+    if (!s.seedTerrain) return; // seeds not synced yet (0 = "no map")
+    this.arenaMap = generateArena({
+      seedTerrain: s.seedTerrain,
+      seedHazard: s.seedHazard,
+      seedTheme: s.seedTheme,
+      seedDecor: s.seedDecor,
+    });
+    this.buildArenaFloor(this.arenaMap);
+    this.floorBuilt = true;
+  }
 
-    // Deterministic scatter (mulberry32) so the dressing is stable frame-to-frame.
-    let seed = 0x5eed1e;
-    const rng = (): number => {
-      seed |= 0;
-      seed = (seed + 0x6d2b79f5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-    const between = (a: number, b: number): number => a + rng() * (b - a);
+  /**
+   * §17 "Dust & The Drop" floor bake (the panel-winning look): warm-black PIT voids, a rust band + hot
+   * amber lip on every pit edge with inward CHEVRON teeth on the wide (go-around) runs and a clean solid
+   * lip on the narrow (hoppable) gaps, and a cyan SPAWN safe-ring. All static geometry in ONE Graphics
+   * (drawn once, scrolled by the camera for free) at a low depth under the entities.
+   */
+  private buildArenaFloor(map: ArenaMap): void {
+    const T = map.tileSize;
+    const cls = classifyPitRegions(map);
+    const ground = (gx: number, gy: number): boolean =>
+      gx >= 0 &&
+      gy >= 0 &&
+      gx < map.cols &&
+      gy < map.rows &&
+      map.tiles[gy * map.cols + gx] !== TILE_PIT;
 
-    // Faint tan dust drifts — big, soft, low-alpha so the floor isn't flat.
-    for (let i = 0; i < 40; i++) {
-      this.add
-        .ellipse(
-          rng() * ARENA_WIDTH,
-          rng() * ARENA_HEIGHT,
-          between(160, 360),
-          between(110, 240),
-          0xc49a5a,
-        )
-        .setAlpha(between(0.03, 0.07));
+    const g = this.add.graphics().setDepth(-14); // above the litter so the rim telegraph stays visible
+    g.fillStyle(0x0d0a10, 1);
+    for (let y = 0; y < map.rows; y++)
+      for (let x = 0; x < map.cols; x++)
+        if (map.tiles[y * map.cols + x] === TILE_PIT) g.fillRect(x * T, y * T, T, T);
+
+    // Pit-edge segments (a pit-cell side bordering ground) + whether the run is hoppable.
+    const seg: Array<{
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      nx: number;
+      ny: number;
+      hop: boolean;
+    }> = [];
+    for (let y = 0; y < map.rows; y++)
+      for (let x = 0; x < map.cols; x++) {
+        if (map.tiles[y * map.cols + x] !== TILE_PIT) continue;
+        const hop = cls.hoppable[cls.regionOf[y * map.cols + x] ?? -1] ?? false;
+        const ox = x * T;
+        const oy = y * T;
+        if (ground(x, y - 1)) seg.push({ x1: ox, y1: oy, x2: ox + T, y2: oy, nx: 0, ny: 1, hop });
+        if (ground(x, y + 1))
+          seg.push({ x1: ox, y1: oy + T, x2: ox + T, y2: oy + T, nx: 0, ny: -1, hop });
+        if (ground(x - 1, y)) seg.push({ x1: ox, y1: oy, x2: ox, y2: oy + T, nx: 1, ny: 0, hop });
+        if (ground(x + 1, y))
+          seg.push({ x1: ox + T, y1: oy, x2: ox + T, y2: oy + T, nx: -1, ny: 0, hop });
+      }
+    // Rust band (under) then hot amber lip (over) — opaque + static, so it reads as TERRAIN under the neon.
+    g.lineStyle(T * 0.11, 0xa8482e, 1);
+    for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
+    g.lineStyle(T * 0.045, 0xf0a73c, 1);
+    for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
+    // Inward chevron teeth on the wide runs ("go around"); narrow gaps keep the clean lip ("hop me").
+    g.fillStyle(0xf0a73c, 1);
+    for (const s of seg) {
+      if (s.hop) continue;
+      const mx = (s.x1 + s.x2) / 2;
+      const my = (s.y1 + s.y2) / 2;
+      const ex = -s.ny; // edge direction (perpendicular to the inward normal)
+      const ey = s.nx;
+      g.fillTriangle(
+        mx + s.nx * T * 0.2,
+        my + s.ny * T * 0.2,
+        mx + ex * T * 0.1,
+        my + ey * T * 0.1,
+        mx - ex * T * 0.1,
+        my - ey * T * 0.1,
+      );
     }
-    // Scrub/cacti (olive) and rocks (gunmetal/steel) — readable ground litter.
+    // Cyan SPAWN safe-ring (cool = safe — the opposite semaphore to the hot pit lip).
+    const sr = MAP_SPAWN_CLEAR_TILES * T;
+    g.fillStyle(0x33e6ff, 0.06);
+    g.fillCircle(map.spawnX, map.spawnY, sr);
+    g.lineStyle(3, 0x33e6ff, 0.85);
+    g.strokeCircle(map.spawnX, map.spawnY, sr);
+
+    this.scatterDecor(map);
+  }
+
+  /** Seeded ground litter (dust drifts + rocks/scrub), kept OFF the pits. Seeded from the map so every
+   *  client dresses the floor identically. Low depth — players + enemies render over it. */
+  private scatterDecor(map: ArenaMap): void {
+    const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
+    const between = (a: number, b: number): number => a + rng.next() * (b - a);
+    for (let i = 0; i < 40; i++) {
+      // Draw the full RNG sequence first (fixed cadence → deterministic across clients), THEN decide.
+      const dx = rng.next() * ARENA_WIDTH;
+      const dy = rng.next() * ARENA_HEIGHT;
+      const w = between(160, 360);
+      const h = between(110, 240);
+      const a = between(0.03, 0.07);
+      if (isPitAtPx(map, dx, dy)) continue; // keep the haze centre off the void (matches "kept OFF the pits")
+      this.add.ellipse(dx, dy, w, h, 0xc49a5a).setAlpha(a).setDepth(-16);
+    }
     for (let i = 0; i < 90; i++) {
       const x = between(60, ARENA_WIDTH - 60);
       const y = between(60, ARENA_HEIGHT - 60);
-      if (rng() < 0.4) {
-        // Cactus/scrub: a stubby olive lump.
+      if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit
+      if (rng.next() < 0.4) {
         const r = between(10, 20);
-        this.add.ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042).setStrokeStyle(3, 0x22251b);
-      } else {
-        // Rock: gunmetal with a darker rim and a small shadow patch.
-        const r = between(12, 30);
-        this.add.ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17).setAlpha(0.5);
         this.add
-          .ellipse(x, y, r * 1.5, r, rng() < 0.5 ? 0x3a4049 : 0x5a6472)
-          .setStrokeStyle(3, 0x22252b);
+          .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
+          .setStrokeStyle(3, 0x22251b)
+          .setDepth(-15);
+      } else {
+        const r = between(12, 30);
+        this.add
+          .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
+          .setAlpha(0.5)
+          .setDepth(-15);
+        this.add
+          .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
+          .setStrokeStyle(3, 0x22252b)
+          .setDepth(-15);
       }
     }
+  }
 
-    // Arena boundary — a rusted rail.
-    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT).setStrokeStyle(6, 0xa8482e);
+  /** §17 fire the fall VFX when a player's synced `fellSeq` ticks: a dust poof at the landing tile, plus a
+   *  brief red flash + shake for the LOCAL player so the chip-damage fall has weight. */
+  private checkFalls(): void {
+    const st = this.room?.state;
+    if (!st) return;
+    const selfId = this.room?.sessionId;
+    st.players.forEach((player, id) => {
+      const prev = this.lastFell.get(id);
+      this.lastFell.set(id, player.fellSeq);
+      if (prev === undefined || prev === player.fellSeq) return;
+      this.spawnPoof(player.x, player.y);
+      if (id === selfId) {
+        this.cameras.main.flash(170, 90, 16, 16);
+        this.cameras.main.shake(150, 0.006);
+      }
+    });
   }
 
   private async connect(): Promise<void> {
@@ -613,11 +742,24 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
 
     this.deltaSec = deltaMs / 1000;
-    // §9/§13 R: TAP = drop the held weapon on the floor (grabbable); HOLD = salvage it into the bag.
+    // §9/§13 R — context-sensitive: if a dropped weapon is within reach, TAP = GRAB it (equip). Otherwise,
+    // with a weapon held, TAP = drop it on the floor and HOLD = salvage it into the bag. Spacebar = jump.
     // (Restart the run is now the on-screen button, top-right.)
     const selfP = this.room.state.players.get(this.room.sessionId);
-    const canDrop = !!selfP && selfP.alive && selfP.weapon !== FISTS_WEAPON;
-    if (this.keys.R.isDown && canDrop) {
+    const alive = !!selfP && selfP.alive;
+    const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
+    // Is a grabbable pickup within arm's reach? (Then R means "grab", not "drop/salvage".)
+    let nearPickup = false;
+    if (selfP && alive) {
+      const r2 = PICKUP_RADIUS * PICKUP_RADIUS;
+      this.room.state.pickups.forEach((pk) => {
+        const dx = pk.x - selfP.x;
+        const dy = pk.y - selfP.y;
+        if (dx * dx + dy * dy <= r2) nearPickup = true;
+      });
+    }
+    const canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
+    if (this.keys.R.isDown && canSalvage) {
       this.rHold += this.deltaSec;
       if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
         this.room.send("salvageWeapon");
@@ -625,20 +767,30 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
-      if (!this.rSalvaged && this.rHold > 0.02 && this.rHold < SALVAGE_HOLD_SECONDS) {
+      if (alive && nearPickup) {
+        this.room.send("grabWeapon"); // standing on a dropped weapon: pick it up
+      } else if (
+        !this.rSalvaged &&
+        this.rHold > 0.02 &&
+        this.rHold < SALVAGE_HOLD_SECONDS &&
+        holdingWeapon
+      ) {
         this.room.send("dropWeapon"); // a quick tap = drop
       }
       this.rHold = 0;
       this.rSalvaged = false;
     }
-    this.updateDropBar(canDrop);
+    this.updateDropBar(canSalvage);
+    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.room.send("jump"); // §5 traversal hop
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon");
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
 
+    this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
     this.sendInput();
     this.syncBlobs();
+    this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
     this.syncEnemies();
     this.syncPickups();
@@ -732,7 +884,14 @@ export class ArenaScene extends Phaser.Scene {
         my = 0;
       }
       this.enemyPrev.set(id, { x: rig.x, y: rig.y });
-      rig.animate(this.time.now, { moveX: mx, moveY: my, aimX: 0, aimY: 0, isSelf: false });
+      rig.animate(this.time.now, {
+        moveX: mx,
+        moveY: my,
+        aimX: 0,
+        aimY: 0,
+        aimDir: 0,
+        isSelf: false,
+      });
       rig.setDepth(rig.y);
     }
   }
@@ -772,9 +931,11 @@ export class ArenaScene extends Phaser.Scene {
           const p = this.room.state.players.get(shooter);
           if (p) {
             const ang = Math.atan2(pr.vy, pr.vx);
+            // Flash at the shooter's BARREL TIP (per-gun reach), matching where the server spawned the shot.
+            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]);
             this.spawnMuzzleFlash(
-              p.x + Math.cos(ang) * 34,
-              p.y + Math.sin(ang) * 34,
+              p.x + Math.cos(ang) * reach,
+              p.y + Math.sin(ang) * reach,
               ang,
               fx.size,
               fx.color,
@@ -1546,12 +1707,21 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.prevPos.set(id, { x: blob.x, y: blob.y });
 
+      // §5 jump hop: drive the rig's lift from the synced airborne timer (counts down from JUMP_AIRTIME).
+      // A sine arc → 0 at launch, peak at apex, 0 on landing.
+      const pl = this.room?.state.players.get(id);
+      const airborne = pl?.airborne ?? 0;
+      blob.setHop(
+        airborne > 0 ? Math.sin((1 - airborne / JUMP_AIRTIME) * Math.PI) * JUMP_HOP_HEIGHT : 0,
+      );
+
       const isSelf = id === selfId;
       blob.animate(this.time.now, {
         moveX: mx,
         moveY: my,
         aimX: isSelf ? aimX : 0,
         aimY: isSelf ? aimY : 0,
+        aimDir: pl?.aimDir ?? 0, // §9 remote gun pose tracks the synced aim
         isSelf,
       });
       blob.setDepth(blob.y);
@@ -1943,8 +2113,8 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12)
       .setText(
         training
-          ? `⛶ TESTING GROUNDS — walk onto a weapon to equip · swing at the dummies · T to exit${who}`
-          : `Survive until OLD RUST, then extract · B: boss · T: Testing Grounds${who}`,
+          ? `⛶ TESTING GROUNDS — R: grab a weapon (hold: salvage) · Space: jump · swing at the dummies · T to exit${who}`
+          : `Survive until OLD RUST, then extract · Space: jump · B: boss · T: Testing Grounds${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 

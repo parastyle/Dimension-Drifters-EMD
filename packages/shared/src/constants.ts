@@ -17,6 +17,32 @@ export const MOVE_SPEED = 320;
 export const ARENA_WIDTH = 2400;
 export const ARENA_HEIGHT = 2400;
 
+/**
+ * §17 procedural arena tiling. The map is a coarse integer grid of `MAP_TILE`-px cells (chosen to divide
+ * the arena evenly: 2400 / 80 = 30 → a 30×30 grid). Generation (mapgen.ts) is server-seeded + shared so
+ * every client reproduces the identical map. All TUNING. Phase 0 only produces + validates the grid; pit
+ * rendering/collision is the §17 Phase 1 follow-up.
+ */
+export const MAP_TILE = 80;
+/** Guaranteed-ground disc at the arena centre (tiles) — players spawn here, never on/over a pit. */
+export const MAP_SPAWN_CLEAR_TILES = 3;
+/** A solid ground ring this many tiles deep around the arena edge (no pit flush against the wall). */
+export const MAP_BORDER_TILES = 1;
+/** Target pit coverage of the interior (fraction) — the generator aims near this. */
+export const MAP_PIT_TARGET = 0.16;
+/** Hard ceiling on pit coverage — if blob growth + smoothing overshoot, an erosion pass trims pits back
+ *  under this so the arena stays mostly playable (never swiss cheese). */
+export const MAP_PIT_MAX = 0.26;
+/** Minimum spacing between pit "seed" sites (tiles), so hazards spread out instead of clumping. */
+export const MAP_PIT_SPACING_TILES = 4;
+/**
+ * Widest pit GAP (tiles) a player may be REQUIRED to cross by jumping — the connectivity guarantee treats
+ * any straight gap up to this as "hoppable" and bridges anything wider with ground, so no region is ever
+ * stranded behind an uncrossable pit. Derived from the hop reach (JUMP_AIRTIME × MOVE_SPEED ≈ 144px ≈ ~2
+ * tiles); kept conservative so a required hop is always comfortable.
+ */
+export const MAP_MAX_JUMP_TILES = 2;
+
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;
 
@@ -64,6 +90,22 @@ export const PICKUP_RADIUS = 46;
 export const DROP_GRACE_SECONDS = 0.7;
 /** §13 hold-to-salvage: seconds the drop key must be HELD before the held weapon salvages (tap = drop). */
 export const SALVAGE_HOLD_SECONDS = 0.6;
+
+/** §5 JUMP (Spacebar) — a low all-class traversal HOP that clears barriers + pitfalls (§17). It is PURE
+ *  MOVEMENT, NOT a dodge — no i-frames (the parry stays the only defensive tool, so the two never overlap).
+ *  Server-authoritative airborne timer + a short cooldown so it isn't a spammable bunny-hop; the §17 pit
+ *  layer reads `airborne` to let a hopping player pass over a gap. */
+export const JUMP_AIRTIME = 0.45;
+export const JUMP_COOLDOWN = 0.7;
+/** Peak visual hop height (px) the client lifts the rig at the top of the arc. */
+export const JUMP_HOP_HEIGHT = 34;
+
+/** §17 pitfall FALL consequence (Mike's ruling: chip + reposition, NOT run-ending). A grounded player
+ *  whose body is over a pit falls: loses this fraction of max HP, snaps back to the last grounded tile,
+ *  and gets a brief GRACE (i-frames + no re-fall) so a pit isn't a death spiral or a landing-gank. An
+ *  AIRBORNE player (mid-jump, §5) is immune — the hop clears the gap. */
+export const PIT_FALL_DAMAGE_FRAC = 0.15;
+export const PIT_FALL_GRACE = 0.6;
 
 /**
  * "Fists" placeholder melee — a stand-in so the level is playable before the real weapon

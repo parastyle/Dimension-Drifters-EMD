@@ -67,6 +67,7 @@ http
         await shot("tmp-cards.png");
 
         // Zoom the camera onto the player for a clear pose read, and quiet nearby enemies.
+        const z0 = await ev(`${SC}.cameras.main.zoom`); // capture + restore (RENDER_DPR), never hardcode 1
         await ev(`${SC}.cameras.main.setZoom(3.2)`);
         await ev(`${SC}.room.send('input',{dx:0,dy:0})`);
         await sleep(700);
@@ -78,7 +79,7 @@ http
         );
         await sleep(140);
         await shot("tmp-brace.png");
-        await ev(`${SC}.cameras.main.setZoom(1)`);
+        await ev(`${SC}.cameras.main.setZoom(${z0})`);
 
         const snap = await ev(
           `(()=>{const r=${SC}.room,me=r.state.players.get(r.sessionId);const card=${SC}.carousel.find(c=>c.id===me.weapon);return {weapon:me.weapon,attrs:[me.str,me.dex,me.int,me.con,me.luk].join('/'),eq:card&&card.eq.text,canvas:(document.querySelector('canvas')||{}).width+'x'+(document.querySelector('canvas')||{}).height,fps:Math.round(${SC}.game.loop.actualFps)};})()`,

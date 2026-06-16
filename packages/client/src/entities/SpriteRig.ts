@@ -16,6 +16,8 @@ export interface RigAnim {
   /** Aim direction toward the cursor (local player only). */
   aimX: number;
   aimY: number;
+  /** §9 synced aim angle (radians) — points a REMOTE player's gun (the local player uses aimX/aimY). */
+  aimDir: number;
   isSelf: boolean;
 }
 
@@ -58,6 +60,9 @@ export class SpriteRig {
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
   private braceStart = -1e9;
+  /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
+   *  the camera + depth-sort use the ground position; only the visible parts rise. */
+  private hopPx = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -131,6 +136,12 @@ export class SpriteRig {
   /** Top-down draw order: lower on screen renders in front. */
   setDepth(d: number): void {
     this.root.setDepth(d);
+  }
+
+  /** §5 jump hop: lift the rendered art by `px` (peak of the arc). The container's logical position is
+   *  untouched, so the camera + depth-sort stay grounded — only the visible body/hands/feet/weapon rise. */
+  setHop(px: number): void {
+    this.hopPx = px;
   }
 
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
@@ -255,9 +266,10 @@ export class SpriteRig {
     const moving = Math.hypot(anim.moveX, anim.moveY) > 0.02;
     const s = this.scale;
 
-    // Facing: toward the cursor for the local player, else toward movement. Mirror the whole
+    // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
+    // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
-    const dirX = anim.isSelf ? anim.aimX : anim.moveX;
+    const dirX = anim.isSelf ? anim.aimX : this.weaponDef?.gun ? Math.cos(anim.aimDir) : anim.moveX;
     if (Math.abs(dirX) > 0.05) this.facing = dirX >= 0 ? 1 : -1;
     // UNIFORM scale on both axes (baseScale), facing = a pure horizontal MIRROR — never a stretch,
     // so the hand-painted art keeps its aspect ratio at any size (§28.4).
@@ -293,10 +305,16 @@ export class SpriteRig {
       this.body.scaleY = s * (1 - bob * 0.06 - brace * 0.05); // slight squash
     }
 
-    // Weapon swing angle — upright at rest, wind-up + chop on swing. Computed BEFORE the hands
-    // so a two-handed grip can place the back hand on the haft.
+    // Weapon angle — guns AIM along the cursor; melee weapons sit upright at rest then wind-up + chop on
+    // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
-    if (this.weaponDef && this.weapons.length > 0) {
+    if (this.weaponDef?.gun && this.weapons.length > 0) {
+      // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
+      // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
+      // barrel tracks the cursor whichever way the body faces.
+      const aimAng = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
+      weaponAngle = Math.atan2(Math.sin(aimAng), Math.cos(aimAng) * this.facing);
+    } else if (this.weaponDef && this.weapons.length > 0) {
       const def = this.weaponDef;
       // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
       const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
@@ -376,6 +394,16 @@ export class SpriteRig {
       const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation = weaponAngle + off;
+    }
+
+    // §5 jump hop: after every part is positioned, lift the whole rig's ART up the arc. Feet lift most
+    // (they leave the ground), so the silhouette reads as "off the ground" rather than just sliding up.
+    if (this.hopPx > 0.01) {
+      const lift = this.hopPx;
+      for (const p of this.parts) p.y -= lift;
+      for (const w of this.weapons) w.img.y -= lift;
+      // A touch of squash relief at the apex sells the leap (body stretches up slightly mid-air).
+      this.body.scaleY *= 1 + Math.min(0.12, lift / 300);
     }
   }
 }

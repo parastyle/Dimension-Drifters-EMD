@@ -22,6 +22,10 @@ export class PlayerState extends Schema {
   /** §7 chosen CHARACTER skin (keys the sprite manifest) — cosmetic; cycled with the C key. Synced so
    *  teammates see who you're playing. Defaults to the Drifter. */
   @type("string") character = "drifter";
+  /** §9 aim direction (radians, atan2 of the cursor aim) — synced so EVERY client can point a player's
+   *  held GUN barrel + render their shots along their real aim. The local player uses its own live cursor;
+   *  this drives remote players' gun pose. Updated server-side from the aim each shot. */
+  @type("number") aimDir = 0;
   /** §12 leveling (synced for the HUD). XP is squad-shared, so all players level in lockstep. */
   @type("number") level = 1;
   /** Current XP toward the next level. */
@@ -45,6 +49,12 @@ export class PlayerState extends Schema {
   /** §13 salvage-bag stub: count of weapons salvaged (hold-drop). The real parts economy (§13) isn't
    *  built yet — this just tallies + drives the HUD readout so the hold-to-salvage action has feedback. */
   @type("number") salvaged = 0;
+  /** §5 jump: seconds of HOP airtime remaining (0 = grounded). Synced so every client renders the hop +
+   *  the server gates pit-falling on it (§17 — airborne clears gaps). */
+  @type("number") airborne = 0;
+  /** §17 pit fall: increments each time this player falls into a pit. Synced ONLY as a client VFX trigger
+   *  (dust poof + a local red flash) — the fall's damage/reposition is applied server-authoritatively. */
+  @type("number") fellSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -106,6 +116,17 @@ export class ArenaState extends Schema {
   @type({ map: PickupState }) pickups = new MapSchema<PickupState>();
   @type({ map: ProjectileState }) projectiles = new MapSchema<ProjectileState>();
   @type({ map: ZoneState }) zones = new MapSchema<ZoneState>();
+  /**
+   * §17 procedural arena seeds. The server mints these ONCE at room create (server-side `Math.random`)
+   * and syncs them; every client feeds the same four into the shared `generateArena` (mapgen.ts) and
+   * reproduces a byte-identical map locally — no tile streaming. Four independent streams so tuning one
+   * pass (terrain shape vs hazard placement vs theme vs decor) doesn't reshuffle the others. All 0 until
+   * the server seeds them (0 = "no map yet" — a client treats that as the empty open arena).
+   */
+  @type("number") seedTerrain = 0;
+  @type("number") seedHazard = 0;
+  @type("number") seedTheme = 0;
+  @type("number") seedDecor = 0;
   /** Run time in seconds — drives spawn escalation (§6) and the HUD timer. */
   @type("number") elapsed = 0;
   /** "arena" (survival) | "training" (Testing Grounds — dummies + pickups, no spawns). */

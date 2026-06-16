@@ -21,6 +21,12 @@ app.commandLine.appendSwitch("disable-renderer-backgrounding");
 app.commandLine.appendSwitch("disable-background-timer-throttling");
 app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
 
+// Opt-in CDP endpoint for the tools/cdp-*.cjs verification harness (drives the live game via
+// window.ddGame). OFF unless DD_DEBUG_PORT is set, so the shipped runtime never exposes a debug port.
+if (process.env.DD_DEBUG_PORT) {
+  app.commandLine.appendSwitch("remote-debugging-port", process.env.DD_DEBUG_PORT);
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,

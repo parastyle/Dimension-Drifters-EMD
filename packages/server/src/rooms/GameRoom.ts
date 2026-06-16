@@ -1,6 +1,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  type ArenaMap,
   ArenaState,
   ATTRS,
   type Attr,
@@ -20,7 +21,12 @@ import {
   effectiveDamageMult,
   enemyHpScale,
   FISTS_WEAPON,
+  generateArena,
+  gunMuzzleReach,
   inMeleeArc,
+  isPitAtPx,
+  JUMP_AIRTIME,
+  JUMP_COOLDOWN,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
@@ -29,6 +35,7 @@ import {
   MAX_PLAYERS,
   MOVE_SPEED,
   type MoveInput,
+  nearestGroundPx,
   nearestPoint,
   nextCharacter,
   nextWeapon,
@@ -37,6 +44,8 @@ import {
   PARRY_KNOCKBACK,
   PARRY_RADIUS,
   PICKUP_RADIUS,
+  PIT_FALL_DAMAGE_FRAC,
+  PIT_FALL_GRACE,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -48,6 +57,7 @@ import {
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
   RESPAWN_SECONDS,
+  randomSeed,
   resolveBodyCollisions,
   SPAWN_RING,
   selectChainTargets,
@@ -61,6 +71,7 @@ import {
   TOUGH_XP_MULT,
   toughChance,
   type Vec2,
+  validateArena,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
@@ -100,6 +111,15 @@ interface CombatState {
   reloadCd: number;
   /** Last equipped weapon id — detect a swap to (re)initialise charges. */
   lastWeapon: string;
+  /** §5 jump cooldown, sec (so the hop isn't spammable). */
+  jumpCd: number;
+  /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
+   *  tick the player stands on solid ground. */
+  lastGroundX: number;
+  lastGroundY: number;
+  /** §17 post-fall grace, sec: i-frames + a window where the player won't re-fall (so a pit isn't a death
+   *  spiral or a landing-gank). */
+  pitGrace: number;
 }
 
 /**
@@ -153,6 +173,10 @@ export class GameRoom extends Room<ArenaState> {
   private projectileSeq = 0;
   private zoneSeq = 0;
   private pickupSeq = 0;
+  /** §17 the procedurally generated arena for this room — minted once at create from the seeds synced on
+   *  ArenaState, so the server holds the authoritative tile grid (pit collision/fall handling, §17 Phase 1).
+   *  Clients reproduce the identical map from the same seeds. */
+  private map!: ArenaMap;
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
   private bossSpawned = false;
   private bossId: string | null = null;
@@ -165,6 +189,23 @@ export class GameRoom extends Room<ArenaState> {
 
   override onCreate(): void {
     this.setState(new ArenaState());
+
+    // §17 mint the procedural arena ONCE. The four seeds are synced on ArenaState so every client feeds
+    // them to the same shared `generateArena` and reproduces a byte-identical map — no tile streaming.
+    this.state.seedTerrain = randomSeed();
+    this.state.seedHazard = randomSeed();
+    this.state.seedTheme = randomSeed();
+    this.state.seedDecor = randomSeed();
+    this.map = generateArena({
+      seedTerrain: this.state.seedTerrain,
+      seedHazard: this.state.seedHazard,
+      seedTheme: this.state.seedTheme,
+      seedDecor: this.state.seedDecor,
+    });
+    // The generator guarantees a connected, spawn-clear map; assert it (cheap) so a future regression
+    // surfaces loudly instead of shipping an unplayable arena.
+    const v = validateArena(this.map);
+    if (!v.ok) console.error(`[room ${this.roomId}] mapgen produced an invalid arena: ${v.reason}`);
 
     this.onMessage("input", (client, message: MoveInput) => {
       // Trust nothing off the wire; coerce to finite numbers. stepPlayerMovement
@@ -195,6 +236,8 @@ export class GameRoom extends Room<ArenaState> {
           c.aimX = 1;
           c.aimY = 0;
         }
+        // §9 sync the aim angle so other clients can point this player's held gun + bullets at their cursor.
+        if (player) player.aimDir = Math.atan2(c.aimY, c.aimX);
         // Cursor world target (defaults to just ahead of the player along aim).
         c.targetX = Number.isFinite(message?.tx)
           ? (message.tx as number)
@@ -275,6 +318,43 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       player.salvaged += 1;
       player.weapon = FISTS_WEAPON;
+    });
+
+    // §13 R-TAP near a ground weapon = GRAB it (the client only sends this when a pickup is in reach).
+    // Equips the nearest pickup; player drops (`drop*`) are consumed on grab, the Testing-Grounds gallery
+    // (`pk*`) persists so you can keep swapping.
+    this.onMessage("grabWeapon", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      let best: PickupState | null = null;
+      let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
+      this.state.pickups.forEach((pk, pid) => {
+        if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
+        const d = (pk.x - player.x) ** 2 + (pk.y - player.y) ** 2;
+        if (d <= bestD) {
+          bestD = d;
+          best = pk;
+        }
+      });
+      if (!best) return;
+      const grabbed = best as PickupState;
+      player.weapon = grabbed.weapon;
+      if (grabbed.id.startsWith("drop")) {
+        this.state.pickups.delete(grabbed.id);
+        this.pickupGrace.delete(grabbed.id);
+      }
+    });
+
+    // §5 JUMP (Spacebar) — a low all-class traversal HOP, then a cooldown so it isn't spammable. PURE
+    // movement, NOT a dodge (no i-frames — the parry stays the defensive tool). The §17 pitfall layer reads
+    // `airborne` to let a hopping player clear a gap.
+    this.onMessage("jump", (client) => {
+      const player = this.state.players.get(client.sessionId);
+      const c = this.combat.get(client.sessionId);
+      if (!player?.alive || player.flexPending > 0 || !c) return;
+      if (c.jumpCd > 0 || player.airborne > 0) return;
+      player.airborne = JUMP_AIRTIME;
+      c.jumpCd = JUMP_COOLDOWN;
     });
 
     // Toggle the Testing Grounds (§21): stop spawns, swap the swarm for dummies + weapon pickups.
@@ -394,8 +474,8 @@ export class GameRoom extends Room<ArenaState> {
       player.maxHp = PLAYER_MAX_HP;
       player.alive = true;
       player.hp = player.maxHp;
-      player.x = ARENA_WIDTH / 2 + (Math.random() * 200 - 100);
-      player.y = ARENA_HEIGHT / 2 + (Math.random() * 200 - 100);
+      player.x = this.map.spawnX + (Math.random() * 200 - 100);
+      player.y = this.map.spawnY + (Math.random() * 200 - 100);
       const c = this.combat.get(id);
       if (c) {
         c.respawn = 0;
@@ -483,9 +563,10 @@ export class GameRoom extends Room<ArenaState> {
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
-    // Spawn near arena center with a little scatter so blobs don't perfectly overlap.
-    player.x = ARENA_WIDTH / 2 + (Math.random() * 200 - 100);
-    player.y = ARENA_HEIGHT / 2 + (Math.random() * 200 - 100);
+    // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
+    // (±100px stays inside the cleared centre, never over a pit).
+    player.x = this.map.spawnX + (Math.random() * 200 - 100);
+    player.y = this.map.spawnY + (Math.random() * 200 - 100);
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, { dx: 0, dy: 0 });
@@ -501,6 +582,10 @@ export class GameRoom extends Room<ArenaState> {
       parryCd: 0,
       reloadCd: 0,
       lastWeapon: "",
+      jumpCd: 0,
+      lastGroundX: player.x,
+      lastGroundY: player.y,
+      pitGrace: 0,
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
@@ -552,6 +637,36 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
+    // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
+    // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
+    // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
+    this.state.players.forEach((player, id) => {
+      if (!player.alive || player.flexPending > 0) return;
+      const c = this.combat.get(id);
+      if (!c) return;
+      if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
+      if (player.airborne > 0) return; // the hop carries you over
+      const overPit = isPitAtPx(this.map, player.x, player.y);
+      if (!overPit) {
+        c.lastGroundX = player.x; // standing on solid ground → remember it
+        c.lastGroundY = player.y;
+        return;
+      }
+      if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
+      // FALL.
+      player.hp = Math.max(0, player.hp - player.maxHp * PIT_FALL_DAMAGE_FRAC);
+      const safe = isPitAtPx(this.map, c.lastGroundX, c.lastGroundY)
+        ? nearestGroundPx(this.map, player.x, player.y)
+        : { x: c.lastGroundX, y: c.lastGroundY };
+      player.x = safe.x;
+      player.y = safe.y;
+      c.lastGroundX = safe.x;
+      c.lastGroundY = safe.y;
+      c.pitGrace = PIT_FALL_GRACE;
+      c.invuln = Math.max(c.invuln, PIT_FALL_GRACE); // brief mercy on landing
+      player.fellSeq++;
+    });
+
     // 3. Run clock + spawn director (§6) — survival mode only. `bodies` = living players.
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
@@ -565,29 +680,13 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
 
-    // 3b. Walk over a weapon pickup to equip it (BOTH modes — §13/§21). The Testing-Grounds GALLERY
-    // pickups (`pk*`) PERSIST so you can keep cycling; player/enemy DROPS (`drop*`) are CONSUMED on grab
-    // and honour their grace window (a just-dropped weapon can't snap straight back to the dropper).
+    // 3b. Pickups are grabbed with the R key now (§13 `grabWeapon`), not walk-over — here we just age the
+    // per-DROP grace window (a just-dropped weapon can't be re-grabbed until it expires).
     for (const [pid, t] of this.pickupGrace) {
       const left = t - dt;
       if (left <= 0 || !this.state.pickups.has(pid)) this.pickupGrace.delete(pid);
       else this.pickupGrace.set(pid, left);
     }
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      this.state.pickups.forEach((pk, pid) => {
-        if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
-        const dx = pk.x - player.x;
-        const dy = pk.y - player.y;
-        if (dx * dx + dy * dy <= PICKUP_RADIUS * PICKUP_RADIUS) {
-          player.weapon = pk.weapon;
-          if (pid.startsWith("drop")) {
-            this.state.pickups.delete(pid); // a dropped weapon is consumed on grab; the gallery isn't
-            this.pickupGrace.delete(pid);
-          }
-        }
-      });
-    });
 
     // 4. Resolve attacks (cooldown-gated). Melee weapons swing; thrown weapons hurl a charge.
     this.state.players.forEach((player, id) => {
@@ -599,6 +698,8 @@ export class GameRoom extends Room<ArenaState> {
       c.cd = Math.max(-dt, c.cd - dt);
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
+      c.jumpCd = Math.max(0, c.jumpCd - dt);
+      player.airborne = Math.max(0, player.airborne - dt); // §5 jump hop airtime
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
@@ -677,6 +778,17 @@ export class GameRoom extends Room<ArenaState> {
     // players (one-way — players stay authoritative). Stops the horde stacking on the spawn.
     this.resolveEnemyCollisions();
 
+    // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. This is
+    // the "hazards hurt everything" rule (§17): kite the horde into a pit, or knock one in with a parry
+    // (the knockback shoves it over the edge) = an instant kill. The boss is pit-immune. No XP — terrain
+    // kills are free crowd control, not score.
+    const fellIn: string[] = [];
+    this.state.enemies.forEach((enemy, eid) => {
+      if (eid === this.bossId) return;
+      if (isPitAtPx(this.map, enemy.x, enemy.y)) fellIn.push(eid);
+    });
+    for (const eid of fellIn) this.state.enemies.delete(eid);
+
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
       const kind = ENEMY_KINDS[enemy.kind];
@@ -709,8 +821,8 @@ export class GameRoom extends Room<ArenaState> {
         if (c.respawn <= 0) {
           player.alive = true;
           player.hp = player.maxHp;
-          player.x = ARENA_WIDTH / 2;
-          player.y = ARENA_HEIGHT / 2;
+          player.x = this.map.spawnX;
+          player.y = this.map.spawnY;
           // Clear the pile that coalesced on the spawn point so respawn isn't instant death.
           this.clearEnemiesNear(player.x, player.y, RESPAWN_CLEAR_RADIUS);
         }
@@ -966,6 +1078,10 @@ export class GameRoom extends Room<ArenaState> {
     const spread = g.spread ?? 0;
     const baseAng = Math.atan2(c.aimY, c.aimX);
     const ttl = g.range / g.projectileSpeed;
+    // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body.
+    const reach = gunMuzzleReach(weapon);
+    const mx = player.x + c.aimX * reach;
+    const my = player.y + c.aimY * reach;
     for (let i = 0; i < pellets; i++) {
       // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
       const ang =
@@ -973,8 +1089,8 @@ export class GameRoom extends Room<ArenaState> {
           ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
           : baseAng + (Math.random() - 0.5) * 2 * spread;
       this.fireProjectile(
-        { x: player.x, y: player.y },
-        { x: player.x + Math.cos(ang), y: player.y + Math.sin(ang) },
+        { x: mx, y: my },
+        { x: mx + Math.cos(ang), y: my + Math.sin(ang) },
         g.projectileSpeed,
         dmg,
         false,
@@ -1328,8 +1444,17 @@ export class GameRoom extends Room<ArenaState> {
       kind.archetype !== "swarm" && Math.random() < toughChance(this.state.elapsed, players);
     // §6: spongier with more players (equalises death rate vs combined DPS). 1.0 solo.
     enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
-    enemy.x = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
-    enemy.y = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
+    const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
+    const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
+    // §17 don't spawn an enemy on a pit (it would instantly fall in) — nudge to the nearest solid tile.
+    if (isPitAtPx(this.map, ex, ey)) {
+      const g = nearestGroundPx(this.map, ex, ey);
+      enemy.x = g.x;
+      enemy.y = g.y;
+    } else {
+      enemy.x = ex;
+      enemy.y = ey;
+    }
     this.state.enemies.set(enemy.id, enemy);
   }
 

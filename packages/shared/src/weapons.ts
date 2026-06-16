@@ -223,6 +223,17 @@ export interface WeaponDef {
 /** Damage-scaling letter grade (§10). */
 export type Grade = "S" | "A" | "B" | "C" | "D" | "E";
 
+/** §9 GUN barrel-tip reach: distance (px) from the player CENTRE to a held gun's MUZZLE along the aim,
+ *  derived from each gun's OWN held geometry — the gun pivots at `gripFrac` of its `displayLength` and the
+ *  barrel extends past the grip, plus the front hand sits a little forward. So bullets + the muzzle flash
+ *  always leave the BARREL TIP (not the body), and a longer gun muzzles further out automatically. Server
+ *  (bullet spawn) + client (muzzle flash) both call this so the shot + flash coincide. */
+export const GUN_HAND_FORWARD = 12;
+export function gunMuzzleReach(weapon: WeaponDef | undefined): number {
+  if (!weapon) return GUN_HAND_FORWARD;
+  return GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength;
+}
+
 /** Per-point damage multiplier contributed by each grade (tuning; B = the legacy 0.06/pt). */
 export const GRADE_DMG_COEFF: Record<Grade, number> = {
   S: 0.1,
