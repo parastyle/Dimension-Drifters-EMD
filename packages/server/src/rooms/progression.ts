@@ -6,6 +6,7 @@ import {
   M0_CLASS_ATTR,
   M0_REQ_ATTR,
   type PlayerState,
+  SIGNATURE_INTERVAL,
   xpToNextLevel,
 } from "@dd/shared";
 
@@ -23,10 +24,11 @@ export function allocate(player: PlayerState, attr: Attr, n: number): void {
   if (player.maxHp > prevMax) player.hp += player.maxHp - prevMax; // gain the new HP immediately
 }
 
-/** Consume one pending flex point; close the window (or refresh its timer) accordingly. */
+/** Consume one pending flex point; close the window (or refresh its timer) accordingly. The window stays
+ *  open while a §8 signature augment pick is ALSO owed, so the timer doesn't expire between picks. */
 export function consumeFlex(player: PlayerState): void {
   player.flexPending = Math.max(0, player.flexPending - 1);
-  player.flexTimer = player.flexPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
+  player.flexTimer = player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
 }
 
 /** Add XP to one player; each level reached (capped at 30) grants the §12 3-point allocation. */
@@ -40,6 +42,9 @@ export function levelUpPlayer(player: PlayerState, amount: number): void {
     allocate(player, M0_CLASS_ATTR, 1);
     allocate(player, M0_REQ_ATTR, 1);
     player.flexPending += 1;
+    // §8 every 5th level ALSO grants a signature pick (an augment draft) — same window. The offer CSV is
+    // rolled server-side once the window is open (GameRoom.openSigOffers).
+    if (player.level % SIGNATURE_INTERVAL === 0) player.sigPending += 1;
     player.flexTimer = LEVELUP_WINDOW_SECONDS; // open/refresh the invincible pick window
     player.xpToNext = xpToNextLevel(player.level);
   }

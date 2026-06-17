@@ -43,6 +43,14 @@ export class PlayerState extends Schema {
   @type("number") flexPending = 0;
   /** Seconds left in the current level-up window (counts down from LEVELUP_WINDOW_SECONDS). */
   @type("number") flexTimer = 0;
+  /** §8 owned parry augments — CSV of augment ids (repeats = stacks). Drives the parry handler's offense
+   *  (server) + the owned-augment HUD (client). */
+  @type("string") augments = "";
+  /** §8/§12 signature picks owed (one per 5th level). While > 0 the level-up window stays open offering
+   *  an augment draft; the player is frozen + immune just like the flex-point pick. */
+  @type("number") sigPending = 0;
+  /** §8 the current 3-of-9 augment DRAFT offered for the open signature pick — CSV of augment ids. */
+  @type("string") sigOffer = "";
   /** Thrown-weapon charges remaining + max (§9/§10 charge readout). 0/0 = not a thrown weapon. */
   @type("number") charges = 0;
   @type("number") maxCharges = 0;
@@ -69,6 +77,9 @@ export class EnemyState extends Schema {
   @type("boolean") tough = false;
   /** §15 duelist combo: increments on each melee swing so the client triggers a swing animation. */
   @type("number") atkSeq = 0;
+  /** §8 Brand augment: seconds remaining as Marked — takes ×BRAND_DAMAGE_MULT from all sources. Synced so
+   *  the client can tint the marked enemy. 0 = not branded. */
+  @type("number") branded = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

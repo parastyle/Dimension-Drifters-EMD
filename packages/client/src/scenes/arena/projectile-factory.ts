@@ -107,6 +107,23 @@ export function makeMagma(
   return c;
 }
 
+/** §8 Counterblade parry projectile — a cyan blade-streak (velocity-aligned hot capsule + white core)
+ *  so the parry's riposte reads distinct from gun bullets / enemy spit. */
+export function makeCounter(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number },
+): Phaser.GameObjects.Container {
+  const ang = Math.atan2(pr.vy, pr.vx);
+  const ADD = Phaser.BlendModes.ADD;
+  const trail = scene.add
+    .ellipse(-Math.cos(ang) * 12, -Math.sin(ang) * 12, 30, 7, 0x6fe6ff, 0.5)
+    .setRotation(ang)
+    .setBlendMode(ADD);
+  const blade = scene.add.rectangle(0, 0, 22, 4, 0x9cf3ff).setRotation(ang).setBlendMode(ADD);
+  const core = scene.add.circle(0, 0, 2.4, 0xffffff).setBlendMode(ADD);
+  return scene.add.container(pr.x, pr.y, [trail, blade, core]).setDepth(99000);
+}
+
 /** §9 GUN bullet — a distinct in-flight look per `bulletKind` (slug/pellet/tracer/nail/ricochet): a
  *  velocity-aligned additive trail + a hot core (or a metallic dart for nails, an electric ring for
  *  ricochets). Server-authoritative (the bullet you see is the bullet that hits, §14 WYSIWYG). */

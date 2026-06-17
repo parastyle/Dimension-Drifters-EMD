@@ -3,16 +3,30 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   ArenaState,
+  AUG_PROJECTILE_DAMAGE,
+  AUG_PROJECTILE_PIERCE,
+  AUG_PROJECTILE_SPEED,
+  AUG_PROJECTILE_SPREAD,
   BOSS_SPAWN_SECONDS,
+  BRAND_DAMAGE_MULT,
+  BRAND_DURATION,
+  BULWARK_SHIELD,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  CONFLAG_DELAY,
   clamp,
   clampQuakeEpicenter,
   coneAngles,
+  countAugment,
   DEFAULT_WEAPON,
   DROP_GRACE_SECONDS,
   DUMMY_HP,
   deriveStats,
+  draftAugments,
+  EMBERGUARD_BASE_DMG,
+  EMBERGUARD_HALF_ARC,
+  EMBERGUARD_PER_INT,
+  EMBERGUARD_RANGE,
   ENEMY_KINDS,
   ENEMY_RADIUS,
   EnemyState,
@@ -22,11 +36,18 @@ import {
   FISTS_WEAPON,
   generateArena,
   gunMuzzleReach,
+  HAIRTRIGGER_MAX,
+  HAIRTRIGGER_WINDOW,
+  hasAugment,
+  IRON_STANCE_IFRAME_PER,
+  IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
   isAttr,
+  isAugment,
   isPitAtPx,
   JUMP_AIRTIME,
   JUMP_COOLDOWN,
+  LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
   MAP_POI_RADIUS,
   MAX_ENEMIES,
@@ -59,6 +80,8 @@ import {
   randomSeed,
   resolveBodyCollisions,
   resolvePoiCollision,
+  SECOND_WIND_BASE,
+  SECOND_WIND_PER_CON,
   SPAWN_RING,
   safeSpawnPos,
   selectChainTargets,
@@ -122,6 +145,10 @@ interface CombatState {
   /** §17 post-fall grace, sec: i-frames + a window where the player won't re-fall (so a pit isn't a death
    *  spiral or a landing-gank). */
   pitGrace: number;
+  /** §8 Hair-Trigger augment: consecutive-parry streak (each parry within HAIRTRIGGER_WINDOW adds one). */
+  hairStreak: number;
+  /** §8 Hair-Trigger: run-elapsed (sec) of the last parry, for the streak window. */
+  lastParryAt: number;
 }
 
 /**
@@ -169,6 +196,16 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
+  /** §8 Conflagration: pending deferred Emberguard re-pulses (the "burning zone" POC). Each fires one more
+   *  fire-wave cone once `state.elapsed >= at`. Processed + pruned each tick. */
+  private readonly burnPulses: {
+    x: number;
+    y: number;
+    aimX: number;
+    aimY: number;
+    dmg: number;
+    at: number;
+  }[] = [];
   /** Spawn-director accumulator + monotonic enemy/projectile/zone/pickup id counters. */
   private spawnAccum = 0;
   private enemySeq = 0;
@@ -250,14 +287,18 @@ export class GameRoom extends Room<ArenaState> {
       },
     );
 
-    // LMB = the melee Parry signature (§7/§8). Base effect: brief i-frames + knockback. (No
-    // telegraphed enemy attacks yet, so it's a defensive button; augments/white-tells come later.)
+    // LMB = the melee Parry signature (§7/§8). Base effect: brief i-frames + knockback; ALL offense comes
+    // from the §8 augment pool (applied below). (No telegraphed enemy attacks yet, so it's a defensive
+    // button + augment offense; the white-tell parry-this-attack layer comes later.)
     this.onMessage("parry", (client) => {
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || !c || c.parryCd > 0) return;
-      c.invuln = PARRY_IFRAMES;
+      // §8 Iron Stance (stacks): wider i-frame window + bigger knockback.
+      const iron = countAugment(player.augments, "iron-stance");
+      c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
       c.parryCd = PARRY_COOLDOWN;
+      const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
       const r2 = PARRY_RADIUS * PARRY_RADIUS;
       this.state.enemies.forEach((enemy) => {
         const dx = enemy.x - player.x;
@@ -265,18 +306,15 @@ export class GameRoom extends Room<ArenaState> {
         const d2 = dx * dx + dy * dy;
         if (d2 > 0 && d2 <= r2) {
           const d = Math.sqrt(d2);
-          enemy.x = clamp(
-            enemy.x + (dx / d) * PARRY_KNOCKBACK,
-            ENEMY_RADIUS,
-            ARENA_WIDTH - ENEMY_RADIUS,
-          );
+          enemy.x = clamp(enemy.x + (dx / d) * knockback, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
           enemy.y = clamp(
-            enemy.y + (dy / d) * PARRY_KNOCKBACK,
+            enemy.y + (dy / d) * knockback,
             ENEMY_RADIUS,
             ARENA_HEIGHT - ENEMY_RADIUS,
           );
         }
       });
+      this.applyParryAugments(player, c);
     });
 
     // Cycle to the next weapon in the roster (§9 arsenal — POC keyboard cycle).
@@ -353,7 +391,7 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("jump", (client) => {
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
-      if (!player?.alive || player.flexPending > 0 || !c) return;
+      if (!player?.alive || this.inLevelWindow(player) || !c) return;
       if (c.jumpCd > 0 || player.airborne > 0) return;
       player.airborne = JUMP_AIRTIME;
       c.jumpCd = JUMP_COOLDOWN;
@@ -384,6 +422,21 @@ export class GameRoom extends Room<ArenaState> {
       if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
       allocate(player, attr, 1);
       consumeFlex(player);
+    });
+
+    // §8 signature pick: the player chooses one augment from the offered 3-of-9 draft.
+    this.onMessage("chooseAugment", (client, message: { id?: string }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player || player.sigPending <= 0) return;
+      const id = message?.id;
+      if (!isAugment(id)) return; // valid augment id…
+      if (!player.sigOffer.split(",").includes(id)) return; // …AND one actually offered this pick
+      player.augments = player.augments ? `${player.augments},${id}` : id;
+      player.sigPending = Math.max(0, player.sigPending - 1);
+      player.sigOffer = ""; // re-rolled next tick by tickLevelWindows if more picks remain
+      // Keep the window open + timer alive if anything's still owed (flex or another sig pick).
+      player.flexTimer =
+        player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
     });
 
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
@@ -473,6 +526,10 @@ export class GameRoom extends Room<ArenaState> {
       player.luk = 1;
       player.flexPending = 0;
       player.flexTimer = 0;
+      // §8 augments are PER-RUN — clear the parry build on a fresh run.
+      player.augments = "";
+      player.sigPending = 0;
+      player.sigOffer = "";
       player.maxHp = PLAYER_MAX_HP;
       player.alive = true;
       player.hp = player.maxHp;
@@ -485,8 +542,11 @@ export class GameRoom extends Room<ArenaState> {
         c.attacking = false;
         c.reloadCd = 0;
         c.lastWeapon = ""; // forces charge re-init next tick
+        c.hairStreak = 0;
+        c.lastParryAt = -999;
       }
     });
+    this.burnPulses.length = 0;
     console.log(`[room ${this.roomId}] run restarted`);
   }
 
@@ -588,6 +648,8 @@ export class GameRoom extends Room<ArenaState> {
       lastGroundX: player.x,
       lastGroundY: player.y,
       pitGrace: 0,
+      hairStreak: 0,
+      lastParryAt: -999,
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
@@ -604,6 +666,12 @@ export class GameRoom extends Room<ArenaState> {
     console.log(`[room ${this.roomId}] -leave ${client.sessionId} (${this.clients.length} online)`);
   }
 
+  /** §12/§8 is the player in the invincible level-up window? True while EITHER a flex stat point OR a
+   *  signature augment pick is owed — both freeze + immune the player so they choose safely. */
+  private inLevelWindow(player: PlayerState): boolean {
+    return player.flexPending > 0 || player.sigPending > 0;
+  }
+
   private update(deltaMs: number): void {
     // Clamp the step so one GC/CPU stall can't produce a giant dt (point-sampled projectiles would
     // tunnel + enemies teleport). Cap at ~2.5 ticks; a longer stall is absorbed as a brief slow-mo.
@@ -612,7 +680,7 @@ export class GameRoom extends Room<ArenaState> {
     // 1. Integrate each LIVING player's authoritative movement from their latest input.
     //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
     this.state.players.forEach((player, id) => {
-      if (!player.alive || player.flexPending > 0) return;
+      if (!player.alive || this.inLevelWindow(player)) return;
       const input = this.inputs.get(id);
       if (!input) return;
       const next = stepPlayerMovement(player, input, dt, MOVE_SPEED);
@@ -651,7 +719,7 @@ export class GameRoom extends Room<ArenaState> {
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
     this.state.players.forEach((player, id) => {
-      if (!player.alive || player.flexPending > 0) return;
+      if (!player.alive || this.inLevelWindow(player)) return;
       const c = this.combat.get(id);
       if (!c) return;
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
@@ -723,7 +791,7 @@ export class GameRoom extends Room<ArenaState> {
         player.maxCharges = max;
       }
 
-      const canAct = player.alive && player.flexPending <= 0 && c.attacking && c.cd <= 0;
+      const canAct = player.alive && !this.inLevelWindow(player) && c.attacking && c.cd <= 0;
       if (weapon?.gun) {
         // §9 GUN: fire-rate-gated bullets that spend ammo; on empty, RELOAD (refill the magazine).
         if (player.charges <= 0 && c.reloadCd > 0) {
@@ -816,7 +884,7 @@ export class GameRoom extends Room<ArenaState> {
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
       this.state.players.forEach((player) => {
-        if (!player.alive || player.flexPending > 0) return; // invincible in the §12 level window
+        if (!player.alive || this.inLevelWindow(player)) return; // invincible in the §12 level window
         if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry i-frames
         const reach = kind.radius + PLAYER_RADIUS;
         const dx = enemy.x - player.x;
@@ -851,7 +919,20 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
-    // 8. Tick the §12 level-up windows (auto-resolve a flex point if the 5s timer runs out).
+    // §8 Conflagration: fire any deferred burn re-pulses whose delay has elapsed (the "lingering" wave).
+    for (let i = this.burnPulses.length - 1; i >= 0; i--) {
+      const p = this.burnPulses[i];
+      if (p && this.state.elapsed >= p.at) {
+        this.emberguardWave(p.x, p.y, p.aimX, p.aimY, p.dmg);
+        this.burnPulses.splice(i, 1);
+      }
+    }
+    // §8 Brand: decay the Marked timer on every enemy.
+    this.state.enemies.forEach((enemy) => {
+      if (enemy.branded > 0) enemy.branded = Math.max(0, enemy.branded - dt);
+    });
+
+    // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
     this.tickLevelWindows(dt);
   }
 
@@ -862,7 +943,7 @@ export class GameRoom extends Room<ArenaState> {
     let xpGained = 0;
     const hit = (enemy: EnemyState, eid: string, dmg: number): void => {
       if (kills.has(eid)) return;
-      enemy.hp -= dmg;
+      enemy.hp -= dmg * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1); // §8 Brand: Marked enemies take more
       if (enemy.hp <= 0) {
         // Dummies persist — reset HP instead of dying so you can keep testing on them.
         if (enemy.kind === "dummy") enemy.hp = DUMMY_HP;
@@ -955,15 +1036,30 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  /** §12 window: count down each open pick; on timeout auto-spend the flex into the class attr. */
+  /** §12/§8 window: roll the augment draft when a signature pick opens, count down the shared timer, and on
+   *  timeout auto-resolve the pending pick(s) — a flex point → the class attr, a signature pick → the first
+   *  offered augment ("pick in time or you exit it"; you never lose the pick). */
   private tickLevelWindows(dt: number): void {
     this.state.players.forEach((player) => {
-      if (player.flexPending <= 0) return;
-      player.flexTimer -= dt;
-      if (player.flexTimer <= 0) {
-        allocate(player, M0_CLASS_ATTR, 1); // "pick in time or you exit it" → default to class
-        consumeFlex(player);
+      // Open the augment draft for any signature pick that doesn't have one yet (server-authoritative roll).
+      if (player.sigPending > 0 && !player.sigOffer) {
+        player.sigOffer = draftAugments(Math.random).join(",");
       }
+      if (!this.inLevelWindow(player)) return;
+      player.flexTimer -= dt;
+      if (player.flexTimer > 0) return;
+      // Timed out → auto-resolve one pending pick of each kind, then refresh/close the window.
+      if (player.flexPending > 0) {
+        allocate(player, M0_CLASS_ATTR, 1); // default the flex point to the class attr
+        player.flexPending = Math.max(0, player.flexPending - 1);
+      }
+      if (player.sigPending > 0) {
+        const first = player.sigOffer.split(",").filter(Boolean)[0];
+        if (first) player.augments = player.augments ? `${player.augments},${first}` : first;
+        player.sigPending = Math.max(0, player.sigPending - 1);
+        player.sigOffer = "";
+      }
+      player.flexTimer = this.inLevelWindow(player) ? LEVELUP_WINDOW_SECONDS : 0;
     });
   }
 
@@ -1150,6 +1246,23 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
+  /** Apply `raw` damage to one enemy, folding in the §8 Brand multiplier, then do the shared kill/XP/portal
+   *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
+   *  deletes after iterating). Returns XP earned (0 if it survived or was a dummy). The single damage
+   *  primitive so Brand + drops + XP stay consistent across every source (swing / blast / projectile / wave). */
+  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[]): number {
+    enemy.hp -= raw * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1);
+    if (enemy.hp > 0) return 0;
+    if (enemy.kind === "dummy") {
+      enemy.hp = DUMMY_HP;
+      return 0;
+    }
+    if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
+    this.maybeDropWeapon(enemy); // §13 ronin sword drop
+    kills.push(eid);
+    return (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+  }
+
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
    *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
   private detonate(x: number, y: number, radius: number, damage: number): void {
@@ -1160,20 +1273,91 @@ export class GameRoom extends Room<ArenaState> {
       const dx = enemy.x - x;
       const dy = enemy.y - y;
       if (dx * dx + dy * dy > r2) return;
-      enemy.hp -= damage;
-      if (enemy.hp <= 0) {
-        if (enemy.kind === "dummy") {
-          enemy.hp = DUMMY_HP;
-        } else {
-          if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
-          xpGained += (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
-          this.maybeDropWeapon(enemy); // §13 ronin sword drop
-          kills.push(eid);
-        }
+      xpGained += this.damageEnemy(enemy, eid, damage, kills);
+    });
+    for (const eid of kills) this.state.enemies.delete(eid);
+    if (xpGained > 0) this.grantXp(xpGained);
+  }
+
+  /** §8 Emberguard fire wave — a cone of fire in front of `aim` (origin at the player), `dmg` to each enemy
+   *  inside, kill bookkeeping via `damageEnemy`. The shared primitive for the on-parry wave AND the
+   *  Conflagration re-pulse. */
+  private emberguardWave(x: number, y: number, aimX: number, aimY: number, dmg: number): void {
+    const kills: string[] = [];
+    let xpGained = 0;
+    this.state.enemies.forEach((enemy, eid) => {
+      if (inMeleeArc({ x, y }, aimX, aimY, enemy, EMBERGUARD_RANGE, EMBERGUARD_HALF_ARC)) {
+        xpGained += this.damageEnemy(enemy, eid, dmg, kills);
       }
     });
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
+  }
+
+  /** §8 apply the player's owned parry AUGMENTS on a successful parry (Iron Stance is handled at the call
+   *  site since it scales the base i-frames/knockback). Each augment is small + stacks; the pool builds a
+   *  custom parry per run. Offense here is server-authoritative (the client renders off the synced effects). */
+  private applyParryAugments(player: PlayerState, c: CombatState): void {
+    const owned = player.augments;
+    if (!owned) return;
+    const now = this.state.elapsed;
+
+    // Aegis — Second Wind (stacks): heal a CON-scaled sliver. Bulwark: a brief absorb shield.
+    const sw = countAugment(owned, "second-wind");
+    if (sw > 0) {
+      const heal = sw * (SECOND_WIND_BASE + SECOND_WIND_PER_CON * Math.max(0, player.con - 1));
+      player.hp = Math.min(player.maxHp, player.hp + heal);
+    }
+    // Bulwark POC: a 1.5s absorb modelled as extended i-frames (full negate for the window). A true
+    // absorb-amount shield is a polish follow-up.
+    if (hasAugment(owned, "bulwark")) c.invuln = Math.max(c.invuln, BULWARK_SHIELD);
+
+    // Riposte — Counterblade + Twin Fang (each = +1 projectile) + Hair-Trigger (consecutive parries add one).
+    let projectiles = countAugment(owned, "counterblade") + countAugment(owned, "twin-fang");
+    if (hasAugment(owned, "hair-trigger")) {
+      c.hairStreak =
+        now - c.lastParryAt <= HAIRTRIGGER_WINDOW ? Math.min(HAIRTRIGGER_MAX, c.hairStreak + 1) : 1;
+      projectiles += c.hairStreak;
+    }
+    c.lastParryAt = now;
+    if (projectiles > 0) {
+      const baseAng = Math.atan2(c.aimY, c.aimX);
+      for (const ang of coneAngles(baseAng, projectiles, AUG_PROJECTILE_SPREAD)) {
+        this.fireProjectile(
+          { x: player.x, y: player.y },
+          { x: player.x + Math.cos(ang), y: player.y + Math.sin(ang) },
+          AUG_PROJECTILE_SPEED,
+          AUG_PROJECTILE_DAMAGE,
+          false,
+          "counter",
+          AUG_PROJECTILE_PIERCE,
+        );
+      }
+    }
+
+    // Hex — Brand (mark nearby enemies), Emberguard (fire wave), Conflagration (a deferred re-pulse).
+    if (hasAugment(owned, "brand")) {
+      const r2 = PARRY_RADIUS * PARRY_RADIUS;
+      this.state.enemies.forEach((enemy) => {
+        const dx = enemy.x - player.x;
+        const dy = enemy.y - player.y;
+        if (dx * dx + dy * dy <= r2) enemy.branded = BRAND_DURATION;
+      });
+    }
+    if (hasAugment(owned, "emberguard")) {
+      const dmg = EMBERGUARD_BASE_DMG + EMBERGUARD_PER_INT * Math.max(0, player.int - 1);
+      this.emberguardWave(player.x, player.y, c.aimX, c.aimY, dmg);
+      if (hasAugment(owned, "conflagration")) {
+        this.burnPulses.push({
+          x: player.x,
+          y: player.y,
+          aimX: c.aimX,
+          aimY: c.aimY,
+          dmg,
+          at: now + CONFLAG_DELAY,
+        });
+      }
+    }
   }
 
   /** §15 duelists (ronin): close to `melee.approach`, telegraph `windup`, then swing `hits` times (each
@@ -1243,7 +1427,7 @@ export class GameRoom extends Room<ArenaState> {
     const aimY = target ? target.y - enemy.y : 0;
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
     this.state.players.forEach((player) => {
-      if (!player.alive || player.flexPending > 0) return;
+      if (!player.alive || this.inLevelWindow(player)) return;
       if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry i-frames dodge it
       if (inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) {
         player.hp -= m.damage * dmgMul;
@@ -1326,7 +1510,7 @@ export class GameRoom extends Room<ArenaState> {
       if (meta.hostile) {
         let hit = false;
         this.state.players.forEach((player) => {
-          if (hit || !player.alive || player.flexPending > 0) return;
+          if (hit || !player.alive || this.inLevelWindow(player)) return;
           if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry dodges it
           const reach = PROJECTILE_RADIUS + PLAYER_RADIUS;
           const dx = pr.x - player.x;
@@ -1349,7 +1533,7 @@ export class GameRoom extends Room<ArenaState> {
           if (dx * dx + dy * dy <= reach * reach) {
             meta.hit.add(eid);
             meta.pierce -= 1;
-            enemy.hp -= meta.damage;
+            enemy.hp -= meta.damage * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1); // §8 Brand
             if (enemy.hp <= 0) {
               if (enemy.kind === "dummy") enemy.hp = DUMMY_HP;
               else {
@@ -1420,7 +1604,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.players.forEach((player) => {
         // §8/§15: zoner puddles are UNPARRYABLE — only the §12 level-up invincibility skips them,
         // NOT parry i-frames. You must walk out of the puddle.
-        if (!player.alive || player.flexPending > 0) return;
+        if (!player.alive || this.inLevelWindow(player)) return;
         const dx = player.x - zone.x;
         const dy = player.y - zone.y;
         if (dx * dx + dy * dy <= r2) player.hp -= ZONE_DPS * dt;

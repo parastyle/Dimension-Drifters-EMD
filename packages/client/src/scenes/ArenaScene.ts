@@ -4,6 +4,7 @@ import {
   type ArenaMap,
   type ArenaState,
   type Attr,
+  AUGMENTS,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
@@ -12,11 +13,14 @@ import {
   DEFAULT_PORT,
   DEFAULT_WEAPON,
   damageMultFromGrades,
+  EMBERGUARD_HALF_ARC,
+  EMBERGUARD_RANGE,
   ENEMY_KINDS,
   EXTRACT_RADIUS,
   FISTS_WEAPON,
   generateArena,
   gunMuzzleReach,
+  hasAugment,
   inMeleeArc,
   isPitAtPx,
   JUMP_AIRTIME,
@@ -45,12 +49,13 @@ import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { POI_IDS } from "../sprites/poi-manifest.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
-import { buildCard, type Card, WEAPON_ACCENT } from "./arena/card-art.js";
+import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import { buildArenaFloor, buildPois, drawArena } from "./arena/floor-renderer.js";
 import {
   GUN_FX,
   makeBullet,
+  makeCounter,
   makeMagma,
   makeSpit,
   makeThrownCleaver,
@@ -121,6 +126,7 @@ export class ArenaScene extends Phaser.Scene {
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
   private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
+  private augmentText!: Phaser.GameObjects.Text;
   private modeText!: Phaser.GameObjects.Text;
   private hpBarBg!: Phaser.GameObjects.Rectangle;
   private hpBarFill!: Phaser.GameObjects.Rectangle;
@@ -321,6 +327,13 @@ export class ArenaScene extends Phaser.Scene {
     // Equipped-weapon readout (sits just above the HP bar).
     this.weaponText = this.add
       .text(0, 0, "", { fontSize: "13px", color: "#9cff3b", fontStyle: "bold" })
+      .setScrollFactor(0)
+      .setOrigin(0, 1)
+      .setDepth(100002);
+
+    // §8 owned parry-augment readout (sits just above the weapon readout).
+    this.augmentText = this.add
+      .text(0, 0, "", { fontSize: "12px", color: "#b07bd6", fontStyle: "bold" })
       .setScrollFactor(0)
       .setOrigin(0, 1)
       .setDepth(100002);
@@ -712,6 +725,7 @@ export class ArenaScene extends Phaser.Scene {
         aimDir: 0,
         isSelf: false,
       });
+      rig.setBranded((this.room?.state.enemies.get(id)?.branded ?? 0) > 0); // §8 Brand tint
       rig.setDepth(rig.y);
     }
   }
@@ -730,7 +744,9 @@ export class ArenaScene extends Phaser.Scene {
           ? makeThrownCleaver(this, pr)
           : pr.kind === "magma"
             ? makeMagma(this, pr)
-            : makeSpit(this, pr);
+            : pr.kind === "counter"
+              ? makeCounter(this, pr) // §8 Counterblade parry projectile
+              : makeSpit(this, pr);
       container.setData("kind", pr.kind);
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
@@ -922,18 +938,25 @@ export class ArenaScene extends Phaser.Scene {
     cam.shake(180, 0.006);
   }
 
-  /** §12 level-up window: when the local player has a flex point pending, show the attribute pick. */
+  /** §12/§8 level-up window: while the local player owes a FLEX stat point, show the attribute pick; once
+   *  that's spent but a SIGNATURE pick is still owed, show the §8 augment draft. Both freeze the player. */
   private updateLevelWindow(): void {
     if (!this.room) return;
     const self = this.room.state.players.get(this.room.sessionId);
-    const open = !!self && self.flexPending > 0;
-    const key = open ? `${self.level}:${self.flexPending}` : "";
+    const flex = !!self && self.flexPending > 0;
+    const sig = !!self && self.sigPending > 0 && !flex; // the augment pick follows the stat pick
+    const open = flex || sig;
+    const key =
+      open && self
+        ? `${self.level}:${flex ? "F" : "S"}:${self.flexPending}:${self.sigPending}:${self.sigOffer}`
+        : "";
     if (key !== this.levelWinKey) {
       this.levelWinKey = key;
       for (const o of this.levelWinObjects) o.destroy();
       this.levelWinObjects = [];
       this.levelWinTimerBar = undefined;
-      if (open && self) this.buildLevelWindow(self);
+      if (self && flex) this.buildLevelWindow(self);
+      else if (self && sig) this.buildAugmentWindow(self);
     }
     if (open && self && this.levelWinTimerBar) {
       this.levelWinTimerBar.width =
@@ -951,8 +974,15 @@ export class ArenaScene extends Phaser.Scene {
       luk: { name: "LUK", desc: "+ luck & rarity", color: 0xffd479 },
     };
 
-  /** Build the dim overlay + 5 attribute buttons for the §12 flex-point pick. */
-  private buildLevelWindow(self: PlayerState): void {
+  /** §8 augment flavor-tag → accent colour (riposte STR-orange · aegis CON-green · hex INT-purple). */
+  private static readonly AUG_TAG_COL: Record<string, number> = {
+    riposte: 0xff8a2b,
+    aegis: 0x9cff3b,
+    hex: 0xb07bd6,
+  };
+
+  /** The shared dim overlay + title + subtitle + countdown bar for either level-window mode. */
+  private buildLevelShell(self: PlayerState, sub: string): { cx: number; cy: number } {
     const cx = this.screenW() / 2;
     const cy = this.screenH() / 2;
     const dim = this.add
@@ -969,11 +999,8 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100011);
-    const sub = this.add
-      .text(cx, cy - 138, "+1 STR  +1 CON (auto) · spend your FLEX point", {
-        fontSize: "15px",
-        color: "#cfc8b6",
-      })
+    const subT = this.add
+      .text(cx, cy - 138, sub, { fontSize: "15px", color: "#cfc8b6" })
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100011);
@@ -987,8 +1014,65 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100012);
-    this.levelWinObjects.push(dim, title, sub, barBg, this.levelWinTimerBar);
+    this.levelWinObjects.push(dim, title, subT, barBg, this.levelWinTimerBar);
+    return { cx, cy };
+  }
 
+  /** §8 build the dim overlay + 3 augment cards for the signature draft (every 5th level). */
+  private buildAugmentWindow(self: PlayerState): void {
+    const { cx, cy } = this.buildLevelShell(self, "SIGNATURE — pick a parry augment (§8)");
+    const offer = self.sigOffer.split(",").filter(Boolean);
+    const W = 196;
+    const H = 214;
+    const gap = 22;
+    const startX = cx - (offer.length * (W + gap) - gap) / 2 + W / 2;
+    offer.forEach((id, i) => {
+      const def = AUGMENTS[id];
+      if (!def) return;
+      const col = ArenaScene.AUG_TAG_COL[def.tag] ?? 0xb9975b;
+      const x = startX + i * (W + gap);
+      const card = this.add
+        .rectangle(x, cy + 30, W, H, 0x1b1812, 0.98)
+        .setScrollFactor(0)
+        .setStrokeStyle(3, col)
+        .setDepth(100011)
+        .setInteractive({ useHandCursor: true });
+      const icon = this.add.graphics().setScrollFactor(0).setDepth(100012);
+      drawIcon(icon, def.icon, x, cy - 46, 13, col);
+      const name = this.add
+        .text(x, cy - 8, def.name, { fontSize: "20px", color: "#f0ead8", fontStyle: "bold" })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100012);
+      const tag = this.add
+        .text(x, cy + 16, def.tag.toUpperCase(), {
+          fontSize: "12px",
+          color: `#${col.toString(16).padStart(6, "0")}`,
+          fontStyle: "bold",
+        })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100012);
+      const desc = this.add
+        .text(x, cy + 58, def.desc, {
+          fontSize: "13px",
+          color: "#cfc8b6",
+          align: "center",
+          wordWrap: { width: W - 26 },
+        })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100012);
+      card.on("pointerover", () => card.setScale(1.05));
+      card.on("pointerout", () => card.setScale(1));
+      card.on("pointerdown", () => this.room?.send("chooseAugment", { id }));
+      this.levelWinObjects.push(card, icon, name, tag, desc);
+    });
+  }
+
+  /** Build the dim overlay + 5 attribute buttons for the §12 flex-point pick. */
+  private buildLevelWindow(self: PlayerState): void {
+    const { cx, cy } = this.buildLevelShell(self, "+1 STR  +1 CON (auto) · spend your FLEX point");
     const attrs: Attr[] = ["str", "dex", "int", "con", "luk"];
     const W = 150;
     const H = 200;
@@ -1208,11 +1292,60 @@ export class ArenaScene extends Phaser.Scene {
     this.localParryCd = Math.max(0, this.localParryCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self?.alive || self.flexPending > 0) return;
+    if (!self?.alive || self.flexPending > 0 || self.sigPending > 0) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
     this.room.send("parry");
-    this.blobs.get(selfId)?.triggerBrace(this.time.now);
+    const rig = this.blobs.get(selfId);
+    rig?.triggerBrace(this.time.now);
+    // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
+    if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
+  }
+
+  /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
+   *  fire-wave cone (toward the live cursor aim). Counterblade's blades + the damage are server-spawned. */
+  private spawnParryFx(x: number, y: number, owned: string): void {
+    if (hasAugment(owned, "bulwark")) {
+      const ring = this.add.circle(x, y, 30).setStrokeStyle(4, 0x6fe6ff, 0.9).setDepth(99996);
+      this.tweens.add({
+        targets: ring,
+        scale: 1.7,
+        alpha: 0,
+        duration: 380,
+        ease: "Quad.easeOut",
+        onComplete: () => ring.destroy(),
+      });
+    }
+    if (hasAugment(owned, "emberguard")) {
+      const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
+      const ADD = Phaser.BlendModes.ADD;
+      const base = this.add
+        .ellipse(x, y, EMBERGUARD_RANGE, EMBERGUARD_RANGE * 0.55, 0xff5a1e, 0.18)
+        .setRotation(ang)
+        .setBlendMode(ADD)
+        .setDepth(99994);
+      this.tweens.add({
+        targets: base,
+        alpha: 0,
+        scale: 1.2,
+        duration: 240,
+        onComplete: () => base.destroy(),
+      });
+      for (let i = 0; i < 7; i++) {
+        const a = ang + (i / 6 - 0.5) * EMBERGUARD_HALF_ARC * 2;
+        const ember = this.add.circle(x, y, 7, 0xff7a2a, 0.9).setBlendMode(ADD).setDepth(99995);
+        this.tweens.add({
+          targets: ember,
+          x: x + Math.cos(a) * EMBERGUARD_RANGE,
+          y: y + Math.sin(a) * EMBERGUARD_RANGE,
+          alpha: 0,
+          scale: 2,
+          duration: 280 + Math.random() * 80,
+          ease: "Quad.easeOut",
+          onComplete: () => ember.destroy(),
+        });
+      }
+    }
   }
 
   /** Hit-stop (§20): hold the visuals for `ms` on impactful events. */
@@ -1360,6 +1493,23 @@ export class ArenaScene extends Phaser.Scene {
       );
     } else {
       this.weaponText.setColor("#9cff3b");
+    }
+
+    // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
+    if (self?.augments) {
+      const counts = new Map<string, number>();
+      for (const a of self.augments.split(",").filter(Boolean))
+        counts.set(a, (counts.get(a) ?? 0) + 1);
+      const parts = [...counts].map(([id, n]) => {
+        const name = AUGMENTS[id]?.name ?? id;
+        return n > 1 ? `${name} ×${n}` : name;
+      });
+      this.augmentText
+        .setPosition(barX, xpY - 42)
+        .setText(`✦ ${parts.join(" · ")}`)
+        .setVisible(true);
+    } else {
+      this.augmentText.setVisible(false);
     }
 
     const training = this.room?.state.mode === "training";

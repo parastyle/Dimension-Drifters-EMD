@@ -232,12 +232,28 @@ export class SpriteRig {
     this.braceStart = timeMs;
   }
 
-  /** Brief white impact flash on every part (§20 hit feedback). */
+  /** §8 Brand augment: a persistent ember-orange tint marking a Marked enemy (takes more damage). */
+  private branded = false;
+
+  /** Toggle the §8 Brand tint. Cheap + idempotent — the scene calls it each frame off the synced state. */
+  setBranded(on: boolean): void {
+    if (on === this.branded) return;
+    this.branded = on;
+    this.restTint();
+  }
+
+  /** Re-apply the resting tint (Brand ember-orange, or none). */
+  private restTint(): void {
+    for (const p of this.parts) {
+      if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
+      else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    }
+  }
+
+  /** Brief white impact flash on every part (§20 hit feedback), then back to the resting tint. */
   flash(ms = 80): void {
     for (const p of this.parts) p.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-    this.scene.time.delayedCall(ms, () => {
-      for (const p of this.parts) p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
-    });
+    this.scene.time.delayedCall(ms, () => this.restTint());
   }
 
   get x(): number {

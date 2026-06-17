@@ -1,3 +1,4 @@
+export * from "./augments.js";
 export * from "./characters.js";
 export * from "./collision.js";
 export * from "./combat.js";
