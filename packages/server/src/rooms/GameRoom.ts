@@ -24,6 +24,7 @@ import {
   generateArena,
   gunMuzzleReach,
   inMeleeArc,
+  isInsidePoi,
   isPitAtPx,
   JUMP_AIRTIME,
   JUMP_COOLDOWN,
@@ -1326,6 +1327,14 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
       }
+      // §17 POI COVER — a projectile that flies into a landmark is BLOCKED (absorbed); exploding rounds
+      // detonate against it (the doomed loop handles that). Cover works both ways: hide from spitters, but
+      // a landmark in YOUR line eats your shots too. (Even ricochet rounds are absorbed — they only carom
+      // off the arena walls, not the POIs.)
+      if (isInsidePoi(this.map, pr.x, pr.y)) {
+        doomed.push(id);
+        return;
+      }
       if (meta.hostile) {
         let hit = false;
         this.state.players.forEach((player) => {
@@ -1467,16 +1476,29 @@ export class GameRoom extends Room<ArenaState> {
     enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
-    // §17 don't spawn an enemy on a pit (it would instantly fall in) — nudge to the nearest solid tile.
-    if (isPitAtPx(this.map, ex, ey)) {
-      const g = nearestGroundPx(this.map, ex, ey);
-      enemy.x = g.x;
-      enemy.y = g.y;
-    } else {
-      enemy.x = ex;
-      enemy.y = ey;
-    }
+    // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
+    const sp = this.safeSpawnPos(ex, ey, kind.radius);
+    enemy.x = sp.x;
+    enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
+  }
+
+  /** §17 nudge a spawn position onto solid GROUND and OUT of any POI obstacle, so nothing spawns inside a
+   *  pit or a landmark and then teleports out on the next tick (the review caught this for enemies + the boss). */
+  private safeSpawnPos(x: number, y: number, radius: number): Vec2 {
+    let nx = x;
+    let ny = y;
+    if (isPitAtPx(this.map, nx, ny)) {
+      const g = nearestGroundPx(this.map, nx, ny);
+      nx = g.x;
+      ny = g.y;
+    }
+    if (isInsidePoi(this.map, nx, ny)) {
+      const safe = resolvePoiCollision(this.map, nx, ny, radius);
+      nx = safe.x;
+      ny = safe.y;
+    }
+    return { x: nx, y: ny };
   }
 
   /** Spawn the boss OLD RUST on a ring around a player (§16) — the run's capstone threat. */
@@ -1496,12 +1518,20 @@ export class GameRoom extends Room<ArenaState> {
     boss.id = `boss${this.enemySeq++}`;
     boss.kind = "old-rust";
     boss.hp = kind.hp * enemyHpScale(this.state.players.size); // §6 boss HP-sponge × players
-    boss.x = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, kind.radius, ARENA_WIDTH - kind.radius);
-    boss.y = clamp(
+    const bx = clamp(
+      anchor.x + Math.cos(angle) * SPAWN_RING,
+      kind.radius,
+      ARENA_WIDTH - kind.radius,
+    );
+    const by = clamp(
       anchor.y + Math.sin(angle) * SPAWN_RING,
       kind.radius,
       ARENA_HEIGHT - kind.radius,
     );
+    // §17 land the boss on solid ground + clear of POIs so its grand entrance doesn't teleport-out next tick.
+    const sp = this.safeSpawnPos(bx, by, kind.radius);
+    boss.x = sp.x;
+    boss.y = sp.y;
     this.state.enemies.set(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;

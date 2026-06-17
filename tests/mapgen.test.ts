@@ -2,6 +2,7 @@ import {
   type ArenaMapSeeds,
   classifyPitRegions,
   generateArena,
+  isInsidePoi,
   isPitAtPx,
   MAP_MAX_JUMP_TILES,
   MAP_POI_COUNT,
@@ -125,7 +126,9 @@ describe("mapgen — POI landmarks", () => {
         const p = map.pois[i];
         if (!p) continue;
         expect(isPitAtPx(map, p.x, p.y), "POI must stand on ground").toBe(false);
-        expect(Math.hypot(p.x - map.spawnX, p.y - map.spawnY)).toBeGreaterThan(spawnClearPx - MAP_TILE);
+        expect(Math.hypot(p.x - map.spawnX, p.y - map.spawnY)).toBeGreaterThan(
+          spawnClearPx - MAP_TILE,
+        );
         for (let j = i + 1; j < map.pois.length; j++) {
           const q = map.pois[j];
           if (q) expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThanOrEqual(minPx);
@@ -145,6 +148,16 @@ describe("mapgen — POI landmarks", () => {
     // A point far from every POI is returned unchanged.
     const far = resolvePoiCollision(map, map.spawnX, map.spawnY, r);
     expect([far.x, far.y]).toEqual([map.spawnX, map.spawnY]);
+  });
+
+  it("isInsidePoi blocks a projectile inside a landmark, passes clear ground (§17 cover)", () => {
+    const map = generateArena(seeds(11, 12, 13, 14));
+    if (map.pois.length === 0) return;
+    const p = map.pois[0];
+    if (!p) return;
+    expect(isInsidePoi(map, p.x, p.y)).toBe(true); // dead centre = blocked
+    expect(isInsidePoi(map, p.x + MAP_POI_RADIUS + 5, p.y)).toBe(false); // just outside the footprint
+    expect(isInsidePoi(map, map.spawnX, map.spawnY)).toBe(false); // spawn is clear of POIs
   });
 });
 
