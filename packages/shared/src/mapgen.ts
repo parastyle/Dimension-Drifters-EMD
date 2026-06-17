@@ -398,16 +398,21 @@ export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
   return tileAtPx(map, px, py) === TILE_PIT;
 }
 
-/** §17 true if a world px point is inside a POI obstacle (the landmark footprint) — projectiles blocked
- *  here so the landmarks are real cover from gunfire. PURE. */
-export function isInsidePoi(map: ArenaMap, x: number, y: number): boolean {
+/** §17 the POI whose obstacle footprint contains a world px point, or undefined. PURE. */
+export function poiAt(map: ArenaMap, x: number, y: number): PoiInstance | undefined {
   const r2 = MAP_POI_RADIUS * MAP_POI_RADIUS;
   for (const p of map.pois) {
     const dx = x - p.x;
     const dy = y - p.y;
-    if (dx * dx + dy * dy < r2) return true;
+    if (dx * dx + dy * dy < r2) return p;
   }
-  return false;
+  return undefined;
+}
+
+/** §17 true if a world px point is inside a POI obstacle (the landmark footprint) — projectiles blocked
+ *  here so the landmarks are real cover from gunfire. PURE. */
+export function isInsidePoi(map: ArenaMap, x: number, y: number): boolean {
+  return poiAt(map, x, y) !== undefined;
 }
 
 /** §17 push an entity (centre x,y + body radius) OUT of any overlapping POI obstacle, returning the

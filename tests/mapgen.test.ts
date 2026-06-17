@@ -12,6 +12,7 @@ import {
   MAP_TILE,
   nearestGroundPx,
   pitFraction,
+  poiAt,
   resolvePoiCollision,
   TILE_GROUND,
   TILE_PIT,
@@ -158,6 +159,15 @@ describe("mapgen — POI landmarks", () => {
     expect(isInsidePoi(map, p.x, p.y)).toBe(true); // dead centre = blocked
     expect(isInsidePoi(map, p.x + MAP_POI_RADIUS + 5, p.y)).toBe(false); // just outside the footprint
     expect(isInsidePoi(map, map.spawnX, map.spawnY)).toBe(false); // spawn is clear of POIs
+  });
+
+  it("poiAt returns the containing landmark (for the ricochet carom) or undefined", () => {
+    const map = generateArena(seeds(7, 8, 9, 10));
+    if (map.pois.length === 0) return;
+    const p = map.pois[0];
+    if (!p) return;
+    expect(poiAt(map, p.x, p.y)).toBe(p); // inside → that POI
+    expect(poiAt(map, map.spawnX, map.spawnY)).toBeUndefined(); // clear ground → none
   });
 });
 

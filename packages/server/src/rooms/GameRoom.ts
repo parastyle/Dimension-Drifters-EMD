@@ -32,6 +32,7 @@ import {
   LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
   M0_REQ_ATTR,
+  MAP_POI_RADIUS,
   MAX_ENEMIES,
   MAX_PLAYERS,
   MOVE_SPEED,
@@ -55,6 +56,7 @@ import {
   PROJECTILE_TTL,
   ProjectileState,
   pickEnemyKind,
+  poiAt,
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
   RESPAWN_SECONDS,
@@ -1327,13 +1329,32 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
       }
-      // §17 POI COVER — a projectile that flies into a landmark is BLOCKED (absorbed); exploding rounds
-      // detonate against it (the doomed loop handles that). Cover works both ways: hide from spitters, but
-      // a landmark in YOUR line eats your shots too. (Even ricochet rounds are absorbed — they only carom
-      // off the arena walls, not the POIs.)
-      if (isInsidePoi(this.map, pr.x, pr.y)) {
-        doomed.push(id);
-        return;
+      // §17 POI COVER — a projectile that flies into a landmark is BLOCKED. A RICOCHET round (bounces left)
+      // CAROMS off the landmark like a wall: reflect the velocity across the radial normal, snap to the
+      // surface, and re-arm (fresh pierce/hit-set/life) so it keeps hunting. Everything else is ABSORBED
+      // (exploding rounds detonate via the doomed loop). Cover works both ways — a landmark in YOUR line
+      // eats your shots too.
+      const hitPoi = poiAt(this.map, pr.x, pr.y);
+      if (hitPoi) {
+        if ((meta.bounces ?? 0) > 0) {
+          meta.bounces = (meta.bounces ?? 0) - 1;
+          const nx = pr.x - hitPoi.x;
+          const ny = pr.y - hitPoi.y;
+          const nl = Math.hypot(nx, ny) || 1;
+          const ux = nx / nl;
+          const uy = ny / nl;
+          const dot = pr.vx * ux + pr.vy * uy;
+          pr.vx -= 2 * dot * ux;
+          pr.vy -= 2 * dot * uy;
+          pr.x = hitPoi.x + ux * (MAP_POI_RADIUS + PROJECTILE_RADIUS);
+          pr.y = hitPoi.y + uy * (MAP_POI_RADIUS + PROJECTILE_RADIUS);
+          meta.hit.clear();
+          meta.pierce = meta.pierceMax ?? meta.pierce;
+          meta.ttl += meta.legTtl ?? 0;
+        } else {
+          doomed.push(id);
+          return;
+        }
       }
       if (meta.hostile) {
         let hit = false;

@@ -755,7 +755,7 @@ export class ArenaScene extends Phaser.Scene {
       const prev = this.lastFell.get(id);
       this.lastFell.set(id, player.fellSeq);
       if (prev === undefined || prev === player.fellSeq) return;
-      this.spawnPoof(player.x, player.y);
+      this.spawnFallStreak(player.x, player.y);
       if (id === selfId) {
         this.cameras.main.flash(170, 90, 16, 16);
         this.cameras.main.shake(150, 0.006);
@@ -917,9 +917,14 @@ export class ArenaScene extends Phaser.Scene {
     });
     for (const id of [...this.enemies.keys()]) {
       if (!enemies.has(id)) {
-        // Enemy gone from authoritative state → it died (or left view): puff + clean up.
+        // Enemy gone from authoritative state → it died (or left view): puff + clean up. If it vanished
+        // over a PIT it fell in (§17) — give it the downward "into the void" streak instead of a flat puff.
         const rig = this.enemies.get(id);
-        if (rig) this.spawnPoof(rig.x, rig.y);
+        if (rig) {
+          if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y))
+            this.spawnFallStreak(rig.x, rig.y);
+          else this.spawnPoof(rig.x, rig.y);
+        }
         rig?.destroy();
         this.enemies.delete(id);
         this.enemyPrev.delete(id);
@@ -2122,6 +2127,37 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Quad.easeOut",
       onComplete: () => ring.destroy(),
     });
+  }
+
+  /** §17 "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a pit
+   *  fall (player or enemy) reads as falling, not just a flat poof. Cosmetic, client-local. */
+  private spawnFallStreak(x: number, y: number): void {
+    const puff = this.add.circle(x, y, 11, 0x1a140f, 0.6).setDepth(99998);
+    this.tweens.add({
+      targets: puff,
+      scale: 0.3,
+      alpha: 0,
+      y: y + 20,
+      duration: 340,
+      ease: "Quad.easeIn",
+      onComplete: () => puff.destroy(),
+    });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const mote = this.add
+        .circle(x + Math.cos(a) * 6, y + Math.sin(a) * 4, 2.5, 0xcfc6ae, 0.7)
+        .setDepth(99999);
+      this.tweens.add({
+        targets: mote,
+        x: mote.x + Math.cos(a) * 14,
+        y: mote.y + 22 + Math.random() * 12,
+        alpha: 0,
+        scale: 0.4,
+        duration: 300 + Math.random() * 130,
+        ease: "Quad.easeIn",
+        onComplete: () => mote.destroy(),
+      });
+    }
   }
 
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */
