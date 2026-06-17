@@ -68,6 +68,9 @@ export class PlayerState extends Schema {
    *  Server integrates it into x/y each tick + decays it; synced so the client leans/jiggles the rig. */
   @type("number") vx = 0;
   @type("number") vy = 0;
+  /** §8 successful-parry counter (Stage C): increments each time this player PARRIES a telegraphed enemy
+   *  attack (negates it in the parry window). Synced ONLY as a client VFX trigger (white parry flash). */
+  @type("number") parriedSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -85,6 +88,10 @@ export class EnemyState extends Schema {
   /** §8 Brand augment: seconds remaining as Marked — takes ×BRAND_DAMAGE_MULT from all sources. Synced so
    *  the client can tint the marked enemy. 0 = not branded. */
   @type("number") branded = 0;
+  /** §8 white-tell TELEGRAPH (Stage C): windup progress 0→1 of a parryable attack (0 = not telegraphing).
+   *  Synced so the client ramps the enemy WHITE + shrinks the rhythm ring; the swing lands (and is
+   *  parryable) as it peaks at 1. The §8 universal cue: white = parryable. */
+  @type("number") windup = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

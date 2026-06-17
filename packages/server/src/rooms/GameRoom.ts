@@ -63,6 +63,7 @@ import {
   nearestPoint,
   nextCharacter,
   nextWeapon,
+  PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
   PARRY_KNOCKBACK,
@@ -1453,10 +1454,16 @@ export class GameRoom extends Room<ArenaState> {
       } else if (st.t <= 0) {
         st.phase = "idle"; // recover done
       }
+      // §8 white-tell TELEGRAPH (Stage C): expose the windup progress (0→1) so the client ramps the enemy
+      // WHITE + shrinks the rhythm ring — the player sees the swing coming and parries as it peaks.
+      enemy.windup =
+        st.phase === "windup" && m.windup > 0 ? Math.max(0, Math.min(1, 1 - st.t / m.windup)) : 0;
     });
   }
 
-  /** One duelist swing: bump `atkSeq` (client animates) + arc-damage players in front (parry dodges). */
+  /** One duelist swing: bump `atkSeq` (client animates) + arc-damage players in front. A player whose parry
+   *  i-frames are up has PARRIED the telegraphed attack (§8) — it's negated, the attacker is knocked back,
+   *  and `parriedSeq` ticks the client's white parry flash. (The parry's augment offense already fired.) */
   private duelistSwing(
     enemy: EnemyState,
     target: Vec2 | null,
@@ -1468,10 +1475,29 @@ export class GameRoom extends Room<ArenaState> {
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
     this.state.players.forEach((player) => {
       if (!player.alive || this.inLevelWindow(player)) return;
-      if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry i-frames dodge it
-      if (inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) {
-        player.hp -= m.damage * dmgMul;
+      if (!inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) return;
+      const pc = this.combat.get(player.id);
+      if ((pc?.invuln ?? 0) > 0) {
+        // §8 PARRIED — negate + punish + FLOW: bump the feedback, refresh the parry cooldown so you can
+        // immediately parry the next swing (chain), and shove the attacker back hard.
+        player.parriedSeq = (player.parriedSeq + 1) % 100000;
+        if (pc) pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
+        const dx = enemy.x - player.x;
+        const dy = enemy.y - player.y;
+        const d = Math.hypot(dx, dy) || 1;
+        enemy.x = clamp(
+          enemy.x + (dx / d) * PARRY_KNOCKBACK * 1.6,
+          ENEMY_RADIUS,
+          ARENA_WIDTH - ENEMY_RADIUS,
+        );
+        enemy.y = clamp(
+          enemy.y + (dy / d) * PARRY_KNOCKBACK * 1.6,
+          ENEMY_RADIUS,
+          ARENA_HEIGHT - ENEMY_RADIUS,
+        );
+        return;
       }
+      player.hp -= m.damage * dmgMul;
     });
   }
 

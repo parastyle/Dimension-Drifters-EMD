@@ -24,6 +24,7 @@ import {
   inMeleeArc,
   isPitAtPx,
   LEVELUP_WINDOW_SECONDS,
+  PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
   PICKUP_RADIUS,
   type PlayerState,
@@ -86,6 +87,10 @@ export class ArenaScene extends Phaser.Scene {
   private readonly enemies = new Map<string, SpriteRig>();
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
+  /** §8 white-tell telegraph layer (Stage C) — redrawn each frame from enemies' synced `windup`. */
+  private telegraphGfx!: Phaser.GameObjects.Graphics;
+  /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
+  private readonly lastParried = new Map<string, number>();
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
@@ -200,6 +205,9 @@ export class ArenaScene extends Phaser.Scene {
   create(): void {
     drawArena(this, (k) => this.hasTile(k));
     this.vfxPlayer = new VfxPlayer(this);
+    // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
+    // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
+    this.telegraphGfx = this.add.graphics().setDepth(99990);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
@@ -720,6 +728,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Drive each enemy's procedural animation from its render-velocity (faces its travel dir). */
   private animateEnemies(): void {
+    this.telegraphGfx.clear(); // §8 redraw the white-tell layer fresh each frame
     for (const [id, rig] of this.enemies) {
       const prev = this.enemyPrev.get(id) ?? { x: rig.x, y: rig.y };
       let mx = rig.x - prev.x;
@@ -741,7 +750,18 @@ export class ArenaScene extends Phaser.Scene {
         aimDir: 0,
         isSelf: false,
       });
-      rig.setBranded((this.room?.state.enemies.get(id)?.branded ?? 0) > 0); // §8 Brand tint
+      const es = this.room?.state.enemies.get(id);
+      rig.setBranded((es?.branded ?? 0) > 0); // §8 Brand tint
+      // §8 white-tell (Stage C): a glowing-white disc + a rhythm ring that SHRINKS to the body as the
+      // windup peaks — the §8 "white = parryable" cue. Parry as the ring tightens to negate the swing.
+      const w = es?.windup ?? 0;
+      if (w > 0.01) {
+        const g = this.telegraphGfx;
+        g.fillStyle(0xffffff, w * 0.4);
+        g.fillCircle(rig.x, rig.y, 24);
+        g.lineStyle(2.5 + 2 * w, 0xffffff, 0.55 + 0.45 * w);
+        g.strokeCircle(rig.x, rig.y, 52 - 30 * w);
+      }
       rig.setDepth(rig.y);
     }
   }
@@ -1384,6 +1404,18 @@ export class ArenaScene extends Phaser.Scene {
       this.enemyHp.set(id, enemy.hp);
     });
 
+    // §8 successful-parry flash (Stage C): a white burst when ANY player parries a telegraphed attack;
+    // the LOCAL player's parry cooldown refreshes (§8 flow) so they can immediately parry the next swing.
+    this.room.state.players.forEach((p, id) => {
+      const prev = this.lastParried.get(id);
+      this.lastParried.set(id, p.parriedSeq);
+      if (prev !== undefined && prev !== p.parriedSeq) {
+        this.spawnParrySpark(p.x, p.y);
+        if (id === this.room?.sessionId)
+          this.localParryCd = Math.min(this.localParryCd, PARRY_CHAIN_CD);
+      }
+    });
+
     const selfId = this.room.sessionId;
     const self = selfId ? this.room.state.players.get(selfId) : undefined;
     if (self) {
@@ -1404,6 +1436,50 @@ export class ArenaScene extends Phaser.Scene {
         if (rig) this.spawnLevelUp(rig.x, rig.y);
       }
       this.prevLevel = self.level;
+    }
+  }
+
+  /** §8 successful-parry flash (Stage C) — a crisp WHITE ring burst + sparks where a player parried a
+   *  telegraphed attack (the §8 white parry-language: white = the parry connected). */
+  private spawnParrySpark(x: number, y: number): void {
+    const ADD = Phaser.BlendModes.ADD;
+    const ring = this.add
+      .circle(x, y, 16)
+      .setStrokeStyle(4, 0xffffff, 0.95)
+      .setBlendMode(ADD)
+      .setDepth(99996);
+    this.tweens.add({
+      targets: ring,
+      scale: 2.6,
+      alpha: 0,
+      duration: 260,
+      ease: "Quad.easeOut",
+      onComplete: () => ring.destroy(),
+    });
+    const flash = this.add.circle(x, y, 22, 0xffffff, 0.5).setBlendMode(ADD).setDepth(99995);
+    this.tweens.add({
+      targets: flash,
+      scale: 1.4,
+      alpha: 0,
+      duration: 160,
+      onComplete: () => flash.destroy(),
+    });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const s = this.add
+        .rectangle(x, y, 13, 2.4, 0xffffff, 0.95)
+        .setRotation(a)
+        .setBlendMode(ADD)
+        .setDepth(99996);
+      this.tweens.add({
+        targets: s,
+        x: x + Math.cos(a) * 34,
+        y: y + Math.sin(a) * 34,
+        alpha: 0,
+        duration: 200,
+        ease: "Quad.easeOut",
+        onComplete: () => s.destroy(),
+      });
     }
   }
 

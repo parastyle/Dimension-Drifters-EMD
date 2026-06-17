@@ -199,6 +199,10 @@ export const PARRY_IFRAMES = 0.45;
 export const PARRY_COOLDOWN = 0.6;
 export const PARRY_RADIUS = 135;
 export const PARRY_KNOCKBACK = 96;
+/** §8 parry FLOW (Stage C): a SUCCESSFUL parry of a telegraphed attack refreshes the cooldown to this small
+ *  value (vs the full PARRY_COOLDOWN miss-penalty), so you can immediately parry the next swing — that's how
+ *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */
+export const PARRY_CHAIN_CD = 0.12;
 
 /** §20 MOMENTUM layer (Stage A) — forces (gun recoil, enemy-hit knockback, …) add to a per-player impulse
  *  velocity that displaces the body on top of WASD, then decays back to rest. The authoritative position
