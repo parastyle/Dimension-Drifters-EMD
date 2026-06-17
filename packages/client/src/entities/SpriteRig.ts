@@ -148,6 +148,33 @@ export class SpriteRig {
     this.hopPx = px;
   }
 
+  /** §20 DEATH-POP (Stage B): launch the corpse — slide along (vx,vy), arc UP under a fake gravity, spin,
+   *  and fade, then self-destroy. Purely client-local cosmetic (the enemy is already gone server-side, so
+   *  this is the momentum layer applied on death — the start of the "Madness" feel). The caller must have
+   *  already detached the rig from the animated set so `animate()` won't fight the tweens. */
+  deathPop(vx: number, vy: number): void {
+    const dur = 520;
+    const spin = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3);
+    const peak = 36 + Math.random() * 34;
+    this.scene.tweens.add({
+      targets: this.root,
+      x: this.root.x + vx,
+      y: this.root.y + vy,
+      rotation: spin,
+      alpha: 0,
+      duration: dur,
+      ease: "Quad.easeOut",
+      onComplete: () => this.destroy(),
+    });
+    // The vertical arc rides the existing hop-lift (up at launch → 0 on landing).
+    this.scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: dur,
+      onUpdate: (tw) => this.setHop(Math.sin((tw.getValue() ?? 0) * Math.PI) * peak),
+    });
+  }
+
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
   setRigScale(mult: number): void {

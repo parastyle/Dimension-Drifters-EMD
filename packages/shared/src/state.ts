@@ -57,9 +57,10 @@ export class PlayerState extends Schema {
   /** §13 salvage-bag stub: count of weapons salvaged (hold-drop). The real parts economy (§13) isn't
    *  built yet — this just tallies + drives the HUD readout so the hold-to-salvage action has feedback. */
   @type("number") salvaged = 0;
-  /** §5 jump: seconds of HOP airtime remaining (0 = grounded). Synced so every client renders the hop +
-   *  the server gates pit-falling on it (§17 — airborne clears gaps). */
-  @type("number") airborne = 0;
+  /** §5/§20 jump (Stage B): HEIGHT in px above the ground (0 = grounded). A real vertical axis under
+   *  gravity — the jump seeds the upward velocity, the §8 parry-launch will add to it. Synced so every
+   *  client lifts the rig; the server gates pit-falling on it (§17 — airborne, height>0, clears gaps). */
+  @type("number") height = 0;
   /** §17 pit fall: increments each time this player falls into a pit. Synced ONLY as a client VFX trigger
    *  (dust poof + a local red flash) — the fall's damage/reposition is applied server-authoritatively. */
   @type("number") fellSeq = 0;

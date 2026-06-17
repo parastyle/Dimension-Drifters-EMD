@@ -113,6 +113,15 @@ export const JUMP_COOLDOWN = 0.7;
 /** Peak visual hop height (px) the client lifts the rig at the top of the arc. */
 export const JUMP_HOP_HEIGHT = 34;
 
+/** §5/§20 VERTICAL physics (Stage B) — the jump is now a real upward impulse under gravity, generalising
+ *  the old fixed-duration hop into a HEIGHT axis (px above ground) that the §17 pit layer + the later
+ *  §8 parry-launch ride on. Tuned so airtime ≈ JUMP_AIRTIME (0.45s) and peak ≈ JUMP_HOP_HEIGHT (34px).
+ *  PURE: a shared `stepVertical(height, vh, dt)` integrates it server-side + (future) in client prediction. */
+export const GRAVITY = 1350; // px/s² pulling height back to ground
+export const JUMP_VELOCITY = 303; // px/s upward kick on a grounded jump
+/** Height (px) at/below which a player counts as GROUNDED (jump-ready + pit-fall-eligible). */
+export const GROUND_EPSILON = 0.5;
+
 /** §17 pitfall FALL consequence (Mike's ruling: chip + reposition, NOT run-ending). A grounded player
  *  whose body is over a pit falls: loses this fraction of max HP, snaps back to the last grounded tile,
  *  and gets a brief GRACE (i-frames + no re-fall) so a pit isn't a death spiral or a landing-gank. An

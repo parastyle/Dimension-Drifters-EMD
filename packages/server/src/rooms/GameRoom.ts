@@ -35,6 +35,7 @@ import {
   effectiveDamageMult,
   enemyHpScale,
   FISTS_WEAPON,
+  GROUND_EPSILON,
   GUN_RECOIL_BASELINE,
   GUN_RECOIL_IMPULSE,
   generateArena,
@@ -49,8 +50,8 @@ import {
   isAttr,
   isAugment,
   isPitAtPx,
-  JUMP_AIRTIME,
   JUMP_COOLDOWN,
+  JUMP_VELOCITY,
   LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
   MAP_POI_RADIUS,
@@ -94,6 +95,7 @@ import {
   stepEnemyKite,
   stepImpulse,
   stepPlayerMovement,
+  stepVertical,
   TICK_MS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
@@ -143,6 +145,8 @@ interface CombatState {
   lastWeapon: string;
   /** §5 jump cooldown, sec (so the hop isn't spammable). */
   jumpCd: number;
+  /** §5/§20 vertical velocity (px/s) for the real height axis — the jump seeds it, gravity decays it. */
+  vh: number;
   /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
    *  tick the player stands on solid ground. */
   lastGroundX: number;
@@ -397,8 +401,9 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || this.inLevelWindow(player) || !c) return;
-      if (c.jumpCd > 0 || player.airborne > 0) return;
-      player.airborne = JUMP_AIRTIME;
+      // §5/§20 (Stage B): only jump when GROUNDED + off cooldown; seed the upward velocity, gravity arcs it.
+      if (c.jumpCd > 0 || player.height > GROUND_EPSILON) return;
+      c.vh = JUMP_VELOCITY;
       c.jumpCd = JUMP_COOLDOWN;
     });
 
@@ -537,6 +542,7 @@ export class GameRoom extends Room<ArenaState> {
       player.sigOffer = "";
       player.vx = 0; // §20 clear any residual momentum
       player.vy = 0;
+      player.height = 0; // §5/§20 back to the ground
       player.maxHp = PLAYER_MAX_HP;
       player.alive = true;
       player.hp = player.maxHp;
@@ -551,6 +557,7 @@ export class GameRoom extends Room<ArenaState> {
         c.lastWeapon = ""; // forces charge re-init next tick
         c.hairStreak = 0;
         c.lastParryAt = -999;
+        c.vh = 0;
       }
     });
     this.burnPulses.length = 0;
@@ -657,6 +664,7 @@ export class GameRoom extends Room<ArenaState> {
       pitGrace: 0,
       hairStreak: 0,
       lastParryAt: -999,
+      vh: 0,
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
@@ -735,7 +743,7 @@ export class GameRoom extends Room<ArenaState> {
       const c = this.combat.get(id);
       if (!c) return;
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
-      if (player.airborne > 0) return; // the hop carries you over
+      if (player.height > GROUND_EPSILON) return; // airborne (mid-jump) — the hop carries you over
       const overPit = isPitAtPx(this.map, player.x, player.y);
       if (!overPit) {
         c.lastGroundX = player.x; // standing on solid ground → remember it
@@ -789,7 +797,10 @@ export class GameRoom extends Room<ArenaState> {
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
       c.jumpCd = Math.max(0, c.jumpCd - dt);
-      player.airborne = Math.max(0, player.airborne - dt); // §5 jump hop airtime
+      // §5/§20 (Stage B): integrate the real height axis under gravity (the jump + later parry-launch).
+      const vert = stepVertical(player.height, c.vh, dt);
+      player.height = vert.height;
+      c.vh = vert.vh;
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the

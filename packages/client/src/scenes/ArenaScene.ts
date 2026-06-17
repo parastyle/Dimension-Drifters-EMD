@@ -23,8 +23,6 @@ import {
   hasAugment,
   inMeleeArc,
   isPitAtPx,
-  JUMP_AIRTIME,
-  JUMP_HOP_HEIGHT,
   LEVELUP_WINDOW_SECONDS,
   PARRY_COOLDOWN,
   PICKUP_RADIUS,
@@ -675,19 +673,37 @@ export class ArenaScene extends Phaser.Scene {
     });
     for (const id of [...this.enemies.keys()]) {
       if (!enemies.has(id)) {
-        // Enemy gone from authoritative state → it died (or left view): puff + clean up. If it vanished
-        // over a PIT it fell in (§17) — give it the downward "into the void" streak instead of a flat puff.
+        // Enemy gone from authoritative state → it died (or left view). Detach it from the animated set
+        // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
-        if (rig) {
-          if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y))
-            spawnFallStreak(this, rig.x, rig.y);
-          else spawnPoof(this, rig.x, rig.y);
-        }
-        rig?.destroy();
         this.enemies.delete(id);
         this.enemyPrev.delete(id);
         this.enemyHp.delete(id);
         this.enemyAtk.delete(id);
+        if (rig) {
+          if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y)) {
+            spawnFallStreak(this, rig.x, rig.y); // fell over a pit → sinks into the void, no pop
+            rig.destroy();
+          } else {
+            spawnPoof(this, rig.x, rig.y); // dust at the kill point
+            // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
+            let ax = Math.random() - 0.5;
+            let ay = Math.random() - 0.5;
+            let best = Number.POSITIVE_INFINITY;
+            this.room?.state.players.forEach((p) => {
+              if (!p.alive) return;
+              const d = Math.hypot(rig.x - p.x, rig.y - p.y);
+              if (d < best) {
+                best = d;
+                ax = rig.x - p.x;
+                ay = rig.y - p.y;
+              }
+            });
+            const al = Math.hypot(ax, ay) || 1;
+            const dist = 70 + Math.random() * 60;
+            rig.deathPop((ax / al) * dist, (ay / al) * dist);
+          }
+        }
       }
     }
   }
@@ -1217,13 +1233,10 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.prevPos.set(id, { x: blob.x, y: blob.y });
 
-      // §5 jump hop: drive the rig's lift from the synced airborne timer (counts down from JUMP_AIRTIME).
-      // A sine arc → 0 at launch, peak at apex, 0 on landing.
+      // §5/§20 (Stage B): lift the rig by the synced HEIGHT (a real gravity arc, server-integrated) — the
+      // jump, and later the §8 parry-launch, just raise this value; the client renders whatever height is.
       const pl = this.room?.state.players.get(id);
-      const airborne = pl?.airborne ?? 0;
-      blob.setHop(
-        airborne > 0 ? Math.sin((1 - airborne / JUMP_AIRTIME) * Math.PI) * JUMP_HOP_HEIGHT : 0,
-      );
+      blob.setHop(pl?.height ?? 0);
 
       const isSelf = id === selfId;
       blob.animate(this.time.now, {

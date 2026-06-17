@@ -1,6 +1,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  GRAVITY,
   IMPULSE_EPSILON,
   IMPULSE_FRICTION,
   IMPULSE_MAX,
@@ -95,4 +96,20 @@ export function addImpulse(vel: Impulse, ix: number, iy: number): Impulse {
     vy = (vy / sp) * IMPULSE_MAX;
   }
   return { vx, vy };
+}
+
+/**
+ * §5/§20 vertical physics (Stage B) — integrate a HEIGHT (px above ground) under an upward velocity `vh`
+ * and gravity, landing (snap to 0) when it returns to the floor. PURE + deterministic. The jump seeds `vh`
+ * with `JUMP_VELOCITY`; the later §8 parry-launch adds to it, so a chain of incoming hits can loft a player
+ * higher and gravity reclaims them when it stops. `height > GROUND_EPSILON` = airborne (clears §17 pits).
+ */
+export function stepVertical(
+  height: number,
+  vh: number,
+  dtSeconds: number,
+): { height: number; vh: number } {
+  const h = height + vh * dtSeconds;
+  if (h <= 0) return { height: 0, vh: 0 }; // landed → rest on the ground
+  return { height: h, vh: vh - GRAVITY * dtSeconds };
 }

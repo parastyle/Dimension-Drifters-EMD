@@ -1,11 +1,14 @@
 import {
   ARENA_WIDTH,
   addImpulse,
+  GRAVITY,
   IMPULSE_MAX,
+  JUMP_VELOCITY,
   MOVE_SPEED,
   PLAYER_RADIUS,
   stepImpulse,
   stepPlayerMovement,
+  stepVertical,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
@@ -98,5 +101,46 @@ describe("addImpulse (accumulate + cap)", () => {
     const r = addImpulse({ vx: 0, vy: 0 }, 3000, 4000); // 3-4-5 → way over cap
     expect(r.vx / r.vy).toBeCloseTo(3 / 4, 6);
     expect(Math.hypot(r.vx, r.vy)).toBeCloseTo(IMPULSE_MAX, 4);
+  });
+});
+
+// §5/§20 vertical physics (Stage B) — the real height axis the jump + parry-launch ride on.
+describe("stepVertical (height + gravity)", () => {
+  it("a grounded rest is a no-op", () => {
+    expect(stepVertical(0, 0, 1 / 60)).toEqual({ height: 0, vh: 0 });
+  });
+
+  it("rises on an upward velocity and gravity decelerates it", () => {
+    const a = stepVertical(0, JUMP_VELOCITY, 1 / 60);
+    expect(a.height).toBeGreaterThan(0);
+    expect(a.vh).toBeLessThan(JUMP_VELOCITY); // gravity took a bite
+    expect(a.vh).toBeCloseTo(JUMP_VELOCITY - GRAVITY / 60, 4);
+  });
+
+  it("a full jump arcs up then lands back at 0 (and stays grounded)", () => {
+    let h = 0;
+    let vh = JUMP_VELOCITY;
+    let peak = 0;
+    let landed = -1;
+    const dt = 1 / 120;
+    for (let i = 0; i < 240; i++) {
+      const r = stepVertical(h, vh, dt);
+      h = r.height;
+      vh = r.vh;
+      peak = Math.max(peak, h);
+      if (h === 0 && landed < 0 && i > 1) landed = i * dt;
+    }
+    expect(peak).toBeGreaterThan(25); // a real hop (~34px peak with the tuning)
+    expect(peak).toBeLessThan(60);
+    expect(landed).toBeGreaterThan(0.3); // airtime in the ~0.45s ballpark
+    expect(landed).toBeLessThan(0.6);
+    expect(h).toBe(0); // fully landed, at rest
+    expect(vh).toBe(0);
+  });
+
+  it("never goes below the ground (snaps to 0 on landing)", () => {
+    const r = stepVertical(2, -9999, 1 / 60); // slammed down hard
+    expect(r.height).toBe(0);
+    expect(r.vh).toBe(0);
   });
 });
