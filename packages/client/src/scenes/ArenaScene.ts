@@ -545,9 +545,10 @@ export class ArenaScene extends Phaser.Scene {
 
   /**
    * Wild West arena (§17 "one big themed room", §28.7 West palette: dusty tan/rust/olive on
-   * charcoal). Dust-mesa ground + seeded scatter of rocks/scrub/cacti for visual texture and
-   * spatial reference. The scatter is decorative for now; server-seeded procedural arenas with
-   * collidable obstacles/POIs come later (§17/§4) — this fixed client seed is a placeholder.
+   * charcoal). Lays down the map-independent base only: dust-mesa ground bed + low-contrast grid.
+   * The §17 server-seeded procedural terrain — pits, rim telegraph, spawn safe-ring, collidable
+   * POIs and seeded decal scatter — is baked in `buildArenaFloor`/`buildPois` once the room's map
+   * seeds sync (the server and every client regenerate the same map from those seeds).
    */
   private drawArena(): void {
     const cx = ARENA_WIDTH / 2;
@@ -597,11 +598,14 @@ export class ArenaScene extends Phaser.Scene {
    *  players + enemies depth-sort around them (walk BEHIND a tower's upper structure, IN FRONT of its base).
    *  Collision is server-authoritative (the static obstacle circle); this is the matching visual. */
   private buildPois(map: ArenaMap): void {
-    const ids = POI_IDS.filter((id) => this.textures.exists(id));
+    // Map each landmark's `kind` through the BUILD-TIME manifest so the kind→sprite choice is identical
+    // on every client (collision is server-authoritative; this is just the matching visual). A POI whose
+    // specific texture failed to load skips its own draw rather than shifting every other POI's sprite.
+    const ids: readonly string[] = POI_IDS; // widen the const tuple so the empty-pack guard is honest
     if (ids.length === 0) return;
     for (const poi of map.pois) {
       const id = ids[poi.kind % ids.length] ?? ids[0];
-      if (!id) continue;
+      if (!id || !this.textures.exists(id)) continue;
       const sc = 0.78 + (poi.kind % 5) * 0.05; // gentle per-landmark size variety
       const img = this.add.image(poi.x, poi.y, id).setOrigin(0.5, 1).setDepth(poi.y).setScale(sc);
       if (poi.kind % 2 === 0) img.setFlipX(true);
@@ -705,17 +709,19 @@ export class ArenaScene extends Phaser.Scene {
     }
     // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
     // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal
-    // "tile-bombing"). Falls back to the procedural rock/scrub shapes if the pack isn't installed.
-    const decals = DECAL_IDS.filter((id) => this.textures.exists(id));
-    if (decals.length > 0) {
+    // "tile-bombing"). Falls back to the procedural rock/scrub shapes if the pack isn't authored.
+    // Determinism: branch + index off the BUILD-TIME manifest `DECAL_IDS`, never the runtime-loaded
+    // set — so the RNG draw sequence is identical on every client even if one client missed a texture
+    // load. A texture that failed to load just skips its own draw; positions stay in lockstep.
+    if (DECAL_IDS.length > 0) {
       for (let i = 0; i < 70; i++) {
         const x = between(60, ARENA_WIDTH - 60);
         const y = between(60, ARENA_HEIGHT - 60);
-        const id = decals[Math.floor(rng.next() * decals.length)] ?? decals[0];
+        const id = DECAL_IDS[Math.floor(rng.next() * DECAL_IDS.length)] ?? DECAL_IDS[0];
         const sc = between(0.4, 0.82);
         const rot = rng.next() * Math.PI * 2;
         const flip = rng.next() < 0.5;
-        if (isPitAtPx(map, x, y) || !id) continue;
+        if (isPitAtPx(map, x, y) || !id || !this.textures.exists(id)) continue;
         const img = this.add.image(x, y, id).setScale(sc).setRotation(rot).setDepth(-15);
         if (flip) img.setFlipX(true);
       }
@@ -1643,7 +1649,7 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100012);
     this.levelWinObjects.push(dim, title, sub, barBg, this.levelWinTimerBar);
 
-    const attrs = ["str", "dex", "int", "con", "luk"];
+    const attrs: Attr[] = ["str", "dex", "int", "con", "luk"];
     const W = 150;
     const H = 200;
     const gap = 16;
@@ -1651,7 +1657,7 @@ export class ArenaScene extends Phaser.Scene {
     attrs.forEach((attr, i) => {
       const info = ArenaScene.ATTR_INFO[attr];
       if (!info) return;
-      const cur = (self as unknown as Record<string, number>)[attr] ?? 1;
+      const cur = self[attr]; // PlayerState[Attr] → number (no cast needed)
       const x = startX + i * (W + gap);
       const card = this.add
         .rectangle(x, cy + 30, W, H, 0x1b1812, 0.98)

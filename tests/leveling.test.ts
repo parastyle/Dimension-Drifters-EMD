@@ -1,7 +1,9 @@
 import {
+  ATTRS,
   CON_HP_PER,
   CON_REGEN_PER,
   deriveStats,
+  isAttr,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
   XP_BASE,
@@ -31,5 +33,27 @@ describe("deriveStats (CON survivability, §11)", () => {
     const s = deriveStats({ con: 4 });
     expect(s.maxHp).toBeCloseTo(PLAYER_MAX_HP + CON_HP_PER * 3, 6);
     expect(s.regen).toBeCloseTo(PLAYER_REGEN + CON_REGEN_PER * 3, 6);
+  });
+});
+
+describe("isAttr (§12 untrusted-input guard)", () => {
+  it("accepts every real attribute id", () => {
+    for (const a of ATTRS) expect(isAttr(a)).toBe(true);
+  });
+
+  it("rejects unknown strings, wrong case, and empties", () => {
+    for (const v of ["", "hp", "STR", "strength", "luck"]) expect(isAttr(v)).toBe(false);
+  });
+
+  it("rejects non-string values (a malformed network message field)", () => {
+    for (const v of [undefined, null, 0, 1, {}, [], true]) expect(isAttr(v)).toBe(false);
+  });
+
+  it("narrows the type so a validated value indexes attribute records", () => {
+    const msg: unknown = "dex";
+    if (isAttr(msg)) {
+      const spread: Record<typeof msg, number> = { str: 1, dex: 2, int: 1, con: 1, luk: 1 };
+      expect(spread[msg]).toBe(2); // compiles only because `msg` narrowed to Attr
+    }
   });
 });

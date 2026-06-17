@@ -5,6 +5,7 @@ export * from "./constants.js";
 export * from "./enemies.js";
 export * from "./leveling.js";
 export * from "./mapgen.js";
+export * from "./math.js";
 export * from "./movement.js";
 export * from "./rng.js";
 export * from "./state.js";

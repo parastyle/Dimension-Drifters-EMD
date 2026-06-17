@@ -60,6 +60,7 @@
   .param label { color: var(--dim); } .param input { width: 100%; accent-color: var(--rust); }
   .param .val { color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
   .stats { display: flex; gap: 16px; color: var(--dim); flex-wrap: wrap; }
+  /* biome-ignore lint/style/noDescendingSpecificity: .stats b and `aside .wp b` style disjoint <b> elements (stats panel vs sidebar) — no real cascade overlap. */
   .stats b { color: var(--ink); }
   .empty { color: var(--dim); padding: 60px 0; text-align: center; }
   .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #ffffff44; border-top-color: var(--gold); border-radius: 50%; animation: sp 0.7s linear infinite; vertical-align: -2px; }

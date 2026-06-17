@@ -1,11 +1,16 @@
 import {
+  ARENA_HEIGHT,
+  ARENA_WIDTH,
   coneAngles,
   ENEMY_KINDS,
+  ENEMY_RADIUS,
   enemyHpScale,
   inMeleeArc,
   nearestPoint,
   pickEnemyKind,
   spawnInterval,
+  stepEnemyChase,
+  stepEnemyKite,
   toughChance,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -119,5 +124,77 @@ describe("difficulty ramps (§6)", () => {
   it("spawnInterval shrinks over the run (faster spawns)", () => {
     expect(spawnInterval(0)).toBeGreaterThan(spawnInterval(9999));
     expect(spawnInterval(9999)).toBeGreaterThan(0);
+  });
+});
+
+describe("stepEnemyChase (§15 rusher AI)", () => {
+  const C = { x: 600, y: 600 };
+
+  it("with no target, the enemy holds position (returns a copy)", () => {
+    const out = stepEnemyChase(C, null, 200, 0.1);
+    expect(out).toEqual(C);
+    expect(out).not.toBe(C); // pure — never mutates the input
+  });
+
+  it("moves toward the target by exactly speed×dt along the straight line", () => {
+    const out = stepEnemyChase(C, { x: 800, y: 600 }, 100, 0.5);
+    expect(out.x).toBeCloseTo(650, 6); // 100 * 0.5 = 50 px toward +x
+    expect(out.y).toBeCloseTo(600, 6);
+  });
+
+  it("normalizes the direction so diagonal chase isn't faster than axis chase", () => {
+    const out = stepEnemyChase(C, { x: 600 + 300, y: 600 + 400 }, 100, 1); // 3-4-5 triangle
+    const moved = Math.hypot(out.x - C.x, out.y - C.y);
+    expect(moved).toBeCloseTo(100, 4); // step length == speed×dt regardless of angle
+  });
+
+  it("clamps to the arena bounds (never walks an enemy off the field)", () => {
+    const corner = { x: ENEMY_RADIUS + 1, y: ENEMY_RADIUS + 1 };
+    const out = stepEnemyChase(corner, { x: -9999, y: -9999 }, 500, 1);
+    expect(out.x).toBeGreaterThanOrEqual(ENEMY_RADIUS);
+    expect(out.y).toBeGreaterThanOrEqual(ENEMY_RADIUS);
+    expect(out.x).toBeLessThanOrEqual(ARENA_WIDTH - ENEMY_RADIUS);
+    expect(out.y).toBeLessThanOrEqual(ARENA_HEIGHT - ENEMY_RADIUS);
+  });
+
+  it("is deterministic (same inputs → same output)", () => {
+    const t = { x: 700, y: 500 };
+    expect(stepEnemyChase(C, t, 123, 0.3)).toEqual(stepEnemyChase(C, t, 123, 0.3));
+  });
+});
+
+describe("stepEnemyKite (§15 spitter AI)", () => {
+  const C = { x: 600, y: 600 };
+  const RANGE = 200;
+
+  it("with no target, holds position (returns a copy)", () => {
+    const out = stepEnemyKite(C, null, 100, RANGE, 0.1);
+    expect(out).toEqual(C);
+    expect(out).not.toBe(C);
+  });
+
+  it("closes in when farther than preferredRange", () => {
+    const target = { x: 600 + RANGE + 100, y: 600 }; // well beyond range, to the +x
+    const out = stepEnemyKite(C, target, 100, RANGE, 0.5);
+    expect(out.x).toBeGreaterThan(C.x); // steps toward the target
+  });
+
+  it("backs off when closer than 85% of preferredRange", () => {
+    const target = { x: 600 + RANGE * 0.5, y: 600 }; // too close, to the +x
+    const out = stepEnemyKite(C, target, 100, RANGE, 0.5);
+    expect(out.x).toBeLessThan(C.x); // retreats AWAY from the target
+  });
+
+  it("holds station inside the dead-band (between 85% and 100% of range)", () => {
+    const target = { x: 600 + RANGE * 0.92, y: 600 }; // inside the comfort band
+    const out = stepEnemyKite(C, target, 100, RANGE, 0.5);
+    expect(out.x).toBeCloseTo(C.x, 6);
+    expect(out.y).toBeCloseTo(C.y, 6);
+  });
+
+  it("clamps to the arena bounds", () => {
+    const edge = { x: ARENA_WIDTH - ENEMY_RADIUS - 1, y: 600 };
+    const out = stepEnemyKite(edge, { x: ARENA_WIDTH + 9999, y: 600 }, 500, RANGE, 1);
+    expect(out.x).toBeLessThanOrEqual(ARENA_WIDTH - ENEMY_RADIUS);
   });
 });

@@ -1,13 +1,19 @@
 import {
   type Attr,
+  DEFAULT_WEAPON,
   damageMultFromGrades,
   effectiveDamageMult,
+  FISTS_WEAPON,
   GRADE_DMG_COEFF,
+  GUN_HAND_FORWARD,
+  gunMuzzleReach,
+  nextWeapon,
   REQ_PENALTY_FLOOR,
   REQ_PENALTY_PER_POINT,
   requirementPenalty,
   requirementShortfall,
   sourceDamageMult,
+  WEAPON_IDS,
   WEAPONS,
   weaponDamageMult,
   weaponDamageSources,
@@ -269,5 +275,64 @@ describe("GRADE_DMG_COEFF ordering", () => {
     for (let i = 1; i < order.length; i++) {
       expect(GRADE_DMG_COEFF[order[i - 1]]).toBeGreaterThan(GRADE_DMG_COEFF[order[i]]);
     }
+  });
+});
+
+describe("gunMuzzleReach (§9 barrel-tip muzzle)", () => {
+  it("an undefined weapon (fists / no held sprite) just reaches the hand-forward offset", () => {
+    expect(gunMuzzleReach(undefined)).toBe(GUN_HAND_FORWARD);
+  });
+
+  it("extends the muzzle past the hand by the ungripped length of the barrel", () => {
+    const w = { gripFrac: 0.25, displayLength: 80 } as Parameters<typeof gunMuzzleReach>[0];
+    // GUN_HAND_FORWARD + (1 - 0.25) * 80 = 12 + 60
+    expect(gunMuzzleReach(w)).toBeCloseTo(GUN_HAND_FORWARD + 60, 6);
+  });
+
+  it("a fully-gripped weapon (gripFrac 1) reaches no farther than the hand", () => {
+    const w = { gripFrac: 1, displayLength: 200 } as Parameters<typeof gunMuzzleReach>[0];
+    expect(gunMuzzleReach(w)).toBeCloseTo(GUN_HAND_FORWARD, 6);
+  });
+
+  it("every shipped gun puts its muzzle out past the hand (bullets never spawn behind the barrel)", () => {
+    for (const id of WEAPON_IDS) {
+      const w = WEAPONS[id];
+      if (!w?.gun) continue;
+      expect(gunMuzzleReach(w)).toBeGreaterThan(GUN_HAND_FORWARD);
+    }
+  });
+});
+
+describe("nextWeapon (§9 cycle)", () => {
+  it("advances to the next id in the roster", () => {
+    const first = WEAPON_IDS[0];
+    const second = WEAPON_IDS[1];
+    if (!first || !second) return;
+    expect(nextWeapon(first)).toBe(second);
+  });
+
+  it("wraps around from the last weapon back to the first", () => {
+    const last = WEAPON_IDS[WEAPON_IDS.length - 1];
+    if (!last) return;
+    expect(nextWeapon(last)).toBe(WEAPON_IDS[0]);
+  });
+
+  it("an unknown id (e.g. fists, excluded from the cycle) falls to the default weapon", () => {
+    // indexOf → -1, (-1 + 1) % n = 0 → the first roster weapon; for an empty roster, DEFAULT_WEAPON.
+    const out = nextWeapon(FISTS_WEAPON);
+    expect(out).toBe(WEAPON_IDS[0] ?? DEFAULT_WEAPON);
+  });
+
+  it("cycling the whole roster visits every weapon exactly once and returns home", () => {
+    const start = WEAPON_IDS[0];
+    if (!start) return;
+    const visited = [start];
+    let cur = start;
+    for (let i = 0; i < WEAPON_IDS.length - 1; i++) {
+      cur = nextWeapon(cur);
+      visited.push(cur);
+    }
+    expect(new Set(visited).size).toBe(WEAPON_IDS.length); // no repeats until the wrap
+    expect(nextWeapon(cur)).toBe(start); // full loop closes
   });
 });

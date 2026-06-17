@@ -24,6 +24,11 @@ export function xpToNextLevel(level: number): number {
 export const ATTRS = ["str", "dex", "int", "con", "luk"] as const;
 export type Attr = (typeof ATTRS)[number];
 
+/** Type guard for an untrusted value (e.g. a network message field) → a valid `Attr`. */
+export function isAttr(value: unknown): value is Attr {
+  return typeof value === "string" && (ATTRS as readonly string[]).includes(value);
+}
+
 /**
  * M0 melee Drifter auto-allocation (§12 "1 class attr + 1 requirement attr"). One character for M0;
  * per-character class/requirement attrs become data when more characters land. (tuning)

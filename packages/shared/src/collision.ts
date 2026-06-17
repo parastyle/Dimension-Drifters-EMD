@@ -1,4 +1,5 @@
 import { ARENA_HEIGHT, ARENA_WIDTH, PLAYER_RADIUS } from "./constants.js";
+import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 
 /**
@@ -52,8 +53,4 @@ export function resolveBodyCollisions(
     b.y = clamp(b.y, radius, ARENA_HEIGHT - radius);
   }
   return out;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }

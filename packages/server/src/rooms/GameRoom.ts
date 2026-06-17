@@ -3,11 +3,11 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   ArenaState,
-  ATTRS,
   type Attr,
   BOSS_SPAWN_SECONDS,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  clamp,
   clampQuakeEpicenter,
   coneAngles,
   DEFAULT_WEAPON,
@@ -24,6 +24,7 @@ import {
   generateArena,
   gunMuzzleReach,
   inMeleeArc,
+  isAttr,
   isInsidePoi,
   isPitAtPx,
   JUMP_AIRTIME,
@@ -382,8 +383,8 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("chooseAttribute", (client, message: { attr?: string }) => {
       const player = this.state.players.get(client.sessionId);
       if (!player || player.flexPending <= 0) return;
-      const attr = message?.attr as Attr | undefined;
-      if (!attr || !ATTRS.includes(attr)) return;
+      const attr = message?.attr;
+      if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
       this.allocate(player, attr, 1);
       this.consumeFlex(player);
     });
@@ -1587,8 +1588,4 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
   }
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v));
 }

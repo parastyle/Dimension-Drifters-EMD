@@ -184,8 +184,8 @@ export const CHAIN_MAX_RANGE = 320;
 /** Step within this radius of the open extraction portal to complete the run. (tuning) */
 export const EXTRACT_RADIUS = 90;
 
-/** Parry — the melee LMB signature (§7/§8). Base effect = i-frames + knockback (augments TODO).
- *  No telegraphed enemy attacks yet, so for now it's a defensive panic button. (tuning) */
+/** Parry — the melee LMB signature (§7/§8). Base effect = i-frames + knockback; the parry *augments*
+ *  (§12) are deferred — no telegraphed enemy attacks yet, so for now it's a defensive panic button. (tuning) */
 export const PARRY_IFRAMES = 0.45;
 export const PARRY_COOLDOWN = 0.6;
 export const PARRY_RADIUS = 135;

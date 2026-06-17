@@ -12,6 +12,7 @@ import {
   TOUGH_CHANCE_PER_PLAYER,
   TOUGH_RAMP_SECONDS,
 } from "./constants.js";
+import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 
 /**
@@ -345,8 +346,4 @@ export function enemyHpScale(playerCount: number): number {
 export function spawnInterval(elapsedSeconds: number): number {
   const t = Math.min(1, Math.max(0, elapsedSeconds) / SPAWN_RAMP_SECONDS);
   return SPAWN_INTERVAL_START + (SPAWN_INTERVAL_MIN - SPAWN_INTERVAL_START) * t;
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v));
 }

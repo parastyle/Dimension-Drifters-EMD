@@ -4,7 +4,7 @@
 > **THIS IS THE GAME BIBLE — THE SINGLE SOURCE OF TRUTH.**
 > It is a *living* document, updated every session with all canon decisions. "Living" ≠ "unlocked": `[LOCKED]` items are canon until explicitly changed here. Any decision made anywhere (chat, coding session, playtest) must be written back into this file or it does not exist. If code and this doc disagree, that's a bug in one of them — reconcile immediately.
 
-**Doc version:** v0.78 · **Last updated:** 2026-06-16 · **Owner:** product owner (Mike)
+**Doc version:** v0.79 · **Last updated:** 2026-06-16 · **Owner:** product owner (Mike)
 **Status:** Living design bible. Consolidates the full design session.
 **Legend:** `[LOCKED]` = decided/canon. `[PROPOSED]` = drafted by Claude, awaiting sign-off. `[OPEN]` = undecided.
 **Update protocol:** bump version + date on every edit; record reversals in §25; never silently overwrite a `[LOCKED]` item — supersede it with a logged note.
@@ -447,7 +447,7 @@ Plus tuned fields: damage, **knockback value (per LMB/RMB attack; default 0, tun
 **Goal:** one complete run loop, co-op, with the arsenal feeling great. Everything else is fakeable.
 
 **In scope:**
-1. **Melee class, one character.** Parry signature + the mix-and-match augment pool (§8).
+1. **Melee class, one character.** Parry signature + the mix-and-match augment pool (§8). *(Parry base — i-frames + knockback — is shipped; the **augment-pick layer is currently deferred**, see §12 NOT-YET-BUILT.)*
 2. **~10 hand-authored melee weapons** on the data framework (proving-ground-first); full VFX pass on ≥5; card art for all.
 3. **Arsenal system complete:** held weapon in-world + bottom-center **card carousel** (orbiting weapons deprecated §9), charges/durability/cooldown, auto-cycle, manual cycle.
 4. **One Wild West arena** (procedural), 6 enemy types (§15) + boss OLD RUST (§16).
@@ -503,6 +503,8 @@ Plus tuned fields: damage, **knockback value (per LMB/RMB attack; default 0, tun
 ---
 
 ## 25. Decision Log / Changelog (so we don't relitigate)
+
+**CODEBASE AUDIT + tidy-up (housekeeping, no behaviour change) — 2026-06-16 (v0.79) `[DONE]`:** Mike: "full audit of our code base, time to tidy up — the whole shabang." Ran a multi-agent audit (9 auditors → 44 candidates → 40 confirmed) and executed every safe fix; pure hygiene, zero gameplay change. **(1) Dead scripts** — removed all 23 one-off CDP harness scripts (`tools/cdp-*.cjs`, `tools/mapgen-port-check.cjs`) + tmp scratch JSON; they were single-use verification probes, preserved only as changelog references. **(2) DRY** — the 4 copy-pasted `clamp()` helpers (collision/movement/enemies/GameRoom) collapse into one shared `math.ts` (`clamp` + `clamp01`) so server + client clamp identically. **(3) Determinism hardening** — client decal + POI scatter now index off the BUILD-TIME manifest (`DECAL_IDS`/`POI_IDS`), never the runtime-loaded set, so a client that missed a texture load stays in lockstep (the missing prop just skips its own draw) instead of silently shifting every other prop/landmark. **(4) Type safety** — the `chooseAttribute` net-message handler validates via a new shared `isAttr` type guard (was an unchecked `as Attr` cast); the level-up window reads `self[attr]` through a typed `Attr[]` (dropped an `as unknown as Record` cast). **(5) Stale docs** — fixed the `drawArena` docstring (still claimed a "fixed client seed placeholder"; it's server-seeded procgen now), the parry "augments TODO" comment, and reconciled the §23 M0-scope parry-augment line with the §12 NOT-YET-BUILT deferral. **(6) Tests** — +35 (96 → **131**): new `rng.test.ts` (makeRng stream/range/int/chance/pick, mixSeeds order-sensitivity, randomSeed bounds), enemy AI (`stepEnemyChase`/`stepEnemyKite` close/kite/dead-band/clamp), `gunMuzzleReach`/`nextWeapon`, and `isAttr`. **Gate green:** format + typecheck (all 4 packages) + lint (was 1 error + 3 warnings → **0**) + 131 tests. *Big structural recommendations (split the 2.7k-line ArenaScene + 1.6k-line GameRoom; extract magic depth/tween constants) were logged for Mike's call, NOT done — they're risky refactors, not tidy-up.*
 
 **Arena POLISH — ricochet-off-landmark carom + pit-fall VFX (§17) — 2026-06-16 (v0.78) `[BUILT]`:** Feel pass on the procgen arena (Mike: "polish the arena"). **(1) Ricochet rounds CAROM off POIs** — new shared `poiAt(map,x,y)` (the landmark a point is in); in `stepProjectiles`, a ricochet round (bounces left) that hits a landmark reflects across the radial normal, snaps to the surface, and re-arms (fresh pierce/hit-set/life) — same model as the wall carom — instead of being absorbed; non-bouncing rounds still absorb (cover). **(2) Pit-fall VFX** — a new `spawnFallStreak` (a dark puff that SINKS + dust motes that drop downward) replaces the flat poof when a PLAYER falls into a pit (driven off `fellSeq`) AND when an ENEMY vanishes over a pit (client checks `isPitAtPx` on removal), so a fall reads as falling into the void. **Verified:** 96 tests (1 new — `poiAt`) + typecheck + lint green; **live CDP** (`tools/cdp-ricochet.cjs`): ricochet pistol fired at a landmark — 6 bounce-frames detected (bullets reflecting outward off the near face). *(Remaining P4: biome hazards (`[OPEN]` w/ Mike) + ground-tile variants.)*
 

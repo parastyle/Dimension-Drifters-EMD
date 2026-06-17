@@ -1,4 +1,5 @@
 import { ARENA_HEIGHT, ARENA_WIDTH, MOVE_SPEED, PLAYER_RADIUS } from "./constants.js";
+import { clamp } from "./math.js";
 
 export interface Vec2 {
   x: number;
@@ -45,8 +46,4 @@ export function stepPlayerMovement(
   y = clamp(y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
 
   return { x, y };
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
