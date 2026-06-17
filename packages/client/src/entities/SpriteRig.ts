@@ -67,6 +67,9 @@ export class SpriteRig {
   /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
    *  the camera + depth-sort use the ground position; only the visible parts rise. */
   private hopPx = 0;
+  /** §5/§20 ground shadow — stays grounded while the art lifts, so the gap reads as HEIGHT (jump /
+   *  parry-launch / death-pop). Shrinks + fades as the rig rises. */
+  private readonly shadow: Phaser.GameObjects.Ellipse;
 
   constructor(
     scene: Phaser.Scene,
@@ -124,6 +127,13 @@ export class SpriteRig {
           .setOrigin(0.5)
       : undefined;
     if (this.label) order.push(this.label);
+
+    // §5/§20 ground shadow at the feet — drawn FIRST (behind everything) so it sits under the rig; it
+    // stays put while the art lifts on the hop, so the gap reads as altitude.
+    this.shadow = scene.add
+      .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0.3)
+      .setOrigin(0.5);
+    order.unshift(this.shadow);
 
     this.root = scene.add.container(x, y, order);
 
@@ -464,5 +474,9 @@ export class SpriteRig {
       // A touch of squash relief at the apex sells the leap (body stretches up slightly mid-air).
       this.body.scaleY *= 1 + Math.min(0.12, lift / 300);
     }
+    // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
+    // between the lifted art and the planted shadow). The shadow itself never lifts.
+    const shrink = Math.max(0.42, 1 - this.hopPx / 420);
+    this.shadow.setScale(shrink, shrink).setAlpha(0.3 * shrink);
   }
 }

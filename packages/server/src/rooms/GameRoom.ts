@@ -67,6 +67,9 @@ import {
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
   PARRY_KNOCKBACK,
+  PARRY_LAUNCH,
+  PARRY_LAUNCH_MAX,
+  PARRY_PUSH,
   PARRY_RADIUS,
   PICKUP_RADIUS,
   PIT_FALL_DAMAGE_FRAC,
@@ -1481,7 +1484,6 @@ export class GameRoom extends Room<ArenaState> {
         // §8 PARRIED — negate + punish + FLOW: bump the feedback, refresh the parry cooldown so you can
         // immediately parry the next swing (chain), and shove the attacker back hard.
         player.parriedSeq = (player.parriedSeq + 1) % 100000;
-        if (pc) pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
         const d = Math.hypot(dx, dy) || 1;
@@ -1495,6 +1497,16 @@ export class GameRoom extends Room<ArenaState> {
           ENEMY_RADIUS,
           ARENA_HEIGHT - ENEMY_RADIUS,
         );
+        if (pc) {
+          pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
+          // §20 Stage D — the parry LAUNCHES the parrier: an upward kick on the height axis (capped, so a
+          // chain stacks faster than gravity removes it = you ride the flurry UP), plus a horizontal shove
+          // along the attack vector (away from the attacker). Stop parrying → gravity reclaims you.
+          pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+          const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
+          player.vx = k.vx;
+          player.vy = k.vy;
+        }
         return;
       }
       player.hp -= m.damage * dmgMul;

@@ -204,6 +204,14 @@ export const PARRY_KNOCKBACK = 96;
  *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */
 export const PARRY_CHAIN_CD = 0.12;
 
+/** §8/§20 parry-LAUNCH (Stage D) — a successful parry of an attack lofts the PARRIER: it adds an upward kick
+ *  to the height-axis velocity (`vh`, §5 Stage B) + shoves them along the attack vector. Chaining parries
+ *  stacks the kicks faster than gravity removes them, so you RIDE the flurry up; stop parrying and gravity
+ *  reclaims you. Capped so it can't moon-launch. (all tuning) */
+export const PARRY_LAUNCH = 420; // px/s upward kick per parried hit
+export const PARRY_LAUNCH_MAX = 640; // px/s cap on the accumulated upward velocity
+export const PARRY_PUSH = 130; // px/s horizontal shove along the attack (away from the attacker)
+
 /** §20 MOMENTUM layer (Stage A) — forces (gun recoil, enemy-hit knockback, …) add to a per-player impulse
  *  velocity that displaces the body on top of WASD, then decays back to rest. The authoritative position
  *  is the input-driven base PLUS this shove, so it reads as weight without breaking control. (all tuning) */
