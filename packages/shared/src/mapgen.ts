@@ -477,6 +477,30 @@ export function nearestGroundPx(map: ArenaMap, px: number, py: number): { x: num
   return center(Math.floor(cols / 2), Math.floor(rows / 2)); // unreachable (border is ground)
 }
 
+/** §17 nudge a spawn position onto solid GROUND and OUT of any POI obstacle, so nothing spawns inside a
+ *  pit or a landmark and then teleports out on the next tick. Pure — the server's spawn paths + the
+ *  unit tests share it. */
+export function safeSpawnPos(
+  map: ArenaMap,
+  x: number,
+  y: number,
+  radius: number,
+): { x: number; y: number } {
+  let nx = x;
+  let ny = y;
+  if (isPitAtPx(map, nx, ny)) {
+    const g = nearestGroundPx(map, nx, ny);
+    nx = g.x;
+    ny = g.y;
+  }
+  if (isInsidePoi(map, nx, ny)) {
+    const safe = resolvePoiCollision(map, nx, ny, radius);
+    nx = safe.x;
+    ny = safe.y;
+  }
+  return { x: nx, y: ny };
+}
+
 export type PitClassification = {
   /** Per-cell region id (−1 for ground). */
   regionOf: Int16Array;

@@ -14,6 +14,7 @@ import {
   pitFraction,
   poiAt,
   resolvePoiCollision,
+  safeSpawnPos,
   TILE_GROUND,
   TILE_PIT,
   tileAtPx,
@@ -168,6 +169,41 @@ describe("mapgen — POI landmarks", () => {
     if (!p) return;
     expect(poiAt(map, p.x, p.y)).toBe(p); // inside → that POI
     expect(poiAt(map, map.spawnX, map.spawnY)).toBeUndefined(); // clear ground → none
+  });
+});
+
+describe("mapgen — safeSpawnPos (§17 spawn nudge)", () => {
+  const R = 24;
+
+  it("nudges a pit-centre spawn onto solid ground", () => {
+    for (const s of SAMPLES.slice(0, 60)) {
+      const map = generateArena(s);
+      for (let i = 0; i < map.tiles.length; i++) {
+        if (map.tiles[i] !== TILE_PIT) continue;
+        const cx = ((i % map.cols) + 0.5) * map.tileSize;
+        const cy = (Math.floor(i / map.cols) + 0.5) * map.tileSize;
+        const sp = safeSpawnPos(map, cx, cy, R);
+        expect(isPitAtPx(map, sp.x, sp.y), `pit spawn for seed ${JSON.stringify(s)}`).toBe(false);
+        break; // one pit cell per map is enough to exercise the nudge
+      }
+    }
+  });
+
+  it("pushes a spawn out of a POI footprint", () => {
+    const map = generateArena(seeds(3, 4, 5, 6));
+    const p = map.pois[0];
+    if (!p) return;
+    const sp = safeSpawnPos(map, p.x + 5, p.y, R); // start inside the landmark
+    expect(isInsidePoi(map, sp.x, sp.y)).toBe(false);
+  });
+
+  it("leaves an already-clear spawn (the map spawn point) on ground + out of POIs", () => {
+    for (const s of SAMPLES.slice(0, 40)) {
+      const map = generateArena(s);
+      const sp = safeSpawnPos(map, map.spawnX, map.spawnY, R);
+      expect(isPitAtPx(map, sp.x, sp.y)).toBe(false);
+      expect(isInsidePoi(map, sp.x, sp.y)).toBe(false);
+    }
   });
 });
 

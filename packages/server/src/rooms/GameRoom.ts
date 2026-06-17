@@ -3,7 +3,6 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   ArenaState,
-  type Attr,
   BOSS_SPAWN_SECONDS,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
@@ -25,14 +24,10 @@ import {
   gunMuzzleReach,
   inMeleeArc,
   isAttr,
-  isInsidePoi,
   isPitAtPx,
   JUMP_AIRTIME,
   JUMP_COOLDOWN,
-  LEVEL_CAP,
-  LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
-  M0_REQ_ATTR,
   MAP_POI_RADIUS,
   MAX_ENEMIES,
   MAX_PLAYERS,
@@ -65,6 +60,7 @@ import {
   resolveBodyCollisions,
   resolvePoiCollision,
   SPAWN_RING,
+  safeSpawnPos,
   selectChainTargets,
   spawnInterval,
   stepEnemyChase,
@@ -88,6 +84,7 @@ import {
   ZoneState,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
+import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 
 /** Latest input received from each client, applied every tick. */
 interface InputState {
@@ -385,8 +382,8 @@ export class GameRoom extends Room<ArenaState> {
       if (!player || player.flexPending <= 0) return;
       const attr = message?.attr;
       if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
-      this.allocate(player, attr, 1);
-      this.consumeFlex(player);
+      allocate(player, attr, 1);
+      consumeFlex(player);
     });
 
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
@@ -954,39 +951,8 @@ export class GameRoom extends Room<ArenaState> {
   /** §12: XP is SQUAD-SHARED — every kill levels the whole squad in lockstep (not just the killer). */
   private grantXp(amount: number): void {
     this.state.players.forEach((player) => {
-      this.levelUpPlayer(player, amount);
+      levelUpPlayer(player, amount);
     });
-  }
-
-  /** Add XP to one player; each level reached (capped at 30) grants the §12 3-point allocation. */
-  private levelUpPlayer(player: PlayerState, amount: number): void {
-    if (player.level >= LEVEL_CAP) return;
-    player.xp += amount;
-    while (player.xp >= player.xpToNext && player.level < LEVEL_CAP) {
-      player.xp -= player.xpToNext;
-      player.level += 1;
-      // 2 auto points: +1 class attr, +1 requirement attr (§12). The 3rd is the FLEX pick.
-      this.allocate(player, M0_CLASS_ATTR, 1);
-      this.allocate(player, M0_REQ_ATTR, 1);
-      player.flexPending += 1;
-      player.flexTimer = LEVELUP_WINDOW_SECONDS; // open/refresh the invincible pick window
-      player.xpToNext = xpToNextLevel(player.level);
-    }
-    if (player.level >= LEVEL_CAP) player.xp = 0;
-  }
-
-  /** Allocate `n` points into an attribute and re-derive maxHp (CON), topping up the gained HP. */
-  private allocate(player: PlayerState, attr: Attr, n: number): void {
-    player[attr] += n;
-    const prevMax = player.maxHp;
-    player.maxHp = deriveStats(player).maxHp;
-    if (player.maxHp > prevMax) player.hp += player.maxHp - prevMax; // gain the new HP immediately
-  }
-
-  /** Consume one pending flex point; close the window (or refresh its timer) accordingly. */
-  private consumeFlex(player: PlayerState): void {
-    player.flexPending = Math.max(0, player.flexPending - 1);
-    player.flexTimer = player.flexPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
   }
 
   /** §12 window: count down each open pick; on timeout auto-spend the flex into the class attr. */
@@ -995,8 +961,8 @@ export class GameRoom extends Room<ArenaState> {
       if (player.flexPending <= 0) return;
       player.flexTimer -= dt;
       if (player.flexTimer <= 0) {
-        this.allocate(player, M0_CLASS_ATTR, 1); // "pick in time or you exit it" → default to class
-        this.consumeFlex(player);
+        allocate(player, M0_CLASS_ATTR, 1); // "pick in time or you exit it" → default to class
+        consumeFlex(player);
       }
     });
   }
@@ -1499,28 +1465,10 @@ export class GameRoom extends Room<ArenaState> {
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
     // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
-    const sp = this.safeSpawnPos(ex, ey, kind.radius);
+    const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
-  }
-
-  /** §17 nudge a spawn position onto solid GROUND and OUT of any POI obstacle, so nothing spawns inside a
-   *  pit or a landmark and then teleports out on the next tick (the review caught this for enemies + the boss). */
-  private safeSpawnPos(x: number, y: number, radius: number): Vec2 {
-    let nx = x;
-    let ny = y;
-    if (isPitAtPx(this.map, nx, ny)) {
-      const g = nearestGroundPx(this.map, nx, ny);
-      nx = g.x;
-      ny = g.y;
-    }
-    if (isInsidePoi(this.map, nx, ny)) {
-      const safe = resolvePoiCollision(this.map, nx, ny, radius);
-      nx = safe.x;
-      ny = safe.y;
-    }
-    return { x: nx, y: ny };
   }
 
   /** Spawn the boss OLD RUST on a ring around a player (§16) — the run's capstone threat. */
@@ -1551,7 +1499,7 @@ export class GameRoom extends Room<ArenaState> {
       ARENA_HEIGHT - kind.radius,
     );
     // §17 land the boss on solid ground + clear of POIs so its grand entrance doesn't teleport-out next tick.
-    const sp = this.safeSpawnPos(bx, by, kind.radius);
+    const sp = safeSpawnPos(this.map, bx, by, kind.radius);
     boss.x = sp.x;
     boss.y = sp.y;
     this.state.enemies.set(boss.id, boss);
