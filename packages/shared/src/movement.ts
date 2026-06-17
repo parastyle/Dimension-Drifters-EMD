@@ -1,4 +1,12 @@
-import { ARENA_HEIGHT, ARENA_WIDTH, MOVE_SPEED, PLAYER_RADIUS } from "./constants.js";
+import {
+  ARENA_HEIGHT,
+  ARENA_WIDTH,
+  IMPULSE_EPSILON,
+  IMPULSE_FRICTION,
+  IMPULSE_MAX,
+  MOVE_SPEED,
+  PLAYER_RADIUS,
+} from "./constants.js";
 import { clamp } from "./math.js";
 
 export interface Vec2 {
@@ -46,4 +54,45 @@ export function stepPlayerMovement(
   y = clamp(y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
 
   return { x, y };
+}
+
+/** §20 momentum layer (Stage A). An impulse velocity that shoves the body. */
+export interface Impulse {
+  vx: number;
+  vy: number;
+}
+
+/**
+ * Integrate an impulse shove into a position then decay it under exponential friction — PURE + deterministic.
+ * The authoritative player position = the WASD base (`stepPlayerMovement`) PLUS this offset, so recoil /
+ * knockback / (later) parry-launch read as weight without breaking input control. Clamps to the arena;
+ * snaps sub-`IMPULSE_EPSILON` residuals to 0 so the shove fully settles. Same fn server + (future) client
+ * prediction so the two can't diverge.
+ */
+export function stepImpulse(
+  pos: Vec2,
+  vel: Impulse,
+  dtSeconds: number,
+): { x: number; y: number; vx: number; vy: number } {
+  const x = clamp(pos.x + vel.vx * dtSeconds, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+  const y = clamp(pos.y + vel.vy * dtSeconds, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
+  const decay = Math.exp(-IMPULSE_FRICTION * dtSeconds); // frame-rate-independent friction
+  let vx = vel.vx * decay;
+  let vy = vel.vy * decay;
+  if (Math.abs(vx) < IMPULSE_EPSILON) vx = 0;
+  if (Math.abs(vy) < IMPULSE_EPSILON) vy = 0;
+  return { x, y, vx, vy };
+}
+
+/** Add an impulse to a velocity, capped at `IMPULSE_MAX` so a rapid-fire stream / pile-up can't fling a
+ *  body across the arena. PURE. */
+export function addImpulse(vel: Impulse, ix: number, iy: number): Impulse {
+  let vx = vel.vx + ix;
+  let vy = vel.vy + iy;
+  const sp = Math.hypot(vx, vy);
+  if (sp > IMPULSE_MAX) {
+    vx = (vx / sp) * IMPULSE_MAX;
+    vy = (vy / sp) * IMPULSE_MAX;
+  }
+  return { vx, vy };
 }

@@ -63,6 +63,10 @@ export class PlayerState extends Schema {
   /** §17 pit fall: increments each time this player falls into a pit. Synced ONLY as a client VFX trigger
    *  (dust poof + a local red flash) — the fall's damage/reposition is applied server-authoritatively. */
   @type("number") fellSeq = 0;
+  /** §20 momentum layer (Stage A): impulse velocity (px/s) — the shove from gun recoil / hit knockback.
+   *  Server integrates it into x/y each tick + decays it; synced so the client leans/jiggles the rig. */
+  @type("number") vx = 0;
+  @type("number") vy = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

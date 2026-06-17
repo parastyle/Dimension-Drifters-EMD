@@ -7,6 +7,7 @@ import {
   AUG_PROJECTILE_PIERCE,
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
+  addImpulse,
   BOSS_SPAWN_SECONDS,
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
@@ -34,10 +35,13 @@ import {
   effectiveDamageMult,
   enemyHpScale,
   FISTS_WEAPON,
+  GUN_RECOIL_BASELINE,
+  GUN_RECOIL_IMPULSE,
   generateArena,
   gunMuzzleReach,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
+  HIT_KNOCKBACK_IMPULSE,
   hasAugment,
   IRON_STANCE_IFRAME_PER,
   IRON_STANCE_KNOCKBACK_PER,
@@ -88,6 +92,7 @@ import {
   spawnInterval,
   stepEnemyChase,
   stepEnemyKite,
+  stepImpulse,
   stepPlayerMovement,
   TICK_MS,
   TOUGH_DAMAGE_MULT,
@@ -530,6 +535,8 @@ export class GameRoom extends Room<ArenaState> {
       player.augments = "";
       player.sigPending = 0;
       player.sigOffer = "";
+      player.vx = 0; // §20 clear any residual momentum
+      player.vy = 0;
       player.maxHp = PLAYER_MAX_HP;
       player.alive = true;
       player.hp = player.maxHp;
@@ -684,8 +691,13 @@ export class GameRoom extends Room<ArenaState> {
       const input = this.inputs.get(id);
       if (!input) return;
       const next = stepPlayerMovement(player, input, dt, MOVE_SPEED);
-      player.x = next.x;
-      player.y = next.y;
+      // §20 momentum layer (Stage A): integrate the impulse shove (recoil / knockback) on top of WASD,
+      // then decay it. The authoritative position is the input base PLUS the shove.
+      const imp = stepImpulse(next, player, dt);
+      player.x = imp.x;
+      player.y = imp.y;
+      player.vx = imp.vx;
+      player.vy = imp.vy;
     });
 
     // 2. Resolve body collisions so living players block each other (§5). Authoritative.
@@ -890,7 +902,17 @@ export class GameRoom extends Room<ArenaState> {
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
         const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
-        if (dx * dx + dy * dy <= reach * reach) player.hp -= kind.contactDamage * dmgMul * dt;
+        if (dx * dx + dy * dy <= reach * reach) {
+          player.hp -= kind.contactDamage * dmgMul * dt;
+          // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
+          if (kind.contactDamage > 0) {
+            const d = Math.hypot(dx, dy) || 1;
+            const push = HIT_KNOCKBACK_IMPULSE * dt;
+            const k = addImpulse(player, (-dx / d) * push, (-dy / d) * push);
+            player.vx = k.vx;
+            player.vy = k.vy;
+          }
+        }
       });
     });
 
@@ -1188,6 +1210,13 @@ export class GameRoom extends Room<ArenaState> {
         g.bounces ?? 0,
       );
     }
+    // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
+    // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
+    // so a slow heavy gun punches once while a gatling stream accumulates a steady shove (capped).
+    const kick = GUN_RECOIL_IMPULSE * ((g.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE);
+    const r = addImpulse(player, -c.aimX * kick, -c.aimY * kick);
+    player.vx = r.vx;
+    player.vy = r.vy;
   }
 
   /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */
@@ -1517,6 +1546,15 @@ export class GameRoom extends Room<ArenaState> {
           const dy = pr.y - player.y;
           if (dx * dx + dy * dy <= reach * reach) {
             player.hp -= meta.damage;
+            // §20 knockback (Stage A): a sharp bump along the bullet's travel direction.
+            const sp = Math.hypot(pr.vx, pr.vy) || 1;
+            const k = addImpulse(
+              player,
+              (pr.vx / sp) * HIT_KNOCKBACK_IMPULSE,
+              (pr.vy / sp) * HIT_KNOCKBACK_IMPULSE,
+            );
+            player.vx = k.vx;
+            player.vy = k.vy;
             hit = true;
           }
         });

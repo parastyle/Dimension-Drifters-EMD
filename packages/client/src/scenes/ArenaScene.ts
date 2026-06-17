@@ -1233,6 +1233,8 @@ export class ArenaScene extends Phaser.Scene {
         aimY: isSelf ? aimY : 0,
         aimDir: pl?.aimDir ?? 0, // §9 remote gun pose tracks the synced aim
         isSelf,
+        recoilX: pl?.vx ?? 0, // §20 momentum flinch (gun recoil / hit knockback)
+        recoilY: pl?.vy ?? 0,
       });
       blob.setDepth(blob.y);
     }

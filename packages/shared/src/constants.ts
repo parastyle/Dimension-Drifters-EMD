@@ -190,3 +190,19 @@ export const PARRY_IFRAMES = 0.45;
 export const PARRY_COOLDOWN = 0.6;
 export const PARRY_RADIUS = 135;
 export const PARRY_KNOCKBACK = 96;
+
+/** §20 MOMENTUM layer (Stage A) — forces (gun recoil, enemy-hit knockback, …) add to a per-player impulse
+ *  velocity that displaces the body on top of WASD, then decays back to rest. The authoritative position
+ *  is the input-driven base PLUS this shove, so it reads as weight without breaking control. (all tuning) */
+/** Exponential friction (per second) decaying an impulse shove to rest — higher = snappier settle. */
+export const IMPULSE_FRICTION = 9;
+/** Below this speed (px/s) the impulse snaps to 0 (fully settled, no infinite crawl). */
+export const IMPULSE_EPSILON = 5;
+/** Cap on accumulated impulse speed (px/s) so a gatling stream / pile-up can't fling you across the map. */
+export const IMPULSE_MAX = 780;
+/** Per-shot gun recoil pushback (px/s), backward along aim, scaled by the gun's authored `recoil`. */
+export const GUN_RECOIL_IMPULSE = 190;
+/** The recoil baseline `recoil` value the impulse scale is normalised against (the revolver's kick). */
+export const GUN_RECOIL_BASELINE = 0.0017;
+/** Knockback (px/s) shoved onto a player when an enemy contact-hits or a hostile projectile lands. */
+export const HIT_KNOCKBACK_IMPULSE = 300;

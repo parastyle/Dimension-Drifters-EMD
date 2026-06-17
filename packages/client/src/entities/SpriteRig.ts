@@ -19,6 +19,10 @@ export interface RigAnim {
   /** §9 synced aim angle (radians) — points a REMOTE player's gun (the local player uses aimX/aimY). */
   aimDir: number;
   isSelf: boolean;
+  /** §20 momentum (Stage A): the impulse velocity (px/s) shoving the body — drives a lean/jolt flinch.
+   *  Optional (enemies have no momentum); defaults to 0. */
+  recoilX?: number;
+  recoilY?: number;
 }
 
 /**
@@ -304,6 +308,18 @@ export class SpriteRig {
     this.body.scaleY = s * (1 - bob * 0.06);
     // Body leans back looking up, forward looking down (+ the existing movement lean).
     this.body.rotation = (moving ? anim.moveX * 0.16 : 0) + lookY * BODY_LOOK_LEAN;
+
+    // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
+    // knockback). The whole body already slides via the server position; this is the additive flinch on
+    // top so the push reads as weight, not a teleport. Same world axes as the movement lean above.
+    const rcx = anim.recoilX ?? 0;
+    const rcy = anim.recoilY ?? 0;
+    const rk = Math.min(1, Math.hypot(rcx, rcy) / 520);
+    if (rk > 0.01) {
+      this.body.rotation += Math.max(-1, Math.min(1, rcx / 520)) * 0.22;
+      this.body.y += Math.max(-1, Math.min(1, rcy / 520)) * 5 * s;
+      this.body.scaleX *= 1 + rk * 0.06;
+    }
 
     // Parry BRACE (§8): a quick snap into a guard, hold through the i-frame window, ease out. Folds
     // into the weapon angle + hand positions below so the whole body reads as a block.
