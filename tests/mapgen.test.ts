@@ -4,8 +4,14 @@ import {
   generateArena,
   isPitAtPx,
   MAP_MAX_JUMP_TILES,
+  MAP_POI_COUNT,
+  MAP_POI_RADIUS,
+  MAP_POI_SPACING_TILES,
+  MAP_POI_SPAWN_CLEAR_TILES,
+  MAP_TILE,
   nearestGroundPx,
   pitFraction,
+  resolvePoiCollision,
   TILE_GROUND,
   TILE_PIT,
   tileAtPx,
@@ -105,6 +111,40 @@ describe("mapgen — pit helpers (fall + rim)", () => {
       expect(hoppable.length).toBe(maxRegion + 1);
       expect(hoppable.every((h) => typeof h === "boolean")).toBe(true);
     }
+  });
+});
+
+describe("mapgen — POI landmarks", () => {
+  it("places POIs on GROUND, spaced apart, clear of spawn, within the cap", () => {
+    for (const s of SAMPLES.slice(0, 80)) {
+      const map = generateArena(s);
+      expect(map.pois.length).toBeLessThanOrEqual(MAP_POI_COUNT);
+      const minPx = MAP_POI_SPACING_TILES * MAP_TILE;
+      const spawnClearPx = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE;
+      for (let i = 0; i < map.pois.length; i++) {
+        const p = map.pois[i];
+        if (!p) continue;
+        expect(isPitAtPx(map, p.x, p.y), "POI must stand on ground").toBe(false);
+        expect(Math.hypot(p.x - map.spawnX, p.y - map.spawnY)).toBeGreaterThan(spawnClearPx - MAP_TILE);
+        for (let j = i + 1; j < map.pois.length; j++) {
+          const q = map.pois[j];
+          if (q) expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThanOrEqual(minPx);
+        }
+      }
+    }
+  });
+
+  it("resolvePoiCollision pushes an entity OUT of a landmark + leaves clear ground untouched", () => {
+    const map = generateArena(seeds(3, 4, 5, 6));
+    if (map.pois.length === 0) return;
+    const p = map.pois[0];
+    if (!p) return;
+    const r = 24;
+    const out = resolvePoiCollision(map, p.x + 5, p.y, r); // start INSIDE the obstacle
+    expect(Math.hypot(out.x - p.x, out.y - p.y)).toBeGreaterThanOrEqual(MAP_POI_RADIUS + r - 0.5);
+    // A point far from every POI is returned unchanged.
+    const far = resolvePoiCollision(map, map.spawnX, map.spawnY, r);
+    expect([far.x, far.y]).toEqual([map.spawnX, map.spawnY]);
   });
 });
 

@@ -59,6 +59,7 @@ import {
   RESPAWN_SECONDS,
   randomSeed,
   resolveBodyCollisions,
+  resolvePoiCollision,
   SPAWN_RING,
   selectChainTargets,
   spawnInterval,
@@ -637,6 +638,14 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
+    // 2.4 §17 POI collision — push living players OUT of the landmark obstacles (cover you can't walk through).
+    this.state.players.forEach((player) => {
+      if (!player.alive) return;
+      const r = resolvePoiCollision(this.map, player.x, player.y, PLAYER_RADIUS);
+      player.x = r.x;
+      player.y = r.y;
+    });
+
     // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
@@ -777,6 +786,18 @@ export class GameRoom extends Room<ArenaState> {
     // 5.5 Body collision (§5): separate enemies from each other + push them out of living
     // players (one-way — players stay authoritative). Stops the horde stacking on the spawn.
     this.resolveEnemyCollisions();
+
+    // 5.55 §17 POI collision — enemies are blocked by the landmarks too (they bunch up + flow around them).
+    this.state.enemies.forEach((enemy) => {
+      const r = resolvePoiCollision(
+        this.map,
+        enemy.x,
+        enemy.y,
+        ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
+      );
+      enemy.x = r.x;
+      enemy.y = r.y;
+    });
 
     // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. This is
     // the "hazards hurt everything" rule (§17): kite the horde into a pit, or knock one in with a parry

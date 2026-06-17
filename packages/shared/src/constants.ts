@@ -43,6 +43,19 @@ export const MAP_PIT_SPACING_TILES = 4;
  */
 export const MAP_MAX_JUMP_TILES = 2;
 
+/**
+ * §17 POI LANDMARKS — a few big standing structures (oil derrick / windmill / dead tree / adobe ruin /
+ * water tower / rock spire) placed deterministically in the arena for cover + orientation. Players AND
+ * enemies COLLIDE with them (static circle obstacles), so they read as real cover. (tuning)
+ */
+export const MAP_POI_COUNT = 7;
+/** Minimum spacing between POIs (tiles), so landmarks spread out instead of clumping. */
+export const MAP_POI_SPACING_TILES = 5;
+/** POI collision radius (px) — a chunky obstacle (~2× the player radius). */
+export const MAP_POI_RADIUS = 52;
+/** Keep POIs this many tiles clear of the spawn disc so they never trap a spawning player. */
+export const MAP_POI_SPAWN_CLEAR_TILES = 5;
+
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;
 

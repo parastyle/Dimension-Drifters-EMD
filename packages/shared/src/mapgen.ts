@@ -24,6 +24,10 @@ import {
   MAP_PIT_MAX,
   MAP_PIT_SPACING_TILES,
   MAP_PIT_TARGET,
+  MAP_POI_COUNT,
+  MAP_POI_RADIUS,
+  MAP_POI_SPACING_TILES,
+  MAP_POI_SPAWN_CLEAR_TILES,
   MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
 } from "./constants.js";
@@ -40,6 +44,9 @@ export type ArenaMapSeeds = {
   seedDecor: number;
 };
 
+/** A §17 POI landmark placed in the arena — world px + a `kind` index the client maps to a sprite. */
+export type PoiInstance = { x: number; y: number; kind: number };
+
 export type ArenaMap = {
   /** Grid dimensions in tiles + the px size of one tile. */
   cols: number;
@@ -50,6 +57,8 @@ export type ArenaMap = {
   /** Guaranteed-ground spawn point, in WORLD px (centre of the arena). */
   spawnX: number;
   spawnY: number;
+  /** §17 collidable landmark structures (cover + orientation), placed deterministically on ground. */
+  pois: PoiInstance[];
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
   seeds: ArenaMapSeeds;
 };
@@ -314,6 +323,32 @@ function ensureConnected(tiles: Uint8Array, cols: number, rows: number, spawn: n
     if (tiles[i] === TILE_GROUND && !reached[i]) tiles[i] = TILE_PIT;
 }
 
+/** Place §17 POI landmarks: rejection-sample GROUND tiles, spread out (min spacing) + clear of the spawn
+ *  disc. Deterministic (its own seed stream). Each gets a `kind` the client maps to a sprite. */
+function placePois(
+  tiles: Uint8Array,
+  cols: number,
+  rows: number,
+  spawnCol: number,
+  spawnRow: number,
+  rng: Rng,
+): PoiInstance[] {
+  const pois: PoiInstance[] = [];
+  const minPx = MAP_POI_SPACING_TILES * MAP_TILE;
+  const attempts = MAP_POI_COUNT * 40;
+  for (let a = 0; a < attempts && pois.length < MAP_POI_COUNT; a++) {
+    const tx = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
+    const ty = rng.int(MAP_BORDER_TILES + 1, rows - MAP_BORDER_TILES - 2);
+    if (tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue; // stand on solid ground
+    if (Math.hypot(tx - spawnCol, ty - spawnRow) <= MAP_POI_SPAWN_CLEAR_TILES) continue; // clear of spawn
+    const cx = (tx + 0.5) * MAP_TILE;
+    const cy = (ty + 0.5) * MAP_TILE;
+    if (!pois.every((p) => Math.hypot(p.x - cx, p.y - cy) >= minPx)) continue; // spaced from other POIs
+    pois.push({ x: cx, y: cy, kind: rng.int(0, 999) });
+  }
+  return pois;
+}
+
 /** Generate the arena for a set of seeds. PURE: same seeds → byte-identical map, on any machine. */
 export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
   const cols = Math.floor(ARENA_WIDTH / MAP_TILE);
@@ -334,6 +369,10 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
   forceGround(tiles, cols, rows, spawnCol, spawnRow);
   ensureConnected(tiles, cols, rows, idx(spawnCol, spawnRow, cols));
 
+  // POI landmarks — its own seed stream so tuning pits/decor won't reshuffle them.
+  const poiRng = makeRng(mixSeeds(seeds.seedTheme, seeds.seedDecor, 0x9011));
+  const pois = placePois(tiles, cols, rows, spawnCol, spawnRow, poiRng);
+
   return {
     cols,
     rows,
@@ -341,6 +380,7 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
     tiles,
     spawnX: (spawnCol + 0.5) * MAP_TILE,
     spawnY: (spawnRow + 0.5) * MAP_TILE,
+    pois,
     seeds: { ...seeds },
   };
 }
@@ -356,6 +396,27 @@ export function tileAtPx(map: ArenaMap, px: number, py: number): number {
 /** True if a world px position is over a pit (§17 — fall trigger, once collision is wired in Phase 1). */
 export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
   return tileAtPx(map, px, py) === TILE_PIT;
+}
+
+/** §17 push an entity (centre x,y + body radius) OUT of any overlapping POI obstacle, returning the
+ *  corrected position. POIs are spaced > 2 radii apart so an entity can overlap at most one. PURE. */
+export function resolvePoiCollision(
+  map: ArenaMap,
+  x: number,
+  y: number,
+  radius: number,
+): { x: number; y: number } {
+  for (const p of map.pois) {
+    const min = MAP_POI_RADIUS + radius;
+    const dx = x - p.x;
+    const dy = y - p.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= min * min) continue;
+    const d = Math.sqrt(d2);
+    if (d < 1e-4) return { x: p.x, y: p.y - min }; // dead centre → pop straight out
+    return { x: p.x + (dx / d) * min, y: p.y + (dy / d) * min };
+  }
+  return { x, y };
 }
 
 /** Fraction of the grid that is pit — for tuning + tests. */

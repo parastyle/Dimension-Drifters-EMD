@@ -50,6 +50,7 @@ import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
+import { POI_IDS } from "../sprites/poi-manifest.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { WEAPON_VFX } from "../vfx/weapon-vfx.generated.js";
 
@@ -246,11 +247,11 @@ export class ArenaScene extends Phaser.Scene {
     // dev server returns index.html, which fails to decode; `loaderror` flags it so the floor falls back
     // to the flat fill instead of TileSpriting a broken stub.
     this.load.image("tile-ground", "tiles/ground.jpg");
-    // §17 P4 Codex DECAL prop-pack (gen-decals.mjs) — painted ground litter, scattered in `scatterDecor`.
+    // §17 P4 Codex prop-packs (gen-decals.mjs): DECAL ground litter + POI landmark structures.
     for (const id of DECAL_IDS) this.load.image(id, `decals/${id}.png`);
+    for (const id of POI_IDS) this.load.image(id, `pois/${id}.png`);
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (file.key.startsWith("tile-") || file.key.startsWith("decal-"))
-        this.tilesMissing.add(file.key);
+      if (/^(tile|decal|poi)-/.test(file.key)) this.tilesMissing.add(file.key);
     });
   }
 
@@ -588,7 +589,23 @@ export class ArenaScene extends Phaser.Scene {
       seedDecor: s.seedDecor,
     });
     this.buildArenaFloor(this.arenaMap);
+    this.buildPois(this.arenaMap);
     this.floorBuilt = true;
+  }
+
+  /** §17 place the POI landmark sprites — base at the map position (origin bottom-centre), depth = its y so
+   *  players + enemies depth-sort around them (walk BEHIND a tower's upper structure, IN FRONT of its base).
+   *  Collision is server-authoritative (the static obstacle circle); this is the matching visual. */
+  private buildPois(map: ArenaMap): void {
+    const ids = POI_IDS.filter((id) => this.textures.exists(id));
+    if (ids.length === 0) return;
+    for (const poi of map.pois) {
+      const id = ids[poi.kind % ids.length] ?? ids[0];
+      if (!id) continue;
+      const sc = 0.78 + (poi.kind % 5) * 0.05; // gentle per-landmark size variety
+      const img = this.add.image(poi.x, poi.y, id).setOrigin(0.5, 1).setDepth(poi.y).setScale(sc);
+      if (poi.kind % 2 === 0) img.setFlipX(true);
+    }
   }
 
   /**
