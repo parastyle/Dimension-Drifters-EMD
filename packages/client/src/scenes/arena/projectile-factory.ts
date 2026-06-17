@@ -1,0 +1,154 @@
+import Phaser from "phaser";
+import { SPRITES } from "../../sprites/manifest.js";
+import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
+import { blendHex } from "./draw-util.js";
+
+/** §9/§14/§15 projectile FACTORY — builds the in-flight render container for every projectile kind
+ *  (enemy spit, thrown cleaver, magma scatter ball, gun bullets). Pure factories: each takes the scene
+ *  (for the GameObject factory + tween manager) and the synced projectile snapshot, and returns a
+ *  Container at depth 99000. Extracted from ArenaScene so `syncProjectiles` stays a thin reconciler. */
+
+export type GunFx = { color: number; size: number; style: string; trail: number; trailW: number };
+
+/** §9 per-bullet-kind visual config — colour + muzzle-flash size + trail style. Each gun's `bulletKind`
+ *  (server-synced on `ProjectileState.kind`) keys this, so each gun looks distinct without extra sync. */
+export const GUN_FX: Record<string, GunFx> = {
+  slug: { color: 0xffb24a, size: 23, style: "heavy", trail: 26, trailW: 9 }, // revolver: fat hot slug
+  pellet: { color: 0xff6a2a, size: 19, style: "boom", trail: 16, trailW: 6 }, // shotgun: red-hot buckshot
+  tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
+  nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
+  ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
+};
+
+/** Resolve a bullet-kind's visual config, with a safe default for any unmapped kind. */
+export function gunFx(kind: string): GunFx {
+  return GUN_FX[kind] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 };
+}
+
+/** Enemy spit — full NEON so it reads as a THREAT against the olive scrub/dust (§28.7). */
+export function makeSpit(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number },
+): Phaser.GameObjects.Container {
+  const ang = Math.atan2(pr.vy, pr.vx);
+  const trail = scene.add
+    .ellipse(-Math.cos(ang) * 14, -Math.sin(ang) * 14, 34, 9, 0x9bff2e, 0.35)
+    .setRotation(ang);
+  const glow = scene.add.circle(0, 0, 12, 0x9bff2e, 0.5);
+  const ring = scene.add.circle(0, 0, 8).setStrokeStyle(2, 0xd6ff7a, 0.9);
+  const core = scene.add.circle(0, 0, 4.5, 0xf4ffd0);
+  const c = scene.add.container(pr.x, pr.y, [trail, glow, ring, core]).setDepth(99000);
+  scene.tweens.add({
+    targets: glow,
+    scale: 1.4,
+    duration: 200,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.inOut",
+  });
+  return c;
+}
+
+/** Thrown cleaver — the actual weapon sprite spinning through the air (§10 thrown delivery). */
+export function makeThrownCleaver(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number },
+): Phaser.GameObjects.Container {
+  const part = SPRITES["rusty-cleaver"]?.parts[0];
+  const blade = part
+    ? scene.add.image(0, 0, "rusty-cleaver:part-1").setScale(108 / part.w)
+    : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
+  const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
+  return scene.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
+}
+
+/** Magma scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered
+ *  with the AUTHORED PAINTED magma-ball art (a random frame of the scatter sheet) so the projectile you
+ *  see IS the painted ball. A hot additive glow + motion-blur trail sell the molten flight; the ball
+ *  tumbles. Falls back to a procedural ember only if the scatter texture isn't loaded. */
+export function makeMagma(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number },
+): Phaser.GameObjects.Container {
+  const ang = Math.atan2(pr.vy, pr.vx);
+  const trail = scene.add
+    .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, 0xff5a1e, 0.4)
+    .setRotation(ang)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const glow = scene.add.circle(0, 0, 17, 0xff6a22, 0.5).setBlendMode(Phaser.BlendModes.ADD);
+  // The painted magma ball (the authored scatter art) — the real projectile rendered as its own art.
+  const sc = WEAPON_VFX["x-sword-bone"]?.scatter;
+  const key = sc ? `scatter:${sc.url}` : null;
+  let ball: Phaser.GameObjects.GameObject;
+  if (key && scene.textures.exists(key)) {
+    const frame = Math.floor(Math.random() * (sc?.count ?? 1));
+    const img = scene.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? 249));
+    scene.tweens.add({
+      targets: img,
+      angle: 360,
+      duration: 900 + Math.random() * 500,
+      repeat: -1,
+      ease: "Linear",
+    });
+    ball = img;
+  } else {
+    ball = scene.add.circle(0, 0, 7, 0xff8a2b); // fallback ember
+  }
+  const c = scene.add.container(pr.x, pr.y, [trail, glow, ball]).setDepth(99000);
+  scene.tweens.add({
+    targets: glow,
+    scale: 1.4,
+    alpha: 0.28,
+    duration: 140,
+    yoyo: true,
+    repeat: -1,
+    ease: "Sine.inOut",
+  });
+  return c;
+}
+
+/** §9 GUN bullet — a distinct in-flight look per `bulletKind` (slug/pellet/tracer/nail/ricochet): a
+ *  velocity-aligned additive trail + a hot core (or a metallic dart for nails, an electric ring for
+ *  ricochets). Server-authoritative (the bullet you see is the bullet that hits, §14 WYSIWYG). */
+export function makeBullet(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number; kind: string },
+): Phaser.GameObjects.Container {
+  const fx = gunFx(pr.kind);
+  const ang = Math.atan2(pr.vy, pr.vx);
+  const ADD = Phaser.BlendModes.ADD;
+  const items: Phaser.GameObjects.GameObject[] = [];
+  const trail = scene.add
+    .ellipse(
+      -Math.cos(ang) * fx.trail * 0.5,
+      -Math.sin(ang) * fx.trail * 0.5,
+      fx.trail,
+      fx.trailW,
+      fx.color,
+      0.5,
+    )
+    .setRotation(ang)
+    .setBlendMode(ADD);
+  items.push(trail);
+  if (pr.kind === "nail") {
+    // metallic dart — a thin steel rectangle aligned to flight + a white tip
+    items.push(scene.add.rectangle(0, 0, 18, 2.6, 0xeef2f6).setRotation(ang));
+    items.push(scene.add.circle(0, 0, 1.8, 0xffffff));
+  } else if (pr.kind === "tracer") {
+    // streak of light — a velocity-aligned hot capsule (reads opposite to the stubby pellet)
+    items.push(scene.add.rectangle(0, 0, 15, 3, fx.color).setRotation(ang).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 2, 0xffffff).setBlendMode(ADD));
+  } else if (pr.kind === "pellet") {
+    // buckshot — a small DENSE lead ball: dark rim under a tight hot core (reads heavy/stubby)
+    items.push(scene.add.circle(0, 0, 4, 0x140a06, 0.5));
+    items.push(scene.add.circle(0, 0, 3, blendHex(fx.color, 0x806040, 0.45)));
+    items.push(scene.add.circle(0, 0, 1.6, 0xffe6c4));
+  } else {
+    const big = pr.kind === "slug";
+    items.push(scene.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, big ? 3.4 : 2.2, 0xffffff));
+    if (pr.kind === "ricochet")
+      items.push(scene.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
+  }
+  return scene.add.container(pr.x, pr.y, items).setDepth(99000);
+}

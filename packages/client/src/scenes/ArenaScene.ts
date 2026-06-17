@@ -9,8 +9,6 @@ import {
   characterName,
   characterScale,
   clampQuakeEpicenter,
-  classifyPitRegions,
-  type DamageSource,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
   damageMultFromGrades,
@@ -24,9 +22,6 @@ import {
   JUMP_AIRTIME,
   JUMP_HOP_HEIGHT,
   LEVELUP_WINDOW_SECONDS,
-  MAP_SPAWN_CLEAR_TILES,
-  makeRng,
-  mixSeeds,
   PARRY_COOLDOWN,
   PICKUP_RADIUS,
   type PlayerState,
@@ -35,13 +30,11 @@ import {
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
   selectChainTargets,
-  TILE_PIT,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
-  weaponDamageSources,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
@@ -52,56 +45,29 @@ import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { POI_IDS } from "../sprites/poi-manifest.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
-import { WEAPON_VFX } from "../vfx/weapon-vfx.generated.js";
+import { buildCard, type Card, WEAPON_ACCENT } from "./arena/card-art.js";
+import { boltPoints, strokeBolt } from "./arena/draw-util.js";
+import { buildArenaFloor, buildPois, drawArena } from "./arena/floor-renderer.js";
+import {
+  GUN_FX,
+  makeBullet,
+  makeMagma,
+  makeSpit,
+  makeThrownCleaver,
+} from "./arena/projectile-factory.js";
+import {
+  spawnBulletImpact,
+  spawnDamageNumber,
+  spawnExplosion,
+  spawnFallStreak,
+  spawnMuzzleFlash,
+  spawnPoof,
+  spawnQuake,
+  spawnSplat,
+} from "./arena/vfx.js";
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
-
-/** Blend two 0xRRGGBB colours by `t` (0 = c1, 1 = c2). Used for the muzzle-flash hot inner streak. */
-function blendHex(c1: number, c2: number, t: number): number {
-  const r = Math.round(((c1 >> 16) & 0xff) * (1 - t) + ((c2 >> 16) & 0xff) * t);
-  const g = Math.round(((c1 >> 8) & 0xff) * (1 - t) + ((c2 >> 8) & 0xff) * t);
-  const b = Math.round((c1 & 0xff) * (1 - t) + (c2 & 0xff) * t);
-  return (r << 16) | (g << 8) | b;
-}
-
-/** Jagged polyline between two WORLD points — the world-space twin of vfx-render's local arc-bolt jag.
- *  Walks along the segment, offsetting each interior node perpendicular by ±(segLen × jag). */
-function boltPoints(
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  jag: number,
-): Array<{ x: number; y: number }> {
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  const len = Math.hypot(dx, dy) || 1;
-  const px = -dy / len; // perpendicular unit
-  const py = dx / len;
-  const steps = Math.max(4, (len / 22) | 0); // ~22px segments
-  const pts: Array<{ x: number; y: number }> = [{ x: x0, y: y0 }];
-  for (let i = 1; i < steps; i++) {
-    const t = i / steps;
-    const off = (Math.random() - 0.5) * len * jag * 0.4;
-    pts.push({ x: x0 + dx * t + px * off, y: y0 + dy * t + py * off });
-  }
-  pts.push({ x: x1, y: y1 });
-  return pts;
-}
-function strokeBolt(g: Phaser.GameObjects.Graphics, pts: Array<{ x: number; y: number }>): void {
-  if (pts.length === 0) return;
-  g.beginPath();
-  let started = false;
-  for (const p of pts) {
-    if (started) g.lineTo(p.x, p.y);
-    else {
-      g.moveTo(p.x, p.y);
-      started = true;
-    }
-  }
-  g.strokePath();
-}
 
 /**
  * Player-core scene (build order §27.3 step 3, building on step 2's netcode).
@@ -186,42 +152,7 @@ export class ArenaScene extends Phaser.Scene {
   // §9 card carousel — held card big with full stats. Each card holds its LIVE elements (one equation
   // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
   // from the player's current attributes every frame so the numbers track levelling.
-  private carousel: {
-    id: string;
-    container: Phaser.GameObjects.Container;
-    /** One live "base + bonus = total" line per damage source (blade / magma / quake / …). */
-    sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
-    /** Min-requirement tokens, recoloured green/red vs the player's live attributes. */
-    reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
-    /** Charges (thrown, live) or durability (melee, static for now) readout. */
-    resource: Phaser.GameObjects.Text;
-  }[] = [];
-  /** Per-weapon accent colour for card frames (rarity tinting lands with the loot system). */
-  private static readonly WEAPON_ACCENT: Record<string, number> = {
-    "rusty-cleaver": 0xff8a2b,
-    "tombstone-greatsword": 0x9cff3b,
-    "twin-bowie-fangs": 0x6fd6ff,
-    driftblade: 0x6f8bff,
-    "x-sword-neon-katana": 0x5dcaa5,
-    "x-sword-bone": 0xff7a3c,
-    "x-gun-revolver-cannon": 0xffb24a,
-    "x-gun-coffin-shotgun": 0xff8a3c,
-    "x-gun-gatling": 0xfff0a0,
-    "x-gun-nailgun": 0xd6dde6,
-    "x-gun-ricochet-pistol": 0x5dd6ff,
-  };
-  /** §9 per-bullet-kind visual config — colour + muzzle-flash size + trail style. Each gun's `bulletKind`
-   *  (server-synced on `ProjectileState.kind`) keys this, so each gun looks distinct without extra sync. */
-  private static readonly GUN_FX: Record<
-    string,
-    { color: number; size: number; style: string; trail: number; trailW: number }
-  > = {
-    slug: { color: 0xffb24a, size: 23, style: "heavy", trail: 26, trailW: 9 }, // revolver: fat hot slug
-    pellet: { color: 0xff6a2a, size: 19, style: "boom", trail: 16, trailW: 6 }, // shotgun: red-hot buckshot
-    tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
-    nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
-    ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
-  };
+  private carousel: Card[] = [];
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -263,7 +194,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.drawArena();
+    drawArena(this, (k) => this.hasTile(k));
     this.vfxPlayer = new VfxPlayer(this);
 
     const keyboard = this.input.keyboard;
@@ -452,7 +383,7 @@ export class ArenaScene extends Phaser.Scene {
       const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
       const part = manifest?.parts[0];
       const def = WEAPONS[pk.weapon];
-      const accent = ArenaScene.WEAPON_ACCENT[pk.weapon] ?? 0xffd479;
+      const accent = WEAPON_ACCENT[pk.weapon] ?? 0xffd479;
       const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
       const baseScale = part ? 72 / part.w : 1;
 
@@ -543,41 +474,6 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /**
-   * Wild West arena (§17 "one big themed room", §28.7 West palette: dusty tan/rust/olive on
-   * charcoal). Lays down the map-independent base only: dust-mesa ground bed + low-contrast grid.
-   * The §17 server-seeded procedural terrain — pits, rim telegraph, spawn safe-ring, collidable
-   * POIs and seeded decal scatter — is baked in `buildArenaFloor`/`buildPois` once the room's map
-   * seeds sync (the server and every client regenerate the same map from those seeds).
-   */
-  private drawArena(): void {
-    const cx = ARENA_WIDTH / 2;
-    const cy = ARENA_HEIGHT / 2;
-    // Base ground bed + low-contrast grid (map-independent). The §17 procedural PITS, the rim telegraph,
-    // the spawn safe-ring + seeded decor are baked in `buildArenaFloor` once the server's map seeds sync.
-    // The whole floor stack lives at NEGATIVE depths so it always renders behind the entities (which use
-    // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
-    // (-14, so the telegraph stays visible over litter) · rail(-12).
-    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 0x2a2620).setDepth(-20);
-    if (this.hasTile("tile-ground")) {
-      // §17 PAINTED ground — a SEAMLESS Codex dust tile (gen-tiles.mjs), GPU-tiled across the arena PLUS a
-      // wide margin so 4K/ultrawide viewports always show ground, never the void. One draw, scrolls free.
-      const margin = 3200;
-      const ts = this.add
-        .tileSprite(cx, cy, ARENA_WIDTH + margin * 2, ARENA_HEIGHT + margin * 2, "tile-ground")
-        .setDepth(-19);
-      ts.tileScaleX = 0.5;
-      ts.tileScaleY = 0.5;
-    } else {
-      // Fallback (no tile art installed yet): the low-contrast earthy grid.
-      this.add
-        .grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5)
-        .setDepth(-19);
-    }
-    // Arena boundary — a rusted rail (marks the playable bound; the ground extends past it on big screens).
-    this.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT).setStrokeStyle(6, 0xa8482e).setDepth(-12);
-  }
-
   /** §17 once the server's seeds arrive, regenerate the IDENTICAL map client-side + bake the floor once. */
   private maybeBuildFloor(): void {
     if (this.floorBuilt || !this.room) return;
@@ -589,166 +485,9 @@ export class ArenaScene extends Phaser.Scene {
       seedTheme: s.seedTheme,
       seedDecor: s.seedDecor,
     });
-    this.buildArenaFloor(this.arenaMap);
-    this.buildPois(this.arenaMap);
+    buildArenaFloor(this, this.arenaMap);
+    buildPois(this, this.arenaMap);
     this.floorBuilt = true;
-  }
-
-  /** §17 place the POI landmark sprites — base at the map position (origin bottom-centre), depth = its y so
-   *  players + enemies depth-sort around them (walk BEHIND a tower's upper structure, IN FRONT of its base).
-   *  Collision is server-authoritative (the static obstacle circle); this is the matching visual. */
-  private buildPois(map: ArenaMap): void {
-    // Map each landmark's `kind` through the BUILD-TIME manifest so the kind→sprite choice is identical
-    // on every client (collision is server-authoritative; this is just the matching visual). A POI whose
-    // specific texture failed to load skips its own draw rather than shifting every other POI's sprite.
-    const ids: readonly string[] = POI_IDS; // widen the const tuple so the empty-pack guard is honest
-    if (ids.length === 0) return;
-    for (const poi of map.pois) {
-      const id = ids[poi.kind % ids.length] ?? ids[0];
-      if (!id || !this.textures.exists(id)) continue;
-      const sc = 0.78 + (poi.kind % 5) * 0.05; // gentle per-landmark size variety
-      const img = this.add.image(poi.x, poi.y, id).setOrigin(0.5, 1).setDepth(poi.y).setScale(sc);
-      if (poi.kind % 2 === 0) img.setFlipX(true);
-    }
-  }
-
-  /**
-   * §17 "Dust & The Drop" floor bake (the panel-winning look): warm-black PIT voids, a rust band + hot
-   * amber lip on every pit edge with inward CHEVRON teeth on the wide (go-around) runs and a clean solid
-   * lip on the narrow (hoppable) gaps, and a cyan SPAWN safe-ring. All static geometry in ONE Graphics
-   * (drawn once, scrolled by the camera for free) at a low depth under the entities.
-   */
-  private buildArenaFloor(map: ArenaMap): void {
-    const T = map.tileSize;
-    const cls = classifyPitRegions(map);
-    const ground = (gx: number, gy: number): boolean =>
-      gx >= 0 &&
-      gy >= 0 &&
-      gx < map.cols &&
-      gy < map.rows &&
-      map.tiles[gy * map.cols + gx] !== TILE_PIT;
-
-    // PIT FILL — the warm-black void (the §17 "absence" read). The painted GROUND tile fills the floor;
-    // pits stay a clean flat void — it reads better than a busy texture, and a near-black pit tile is
-    // visually indistinguishable from this anyway.
-    const g = this.add.graphics().setDepth(-14); // pit void + rim + spawn, above the ground + the litter
-    g.fillStyle(0x0d0a10, 1);
-    for (let y = 0; y < map.rows; y++)
-      for (let x = 0; x < map.cols; x++)
-        if (map.tiles[y * map.cols + x] === TILE_PIT) g.fillRect(x * T, y * T, T, T);
-
-    // Pit-edge segments (a pit-cell side bordering ground) + whether the run is hoppable.
-    const seg: Array<{
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-      nx: number;
-      ny: number;
-      hop: boolean;
-    }> = [];
-    for (let y = 0; y < map.rows; y++)
-      for (let x = 0; x < map.cols; x++) {
-        if (map.tiles[y * map.cols + x] !== TILE_PIT) continue;
-        const hop = cls.hoppable[cls.regionOf[y * map.cols + x] ?? -1] ?? false;
-        const ox = x * T;
-        const oy = y * T;
-        if (ground(x, y - 1)) seg.push({ x1: ox, y1: oy, x2: ox + T, y2: oy, nx: 0, ny: 1, hop });
-        if (ground(x, y + 1))
-          seg.push({ x1: ox, y1: oy + T, x2: ox + T, y2: oy + T, nx: 0, ny: -1, hop });
-        if (ground(x - 1, y)) seg.push({ x1: ox, y1: oy, x2: ox, y2: oy + T, nx: 1, ny: 0, hop });
-        if (ground(x + 1, y))
-          seg.push({ x1: ox + T, y1: oy, x2: ox + T, y2: oy + T, nx: -1, ny: 0, hop });
-      }
-    // Rust band (under) then hot amber lip (over) — opaque + static, so it reads as TERRAIN under the neon.
-    g.lineStyle(T * 0.11, 0xa8482e, 1);
-    for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
-    g.lineStyle(T * 0.045, 0xf0a73c, 1);
-    for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
-    // Inward chevron teeth on the wide runs ("go around"); narrow gaps keep the clean lip ("hop me").
-    g.fillStyle(0xf0a73c, 1);
-    for (const s of seg) {
-      if (s.hop) continue;
-      const mx = (s.x1 + s.x2) / 2;
-      const my = (s.y1 + s.y2) / 2;
-      const ex = -s.ny; // edge direction (perpendicular to the inward normal)
-      const ey = s.nx;
-      g.fillTriangle(
-        mx + s.nx * T * 0.2,
-        my + s.ny * T * 0.2,
-        mx + ex * T * 0.1,
-        my + ey * T * 0.1,
-        mx - ex * T * 0.1,
-        my - ey * T * 0.1,
-      );
-    }
-    // Cyan SPAWN safe-ring (cool = safe — the opposite semaphore to the hot pit lip).
-    const sr = MAP_SPAWN_CLEAR_TILES * T;
-    g.fillStyle(0x33e6ff, 0.06);
-    g.fillCircle(map.spawnX, map.spawnY, sr);
-    g.lineStyle(3, 0x33e6ff, 0.85);
-    g.strokeCircle(map.spawnX, map.spawnY, sr);
-
-    this.scatterDecor(map);
-  }
-
-  /** Seeded ground litter (dust drifts + rocks/scrub), kept OFF the pits. Seeded from the map so every
-   *  client dresses the floor identically. Low depth — players + enemies render over it. */
-  private scatterDecor(map: ArenaMap): void {
-    const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
-    const between = (a: number, b: number): number => a + rng.next() * (b - a);
-    for (let i = 0; i < 40; i++) {
-      // Draw the full RNG sequence first (fixed cadence → deterministic across clients), THEN decide.
-      const dx = rng.next() * ARENA_WIDTH;
-      const dy = rng.next() * ARENA_HEIGHT;
-      const w = between(160, 360);
-      const h = between(110, 240);
-      const a = between(0.03, 0.07);
-      if (isPitAtPx(map, dx, dy)) continue; // keep the haze centre off the void (matches "kept OFF the pits")
-      this.add.ellipse(dx, dy, w, h, 0xc49a5a).setAlpha(a).setDepth(-16);
-    }
-    // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
-    // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal
-    // "tile-bombing"). Falls back to the procedural rock/scrub shapes if the pack isn't authored.
-    // Determinism: branch + index off the BUILD-TIME manifest `DECAL_IDS`, never the runtime-loaded
-    // set — so the RNG draw sequence is identical on every client even if one client missed a texture
-    // load. A texture that failed to load just skips its own draw; positions stay in lockstep.
-    if (DECAL_IDS.length > 0) {
-      for (let i = 0; i < 70; i++) {
-        const x = between(60, ARENA_WIDTH - 60);
-        const y = between(60, ARENA_HEIGHT - 60);
-        const id = DECAL_IDS[Math.floor(rng.next() * DECAL_IDS.length)] ?? DECAL_IDS[0];
-        const sc = between(0.4, 0.82);
-        const rot = rng.next() * Math.PI * 2;
-        const flip = rng.next() < 0.5;
-        if (isPitAtPx(map, x, y) || !id || !this.textures.exists(id)) continue;
-        const img = this.add.image(x, y, id).setScale(sc).setRotation(rot).setDepth(-15);
-        if (flip) img.setFlipX(true);
-      }
-    } else {
-      for (let i = 0; i < 90; i++) {
-        const x = between(60, ARENA_WIDTH - 60);
-        const y = between(60, ARENA_HEIGHT - 60);
-        if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit
-        if (rng.next() < 0.4) {
-          const r = between(10, 20);
-          this.add
-            .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
-            .setStrokeStyle(3, 0x22251b)
-            .setDepth(-15);
-        } else {
-          const r = between(12, 30);
-          this.add
-            .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
-            .setAlpha(0.5)
-            .setDepth(-15);
-          this.add
-            .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
-            .setStrokeStyle(3, 0x22252b)
-            .setDepth(-15);
-        }
-      }
-    }
   }
 
   /** §17 fire the fall VFX when a player's synced `fellSeq` ticks: a dust poof at the landing tile, plus a
@@ -761,7 +500,7 @@ export class ArenaScene extends Phaser.Scene {
       const prev = this.lastFell.get(id);
       this.lastFell.set(id, player.fellSeq);
       if (prev === undefined || prev === player.fellSeq) return;
-      this.spawnFallStreak(player.x, player.y);
+      spawnFallStreak(this, player.x, player.y);
       if (id === selfId) {
         this.cameras.main.flash(170, 90, 16, 16);
         this.cameras.main.shake(150, 0.006);
@@ -928,8 +667,8 @@ export class ArenaScene extends Phaser.Scene {
         const rig = this.enemies.get(id);
         if (rig) {
           if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y))
-            this.spawnFallStreak(rig.x, rig.y);
-          else this.spawnPoof(rig.x, rig.y);
+            spawnFallStreak(this, rig.x, rig.y);
+          else spawnPoof(this, rig.x, rig.y);
         }
         rig?.destroy();
         this.enemies.delete(id);
@@ -984,14 +723,14 @@ export class ArenaScene extends Phaser.Scene {
     const flashedShooters = new Set<string>(); // one muzzle flash per shooter per frame (= per shot)
     state.forEach((pr, id) => {
       if (this.projectiles.has(id)) return;
-      const fx = ArenaScene.GUN_FX[pr.kind];
+      const fx = GUN_FX[pr.kind];
       const container = fx
-        ? this.makeBullet(pr)
+        ? makeBullet(this, pr)
         : pr.kind === "cleaver"
-          ? this.makeThrownCleaver(pr)
+          ? makeThrownCleaver(this, pr)
           : pr.kind === "magma"
-            ? this.makeMagma(pr)
-            : this.makeSpit(pr);
+            ? makeMagma(this, pr)
+            : makeSpit(this, pr);
       container.setData("kind", pr.kind);
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
@@ -1014,7 +753,8 @@ export class ArenaScene extends Phaser.Scene {
             const ang = Math.atan2(pr.vy, pr.vx);
             // Flash at the shooter's BARREL TIP (per-gun reach), matching where the server spawned the shot.
             const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]);
-            this.spawnMuzzleFlash(
+            spawnMuzzleFlash(
+              this,
               p.x + Math.cos(ang) * reach,
               p.y + Math.sin(ang) * reach,
               ang,
@@ -1032,400 +772,14 @@ export class ArenaScene extends Phaser.Scene {
         if (c) {
           const k = c.getData("kind") as string;
           const er = (c.getData("explodeR") as number) ?? 0;
-          if (k === "magma" && er > 0) this.spawnExplosion(c.x, c.y, er);
-          else if (ArenaScene.GUN_FX[k])
-            this.spawnBulletImpact(c.x, c.y, k, (c.getData("ang") as number) ?? 0);
-          else this.spawnSplat(c.x, c.y, k);
+          if (k === "magma" && er > 0) spawnExplosion(this, c.x, c.y, er);
+          else if (GUN_FX[k])
+            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0);
+          else spawnSplat(this, c.x, c.y, k);
         }
         c?.destroy();
         this.projectiles.delete(id);
       }
-    }
-  }
-
-  /** Enemy spit — full NEON so it reads as a THREAT against the olive scrub/dust (§28.7). */
-  private makeSpit(pr: {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-  }): Phaser.GameObjects.Container {
-    const ang = Math.atan2(pr.vy, pr.vx);
-    const trail = this.add
-      .ellipse(-Math.cos(ang) * 14, -Math.sin(ang) * 14, 34, 9, 0x9bff2e, 0.35)
-      .setRotation(ang);
-    const glow = this.add.circle(0, 0, 12, 0x9bff2e, 0.5);
-    const ring = this.add.circle(0, 0, 8).setStrokeStyle(2, 0xd6ff7a, 0.9);
-    const core = this.add.circle(0, 0, 4.5, 0xf4ffd0);
-    const c = this.add.container(pr.x, pr.y, [trail, glow, ring, core]).setDepth(99000);
-    this.tweens.add({
-      targets: glow,
-      scale: 1.4,
-      duration: 200,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.inOut",
-    });
-    return c;
-  }
-
-  /** Thrown cleaver — the actual weapon sprite spinning through the air (§10 thrown delivery). */
-  private makeThrownCleaver(pr: { x: number; y: number }): Phaser.GameObjects.Container {
-    const part = SPRITES["rusty-cleaver"]?.parts[0];
-    const blade = part
-      ? this.add.image(0, 0, "rusty-cleaver:part-1").setScale(108 / part.w)
-      : this.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
-    const glow = this.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
-    return this.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
-  }
-
-  /** Magma scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered
-   *  with the AUTHORED PAINTED magma-ball art (a random frame of the scatter sheet) so the projectile you
-   *  see IS the painted ball. A hot additive glow + motion-blur trail sell the molten flight; the ball
-   *  tumbles. Falls back to a procedural ember only if the scatter texture isn't loaded. */
-  private makeMagma(pr: {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-  }): Phaser.GameObjects.Container {
-    const ang = Math.atan2(pr.vy, pr.vx);
-    const trail = this.add
-      .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, 0xff5a1e, 0.4)
-      .setRotation(ang)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const glow = this.add.circle(0, 0, 17, 0xff6a22, 0.5).setBlendMode(Phaser.BlendModes.ADD);
-    // The painted magma ball (the authored scatter art) — the real projectile rendered as its own art.
-    const sc = WEAPON_VFX["x-sword-bone"]?.scatter;
-    const key = sc ? `scatter:${sc.url}` : null;
-    let ball: Phaser.GameObjects.GameObject;
-    if (key && this.textures.exists(key)) {
-      const frame = Math.floor(Math.random() * (sc?.count ?? 1));
-      const img = this.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? 249));
-      this.tweens.add({
-        targets: img,
-        angle: 360,
-        duration: 900 + Math.random() * 500,
-        repeat: -1,
-        ease: "Linear",
-      });
-      ball = img;
-    } else {
-      ball = this.add.circle(0, 0, 7, 0xff8a2b); // fallback ember
-    }
-    const c = this.add.container(pr.x, pr.y, [trail, glow, ball]).setDepth(99000);
-    this.tweens.add({
-      targets: glow,
-      scale: 1.4,
-      alpha: 0.28,
-      duration: 140,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.inOut",
-    });
-    return c;
-  }
-
-  /** Resolve a bullet-kind's visual config, with a safe default for any unmapped kind. */
-  private gunFx(kind: string): {
-    color: number;
-    size: number;
-    style: string;
-    trail: number;
-    trailW: number;
-  } {
-    return (
-      ArenaScene.GUN_FX[kind] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 }
-    );
-  }
-
-  /** §9 GUN bullet — a distinct in-flight look per `bulletKind` (slug/pellet/tracer/nail/ricochet): a
-   *  velocity-aligned additive trail + a hot core (or a metallic dart for nails, an electric ring for
-   *  ricochets). Server-authoritative (the bullet you see is the bullet that hits, §14 WYSIWYG). */
-  private makeBullet(pr: {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    kind: string;
-  }): Phaser.GameObjects.Container {
-    const fx = this.gunFx(pr.kind);
-    const ang = Math.atan2(pr.vy, pr.vx);
-    const ADD = Phaser.BlendModes.ADD;
-    const items: Phaser.GameObjects.GameObject[] = [];
-    const trail = this.add
-      .ellipse(
-        -Math.cos(ang) * fx.trail * 0.5,
-        -Math.sin(ang) * fx.trail * 0.5,
-        fx.trail,
-        fx.trailW,
-        fx.color,
-        0.5,
-      )
-      .setRotation(ang)
-      .setBlendMode(ADD);
-    items.push(trail);
-    if (pr.kind === "nail") {
-      // metallic dart — a thin steel rectangle aligned to flight + a white tip
-      items.push(this.add.rectangle(0, 0, 18, 2.6, 0xeef2f6).setRotation(ang));
-      items.push(this.add.circle(0, 0, 1.8, 0xffffff));
-    } else if (pr.kind === "tracer") {
-      // streak of light — a velocity-aligned hot capsule (reads opposite to the stubby pellet)
-      items.push(this.add.rectangle(0, 0, 15, 3, fx.color).setRotation(ang).setBlendMode(ADD));
-      items.push(this.add.circle(0, 0, 2, 0xffffff).setBlendMode(ADD));
-    } else if (pr.kind === "pellet") {
-      // buckshot — a small DENSE lead ball: dark rim under a tight hot core (reads heavy/stubby)
-      items.push(this.add.circle(0, 0, 4, 0x140a06, 0.5));
-      items.push(this.add.circle(0, 0, 3, blendHex(fx.color, 0x806040, 0.45)));
-      items.push(this.add.circle(0, 0, 1.6, 0xffe6c4));
-    } else {
-      const big = pr.kind === "slug";
-      items.push(this.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
-      items.push(this.add.circle(0, 0, big ? 3.4 : 2.2, 0xffffff));
-      if (pr.kind === "ricochet")
-        items.push(this.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
-    }
-    return this.add.container(pr.x, pr.y, items).setDepth(99000);
-  }
-
-  /** §9 per-gun MUZZLE FLASH — the shaped 8-prong caged-fire star (the same geometry as the engine
-   *  `drawMuzzleFlash`) drawn at the barrel, sized + tinted per gun, with a hot core + white centre, then
-   *  faded out fast. Cheap (one Graphics + a tween) so it survives the gatling's fire rate. */
-  private spawnMuzzleFlash(
-    x: number,
-    y: number,
-    ang: number,
-    size: number,
-    color: number,
-    style = "heavy",
-  ): void {
-    const hot = blendHex(color, 0xffffff, 0.55);
-    const TAU = Math.PI * 2;
-    const g = this.add.graphics().setDepth(99500).setBlendMode(Phaser.BlendModes.ADD);
-    // "boom" (shotgun) splays the side prongs into a fat cone over a big soft blast disc; "punch" stays tight.
-    if (style === "boom") g.fillStyle(color, 0.26).fillCircle(0, 0, size * 1.15);
-    const side = style === "boom" ? 1.45 : 0.95;
-    const prongs: [number, number, number][] = [
-      [0, style === "punch" ? 2.9 : 2.5, 0.22],
-      [-0.46, 1.6, 0.16],
-      [0.46, 1.6, 0.16],
-      [-side, 0.95, 0.12],
-      [side, 0.95, 0.12],
-      [Math.PI, 0.6, 0.12],
-      [Math.PI - 0.7, 0.5, 0.1],
-      [Math.PI + 0.7, 0.5, 0.1],
-    ];
-    for (const [a, lm, wm] of prongs) {
-      const len = size * lm;
-      const w = size * wm;
-      const tx = Math.cos(a) * len;
-      const ty = Math.sin(a) * len;
-      const n = a + Math.PI / 2;
-      g.fillStyle(color, 0.5);
-      g.fillTriangle(Math.cos(n) * w, Math.sin(n) * w, -Math.cos(n) * w, -Math.sin(n) * w, tx, ty);
-      g.fillStyle(hot, 0.55);
-      g.fillTriangle(
-        Math.cos(n) * w * 0.45,
-        Math.sin(n) * w * 0.45,
-        -Math.cos(n) * w * 0.45,
-        -Math.sin(n) * w * 0.45,
-        Math.cos(a) * len * 0.7,
-        Math.sin(a) * len * 0.7,
-      );
-    }
-    g.fillStyle(hot, 0.9).fillCircle(0, 0, size * 0.32);
-    g.fillStyle(0xffffff, 0.95).fillCircle(0, 0, size * 0.17);
-    // "spark" (ricochet) — a few thin electric streaks crackle out from the muzzle.
-    if (style === "spark") {
-      for (let i = 0; i < 5; i++) {
-        const a = Math.random() * TAU;
-        const L = size * (0.8 + Math.random() * 0.9);
-        g.lineStyle(1.4, color, 0.85);
-        g.beginPath();
-        g.moveTo(Math.cos(a) * size * 0.3, Math.sin(a) * size * 0.3);
-        g.lineTo(Math.cos(a) * L, Math.sin(a) * L);
-        g.strokePath();
-      }
-    }
-    // "rapid" (gatling) — small per-shot rotation jitter so a held stream flickers instead of stacking.
-    const jitter = style === "rapid" ? (Math.random() - 0.5) * 0.5 : 0;
-    g.setPosition(x, y).setRotation(ang + jitter);
-    // "heavy" (revolver) — a dark recoil-smoke puff drifts up-barrel under the flash.
-    if (style === "heavy") {
-      const smoke = this.add
-        .circle(
-          x + Math.cos(ang) * size * 0.5,
-          y + Math.sin(ang) * size * 0.5,
-          size * 0.5,
-          0x2a2018,
-          0.4,
-        )
-        .setDepth(99450);
-      this.tweens.add({
-        targets: smoke,
-        scale: 2,
-        alpha: 0,
-        x: smoke.x + Math.cos(ang) * 16,
-        y: smoke.y + Math.sin(ang) * 16 - 6,
-        duration: 340,
-        onComplete: () => smoke.destroy(),
-      });
-    }
-    const grow = style === "boom" ? 1.55 : 1.3;
-    this.tweens.add({
-      targets: g,
-      alpha: 0,
-      scaleX: grow,
-      scaleY: grow,
-      duration: style === "rapid" ? 70 : style === "boom" ? 135 : 105,
-      ease: "Quad.out",
-      onComplete: () => g.destroy(),
-    });
-  }
-
-  /** §9 bullet IMPACT — a per-gun hit effect where a bullet died (hit / wall / max range): the slug
-   *  THUMPS with a dust ring, buckshot is a cheap flash, nails STICK + ping, ricochets crackle cyan,
-   *  tracers spark + scorch. `ang` = the bullet's travel angle (for oriented effects). */
-  private spawnBulletImpact(x: number, y: number, kind: string, ang = 0): void {
-    const fx = this.gunFx(kind);
-    const ADD = Phaser.BlendModes.ADD;
-    const flash = (r: number, sc: number, dur: number) => {
-      const f = this.add.circle(x, y, r, 0xfff0d0, 0.9).setBlendMode(ADD).setDepth(99400);
-      this.tweens.add({
-        targets: f,
-        scale: sc,
-        alpha: 0,
-        duration: dur,
-        onComplete: () => f.destroy(),
-      });
-    };
-    if (kind === "pellet") {
-      flash(5, 1.8, 120); // cheap — a 7-pellet volley shouldn't spawn 35 objects
-      return;
-    }
-    if (kind === "nail") {
-      flash(5, 1.6, 110);
-      const dart = this.add.rectangle(x, y, 9, 2, 0xd6dde6, 0.95).setRotation(ang).setDepth(98500);
-      this.tweens.add({ targets: dart, alpha: 0, duration: 420, onComplete: () => dart.destroy() });
-      return;
-    }
-    if (kind === "ricochet") {
-      flash(6, 2, 130);
-      for (let i = 0; i < 4; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const s = this.add
-          .rectangle(x, y, 12, 1.6, 0x5dd6ff, 0.95)
-          .setRotation(a)
-          .setBlendMode(ADD)
-          .setDepth(99400);
-        this.tweens.add({
-          targets: s,
-          x: x + Math.cos(a) * 18,
-          y: y + Math.sin(a) * 18,
-          alpha: 0,
-          duration: 150,
-          onComplete: () => s.destroy(),
-        });
-      }
-      return;
-    }
-    // slug (heavy thump + dust ring) and default (tracer): flash + radial sparks + lingering scorch.
-    const heavy = kind === "slug";
-    flash(heavy ? 9 : 7, heavy ? 2.8 : 2.1, 160);
-    if (heavy) {
-      const dust = this.add
-        .circle(x, y, 5, 0x6b5a44, 0)
-        .setStrokeStyle(2, 0x6b5a44, 0.5)
-        .setDepth(98200);
-      this.tweens.add({
-        targets: dust,
-        scale: 3,
-        alpha: 0,
-        duration: 280,
-        onComplete: () => dust.destroy(),
-      });
-    }
-    for (let i = 0; i < 3; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const s = this.add
-        .rectangle(x, y, 11, 2, fx.color, 0.9)
-        .setRotation(a)
-        .setBlendMode(ADD)
-        .setDepth(99400);
-      this.tweens.add({
-        targets: s,
-        x: x + Math.cos(a) * 16,
-        y: y + Math.sin(a) * 16,
-        alpha: 0,
-        duration: 170,
-        onComplete: () => s.destroy(),
-      });
-    }
-    const scorch = this.add.circle(x, y, 4, 0x161009, 0.5).setDepth(98000);
-    this.tweens.add({
-      targets: scorch,
-      alpha: 0,
-      duration: 1100,
-      onComplete: () => scorch.destroy(),
-    });
-  }
-
-  /** Fiery AoE explosion where a magma ball died — a flash + a shockwave ring expanding to EXACTLY the
-   *  blast radius (the server hitbox) + a hot footprint disc + flung sparks. §14 WYSIWYG: visual = hitbox. */
-  private spawnExplosion(x: number, y: number, radius: number): void {
-    const flash = this.add
-      .circle(x, y, radius * 0.5, 0xffe6b0, 0.9)
-      .setDepth(99002)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: flash,
-      scale: 1.6,
-      alpha: 0,
-      duration: 220,
-      ease: "Quad.easeOut",
-      onComplete: () => flash.destroy(),
-    });
-    const ring = this.add
-      .circle(x, y, radius)
-      .setStrokeStyle(4, 0xff8a2b, 0.95)
-      .setScale(0.2)
-      .setDepth(99002)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: ring,
-      scale: 1,
-      alpha: 0,
-      duration: 300,
-      ease: "Quad.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-    const disc = this.add
-      .circle(x, y, radius, 0xff5a1e, 0.32)
-      .setDepth(99001)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: disc,
-      alpha: 0,
-      scale: 1.05,
-      duration: 260,
-      ease: "Quad.easeOut",
-      onComplete: () => disc.destroy(),
-    });
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
-      const spark = this.add
-        .circle(x, y, 2.5, 0xffd9a0, 0.9)
-        .setDepth(99002)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({
-        targets: spark,
-        x: x + Math.cos(a) * radius * 1.1,
-        y: y + Math.sin(a) * radius * 1.1,
-        alpha: 0,
-        duration: 240 + Math.random() * 120,
-        ease: "Quad.easeOut",
-        onComplete: () => spark.destroy(),
-      });
     }
   }
 
@@ -1440,20 +794,6 @@ export class ArenaScene extends Phaser.Scene {
       const py = c.y + pr.vy * dtSec;
       c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
-    });
-  }
-
-  /** Small impact splat where a projectile hit or expired (green spit / amber cleaver). */
-  private spawnSplat(x: number, y: number, kind?: string): void {
-    const color = kind === "cleaver" ? 0xffb23b : 0xc9ff5e;
-    const ring = this.add.circle(x, y, 7, color, 0.7).setDepth(99001);
-    this.tweens.add({
-      targets: ring,
-      scale: 2.2,
-      alpha: 0,
-      duration: 230,
-      ease: "Quad.easeOut",
-      onComplete: () => ring.destroy(),
     });
   }
 
@@ -1843,7 +1183,7 @@ export class ArenaScene extends Phaser.Scene {
         { x: cwx, y: cwy },
         QUAKE_REACH,
       );
-      this.spawnQuake(ep.x, ep.y, weapon.quake);
+      spawnQuake(this, ep.x, ep.y, weapon.quake);
       this.hitStop(130);
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
@@ -1880,144 +1220,6 @@ export class ArenaScene extends Phaser.Scene {
     this.frozenUntil = Math.max(this.frozenUntil, this.time.now + ms);
   }
 
-  /** Earthquake VFX (§14): the Codex hero skin (authored in the Weaponsmith) if the weapon carries
-   *  one, else the procedural fallback. Both composite engine dust/debris/flash/shake. */
-  private spawnQuake(x: number, y: number, quake: NonNullable<WeaponDef["quake"]>): void {
-    if (quake.vfx && this.textures.exists(quake.vfx.image)) {
-      this.spawnQuakeHero(x, y, quake.radius, quake.vfx);
-    } else {
-      this.spawnQuakeProcedural(x, y, quake.radius);
-    }
-  }
-
-  /** Hero-skin quake: the Codex slab eruption (candidate-8) erupting up + engine overlays. The
-   *  `vfx` params (radius/flash/dust/debris/shake) were dialed in the Weaponsmith and baked here. */
-  private spawnQuakeHero(
-    x: number,
-    y: number,
-    radius: number,
-    vfx: NonNullable<NonNullable<WeaponDef["quake"]>["vfx"]>,
-  ): void {
-    // Hero sprite scaled so its width spans the AoE diameter × the authored visual radius.
-    // UNIFORM scale (no foreshortening squish) — the hand-drawn art keeps its painted aspect (§28.4).
-    const src = this.textures.get(vfx.image).getSourceImage();
-    const full = (radius * 2 * vfx.radius) / src.width;
-    // Low ground depth so the character (depth = y) always renders OVER the eruption.
-    const hero = this.add.image(x, y, vfx.image).setOrigin(0.5, 0.5).setDepth(6);
-    hero.setScale(full * 0.32).setAlpha(0);
-    this.tweens.add({
-      targets: hero,
-      scale: full,
-      alpha: 1,
-      duration: 200,
-      ease: "Back.easeOut",
-    });
-    this.tweens.add({
-      targets: hero,
-      alpha: 0,
-      delay: 520,
-      duration: 320,
-      ease: "Cubic.easeIn",
-      onComplete: () => hero.destroy(),
-    });
-
-    // Engine dust kicked up (param 0..1).
-    if (vfx.dust > 0) {
-      const dust = this.add
-        .ellipse(x, y, radius * 1.8, radius, 0x6e7042, 0.36 * vfx.dust)
-        .setScale(0.4)
-        .setDepth(4);
-      this.tweens.add({
-        targets: dust,
-        scale: 1.1,
-        alpha: 0,
-        duration: 500,
-        ease: "Quad.easeOut",
-        onComplete: () => dust.destroy(),
-      });
-    }
-
-    // Engine debris bits flung outward with gravity arcs (param = count).
-    const n = Math.round(vfx.debris);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + Math.random() * 0.6;
-      const dist = radius * (0.5 + Math.random() * 0.55);
-      const sz = 4 + Math.random() * 6;
-      const bit = this.add
-        .rectangle(x, y, sz, sz * 0.8, Math.random() < 0.5 ? 0x4a5159 : 0x2b3037)
-        .setStrokeStyle(1.5, 0x13161a)
-        .setDepth(8);
-      this.tweens.add({
-        targets: bit,
-        x: x + Math.cos(a) * dist,
-        y: y + Math.sin(a) * dist * 0.55 - (18 + Math.random() * 34),
-        angle: Math.random() * 360,
-        alpha: 0,
-        scale: 0.4,
-        duration: 380 + Math.random() * 220,
-        ease: "Quad.easeOut",
-        onComplete: () => bit.destroy(),
-      });
-    }
-
-    // Engine impact flash (param 0..1) — kept subtle per the authored value.
-    if (vfx.flash > 0) {
-      const flash = this.add
-        .ellipse(x, y, radius * 2.2, radius * 1.2, 0xffcaa0, 0.7 * vfx.flash)
-        .setBlendMode(Phaser.BlendModes.SCREEN)
-        .setDepth(5);
-      this.tweens.add({
-        targets: flash,
-        alpha: 0,
-        scale: 1.25,
-        duration: 240,
-        ease: "Cubic.easeOut",
-        onComplete: () => flash.destroy(),
-      });
-    }
-
-    this.cameras.main.shake(220, 0.02 * vfx.shake);
-  }
-
-  /** Procedural quake fallback (golden ground shockwave) for quake weapons without a VFX skin. */
-  private spawnQuakeProcedural(x: number, y: number, radius: number): void {
-    const ring = this.add.ellipse(x, y, 44, 26).setStrokeStyle(5, 0xffb23b, 0.9).setDepth(99998);
-    this.tweens.add({
-      targets: ring,
-      scaleX: (radius * 2) / 44,
-      scaleY: ((radius * 2) / 44) * 0.62,
-      alpha: 0,
-      duration: 400,
-      ease: "Cubic.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-    const dust = this.add.ellipse(x, y, 34, 20, 0x6e7042, 0.4).setDepth(99997);
-    this.tweens.add({
-      targets: dust,
-      scaleX: (radius * 1.5) / 34,
-      scaleY: (radius * 1.5) / 34,
-      alpha: 0,
-      duration: 340,
-      ease: "Quad.easeOut",
-      onComplete: () => dust.destroy(),
-    });
-    for (let i = 0; i < 9; i++) {
-      const a = (i / 9) * Math.PI * 2;
-      const p = this.add.circle(x, y, 6, 0x8a6a3a, 0.75).setDepth(99999);
-      this.tweens.add({
-        targets: p,
-        x: x + Math.cos(a) * radius * 0.72,
-        y: y + Math.sin(a) * radius * 0.42 - 18,
-        alpha: 0,
-        scale: 0.3,
-        duration: 380,
-        ease: "Quad.easeOut",
-        onComplete: () => p.destroy(),
-      });
-    }
-    this.cameras.main.shake(220, 0.012);
-  }
-
   /** Hit feedback driven off authoritative state diffs: enemy hp drops → flash + damage number;
    *  local player hp drops → flash + screen shake (§20 game-feel from day one). */
   private updateCombatFx(): void {
@@ -2028,7 +1230,7 @@ export class ArenaScene extends Phaser.Scene {
         const rig = this.enemies.get(id);
         if (rig) {
           rig.flash();
-          this.spawnDamageNumber(rig.x, rig.y - 26, prev - enemy.hp, "#FFE08A");
+          spawnDamageNumber(this, rig.x, rig.y - 26, prev - enemy.hp, "#FFE08A");
         }
       }
       this.enemyHp.set(id, enemy.hp);
@@ -2100,70 +1302,6 @@ export class ArenaScene extends Phaser.Scene {
       onComplete: () => toast.destroy(),
     });
     cam.shake(120, 0.004);
-  }
-
-  /** Floating combat text that rises and fades (world-space, over the target). */
-  private spawnDamageNumber(x: number, y: number, amount: number, color: string): void {
-    const text = this.add
-      .text(x, y, String(Math.max(1, Math.round(amount))), {
-        fontSize: "16px",
-        color,
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(100000);
-    this.tweens.add({
-      targets: text,
-      y: y - 30,
-      alpha: 0,
-      duration: 550,
-      ease: "Cubic.easeOut",
-      onComplete: () => text.destroy(),
-    });
-  }
-
-  /** Quick dust puff where an enemy died. */
-  private spawnPoof(x: number, y: number): void {
-    const ring = this.add.circle(x, y, 8, 0xcfc6ae, 0.5).setDepth(99999);
-    this.tweens.add({
-      targets: ring,
-      scale: 3,
-      alpha: 0,
-      duration: 260,
-      ease: "Quad.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-  }
-
-  /** §17 "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a pit
-   *  fall (player or enemy) reads as falling, not just a flat poof. Cosmetic, client-local. */
-  private spawnFallStreak(x: number, y: number): void {
-    const puff = this.add.circle(x, y, 11, 0x1a140f, 0.6).setDepth(99998);
-    this.tweens.add({
-      targets: puff,
-      scale: 0.3,
-      alpha: 0,
-      y: y + 20,
-      duration: 340,
-      ease: "Quad.easeIn",
-      onComplete: () => puff.destroy(),
-    });
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      const mote = this.add
-        .circle(x + Math.cos(a) * 6, y + Math.sin(a) * 4, 2.5, 0xcfc6ae, 0.7)
-        .setDepth(99999);
-      this.tweens.add({
-        targets: mote,
-        x: mote.x + Math.cos(a) * 14,
-        y: mote.y + 22 + Math.random() * 12,
-        alpha: 0,
-        scale: 0.4,
-        duration: 300 + Math.random() * 130,
-        ease: "Quad.easeIn",
-        onComplete: () => mote.destroy(),
-      });
-    }
   }
 
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */
@@ -2243,315 +1381,7 @@ export class ArenaScene extends Phaser.Scene {
   /** §9 card carousel: one full infographic card per arsenal weapon (art + stats), fanned at the
    *  bottom; the held card is centered, upright, enlarged + readable. */
   private buildCarousel(): void {
-    for (const id of WEAPON_IDS) this.carousel.push(this.buildCard(id));
-  }
-
-  /** Grade → chip colour (§10 S/A/B/C/D/E). */
-  private static readonly GRADE_COL: Record<string, number> = {
-    S: 0xffd479,
-    A: 0xff8a2b,
-    B: 0x9cff3b,
-    C: 0x6fd6ff,
-    D: 0x6f8bff,
-    E: 0x9a9484,
-  };
-
-  /** Bake the FULL-BLEED card art (cover-fit + rounded clip) into a per-card texture so it transforms
-   *  cleanly with the carousel (masks don't follow container transforms). Returns the texture key. */
-  private bakeCardArt(id: string, W: number, H: number, R: number): string {
-    const key = `cardbg-${id}`;
-    if (this.textures.exists(key)) return key;
-    const canvas = document.createElement("canvas");
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return key;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, W, H, R);
-    ctx.clip();
-    const tex = this.textures.exists(`card-${id}`) ? `card-${id}` : null;
-    if (tex) {
-      const src = this.textures.get(tex).getSourceImage() as CanvasImageSource & {
-        width: number;
-        height: number;
-      };
-      const sc = Math.max(W / src.width, H / src.height);
-      const dw = src.width * sc;
-      const dh = src.height * sc;
-      ctx.drawImage(src, (W - dw) / 2, Math.min(0, (H - dh) * 0.12), dw, dh); // bias to the top
-    } else if (this.textures.exists(`${id}:part-1`)) {
-      // No dedicated card art yet → show the installed weapon sprite (contain-fit, upper area) on a
-      // dark ground. Keeps newly-wired weapons (explore swords) legible until bespoke card art lands.
-      ctx.fillStyle = "#15120d";
-      ctx.fillRect(0, 0, W, H);
-      const src = this.textures.get(`${id}:part-1`).getSourceImage() as CanvasImageSource & {
-        width: number;
-        height: number;
-      };
-      const availW = W * 0.86;
-      const availH = H * 0.5;
-      const sc = Math.min(availW / src.width, availH / src.height);
-      const dw = src.width * sc;
-      const dh = src.height * sc;
-      ctx.drawImage(src, (W - dw) / 2, H * 0.07 + (availH - dh) / 2, dw, dh);
-    } else {
-      ctx.fillStyle = "#15120d";
-      ctx.fillRect(0, 0, W, H);
-    }
-    this.textures.addCanvas(key, canvas);
-    return key;
-  }
-
-  /** Tiny vector icons for the §9 card (icon-driven — no word labels, §9). Drawn into `g`, centred at
-   *  (x,y), fitting roughly a 2·s box, in the given colour. */
-  private drawIcon(
-    g: Phaser.GameObjects.Graphics,
-    kind: string,
-    x: number,
-    y: number,
-    s: number,
-    color: number,
-  ): void {
-    g.lineStyle(1.7, color, 1).fillStyle(color, 1);
-    if (kind === "hit") {
-      g.beginPath();
-      g.arc(x - s * 0.3, y + s * 0.6, s * 1.5, -Math.PI * 0.58, -Math.PI * 0.04);
-      g.strokePath(); // a slash arc
-    } else if (kind === "throw") {
-      g.beginPath();
-      g.arc(x, y, s * 0.95, Math.PI * 0.35, Math.PI * 1.95);
-      g.strokePath();
-      g.fillTriangle(
-        x + s * 0.85,
-        y - s * 0.6,
-        x + s * 1.35,
-        y - s * 0.25,
-        x + s * 0.7,
-        y + s * 0.05,
-      );
-    } else if (kind === "shot") {
-      // a bullet: a pointed slug with a motion streak (gun damage source)
-      g.fillCircle(x + s * 0.55, y, s * 0.5);
-      g.fillTriangle(x + s * 1.05, y, x + s * 0.55, y - s * 0.5, x + s * 0.55, y + s * 0.5);
-      g.lineStyle(1.6, color, 0.7);
-      g.beginPath();
-      g.moveTo(x - s, y);
-      g.lineTo(x + s * 0.05, y);
-      g.strokePath();
-    } else if (kind === "quake") {
-      for (let i = 1; i <= 3; i++) {
-        g.lineStyle(1.5, color, 1 - i * 0.16);
-        g.beginPath();
-        g.arc(x, y + s * 0.5, s * 0.42 * i, Math.PI * 1.12, Math.PI * 1.88);
-        g.strokePath();
-      }
-    } else if (kind === "chain") {
-      g.beginPath();
-      g.moveTo(x + s * 0.4, y - s);
-      g.lineTo(x - s * 0.35, y);
-      g.lineTo(x + s * 0.15, y);
-      g.lineTo(x - s * 0.4, y + s);
-      g.strokePath(); // lightning bolt
-    } else if (kind === "magma") {
-      g.fillCircle(x + s * 0.25, y + s * 0.25, s * 0.6); // meteor head
-      g.lineStyle(1.5, color, 0.8);
-      g.beginPath();
-      g.moveTo(x - s * 0.7, y - s * 0.7);
-      g.lineTo(x, y);
-      g.strokePath(); // trail
-    } else if (kind === "blast") {
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        g.beginPath();
-        g.moveTo(x + Math.cos(a) * s * 0.38, y + Math.sin(a) * s * 0.38);
-        g.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
-        g.strokePath();
-      }
-    } else if (kind === "str") {
-      g.beginPath();
-      g.moveTo(x - s * 0.75, y + s * 0.15);
-      g.lineTo(x, y - s * 0.75);
-      g.lineTo(x + s * 0.75, y + s * 0.15);
-      g.strokePath();
-      g.beginPath();
-      g.moveTo(x - s * 0.75, y + s * 0.75);
-      g.lineTo(x, y - s * 0.15);
-      g.lineTo(x + s * 0.75, y + s * 0.75);
-      g.strokePath(); // double up-chevron (power)
-    } else if (kind === "dex") {
-      g.beginPath();
-      g.moveTo(x - s * 0.85, y + s * 0.85);
-      g.lineTo(x + s * 0.85, y - s * 0.85);
-      g.strokePath();
-      g.beginPath();
-      g.moveTo(x + s * 0.15, y - s * 0.85);
-      g.lineTo(x + s * 0.85, y - s * 0.85);
-      g.lineTo(x + s * 0.85, y - s * 0.15);
-      g.strokePath(); // slim arrow (finesse)
-    } else if (kind === "int") {
-      g.fillTriangle(x, y - s, x - s * 0.32, y, x + s * 0.32, y);
-      g.fillTriangle(x, y + s, x - s * 0.32, y, x + s * 0.32, y);
-      g.fillTriangle(x - s, y, x, y - s * 0.32, x, y + s * 0.32);
-      g.fillTriangle(x + s, y, x, y - s * 0.32, x, y + s * 0.32); // 4-point sparkle (arcane)
-    } else if (kind === "con" || kind === "durability") {
-      g.beginPath();
-      g.moveTo(x, y - s);
-      g.lineTo(x + s * 0.82, y - s * 0.45);
-      g.lineTo(x + s * 0.6, y + s * 0.65);
-      g.lineTo(x, y + s);
-      g.lineTo(x - s * 0.6, y + s * 0.65);
-      g.lineTo(x - s * 0.82, y - s * 0.45);
-      g.closePath();
-      g.strokePath(); // shield
-    } else if (kind === "luk") {
-      const p: number[] = [];
-      for (let i = 0; i < 10; i++) {
-        const a = -Math.PI / 2 + (i * Math.PI) / 5;
-        const r = i % 2 ? s * 0.42 : s;
-        p.push(x + Math.cos(a) * r, y + Math.sin(a) * r);
-      }
-      g.beginPath();
-      g.moveTo(p[0] as number, p[1] as number);
-      for (let i = 2; i < p.length; i += 2) g.lineTo(p[i] as number, p[i + 1] as number);
-      g.closePath();
-      g.strokePath(); // star (luck)
-    } else if (kind === "req") {
-      g.strokeRoundedRect(x - s * 0.75, y - s * 0.05, s * 1.5, s, 2);
-      g.beginPath();
-      g.arc(x, y - s * 0.05, s * 0.48, Math.PI, 0);
-      g.strokePath(); // padlock
-    } else if (kind === "charges") {
-      g.fillTriangle(x, y - s, x + s * 0.7, y, x - s * 0.7, y);
-      g.fillTriangle(x, y + s, x + s * 0.7, y, x - s * 0.7, y); // diamond pip
-    }
-  }
-
-  /** Build one card: full-bleed art + a §5 tooltip slab — name + tag subtitle are the ONLY text; the
-   *  damage sources, scaling, requirements and charges/durability are ICON-driven (§9). */
-  private buildCard(id: string): {
-    id: string;
-    container: Phaser.GameObjects.Container;
-    sources: { text: Phaser.GameObjects.Text; src: DamageSource }[];
-    reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
-    resource: Phaser.GameObjects.Text;
-  } {
-    const def = WEAPONS[id];
-    const W = 212;
-    const H = 296;
-    const R = 14;
-    const ART_FRAC = 0.34; // top third is the painted art; the rest is the §5 tooltip slab
-    const accent = ArenaScene.WEAPON_ACCENT[id] ?? 0xb9975b;
-    const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
-    const o: Phaser.GameObjects.GameObject[] = [];
-    const L = -W / 2;
-    const T = -H / 2;
-    const padL = L + 13;
-    const padR = -L - 13;
-    const mk = (
-      x: number,
-      ty: number,
-      size: number,
-      color: string,
-      str: string,
-      ox = 0,
-      bold = false,
-    ): Phaser.GameObjects.Text =>
-      this.add
-        .text(x, ty, str, { fontSize: `${size}px`, color, fontStyle: bold ? "bold" : "normal" })
-        .setOrigin(ox, 0);
-
-    // §5 layout: full-bleed painted art up top, a dark tooltip slab over the lower section.
-    o.push(this.add.image(0, 0, this.bakeCardArt(id, W, H, R)));
-    const panel = this.add.graphics();
-    panel.fillStyle(0x0a0805, 0.93).fillRect(L, T + H * ART_FRAC, W, H * (1 - ART_FRAC));
-    o.push(panel);
-
-    // Accent (rarity) frame.
-    const frame = this.add.graphics();
-    frame.lineStyle(3, accent, 0.92).strokeRoundedRect(L + 1.5, T + 1.5, W - 3, H - 3, R);
-    frame.lineStyle(1, 0x000000, 0.4).strokeRoundedRect(L + 5, T + 5, W - 10, H - 10, R - 4);
-    o.push(frame);
-
-    let y = T + H * ART_FRAC + 8;
-
-    // Name (rarity-tinted) + subtitle (grip · family · element).
-    o.push(mk(padL, y, 17, accentHex, def?.name ?? id, 0, true));
-    y += 23;
-    const grip = def?.dual ? "dual" : def?.twoHanded ? "2-hand" : "1-hand";
-    const sub = def ? `${grip} · ${def.tags.family} · ${def.tags.element}` : "";
-    o.push(mk(padL, y, 10, "#b9b3a3", sub));
-    y += 15;
-    const div = this.add.graphics();
-    div.lineStyle(1, accent, 0.3).lineBetween(padL, y, padR, y);
-    o.push(div);
-    y += 9;
-
-    // ICON-DRIVEN (§9): one damage-type ICON per §14 source + its live "base + bonus = total" — no words.
-    const icons = this.add.graphics();
-    o.push(icons);
-    const sources: { text: Phaser.GameObjects.Text; src: DamageSource }[] = [];
-    for (const src of (def ? weaponDamageSources(def) : []).slice(0, 4)) {
-      this.drawIcon(icons, src.label, padL + 6, y + 7, 6, accent);
-      if (src.count > 1) o.push(mk(padL + 15, y + 1, 10, "#8f897a", `×${src.count}`));
-      const eqText = mk(padR, y, 13, "#ffd479", "", 1, true);
-      sources.push({ text: eqText, src });
-      o.push(eqText);
-      y += 18;
-    }
-    y += 6;
-
-    // Scaling: an ATTRIBUTE ICON + its grade letter (colour = grade) per scaling attribute.
-    const grades = def?.scalingGrades ?? { str: "B" };
-    let cx = padL;
-    for (const [attr, g] of Object.entries(grades) as [Attr, string][]) {
-      const col = ArenaScene.GRADE_COL[g] ?? 0x9a9484;
-      const cw = 40;
-      const chip = this.add.graphics();
-      chip.fillStyle(0x000000, 0.4).fillRoundedRect(cx, y, cw, 18, 5);
-      chip.lineStyle(1, col, 0.7).strokeRoundedRect(cx, y, cw, 18, 5);
-      o.push(chip);
-      this.drawIcon(icons, attr, cx + 11, y + 9, 6, 0xcfc6ae);
-      o.push(
-        this.add
-          .text(cx + cw - 7, y + 9, g, {
-            fontSize: "13px",
-            color: `#${col.toString(16).padStart(6, "0")}`,
-            fontStyle: "bold",
-          })
-          .setOrigin(1, 0.5),
-      );
-      cx += cw + 6;
-    }
-    y += 25;
-
-    // Minimum requirements: a PADLOCK + (attribute icon · number) per requirement. The NUMBER recolours
-    // green/red met/unmet vs the player's live attributes (updateCarousel).
-    const reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[] = [];
-    const reqEntries = Object.entries(def?.requirements ?? {}) as [Attr, number][];
-    if (reqEntries.length > 0) {
-      this.drawIcon(icons, "req", padL + 6, y + 6, 6, 0x8f897a);
-      let rx = padL + 22;
-      for (const [attr, need] of reqEntries) {
-        this.drawIcon(icons, attr, rx + 5, y + 6, 6, 0xb9b3a3);
-        const tk = mk(rx + 14, y, 12, "#cfc6ae", String(need), 0, true);
-        reqTokens.push({ text: tk, attr, need });
-        o.push(tk);
-        rx += 44;
-      }
-    }
-
-    // Charges (thrown, live) or durability (melee) — an ICON + a live number, anchored at the card bottom.
-    const resY = H / 2 - 22;
-    this.drawIcon(icons, def?.thrown ? "charges" : "durability", padL + 6, resY + 6, 6, accent);
-    const resource = mk(padL + 17, resY, 12, accentHex, "", 0, true);
-    o.push(resource);
-
-    // Crisp text — Phaser Text defaults to resolution 1, which blurs on high-DPI + when scaled.
-    const res = Math.max(2, Math.ceil(window.devicePixelRatio || 1));
-    for (const obj of o) if (obj instanceof Phaser.GameObjects.Text) obj.setResolution(res);
-
-    const container = this.add.container(0, 0, o).setScrollFactor(0).setDepth(100000);
-    return { id, container, sources, reqTokens, resource };
+    for (const id of WEAPON_IDS) this.carousel.push(buildCard(this, id));
   }
 
   /** §9/§13 draw the drop/salvage HOLD bar while R is held — a bar above the card carousel filling
