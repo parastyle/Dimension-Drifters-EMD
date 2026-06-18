@@ -8,12 +8,25 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
+  BOSS_ADD_CD,
+  BOSS_ADD_COUNT,
+  BOSS_BULLET_SPEED,
+  BOSS_P1_FIRE_CD,
+  BOSS_P3_FIRE_CD,
+  BOSS_SLAM_CD,
+  BOSS_SLAM_DAMAGE,
+  BOSS_SLAM_RADIUS,
+  BOSS_SLAM_TELEGRAPH,
   BOSS_SPAWN_SECONDS,
+  BOSS_WALL_ARC,
+  BOSS_WALL_COUNT,
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
   bladeAngleAt,
   bladeHitsCircle,
+  bossPhaseForHp,
+  bulletWallAngles,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   CONFLAG_DELAY,
@@ -187,6 +200,13 @@ export class GameRoom extends Room<ArenaState> {
   private readonly combat = new Map<string, CombatState>();
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
   private readonly enemyFireCd = new Map<string, number>();
+  /** §16 OLD RUST phase timers (boss-internal). `bossSlamElapsed` > 0 while a punch-slam is telegraphing. */
+  private bossFireCd = 0;
+  private bossSlamCd = BOSS_SLAM_CD;
+  private bossSlamElapsed = 0;
+  private bossAddCd = BOSS_ADD_CD;
+  private bossWallSeq = 0;
+  private bossMaxHp = 1;
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
    *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
@@ -919,6 +939,9 @@ export class GameRoom extends Room<ArenaState> {
 
     // 5.1 Duelists (ronin): close in, telegraph, then string a melee COMBO (§15).
     this.stepDuelists(dt, bodies);
+    // 5.15 §16 OLD RUST boss phases (bullet-walls / punch-slams / enrage). Runs BEFORE the spitters so it
+    // owns the boss's fire (stepSpitters skips the boss).
+    this.stepBoss(dt, bodies);
     // 5.2 Spitters fire projectiles at the nearest player on a cooldown (§15 ranged threat).
     this.stepSpitters(dt, bodies);
     // 5.3 Advance projectiles + apply hits (server-authoritative damage).
@@ -1206,6 +1229,124 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
+  /** §16 OLD RUST phase machine: escalate the fight by HP fraction + fire the phase's pattern on a cadence.
+   *  P1 bullet-walls · P2 (+) telegraphed punch-slams · P3 enrage (faster walls + Mote adds). */
+  private stepBoss(dt: number, bodies: Vec2[]): void {
+    if (!this.bossId) {
+      if (this.state.bossPhase !== 0) this.state.bossPhase = 0;
+      return;
+    }
+    const boss = this.state.enemies.get(this.bossId);
+    if (!boss) {
+      this.bossId = null;
+      this.state.bossPhase = 0;
+      this.state.bossSlamT = 0;
+      this.bossSlamElapsed = 0;
+      return;
+    }
+    const frac = this.bossMaxHp > 0 ? boss.hp / this.bossMaxHp : 1;
+    const phase = bossPhaseForHp(frac);
+    this.state.bossPhase = phase;
+    const target = nearestPoint(boss, bodies);
+    if (!target) return;
+
+    // P1+ — minigun BULLET-WALLS with a weave-gap (faster at P3 enrage).
+    this.bossFireCd -= dt;
+    if (this.bossFireCd <= 0) {
+      this.fireBulletWall(boss, target);
+      this.bossFireCd = phase === 3 ? BOSS_P3_FIRE_CD : BOSS_P1_FIRE_CD;
+    }
+
+    // P2+ — a telegraphed RED PUNCH-SLAM shockwave (unparryable) between sweeps. Telegraph at the target's
+    // position, then detonate when it peaks.
+    if (phase >= 2) {
+      if (this.bossSlamElapsed > 0) {
+        this.bossSlamElapsed += dt;
+        this.state.bossSlamT = Math.min(1, this.bossSlamElapsed / BOSS_SLAM_TELEGRAPH);
+        if (this.bossSlamElapsed >= BOSS_SLAM_TELEGRAPH) {
+          this.bossSlam(this.state.bossSlamX, this.state.bossSlamY);
+          this.bossSlamElapsed = 0;
+          this.state.bossSlamT = 0;
+          this.bossSlamCd = BOSS_SLAM_CD;
+        }
+      } else {
+        this.bossSlamCd -= dt;
+        if (this.bossSlamCd <= 0) {
+          this.state.bossSlamX = target.x;
+          this.state.bossSlamY = target.y;
+          this.bossSlamElapsed = dt; // begin telegraphing this tick
+          this.state.bossSlamT = Math.min(1, this.bossSlamElapsed / BOSS_SLAM_TELEGRAPH);
+        }
+      }
+    }
+
+    // P3 — ENRAGE: spawn Mote adds (a DPS check).
+    if (phase === 3) {
+      this.bossAddCd -= dt;
+      if (this.bossAddCd <= 0) {
+        this.spawnBossAdds(boss);
+        this.bossAddCd = BOSS_ADD_CD;
+      }
+    }
+  }
+
+  /** §16 P1 fire one minigun BULLET-WALL toward `target` — a fan of slugs with a moving weave-gap. */
+  private fireBulletWall(boss: EnemyState, target: Vec2): void {
+    const base = Math.atan2(target.y - boss.y, target.x - boss.x);
+    const gapIdx = this.bossWallSeq++ % (BOSS_WALL_COUNT - 1); // walk the gap around so it's not always centred
+    const dmg = (ENEMY_KINDS["old-rust"]?.ranged?.damage ?? 10) * 0.55; // per-slug, lighter than the single spit
+    for (const ang of bulletWallAngles(base, BOSS_WALL_COUNT, BOSS_WALL_ARC, gapIdx)) {
+      this.fireProjectile(
+        boss,
+        { x: boss.x + Math.cos(ang), y: boss.y + Math.sin(ang) },
+        BOSS_BULLET_SPEED,
+        dmg,
+      );
+    }
+  }
+
+  /** §16 P2 the punch-slam shockwave lands: UNPARRYABLE damage + a hard knockback to every player inside. */
+  private bossSlam(x: number, y: number): void {
+    const r2 = BOSS_SLAM_RADIUS * BOSS_SLAM_RADIUS;
+    this.state.players.forEach((p) => {
+      if (!p.alive || this.inLevelWindow(p)) return;
+      const dx = p.x - x;
+      const dy = p.y - y;
+      if (dx * dx + dy * dy > r2) return;
+      p.hp -= BOSS_SLAM_DAMAGE; // §16 unparryable — dodge it, don't block it
+      const d = Math.hypot(dx, dy) || 1;
+      const k = addImpulse(
+        p,
+        (dx / d) * HIT_KNOCKBACK_IMPULSE * 2.2,
+        (dy / d) * HIT_KNOCKBACK_IMPULSE * 2.2,
+      );
+      p.vx = k.vx;
+      p.vy = k.vy;
+    });
+  }
+
+  /** §16 P3 enrage: conjure a few Mote adds in a ring around the boss (a DPS check). */
+  private spawnBossAdds(boss: EnemyState): void {
+    const kind = ENEMY_KINDS["mote-swarm"];
+    if (!kind) return;
+    const players = this.state.players.size;
+    const bossRadius = ENEMY_KINDS[boss.kind]?.radius ?? ENEMY_RADIUS;
+    for (let i = 0; i < BOSS_ADD_COUNT; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = bossRadius + 44 + Math.random() * 70;
+      const e = new EnemyState();
+      e.id = `e${this.enemySeq++}`;
+      e.kind = "mote-swarm";
+      e.hp = kind.hp * enemyHpScale(players);
+      const ex = clamp(boss.x + Math.cos(a) * r, kind.radius, ARENA_WIDTH - kind.radius);
+      const ey = clamp(boss.y + Math.sin(a) * r, kind.radius, ARENA_HEIGHT - kind.radius);
+      const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
+      e.x = sp.x;
+      e.y = sp.y;
+      this.state.enemies.set(e.id, e);
+    }
+  }
+
   /** Spitters fire a projectile at the nearest living player on a cooldown (§15 ranged threat). */
   private stepSpitters(dt: number, bodies: Vec2[]): void {
     // Prune cooldowns for enemies that have died/left.
@@ -1213,6 +1354,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.state.enemies.has(id)) this.enemyFireCd.delete(id);
     }
     this.state.enemies.forEach((enemy, id) => {
+      if (id === this.bossId) return; // §16 the boss fires via stepBoss (phase patterns), not the generic spit
       const ranged = ENEMY_KINDS[enemy.kind]?.ranged;
       if (!ranged) return;
       let cd = this.enemyFireCd.get(id);
@@ -1925,6 +2067,12 @@ export class GameRoom extends Room<ArenaState> {
     boss.id = `boss${this.enemySeq++}`;
     boss.kind = "old-rust";
     boss.hp = kind.hp * enemyHpScale(this.state.players.size); // §6 boss HP-sponge × players
+    this.bossMaxHp = boss.hp; // §16 frozen for the phase-fraction thresholds
+    this.bossFireCd = 0;
+    this.bossSlamCd = BOSS_SLAM_CD;
+    this.bossSlamElapsed = 0;
+    this.bossAddCd = BOSS_ADD_CD;
+    this.bossWallSeq = 0;
     const bx = clamp(
       anchor.x + Math.cos(angle) * SPAWN_RING,
       kind.radius,

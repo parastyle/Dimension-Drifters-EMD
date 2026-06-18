@@ -189,6 +189,21 @@ export const TOUGH_SCALE = 1.7;
  * portal — step into it to WIN the run. The capstone goal that turns survival into a run. (tuning)
  */
 export const BOSS_SPAWN_SECONDS = 120;
+/** §16 OLD RUST multi-phase fight tuning (all placeholders). P1/P3 = bullet-wall fire cadence (sec); the
+ *  wall fans `BOSS_WALL_COUNT` slugs across `BOSS_WALL_ARC` rad with a 2-wide weave-gap at `BOSS_BULLET_SPEED`.
+ *  P2 punch-slam: telegraph `BOSS_SLAM_TELEGRAPH` sec then an UNPARRYABLE `BOSS_SLAM_DAMAGE` hit inside
+ *  `BOSS_SLAM_RADIUS`, on a `BOSS_SLAM_CD` cadence. P3 enrage spawns Mote adds every `BOSS_ADD_CD` sec. */
+export const BOSS_WALL_COUNT = 11;
+export const BOSS_WALL_ARC = 1.9;
+export const BOSS_BULLET_SPEED = 360;
+export const BOSS_P1_FIRE_CD = 1.5;
+export const BOSS_P3_FIRE_CD = 0.85;
+export const BOSS_SLAM_CD = 4.2;
+export const BOSS_SLAM_TELEGRAPH = 0.85;
+export const BOSS_SLAM_RADIUS = 150;
+export const BOSS_SLAM_DAMAGE = 22;
+export const BOSS_ADD_CD = 3.5;
+export const BOSS_ADD_COUNT = 2;
 
 /** Greatsword slam (§9 "everything aims at the cursor"): the quake erupts at the CURSOR, but no
  *  farther than this from the character — you slam where you aim, within reach. (tuning) */

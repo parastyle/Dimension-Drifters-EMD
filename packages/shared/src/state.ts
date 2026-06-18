@@ -158,10 +158,18 @@ export class ArenaState extends Schema {
   @type("number") elapsed = 0;
   /** "arena" (survival) | "training" (Testing Grounds — dummies + pickups, no spawns). */
   @type("string") mode = "arena";
-  /** Run outcome (§16): "active" while playing, "victory" once a player extracts. */
+  /** Run outcome (§16): "active" while playing, "victory" once a player extracts, "defeat" on a §6 wipe. */
   @type("string") outcome = "active";
   /** Extraction portal — opened when the boss OLD RUST falls; step in to win. */
   @type("boolean") portalOpen = false;
   @type("number") portalX = 0;
   @type("number") portalY = 0;
+  /** §16 OLD RUST phase (0 = no boss · 1 paces/bullet-walls · 2 +punch-slams · 3 enrage). Drives the
+   *  client's heat-haze/aggression tell. */
+  @type("number") bossPhase = 0;
+  /** §16 P2 punch-slam TELEGRAPH: epicentre + progress 0→1 (0 = no slam pending). The client draws a red
+   *  shrinking warning ring; at 1 the server fires the unparryable hit. */
+  @type("number") bossSlamX = 0;
+  @type("number") bossSlamY = 0;
+  @type("number") bossSlamT = 0;
 }

@@ -5,6 +5,7 @@ import {
   type ArenaState,
   type Attr,
   AUGMENTS,
+  BOSS_SLAM_RADIUS,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
@@ -94,6 +95,8 @@ export class ArenaScene extends Phaser.Scene {
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
   private readonly lastRevived = new Map<string, number>();
+  /** §16 last-seen boss punch-slam telegraph progress, to fire the impact burst when it lands. */
+  private lastBossSlamT = 0;
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
@@ -771,7 +774,9 @@ export class ArenaScene extends Phaser.Scene {
         isSelf: false,
       });
       const es = this.room?.state.enemies.get(id);
-      rig.setBranded((es?.branded ?? 0) > 0); // §8 Brand tint
+      // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
+      const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
+      rig.setBranded((es?.branded ?? 0) > 0 || enraged);
       // §8 white-tell (Stage C): a glowing-white disc + a rhythm ring that SHRINKS to the body as the
       // windup peaks — the §8 "white = parryable" cue. Parry as the ring tightens to negate the swing.
       const w = es?.windup ?? 0;
@@ -808,6 +813,28 @@ export class ArenaScene extends Phaser.Scene {
       }
       rig.setDepth(rig.y);
     }
+    this.renderBossSlam();
+  }
+
+  /** §16 P2 punch-slam: draw the RED warning ring at the synced epicentre (the danger fills to the hit
+   *  radius as the telegraph peaks), and burst + shake when it lands (bossSlamT drops high → 0). */
+  private renderBossSlam(): void {
+    const st = this.room?.state;
+    if (!st) return;
+    const t = st.bossSlamT;
+    if (t > 0.001) {
+      const g = this.telegraphGfx;
+      g.fillStyle(0xff3b2f, 0.1 + 0.24 * t);
+      g.fillCircle(st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS * t); // danger grows to the edge at impact
+      g.lineStyle(3, 0xff5d3b, 0.5 + 0.5 * t);
+      g.strokeCircle(st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
+    }
+    // A high telegraph snapping to 0 = the slam fired this frame → impact ring + a hard shake.
+    if (this.lastBossSlamT > 0.6 && t < 0.001) {
+      spawnExplosion(this, st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
+      this.cameras.main.shake(200, 0.014);
+    }
+    this.lastBossSlamT = t;
   }
 
   /** Reconcile rendered projectiles vs authoritative state; splat on removal (hit/expire). */
