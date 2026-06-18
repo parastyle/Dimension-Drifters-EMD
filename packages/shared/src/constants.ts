@@ -83,6 +83,8 @@ export const SPAWN_RING = 720;
  * soft-synced horde (hundreds/player) lands with StateView AoI before the load test.
  */
 export const MAX_ENEMIES = 80;
+/** Dev summon (§21 Testing Grounds): max monsters spawned per Tab-menu summon click (the multiplier cap). */
+export const DEBUG_SPAWN_MAX = 30;
 
 /** Player combat/survival (§6, §20). All tuning placeholders. */
 export const PLAYER_MAX_HP = 100;

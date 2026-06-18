@@ -4,7 +4,7 @@
 > **THIS IS THE GAME BIBLE — THE SINGLE SOURCE OF TRUTH.**
 > It is a *living* document, updated every session with all canon decisions. "Living" ≠ "unlocked": `[LOCKED]` items are canon until explicitly changed here. Any decision made anywhere (chat, coding session, playtest) must be written back into this file or it does not exist. If code and this doc disagree, that's a bug in one of them — reconcile immediately.
 
-**Doc version:** v0.86 · **Last updated:** 2026-06-17 · **Owner:** product owner (Mike)
+**Doc version:** v0.87 · **Last updated:** 2026-06-17 · **Owner:** product owner (Mike)
 **Status:** Living design bible. Consolidates the full design session.
 **Legend:** `[LOCKED]` = decided/canon. `[PROPOSED]` = drafted by Claude, awaiting sign-off. `[OPEN]` = undecided.
 **Update protocol:** bump version + date on every edit; record reversals in §25; never silently overwrite a `[LOCKED]` item — supersede it with a logged note.
@@ -506,6 +506,8 @@ Plus tuned fields: damage, **knockback value (per LMB/RMB attack; default 0, tun
 ---
 
 ## 25. Decision Log / Changelog (so we don't relitigate)
+
+**Testing-Grounds Tab SUMMON menu — playtest note #7 — 2026-06-17 (v0.87) `[BUILT]`:** Playtest: "in the Dev weapon test dimension press Tab → a list of monsters to summon + a multiplier (tough enemy ×1 → one monster appears)." Built it. **Server:** a new `debugSpawn { kind, count, tough }` message (GameRoom), **training-mode only** (rejected in a live `arena` run) and fully validated (untrusted client — kind must be a real non-`dummy` `ENEMY_KINDS` id, count clamped 1…`DEBUG_SPAWN_MAX`=30, tough coerced to bool). It spawns `count` of the chosen kind on the `SPAWN_RING` around the requester via a new `debugSpawnOne` (mirrors `spawnEnemy`'s pit/POI safe-spawn; swarm/boss ignore the tough flag since they're already a fixed tier). Any client may summon (it's a shared sandbox; both players test) — unlike the host-only run-wide toggles. **Client:** `Tab` (captured so it doesn't move browser focus) toggles a Phaser overlay (same idiom as the §8/§12 level cards) — a ×1/×5/×10/×30 multiplier row, a TOUGH toggle, and one button per summonable kind (Critter/Mote/Pricklepulp/Boothill/Gatlin/Ronin/OLD RUST). Clicking a kind fires `debugSpawn` and leaves the menu up so you can keep conjuring; the menu auto-closes if you leave training. The §21 mode hint now advertises `Tab: summon monsters`. Gate green — typecheck (4 pkgs) + lint + 161 tests. (A dev affordance; not part of the locked production hub.)
 
 **Weapon cycle = `Q` / `E` (E back-cycle) — playtest note #1 — 2026-06-17 (v0.86) `[BUILT]`:** Playtest: cycling weapons "should be Q AND E, E is currently not working." Only `Q` (forward) was wired; the §6 controls line already anticipated an `EQ` manual cycle (line ~175) but `E` was never bound. Added the inverse: new shared pure `prevWeapon(current)` (the mirror of `nextWeapon` — steps back one roster id, wraps the same way, falls to the last weapon / `DEFAULT_WEAPON` on an unknown id like `fists`); the server `cycleWeapon` handler now takes `{ dir }` (`E` → `dir:-1` → `prevWeapon`, `Q`/default → `nextWeapon`); the client binds `E` alongside `Q`. **Verified:** gate green — typecheck (4 pkgs) + lint + **161 tests** (5 new: prev advances/wraps/inverse-of-next/unknown-id). The M0 keymap (§6) now reads `Q` next / `E` previous.
 

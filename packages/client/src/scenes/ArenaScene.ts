@@ -10,6 +10,7 @@ import {
   characterName,
   characterScale,
   clampQuakeEpicenter,
+  DEBUG_SPAWN_MAX,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
   damageMultFromGrades,
@@ -94,7 +95,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
-    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "SPACE",
+    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
   private lastSent = { dx: Number.NaN, dy: Number.NaN };
@@ -152,6 +153,11 @@ export class ArenaScene extends Phaser.Scene {
   private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
+  // §21 Testing-Grounds Tab summon menu (dev): pick a monster kind + a multiplier to conjure it.
+  private summonObjects: Phaser.GameObjects.GameObject[] = [];
+  private summonOpen = false;
+  private summonCount = 1; // the multiplier (× this many per spawn click)
+  private summonTough = false;
   // §9/§13 drop & salvage (R): tap = drop the held weapon, HOLD = salvage it. `rHold` = seconds R has
   // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
   private rHold = 0;
@@ -211,10 +217,12 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,SPACE") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "SPACE",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,TAB,SPACE") as Record<
+      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
       Phaser.Input.Keyboard.Key
     >;
+    // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
+    keyboard.addCapture("TAB");
     this.input.setDefaultCursor("crosshair");
 
     // Read the cursor straight from the DOM for aiming. Phaser's pointer pipeline was dropping
@@ -620,6 +628,13 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
+    // §21 Tab toggles the dev summon menu — Testing Grounds only (the server rejects it elsewhere anyway).
+    if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
+      const training = this.room?.state.mode === "training";
+      if (training && !this.summonOpen) this.openSummonMenu();
+      else this.closeSummonMenu();
+    }
+    if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
@@ -1157,6 +1172,152 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
+  /** §21 Testing-Grounds Tab menu — the summonable roster (boss + dummy excluded; tough is a toggle). */
+  private static readonly SUMMON_KINDS: { id: string; label: string }[] = [
+    { id: "critter", label: "Critter (rusher)" },
+    { id: "mote-swarm", label: "Mote (swarm)" },
+    { id: "pricklepulp", label: "Pricklepulp (zoner)" },
+    { id: "boothill", label: "Boothill (spitter)" },
+    { id: "gatlin", label: "Gatlin (scatter)" },
+    { id: "ronin", label: "Ronin (duelist)" },
+    { id: "old-rust", label: "OLD RUST (boss)" },
+  ];
+
+  /** Tear down the summon overlay. */
+  private closeSummonMenu(): void {
+    for (const o of this.summonObjects) o.destroy();
+    this.summonObjects = [];
+    this.summonOpen = false;
+  }
+
+  /** Open (or rebuild) the dev summon menu: a multiplier row + a Tough toggle + one button per kind.
+   *  Clicking a kind sends `debugSpawn` and leaves the menu up so you can keep conjuring. */
+  private openSummonMenu(): void {
+    this.closeSummonMenu();
+    this.summonOpen = true;
+    const cx = this.screenW() / 2;
+    const cy = this.screenH() / 2;
+    const dim = this.add
+      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.55)
+      .setScrollFactor(0)
+      .setDepth(100020)
+      .setInteractive();
+    const title = this.add
+      .text(cx, cy - 196, "SUMMON — Testing Grounds", {
+        fontSize: "26px",
+        color: "#33e6ff",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100021);
+    const hint = this.add
+      .text(cx, cy - 166, "click a monster to spawn · Tab to close", {
+        fontSize: "13px",
+        color: "#cfc8b6",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100021);
+    this.summonObjects.push(dim, title, hint);
+
+    // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle on the right.
+    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
+    const chipW = 58;
+    const chipGap = 10;
+    const rowW = mults.length * (chipW + chipGap) - chipGap;
+    const mStartX = cx - rowW / 2 + chipW / 2 - 70;
+    const my = cy - 122;
+    const mLabel = this.add
+      .text(mStartX - chipW / 2 - 14, my, "×", { fontSize: "18px", color: "#9a9486" })
+      .setScrollFactor(0)
+      .setOrigin(1, 0.5)
+      .setDepth(100021);
+    this.summonObjects.push(mLabel);
+    mults.forEach((n, i) => {
+      const x = mStartX + i * (chipW + chipGap);
+      const on = this.summonCount === n;
+      const chip = this.add
+        .rectangle(x, my, chipW, 30, on ? 0x1f6b78 : 0x1b1812, 0.98)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, on ? 0x33e6ff : 0x4a443a)
+        .setDepth(100021)
+        .setInteractive({ useHandCursor: true });
+      const t = this.add
+        .text(x, my, `${n}`, {
+          fontSize: "16px",
+          color: on ? "#bdf6ff" : "#cfc8b6",
+          fontStyle: "bold",
+        })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100022);
+      chip.on("pointerdown", () => {
+        this.summonCount = n;
+        this.openSummonMenu(); // rebuild to refresh the selected highlight
+      });
+      this.summonObjects.push(chip, t);
+    });
+    // Tough toggle.
+    const tx = mStartX + mults.length * (chipW + chipGap) + 40;
+    const tough = this.add
+      .rectangle(tx, my, 96, 30, this.summonTough ? 0x6b4a1f : 0x1b1812, 0.98)
+      .setScrollFactor(0)
+      .setStrokeStyle(2, this.summonTough ? 0xffb24a : 0x4a443a)
+      .setDepth(100021)
+      .setInteractive({ useHandCursor: true });
+    const toughT = this.add
+      .text(tx, my, this.summonTough ? "TOUGH ✓" : "tough", {
+        fontSize: "14px",
+        color: this.summonTough ? "#ffd9a8" : "#9a9486",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100022);
+    tough.on("pointerdown", () => {
+      this.summonTough = !this.summonTough;
+      this.openSummonMenu();
+    });
+    this.summonObjects.push(tough, toughT);
+
+    // Monster buttons — a centered grid (4 per row).
+    const kinds = ArenaScene.SUMMON_KINDS;
+    const W = 196;
+    const H = 52;
+    const gap = 14;
+    const perRow = 4;
+    kinds.forEach((k, i) => {
+      const col = i % perRow;
+      const row = Math.floor(i / perRow);
+      const rowCount = Math.min(perRow, kinds.length - row * perRow);
+      const rowWidth = rowCount * (W + gap) - gap;
+      const x = cx - rowWidth / 2 + W / 2 + col * (W + gap);
+      const y = cy - 56 + row * (H + gap);
+      const btn = this.add
+        .rectangle(x, y, W, H, 0x1b1812, 0.98)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, 0x33e6ff)
+        .setDepth(100021)
+        .setInteractive({ useHandCursor: true });
+      const t = this.add
+        .text(x, y, k.label, { fontSize: "14px", color: "#e6f8ff", align: "center" })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100022);
+      btn.on("pointerover", () => btn.setFillStyle(0x26221a, 1));
+      btn.on("pointerout", () => btn.setFillStyle(0x1b1812, 0.98));
+      btn.on("pointerdown", () =>
+        this.room?.send("debugSpawn", {
+          kind: k.id,
+          count: this.summonCount,
+          tough: this.summonTough,
+        }),
+      );
+      this.summonObjects.push(btn, t);
+    });
+  }
+
   /**
    * Reconcile rendered blobs against authoritative state every frame: create a blob for
    * any player that lacks one, destroy any blob whose player has left. Race-proof — does
@@ -1610,7 +1771,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12)
       .setText(
         training
-          ? `⛶ TESTING GROUNDS — R: grab a weapon (hold: salvage) · Space: jump · swing at the dummies · T to exit${who}`
+          ? `⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
           : `Survive until OLD RUST, then extract · Space: jump · B: boss · T: Testing Grounds${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");

@@ -19,6 +19,7 @@ import {
   clampQuakeEpicenter,
   coneAngles,
   countAugment,
+  DEBUG_SPAWN_MAX,
   DEFAULT_WEAPON,
   DROP_GRACE_SECONDS,
   DUMMY_HP,
@@ -430,6 +431,23 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("spawnBoss", (client) => {
       if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
     });
+
+    // §21 Dev summon (Tab menu): spawn N of a chosen enemy kind on a ring around the requester, optionally
+    // TOUGH. Training-mode ONLY — it's a sandbox affordance (so any client may summon; both players test),
+    // and gating to training keeps it out of a live survival run. All fields validated (untrusted client).
+    this.onMessage(
+      "debugSpawn",
+      (client, message: { kind?: string; count?: number; tough?: boolean }) => {
+        if (this.state.mode !== "training") return;
+        const player = this.state.players.get(client.sessionId);
+        if (!player) return;
+        const kindId = message?.kind;
+        if (typeof kindId !== "string" || !ENEMY_KINDS[kindId] || kindId === "dummy") return;
+        const count = clamp(Math.floor(message?.count ?? 1), 1, DEBUG_SPAWN_MAX);
+        const tough = message?.tough === true;
+        for (let i = 0; i < count; i++) this.debugSpawnOne(kindId, tough, player);
+      },
+    );
 
     // §12 level-up window: the player spends their FLEX point on an attribute.
     this.onMessage("chooseAttribute", (client, message: { attr?: string }) => {
@@ -1739,6 +1757,29 @@ export class GameRoom extends Room<ArenaState> {
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
     // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
+    const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
+    enemy.x = sp.x;
+    enemy.y = sp.y;
+    this.state.enemies.set(enemy.id, enemy);
+  }
+
+  /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
+   *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
+   *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
+  private debugSpawnOne(kindId: string, tough: boolean, anchor: PlayerState): void {
+    const kind = ENEMY_KINDS[kindId];
+    if (!kind) return;
+    const players = this.state.players.size;
+    const angle = Math.random() * Math.PI * 2;
+    const m = kind.radius + 4;
+    const enemy = new EnemyState();
+    enemy.id = `e${this.enemySeq++}`;
+    enemy.kind = kindId;
+    // Swarm trash can't be tough (matches the director rule); the boss ignores the flag (it's already a tier).
+    enemy.tough = tough && kind.archetype !== "swarm" && kind.archetype !== "boss";
+    enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
+    const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
+    const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
     const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
     enemy.x = sp.x;
     enemy.y = sp.y;
