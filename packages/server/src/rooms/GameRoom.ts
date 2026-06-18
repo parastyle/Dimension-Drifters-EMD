@@ -12,6 +12,8 @@ import {
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
+  bladeAngleAt,
+  bladeHitsCircle,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   CONFLAG_DELAY,
@@ -59,8 +61,11 @@ import {
   MAP_POI_RADIUS,
   MAX_ENEMIES,
   MAX_PLAYERS,
+  MELEE_BLADE_HALFWIDTH,
+  MELEE_SAMPLE_STEP,
   MOVE_SPEED,
   type MoveInput,
+  meleeSwingActive,
   nearestGroundPx,
   nearestPoint,
   nextCharacter,
@@ -210,6 +215,22 @@ export class GameRoom extends Room<ArenaState> {
   private readonly comboState = new Map<
     string,
     { phase: "idle" | "windup" | "recover"; t: number; hits: number; wind: number }
+  >();
+  /** §20 WYSIWYG melee: in-flight swept-blade swings per player id. A swing lives for its `active` window;
+   *  `stepMeleeSwings` sweeps the blade across `swingArc` from `aim0` and edge-hits each enemy ONCE (`hit`).
+   *  The blade origin is read live from the player each tick, so the cut tracks you as you move. */
+  private readonly meleeSwings = new Map<
+    string,
+    {
+      aim0: number;
+      range: number;
+      swingArc: number;
+      halfWidth: number;
+      edgeDamage: number;
+      elapsed: number;
+      active: number;
+      hit: Set<string>;
+    }
   >();
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
@@ -874,6 +895,9 @@ export class GameRoom extends Room<ArenaState> {
       c.attacking = false;
     });
 
+    // 4.6 §20 advance in-flight swept melee blades (edge damage over the swing's active window).
+    this.stepMeleeSwings(dt);
+
     // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
     this.state.enemies.forEach((enemy) => {
@@ -997,95 +1021,127 @@ export class GameRoom extends Room<ArenaState> {
     this.tickLevelWindows(dt);
   }
 
-  /** Apply one weapon swing: forward-arc damage, plus an earthquake AoE for quake weapons.
-   *  Damage scales with the player's level-up `power` (§12); kills grant XP. */
+  /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps
+   *  it across `swingArc` and damages each enemy the blade actually crosses — #2/#5/#6); the secondary
+   *  LAYERS (chain / quake / scatter) fire here at the swing moment, each an independent position-based
+   *  source ("layered like the Wyrmtooth"). Damage scales per-source (§14); kills grant XP. */
   private resolveSwing(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
-    const kills = new Set<string>();
-    let xpGained = 0;
-    const hit = (enemy: EnemyState, eid: string, dmg: number): void => {
-      if (kills.has(eid)) return;
-      enemy.hp -= dmg * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1); // §8 Brand: Marked enemies take more
-      if (enemy.hp <= 0) {
-        // Dummies persist — reset HP instead of dying so you can keep testing on them.
-        if (enemy.kind === "dummy") enemy.hp = DUMMY_HP;
-        else {
-          kills.add(eid);
-          xpGained += (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
-          this.maybeDropWeapon(enemy); // §13 ronin sword drop
-          // Boss down → open the extraction portal where it fell (§16).
-          if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
-        }
-      }
-    };
-
-    // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE (forward arc) uses the weapon's
-    // own grades; the VFX/behavior sources below (chain, quake, …) carry their own grades and may scale
-    // off DIFFERENT attributes (e.g. an INT-scaling magma burst on a STR/DEX blade).
+    // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
+    // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
     const edgePower = effectiveDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
+    const aim0 = Math.atan2(c.aimY, c.aimX);
+    // Register the swept edge — the blade sweeps from `aim0 − swingArc/2` to `+swingArc/2` over `active`,
+    // origin tracked live from the player. Replaces any in-flight swing (cooldown ≥ active, so no overlap).
+    this.meleeSwings.set(player.id, {
+      aim0,
+      range: weapon.range,
+      swingArc: weapon.swingArc,
+      halfWidth: MELEE_BLADE_HALFWIDTH,
+      edgeDamage: weapon.damage * edgePower,
+      elapsed: 0,
+      active: meleeSwingActive(weapon.cooldown),
+      hit: new Set<string>(),
+    });
 
-    // Forward arc — also capture the nearest struck enemy as the chain-lightning SEED, and remember
-    // every arc-hit enemy so the chain leaps to OTHER enemies (not ones the cut already hit).
-    const struckArc = new Set<string>();
-    let seedX = 0;
-    let seedY = 0;
-    let seedFound = false;
-    let seedBestD = Infinity;
-    this.state.enemies.forEach((enemy, eid) => {
-      if (inMeleeArc(player, c.aimX, c.aimY, enemy, weapon.range, weapon.halfArc)) {
-        hit(enemy, eid, weapon.damage * edgePower);
-        struckArc.add(eid);
-        const d = (enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2;
-        if (d < seedBestD) {
-          seedBestD = d;
+    // Chain lightning (§10 on-hit proc): seed off the nearest enemy inside the swing WEDGE (within range +
+    // swingArc/2 of the aim), then leap to the nearest enemies OUTSIDE the wedge, up to `jumps`. Target
+    // SELECTION is the shared `selectChainTargets` (the client re-runs the identical pick for the bolt VFX).
+    if (weapon.chainLightning) {
+      const halfSweep = weapon.swingArc / 2;
+      const r2 = weapon.range * weapon.range;
+      const wedge = new Set<string>();
+      let seedX = 0;
+      let seedY = 0;
+      let seedFound = false;
+      let seedBestD = Number.POSITIVE_INFINITY;
+      this.state.enemies.forEach((enemy, eid) => {
+        const dx = enemy.x - player.x;
+        const dy = enemy.y - player.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > r2) return;
+        let da = Math.abs(Math.atan2(dy, dx) - aim0);
+        if (da > Math.PI) da = 2 * Math.PI - da;
+        if (da > halfSweep) return;
+        wedge.add(eid);
+        if (d2 < seedBestD) {
+          seedBestD = d2;
           seedX = enemy.x;
           seedY = enemy.y;
           seedFound = true;
         }
+      });
+      if (seedFound) {
+        const cl = weapon.chainLightning;
+        const clPower = effectiveDamageMult(weapon, cl.scalingGrades, player);
+        const candidates: ChainCandidate[] = [];
+        this.state.enemies.forEach((enemy, eid) => {
+          candidates.push({ id: eid, x: enemy.x, y: enemy.y });
+        });
+        const links = selectChainTargets(
+          { x: seedX, y: seedY },
+          candidates,
+          cl.jumps,
+          Math.min(cl.range, CHAIN_MAX_RANGE),
+          wedge, // swing-wedge enemies aren't chain targets (the blade already covers them)
+        );
+        const kills: string[] = [];
+        let xp = 0;
+        links.forEach((t, n) => {
+          const enemy = this.state.enemies.get(t.id);
+          if (enemy)
+            xp += this.damageEnemy(enemy, t.id, cl.damage * cl.falloff ** n * clPower, kills);
+        });
+        for (const eid of kills) this.state.enemies.delete(eid);
+        if (xp > 0) this.grantXp(xp);
       }
-    });
-
-    // Chain lightning (§10 on-hit proc): leap from the seed to the nearest UNHIT enemy, up to `jumps`
-    // times; link n does damage × falloff^n × power. Target SELECTION is the shared `selectChainTargets`
-    // (the client re-runs the identical pick for the bolt VFX — they cannot diverge). Damage routes
-    // through hit() (dedupe/XP/portal for free).
-    if (weapon.chainLightning && seedFound) {
-      const cl = weapon.chainLightning;
-      const clPower = effectiveDamageMult(weapon, cl.scalingGrades, player); // §14 source grades × §11 req penalty
-      const candidates: ChainCandidate[] = [];
-      this.state.enemies.forEach((enemy, eid) => {
-        if (!kills.has(eid)) candidates.push({ id: eid, x: enemy.x, y: enemy.y });
-      });
-      const links = selectChainTargets(
-        { x: seedX, y: seedY },
-        candidates,
-        cl.jumps,
-        Math.min(cl.range, CHAIN_MAX_RANGE),
-        struckArc, // arc-hit enemies are not chain targets
-      );
-      links.forEach((t, n) => {
-        const enemy = this.state.enemies.get(t.id);
-        if (enemy) hit(enemy, t.id, cl.damage * cl.falloff ** n * clPower);
-      });
     }
 
-    // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor);
-    // AoE damage to everything within radius of that epicenter (§14 VFX matches on the client via the
-    // SAME shared clampQuakeEpicenter).
+    // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor); AoE via
+    // the shared `detonate` (same kill/XP/portal bookkeeping). The client matches the epicentre via the
+    // SAME shared clampQuakeEpicenter.
     if (weapon.quake) {
-      const qPower = effectiveDamageMult(weapon, weapon.quake.scalingGrades, player); // §14 source grades × §11 req penalty
+      const qPower = effectiveDamageMult(weapon, weapon.quake.scalingGrades, player);
       const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
-      const r2 = weapon.quake.radius * weapon.quake.radius;
-      this.state.enemies.forEach((enemy, eid) => {
-        const dx = enemy.x - ep.x;
-        const dy = enemy.y - ep.y;
-        if (dx * dx + dy * dy <= r2) hit(enemy, eid, (weapon.quake?.damage ?? 0) * qPower);
-      });
+      this.detonate(ep.x, ep.y, weapon.quake.radius, weapon.quake.damage * qPower);
     }
 
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
-    // Fired as live projectiles (server-authoritative) — they advance + detonate in stepProjectiles.
+    // Fired as live projectiles (server-authoritative) — they advance + detonate ON CONTACT in
+    // stepProjectiles, so the secondary VFX damage where it actually touches an enemy (#6).
     if (weapon.scatter) this.fireScatter(player, c, weapon);
+  }
 
+  /** §20 advance every in-flight melee swing: sweep the blade across its arc this tick (super-sampled so the
+   *  band is continuous between 20Hz ticks) and edge-hit each enemy the blade crosses ONCE per swing. The
+   *  blade origin is read live from the player so the cut tracks you. Expired swings are dropped. */
+  private stepMeleeSwings(dt: number): void {
+    if (this.meleeSwings.size === 0) return;
+    const kills: string[] = [];
+    let xpGained = 0;
+    for (const [pid, sw] of this.meleeSwings) {
+      const player = this.state.players.get(pid);
+      if (!player?.alive) {
+        this.meleeSwings.delete(pid);
+        continue;
+      }
+      const p0 = Math.min(1, sw.elapsed / sw.active);
+      sw.elapsed += dt;
+      const p1 = Math.min(1, sw.elapsed / sw.active);
+      const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
+      const wielder = { x: player.x, y: player.y };
+      for (let s = 1; s <= steps; s++) {
+        const angle = bladeAngleAt(sw.aim0, sw.swingArc, p0 + ((p1 - p0) * s) / steps);
+        this.state.enemies.forEach((enemy, eid) => {
+          if (sw.hit.has(eid) || enemy.hp <= 0) return; // once per swing; skip corpses pending deletion
+          const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+          if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
+            sw.hit.add(eid);
+            xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills);
+          }
+        });
+      }
+      if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
+    }
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
   }

@@ -63,6 +63,8 @@ export class SpriteRig {
   }[] = [];
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
+  /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
+  private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
   /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
    *  the camera + depth-sort use the ground position; only the visible parts rise. */
@@ -261,9 +263,12 @@ export class SpriteRig {
     for (const obj of stack) this.root.bringToTop(obj);
   }
 
-  /** Start a swing animation (the actual damage is server-authoritative). */
-  triggerSwing(timeMs: number): void {
+  /** Start a swing animation (the actual damage is server-authoritative). `aimWorld` (radians) freezes the
+   *  aim AT swing-start so the blade sweeps the same arc the server's swept hitbox uses (§20 WYSIWYG); omit
+   *  for a swing with no captured aim (the animate loop then falls back to the live/synced aim). */
+  triggerSwing(timeMs: number, aimWorld?: number): void {
     this.swingStart = timeMs;
+    this.swingAimWorld = aimWorld ?? Number.NaN;
   }
 
   /** Start a parry BRACE pose (§8) — raise the weapon to a horizontal block, draw the hands up into
@@ -391,13 +396,22 @@ export class SpriteRig {
       const el = timeMs - this.swingStart;
       const dur = def.cooldown * 470;
       if (el >= 0 && el < dur) {
+        // §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE AIM (frozen at swing-start), so the
+        // sprite passes through exactly what the server's swept hitbox damages. World aim → local (mirrored).
+        const aimW = Number.isNaN(this.swingAimWorld)
+          ? anim.isSelf
+            ? Math.atan2(anim.aimY, anim.aimX)
+            : anim.aimDir
+          : this.swingAimWorld;
+        const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
+        const start = aimLocal - def.swingArc / 2;
+        const end = aimLocal + def.swingArc / 2;
+        const back = start - 0.3; // a quick wind-back just past the start of the sweep
         const tt = el / dur;
-        const windup = restA - 0.6;
-        const end = restA + def.swingArc;
         weaponAngle =
-          tt < 0.18
-            ? restA + (windup - restA) * (tt / 0.18)
-            : windup + (end - windup) * (1 - (1 - (tt - 0.18) / 0.82) ** 2);
+          tt < 0.16
+            ? restA + (back - restA) * (tt / 0.16) // wind up
+            : back + (end - back) * (1 - (1 - (tt - 0.16) / 0.84) ** 2); // ease-out sweep through the arc
       }
     }
     // Brace overrides the swing: raise the weapon toward a near-horizontal block (business end up).

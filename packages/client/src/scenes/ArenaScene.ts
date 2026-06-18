@@ -1477,7 +1477,9 @@ export class ArenaScene extends Phaser.Scene {
     if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
     this.localAtkCd = weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3;
     const rig = this.blobs.get(selfId);
-    if (!weapon?.gun) rig?.triggerSwing(this.time.now); // guns don't melee-swing — the shot is the muzzle flash
+    // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
+    // uses. Guns don't melee-swing — the shot is the muzzle flash.
+    if (!weapon?.gun) rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x));
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
