@@ -302,6 +302,17 @@ describe("gunMuzzleReach (§9 barrel-tip muzzle)", () => {
       expect(gunMuzzleReach(w)).toBeGreaterThan(GUN_HAND_FORWARD);
     }
   });
+
+  it("scales the WHOLE muzzle reach by the holder's rig scale (§7) so the shot lands on the tip", () => {
+    const w = { gripFrac: 0.25, displayLength: 80 } as Parameters<typeof gunMuzzleReach>[0];
+    const base = gunMuzzleReach(w); // renderScale defaults to 1
+    // A 1.25× rig (e.g. a chunky character) puts the barrel tip 25% farther out in world space.
+    expect(gunMuzzleReach(w, 1.25)).toBeCloseTo(base * 1.25, 6);
+    // Hand-forward also scales (it's part of the same scaled rig), so a fully-gripped gun stays consistent.
+    const gripped = { gripFrac: 1, displayLength: 200 } as Parameters<typeof gunMuzzleReach>[0];
+    expect(gunMuzzleReach(gripped, 1.2)).toBeCloseTo(GUN_HAND_FORWARD * 1.2, 6);
+    expect(gunMuzzleReach(undefined, 1.2)).toBeCloseTo(GUN_HAND_FORWARD * 1.2, 6);
+  });
 });
 
 describe("nextWeapon (§9 cycle)", () => {

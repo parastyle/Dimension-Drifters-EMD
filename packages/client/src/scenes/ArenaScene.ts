@@ -819,8 +819,12 @@ export class ArenaScene extends Phaser.Scene {
           const p = this.room.state.players.get(shooter);
           if (p) {
             const ang = Math.atan2(pr.vy, pr.vx);
-            // Flash at the shooter's BARREL TIP (per-gun reach), matching where the server spawned the shot.
-            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]);
+            // Flash at the shooter's BARREL TIP (per-gun reach × the holder's rig scale), matching where the
+            // server spawned the shot (both call the same shared reach with the same character scale).
+            const reach = gunMuzzleReach(
+              WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON],
+              characterScale(p.character),
+            );
             spawnMuzzleFlash(
               this,
               p.x + Math.cos(ang) * reach,

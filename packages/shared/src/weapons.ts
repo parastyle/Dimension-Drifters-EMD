@@ -227,11 +227,17 @@ export type Grade = "S" | "A" | "B" | "C" | "D" | "E";
  *  derived from each gun's OWN held geometry — the gun pivots at `gripFrac` of its `displayLength` and the
  *  barrel extends past the grip, plus the front hand sits a little forward. So bullets + the muzzle flash
  *  always leave the BARREL TIP (not the body), and a longer gun muzzles further out automatically. Server
- *  (bullet spawn) + client (muzzle flash) both call this so the shot + flash coincide. */
+ *  (bullet spawn) + client (muzzle flash) both call this so the shot + flash coincide.
+ *
+ *  `renderScale` = the holder's rig scale (`characterScale(player.character)`, §7). The whole rig — hand
+ *  offset AND the barrel that extends from it — is drawn at that scale, so the WORLD muzzle distance scales
+ *  with it too. Without this the shot spawned ~6–25% SHORT of the rendered barrel (every character sits at
+ *  1.06–1.25×) — the "bullets out of the barrel is OK at best" playtest note. Pass the holder's scale to
+ *  land the shot exactly on the tip. Defaults to 1 for callers that don't know the holder. */
 export const GUN_HAND_FORWARD = 12;
-export function gunMuzzleReach(weapon: WeaponDef | undefined): number {
-  if (!weapon) return GUN_HAND_FORWARD;
-  return GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength;
+export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): number {
+  if (!weapon) return GUN_HAND_FORWARD * renderScale;
+  return renderScale * (GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength);
 }
 
 /** Per-point damage multiplier contributed by each grade (tuning; B = the legacy 0.06/pt). */

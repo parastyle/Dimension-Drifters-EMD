@@ -15,6 +15,7 @@ import {
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   CONFLAG_DELAY,
+  characterScale,
   clamp,
   clampQuakeEpicenter,
   coneAngles,
@@ -1223,8 +1224,9 @@ export class GameRoom extends Room<ArenaState> {
     const spread = g.spread ?? 0;
     const baseAng = Math.atan2(c.aimY, c.aimX);
     const ttl = g.range / g.projectileSpeed;
-    // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body.
-    const reach = gunMuzzleReach(weapon);
+    // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
+    // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
+    const reach = gunMuzzleReach(weapon, characterScale(player.character));
     const mx = player.x + c.aimX * reach;
     const my = player.y + c.aimY * reach;
     for (let i = 0; i < pellets; i++) {
