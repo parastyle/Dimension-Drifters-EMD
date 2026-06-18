@@ -1502,11 +1502,18 @@ export class ArenaScene extends Phaser.Scene {
       // The muzzle flash + bullet render off the server-spawned projectile (syncProjectiles).
       this.cameras.main.shake(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
     } else if (weapon && !weapon.thrown) {
-      // Plain melee swing → the weapon's authored swing VFX (§14).
-      this.spawnSlash(rig?.x ?? self.x, rig?.y ?? self.y, this.selfAim, weapon);
+      // Plain melee swing → the weapon's authored swing VFX (§14). If the weapon is authored "spawn at
+      // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
+      const rx = rig?.x ?? self.x;
+      const ry = rig?.y ?? self.y;
+      if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
+        const ep = clampQuakeEpicenter({ x: rx, y: ry }, { x: cwx, y: cwy }, QUAKE_REACH);
+        this.spawnSlash(ep.x, ep.y, this.selfAim, weapon, true);
+      } else {
+        this.spawnSlash(rx, ry, this.selfAim, weapon);
+      }
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
-      if (weapon.chainLightning)
-        this.spawnChain(rig?.x ?? self.x, rig?.y ?? self.y, this.selfAim, weapon);
+      if (weapon.chainLightning) this.spawnChain(rx, ry, this.selfAim, weapon);
     }
     this.room.send("attack", { aimX: this.selfAim.x, aimY: this.selfAim.y, tx: cwx, ty: cwy });
   }
@@ -1996,9 +2003,16 @@ export class ArenaScene extends Phaser.Scene {
   /** Melee swing VFX (§14, CODE-8): play the weapon's AUTHORED suite (painted hero + engine layers) via
    *  the shared renderer at the strike point, oriented to aim. Un-authored weapons get a default slash.
    *  The effect sits at ~60% of the swing reach so the arc reads where the weapon connects. */
-  private spawnSlash(x: number, y: number, aim: { x: number; y: number }, weapon: WeaponDef): void {
+  private spawnSlash(
+    x: number,
+    y: number,
+    aim: { x: number; y: number },
+    weapon: WeaponDef,
+    exact = false,
+  ): void {
     const ang = Math.atan2(aim.y, aim.x);
-    const reach = (weapon.range ?? 100) * 0.6; // WHERE the effect sits along the swing (placement, not size)
+    // §14 `exact` (cursor-spawn) places the VFX right at (x,y); otherwise it sits ~60% along the swing reach.
+    const reach = exact ? 0 : (weapon.range ?? 100) * 0.6;
     const sx = x + Math.cos(ang) * reach;
     const sy = y + Math.sin(ang) * reach;
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for

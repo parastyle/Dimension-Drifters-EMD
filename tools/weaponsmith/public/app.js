@@ -22,6 +22,9 @@ const state = {
   rot: 0,
   displayLength: 90,
   vfxRadius: 74,
+  vfxOrigin: { x: 0, y: 0 }, // §14 authored VFX spawn offset (game px) from the weapon anchor
+  spawnAtCursor: false, // §14 spawn the VFX at the in-game cursor (greatsword-quake style) instead
+  originPlacing: false, // UI: "click the preview to place the origin" mode is active
   candidates: [],
   vfxSubject: null,
   weaponArt: null,
@@ -143,6 +146,10 @@ async function selectWeapon(id) {
   state.displayLength = w.displayLength || 90;
   state.vfxRadius = w.vfxRadius || 74;
   const a = w.assigned || {};
+  state.vfxOrigin =
+    a.vfxOrigin && typeof a.vfxOrigin.x === "number" ? { ...a.vfxOrigin } : { x: 0, y: 0 };
+  state.spawnAtCursor = !!a.spawnAtCursor;
+  state.originPlacing = false;
   state.image = a.image || w.candidates[0] || null;
   state.suite = defaultSuite();
   if (a.suite) {
@@ -204,7 +211,9 @@ function renderMain(w) {
     <div class="enginework">
       <div class="ework-left panel">
         <div class="ptitle"><span>Combined · attack</span><span class="sp"></span><button data-edit="combined">✎ edit</button></div>
-        <div class="pbody"><div class="stage" id="stageCombined"></div></div>
+        <div class="pbody" id="combinedBody"><div class="stage" id="stageCombined"></div>
+          <div id="originOverlay" class="originoverlay"></div>
+          <div id="originMark" class="originmark"></div></div>
         <div class="pedit" data-pedit="combined">
           <textarea placeholder="What's wrong with the combined attack?">${esc(state.author.edits?.combined || "")}</textarea>
           <div class="erow"><button data-savepanel="combined" class="primary">Save note</button><span class="muted" data-panelstatus="combined"></span></div>
@@ -225,6 +234,14 @@ function renderMain(w) {
           <span class="muted" title="§14 fixed VFX/AoE size (px) — static per weapon, NEVER scaled by level/stat/augment">VFX size:</span>
           <input id="vfxsize" type="range" min="40" max="200" step="2" value="${state.vfxRadius}" style="flex:1;accent-color:var(--gold)"/>
           <span id="vfxsizeVal" class="rotval">${state.vfxRadius}</span>
+        </div>
+        <div class="rotrow" style="padding:0 9px 8px;flex-wrap:wrap">
+          <span class="muted" title="§14 where this weapon's VFX spawns — click ⌖ then click the preview to place the origin">VFX origin:</span>
+          <button id="originPick" type="button">⌖ place</button>
+          <span id="originVal" class="rotval" style="min-width:64px">${state.vfxOrigin.x},${state.vfxOrigin.y}</span>
+          <button id="originReset" type="button">reset</button>
+          <label class="muted" title="§14 spawn the VFX at the IN-GAME cursor (like the greatsword quake) instead of at the weapon" style="display:flex;align-items:center;gap:4px;margin-left:8px">
+            <input id="spawnCursor" type="checkbox" ${state.spawnAtCursor ? "checked" : ""}/>at cursor</label>
         </div>
       </div>
       <div class="ework-right">
@@ -305,6 +322,7 @@ function renderMain(w) {
     };
     vs.onchange = saveVfxRadius; // persist on release
   }
+  wireOrigin(); // §14 VFX-origin picker (click-to-place + at-cursor)
   const aPainted = $("#aPainted");
   if (aPainted) aPainted.oninput = (e) => (state.author.painted = e.target.value);
   $("#aEngine").oninput = (e) => (state.author.engine = e.target.value);
@@ -433,6 +451,81 @@ async function saveVfxRadius() {
     body: JSON.stringify({ weaponId: state.weapon.id, vfxRadius: state.vfxRadius }),
   });
   status(`✓ VFX size ${state.vfxRadius}`);
+  setTimeout(() => status(""), 1500);
+}
+
+// §14 VFX-origin picker. The Combined preview maps to ±ORIGIN_RANGE game px across its half-width, so a
+// click anywhere in the preview becomes a game-px offset from the weapon anchor (eyeballed; tune in-game).
+const ORIGIN_RANGE = 160;
+function positionOriginMark() {
+  const m = $("#originMark");
+  if (!m) return;
+  const leftPct = 50 + (state.vfxOrigin.x / ORIGIN_RANGE) * 50;
+  const topPct = 50 + (state.vfxOrigin.y / ORIGIN_RANGE) * 50;
+  m.style.left = `${leftPct}%`;
+  m.style.top = `${topPct}%`;
+  const show = state.originPlacing || state.vfxOrigin.x !== 0 || state.vfxOrigin.y !== 0;
+  m.style.display = show ? "block" : "none";
+}
+function setOriginPlacing(on) {
+  state.originPlacing = on;
+  const ov = $("#originOverlay");
+  if (ov) ov.classList.toggle("active", on);
+  const btn = $("#originPick");
+  if (btn) btn.classList.toggle("primary", on);
+  positionOriginMark();
+}
+function wireOrigin() {
+  const ov = $("#originOverlay");
+  const pick = $("#originPick");
+  const reset = $("#originReset");
+  const cur = $("#spawnCursor");
+  if (pick) pick.onclick = () => setOriginPlacing(!state.originPlacing);
+  if (ov)
+    ov.onclick = (e) => {
+      if (!state.originPlacing) return;
+      const r = ov.getBoundingClientRect();
+      const fx = (e.clientX - r.left) / r.width - 0.5; // [-0.5, 0.5]
+      const fy = (e.clientY - r.top) / r.height - 0.5;
+      state.vfxOrigin = {
+        x: Math.round(fx * 2 * ORIGIN_RANGE),
+        y: Math.round(fy * 2 * ORIGIN_RANGE),
+      };
+      $("#originVal").textContent = `${state.vfxOrigin.x},${state.vfxOrigin.y}`;
+      setOriginPlacing(false);
+      saveVfxOrigin();
+    };
+  if (reset)
+    reset.onclick = () => {
+      state.vfxOrigin = { x: 0, y: 0 };
+      $("#originVal").textContent = "0,0";
+      positionOriginMark();
+      saveVfxOrigin();
+    };
+  if (cur)
+    cur.onchange = (e) => {
+      state.spawnAtCursor = e.target.checked;
+      saveVfxOrigin();
+    };
+  positionOriginMark();
+}
+
+// Persist the authored VFX origin + spawn-at-cursor flag. Reaches the game after re-running
+// `node tools/artkit/build-weapon-vfx.mjs` (bakes them into weapon-vfx.generated.ts).
+async function saveVfxOrigin() {
+  if (!state.weapon) return;
+  await api("/api/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      weaponId: state.weapon.id,
+      vfxOrigin: state.vfxOrigin,
+      spawnAtCursor: state.spawnAtCursor,
+    }),
+  });
+  status(
+    `✓ origin ${state.vfxOrigin.x},${state.vfxOrigin.y}${state.spawnAtCursor ? " · at cursor" : ""}`,
+  );
   setTimeout(() => status(""), 1500);
 }
 

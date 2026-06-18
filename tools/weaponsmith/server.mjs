@@ -365,6 +365,12 @@ const server = createServer(async (req, res) => {
         vfxRadius: b.vfxRadius ?? a[b.weaponId]?.vfxRadius ?? undefined,
         // §10 delivery override (thrown vs melee). undefined = inherit the coded value.
         thrown: b.thrown ?? a[b.weaponId]?.thrown ?? undefined,
+        // §14 authored VFX ORIGIN — a {x,y} px offset (from the weapon/player anchor) where this weapon's
+        // VFX spawns, mouse-placed in the smith. undefined = the default anchor (no offset).
+        vfxOrigin: b.vfxOrigin ?? a[b.weaponId]?.vfxOrigin ?? undefined,
+        // §14 when true the VFX spawns at the IN-GAME CURSOR (clamped), like the greatsword quake, instead
+        // of at the weapon anchor. undefined/false = anchor-spawn.
+        spawnAtCursor: b.spawnAtCursor ?? a[b.weaponId]?.spawnAtCursor ?? undefined,
         notes: b.notes ?? a[b.weaponId]?.notes ?? "",
         updatedAt: new Date().toISOString().slice(0, 19),
       };

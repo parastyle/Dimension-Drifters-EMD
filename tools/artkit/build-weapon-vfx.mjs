@@ -49,13 +49,22 @@ for (const [id, a] of Object.entries(assignments)) {
   }
   if (painted) suite["hero-skin"] = { on: true, params: { ...defaultsFor("hero-skin") } };
 
-  // Emit an entry when there's anything to render OR an authored fixed VFX size to carry (a melee weapon
-  // may have no layers but a tuned vfxRadius — that must still reach the game).
+  // §14 authored VFX origin + spawn-at-cursor (mouse-placed in the smith).
+  const vfxOrigin =
+    a.vfxOrigin && (a.vfxOrigin.x || a.vfxOrigin.y)
+      ? { x: a.vfxOrigin.x | 0, y: a.vfxOrigin.y | 0 }
+      : null;
+  const spawnAtCursor = !!a.spawnAtCursor;
+
+  // Emit an entry when there's anything to render OR an authored value to carry (a melee weapon may have
+  // no layers but a tuned vfxRadius / placed origin / cursor-spawn — those must still reach the game).
   const hasAny = Object.keys(suite).length > 0 || scatterMeta;
-  if (!hasAny && a.vfxRadius == null) continue;
+  if (!hasAny && a.vfxRadius == null && !vfxOrigin && !spawnAtCursor) continue;
 
   const entry = { suite, rot: a.rot || 0 };
   if (a.vfxRadius != null) entry.vfxRadius = a.vfxRadius; // §14 fixed per-weapon VFX size (px)
+  if (vfxOrigin) entry.vfxOrigin = vfxOrigin; // §14 authored spawn offset (game px) from the anchor
+  if (spawnAtCursor) entry.spawnAtCursor = true; // §14 spawn at the in-game cursor (quake-style)
 
   // Copy the painted hero candidate → public/vfx/<id>.png
   if (painted) {
@@ -84,6 +93,10 @@ const types =
   "  rot: number;\n" +
   "  /** Fixed authored VFX radius (px); falls back to VFX_RADIUS_DEFAULT (74) when absent. */\n" +
   "  vfxRadius?: number;\n" +
+  "  /** Authored VFX spawn offset (game px) from the weapon anchor, applied rotated by aim (§14). */\n" +
+  "  vfxOrigin?: { x: number; y: number };\n" +
+  "  /** When true the VFX spawns at the in-game cursor (clamped, greatsword-quake style) (§14). */\n" +
+  "  spawnAtCursor?: boolean;\n" +
   "  /** Texture path under public/ for the painted hero skin (e.g. \"vfx/rattler-sabre.png\"). */\n" +
   "  hero?: string;\n" +
   "  scatter?: { url: string; frameWidth: number; frameHeight: number; count: number };\n" +

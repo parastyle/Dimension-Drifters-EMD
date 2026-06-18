@@ -11,6 +11,10 @@ export interface WeaponVfx {
   rot: number;
   /** Fixed authored VFX radius (px); falls back to VFX_RADIUS_DEFAULT (74) when absent. */
   vfxRadius?: number;
+  /** Authored VFX spawn offset (game px) from the weapon anchor, applied rotated by aim (§14). */
+  vfxOrigin?: { x: number; y: number };
+  /** When true the VFX spawns at the in-game cursor (clamped, greatsword-quake style) (§14). */
+  spawnAtCursor?: boolean;
   /** Texture path under public/ for the painted hero skin (e.g. "vfx/rattler-sabre.png"). */
   hero?: string;
   scatter?: { url: string; frameWidth: number; frameHeight: number; count: number };

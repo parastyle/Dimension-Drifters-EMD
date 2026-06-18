@@ -116,6 +116,16 @@
   .enginework { display: grid; grid-template-columns: minmax(300px, 1.05fr) 1fr; gap: 14px; margin-top: 12px; align-items: start; }
   .ework-left { position: sticky; top: 8px; }
   .ework-left .pbody { aspect-ratio: 1; }
+  /* §14 VFX-origin picker — a click overlay + crosshair over the Combined preview */
+  .originoverlay { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+  .originoverlay.active { pointer-events: auto; cursor: crosshair; box-shadow: inset 0 0 0 2px var(--gold); background: #ffd47914; }
+  .originmark { position: absolute; z-index: 6; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+    pointer-events: none; display: none;
+    background: radial-gradient(circle, var(--gold) 0 2px, transparent 3px);
+    box-shadow: 0 0 0 1px #0008; }
+  .originmark::before, .originmark::after { content: ""; position: absolute; background: var(--gold); }
+  .originmark::before { left: 7px; top: 0; width: 2px; height: 16px; }
+  .originmark::after { top: 7px; left: 0; height: 2px; width: 16px; }
   .ework-right .suite { max-height: 70vh; }
   .ework-right h2 { margin: 12px 0 6px; }
 </style>

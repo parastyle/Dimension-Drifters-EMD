@@ -67,6 +67,12 @@ export class VfxPlayer {
     return this.root;
   }
 
+  /** §14 whether this weapon's authored VFX spawns at the in-game CURSOR (clamped, greatsword-quake style)
+   *  rather than at the weapon anchor. The caller picks the spawn point; the offset/origin still applies. */
+  spawnsAtCursor(weaponId: string): boolean {
+    return !!WEAPON_VFX[weaponId]?.spawnAtCursor;
+  }
+
   /** Preload every authored hero skin + scatter sheet referenced by the baked VFX (call in scene.preload). */
   static preloadAssets(scene: Phaser.Scene): void {
     for (const [id, vfx] of Object.entries(WEAPON_VFX)) {
@@ -138,8 +144,19 @@ export class VfxPlayer {
     } else {
       S.scatterMeta = null;
     }
+    // §14 authored VFX ORIGIN: shift the spawn by the placed offset, rotated into the aim frame so the
+    // anchor stays consistent whichever way the weapon points (no offset = spawn at the strike point).
+    let ox = x;
+    let oy = y;
+    const o = vfx?.vfxOrigin;
+    if (o && (o.x || o.y)) {
+      const c = Math.cos(aimRad);
+      const s = Math.sin(aimRad);
+      ox = x + o.x * c - o.y * s;
+      oy = y + o.x * s + o.y * c;
+    }
     surf.container
-      .setPosition(x, y)
+      .setPosition(ox, oy)
       .setRotation(aimRad + (vfx?.rot ?? 0) * DEG)
       .setVisible(true);
     this.scene.tweens.addCounter({
