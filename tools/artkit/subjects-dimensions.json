@@ -1,0 +1,479 @@
+[
+  {
+    "id": "frostbitten-revenant",
+    "name": "Frostbitten Revenant",
+    "tier": "low",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Frostbitten Revenant — a fast ice-corpse rusher enemy, limbless construction, FULL build, generated empty-handed. A gaunt charcoal-and-steel cathedral-corpse body, one rounded pill torso sheathed in a crust of pale blue hoarfrost and a cracked frozen monk's-cowl hood shadowing the face to a dark void with ONE small glowing cyan dot-eye, frost-rimed shoulders. EXACTLY TWO detached frost-knuckled blob hands (rounded mitts, NO fingers), one floating clear of each side, TWO detached frozen blob feet below in ice-caked stumps — every detached part sits fully OUTSIDE the body silhouette with a clear flat-green gap. A lean, lurching, hungry side-on silhouette facing RIGHT. Cold blue-white over grim charcoal; ~4-6 colours, bold uniform black outline, flat cel shading; NO glow/VFX baked in (the cyan reads lit purely by colour).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "rusher",
+      "frostfell"
+    ]
+  },
+  {
+    "id": "shriek-wraith",
+    "name": "Shriek-Wraith",
+    "tier": "low",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Shriek-Wraith — a single shrieking wraith-swarm unit. A PURE BLOB build: a tiny tattered dark-teal spectral body-blob (fist-sized) trailing a ragged frozen funeral-shroud hem, ONE small glowing pale-white pinprick eye and a thin gaping shadow where a mouth would be, faint frost-flecks crusting the hem — NO detached hands and NO detached feet. Weak, fast and ghostly, designed to read as ONE clean bold shape in a screaming cloud of many, side-on facing RIGHT. Desaturated cold palette, ~4 colours, bold uniform black outline, flat cel shading; NO glow/VFX baked in.",
+    "palette": {
+      "primary": "#23303F",
+      "accent": "#CFE0E8"
+    },
+    "tags": [
+      "enemy",
+      "swarm",
+      "frostfell"
+    ]
+  },
+  {
+    "id": "hoarfrost-bloom",
+    "name": "Hoarfrost Bloom",
+    "tier": "low",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Hoarfrost Bloom — an ORIGINAL frost-fungus zoner enemy (spore-creature, distinct, NOT any existing mascot). A PURE BLOB build: a dumpy dull-teal frost-puffball body bristling with stubby pale bone-white ice-spore stalks and crusted rime ridges, one squinting dark slit-eye low on the bulk — NO detached hands and NO detached feet, it just squats and seeps cold. A bloated, swollen, about-to-burst silhouette facing RIGHT (it puffs a chilling hoarfrost-spore cloud as its zone, rendered in-engine). Bold readable shape, cold teal-and-bone palette, ~4-6 colours, uniform black outline, flat cel shading; NO glow/VFX baked in.",
+    "palette": {
+      "primary": "#3C6E6A",
+      "accent": "#CFC6AE"
+    },
+    "tags": [
+      "enemy",
+      "zoner",
+      "frostfell"
+    ]
+  },
+  {
+    "id": "rimebound-archer",
+    "name": "Rimebound Archer",
+    "tier": "low",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Rimebound Archer — a limbless frost-archer spitter enemy, empty-handed, HANDS-ONLY build (NO feet — it hovers). A frozen-bowman revenant: a bone-and-frost body in a frost-glazed ranger's tabard and a sharp-peaked iced hood pulled low to a dark void with ONE pale-cyan glowing dot-eye, a quiver of ice-shard arrows crusted to its back, TWO detached rounded bone-white hand-blobs (smooth frost mitts, NO fingers — empty, the bow is a separate asset), and NO detached feet — it drifts above the frozen flagstones. A grim, patient, kiting silhouette facing RIGHT. Cold bone-white and cyan over charcoal, ~4-6 colours, uniform black outline, flat cel shading; NO glow/VFX baked in.",
+    "palette": {
+      "primary": "#CFC6AE",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "spitter",
+      "frostfell"
+    ]
+  },
+  {
+    "id": "frozen-knight",
+    "name": "The Frozen Knight",
+    "tier": "medium",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "The Frozen Knight — a TOUGH frozen-cathedral-guardian melee-combo duelist enemy, limbless construction, generated EMPTY-HANDED (its greatsword is a separate asset). A broad, heavy body fusing dented steel cathedral plate with a thick glaze of blue ice, a frost-fused great-helm shadowing the face to a dark void with ONE cold cyan slit-glow, ice rimes welded across the pauldrons and a tattered frozen surcoat hugging the body to a clean ragged hem (NO billowing cloth). EXACTLY TWO heavy detached frost-gauntlet blobs (rounded, NO fingers), TWO detached ice-caked armoured foot-blobs, all with clear flat-green gaps. A bigger, scaled-up tough-tier presence (the tier glow is an engine layer, NOT painted). A planted, looming, multi-hit duelist silhouette facing RIGHT, weight on both feet. Steel-grey and glacier-blue over charcoal, ~4-6 colours, uniform black outline, flat cel shading; NO glow/VFX baked in.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "duelist",
+      "frostfell"
+    ]
+  },
+  {
+    "id": "the-hollow-king",
+    "name": "THE HOLLOW KING, Lich of the Frozen Choir",
+    "tier": "high",
+    "dimension": "frostfell",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "THE HOLLOW KING, Lich of the Frozen Choir — the Frostfell main boss, an ORIGINAL frozen-lich silhouette, limbless construction, FULL build, generated EMPTY-HANDED (its greatsword is a separate asset). A gigantic, looming ice-king: one towering charcoal-and-steel body sheathed in fractured glacier-plate, a high cracked frost-crown fused to a frozen great-helm shadowing the face to a deep dark void with TWO small cold-cyan dot-eyes, a heavy frozen royal mantle crusted to the shoulders and ending in a clean ragged frost-rimed hem (NO billowing cloth), shards of blue ice jutting from the back. EXACTLY TWO huge detached frost-gauntlet blobs (rounded, NO fingers, empty), TWO massive detached ice-locked foot-blobs, all with clear flat-green gaps. Built from BOLD SIMPLE SHAPES at the SAME clean flat-cel detail level as a normal character — menace from SCALE and a strong silhouette, NOT busy intricacy. Side-on facing RIGHT, planted and regal. Glacier-blue, steel-grey and bone over deep charcoal, ~5-6 colours, uniform black outline, flat cel shading; NO glow/VFX baked in (the cyan eyes read lit purely by colour contrast).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "boss",
+      "unique",
+      "frostfell"
+    ],
+    "cardartAction": "mid-rampage — THE HOLLOW KING, Lich of the Frozen Choir unleashing its signature attack, themed VFX erupting around its planted stance"
+  },
+  {
+    "id": "vine-lasher",
+    "name": "Vine-Lasher",
+    "tier": "low",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Vine-Lasher — a fast creeper-vine rusher enemy, limbless construction, FULL build, generated empty-handed. A lean knot-of-vines body: a coiled olive-and-moss tendril torso wound like a sprung snare, a hooded leaf-frond cowl over a dark void face with one glowing plasma-lime DOT eye, a fanged seed-pod jaw. TWO detached oval blob hands shaped like balled vine-fists (no fingers), TWO detached gnarled root-stub feet below — EVERY detached part sits fully OUTSIDE the body silhouette with a clear flat-#00ff00 gap; NEVER a hand fused to the body. Side-on facing RIGHT, upright and planted, neutral stance. Lean, hungry, lunging silhouette. Bold uniform black outline, flat cel shading, ~4-6 colours, kept simple by SILHOUETTE at the character baseline (do not over-render). On a flat opaque #00ff00 field, no ground, no VFX, no glow-bloom.",
+    "palette": {
+      "primary": "#6e7042",
+      "accent": "#9cff3b"
+    },
+    "tags": [
+      "enemy",
+      "rusher",
+      "verdant-ruins"
+    ]
+  },
+  {
+    "id": "venom-spore",
+    "name": "Venom-Spore",
+    "tier": "low",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Venom-Spore — a single venom-spore swarm unit, limbless construction, PURE BLOB build. A tiny dark moss-green floating spore-puff body (fist-sized) — one round burr-pod with a frilled mushroom-cap rim, a few short toxic plasma-lime bristles, and one glowing pinprick lime DOT eye in a dark void. NO detached hands and NO detached feet — it just drifts. Side-on facing RIGHT, neutral hovering pose. Weak and fast, designed to read as ONE clean bold shape in a cloud of many. Bold uniform black outline, flat cel shading, ~4-6 colours at the character baseline. On a flat opaque #00ff00 field, no ground, no VFX, no glow-bloom, no spore-cloud painted around it.",
+    "palette": {
+      "primary": "#3c6e3a",
+      "accent": "#9cff3b"
+    },
+    "tags": [
+      "enemy",
+      "swarm",
+      "verdant-ruins"
+    ]
+  },
+  {
+    "id": "fungal-bloomer",
+    "name": "Fungal Bloomer",
+    "tier": "low",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Fungal Bloomer — an ORIGINAL toxic-mushroom zoner enemy (fungus-inspired but distinct). A PURE BLOB build: a dumpy bloated olive-and-dull-teal toadstool body, a heavy domed cap mottled with arc-violet pox-spots and venting gill-slits underneath, one squinting dark void eye under the cap brim — NO detached hands and NO detached feet, it just squats low and oozes. It periodically belches a toxic cloud (engine VFX, NOT painted). Side-on facing RIGHT, planted, neutral squat. Bold readable silhouette, uniform black outline, flat cel shading, ~4-6 colours at the character baseline. On a flat opaque #00ff00 field, no ground, no spores/gas painted, no glow-bloom.",
+    "palette": {
+      "primary": "#6e7042",
+      "accent": "#b14bff"
+    },
+    "tags": [
+      "enemy",
+      "zoner",
+      "verdant-ruins"
+    ]
+  },
+  {
+    "id": "blowdart-sentinel",
+    "name": "Blowdart Sentinel",
+    "tier": "low",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Blowdart Sentinel — a limbless temple-guardian spitter enemy, empty-handed, HANDS-ONLY build (NO feet — it hovers upright like a roused idol). A carved bone-pale stone-mask body: a totem head fused to a mossy weathered ribcage-plinth, a long hollow reed blowpipe-snout jutting from the mask, dull-teal lichen creeping up the carvings, one glowing dull-teal eye-slit in a dark void. TWO detached rounded stone hand-blobs (smooth mitts, NO fingers) cupped near the pipe, NO detached feet — it floats above the flagstones. Side-on facing RIGHT, neutral upright. A grim watchful guardian silhouette. Bold uniform black outline, flat cel shading, ~4-6 colours at the character baseline. On a flat opaque #00ff00 field, no ground, no darts/VFX, no glow-bloom.",
+    "palette": {
+      "primary": "#cfc6ae",
+      "accent": "#3c6e6a"
+    },
+    "tags": [
+      "enemy",
+      "spitter",
+      "verdant-ruins"
+    ]
+  },
+  {
+    "id": "thornblade-warden",
+    "name": "Thornblade Warden",
+    "tier": "medium",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Thornblade Warden — a TOUGH temple-guardian melee-combo duelist enemy, limbless construction, FULL build, generated EMPTY-HANDED (its sword is a separate asset). A broad armored warden body fusing carved jade-stone temple-plate with a thick bark-and-thorn shell, a horned mossy helm-mask over a dark void face with one fierce dull-teal eye-slit, briar-vines wound across the torso like a sash. TWO heavy detached gauntlet-blobs (rounded jade mitts, no fingers), TWO detached mossy stone foot-blobs, clear flat-#00ff00 gaps. A bigger, scaled-up tough-tier presence (the tier glow is an engine layer, NOT painted). Side-on facing RIGHT, upright and planted, neutral stance — a heavy multi-hit duelist silhouette. Bold uniform black outline, flat cel shading, ~4-6 colours at the character baseline (NOT more detailed than a normal character — only bigger). On a flat opaque #00ff00 field, no ground, no VFX, no glow-bloom.",
+    "palette": {
+      "primary": "#3c6e6a",
+      "accent": "#a8482e"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "duelist",
+      "verdant-ruins"
+    ]
+  },
+  {
+    "id": "moss-stone-golem",
+    "name": "GREENGRASP, the Moss-Stone Golem",
+    "tier": "high",
+    "dimension": "verdant-ruins",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "GREENGRASP, the Moss-Stone Golem — the Verdant Ruins main boss, an ORIGINAL limbless construction, FULL build, generated EMPTY-HANDED (its greatsword is a separate asset). A colossal hulking guardian built from mossed temple-masonry: a blocky cracked-granite torso bound in thick olive vines and lime lichen, a heavy carved-idol head with a horned brow over a dark void face and two glowing plasma-lime DOT eyes, jagged stone shoulders sprouting ferns, deep fissures glowing faint lime in the cracks (drawn as flat bright shapes, NOT blooming light). TWO massive detached boulder fist-blobs (rounded, no fingers), TWO huge detached slab foot-blobs, clear flat-#00ff00 gaps. Gigantic and looming — menace from SCALE and a strong silhouette, built from BOLD SIMPLE SHAPES at the SAME clean flat-cel and detail level as a normal character (NOT busier, NOT more intricate — only bigger). Side-on facing RIGHT, upright and planted, neutral stance. Bold uniform black outline, flat cel shading, ~4-6 colours. On a flat opaque #00ff00 field, no ground, no VFX, no glow-bloom.",
+    "palette": {
+      "primary": "#6e7042",
+      "accent": "#9cff3b"
+    },
+    "tags": [
+      "enemy",
+      "boss",
+      "unique",
+      "verdant-ruins"
+    ],
+    "cardartAction": "mid-rampage — GREENGRASP, the Moss-Stone Golem unleashing its signature attack, themed VFX erupting around its planted stance"
+  },
+  {
+    "id": "cinder-imp",
+    "name": "Cinder-Imp",
+    "tier": "low",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Cinder-Imp — a fast little magma-imp rusher enemy, limbless construction, FULL build, generated empty-handed. One chunky charred-charcoal body lump like a hunched gremlin torso, its surface CRACKED into a few flat ember-orange seam-shapes (drawn as solid bright shapes, NEVER glowing/blooming), two stubby blunt cinder-horn nubs, a dark void face with ONE small ember dot-eye. TWO tiny detached oval cinder hand-blobs (no fingers) and TWO detached foot-blobs below, each fully OUTSIDE the body silhouette with a clear flat-green gap. A lean, hungry, lunging side-on silhouette facing RIGHT. Reads as a clean bold shape at small swarm size — at the same flat-cel ~4-6 colour detail level as a normal character (do not over-render). On a flat opaque #00ff00 field, NO VFX, NO baked glow, original/trademark-distinct.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "rusher",
+      "ashlands"
+    ]
+  },
+  {
+    "id": "ember-mote",
+    "name": "Ember-Mote",
+    "tier": "low",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Ember-Mote — a single floating ember-mote swarm unit. A PURE BLOB build: one tiny fist-sized rounded body-blob of charred dull-red rock with a few flat ember-orange crack-shapes across it and ONE bright ember dot-eye in a dark void — NO detached hands and NO detached feet, it just drifts as a hot cinder. Weak and fast, designed to read as ONE clean bold shape in a cloud of many, side-on facing RIGHT. Same flat-cel ~4-6 colour baseline detail as a normal character (do not over-render). Rendered on a flat opaque #00ff00 field, NO VFX, NO baked glow or sparks, original/trademark-distinct.",
+    "palette": {
+      "primary": "#9E3B36",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "swarm",
+      "ashlands"
+    ]
+  },
+  {
+    "id": "slag-crawler",
+    "name": "Slag-Crawler",
+    "tier": "low",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Slag-Crawler — an ORIGINAL molten-rock zoner enemy (a slow oozing slag creature, distinct from any existing game). A PURE BLOB build: one dumpy, heavy lava-rock barrel body of cooled black basalt CRUSTED in flat plates, the seams between plates showing as solid bright ember-orange and dull-red crack-shapes, a slumped lower edge that reads as oozing slag, ONE squinting ember dot-eye in a dark void — NO detached hands and NO detached feet, it just squats and crawls. Bold readable lumpen silhouette facing RIGHT. Flat-cel ~4-6 colours at the normal-character detail baseline (do not over-render). On a flat opaque #00ff00 field, NO VFX, NO baked glow, original/trademark-distinct.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#C0341F"
+    },
+    "tags": [
+      "enemy",
+      "zoner",
+      "ashlands"
+    ]
+  },
+  {
+    "id": "ember-spitter",
+    "name": "Ember-Spitter",
+    "tier": "low",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Ember-Spitter — a hovering magma-conjurer spitter enemy, limbless construction, HANDS-ONLY build (NO feet — it floats), generated empty-handed. A tall gaunt gunmetal-and-charcoal body like a stooped robed cinder-priest, the ragged hem of its scorched robe ending in a clean ragged edge (NO billowing), a heavy hooded head as a dark void with ONE ember dot-eye, a cracked maw-shape on its chest glowing as a solid flat ember-orange shape (NOT a bloom). TWO detached rounded cinder hand-blobs (smooth mitts, NO fingers) held forward to cast, and NO detached feet — it hovers above the ash. A grim side-on caster silhouette facing RIGHT. Flat-cel ~4-6 colours at the normal-character detail baseline (do not over-render). On a flat opaque #00ff00 field, NO VFX, NO baked glow/flame, original/trademark-distinct.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "spitter",
+      "ashlands"
+    ]
+  },
+  {
+    "id": "magma-duelist",
+    "name": "Magma-Duelist",
+    "tier": "medium",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Magma-Duelist — a TOUGH molten-warrior melee-combo enemy, limbless construction, FULL build, generated EMPTY-HANDED (its sword is a separate asset). A broad heavy body of fused black basalt PLATE armour, the deep seams between plates showing as solid bright ember-orange and dull-red crack-shapes (flat shapes, NEVER blooming), a horned obsidian helm carrying the whole identity with a dark void beneath and TWO small ember dot-eyes. TWO heavy detached molten gauntlet-blobs (rounded, NO fingers) and TWO detached basalt foot-blobs, each fully OUTSIDE the body with clear flat-green gaps. A bigger, scaled-up tough-tier multi-hit duelist silhouette facing RIGHT (the tier glow is an engine layer, NOT painted into the sprite). Flat-cel ~4-6 colours at the normal-character detail baseline (do not over-render). On a flat opaque #00ff00 field, NO VFX, NO baked glow, original/trademark-distinct.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#C0341F"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "duelist",
+      "ashlands"
+    ]
+  },
+  {
+    "id": "molten-brute",
+    "name": "MOLTEN BRUTE, the Ashlands' Heart",
+    "tier": "high",
+    "dimension": "ashlands",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "MOLTEN BRUTE, the Ashlands' Heart — the Ashlands main boss, an ORIGINAL hulking magma-titan silhouette (trademark-distinct, NO existing-game DNA), generated EMPTY-HANDED (its weapon is a separate asset). A gigantic, looming, barrel-chested body of cracked black basalt and cooled lava, the deep fissures across its torso and shoulders showing as bold solid flat ember-orange and dull-red crack-shapes (NEVER glowing/blooming), a massive craggy head fused to hunched obsidian shoulders, a dark void face with TWO heavy ember dot-eyes and a cracked brow ridge. Limbless-adjacent: TWO huge detached molten fist-blobs (rounded, NO fingers) and TWO heavy detached basalt foot-blobs, each with clear flat-green gaps. Built from BOLD SIMPLE SHAPES at the SAME clean flat-cel ~4-6 colour detail level as a normal character — menace comes from SCALE and a strong silhouette, NOT from busy detail. Side-on facing RIGHT, planted upright. On a flat opaque #00ff00 field, NO VFX, NO baked glow, original/trademark-distinct.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "boss",
+      "unique",
+      "ashlands"
+    ],
+    "cardartAction": "mid-rampage — MOLTEN BRUTE, the Ashlands' Heart unleashing its signature attack, themed VFX erupting around its planted stance"
+  },
+  {
+    "id": "synthrunner",
+    "name": "Synthrunner",
+    "tier": "low",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Synthrunner — a fast synth-android rusher enemy, limbless construction, FULL build (body + 2 hands + 2 feet), generated EMPTY-HANDED. A lean chrome-and-gunmetal android torso shaped like a hunched sprinter shell, a smooth faceless visor-head that is a dark void with ONE small glowing cyber-cyan dot-eye, exposed cable-segments at the neck. EXACTLY TWO detached rounded chrome mitten-hand blobs (no fingers), one floating clear of each side, TWO detached chunky magnetic foot-blobs below — every detached part sits fully OUTSIDE the body silhouette with a clear flat-green gap, never fused or overlapping. Side-on facing RIGHT, upright planted neutral stance. A sleek hungry lunging silhouette. Flat cel, bold uniform black outline, ~4-6 colours, NO baked glow/VFX (the eye is a small solid bright shape only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "rusher",
+      "neon-cyber"
+    ]
+  },
+  {
+    "id": "dronemite",
+    "name": "Dronemite",
+    "tier": "low",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Dronemite — a single micro-drone swarm unit, limbless, PURE BLOB build (body only, NO hands and NO feet). A tiny dark gunmetal quad-rotor body-blob (fist-sized) — one squat rounded chassis with four stubby blade-nub housings and ONE small glowing hot-magenta pinprick lens-eye. No detached parts. Weak and fast, designed to read as ONE clean bold chunky shape in a buzzing cloud of many. Side-on facing RIGHT. Flat cel, bold uniform black outline, ~4-5 colours, NO baked glow/VFX (the lens is a small solid bright shape only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF3BD4"
+    },
+    "tags": [
+      "enemy",
+      "swarm",
+      "neon-cyber"
+    ]
+  },
+  {
+    "id": "turret-node",
+    "name": "Turret Node",
+    "tier": "low",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Turret Node — an ORIGINAL deployable grid-turret zoner enemy, limbless, PURE BLOB build (NO detached hands and NO detached feet — it crawls on a tracked base). A squat heavy steel-and-gunmetal turret pod: a dumpy armored dome chassis on a low magnetic tread skirt, a blunt stubby emitter port on the front and ONE recessed glowing arc-violet sensor dot-eye, a few panel-seam interior lines. It just squats and creeps, anchoring an area. Bold readable chunky silhouette. Side-on facing RIGHT. Flat cel, bold uniform black outline, ~4-6 colours, NO baked glow/VFX (the sensor is a small solid bright shape only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#B14BFF"
+    },
+    "tags": [
+      "enemy",
+      "zoner",
+      "neon-cyber"
+    ]
+  },
+  {
+    "id": "laser-spire",
+    "name": "Laser-Spire",
+    "tier": "low",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Laser-Spire — a limbless hovering laser-spitter enemy, empty-handed, HANDS-ONLY build (NO feet — it hovers). A slim antigravity drone-pillar body: a tall narrow gunmetal spire-chassis with a glowing cyber-cyan focusing-lens aperture set in its front face as ONE small bright dot-eye, a thin segmented neck, hover-vents at the base. TWO detached smooth rounded chrome hand-blobs (no fingers) floating at its sides, and NO detached feet — it floats above the ground with a clear flat-green gap beneath. A cold precise sniper silhouette that keeps its distance. Side-on facing RIGHT. Flat cel, bold uniform black outline, ~4-6 colours, NO baked glow/VFX (the lens is a small solid bright shape only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "spitter",
+      "neon-cyber"
+    ]
+  },
+  {
+    "id": "riot-enforcer",
+    "name": "Riot Enforcer",
+    "tier": "medium",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Riot Enforcer — a TOUGH riot-control android duelist enemy, limbless construction, FULL build (body + 2 hands + 2 feet), generated EMPTY-HANDED (its sidearm is a separate asset). A broad armored peacekeeper shell: a heavy slab-chest charcoal riot-frame plated in gunmetal, a blunt faceless combat-helm with a slit visor that is a dark void showing ONE narrow hot-magenta dot-eye, segmented gorget cables. TWO heavy detached chrome gauntlet-blobs (rounded, NO fingers), TWO detached armored magnetic foot-blobs, all fully outside the body with clear flat-green gaps. A bigger scaled-up tough-tier presence (the tier glow is an engine layer, NOT painted). An imposing advancing duelist silhouette. Side-on facing RIGHT, upright planted neutral stance, hands EMPTY. Flat cel, bold uniform black outline, ~4-6 colours, NO baked glow/VFX (the visor-eye is a small solid bright shape only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#22252B",
+      "accent": "#FF3BD4"
+    },
+    "tags": [
+      "enemy",
+      "tough",
+      "duelist",
+      "neon-cyber"
+    ]
+  },
+  {
+    "id": "warden-mech",
+    "name": "WARDEN-7, the Security Mech",
+    "tier": "high",
+    "dimension": "neon-cyber",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "WARDEN-7, the Security Mech — the Neon-Cyber main boss, an ORIGINAL towering security-mech silhouette with NO existing-franchise DNA, limbless construction, FULL build (body + 2 hands + 2 feet), generated EMPTY-HANDED (its gun is a separate asset). A colossal chrome-and-gunmetal enforcement chassis: a blocky armored core-torso with heavy steel pauldron slabs and a caged reactor-rib panel, a stout faceless warden-helm whose visor band is a dark void with TWO small glowing cyber-cyan dot-eyes, thick segmented power-cables at the joints. TWO huge detached chrome fist-blobs (rounded, NO fingers) and TWO massive detached magnetic foot-blobs, all with clear flat-green gaps. Built from BOLD SIMPLE SHAPES at the SAME clean flat-cel and detail level as a normal character — menace comes from SCALE and a strong silhouette, NOT busy mechanical intricacy. Gigantic, looming, riot-lockdown dread. Side-on facing RIGHT, upright planted neutral stance, hands EMPTY. Flat cel, bold uniform black outline, ~4-6 colours, NO baked glow/VFX (the visor-eyes are small solid bright shapes only). On a flat opaque #00ff00 field.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "boss",
+      "unique",
+      "neon-cyber"
+    ],
+    "cardartAction": "mid-rampage — WARDEN-7, the Security Mech unleashing its signature attack, themed VFX erupting around its planted stance"
+  },
+  {
+    "id": "shifter-cinder-marshal",
+    "name": "Vance Holloway, the Cinder Marshal",
+    "tier": "high",
+    "dimension": "shifter",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Vance Holloway, the Cinder Marshal — a DIMENSION SHIFTER roaming-invader enemy, limbless construction, FULL build (body + 2 detached blob hands + 2 detached blob feet), generated EMPTY-HANDED, drawn for green-gap part-slicing. A HUMANOID pill-grunt: one rounded charcoal-and-rust capsule torso wearing a long sun-scorched tin-star duster that hugs the body and ends in a clean ragged hem (NO cape, NO billowing fabric), a battered low-crowned marshal hat fused to a SIMPLE chrome-pin sheriff star at the collar. FACELESS head: under the hat brim a dark void with ONE small glowing ember-orange dot-eye — no mouth, nose, or human features. TWO detached oval mitten hand-blobs (NO fingers), one floating clear of each side; TWO detached scuffed-boot foot-blobs below — EVERY detached part sits fully OUTSIDE the body silhouette with a clear flat-#00ff00 gap around it, never fused or overlapping. Stands UPRIGHT and PLANTED on both feet, side-profile FACING RIGHT, neutral standing stance (NOT dynamic/lunging). Palette pulled from charcoal #22252B, gunmetal #3A4049, rust #A8482E, tan #C49A5A, bone #CFC6AE with one ember-orange #FF8A2B accent dot-eye; ~5-6 colours. ONE uniform heavy slightly-uneven black outline, flat cel shading only (base + 1 shadow + at most 1 highlight per region), ZERO VFX/glow/bloom/sparks baked into the sprite — the lit eye is a small solid bright shape, not radiating. Behemoth-chunky readable silhouette rendered grim and gritty like Darkest Dungeon. Render on a perfectly flat fully-opaque #00ff00 chroma field, no ground/floor/shadow/background. Original, trademark-distinct design.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#FF8A2B"
+    },
+    "tags": [
+      "enemy",
+      "shifter",
+      "spitter",
+      "shifter"
+    ],
+    "cardartAction": "mid-incursion — Vance Holloway, the Cinder Marshal phasing in, rift-light imploding around it as it raises its weapon"
+  },
+  {
+    "id": "shifter-voltaic-ronin",
+    "name": "Kaori Tsuge, the Voltaic Ronin",
+    "tier": "high",
+    "dimension": "shifter",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Kaori Tsuge, the Voltaic Ronin — a DIMENSION SHIFTER roaming-invader enemy, limbless construction, FULL build (body + 2 detached blob hands + 2 detached blob feet), generated EMPTY-HANDED, drawn for green-gap part-slicing. A HUMANOID pill-grunt: one sleek rounded steel-and-charcoal capsule torso clad in lacquered segmented duelist plate that hugs the body and ends in a clean hem (NO cape, NO billowing scarf/fabric), an angular crested kabuto-style helmet with a flat horned crest carrying the whole identity. FACELESS head: the helmet face is a dark void with ONE thin glowing cyber-cyan slit-dot — no mouth, nose, or human features. TWO detached rounded gauntlet hand-blobs (NO fingers), one floating clear of each side; TWO detached armored foot-blobs below — EVERY detached part sits fully OUTSIDE the body silhouette with a clear flat-#00ff00 gap, never fused or overlapping. Stands UPRIGHT and PLANTED on both feet, side-profile FACING RIGHT, neutral standing stance (NOT a dynamic/slashing/lunging pose). Palette pulled from charcoal #22252B, gunmetal #3A4049, steel #5A6472, off-white #E8E4D8 with one cyber-cyan #33E6FF accent slit-eye + a single thin cyan trim line; ~5-6 colours. ONE uniform heavy slightly-uneven black outline, flat cel shading only (base + 1 shadow + at most 1 highlight per region), ZERO VFX/glow/bloom/lightning/sparks baked into the sprite — the cyan slit is a small solid bright shape, not radiating or arcing. Behemoth-chunky readable silhouette rendered grim and gritty like Darkest Dungeon. Render on a perfectly flat fully-opaque #00ff00 chroma field, no ground/floor/shadow/background. Original, trademark-distinct design (NOT any existing game character).",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "enemy",
+      "shifter",
+      "duelist",
+      "shifter"
+    ],
+    "cardartAction": "mid-incursion — Kaori Tsuge, the Voltaic Ronin phasing in, rift-light imploding around it as it raises its weapon"
+  },
+  {
+    "id": "shifter-grave-warden",
+    "name": "Brother Mordecai, the Grave Warden",
+    "tier": "high",
+    "dimension": "shifter",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Brother Mordecai, the Grave Warden — a DIMENSION SHIFTER roaming-invader enemy, limbless construction, FULL build (body + 2 detached blob hands + 2 detached blob feet), generated EMPTY-HANDED, drawn for green-gap part-slicing. A HUMANOID pill-grunt, BIGGER in SCALE (not more detailed): one heavy broad rounded charcoal-and-bone capsule torso draped in a tattered gravedigger-monk cassock + a corroded iron breastplate that hug the body and end in a clean ragged hem (NO cape, NO billowing fabric), a deep weathered hood pulled low and a simple flat plague-mask carrying the whole identity. FACELESS head: inside the hood/mask a dark void with TWO tiny glowing dull-teal dot-eyes — no mouth, nose, or human features. TWO heavy detached mitten hand-blobs (NO fingers), one floating clear of each side; TWO chunky detached boot foot-blobs below — EVERY detached part sits fully OUTSIDE the body silhouette with a clear flat-#00ff00 gap, never fused or overlapping. Stands UPRIGHT and PLANTED on both feet, side-profile FACING RIGHT, neutral standing stance (NOT dynamic/swinging/lunging). Palette pulled from charcoal #22252B, gunmetal #3A4049, steel #5A6472, bone #CFC6AE, olive #6E7042 with two small dull-teal #3C6E6A accent dot-eyes; ~5-6 colours. ONE uniform heavy slightly-uneven black outline, flat cel shading only (base + 1 shadow + at most 1 highlight per region), ZERO VFX/glow/bloom/wisps baked into the sprite — the teal eyes are small solid bright shapes, not radiating. Behemoth-chunky readable silhouette rendered grim and gritty like Darkest Dungeon; menace from SCALE + silhouette, not busy detail. Render on a perfectly flat fully-opaque #00ff00 chroma field, no ground/floor/shadow/background. Original, trademark-distinct design.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#3C6E6A"
+    },
+    "tags": [
+      "enemy",
+      "shifter",
+      "duelist",
+      "shifter"
+    ],
+    "cardartAction": "mid-incursion — Brother Mordecai, the Grave Warden phasing in, rift-light imploding around it as it raises its weapon"
+  }
+]

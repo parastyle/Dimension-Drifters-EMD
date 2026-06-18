@@ -180,6 +180,10 @@ export class ArenaScene extends Phaser.Scene {
   private portal?: Phaser.GameObjects.Container;
   private bannerShownFor = "";
   private prevBossPresent = false;
+  /** §20/§28 4K-widescreen UI: last-applied HUD scale factor (-1 = not yet applied). The HUD is authored at
+   *  a 1× baseline and `applyHudScale` grows every element on big viewports so it stays proportionate; we
+   *  only re-apply when `uiScale()` actually changes (a resize), not every frame. */
+  private hudScale = -1;
   // §12 level-up window (attribute allocation).
   private levelWinObjects: Phaser.GameObjects.GameObject[] = [];
   private levelWinKey = "";
@@ -315,6 +319,34 @@ export class ArenaScene extends Phaser.Scene {
   }
   private screenH(): number {
     return this.cameras.main.height / RENDER_DPR;
+  }
+
+  /** §28 4K-widescreen UI scale. The HUD is authored at a 1× baseline (≈1600px wide); on bigger viewports it
+   *  grows so fixed-px bars/text don't read tiny on a 4K/ultrawide panel, clamped to [1, 2.1] so a laptop
+   *  keeps the baseline and a 4K never balloons. Drives `applyHudScale` (sizes) + the per-frame HUD layout. */
+  private uiScale(): number {
+    return Math.max(1, Math.min(2.1, this.screenW() / 1600));
+  }
+
+  /** Grow every HUD element to the current `uiScale` — bar sizes + font sizes. Called only when the scale
+   *  actually changes (a resize), so per-frame `updateHud` stays cheap. Fill widths are re-derived each
+   *  frame from the ratio × scaled base, so setting them here is just the initial full-width state. */
+  private applyHudScale(s: number): void {
+    this.hpBarBg.setSize(240 * s, 18 * s);
+    this.hpBarFill.setSize(236 * s, 12 * s);
+    this.xpBarBg.setSize(240 * s, 8 * s);
+    this.xpBarFill.setSize(236 * s, 4 * s);
+    this.bossBarBg.setSize(520 * s, 16 * s);
+    this.bossBarFill.setSize(516 * s, 12 * s);
+    this.hpText.setFontSize(12 * s);
+    this.levelText.setFontSize(13 * s);
+    this.weaponText.setFontSize(13 * s);
+    this.augmentText.setFontSize(12 * s);
+    this.modeText.setFontSize(15 * s);
+    this.bossText.setFontSize(14 * s);
+    this.restartBtn.setFontSize(14 * s);
+    this.deathText.setFontSize(26 * s);
+    this.victoryText.setFontSize(28 * s);
   }
 
   /** Screen-space HUD: HP bar + downed overlay (§20). Fixed to the camera (scrollFactor 0). */
@@ -1066,18 +1098,24 @@ export class ArenaScene extends Phaser.Scene {
   /** Boss health bar + approach banner + victory screen (§16). */
   private updateRunState(): void {
     if (!this.room) return;
-    // Locate the boss (if any) and total its max HP from the roster.
-    let boss: { hp: number } | undefined;
+    // Locate the boss (if any) — §17 ANY dimension's boss (archetype "boss"), not just OLD RUST — and total
+    // its max HP from the roster. The nameplate + approach toast read the active dimension's name.
+    let boss: { hp: number; kind: string } | undefined;
     this.room.state.enemies.forEach((e) => {
-      if (e.kind === "old-rust") boss = e;
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
     });
-    const bossMax = ENEMY_KINDS["old-rust"]?.hp ?? 420;
+    const s = this.uiScale();
+    const bossMax = boss ? (ENEMY_KINDS[boss.kind]?.hp ?? 420) : 420;
+    const dimName = getDimension(this.room.state.dimensionId).name;
     const present = !!boss;
     if (present && boss) {
-      this.bossBarBg.setPosition(this.screenW() / 2, 40).setVisible(true);
-      this.bossBarFill.setPosition(this.screenW() / 2 - 258, 48).setVisible(true);
-      this.bossBarFill.width = 516 * Math.max(0, Math.min(1, boss.hp / bossMax));
-      this.bossText.setPosition(this.screenW() / 2, 38).setVisible(true);
+      this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
+      this.bossBarFill.setPosition(this.screenW() / 2 - 258 * s, 48 * s).setVisible(true);
+      this.bossBarFill.width = 516 * s * Math.max(0, Math.min(1, boss.hp / bossMax));
+      this.bossText
+        .setPosition(this.screenW() / 2, 38 * s)
+        .setText(`${dimName.toUpperCase()} BOSS`)
+        .setVisible(true);
     } else {
       this.bossBarBg.setVisible(false);
       this.bossBarFill.setVisible(false);
@@ -1086,7 +1124,7 @@ export class ArenaScene extends Phaser.Scene {
     // Boss-approach toast on first appearance.
     if (present && !this.prevBossPresent && this.bannerShownFor !== "boss") {
       this.bannerShownFor = "boss";
-      this.flashBanner("⚠  OLD RUST APPROACHES  ⚠", "#ff5d3b");
+      this.flashBanner(`⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`, "#ff5d3b");
     }
     if (!present) this.bannerShownFor = "";
     this.prevBossPresent = present;
@@ -1855,35 +1893,43 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
 
-    const barX = 20;
-    const barY = this.screenH() - 24;
-    const xpY = barY - 15;
+    // §28 4K-widescreen UI: grow the whole HUD on big viewports (only re-sizing elements when the scale
+    // actually changes — a resize — to keep the per-frame path cheap).
+    const s = this.uiScale();
+    if (s !== this.hudScale) {
+      this.hudScale = s;
+      this.applyHudScale(s);
+    }
+
+    const barX = 20 * s;
+    const barY = this.screenH() - 24 * s;
+    const xpY = barY - 15 * s;
     this.hpBarBg.setPosition(barX, barY);
-    this.hpBarFill.setPosition(barX + 2, barY);
-    this.hpText.setPosition(barX + 8, barY);
+    this.hpBarFill.setPosition(barX + 2 * s, barY);
+    this.hpText.setPosition(barX + 8 * s, barY);
 
     const hp = self ? Math.max(0, self.hp) : 0;
     const maxHp = self ? self.maxHp : 100;
     const ratio = maxHp > 0 ? hp / maxHp : 0;
-    this.hpBarFill.width = 236 * ratio;
+    this.hpBarFill.width = 236 * s * ratio;
     // Green → amber → red as it drains.
     this.hpBarFill.fillColor = ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
     this.hpText.setText(`${Math.ceil(hp)} / ${maxHp}`);
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
-    this.xpBarFill.setPosition(barX + 2, xpY);
+    this.xpBarFill.setPosition(barX + 2 * s, xpY);
     const xpRatio = self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
-    this.xpBarFill.width = 236 * xpRatio;
+    this.xpBarFill.width = 236 * s * xpRatio;
     this.levelText
-      .setPosition(barX, xpY - 9)
+      .setPosition(barX, xpY - 9 * s)
       .setText(
         self
           ? `Lv ${self.level}   STR ${self.str} · DEX ${self.dex} · INT ${self.int} · CON ${self.con} · LUK ${self.luk}`
           : "",
       );
 
-    this.restartBtn.setPosition(this.screenW() - 14, 14);
+    this.restartBtn.setPosition(this.screenW() - 14 * s, 14 * s);
     // Weapon name + an ammo readout: filled/empty pips for small mags (thrown/revolver), a numeric
     // "loaded/mag" for big-magazine guns (gatling/nailgun), or "reloading…" while empty.
     let charges = "";
@@ -1894,7 +1940,7 @@ export class ArenaScene extends Phaser.Scene {
         charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
     }
     this.weaponText
-      .setPosition(barX, xpY - 24)
+      .setPosition(barX, xpY - 24 * s)
       .setText(
         self ? `⚔ ${WEAPONS[self.weapon]?.name ?? self.weapon}${charges}   ·   Q to cycle` : "",
       );
@@ -1918,7 +1964,7 @@ export class ArenaScene extends Phaser.Scene {
         return n > 1 ? `${name} ×${n}` : name;
       });
       this.augmentText
-        .setPosition(barX, xpY - 42)
+        .setPosition(barX, xpY - 42 * s)
         .setText(`✦ ${parts.join(" · ")}`)
         .setVisible(true);
     } else {
@@ -1927,12 +1973,13 @@ export class ArenaScene extends Phaser.Scene {
 
     const training = this.room?.state.mode === "training";
     const who = self ? ` · C: swap character (${characterName(self.character)})` : "";
+    const dimName = getDimension(this.room?.state.dimensionId).name;
     this.modeText
-      .setPosition(this.screenW() / 2, 12)
+      .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
           ? `⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : `Survive until OLD RUST, then extract · Space: jump · B: boss · T: Testing Grounds${who}`,
+          : `${dimName} · survive until the boss, then extract · Space: jump · B: boss · T: Testing Grounds${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 

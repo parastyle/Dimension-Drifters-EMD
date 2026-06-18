@@ -40,11 +40,17 @@ export class MenuScene extends Phaser.Scene {
     // Mirror ArenaScene's hi-DPI camera: zoom by RENDER_DPR + origin (0,0) so screen-space UI maps 1:1 to
     // CSS px and we lay everything out in `screenW()/screenH()` (the visible CSS size).
     this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
-    this.scale.on("resize", (size: Phaser.Structs.Size) => {
+    // Re-flow on resize. MenuScene is SHUT DOWN when a dimension is picked (scene.start("arena")), so the
+    // listener MUST be removed on shutdown — otherwise it fires post-teardown against a destroyed camera and
+    // throws on the next window resize. (ArenaScene's twin listener is safe — that scene never shuts down.)
+    const onResize = (size: Phaser.Structs.Size): void => {
+      if (!this.cameras?.main) return;
       this.cameras.main.setSize(size.width, size.height);
       this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
       this.layout();
-    });
+    };
+    this.scale.on("resize", onResize);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off("resize", onResize));
 
     this.title = this.add
       .text(0, 0, "DIMENSION DRIFTERS", { fontSize: "52px", color: TITLE_COLOR, fontStyle: "bold" })
