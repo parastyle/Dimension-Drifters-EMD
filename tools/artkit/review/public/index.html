@@ -63,13 +63,14 @@
             <button id="mClose" class="icon-btn" title="Close (Esc)">✕</button>
           </div>
         </div>
-        <div class="hint">Click a candidate to zoom · press <kbd>1</kbd>–<kbd>9</kbd> to pick · <kbd>R</kbd> re-roll</div>
+        <div class="hint">Click a candidate to zoom · press <kbd>1</kbd>–<kbd>9</kbd> to pick · <kbd>R</kbd> re-roll · <kbd>I</kbd> install</div>
         <div id="mCandidates" class="candidates"></div>
         <label class="lbl" for="mPrompt">Prompt</label>
         <textarea id="mPrompt" rows="5" spellcheck="false"></textarea>
         <div class="actions">
           <button id="mSave" class="btn">Save prompt</button>
           <button id="mReroll" class="btn warn">Re-roll 5 ↻</button>
+          <button id="mInstall" class="btn go" title="Slice the current pick + push it into the game">⤓ Install to game</button>
           <a id="mOpen" class="btn ghost" target="_blank" rel="noopener">Open ref ↗</a>
           <span id="mStatus" class="status" role="status"></span>
         </div>

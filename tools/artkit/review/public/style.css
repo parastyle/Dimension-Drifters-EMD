@@ -154,3 +154,7 @@ textarea { width: 100%; background: #15181e; border: 1px solid var(--line); bord
   .only-mobile { display: inline-grid; }
   .progress { display: none; }
 }
+
+/* Install-to-game action — green = "push the pick into the build". */
+.btn.go { background: #1f3a22; border-color: #2f6b34; color: #c8f7cc; }
+.btn.go:hover { background: #295030; border-color: #3f8f46; }

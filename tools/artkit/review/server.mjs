@@ -5,7 +5,7 @@
 // picks (→ identity-ref), edit prompts, and re-roll. Run:  node review/server.mjs  → :8190
 //   PORT=8190  HOST=0.0.0.0 (LAN/tunnel-friendly)
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   copyFileSync,
   createReadStream,
@@ -25,7 +25,12 @@ const OUT = join(ROOT, "out");
 const PUBLIC = join(HERE, "public");
 const PORT = Number(process.env.PORT || 8190);
 const HOST = process.env.HOST || "127.0.0.1";
-const MANIFESTS = ["subjects.json", "subjects.explore.json", "subjects.concepts.json"];
+const MANIFESTS = [
+  "subjects.json",
+  "subjects.explore.json",
+  "subjects.concepts.json",
+  "subjects-dimensions.json", // §17 the 5-dimension enemies/toughs/bosses + 3 shifters (27 subjects)
+];
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -195,6 +200,33 @@ function reroll(id) {
   return { ok: true, status: "started" };
 }
 
+/** Push the CURRENT pick (identity-ref) into the actual game: re-key the ref (so a freshly-promoted
+ *  candidate is what gets sliced), drop any stale parts so it re-slices, then harvest-install → updates
+ *  `packages/client/public/sprites/<id>/` + the client sprite manifest. Closes the review→game loop so a
+ *  phone re-pick/re-roll lands in the build (the dev server hot-reloads). Synchronous (a few seconds). */
+function install(id) {
+  const subjects = loadSubjects();
+  const s = subjects.get(id);
+  if (!s) return { ok: false, error: "unknown id" };
+  if (!existsSync(join(OUT, id, "identity-ref.png")))
+    return { ok: false, error: "no identity-ref yet — pick a candidate first" };
+  const kind = (s.tags || []).includes("weapon") ? "weapon" : "character";
+  // 1. re-key the (possibly re-picked) identity-ref so identity-ref.keyed.png matches the current pick.
+  spawnSync(process.execPath, [join(ROOT, "guards", "chroma-key.mjs"), `--only=${id}`], { cwd: ROOT });
+  // 2. drop stale slices so harvest re-slices the new art (ensureSliced skips when parts.json exists).
+  try {
+    rmSync(join(OUT, id, "parts"), { recursive: true, force: true });
+  } catch {}
+  // 3. slice + presize + copy into the client + regenerate manifest.ts.
+  const r = spawnSync(
+    process.execPath,
+    [join(ROOT, "harvest-install.mjs"), `--ids=${id}`, `--kind=${kind}`],
+    { cwd: ROOT, encoding: "utf8" },
+  );
+  const log = `${r.stdout || ""}${r.stderr || ""}`.slice(-2500);
+  return { ok: r.status === 0, log };
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname;
@@ -217,6 +249,7 @@ const server = createServer(async (req, res) => {
     if (path === "/api/promote") return sendJson(res, 200, promote(body.id, body.candidate));
     if (path === "/api/prompt") return sendJson(res, 200, editPrompt(body.id, body.prompt));
     if (path === "/api/reroll") return sendJson(res, 200, reroll(body.id));
+    if (path === "/api/install") return sendJson(res, 200, install(body.id));
     return sendJson(res, 404, { ok: false });
   }
 

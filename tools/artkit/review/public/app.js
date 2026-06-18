@@ -166,6 +166,16 @@ async function savePrompt() {
   $("#mStatus").textContent = r.ok ? "Prompt saved." : "Error";
   toast(r.ok ? "Prompt saved" : "Save failed", r.ok ? "ok" : "err");
 }
+async function install() {
+  const id = modalId; if (!id) return;
+  const a = state.assets.find((x) => x.id === id);
+  if (!a || !a.locked) { toast("Pick a candidate first", "err"); return; }
+  $("#mStatus").textContent = "Installing into the game…";
+  toast("Installing " + a.name + "…", "ok");
+  const r = await api("/api/install", { id });
+  $("#mStatus").textContent = r.ok ? "Installed → live in the game (dev server reloads)." : "Install failed: " + (r.error || "see log");
+  toast(r.ok ? "Installed " + a.name : "Install failed", r.ok ? "ok" : "err");
+}
 async function reroll() {
   const id = modalId; if (!id) return;
   $("#mStatus").textContent = "Re-roll queued… (~5 min)";
@@ -203,6 +213,7 @@ $("#mPrev").onclick = () => stepModal(-1);
 $("#mNext").onclick = () => stepModal(1);
 $("#mSave").onclick = savePrompt;
 $("#mReroll").onclick = reroll;
+$("#mInstall").onclick = install;
 $("#modal").onclick = (e) => { if (e.target.id === "modal") closeModal(); };
 $("#lightbox").onclick = () => ($("#lightbox").hidden = true);
 
@@ -215,6 +226,7 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") return stepModal(-1);
     if (e.key === "ArrowRight") return stepModal(1);
     if (e.key.toLowerCase() === "r") return reroll();
+    if (e.key.toLowerCase() === "i") return install();
     if (/^[1-9]$/.test(e.key)) { const a = state.assets.find((x) => x.id === modalId); if (a && a.candidates.includes(+e.key)) promote(a.id, +e.key); return; }
   } else {
     if (inField) return;
