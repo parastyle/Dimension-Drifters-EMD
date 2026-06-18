@@ -5,6 +5,13 @@
  * Anything tagged "tuning" is a placeholder, not a [LOCKED] spec value.
  */
 
+/** §4 Colyseus schema HANDSHAKE version (audit). BUMP this whenever a synced `@type` field is added,
+ *  removed, reordered, or retyped in state.ts — Colyseus serializes by field ORDER, so a stale client
+ *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
+ *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
+ *  mismatch instead of rendering silently-corrupt state. */
+export const SCHEMA_VERSION = 1;
+
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
 /** Milliseconds per server tick. */

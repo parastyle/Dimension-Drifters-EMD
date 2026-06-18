@@ -34,6 +34,7 @@ import {
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
+  SCHEMA_VERSION,
   selectChainTargets,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
@@ -560,6 +561,17 @@ export class ArenaScene extends Phaser.Scene {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME);
+        // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
+        // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
+        // tell the player to hard-reload instead of silently rendering garbage.
+        this.room.onStateChange.once((state) => {
+          const sv = state.schemaVersion;
+          if (sv && sv !== SCHEMA_VERSION) {
+            const msg = `⚠ version mismatch (server schema ${sv} ≠ client ${SCHEMA_VERSION}) — hard-reload this page (Ctrl+Shift+R)`;
+            if (status) status.textContent = msg;
+            console.error(`[client] ${msg}`);
+          }
+        });
         if (status) status.textContent = `connected · you are ${this.room.sessionId.slice(0, 4)}`;
         return;
       } catch (err) {

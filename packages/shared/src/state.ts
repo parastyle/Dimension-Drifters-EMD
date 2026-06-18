@@ -1,4 +1,5 @@
 import { MapSchema, Schema, type } from "@colyseus/schema";
+import { SCHEMA_VERSION } from "./constants.js";
 
 /**
  * Authoritative networked state (Colyseus Schema). Lives in `shared` so client and
@@ -138,6 +139,10 @@ export class ProjectileState extends Schema {
 }
 
 export class ArenaState extends Schema {
+  /** §4 schema handshake (audit) — FIRST field (index 0) so it stays decodable even if later fields get
+   *  reordered; the client compares it to its own SCHEMA_VERSION on join and prompts a reload on mismatch
+   *  rather than rendering corrupt state. Bump SCHEMA_VERSION (constants.ts) on any synced-field change. */
+  @type("uint16") schemaVersion = SCHEMA_VERSION;
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type({ map: EnemyState }) enemies = new MapSchema<EnemyState>();
   @type({ map: PickupState }) pickups = new MapSchema<PickupState>();
