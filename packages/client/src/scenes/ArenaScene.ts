@@ -94,7 +94,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
-    "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C" | "SPACE",
+    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
   private lastSent = { dx: Number.NaN, dy: Number.NaN };
@@ -211,8 +211,8 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,T,B,C,SPACE") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "T" | "B" | "C" | "SPACE",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,SPACE") as Record<
+      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "SPACE",
       Phaser.Input.Keyboard.Key
     >;
     this.input.setDefaultCursor("crosshair");
@@ -616,7 +616,8 @@ export class ArenaScene extends Phaser.Scene {
     }
     this.updateDropBar(canSalvage);
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.room.send("jump"); // §5 traversal hop
-    if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon");
+    if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
+    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin

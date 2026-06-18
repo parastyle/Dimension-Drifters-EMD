@@ -83,6 +83,7 @@ import {
   ProjectileState,
   pickEnemyKind,
   poiAt,
+  prevWeapon,
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
   RESPAWN_SECONDS,
@@ -330,10 +331,12 @@ export class GameRoom extends Room<ArenaState> {
       this.applyParryAugments(player, c);
     });
 
-    // Cycle to the next weapon in the roster (§9 arsenal — POC keyboard cycle).
-    this.onMessage("cycleWeapon", (client) => {
+    // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0).
+    this.onMessage("cycleWeapon", (client, message: { dir?: number }) => {
       const player = this.state.players.get(client.sessionId);
-      if (player) player.weapon = nextWeapon(player.weapon);
+      if (!player) return;
+      player.weapon =
+        (message?.dir ?? 1) < 0 ? prevWeapon(player.weapon) : nextWeapon(player.weapon);
     });
 
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).

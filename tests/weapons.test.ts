@@ -8,6 +8,7 @@ import {
   GUN_HAND_FORWARD,
   gunMuzzleReach,
   nextWeapon,
+  prevWeapon,
   REQ_PENALTY_FLOOR,
   REQ_PENALTY_PER_POINT,
   requirementPenalty,
@@ -334,5 +335,33 @@ describe("nextWeapon (§9 cycle)", () => {
     }
     expect(new Set(visited).size).toBe(WEAPON_IDS.length); // no repeats until the wrap
     expect(nextWeapon(cur)).toBe(start); // full loop closes
+  });
+});
+
+describe("prevWeapon (§9 cycle — E back-cycle)", () => {
+  it("retreats to the previous id in the roster", () => {
+    const first = WEAPON_IDS[0];
+    const second = WEAPON_IDS[1];
+    if (!first || !second) return;
+    expect(prevWeapon(second)).toBe(first);
+  });
+
+  it("wraps around from the first weapon back to the last", () => {
+    const first = WEAPON_IDS[0];
+    if (!first) return;
+    expect(prevWeapon(first)).toBe(WEAPON_IDS[WEAPON_IDS.length - 1]);
+  });
+
+  it("is the exact inverse of nextWeapon for every roster id", () => {
+    for (const id of WEAPON_IDS) {
+      expect(prevWeapon(nextWeapon(id))).toBe(id);
+      expect(nextWeapon(prevWeapon(id))).toBe(id);
+    }
+  });
+
+  it("an unknown id (e.g. fists, excluded from the cycle) falls to a valid roster weapon", () => {
+    // indexOf → -1, (0 - 1 + n) % n = n-1 → the last roster weapon; for an empty roster, DEFAULT_WEAPON.
+    const out = prevWeapon(FISTS_WEAPON);
+    expect(out).toBe(WEAPON_IDS[WEAPON_IDS.length - 1] ?? DEFAULT_WEAPON);
   });
 });

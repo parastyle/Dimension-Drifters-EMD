@@ -990,3 +990,10 @@ export function nextWeapon(current: string): string {
   const i = WEAPON_IDS.indexOf(current);
   return WEAPON_IDS[(i + 1) % WEAPON_IDS.length] ?? DEFAULT_WEAPON;
 }
+
+/** Previous weapon in the roster (E / back-cycle), wrapping around. */
+export function prevWeapon(current: string): string {
+  const i = WEAPON_IDS.indexOf(current);
+  const n = WEAPON_IDS.length;
+  return WEAPON_IDS[(((i < 0 ? 0 : i) - 1 + n) % n) as number] ?? DEFAULT_WEAPON;
+}
