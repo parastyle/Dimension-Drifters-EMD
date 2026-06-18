@@ -2,6 +2,7 @@ import {
   type Attr,
   DEFAULT_WEAPON,
   damageMultFromGrades,
+  EXPANSION_WEAPON_IDS,
   effectiveDamageMult,
   FISTS_WEAPON,
   GRADE_DMG_COEFF,
@@ -348,6 +349,31 @@ describe("nextWeapon (§9 cycle)", () => {
     }
     expect(new Set(visited).size).toBe(WEAPON_IDS.length); // no repeats until the wrap
     expect(nextWeapon(cur)).toBe(start); // full loop closes
+  });
+});
+
+describe("§13 expansion roster (the +300, gated behind the `expansion` flag)", () => {
+  it("ships ~297 expansion weapons, all flagged + valid WeaponDefs", () => {
+    expect(EXPANSION_WEAPON_IDS.length).toBeGreaterThan(250);
+    for (const id of EXPANSION_WEAPON_IDS) {
+      const w = WEAPONS[id];
+      expect(w?.expansion).toBe(true);
+      expect(w?.tags?.classPool).toBeTruthy(); // a real, complete WeaponDef
+      expect(w?.damage).toBeGreaterThan(0);
+    }
+  });
+
+  it("is held OUT of the active roster — no expansion weapon is cycleable/droppable", () => {
+    const active = new Set(WEAPON_IDS);
+    for (const id of EXPANSION_WEAPON_IDS) expect(active.has(id)).toBe(false);
+    // …and the active roster carries nothing flagged expansion.
+    for (const id of WEAPON_IDS) expect(WEAPONS[id]?.expansion).not.toBe(true);
+  });
+
+  it("every expansion weapon sits at the 1.0 damage baseline at 1/1/1/1/1 (no free scaling)", () => {
+    for (const id of EXPANSION_WEAPON_IDS) {
+      expect(weaponDamageMult(WEAPONS[id] as never, at({}))).toBeCloseTo(1, 6);
+    }
   });
 });
 

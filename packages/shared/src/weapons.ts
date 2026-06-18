@@ -12,6 +12,7 @@ import {
   REZ_RADIUS,
 } from "./constants.js";
 import type { Attr } from "./leveling.js";
+import { EXPANSION_WEAPONS } from "./weapons-expansion.generated.js";
 
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
@@ -230,6 +231,10 @@ export interface WeaponDef {
    * → the weapon doesn't track durability (e.g. casters/thrown).
    */
   durability?: number;
+  /** §13 EXPANSION weapon — defined + arted but held OUT of the active roster (`WEAPON_IDS`): not in the
+   *  Testing-Grounds gallery, the Q/E cycle, or the drop pool, so the +300 batch doesn't flood the game
+   *  until it's curated in. Promote one by clearing this flag (or moving it to the base roster). */
+  expansion?: boolean;
 }
 
 /** Damage-scaling letter grade (§10). */
@@ -423,7 +428,7 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
  */
 export const VFX_RADIUS_DEFAULT = 74;
 
-export const WEAPONS: Record<string, WeaponDef> = {
+const BASE_WEAPONS: Record<string, WeaponDef> = {
   // §9 unarmed fallback — what you hold after DROPPING/SALVAGING a weapon, or when everything's broken.
   // No sprite (empty hands), no requirements, weak short arc. Excluded from WEAPON_IDS (never in the
   // Q-cycle or the Testing-Grounds gallery).
@@ -1028,10 +1033,20 @@ export const WEAPONS: Record<string, WeaponDef> = {
   },
 };
 
+/** Every weapon: the hand-authored BASE roster + the codegen'd §13 EXPANSION batch (the +300, art-backed
+ *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
+ *  (held sprite, card art, VFX) resolves for either. */
+export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...EXPANSION_WEAPONS };
+
 /** The §9 unarmed-fallback weapon id (empty hands). Not part of the arsenal cycle/gallery. */
 export const FISTS_WEAPON = "fists";
-/** Cycleable arsenal (Q-cycle + Testing-Grounds gallery) — every weapon EXCEPT the fists fallback. */
-export const WEAPON_IDS = Object.keys(WEAPONS).filter((id) => id !== FISTS_WEAPON);
+/** ACTIVE arsenal (Q/E cycle · Testing-Grounds gallery · drop pool) — every weapon EXCEPT the fists
+ *  fallback AND the §13 expansion batch (those are defined+arted but curated-in later, one by one). */
+export const WEAPON_IDS = Object.keys(WEAPONS).filter(
+  (id) => id !== FISTS_WEAPON && !WEAPONS[id]?.expansion,
+);
+/** The +300 §13 expansion ids — defined + arted, held out of `WEAPON_IDS`. For curation/preview tooling. */
+export const EXPANSION_WEAPON_IDS = Object.keys(WEAPONS).filter((id) => WEAPONS[id]?.expansion);
 export const DEFAULT_WEAPON = "rusty-cleaver";
 
 /** Next weapon in the roster (RMB/cycle), wrapping around. */
