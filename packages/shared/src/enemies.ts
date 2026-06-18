@@ -65,9 +65,11 @@ export interface EnemyKind {
     };
   };
   /**
-   * §15 melee DUELIST combo: instead of pure contact-DPS, the enemy closes to `approach`, telegraphs
-   * for `windup` sec, then strings `hits` arc swings (`swingGap` apart), then `recover`s before it can
-   * start another. Each swing damages players within `range`/`halfArc` of the aim toward its target.
+   * §15 melee DUELIST combo (Sekiro-style §20): the enemy closes to `approach`, then strings `hits`
+   * advancing strikes. EACH strike telegraphs (a white rhythm ring + lean-in) for its own windup —
+   * `windup` sec for the first, `swingGap` sec for each follow-up — then LUNGES `step` px forward and
+   * swings (arc-damaging players within `range`/`halfArc`), so it walks INTO you instead of flailing in
+   * place. After the last hit it `recover`s before it can start another.
    */
   melee?: {
     approach: number;
@@ -78,6 +80,8 @@ export interface EnemyKind {
     windup: number;
     swingGap: number;
     recover: number;
+    /** §20 forward LUNGE distance (px) on each strike — the "steps forward each attack" advance. */
+    step: number;
   };
   /** §9/§15 the enemy visibly WIELDS this weapon id (held-sprite on its rig, swung on each combo hit). */
   wieldsWeapon?: string;
@@ -173,14 +177,15 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     wieldsWeapon: "x-sword-neon-katana",
     dropWeapon: 0.35,
     melee: {
-      approach: 116,
-      range: 132,
-      halfArc: 0.95,
+      approach: 150, // start the duel from a touch farther so the lunges read as it CLOSING on you
+      range: 138,
+      halfArc: 0.9,
       damage: 13,
       hits: 3,
-      windup: 0.42,
-      swingGap: 0.26,
-      recover: 1.1,
+      windup: 0.52, // a clear first telegraph (white ring fills) — time to read + parry
+      swingGap: 0.34, // each follow-up also telegraphs over this — a parryable rhythm, not a flurry
+      recover: 0.95,
+      step: 72, // lunges forward on each strike (Sekiro step-in) — advances rather than standing still
     },
   },
   // §15 SCATTER tough — GATLIN, a heavy drifter (§15 "Tough/scatter — parryable scatter spread"). Slow

@@ -204,10 +204,12 @@ export class GameRoom extends Room<ArenaState> {
   private readonly zonerDropCd = new Map<string, number>();
   /** Per-zone remaining lifetime (sec), keyed by zone id. */
   private readonly zoneMeta = new Map<string, number>();
-  /** §15 duelist (ronin) combo state per enemy id: phase + timer + swings left. Pruned with the enemy. */
+  /** §15 duelist (ronin) combo state per enemy id: phase + timer + swings left + the CURRENT windup's
+   *  duration (`wind`, for the 0→1 telegraph ramp — `windup` for the first hit, `swingGap` after). Each hit
+   *  now telegraphs (no standalone "swing" phase). Pruned with the enemy. */
   private readonly comboState = new Map<
     string,
-    { phase: "idle" | "windup" | "swing" | "recover"; t: number; hits: number }
+    { phase: "idle" | "windup" | "recover"; t: number; hits: number; wind: number }
   >();
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
@@ -1440,37 +1442,42 @@ export class GameRoom extends Room<ArenaState> {
       const target = nearestPoint(enemy, bodies);
       let st = this.comboState.get(id);
       if (!st) {
-        st = { phase: "idle", t: 0, hits: 0 };
+        st = { phase: "idle", t: 0, hits: 0, wind: 0 };
         this.comboState.set(id, st);
       }
       const dist = target
         ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
         : Number.POSITIVE_INFINITY;
-      // Move toward the target only while idle + out of reach; hold position through the combo.
+      // Move toward the target only while idle + out of reach; the combo advances via LUNGES (below).
       if (st.phase === "idle" && target && dist > m.approach) {
         const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed, dt);
+        enemy.x = next.x;
+        enemy.y = next.y;
+      }
+      // §20 Sekiro lean-in: creep slowly forward DURING a windup so the wind-up reads as "stepping into it".
+      if (st.phase === "windup" && target && dist > m.range * 0.45) {
+        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed * 0.28, dt);
         enemy.x = next.x;
         enemy.y = next.y;
       }
       st.t -= dt;
       if (st.phase === "idle") {
         if (target && dist <= m.approach) {
-          st.phase = "windup";
+          st.phase = "windup"; // begin the first telegraphed strike
+          st.hits = m.hits;
+          st.wind = m.windup;
           st.t = m.windup;
         }
       } else if (st.phase === "windup") {
         if (st.t <= 0) {
-          st.phase = "swing";
-          st.hits = m.hits;
+          // Strike: LUNGE forward (capped so it stops at sword's length, never stacks on the player), swing,
+          // then either telegraph the next hit (swingGap) or recover.
+          this.duelistLunge(enemy, target, m, dist);
           this.duelistSwing(enemy, target, m);
           st.hits -= 1;
-          st.t = m.swingGap;
-        }
-      } else if (st.phase === "swing") {
-        if (st.t <= 0) {
           if (st.hits > 0) {
-            this.duelistSwing(enemy, target, m);
-            st.hits -= 1;
+            st.phase = "windup";
+            st.wind = m.swingGap;
             st.t = m.swingGap;
           } else {
             st.phase = "recover";
@@ -1480,11 +1487,30 @@ export class GameRoom extends Room<ArenaState> {
       } else if (st.t <= 0) {
         st.phase = "idle"; // recover done
       }
-      // §8 white-tell TELEGRAPH (Stage C): expose the windup progress (0→1) so the client ramps the enemy
-      // WHITE + shrinks the rhythm ring — the player sees the swing coming and parries as it peaks.
+      // §8 white-tell TELEGRAPH (Stage C): every windup (the first AND each follow-up) ramps `windup` 0→1
+      // so the client fills a white rhythm ring + whitens the enemy before EACH hit — a parryable beat.
       enemy.windup =
-        st.phase === "windup" && m.windup > 0 ? Math.max(0, Math.min(1, 1 - st.t / m.windup)) : 0;
+        st.phase === "windup" && st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
     });
+  }
+
+  /** §20 one duelist LUNGE: dash the enemy `m.step` px toward the target, but never inside `range×0.45`
+   *  (it stays at sword's length so the advance reads as pressure, not a body-block stack). */
+  private duelistLunge(
+    enemy: EnemyState,
+    target: Vec2 | null,
+    m: { range: number; step: number },
+    dist: number,
+  ): void {
+    if (!target || dist < 0.001) return;
+    const floor = m.range * 0.45;
+    const move = Math.max(0, Math.min(m.step, dist - floor));
+    if (move <= 0) return;
+    const dx = (target.x - enemy.x) / dist;
+    const dy = (target.y - enemy.y) / dist;
+    const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    enemy.x = clamp(enemy.x + dx * move, r, ARENA_WIDTH - r);
+    enemy.y = clamp(enemy.y + dy * move, r, ARENA_HEIGHT - r);
   }
 
   /** One duelist swing: bump `atkSeq` (client animates) + arc-damage players in front. A player whose parry
@@ -1532,7 +1558,19 @@ export class GameRoom extends Room<ArenaState> {
         }
         return;
       }
+      // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
+      // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
       player.hp -= m.damage * dmgMul;
+      const hx = player.x - enemy.x;
+      const hy = player.y - enemy.y;
+      const hd = Math.hypot(hx, hy) || 1;
+      const k = addImpulse(
+        player,
+        (hx / hd) * HIT_KNOCKBACK_IMPULSE,
+        (hy / hd) * HIT_KNOCKBACK_IMPULSE,
+      );
+      player.vx = k.vx;
+      player.vy = k.vy;
     });
   }
 

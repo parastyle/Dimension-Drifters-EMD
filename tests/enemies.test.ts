@@ -108,6 +108,22 @@ describe("Gatlin (§15 scatter tough)", () => {
   });
 });
 
+describe("Ronin (§15/§20 Sekiro duelist)", () => {
+  const m = ENEMY_KINDS.ronin?.melee;
+  it("lunges forward each strike (a positive step), advancing rather than standing still", () => {
+    expect(m?.step ?? 0).toBeGreaterThan(0);
+  });
+  it("starts the duel OUTSIDE the lunge floor so the first step reads as closing in", () => {
+    // The lunge never goes inside range×0.45, so approach must be beyond that for the advance to show.
+    expect(m?.approach ?? 0).toBeGreaterThan((m?.range ?? 0) * 0.45);
+  });
+  it("telegraphs every hit — a first windup and a follow-up rhythm gap, both > 0", () => {
+    expect(m?.windup ?? 0).toBeGreaterThan(0);
+    expect(m?.swingGap ?? 0).toBeGreaterThan(0);
+    expect(m?.hits ?? 0).toBeGreaterThan(1);
+  });
+});
+
 describe("difficulty ramps (§6)", () => {
   it("toughChance is monotonic in time, ≥0, capped at 0.8", () => {
     expect(toughChance(0)).toBeGreaterThanOrEqual(0);

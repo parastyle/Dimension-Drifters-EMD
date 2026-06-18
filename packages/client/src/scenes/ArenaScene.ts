@@ -773,6 +773,30 @@ export class ArenaScene extends Phaser.Scene {
       const w = es?.windup ?? 0;
       if (w > 0.01) {
         const g = this.telegraphGfx;
+        // §20 "white gradient leading flash": a directional cone toward the targeted player showing EXACTLY
+        // where the strike lands (the enemy's real melee range/arc) — WYSIWYG danger, brightening as it peaks.
+        const mel = ENEMY_KINDS[es?.kind ?? ""]?.melee;
+        if (mel) {
+          let nx = 1;
+          let ny = 0;
+          let bestD = Number.POSITIVE_INFINITY;
+          this.room?.state.players.forEach((p) => {
+            if (!p.alive) return;
+            const d = (p.x - rig.x) ** 2 + (p.y - rig.y) ** 2;
+            if (d < bestD) {
+              bestD = d;
+              nx = p.x - rig.x;
+              ny = p.y - rig.y;
+            }
+          });
+          const ang = Math.atan2(ny, nx);
+          g.fillStyle(0xffffff, 0.06 + 0.22 * w);
+          g.beginPath();
+          g.moveTo(rig.x, rig.y);
+          g.arc(rig.x, rig.y, mel.range, ang - mel.halfArc, ang + mel.halfArc);
+          g.closePath();
+          g.fillPath();
+        }
         g.fillStyle(0xffffff, w * 0.4);
         g.fillCircle(rig.x, rig.y, 24);
         g.lineStyle(2.5 + 2 * w, 0xffffff, 0.55 + 0.45 * w);
