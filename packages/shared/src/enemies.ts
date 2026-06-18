@@ -12,6 +12,7 @@ import {
   TOUGH_CHANCE_PER_PLAYER,
   TOUGH_RAMP_SECONDS,
 } from "./constants.js";
+import { DIMENSION_ENEMY_KINDS } from "./dimensions.generated.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 
@@ -87,6 +88,11 @@ export interface EnemyKind {
   wieldsWeapon?: string;
   /** §13 on death, CHANCE [0..1] to DROP `wieldsWeapon` as a grabbable pickup. */
   dropWeapon?: number;
+  /** §17 DIMENSION SHIFTER — a roaming cross-dimensional invader (the TimeSplitters-style antagonists), NOT
+   *  part of any weighted spawn roster (weight 0). The shifter director phases one in on a timer, it HUNTS
+   *  for `window` seconds, then phases out (despawns) if it survives. `tier` orders the three (1 = earliest
+   *  + weakest Marshal, 2 = Ronin, 3 = heaviest Warden) — the active tier scales with run time. */
+  shifter?: { tier: number; window: number };
 }
 
 /** Wild West M0 roster wired for the first level (§15). */
@@ -223,19 +229,34 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     weight: 0,
     xpValue: 0,
   },
+  // §17 the themed-dimension rosters (Frostfell / Verdant Ruins / Ashlands / Neon-Cyber) + the 3 roaming
+  // SHIFTERS, codegen'd into dimensions.generated.ts from the design data. Each dimension scopes its own
+  // weighted spawn pool via `getDimension(id).roster` (pickEnemyKind), so these never leak into Wild West.
+  ...DIMENSION_ENEMY_KINDS,
 };
 
 export const ENEMY_KIND_IDS = Object.keys(ENEMY_KINDS);
 
-/** Pick a kind id by spawn weight from a [0,1) roll. Pure (caller supplies the random). */
-export function pickEnemyKind(roll: number): string {
-  const total = ENEMY_KIND_IDS.reduce((s, k) => s + (ENEMY_KINDS[k]?.weight ?? 0), 0);
+/** §17 the DIMENSION-SHIFTER kind ids, ordered by tier (1 = earliest/weakest Marshal → 3 = Warden). Derived
+ *  from the `shifter` flag on the merged kinds, so adding a shifter to the data wires it into the director
+ *  with no code change. The shifter director indexes this by run-time tier. */
+export const SHIFTER_KIND_IDS: readonly string[] = ENEMY_KIND_IDS.filter(
+  (id) => ENEMY_KINDS[id]?.shifter,
+).sort((a, b) => (ENEMY_KINDS[a]?.shifter?.tier ?? 0) - (ENEMY_KINDS[b]?.shifter?.tier ?? 0));
+
+/** Pick a kind id by spawn weight from a [0,1) roll, restricted to `roster` (§17 the active dimension's
+ *  weighted spawn pool — so frost enemies never spawn in the desert). Pure (caller supplies the random);
+ *  defaults to every kind for back-compat. */
+export function pickEnemyKind(roll: number, roster: readonly string[] = ENEMY_KIND_IDS): string {
+  const ids = roster.length ? roster : ENEMY_KIND_IDS;
+  const total = ids.reduce((s, k) => s + (ENEMY_KINDS[k]?.weight ?? 0), 0);
+  if (total <= 0) return ids[0] ?? "critter";
   let r = roll * total;
-  for (const k of ENEMY_KIND_IDS) {
+  for (const k of ids) {
     r -= ENEMY_KINDS[k]?.weight ?? 0;
     if (r < 0) return k;
   }
-  return ENEMY_KIND_IDS[0] ?? "critter";
+  return ids[0] ?? "critter";
 }
 
 /** Nearest target to `pos` (the squad). Returns null if there are none. */

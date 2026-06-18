@@ -1,4 +1,12 @@
-import { DEFAULT_WEAPON, EnemyState, PLAYER_MAX_HP, REVIVE_HP_FRAC } from "@dd/shared";
+import {
+  DEFAULT_WEAPON,
+  ENEMY_KINDS,
+  EnemyState,
+  getDimension,
+  PLAYER_MAX_HP,
+  REVIVE_HP_FRAC,
+  SHIFTER_KIND_IDS,
+} from "@dd/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The authoritative 20Hz tick (GameRoom) had ZERO tests (audit cluster ②) — only live co-op exercised the
@@ -26,14 +34,14 @@ const { GameRoom } = await import("./GameRoom.js");
 // biome-ignore lint/suspicious/noExplicitAny: the harness reaches private room internals (update/combat) on purpose.
 type AnyRoom = any;
 
-function makeRoom() {
+function makeRoom(options?: { dimensionId?: string }) {
   const room = new GameRoom() as AnyRoom;
   const handlers = new Map<string, (c: { sessionId: string }, m?: unknown) => void>();
   room.onMessage = (type: string, fn: (c: { sessionId: string }, m?: unknown) => void) =>
     handlers.set(type, fn);
   room.clients = [];
   room.roomId = "test";
-  room.onCreate();
+  room.onCreate(options);
   return {
     room,
     state: () => room.state,
@@ -176,6 +184,69 @@ describe("GameRoom — §20 swept melee connects in the live tick", () => {
     // The critter (3 HP base, here 50) should have taken edge damage from the sweep.
     const after = h.state().enemies.get("victim");
     expect(after === undefined || after.hp < 50).toBe(true);
+  });
+});
+
+describe("GameRoom — §17 dimension wiring", () => {
+  it("scopes the dimensionId + boss kind to the joined dimension", () => {
+    const h = makeRoom({ dimensionId: "frostfell" });
+    h.join("p1");
+    expect(h.state().dimensionId).toBe("frostfell");
+    h.send("p1", "spawnBoss");
+    h.tick(1);
+    let boss: EnemyState | undefined;
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+    });
+    expect(boss?.kind).toBe(getDimension("frostfell").boss); // "the-hollow-king", not "old-rust"
+  });
+
+  it("an unknown dimensionId falls back to Wild West", () => {
+    const h = makeRoom({ dimensionId: "atlantis" });
+    expect(h.state().dimensionId).toBe("wild-west");
+    h.join("p1");
+    h.send("p1", "spawnBoss");
+    h.tick(1);
+    let boss: EnemyState | undefined;
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
+    });
+    expect(boss?.kind).toBe("old-rust");
+  });
+});
+
+describe("GameRoom — §17 shifter-incursion director", () => {
+  it("phases a tier-1 shifter IN on the timer, then phases it OUT after its window", () => {
+    const h = makeRoom();
+    h.join("p1");
+    // Fast-forward to the first incursion: tier-0 (early) → the weakest shifter (Marshal).
+    h.state().elapsed = 10;
+    h.room.shifterCd = 0.01;
+    h.tick(1);
+    expect(h.room.shifterId).not.toBeNull();
+    const shifter = h.state().enemies.get(h.room.shifterId);
+    expect(shifter).toBeDefined();
+    expect(SHIFTER_KIND_IDS).toContain(shifter.kind);
+    expect(shifter.kind).toBe(SHIFTER_KIND_IDS[0]); // tier 0 → first in the tier-ordered roster
+    expect(h.room.shifterWaves).toBe(1);
+
+    // PHASE-OUT: force the hunt window to expire — the survivor rifts back out (removed from state).
+    const sid = h.room.shifterId;
+    h.room.shifterTimer = 0.01;
+    h.tick(1);
+    expect(h.room.shifterId).toBeNull();
+    expect(h.state().enemies.has(sid)).toBe(false);
+  });
+
+  it("holds incursions while the dimension boss is up", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "spawnBoss"); // boss now alive → bossId set
+    h.tick(1);
+    h.state().elapsed = 10;
+    h.room.shifterCd = 0.01;
+    h.tick(1);
+    expect(h.room.shifterId).toBeNull(); // no incursion started during the boss fight
   });
 });
 

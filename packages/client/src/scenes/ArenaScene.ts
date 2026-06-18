@@ -12,15 +12,18 @@ import {
   characterScale,
   clampQuakeEpicenter,
   DEBUG_SPAWN_MAX,
+  DEFAULT_DIMENSION,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
   damageMultFromGrades,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
   ENEMY_KINDS,
+  type EnemyKind,
   EXTRACT_RADIUS,
   FISTS_WEAPON,
   generateArena,
+  getDimension,
   gunMuzzleReach,
   hasAugment,
   inMeleeArc,
@@ -75,6 +78,30 @@ import {
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
+
+/** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
+ *  harvest-installed yet (its manifest id isn't in SPRITES). Keeps every new dimension playable on day one
+ *  with an archetype-matched Wild-West rig (the same POC pattern as old-rust/ronin/gatlin → boothill); once
+ *  the real sprite lands in the manifest, `resolveEnemySprite` picks it automatically. All targets are
+ *  always-installed base sprites. */
+const ENEMY_FALLBACK_SPRITE: Record<string, string> = {
+  rusher: "critter",
+  swarm: "mote-swarm",
+  zoner: "pricklepulp",
+  spitter: "boothill",
+  duelist: "boothill",
+  tough: "boothill",
+  boss: "boothill",
+  dummy: "pricklepulp",
+};
+
+/** Resolve the sprite manifest id to render for an enemy kind: the bespoke sprite if its art is installed,
+ *  else the archetype stand-in (so an un-rendered themed enemy doesn't crash SpriteRig). */
+function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): string {
+  const want = kind?.sprite ?? rawKind;
+  if (SPRITES[want as keyof typeof SPRITES]) return want;
+  return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "rusher"] ?? "critter";
+}
 
 /**
  * Player-core scene (build order §27.3 step 3, building on step 2's netcode).
@@ -180,6 +207,15 @@ export class ArenaScene extends Phaser.Scene {
     super("arena");
   }
 
+  /** §17 the dimension chosen at the menu (MenuScene → `scene.start("arena", { dimensionId })`). Passed to
+   *  the room as a join option — only the room CREATOR's pick takes effect; joiners inherit the host's
+   *  synced `dimensionId`. Defaults to Wild West when the arena is launched directly (no menu). */
+  private selectedDimension: string = DEFAULT_DIMENSION;
+
+  init(data?: { dimensionId?: string }): void {
+    if (data?.dimensionId) this.selectedDimension = data.dimensionId;
+  }
+
   /** Load every installed sprite's harvest-sliced parts (served from public/sprites/<id>/). */
   preload(): void {
     for (const manifest of Object.values(SPRITES)) {
@@ -222,7 +258,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   create(): void {
-    drawArena(this, (k) => this.hasTile(k));
+    // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
+    // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
@@ -527,7 +564,10 @@ export class ArenaScene extends Phaser.Scene {
       seedTheme: s.seedTheme,
       seedDecor: s.seedDecor,
     });
-    buildArenaFloor(this, this.arenaMap);
+    // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
+    const palette = getDimension(s.dimensionId).palette;
+    drawArena(this, (k) => this.hasTile(k), palette);
+    buildArenaFloor(this, this.arenaMap, palette);
     buildPois(this, this.arenaMap);
     this.floorBuilt = true;
   }
@@ -560,7 +600,11 @@ export class ArenaScene extends Phaser.Scene {
     const maxAttempts = 30;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME);
+        // §17 pass the menu's dimension pick as a join option (the room creator scopes the run to it; a
+        // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
+        this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME, {
+          dimensionId: this.selectedDimension,
+        });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
@@ -700,7 +744,14 @@ export class ArenaScene extends Phaser.Scene {
     enemies.forEach((enemy, id) => {
       if (!this.enemies.has(id)) {
         const kind = ENEMY_KINDS[enemy.kind];
-        const rig = new SpriteRig(this, enemy.x, enemy.y, false, id, kind?.sprite ?? enemy.kind);
+        const rig = new SpriteRig(
+          this,
+          enemy.x,
+          enemy.y,
+          false,
+          id,
+          resolveEnemySprite(kind, enemy.kind),
+        );
         // Bosses use their own scale; tough kin scale up + glow (§15/§28.6 bigger not detailed).
         if (kind?.renderScale) rig.setRigScale(kind.renderScale);
         else if (enemy.tough) rig.setRigScale(TOUGH_SCALE);

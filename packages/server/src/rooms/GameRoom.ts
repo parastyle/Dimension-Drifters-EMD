@@ -56,6 +56,7 @@ import {
   GUN_RECOIL_BASELINE,
   GUN_RECOIL_IMPULSE,
   generateArena,
+  getDimension,
   gunMuzzleReach,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
@@ -112,6 +113,11 @@ import {
   resolvePoiCollision,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
+  SHIFTER_FIRST_SECONDS,
+  SHIFTER_HP_PER_WAVE,
+  SHIFTER_INTERVAL,
+  SHIFTER_KIND_IDS,
+  SHIFTER_TIER_SECONDS,
   SPAWN_RING,
   safeSpawnPos,
   selectChainTargets,
@@ -278,6 +284,12 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
   private bossSpawned = false;
   private bossId: string | null = null;
+  /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
+   *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
+  private shifterCd = SHIFTER_FIRST_SECONDS;
+  private shifterId: string | null = null;
+  private shifterTimer = 0;
+  private shifterWaves = 0;
   /** Co-op host = the first player to join (reassigned if they leave). Run-wide commands
    *  (restart / toggle-training / spawn-boss) are host-only so one client can't wipe the shared run. */
   private hostId: string | null = null;
@@ -285,8 +297,13 @@ export class GameRoom extends Room<ArenaState> {
     return this.hostId === null || client.sessionId === this.hostId;
   }
 
-  override onCreate(): void {
+  override onCreate(options?: { dimensionId?: string }): void {
     this.setState(new ArenaState());
+
+    // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
+    // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
+    // syncs on ArenaState so the client reproduces the matching palette + asset set.
+    this.state.dimensionId = getDimension(options?.dimensionId).id;
 
     // §17 mint the procedural arena ONCE. The four seeds are synced on ArenaState so every client feeds
     // them to the same shared `generateArena` and reproduces a byte-identical map — no tile streaming.
@@ -538,6 +555,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.portalOpen = false;
     this.bossSpawned = false;
     this.bossId = null;
+    this.resetShifters();
     const cx = ARENA_WIDTH / 2;
     const cy = ARENA_HEIGHT / 2;
 
@@ -591,6 +609,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.portalOpen = false;
     this.bossSpawned = false;
     this.bossId = null;
+    this.resetShifters();
     this.spawnAccum = 0;
     this.enemySeq = 0;
     this.state.players.forEach((player, id) => {
@@ -843,6 +862,10 @@ export class GameRoom extends Room<ArenaState> {
         // The horde keeps coming until the boss falls; once the portal opens it eases off so the
         // run can be cleanly extracted.
         if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
+        // §17 cross-dimensional SHIFTER incursions (roaming invaders) — phase one in on a timer, phase it
+        // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
+        // owns lifecycle.
+        this.stepShifters(dt, bodies);
         this.checkExtraction(bodies);
       }
     }
@@ -1294,7 +1317,7 @@ export class GameRoom extends Room<ArenaState> {
   private fireBulletWall(boss: EnemyState, target: Vec2): void {
     const base = Math.atan2(target.y - boss.y, target.x - boss.x);
     const gapIdx = this.bossWallSeq++ % (BOSS_WALL_COUNT - 1); // walk the gap around so it's not always centred
-    const dmg = (ENEMY_KINDS["old-rust"]?.ranged?.damage ?? 10) * 0.55; // per-slug, lighter than the single spit
+    const dmg = (ENEMY_KINDS[boss.kind]?.ranged?.damage ?? 10) * 0.55; // per-slug, lighter than the single spit
     for (const ang of bulletWallAngles(base, BOSS_WALL_COUNT, BOSS_WALL_ARC, gapIdx)) {
       this.fireProjectile(
         boss,
@@ -1550,7 +1573,7 @@ export class GameRoom extends Room<ArenaState> {
       enemy.hp = DUMMY_HP;
       return 0;
     }
-    if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
+    if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") this.openPortal(enemy.x, enemy.y);
     this.maybeDropWeapon(enemy); // §13 ronin sword drop
     kills.push(eid);
     return (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
@@ -1909,7 +1932,8 @@ export class GameRoom extends Room<ArenaState> {
             if (enemy.hp <= 0) {
               if (enemy.kind === "dummy") enemy.hp = DUMMY_HP;
               else {
-                if (enemy.kind === "old-rust") this.openPortal(enemy.x, enemy.y);
+                if (ENEMY_KINDS[enemy.kind]?.archetype === "boss")
+                  this.openPortal(enemy.x, enemy.y);
                 xpGained +=
                   (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
                 this.maybeDropWeapon(enemy); // §13 ronin sword drop
@@ -2000,7 +2024,8 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private spawnEnemy(anchors: Vec2[]): void {
-    const kindId = pickEnemyKind(Math.random());
+    // §17 weighted pick scoped to the ACTIVE dimension's roster (frost enemies never spawn in the desert).
+    const kindId = pickEnemyKind(Math.random(), getDimension(this.state.dimensionId).roster);
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const anchor = anchors[Math.floor(Math.random() * anchors.length)] ?? anchors[0];
@@ -2050,9 +2075,10 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(enemy.id, enemy);
   }
 
-  /** Spawn the boss OLD RUST on a ring around a player (§16) — the run's capstone threat. */
+  /** Spawn the active dimension's BOSS on a ring around a player (§16) — the run's capstone threat. */
   private spawnBoss(): void {
-    const kind = ENEMY_KINDS["old-rust"];
+    const bossKind = getDimension(this.state.dimensionId).boss;
+    const kind = ENEMY_KINDS[bossKind];
     if (!kind) return;
     const anchors: Vec2[] = [];
     this.state.players.forEach((pl) => {
@@ -2065,7 +2091,7 @@ export class GameRoom extends Room<ArenaState> {
     const angle = Math.random() * Math.PI * 2;
     const boss = new EnemyState();
     boss.id = `boss${this.enemySeq++}`;
-    boss.kind = "old-rust";
+    boss.kind = bossKind;
     boss.hp = kind.hp * enemyHpScale(this.state.players.size); // §6 boss HP-sponge × players
     this.bossMaxHp = boss.hp; // §16 frozen for the phase-fraction thresholds
     this.bossFireCd = 0;
@@ -2090,7 +2116,81 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
-    console.log(`[room ${this.roomId}] ⚠ OLD RUST approaches`);
+    console.log(`[room ${this.roomId}] ⚠ boss approaches — ${bossKind}`);
+  }
+
+  /** Reset the §17 shifter director for a fresh run (first incursion timer, no active incursion, wave 0). */
+  private resetShifters(): void {
+    this.shifterCd = SHIFTER_FIRST_SECONDS;
+    this.shifterId = null;
+    this.shifterTimer = 0;
+    this.shifterWaves = 0;
+  }
+
+  /** §17 SHIFTER director: manage the active incursion (phase it out when its hunt window expires) and, in
+   *  normal play, start the next one on the cadence. Only one incursion at a time; held while the boss is up
+   *  or the portal is open. The shifter's actual combat runs through the generic archetype AI. */
+  private stepShifters(dt: number, bodies: Vec2[]): void {
+    // The active shifter died (or was removed) → clear tracking so the cooldown can restart.
+    if (this.shifterId && !this.state.enemies.has(this.shifterId)) this.shifterId = null;
+
+    if (this.shifterId) {
+      // PHASE-OUT: an incursion the squad couldn't put down rifts back out when its window elapses.
+      this.shifterTimer -= dt;
+      if (this.shifterTimer <= 0) {
+        this.state.enemies.delete(this.shifterId);
+        this.comboState.delete(this.shifterId);
+        this.enemyFireCd.delete(this.shifterId);
+        console.log(`[room ${this.roomId}] ⌁ shifter phased out — ${this.shifterId}`);
+        this.shifterId = null;
+      }
+      return; // one incursion at a time
+    }
+
+    this.shifterCd -= dt;
+    if (this.shifterCd > 0) return;
+    this.shifterCd = SHIFTER_INTERVAL;
+    // Hold new incursions while the dimension boss is up or the run is extracting — keep the climax clean.
+    if (this.bossId || this.state.portalOpen) return;
+    this.spawnShifter(bodies);
+  }
+
+  /** Phase a shifter in at the arena edge near a living drifter. Tier escalates with run time; HP ramps per
+   *  incursion (§17 "tougher deeper into the chain"). It hunts for `shifter.window` sec, then phases out. */
+  private spawnShifter(bodies: Vec2[]): void {
+    if (SHIFTER_KIND_IDS.length === 0 || bodies.length === 0) return;
+    const tier = Math.min(
+      SHIFTER_KIND_IDS.length - 1,
+      Math.floor(this.state.elapsed / SHIFTER_TIER_SECONDS),
+    );
+    const kindId = SHIFTER_KIND_IDS[tier];
+    const kind = kindId ? ENEMY_KINDS[kindId] : undefined;
+    if (!kindId || !kind) return;
+    const anchor = bodies[Math.floor(Math.random() * bodies.length)] ?? {
+      x: ARENA_WIDTH / 2,
+      y: ARENA_HEIGHT / 2,
+    };
+    const angle = Math.random() * Math.PI * 2;
+    const s = new EnemyState();
+    s.id = `shifter${this.enemySeq++}`;
+    s.kind = kindId;
+    s.hp =
+      kind.hp *
+      enemyHpScale(this.state.players.size) *
+      (1 + SHIFTER_HP_PER_WAVE * this.shifterWaves);
+    const m = kind.radius + 4;
+    const sx = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
+    const sy = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
+    const sp = safeSpawnPos(this.map, sx, sy, kind.radius);
+    s.x = sp.x;
+    s.y = sp.y;
+    this.state.enemies.set(s.id, s);
+    this.shifterId = s.id;
+    this.shifterTimer = kind.shifter?.window ?? 20;
+    this.shifterWaves++;
+    console.log(
+      `[room ${this.roomId}] ⌁ shifter incursion — ${kindId} (wave ${this.shifterWaves})`,
+    );
   }
 
   /** Open the extraction portal where the boss fell (§16). */

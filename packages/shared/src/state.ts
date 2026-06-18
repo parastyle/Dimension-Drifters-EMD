@@ -1,5 +1,6 @@
 import { MapSchema, Schema, type } from "@colyseus/schema";
 import { SCHEMA_VERSION } from "./constants.js";
+import { DEFAULT_DIMENSION } from "./dimensions.js";
 
 /**
  * Authoritative networked state (Colyseus Schema). Lives in `shared` so client and
@@ -163,6 +164,9 @@ export class ArenaState extends Schema {
   @type("number") elapsed = 0;
   /** "arena" (survival) | "training" (Testing Grounds — dummies + pickups, no spawns). */
   @type("string") mode = "arena";
+  /** §17 the active DIMENSION id (keys the shared `DIMENSIONS` registry) — scopes the server's spawn roster
+   *  + boss and drives the client's palette + POI/decal/tile asset sets. A run is a chain of these (§6). */
+  @type("string") dimensionId = DEFAULT_DIMENSION;
   /** Run outcome (§16): "active" while playing, "victory" once a player extracts, "defeat" on a §6 wipe. */
   @type("string") outcome = "active";
   /** Extraction portal — opened when the boss OLD RUST falls; step in to win. */

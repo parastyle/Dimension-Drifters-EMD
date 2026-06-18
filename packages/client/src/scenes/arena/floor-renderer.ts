@@ -3,6 +3,7 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   classifyPitRegions,
+  type DimensionPalette,
   isPitAtPx,
   MAP_SPAWN_CLEAR_TILES,
   makeRng,
@@ -25,15 +26,20 @@ import { POI_IDS } from "../../sprites/poi-manifest.js";
 
 /** Base ground bed + low-contrast grid (map-independent), drawn once in create(). `hasTile` is the scene's
  *  missing-texture guard so we fall back to the grid when the painted tile isn't installed. */
-export function drawArena(scene: Phaser.Scene, hasTile: (key: string) => boolean): void {
+export function drawArena(
+  scene: Phaser.Scene,
+  hasTile: (key: string) => boolean,
+  palette: DimensionPalette,
+): void {
   const cx = ARENA_WIDTH / 2;
   const cy = ARENA_HEIGHT / 2;
   // Base ground bed + low-contrast grid (map-independent). The §17 procedural PITS, the rim telegraph,
   // the spawn safe-ring + seeded decor are baked in `buildArenaFloor` once the server's map seeds sync.
   // The whole floor stack lives at NEGATIVE depths so it always renders behind the entities (which use
   // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
-  // (-14, so the telegraph stays visible over litter) · rail(-12).
-  scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 0x2a2620).setDepth(-20);
+  // (-14, so the telegraph stays visible over litter) · rail(-12). Colours come from the active §17
+  // dimension palette (a re-skin of the "Dust & The Drop" slots) — Wild West's are the defaults.
+  scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, palette.groundBed).setDepth(-20);
   if (hasTile("tile-ground")) {
     // §17 PAINTED ground — a SEAMLESS Codex dust tile (gen-tiles.mjs), GPU-tiled across the arena PLUS a
     // wide margin so 4K/ultrawide viewports always show ground, never the void. One draw, scrolls free.
@@ -44,13 +50,27 @@ export function drawArena(scene: Phaser.Scene, hasTile: (key: string) => boolean
     ts.tileScaleX = 0.5;
     ts.tileScaleY = 0.5;
   } else {
-    // Fallback (no tile art installed yet): the low-contrast earthy grid.
+    // Fallback (no tile art installed yet): the low-contrast themed grid.
     scene.add
-      .grid(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, 128, 128, 0x2a2620, 1, 0x342d22, 0.5)
+      .grid(
+        cx,
+        cy,
+        ARENA_WIDTH,
+        ARENA_HEIGHT,
+        128,
+        128,
+        palette.gridColor1,
+        1,
+        palette.gridColor2,
+        0.5,
+      )
       .setDepth(-19);
   }
-  // Arena boundary — a rusted rail (marks the playable bound; the ground extends past it on big screens).
-  scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT).setStrokeStyle(6, 0xa8482e).setDepth(-12);
+  // Arena boundary — a themed rail (marks the playable bound; the ground extends past it on big screens).
+  scene.add
+    .rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT)
+    .setStrokeStyle(6, palette.boundaryRail)
+    .setDepth(-12);
 }
 
 /** §17 place the POI landmark sprites — base at the map position (origin bottom-centre), depth = its y so
@@ -77,7 +97,11 @@ export function buildPois(scene: Phaser.Scene, map: ArenaMap): void {
  * lip on the narrow (hoppable) gaps, and a cyan SPAWN safe-ring. All static geometry in ONE Graphics
  * (drawn once, scrolled by the camera for free) at a low depth under the entities.
  */
-export function buildArenaFloor(scene: Phaser.Scene, map: ArenaMap): void {
+export function buildArenaFloor(
+  scene: Phaser.Scene,
+  map: ArenaMap,
+  palette: DimensionPalette,
+): void {
   const T = map.tileSize;
   const cls = classifyPitRegions(map);
   const ground = (gx: number, gy: number): boolean =>
@@ -91,7 +115,7 @@ export function buildArenaFloor(scene: Phaser.Scene, map: ArenaMap): void {
   // pits stay a clean flat void — it reads better than a busy texture, and a near-black pit tile is
   // visually indistinguishable from this anyway.
   const g = scene.add.graphics().setDepth(-14); // pit void + rim + spawn, above the ground + the litter
-  g.fillStyle(0x0d0a10, 1);
+  g.fillStyle(palette.pitVoid, 1);
   for (let y = 0; y < map.rows; y++)
     for (let x = 0; x < map.cols; x++)
       if (map.tiles[y * map.cols + x] === TILE_PIT) g.fillRect(x * T, y * T, T, T);
@@ -120,12 +144,12 @@ export function buildArenaFloor(scene: Phaser.Scene, map: ArenaMap): void {
         seg.push({ x1: ox + T, y1: oy, x2: ox + T, y2: oy + T, nx: -1, ny: 0, hop });
     }
   // Rust band (under) then hot amber lip (over) — opaque + static, so it reads as TERRAIN under the neon.
-  g.lineStyle(T * 0.11, 0xa8482e, 1);
+  g.lineStyle(T * 0.11, palette.pitRustBand, 1);
   for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
-  g.lineStyle(T * 0.045, 0xf0a73c, 1);
+  g.lineStyle(T * 0.045, palette.pitAmberLip, 1);
   for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
   // Inward chevron teeth on the wide runs ("go around"); narrow gaps keep the clean lip ("hop me").
-  g.fillStyle(0xf0a73c, 1);
+  g.fillStyle(palette.pitAmberLip, 1);
   for (const s of seg) {
     if (s.hop) continue;
     const mx = (s.x1 + s.x2) / 2;
@@ -141,19 +165,19 @@ export function buildArenaFloor(scene: Phaser.Scene, map: ArenaMap): void {
       my - ey * T * 0.1,
     );
   }
-  // Cyan SPAWN safe-ring (cool = safe — the opposite semaphore to the hot pit lip).
+  // Cool SPAWN safe-ring (cool = safe — the opposite semaphore to the hot pit lip).
   const sr = MAP_SPAWN_CLEAR_TILES * T;
-  g.fillStyle(0x33e6ff, 0.06);
+  g.fillStyle(palette.spawnRingSafe, 0.06);
   g.fillCircle(map.spawnX, map.spawnY, sr);
-  g.lineStyle(3, 0x33e6ff, 0.85);
+  g.lineStyle(3, palette.spawnRingSafe, 0.85);
   g.strokeCircle(map.spawnX, map.spawnY, sr);
 
-  scatterDecor(scene, map);
+  scatterDecor(scene, map, palette);
 }
 
 /** Seeded ground litter (dust drifts + rocks/scrub), kept OFF the pits. Seeded from the map so every
  *  client dresses the floor identically. Low depth — players + enemies render over it. */
-export function scatterDecor(scene: Phaser.Scene, map: ArenaMap): void {
+export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: DimensionPalette): void {
   const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
   const between = (a: number, b: number): number => a + rng.next() * (b - a);
   for (let i = 0; i < 40; i++) {
@@ -164,7 +188,7 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap): void {
     const h = between(110, 240);
     const a = between(0.03, 0.07);
     if (isPitAtPx(map, dx, dy)) continue; // keep the haze centre off the void (matches "kept OFF the pits")
-    scene.add.ellipse(dx, dy, w, h, 0xc49a5a).setAlpha(a).setDepth(-16);
+    scene.add.ellipse(dx, dy, w, h, palette.dustDrift).setAlpha(a).setDepth(-16);
   }
   // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
   // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal

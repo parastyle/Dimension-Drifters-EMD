@@ -4,6 +4,7 @@ export * from "./characters.js";
 export * from "./collision.js";
 export * from "./combat.js";
 export * from "./constants.js";
+export * from "./dimensions.js";
 export * from "./enemies.js";
 export * from "./leveling.js";
 export * from "./mapgen.js";

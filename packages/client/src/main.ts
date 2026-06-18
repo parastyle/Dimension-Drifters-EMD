@@ -1,12 +1,15 @@
 import Phaser from "phaser";
 import { RENDER_DPR } from "./render-dpr.js";
 import { ArenaScene } from "./scenes/ArenaScene.js";
+import { MenuScene } from "./scenes/MenuScene.js";
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game-root",
   backgroundColor: "#1a1320",
-  scene: [ArenaScene],
+  // §17 MenuScene is FIRST → it auto-starts (Phaser starts only the first scene in the list); picking a
+  // dimension calls scene.start("arena", { dimensionId }). ArenaScene stays registered but dormant.
+  scene: [MenuScene, ArenaScene],
   scale: {
     // §28 crispness: the DRAWING BUFFER is the window size × RENDER_DPR (so it matches the physical
     // display), but the canvas is DISPLAYED at the CSS window size (`zoom = 1/RENDER_DPR`). RESIZE mode

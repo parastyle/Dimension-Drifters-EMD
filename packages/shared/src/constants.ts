@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -211,6 +211,19 @@ export const BOSS_SLAM_RADIUS = 150;
 export const BOSS_SLAM_DAMAGE = 22;
 export const BOSS_ADD_CD = 3.5;
 export const BOSS_ADD_COUNT = 2;
+
+/**
+ * §17 DIMENSION SHIFTER incursions — the roaming cross-dimensional antagonists (TimeSplitters-style). One
+ * phases in on the `SHIFTER_INTERVAL` cadence (first at `SHIFTER_FIRST_SECONDS`), HUNTS the squad for its
+ * own `shifter.window`, then rifts back out if it survives. The tier in play escalates with run time —
+ * `floor(elapsed / SHIFTER_TIER_SECONDS)` indexes the tier-ordered roster (Marshal → Ronin → Warden) — and
+ * each successive incursion is `SHIFTER_HP_PER_WAVE` tougher (the "deeper into the chain" ramp). Only one
+ * incursion at a time; held while the dimension BOSS is up. (tuning)
+ */
+export const SHIFTER_FIRST_SECONDS = 28;
+export const SHIFTER_INTERVAL = 42;
+export const SHIFTER_TIER_SECONDS = 45;
+export const SHIFTER_HP_PER_WAVE = 0.12;
 
 /** Greatsword slam (§9 "everything aims at the cursor"): the quake erupts at the CURSOR, but no
  *  farther than this from the character — you slam where you aim, within reach. (tuning) */
