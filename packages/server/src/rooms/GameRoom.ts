@@ -93,7 +93,7 @@ import {
   prevWeapon,
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
-  RESPAWN_SECONDS,
+  REVIVE_HP_FRAC,
   randomSeed,
   resolveBodyCollisions,
   resolvePoiCollision,
@@ -979,30 +979,29 @@ export class GameRoom extends Room<ArenaState> {
       });
     });
 
-    // 7. Always-on regen (§6), death, and POC respawn.
-    this.state.players.forEach((player, id) => {
-      const c = this.combat.get(id);
-      if (!c) return;
-      if (player.alive) {
-        if (player.hp <= 0) {
-          player.hp = 0;
-          player.alive = false;
-          c.respawn = RESPAWN_SECONDS;
-        } else {
-          player.hp = Math.min(player.maxHp, player.hp + deriveStats(player).regen * dt);
-        }
-      } else {
-        c.respawn -= dt;
-        if (c.respawn <= 0) {
-          player.alive = true;
-          player.hp = player.maxHp;
-          player.x = this.map.spawnX;
-          player.y = this.map.spawnY;
-          // Clear the pile that coalesced on the spawn point so respawn isn't instant death.
-          this.clearEnemiesNear(player.x, player.y, RESPAWN_CLEAR_RADIUS);
-        }
+    // 7. Always-on regen (§6) + the §6 REZ-OR-DEAD death model. A player at 0 HP is DOWNED — alive=false,
+    // body persists, NO auto-respawn. They stay down until a rez weapon (Gravedigger's Spade) revives them
+    // (handled in resolveSwing). Living players regen.
+    let anyAlive = false;
+    this.state.players.forEach((player) => {
+      if (!player.alive) return; // downed — waiting for a rez (no auto-respawn)
+      if (player.hp <= 0) {
+        player.hp = 0;
+        player.alive = false; // DOWNED
+        return;
       }
+      anyAlive = true;
+      player.hp = Math.min(player.maxHp, player.hp + deriveStats(player).regen * dt);
     });
+    // §6 WIPE: in a live run, if there are players and NONE are still up, no one can rez → the run is over.
+    if (
+      this.state.mode === "arena" &&
+      this.state.outcome === "active" &&
+      this.state.players.size > 0 &&
+      !anyAlive
+    ) {
+      this.state.outcome = "defeat";
+    }
 
     // §8 Conflagration: fire any deferred burn re-pulses whose delay has elapsed (the "lingering" wave).
     for (let i = this.burnPulses.length - 1; i >= 0; i--) {
@@ -1109,6 +1108,33 @@ export class GameRoom extends Room<ArenaState> {
     // Fired as live projectiles (server-authoritative) — they advance + detonate ON CONTACT in
     // stepProjectiles, so the secondary VFX damage where it actually touches an enemy (#6).
     if (weapon.scatter) this.fireScatter(player, c, weapon);
+
+    // §6 REZ (Gravedigger's Spade): the swing REVIVES the nearest downed ally within range (at 30% HP).
+    if (weapon.rez) this.tryRez(player, weapon.rez.radius);
+  }
+
+  /** §6 try to revive the nearest DOWNED ally within `radius` of the rezzer (the swing's rez effect). The
+   *  ally comes back at `REVIVE_HP_FRAC` of max HP, WHERE THEY FELL, with the spawn pile cleared so they
+   *  don't instantly re-down; `revivedSeq` bumps the client's revive VFX. One rez per swing. */
+  private tryRez(rezzer: PlayerState, radius: number): void {
+    let best: PlayerState | null = null;
+    let bestD = radius * radius;
+    this.state.players.forEach((p) => {
+      if (p.alive || p.id === rezzer.id) return; // only DOWNED allies
+      const dx = p.x - rezzer.x;
+      const dy = p.y - rezzer.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 <= bestD) {
+        bestD = d2;
+        best = p;
+      }
+    });
+    if (!best) return;
+    const ally: PlayerState = best;
+    ally.alive = true;
+    ally.hp = Math.max(1, Math.round(ally.maxHp * REVIVE_HP_FRAC));
+    ally.revivedSeq = (ally.revivedSeq + 1) % 100000;
+    this.clearEnemiesNear(ally.x, ally.y, RESPAWN_CLEAR_RADIUS);
   }
 
   /** §20 advance every in-flight melee swing: sweep the blade across its arc this tick (super-sampled so the

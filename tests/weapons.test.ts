@@ -11,6 +11,8 @@ import {
   prevWeapon,
   REQ_PENALTY_FLOOR,
   REQ_PENALTY_PER_POINT,
+  REVIVE_HP_FRAC,
+  REZ_RADIUS,
   requirementPenalty,
   requirementShortfall,
   sourceDamageMult,
@@ -346,6 +348,33 @@ describe("nextWeapon (§9 cycle)", () => {
     }
     expect(new Set(visited).size).toBe(WEAPON_IDS.length); // no repeats until the wrap
     expect(nextWeapon(cur)).toBe(start); // full loop closes
+  });
+});
+
+describe("Gravedigger's Spade — §6 rez carrier", () => {
+  const spade = WEAPONS["gravediggers-spade"];
+
+  it("exists, is a melee weapon, and carries a rez effect at REZ_RADIUS", () => {
+    expect(spade).toBeDefined();
+    expect(spade?.rez?.radius).toBe(REZ_RADIUS);
+    expect(spade?.tags.classPool).toBe("melee");
+  });
+
+  it("borrows a placeholder sprite (a different real weapon) until bespoke art lands", () => {
+    expect(spade?.sprite).toBeTruthy();
+    expect(spade?.sprite).not.toBe("gravediggers-spade");
+    expect(WEAPONS[spade?.sprite ?? ""]).toBeDefined(); // the placeholder is a real weapon id
+  });
+
+  it("is in the cyclable roster (so it spawns as a Testing-Grounds pickup)", () => {
+    expect(WEAPON_IDS).toContain("gravediggers-spade");
+  });
+
+  it("the revive returns a sane fraction of max HP, floored at 1 (never 0)", () => {
+    expect(REVIVE_HP_FRAC).toBeGreaterThan(0);
+    expect(REVIVE_HP_FRAC).toBeLessThan(1);
+    expect(Math.max(1, Math.round(100 * REVIVE_HP_FRAC))).toBe(30);
+    expect(Math.max(1, Math.round(1 * REVIVE_HP_FRAC))).toBe(1); // tiny maxHp still revives to ≥1
   });
 });
 

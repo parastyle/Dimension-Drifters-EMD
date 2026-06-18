@@ -4,7 +4,13 @@
  * uses to render + animate the weapon in hand. PURE data (no engine/network types). Replaces
  * the hardcoded "fists" placeholder; fists remain as the empty-handed fallback.
  */
-import { FISTS_COOLDOWN, FISTS_DAMAGE, FISTS_HALF_ARC, FISTS_RANGE } from "./constants.js";
+import {
+  FISTS_COOLDOWN,
+  FISTS_DAMAGE,
+  FISTS_HALF_ARC,
+  FISTS_RANGE,
+  REZ_RADIUS,
+} from "./constants.js";
 import type { Attr } from "./leveling.js";
 
 export interface WeaponDef {
@@ -36,6 +42,12 @@ export interface WeaponDef {
   dual?: boolean;
   /** Two-handed: both hands grip the haft (heavy 2H swords). */
   twoHanded?: boolean;
+  /** Held-render sprite override — the manifest id whose sliced parts to draw in-hand, when it differs
+   *  from this weapon's `id` (e.g. a not-yet-arted weapon borrowing an existing sprite as placeholder). */
+  sprite?: string;
+  /** §6 REZ effect — a swing within `radius` of a DOWNED ally REVIVES them (at REVIVE_HP_FRAC of max HP).
+   *  Revival is loot: the Gravedigger's Spade is the M0 rez carrier. The weapon still does its edge damage. */
+  rez?: { radius: number };
   /**
    * Thrown weapon (§10 delivery `thrown`, three-layer use-model): RMB hurls a spinning projectile
    * toward the cursor instead of a melee swing. Each throw spends a CHARGE; when charges deplete the
@@ -435,6 +447,37 @@ export const WEAPONS: Record<string, WeaponDef> = {
       element: "physical",
       classPool: "melee",
       family: "fist",
+      rangeBand: "close",
+      scaling: ["STR"],
+    },
+  },
+  // §6/§15 #10 GRAVEDIGGER'S SPADE — the M0 REZ carrier. A heavy 2H digging spade: a real (if modest) STR
+  // melee whose swing REVIVES a downed ally within REZ_RADIUS at 30% HP. Bespoke spade art is pending
+  // (CODE-21) — for now it borrows the tombstone-greatsword sprite (heavy 2H haft) via `sprite`.
+  "gravediggers-spade": {
+    id: "gravediggers-spade",
+    name: "Gravedigger's Spade",
+    sprite: "tombstone-greatsword", // placeholder art until a bespoke spade is generated
+    scalingGrades: { str: "B" },
+    requirements: { str: 5 },
+    damage: 8,
+    range: 150,
+    halfArc: 0.95,
+    cooldown: 0.6, // a heavy, deliberate dig
+    displayLength: 124,
+    swingArc: 2.7,
+    gripFrac: 0.1,
+    twoHanded: true,
+    durability: 90,
+    rez: { radius: REZ_RADIUS }, // §6 the swing revives a downed ally in range
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "melee-arc",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "spade",
       rangeBand: "close",
       scaling: ["STR"],
     },

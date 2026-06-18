@@ -15,7 +15,8 @@ export class PlayerState extends Schema {
   @type("number") y = 0;
   @type("number") hp = 100;
   @type("number") maxHp = 100;
-  /** Downed players are dead until respawn (POC) / rez (§6). */
+  /** §6 alive flag. `false` = DOWNED — dead until a rez weapon effect revives you (no auto-respawn); the
+   *  body persists in-world + keeps its arsenal, and the player spectate-follows the squad. */
   @type("boolean") alive = true;
   /** Equipped weapon id (keys WEAPONS + the sprite manifest). */
   @type("string") weapon = "rusty-cleaver";
@@ -71,6 +72,9 @@ export class PlayerState extends Schema {
   /** §8 successful-parry counter (Stage C): increments each time this player PARRIES a telegraphed enemy
    *  attack (negates it in the parry window). Synced ONLY as a client VFX trigger (white parry flash). */
   @type("number") parriedSeq = 0;
+  /** §6 rez counter: increments each time this player is REVIVED by a rez weapon (Gravedigger's Spade).
+   *  Synced ONLY as a client VFX trigger (the revive pop) — the heal itself is in `hp`/`alive`. */
+  @type("number") revivedSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

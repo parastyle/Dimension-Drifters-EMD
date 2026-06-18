@@ -280,6 +280,8 @@ export class SpriteRig {
 
   /** §8 Brand augment: a persistent ember-orange tint marking a Marked enemy (takes more damage). */
   private branded = false;
+  /** §6 DOWNED state — fades + grey-tints the rig (it's a body on the ground until a rez revives it). */
+  private downed = false;
 
   /** Toggle the §8 Brand tint. Cheap + idempotent — the scene calls it each frame off the synced state. */
   setBranded(on: boolean): void {
@@ -288,17 +290,26 @@ export class SpriteRig {
     this.restTint();
   }
 
-  /** Re-apply the resting tint (Brand ember-orange, or none). */
+  /** §6 DOWNED look: fade + a cold grey tint (a body on the ground), or restore on revive. */
+  setDowned(on: boolean): void {
+    if (on === this.downed) return;
+    this.downed = on;
+    this.root.setAlpha(on ? 0.5 : 1);
+    this.restTint();
+  }
+
+  /** Re-apply the resting tint (downed grey > Brand ember-orange > none). */
   private restTint(): void {
     for (const p of this.parts) {
-      if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
+      if (this.downed) p.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
       else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     }
   }
 
-  /** Brief white impact flash on every part (§20 hit feedback), then back to the resting tint. */
-  flash(ms = 80): void {
-    for (const p of this.parts) p.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+  /** Brief impact flash on every part (§20 hit feedback / §6 revive pop), then back to the resting tint. */
+  flash(ms = 80, color = 0xffffff): void {
+    for (const p of this.parts) p.setTint(color).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(ms, () => this.restTint());
   }
 

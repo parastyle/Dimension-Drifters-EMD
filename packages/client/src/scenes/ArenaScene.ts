@@ -92,6 +92,8 @@ export class ArenaScene extends Phaser.Scene {
   private telegraphGfx!: Phaser.GameObjects.Graphics;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
+  /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
+  private readonly lastRevived = new Map<string, number>();
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   private keys!: Record<
@@ -490,9 +492,11 @@ export class ArenaScene extends Phaser.Scene {
       if (!rig) return;
       if (this.equipped.get(id) === player.weapon) return;
       const def = WEAPONS[player.weapon];
-      const manifest = SPRITES[player.weapon as keyof typeof SPRITES];
+      // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
+      const spriteId = def?.sprite ?? player.weapon;
+      const manifest = SPRITES[spriteId as keyof typeof SPRITES];
       if (def && manifest) {
-        rig.equipWeapon(player.weapon, def, manifest);
+        rig.equipWeapon(spriteId, def, manifest);
         this.equipped.set(id, player.weapon);
       } else if (def) {
         rig.unequip(def); // §9 fists / any weapon with no held sprite → empty hands
@@ -1385,6 +1389,19 @@ export class ArenaScene extends Phaser.Scene {
   private followSelf(): void {
     const id = this.room?.sessionId;
     if (!id) return;
+    // §6 spectate-follow: while DOWNED, the camera trails a living squadmate (you watch the squad until a
+    // teammate with a rez weapon revives you). Falls back to your own downed body if nobody's up.
+    const me = this.room?.state.players.get(id);
+    if (me && !me.alive) {
+      let target: SpriteRig | undefined;
+      this.room?.state.players.forEach((p, pid) => {
+        if (!target && p.alive && pid !== id) target = this.blobs.get(pid);
+      });
+      if (target) {
+        this.centerCam(target.x, target.y);
+        return;
+      }
+    }
     const self = this.blobs.get(id);
     if (self) this.centerCam(self.x, self.y);
   }
@@ -1447,6 +1464,15 @@ export class ArenaScene extends Phaser.Scene {
       // jump, and later the §8 parry-launch, just raise this value; the client renders whatever height is.
       const pl = this.room?.state.players.get(id);
       blob.setHop(pl?.height ?? 0);
+
+      // §6 DOWNED look + revive pop. A downed body greys out + fades; a rez (revivedSeq tick) pops it green.
+      const alive = pl?.alive ?? true;
+      blob.setDowned(!alive);
+      const rs = pl?.revivedSeq ?? 0;
+      if (this.lastRevived.get(id) !== rs) {
+        if (this.lastRevived.has(id) && alive) blob.flash(170, 0x9cff3b);
+        this.lastRevived.set(id, rs);
+      }
 
       const isSelf = id === selfId;
       blob.animate(this.time.now, {
@@ -1813,9 +1839,20 @@ export class ArenaScene extends Phaser.Scene {
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 
+    // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;
     this.deathText.setVisible(downed);
-    if (downed) this.deathText.setPosition(this.screenW() / 2, this.screenH() / 2);
+    if (downed) {
+      const wiped = this.room?.state.outcome === "defeat";
+      this.deathText
+        .setText(
+          wiped
+            ? "DEFEATED — the squad is down\n(click Restart Run, top-right)"
+            : "DOWNED — a squadmate with a rez weapon\n(Gravedigger's Spade) can revive you",
+        )
+        .setColor(wiped ? "#ff5d5d" : "#ffd479")
+        .setPosition(this.screenW() / 2, this.screenH() / 2);
+    }
   }
 
   /** §9 card carousel: one full infographic card per arsenal weapon (art + stats), fanned at the

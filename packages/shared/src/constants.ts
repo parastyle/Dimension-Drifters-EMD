@@ -90,10 +90,15 @@ export const DEBUG_SPAWN_MAX = 30;
 export const PLAYER_MAX_HP = 100;
 /** Always-on health regen, hp/sec (§6). */
 export const PLAYER_REGEN = 6;
-/** POC convenience respawn; the brutal §6 death rules (rez-or-dead) come with the run loop. */
+/** Legacy POC respawn delay — superseded by the §6 rez-or-dead model (kept only for `restart`). */
 export const RESPAWN_SECONDS = 3;
-/** On respawn, clear enemies within this radius of the spawn point so you don't instantly die. (tuning) */
+/** On revive/restart, clear enemies within this radius so you don't instantly die in the pile. (tuning) */
 export const RESPAWN_CLEAR_RADIUS = 320;
+/** §6 rez-or-dead death model. A downed player is dead until a REZ weapon effect is used on them; the
+ *  revive returns them at `REVIVE_HP_FRAC` of max HP. `REZ_RADIUS` = how close the rez weapon reaches a
+ *  downed ally on a swing. No rezzer (solo, or whole squad down) → the run wipes (`outcome="defeat"`). */
+export const REVIVE_HP_FRAC = 0.3;
+export const REZ_RADIUS = 96;
 
 /** Testing Grounds (§21 hub dummies). Dummy HP resets when depleted so it persists; pickups
  *  equip on walk-over. (tuning) */
