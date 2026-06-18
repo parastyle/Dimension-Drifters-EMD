@@ -18,10 +18,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "D"
@@ -57,10 +54,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "C"
@@ -104,10 +98,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "D"
@@ -143,9 +134,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -180,10 +169,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -224,10 +210,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -275,10 +258,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -314,10 +294,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "scalingGrades": {
         "str": "A",
         "con": "D"
@@ -358,10 +335,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "A",
         "luk": "D"
@@ -397,10 +371,7 @@
       "grip": "1H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -448,9 +419,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -485,10 +454,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "C",
         "int": "B"
@@ -539,10 +505,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -579,10 +542,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "A",
         "str": "E"
@@ -618,9 +578,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "scalingGrades": {
         "str": "A"
       },
@@ -655,10 +613,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "C"
@@ -706,10 +661,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "B"
@@ -757,10 +709,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "A",
         "str": "D"
@@ -808,10 +757,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "B"
@@ -849,10 +795,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a stout frontier camp hatchet — a compact chipped grey iron axe-head with a single bright honed nick on the bit, a short sweat-darkened ash haft bound with worn rawhide at the throat. Crude, brutal, dependable wild-west tool. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: axe-head cutting edge to the RIGHT, rawhide-bound haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -890,9 +833,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a grim executioner's hand-axe — a wide trapezoid iron bit stained dark along the edge, a square poll, a thick oak haft ending in a knotted noose-loop of frayed rope at the butt. Heavy frontier-gallows menace. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: wide axe bit/edge to the RIGHT, rope-knotted haft on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#9E3B36",
@@ -929,10 +870,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a massive two-handed smithy cleaver — a huge rectangular blackened-iron blade with glowing molten-orange heat-cracks worked INTO the metal along the bit (integral red-hot glow, NO emitted heat-haze or flying sparks), a long soot-scorched leather-wrapped haft. Brutal forge-hot frontier slab. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad glowing cleaver edge to the RIGHT, scorched haft/grip on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -983,10 +921,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a long-hafted crescent bardiche of pale blue glacier-iron — a tall sweeping crescent axe-blade edged with a band of frost-white rime, a slender steel haft chased with delicate filigree, a small iron buttspike. Elegant, cold, XL reach. Flat orthographic full side-profile, lots of empty space, ~4-6 colours. Faces RIGHT: crescent blade edge to the RIGHT, filigreed haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -1025,10 +960,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a broad two-handed storm battleaxe — a wide bright-steel double-flared axe-head inlaid with thin copper lightning-conduit lines along the bit (drawn as solid bright cyan lines IN the metal, NOT glowing/arcing off it), a banded oak haft with a copper pommel cap. Frontier storm-iron. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: wide axe bit/edge to the RIGHT, banded haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -1071,9 +1003,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a flawless consecrated execution cleaver — a broad mirror-bright white-gold blade etched with a simple solemn cross-mark, a polished cruciform throat, a pale ivory-wrapped grip with a gold cap. Clean, heavy, judgment-grim. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad mirror bit/edge to the RIGHT, ivory grip on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
@@ -1110,10 +1040,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of compact swamp-iron throwing hatchets presented as one paired weapon — pitted dull-iron bits with a sickly olive-green corrosion film along the edge, knotted vine-wrapped short hafts. Grimy bog-rot menace. Flat orthographic full side-profile, both hatchets parallel, ~4-6 colours. Both face RIGHT: corroded axe edges to the RIGHT, vine-wrapped grips on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -1157,10 +1084,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a jagged void crescent battleaxe — a wide blackened-iron crescent bit whose two horns thin into ragged dark wisps (drawn as solid dark shapes, NOT emitting), a pitted black haft wound with grey cord, a small violet relic-stone set in the throat. Grim cross-dimension darkness. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: crescent void edge to the RIGHT, cord-wound haft on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -1211,10 +1135,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a heavy two-handed miner's poll-axe — one wide chipped iron bit and a blunt squared hammer-poll on the opposite cheek of the same head, ore-flecked, a thick dust-caked oak haft bound with twisted wire. Massive XL frontier mining-iron. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad axe bit/edge to the RIGHT, wire-bound haft on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -1255,9 +1176,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a light frontier belt tomahawk — a slim flared steel bit with a thin spike on the poll, a straight hickory haft with a small bone-and-feather charm tied near the head. Fast, lean, gunslinger sidearm. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: tomahawk bit/edge to the RIGHT, charmed haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#A8482E",
@@ -1300,10 +1219,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of blackened infernal hatchets presented as one paired weapon — cracked dark-iron bits seamed with dull molten-orange glow worked INTO the metal (NO flying sparks, NO heat-haze), short charred leather-wrapped hafts. Brutal twin frontier hellfire-iron. Flat orthographic full side-profile, both parallel, ~4-6 colours. Both face RIGHT: glowing axe edges to the RIGHT, charred grips on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -1342,10 +1258,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): an immense executioner's cleaver carved from a single block of pale blue glacier-ice — a broad faceted translucent ice blade with a frost-white honed edge, a rimed steel collar, a leather-bound grip frosted at the throat. Cold, heavy, eternal. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: faceted ice cleaver edge to the RIGHT, frosted grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -1384,10 +1297,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of weathered frontier war-hatchets presented as one paired weapon — broad scuffed-steel bits with bellied edges, stout tan-leather-wrapped hafts with looped wrist-cords. Rough whirling close-work iron. Flat orthographic full side-profile, both parallel, ~4-6 colours. Both face RIGHT: bellied axe edges to the RIGHT, cord-looped grips on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#C49A5A",
@@ -1426,9 +1336,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a towering ceremonial holy greataxe — a huge broad double-bitted steel head chased with brass filigree and small stained-glass enamel panes, a long banded haft with a brass cross-pommel. Grand, heavy, altar-grim XL. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad double bit/edge to the RIGHT, brass-capped haft on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#FF8A2B",
@@ -1467,9 +1375,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a slim mirror-polished trapper's skinning cleaver — a narrow rectangular bright-steel blade with a delicately curved belly and a finger-notch at the spine, a tidy bone-scale grip pinned with brass rivets. Clean, light, precise frontier blade. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: cleaver edge/point to the RIGHT, bone grip on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#33E6FF",
@@ -1506,10 +1412,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a living-wood felling axe — the axe-head is a single hardened heartwood wedge veined with glowing amber sap and beaded with sickly olive-green rot along the edge, the haft a knotted living branch with small leaf-nubs and bark. Grim cross-dimension nature-iron. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: wooden axe edge to the RIGHT, branch-haft/grip on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -1560,10 +1463,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a colossal two-handed gallows greatcleaver — an enormous rectangular notch-scarred dark-iron slab-blade with a rusted reinforcing rib down the spine, a long sweat-stained leather-wrapped haft with an iron buttcap. Massive grim XL frontier slab. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge cleaver edge to the RIGHT, wrapped haft on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#9E3B36",
@@ -1604,10 +1504,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of cobalt-and-brass shock hatchets presented as one paired weapon — slim bright-steel bits inlaid with thin cyan conduit-lines (solid lines IN the metal, NOT arcing off), short brass-banded hafts with crow-feather charms. Sleek frontier storm-iron. Flat orthographic full side-profile, both parallel, ~4-6 colours. Both face RIGHT: axe edges to the RIGHT, banded grips on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -1650,10 +1547,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): an arcane relic broadaxe — a wide etched-steel bit with a single faceted arc-violet relic-shard fused into the cheek (solid bright shape, NOT emitting glow), a haft wound with rune-inscribed grey cord and a small carved-bone fetish. Grim cross-dimension reliquary-iron. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: broad axe edge to the RIGHT, runed haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
@@ -1704,10 +1598,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a mirror-bright knightly bearded battleaxe — a broad steel head with a deep hooked beard curving down off the bit, a small etched vow-script band at the throat, a polished walnut haft with a steel langet and iron buttcap. Clean disciplined frontier-knight iron. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: bearded axe edge to the RIGHT, walnut haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#CFC6AE",
@@ -1745,10 +1636,7 @@
       "size": "M",
       "rangeBand": "mid",
       "finish": "battle-worn",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "palettePrimary": "#5A6472",
       "paletteAccent": "#A8482E",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a heavy whaler's harpoon scavenged on the frontier — a single rust-flecked steel barb-head with two back-swept hooks, a short coiled rawhide throwing-cord stud near the socket, a sweat-darkened ash haft. Brutal, salt-pitted, dependable. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: barbed harpoon POINT to the RIGHT, corded haft/grip on the LEFT.",
@@ -1791,10 +1679,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "worn",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "palettePrimary": "#6E7042",
       "paletteAccent": "#C49A5A",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a long-hafted frontier glaive — a wide single-edged curved blade pitted and dust-scoured to a dull olive sheen, a sand-worn leather-bound oak haft, a plain iron ferrule cap. Sweeping, gritty, plains-worn. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: glaive blade TIP to the RIGHT, bound haft/grip on the LEFT.",
@@ -1833,10 +1718,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "finish": "battle-worn",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an immense long pike forged from a blackened branding rod — a slender soot-streaked iron spearhead glowing molten ember-orange along its bevels (integral red-hot glow IN the metal, NO emitted haze), a scorched-leather wrapped haft, a heavy iron butt-cap. Reaching, infernal, frontier-forged. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: glowing spearhead POINT to the RIGHT, scorched haft/grip on the LEFT.",
@@ -1873,10 +1755,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "ornate",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#CFC6AE",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a long naginata polearm topped with a gracefully curved blade of pale frost-blued steel, faint rime-white etching of thorned vines along the spine, a dull-teal lacquered haft with bone-white cord wraps. Elegant, cold, drifter-elegant. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: curved naginata blade TIP to the RIGHT, cord-wrapped haft/grip on the LEFT.",
@@ -1913,10 +1792,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "pristine",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a long spear built from a salvaged telegraph pole — a needle-fine polished steel spearhead, three copper conductor-rings banded down a varnished pole, glass insulator-knobs at the socket painted bright cyber-cyan. Crisp, electric, frontier-tech. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: needle spearhead POINT to the RIGHT, copper-ringed pole/grip on the LEFT.",
@@ -1957,10 +1833,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "finish": "ornate",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#FF8A2B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a tall ceremonial frontier halberd — a crescent axe-blade, a needle spike, and a back-hook all in bone-pale silvered steel, a small brass sun-medallion riveted at the socket, a polished oak haft banded in tarnished brass. Solemn, gleaming, preacher-grim. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: halberd axe-crescent and spike to the RIGHT, brass-banded haft/grip on the LEFT.",
@@ -1997,10 +1870,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "worn",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a three-pronged gigging trident from the bayou frontier — three barbed iron tines stained sickly plasma-lime along their points (integral colour IN the metal, NO drips or haze), a moss-darkened wrapped haft, a bog-rotted ferrule. Crude, venomous, swamp-worn. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: three trident PRONGS to the RIGHT, wrapped haft/grip on the LEFT.",
@@ -2037,10 +1907,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "arcane",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a frontier partisan — a broad leaf-shaped spearhead flanked by two upswept side-lugs, arc-violet warding glyphs inlaid along the blade (integral colour IN the metal, NO emitted glow), a dark gunmetal haft wound with violet-dyed cord. Occult, precise, surveyor-arcane. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: winged partisan POINT to the RIGHT, cord-wound haft/grip on the LEFT.",
@@ -2086,10 +1953,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "finish": "arcane",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an impossibly long void-touched pike — a slender matte-black spearhead whose tip fades into a starless arc-violet dark (integral colour IN the metal, NO emitted aura), a charcoal haft flecked with faint violet motes worked into the wrap, a dark iron butt. Eerie, light-drinking, rift-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: void spearhead POINT to the RIGHT, dark haft/grip on the LEFT.",
@@ -2126,10 +1990,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "battle-worn",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#5A6472",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a sturdy boar-hunting spear — a broad leaf-shaped steel head with a forked antler cross-bar lashed below it to stop the thrust, a tan hide-wrapped hickory haft, a worn iron spike-butt. Rugged, plain, hunting-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: broad spear POINT to the RIGHT, antler-barred haft/grip on the LEFT.",
@@ -2166,10 +2027,7 @@
       "size": "XL",
       "rangeBand": "close",
       "finish": "worn",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "palettePrimary": "#3A4049",
       "paletteAccent": "#A8482E",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a colossal frontier bardiche — an enormous long crescent cleaving blade of pitted grey iron streaked with rust, mounted on a thick dust-caked timber haft bound with wire, an iron foot-spike at the butt. Crude, brutal, quarry-forged. MEDIUM detail (large size class), ~5 colours. Flat orthographic full side-profile, faces RIGHT: huge crescent blade EDGE to the RIGHT, wire-bound haft/grip on the LEFT.",
@@ -2208,10 +2066,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "battle-worn",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "palettePrimary": "#A8482E",
       "paletteAccent": "#FF8A2B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a curved single-edged fauchard glaive with an oil-lamp reservoir brazed at the socket — a hooked rust-red blade, a small brass lamp-cup glowing ember-orange (integral glow IN the metal, NO emitted flame), a scorched wrapped haft. Improvised, smouldering, lamp-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: hooked fauchard blade TIP to the RIGHT, lamp-cup haft/grip on the LEFT.",
@@ -2257,10 +2112,7 @@
       "size": "M",
       "rangeBand": "mid",
       "finish": "ornate",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#3C6E6A",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an officer's short spontoon spear — a slim engraved steel spearhead with two small curled side-flukes shaped like coiled snakes, a brass-collared tan-leather grip, a tasselled cord at the socket with a dull-teal venom-sheen on the point. Quick, finesse, frontier-officer. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: coiling spearhead POINT to the RIGHT, brass-collared grip on the LEFT.",
@@ -2296,10 +2148,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "pristine",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a chapel-guard lochaber axe — a long single-edged blade with a pronounced upper hook for pulling, polished off-white steel with a small etched cross near the heel, an oak haft capped in pale brass. Disciplined, clean, guard-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: hooked lochaber blade EDGE to the RIGHT, brass-capped haft/grip on the LEFT.",
@@ -2336,10 +2185,7 @@
       "size": "M",
       "rangeBand": "mid",
       "finish": "worn",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#33E6FF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an ice-fisher's throwing harpoon — a single rime-frosted barbed head of pale frost-blue steel, a coiled hide retrieval-cord at the socket, a weathered driftwood haft crusted with dull-teal frost. Cold, flung, lake-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: frosted barbed POINT to the RIGHT, corded driftwood haft/grip on the LEFT.",
@@ -2382,10 +2228,7 @@
       "size": "XL",
       "rangeBand": "close",
       "finish": "battle-worn",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#22252B",
       "paletteAccent": "#33E6FF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a massive frontier voulge — a heavy broad meat-cleaver-shaped blade of dark scorched steel with cyber-cyan arc-scoring etched along the spine (integral colour IN the metal, NO emitted sparks), a thick iron-banded timber haft. Heavy, storm-charged, plains-forged. MEDIUM detail (large size class), ~5 colours. Flat orthographic full side-profile, faces RIGHT: broad cleaver-blade EDGE to the RIGHT, banded haft/grip on the LEFT.",
@@ -2426,10 +2269,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "battle-worn",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#9E3B36",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a grim ranseur — a central bone spearpoint flanked by two outswept bone side-tines bound with sinew, a yellowed bone-and-iron head on a hide-wrapped haft, a notched iron butt-spike. Savage, trophy-grim, frontier-forged. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: three bone TINES to the RIGHT, sinew-wrapped haft/grip on the LEFT.",
@@ -2466,10 +2306,7 @@
       "size": "M",
       "rangeBand": "mid",
       "finish": "ornate",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#FF8A2B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a blessed throwing pike — a slender gold-washed spearhead etched with a small radiant sun-sigil glowing ember-orange (integral glow IN the metal, NO emitted rays), a tan-leather grip with a brass throwing-collar, a polished ferrule. Radiant, flung, dawn-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: gold sun-spearhead POINT to the RIGHT, collared grip on the LEFT.",
@@ -2512,10 +2349,7 @@
       "size": "L",
       "rangeBand": "mid",
       "finish": "organic",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a plague-rotted pitchfork glaive — a curved twin-tined head fused with fungal growths and plasma-lime mould (integral colour IN the matter, NO emitted spores), a gnarled living-wood haft veined sickly green, a root-bound butt. Diseased, organic, swamp-frontier. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: rotted twin-tine head to the RIGHT, gnarled haft/grip on the LEFT.",
@@ -2561,10 +2395,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "finish": "arcane",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an impossibly long void naginata — an extreme-length slender curved blade of dark gunmetal whose far edge dissolves into starless arc-violet nothing (integral colour IN the metal, NO emitted aura), a small iron disc-collar and a charcoal cord-wrapped haft on the far left. EMPHASIZE extreme length and a very NARROW blade with lots of empty space around it. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: long curved blade TIP to the RIGHT, collared haft/grip on the LEFT.",
@@ -2601,9 +2432,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a colossal two-handed demolition maul scavenged from a frontier mine — a blocky square iron sledge-head pitted and dust-grey, banded with riveted steel straps, a thick scorched-oak haft bound in frayed wire near the base. Brutal, heavy, town-flattening. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: massive sledge HEAD to the RIGHT, wire-bound haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -2640,10 +2469,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a one-handed ball-and-chain flail — a knotted spiked iron ball at the end of three rusty oxidized chain links, fused to a stubby leather-wrapped wooden handle with an iron end-cap. Tangled, whirling, frontier-crude. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: spiked ball business-end to the RIGHT trailing the chain, wrapped handle/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#A8482E",
@@ -2680,10 +2506,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite: a one-handed judge's warhammer shaped like an oversized courtroom gavel — a polished dark-walnut cylindrical head ringed with tarnished brass bands and a faint bone-white inlaid cross, a short turned grip with a domed brass pommel. Solemn, sentencing, frontier-justice. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: gavel HEAD to the RIGHT, turned grip/pommel on the LEFT.",
       "palettePrimary": "#5b4636",
       "paletteAccent": "#CFC6AE",
@@ -2720,10 +2543,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a swinging thurible-flail — a perforated corroded brass censer ball crusted with sickly olive fungus and dull-teal verdigris, hung on two short tarnished chain links from a bone-handled grip. A mercury-poison incense bludgeon. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: perforated censer ball business-end to the RIGHT on its chain, bone grip on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#3C6E6A",
@@ -2769,10 +2589,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a two-handed railroad spike-driving sledge whose blunt iron head is wound with frayed copper wire and a dull cyan-tinged conductor coil set into the steel (the spark is engine VFX, not painted), a long sweat-darkened hickory haft. A storm-charged work maul. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: coil-wound sledge HEAD to the RIGHT, hickory haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -2813,10 +2630,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a colossal two-handed maul whose head is a frost-rimed granite grave-marker slab of pale blue-white ice-veined stone, a faint chiselled cross worn smooth, lashed to a frost-cracked oak haft with rope gone stiff and white. Cold, funereal, crushing. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: frozen headstone HEAD to the RIGHT, lashed haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#E8E4D8",
@@ -2855,10 +2669,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a one-handed morningstar — a round iron ball studded with long fang-like spikes, the tips stained a dull-teal venom sheen, set on a short rust-flecked iron shaft wrapped in cracked rattlesnake-hide. Vicious frontier sidearm. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: spiked ball HEAD to the RIGHT, hide-wrapped shaft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#3C6E6A",
@@ -2895,9 +2706,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite: a heavy two-handed brazier-flail — a blackened cast-iron fire-cage ball packed with smouldering ember-orange coals (integral glow in the metal, NO emitted flame or sparks), swung on a long thick chain from an iron-banded oak pole. A swinging furnace. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: ember-cage ball business-end to the RIGHT trailing the long chain, banded pole/grip on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -2941,10 +2750,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite: an absurd two-handed maul whose head is a whole dented blacksmith's anvil — pitted dark iron with a worn horn and a chipped face, lashed sideways to a stout splintered timber haft with thick rope. Comically heavy, frontier-forge brutal. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: anvil HEAD to the RIGHT (horn pointing right), roped timber haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#5A6472",
@@ -2983,10 +2789,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: a matched pair of small bludgeoning fist-maces, each a knot of fused dark bone-knuckles and pitted iron forming a heavy striking head, the bone edges fading into starless void-black at the tips (the void wisp is engine VFX). Quick paired smashers. Flat orthographic full side-profile, ~4-6 colours. Both face RIGHT: bone-knuckle striking heads to the RIGHT, short grips on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#22252B",
@@ -3023,10 +2826,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a two-handed mace whose head is a small cast church bell of tarnished brass with a bone-white painted cross and a heavy iron clapper hanging inside, mounted on a polished walnut haft with a braided rope grip. A tolling holy bludgeon. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: bell HEAD to the RIGHT, rope-braided haft/grip on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#E8E4D8",
@@ -3065,10 +2865,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a stubby blunt-nosed hand-cannon built into a maul head — a fat dark-iron percussion-cannon barrel forming the striking face, a riveted breech block, a short leather-wrapped pistol grip with a domed pommel. Fires a heavy concussion slug. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: blunt cannon MUZZLE/striking face to the RIGHT, wrapped pistol grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -3124,10 +2921,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a brutish two-handed scrap-cannon with a wide flared blunt muzzle, a bulging hopper of loose iron slag and gravel feeding the breech, a battered steel shoulder-stock and bound-wire fore-grip. Spits a spray of crushing scrap. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: flared blunt MUZZLE to the RIGHT, shoulder-stock/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#6E7042",
@@ -3179,10 +2973,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite: a two-handed warhammer with a broad flat-faced iron head and a stubby back-spike, the head caked in pale desert dust, the long ash haft bound in worn olive cord with an iron foot-spike at the base. A plains-quake hammer. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: flat hammer HEAD and back-spike to the RIGHT, cord-bound haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -3221,10 +3012,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: a one-handed triple-headed scourge flail — three short rusty chains each ending in a small barbed iron locust-shaped weight, fused to a leather-wrapped bone handle with an iron ferrule. A swarming whirl of heads. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: the three barbed locust weights business-end to the RIGHT on their chains, wrapped handle/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#6E7042",
@@ -3261,10 +3049,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a grand two-handed relic warhammer — a great brass-and-bone head cast as a reliquary box with a glowing bone-white inlaid sunburst sigil (integral bright shape, NO emitted glow), filigreed bands, a long pale-wood haft wrapped in clean white cord with a cross-shaped pommel. Cathedral-grade judgment. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: reliquary HEAD to the RIGHT, cord-wrapped haft/cross-pommel on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#E8E4D8",
@@ -3303,10 +3088,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a short one-handed club carved from a thick gnarled buzzard leg-bone, knobbed at the striking end with jagged broken-off bone spurs stained sickly olive, the grip wrapped in dried sinew. A rotting carrion bludgeon. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: knobbed bone striking head to the RIGHT, sinew-wrapped grip on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#6E7042",
@@ -3343,10 +3125,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a two-handed piston-maul — a heavy cylindrical steel ram-head sleeved in pale frost-rimed brass with a stepped piston shaft, a long gunmetal haft wrapped in stiff white-frosted cord. A cold mining piledriver. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: cylindrical ram HEAD to the RIGHT, frosted haft/grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -3385,10 +3164,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: a small one-handed throwing hammer-tomahawk — a blunt iron hammer-poll on one side and a stubby flat striking face on the other, the head wound with thin frayed copper wire (the spark is engine VFX), a short rawhide-wrapped wooden handle with a thong loop. A balanced throwing bludgeon. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: hammer HEAD to the RIGHT, rawhide handle/thong on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -3431,10 +3207,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "artPrompt": "Weapon-only in-world sprite: an enormous two-handed wrecking-ball flail — a massive pitted dark-iron demolition sphere on a length of thick heavy oxidized chain, anchored to a riveted steel haft with a reinforced cross-brace handle. Devastating, swinging ruin. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: huge iron wrecking-ball business-end to the RIGHT trailing the heavy chain, braced steel haft/grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#5A6472",
@@ -3474,10 +3247,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a long braided rawhide bullwhip studded with small rattler-fang barbs along its coil, a worn leather hand-grip on the FAR LEFT and the cracking lash tail trailing to the FAR RIGHT with a faint dull-teal venom sheen on the barbs. Gritty Wild-West cross-dimension drifter gear, flat orthographic full side-profile, ~4-6 colours (tan, rust, charcoal, dull-teal, bone). Faces RIGHT: lash/business end to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#3C6E6A",
@@ -3514,10 +3284,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a living bramble-vine whip of twisted olive-green woody cord bristling with hooked thorns, a knotted root hand-grip on the FAR LEFT and the thorned vine-tail trailing to the FAR RIGHT, faint amber sap-beads on the thorns. Organic gritty style, flat orthographic full side-profile, ~4-6 colours (olive, tan, charcoal, ember-orange sap, bone). Faces RIGHT: thorned vine end to the RIGHT, root grip on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#FF8A2B",
@@ -3554,9 +3321,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "shock",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a frayed copper-cored bullwhip wound with scuffed black insulating tape, a steel cracker bead at the tip, a worn grip on the FAR LEFT and the braided lash trailing to the FAR RIGHT. Exposed copper strands glint cyber-cyan as a solid bright shape (NO emitted glow). Gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (charcoal, rust-copper, steel, cyber-cyan, bone). Faces RIGHT: cracker/lash end to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -3596,10 +3361,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "physical",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a cat-o-nine-tails flail-whip — a wrapped leather handle on the FAR LEFT splitting into nine knotted leather thongs fanning to the FAR RIGHT, each thong tipped with a small honed steel razor-shard. Gritty, brutal Wild-West style, flat orthographic full side-profile, ~4-6 colours (charcoal, rust, steel, bone, off-white). Faces RIGHT: the nine razor-tipped tails to the RIGHT, handle on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#CFC6AE",
@@ -3646,10 +3408,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "physical",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a long two-handed harvest scythe — a curved wooden snaith haft running across the frame with two peg hand-grips, capped by a wide sweeping crescent steel blade. The notched blade curves so its point aims to the FAR RIGHT, snaith butt on the FAR LEFT. Battle-worn oil-darkened steel, gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (tan wood, steel, charcoal, rust, bone). Faces RIGHT: scythe blade/point to the RIGHT, haft butt on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#C49A5A",
@@ -3687,10 +3446,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "void",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a death-reaper's scythe — a blackened iron haft wrapped in short lengths of rusted chain running across the frame, capped with a broad crescent blade of dark void-iron whose edge is a thin solid arc-violet line (NO emitted glow). Haft butt on the FAR LEFT, blade point to the FAR RIGHT. Grim arcane Darkest-Dungeon weight, flat orthographic full side-profile, ~4-6 colours (charcoal, gunmetal, rust, arc-violet, bone). Faces RIGHT: scythe blade/point to the RIGHT, chained haft on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -3728,9 +3484,7 @@
       "size": "S",
       "rangeBand": "close",
       "element": "frost",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a small one-handed sickle — a short wrapped grip on the FAR LEFT and a tight curved crescent blade hooking to the FAR RIGHT, the pale steel inner edge furred with a solid pale-blue rime of frost (NO emitted glow). Pristine but gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (off-white steel, dull-teal frost, charcoal, bone, tan). Faces RIGHT: sickle hook/point to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#3C6E6A",
@@ -3766,10 +3520,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "element": "holy",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a long XL twin-crescent war-scythe — a slender silvered haft running the FULL width of the frame with two crescent blades, one at EACH end, the larger leading crescent point aimed to the FAR RIGHT and a smaller back-crescent on the FAR LEFT. Ornate filigree chasing on the blades, off-white and silver steel. Gritty grim style, flat orthographic full side-profile, ~4-6 colours (off-white, steel, bone, tan, charcoal). Faces RIGHT: leading scythe blade/point to the RIGHT, back-crescent on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#E8E4D8",
@@ -3807,10 +3558,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a two-handed threshing scythe with a knotted living-wood haft running across the frame and a wide rusted crescent blade, clusters of bulbous olive-green fungal spore-pods sprouting along the blade's spine. Haft butt on the FAR LEFT, blade point to the FAR RIGHT. Organic grimy style, flat orthographic full side-profile, ~4-6 colours (olive, rust, charcoal, plasma-lime pods, bone). Faces RIGHT: scythe blade/point to the RIGHT, haft on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -3850,9 +3598,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "physical",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a scythe built from bone — a long pale femur haft running across the frame bound with cracked sinew cord, capped by a curved sharpened rib-bone forming the crescent blade. Haft butt on the FAR LEFT, bone-blade point to the FAR RIGHT. Worn yellowed bone, grim gritty style, flat orthographic full side-profile, ~4-6 colours (bone, off-white, tan, charcoal, rust). Faces RIGHT: bone scythe-blade/point to the RIGHT, femur haft on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#C49A5A",
@@ -3888,10 +3634,7 @@
       "size": "S",
       "rangeBand": "close",
       "element": "frost",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of beast-claw gauntlets presented as one paired weapon, each a hide-strapped knuckle plate on the LEFT sprouting four long curved antler-bone talons hooking to the RIGHT, the talon tips furred with pale-blue frost rime (solid colour, NO glow). Organic gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (bone, hide-tan, dull-teal frost, charcoal, off-white). Both claws face RIGHT: talon points to the RIGHT, knuckle straps on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#3C6E6A",
@@ -3929,10 +3672,7 @@
       "size": "S",
       "rangeBand": "close",
       "element": "physical",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of scavenged punch-claws as one paired weapon, each a worn brass-knuckle frame on the LEFT welded with three hooked railroad-spike talons curving to the RIGHT, pitted iron and tarnished brass. Gritty Wild-West salvage, flat orthographic full side-profile, ~4-6 colours (rust, tan-brass, charcoal, steel, bone). Both claws face RIGHT: spike-talon points to the RIGHT, knuckle frames on the LEFT.",
       "palettePrimary": "#A8482E",
       "paletteAccent": "#C49A5A",
@@ -3970,9 +3710,7 @@
       "size": "M",
       "rangeBand": "close",
       "element": "shock",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a single forearm vambrace weapon — a scuffed gunmetal bracer cuff on the FAR LEFT mounting three long forward-jutting steel rend-blades fanned out to the RIGHT, a thin copper coil wired along the cuff glinting cyber-cyan as a solid bright line (NO emitted glow). Battle-worn gritty style, flat orthographic full side-profile, ~4-6 colours (gunmetal, steel, charcoal, cyber-cyan, copper-rust). Faces RIGHT: rend-blade points to the RIGHT, bracer cuff on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -4008,10 +3746,7 @@
       "size": "S",
       "rangeBand": "close",
       "element": "arcane",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a matched PAIR of crystal claw-rakes as one paired weapon, each grown from a chunk of faceted violet quartz — a crystalline grip-knob on the LEFT splitting into three sharp faceted talons to the RIGHT, the quartz a solid arc-violet (NO emitted glow). Arcane gritty style, flat orthographic full side-profile, ~4-6 colours (arc-violet, charcoal, steel, off-white facets, bone). Both rakes face RIGHT: crystal talon points to the RIGHT, grip-knobs on the LEFT.",
       "palettePrimary": "#B14BFF",
       "paletteAccent": "#5A6472",
@@ -4049,10 +3784,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "physical",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a chain-blade — a worn leather hand-grip on the FAR LEFT, a long length of heavy oxidized iron chain running across the frame, ending in a broad chipped cleaver-blade on the FAR RIGHT. Gritty Wild-West battle-worn steel, flat orthographic full side-profile, ~4-6 colours (rust, charcoal, steel, bone, tan). Faces RIGHT: cleaver-blade to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#A8482E",
@@ -4092,10 +3824,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "fire",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a segmented fire chain-whip — a scorched leather grip on the FAR LEFT, a chain of blackened iron links each socketing a small molten ember-orange coal (solid hot colour IN the metal, NO emitted glow), ending in a hooked blade-tip on the FAR RIGHT. Battle-worn grimy style, flat orthographic full side-profile, ~4-6 colours (charcoal, ember-orange, rust, steel, bone). Faces RIGHT: hooked blade-tip to the RIGHT, grip on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -4142,9 +3871,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "holy",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a flowing chainblade — a polished hilt with a small disc-guard on the FAR LEFT, a mirror-bright sabre blade that breaks mid-length into a flowing chain of bright silver links, reassembling into a needle point on the FAR RIGHT. Pristine off-white steel, gritty style, flat orthographic full side-profile, ~4-6 colours (off-white, steel, bone, tan, charcoal). Faces RIGHT: blade/chain point to the RIGHT, hilt on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#CFC6AE",
@@ -4180,10 +3907,7 @@
       "size": "M",
       "rangeBand": "long",
       "element": "physical",
-      "scaling": [
-        "STR",
-        "LUK"
-      ],
+      "scaling": ["STR", "LUK"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a meteor-hammer — a worn rope hand-loop on the FAR LEFT, a long coiled rope-and-chain running across the frame, ending in a heavy spiked iron ball-weight on the FAR RIGHT. Gritty Wild-West salvage, flat orthographic full side-profile, ~4-6 colours (rust, tan-rope, charcoal, steel, bone). Faces RIGHT: spiked iron weight to the RIGHT, rope-loop grip on the LEFT.",
       "palettePrimary": "#A8482E",
       "paletteAccent": "#3A4049",
@@ -4226,10 +3950,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "physical",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a kusarigama laid flat — a wrapped wooden grip with a curved steel hand-sickle hooking up on the FAR LEFT, a long weighted iron chain running across the frame to a small iron counterweight ball on the FAR RIGHT. Weathered gritty Wild-West style, flat orthographic full side-profile, ~4-6 colours (tan wood, steel, charcoal, rust, bone). Faces RIGHT: chain counterweight to the RIGHT, sickle grip on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#C49A5A",
@@ -4267,10 +3988,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "shock",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): a storm kusarigama-flail — a wrapped grip with a curved steel sickle hooking up on the FAR LEFT, a long iron chain running across the frame splitting into TWO chains each ending in a spiked iron weight on the FAR RIGHT, a thin copper wire along the chain glinting cyber-cyan as a solid line (NO glow). Battle-worn gritty style, flat orthographic full side-profile, ~4-6 colours (steel, charcoal, rust, cyber-cyan, tan). Faces RIGHT: chained weights to the RIGHT, sickle grip on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -4311,10 +4029,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "D"
@@ -4363,10 +4078,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "D"
@@ -4415,10 +4127,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -4468,10 +4177,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -4525,10 +4231,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "D"
@@ -4577,9 +4280,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -4627,10 +4328,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "C"
@@ -4679,10 +4377,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -4732,10 +4427,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "C"
@@ -4785,10 +4477,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "LUK",
-        "DEX"
-      ],
+      "scaling": ["LUK", "DEX"],
       "scalingGrades": {
         "luk": "A",
         "dex": "C"
@@ -4838,9 +4527,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -4888,10 +4575,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "C"
@@ -4945,10 +4629,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -4998,10 +4679,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "LUK",
-        "DEX"
-      ],
+      "scaling": ["LUK", "DEX"],
       "scalingGrades": {
         "luk": "B",
         "dex": "C"
@@ -5052,9 +4730,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -5102,10 +4778,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -5159,10 +4832,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "D"
@@ -5212,10 +4882,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "C"
@@ -5265,9 +4932,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -5315,10 +4980,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -5368,10 +5030,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character): a weathered frontier lever-action rifle — a long octagonal blued-steel barrel, a brass loading-gate receiver gone dull, a sweat-darkened walnut stock and a big curled finger-loop lever under the breech. Dependable trail-worn iron. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, walnut stock and curled lever on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -5418,9 +5077,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a short saddle-ring carbine cut down for fast work — a stubby round barrel, a scuffed steel receiver with a worn saddle-ring on the side, a compact bone-pale hardwood stock and a small loop lever. Quick frontier repeater. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, pale stock and loop lever on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#CFC6AE",
@@ -5465,9 +5122,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a precise bolt-action marksman rifle — a long slim fluted barrel, a clean gunmetal receiver with a swept-back bolt handle, a slender brass spotting-scope clamped over the breech, an off-white composite stock. Surgical and steady. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, scope and stock and bolt on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -5513,10 +5168,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a long anti-materiel railgun cobbled from frontier salvage — twin parallel rails running the full length over a bone-white ceramic shell, a stack of brass capacitor rings near the breech, a heavy shoulder-stock. Solid, drawn-out, gleaming. MEDIUM detail, ~6 colours. Faces RIGHT: paired rails and MUZZLE to the RIGHT, capacitor rings and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#FF8A2B",
@@ -5564,10 +5216,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a lever-action repeater rechambered for darkness — a matte obsidian-black octagonal barrel, an arc-violet inlaid receiver with a starless aperture at the breech, a charcoal grip-stock and a slim lever. Cold, hungry, frontier-occult. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, violet-inlaid receiver and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -5615,9 +5264,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: an elegant long marksman rifle plated in frost-blued steel with silver scroll-engraving down the receiver, a slim fluted barrel rimed pale, a polished pale-bone cheekpiece on the stock. Cold and precise. MEDIUM detail, ~6 colours. Faces RIGHT: fluted barrel MUZZLE to the RIGHT, engraved receiver and bone cheekpiece on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -5663,10 +5310,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a brass-and-cobalt lever rifle wound with coil-wire down the barrel — a polished brass receiver, copper coil rings spiralling the blued barrel, a dark lacquered stock and a wide finger-loop lever. Crackling frontier-storm iron. MEDIUM detail, ~6 colours. Faces RIGHT: coil-wound barrel MUZZLE to the RIGHT, brass receiver and stock and loop on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#33E6FF",
@@ -5714,10 +5358,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: a heavy long-barrelled frontier longrifle scorched from use — a soot-blackened octagonal barrel with ember-orange heat-cracks worked into the metal, a rust-pitted receiver, a charred walnut stock with iron furniture. Hot, brutal, slow. MEDIUM detail, ~5 colours. Faces RIGHT: long barrel MUZZLE to the RIGHT, charred stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -5769,9 +5410,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a lever-action repeater grown over a snake-spine — a barrel of fused vertebrae sheathed in dull bone, an olive-resin receiver dripping a sickly green sheen, a sinew-wrapped stock and a fanged lever. Grim frontier organ-iron. MEDIUM detail, ~5 colours. Faces RIGHT: vertebrae barrel MUZZLE to the RIGHT, resin receiver and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -5817,9 +5456,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a slim ceremonial carbine of bone-white steel chased with thin gold scrollwork, a polished short barrel, a small gilded sight-bead at the muzzle, an off-white stock with a brass butt-plate. Clean, sanctified, frontier-honor-guard. MEDIUM detail, ~6 colours. Faces RIGHT: barrel MUZZLE and gold bead to the RIGHT, white stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
@@ -5865,10 +5502,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a massive single-shot big-bore buffalo gun — an enormous heavy octagonal barrel, a tall iron breech-block lever, a thick brass-capped hardwood stock and a wide trigger-guard. Hand-cannon of the plains. MEDIUM detail, ~5 colours. Faces RIGHT: huge barrel MUZZLE to the RIGHT, breech-block and thick stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#C49A5A",
@@ -5916,10 +5550,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a sleek gauss coilrifle in brushed rose-steel — a long smooth barrel ringed by stacked arc-violet coil-bands, a filigree-etched receiver, a slim composite stock. Humming frontier-future precision iron. MEDIUM detail, ~6 colours. Faces RIGHT: coil-ringed barrel MUZZLE to the RIGHT, etched receiver and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#B14BFF",
@@ -5967,10 +5598,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a rugged pump-action slug rifle scarred from skirmishes — a rust-mottled barrel, a sliding wooden fore-grip pump under the barrel, a chipped steel receiver and a battered stock. Workmanlike, dependable, grimy. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, pump fore-grip and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#A8482E",
       "paletteAccent": "#3A4049",
@@ -6017,10 +5645,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "artPrompt": "Weapon-only in-world sprite: a long spectral railgun of black-iron and tarnished silver — twin dark rails running the full length, a starless aperture-cavity at the breech with arc-violet edging, a grey bone-inlaid stock. Eerie occult-frontier reach-iron. MEDIUM detail, ~6 colours. Faces RIGHT: dark rails and MUZZLE to the RIGHT, aperture-breech and inlaid stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -6068,9 +5693,7 @@
       "grip": "dual",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a matched pair of short lever carbines fired akimbo, presented as one paired weapon (one per hand) — sleek pearl-grey barrels, brass receivers etched with rattlesnake coils, dark loop levers, stubby stocks. Both carbines face RIGHT: barrel MUZZLES to the RIGHT, loop levers and stocks on the LEFT; flat orthographic full side-profile, the pair stacked.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -6116,9 +5739,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "artPrompt": "Weapon-only in-world sprite: an oversized iron punt-rifle that fires bursting slugs — a very long wide-bore barrel, a riveted breech-drum near the receiver, a thick scuffed stock with a leather cheek-pad. A wall-gun on a man's shoulder. MEDIUM detail, ~5 colours. Faces RIGHT: wide-bore barrel MUZZLE to the RIGHT, breech-drum and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#FF8A2B",
@@ -6168,9 +5789,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "artPrompt": "Weapon-only in-world sprite: a long weathered bolt-action longgun gone ghost-pale — a frost-bleached barrel, a worn steel receiver with a straight bolt handle, a sun-bleached bone-white stock cracked with age. Dead-quiet hunter's iron. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, bolt and pale stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#3C6E6A",
@@ -6216,10 +5835,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: an ornate ceremonial volley rifle — a polished gold-chased receiver with floral engraving, a blued barrel cluster, a deep-walnut stock with brass inlay and a gleaming loop lever. Parade-ground showpiece, frontier-regal. MEDIUM detail, ~6 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, engraved receiver and inlaid stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#E8E4D8",
@@ -6269,10 +5885,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "artPrompt": "Weapon-only in-world sprite: a long hex-marked witchrifle — a charcoal barrel scribed with faint arc-violet sigils, a receiver socketed with a single dull amethyst, a dark bone-grey stock bound in cord. Occult-frontier hex-iron. MEDIUM detail, ~5 colours. Faces RIGHT: sigil-scribed barrel MUZZLE to the RIGHT, amethyst receiver and stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
@@ -6320,10 +5933,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "artPrompt": "Weapon-only in-world sprite: a grimy lever repeater caked in ash and bone-dust — a pitted grey barrel, an olive-stained receiver with a worn loading-gate, a sweat-darkened stock wrapped in cracked hide and a heavy loop lever. Plague-trail frontier iron. MEDIUM detail, ~5 colours. Faces RIGHT: barrel MUZZLE to the RIGHT, stained receiver and wrapped stock on the LEFT; flat orthographic full side-profile.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -6375,10 +5985,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -6427,10 +6034,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "D"
@@ -6478,10 +6082,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "C",
         "int": "C"
@@ -6535,10 +6136,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -6588,10 +6186,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -6641,10 +6236,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -6698,9 +6290,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "B"
       },
@@ -6748,10 +6338,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -6801,10 +6388,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -6854,10 +6438,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "C",
         "luk": "C"
@@ -6905,9 +6486,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "scalingGrades": {
         "str": "A"
       },
@@ -6954,10 +6533,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -7006,10 +6582,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -7063,10 +6636,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -7120,10 +6690,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "C",
         "luk": "C"
@@ -7174,10 +6741,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -7226,10 +6790,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "C",
         "int": "C"
@@ -7279,10 +6840,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "C",
         "luk": "C"
@@ -7331,10 +6889,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "C",
         "str": "C"
@@ -7384,10 +6939,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "D"
@@ -7436,10 +6988,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "D"
@@ -7487,9 +7036,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "scalingGrades": {
         "str": "A"
       },
@@ -7538,10 +7085,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "C"
@@ -7591,10 +7135,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -7645,10 +7186,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "B"
@@ -7699,10 +7237,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "C",
         "dex": "C"
@@ -7754,10 +7289,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "C",
         "str": "C"
@@ -7805,10 +7337,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "LUK"
-      ],
+      "scaling": ["STR", "LUK"],
       "scalingGrades": {
         "str": "B",
         "luk": "D"
@@ -7859,10 +7388,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -7910,10 +7436,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -7964,9 +7487,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "STR"
-      ],
+      "scaling": ["STR"],
       "scalingGrades": {
         "str": "A"
       },
@@ -8011,10 +7532,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "D"
@@ -8065,10 +7583,7 @@
       "grip": "mounted",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "B"
@@ -8119,9 +7634,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -8170,10 +7683,7 @@
       "grip": "dual",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "C",
         "str": "C"
@@ -8226,10 +7736,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -8281,10 +7788,7 @@
       "grip": "mounted",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "CON"
-      ],
+      "scaling": ["STR", "CON"],
       "scalingGrades": {
         "str": "A",
         "con": "D"
@@ -8335,10 +7839,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "C",
         "int": "C"
@@ -8391,10 +7892,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "scalingGrades": {
         "int": "B",
         "str": "D"
@@ -8445,10 +7943,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "LUK",
-        "STR"
-      ],
+      "scaling": ["LUK", "STR"],
       "scalingGrades": {
         "luk": "B",
         "str": "C"
@@ -8500,10 +7995,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "D"
@@ -8555,10 +8047,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "C"
@@ -8611,10 +8100,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "A",
         "str": "C"
@@ -8666,9 +8152,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "B"
       },
@@ -8717,10 +8201,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "B",
         "dex": "C"
@@ -8772,10 +8253,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "C",
         "luk": "C"
@@ -8828,10 +8306,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "C"
@@ -8887,10 +8362,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -8942,10 +8414,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "C"
@@ -8997,10 +8466,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "LUK"
-      ],
+      "scaling": ["DEX", "LUK"],
       "scalingGrades": {
         "dex": "B",
         "luk": "B"
@@ -9053,10 +8519,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "A",
         "int": "C"
@@ -9108,10 +8571,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "C"
@@ -9163,10 +8623,7 @@
       "grip": "2H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "DEX",
-        "STR"
-      ],
+      "scaling": ["DEX", "STR"],
       "scalingGrades": {
         "dex": "B",
         "str": "C"
@@ -9220,10 +8677,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "B"
@@ -9275,10 +8729,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "LUK",
-        "DEX"
-      ],
+      "scaling": ["LUK", "DEX"],
       "scalingGrades": {
         "luk": "B",
         "dex": "C"
@@ -9332,9 +8783,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ],
+      "scaling": ["DEX"],
       "scalingGrades": {
         "dex": "A"
       },
@@ -9383,10 +8832,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "STR",
-        "INT"
-      ],
+      "scaling": ["STR", "INT"],
       "scalingGrades": {
         "str": "B",
         "int": "B"
@@ -9442,10 +8888,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "DEX",
-        "INT"
-      ],
+      "scaling": ["DEX", "INT"],
       "scalingGrades": {
         "dex": "B",
         "int": "D"
@@ -9497,10 +8940,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "LUK",
-        "DEX"
-      ],
+      "scaling": ["LUK", "DEX"],
       "scalingGrades": {
         "luk": "A",
         "dex": "C"
@@ -9553,10 +8993,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "long",
-      "scaling": [
-        "STR",
-        "DEX"
-      ],
+      "scaling": ["STR", "DEX"],
       "scalingGrades": {
         "str": "A",
         "dex": "C"
@@ -9612,9 +9049,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a heavy spellbook grimoire held open mid-air, its split-tongue motif spine and crackling forked-rune pages reading as a lightning tome. A worn dark-charcoal leather cover (#22252B) with steel-grey corner caps (#5A6472), arc-violet rune-glyphs inked across the open off-white pages (#E8E4D8 / #B14BFF), a small cyber-cyan focus-gem set in the spine (#33E6FF). Flat orthographic full side-profile, the book's OPEN FORE-EDGE / casting face to the RIGHT, the bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline, gritty Wild-West cross-dimension grimoire. No emitted glow, no particles.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -9653,9 +9088,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an ornate filigreed grimoire flowering open like a many-petalled bloom, gilt-tan scrollwork (#C49A5A) framing a deep steel-grey cover (#5A6472), arc-violet sigil-petals fanning across off-white pages (#B14BFF / #E8E4D8). A floating arc-violet focus-bead hovers a hair above the open fore-edge. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven hand-drawn outline. No emitted glow, no particles.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#B14BFF",
@@ -9700,9 +9133,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a grimoire whose open pages are a solid matte void — flat starless black sheets (#22252B) bound in tarnished steel clasps (#5A6472), arc-violet rune-stitching running the gutter (#B14BFF), the cover bone-pale and cracked (#CFC6AE). The open spread reads as a hole cut out of the world. Flat orthographic full side-profile, open void fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No emitted glow, no rays, no particles.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -9740,9 +9171,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a scorched spellbook with ember-rimmed pages, the dark gunmetal cover blistered and heat-cracked (#3A4049), brass-tan corner straps (#C49A5A), molten ember-orange glyphs branded across the singed off-white pages (#FF8A2B / #E8E4D8). The page edges read charred and curled. Flat orthographic full side-profile, open burning fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No flame, no smoke, no emitted glow.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#FF8A2B",
@@ -9786,9 +9215,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a small pristine folio bound in pale frost-glazed leather, its pages stiff sheets of clear blue ice. Off-white cover (#E8E4D8) with steel-grey hinges (#5A6472), dull-teal frostwork etched into the icy pages (#3C6E6A), a cyber-cyan snow-gem on the clasp (#33E6FF). Crisp, cold, compact. Flat orthographic full side-profile, open frosted fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No mist, no emitted glow, no particles.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#33E6FF",
@@ -9833,9 +9260,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a large two-clasp storm-grimoire, brass-tan binding (#C49A5A) over a deep steel cover (#5A6472), thick off-white pages scrawled with cyber-cyan thunderhead diagrams (#33E6FF / #E8E4D8), a copper coil-stud set into the spine. Heavy and ceremonial. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No sparks, no arcs, no emitted glow.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -9874,9 +9299,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a living bestiary grown over with moss and shelf-fungus, its cover a slab of olive bark (#6E7042) veined with dull-teal rot (#3C6E6A), pages of pressed wilted leaves crawling with plasma-lime spore-glyphs (#9CFF3B), a muted-red beetle-clasp (#9E3B36). Damp and overgrown. Flat orthographic full side-profile, open spore-shedding fore-edge to the RIGHT, bound spine/grip on the LEFT. ~6 colours, flat cel, thick uneven black outline. No haze, no spores in air, no emitted glow.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -9920,9 +9343,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a grand pristine psalter bound in white-gold, off-white covers (#E8E4D8) chased with tan-gold leaf (#C49A5A), gilt-edged pages of luminous holy script, an ember-orange sunburst boss centred on the cover (#FF8A2B). Solemn and radiant. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No rays, no halo glow, no particles.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
@@ -9960,9 +9381,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a small dog-eared pocket spellbook, worn tan leather cover (#C49A5A) softened to suede, a charcoal elastic band across it (#22252B), thumb-worn off-white pages flickering with tiny arc-violet sigils (#B14BFF / #E8E4D8). Scrappy and well-thumbed. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No emitted glow, no particles.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#B14BFF",
@@ -10003,9 +9422,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a thick warding tome scarred with old chalk-salt circle diagrams, weathered charcoal cover (#22252B) banded in steel (#5A6472), off-white pages crammed with arc-violet binding-glyphs and salt-line rings (#B14BFF / #E8E4D8). Crusted and hard-used. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No emitted glow, no particles.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -10043,9 +9460,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a fat farmer's almanac gone to soot, the worn olive board cover scorched at the corners (#6E7042), a tan twine binding (#C49A5A), thick off-white pages tabbed with ember-orange month-runes (#FF8A2B / #E8E4D8). A burnt quill is tucked in the gutter. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No flame, no smoke, no emitted glow.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#FF8A2B",
@@ -10082,9 +9497,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a matched pair of slim palm-sized pamphlet-books presented as one paired weapon (one per hand), each a clean off-white cover (#E8E4D8) with steel corners (#5A6472) and cyber-cyan spark-sigils on thin pages (#33E6FF). Both face RIGHT: open casting fore-edges to the RIGHT, bound spines/grips on the LEFT. Twin, mirrored, compact. ~4 colours, flat cel, thick uneven black outline. No sparks, no emitted glow, no particles.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#33E6FF",
@@ -10124,9 +9537,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a forbidden ornate apocryphal tome chained shut at the fore-edge, deep charcoal cover (#22252B) inlaid with arc-violet ribwork (#B14BFF), bone-pale clasps and an iron lock (#CFC6AE / #5A6472), pages of black vellum. Heavy, sealed, ominous. Flat orthographic full side-profile, open void fore-edge to the RIGHT, bound chained spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No emitted glow, no particles.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -10171,9 +9582,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an illuminated manuscript bound in gilt-tan vellum (#C49A5A) over off-white boards (#E8E4D8), the open pages dense with gold-leaf marginalia and a single bright ember-orange initial-letter (#FF8A2B), steel-grey corner bosses (#5A6472). Devotional and precise. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No rays, no emitted glow, no particles.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#FF8A2B",
@@ -10212,9 +9621,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a large pristine reference compendium bound in pale frost-rimed boards, off-white cover (#E8E4D8) with steel-blue hinges (#5A6472), the open pages dense with dull-teal cold-charts (#3C6E6A), a cyber-cyan focusing prism set in the gutter (#33E6FF). Cold, scholarly, weighty. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No mist, no emitted glow, no particles.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#33E6FF",
@@ -10252,9 +9659,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a cheap stitched chapbook, thin tan paper cover curling at the edges (#C49A5A), a charcoal stitch-spine (#22252B), the few off-white pages printed with ember-orange flame-woodcuts (#FF8A2B / #E8E4D8). Flimsy and quick. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, stitched spine/grip on the LEFT. ~4 colours, flat cel, thick uneven black outline. No flame, no smoke, no emitted glow.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#FF8A2B",
@@ -10298,9 +9703,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a tall accountant's ledger bound for grim tallies, scuffed gunmetal boards (#3A4049) with a steel ledger-clasp (#5A6472), off-white ruled pages columned with arc-violet soul-tallies and crossed-out names (#B14BFF / #E8E4D8), a frayed muted-red ribbon marker (#9E3B36). Bureaucratic and sinister. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No emitted glow, no particles.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
@@ -10338,9 +9741,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a slim addendum-codicil clamped onto a larger book's edge, a steel-grey board cover (#5A6472) with charcoal trim (#22252B), thin off-white codicil pages scrawled with cyber-cyan circuit-runes (#33E6FF / #E8E4D8), a small copper voltage-stud on the clasp. Technical and crackling. Flat orthographic full side-profile, open casting fore-edge to the RIGHT, bound spine/grip on the LEFT. ~5 colours, flat cel, thick uneven black outline. No sparks, no emitted glow, no particles.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -10385,9 +9786,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a MONUMENTAL grand grimoire, far longer than a normal book and rendered as a wide low slab so it reads XL — corroded verdigris-bronze boards crusted dull-teal (#3C6E6A) over olive leather (#6E7042), enormous off-white pages dripping plasma-lime venom-script (#9CFF3B / #E8E4D8), a heavy muted-red bog-iron clasp (#9E3B36). Ancient and oozing. Flat orthographic full side-profile, long axis across the frame, open casting fore-edge to the RIGHT, massive bound spine/grip on the LEFT. ~6 colours, flat cel, thick uneven black outline. No spores, no haze, no emitted glow.",
       "palettePrimary": "#3C6E6A",
       "paletteAccent": "#9CFF3B",
@@ -10427,9 +9826,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "fire",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 9
       },
@@ -10477,10 +9874,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "frost",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "requirements": {
         "int": 7
       },
@@ -10520,10 +9914,7 @@
       "size": "S",
       "rangeBand": "mid",
       "element": "arcane",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "requirements": {
         "int": 6,
         "luk": 4
@@ -10565,9 +9956,7 @@
       "size": "S",
       "rangeBand": "mid",
       "element": "shock",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 8
       },
@@ -10607,9 +9996,7 @@
       "size": "L",
       "rangeBand": "long",
       "element": "holy",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 11
       },
@@ -10648,9 +10035,7 @@
       "size": "S",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 7
       },
@@ -10698,10 +10083,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "element": "fire",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "requirements": {
         "int": 10,
         "str": 6
@@ -10741,10 +10123,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "frost",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "requirements": {
         "int": 8,
         "dex": 4
@@ -10794,9 +10173,7 @@
       "size": "M",
       "rangeBand": "long",
       "element": "void",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 12
       },
@@ -10835,10 +10212,7 @@
       "size": "S",
       "rangeBand": "mid",
       "element": "arcane",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "requirements": {
         "int": 5,
         "luk": 6
@@ -10889,9 +10263,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "fire",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 9
       },
@@ -10929,9 +10301,7 @@
       "size": "S",
       "rangeBand": "long",
       "element": "shock",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 8
       },
@@ -10970,9 +10340,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "frost",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 10
       },
@@ -11010,10 +10378,7 @@
       "size": "M",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "requirements": {
         "int": 6,
         "luk": 5
@@ -11055,9 +10420,7 @@
       "size": "L",
       "rangeBand": "long",
       "element": "shock",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 9
       },
@@ -11096,9 +10459,7 @@
       "size": "S",
       "rangeBand": "mid",
       "element": "holy",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 7
       },
@@ -11146,9 +10507,7 @@
       "size": "XL",
       "rangeBand": "mid",
       "element": "void",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 13
       },
@@ -11186,10 +10545,7 @@
       "size": "M",
       "rangeBand": "long",
       "element": "frost",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "requirements": {
         "int": 9
       },
@@ -11229,9 +10585,7 @@
       "size": "L",
       "rangeBand": "mid",
       "element": "toxic",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "requirements": {
         "int": 8
       },
@@ -11278,10 +10632,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "B",
         "luk": "C"
@@ -11319,9 +10670,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -11358,9 +10707,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -11398,9 +10745,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "B"
       },
@@ -11444,9 +10789,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -11490,10 +10833,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "B",
         "luk": "C"
@@ -11533,10 +10873,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "A",
         "luk": "D"
@@ -11574,9 +10911,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "B"
       },
@@ -11620,9 +10955,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -11660,10 +10993,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "D"
@@ -11704,9 +11034,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -11743,10 +11071,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -11792,9 +11117,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -11832,10 +11155,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "B",
         "luk": "D"
@@ -11880,9 +11200,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -11919,9 +11237,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "B"
       },
@@ -11960,9 +11276,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -12000,9 +11314,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12039,10 +11351,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "A",
         "luk": "D"
@@ -12087,9 +11396,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -12127,9 +11434,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12176,10 +11481,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "CON"
-      ],
+      "scaling": ["INT", "CON"],
       "scalingGrades": {
         "int": "B",
         "con": "C"
@@ -12218,9 +11520,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -12258,9 +11558,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12297,10 +11595,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -12350,10 +11645,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "A",
         "luk": "D"
@@ -12393,9 +11685,7 @@
       "grip": "mounted",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -12433,9 +11723,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "B"
       },
@@ -12484,10 +11772,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "CON"
-      ],
+      "scaling": ["INT", "CON"],
       "scalingGrades": {
         "int": "A",
         "con": "D"
@@ -12526,10 +11811,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "B",
         "luk": "C"
@@ -12582,9 +11864,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12621,9 +11901,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12670,10 +11948,7 @@
       "grip": "2H",
       "size": "XL",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "scalingGrades": {
         "int": "A",
         "str": "D"
@@ -12712,9 +11987,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12761,9 +12034,7 @@
       "grip": "mounted",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "S"
       },
@@ -12801,9 +12072,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "B"
       },
@@ -12853,10 +12122,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "CON"
-      ],
+      "scaling": ["INT", "CON"],
       "scalingGrades": {
         "int": "B",
         "con": "C"
@@ -12895,10 +12161,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "scalingGrades": {
         "int": "B",
         "dex": "C"
@@ -12939,9 +12202,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "scalingGrades": {
         "int": "A"
       },
@@ -12979,10 +12240,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "scalingGrades": {
         "int": "A",
         "luk": "E"
@@ -13035,10 +12293,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a scuffed gunmetal spell-gauntlet, a stubby fingerless brawler's mitt with a single arc-coil knuckle plate and a cracked cyan focus-bead set in the back of the hand. Hexed frontier tech, dependable and rough. ~4-6 colours, flat full side-profile. Faces RIGHT: knuckle/emitter business end to the RIGHT, wrist-cuff opening on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#33E6FF",
@@ -13078,9 +12333,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a heat-scorched leather glove with an iron palm-plate stamped with a glowing molten-orange sigil and a stubby vent-grille across the knuckles. The hot sigil is a small solid bright shape, NOT a glow that radiates. Gritty wild-west hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: glowing palm-plate to the RIGHT, frayed wrist-strap on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -13124,10 +12377,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a matched pair of sleek off-white spell-gloves, each with a slim copper conductor-rail running across the back of the hand to a bright cyan fingertip node. Presented as one paired weapon, one per hand. Clean hexed tech. ~4-6 colours, flat full side-profile. Both face RIGHT: fingertip emitter-nodes to the RIGHT, wrist-cuffs on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#33E6FF",
@@ -13173,10 +12423,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a massive blackened two-handed siege-gauntlet, a blocky iron forearm-sleeve and oversized fist with molten-orange heat-cracks glowing dully in the knuckle seams. Brutal hexed bruiser tech. ~4-6 colours, flat full side-profile. Faces RIGHT: huge fist business end to the RIGHT, long forearm cuff on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
@@ -13215,9 +12462,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): an elegant silver spell-gauntlet rimed with delicate frostwork filigree, a faceted pale-blue ice-crystal set into the back of the hand and frost-white knuckle ridges. Cold hexed elegance. ~4-6 colours, flat full side-profile. Faces RIGHT: crystal knuckle to the RIGHT, filigreed cuff on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -13261,9 +12506,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a hexed gauntlet wrapped in coiled copper windings up the forearm, a glass-domed arc-violet spark-bulb mounted on the back of the hand between insulator-rings. Mad-frontier electroconjury. ~4-6 colours, flat full side-profile. Faces RIGHT: spark-bulb emitter to the RIGHT, coiled forearm cuff on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#B14BFF",
@@ -13302,9 +12545,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a soot-blackened iron gauntlet whose palm opens into a small fanged brazier-maw lined with dull-red embers, the knuckles studded with rivets. Grim infernal hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: the open maw business end to the RIGHT, charred wrist cuff on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#9E3B36",
@@ -13350,10 +12591,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a gold-chased spell-mitt etched with tiny hex-runes, a single violet focus-gem socketed at the fingertips and filigree tracing the back of the hand. Lucky hexcraft trinket-glove. ~4-6 colours, flat full side-profile. Faces RIGHT: gemmed fingertip emitter to the RIGHT, runed cuff on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#B14BFF",
@@ -13399,10 +12637,7 @@
       "grip": "dual",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a matched pair of weathered steel spell-gloves, each crowned with a tiny three-prong static fork over the knuckles and a worn cyan bead in the palm. One per hand, paired weapon. Storm-chaser hexcraft. ~4-6 colours, flat full side-profile. Both face RIGHT: prong forks to the RIGHT, wrist cuffs on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -13448,9 +12683,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a white-gold reliquary gauntlet, each knuckle a tiny cathedral-cut window of warm amber glass, a winged sigil engraved across the back of the hand. Sanctified hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: glowing knuckle-windows to the RIGHT, gilded cuff on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
@@ -13488,9 +12721,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "close",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a hexed glove grown from hardened olive bracket-fungus and cracked chitin, knuckle-caps sprouting little puffball pods crusted with sickly green resin. Living frontier rot-craft. ~4-6 colours, flat full side-profile. Faces RIGHT: spore-pods to the RIGHT, mossy wrist cuff on the LEFT.",
       "palettePrimary": "#6E7042",
       "paletteAccent": "#9CFF3B",
@@ -13534,9 +12765,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a slim obsidian-black spell-gauntlet whose palm holds a small starless dark aperture ringed by thin arc-violet inlay, the knuckles tapering into needle-points. Hungry void hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: dark aperture to the RIGHT, black wrist cuff on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -13574,10 +12803,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a heavy wrought-iron knuckle-gauntlet, the striking face cast as a glowing molten-orange cattle-brand sigil set into the metal, the forearm wrapped in scorched leather. The hot brand is a solid bright shape, not a radiating glow. Frontier hex-iron. ~4-6 colours, flat full side-profile. Faces RIGHT: branded knuckle-face to the RIGHT, wrapped cuff on the LEFT.",
       "palettePrimary": "#3A4049",
       "paletteAccent": "#FF8A2B",
@@ -13616,9 +12842,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a bulky pair of white-ceramic powered gauntlets fused at the wrist into one bracing forearm cannon, stacked cyan capacitor-rings down the back and a single emitter prong at the fist. Heavy hexed artillery-glove. ~4-6 colours, flat full side-profile. Faces RIGHT: emitter prong to the RIGHT, braced double cuff on the LEFT.",
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#33E6FF",
@@ -13663,10 +12887,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ],
+      "scaling": ["INT", "DEX"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a clawed spell-gauntlet sheathed in overlapping rust-and-brass dragon scales, blunt talon-caps over the fingers and a molten amber gem in the palm. Hexed wyrm-craft. ~4-6 colours, flat full side-profile. Faces RIGHT: talon-tips to the RIGHT, scaled wrist cuff on the LEFT.",
       "palettePrimary": "#A8482E",
       "paletteAccent": "#FF8A2B",
@@ -13712,10 +12933,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a delicate hexed glove woven from black lace and fine silver wire like a spider's web, a single dim arc-violet bead at the wrist and thread-thin fingers. Eerie occult fashion-craft. ~4-6 colours, flat full side-profile. Faces RIGHT: webbed fingertips to the RIGHT, laced cuff on the LEFT.",
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
@@ -13754,10 +12972,7 @@
       "grip": "2H",
       "size": "L",
       "rangeBand": "close",
-      "scaling": [
-        "INT",
-        "STR"
-      ],
+      "scaling": ["INT", "STR"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a hulking pair of scuffed steel storm-gauntlets joined into one heavy forearm-bracer, stormcloud-grey plating with embedded cyan arc-nodes across the knuckles. Brawler's hex-thunder. ~4-6 colours, flat full side-profile. Faces RIGHT: knuckle nodes to the RIGHT, doubled bracer cuff on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
@@ -13796,9 +13011,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "mid",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a hexed gauntlet grown from clear faceted quartz, the knuckles a row of cut prisms and a single violet core-shard in the palm, set in slim chrome bands. Crystalline hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: prism knuckles to the RIGHT, banded cuff on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#B14BFF",
@@ -13842,10 +13055,7 @@
       "grip": "1H",
       "size": "S",
       "rangeBand": "long",
-      "scaling": [
-        "INT",
-        "LUK"
-      ],
+      "scaling": ["INT", "LUK"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a patched tan buckskin glove strung with bone beads and a cracked dull-teal charm-stone in the palm, a single copper spark-coil over the knuckles. Frontier trickster hexcraft. ~4-6 colours, flat full side-profile. Faces RIGHT: charm-stone palm to the RIGHT, fringed cuff on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#3C6E6A",
@@ -13893,9 +13103,7 @@
       "grip": "1H",
       "size": "M",
       "rangeBand": "long",
-      "scaling": [
-        "INT"
-      ],
+      "scaling": ["INT"],
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a blue-veined crystal-and-chrome spell-bracer encasing the hand, a long faceted ice-spike jutting past the fingertips and runic frost-script etched down the forearm. Cold hexed precision. ~4-6 colours, flat full side-profile. Faces RIGHT: ice-spike point to the RIGHT, runed cuff on the LEFT.",
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
