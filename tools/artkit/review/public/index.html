@@ -15,6 +15,7 @@
         <input id="search" type="search" placeholder="Search assets…  ( / )" autocomplete="off" aria-label="Search assets" />
       </div>
       <div class="progress" id="progress" title="Locked / total"></div>
+      <button id="triageBtn" class="icon-btn" title="Swipe-triage the filtered set">🃏</button>
       <button id="refresh" class="icon-btn" title="Reload (R)" aria-label="Reload">⟳</button>
     </header>
 
@@ -68,12 +69,42 @@
         <label class="lbl" for="mPrompt">Prompt</label>
         <textarea id="mPrompt" rows="5" spellcheck="false"></textarea>
         <div class="actions">
+          <button id="mArena" class="btn" title="Blind pairwise pick across the candidates">⚔ Arena pick</button>
           <button id="mSave" class="btn">Save prompt</button>
           <button id="mReroll" class="btn warn">Re-roll 5 ↻</button>
           <button id="mInstall" class="btn go" title="Slice the current pick + push it into the game">⤓ Install to game</button>
           <a id="mOpen" class="btn ghost" target="_blank" rel="noopener">Open ref ↗</a>
           <span id="mStatus" class="status" role="status"></span>
         </div>
+      </div>
+    </div>
+
+    <!-- Arena: blind pairwise pick across one subject's candidates -->
+    <div id="arena" class="arena" hidden role="dialog" aria-modal="true">
+      <div class="arena-head">
+        <span id="arenaTitle"></span>
+        <span id="arenaProg" class="muted"></span>
+        <button id="arenaClose" class="icon-btn" title="Close (Esc)">✕</button>
+      </div>
+      <div class="arena-body">
+        <button class="arena-pick" data-side="a"><img id="arenaA" alt="candidate A" /><span class="arena-key">←</span></button>
+        <div class="arena-vs">VS</div>
+        <button class="arena-pick" data-side="b"><img id="arenaB" alt="candidate B" /><span class="arena-key">→</span></button>
+      </div>
+      <div class="arena-foot">Tap the stronger sprite · it advances champion-vs-challenger · the winner is promoted</div>
+    </div>
+
+    <!-- Triage: swipe through the filtered set, keep or flag-for-reroll -->
+    <div id="triage" class="triage" hidden role="dialog" aria-modal="true">
+      <div class="triage-head">
+        <span id="triageProg" class="muted"></span>
+        <button id="triageClose" class="icon-btn" title="Close (Esc)">✕</button>
+      </div>
+      <div id="triageDeck" class="triage-deck"></div>
+      <div class="triage-foot">
+        <button id="tReject" class="tbtn rej" title="Flag for re-roll (← / swipe left)">✗ Re-roll</button>
+        <button id="tSkip" class="tbtn skip" title="Skip (↓)">↩ Skip</button>
+        <button id="tKeep" class="tbtn keep" title="Keep (→ / swipe right)">✓ Keep</button>
       </div>
     </div>
 

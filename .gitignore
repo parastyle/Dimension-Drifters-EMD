@@ -24,3 +24,4 @@ tmp-*.jpeg
 .vscode/*
 !.vscode/extensions.json
 Thumbs.db
+tools/artkit/review/flags.json

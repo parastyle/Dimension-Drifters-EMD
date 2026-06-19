@@ -19,6 +19,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/weaponsmith/server.mjs"],
       "port": 5050
+    },
+    {
+      "name": "art-review",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/artkit/review/server.mjs"],
+      "port": 8190
     }
   ]
 }

@@ -158,3 +158,37 @@ textarea { width: 100%; background: #15181e; border: 1px solid var(--line); bord
 /* Install-to-game action — green = "push the pick into the build". */
 .btn.go { background: #1f3a22; border-color: #2f6b34; color: #c8f7cc; }
 .btn.go:hover { background: #295030; border-color: #3f8f46; }
+
+/* ── Arena: blind pairwise pick ── */
+.arena, .triage { position: fixed; inset: 0; z-index: 60; background: #0c0a12f2; display: flex; flex-direction: column; }
+.arena[hidden], .triage[hidden] { display: none; }
+.arena-head, .triage-head { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line2); }
+.arena-head #arenaTitle { font-weight: 700; font-size: 16px; }
+.arena-head .icon-btn, .triage-head .icon-btn { margin-left: auto; }
+.arena-body { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px; min-height: 0; }
+.arena-vs { color: var(--dim2); font-weight: 800; letter-spacing: 1px; }
+.arena-pick { position: relative; flex: 1; max-width: 46vw; height: 100%; background: var(--panel); border: 2px solid var(--line); border-radius: var(--radius); padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .12s, transform .08s; }
+.arena-pick:hover { border-color: var(--cyan); }
+.arena-pick:active { transform: scale(.985); }
+.arena-pick img { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: auto; }
+.arena-key { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: #0008; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; font: 12px ui-monospace, monospace; color: var(--dim); }
+.arena-foot, .triage-foot { padding: 12px 16px; color: var(--dim); text-align: center; border-top: 1px solid var(--line2); }
+
+/* ── Triage: swipe deck ── */
+.triage-deck { flex: 1; display: flex; align-items: center; justify-content: center; padding: 14px; min-height: 0; touch-action: pan-y; user-select: none; }
+.tcard { width: min(560px, 92vw); max-height: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; transition: transform .18s ease, opacity .18s ease; }
+.tcard .timg { flex: 1; min-height: 0; background: #181520 center/contain no-repeat; }
+.tcard .tmeta { padding: 12px 16px; border-top: 1px solid var(--line2); }
+.tcard .tname { font-weight: 700; font-size: 17px; }
+.tcard .tsub { color: var(--dim); font-size: 13px; margin-top: 2px; }
+.tcard.go-r { transform: translateX(120%) rotate(8deg); opacity: 0; }
+.tcard.go-l { transform: translateX(-120%) rotate(-8deg); opacity: 0; }
+.triage-foot { display: flex; gap: 10px; justify-content: center; }
+.tbtn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+.tbtn.keep { border-color: #2f6b34; color: #c8f7cc; background: #1f3a22; }
+.tbtn.rej { border-color: #5a2530; color: var(--red); background: #341820; }
+.tbtn.skip { color: var(--dim); }
+
+/* triage flag badges on grid cards */
+.badge.flag-reroll { background: #341820; color: var(--red); }
+.badge.flag-approved { background: #1f3a22; color: #c8f7cc; }

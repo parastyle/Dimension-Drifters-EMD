@@ -110,8 +110,10 @@ function card(a) {
   const badge = st === "locked" ? `<span class="badge locked">✓ #${a.promoted ?? ""}</span>`
     : st === "needpick" ? `<span class="badge cand">${a.candidates.length} candidates</span>`
     : `<span class="badge pending">pending</span>`;
+  const flagBadge = a.flag === "reroll" ? `<span class="badge flag-reroll">↻ re-roll</span>`
+    : a.flag === "approved" ? `<span class="badge flag-approved">✓ ok</span>` : "";
   c.innerHTML = `<div class="thumb${t ? "" : " empty"}" style="${t ? `background-image:url('${t}')` : ""}"></div>
-    <div class="meta"><div class="name">${a.name}</div><div class="sub">${a.category} ${badge}</div></div>`;
+    <div class="meta"><div class="name">${a.name}</div><div class="sub">${a.category} ${badge}${flagBadge}</div></div>`;
   const open = () => openModal(a.id);
   c.onclick = open;
   c.onkeydown = (e) => { if (e.key === "Enter") open(); };
@@ -193,6 +195,88 @@ async function reroll() {
   }, 4000);
 }
 
+/* ── Arena: blind pairwise pick across a subject's candidates ── */
+let arena = null; // { id, name, cands[], champ, idx, aIsChamp }
+function openArena() {
+  const a = state.assets.find((x) => x.id === modalId);
+  if (!a || a.candidates.length < 2) { toast("Need ≥2 candidates to compare", "err"); return; }
+  const cands = [...a.candidates].sort(() => Math.random() - 0.5); // blind order
+  arena = { id: a.id, name: a.name, cands, champ: cands[0], idx: 1 };
+  $("#arenaTitle").textContent = a.name;
+  $("#arena").hidden = false;
+  showArenaPair();
+}
+function showArenaPair() {
+  if (!arena) return;
+  if (arena.idx >= arena.cands.length) return finishArena();
+  arena.aIsChamp = Math.random() < 0.5; // randomise side each round (no position bias)
+  const challenger = arena.cands[arena.idx];
+  $("#arenaA").src = `/img/${arena.id}/${arena.aIsChamp ? arena.champ : challenger}`;
+  $("#arenaB").src = `/img/${arena.id}/${arena.aIsChamp ? challenger : arena.champ}`;
+  $("#arenaProg").textContent = `match ${arena.idx} / ${arena.cands.length - 1}`;
+}
+function arenaPick(side) {
+  if (!arena) return;
+  const pickedChamp = (side === "a") === arena.aIsChamp;
+  if (!pickedChamp) arena.champ = arena.cands[arena.idx]; // challenger won → new champion
+  arena.idx++;
+  showArenaPair();
+}
+async function finishArena() {
+  const { id, champ } = arena;
+  $("#arena").hidden = true; arena = null;
+  await promote(id, champ);
+  toast(`Arena winner → #${champ} promoted`, "ok");
+}
+function closeArena() { $("#arena").hidden = true; arena = null; }
+
+/* ── Triage: swipe the filtered set, keep or flag-for-reroll ── */
+let triage = null; // { ids[], i, kept, flagged }
+function openTriage() {
+  const ids = state.view.slice(); // current filtered + sorted order
+  if (!ids.length) { toast("Nothing to triage — adjust filters", "err"); return; }
+  triage = { ids, i: 0, kept: 0, flagged: 0 };
+  $("#triage").hidden = false;
+  showTriageCard();
+}
+function showTriageCard() {
+  if (!triage) return;
+  if (triage.i >= triage.ids.length) return finishTriage();
+  const a = state.assets.find((x) => x.id === triage.ids[triage.i]);
+  if (!a) { triage.i++; return showTriageCard(); }
+  const img = thumb(a);
+  $("#triageDeck").innerHTML = `<div class="tcard" id="tcard">
+    <div class="timg" style="${img ? `background-image:url('${img}')` : ""}"></div>
+    <div class="tmeta"><div class="tname">${a.name}</div><div class="tsub">${a.category}${a.flag ? ` · was: ${a.flag}` : ""}</div></div></div>`;
+  $("#triageProg").textContent = `${triage.i + 1} / ${triage.ids.length}  ·  ✓ ${triage.kept}   ✗ ${triage.flagged}`;
+  attachSwipe($("#tcard"));
+}
+async function triageDecide(action) { // "keep" | "reroll" | "skip"
+  if (!triage) return;
+  const id = triage.ids[triage.i];
+  const card = $("#tcard");
+  if (action === "keep") { triage.kept++; card && card.classList.add("go-r"); api("/api/flag", { id, status: "approved" }); }
+  else if (action === "reroll") { triage.flagged++; card && card.classList.add("go-l"); api("/api/flag", { id, status: "reroll" }); }
+  const a = state.assets.find((x) => x.id === id);
+  if (a && action !== "skip") a.flag = action === "keep" ? "approved" : "reroll";
+  setTimeout(() => { triage.i++; showTriageCard(); }, action === "skip" ? 0 : 190);
+}
+function finishTriage() {
+  toast(`Triage done — ${triage.kept} kept · ${triage.flagged} flagged`, "ok");
+  $("#triage").hidden = true; triage = null; render();
+}
+function closeTriage() { const had = !!triage; $("#triage").hidden = true; triage = null; if (had) render(); }
+function attachSwipe(card) {
+  if (!card) return;
+  let x0 = null;
+  card.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  card.addEventListener("touchend", (e) => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (dx > 55) triageDecide("keep"); else if (dx < -55) triageDecide("reroll");
+  }, { passive: true });
+}
+
 /* ── lightbox + toasts ── */
 function lightbox(src) { $("#lbImg").src = src; $("#lightbox").hidden = false; }
 function toast(msg, kind) {
@@ -214,10 +298,31 @@ $("#mNext").onclick = () => stepModal(1);
 $("#mSave").onclick = savePrompt;
 $("#mReroll").onclick = reroll;
 $("#mInstall").onclick = install;
+$("#mArena").onclick = openArena;
+$("#arenaClose").onclick = closeArena;
+for (const b of document.querySelectorAll(".arena-pick")) b.onclick = () => arenaPick(b.dataset.side);
+$("#triageBtn").onclick = openTriage;
+$("#triageClose").onclick = closeTriage;
+$("#tKeep").onclick = () => triageDecide("keep");
+$("#tReject").onclick = () => triageDecide("reroll");
+$("#tSkip").onclick = () => triageDecide("skip");
 $("#modal").onclick = (e) => { if (e.target.id === "modal") closeModal(); };
 $("#lightbox").onclick = () => ($("#lightbox").hidden = true);
 
 document.addEventListener("keydown", (e) => {
+  if (!$("#arena").hidden) {
+    if (e.key === "Escape") return closeArena();
+    if (e.key === "ArrowLeft") return arenaPick("a");
+    if (e.key === "ArrowRight") return arenaPick("b");
+    return;
+  }
+  if (!$("#triage").hidden) {
+    if (e.key === "Escape") return closeTriage();
+    if (e.key === "ArrowRight") return triageDecide("keep");
+    if (e.key === "ArrowLeft") return triageDecide("reroll");
+    if (e.key === "ArrowDown") return triageDecide("skip");
+    return;
+  }
   if (!$("#lightbox").hidden && e.key === "Escape") return ($("#lightbox").hidden = true);
   const inField = /input|textarea|select/i.test(document.activeElement.tagName);
   if (!$("#modal").hidden) {

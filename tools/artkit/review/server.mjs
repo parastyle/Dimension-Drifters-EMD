@@ -25,6 +25,24 @@ const OUT = join(ROOT, "out");
 const PUBLIC = join(HERE, "public");
 const PORT = Number(process.env.PORT || 8190);
 const HOST = process.env.HOST || "127.0.0.1";
+const FLAGS = join(HERE, "flags.json"); // local review state: id → "approved" | "reroll"
+
+/** Triage flags (swipe pass): persist a per-asset approve/re-roll decision so the grid can badge them
+ *  and a later batch re-roll can target the rejects. Local-only state (gitignored). */
+function loadFlags() {
+  try {
+    return JSON.parse(readFileSync(FLAGS, "utf8"));
+  } catch {
+    return {};
+  }
+}
+function setFlag(id, status) {
+  const f = loadFlags();
+  if (!status || status === "clear") delete f[id];
+  else f[id] = status;
+  writeFileSync(FLAGS, `${JSON.stringify(f, null, 2)}\n`);
+  return { ok: true, flag: f[id] ?? null };
+}
 const MANIFESTS = [
   "subjects.json",
   "subjects.explore.json",
@@ -85,6 +103,7 @@ function candidateNumbers(id) {
 
 function assetList() {
   const subjects = loadSubjects();
+  const flags = loadFlags();
   const out = [];
   for (const [id, s] of subjects) {
     const cands = candidateNumbers(id);
@@ -101,6 +120,7 @@ function assetList() {
       candidates: cands,
       locked: existsSync(join(OUT, id, "identity-ref.png")),
       promoted, // e.g. "3"
+      flag: flags[id] ?? null, // "approved" | "reroll" | null (triage state)
     });
   }
   out.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
@@ -250,6 +270,7 @@ const server = createServer(async (req, res) => {
     if (path === "/api/prompt") return sendJson(res, 200, editPrompt(body.id, body.prompt));
     if (path === "/api/reroll") return sendJson(res, 200, reroll(body.id));
     if (path === "/api/install") return sendJson(res, 200, install(body.id));
+    if (path === "/api/flag") return sendJson(res, 200, setFlag(body.id, body.status));
     return sendJson(res, 404, { ok: false });
   }
 
