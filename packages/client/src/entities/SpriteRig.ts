@@ -2,6 +2,27 @@ import type { WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 
+/** §28 the packed sprite MULTIATLAS key (tools/artkit/pack-atlas.mjs → public/sprites/dd-sprites.json). When
+ *  loaded, every non-expansion part lives here as the frame "<id>/<role>", so the WebGL batcher binds ONE
+ *  texture for a whole screen of rigs instead of one per part. ArenaScene boot-loads it under this key. */
+export const SPRITE_ATLAS = "dd-sprites";
+
+/** Resolve the texture for a sprite part: the packed atlas frame "<id>/<role>" if the atlas is loaded and
+ *  has it, else the loose per-part texture "<id>:<role>" (back-compat — e.g. the atlas missing a frame, or
+ *  a future on-demand expansion sprite). Returns args to spread into `scene.add.image(x, y, key, frame?)`.
+ *  Exported so other renderers (e.g. ground weapon-pickups) resolve textures the same way. */
+export function partTexture(
+  scene: Phaser.Scene,
+  spriteId: string,
+  role: string,
+): { key: string; frame?: string } {
+  const frame = `${spriteId}/${role}`;
+  if (scene.textures.exists(SPRITE_ATLAS) && scene.textures.get(SPRITE_ATLAS).has(frame)) {
+    return { key: SPRITE_ATLAS, frame };
+  }
+  return { key: `${spriteId}:${role}` };
+}
+
 /** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
 const TARGET_BODY_H = 84;
 /** Vertical "look" toward the cursor (local player): how far the torso leans + the held weapon tilts
@@ -91,11 +112,8 @@ export class SpriteRig {
     const make = (role: string): Phaser.GameObjects.Image | undefined => {
       const part = manifest.parts.find((p) => p.role === role);
       if (!part) return undefined;
-      const img = scene.add.image(
-        part.ox * this.scale,
-        part.oy * this.scale,
-        `${spriteId}:${role}`,
-      );
+      const tx = partTexture(scene, spriteId, role);
+      const img = scene.add.image(part.ox * this.scale, part.oy * this.scale, tx.key, tx.frame);
       img.setOrigin(0.5).setScale(this.scale);
       this.parts.push(img);
       return img;
@@ -227,7 +245,8 @@ export class SpriteRig {
       hand: typeof frontHand,
     ): Phaser.GameObjects.Image | undefined => {
       if (!part || !hand) return undefined;
-      const img = this.scene.add.image(hand.img.x, hand.img.y, `${spriteId}:${part.role}`);
+      const tx = partTexture(this.scene, spriteId, part.role);
+      const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
       img.setOrigin(def.gripFrac, 0.5).setScale(def.displayLength / part.w);
       this.root.add(img);
       this.weapons.push({ img, hand });

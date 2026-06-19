@@ -47,7 +47,7 @@ import {
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
-import { SpriteRig } from "../entities/SpriteRig.js";
+import { partTexture, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { DECAL_IDS } from "../sprites/decal-manifest.js";
@@ -220,13 +220,16 @@ export class ArenaScene extends Phaser.Scene {
     if (data?.dimensionId) this.selectedDimension = data.dimensionId;
   }
 
-  /** Load every installed sprite's harvest-sliced parts (served from public/sprites/<id>/). */
+  /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
+   *  part as the frame "<id>/<role>", so the WebGL batcher binds a single texture for a whole screen of rigs
+   *  instead of one per part (the genre's standard horde-render fix). SpriteRig reads frames via `partTexture`. */
   preload(): void {
+    this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     for (const manifest of Object.values(SPRITES)) {
-      // §13 the +300 EXPANSION weapons are art-backed but held out of the active roster — don't boot-load
-      // their sprites (they'd flood the loader). They load when one is curated in (its `expansion` flag
-      // cleared → it boot-loads then). The held render only resolves once loaded, so they stay invisible.
-      if (WEAPONS[manifest.id]?.expansion) continue;
+      // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
+      // bloat VRAM). Only a CURATED one (expansion flag cleared) boot-loads its loose parts — SpriteRig then
+      // falls back to the per-part texture since it isn't in the atlas. Everything non-expansion is in the atlas.
+      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion) continue;
       for (const part of manifest.parts) {
         this.load.image(`${manifest.id}:${part.role}`, `sprites/${manifest.id}/${part.file}`);
       }
@@ -499,18 +502,21 @@ export class ArenaScene extends Phaser.Scene {
       const beam = this.add.rectangle(0, -10, 34, 104, accent, 0.08).setBlendMode(ADD); // pedestal light
       const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
       const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
-      const img = part
-        ? this.add.image(0, 0, `${pk.weapon}:${part.role}`).setScale(baseScale)
-        : this.add.rectangle(0, 0, 50, 12, accent);
-      const shine = part
-        ? this.add
-            .image(0, 0, `${pk.weapon}:${part.role}`)
-            .setScale(baseScale)
-            .setTint(0xffffff)
-            .setTintMode(Phaser.TintModes.FILL)
-            .setBlendMode(ADD)
-            .setAlpha(0)
-        : null;
+      const tx = part ? partTexture(this, pk.weapon, part.role) : null;
+      const img =
+        part && tx
+          ? this.add.image(0, 0, tx.key, tx.frame).setScale(baseScale)
+          : this.add.rectangle(0, 0, 50, 12, accent);
+      const shine =
+        part && tx
+          ? this.add
+              .image(0, 0, tx.key, tx.frame)
+              .setScale(baseScale)
+              .setTint(0xffffff)
+              .setTintMode(Phaser.TintModes.FILL)
+              .setBlendMode(ADD)
+              .setAlpha(0)
+          : null;
       const label = this.add
         .text(0, 42, def?.name ?? pk.weapon, {
           fontSize: "11px",

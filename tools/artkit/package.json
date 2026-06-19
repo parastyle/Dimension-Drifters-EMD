@@ -10,6 +10,7 @@
     "fix:alpha": "node guards/fix-checkerboard.mjs --all"
   },
   "dependencies": {
+    "free-tex-packer-core": "^0.3.8",
     "sharp": "^0.33.0"
   }
 }

@@ -14,7 +14,8 @@
       "!assets",
       "!.tmp-bin",
       "!tools/artkit",
-      "!tools/weaponsmith/assignments.json"
+      "!tools/weaponsmith/assignments.json",
+      "!packages/client/public/sprites/dd-sprites*.json"
     ]
   },
   "formatter": {

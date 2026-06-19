@@ -199,3 +199,9 @@ export type SpriteId = keyof typeof SPRITES;
 `;
 writeFileSync(manifestTs, header);
 log(`wrote manifest.ts (${Object.keys(sorted).length} subject(s): ${Object.keys(sorted).join(", ")})`);
+
+// §28 re-pack the sprite MULTIATLAS so the client's single `load.multiatlas` matches the new parts/manifest
+// (the perf-critical horde-render path). Keeps the review-UI install loop + manual re-slices consistent.
+const atlas = spawnSync(process.execPath, [join(ROOT, "pack-atlas.mjs")], { cwd: ROOT, encoding: "utf8" });
+if (atlas.status === 0) log((atlas.stdout || "").trim().split("\n").pop() || "re-packed sprite atlas");
+else log(`⚠ pack-atlas failed (run it manually): ${(atlas.stderr || "").slice(-200)}`);
