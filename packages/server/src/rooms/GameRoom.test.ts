@@ -571,7 +571,7 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     const h = training();
     const p = h.state().players.get("p1");
     const gunId = "x-gun-revolver-cannon";
-    const gun = WEAPONS[gunId].gun;
+    const gun = WEAPONS[gunId]?.gun;
     if (!gun) throw new Error("fixture weapon is not a gun");
     p.weapon = gunId;
     h.tick(1); // equip → ammo readout initialises to the magazine

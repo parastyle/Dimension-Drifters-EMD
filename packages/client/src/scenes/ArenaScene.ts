@@ -6,6 +6,7 @@ import {
   type Attr,
   AUGMENTS,
   BOSS_SLAM_RADIUS,
+  BOSS_SPAWN_SECONDS,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
@@ -21,6 +22,7 @@ import {
   ENEMY_KINDS,
   type EnemyKind,
   EXTRACT_RADIUS,
+  effectiveMelee,
   FISTS_WEAPON,
   generateArena,
   getDimension,
@@ -31,6 +33,7 @@ import {
   LEVELUP_WINDOW_SECONDS,
   PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
+  PARRY_IFRAMES,
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
@@ -119,6 +122,10 @@ export class ArenaScene extends Phaser.Scene {
   private vfxPlayer!: VfxPlayer;
   /** §8 white-tell telegraph layer (Stage C) — redrawn each frame from enemies' synced `windup`. */
   private telegraphGfx!: Phaser.GameObjects.Graphics;
+  /** H10 §20 parry-state ring under the LOCAL drifter — active i-frame flash + cooldown-recovery arc. */
+  private parryGfx!: Phaser.GameObjects.Graphics;
+  /** H10 `time.now` of the last parry press, so the ring can flash bright through the i-frame window. */
+  private lastParryPress = -9999;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
@@ -142,6 +149,8 @@ export class ArenaScene extends Phaser.Scene {
   private localAtkCd = 0;
   private localParryCd = 0;
   private frozenUntil = 0;
+  /** H3 hit-stop throttle — kills crunch at most this often so a horde-clearing AoE can't lock the screen. */
+  private lastKillStop = 0;
   private deltaSec = 0;
   private readonly enemyHp = new Map<string, number>();
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
@@ -271,6 +280,9 @@ export class ArenaScene extends Phaser.Scene {
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
     this.telegraphGfx = this.add.graphics().setDepth(99990);
+    // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
+    // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
+    this.parryGfx = this.add.graphics().setDepth(99989);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
@@ -763,10 +775,12 @@ export class ArenaScene extends Phaser.Scene {
       this.moveProjectiles(this.deltaSec);
       this.animateBlobs();
       this.animateEnemies();
+      this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
     }
     this.followSelf();
     this.sendAttack();
     this.sendParry();
+    this.renderParryState();
     this.updateCombatFx();
     this.updateHud();
     this.updateRunState();
@@ -841,6 +855,18 @@ export class ArenaScene extends Phaser.Scene {
             const al = Math.hypot(ax, ay) || 1;
             const dist = 70 + Math.random() * 60;
             rig.deathPop((ax / al) * dist, (ay / al) * dist);
+            // H3 §20 hit-stop: a brief crunch when a kill lands near YOU (≈ your kill). Throttled so a
+            // horde-clearing AoE can't chain freezes into lag; parry/quake stops override via Math.max.
+            const selfId = this.room?.sessionId;
+            const me = selfId ? this.room?.state.players.get(selfId) : undefined;
+            if (
+              me?.alive &&
+              Math.hypot(rig.x - me.x, rig.y - me.y) < 420 &&
+              this.time.now - this.lastKillStop >= 110
+            ) {
+              this.lastKillStop = this.time.now;
+              this.hitStop(45);
+            }
           }
         }
       }
@@ -892,7 +918,9 @@ export class ArenaScene extends Phaser.Scene {
         const g = this.telegraphGfx;
         // §20 "white gradient leading flash": a directional cone toward the targeted player showing EXACTLY
         // where the strike lands (the enemy's real melee range/arc) — WYSIWYG danger, brightening as it peaks.
-        const mel = ENEMY_KINDS[es?.kind ?? ""]?.melee;
+        // M1: read effectiveMelee (not raw .melee) so the DERIVED lunges (rusher/swarm/zoner) draw the same
+        // cone as the Ronin's explicit combo — every telegraphing enemy now shows where its jump lands.
+        const mel = effectiveMelee(ENEMY_KINDS[es?.kind ?? ""]);
         if (mel) {
           let nx = 1;
           let ny = 0;
@@ -1079,7 +1107,7 @@ export class ArenaScene extends Phaser.Scene {
         .circle(0, 0, EXTRACT_RADIUS * 0.5, 0xffd479, 0.22)
         .setStrokeStyle(2, 0xffd479, 0.9);
       const label = this.add
-        .text(0, -EXTRACT_RADIUS - 16, "▼ EXTRACT", {
+        .text(0, -EXTRACT_RADIUS - 16, "▼ EXTRACT — bank salvage & end run", {
           fontSize: "16px",
           color: "#ffd479",
           fontStyle: "bold",
@@ -1696,11 +1724,75 @@ export class ArenaScene extends Phaser.Scene {
     if (!self?.alive || self.flexPending > 0 || self.sigPending > 0) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
+    this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
     const rig = this.blobs.get(selfId);
     rig?.triggerBrace(this.time.now);
     // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
+  }
+
+  /** H10 §20 parry-state ring under the LOCAL drifter so the timing is learnable: a bright flash through the
+   *  active i-frame window after a press (you're invulnerable NOW), a dim arc sweeping back to a full ring as
+   *  the cooldown drains after a whiff, and a faint "ready" ring at rest. Mirrors the press + the shared
+   *  PARRY_IFRAMES / PARRY_COOLDOWN (the server owns the real i-frames). */
+  private renderParryState(): void {
+    const g = this.parryGfx;
+    g.clear();
+    const selfId = this.room?.sessionId;
+    const self = selfId ? this.room?.state.players.get(selfId) : undefined;
+    const rig = selfId ? this.blobs.get(selfId) : undefined;
+    if (!self?.alive || !rig || self.flexPending > 0 || self.sigPending > 0) return; // hide mid-pick
+    const x = rig.x;
+    const y = rig.y;
+    const R = 30;
+    const sinceParry = (this.time.now - this.lastParryPress) / 1000;
+    if (sinceParry < PARRY_IFRAMES) {
+      // ACTIVE i-frame window — a bright white ring that fades as the window closes.
+      const k = 1 - sinceParry / PARRY_IFRAMES;
+      g.lineStyle(3.5, 0xffffff, 0.35 + 0.5 * k);
+      g.strokeCircle(x, y, R);
+    } else if (this.localParryCd > 0) {
+      // RECOVERING — a dim arc filling clockwise from the top back to a full ring as the cooldown drains.
+      const frac = 1 - this.localParryCd / PARRY_COOLDOWN; // 0 = just whiffed, 1 = ready
+      g.lineStyle(3, 0x3aa0c0, 0.5);
+      g.beginPath();
+      g.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      g.strokePath();
+    } else {
+      // READY — a faint full ring (parry available).
+      g.lineStyle(2, 0x8fdcff, 0.28);
+      g.strokeCircle(x, y, R);
+    }
+  }
+
+  /** M2 §15/§16 ranged parry tell: a bright core + a ring that tightens onto each HOSTILE projectile (enemy
+   *  spit + the boss bullet-wall — both kind "spit") as it closes on a player. Teaches "ranged = parryable,
+   *  not just dodge." Constant velocity makes the timing honest. Drawn on the white-tell layer (same
+   *  language as the melee windup ring); the parry itself already flashes the player's white spark via
+   *  parriedSeq. */
+  private renderProjectileTells(): void {
+    if (!this.room) return;
+    const g = this.telegraphGfx;
+    const TELL = 150; // begin the cue ~150px out — a readable beat at bullet speed
+    this.room.state.projectiles.forEach((pr, id) => {
+      if (pr.kind !== "spit") return; // friendly gun/cleaver/magma/counter shots aren't a threat to parry
+      const c = this.projectiles.get(id);
+      const px = c?.x ?? pr.x;
+      const py = c?.y ?? pr.y;
+      let best = TELL;
+      this.room?.state.players.forEach((p) => {
+        if (!p.alive) return;
+        const d = Math.hypot(p.x - px, p.y - py);
+        if (d < best) best = d;
+      });
+      if (best >= TELL) return; // not near anyone yet — no cue
+      const k = 1 - best / TELL; // 0 far → 1 right on the player (parry NOW)
+      g.fillStyle(0xffffff, 0.22 + 0.5 * k);
+      g.fillCircle(px, py, 4 + 3 * k);
+      g.lineStyle(2 + 1.5 * k, 0xffffff, 0.35 + 0.5 * k);
+      g.strokeCircle(px, py, 22 - 13 * k); // ring tightens onto the slug as it arrives
+    });
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
@@ -1777,8 +1869,10 @@ export class ArenaScene extends Phaser.Scene {
       this.lastParried.set(id, p.parriedSeq);
       if (prev !== undefined && prev !== p.parriedSeq) {
         this.spawnParrySpark(p.x, p.y);
-        if (id === this.room?.sessionId)
+        if (id === this.room?.sessionId) {
           this.localParryCd = Math.min(this.localParryCd, PARRY_CHAIN_CD);
+          this.hitStop(100); // H3 §20: the parry is the skill beat — freeze a touch longer than a kill
+        }
       }
     });
 
@@ -1980,12 +2074,28 @@ export class ArenaScene extends Phaser.Scene {
     const training = this.room?.state.mode === "training";
     const who = self ? ` · C: swap character (${characterName(self.character)})` : "";
     const dimName = getDimension(this.room?.state.dimensionId).name;
+    // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
+    // fight, then what stepping into the portal actually DOES (bank + end). H9: the two core verbs (RMB fire,
+    // LMB parry) ride on the always-on line so there's a path to learning the controls.
+    const st = this.room?.state;
+    const elapsed = st?.elapsed ?? 0;
+    const bossActive = (st?.bossPhase ?? 0) >= 1;
+    let objective: string;
+    if (st?.portalOpen) {
+      objective = "▼ portal OPEN — step in to bank salvage & end the run";
+    } else if (bossActive) {
+      objective = "⚠ BOSS — defeat it to open the extraction portal";
+    } else {
+      const left = Math.max(0, BOSS_SPAWN_SECONDS - elapsed);
+      const mmss = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}`;
+      objective = `survive — boss approaches in ${mmss}`;
+    }
     this.modeText
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
           ? `⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : `${dimName} · survive until the boss, then extract · Space: jump · B: boss · T: Testing Grounds${who}`,
+          : `${dimName} · ${objective} · RMB fire · LMB parry · Space jump · B boss · T grounds${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 
