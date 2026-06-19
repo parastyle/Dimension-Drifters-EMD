@@ -33,6 +33,7 @@ const SUBJECT_FILES = [
   join(ARTKIT, "subjects.json"),
   join(ARTKIT, "subjects.explore.json"),
   join(ARTKIT, "subjects.concepts.json"),
+  join(ARTKIT, "subjects-300.json"), // §13 the +300 EXPANSION arsenal (x2-*) — all 297 designed weapons
 ];
 const WEAPONS_TS = join(REPO, "packages", "shared", "src", "weapons.ts");
 // §14 fixed VFX size default — single-sourced from weapons.ts (VFX_RADIUS_DEFAULT), so the smith slider

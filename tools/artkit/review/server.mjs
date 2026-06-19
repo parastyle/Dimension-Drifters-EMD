@@ -48,6 +48,7 @@ const MANIFESTS = [
   "subjects.explore.json",
   "subjects.concepts.json",
   "subjects-dimensions.json", // §17 the 5-dimension enemies/toughs/bosses + 3 shifters (27 subjects)
+  "subjects-300.json", // §13 the +300 EXPANSION arsenal (x2-*) — all 297 designed weapons
 ];
 
 const MIME = {
