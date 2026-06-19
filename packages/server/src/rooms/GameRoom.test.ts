@@ -250,5 +250,50 @@ describe("GameRoom — §17 shifter-incursion director", () => {
   });
 });
 
+describe("GameRoom — §20 universal lunge", () => {
+  it("a rusher (critter) TELEGRAPHS a lunge and it's PARRYABLE", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = 1000;
+    p.y = 1000;
+    // a critter just outside touch range but inside lunge approach — it should wind up + jump, not just chip.
+    const e = new EnemyState();
+    e.id = "lunger";
+    e.kind = "critter";
+    e.hp = 999;
+    e.x = 1050;
+    e.y = 1000;
+    h.state().enemies.set("lunger", e);
+    const pc = h.room.combat.get("p1");
+    let sawWindup = false;
+    for (let i = 0; i < 30; i++) {
+      pc.invuln = 1; // hold a parry stance every tick (i-frames up)
+      h.tick(1);
+      if ((h.state().enemies.get("lunger")?.windup ?? 0) > 0) sawWindup = true;
+    }
+    expect(sawWindup).toBe(true); // §8 white-tell telegraph ramped → readable + parryable
+    expect(p.parriedSeq).toBeGreaterThan(0); // a lunge connected during the parry window → negated
+  });
+
+  it("a critter's lunge HITS an un-parrying player (the attack is real)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = 1000;
+    p.y = 1000;
+    p.hp = 100;
+    const e = new EnemyState();
+    e.id = "lunger2";
+    e.kind = "critter";
+    e.hp = 999;
+    e.x = 1052;
+    e.y = 1000;
+    h.state().enemies.set("lunger2", e);
+    h.tick(30); // no parry → it telegraphs, jumps, and connects (lunge + contact chip)
+    expect(p.hp).toBeLessThan(100);
+  });
+});
+
 // Re-seed nothing between files — each makeRoom() is independent.
 beforeEach(() => {});

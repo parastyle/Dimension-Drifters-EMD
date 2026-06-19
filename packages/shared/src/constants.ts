@@ -246,6 +246,23 @@ export const PARRY_KNOCKBACK = 96;
  *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */
 export const PARRY_CHAIN_CD = 0.12;
 
+/**
+ * §8/§20 UNIVERSAL LUNGE — every melee/contact monster (rusher/swarm/zoner) telegraphs then JUMPS at you,
+ * so its attack is PARRYABLE (the duelist combo machine, but a derived single-hit lunge). Passive contact
+ * damage (`contactDamage`, while touching) is SEPARATE + always applies — the lunge is the discrete,
+ * telegraphed, parryable hit on top. Only DoT (zoner puddles) + AoE (boss slam) stay unparryable. The
+ * derived lunge is sized off each kind: reach = radius + pad, damage = max(min, contactDamage × mult),
+ * windup readable (swarm faster), step forward dash. (tuning)
+ */
+export const LUNGE_REACH_PAD = 30; // lunge range = enemy radius + this (a touch beyond body contact)
+export const LUNGE_DAMAGE_MULT = 1.6; // discrete lunge hit = contactDamage × this …
+export const LUNGE_MIN_DAMAGE = 5; // … floored here so even a weak swarm lunge stings
+export const LUNGE_WINDUP = 0.46; // telegraph (white-tell ramp) before the jump — time to read + parry
+export const LUNGE_WINDUP_SWARM = 0.32; // swarm lunges faster so the cloud still feels frantic
+export const LUNGE_RECOVER = 0.6; // post-jump vulnerable window before it can wind up again
+export const LUNGE_RECOVER_SWARM = 0.42;
+export const LUNGE_STEP_FRAC = 0.34; // forward dash distance = enemy speed × this (min 48px)
+
 /** §8/§20 parry-LAUNCH (Stage D) — a successful parry of an attack lofts the PARRIER: it adds an upward kick
  *  to the height-axis velocity (`vh`, §5 Stage B) + shoves them along the attack vector. Chaining parries
  *  stacks the kicks faster than gravity removes them, so you RIDE the flurry up; stop parrying and gravity

@@ -4,8 +4,10 @@ import {
   coneAngles,
   ENEMY_KINDS,
   ENEMY_RADIUS,
+  effectiveMelee,
   enemyHpScale,
   inMeleeArc,
+  LUNGE_MIN_DAMAGE,
   nearestPoint,
   pickEnemyKind,
   spawnInterval,
@@ -212,5 +214,35 @@ describe("stepEnemyKite (§15 spitter AI)", () => {
     const edge = { x: ARENA_WIDTH - ENEMY_RADIUS - 1, y: 600 };
     const out = stepEnemyKite(edge, { x: ARENA_WIDTH + 9999, y: 600 }, 500, RANGE, 1);
     expect(out.x).toBeLessThanOrEqual(ARENA_WIDTH - ENEMY_RADIUS);
+  });
+});
+
+describe("effectiveMelee — §20 universal lunge", () => {
+  it("derives a single-hit lunge for the contact archetypes (rusher/swarm/zoner)", () => {
+    for (const kindId of ["critter", "mote-swarm", "pricklepulp"]) {
+      const m = effectiveMelee(ENEMY_KINDS[kindId]);
+      expect(m, kindId).toBeDefined();
+      expect(m?.hits).toBe(1);
+      expect(m?.windup).toBeGreaterThan(0); // telegraphed → parryable
+      expect(m?.range).toBeGreaterThan(ENEMY_KINDS[kindId]?.radius ?? 0); // reaches a touch past the body
+      expect(m?.damage).toBeGreaterThanOrEqual(LUNGE_MIN_DAMAGE);
+    }
+  });
+
+  it("has NO lunge for ranged spitters, the boss, or dummies (their threat isn't a jab)", () => {
+    expect(effectiveMelee(ENEMY_KINDS.boothill)).toBeUndefined(); // spitter
+    expect(effectiveMelee(ENEMY_KINDS["old-rust"])).toBeUndefined(); // boss
+    expect(effectiveMelee(ENEMY_KINDS.dummy)).toBeUndefined();
+    expect(effectiveMelee(undefined)).toBeUndefined();
+  });
+
+  it("returns a duelist's EXPLICIT multi-hit combo verbatim (not the derived jab)", () => {
+    const ronin = ENEMY_KINDS.ronin;
+    expect(effectiveMelee(ronin)).toBe(ronin?.melee); // same object — the authored combo
+    expect(ronin?.melee?.hits).toBeGreaterThan(1);
+  });
+
+  it("MEMOIZES the derived lunge per kind (no per-tick allocation)", () => {
+    expect(effectiveMelee(ENEMY_KINDS.critter)).toBe(effectiveMelee(ENEMY_KINDS.critter));
   });
 });

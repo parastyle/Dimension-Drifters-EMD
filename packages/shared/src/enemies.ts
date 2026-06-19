@@ -5,6 +5,14 @@ import {
   DUMMY_RADIUS,
   ENEMY_HP_PER_PLAYER,
   ENEMY_RADIUS,
+  LUNGE_DAMAGE_MULT,
+  LUNGE_MIN_DAMAGE,
+  LUNGE_REACH_PAD,
+  LUNGE_RECOVER,
+  LUNGE_RECOVER_SWARM,
+  LUNGE_STEP_FRAC,
+  LUNGE_WINDUP,
+  LUNGE_WINDUP_SWARM,
   SPAWN_INTERVAL_MIN,
   SPAWN_INTERVAL_START,
   SPAWN_RAMP_SECONDS,
@@ -257,6 +265,40 @@ export function pickEnemyKind(roll: number, roster: readonly string[] = ENEMY_KI
     if (r < 0) return k;
   }
   return ids[0] ?? "critter";
+}
+
+/** §8/§20 the LUNGE attack a melee/contact monster uses: the explicit `melee` combo if the kind defines one
+ *  (duelists/shifters), else a DERIVED single-hit lunge for the contact archetypes (rusher/swarm/zoner) so
+ *  EVERY such monster telegraphs then JUMPS at you = parryable (§8). Ranged spitters, the boss, and dummies
+ *  have NO lunge (undefined) — their threat is projectiles / phases / nothing, and DoT puddles + the boss's
+ *  AoE slam stay unparryable by design. Passive contact (touch) damage (`contactDamage`) is SEPARATE and
+ *  always applies; the lunge is the discrete telegraphed hit on top. Derived lunges are MEMOIZED per kind
+ *  (deterministic) so the per-tick AI loop allocates nothing. */
+const LUNGE_ARCHETYPES = new Set(["rusher", "swarm", "zoner"]);
+const meleeCache = new WeakMap<EnemyKind, NonNullable<EnemyKind["melee"]> | null>();
+export function effectiveMelee(kind: EnemyKind | undefined): EnemyKind["melee"] {
+  if (!kind) return undefined;
+  if (kind.melee) return kind.melee;
+  const cached = meleeCache.get(kind);
+  if (cached !== undefined) return cached ?? undefined;
+  let derived: NonNullable<EnemyKind["melee"]> | null = null;
+  if (LUNGE_ARCHETYPES.has(kind.archetype)) {
+    const swarm = kind.archetype === "swarm";
+    const reach = kind.radius + LUNGE_REACH_PAD;
+    derived = {
+      approach: reach + 16, // start winding up a touch before contact range
+      range: reach,
+      halfArc: 0.95, // forgiving cone — readable, not a sniper jab
+      damage: Math.max(LUNGE_MIN_DAMAGE, kind.contactDamage * LUNGE_DAMAGE_MULT),
+      hits: 1, // a single jab (duelists override with a real multi-hit combo)
+      windup: swarm ? LUNGE_WINDUP_SWARM : LUNGE_WINDUP,
+      swingGap: 0.3, // unused at hits:1, kept valid for the combo machine
+      recover: swarm ? LUNGE_RECOVER_SWARM : LUNGE_RECOVER,
+      step: Math.max(48, kind.speed * LUNGE_STEP_FRAC),
+    };
+  }
+  meleeCache.set(kind, derived);
+  return derived ?? undefined;
 }
 
 /** Nearest target to `pos` (the squad). Returns null if there are none. */

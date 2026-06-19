@@ -50,6 +50,7 @@ import {
   EnemyState,
   EXTRACT_RADIUS,
   effectiveDamageMult,
+  effectiveMelee,
   enemyHpScale,
   FISTS_WEAPON,
   GROUND_EPSILON,
@@ -945,7 +946,9 @@ export class GameRoom extends Room<ArenaState> {
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
     this.state.enemies.forEach((enemy) => {
       const kind = ENEMY_KINDS[enemy.kind];
-      if (!kind || kind.melee) return;
+      // §20 lunge-enemies (duelists + the derived rusher/swarm/zoner lunge) move via stepDuelists; this
+      // generic pass only chases/kites the rest (ranged spitters kite; the boss is stepped separately).
+      if (!kind || effectiveMelee(kind)) return;
       const target = nearestPoint(enemy, bodies);
       const next = kind.ranged
         ? stepEnemyKite(
@@ -1684,8 +1687,10 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
-      const m = kind?.melee;
-      if (!m) return;
+      // §20 every contact monster lunges: an explicit duelist combo, or a derived single-hit lunge for
+      // rusher/swarm/zoner (so the attack telegraphs + is parryable). Spitters/boss/dummies → no lunge.
+      const m = effectiveMelee(kind);
+      if (!m || !kind) return;
       const target = nearestPoint(enemy, bodies);
       let st = this.comboState.get(id);
       if (!st) {
