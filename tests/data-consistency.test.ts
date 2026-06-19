@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { EXPANSION_WEAPON_IDS, WEAPONS } from "@dd/shared";
+import {
+  DIMENSIONS,
+  ENEMY_KINDS,
+  EXPANSION_WEAPON_IDS,
+  SHIFTER_KIND_IDS,
+  WEAPONS,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
 const readJson = (rel: string): unknown =>
@@ -72,5 +78,34 @@ describe("weapon-data cross-references (codegen SoT)", () => {
       unknown
     >;
     for (const id of realKeys(overrides)) expect(WEAPONS[id], `override "${id}"`).toBeDefined();
+  });
+});
+
+// §17 the dimension registry is partly codegen'd; its rosters/bosses are raw kind-id strings. A typo or a
+// renamed/removed kind would fail SILENTLY (pickEnemyKind thins the pool, a bad boss id → no boss spawns).
+// Turn that into a build failure instead of a dead dimension found mid-playtest.
+describe("§17 dimension registry ↔ ENEMY_KINDS", () => {
+  for (const [dimId, dim] of Object.entries(DIMENSIONS)) {
+    it(`${dimId}: every roster id is a real, positively-weighted kind`, () => {
+      for (const id of dim.roster) {
+        const kind = ENEMY_KINDS[id];
+        expect(kind, `${dimId} roster id "${id}"`).toBeDefined();
+        expect(kind?.weight ?? 0, `${dimId} roster id "${id}" weight`).toBeGreaterThan(0);
+      }
+    });
+    it(`${dimId}: the boss id resolves to a kind with archetype "boss"`, () => {
+      const boss = ENEMY_KINDS[dim.boss];
+      expect(boss, `${dimId} boss "${dim.boss}"`).toBeDefined();
+      expect(boss?.archetype).toBe("boss");
+    });
+  }
+
+  it("every SHIFTER_KIND_IDS entry is a real kind carrying the shifter flag", () => {
+    expect(SHIFTER_KIND_IDS.length).toBeGreaterThan(0);
+    for (const id of SHIFTER_KIND_IDS) {
+      const kind = ENEMY_KINDS[id];
+      expect(kind, `shifter "${id}"`).toBeDefined();
+      expect(kind?.shifter, `shifter "${id}" flag`).toBeDefined();
+    }
   });
 });

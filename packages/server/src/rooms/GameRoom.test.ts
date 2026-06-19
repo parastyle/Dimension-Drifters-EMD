@@ -1,11 +1,15 @@
 import {
   DEFAULT_WEAPON,
+  DUMMY_HP,
   ENEMY_KINDS,
   EnemyState,
   getDimension,
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
+  ZONE_RADIUS,
+  ZONE_TTL,
+  ZoneState,
 } from "@dd/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -109,12 +113,13 @@ describe("GameRoom — §6 rez-or-dead death model", () => {
     h.join("p2");
     const p1 = h.state().players.get("p1");
     const p2 = h.state().players.get("p2");
-    // p1 goes down; p2 stands on the body wielding the rez spade.
-    p1.x = 1000;
-    p1.y = 1000;
+    // p1 goes down; p2 stands on the body wielding the rez spade. Anchor to the mapgen-guaranteed clear
+    // spawn disc (240px radius) so a random pit can't snap a player off-position and flake the rez.
+    p1.x = h.room.map.spawnX;
+    p1.y = h.room.map.spawnY;
     p1.hp = 0;
-    p2.x = 1000;
-    p2.y = 1010; // ~10px away, well inside REZ_RADIUS (96)
+    p2.x = h.room.map.spawnX;
+    p2.y = h.room.map.spawnY + 10; // ~10px away, well inside REZ_RADIUS (96)
     p2.weapon = "gravediggers-spade";
     h.tick(1); // p1 registers as downed
     expect(p1.alive).toBe(false);
@@ -167,17 +172,17 @@ describe("GameRoom — §20 swept melee connects in the live tick", () => {
     const h = makeRoom();
     h.join("p1");
     const p1 = h.state().players.get("p1");
-    p1.x = 1000;
-    p1.y = 1000;
+    p1.x = h.room.map.spawnX;
+    p1.y = h.room.map.spawnY;
     p1.weapon = "gravediggers-spade"; // a pure-edge MELEE weapon (the default cleaver is THROWN)
     h.tick(1); // let the weapon-swap init settle
-    // Plant a critter right in front along +x, within the spade's reach (150).
+    // Plant a critter right in front along +x, within the spade's reach (150) and the clear spawn disc.
     const e = new EnemyState();
     e.id = "victim";
     e.kind = "critter";
     e.hp = 50;
-    e.x = 1050;
-    e.y = 1000;
+    e.x = h.room.map.spawnX + 50;
+    e.y = h.room.map.spawnY;
     h.state().enemies.set("victim", e);
     h.send("p1", "attack", { aimX: 1, aimY: 0 });
     h.tick(4); // resolveSwing registers the swept blade; stepMeleeSwings samples it over the active window
@@ -255,15 +260,15 @@ describe("GameRoom — §20 universal lunge", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.x = 1000;
-    p.y = 1000;
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
     // a critter just outside touch range but inside lunge approach — it should wind up + jump, not just chip.
     const e = new EnemyState();
     e.id = "lunger";
     e.kind = "critter";
     e.hp = 999;
-    e.x = 1050;
-    e.y = 1000;
+    e.x = h.room.map.spawnX + 50;
+    e.y = h.room.map.spawnY;
     h.state().enemies.set("lunger", e);
     const pc = h.room.combat.get("p1");
     let sawWindup = false;
@@ -276,22 +281,195 @@ describe("GameRoom — §20 universal lunge", () => {
     expect(p.parriedSeq).toBeGreaterThan(0); // a lunge connected during the parry window → negated
   });
 
-  it("a critter's lunge HITS an un-parrying player (the attack is real)", () => {
+  it("a critter's lunge HITS an un-parrying player (the telegraphed attack is real)", () => {
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
-    p.x = 1000;
-    p.y = 1000;
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
     p.hp = 100;
+    // The companion test proves a parry NEGATES the lunge; this proves it LANDS without one. We assert the
+    // discrete lunge hit (≥ LUNGE_MIN_DAMAGE 5, derived 6.4 for a critter), NOT passive touch chip —
+    // passive contact (4/s × dt ≈ 0.2/tick) is smaller than per-tick regen, so it clamps right back to maxHp.
+    // On the clear spawn disc (no pits) the windup→strike is fully deterministic.
     const e = new EnemyState();
     e.id = "lunger2";
     e.kind = "critter";
     e.hp = 999;
-    e.x = 1052;
-    e.y = 1000;
+    e.x = h.room.map.spawnX + 30; // inside the derived approach (64) → winds up immediately
+    e.y = h.room.map.spawnY;
     h.state().enemies.set("lunger2", e);
-    h.tick(30); // no parry → it telegraphs, jumps, and connects (lunge + contact chip)
-    expect(p.hp).toBeLessThan(100);
+    h.tick(14); // windup (~0.46s ≈ 9 ticks) → the jab connects ~tick 11; a few regen ticks can't refill 6.4
+    expect(p.hp).toBeLessThan(96); // a real, regen-proof chunk of HP gone
+  });
+});
+
+describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)", () => {
+  // Place the boss `dx` px right of the clear spawn disc centre, at 1 HP. The boss is pit-immune, but the
+  // PLAYER who must reach it is not — anchoring to spawnX/spawnY keeps the attacker on guaranteed ground.
+  function spawnLowBoss(h: ReturnType<typeof makeRoom>, dx: number) {
+    h.send("p1", "spawnBoss");
+    h.tick(1);
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+        e.hp = 1;
+        e.x = h.room.map.spawnX + dx;
+        e.y = h.room.map.spawnY;
+      }
+    });
+  }
+
+  it("killing the boss with a SWING opens the extraction portal", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "gravediggers-spade"; // pure-edge melee
+    h.tick(1);
+    spawnLowBoss(h, 100); // within the spade's reach (150) and the clear disc
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4);
+    expect(h.state().portalOpen).toBe(true);
+  });
+
+  it("killing the boss with a THROWN projectile ALSO opens the portal (locks the deduped path)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "rusty-cleaver"; // thrown
+    h.tick(1);
+    spawnLowBoss(h, 120); // a short throw away, still on the clear disc
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(10); // cleaver flies out + connects
+    expect(h.state().portalOpen).toBe(true);
+  });
+
+  it("a dummy never dies — a lethal swing resets its HP to DUMMY_HP", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "gravediggers-spade";
+    h.tick(1);
+    const e = new EnemyState();
+    e.id = "dum";
+    e.kind = "dummy";
+    e.hp = 1;
+    e.x = h.room.map.spawnX + 80; // within the spade's swept reach, on the clear disc
+    e.y = h.room.map.spawnY;
+    h.state().enemies.set("dum", e);
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4);
+    const after = h.state().enemies.get("dum");
+    expect(after).toBeDefined(); // never removed
+    expect(after.hp).toBe(DUMMY_HP); // reset, not killed
+  });
+
+  it("a kill grants XP (the squad's xp/level advances)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "gravediggers-spade";
+    h.tick(1);
+    const before = p.xp + (p.level - 1) * 1e6;
+    const e = new EnemyState();
+    e.id = "v";
+    e.kind = "critter";
+    e.hp = 1;
+    e.x = h.room.map.spawnX + 45; // within the spade's swept reach, on the clear disc
+    e.y = h.room.map.spawnY;
+    h.state().enemies.set("v", e);
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(5);
+    expect(h.state().enemies.has("v")).toBe(false); // killed
+    expect(p.xp + (p.level - 1) * 1e6).toBeGreaterThan(before); // §12 xp granted
+  });
+});
+
+describe("GameRoom — §4 untrusted-input handlers (anti-cheat surface)", () => {
+  it("debugSpawn does nothing in arena mode (training-gated)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const before = h.state().enemies.size;
+    h.send("p1", "debugSpawn", { kind: "critter", count: 5 });
+    expect(h.state().enemies.size).toBe(before);
+  });
+
+  it("debugSpawn rejects an unknown or 'dummy' kind", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "toggleTraining"); // → training mode
+    h.send("p1", "debugSpawn", { kind: "no-such-kind", count: 3 });
+    let critters = 0;
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (e.kind === "critter") critters++;
+    });
+    expect(critters).toBe(0); // bad id spawned nothing
+  });
+
+  it("an extreme/non-unit aim is normalized to a unit vector", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "attack", { aimX: 99, aimY: 0 });
+    const c = h.room.combat.get("p1");
+    expect(Math.hypot(c.aimX, c.aimY)).toBeCloseTo(1, 6);
+  });
+
+  it("chooseAugment ignores an id that wasn't in the offered draft", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.sigPending = 1;
+    p.sigOffer = ""; // nothing offered this pick
+    h.send("p1", "chooseAugment", { id: "brand" });
+    expect(p.augments).toBe(""); // rejected
+    expect(p.sigPending).toBe(1); // unspent
+  });
+});
+
+describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
+  it("a living player in the open portal flips the run to VICTORY", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    // Stand the player and the portal on the clear spawn disc — a random pit under an arbitrary coordinate
+    // would chip + snap the player off the portal mouth and flake the victory check.
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    h.state().portalOpen = true;
+    h.state().portalX = h.room.map.spawnX;
+    h.state().portalY = h.room.map.spawnY;
+    h.tick(2);
+    expect(h.state().outcome).toBe("victory");
+  });
+
+  it("a zoner puddle damages a player WITH parry i-frames up — DoT is UNPARRYABLE", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    // On the clear spawn disc so the only thing that can chip the player is the puddle, not a random pit.
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.hp = 100;
+    const z = new ZoneState();
+    z.id = "puddle";
+    z.x = h.room.map.spawnX;
+    z.y = h.room.map.spawnY;
+    z.radius = ZONE_RADIUS;
+    h.state().zones.set("puddle", z);
+    h.room.zoneMeta.set("puddle", ZONE_TTL); // give the puddle life
+    const pc = h.room.combat.get("p1");
+    for (let i = 0; i < 6; i++) {
+      pc.invuln = 1; // hold a parry every tick
+      h.tick(1);
+    }
+    expect(p.hp).toBeLessThan(100); // the puddle ignored the i-frames
   });
 });
 

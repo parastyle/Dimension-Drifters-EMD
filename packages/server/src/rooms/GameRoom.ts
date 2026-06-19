@@ -542,16 +542,39 @@ export class GameRoom extends Room<ArenaState> {
     this.setPatchRate(TICK_MS);
   }
 
+  /** Reset every NON-synced per-entity collection at a run boundary (restart / training toggle) so no
+   *  in-flight swing, combo, fire-cooldown, zone, pickup-grace, or burn-pulse ghost-carries into the fresh
+   *  run. ONE place → adding a new transient Map forces touching this. (`inputs`/`combat` are player-
+   *  lifecycle, not run transients, so they're left alone.) */
+  private clearTransients(): void {
+    this.projectileMeta.clear();
+    this.enemyFireCd.clear();
+    this.zonerDropCd.clear();
+    this.zoneMeta.clear();
+    this.comboState.clear();
+    this.meleeSwings.clear();
+    this.pickupGrace.clear();
+    this.burnPulses.length = 0;
+  }
+
+  /** §6 count of LIVING players — what the TRASH horde difficulty scales on, so a mostly-downed squad faces
+   *  a beatable horde and rezzes stay achievable (the rez-or-dead death-spiral fix). The boss keeps the
+   *  full-squad `players.size` high-water-mark (a capstone shouldn't soften because allies are down). */
+  private livingCount(): number {
+    let n = 0;
+    this.state.players.forEach((p) => {
+      if (p.alive) n++;
+    });
+    return Math.max(1, n);
+  }
+
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
   private toggleTraining(): void {
     this.state.enemies.clear();
     this.state.pickups.clear();
     this.state.projectiles.clear();
     this.state.zones.clear();
-    this.projectileMeta.clear();
-    this.enemyFireCd.clear();
-    this.zonerDropCd.clear();
-    this.zoneMeta.clear();
+    this.clearTransients();
     this.state.outcome = "active";
     this.state.portalOpen = false;
     this.bossSpawned = false;
@@ -601,10 +624,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.clear();
     this.state.projectiles.clear();
     this.state.zones.clear();
-    this.projectileMeta.clear();
-    this.enemyFireCd.clear();
-    this.zonerDropCd.clear();
-    this.zoneMeta.clear();
+    this.clearTransients();
     this.state.elapsed = 0;
     this.state.outcome = "active";
     this.state.portalOpen = false;
@@ -649,7 +669,6 @@ export class GameRoom extends Room<ArenaState> {
         c.vh = 0;
       }
     });
-    this.burnPulses.length = 0;
     console.log(`[room ${this.roomId}] run restarted`);
   }
 
@@ -1355,7 +1374,7 @@ export class GameRoom extends Room<ArenaState> {
   private spawnBossAdds(boss: EnemyState): void {
     const kind = ENEMY_KINDS["mote-swarm"];
     if (!kind) return;
-    const players = this.state.players.size;
+    const players = this.livingCount(); // §6 scale adds to who can fight, not who's connected
     const bossRadius = ENEMY_KINDS[boss.kind]?.radius ?? ENEMY_RADIUS;
     for (let i = 0; i < BOSS_ADD_COUNT; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -1933,18 +1952,9 @@ export class GameRoom extends Room<ArenaState> {
           if (dx * dx + dy * dy <= reach * reach) {
             meta.hit.add(eid);
             meta.pierce -= 1;
-            enemy.hp -= meta.damage * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1); // §8 Brand
-            if (enemy.hp <= 0) {
-              if (enemy.kind === "dummy") enemy.hp = DUMMY_HP;
-              else {
-                if (ENEMY_KINDS[enemy.kind]?.archetype === "boss")
-                  this.openPortal(enemy.x, enemy.y);
-                xpGained +=
-                  (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
-                this.maybeDropWeapon(enemy); // §13 ronin sword drop
-                kills.push(eid);
-              }
-            }
+            // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the
+            // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
+            xpGained += this.damageEnemy(enemy, eid, meta.damage, kills);
           }
         });
         for (const eid of kills) this.state.enemies.delete(eid);
@@ -2039,7 +2049,7 @@ export class GameRoom extends Room<ArenaState> {
     // Appear on a ring just beyond a typical screen edge, then converge inward.
     const angle = Math.random() * Math.PI * 2;
     const m = ENEMY_RADIUS + 4;
-    const players = this.state.players.size;
+    const players = this.livingCount(); // §6 trash horde scales on LIVING players (rez-or-dead spiral fix)
     const enemy = new EnemyState();
     enemy.id = `e${this.enemySeq++}`;
     enemy.kind = kindId;
