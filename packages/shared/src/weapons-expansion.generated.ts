@@ -7,11779 +7,12571 @@ import type { WeaponDef } from "./weapons.js";
 
 export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
   "x2-sandsong-saber": {
-    id: "x2-sandsong-saber",
-    name: "Sandsong Saber",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-sandsong-saber",
+    "name": "Sandsong Saber",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 6,
-    range: 134,
-    halfArc: 0.66,
-    cooldown: 0.3,
-    displayLength: 96,
-    swingArc: 2.4,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "saber",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 134,
+    "halfArc": 0.66,
+    "cooldown": 0.3,
+    "displayLength": 96,
+    "swingArc": 2.4,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "saber",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      dex: 5,
+    "requirements": {
+      "dex": 5
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-coyote-s-grin": {
-    id: "x2-coyote-s-grin",
-    name: "Coyote's Grin",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-coyote-s-grin",
+    "name": "Coyote's Grin",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 4,
-    range: 96,
-    halfArc: 0.7,
-    cooldown: 0.24,
-    displayLength: 66,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "saber",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 4,
+    "range": 96,
+    "halfArc": 0.7,
+    "cooldown": 0.24,
+    "displayLength": 66,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "saber",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 6,
+    "requirements": {
+      "dex": 6
     },
-    dual: true,
-    durability: 75,
-    thrown: {
-      speed: 680,
-      range: 520,
-      damage: 4,
-      charges: 3,
-      refillSeconds: 1.5,
-      pierce: 1,
-    },
+    "dual": true,
+    "durability": 75,
+    "thrown": {
+      "speed": 680,
+      "range": 520,
+      "damage": 4,
+      "charges": 3,
+      "refillSeconds": 1.5,
+      "pierce": 1
+    }
   },
   "x2-brimstone-falcata": {
-    id: "x2-brimstone-falcata",
-    name: "Brimstone Falcata",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "D",
+    "id": "x2-brimstone-falcata",
+    "name": "Brimstone Falcata",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "D"
     },
-    damage: 9,
-    range: 138,
-    halfArc: 0.8,
-    cooldown: 0.42,
-    displayLength: 102,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "saber",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 9,
+    "range": 138,
+    "halfArc": 0.8,
+    "cooldown": 0.42,
+    "displayLength": 102,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "saber",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
+    "requirements": {
+      "str": 7
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-hailwidow-katana": {
-    id: "x2-hailwidow-katana",
-    name: "Hailwidow Katana",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-hailwidow-katana",
+    "name": "Hailwidow Katana",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 7,
-    range: 140,
-    halfArc: 0.6,
-    cooldown: 0.3,
-    displayLength: 128,
-    swingArc: 2.3,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "katana",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 7,
+    "range": 140,
+    "halfArc": 0.6,
+    "cooldown": 0.3,
+    "displayLength": 128,
+    "swingArc": 2.3,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "katana",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 11,
+    "requirements": {
+      "dex": 11
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-gravechill-nodachi": {
-    id: "x2-gravechill-nodachi",
-    name: "Gravechill Nodachi",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-gravechill-nodachi",
+    "name": "Gravechill Nodachi",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 9,
-    range: 300,
-    halfArc: 1,
-    cooldown: 0.66,
-    displayLength: 330,
-    swingArc: 2.4,
-    gripFrac: 0.05,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "nodachi",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 9,
+    "range": 300,
+    "halfArc": 1,
+    "cooldown": 0.66,
+    "displayLength": 330,
+    "swingArc": 2.4,
+    "gripFrac": 0.05,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "nodachi",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 7,
+    "requirements": {
+      "str": 9,
+      "dex": 7
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 130,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 130,
+      "damage": 7
+    }
   },
   "x2-voltfang-tachi": {
-    id: "x2-voltfang-tachi",
-    name: "Voltfang Tachi",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-voltfang-tachi",
+    "name": "Voltfang Tachi",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 6,
-    range: 142,
-    halfArc: 0.64,
-    cooldown: 0.32,
-    displayLength: 126,
-    swingArc: 2.4,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "katana",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 142,
+    "halfArc": 0.64,
+    "cooldown": 0.32,
+    "displayLength": 126,
+    "swingArc": 2.4,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "katana",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 9,
-      int: 4,
+    "requirements": {
+      "dex": 9,
+      "int": 4
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-reverent-broadsword": {
-    id: "x2-reverent-broadsword",
-    name: "Reverent Broadsword",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-reverent-broadsword",
+    "name": "Reverent Broadsword",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 8,
-    range: 144,
-    halfArc: 0.82,
-    cooldown: 0.4,
-    displayLength: 108,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "broadsword",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 8,
+    "range": 144,
+    "halfArc": 0.82,
+    "cooldown": 0.4,
+    "displayLength": 108,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "broadsword",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
+    "requirements": {
+      "str": 6
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-tombwarden-claymore": {
-    id: "x2-tombwarden-claymore",
-    name: "Tombwarden Claymore",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "D",
+    "id": "x2-tombwarden-claymore",
+    "name": "Tombwarden Claymore",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "D"
     },
-    damage: 14,
-    range: 178,
-    halfArc: 1.05,
-    cooldown: 0.82,
-    displayLength: 210,
-    swingArc: 3.1,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "broadsword",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 14,
+    "range": 178,
+    "halfArc": 1.05,
+    "cooldown": 0.82,
+    "displayLength": 210,
+    "swingArc": 3.1,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "broadsword",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 12,
-      con: 6,
+    "requirements": {
+      "str": 12,
+      "con": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 130,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 130,
+      "damage": 7
+    }
   },
   "x2-hexbloom-rapier": {
-    id: "x2-hexbloom-rapier",
-    name: "Hexbloom Rapier",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
-      luk: "D",
+    "id": "x2-hexbloom-rapier",
+    "name": "Hexbloom Rapier",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "luk": "D"
     },
-    damage: 6,
-    range: 158,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 132,
-    swingArc: 2.2,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "rapier",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 6,
+    "range": 158,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 132,
+    "swingArc": 2.2,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "rapier",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-phantom-estoc": {
-    id: "x2-phantom-estoc",
-    name: "Phantom Estoc",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-phantom-estoc",
+    "name": "Phantom Estoc",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 7,
-    range: 168,
-    halfArc: 0.5,
-    cooldown: 0.46,
-    displayLength: 150,
-    swingArc: 2.2,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "rapier",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 7,
+    "range": 168,
+    "halfArc": 0.5,
+    "cooldown": 0.46,
+    "displayLength": 150,
+    "swingArc": 2.2,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "rapier",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 9,
-      int: 5,
+    "requirements": {
+      "dex": 9,
+      "int": 5
     },
-    durability: 75,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 560,
-      range: 360,
-      damage: 5,
-    },
+    "durability": 75,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 560,
+      "range": 360,
+      "damage": 5
+    }
   },
   "x2-mirage-hardlight-saber": {
-    id: "x2-mirage-hardlight-saber",
-    name: "Mirage Hardlight Saber",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-mirage-hardlight-saber",
+    "name": "Mirage Hardlight Saber",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 7,
-    range: 136,
-    halfArc: 0.62,
-    cooldown: 0.28,
-    displayLength: 110,
-    swingArc: 2.3,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "energy-blade",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 7,
+    "range": 136,
+    "halfArc": 0.62,
+    "cooldown": 0.28,
+    "displayLength": 110,
+    "swingArc": 2.3,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "energy-blade",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 12,
+    "requirements": {
+      "dex": 12
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-riftcleaver-greatblade": {
-    id: "x2-riftcleaver-greatblade",
-    name: "Riftcleaver Greatblade",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-riftcleaver-greatblade",
+    "name": "Riftcleaver Greatblade",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 10,
-    range: 156,
-    halfArc: 1,
-    cooldown: 0.7,
-    displayLength: 142,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "melee",
-      family: "energy-blade",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 10,
+    "range": 156,
+    "halfArc": 1,
+    "cooldown": 0.7,
+    "displayLength": 142,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "melee",
+      "family": "energy-blade",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 8,
-      int: 7,
+    "requirements": {
+      "str": 8,
+      "int": 7
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 560,
-      range: 360,
-      damage: 5,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 560,
+      "range": 360,
+      "damage": 5
+    }
   },
   "x2-saltbrand-cutlass": {
-    id: "x2-saltbrand-cutlass",
-    name: "Saltbrand Cutlass",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-saltbrand-cutlass",
+    "name": "Saltbrand Cutlass",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 8,
-    range: 130,
-    halfArc: 0.86,
-    cooldown: 0.38,
-    displayLength: 98,
-    swingArc: 2.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "saber",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 8,
+    "range": 130,
+    "halfArc": 0.86,
+    "cooldown": 0.38,
+    "displayLength": 98,
+    "swingArc": 2.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "saber",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 4,
+    "requirements": {
+      "str": 5,
+      "dex": 4
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-cinderfang-wakizashi-pair": {
-    id: "x2-cinderfang-wakizashi-pair",
-    name: "Cinderfang Wakizashi Pair",
-    expansion: true,
-    scalingGrades: {
-      str: "E",
-      dex: "A",
+    "id": "x2-cinderfang-wakizashi-pair",
+    "name": "Cinderfang Wakizashi Pair",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "E",
+      "dex": "A"
     },
-    damage: 4,
-    range: 100,
-    halfArc: 0.68,
-    cooldown: 0.22,
-    displayLength: 70,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "katana",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 4,
+    "range": 100,
+    "halfArc": 0.68,
+    "cooldown": 0.22,
+    "displayLength": 70,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "katana",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      dex: 8,
+    "requirements": {
+      "dex": 8
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-dustreaper-zweihander": {
-    id: "x2-dustreaper-zweihander",
-    name: "Dustreaper Zweihander",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-dustreaper-zweihander",
+    "name": "Dustreaper Zweihander",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 13,
-    range: 218,
-    halfArc: 1.05,
-    cooldown: 0.78,
-    displayLength: 230,
-    swingArc: 3.1,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "broadsword",
-      rangeBand: "mid",
-      scaling: ["STR"],
+    "damage": 13,
+    "range": 218,
+    "halfArc": 1.05,
+    "cooldown": 0.78,
+    "displayLength": 230,
+    "swingArc": 3.1,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "broadsword",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 13,
+    "requirements": {
+      "str": 13
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-verdict-longsword": {
-    id: "x2-verdict-longsword",
-    name: "Verdict Longsword",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-verdict-longsword",
+    "name": "Verdict Longsword",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 8,
-    range: 140,
-    halfArc: 0.78,
-    cooldown: 0.42,
-    displayLength: 106,
-    swingArc: 2.6,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "broadsword",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 8,
+    "range": 140,
+    "halfArc": 0.78,
+    "cooldown": 0.42,
+    "displayLength": 106,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "broadsword",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 5,
+    "requirements": {
+      "str": 6,
+      "int": 5
     },
-    durability: 75,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "durability": 75,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-bonewhisper-jian": {
-    id: "x2-bonewhisper-jian",
-    name: "Bonewhisper Jian",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "B",
+    "id": "x2-bonewhisper-jian",
+    "name": "Bonewhisper Jian",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "B"
     },
-    damage: 6,
-    range: 150,
-    halfArc: 0.54,
-    cooldown: 0.34,
-    displayLength: 116,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "rapier",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 150,
+    "halfArc": 0.54,
+    "cooldown": 0.34,
+    "displayLength": 116,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "rapier",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 6,
+    "requirements": {
+      "dex": 8,
+      "int": 6
     },
-    durability: 75,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 560,
-      range: 360,
-      damage: 5,
-    },
+    "durability": 75,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 560,
+      "range": 360,
+      "damage": 5
+    }
   },
   "x2-stormpetal-odachi": {
-    id: "x2-stormpetal-odachi",
-    name: "Stormpetal Odachi",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "A",
+    "id": "x2-stormpetal-odachi",
+    "name": "Stormpetal Odachi",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "A"
     },
-    damage: 9,
-    range: 300,
-    halfArc: 1,
-    cooldown: 0.64,
-    displayLength: 335,
-    swingArc: 2.4,
-    gripFrac: 0.05,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "nodachi",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 9,
+    "range": 300,
+    "halfArc": 1,
+    "cooldown": 0.64,
+    "displayLength": 335,
+    "swingArc": 2.4,
+    "gripFrac": 0.05,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "nodachi",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 12,
+    "requirements": {
+      "str": 6,
+      "dex": 12
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-toxinwell-khopesh": {
-    id: "x2-toxinwell-khopesh",
-    name: "Toxinwell Khopesh",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-toxinwell-khopesh",
+    "name": "Toxinwell Khopesh",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 7,
-    range: 132,
-    halfArc: 0.84,
-    cooldown: 0.4,
-    displayLength: 100,
-    swingArc: 2.7,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "saber",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 7,
+    "range": 132,
+    "halfArc": 0.84,
+    "cooldown": 0.4,
+    "displayLength": 100,
+    "swingArc": 2.7,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "saber",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 6,
+    "requirements": {
+      "str": 6,
+      "dex": 6
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-boothill-hatchet": {
-    id: "x2-boothill-hatchet",
-    name: "Boothill Hatchet",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "D",
+    "id": "x2-boothill-hatchet",
+    "name": "Boothill Hatchet",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "D"
     },
-    damage: 7,
-    range: 116,
-    halfArc: 0.78,
-    cooldown: 0.3,
-    displayLength: 56,
-    swingArc: 2.4,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 7,
+    "range": 116,
+    "halfArc": 0.78,
+    "cooldown": 0.3,
+    "displayLength": 56,
+    "swingArc": 2.4,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 4,
+    "requirements": {
+      "str": 4
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-gallows-splitter": {
-    id: "x2-gallows-splitter",
-    name: "Gallows Splitter",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-gallows-splitter",
+    "name": "Gallows Splitter",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 11,
-    range: 138,
-    halfArc: 0.82,
-    cooldown: 0.52,
-    displayLength: 92,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR"],
+    "damage": 11,
+    "range": 138,
+    "halfArc": 0.82,
+    "cooldown": 0.52,
+    "displayLength": 92,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 8,
+    "requirements": {
+      "str": 8
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-cinderbrand-cleaver": {
-    id: "x2-cinderbrand-cleaver",
-    name: "Cinderbrand Cleaver",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-cinderbrand-cleaver",
+    "name": "Cinderbrand Cleaver",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 12,
-    range: 158,
-    halfArc: 1,
-    cooldown: 0.72,
-    displayLength: 140,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "cleaver",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 12,
+    "range": 158,
+    "halfArc": 1,
+    "cooldown": 0.72,
+    "displayLength": 140,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "cleaver",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 9,
-      int: 4,
+    "requirements": {
+      "str": 9,
+      "int": 4
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 5,
-      spread: 0.45,
-      speed: 360,
-      range: 210,
-      damage: 5,
-      explode: {
-        radius: 54,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 5,
+      "spread": 0.45,
+      "speed": 360,
+      "range": 210,
+      "damage": 5,
+      "explode": {
+        "radius": 54,
+        "damage": 6
+      }
+    }
   },
   "x2-permafrost-bardiche": {
-    id: "x2-permafrost-bardiche",
-    name: "Permafrost Bardiche",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-permafrost-bardiche",
+    "name": "Permafrost Bardiche",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 9,
-    range: 250,
-    halfArc: 1,
-    cooldown: 0.66,
-    displayLength: 240,
-    swingArc: 2.6,
-    gripFrac: 0.06,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 9,
+    "range": 250,
+    "halfArc": 1,
+    "cooldown": 0.66,
+    "displayLength": 240,
+    "swingArc": 2.6,
+    "gripFrac": 0.06,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 9,
+    "requirements": {
+      "str": 6,
+      "dex": 9
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-thunderhoof-splittingaxe": {
-    id: "x2-thunderhoof-splittingaxe",
-    name: "Thunderhoof Splittingaxe",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-thunderhoof-splittingaxe",
+    "name": "Thunderhoof Splittingaxe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 10,
-    range: 150,
-    halfArc: 0.95,
-    cooldown: 0.62,
-    displayLength: 132,
-    swingArc: 2.9,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 10,
+    "range": 150,
+    "halfArc": 0.95,
+    "cooldown": 0.62,
+    "displayLength": 132,
+    "swingArc": 2.9,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 3,
-      range: 220,
-      damage: 5,
-      falloff: 0.75,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 220,
+      "damage": 5,
+      "falloff": 0.75
+    }
   },
   "x2-sanctified-headsman": {
-    id: "x2-sanctified-headsman",
-    name: "Sanctified Headsman",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-sanctified-headsman",
+    "name": "Sanctified Headsman",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 13,
-    range: 160,
-    halfArc: 0.9,
-    cooldown: 0.74,
-    displayLength: 138,
-    swingArc: 2.9,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "cleaver",
-      rangeBand: "close",
-      scaling: ["STR"],
+    "damage": 13,
+    "range": 160,
+    "halfArc": 0.9,
+    "cooldown": 0.74,
+    "displayLength": 138,
+    "swingArc": 2.9,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "cleaver",
+      "rangeBand": "close",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 10,
+    "requirements": {
+      "str": 10
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-bogwater-twinbits": {
-    id: "x2-bogwater-twinbits",
-    name: "Bogwater Twinbits",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-bogwater-twinbits",
+    "name": "Bogwater Twinbits",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 5,
-    range: 110,
-    halfArc: 0.72,
-    cooldown: 0.32,
-    displayLength: 58,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 110,
+    "halfArc": 0.72,
+    "cooldown": 0.32,
+    "displayLength": 58,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 6,
+    "requirements": {
+      "dex": 6
     },
-    dual: true,
-    durability: 75,
-    thrown: {
-      speed: 680,
-      range: 540,
-      damage: 8,
-      charges: 4,
-      refillSeconds: 1.6,
-      pierce: 2,
-    },
+    "dual": true,
+    "durability": 75,
+    "thrown": {
+      "speed": 680,
+      "range": 540,
+      "damage": 8,
+      "charges": 4,
+      "refillSeconds": 1.6,
+      "pierce": 2
+    }
   },
   "x2-hollowmoon-reaver": {
-    id: "x2-hollowmoon-reaver",
-    name: "Hollowmoon Reaver",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-hollowmoon-reaver",
+    "name": "Hollowmoon Reaver",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 10,
-    range: 152,
-    halfArc: 1,
-    cooldown: 0.7,
-    displayLength: 136,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 10,
+    "range": 152,
+    "halfArc": 1,
+    "cooldown": 0.7,
+    "displayLength": 136,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 7,
+    "requirements": {
+      "str": 6,
+      "int": 7
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 4,
-      spread: 0.6,
-      speed: 320,
-      range: 190,
-      damage: 6,
-      explode: {
-        radius: 60,
-        damage: 7,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 4,
+      "spread": 0.6,
+      "speed": 320,
+      "range": 190,
+      "damage": 6,
+      "explode": {
+        "radius": 60,
+        "damage": 7
+      }
+    }
   },
   "x2-sluicebox-maul-axe": {
-    id: "x2-sluicebox-maul-axe",
-    name: "Sluicebox Maul-Axe",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "C",
+    "id": "x2-sluicebox-maul-axe",
+    "name": "Sluicebox Maul-Axe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "C"
     },
-    damage: 12,
-    range: 168,
-    halfArc: 1.05,
-    cooldown: 0.82,
-    displayLength: 210,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 12,
+    "range": 168,
+    "halfArc": 1.05,
+    "cooldown": 0.82,
+    "displayLength": 210,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 11,
-      con: 5,
+    "requirements": {
+      "str": 11,
+      "con": 5
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 150,
-      damage: 8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 150,
+      "damage": 8
+    }
   },
   "x2-saloon-tomahawk": {
-    id: "x2-saloon-tomahawk",
-    name: "Saloon Tomahawk",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-saloon-tomahawk",
+    "name": "Saloon Tomahawk",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 6,
-    range: 112,
-    halfArc: 0.75,
-    cooldown: 0.34,
-    displayLength: 60,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 6,
+    "range": 112,
+    "halfArc": 0.75,
+    "cooldown": 0.34,
+    "displayLength": 60,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    durability: 75,
-    thrown: {
-      speed: 760,
-      range: 600,
-      damage: 9,
-      charges: 3,
-      refillSeconds: 1.4,
-      pierce: 2,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 760,
+      "range": 600,
+      "damage": 9,
+      "charges": 3,
+      "refillSeconds": 1.4,
+      "pierce": 2
+    }
   },
   "x2-brimstone-doubleheader": {
-    id: "x2-brimstone-doubleheader",
-    name: "Brimstone Doubleheader",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-brimstone-doubleheader",
+    "name": "Brimstone Doubleheader",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 5,
-    range: 100,
-    halfArc: 0.7,
-    cooldown: 0.28,
-    displayLength: 58,
-    swingArc: 2.2,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 100,
+    "halfArc": 0.7,
+    "cooldown": 0.28,
+    "displayLength": 58,
+    "swingArc": 2.2,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-glacier-headtaker": {
-    id: "x2-glacier-headtaker",
-    name: "Glacier Headtaker",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      int: "D",
+    "id": "x2-glacier-headtaker",
+    "name": "Glacier Headtaker",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "int": "D"
     },
-    damage: 13,
-    range: 156,
-    halfArc: 0.92,
-    cooldown: 0.78,
-    displayLength: 134,
-    swingArc: 2.9,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "cleaver",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 13,
+    "range": 156,
+    "halfArc": 0.92,
+    "cooldown": 0.78,
+    "displayLength": 134,
+    "swingArc": 2.9,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "cleaver",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 10,
-      int: 3,
+    "requirements": {
+      "str": 10,
+      "int": 3
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-dustdevil-whirlbits": {
-    id: "x2-dustdevil-whirlbits",
-    name: "Dustdevil Whirlbits",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-dustdevil-whirlbits",
+    "name": "Dustdevil Whirlbits",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 6,
-    range: 104,
-    halfArc: 0.85,
-    cooldown: 0.3,
-    displayLength: 60,
-    swingArc: 3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 104,
+    "halfArc": 0.85,
+    "cooldown": 0.3,
+    "displayLength": 60,
+    "swingArc": 3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 5,
+    "requirements": {
+      "str": 5,
+      "dex": 5
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-choir-iron-greataxe": {
-    id: "x2-choir-iron-greataxe",
-    name: "Choir-Iron Greataxe",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-choir-iron-greataxe",
+    "name": "Choir-Iron Greataxe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 12,
-    range: 172,
-    halfArc: 1.05,
-    cooldown: 0.85,
-    displayLength: 220,
-    swingArc: 3.1,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR"],
+    "damage": 12,
+    "range": 172,
+    "halfArc": 1.05,
+    "cooldown": 0.85,
+    "displayLength": 220,
+    "swingArc": 3.1,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 12,
+    "requirements": {
+      "str": 12
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 170,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 170,
+      "damage": 9
+    }
   },
   "x2-quicksilver-skinning-cleaver": {
-    id: "x2-quicksilver-skinning-cleaver",
-    name: "Quicksilver Skinning Cleaver",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-quicksilver-skinning-cleaver",
+    "name": "Quicksilver Skinning Cleaver",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 6,
-    range: 130,
-    halfArc: 0.62,
-    cooldown: 0.3,
-    displayLength: 86,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "cleaver",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 6,
+    "range": 130,
+    "halfArc": 0.62,
+    "cooldown": 0.3,
+    "displayLength": 86,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "cleaver",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 9,
+    "requirements": {
+      "dex": 9
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-witchwood-splitter": {
-    id: "x2-witchwood-splitter",
-    name: "Witchwood Splitter",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-witchwood-splitter",
+    "name": "Witchwood Splitter",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 10,
-    range: 150,
-    halfArc: 0.95,
-    cooldown: 0.68,
-    displayLength: 130,
-    swingArc: 2.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 10,
+    "range": 150,
+    "halfArc": 0.95,
+    "cooldown": 0.68,
+    "displayLength": 130,
+    "swingArc": 2.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 6,
+    "requirements": {
+      "str": 6,
+      "int": 6
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 340,
-      range: 200,
-      damage: 4,
-      explode: {
-        radius: 50,
-        damage: 5,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 340,
+      "range": 200,
+      "damage": 4,
+      "explode": {
+        "radius": 50,
+        "damage": 5
+      }
+    }
   },
   "x2-hangman-s-greatcleaver": {
-    id: "x2-hangman-s-greatcleaver",
-    name: "Hangman's Greatcleaver",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "C",
+    "id": "x2-hangman-s-greatcleaver",
+    "name": "Hangman's Greatcleaver",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "C"
     },
-    damage: 14,
-    range: 174,
-    halfArc: 1.05,
-    cooldown: 0.88,
-    displayLength: 230,
-    swingArc: 3.2,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "cleaver",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 14,
+    "range": 174,
+    "halfArc": 1.05,
+    "cooldown": 0.88,
+    "displayLength": 230,
+    "swingArc": 3.2,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "cleaver",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 13,
-      con: 6,
+    "requirements": {
+      "str": 13,
+      "con": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 160,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 160,
+      "damage": 9
+    }
   },
   "x2-stormcrow-twin-hatchets": {
-    id: "x2-stormcrow-twin-hatchets",
-    name: "Stormcrow Twin-Hatchets",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-stormcrow-twin-hatchets",
+    "name": "Stormcrow Twin-Hatchets",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 5,
-    range: 102,
-    halfArc: 0.7,
-    cooldown: 0.3,
-    displayLength: 58,
-    swingArc: 2.3,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 102,
+    "halfArc": 0.7,
+    "cooldown": 0.3,
+    "displayLength": 58,
+    "swingArc": 2.3,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 5,
+    "requirements": {
+      "dex": 6,
+      "int": 5
     },
-    dual: true,
-    durability: 75,
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 4,
-      falloff: 0.8,
-    },
+    "dual": true,
+    "durability": 75,
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 4,
+      "falloff": 0.8
+    }
   },
   "x2-reliquary-broadaxe": {
-    id: "x2-reliquary-broadaxe",
-    name: "Reliquary Broadaxe",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-reliquary-broadaxe",
+    "name": "Reliquary Broadaxe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 9,
-    range: 144,
-    halfArc: 0.9,
-    cooldown: 0.6,
-    displayLength: 96,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 9,
+    "range": 144,
+    "halfArc": 0.9,
+    "cooldown": 0.6,
+    "displayLength": 96,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 5,
-      int: 8,
+    "requirements": {
+      "str": 5,
+      "int": 8
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 5,
-      spread: 0.4,
-      speed: 380,
-      range: 220,
-      damage: 5,
-      explode: {
-        radius: 58,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 5,
+      "spread": 0.4,
+      "speed": 380,
+      "range": 220,
+      "damage": 5,
+      "explode": {
+        "radius": 58,
+        "damage": 6
+      }
+    }
   },
   "x2-iron-vow-bearded-axe": {
-    id: "x2-iron-vow-bearded-axe",
-    name: "Iron Vow Bearded Axe",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-iron-vow-bearded-axe",
+    "name": "Iron Vow Bearded Axe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 11,
-    range: 154,
-    halfArc: 0.95,
-    cooldown: 0.64,
-    displayLength: 128,
-    swingArc: 2.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "axe",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 11,
+    "range": 154,
+    "halfArc": 0.95,
+    "cooldown": 0.64,
+    "displayLength": 128,
+    "swingArc": 2.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "axe",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 5,
+    "requirements": {
+      "str": 8,
+      "dex": 5
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-boothook-harpoon": {
-    id: "x2-boothook-harpoon",
-    name: "Boothook Harpoon",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-boothook-harpoon",
+    "name": "Boothook Harpoon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 12,
-    range: 150,
-    halfArc: 0.7,
-    cooldown: 0.34,
-    displayLength: 92,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "harpoon",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 12,
+    "range": 150,
+    "halfArc": 0.7,
+    "cooldown": 0.34,
+    "displayLength": 92,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "harpoon",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 7,
+    "requirements": {
+      "str": 5,
+      "dex": 7
     },
-    durability: 75,
-    thrown: {
-      speed: 760,
-      range: 600,
-      damage: 12,
-      charges: 3,
-      refillSeconds: 1.8,
-      pierce: 3,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 760,
+      "range": 600,
+      "damage": 12,
+      "charges": 3,
+      "refillSeconds": 1.8,
+      "pierce": 3
+    }
   },
   "x2-dustdevil-glaive": {
-    id: "x2-dustdevil-glaive",
-    name: "Dustdevil Glaive",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-dustdevil-glaive",
+    "name": "Dustdevil Glaive",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 10,
-    range: 190,
-    halfArc: 1.05,
-    cooldown: 0.62,
-    displayLength: 150,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "glaive",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 10,
+    "range": 190,
+    "halfArc": 1.05,
+    "cooldown": 0.62,
+    "displayLength": 150,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "glaive",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 7,
+    "requirements": {
+      "str": 6,
+      "dex": 7
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 150,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 150,
+      "damage": 7
+    }
   },
   "x2-cinderbrand-pike": {
-    id: "x2-cinderbrand-pike",
-    name: "Cinderbrand Pike",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-cinderbrand-pike",
+    "name": "Cinderbrand Pike",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 13,
-    range: 290,
-    halfArc: 0.85,
-    cooldown: 0.68,
-    displayLength: 300,
-    swingArc: 2.4,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 13,
+    "range": 290,
+    "halfArc": 0.85,
+    "cooldown": 0.68,
+    "displayLength": 300,
+    "swingArc": 2.4,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 6,
+    "requirements": {
+      "str": 9,
+      "dex": 6
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-rimethorn-naginata": {
-    id: "x2-rimethorn-naginata",
-    name: "Rimethorn Naginata",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-rimethorn-naginata",
+    "name": "Rimethorn Naginata",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 9,
-    range: 200,
-    halfArc: 1,
-    cooldown: 0.58,
-    displayLength: 145,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "naginata",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 9,
+    "range": 200,
+    "halfArc": 1,
+    "cooldown": 0.58,
+    "displayLength": 145,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "naginata",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 8,
+    "requirements": {
+      "str": 5,
+      "dex": 8
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-galvanic-lancepole": {
-    id: "x2-galvanic-lancepole",
-    name: "Galvanic Lancepole",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-galvanic-lancepole",
+    "name": "Galvanic Lancepole",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 8,
-    range: 205,
-    halfArc: 0.8,
-    cooldown: 0.5,
-    displayLength: 150,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 8,
+    "range": 205,
+    "halfArc": 0.8,
+    "cooldown": 0.5,
+    "displayLength": 150,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 5,
+    "requirements": {
+      "dex": 8,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 3,
-      range: 210,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 210,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-reliquary-halberd": {
-    id: "x2-reliquary-halberd",
-    name: "Reliquary Halberd",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-reliquary-halberd",
+    "name": "Reliquary Halberd",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 14,
-    range: 270,
-    halfArc: 1,
-    cooldown: 0.72,
-    displayLength: 280,
-    swingArc: 3.1,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "halberd",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 14,
+    "range": 270,
+    "halfArc": 1,
+    "cooldown": 0.72,
+    "displayLength": 280,
+    "swingArc": 3.1,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "halberd",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 6,
+    "requirements": {
+      "str": 9,
+      "dex": 6
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-venomtongue-trident": {
-    id: "x2-venomtongue-trident",
-    name: "Venomtongue Trident",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-venomtongue-trident",
+    "name": "Venomtongue Trident",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 9,
-    range: 195,
-    halfArc: 0.9,
-    cooldown: 0.46,
-    displayLength: 140,
-    swingArc: 2.5,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 9,
+    "range": 195,
+    "halfArc": 0.9,
+    "cooldown": 0.46,
+    "displayLength": 140,
+    "swingArc": 2.5,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 7,
+    "requirements": {
+      "str": 4,
+      "dex": 7
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-hexglyph-partisan": {
-    id: "x2-hexglyph-partisan",
-    name: "Hexglyph Partisan",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-hexglyph-partisan",
+    "name": "Hexglyph Partisan",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 9,
-    range: 190,
-    halfArc: 0.85,
-    cooldown: 0.6,
-    displayLength: 140,
-    swingArc: 2.5,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "melee",
-      family: "partisan",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 9,
+    "range": 190,
+    "halfArc": 0.85,
+    "cooldown": 0.6,
+    "displayLength": 140,
+    "swingArc": 2.5,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "melee",
+      "family": "partisan",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 7,
+    "requirements": {
+      "dex": 5,
+      "int": 7
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 5,
-      spread: 0.45,
-      speed: 380,
-      range: 210,
-      damage: 5,
-      explode: {
-        radius: 52,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 5,
+      "spread": 0.45,
+      "speed": 380,
+      "range": 210,
+      "damage": 5,
+      "explode": {
+        "radius": 52,
+        "damage": 6
+      }
+    }
   },
   "x2-nullspike-pike": {
-    id: "x2-nullspike-pike",
-    name: "Nullspike Pike",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-nullspike-pike",
+    "name": "Nullspike Pike",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 11,
-    range: 295,
-    halfArc: 0.8,
-    cooldown: 0.64,
-    displayLength: 310,
-    swingArc: 2.3,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 11,
+    "range": 295,
+    "halfArc": 0.8,
+    "cooldown": 0.64,
+    "displayLength": 310,
+    "swingArc": 2.3,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 8,
+    "requirements": {
+      "dex": 6,
+      "int": 8
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-buckhorn-boarspear": {
-    id: "x2-buckhorn-boarspear",
-    name: "Buckhorn Boarspear",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-buckhorn-boarspear",
+    "name": "Buckhorn Boarspear",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 11,
-    range: 200,
-    halfArc: 0.85,
-    cooldown: 0.5,
-    displayLength: 150,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 11,
+    "range": 200,
+    "halfArc": 0.85,
+    "cooldown": 0.5,
+    "displayLength": 150,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-quarry-splitter-bardiche": {
-    id: "x2-quarry-splitter-bardiche",
-    name: "Quarry-Splitter Bardiche",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "C",
+    "id": "x2-quarry-splitter-bardiche",
+    "name": "Quarry-Splitter Bardiche",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "C"
     },
-    damage: 15,
-    range: 240,
-    halfArc: 1.1,
-    cooldown: 0.88,
-    displayLength: 320,
-    swingArc: 3.1,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "glaive",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 15,
+    "range": 240,
+    "halfArc": 1.1,
+    "cooldown": 0.88,
+    "displayLength": 320,
+    "swingArc": 3.1,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "glaive",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 11,
-      con: 6,
+    "requirements": {
+      "str": 11,
+      "con": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 170,
-      damage: 8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 170,
+      "damage": 8
+    }
   },
   "x2-wickfire-fauchard": {
-    id: "x2-wickfire-fauchard",
-    name: "Wickfire Fauchard",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-wickfire-fauchard",
+    "name": "Wickfire Fauchard",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 10,
-    range: 195,
-    halfArc: 1,
-    cooldown: 0.62,
-    displayLength: 145,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "glaive",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 10,
+    "range": 195,
+    "halfArc": 1,
+    "cooldown": 0.62,
+    "displayLength": 145,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "glaive",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 5,
+    "requirements": {
+      "str": 6,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 360,
-      range: 220,
-      damage: 5,
-      explode: {
-        radius: 54,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 360,
+      "range": 220,
+      "damage": 5,
+      "explode": {
+        "radius": 54,
+        "damage": 6
+      }
+    }
   },
   "x2-sidewinder-spontoon": {
-    id: "x2-sidewinder-spontoon",
-    name: "Sidewinder Spontoon",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "D",
+    "id": "x2-sidewinder-spontoon",
+    "name": "Sidewinder Spontoon",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "D"
     },
-    damage: 7,
-    range: 175,
-    halfArc: 0.65,
-    cooldown: 0.32,
-    displayLength: 110,
-    swingArc: 2.3,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 7,
+    "range": 175,
+    "halfArc": 0.65,
+    "cooldown": 0.32,
+    "displayLength": 110,
+    "swingArc": 2.3,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-saintspar-lochaber": {
-    id: "x2-saintspar-lochaber",
-    name: "Saintspar Lochaber",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-saintspar-lochaber",
+    "name": "Saintspar Lochaber",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 12,
-    range: 195,
-    halfArc: 1,
-    cooldown: 0.66,
-    displayLength: 150,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "halberd",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 12,
+    "range": 195,
+    "halfArc": 1,
+    "cooldown": 0.66,
+    "displayLength": 150,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "halberd",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 6,
+    "requirements": {
+      "str": 8,
+      "dex": 6
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-frostgig-harpoon": {
-    id: "x2-frostgig-harpoon",
-    name: "Frostgig Harpoon",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-frostgig-harpoon",
+    "name": "Frostgig Harpoon",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 10,
-    range: 140,
-    halfArc: 0.7,
-    cooldown: 0.36,
-    displayLength: 88,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "harpoon",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 10,
+    "range": 140,
+    "halfArc": 0.7,
+    "cooldown": 0.36,
+    "displayLength": 88,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "harpoon",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 4,
+    "requirements": {
+      "dex": 6,
+      "int": 4
     },
-    durability: 75,
-    thrown: {
-      speed: 720,
-      range: 580,
-      damage: 10,
-      charges: 3,
-      refillSeconds: 1.6,
-      pierce: 2,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 720,
+      "range": 580,
+      "damage": 10,
+      "charges": 3,
+      "refillSeconds": 1.6,
+      "pierce": 2
+    }
   },
   "x2-thunderhead-voulge": {
-    id: "x2-thunderhead-voulge",
-    name: "Thunderhead Voulge",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      dex: "C",
+    "id": "x2-thunderhead-voulge",
+    "name": "Thunderhead Voulge",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "dex": "C"
     },
-    damage: 13,
-    range: 230,
-    halfArc: 1.1,
-    cooldown: 0.82,
-    displayLength: 300,
-    swingArc: 3.1,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "glaive",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 13,
+    "range": 230,
+    "halfArc": 1.1,
+    "cooldown": 0.82,
+    "displayLength": 300,
+    "swingArc": 3.1,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "glaive",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 10,
-      dex: 6,
+    "requirements": {
+      "str": 10,
+      "dex": 6
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 6,
-      falloff: 0.8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 6,
+      "falloff": 0.8
+    }
   },
   "x2-marrowpike-ranseur": {
-    id: "x2-marrowpike-ranseur",
-    name: "Marrowpike Ranseur",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-marrowpike-ranseur",
+    "name": "Marrowpike Ranseur",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 11,
-    range: 195,
-    halfArc: 0.9,
-    cooldown: 0.52,
-    displayLength: 145,
-    swingArc: 2.5,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "partisan",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 11,
+    "range": 195,
+    "halfArc": 0.9,
+    "cooldown": 0.52,
+    "displayLength": 145,
+    "swingArc": 2.5,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "partisan",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-sunlance-javelin-pike": {
-    id: "x2-sunlance-javelin-pike",
-    name: "Sunlance Javelin-Pike",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-sunlance-javelin-pike",
+    "name": "Sunlance Javelin-Pike",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 8,
-    range: 170,
-    halfArc: 0.7,
-    cooldown: 0.34,
-    displayLength: 108,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "spear",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 8,
+    "range": 170,
+    "halfArc": 0.7,
+    "cooldown": 0.34,
+    "displayLength": 108,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "spear",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 7,
-      int: 5,
+    "requirements": {
+      "dex": 7,
+      "int": 5
     },
-    durability: 75,
-    thrown: {
-      speed: 820,
-      range: 640,
-      damage: 11,
-      charges: 3,
-      refillSeconds: 1.7,
-      pierce: 2,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 820,
+      "range": 640,
+      "damage": 11,
+      "charges": 3,
+      "refillSeconds": 1.7,
+      "pierce": 2
+    }
   },
   "x2-blightfork-glaive": {
-    id: "x2-blightfork-glaive",
-    name: "Blightfork Glaive",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-blightfork-glaive",
+    "name": "Blightfork Glaive",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 9,
-    range: 195,
-    halfArc: 1,
-    cooldown: 0.6,
-    displayLength: 145,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "glaive",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 9,
+    "range": 195,
+    "halfArc": 1,
+    "cooldown": 0.6,
+    "displayLength": 145,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "glaive",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 5,
+    "requirements": {
+      "dex": 6,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 6,
-      spread: 0.55,
-      speed: 340,
-      range: 215,
-      damage: 4,
-      explode: {
-        radius: 58,
-        damage: 5,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 6,
+      "spread": 0.55,
+      "speed": 340,
+      "range": 215,
+      "damage": 4,
+      "explode": {
+        "radius": 58,
+        "damage": 5
+      }
+    }
   },
   "x2-riftcaller-naginata": {
-    id: "x2-riftcaller-naginata",
-    name: "Riftcaller Naginata",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-riftcaller-naginata",
+    "name": "Riftcaller Naginata",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 11,
-    range: 300,
-    halfArc: 1,
-    cooldown: 0.7,
-    displayLength: 330,
-    swingArc: 2.4,
-    gripFrac: 0.07,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "naginata",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 11,
+    "range": 300,
+    "halfArc": 1,
+    "cooldown": 0.7,
+    "displayLength": 330,
+    "swingArc": 2.4,
+    "gripFrac": 0.07,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "naginata",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 9,
+    "requirements": {
+      "dex": 6,
+      "int": 9
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-boomtown-maul": {
-    id: "x2-boomtown-maul",
-    name: "Boomtown Maul",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-boomtown-maul",
+    "name": "Boomtown Maul",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 15,
-    range: 168,
-    halfArc: 1.05,
-    cooldown: 0.86,
-    displayLength: 210,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "maul",
-      rangeBand: "close",
-      scaling: ["STR"],
+    "damage": 15,
+    "range": 168,
+    "halfArc": 1.05,
+    "cooldown": 0.86,
+    "displayLength": 210,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 12,
+    "requirements": {
+      "str": 12
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 165,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 165,
+      "damage": 9
+    }
   },
   "x2-tumbleweed-flail": {
-    id: "x2-tumbleweed-flail",
-    name: "Tumbleweed Flail",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-tumbleweed-flail",
+    "name": "Tumbleweed Flail",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 8,
-    range: 150,
-    halfArc: 1,
-    cooldown: 0.42,
-    displayLength: 96,
-    swingArc: 3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "flail",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 8,
+    "range": 150,
+    "halfArc": 1,
+    "cooldown": 0.42,
+    "displayLength": 96,
+    "swingArc": 3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "flail",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 4,
+    "requirements": {
+      "str": 5,
+      "dex": 4
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-hangman-s-gavel": {
-    id: "x2-hangman-s-gavel",
-    name: "Hangman's Gavel",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      con: "C",
+    "id": "x2-hangman-s-gavel",
+    "name": "Hangman's Gavel",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "con": "C"
     },
-    damage: 11,
-    range: 124,
-    halfArc: 0.8,
-    cooldown: 0.6,
-    displayLength: 90,
-    swingArc: 2.7,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "warhammer",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 11,
+    "range": 124,
+    "halfArc": 0.8,
+    "cooldown": 0.6,
+    "displayLength": 90,
+    "swingArc": 2.7,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "warhammer",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 7,
-      con: 5,
+    "requirements": {
+      "str": 7,
+      "con": 5
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-quicksilver-censer": {
-    id: "x2-quicksilver-censer",
-    name: "Quicksilver Censer",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "C",
+    "id": "x2-quicksilver-censer",
+    "name": "Quicksilver Censer",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "C"
     },
-    damage: 7,
-    range: 144,
-    halfArc: 0.95,
-    cooldown: 0.5,
-    displayLength: 94,
-    swingArc: 2.9,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "flail",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 7,
+    "range": 144,
+    "halfArc": 0.95,
+    "cooldown": 0.5,
+    "displayLength": 94,
+    "swingArc": 2.9,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "flail",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 5,
-      int: 5,
+    "requirements": {
+      "str": 5,
+      "int": 5
     },
-    durability: 75,
-    scatter: {
-      count: 5,
-      spread: 0.55,
-      speed: 320,
-      range: 210,
-      damage: 4,
-      explode: {
-        radius: 52,
-        damage: 5,
-      },
-    },
+    "durability": 75,
+    "scatter": {
+      "count": 5,
+      "spread": 0.55,
+      "speed": 320,
+      "range": 210,
+      "damage": 4,
+      "explode": {
+        "radius": 52,
+        "damage": 5
+      }
+    }
   },
   "x2-thunderhead-sledge": {
-    id: "x2-thunderhead-sledge",
-    name: "Thunderhead Sledge",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-thunderhead-sledge",
+    "name": "Thunderhead Sledge",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 10,
-    range: 152,
-    halfArc: 0.95,
-    cooldown: 0.7,
-    displayLength: 140,
-    swingArc: 3,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "maul",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 10,
+    "range": 152,
+    "halfArc": 0.95,
+    "cooldown": 0.7,
+    "displayLength": 140,
+    "swingArc": 3,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 6,
+    "requirements": {
+      "str": 8,
+      "dex": 6
     },
-    twoHanded: true,
-    durability: 90,
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 5,
-      falloff: 0.75,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 5,
+      "falloff": 0.75
+    }
   },
   "x2-frostbite-headstone": {
-    id: "x2-frostbite-headstone",
-    name: "Frostbite Headstone",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      int: "D",
+    "id": "x2-frostbite-headstone",
+    "name": "Frostbite Headstone",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "int": "D"
     },
-    damage: 14,
-    range: 170,
-    halfArc: 1,
-    cooldown: 0.84,
-    displayLength: 205,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "maul",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 14,
+    "range": 170,
+    "halfArc": 1,
+    "cooldown": 0.84,
+    "displayLength": 205,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 11,
-      int: 5,
+    "requirements": {
+      "str": 11,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 150,
-      damage: 8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 150,
+      "damage": 8
+    }
   },
   "x2-snakebite-morningstar": {
-    id: "x2-snakebite-morningstar",
-    name: "Snakebite Morningstar",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "D",
+    "id": "x2-snakebite-morningstar",
+    "name": "Snakebite Morningstar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "D"
     },
-    damage: 9,
-    range: 122,
-    halfArc: 0.78,
-    cooldown: 0.5,
-    displayLength: 86,
-    swingArc: 2.6,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "mace",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 9,
+    "range": 122,
+    "halfArc": 0.78,
+    "cooldown": 0.5,
+    "displayLength": 86,
+    "swingArc": 2.6,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "mace",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 4,
+    "requirements": {
+      "str": 6,
+      "dex": 4
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-pendulum-of-the-pyre": {
-    id: "x2-pendulum-of-the-pyre",
-    name: "Pendulum of the Pyre",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-pendulum-of-the-pyre",
+    "name": "Pendulum of the Pyre",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 12,
-    range: 158,
-    halfArc: 1.05,
-    cooldown: 0.74,
-    displayLength: 150,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "flail",
-      rangeBand: "mid",
-      scaling: ["STR"],
+    "damage": 12,
+    "range": 158,
+    "halfArc": 1.05,
+    "cooldown": 0.74,
+    "displayLength": 150,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "flail",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 9,
+    "requirements": {
+      "str": 9
     },
-    twoHanded: true,
-    durability: 90,
-    scatter: {
-      count: 6,
-      spread: 0.6,
-      speed: 360,
-      range: 220,
-      damage: 5,
-      explode: {
-        radius: 58,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "scatter": {
+      "count": 6,
+      "spread": 0.6,
+      "speed": 360,
+      "range": 220,
+      "damage": 5,
+      "explode": {
+        "radius": 58,
+        "damage": 6
+      }
+    }
   },
   "x2-anvil-drop": {
-    id: "x2-anvil-drop",
-    name: "Anvil-Drop",
-    expansion: true,
-    scalingGrades: {
-      str: "S",
-      con: "D",
+    "id": "x2-anvil-drop",
+    "name": "Anvil-Drop",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "S",
+      "con": "D"
     },
-    damage: 16,
-    range: 172,
-    halfArc: 1,
-    cooldown: 0.9,
-    displayLength: 215,
-    swingArc: 3,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "maul",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 16,
+    "range": 172,
+    "halfArc": 1,
+    "cooldown": 0.9,
+    "displayLength": 215,
+    "swingArc": 3,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 13,
-      con: 7,
+    "requirements": {
+      "str": 13,
+      "con": 7
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 175,
-      damage: 10,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 175,
+      "damage": 10
+    }
   },
   "x2-revenant-knuckle": {
-    id: "x2-revenant-knuckle",
-    name: "Revenant Knuckle",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-revenant-knuckle",
+    "name": "Revenant Knuckle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 6,
-    range: 110,
-    halfArc: 0.7,
-    cooldown: 0.3,
-    displayLength: 58,
-    swingArc: 2.3,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "mace",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 110,
+    "halfArc": 0.7,
+    "cooldown": 0.3,
+    "displayLength": 58,
+    "swingArc": 2.3,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "mace",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-sermon-bell": {
-    id: "x2-sermon-bell",
-    name: "Sermon Bell",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-sermon-bell",
+    "name": "Sermon Bell",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 11,
-    range: 150,
-    halfArc: 0.95,
-    cooldown: 0.72,
-    displayLength: 138,
-    swingArc: 2.9,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "mace",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 11,
+    "range": 150,
+    "halfArc": 0.95,
+    "cooldown": 0.72,
+    "displayLength": 138,
+    "swingArc": 2.9,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "mace",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 8,
-      int: 5,
+    "requirements": {
+      "str": 8,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 140,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 140,
+      "damage": 7
+    }
   },
   "x2-hailshot-hand-maul": {
-    id: "x2-hailshot-hand-maul",
-    name: "Hailshot Hand-Maul",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-hailshot-hand-maul",
+    "name": "Hailshot Hand-Maul",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 90,
-    halfArc: 0.55,
-    cooldown: 0.5,
-    displayLength: 96,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "concussion-cannon",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 90,
+    "halfArc": 0.55,
+    "cooldown": 0.5,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "concussion-cannon",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 900,
-      range: 280,
-      fireRate: 0.3,
-      magazine: 8,
-      reloadSeconds: 1.4,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 900,
+      "range": 280,
+      "fireRate": 0.3,
+      "magazine": 8,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016
+    }
   },
   "x2-gravelthroat-repeater": {
-    id: "x2-gravelthroat-repeater",
-    name: "Gravelthroat Repeater",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-gravelthroat-repeater",
+    "name": "Gravelthroat Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 86,
-    halfArc: 0.6,
-    cooldown: 0.7,
-    displayLength: 142,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "scrap-cannon",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 86,
+    "halfArc": 0.6,
+    "cooldown": 0.7,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "scrap-cannon",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 900,
-      range: 280,
-      fireRate: 0.3,
-      magazine: 8,
-      reloadSeconds: 1.4,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 900,
+      "range": 280,
+      "fireRate": 0.3,
+      "magazine": 8,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016
+    }
   },
   "x2-dustdevil-warmaul": {
-    id: "x2-dustdevil-warmaul",
-    name: "Dustdevil Warmaul",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "D",
+    "id": "x2-dustdevil-warmaul",
+    "name": "Dustdevil Warmaul",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "D"
     },
-    damage: 12,
-    range: 154,
-    halfArc: 1,
-    cooldown: 0.78,
-    displayLength: 145,
-    swingArc: 3,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "warhammer",
-      rangeBand: "close",
-      scaling: ["STR", "CON"],
+    "damage": 12,
+    "range": 154,
+    "halfArc": 1,
+    "cooldown": 0.78,
+    "displayLength": 145,
+    "swingArc": 3,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "warhammer",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 9,
-      con: 6,
+    "requirements": {
+      "str": 9,
+      "con": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 155,
-      damage: 8,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 155,
+      "damage": 8
+    }
   },
   "x2-locust-flail": {
-    id: "x2-locust-flail",
-    name: "Locust Flail",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-locust-flail",
+    "name": "Locust Flail",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 7,
-    range: 146,
-    halfArc: 1.05,
-    cooldown: 0.4,
-    displayLength: 92,
-    swingArc: 3.1,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "flail",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 7,
+    "range": 146,
+    "halfArc": 1.05,
+    "cooldown": 0.4,
+    "displayLength": 92,
+    "swingArc": 3.1,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "flail",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-saint-calamity": {
-    id: "x2-saint-calamity",
-    name: "Saint Calamity",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      int: "C",
+    "id": "x2-saint-calamity",
+    "name": "Saint Calamity",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "int": "C"
     },
-    damage: 14,
-    range: 166,
-    halfArc: 1,
-    cooldown: 0.85,
-    displayLength: 200,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "warhammer",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 14,
+    "range": 166,
+    "halfArc": 1,
+    "cooldown": 0.85,
+    "displayLength": 200,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "warhammer",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 11,
-      int: 6,
+    "requirements": {
+      "str": 11,
+      "int": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 160,
-      damage: 10,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 160,
+      "damage": 10
+    }
   },
   "x2-carrion-cudgel": {
-    id: "x2-carrion-cudgel",
-    name: "Carrion Cudgel",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "D",
+    "id": "x2-carrion-cudgel",
+    "name": "Carrion Cudgel",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "D"
     },
-    damage: 6,
-    range: 112,
-    halfArc: 0.75,
-    cooldown: 0.34,
-    displayLength: 60,
-    swingArc: 2.4,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "mace",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 112,
+    "halfArc": 0.75,
+    "cooldown": 0.34,
+    "displayLength": 60,
+    "swingArc": 2.4,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "mace",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 3,
+    "requirements": {
+      "str": 4,
+      "dex": 3
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-hoarfrost-piledriver": {
-    id: "x2-hoarfrost-piledriver",
-    name: "Hoarfrost Piledriver",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      int: "D",
+    "id": "x2-hoarfrost-piledriver",
+    "name": "Hoarfrost Piledriver",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "int": "D"
     },
-    damage: 13,
-    range: 156,
-    halfArc: 0.95,
-    cooldown: 0.8,
-    displayLength: 148,
-    swingArc: 2.9,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "maul",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 13,
+    "range": 156,
+    "halfArc": 0.95,
+    "cooldown": 0.8,
+    "displayLength": 148,
+    "swingArc": 2.9,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "maul",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 9,
-      int: 6,
+    "requirements": {
+      "str": 9,
+      "int": 6
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 145,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 145,
+      "damage": 9
+    }
   },
   "x2-static-tomahawk": {
-    id: "x2-static-tomahawk",
-    name: "Static Tomahawk",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-static-tomahawk",
+    "name": "Static Tomahawk",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 6,
-    range: 116,
-    halfArc: 0.8,
-    cooldown: 0.32,
-    displayLength: 64,
-    swingArc: 2.4,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "warhammer",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 116,
+    "halfArc": 0.8,
+    "cooldown": 0.32,
+    "displayLength": 64,
+    "swingArc": 2.4,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "warhammer",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    durability: 75,
-    thrown: {
-      speed: 700,
-      range: 540,
-      damage: 11,
-      charges: 3,
-      refillSeconds: 1.8,
-      pierce: 2,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 700,
+      "range": 540,
+      "damage": 11,
+      "charges": 3,
+      "refillSeconds": 1.8,
+      "pierce": 2
+    }
   },
   "x2-widowmaker-wrecking-ball": {
-    id: "x2-widowmaker-wrecking-ball",
-    name: "Widowmaker Wrecking-Ball",
-    expansion: true,
-    scalingGrades: {
-      str: "S",
-      con: "C",
+    "id": "x2-widowmaker-wrecking-ball",
+    "name": "Widowmaker Wrecking-Ball",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "S",
+      "con": "C"
     },
-    damage: 15,
-    range: 175,
-    halfArc: 1.1,
-    cooldown: 0.88,
-    displayLength: 220,
-    swingArc: 3.2,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "flail",
-      rangeBand: "mid",
-      scaling: ["STR", "CON"],
+    "damage": 15,
+    "range": 175,
+    "halfArc": 1.1,
+    "cooldown": 0.88,
+    "displayLength": 220,
+    "swingArc": 3.2,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "flail",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 12,
-      con: 8,
+    "requirements": {
+      "str": 12,
+      "con": 8
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 170,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 170,
+      "damage": 9
+    }
   },
   "x2-snakebite-lash": {
-    id: "x2-snakebite-lash",
-    name: "Snakebite Lash",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-snakebite-lash",
+    "name": "Snakebite Lash",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 7,
-    range: 230,
-    halfArc: 0.95,
-    cooldown: 0.42,
-    displayLength: 150,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 7,
+    "range": 230,
+    "halfArc": 0.95,
+    "cooldown": 0.42,
+    "displayLength": 150,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      dex: 6,
+    "requirements": {
+      "dex": 6
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-bramblecoil": {
-    id: "x2-bramblecoil",
-    name: "Bramblecoil",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "D",
+    "id": "x2-bramblecoil",
+    "name": "Bramblecoil",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "D"
     },
-    damage: 6,
-    range: 215,
-    halfArc: 1,
-    cooldown: 0.4,
-    displayLength: 145,
-    swingArc: 3.1,
-    gripFrac: 0.09,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 215,
+    "halfArc": 1,
+    "cooldown": 0.4,
+    "displayLength": 145,
+    "swingArc": 3.1,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 5,
+    "requirements": {
+      "dex": 5
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-galvanic-crackwhip": {
-    id: "x2-galvanic-crackwhip",
-    name: "Galvanic Crackwhip",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-galvanic-crackwhip",
+    "name": "Galvanic Crackwhip",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 6,
-    range: 225,
-    halfArc: 0.9,
-    cooldown: 0.4,
-    displayLength: 148,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 6,
+    "range": 225,
+    "halfArc": 0.9,
+    "cooldown": 0.4,
+    "displayLength": 148,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 11,
+    "requirements": {
+      "dex": 11
     },
-    durability: 75,
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 4,
-      falloff: 0.78,
-    },
+    "durability": 75,
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 4,
+      "falloff": 0.78
+    }
   },
   "x2-nine-tail-razorlash": {
-    id: "x2-nine-tail-razorlash",
-    name: "Nine-Tail Razorlash",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-nine-tail-razorlash",
+    "name": "Nine-Tail Razorlash",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 210,
-    halfArc: 1.05,
-    cooldown: 0.44,
-    displayLength: 140,
-    swingArc: 3.2,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 210,
+    "halfArc": 1.05,
+    "cooldown": 0.44,
+    "displayLength": 140,
+    "swingArc": 3.2,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 6,
+    "requirements": {
+      "str": 6,
+      "dex": 6
     },
-    durability: 75,
-    scatter: {
-      count: 6,
-      spread: 0.55,
-      speed: 420,
-      range: 220,
-      damage: 4,
-      explode: {
-        radius: 42,
-        damage: 3,
-      },
-    },
+    "durability": 75,
+    "scatter": {
+      "count": 6,
+      "spread": 0.55,
+      "speed": 420,
+      "range": 220,
+      "damage": 4,
+      "explode": {
+        "radius": 42,
+        "damage": 3
+      }
+    }
   },
   "x2-reaper-s-tithe": {
-    id: "x2-reaper-s-tithe",
-    name: "Reaper's Tithe",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-reaper-s-tithe",
+    "name": "Reaper's Tithe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 12,
-    range: 200,
-    halfArc: 1.1,
-    cooldown: 0.68,
-    displayLength: 175,
-    swingArc: 3.2,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 12,
+    "range": 200,
+    "halfArc": 1.1,
+    "cooldown": 0.68,
+    "displayLength": 175,
+    "swingArc": 3.2,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 5,
+    "requirements": {
+      "str": 8,
+      "dex": 5
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-gravechain-scythe": {
-    id: "x2-gravechain-scythe",
-    name: "Gravechain Scythe",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-gravechain-scythe",
+    "name": "Gravechain Scythe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 13,
-    range: 205,
-    halfArc: 1.05,
-    cooldown: 0.74,
-    displayLength: 180,
-    swingArc: 3.2,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 13,
+    "range": 205,
+    "halfArc": 1.05,
+    "cooldown": 0.74,
+    "displayLength": 180,
+    "swingArc": 3.2,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 9,
-      int: 5,
+    "requirements": {
+      "str": 9,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-hailspur-sickle": {
-    id: "x2-hailspur-sickle",
-    name: "Hailspur Sickle",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-hailspur-sickle",
+    "name": "Hailspur Sickle",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 7,
-    range: 110,
-    halfArc: 0.7,
-    cooldown: 0.32,
-    displayLength: 60,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 7,
+    "range": 110,
+    "halfArc": 0.7,
+    "cooldown": 0.32,
+    "displayLength": 60,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 8,
+    "requirements": {
+      "dex": 8
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-mournveil-scythe": {
-    id: "x2-mournveil-scythe",
-    name: "Mournveil Scythe",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "B",
+    "id": "x2-mournveil-scythe",
+    "name": "Mournveil Scythe",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "B"
     },
-    damage: 14,
-    range: 250,
-    halfArc: 1.1,
-    cooldown: 0.82,
-    displayLength: 280,
-    swingArc: 3.2,
-    gripFrac: 0.5,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 14,
+    "range": 250,
+    "halfArc": 1.1,
+    "cooldown": 0.82,
+    "displayLength": 280,
+    "swingArc": 3.2,
+    "gripFrac": 0.5,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 9,
+    "requirements": {
+      "str": 9,
+      "dex": 9
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-plaguethresh": {
-    id: "x2-plaguethresh",
-    name: "Plaguethresh",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "C",
+    "id": "x2-plaguethresh",
+    "name": "Plaguethresh",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "C"
     },
-    damage: 11,
-    range: 195,
-    halfArc: 1.1,
-    cooldown: 0.72,
-    displayLength: 170,
-    swingArc: 3.1,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 11,
+    "range": 195,
+    "halfArc": 1.1,
+    "cooldown": 0.72,
+    "displayLength": 170,
+    "swingArc": 3.1,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 7,
-      int: 5,
+    "requirements": {
+      "str": 7,
+      "int": 5
     },
-    twoHanded: true,
-    durability: 90,
-    quake: {
-      radius: 150,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "durability": 90,
+    "quake": {
+      "radius": 150,
+      "damage": 7
+    }
   },
   "x2-hollow-harvest": {
-    id: "x2-hollow-harvest",
-    name: "Hollow Harvest",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-hollow-harvest",
+    "name": "Hollow Harvest",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 12,
-    range: 190,
-    halfArc: 1.05,
-    cooldown: 0.66,
-    displayLength: 165,
-    swingArc: 3.1,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR"],
+    "damage": 12,
+    "range": 190,
+    "halfArc": 1.05,
+    "cooldown": 0.66,
+    "displayLength": 165,
+    "swingArc": 3.1,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 9,
+    "requirements": {
+      "str": 9
     },
-    twoHanded: true,
-    durability: 90,
+    "twoHanded": true,
+    "durability": 90
   },
   "x2-wendigo-claws": {
-    id: "x2-wendigo-claws",
-    name: "Wendigo Claws",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-wendigo-claws",
+    "name": "Wendigo Claws",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 6,
-    range: 105,
-    halfArc: 0.75,
-    cooldown: 0.3,
-    displayLength: 58,
-    swingArc: 2.4,
-    gripFrac: 0.14,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 105,
+    "halfArc": 0.75,
+    "cooldown": 0.3,
+    "displayLength": 58,
+    "swingArc": 2.4,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-knucklebone-talons": {
-    id: "x2-knucklebone-talons",
-    name: "Knucklebone Talons",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-knucklebone-talons",
+    "name": "Knucklebone Talons",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 7,
-    range: 110,
-    halfArc: 0.7,
-    cooldown: 0.32,
-    displayLength: 56,
-    swingArc: 2.3,
-    gripFrac: 0.14,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 7,
+    "range": 110,
+    "halfArc": 0.7,
+    "cooldown": 0.32,
+    "displayLength": 56,
+    "swingArc": 2.3,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 5,
+    "requirements": {
+      "str": 5,
+      "dex": 5
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-rendclaw-vambrace": {
-    id: "x2-rendclaw-vambrace",
-    name: "Rendclaw Vambrace",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-rendclaw-vambrace",
+    "name": "Rendclaw Vambrace",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 8,
-    range: 120,
-    halfArc: 0.8,
-    cooldown: 0.36,
-    displayLength: 78,
-    swingArc: 2.5,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 8,
+    "range": 120,
+    "halfArc": 0.8,
+    "cooldown": 0.36,
+    "displayLength": 78,
+    "swingArc": 2.5,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 9,
+    "requirements": {
+      "dex": 9
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-frostfang-rakes": {
-    id: "x2-frostfang-rakes",
-    name: "Frostfang Rakes",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-frostfang-rakes",
+    "name": "Frostfang Rakes",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 6,
-    range: 108,
-    halfArc: 0.72,
-    cooldown: 0.3,
-    displayLength: 57,
-    swingArc: 2.4,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 108,
+    "halfArc": 0.72,
+    "cooldown": 0.3,
+    "displayLength": 57,
+    "swingArc": 2.4,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 5,
+    "requirements": {
+      "dex": 6,
+      "int": 5
     },
-    dual: true,
-    durability: 75,
+    "dual": true,
+    "durability": 75
   },
   "x2-ferrous-serpent": {
-    id: "x2-ferrous-serpent",
-    name: "Ferrous Serpent",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-ferrous-serpent",
+    "name": "Ferrous Serpent",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 10,
-    range: 200,
-    halfArc: 1.1,
-    cooldown: 0.6,
-    displayLength: 150,
-    swingArc: 3.2,
-    gripFrac: 0.08,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 10,
+    "range": 200,
+    "halfArc": 1.1,
+    "cooldown": 0.6,
+    "displayLength": 150,
+    "swingArc": 3.2,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 5,
+    "requirements": {
+      "str": 7,
+      "dex": 5
     },
-    durability: 75,
-    quake: {
-      radius: 140,
-      damage: 8,
-    },
+    "durability": 75,
+    "quake": {
+      "radius": 140,
+      "damage": 8
+    }
   },
   "x2-cinder-briar": {
-    id: "x2-cinder-briar",
-    name: "Cinder Briar",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-cinder-briar",
+    "name": "Cinder Briar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 7,
-    range: 220,
-    halfArc: 1,
-    cooldown: 0.46,
-    displayLength: 145,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 7,
+    "range": 220,
+    "halfArc": 1,
+    "cooldown": 0.46,
+    "displayLength": 145,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 7,
+    "requirements": {
+      "str": 4,
+      "dex": 7
     },
-    durability: 75,
-    scatter: {
-      count: 5,
-      spread: 0.5,
-      speed: 400,
-      range: 215,
-      damage: 4,
-      explode: {
-        radius: 48,
-        damage: 4,
-      },
-    },
+    "durability": 75,
+    "scatter": {
+      "count": 5,
+      "spread": 0.5,
+      "speed": 400,
+      "range": 215,
+      "damage": 4,
+      "explode": {
+        "radius": 48,
+        "damage": 4
+      }
+    }
   },
   "x2-quicksilver-chainblade": {
-    id: "x2-quicksilver-chainblade",
-    name: "Quicksilver Chainblade",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-quicksilver-chainblade",
+    "name": "Quicksilver Chainblade",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 8,
-    range: 195,
-    halfArc: 0.9,
-    cooldown: 0.4,
-    displayLength: 135,
-    swingArc: 2.9,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 8,
+    "range": 195,
+    "halfArc": 0.9,
+    "cooldown": 0.4,
+    "displayLength": 135,
+    "swingArc": 2.9,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-coilshot-meteor": {
-    id: "x2-coilshot-meteor",
-    name: "Coilshot Meteor",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      luk: "D",
+    "id": "x2-coilshot-meteor",
+    "name": "Coilshot Meteor",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "luk": "D"
     },
-    damage: 9,
-    range: 175,
-    halfArc: 0.85,
-    cooldown: 0.5,
-    displayLength: 150,
-    swingArc: 2.8,
-    gripFrac: 0.08,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "thrown",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "long",
-      scaling: ["STR", "LUK"],
+    "damage": 9,
+    "range": 175,
+    "halfArc": 0.85,
+    "cooldown": 0.5,
+    "displayLength": 150,
+    "swingArc": 2.8,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "thrown",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "LUK"
+      ]
     },
-    requirements: {
-      str: 7,
+    "requirements": {
+      "str": 7
     },
-    durability: 75,
-    thrown: {
-      speed: 700,
-      range: 480,
-      damage: 12,
-      charges: 3,
-      refillSeconds: 1.8,
-      pierce: 2,
-    },
+    "durability": 75,
+    "thrown": {
+      "speed": 700,
+      "range": 480,
+      "damage": 12,
+      "charges": 3,
+      "refillSeconds": 1.8,
+      "pierce": 2
+    }
   },
   "x2-mistral-kusarigama": {
-    id: "x2-mistral-kusarigama",
-    name: "Mistral Kusarigama",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-mistral-kusarigama",
+    "name": "Mistral Kusarigama",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 8,
-    range: 210,
-    halfArc: 0.95,
-    cooldown: 0.42,
-    displayLength: 155,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "physical",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 8,
+    "range": 210,
+    "halfArc": 0.95,
+    "cooldown": 0.42,
+    "displayLength": 155,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "physical",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 7,
+    "requirements": {
+      "str": 5,
+      "dex": 7
     },
-    durability: 75,
+    "durability": 75
   },
   "x2-dust-devil-flail": {
-    id: "x2-dust-devil-flail",
-    name: "Dust-Devil Flail",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-dust-devil-flail",
+    "name": "Dust-Devil Flail",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 10,
-    range: 235,
-    halfArc: 1,
-    cooldown: 0.5,
-    displayLength: 195,
-    swingArc: 3.1,
-    gripFrac: 0.09,
-    tags: {
-      grip: "1H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "melee",
-      family: "exotic-melee",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 10,
+    "range": 235,
+    "halfArc": 1,
+    "cooldown": 0.5,
+    "displayLength": 195,
+    "swingArc": 3.1,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "1H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "melee",
+      "family": "exotic-melee",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 8,
+    "requirements": {
+      "str": 6,
+      "dex": 8
     },
-    durability: 75,
-    chainLightning: {
-      jumps: 3,
-      range: 190,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "durability": 75,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 190,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-ashfall-peacemaker": {
-    id: "x2-ashfall-peacemaker",
-    name: "Ashfall Peacemaker",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-ashfall-peacemaker",
+    "name": "Ashfall Peacemaker",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.45,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "long",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.45,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      dex: 6,
+    "requirements": {
+      "dex": 6
     },
-    gun: {
-      damage: 9,
-      projectileSpeed: 920,
-      range: 620,
-      fireRate: 0.42,
-      magazine: 6,
-      reloadSeconds: 1.3,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0032,
-    },
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 920,
+      "range": 620,
+      "fireRate": 0.42,
+      "magazine": 6,
+      "reloadSeconds": 1.3,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0032
+    }
   },
   "x2-grit-snubnose": {
-    id: "x2-grit-snubnose",
-    name: "Grit Snubnose",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "D",
+    "id": "x2-grit-snubnose",
+    "name": "Grit Snubnose",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "D"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 50,
-    swingArc: 1.8,
-    gripFrac: 0.18,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 50,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 4,
+    "requirements": {
+      "dex": 4
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 820,
-      range: 460,
-      fireRate: 0.26,
-      magazine: 5,
-      reloadSeconds: 1,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0018,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 820,
+      "range": 460,
+      "fireRate": 0.26,
+      "magazine": 5,
+      "reloadSeconds": 1,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0018
+    }
   },
   "x2-mesa-hand-cannon": {
-    id: "x2-mesa-hand-cannon",
-    name: "Mesa Hand-Cannon",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-mesa-hand-cannon",
+    "name": "Mesa Hand-Cannon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 7,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.6,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "hand-cannon",
-      rangeBand: "long",
-      scaling: ["STR", "DEX"],
+    "damage": 7,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.6,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "hand-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 5,
+    "requirements": {
+      "str": 9,
+      "dex": 5
     },
-    gun: {
-      damage: 16,
-      projectileSpeed: 1050,
-      range: 720,
-      fireRate: 0.7,
-      magazine: 5,
-      reloadSeconds: 1.7,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.004,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1050,
+      "range": 720,
+      "fireRate": 0.7,
+      "magazine": 5,
+      "reloadSeconds": 1.7,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.004,
+      "pierce": 2
+    }
   },
   "x2-cinderfang-derringer": {
-    id: "x2-cinderfang-derringer",
-    name: "Cinderfang Derringer",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-cinderfang-derringer",
+    "name": "Cinderfang Derringer",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 46,
-    swingArc: 1.8,
-    gripFrac: 0.18,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 46,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 4,
+    "requirements": {
+      "dex": 5,
+      "int": 4
     },
-    gun: {
-      damage: 8,
-      projectileSpeed: 760,
-      range: 480,
-      fireRate: 0.36,
-      magazine: 2,
-      reloadSeconds: 1.1,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0026,
-      pellets: 2,
-      spread: 0.14,
-      explode: {
-        radius: 44,
-        damage: 5,
-      },
-    },
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 760,
+      "range": 480,
+      "fireRate": 0.36,
+      "magazine": 2,
+      "reloadSeconds": 1.1,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0026,
+      "pellets": 2,
+      "spread": 0.14,
+      "explode": {
+        "radius": 44,
+        "damage": 5
+      }
+    }
   },
   "x2-hailspitter-pepperbox": {
-    id: "x2-hailspitter-pepperbox",
-    name: "Hailspitter Pepperbox",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "D",
+    "id": "x2-hailspitter-pepperbox",
+    "name": "Hailspitter Pepperbox",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "D"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.32,
-    displayLength: 70,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.32,
+    "displayLength": 70,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 740,
-      range: 520,
-      fireRate: 0.14,
-      magazine: 12,
-      reloadSeconds: 1.5,
-      bulletKind: "slug",
-      muzzle: "rapid",
-      recoil: 0.0012,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 740,
+      "range": 520,
+      "fireRate": 0.14,
+      "magazine": 12,
+      "reloadSeconds": 1.5,
+      "bulletKind": "slug",
+      "muzzle": "rapid",
+      "recoil": 0.0012
+    }
   },
   "x2-voltcaster-machine-pistol": {
-    id: "x2-voltcaster-machine-pistol",
-    name: "Voltcaster Machine Pistol",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-voltcaster-machine-pistol",
+    "name": "Voltcaster Machine Pistol",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 78,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "machine-pistol",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 78,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 820,
-      range: 560,
-      fireRate: 0.08,
-      magazine: 24,
-      reloadSeconds: 1.8,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0008,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 820,
+      "range": 560,
+      "fireRate": 0.08,
+      "magazine": 24,
+      "reloadSeconds": 1.8,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008
+    }
   },
   "x2-sidewinder-spitfire": {
-    id: "x2-sidewinder-spitfire",
-    name: "Sidewinder Spitfire",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-sidewinder-spitfire",
+    "name": "Sidewinder Spitfire",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.36,
-    displayLength: 74,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "machine-pistol",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.36,
+    "displayLength": 74,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 8,
+    "requirements": {
+      "dex": 8
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 780,
-      range: 540,
-      fireRate: 0.1,
-      magazine: 20,
-      reloadSeconds: 1.7,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0009,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 780,
+      "range": 540,
+      "fireRate": 0.1,
+      "magazine": 20,
+      "reloadSeconds": 1.7,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0009
+    }
   },
   "x2-sunbrand-hogleg": {
-    id: "x2-sunbrand-hogleg",
-    name: "Sunbrand Hogleg",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-sunbrand-hogleg",
+    "name": "Sunbrand Hogleg",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.46,
-    displayLength: 88,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "hand-cannon",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.46,
+    "displayLength": 88,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "hand-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 5,
+    "requirements": {
+      "dex": 8,
+      "int": 5
     },
-    gun: {
-      damage: 11,
-      projectileSpeed: 1000,
-      range: 700,
-      fireRate: 0.4,
-      magazine: 6,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "heavy",
-      recoil: 0.0028,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 11,
+      "projectileSpeed": 1000,
+      "range": 700,
+      "fireRate": 0.4,
+      "magazine": 6,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "heavy",
+      "recoil": 0.0028,
+      "pierce": 2
+    }
   },
   "x2-gravewind-rimfire": {
-    id: "x2-gravewind-rimfire",
-    name: "Gravewind Rimfire",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-gravewind-rimfire",
+    "name": "Gravewind Rimfire",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 7,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.44,
-    displayLength: 54,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "long",
-      scaling: ["DEX", "LUK"],
+    "damage": 7,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.44,
+    "displayLength": 54,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 7,
-      luk: 4,
+    "requirements": {
+      "dex": 7,
+      "luk": 4
     },
-    gun: {
-      damage: 12,
-      projectileSpeed: 960,
-      range: 660,
-      fireRate: 0.4,
-      magazine: 6,
-      reloadSeconds: 1.4,
-      bulletKind: "slug",
-      muzzle: "spark",
-      recoil: 0.0024,
-      pierce: 3,
-    },
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 960,
+      "range": 660,
+      "fireRate": 0.4,
+      "magazine": 6,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "spark",
+      "recoil": 0.0024,
+      "pierce": 3
+    }
   },
   "x2-fool-s-gold-revolver": {
-    id: "x2-fool-s-gold-revolver",
-    name: "Fool's Gold Revolver",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "A",
+    "id": "x2-fool-s-gold-revolver",
+    "name": "Fool's Gold Revolver",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "A"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.42,
-    displayLength: 58,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "long",
-      scaling: ["LUK", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.42,
+    "displayLength": 58,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "long",
+      "scaling": [
+        "LUK",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      luk: 9,
+    "requirements": {
+      "dex": 5,
+      "luk": 9
     },
-    gun: {
-      damage: 10,
-      projectileSpeed: 900,
-      range: 640,
-      fireRate: 0.38,
-      magazine: 6,
-      reloadSeconds: 1.2,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0022,
-    },
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 900,
+      "range": 640,
+      "fireRate": 0.38,
+      "magazine": 6,
+      "reloadSeconds": 1.2,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0022
+    }
   },
   "x2-quicksilver-fanner": {
-    id: "x2-quicksilver-fanner",
-    name: "Quicksilver Fanner",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-quicksilver-fanner",
+    "name": "Quicksilver Fanner",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 11,
+    "requirements": {
+      "dex": 11
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 880,
-      range: 540,
-      fireRate: 0.12,
-      magazine: 6,
-      reloadSeconds: 1.1,
-      bulletKind: "slug",
-      muzzle: "rapid",
-      recoil: 0.0009,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 880,
+      "range": 540,
+      "fireRate": 0.12,
+      "magazine": 6,
+      "reloadSeconds": 1.1,
+      "bulletKind": "slug",
+      "muzzle": "rapid",
+      "recoil": 0.0009
+    }
   },
   "x2-brimstone-bull": {
-    id: "x2-brimstone-bull",
-    name: "Brimstone Bull",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-brimstone-bull",
+    "name": "Brimstone Bull",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 7,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.62,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "hand-cannon",
-      rangeBand: "long",
-      scaling: ["STR", "INT"],
+    "damage": 7,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.62,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "hand-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 10,
-      int: 5,
+    "requirements": {
+      "str": 10,
+      "int": 5
     },
-    gun: {
-      damage: 13,
-      projectileSpeed: 980,
-      range: 700,
-      fireRate: 0.66,
-      magazine: 5,
-      reloadSeconds: 1.7,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0038,
-      explode: {
-        radius: 56,
-        damage: 6,
-      },
-    },
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 980,
+      "range": 700,
+      "fireRate": 0.66,
+      "magazine": 5,
+      "reloadSeconds": 1.7,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "explode": {
+        "radius": 56,
+        "damage": 6
+      }
+    }
   },
   "x2-scattershot-saint": {
-    id: "x2-scattershot-saint",
-    name: "Scattershot Saint",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-scattershot-saint",
+    "name": "Scattershot Saint",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.6,
-    displayLength: 72,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.6,
+    "displayLength": 72,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 5,
+    "requirements": {
+      "str": 6,
+      "dex": 5
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 680,
-      range: 400,
-      fireRate: 0.62,
-      magazine: 2,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pellets: 6,
-      spread: 0.36,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 680,
+      "range": 400,
+      "fireRate": 0.62,
+      "magazine": 2,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pellets": 6,
+      "spread": 0.36
+    }
   },
   "x2-tumbleweed-skipper": {
-    id: "x2-tumbleweed-skipper",
-    name: "Tumbleweed Skipper",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "B",
+    "id": "x2-tumbleweed-skipper",
+    "name": "Tumbleweed Skipper",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "long",
-      scaling: ["LUK", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "long",
+      "scaling": [
+        "LUK",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 6,
-      luk: 6,
+    "requirements": {
+      "dex": 6,
+      "luk": 6
     },
-    gun: {
-      damage: 8,
-      projectileSpeed: 860,
-      range: 900,
-      fireRate: 0.36,
-      magazine: 6,
-      reloadSeconds: 1.2,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.002,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 860,
+      "range": 900,
+      "fireRate": 0.36,
+      "magazine": 6,
+      "reloadSeconds": 1.2,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.002,
+      "pierce": 2
+    }
   },
   "x2-coyote-stinger": {
-    id: "x2-coyote-stinger",
-    name: "Coyote Stinger",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-coyote-stinger",
+    "name": "Coyote Stinger",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 52,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "machine-pistol",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 52,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    dual: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 800,
-      range: 540,
-      fireRate: 0.1,
-      magazine: 18,
-      reloadSeconds: 1.5,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0008,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 800,
+      "range": 540,
+      "fireRate": 0.1,
+      "magazine": 18,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0008
+    }
   },
   "x2-hollowpoint-hex": {
-    id: "x2-hollowpoint-hex",
-    name: "Hollowpoint Hex",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-hollowpoint-hex",
+    "name": "Hollowpoint Hex",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.42,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.42,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 8,
+    "requirements": {
+      "dex": 5,
+      "int": 8
     },
-    gun: {
-      damage: 8,
-      projectileSpeed: 820,
-      range: 540,
-      fireRate: 0.38,
-      magazine: 6,
-      reloadSeconds: 1.3,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0018,
-      explode: {
-        radius: 48,
-        damage: 5,
-      },
-    },
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 820,
+      "range": 540,
+      "fireRate": 0.38,
+      "magazine": 6,
+      "reloadSeconds": 1.3,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0018,
+      "explode": {
+        "radius": 48,
+        "damage": 5
+      }
+    }
   },
   "x2-frostbite-volley-gun": {
-    id: "x2-frostbite-volley-gun",
-    name: "Frostbite Volley-Gun",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-frostbite-volley-gun",
+    "name": "Frostbite Volley-Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.6,
-    displayLength: 76,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "pistol",
-      rangeBand: "close",
-      scaling: ["INT", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.6,
+    "displayLength": 76,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "pistol",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 7,
+    "requirements": {
+      "dex": 4,
+      "int": 7
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 700,
-      range: 420,
-      fireRate: 0.6,
-      magazine: 4,
-      reloadSeconds: 1.6,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.003,
-      pellets: 4,
-      spread: 0.3,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 700,
+      "range": 420,
+      "fireRate": 0.6,
+      "magazine": 4,
+      "reloadSeconds": 1.6,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.003,
+      "pellets": 4,
+      "spread": 0.3
+    }
   },
   "x2-iron-marshal": {
-    id: "x2-iron-marshal",
-    name: "Iron Marshal",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-iron-marshal",
+    "name": "Iron Marshal",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.44,
-    displayLength: 86,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "hand-cannon",
-      rangeBand: "long",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.44,
+    "displayLength": 86,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "hand-cannon",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 8,
+    "requirements": {
+      "str": 6,
+      "dex": 8
     },
-    gun: {
-      damage: 10,
-      projectileSpeed: 940,
-      range: 680,
-      fireRate: 0.38,
-      magazine: 6,
-      reloadSeconds: 1.3,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0026,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 940,
+      "range": 680,
+      "fireRate": 0.38,
+      "magazine": 6,
+      "reloadSeconds": 1.3,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0026,
+      "pierce": 2
+    }
   },
   "x2-buzzard-s-burnout": {
-    id: "x2-buzzard-s-burnout",
-    name: "Buzzard's Burnout",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-buzzard-s-burnout",
+    "name": "Buzzard's Burnout",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 80,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "machine-pistol",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 80,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 12,
+    "requirements": {
+      "dex": 12
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 760,
-      range: 520,
-      fireRate: 0.06,
-      magazine: 40,
-      reloadSeconds: 2.2,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0006,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 760,
+      "range": 520,
+      "fireRate": 0.06,
+      "magazine": 40,
+      "reloadSeconds": 2.2,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0006
+    }
   },
   "x2-reliquary-repeater": {
-    id: "x2-reliquary-repeater",
-    name: "Reliquary Repeater",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-reliquary-repeater",
+    "name": "Reliquary Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 72,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "machine-pistol",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 72,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "machine-pistol",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 7,
-      int: 7,
+    "requirements": {
+      "dex": 7,
+      "int": 7
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 880,
-      range: 580,
-      fireRate: 0.13,
-      magazine: 15,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.001,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 880,
+      "range": 580,
+      "fireRate": 0.13,
+      "magazine": 15,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.001
+    }
   },
   "x2-dustline-lever-action": {
-    id: "x2-dustline-lever-action",
-    name: "Dustline Lever-Action",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-dustline-lever-action",
+    "name": "Dustline Lever-Action",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 13,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.5,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "long",
-      scaling: ["DEX", "STR"],
+    "damage": 13,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.5,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 6,
+    "requirements": {
+      "str": 4,
+      "dex": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 13,
-      projectileSpeed: 1000,
-      range: 720,
-      fireRate: 0.42,
-      magazine: 10,
-      reloadSeconds: 1.6,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.003,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1000,
+      "range": 720,
+      "fireRate": 0.42,
+      "magazine": 10,
+      "reloadSeconds": 1.6,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.003,
+      "pierce": 2
+    }
   },
   "x2-coffin-nail-carbine": {
-    id: "x2-coffin-nail-carbine",
-    name: "Coffin-Nail Carbine",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
+    "id": "x2-coffin-nail-carbine",
+    "name": "Coffin-Nail Carbine",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 112,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "long",
-      scaling: ["DEX"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 112,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 7,
-      projectileSpeed: 980,
-      range: 600,
-      fireRate: 0.22,
-      magazine: 12,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0012,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 980,
+      "range": 600,
+      "fireRate": 0.22,
+      "magazine": 12,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0012
+    }
   },
   "x2-buzzard-s-eye-marksman": {
-    id: "x2-buzzard-s-eye-marksman",
-    name: "Buzzard's Eye Marksman",
-    expansion: true,
-    scalingGrades: {
-      dex: "S",
+    "id": "x2-buzzard-s-eye-marksman",
+    "name": "Buzzard's Eye Marksman",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "S"
     },
-    damage: 16,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.7,
-    displayLength: 158,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["DEX"],
+    "damage": 16,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.7,
+    "displayLength": 158,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 12,
+    "requirements": {
+      "dex": 12
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 1400,
-      range: 880,
-      fireRate: 0.6,
-      magazine: 5,
-      reloadSeconds: 1.8,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0035,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1400,
+      "range": 880,
+      "fireRate": 0.6,
+      "magazine": 5,
+      "reloadSeconds": 1.8,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0035,
+      "pierce": 3
+    }
   },
   "x2-sunbreaker-railgun": {
-    id: "x2-sunbreaker-railgun",
-    name: "Sunbreaker Railgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
-      int: "C",
+    "id": "x2-sunbreaker-railgun",
+    "name": "Sunbreaker Railgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "int": "C"
     },
-    damage: 16,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.9,
-    displayLength: 220,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "railgun",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 16,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.9,
+    "displayLength": 220,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "railgun",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 11,
-      int: 5,
+    "requirements": {
+      "dex": 11,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 1400,
-      range: 900,
-      fireRate: 0.85,
-      magazine: 4,
-      reloadSeconds: 2.2,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      pierce: 5,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1400,
+      "range": 900,
+      "fireRate": 0.85,
+      "magazine": 4,
+      "reloadSeconds": 2.2,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "pierce": 5
+    }
   },
   "x2-hollowpoint-repeater": {
-    id: "x2-hollowpoint-repeater",
-    name: "Hollowpoint Repeater",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-hollowpoint-repeater",
+    "name": "Hollowpoint Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 12,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.46,
-    displayLength: 148,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 12,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.46,
+    "displayLength": 148,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 5,
+    "requirements": {
+      "dex": 8,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 12,
-      projectileSpeed: 920,
-      range: 700,
-      fireRate: 0.38,
-      magazine: 9,
-      reloadSeconds: 1.7,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0026,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 920,
+      "range": 700,
+      "fireRate": 0.38,
+      "magazine": 9,
+      "reloadSeconds": 1.7,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0026,
+      "pierce": 4
+    }
   },
   "x2-quicksilver-slugthrower": {
-    id: "x2-quicksilver-slugthrower",
-    name: "Quicksilver Slugthrower",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-quicksilver-slugthrower",
+    "name": "Quicksilver Slugthrower",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 14,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.62,
-    displayLength: 152,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["DEX"],
+    "damage": 14,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.62,
+    "displayLength": 152,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 14,
-      projectileSpeed: 1200,
-      range: 820,
-      fireRate: 0.52,
-      magazine: 6,
-      reloadSeconds: 1.7,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.003,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 1200,
+      "range": 820,
+      "fireRate": 0.52,
+      "magazine": 6,
+      "reloadSeconds": 1.7,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.003,
+      "pierce": 3
+    }
   },
   "x2-thunderhead-lever-gun": {
-    id: "x2-thunderhead-lever-gun",
-    name: "Thunderhead Lever-Gun",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-thunderhead-lever-gun",
+    "name": "Thunderhead Lever-Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 10,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.44,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 10,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.44,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 4,
+    "requirements": {
+      "dex": 8,
+      "int": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 10,
-      projectileSpeed: 1300,
-      range: 700,
-      fireRate: 0.34,
-      magazine: 10,
-      reloadSeconds: 1.6,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0018,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 1300,
+      "range": 700,
+      "fireRate": 0.34,
+      "magazine": 10,
+      "reloadSeconds": 1.6,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0018,
+      "pierce": 2
+    }
   },
   "x2-cinderbore-longrifle": {
-    id: "x2-cinderbore-longrifle",
-    name: "Cinderbore Longrifle",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-cinderbore-longrifle",
+    "name": "Cinderbore Longrifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 15,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.78,
-    displayLength: 156,
-    swingArc: 1.8,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["DEX", "STR"],
+    "damage": 15,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.78,
+    "displayLength": 156,
+    "swingArc": 1.8,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 8,
+    "requirements": {
+      "str": 6,
+      "dex": 8
     },
-    twoHanded: true,
-    gun: {
-      damage: 13,
-      projectileSpeed: 1050,
-      range: 760,
-      fireRate: 0.62,
-      magazine: 5,
-      reloadSeconds: 1.9,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0038,
-      pierce: 2,
-      explode: {
-        radius: 60,
-        damage: 7,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1050,
+      "range": 760,
+      "fireRate": 0.62,
+      "magazine": 5,
+      "reloadSeconds": 1.9,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "pierce": 2,
+      "explode": {
+        "radius": 60,
+        "damage": 7
+      }
+    }
   },
   "x2-venomspine-repeater": {
-    id: "x2-venomspine-repeater",
-    name: "Venomspine Repeater",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
+    "id": "x2-venomspine-repeater",
+    "name": "Venomspine Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B"
     },
-    damage: 8,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.36,
-    displayLength: 146,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 8,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.36,
+    "displayLength": 146,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 7,
-      projectileSpeed: 880,
-      range: 560,
-      fireRate: 0.2,
-      magazine: 14,
-      reloadSeconds: 1.6,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0012,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 880,
+      "range": 560,
+      "fireRate": 0.2,
+      "magazine": 14,
+      "reloadSeconds": 1.6,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0012,
+      "pierce": 2
+    }
   },
   "x2-tracer-saint-carbine": {
-    id: "x2-tracer-saint-carbine",
-    name: "Tracer-Saint Carbine",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-tracer-saint-carbine",
+    "name": "Tracer-Saint Carbine",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 9,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 116,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["DEX"],
+    "damage": 9,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 116,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 9,
+    "requirements": {
+      "dex": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 8,
-      projectileSpeed: 1150,
-      range: 700,
-      fireRate: 0.18,
-      magazine: 15,
-      reloadSeconds: 1.5,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.001,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 1150,
+      "range": 700,
+      "fireRate": 0.18,
+      "magazine": 15,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.001,
+      "pierce": 2
+    }
   },
   "x2-ironhide-buffalo-gun": {
-    id: "x2-ironhide-buffalo-gun",
-    name: "Ironhide Buffalo Gun",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "B",
+    "id": "x2-ironhide-buffalo-gun",
+    "name": "Ironhide Buffalo Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "B"
     },
-    damage: 16,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.9,
-    displayLength: 210,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["STR", "DEX"],
+    "damage": 16,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.9,
+    "displayLength": 210,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 7,
+    "requirements": {
+      "str": 9,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 1250,
-      range: 840,
-      fireRate: 0.82,
-      magazine: 3,
-      reloadSeconds: 2,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1250,
+      "range": 840,
+      "fireRate": 0.82,
+      "magazine": 3,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "pierce": 4
+    }
   },
   "x2-mirage-coilrifle": {
-    id: "x2-mirage-coilrifle",
-    name: "Mirage Coilrifle",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "B",
+    "id": "x2-mirage-coilrifle",
+    "name": "Mirage Coilrifle",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "B"
     },
-    damage: 15,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.66,
-    displayLength: 154,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "ranged",
-      family: "railgun",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 15,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.66,
+    "displayLength": 154,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "railgun",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 9,
-      int: 7,
+    "requirements": {
+      "dex": 9,
+      "int": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 14,
-      projectileSpeed: 1350,
-      range: 860,
-      fireRate: 0.54,
-      magazine: 6,
-      reloadSeconds: 1.8,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0028,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 1350,
+      "range": 860,
+      "fireRate": 0.54,
+      "magazine": 6,
+      "reloadSeconds": 1.8,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0028,
+      "pierce": 4
+    }
   },
   "x2-rustwidow-pump-rifle": {
-    id: "x2-rustwidow-pump-rifle",
-    name: "Rustwidow Pump-Rifle",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-rustwidow-pump-rifle",
+    "name": "Rustwidow Pump-Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 12,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.46,
-    displayLength: 122,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 12,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.46,
+    "displayLength": 122,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 5,
+    "requirements": {
+      "str": 6,
+      "dex": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 11,
-      projectileSpeed: 940,
-      range: 560,
-      fireRate: 0.4,
-      magazine: 7,
-      reloadSeconds: 1.5,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.003,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 11,
+      "projectileSpeed": 940,
+      "range": 560,
+      "fireRate": 0.4,
+      "magazine": 7,
+      "reloadSeconds": 1.5,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.003,
+      "pierce": 2
+    }
   },
   "x2-ghostwind-spectre-rail": {
-    id: "x2-ghostwind-spectre-rail",
-    name: "Ghostwind Spectre-Rail",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
-      int: "B",
+    "id": "x2-ghostwind-spectre-rail",
+    "name": "Ghostwind Spectre-Rail",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "int": "B"
     },
-    damage: 15,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.88,
-    displayLength: 215,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "railgun",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 15,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.88,
+    "displayLength": 215,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "railgun",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 11,
-      int: 7,
+    "requirements": {
+      "dex": 11,
+      "int": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 15,
-      projectileSpeed: 1400,
-      range: 900,
-      fireRate: 0.8,
-      magazine: 4,
-      reloadSeconds: 2.2,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0038,
-      pierce: 6,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 1400,
+      "range": 900,
+      "fireRate": 0.8,
+      "magazine": 4,
+      "reloadSeconds": 2.2,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0038,
+      "pierce": 6
+    }
   },
   "x2-sidewinder-twin-rifles": {
-    id: "x2-sidewinder-twin-rifles",
-    name: "Sidewinder Twin-Rifles",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-sidewinder-twin-rifles",
+    "name": "Sidewinder Twin-Rifles",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 8,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 104,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 8,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 9,
+    "requirements": {
+      "dex": 9
     },
-    dual: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 1000,
-      range: 580,
-      fireRate: 0.14,
-      magazine: 16,
-      reloadSeconds: 1.5,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.001,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1000,
+      "range": 580,
+      "fireRate": 0.14,
+      "magazine": 16,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.001
+    }
   },
   "x2-gravelung-punt-rifle": {
-    id: "x2-gravelung-punt-rifle",
-    name: "Gravelung Punt-Rifle",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-gravelung-punt-rifle",
+    "name": "Gravelung Punt-Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 16,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.9,
-    displayLength: 218,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["STR"],
+    "damage": 16,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.9,
+    "displayLength": 218,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 11,
+    "requirements": {
+      "str": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 12,
-      projectileSpeed: 880,
-      range: 740,
-      fireRate: 0.7,
-      magazine: 4,
-      reloadSeconds: 2.1,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.004,
-      explode: {
-        radius: 68,
-        damage: 9,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 880,
+      "range": 740,
+      "fireRate": 0.7,
+      "magazine": 4,
+      "reloadSeconds": 2.1,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.004,
+      "explode": {
+        "radius": 68,
+        "damage": 9
+      }
+    }
   },
   "x2-pale-horse-longgun": {
-    id: "x2-pale-horse-longgun",
-    name: "Pale-Horse Longgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-pale-horse-longgun",
+    "name": "Pale-Horse Longgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 14,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.64,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["DEX"],
+    "damage": 14,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.64,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 14,
-      projectileSpeed: 1200,
-      range: 800,
-      fireRate: 0.56,
-      magazine: 5,
-      reloadSeconds: 1.7,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0032,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 1200,
+      "range": 800,
+      "fireRate": 0.56,
+      "magazine": 5,
+      "reloadSeconds": 1.7,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0032,
+      "pierce": 3
+    }
   },
   "x2-brasswork-volley-rifle": {
-    id: "x2-brasswork-volley-rifle",
-    name: "Brasswork Volley Rifle",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-brasswork-volley-rifle",
+    "name": "Brasswork Volley Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 9,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.42,
-    displayLength: 148,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 9,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.42,
+    "displayLength": 148,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 7,
+    "requirements": {
+      "str": 4,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 1000,
-      range: 620,
-      fireRate: 0.28,
-      magazine: 9,
-      reloadSeconds: 1.6,
-      bulletKind: "tracer",
-      muzzle: "punch",
-      recoil: 0.0016,
-      pellets: 3,
-      spread: 0.1,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1000,
+      "range": 620,
+      "fireRate": 0.28,
+      "magazine": 9,
+      "reloadSeconds": 1.6,
+      "bulletKind": "tracer",
+      "muzzle": "punch",
+      "recoil": 0.0016,
+      "pellets": 3,
+      "spread": 0.1
+    }
   },
   "x2-hexbore-witchrifle": {
-    id: "x2-hexbore-witchrifle",
-    name: "Hexbore Witchrifle",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "A",
+    "id": "x2-hexbore-witchrifle",
+    "name": "Hexbore Witchrifle",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "A"
     },
-    damage: 15,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.68,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "ranged",
-      family: "marksman-rifle",
-      rangeBand: "long",
-      scaling: ["INT", "DEX"],
+    "damage": 15,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.68,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "marksman-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 10,
+    "requirements": {
+      "dex": 5,
+      "int": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 13,
-      projectileSpeed: 1250,
-      range: 840,
-      fireRate: 0.58,
-      magazine: 5,
-      reloadSeconds: 1.8,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0026,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1250,
+      "range": 840,
+      "fireRate": 0.58,
+      "magazine": 5,
+      "reloadSeconds": 1.8,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0026,
+      "pierce": 4
+    }
   },
   "x2-boneash-scattergun-rifle": {
-    id: "x2-boneash-scattergun-rifle",
-    name: "Boneash Scattergun-Rifle",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-boneash-scattergun-rifle",
+    "name": "Boneash Scattergun-Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 11,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.48,
-    displayLength: 124,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "lever-rifle",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 11,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.48,
+    "displayLength": 124,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "lever-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 7,
+    "requirements": {
+      "str": 5,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 9,
-      projectileSpeed: 900,
-      range: 580,
-      fireRate: 0.42,
-      magazine: 8,
-      reloadSeconds: 1.6,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0028,
-      pierce: 2,
-      explode: {
-        radius: 58,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 900,
+      "range": 580,
+      "fireRate": 0.42,
+      "magazine": 8,
+      "reloadSeconds": 1.6,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0028,
+      "pierce": 2,
+      "explode": {
+        "radius": 58,
+        "damage": 6
+      }
+    }
   },
   "x2-buckshot-briar": {
-    id: "x2-buckshot-briar",
-    name: "Buckshot Briar",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-buckshot-briar",
+    "name": "Buckshot Briar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.55,
-    displayLength: 96,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.55,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 4,
+    "requirements": {
+      "str": 6,
+      "dex": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 740,
-      range: 360,
-      fireRate: 0.55,
-      magazine: 5,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pellets: 7,
-      spread: 0.32,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 740,
+      "range": 360,
+      "fireRate": 0.55,
+      "magazine": 5,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pellets": 7,
+      "spread": 0.32
+    }
   },
   "x2-bonepicker-coachgun": {
-    id: "x2-bonepicker-coachgun",
-    name: "Bonepicker Coachgun",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "D",
+    "id": "x2-bonepicker-coachgun",
+    "name": "Bonepicker Coachgun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "D"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.62,
-    cooldown: 0.7,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.62,
+    "cooldown": 0.7,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
+    "requirements": {
+      "str": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 760,
-      range: 340,
-      fireRate: 0.7,
-      magazine: 2,
-      reloadSeconds: 1.4,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0038,
-      pellets: 9,
-      spread: 0.34,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 760,
+      "range": 340,
+      "fireRate": 0.7,
+      "magazine": 2,
+      "reloadSeconds": 1.4,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "pellets": 9,
+      "spread": 0.34
+    }
   },
   "x2-cinderchoke-blunderbuss": {
-    id: "x2-cinderchoke-blunderbuss",
-    name: "Cinderchoke Blunderbuss",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "C",
+    "id": "x2-cinderchoke-blunderbuss",
+    "name": "Cinderchoke Blunderbuss",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "C"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.66,
-    cooldown: 0.72,
-    displayLength: 132,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.66,
+    "cooldown": 0.72,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 4,
+    "requirements": {
+      "str": 6,
+      "int": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 660,
-      range: 320,
-      fireRate: 0.72,
-      magazine: 1,
-      reloadSeconds: 1.3,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0036,
-      pellets: 8,
-      spread: 0.4,
-      explode: {
-        radius: 48,
-        damage: 4,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 660,
+      "range": 320,
+      "fireRate": 0.72,
+      "magazine": 1,
+      "reloadSeconds": 1.3,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0036,
+      "pellets": 8,
+      "spread": 0.4,
+      "explode": {
+        "radius": 48,
+        "damage": 4
+      }
+    }
   },
   "x2-frostbore-scattergun": {
-    id: "x2-frostbore-scattergun",
-    name: "Frostbore Scattergun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-frostbore-scattergun",
+    "name": "Frostbore Scattergun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.58,
-    cooldown: 0.5,
-    displayLength: 94,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.58,
+    "cooldown": 0.5,
+    "displayLength": 94,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 5,
+    "requirements": {
+      "dex": 6,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 800,
-      range: 380,
-      fireRate: 0.5,
-      magazine: 6,
-      reloadSeconds: 1.4,
-      bulletKind: "pellet",
-      muzzle: "punch",
-      recoil: 0.0026,
-      pellets: 6,
-      spread: 0.3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 800,
+      "range": 380,
+      "fireRate": 0.5,
+      "magazine": 6,
+      "reloadSeconds": 1.4,
+      "bulletKind": "pellet",
+      "muzzle": "punch",
+      "recoil": 0.0026,
+      "pellets": 6,
+      "spread": 0.3
+    }
   },
   "x2-galvanic-coachgun": {
-    id: "x2-galvanic-coachgun",
-    name: "Galvanic Coachgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-galvanic-coachgun",
+    "name": "Galvanic Coachgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.6,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.6,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 7,
-      int: 5,
+    "requirements": {
+      "dex": 7,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 900,
-      range: 380,
-      fireRate: 0.6,
-      magazine: 2,
-      reloadSeconds: 1.3,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.003,
-      pellets: 7,
-      spread: 0.33,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 900,
+      "range": 380,
+      "fireRate": 0.6,
+      "magazine": 2,
+      "reloadSeconds": 1.3,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.003,
+      "pellets": 7,
+      "spread": 0.33,
+      "pierce": 2
+    }
   },
   "x2-spore-spitter-blunderbuss": {
-    id: "x2-spore-spitter-blunderbuss",
-    name: "Spore-Spitter Blunderbuss",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-spore-spitter-blunderbuss",
+    "name": "Spore-Spitter Blunderbuss",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 5,
-    range: 320,
-    halfArc: 0.68,
-    cooldown: 0.62,
-    displayLength: 128,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 320,
+    "halfArc": 0.68,
+    "cooldown": 0.62,
+    "displayLength": 128,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 5,
+    "requirements": {
+      "dex": 5,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 600,
-      range: 320,
-      fireRate: 0.62,
-      magazine: 4,
-      reloadSeconds: 1.6,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.003,
-      pellets: 8,
-      spread: 0.45,
-      explode: {
-        radius: 44,
-        damage: 3,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 600,
+      "range": 320,
+      "fireRate": 0.62,
+      "magazine": 4,
+      "reloadSeconds": 1.6,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.003,
+      "pellets": 8,
+      "spread": 0.45,
+      "explode": {
+        "radius": 44,
+        "damage": 3
+      }
+    }
   },
   "x2-quicksilver-streetsweeper": {
-    id: "x2-quicksilver-streetsweeper",
-    name: "Quicksilver Streetsweeper",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
+    "id": "x2-quicksilver-streetsweeper",
+    "name": "Quicksilver Streetsweeper",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.58,
-    cooldown: 0.3,
-    displayLength: 138,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.58,
+    "cooldown": 0.3,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 10,
+    "requirements": {
+      "str": 5,
+      "dex": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 720,
-      range: 360,
-      fireRate: 0.3,
-      magazine: 12,
-      reloadSeconds: 2,
-      bulletKind: "pellet",
-      muzzle: "rapid",
-      recoil: 0.0018,
-      pellets: 5,
-      spread: 0.3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 720,
+      "range": 360,
+      "fireRate": 0.3,
+      "magazine": 12,
+      "reloadSeconds": 2,
+      "bulletKind": "pellet",
+      "muzzle": "rapid",
+      "recoil": 0.0018,
+      "pellets": 5,
+      "spread": 0.3
+    }
   },
   "x2-hallowbore-coachgun": {
-    id: "x2-hallowbore-coachgun",
-    name: "Hallowbore Coachgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-hallowbore-coachgun",
+    "name": "Hallowbore Coachgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.64,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.64,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 6,
+    "requirements": {
+      "dex": 6,
+      "int": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 820,
-      range: 380,
-      fireRate: 0.64,
-      magazine: 2,
-      reloadSeconds: 1.3,
-      bulletKind: "pellet",
-      muzzle: "punch",
-      recoil: 0.0032,
-      pellets: 7,
-      spread: 0.31,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 820,
+      "range": 380,
+      "fireRate": 0.64,
+      "magazine": 2,
+      "reloadSeconds": 1.3,
+      "bulletKind": "pellet",
+      "muzzle": "punch",
+      "recoil": 0.0032,
+      "pellets": 7,
+      "spread": 0.31
+    }
   },
   "x2-hollowpoint-voidgun": {
-    id: "x2-hollowpoint-voidgun",
-    name: "Hollowpoint Voidgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-hollowpoint-voidgun",
+    "name": "Hollowpoint Voidgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.64,
-    cooldown: 0.66,
-    displayLength: 126,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.64,
+    "cooldown": 0.66,
+    "displayLength": 126,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 7,
+    "requirements": {
+      "dex": 6,
+      "int": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 700,
-      range: 340,
-      fireRate: 0.66,
-      magazine: 3,
-      reloadSeconds: 1.5,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pellets: 6,
-      spread: 0.36,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 700,
+      "range": 340,
+      "fireRate": 0.66,
+      "magazine": 3,
+      "reloadSeconds": 1.5,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pellets": 6,
+      "spread": 0.36,
+      "pierce": 3
+    }
   },
   "x2-twin-maw-greenerbore": {
-    id: "x2-twin-maw-greenerbore",
-    name: "Twin-Maw Greenerbore",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "C",
+    "id": "x2-twin-maw-greenerbore",
+    "name": "Twin-Maw Greenerbore",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "C"
     },
-    damage: 5,
-    range: 320,
-    halfArc: 0.66,
-    cooldown: 0.42,
-    displayLength: 58,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 320,
+    "halfArc": 0.66,
+    "cooldown": 0.42,
+    "displayLength": 58,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 8,
+    "requirements": {
+      "dex": 8
     },
-    dual: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 720,
-      range: 320,
-      fireRate: 0.42,
-      magazine: 4,
-      reloadSeconds: 1.2,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0028,
-      pellets: 5,
-      spread: 0.38,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 720,
+      "range": 320,
+      "fireRate": 0.42,
+      "magazine": 4,
+      "reloadSeconds": 1.2,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0028,
+      "pellets": 5,
+      "spread": 0.38
+    }
   },
   "x2-slughammer-breachgun": {
-    id: "x2-slughammer-breachgun",
-    name: "Slughammer Breachgun",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-slughammer-breachgun",
+    "name": "Slughammer Breachgun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 8,
-    range: 320,
-    halfArc: 0.5,
-    cooldown: 0.85,
-    displayLength: 142,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["STR"],
+    "damage": 8,
+    "range": 320,
+    "halfArc": 0.5,
+    "cooldown": 0.85,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 11,
+    "requirements": {
+      "str": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 19,
-      projectileSpeed: 880,
-      range: 460,
-      fireRate: 0.85,
-      magazine: 2,
-      reloadSeconds: 1.6,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 19,
+      "projectileSpeed": 880,
+      "range": 460,
+      "fireRate": 0.85,
+      "magazine": 2,
+      "reloadSeconds": 1.6,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "pierce": 3
+    }
   },
   "x2-wyrmgut-blunderbuss": {
-    id: "x2-wyrmgut-blunderbuss",
-    name: "Wyrmgut Blunderbuss",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-wyrmgut-blunderbuss",
+    "name": "Wyrmgut Blunderbuss",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.66,
-    cooldown: 0.68,
-    displayLength: 130,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.66,
+    "cooldown": 0.68,
+    "displayLength": 130,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 7,
-      dex: 4,
+    "requirements": {
+      "str": 7,
+      "dex": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 700,
-      range: 330,
-      fireRate: 0.68,
-      magazine: 3,
-      reloadSeconds: 1.5,
-      bulletKind: "nail",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pellets: 8,
-      spread: 0.42,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 700,
+      "range": 330,
+      "fireRate": 0.68,
+      "magazine": 3,
+      "reloadSeconds": 1.5,
+      "bulletKind": "nail",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pellets": 8,
+      "spread": 0.42,
+      "pierce": 2
+    }
   },
   "x2-caustic-drum-sweeper": {
-    id: "x2-caustic-drum-sweeper",
-    name: "Caustic Drum Sweeper",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-caustic-drum-sweeper",
+    "name": "Caustic Drum Sweeper",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 5,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.34,
-    displayLength: 136,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.34,
+    "displayLength": 136,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 4,
+    "requirements": {
+      "dex": 8,
+      "int": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 700,
-      range: 340,
-      fireRate: 0.34,
-      magazine: 10,
-      reloadSeconds: 1.9,
-      bulletKind: "pellet",
-      muzzle: "rapid",
-      recoil: 0.0018,
-      pellets: 5,
-      spread: 0.32,
-      explode: {
-        radius: 40,
-        damage: 2,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 700,
+      "range": 340,
+      "fireRate": 0.34,
+      "magazine": 10,
+      "reloadSeconds": 1.9,
+      "bulletKind": "pellet",
+      "muzzle": "rapid",
+      "recoil": 0.0018,
+      "pellets": 5,
+      "spread": 0.32,
+      "explode": {
+        "radius": 40,
+        "damage": 2
+      }
+    }
   },
   "x2-emberfan-pumpgun": {
-    id: "x2-emberfan-pumpgun",
-    name: "Emberfan Pumpgun",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-emberfan-pumpgun",
+    "name": "Emberfan Pumpgun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.62,
-    cooldown: 0.52,
-    displayLength: 96,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.62,
+    "cooldown": 0.52,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 5,
+    "requirements": {
+      "str": 5,
+      "dex": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 700,
-      range: 340,
-      fireRate: 0.52,
-      magazine: 5,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0032,
-      pellets: 7,
-      spread: 0.36,
-      explode: {
-        radius: 42,
-        damage: 3,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 700,
+      "range": 340,
+      "fireRate": 0.52,
+      "magazine": 5,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0032,
+      "pellets": 7,
+      "spread": 0.36,
+      "explode": {
+        "radius": 42,
+        "damage": 3
+      }
+    }
   },
   "x2-carom-coachgun": {
-    id: "x2-carom-coachgun",
-    name: "Carom Coachgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "C",
+    "id": "x2-carom-coachgun",
+    "name": "Carom Coachgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.58,
-    cooldown: 0.6,
-    displayLength: 94,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "LUK"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.58,
+    "cooldown": 0.6,
+    "displayLength": 94,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 8,
-      luk: 4,
+    "requirements": {
+      "dex": 8,
+      "luk": 4
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 860,
-      range: 460,
-      fireRate: 0.6,
-      magazine: 2,
-      reloadSeconds: 1.3,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.0028,
-      pellets: 6,
-      spread: 0.3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 860,
+      "range": 460,
+      "fireRate": 0.6,
+      "magazine": 2,
+      "reloadSeconds": 1.3,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.0028,
+      "pellets": 6,
+      "spread": 0.3
+    }
   },
   "x2-boomstick-saddlegun": {
-    id: "x2-boomstick-saddlegun",
-    name: "Boomstick Saddlegun",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-boomstick-saddlegun",
+    "name": "Boomstick Saddlegun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.58,
-    cooldown: 0.46,
-    displayLength: 98,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.58,
+    "cooldown": 0.46,
+    "displayLength": 98,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 5,
+    "requirements": {
+      "str": 5,
+      "dex": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 760,
-      range: 360,
-      fireRate: 0.46,
-      magazine: 5,
-      reloadSeconds: 1.4,
-      bulletKind: "pellet",
-      muzzle: "punch",
-      recoil: 0.0028,
-      pellets: 6,
-      spread: 0.3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 760,
+      "range": 360,
+      "fireRate": 0.46,
+      "magazine": 5,
+      "reloadSeconds": 1.4,
+      "bulletKind": "pellet",
+      "muzzle": "punch",
+      "recoil": 0.0028,
+      "pellets": 6,
+      "spread": 0.3
+    }
   },
   "x2-tesla-drumbore": {
-    id: "x2-tesla-drumbore",
-    name: "Tesla Drumbore",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "C",
+    "id": "x2-tesla-drumbore",
+    "name": "Tesla Drumbore",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "C"
     },
-    damage: 5,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.32,
-    displayLength: 138,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.32,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 6,
+    "requirements": {
+      "dex": 8,
+      "int": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 880,
-      range: 380,
-      fireRate: 0.32,
-      magazine: 14,
-      reloadSeconds: 2.1,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-      pellets: 5,
-      spread: 0.31,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 880,
+      "range": 380,
+      "fireRate": 0.32,
+      "magazine": 14,
+      "reloadSeconds": 2.1,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016,
+      "pellets": 5,
+      "spread": 0.31,
+      "pierce": 2
+    }
   },
   "x2-glasswidow-punchgun": {
-    id: "x2-glasswidow-punchgun",
-    name: "Glasswidow Punchgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "C",
+    "id": "x2-glasswidow-punchgun",
+    "name": "Glasswidow Punchgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "C"
     },
-    damage: 5,
-    range: 320,
-    halfArc: 0.64,
-    cooldown: 0.44,
-    displayLength: 60,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 320,
+    "halfArc": 0.64,
+    "cooldown": 0.44,
+    "displayLength": 60,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 820,
-      range: 340,
-      fireRate: 0.44,
-      magazine: 4,
-      reloadSeconds: 1.2,
-      bulletKind: "nail",
-      muzzle: "punch",
-      recoil: 0.0024,
-      pellets: 6,
-      spread: 0.34,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 820,
+      "range": 340,
+      "fireRate": 0.44,
+      "magazine": 4,
+      "reloadSeconds": 1.2,
+      "bulletKind": "nail",
+      "muzzle": "punch",
+      "recoil": 0.0024,
+      "pellets": 6,
+      "spread": 0.34
+    }
   },
   "x2-pearlbreech-volleygun": {
-    id: "x2-pearlbreech-volleygun",
-    name: "Pearlbreech Volleygun",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-pearlbreech-volleygun",
+    "name": "Pearlbreech Volleygun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.66,
-    cooldown: 0.8,
-    displayLength: 134,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "blunderbuss",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.66,
+    "cooldown": 0.8,
+    "displayLength": 134,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "blunderbuss",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 7,
+    "requirements": {
+      "str": 6,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 800,
-      range: 380,
-      fireRate: 0.8,
-      magazine: 1,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0038,
-      pellets: 9,
-      spread: 0.4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 800,
+      "range": 380,
+      "fireRate": 0.8,
+      "magazine": 1,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "pellets": 9,
+      "spread": 0.4
+    }
   },
   "x2-dustdevil-riotgun": {
-    id: "x2-dustdevil-riotgun",
-    name: "Dustdevil Riotgun",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-dustdevil-riotgun",
+    "name": "Dustdevil Riotgun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.38,
-    displayLength: 130,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "shotgun",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.38,
+    "displayLength": 130,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "shotgun",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 9,
+    "requirements": {
+      "str": 5,
+      "dex": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 760,
-      range: 360,
-      fireRate: 0.38,
-      magazine: 8,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "rapid",
-      recoil: 0.0022,
-      pellets: 6,
-      spread: 0.32,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 760,
+      "range": 360,
+      "fireRate": 0.38,
+      "magazine": 8,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "rapid",
+      "recoil": 0.0022,
+      "pellets": 6,
+      "spread": 0.32
+    }
   },
   "x2-hellbore-gatling": {
-    id: "x2-hellbore-gatling",
-    name: "Hellbore Gatling",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-hellbore-gatling",
+    "name": "Hellbore Gatling",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.42,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.42,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 11,
+    "requirements": {
+      "str": 8,
+      "dex": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 3,
-      projectileSpeed: 820,
-      range: 600,
-      fireRate: 0.07,
-      magazine: 64,
-      reloadSeconds: 2.8,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0007,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 820,
+      "range": 600,
+      "fireRate": 0.07,
+      "magazine": 64,
+      "reloadSeconds": 2.8,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0007
+    }
   },
   "x2-widowmaker-cannon": {
-    id: "x2-widowmaker-cannon",
-    name: "Widowmaker Cannon",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-widowmaker-cannon",
+    "name": "Widowmaker Cannon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 7,
-    range: 84,
-    halfArc: 0.55,
-    cooldown: 0.85,
-    displayLength: 200,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["STR"],
+    "damage": 7,
+    "range": 84,
+    "halfArc": 0.55,
+    "cooldown": 0.85,
+    "displayLength": 200,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 14,
+    "requirements": {
+      "str": 14
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 640,
-      range: 820,
-      fireRate: 0.9,
-      magazine: 3,
-      reloadSeconds: 2.6,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.004,
-      explode: {
-        radius: 64,
-        damage: 12,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 640,
+      "range": 820,
+      "fireRate": 0.9,
+      "magazine": 3,
+      "reloadSeconds": 2.6,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.004,
+      "explode": {
+        "radius": 64,
+        "damage": 12
+      }
+    }
   },
   "x2-powderkeg-mortar": {
-    id: "x2-powderkeg-mortar",
-    name: "Powderkeg Mortar",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "C",
+    "id": "x2-powderkeg-mortar",
+    "name": "Powderkeg Mortar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.78,
-    displayLength: 130,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.78,
+    "displayLength": 130,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 9,
+    "requirements": {
+      "str": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 11,
-      projectileSpeed: 560,
-      range: 560,
-      fireRate: 0.8,
-      magazine: 4,
-      reloadSeconds: 2,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0035,
-      explode: {
-        radius: 68,
-        damage: 9,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 11,
+      "projectileSpeed": 560,
+      "range": 560,
+      "fireRate": 0.8,
+      "magazine": 4,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0035,
+      "explode": {
+        "radius": 68,
+        "damage": 9
+      }
+    }
   },
   "x2-thunderhead-repeater-cannon": {
-    id: "x2-thunderhead-repeater-cannon",
-    name: "Thunderhead Repeater Cannon",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-thunderhead-repeater-cannon",
+    "name": "Thunderhead Repeater Cannon",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.5,
-    displayLength: 138,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.5,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 10,
-      int: 5,
+    "requirements": {
+      "dex": 10,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 9,
-      projectileSpeed: 1100,
-      range: 760,
-      fireRate: 0.28,
-      magazine: 10,
-      reloadSeconds: 1.6,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0018,
-      pierce: 2,
-      explode: {
-        radius: 44,
-        damage: 5,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 1100,
+      "range": 760,
+      "fireRate": 0.28,
+      "magazine": 10,
+      "reloadSeconds": 1.6,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0018,
+      "pierce": 2,
+      "explode": {
+        "radius": 44,
+        "damage": 5
+      }
+    }
   },
   "x2-brimstone-rocket-tube": {
-    id: "x2-brimstone-rocket-tube",
-    name: "Brimstone Rocket Tube",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "B",
+    "id": "x2-brimstone-rocket-tube",
+    "name": "Brimstone Rocket Tube",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "B"
     },
-    damage: 6,
-    range: 82,
-    halfArc: 0.55,
-    cooldown: 0.88,
-    displayLength: 210,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["STR", "INT"],
+    "damage": 6,
+    "range": 82,
+    "halfArc": 0.55,
+    "cooldown": 0.88,
+    "displayLength": 210,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 11,
-      int: 6,
+    "requirements": {
+      "str": 11,
+      "int": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 14,
-      projectileSpeed: 600,
-      range: 880,
-      fireRate: 0.85,
-      magazine: 2,
-      reloadSeconds: 2.8,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0038,
-      explode: {
-        radius: 70,
-        damage: 13,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 14,
+      "projectileSpeed": 600,
+      "range": 880,
+      "fireRate": 0.85,
+      "magazine": 2,
+      "reloadSeconds": 2.8,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "explode": {
+        "radius": 70,
+        "damage": 13
+      }
+    }
   },
   "x2-buckshot-avalanche": {
-    id: "x2-buckshot-avalanche",
-    name: "Buckshot Avalanche",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-buckshot-avalanche",
+    "name": "Buckshot Avalanche",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.72,
-    displayLength: 132,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "close",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.72,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 8,
+    "requirements": {
+      "str": 8
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 700,
-      range: 400,
-      fireRate: 0.72,
-      magazine: 4,
-      reloadSeconds: 1.9,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0036,
-      pellets: 9,
-      spread: 0.4,
-      explode: {
-        radius: 40,
-        damage: 3,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 700,
+      "range": 400,
+      "fireRate": 0.72,
+      "magazine": 4,
+      "reloadSeconds": 1.9,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0036,
+      "pellets": 9,
+      "spread": 0.4,
+      "explode": {
+        "radius": 40,
+        "damage": 3
+      }
+    }
   },
   "x2-ironhail-pepperbox": {
-    id: "x2-ironhail-pepperbox",
-    name: "Ironhail Pepperbox",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-ironhail-pepperbox",
+    "name": "Ironhail Pepperbox",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.36,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.36,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 7,
+    "requirements": {
+      "str": 5,
+      "dex": 7
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 880,
-      range: 540,
-      fireRate: 0.13,
-      magazine: 14,
-      reloadSeconds: 1.5,
-      bulletKind: "slug",
-      muzzle: "punch",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 880,
+      "range": 540,
+      "fireRate": 0.13,
+      "magazine": 14,
+      "reloadSeconds": 1.5,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016
+    }
   },
   "x2-graveshot-grenade-gun": {
-    id: "x2-graveshot-grenade-gun",
-    name: "Graveshot Grenade Gun",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      luk: "D",
+    "id": "x2-graveshot-grenade-gun",
+    "name": "Graveshot Grenade Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "luk": "D"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.7,
-    displayLength: 134,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["STR", "LUK"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.7,
+    "displayLength": 134,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "LUK"
+      ]
     },
-    requirements: {
-      str: 9,
+    "requirements": {
+      "str": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 10,
-      projectileSpeed: 580,
-      range: 600,
-      fireRate: 0.7,
-      magazine: 5,
-      reloadSeconds: 1.8,
-      bulletKind: "ricochet",
-      muzzle: "boom",
-      recoil: 0.003,
-      explode: {
-        radius: 62,
-        damage: 9,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 580,
+      "range": 600,
+      "fireRate": 0.7,
+      "magazine": 5,
+      "reloadSeconds": 1.8,
+      "bulletKind": "ricochet",
+      "muzzle": "boom",
+      "recoil": 0.003,
+      "explode": {
+        "radius": 62,
+        "damage": 9
+      }
+    }
   },
   "x2-hailstorm-coilgun": {
-    id: "x2-hailstorm-coilgun",
-    name: "Hailstorm Coilgun",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-hailstorm-coilgun",
+    "name": "Hailstorm Coilgun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 152,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 152,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 12,
-      int: 6,
+    "requirements": {
+      "dex": 12,
+      "int": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 1000,
-      range: 640,
-      fireRate: 0.1,
-      magazine: 48,
-      reloadSeconds: 2.4,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0008,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1000,
+      "range": 640,
+      "fireRate": 0.1,
+      "magazine": 48,
+      "reloadSeconds": 2.4,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0008,
+      "pierce": 2
+    }
   },
   "x2-doomsday-drum-cannon": {
-    id: "x2-doomsday-drum-cannon",
-    name: "Doomsday Drum Cannon",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-doomsday-drum-cannon",
+    "name": "Doomsday Drum Cannon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.6,
-    displayLength: 170,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.6,
+    "displayLength": 170,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 12,
-      dex: 7,
+    "requirements": {
+      "str": 12,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 7,
-      projectileSpeed: 640,
-      range: 560,
-      fireRate: 0.34,
-      magazine: 12,
-      reloadSeconds: 2.2,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0026,
-      explode: {
-        radius: 56,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 640,
+      "range": 560,
+      "fireRate": 0.34,
+      "magazine": 12,
+      "reloadSeconds": 2.2,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0026,
+      "explode": {
+        "radius": 56,
+        "damage": 6
+      }
+    }
   },
   "x2-mauler-slug-thrower": {
-    id: "x2-mauler-slug-thrower",
-    name: "Mauler Slug-Thrower",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
+    "id": "x2-mauler-slug-thrower",
+    "name": "Mauler Slug-Thrower",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A"
     },
-    damage: 7,
-    range: 84,
-    halfArc: 0.5,
-    cooldown: 0.82,
-    displayLength: 160,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["STR"],
+    "damage": 7,
+    "range": 84,
+    "halfArc": 0.5,
+    "cooldown": 0.82,
+    "displayLength": 160,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "STR"
+      ]
     },
-    requirements: {
-      str: 13,
+    "requirements": {
+      "str": 13
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 1300,
-      range: 900,
-      fireRate: 0.82,
-      magazine: 4,
-      reloadSeconds: 2.2,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1300,
+      "range": 900,
+      "fireRate": 0.82,
+      "magazine": 4,
+      "reloadSeconds": 2.2,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "pierce": 3
+    }
   },
   "x2-plaguespitter-flak-gun": {
-    id: "x2-plaguespitter-flak-gun",
-    name: "Plaguespitter Flak Gun",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-plaguespitter-flak-gun",
+    "name": "Plaguespitter Flak Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.55,
-    displayLength: 136,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.55,
+    "displayLength": 136,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 8,
+    "requirements": {
+      "dex": 5,
+      "int": 8
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 660,
-      range: 540,
-      fireRate: 0.24,
-      magazine: 16,
-      reloadSeconds: 2,
-      bulletKind: "pellet",
-      muzzle: "spark",
-      recoil: 0.0014,
-      explode: {
-        radius: 58,
-        damage: 7,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 660,
+      "range": 540,
+      "fireRate": 0.24,
+      "magazine": 16,
+      "reloadSeconds": 2,
+      "bulletKind": "pellet",
+      "muzzle": "spark",
+      "recoil": 0.0014,
+      "explode": {
+        "radius": 58,
+        "damage": 7
+      }
+    }
   },
   "x2-sanctus-siege-bombard": {
-    id: "x2-sanctus-siege-bombard",
-    name: "Sanctus Siege Bombard",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "B",
+    "id": "x2-sanctus-siege-bombard",
+    "name": "Sanctus Siege Bombard",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "B"
     },
-    damage: 7,
-    range: 84,
-    halfArc: 0.55,
-    cooldown: 0.88,
-    displayLength: 220,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "mounted",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["STR", "INT"],
+    "damage": 7,
+    "range": 84,
+    "halfArc": 0.55,
+    "cooldown": 0.88,
+    "displayLength": 220,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "mounted",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 12,
-      int: 8,
+    "requirements": {
+      "str": 12,
+      "int": 8
     },
-    gun: {
-      damage: 15,
-      projectileSpeed: 620,
-      range: 880,
-      fireRate: 0.88,
-      magazine: 3,
-      reloadSeconds: 2.6,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0038,
-      explode: {
-        radius: 70,
-        damage: 12,
-      },
-    },
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 620,
+      "range": 880,
+      "fireRate": 0.88,
+      "magazine": 3,
+      "reloadSeconds": 2.6,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0038,
+      "explode": {
+        "radius": 70,
+        "damage": 12
+      }
+    }
   },
   "x2-hexbore-voidmaw": {
-    id: "x2-hexbore-voidmaw",
-    name: "Hexbore Voidmaw",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-hexbore-voidmaw",
+    "name": "Hexbore Voidmaw",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.8,
-    displayLength: 140,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.8,
+    "displayLength": 140,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    twoHanded: true,
-    gun: {
-      damage: 12,
-      projectileSpeed: 560,
-      range: 760,
-      fireRate: 0.78,
-      magazine: 4,
-      reloadSeconds: 2,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pierce: 2,
-      explode: {
-        radius: 66,
-        damage: 10,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 12,
+      "projectileSpeed": 560,
+      "range": 760,
+      "fireRate": 0.78,
+      "magazine": 4,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pierce": 2,
+      "explode": {
+        "radius": 66,
+        "damage": 10
+      }
+    }
   },
   "x2-scattershell-duster": {
-    id: "x2-scattershell-duster",
-    name: "Scattershell Duster",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "C",
+    "id": "x2-scattershell-duster",
+    "name": "Scattershell Duster",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.5,
-    displayLength: 88,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.5,
+    "displayLength": 88,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      dex: 6,
+    "requirements": {
+      "str": 6,
+      "dex": 6
     },
-    dual: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 720,
-      range: 400,
-      fireRate: 0.46,
-      magazine: 4,
-      reloadSeconds: 1.6,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.003,
-      pellets: 6,
-      spread: 0.5,
-      explode: {
-        radius: 42,
-        damage: 4,
-      },
-    },
+    "dual": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 720,
+      "range": 400,
+      "fireRate": 0.46,
+      "magazine": 4,
+      "reloadSeconds": 1.6,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.003,
+      "pellets": 6,
+      "spread": 0.5,
+      "explode": {
+        "radius": 42,
+        "damage": 4
+      }
+    }
   },
   "x2-stormcaller-tesla-gatling": {
-    id: "x2-stormcaller-tesla-gatling",
-    name: "Stormcaller Tesla Gatling",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-stormcaller-tesla-gatling",
+    "name": "Stormcaller Tesla Gatling",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.42,
-    displayLength: 158,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.42,
+    "displayLength": 158,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 8,
-      int: 10,
+    "requirements": {
+      "dex": 8,
+      "int": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 1200,
-      range: 620,
-      fireRate: 0.12,
-      magazine: 40,
-      reloadSeconds: 2.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0009,
-      explode: {
-        radius: 40,
-        damage: 3,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1200,
+      "range": 620,
+      "fireRate": 0.12,
+      "magazine": 40,
+      "reloadSeconds": 2.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0009,
+      "explode": {
+        "radius": 40,
+        "damage": 3
+      }
+    }
   },
   "x2-calamity-howitzer": {
-    id: "x2-calamity-howitzer",
-    name: "Calamity Howitzer",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      con: "D",
+    "id": "x2-calamity-howitzer",
+    "name": "Calamity Howitzer",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "con": "D"
     },
-    damage: 8,
-    range: 84,
-    halfArc: 0.55,
-    cooldown: 0.9,
-    displayLength: 280,
-    swingArc: 1.8,
-    gripFrac: 0.08,
-    tags: {
-      grip: "mounted",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "long",
-      scaling: ["STR", "CON"],
+    "damage": 8,
+    "range": 84,
+    "halfArc": 0.55,
+    "cooldown": 0.9,
+    "displayLength": 280,
+    "swingArc": 1.8,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "mounted",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "CON"
+      ]
     },
-    requirements: {
-      str: 14,
-      con: 8,
+    "requirements": {
+      "str": 14,
+      "con": 8
     },
-    gun: {
-      damage: 16,
-      projectileSpeed: 700,
-      range: 900,
-      fireRate: 0.9,
-      magazine: 2,
-      reloadSeconds: 3,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      explode: {
-        radius: 70,
-        damage: 14,
-      },
-    },
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 700,
+      "range": 900,
+      "fireRate": 0.9,
+      "magazine": 2,
+      "reloadSeconds": 3,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "explode": {
+        "radius": 70,
+        "damage": 14
+      }
+    }
   },
   "x2-cinderfan-dragoon": {
-    id: "x2-cinderfan-dragoon",
-    name: "Cinderfan Dragoon",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "C",
+    "id": "x2-cinderfan-dragoon",
+    "name": "Cinderfan Dragoon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "C"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.74,
-    displayLength: 130,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "close",
-      scaling: ["STR", "INT"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.74,
+    "displayLength": 130,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "close",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 7,
-      int: 5,
+    "requirements": {
+      "str": 7,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 660,
-      range: 380,
-      fireRate: 0.74,
-      magazine: 3,
-      reloadSeconds: 1.8,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0034,
-      pellets: 10,
-      spread: 0.6,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 660,
+      "range": 380,
+      "fireRate": 0.74,
+      "magazine": 3,
+      "reloadSeconds": 1.8,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0034,
+      "pellets": 10,
+      "spread": 0.6,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-permafrost-siege-lobber": {
-    id: "x2-permafrost-siege-lobber",
-    name: "Permafrost Siege Lobber",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      int: "B",
+    "id": "x2-permafrost-siege-lobber",
+    "name": "Permafrost Siege Lobber",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "int": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.76,
-    displayLength: 138,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["INT", "STR"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.76,
+    "displayLength": 138,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 9,
+    "requirements": {
+      "str": 6,
+      "int": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 10,
-      projectileSpeed: 560,
-      range: 620,
-      fireRate: 0.76,
-      magazine: 5,
-      reloadSeconds: 2,
-      bulletKind: "slug",
-      muzzle: "boom",
-      recoil: 0.0032,
-      explode: {
-        radius: 64,
-        damage: 9,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 560,
+      "range": 620,
+      "fireRate": 0.76,
+      "magazine": 5,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "boom",
+      "recoil": 0.0032,
+      "explode": {
+        "radius": 64,
+        "damage": 9
+      }
+    }
   },
   "x2-boneyard-ricochet-mortar": {
-    id: "x2-boneyard-ricochet-mortar",
-    name: "Boneyard Ricochet Mortar",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      luk: "B",
+    "id": "x2-boneyard-ricochet-mortar",
+    "name": "Boneyard Ricochet Mortar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "luk": "B"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.55,
-    cooldown: 0.68,
-    displayLength: 136,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "heavy-ordnance",
-      rangeBand: "mid",
-      scaling: ["LUK", "STR"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.55,
+    "cooldown": 0.68,
+    "displayLength": 136,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "heavy-ordnance",
+      "rangeBand": "mid",
+      "scaling": [
+        "LUK",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 8,
-      luk: 5,
+    "requirements": {
+      "str": 8,
+      "luk": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 9,
-      projectileSpeed: 620,
-      range: 660,
-      fireRate: 0.68,
-      magazine: 5,
-      reloadSeconds: 1.8,
-      bulletKind: "ricochet",
-      muzzle: "boom",
-      recoil: 0.0028,
-      explode: {
-        radius: 58,
-        damage: 8,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 620,
+      "range": 660,
+      "fireRate": 0.68,
+      "magazine": 5,
+      "reloadSeconds": 1.8,
+      "bulletKind": "ricochet",
+      "muzzle": "boom",
+      "recoil": 0.0028,
+      "explode": {
+        "radius": 58,
+        "damage": 8
+      }
+    }
   },
   "x2-coffinnail-driver": {
-    id: "x2-coffinnail-driver",
-    name: "Coffinnail Driver",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      dex: "B",
+    "id": "x2-coffinnail-driver",
+    "name": "Coffinnail Driver",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "dex": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 96,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 4,
-      dex: 5,
+    "requirements": {
+      "str": 4,
+      "dex": 5
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 1050,
-      range: 600,
-      fireRate: 0.17,
-      magazine: 18,
-      reloadSeconds: 1.4,
-      bulletKind: "nail",
-      muzzle: "punch",
-      recoil: 0.0013,
-      pierce: 3,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1050,
+      "range": 600,
+      "fireRate": 0.17,
+      "magazine": 18,
+      "reloadSeconds": 1.4,
+      "bulletKind": "nail",
+      "muzzle": "punch",
+      "recoil": 0.0013,
+      "pierce": 3
+    }
   },
   "x2-carom-king": {
-    id: "x2-carom-king",
-    name: "Carom King",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-carom-king",
+    "name": "Carom King",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.36,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.36,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 8,
-      luk: 4,
+    "requirements": {
+      "dex": 8,
+      "luk": 4
     },
-    gun: {
-      damage: 11,
-      projectileSpeed: 880,
-      range: 1100,
-      fireRate: 0.4,
-      magazine: 6,
-      reloadSeconds: 1.3,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.0022,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 11,
+      "projectileSpeed": 880,
+      "range": 1100,
+      "fireRate": 0.4,
+      "magazine": 6,
+      "reloadSeconds": 1.3,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.0022,
+      "pierce": 2
+    }
   },
   "x2-widowmaker-arbalest": {
-    id: "x2-widowmaker-arbalest",
-    name: "Widowmaker Arbalest",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "A",
+    "id": "x2-widowmaker-arbalest",
+    "name": "Widowmaker Arbalest",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "A"
     },
-    damage: 6,
-    range: 82,
-    halfArc: 0.55,
-    cooldown: 0.6,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["DEX", "STR"],
+    "damage": 6,
+    "range": 82,
+    "halfArc": 0.55,
+    "cooldown": 0.6,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 8,
-      dex: 11,
+    "requirements": {
+      "str": 8,
+      "dex": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 22,
-      projectileSpeed: 1200,
-      range: 880,
-      fireRate: 0.5,
-      magazine: 4,
-      reloadSeconds: 1.8,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0035,
-      pierce: 5,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 22,
+      "projectileSpeed": 1200,
+      "range": 880,
+      "fireRate": 0.5,
+      "magazine": 4,
+      "reloadSeconds": 1.8,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0035,
+      "pierce": 5
+    }
   },
   "x2-quill-storm-repeater": {
-    id: "x2-quill-storm-repeater",
-    name: "Quill Storm Repeater",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
+    "id": "x2-quill-storm-repeater",
+    "name": "Quill Storm Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 110,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 110,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 7,
+    "requirements": {
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 920,
-      range: 560,
-      fireRate: 0.11,
-      magazine: 24,
-      reloadSeconds: 1.6,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0008,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 920,
+      "range": 560,
+      "fireRate": 0.11,
+      "magazine": 24,
+      "reloadSeconds": 1.6,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0008
+    }
   },
   "x2-leviathan-harpoon-gun": {
-    id: "x2-leviathan-harpoon-gun",
-    name: "Leviathan Harpoon Gun",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      dex: "C",
+    "id": "x2-leviathan-harpoon-gun",
+    "name": "Leviathan Harpoon Gun",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
     },
-    damage: 6,
-    range: 84,
-    halfArc: 0.55,
-    cooldown: 0.62,
-    displayLength: 148,
-    swingArc: 1.8,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["STR", "DEX"],
+    "damage": 6,
+    "range": 84,
+    "halfArc": 0.55,
+    "cooldown": 0.62,
+    "displayLength": 148,
+    "swingArc": 1.8,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 9,
-      dex: 6,
+    "requirements": {
+      "str": 9,
+      "dex": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 19,
-      projectileSpeed: 760,
-      range: 540,
-      fireRate: 0.55,
-      magazine: 3,
-      reloadSeconds: 1.9,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0034,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 19,
+      "projectileSpeed": 760,
+      "range": 540,
+      "fireRate": 0.55,
+      "magazine": 3,
+      "reloadSeconds": 1.9,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0034,
+      "pierce": 4
+    }
   },
   "x2-hornet-s-nest-bolter": {
-    id: "x2-hornet-s-nest-bolter",
-    name: "Hornet's Nest Bolter",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "C",
+    "id": "x2-hornet-s-nest-bolter",
+    "name": "Hornet's Nest Bolter",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.66,
-    displayLength: 112,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "close",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.66,
+    "displayLength": 112,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 6,
+    "requirements": {
+      "dex": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 700,
-      range: 380,
-      fireRate: 0.6,
-      magazine: 4,
-      reloadSeconds: 1.5,
-      bulletKind: "nail",
-      muzzle: "boom",
-      recoil: 0.0028,
-      pellets: 8,
-      spread: 0.42,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 700,
+      "range": 380,
+      "fireRate": 0.6,
+      "magazine": 4,
+      "reloadSeconds": 1.5,
+      "bulletKind": "nail",
+      "muzzle": "boom",
+      "recoil": 0.0028,
+      "pellets": 8,
+      "spread": 0.42
+    }
   },
   "x2-embernail-repeater": {
-    id: "x2-embernail-repeater",
-    name: "Embernail Repeater",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-embernail-repeater",
+    "name": "Embernail Repeater",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.32,
-    displayLength: 98,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.32,
+    "displayLength": 98,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 6,
+    "requirements": {
+      "str": 5,
+      "dex": 6
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 980,
-      range: 580,
-      fireRate: 0.2,
-      magazine: 14,
-      reloadSeconds: 1.5,
-      bulletKind: "nail",
-      muzzle: "punch",
-      recoil: 0.0016,
-      pierce: 2,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 980,
+      "range": 580,
+      "fireRate": 0.2,
+      "magazine": 14,
+      "reloadSeconds": 1.5,
+      "bulletKind": "nail",
+      "muzzle": "punch",
+      "recoil": 0.0016,
+      "pierce": 2,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-ghostbolt-crossbow": {
-    id: "x2-ghostbolt-crossbow",
-    name: "Ghostbolt Crossbow",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-ghostbolt-crossbow",
+    "name": "Ghostbolt Crossbow",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 6,
-    range: 82,
-    halfArc: 0.55,
-    cooldown: 0.5,
-    displayLength: 144,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 82,
+    "halfArc": 0.55,
+    "cooldown": 0.5,
+    "displayLength": 144,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 9,
-      int: 5,
+    "requirements": {
+      "dex": 9,
+      "int": 5
     },
-    twoHanded: true,
-    gun: {
-      damage: 15,
-      projectileSpeed: 1300,
-      range: 860,
-      fireRate: 0.42,
-      magazine: 6,
-      reloadSeconds: 1.5,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0018,
-      pierce: 6,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 15,
+      "projectileSpeed": 1300,
+      "range": 860,
+      "fireRate": 0.42,
+      "magazine": 6,
+      "reloadSeconds": 1.5,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0018,
+      "pierce": 6
+    }
   },
   "x2-snakebite-dart-slinger": {
-    id: "x2-snakebite-dart-slinger",
-    name: "Snakebite Dart-Slinger",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "C",
+    "id": "x2-snakebite-dart-slinger",
+    "name": "Snakebite Dart-Slinger",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 86,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "toxic",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 86,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "toxic",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 6,
-      luk: 3,
+    "requirements": {
+      "dex": 6,
+      "luk": 3
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 1000,
-      range: 620,
-      fireRate: 0.24,
-      magazine: 12,
-      reloadSeconds: 1.2,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0009,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1000,
+      "range": 620,
+      "fireRate": 0.24,
+      "magazine": 12,
+      "reloadSeconds": 1.2,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0009,
+      "pierce": 2
+    }
   },
   "x2-pinwheel-caromer": {
-    id: "x2-pinwheel-caromer",
-    name: "Pinwheel Caromer",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      luk: "B",
+    "id": "x2-pinwheel-caromer",
+    "name": "Pinwheel Caromer",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "luk": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 64,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "LUK"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 64,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "LUK"
+      ]
     },
-    requirements: {
-      dex: 9,
-      luk: 5,
+    "requirements": {
+      "dex": 9,
+      "luk": 5
     },
-    dual: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 900,
-      range: 980,
-      fireRate: 0.18,
-      magazine: 10,
-      reloadSeconds: 1.1,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.0012,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 900,
+      "range": 980,
+      "fireRate": 0.18,
+      "magazine": 10,
+      "reloadSeconds": 1.1,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.0012
+    }
   },
   "x2-frostfang-speargun": {
-    id: "x2-frostfang-speargun",
-    name: "Frostfang Speargun",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
-      int: "C",
+    "id": "x2-frostfang-speargun",
+    "name": "Frostfang Speargun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "int": "C"
     },
-    damage: 6,
-    range: 82,
-    halfArc: 0.55,
-    cooldown: 0.56,
-    displayLength: 152,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 82,
+    "halfArc": 0.55,
+    "cooldown": 0.56,
+    "displayLength": 152,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 10,
-      int: 6,
+    "requirements": {
+      "dex": 10,
+      "int": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 17,
-      projectileSpeed: 1150,
-      range: 820,
-      fireRate: 0.45,
-      magazine: 5,
-      reloadSeconds: 1.6,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0026,
-      pierce: 4,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 17,
+      "projectileSpeed": 1150,
+      "range": 820,
+      "fireRate": 0.45,
+      "magazine": 5,
+      "reloadSeconds": 1.6,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0026,
+      "pierce": 4
+    }
   },
   "x2-reliquary-nailcaster": {
-    id: "x2-reliquary-nailcaster",
-    name: "Reliquary Nailcaster",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "C",
+    "id": "x2-reliquary-nailcaster",
+    "name": "Reliquary Nailcaster",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "C"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 100,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 100,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 7,
-      int: 5,
+    "requirements": {
+      "dex": 7,
+      "int": 5
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 1080,
-      range: 640,
-      fireRate: 0.22,
-      magazine: 12,
-      reloadSeconds: 1.4,
-      bulletKind: "nail",
-      muzzle: "spark",
-      recoil: 0.0011,
-      pierce: 3,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1080,
+      "range": 640,
+      "fireRate": 0.22,
+      "magazine": 12,
+      "reloadSeconds": 1.4,
+      "bulletKind": "nail",
+      "muzzle": "spark",
+      "recoil": 0.0011,
+      "pierce": 3
+    }
   },
   "x2-buckshot-bramble-bow": {
-    id: "x2-buckshot-bramble-bow",
-    name: "Buckshot Bramble Bow",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      dex: "B",
+    "id": "x2-buckshot-bramble-bow",
+    "name": "Buckshot Bramble Bow",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "dex": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.62,
-    displayLength: 116,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "2H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "close",
-      scaling: ["DEX", "STR"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.62,
+    "displayLength": 116,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "close",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      dex: 6,
+    "requirements": {
+      "str": 5,
+      "dex": 6
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 740,
-      range: 400,
-      fireRate: 0.55,
-      magazine: 5,
-      reloadSeconds: 1.5,
-      bulletKind: "nail",
-      muzzle: "boom",
-      recoil: 0.0026,
-      pellets: 6,
-      spread: 0.38,
-      pierce: 2,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 740,
+      "range": 400,
+      "fireRate": 0.55,
+      "magazine": 5,
+      "reloadSeconds": 1.5,
+      "bulletKind": "nail",
+      "muzzle": "boom",
+      "recoil": 0.0026,
+      "pellets": 6,
+      "spread": 0.38,
+      "pierce": 2
+    }
   },
   "x2-thunderhead-spikecaster": {
-    id: "x2-thunderhead-spikecaster",
-    name: "Thunderhead Spikecaster",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "B",
+    "id": "x2-thunderhead-spikecaster",
+    "name": "Thunderhead Spikecaster",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "B"
     },
-    damage: 6,
-    range: 82,
-    halfArc: 0.55,
-    cooldown: 0.54,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["DEX", "INT"],
+    "damage": 6,
+    "range": 82,
+    "halfArc": 0.55,
+    "cooldown": 0.54,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 9,
-      int: 7,
+    "requirements": {
+      "dex": 9,
+      "int": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 18,
-      projectileSpeed: 1400,
-      range: 900,
-      fireRate: 0.48,
-      magazine: 8,
-      reloadSeconds: 1.7,
-      bulletKind: "tracer",
-      muzzle: "heavy",
-      recoil: 0.003,
-      pierce: 5,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 18,
+      "projectileSpeed": 1400,
+      "range": 900,
+      "fireRate": 0.48,
+      "magazine": 8,
+      "reloadSeconds": 1.7,
+      "bulletKind": "tracer",
+      "muzzle": "heavy",
+      "recoil": 0.003,
+      "pierce": 5
+    }
   },
   "x2-magpie-scattergun": {
-    id: "x2-magpie-scattergun",
-    name: "Magpie Scattergun",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "B",
+    "id": "x2-magpie-scattergun",
+    "name": "Magpie Scattergun",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "B"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.6,
-    cooldown: 0.6,
-    displayLength: 104,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "close",
-      scaling: ["LUK", "DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.6,
+    "cooldown": 0.6,
+    "displayLength": 104,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "close",
+      "scaling": [
+        "LUK",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      luk: 7,
+    "requirements": {
+      "dex": 4,
+      "luk": 7
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 680,
-      range: 390,
-      fireRate: 0.5,
-      magazine: 6,
-      reloadSeconds: 1.4,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.003,
-      pellets: 7,
-      spread: 0.5,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 680,
+      "range": 390,
+      "fireRate": 0.5,
+      "magazine": 6,
+      "reloadSeconds": 1.4,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.003,
+      "pellets": 7,
+      "spread": 0.5
+    }
   },
   "x2-whisperbarb-hand-crossbow": {
-    id: "x2-whisperbarb-hand-crossbow",
-    name: "Whisperbarb Hand-Crossbow",
-    expansion: true,
-    scalingGrades: {
-      dex: "A",
+    "id": "x2-whisperbarb-hand-crossbow",
+    "name": "Whisperbarb Hand-Crossbow",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A"
     },
-    damage: 5,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.28,
-    displayLength: 66,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "physical",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX"],
+    "damage": 5,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.28,
+    "displayLength": 66,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 10,
+    "requirements": {
+      "dex": 10
     },
-    dual: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 1100,
-      range: 660,
-      fireRate: 0.15,
-      magazine: 14,
-      reloadSeconds: 1.1,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0007,
-      pierce: 2,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1100,
+      "range": 660,
+      "fireRate": 0.15,
+      "magazine": 14,
+      "reloadSeconds": 1.1,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0007,
+      "pierce": 2
+    }
   },
   "x2-grave-anchor-harpoon": {
-    id: "x2-grave-anchor-harpoon",
-    name: "Grave-Anchor Harpoon",
-    expansion: true,
-    scalingGrades: {
-      str: "B",
-      int: "B",
+    "id": "x2-grave-anchor-harpoon",
+    "name": "Grave-Anchor Harpoon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "int": "B"
     },
-    damage: 7,
-    range: 96,
-    halfArc: 0.6,
-    cooldown: 0.7,
-    displayLength: 220,
-    swingArc: 1.8,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["STR", "INT"],
+    "damage": 7,
+    "range": 96,
+    "halfArc": 0.6,
+    "cooldown": 0.7,
+    "displayLength": 220,
+    "swingArc": 1.8,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "INT"
+      ]
     },
-    requirements: {
-      str: 10,
-      int: 7,
+    "requirements": {
+      "str": 10,
+      "int": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 26,
-      projectileSpeed: 700,
-      range: 520,
-      fireRate: 0.7,
-      magazine: 3,
-      reloadSeconds: 2.1,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.004,
-      pierce: 6,
-      explode: {
-        radius: 60,
-        damage: 8,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 26,
+      "projectileSpeed": 700,
+      "range": 520,
+      "fireRate": 0.7,
+      "magazine": 3,
+      "reloadSeconds": 2.1,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "pierce": 6,
+      "explode": {
+        "radius": 60,
+        "damage": 8
+      }
+    }
   },
   "x2-cinderquill-dart-caster": {
-    id: "x2-cinderquill-dart-caster",
-    name: "Cinderquill Dart-Caster",
-    expansion: true,
-    scalingGrades: {
-      dex: "B",
-      int: "D",
+    "id": "x2-cinderquill-dart-caster",
+    "name": "Cinderquill Dart-Caster",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "int": "D"
     },
-    damage: 4,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 84,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "mid",
-      scaling: ["DEX", "INT"],
+    "damage": 4,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 84,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
     },
-    requirements: {
-      dex: 6,
-      int: 4,
+    "requirements": {
+      "dex": 6,
+      "int": 4
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 940,
-      range: 540,
-      fireRate: 0.14,
-      magazine: 16,
-      reloadSeconds: 1.2,
-      bulletKind: "nail",
-      muzzle: "rapid",
-      recoil: 0.0008,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 940,
+      "range": 540,
+      "fireRate": 0.14,
+      "magazine": 16,
+      "reloadSeconds": 1.2,
+      "bulletKind": "nail",
+      "muzzle": "rapid",
+      "recoil": 0.0008
+    }
   },
   "x2-ricochet-roulette": {
-    id: "x2-ricochet-roulette",
-    name: "Ricochet Roulette",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      luk: "A",
+    "id": "x2-ricochet-roulette",
+    "name": "Ricochet Roulette",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "luk": "A"
     },
-    damage: 6,
-    range: 80,
-    halfArc: 0.5,
-    cooldown: 0.4,
-    displayLength: 102,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["LUK", "DEX"],
+    "damage": 6,
+    "range": 80,
+    "halfArc": 0.5,
+    "cooldown": 0.4,
+    "displayLength": 102,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "LUK",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 6,
-      luk: 9,
+    "requirements": {
+      "dex": 6,
+      "luk": 9
     },
-    gun: {
-      damage: 13,
-      projectileSpeed: 860,
-      range: 1100,
-      fireRate: 0.38,
-      magazine: 6,
-      reloadSeconds: 1.4,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.0024,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 860,
+      "range": 1100,
+      "fireRate": 0.38,
+      "magazine": 6,
+      "reloadSeconds": 1.4,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.0024,
+      "pierce": 2
+    }
   },
   "x2-tidehook-bombarpoon": {
-    id: "x2-tidehook-bombarpoon",
-    name: "Tidehook Bombarpoon",
-    expansion: true,
-    scalingGrades: {
-      str: "A",
-      dex: "C",
+    "id": "x2-tidehook-bombarpoon",
+    "name": "Tidehook Bombarpoon",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "A",
+      "dex": "C"
     },
-    damage: 7,
-    range: 94,
-    halfArc: 0.6,
-    cooldown: 0.68,
-    displayLength: 215,
-    swingArc: 1.8,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "ranged",
-      family: "exotic-ranged",
-      rangeBand: "long",
-      scaling: ["STR", "DEX"],
+    "damage": 7,
+    "range": 94,
+    "halfArc": 0.6,
+    "cooldown": 0.68,
+    "displayLength": 215,
+    "swingArc": 1.8,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "ranged",
+      "family": "exotic-ranged",
+      "rangeBand": "long",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
     },
-    requirements: {
-      str: 11,
-      dex: 7,
+    "requirements": {
+      "str": 11,
+      "dex": 7
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 820,
-      range: 840,
-      fireRate: 0.65,
-      magazine: 4,
-      reloadSeconds: 2,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0038,
-      pierce: 3,
-      explode: {
-        radius: 64,
-        damage: 10,
-      },
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 820,
+      "range": 840,
+      "fireRate": 0.65,
+      "magazine": 4,
+      "reloadSeconds": 2,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0038,
+      "pierce": 3,
+      "explode": {
+        "radius": 64,
+        "damage": 10
+      }
+    }
   },
   "x2-codex-of-forked-tongues": {
-    id: "x2-codex-of-forked-tongues",
-    name: "Codex of Forked Tongues",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-codex-of-forked-tongues",
+    "name": "Codex of Forked Tongues",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 8,
-    range: 150,
-    halfArc: 0.85,
-    cooldown: 0.42,
-    displayLength: 92,
-    swingArc: 2.6,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "tome",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 150,
+    "halfArc": 0.85,
+    "cooldown": 0.42,
+    "displayLength": 92,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "tome",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 7,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 7,
+      "falloff": 0.8
+    }
   },
   "x2-hexbloom-scattergrimoire": {
-    id: "x2-hexbloom-scattergrimoire",
-    name: "Hexbloom Scattergrimoire",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "D",
+    "id": "x2-hexbloom-scattergrimoire",
+    "name": "Hexbloom Scattergrimoire",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "D"
     },
-    damage: 7,
-    range: 150,
-    halfArc: 0.9,
-    cooldown: 0.48,
-    displayLength: 96,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "grimoire",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 150,
+    "halfArc": 0.9,
+    "cooldown": 0.48,
+    "displayLength": 96,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "grimoire",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 380,
-      range: 230,
-      damage: 5,
-      explode: {
-        radius: 56,
-        damage: 6,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 380,
+      "range": 230,
+      "damage": 5,
+      "explode": {
+        "radius": 56,
+        "damage": 6
+      }
+    }
   },
   "x2-null-grimoire-of-the-hollow-page": {
-    id: "x2-null-grimoire-of-the-hollow-page",
-    name: "Null Grimoire of the Hollow Page",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-null-grimoire-of-the-hollow-page",
+    "name": "Null Grimoire of the Hollow Page",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 9,
-    range: 150,
-    halfArc: 0.6,
-    cooldown: 0.5,
-    displayLength: 94,
-    swingArc: 2.2,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "grimoire",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 9,
+    "range": 150,
+    "halfArc": 0.6,
+    "cooldown": 0.5,
+    "displayLength": 94,
+    "swingArc": 2.2,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "grimoire",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 1200,
-      range: 760,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-pyroglyph-spellbook": {
-    id: "x2-pyroglyph-spellbook",
-    name: "Pyroglyph Spellbook",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-pyroglyph-spellbook",
+    "name": "Pyroglyph Spellbook",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 8,
-    range: 150,
-    halfArc: 0.95,
-    cooldown: 0.5,
-    displayLength: 90,
-    swingArc: 2.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "spellbook",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 150,
+    "halfArc": 0.95,
+    "cooldown": 0.5,
+    "displayLength": 90,
+    "swingArc": 2.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "spellbook",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    scatter: {
-      count: 5,
-      spread: 0.55,
-      speed: 360,
-      range: 220,
-      damage: 6,
-      explode: {
-        radius: 60,
-        damage: 7,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.55,
+      "speed": 360,
+      "range": 220,
+      "damage": 6,
+      "explode": {
+        "radius": 60,
+        "damage": 7
+      }
+    }
   },
   "x2-rimebound-folio": {
-    id: "x2-rimebound-folio",
-    name: "Rimebound Folio",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-rimebound-folio",
+    "name": "Rimebound Folio",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 6,
-    range: 140,
-    halfArc: 0.85,
-    cooldown: 0.4,
-    displayLength: 56,
-    swingArc: 2.5,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "tome",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 140,
+    "halfArc": 0.85,
+    "cooldown": 0.4,
+    "displayLength": 56,
+    "swingArc": 2.5,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "tome",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    scatter: {
-      count: 7,
-      spread: 0.45,
-      speed: 420,
-      range: 240,
-      damage: 4,
-      explode: {
-        radius: 48,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 7,
+      "spread": 0.45,
+      "speed": 420,
+      "range": 240,
+      "damage": 4,
+      "explode": {
+        "radius": 48,
+        "damage": 5
+      }
+    }
   },
   "x2-galvanic-liber-of-storms": {
-    id: "x2-galvanic-liber-of-storms",
-    name: "Galvanic Liber of Storms",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-galvanic-liber-of-storms",
+    "name": "Galvanic Liber of Storms",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 10,
-    range: 160,
-    halfArc: 1,
-    cooldown: 0.7,
-    displayLength: 140,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "grimoire",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 160,
+    "halfArc": 1,
+    "cooldown": 0.7,
+    "displayLength": 140,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "grimoire",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    twoHanded: true,
-    chainLightning: {
-      jumps: 5,
-      range: 220,
-      damage: 6,
-      falloff: 0.85,
-    },
+    "twoHanded": true,
+    "chainLightning": {
+      "jumps": 5,
+      "range": 220,
+      "damage": 6,
+      "falloff": 0.85
+    }
   },
   "x2-witherleaf-bestiary": {
-    id: "x2-witherleaf-bestiary",
-    name: "Witherleaf Bestiary",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-witherleaf-bestiary",
+    "name": "Witherleaf Bestiary",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 7,
-    range: 150,
-    halfArc: 1,
-    cooldown: 0.52,
-    displayLength: 94,
-    swingArc: 2.7,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "bestiary",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 150,
+    "halfArc": 1,
+    "cooldown": 0.52,
+    "displayLength": 94,
+    "swingArc": 2.7,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "bestiary",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    scatter: {
-      count: 6,
-      spread: 0.6,
-      speed: 320,
-      range: 200,
-      damage: 4,
-      explode: {
-        radius: 64,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.6,
+      "speed": 320,
+      "range": 200,
+      "damage": 4,
+      "explode": {
+        "radius": 64,
+        "damage": 5
+      }
+    }
   },
   "x2-psalter-of-the-burning-halo": {
-    id: "x2-psalter-of-the-burning-halo",
-    name: "Psalter of the Burning Halo",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-psalter-of-the-burning-halo",
+    "name": "Psalter of the Burning Halo",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 11,
-    range: 160,
-    halfArc: 0.55,
-    cooldown: 0.72,
-    displayLength: 144,
-    swingArc: 2.3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "psalter",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 11,
+    "range": 160,
+    "halfArc": 0.55,
+    "cooldown": 0.72,
+    "displayLength": 144,
+    "swingArc": 2.3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "psalter",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 820,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 820,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-pocket-hexicon": {
-    id: "x2-pocket-hexicon",
-    name: "Pocket Hexicon",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "D",
+    "id": "x2-pocket-hexicon",
+    "name": "Pocket Hexicon",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "D"
     },
-    damage: 6,
-    range: 140,
-    halfArc: 0.7,
-    cooldown: 0.3,
-    displayLength: 55,
-    swingArc: 2.4,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "spellbook",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 140,
+    "halfArc": 0.7,
+    "cooldown": 0.3,
+    "displayLength": 55,
+    "swingArc": 2.4,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "spellbook",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 5,
+    "requirements": {
+      "int": 5
     },
-    scatter: {
-      count: 4,
-      spread: 0.4,
-      speed: 460,
-      range: 260,
-      damage: 4,
-    },
+    "scatter": {
+      "count": 4,
+      "spread": 0.4,
+      "speed": 460,
+      "range": 260,
+      "damage": 4
+    }
   },
   "x2-maledict-tome-of-salt-lines": {
-    id: "x2-maledict-tome-of-salt-lines",
-    name: "Maledict Tome of Salt-Lines",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      con: "D",
+    "id": "x2-maledict-tome-of-salt-lines",
+    "name": "Maledict Tome of Salt-Lines",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "con": "D"
     },
-    damage: 10,
-    range: 150,
-    halfArc: 1,
-    cooldown: 0.78,
-    displayLength: 138,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "tome",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 150,
+    "halfArc": 1,
+    "cooldown": 0.78,
+    "displayLength": 138,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "tome",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    quake: {
-      radius: 160,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 160,
+      "damage": 9
+    }
   },
   "x2-cinderquill-almanac": {
-    id: "x2-cinderquill-almanac",
-    name: "Cinderquill Almanac",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-cinderquill-almanac",
+    "name": "Cinderquill Almanac",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 11,
-    range: 150,
-    halfArc: 1.05,
-    cooldown: 0.82,
-    displayLength: 136,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "almanac",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 11,
+    "range": 150,
+    "halfArc": 1.05,
+    "cooldown": 0.82,
+    "displayLength": 136,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "almanac",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    quake: {
-      radius: 150,
-      damage: 10,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 150,
+      "damage": 10
+    }
   },
   "x2-twin-whispervolumes": {
-    id: "x2-twin-whispervolumes",
-    name: "Twin Whispervolumes",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-twin-whispervolumes",
+    "name": "Twin Whispervolumes",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 6,
-    range: 145,
-    halfArc: 0.7,
-    cooldown: 0.32,
-    displayLength: 58,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "spellbook",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 145,
+    "halfArc": 0.7,
+    "cooldown": 0.32,
+    "displayLength": 58,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "spellbook",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    dual: true,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "dual": true,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-abyssal-apocrypha": {
-    id: "x2-abyssal-apocrypha",
-    name: "Abyssal Apocrypha",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
-      luk: "D",
+    "id": "x2-abyssal-apocrypha",
+    "name": "Abyssal Apocrypha",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S",
+      "luk": "D"
     },
-    damage: 10,
-    range: 160,
-    halfArc: 0.95,
-    cooldown: 0.7,
-    displayLength: 142,
-    swingArc: 2.9,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "caster",
-      family: "grimoire",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 160,
+    "halfArc": 0.95,
+    "cooldown": 0.7,
+    "displayLength": 142,
+    "swingArc": 2.9,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "caster",
+      "family": "grimoire",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    twoHanded: true,
-    scatter: {
-      count: 5,
-      spread: 0.5,
-      speed: 340,
-      range: 220,
-      damage: 6,
-      explode: {
-        radius: 66,
-        damage: 7,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 5,
+      "spread": 0.5,
+      "speed": 340,
+      "range": 220,
+      "damage": 6,
+      "explode": {
+        "radius": 66,
+        "damage": 7
+      }
+    }
   },
   "x2-glyphward-manuscript": {
-    id: "x2-glyphward-manuscript",
-    name: "Glyphward Manuscript",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-glyphward-manuscript",
+    "name": "Glyphward Manuscript",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 8,
-    range: 150,
-    halfArc: 0.8,
-    cooldown: 0.44,
-    displayLength: 92,
-    swingArc: 2.5,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "manuscript",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 150,
+    "halfArc": 0.8,
+    "cooldown": 0.44,
+    "displayLength": 92,
+    "swingArc": 2.5,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "manuscript",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    chainLightning: {
-      jumps: 3,
-      range: 190,
-      damage: 6,
-      falloff: 0.85,
-    },
+    "chainLightning": {
+      "jumps": 3,
+      "range": 190,
+      "damage": 6,
+      "falloff": 0.85
+    }
   },
   "x2-frostquill-compendium": {
-    id: "x2-frostquill-compendium",
-    name: "Frostquill Compendium",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-frostquill-compendium",
+    "name": "Frostquill Compendium",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 10,
-    range: 160,
-    halfArc: 0.55,
-    cooldown: 0.68,
-    displayLength: 140,
-    swingArc: 2.3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "caster",
-      family: "compendium",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 160,
+    "halfArc": 0.55,
+    "cooldown": 0.68,
+    "displayLength": 140,
+    "swingArc": 2.3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "compendium",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    twoHanded: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 1200,
-      range: 800,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1200,
+      "range": 800,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-emberleaf-chapbook": {
-    id: "x2-emberleaf-chapbook",
-    name: "Emberleaf Chapbook",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-emberleaf-chapbook",
+    "name": "Emberleaf Chapbook",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 6,
-    range: 140,
-    halfArc: 0.7,
-    cooldown: 0.3,
-    displayLength: 55,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "chapbook",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 140,
+    "halfArc": 0.7,
+    "cooldown": 0.3,
+    "displayLength": 55,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "chapbook",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 5,
+    "requirements": {
+      "int": 5
     },
-    scatter: {
-      count: 4,
-      spread: 0.42,
-      speed: 440,
-      range: 250,
-      damage: 4,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 4,
+      "spread": 0.42,
+      "speed": 440,
+      "range": 250,
+      "damage": 4,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-ledger-of-spent-souls": {
-    id: "x2-ledger-of-spent-souls",
-    name: "Ledger of Spent Souls",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
-      con: "D",
+    "id": "x2-ledger-of-spent-souls",
+    "name": "Ledger of Spent Souls",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S",
+      "con": "D"
     },
-    damage: 12,
-    range: 160,
-    halfArc: 1.05,
-    cooldown: 0.88,
-    displayLength: 140,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "caster",
-      family: "ledger",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 12,
+    "range": 160,
+    "halfArc": 1.05,
+    "cooldown": 0.88,
+    "displayLength": 140,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "caster",
+      "family": "ledger",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 14,
+    "requirements": {
+      "int": 14
     },
-    twoHanded: true,
-    quake: {
-      radius: 170,
-      damage: 11,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 170,
+      "damage": 11
+    }
   },
   "x2-voltscript-codicil": {
-    id: "x2-voltscript-codicil",
-    name: "Voltscript Codicil",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "A",
+    "id": "x2-voltscript-codicil",
+    "name": "Voltscript Codicil",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "A"
     },
-    damage: 7,
-    range: 150,
-    halfArc: 0.85,
-    cooldown: 0.46,
-    displayLength: 90,
-    swingArc: 2.6,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "tome",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 150,
+    "halfArc": 0.85,
+    "cooldown": 0.46,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "tome",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    scatter: {
-      count: 6,
-      spread: 0.48,
-      speed: 420,
-      range: 240,
-      damage: 5,
-      explode: {
-        radius: 50,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.48,
+      "speed": 420,
+      "range": 240,
+      "damage": 5,
+      "explode": {
+        "radius": 50,
+        "damage": 5
+      }
+    }
   },
   "x2-verdigris-grand-grimoire": {
-    id: "x2-verdigris-grand-grimoire",
-    name: "Verdigris Grand Grimoire",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-verdigris-grand-grimoire",
+    "name": "Verdigris Grand Grimoire",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 13,
-    range: 200,
-    halfArc: 1,
-    cooldown: 0.85,
-    displayLength: 240,
-    swingArc: 3,
-    gripFrac: 0.09,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "grimoire",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 13,
+    "range": 200,
+    "halfArc": 1,
+    "cooldown": 0.85,
+    "displayLength": 240,
+    "swingArc": 3,
+    "gripFrac": 0.09,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "grimoire",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 14,
+    "requirements": {
+      "int": 14
     },
-    twoHanded: true,
-    chainLightning: {
-      jumps: 5,
-      range: 210,
-      damage: 7,
-      falloff: 0.85,
-    },
+    "twoHanded": true,
+    "chainLightning": {
+      "jumps": 5,
+      "range": 210,
+      "damage": 7,
+      "falloff": 0.85
+    }
   },
   "x2-tallowtongue-pyre-stave": {
-    id: "x2-tallowtongue-pyre-stave",
-    name: "Tallowtongue Pyre-Stave",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-tallowtongue-pyre-stave",
+    "name": "Tallowtongue Pyre-Stave",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 150,
-    halfArc: 0.7,
-    cooldown: 0.6,
-    displayLength: 138,
-    swingArc: 2.6,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 150,
+    "halfArc": 0.7,
+    "cooldown": 0.6,
+    "displayLength": 138,
+    "swingArc": 2.6,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    twoHanded: true,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 360,
-      range: 240,
-      damage: 5,
-      explode: {
-        radius: 52,
-        damage: 5,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 360,
+      "range": 240,
+      "damage": 5,
+      "explode": {
+        "radius": 52,
+        "damage": 5
+      }
+    }
   },
   "x2-brinequill-tidescepter": {
-    id: "x2-brinequill-tidescepter",
-    name: "Brinequill Tidescepter",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "A",
+    "id": "x2-brinequill-tidescepter",
+    "name": "Brinequill Tidescepter",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "A"
     },
-    damage: 4,
-    range: 90,
-    halfArc: 0.5,
-    cooldown: 0.32,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "caster",
-      family: "scepter",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 4,
+    "range": 90,
+    "halfArc": 0.5,
+    "cooldown": 0.32,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "scepter",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 1200,
-      range: 520,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1200,
+      "range": 520,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-gravesinger-s-hex-wand": {
-    id: "x2-gravesinger-s-hex-wand",
-    name: "Gravesinger's Hex-Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "C",
+    "id": "x2-gravesinger-s-hex-wand",
+    "name": "Gravesinger's Hex-Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "C"
     },
-    damage: 5,
-    range: 130,
-    halfArc: 0.6,
-    cooldown: 0.4,
-    displayLength: 56,
-    swingArc: 2,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 5,
+    "range": 130,
+    "halfArc": 0.6,
+    "cooldown": 0.4,
+    "displayLength": 56,
+    "swingArc": 2,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
-      luk: 4,
+    "requirements": {
+      "int": 6,
+      "luk": 4
     },
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-cogwright-s-tesla-rod": {
-    id: "x2-cogwright-s-tesla-rod",
-    name: "Cogwright's Tesla-Rod",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-cogwright-s-tesla-rod",
+    "name": "Cogwright's Tesla-Rod",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 4,
-    range: 120,
-    halfArc: 0.6,
-    cooldown: 0.36,
-    displayLength: 60,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 120,
+    "halfArc": 0.6,
+    "cooldown": 0.36,
+    "displayLength": 60,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    chainLightning: {
-      jumps: 5,
-      range: 220,
-      damage: 4,
-      falloff: 0.85,
-    },
+    "chainLightning": {
+      "jumps": 5,
+      "range": 220,
+      "damage": 4,
+      "falloff": 0.85
+    }
   },
   "x2-sunmote-reliquary-staff": {
-    id: "x2-sunmote-reliquary-staff",
-    name: "Sunmote Reliquary Staff",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-sunmote-reliquary-staff",
+    "name": "Sunmote Reliquary Staff",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 6,
-    range: 95,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 142,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 95,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 142,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 1200,
-      range: 700,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1200,
+      "range": 700,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-marshlight-bog-censer-wand": {
-    id: "x2-marshlight-bog-censer-wand",
-    name: "Marshlight Bog-Censer Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-marshlight-bog-censer-wand",
+    "name": "Marshlight Bog-Censer Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 140,
-    halfArc: 0.7,
-    cooldown: 0.55,
-    displayLength: 62,
-    swingArc: 2.2,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 140,
+    "halfArc": 0.7,
+    "cooldown": 0.55,
+    "displayLength": 62,
+    "swingArc": 2.2,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    scatter: {
-      count: 7,
-      spread: 0.6,
-      speed: 320,
-      range: 220,
-      damage: 4,
-      explode: {
-        radius: 60,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 7,
+      "spread": 0.6,
+      "speed": 320,
+      "range": 220,
+      "damage": 4,
+      "explode": {
+        "radius": 60,
+        "damage": 4
+      }
+    }
   },
   "x2-anvil-heart-quake-maul-staff": {
-    id: "x2-anvil-heart-quake-maul-staff",
-    name: "Anvil-Heart Quake Maul-Staff",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "A",
+    "id": "x2-anvil-heart-quake-maul-staff",
+    "name": "Anvil-Heart Quake Maul-Staff",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "A"
     },
-    damage: 5,
-    range: 130,
-    halfArc: 1,
-    cooldown: 0.85,
-    displayLength: 210,
-    swingArc: 3,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT", "STR"],
+    "damage": 5,
+    "range": 130,
+    "halfArc": 1,
+    "cooldown": 0.85,
+    "displayLength": 210,
+    "swingArc": 3,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 10,
+    "requirements": {
+      "str": 6,
+      "int": 10
     },
-    twoHanded: true,
-    quake: {
-      radius: 160,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 160,
+      "damage": 9
+    }
   },
   "x2-hollowbarrel-spell-scattergun-staff": {
-    id: "x2-hollowbarrel-spell-scattergun-staff",
-    name: "Hollowbarrel Spell-Scattergun Staff",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "A",
+    "id": "x2-hollowbarrel-spell-scattergun-staff",
+    "name": "Hollowbarrel Spell-Scattergun Staff",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "A"
     },
-    damage: 5,
-    range: 150,
-    halfArc: 0.7,
-    cooldown: 0.62,
-    displayLength: 132,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 150,
+    "halfArc": 0.7,
+    "cooldown": 0.62,
+    "displayLength": 132,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 8,
+    "requirements": {
+      "dex": 4,
+      "int": 8
     },
-    twoHanded: true,
-    scatter: {
-      count: 8,
-      spread: 0.55,
-      speed: 420,
-      range: 230,
-      damage: 4,
-      explode: {
-        radius: 48,
-        damage: 3,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 8,
+      "spread": 0.55,
+      "speed": 420,
+      "range": 230,
+      "damage": 4,
+      "explode": {
+        "radius": 48,
+        "damage": 3
+      }
+    }
   },
   "x2-carrion-roost-necro-scepter": {
-    id: "x2-carrion-roost-necro-scepter",
-    name: "Carrion Roost Necro-Scepter",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-carrion-roost-necro-scepter",
+    "name": "Carrion Roost Necro-Scepter",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 7,
-    range: 95,
-    halfArc: 0.5,
-    cooldown: 0.36,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "scepter",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 95,
+    "halfArc": 0.5,
+    "cooldown": 0.36,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "scepter",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 1200,
-      range: 760,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-glimmerdust-prospector-wand": {
-    id: "x2-glimmerdust-prospector-wand",
-    name: "Glimmerdust Prospector Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "B",
+    "id": "x2-glimmerdust-prospector-wand",
+    "name": "Glimmerdust Prospector Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "B"
     },
-    damage: 4,
-    range: 135,
-    halfArc: 0.65,
-    cooldown: 0.5,
-    displayLength: 58,
-    swingArc: 2.1,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 4,
+    "range": 135,
+    "halfArc": 0.65,
+    "cooldown": 0.5,
+    "displayLength": 58,
+    "swingArc": 2.1,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 5,
-      luk: 6,
+    "requirements": {
+      "int": 5,
+      "luk": 6
     },
-    scatter: {
-      count: 6,
-      spread: 0.45,
-      speed: 380,
-      range: 250,
-      damage: 5,
-      explode: {
-        radius: 50,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.45,
+      "speed": 380,
+      "range": 250,
+      "damage": 5,
+      "explode": {
+        "radius": 50,
+        "damage": 4
+      }
+    }
   },
   "x2-throne-of-ash-coal-scepter": {
-    id: "x2-throne-of-ash-coal-scepter",
-    name: "Throne-of-Ash Coal-Scepter",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-throne-of-ash-coal-scepter",
+    "name": "Throne-of-Ash Coal-Scepter",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 120,
-    halfArc: 0.9,
-    cooldown: 0.7,
-    displayLength: 88,
-    swingArc: 2.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "scepter",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 120,
+    "halfArc": 0.9,
+    "cooldown": 0.7,
+    "displayLength": 88,
+    "swingArc": 2.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "scepter",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    quake: {
-      radius: 130,
-      damage: 8,
-    },
+    "quake": {
+      "radius": 130,
+      "damage": 8
+    }
   },
   "x2-auroral-filament-wand": {
-    id: "x2-auroral-filament-wand",
-    name: "Auroral Filament Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-auroral-filament-wand",
+    "name": "Auroral Filament Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 5,
-    range: 95,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 60,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 95,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 60,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 720,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 720,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-saint-bough-frost-crozier": {
-    id: "x2-saint-bough-frost-crozier",
-    name: "Saint-Bough Frost Crozier",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-saint-bough-frost-crozier",
+    "name": "Saint-Bough Frost Crozier",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 135,
-    halfArc: 1,
-    cooldown: 0.72,
-    displayLength: 144,
-    swingArc: 2.9,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 135,
+    "halfArc": 1,
+    "cooldown": 0.72,
+    "displayLength": 144,
+    "swingArc": 2.9,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    quake: {
-      radius: 150,
-      damage: 7,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 150,
+      "damage": 7
+    }
   },
   "x2-snakeoil-tincture-scepter": {
-    id: "x2-snakeoil-tincture-scepter",
-    name: "Snakeoil Tincture Scepter",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "C",
+    "id": "x2-snakeoil-tincture-scepter",
+    "name": "Snakeoil Tincture Scepter",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "C"
     },
-    damage: 5,
-    range: 125,
-    halfArc: 0.6,
-    cooldown: 0.42,
-    displayLength: 90,
-    swingArc: 1.9,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "scepter",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 5,
+    "range": 125,
+    "halfArc": 0.6,
+    "cooldown": 0.42,
+    "displayLength": 90,
+    "swingArc": 1.9,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "scepter",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
-      luk: 5,
+    "requirements": {
+      "int": 6,
+      "luk": 5
     },
-    chainLightning: {
-      jumps: 4,
-      range: 190,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 4,
+      "range": 190,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-mesa-spine-thunder-stave": {
-    id: "x2-mesa-spine-thunder-stave",
-    name: "Mesa-Spine Thunder Stave",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-mesa-spine-thunder-stave",
+    "name": "Mesa-Spine Thunder Stave",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 5,
-    range: 95,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 140,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 95,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 140,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    twoHanded: true,
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 740,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 740,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-reliquary-lantern-wand": {
-    id: "x2-reliquary-lantern-wand",
-    name: "Reliquary Lantern Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-reliquary-lantern-wand",
+    "name": "Reliquary Lantern Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 130,
-    halfArc: 0.6,
-    cooldown: 0.52,
-    displayLength: 60,
-    swingArc: 2,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "wand",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 130,
+    "halfArc": 0.6,
+    "cooldown": 0.52,
+    "displayLength": 60,
+    "swingArc": 2,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "wand",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    scatter: {
-      count: 5,
-      spread: 0.4,
-      speed: 400,
-      range: 250,
-      damage: 6,
-      explode: {
-        radius: 54,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.4,
+      "speed": 400,
+      "range": 250,
+      "damage": 6,
+      "explode": {
+        "radius": 54,
+        "damage": 5
+      }
+    }
   },
   "x2-obsidian-maw-void-staff": {
-    id: "x2-obsidian-maw-void-staff",
-    name: "Obsidian Maw Void-Staff",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-obsidian-maw-void-staff",
+    "name": "Obsidian Maw Void-Staff",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 6,
-    range: 130,
-    halfArc: 1,
-    cooldown: 0.88,
-    displayLength: 215,
-    swingArc: 3.1,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 130,
+    "halfArc": 1,
+    "cooldown": 0.88,
+    "displayLength": 215,
+    "swingArc": 3.1,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    twoHanded: true,
-    quake: {
-      radius: 170,
-      damage: 10,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 170,
+      "damage": 10
+    }
   },
   "x2-gilded-hourglass-frost-scepter": {
-    id: "x2-gilded-hourglass-frost-scepter",
-    name: "Gilded Hourglass Frost Scepter",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "A",
+    "id": "x2-gilded-hourglass-frost-scepter",
+    "name": "Gilded Hourglass Frost Scepter",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "A"
     },
-    damage: 5,
-    range: 95,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "caster",
-      family: "scepter",
-      rangeBand: "long",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 95,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "scepter",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 700,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 700,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-wormwood-hex-stave": {
-    id: "x2-wormwood-hex-stave",
-    name: "Wormwood Hex-Stave",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-wormwood-hex-stave",
+    "name": "Wormwood Hex-Stave",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 150,
-    halfArc: 0.7,
-    cooldown: 0.6,
-    displayLength: 138,
-    swingArc: 2.5,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "staff",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 150,
+    "halfArc": 0.7,
+    "cooldown": 0.6,
+    "displayLength": 138,
+    "swingArc": 2.5,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "staff",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    twoHanded: true,
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 340,
-      range: 230,
-      damage: 5,
-      explode: {
-        radius: 64,
-        damage: 5,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 340,
+      "range": 230,
+      "damage": 5,
+      "explode": {
+        "radius": 64,
+        "damage": 5
+      }
+    }
   },
   "x2-vagrant-s-wishing-marble": {
-    id: "x2-vagrant-s-wishing-marble",
-    name: "Vagrant's Wishing Marble",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "C",
+    "id": "x2-vagrant-s-wishing-marble",
+    "name": "Vagrant's Wishing Marble",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
     },
-    damage: 7,
-    range: 360,
-    halfArc: 0.9,
-    cooldown: 0.42,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 7,
+    "range": 360,
+    "halfArc": 0.9,
+    "cooldown": 0.42,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    quake: {
-      radius: 110,
-      damage: 8,
-    },
+    "quake": {
+      "radius": 110,
+      "damage": 8
+    }
   },
   "x2-saint-s-knucklebone-censer-orb": {
-    id: "x2-saint-s-knucklebone-censer-orb",
-    name: "Saint's Knucklebone Censer-Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-saint-s-knucklebone-censer-orb",
+    "name": "Saint's Knucklebone Censer-Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 9,
-    range: 300,
-    halfArc: 1,
-    cooldown: 0.62,
-    displayLength: 58,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 9,
+    "range": 300,
+    "halfArc": 1,
+    "cooldown": 0.62,
+    "displayLength": 58,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    quake: {
-      radius: 150,
-      damage: 11,
-    },
+    "quake": {
+      "radius": 150,
+      "damage": 11
+    }
   },
   "x2-riftglass-prism-lantern": {
-    id: "x2-riftglass-prism-lantern",
-    name: "Riftglass Prism-Lantern",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-riftglass-prism-lantern",
+    "name": "Riftglass Prism-Lantern",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 6,
-    range: 720,
-    halfArc: 0.5,
-    cooldown: 0.5,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 720,
+    "halfArc": 0.5,
+    "cooldown": 0.5,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 720,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 720,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-cinderchoke-brazier-orb": {
-    id: "x2-cinderchoke-brazier-orb",
-    name: "Cinderchoke Brazier-Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-cinderchoke-brazier-orb",
+    "name": "Cinderchoke Brazier-Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 8,
-    range: 320,
-    halfArc: 0.8,
-    cooldown: 0.6,
-    displayLength: 88,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 320,
+    "halfArc": 0.8,
+    "cooldown": 0.6,
+    "displayLength": 88,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 360,
-      range: 240,
-      damage: 5,
-      explode: {
-        radius: 56,
-        damage: 6,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 360,
+      "range": 240,
+      "damage": 5,
+      "explode": {
+        "radius": 56,
+        "damage": 6
+      }
+    }
   },
   "x2-hailshard-resonator": {
-    id: "x2-hailshard-resonator",
-    name: "Hailshard Resonator",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-hailshard-resonator",
+    "name": "Hailshard Resonator",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 7,
-    range: 300,
-    halfArc: 0.6,
-    cooldown: 0.45,
-    displayLength: 60,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 300,
+    "halfArc": 0.6,
+    "cooldown": 0.45,
+    "displayLength": 60,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    scatter: {
-      count: 5,
-      spread: 0.4,
-      speed: 420,
-      range: 260,
-      damage: 6,
-      explode: {
-        radius: 48,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.4,
+      "speed": 420,
+      "range": 260,
+      "damage": 6,
+      "explode": {
+        "radius": 48,
+        "damage": 5
+      }
+    }
   },
   "x2-fulgurite-storm-sphere": {
-    id: "x2-fulgurite-storm-sphere",
-    name: "Fulgurite Storm-Sphere",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "C",
+    "id": "x2-fulgurite-storm-sphere",
+    "name": "Fulgurite Storm-Sphere",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.7,
-    cooldown: 0.4,
-    displayLength: 84,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.7,
+    "cooldown": 0.4,
+    "displayLength": 84,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 6,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 6,
+      "falloff": 0.8
+    }
   },
   "x2-coffin-nail-rosary-orb": {
-    id: "x2-coffin-nail-rosary-orb",
-    name: "Coffin-Nail Rosary Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "D",
+    "id": "x2-coffin-nail-rosary-orb",
+    "name": "Coffin-Nail Rosary Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "D"
     },
-    damage: 8,
-    range: 340,
-    halfArc: 0.95,
-    cooldown: 0.7,
-    displayLength: 62,
-    swingArc: 1.8,
-    gripFrac: 0.18,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 8,
+    "range": 340,
+    "halfArc": 0.95,
+    "cooldown": 0.7,
+    "displayLength": 62,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    quake: {
-      radius: 130,
-      damage: 10,
-    },
+    "quake": {
+      "radius": 130,
+      "damage": 10
+    }
   },
   "x2-sporebound-witchglobe": {
-    id: "x2-sporebound-witchglobe",
-    name: "Sporebound Witchglobe",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-sporebound-witchglobe",
+    "name": "Sporebound Witchglobe",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.6,
-    cooldown: 0.58,
-    displayLength: 86,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.6,
+    "cooldown": 0.58,
+    "displayLength": 86,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    scatter: {
-      count: 7,
-      spread: 0.6,
-      speed: 340,
-      range: 220,
-      damage: 5,
-      explode: {
-        radius: 60,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 7,
+      "spread": 0.6,
+      "speed": 340,
+      "range": 220,
+      "damage": 5,
+      "explode": {
+        "radius": 60,
+        "damage": 5
+      }
+    }
   },
   "x2-gravewax-seance-globe": {
-    id: "x2-gravewax-seance-globe",
-    name: "Gravewax Seance-Globe",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-gravewax-seance-globe",
+    "name": "Gravewax Seance-Globe",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 6,
-    range: 760,
-    halfArc: 0.45,
-    cooldown: 0.5,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 760,
+    "halfArc": 0.45,
+    "cooldown": 0.5,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 1200,
-      range: 760,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-mesa-heart-geodes": {
-    id: "x2-mesa-heart-geodes",
-    name: "Mesa-Heart Geodes",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-mesa-heart-geodes",
+    "name": "Mesa-Heart Geodes",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 6,
-    range: 360,
-    halfArc: 0.7,
-    cooldown: 0.32,
-    displayLength: 54,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 6,
+    "range": 360,
+    "halfArc": 0.7,
+    "cooldown": 0.32,
+    "displayLength": 54,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 7,
+    "requirements": {
+      "dex": 4,
+      "int": 7
     },
-    dual: true,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.85,
-    },
+    "dual": true,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.85
+    }
   },
   "x2-reckoning-s-sun-orb": {
-    id: "x2-reckoning-s-sun-orb",
-    name: "Reckoning's Sun-Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-reckoning-s-sun-orb",
+    "name": "Reckoning's Sun-Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 11,
-    range: 300,
-    halfArc: 1.1,
-    cooldown: 0.85,
-    displayLength: 150,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 11,
+    "range": 300,
+    "halfArc": 1.1,
+    "cooldown": 0.85,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    twoHanded: true,
-    quake: {
-      radius: 170,
-      damage: 14,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 170,
+      "damage": 14
+    }
   },
   "x2-tumbleweed-static-bauble": {
-    id: "x2-tumbleweed-static-bauble",
-    name: "Tumbleweed Static-Bauble",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-tumbleweed-static-bauble",
+    "name": "Tumbleweed Static-Bauble",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.65,
-    cooldown: 0.4,
-    displayLength: 58,
-    swingArc: 1.8,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.65,
+    "cooldown": 0.4,
+    "displayLength": 58,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 6,
+    "requirements": {
+      "dex": 4,
+      "int": 6
     },
-    scatter: {
-      count: 6,
-      spread: 0.55,
-      speed: 440,
-      range: 240,
-      damage: 5,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.55,
+      "speed": 440,
+      "range": 240,
+      "damage": 5,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-quartzlight-wayfinder": {
-    id: "x2-quartzlight-wayfinder",
-    name: "Quartzlight Wayfinder",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-quartzlight-wayfinder",
+    "name": "Quartzlight Wayfinder",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 6,
-    range: 740,
-    halfArc: 0.5,
-    cooldown: 0.5,
-    displayLength: 90,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 740,
+    "halfArc": 0.5,
+    "cooldown": 0.5,
+    "displayLength": 90,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 1200,
-      range: 740,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1200,
+      "range": 740,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-pyre-marble-bandolier": {
-    id: "x2-pyre-marble-bandolier",
-    name: "Pyre-Marble Bandolier",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "D",
+    "id": "x2-pyre-marble-bandolier",
+    "name": "Pyre-Marble Bandolier",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "D"
     },
-    damage: 6,
-    range: 320,
-    halfArc: 0.7,
-    cooldown: 0.34,
-    displayLength: 52,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 6,
+    "range": 320,
+    "halfArc": 0.7,
+    "cooldown": 0.34,
+    "displayLength": 52,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    dual: true,
-    scatter: {
-      count: 4,
-      spread: 0.45,
-      speed: 380,
-      range: 230,
-      damage: 5,
-      explode: {
-        radius: 50,
-        damage: 5,
-      },
-    },
+    "dual": true,
+    "scatter": {
+      "count": 4,
+      "spread": 0.45,
+      "speed": 380,
+      "range": 230,
+      "damage": 5,
+      "explode": {
+        "radius": 50,
+        "damage": 5
+      }
+    }
   },
   "x2-dust-devil-cyclone-orb": {
-    id: "x2-dust-devil-cyclone-orb",
-    name: "Dust-Devil Cyclone Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-dust-devil-cyclone-orb",
+    "name": "Dust-Devil Cyclone Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 10,
-    range: 300,
-    halfArc: 1,
-    cooldown: 0.8,
-    displayLength: 145,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 300,
+    "halfArc": 1,
+    "cooldown": 0.8,
+    "displayLength": 145,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    twoHanded: true,
-    quake: {
-      radius: 160,
-      damage: 12,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 160,
+      "damage": 12
+    }
   },
   "x2-locust-glass-plague-orb": {
-    id: "x2-locust-glass-plague-orb",
-    name: "Locust-Glass Plague-Orb",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-locust-glass-plague-orb",
+    "name": "Locust-Glass Plague-Orb",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 7,
-    range: 320,
-    halfArc: 0.7,
-    cooldown: 0.42,
-    displayLength: 84,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 320,
+    "halfArc": 0.7,
+    "cooldown": 0.42,
+    "displayLength": 84,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    chainLightning: {
-      jumps: 5,
-      range: 180,
-      damage: 5,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 5,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.8
+    }
   },
   "x2-pearl-of-penance-censer": {
-    id: "x2-pearl-of-penance-censer",
-    name: "Pearl-of-Penance Censer",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-pearl-of-penance-censer",
+    "name": "Pearl-of-Penance Censer",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 7,
-    range: 780,
-    halfArc: 0.5,
-    cooldown: 0.55,
-    displayLength: 148,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 780,
+    "halfArc": 0.5,
+    "cooldown": 0.55,
+    "displayLength": 148,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    twoHanded: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 1200,
-      range: 780,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1200,
+      "range": 780,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-frostbite-snowglobe": {
-    id: "x2-frostbite-snowglobe",
-    name: "Frostbite Snowglobe",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-frostbite-snowglobe",
+    "name": "Frostbite Snowglobe",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 9,
-    range: 300,
-    halfArc: 0.95,
-    cooldown: 0.62,
-    displayLength: 86,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 9,
+    "range": 300,
+    "halfArc": 0.95,
+    "cooldown": 0.62,
+    "displayLength": 86,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    quake: {
-      radius: 140,
-      damage: 11,
-    },
+    "quake": {
+      "radius": 140,
+      "damage": 11
+    }
   },
   "x2-hexbinder-s-iron-orrery": {
-    id: "x2-hexbinder-s-iron-orrery",
-    name: "Hexbinder's Iron Orrery",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "D",
+    "id": "x2-hexbinder-s-iron-orrery",
+    "name": "Hexbinder's Iron Orrery",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "D"
     },
-    damage: 8,
-    range: 320,
-    halfArc: 0.7,
-    cooldown: 0.66,
-    displayLength: 146,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "focus",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 8,
+    "range": 320,
+    "halfArc": 0.7,
+    "cooldown": 0.66,
+    "displayLength": 146,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "focus",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    twoHanded: true,
-    scatter: {
-      count: 8,
-      spread: 0.6,
-      speed: 380,
-      range: 250,
-      damage: 5,
-      explode: {
-        radius: 60,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 8,
+      "spread": 0.6,
+      "speed": 380,
+      "range": 250,
+      "damage": 5,
+      "explode": {
+        "radius": 60,
+        "damage": 6
+      }
+    }
   },
   "x2-smoldering-eye-of-perdition": {
-    id: "x2-smoldering-eye-of-perdition",
-    name: "Smoldering Eye of Perdition",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-smoldering-eye-of-perdition",
+    "name": "Smoldering Eye of Perdition",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 6,
-    range: 800,
-    halfArc: 0.45,
-    cooldown: 0.5,
-    displayLength: 88,
-    swingArc: 1.8,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "orb",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 800,
+    "halfArc": 0.45,
+    "cooldown": 0.5,
+    "displayLength": 88,
+    "swingArc": 1.8,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "orb",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    gun: {
-      damage: 6,
-      projectileSpeed: 1200,
-      range: 800,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 1200,
+      "range": 800,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-censer-of-the-weeping-saint": {
-    id: "x2-censer-of-the-weeping-saint",
-    name: "Censer of the Weeping Saint",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-censer-of-the-weeping-saint",
+    "name": "Censer of the Weeping Saint",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 210,
-    halfArc: 0.9,
-    cooldown: 0.42,
-    displayLength: 58,
-    swingArc: 2.6,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 210,
+    "halfArc": 0.9,
+    "cooldown": 0.42,
+    "displayLength": 58,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    scatter: {
-      count: 6,
-      spread: 0.6,
-      speed: 380,
-      range: 210,
-      damage: 5,
-      explode: {
-        radius: 50,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.6,
+      "speed": 380,
+      "range": 210,
+      "damage": 5,
+      "explode": {
+        "radius": 50,
+        "damage": 5
+      }
+    }
   },
   "x2-rotgrove-totem": {
-    id: "x2-rotgrove-totem",
-    name: "Rotgrove Totem",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      con: "C",
+    "id": "x2-rotgrove-totem",
+    "name": "Rotgrove Totem",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "con": "C"
     },
-    damage: 9,
-    range: 160,
-    halfArc: 1,
-    cooldown: 0.8,
-    displayLength: 150,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "CON"],
+    "damage": 9,
+    "range": 160,
+    "halfArc": 1,
+    "cooldown": 0.8,
+    "displayLength": 150,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "CON"
+      ]
     },
-    requirements: {
-      int: 9,
-      con: 5,
+    "requirements": {
+      "int": 9,
+      "con": 5
     },
-    twoHanded: true,
-    quake: {
-      radius: 160,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 160,
+      "damage": 9
+    }
   },
   "x2-nullsaint-reliquary": {
-    id: "x2-nullsaint-reliquary",
-    name: "Nullsaint Reliquary",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-nullsaint-reliquary",
+    "name": "Nullsaint Reliquary",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 7,
-    range: 720,
-    halfArc: 0.6,
-    cooldown: 0.4,
-    displayLength: 54,
-    swingArc: 1.8,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 7,
+    "range": 720,
+    "halfArc": 0.6,
+    "cooldown": 0.4,
+    "displayLength": 54,
+    "swingArc": 1.8,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 12,
+    "requirements": {
+      "int": 12
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 1200,
-      range: 720,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 1200,
+      "range": 720,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-idol-of-the-pale-verdict": {
-    id: "x2-idol-of-the-pale-verdict",
-    name: "Idol of the Pale Verdict",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-idol-of-the-pale-verdict",
+    "name": "Idol of the Pale Verdict",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 11,
-    range: 140,
-    halfArc: 1,
-    cooldown: 0.7,
-    displayLength: 148,
-    swingArc: 2.3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 11,
+    "range": 140,
+    "halfArc": 1,
+    "cooldown": 0.7,
+    "displayLength": 148,
+    "swingArc": 2.3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    twoHanded: true,
-    quake: {
-      radius: 140,
-      damage: 11,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 140,
+      "damage": 11
+    }
   },
   "x2-carrion-effigy": {
-    id: "x2-carrion-effigy",
-    name: "Carrion Effigy",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-carrion-effigy",
+    "name": "Carrion Effigy",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 4,
-    range: 240,
-    halfArc: 0.85,
-    cooldown: 0.36,
-    displayLength: 92,
-    swingArc: 2.5,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 4,
+    "range": 240,
+    "halfArc": 0.85,
+    "cooldown": 0.36,
+    "displayLength": 92,
+    "swingArc": 2.5,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 7,
+    "requirements": {
+      "dex": 4,
+      "int": 7
     },
-    scatter: {
-      count: 7,
-      spread: 0.5,
-      speed: 420,
-      range: 240,
-      damage: 4,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 7,
+      "spread": 0.5,
+      "speed": 420,
+      "range": 240,
+      "damage": 4,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-thunderpost-fetish": {
-    id: "x2-thunderpost-fetish",
-    name: "Thunderpost Fetish",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "D",
+    "id": "x2-thunderpost-fetish",
+    "name": "Thunderpost Fetish",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "D"
     },
-    damage: 6,
-    range: 150,
-    halfArc: 1,
-    cooldown: 0.6,
-    displayLength: 140,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 6,
+    "range": 150,
+    "halfArc": 1,
+    "cooldown": 0.6,
+    "displayLength": 140,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    twoHanded: true,
-    chainLightning: {
-      jumps: 4,
-      range: 200,
-      damage: 6,
-      falloff: 0.8,
-    },
+    "twoHanded": true,
+    "chainLightning": {
+      "jumps": 4,
+      "range": 200,
+      "damage": 6,
+      "falloff": 0.8
+    }
   },
   "x2-saintskull-monstrance": {
-    id: "x2-saintskull-monstrance",
-    name: "Saintskull Monstrance",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-saintskull-monstrance",
+    "name": "Saintskull Monstrance",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 9,
-    range: 760,
-    halfArc: 0.55,
-    cooldown: 0.45,
-    displayLength: 96,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "mounted",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 9,
+    "range": 760,
+    "halfArc": 0.55,
+    "cooldown": 0.45,
+    "displayLength": 96,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "mounted",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    gun: {
-      damage: 9,
-      projectileSpeed: 1200,
-      range: 760,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 9,
+      "projectileSpeed": 1200,
+      "range": 760,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-gravewax-twin-idols": {
-    id: "x2-gravewax-twin-idols",
-    name: "Gravewax Twin Idols",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-gravewax-twin-idols",
+    "name": "Gravewax Twin Idols",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 6,
-    range: 440,
-    halfArc: 0.6,
-    cooldown: 0.3,
-    displayLength: 56,
-    swingArc: 1.8,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 440,
+    "halfArc": 0.6,
+    "cooldown": 0.3,
+    "displayLength": 56,
+    "swingArc": 1.8,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    dual: true,
-    gun: {
-      damage: 6,
-      projectileSpeed: 760,
-      range: 440,
-      fireRate: 0.16,
-      magazine: 18,
-      reloadSeconds: 1.4,
-      bulletKind: "slug",
-      muzzle: "spark",
-      recoil: 0.001,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 6,
+      "projectileSpeed": 760,
+      "range": 440,
+      "fireRate": 0.16,
+      "magazine": 18,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "spark",
+      "recoil": 0.001
+    }
   },
   "x2-cairn-of-hollow-names": {
-    id: "x2-cairn-of-hollow-names",
-    name: "Cairn of Hollow Names",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      con: "D",
+    "id": "x2-cairn-of-hollow-names",
+    "name": "Cairn of Hollow Names",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "con": "D"
     },
-    damage: 13,
-    range: 175,
-    halfArc: 1.05,
-    cooldown: 0.88,
-    displayLength: 220,
-    swingArc: 2.3,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "void",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "CON"],
+    "damage": 13,
+    "range": 175,
+    "halfArc": 1.05,
+    "cooldown": 0.88,
+    "displayLength": 220,
+    "swingArc": 2.3,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "void",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "CON"
+      ]
     },
-    requirements: {
-      int: 11,
-      con: 7,
+    "requirements": {
+      "int": 11,
+      "con": 7
     },
-    twoHanded: true,
-    quake: {
-      radius: 175,
-      damage: 13,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 175,
+      "damage": 13
+    }
   },
   "x2-hexpost-charm-pole": {
-    id: "x2-hexpost-charm-pole",
-    name: "Hexpost Charm-Pole",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "C",
+    "id": "x2-hexpost-charm-pole",
+    "name": "Hexpost Charm-Pole",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
     },
-    damage: 6,
-    range: 230,
-    halfArc: 0.8,
-    cooldown: 0.44,
-    displayLength: 94,
-    swingArc: 2.6,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 6,
+    "range": 230,
+    "halfArc": 0.8,
+    "cooldown": 0.44,
+    "displayLength": 94,
+    "swingArc": 2.6,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 8,
-      luk: 4,
+    "requirements": {
+      "int": 8,
+      "luk": 4
     },
-    scatter: {
-      count: 5,
-      spread: 0.45,
-      speed: 400,
-      range: 230,
-      damage: 6,
-      explode: {
-        radius: 58,
-        damage: 7,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.45,
+      "speed": 400,
+      "range": 230,
+      "damage": 6,
+      "explode": {
+        "radius": 58,
+        "damage": 7
+      }
+    }
   },
   "x2-miasma-bell-censer": {
-    id: "x2-miasma-bell-censer",
-    name: "Miasma Bell-Censer",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-miasma-bell-censer",
+    "name": "Miasma Bell-Censer",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 8,
-    range: 120,
-    halfArc: 1,
-    cooldown: 0.58,
-    displayLength: 88,
-    swingArc: 2.5,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 120,
+    "halfArc": 1,
+    "cooldown": 0.58,
+    "displayLength": 88,
+    "swingArc": 2.5,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    quake: {
-      radius: 120,
-      damage: 8,
-    },
+    "quake": {
+      "radius": 120,
+      "damage": 8
+    }
   },
   "x2-frostsaint-ossuary": {
-    id: "x2-frostsaint-ossuary",
-    name: "Frostsaint Ossuary",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-frostsaint-ossuary",
+    "name": "Frostsaint Ossuary",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 200,
-    halfArc: 0.95,
-    cooldown: 0.48,
-    displayLength: 142,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 200,
+    "halfArc": 0.95,
+    "cooldown": 0.48,
+    "displayLength": 142,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    scatter: {
-      count: 8,
-      spread: 0.7,
-      speed: 340,
-      range: 200,
-      damage: 4,
-      explode: {
-        radius: 48,
-        damage: 4,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 8,
+      "spread": 0.7,
+      "speed": 340,
+      "range": 200,
+      "damage": 4,
+      "explode": {
+        "radius": 48,
+        "damage": 4
+      }
+    }
   },
   "x2-godsbone-pillar": {
-    id: "x2-godsbone-pillar",
-    name: "Godsbone Pillar",
-    expansion: true,
-    scalingGrades: {
-      str: "D",
-      int: "A",
+    "id": "x2-godsbone-pillar",
+    "name": "Godsbone Pillar",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "D",
+      "int": "A"
     },
-    damage: 14,
-    range: 178,
-    halfArc: 1.05,
-    cooldown: 0.9,
-    displayLength: 340,
-    swingArc: 2.3,
-    gripFrac: 0.08,
-    tags: {
-      grip: "2H",
-      size: "XL",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "STR"],
+    "damage": 14,
+    "range": 178,
+    "halfArc": 1.05,
+    "cooldown": 0.9,
+    "displayLength": 340,
+    "swingArc": 2.3,
+    "gripFrac": 0.08,
+    "tags": {
+      "grip": "2H",
+      "size": "XL",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 12,
+    "requirements": {
+      "str": 6,
+      "int": 12
     },
-    twoHanded: true,
-    quake: {
-      radius: 178,
-      damage: 14,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 178,
+      "damage": 14
+    }
   },
   "x2-wyrmskull-reliquary": {
-    id: "x2-wyrmskull-reliquary",
-    name: "Wyrmskull Reliquary",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-wyrmskull-reliquary",
+    "name": "Wyrmskull Reliquary",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 235,
-    halfArc: 0.9,
-    cooldown: 0.5,
-    displayLength: 140,
-    swingArc: 2.5,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 235,
+    "halfArc": 0.9,
+    "cooldown": 0.5,
+    "displayLength": 140,
+    "swingArc": 2.5,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    scatter: {
-      count: 6,
-      spread: 0.55,
-      speed: 380,
-      range: 235,
-      damage: 5,
-      explode: {
-        radius: 60,
-        damage: 6,
-      },
-    },
+    "twoHanded": true,
+    "scatter": {
+      "count": 6,
+      "spread": 0.55,
+      "speed": 380,
+      "range": 235,
+      "damage": 5,
+      "explode": {
+        "radius": 60,
+        "damage": 6
+      }
+    }
   },
   "x2-voidwell-idol": {
-    id: "x2-voidwell-idol",
-    name: "Voidwell Idol",
-    expansion: true,
-    scalingGrades: {
-      int: "S",
+    "id": "x2-voidwell-idol",
+    "name": "Voidwell Idol",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "S"
     },
-    damage: 10,
-    range: 800,
-    halfArc: 0.5,
-    cooldown: 0.45,
-    displayLength: 92,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "mounted",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 10,
+    "range": 800,
+    "halfArc": 0.5,
+    "cooldown": 0.45,
+    "displayLength": 92,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "mounted",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 13,
+    "requirements": {
+      "int": 13
     },
-    gun: {
-      damage: 10,
-      projectileSpeed: 1200,
-      range: 800,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 10,
+      "projectileSpeed": 1200,
+      "range": 800,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-spitfire-censer-wand": {
-    id: "x2-spitfire-censer-wand",
-    name: "Spitfire Censer-Wand",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-spitfire-censer-wand",
+    "name": "Spitfire Censer-Wand",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 4,
-    range: 460,
-    halfArc: 0.55,
-    cooldown: 0.3,
-    displayLength: 60,
-    swingArc: 1.8,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 460,
+    "halfArc": 0.55,
+    "cooldown": 0.3,
+    "displayLength": 60,
+    "swingArc": 1.8,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 820,
-      range: 460,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.6,
-      bulletKind: "tracer",
-      muzzle: "rapid",
-      recoil: 0.0007,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 820,
+      "range": 460,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.6,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0007
+    }
   },
   "x2-mawstone-cairn-idol": {
-    id: "x2-mawstone-cairn-idol",
-    name: "Mawstone Cairn-Idol",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      con: "C",
+    "id": "x2-mawstone-cairn-idol",
+    "name": "Mawstone Cairn-Idol",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "con": "C"
     },
-    damage: 10,
-    range: 150,
-    halfArc: 1,
-    cooldown: 0.72,
-    displayLength: 146,
-    swingArc: 2.4,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "CON"],
+    "damage": 10,
+    "range": 150,
+    "halfArc": 1,
+    "cooldown": 0.72,
+    "displayLength": 146,
+    "swingArc": 2.4,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "CON"
+      ]
     },
-    requirements: {
-      int: 8,
-      con: 6,
+    "requirements": {
+      "int": 8,
+      "con": 6
     },
-    twoHanded: true,
-    quake: {
-      radius: 150,
-      damage: 10,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 150,
+      "damage": 10
+    }
   },
   "x2-psalmstone-beadwhip": {
-    id: "x2-psalmstone-beadwhip",
-    name: "Psalmstone Beadwhip",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-psalmstone-beadwhip",
+    "name": "Psalmstone Beadwhip",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 5,
-    range: 160,
-    halfArc: 0.7,
-    cooldown: 0.32,
-    displayLength: 58,
-    swingArc: 2.2,
-    gripFrac: 0.16,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "holy",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 160,
+    "halfArc": 0.7,
+    "cooldown": 0.32,
+    "displayLength": 58,
+    "swingArc": 2.2,
+    "gripFrac": 0.16,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 5,
-      int: 7,
+    "requirements": {
+      "dex": 5,
+      "int": 7
     },
-    dual: true,
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 5,
-      falloff: 0.85,
-    },
+    "dual": true,
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 5,
+      "falloff": 0.85
+    }
   },
   "x2-sanctum-brazier-staff": {
-    id: "x2-sanctum-brazier-staff",
-    name: "Sanctum Brazier-Staff",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-sanctum-brazier-staff",
+    "name": "Sanctum Brazier-Staff",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 8,
-    range: 740,
-    halfArc: 0.6,
-    cooldown: 0.42,
-    displayLength: 144,
-    swingArc: 1.8,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 8,
+    "range": 740,
+    "halfArc": 0.6,
+    "cooldown": 0.42,
+    "displayLength": 144,
+    "swingArc": 1.8,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 11,
+    "requirements": {
+      "int": 11
     },
-    twoHanded: true,
-    gun: {
-      damage: 8,
-      projectileSpeed: 1200,
-      range: 740,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 1200,
+      "range": 740,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-hollowmother-spore-totem": {
-    id: "x2-hollowmother-spore-totem",
-    name: "Hollowmother Spore-Totem",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
-      luk: "E",
+    "id": "x2-hollowmother-spore-totem",
+    "name": "Hollowmother Spore-Totem",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A",
+      "luk": "E"
     },
-    damage: 4,
-    range: 220,
-    halfArc: 0.9,
-    cooldown: 0.4,
-    displayLength: 90,
-    swingArc: 2.6,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "relic/totem",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 4,
+    "range": 220,
+    "halfArc": 0.9,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.6,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "relic/totem",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 9,
-      luk: 3,
+    "requirements": {
+      "int": 9,
+      "luk": 3
     },
-    scatter: {
-      count: 8,
-      spread: 0.65,
-      speed: 360,
-      range: 220,
-      damage: 4,
-      explode: {
-        radius: 52,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 8,
+      "spread": 0.65,
+      "speed": 360,
+      "range": 220,
+      "damage": 4,
+      "explode": {
+        "radius": 52,
+        "damage": 5
+      }
+    }
   },
   "x2-sparkknuckle-hex-mitt": {
-    id: "x2-sparkknuckle-hex-mitt",
-    name: "Sparkknuckle Hex-Mitt",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-sparkknuckle-hex-mitt",
+    "name": "Sparkknuckle Hex-Mitt",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 4,
-    range: 150,
-    halfArc: 0.9,
-    cooldown: 0.34,
-    displayLength: 56,
-    swingArc: 2.4,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT", "DEX"],
+    "damage": 4,
+    "range": 150,
+    "halfArc": 0.9,
+    "cooldown": 0.34,
+    "displayLength": 56,
+    "swingArc": 2.4,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      int: 5,
+    "requirements": {
+      "int": 5
     },
-    chainLightning: {
-      jumps: 3,
-      range: 180,
-      damage: 4,
-      falloff: 0.75,
-    },
+    "chainLightning": {
+      "jumps": 3,
+      "range": 180,
+      "damage": 4,
+      "falloff": 0.75
+    }
   },
   "x2-cinderpalm-brand-glove": {
-    id: "x2-cinderpalm-brand-glove",
-    name: "Cinderpalm Brand-Glove",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-cinderpalm-brand-glove",
+    "name": "Cinderpalm Brand-Glove",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 5,
-    range: 170,
-    halfArc: 0.7,
-    cooldown: 0.4,
-    displayLength: 60,
-    swingArc: 2.5,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 170,
+    "halfArc": 0.7,
+    "cooldown": 0.4,
+    "displayLength": 60,
+    "swingArc": 2.5,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    scatter: {
-      count: 5,
-      spread: 0.45,
-      speed: 380,
-      range: 210,
-      damage: 4,
-      explode: {
-        radius: 50,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.45,
+      "speed": 380,
+      "range": 210,
+      "damage": 4,
+      "explode": {
+        "radius": 50,
+        "damage": 5
+      }
+    }
   },
   "x2-voltvein-conductors": {
-    id: "x2-voltvein-conductors",
-    name: "Voltvein Conductors",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-voltvein-conductors",
+    "name": "Voltvein Conductors",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 3,
-    range: 430,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 58,
-    swingArc: 2.2,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 3,
+    "range": 430,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 58,
+    "swingArc": 2.2,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 5,
+    "requirements": {
+      "dex": 4,
+      "int": 5
     },
-    dual: true,
-    gun: {
-      damage: 4,
-      projectileSpeed: 1100,
-      range: 430,
-      fireRate: 0.14,
-      magazine: 18,
-      reloadSeconds: 1.2,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0008,
-    },
+    "dual": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1100,
+      "range": 430,
+      "fireRate": 0.14,
+      "magazine": 18,
+      "reloadSeconds": 1.2,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0008
+    }
   },
   "x2-pyreclap-mauler": {
-    id: "x2-pyreclap-mauler",
-    name: "Pyreclap Mauler",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "A",
+    "id": "x2-pyreclap-mauler",
+    "name": "Pyreclap Mauler",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "A"
     },
-    damage: 6,
-    range: 200,
-    halfArc: 1.05,
-    cooldown: 0.85,
-    displayLength: 140,
-    swingArc: 3,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT", "STR"],
+    "damage": 6,
+    "range": 200,
+    "halfArc": 1.05,
+    "cooldown": 0.85,
+    "displayLength": 140,
+    "swingArc": 3,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 9,
+    "requirements": {
+      "str": 6,
+      "int": 9
     },
-    twoHanded: true,
-    quake: {
-      radius: 170,
-      damage: 9,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 170,
+      "damage": 9
+    }
   },
   "x2-frostknuckle-rimewrap": {
-    id: "x2-frostknuckle-rimewrap",
-    name: "Frostknuckle Rimewrap",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-frostknuckle-rimewrap",
+    "name": "Frostknuckle Rimewrap",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 5,
-    range: 185,
-    halfArc: 0.65,
-    cooldown: 0.42,
-    displayLength: 88,
-    swingArc: 2.4,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "frost",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 185,
+    "halfArc": 0.65,
+    "cooldown": 0.42,
+    "displayLength": 88,
+    "swingArc": 2.4,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    scatter: {
-      count: 6,
-      spread: 0.5,
-      speed: 400,
-      range: 200,
-      damage: 4,
-      explode: {
-        radius: 46,
-        damage: 4,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.5,
+      "speed": 400,
+      "range": 200,
+      "damage": 4,
+      "explode": {
+        "radius": 46,
+        "damage": 4
+      }
+    }
   },
   "x2-tesla-faradayer": {
-    id: "x2-tesla-faradayer",
-    name: "Tesla Faradayer",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-tesla-faradayer",
+    "name": "Tesla Faradayer",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 165,
-    halfArc: 0.85,
-    cooldown: 0.38,
-    displayLength: 92,
-    swingArc: 2.5,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 165,
+    "halfArc": 0.85,
+    "cooldown": 0.38,
+    "displayLength": 92,
+    "swingArc": 2.5,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    chainLightning: {
-      jumps: 5,
-      range: 200,
-      damage: 4,
-      falloff: 0.8,
-    },
+    "chainLightning": {
+      "jumps": 5,
+      "range": 200,
+      "damage": 4,
+      "falloff": 0.8
+    }
   },
   "x2-hellmouth-palmcaster": {
-    id: "x2-hellmouth-palmcaster",
-    name: "Hellmouth Palmcaster",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-hellmouth-palmcaster",
+    "name": "Hellmouth Palmcaster",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 4,
-    range: 420,
-    halfArc: 0.5,
-    cooldown: 0.32,
-    displayLength: 90,
-    swingArc: 2.3,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "fire",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 420,
+    "halfArc": 0.5,
+    "cooldown": 0.32,
+    "displayLength": 90,
+    "swingArc": 2.3,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 700,
-      range: 380,
-      fireRate: 0.1,
-      magazine: 24,
-      reloadSeconds: 1.5,
-      bulletKind: "pellet",
-      muzzle: "boom",
-      recoil: 0.0006,
-      pellets: 2,
-      spread: 0.22,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 700,
+      "range": 380,
+      "fireRate": 0.1,
+      "magazine": 24,
+      "reloadSeconds": 1.5,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0006,
+      "pellets": 2,
+      "spread": 0.22
+    }
   },
   "x2-hexbolt-spitter-mitt": {
-    id: "x2-hexbolt-spitter-mitt",
-    name: "Hexbolt Spitter-Mitt",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "D",
+    "id": "x2-hexbolt-spitter-mitt",
+    "name": "Hexbolt Spitter-Mitt",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "D"
     },
-    damage: 3,
-    range: 460,
-    halfArc: 0.5,
-    cooldown: 0.3,
-    displayLength: 54,
-    swingArc: 2.2,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "arcane",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 3,
+    "range": 460,
+    "halfArc": 0.5,
+    "cooldown": 0.3,
+    "displayLength": 54,
+    "swingArc": 2.2,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    gun: {
-      damage: 5,
-      projectileSpeed: 1000,
-      range: 460,
-      fireRate: 0.18,
-      magazine: 14,
-      reloadSeconds: 1.3,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.001,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1000,
+      "range": 460,
+      "fireRate": 0.18,
+      "magazine": 14,
+      "reloadSeconds": 1.3,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.001,
+      "pierce": 2
+    }
   },
   "x2-stormcradle-faradaygloves": {
-    id: "x2-stormcradle-faradaygloves",
-    name: "Stormcradle Faradaygloves",
-    expansion: true,
-    scalingGrades: {
-      dex: "C",
-      int: "B",
+    "id": "x2-stormcradle-faradaygloves",
+    "name": "Stormcradle Faradaygloves",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "C",
+      "int": "B"
     },
-    damage: 4,
-    range: 175,
-    halfArc: 0.6,
-    cooldown: 0.36,
-    displayLength: 58,
-    swingArc: 2.3,
-    gripFrac: 0.15,
-    tags: {
-      grip: "dual",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT", "DEX"],
+    "damage": 4,
+    "range": 175,
+    "halfArc": 0.6,
+    "cooldown": 0.36,
+    "displayLength": 58,
+    "swingArc": 2.3,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "dual",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 5,
+    "requirements": {
+      "dex": 4,
+      "int": 5
     },
-    dual: true,
-    scatter: {
-      count: 7,
-      spread: 0.6,
-      speed: 420,
-      range: 190,
-      damage: 3,
-      explode: {
-        radius: 44,
-        damage: 4,
-      },
-    },
+    "dual": true,
+    "scatter": {
+      "count": 7,
+      "spread": 0.6,
+      "speed": 420,
+      "range": 190,
+      "damage": 3,
+      "explode": {
+        "radius": 44,
+        "damage": 4
+      }
+    }
   },
   "x2-seraph-s-knuckle-reliquary": {
-    id: "x2-seraph-s-knuckle-reliquary",
-    name: "Seraph's Knuckle-Reliquary",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-seraph-s-knuckle-reliquary",
+    "name": "Seraph's Knuckle-Reliquary",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 5,
-    range: 440,
-    halfArc: 0.4,
-    cooldown: 0.5,
-    displayLength: 90,
-    swingArc: 2.2,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "holy",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 5,
+    "range": 440,
+    "halfArc": 0.4,
+    "cooldown": 0.5,
+    "displayLength": 90,
+    "swingArc": 2.2,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "holy",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    gun: {
-      damage: 3,
-      projectileSpeed: 1200,
-      range: 440,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 1200,
+      "range": 440,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-blightgrip-spore-mitt": {
-    id: "x2-blightgrip-spore-mitt",
-    name: "Blightgrip Spore-Mitt",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
+    "id": "x2-blightgrip-spore-mitt",
+    "name": "Blightgrip Spore-Mitt",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B"
     },
-    damage: 4,
-    range: 160,
-    halfArc: 0.75,
-    cooldown: 0.44,
-    displayLength: 55,
-    swingArc: 2.4,
-    gripFrac: 0.14,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "toxic",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 160,
+    "halfArc": 0.75,
+    "cooldown": 0.44,
+    "displayLength": 55,
+    "swingArc": 2.4,
+    "gripFrac": 0.14,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "toxic",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 6,
+    "requirements": {
+      "int": 6
     },
-    scatter: {
-      count: 6,
-      spread: 0.55,
-      speed: 320,
-      range: 180,
-      damage: 3,
-      explode: {
-        radius: 60,
-        damage: 5,
-      },
-    },
+    "scatter": {
+      "count": 6,
+      "spread": 0.55,
+      "speed": 320,
+      "range": 180,
+      "damage": 3,
+      "explode": {
+        "radius": 60,
+        "damage": 5
+      }
+    }
   },
   "x2-voidgrasp-null-gauntlet": {
-    id: "x2-voidgrasp-null-gauntlet",
-    name: "Voidgrasp Null-Gauntlet",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-voidgrasp-null-gauntlet",
+    "name": "Voidgrasp Null-Gauntlet",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 6,
-    range: 460,
-    halfArc: 0.35,
-    cooldown: 0.55,
-    displayLength: 94,
-    swingArc: 2.2,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 6,
+    "range": 460,
+    "halfArc": 0.35,
+    "cooldown": 0.55,
+    "displayLength": 94,
+    "swingArc": 2.2,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    gun: {
-      damage: 4,
-      projectileSpeed: 1200,
-      range: 460,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1200,
+      "range": 460,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-ironbrand-heatfist": {
-    id: "x2-ironbrand-heatfist",
-    name: "Ironbrand Heatfist",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "B",
+    "id": "x2-ironbrand-heatfist",
+    "name": "Ironbrand Heatfist",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "B"
     },
-    damage: 6,
-    range: 145,
-    halfArc: 0.8,
-    cooldown: 0.6,
-    displayLength: 86,
-    swingArc: 2.6,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT", "STR"],
+    "damage": 6,
+    "range": 145,
+    "halfArc": 0.8,
+    "cooldown": 0.6,
+    "displayLength": 86,
+    "swingArc": 2.6,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 5,
-      int: 6,
+    "requirements": {
+      "str": 5,
+      "int": 6
     },
-    quake: {
-      radius: 120,
-      damage: 7,
-    },
+    "quake": {
+      "radius": 120,
+      "damage": 7
+    }
   },
   "x2-galvanic-overcasters": {
-    id: "x2-galvanic-overcasters",
-    name: "Galvanic Overcasters",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-galvanic-overcasters",
+    "name": "Galvanic Overcasters",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 720,
-    halfArc: 0.4,
-    cooldown: 0.7,
-    displayLength: 150,
-    swingArc: 2.4,
-    gripFrac: 0.11,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 720,
+    "halfArc": 0.4,
+    "cooldown": 0.7,
+    "displayLength": 150,
+    "swingArc": 2.4,
+    "gripFrac": 0.11,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 10,
+    "requirements": {
+      "int": 10
     },
-    twoHanded: true,
-    gun: {
-      damage: 16,
-      projectileSpeed: 1300,
-      range: 720,
-      fireRate: 0.6,
-      magazine: 5,
-      reloadSeconds: 1.8,
-      bulletKind: "slug",
-      muzzle: "heavy",
-      recoil: 0.0035,
-      pierce: 3,
-    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 16,
+      "projectileSpeed": 1300,
+      "range": 720,
+      "fireRate": 0.6,
+      "magazine": 5,
+      "reloadSeconds": 1.8,
+      "bulletKind": "slug",
+      "muzzle": "heavy",
+      "recoil": 0.0035,
+      "pierce": 3
+    }
   },
   "x2-wyrmscale-hex-talon": {
-    id: "x2-wyrmscale-hex-talon",
-    name: "Wyrmscale Hex-Talon",
-    expansion: true,
-    scalingGrades: {
-      dex: "D",
-      int: "B",
+    "id": "x2-wyrmscale-hex-talon",
+    "name": "Wyrmscale Hex-Talon",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "D",
+      "int": "B"
     },
-    damage: 5,
-    range: 195,
-    halfArc: 0.55,
-    cooldown: 0.46,
-    displayLength: 92,
-    swingArc: 2.5,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "fire",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT", "DEX"],
+    "damage": 5,
+    "range": 195,
+    "halfArc": 0.55,
+    "cooldown": 0.46,
+    "displayLength": 92,
+    "swingArc": 2.5,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "fire",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "DEX"
+      ]
     },
-    requirements: {
-      dex: 4,
-      int: 7,
+    "requirements": {
+      "dex": 4,
+      "int": 7
     },
-    scatter: {
-      count: 5,
-      spread: 0.4,
-      speed: 400,
-      range: 220,
-      damage: 5,
-      explode: {
-        radius: 56,
-        damage: 6,
-      },
-    },
+    "scatter": {
+      "count": 5,
+      "spread": 0.4,
+      "speed": 400,
+      "range": 220,
+      "damage": 5,
+      "explode": {
+        "radius": 56,
+        "damage": 6
+      }
+    }
   },
   "x2-glasswidow-hexweave": {
-    id: "x2-glasswidow-hexweave",
-    name: "Glasswidow Hexweave",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "C",
+    "id": "x2-glasswidow-hexweave",
+    "name": "Glasswidow Hexweave",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
     },
-    damage: 5,
-    range: 400,
-    halfArc: 0.35,
-    cooldown: 0.5,
-    displayLength: 52,
-    swingArc: 2.2,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "void",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT", "LUK"],
+    "damage": 5,
+    "range": 400,
+    "halfArc": 0.35,
+    "cooldown": 0.5,
+    "displayLength": 52,
+    "swingArc": 2.2,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "void",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 7,
+    "requirements": {
+      "int": 7
     },
-    gun: {
-      damage: 3,
-      projectileSpeed: 1200,
-      range: 400,
-      fireRate: 0.1,
-      magazine: 30,
-      reloadSeconds: 1.4,
-      bulletKind: "tracer",
-      muzzle: "spark",
-      recoil: 0.0016,
-    },
+    "gun": {
+      "damage": 3,
+      "projectileSpeed": 1200,
+      "range": 400,
+      "fireRate": 0.1,
+      "magazine": 30,
+      "reloadSeconds": 1.4,
+      "bulletKind": "tracer",
+      "muzzle": "spark",
+      "recoil": 0.0016
+    }
   },
   "x2-thunderhead-stormfists": {
-    id: "x2-thunderhead-stormfists",
-    name: "Thunderhead Stormfists",
-    expansion: true,
-    scalingGrades: {
-      str: "C",
-      int: "A",
+    "id": "x2-thunderhead-stormfists",
+    "name": "Thunderhead Stormfists",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "C",
+      "int": "A"
     },
-    damage: 6,
-    range: 200,
-    halfArc: 1,
-    cooldown: 0.8,
-    displayLength: 145,
-    swingArc: 3.1,
-    gripFrac: 0.1,
-    tags: {
-      grip: "2H",
-      size: "L",
-      delivery: "melee-slam",
-      fireMode: "tap-charge",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "close",
-      scaling: ["INT", "STR"],
+    "damage": 6,
+    "range": 200,
+    "halfArc": 1,
+    "cooldown": 0.8,
+    "displayLength": 145,
+    "swingArc": 3.1,
+    "gripFrac": 0.1,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "melee-slam",
+      "fireMode": "tap-charge",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "close",
+      "scaling": [
+        "INT",
+        "STR"
+      ]
     },
-    requirements: {
-      str: 6,
-      int: 9,
+    "requirements": {
+      "str": 6,
+      "int": 9
     },
-    twoHanded: true,
-    quake: {
-      radius: 180,
-      damage: 8,
-    },
+    "twoHanded": true,
+    "quake": {
+      "radius": 180,
+      "damage": 8
+    }
   },
   "x2-prismhex-diffraction-gauntlet": {
-    id: "x2-prismhex-diffraction-gauntlet",
-    name: "Prismhex Diffraction Gauntlet",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-prismhex-diffraction-gauntlet",
+    "name": "Prismhex Diffraction Gauntlet",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 200,
-    halfArc: 0.6,
-    cooldown: 0.4,
-    displayLength: 90,
-    swingArc: 2.4,
-    gripFrac: 0.13,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "melee-arc",
-      fireMode: "tap-charge",
-      element: "arcane",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "mid",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 200,
+    "halfArc": 0.6,
+    "cooldown": 0.4,
+    "displayLength": 90,
+    "swingArc": 2.4,
+    "gripFrac": 0.13,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "melee-arc",
+      "fireMode": "tap-charge",
+      "element": "arcane",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "mid",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 8,
+    "requirements": {
+      "int": 8
     },
-    scatter: {
-      count: 8,
-      spread: 0.65,
-      speed: 460,
-      range: 210,
-      damage: 3,
-      explode: {
-        radius: 42,
-        damage: 3,
-      },
-    },
+    "scatter": {
+      "count": 8,
+      "spread": 0.65,
+      "speed": 460,
+      "range": 210,
+      "damage": 3,
+      "explode": {
+        "radius": 42,
+        "damage": 3
+      }
+    }
   },
   "x2-coyote-trickster-s-sparkmitt": {
-    id: "x2-coyote-trickster-s-sparkmitt",
-    name: "Coyote Trickster's Sparkmitt",
-    expansion: true,
-    scalingGrades: {
-      int: "B",
-      luk: "C",
+    "id": "x2-coyote-trickster-s-sparkmitt",
+    "name": "Coyote Trickster's Sparkmitt",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "B",
+      "luk": "C"
     },
-    damage: 3,
-    range: 520,
-    halfArc: 0.5,
-    cooldown: 0.34,
-    displayLength: 56,
-    swingArc: 2.2,
-    gripFrac: 0.15,
-    tags: {
-      grip: "1H",
-      size: "S",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "shock",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "long",
-      scaling: ["INT", "LUK"],
+    "damage": 3,
+    "range": 520,
+    "halfArc": 0.5,
+    "cooldown": 0.34,
+    "displayLength": 56,
+    "swingArc": 2.2,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "1H",
+      "size": "S",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "long",
+      "scaling": [
+        "INT",
+        "LUK"
+      ]
     },
-    requirements: {
-      int: 6,
-      luk: 4,
+    "requirements": {
+      "int": 6,
+      "luk": 4
     },
-    gun: {
-      damage: 7,
-      projectileSpeed: 860,
-      range: 900,
-      fireRate: 0.34,
-      magazine: 8,
-      reloadSeconds: 1.2,
-      bulletKind: "ricochet",
-      muzzle: "spark",
-      recoil: 0.0015,
-      pierce: 2,
-    },
+    "gun": {
+      "damage": 7,
+      "projectileSpeed": 860,
+      "range": 900,
+      "fireRate": 0.34,
+      "magazine": 8,
+      "reloadSeconds": 1.2,
+      "bulletKind": "ricochet",
+      "muzzle": "spark",
+      "recoil": 0.0015,
+      "pierce": 2
+    }
   },
   "x2-permafrost-cryo-bracer": {
-    id: "x2-permafrost-cryo-bracer",
-    name: "Permafrost Cryo-Bracer",
-    expansion: true,
-    scalingGrades: {
-      int: "A",
+    "id": "x2-permafrost-cryo-bracer",
+    "name": "Permafrost Cryo-Bracer",
+    "expansion": true,
+    "scalingGrades": {
+      "int": "A"
     },
-    damage: 4,
-    range: 640,
-    halfArc: 0.45,
-    cooldown: 0.5,
-    displayLength: 90,
-    swingArc: 2.3,
-    gripFrac: 0.12,
-    tags: {
-      grip: "1H",
-      size: "M",
-      delivery: "projectile",
-      fireMode: "auto",
-      element: "frost",
-      classPool: "caster",
-      family: "gauntlet",
-      rangeBand: "long",
-      scaling: ["INT"],
+    "damage": 4,
+    "range": 640,
+    "halfArc": 0.45,
+    "cooldown": 0.5,
+    "displayLength": 90,
+    "swingArc": 2.3,
+    "gripFrac": 0.12,
+    "tags": {
+      "grip": "1H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "frost",
+      "classPool": "caster",
+      "family": "gauntlet",
+      "rangeBand": "long",
+      "scaling": [
+        "INT"
+      ]
     },
-    requirements: {
-      int: 9,
+    "requirements": {
+      "int": 9
     },
-    gun: {
-      damage: 13,
-      projectileSpeed: 1200,
-      range: 640,
-      fireRate: 0.5,
-      magazine: 6,
-      reloadSeconds: 1.5,
-      bulletKind: "nail",
-      muzzle: "punch",
-      recoil: 0.0018,
-      pierce: 3,
-    },
-  },
+    "gun": {
+      "damage": 13,
+      "projectileSpeed": 1200,
+      "range": 640,
+      "fireRate": 0.5,
+      "magazine": 6,
+      "reloadSeconds": 1.5,
+      "bulletKind": "nail",
+      "muzzle": "punch",
+      "recoil": 0.0018,
+      "pierce": 3
+    }
+  }
 };

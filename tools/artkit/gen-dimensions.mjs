@@ -7,9 +7,10 @@
 // Wild West (dimension 1) stays hand-authored in shared/dimensions.ts + shared/enemies.ts.
 //
 //   node tools/artkit/gen-dimensions.mjs
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -141,9 +142,11 @@ const body =
   `export const DIMENSION_ENEMY_KINDS: Record<string, EnemyKind> = ${JSON.stringify(kinds, null, 2)};\n`;
 // Unquote the palette colour sentinels ("0xrrggbb" → 0xrrggbb) so they read as real hex-number literals.
 const text = `${banner}\n${body}`.replace(/"0x([0-9a-f]{6})"/g, "0x$1");
-writeFileSync(OUT, text);
+emit(OUT, text, "dimensions.generated.ts");
 
-console.log(
-  `wrote dimensions.generated.ts — ${Object.keys(dims).length} dimensions, ${kindCount} enemy kinds ` +
-    `(${shiftData.shifters.length} shifters)`,
-);
+if (!isCheck) {
+  console.log(
+    `wrote dimensions.generated.ts — ${Object.keys(dims).length} dimensions, ${kindCount} enemy kinds ` +
+      `(${shiftData.shifters.length} shifters)`,
+  );
+}

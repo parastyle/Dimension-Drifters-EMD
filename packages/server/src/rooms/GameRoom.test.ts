@@ -4,6 +4,7 @@ import {
   ENEMY_KINDS,
   EnemyState,
   getDimension,
+  makeRng,
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
@@ -470,6 +471,104 @@ describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
       h.tick(1);
     }
     expect(p.hp).toBeLessThan(100); // the puddle ignored the i-frames
+  });
+});
+
+describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order is a CONTRACT)", () => {
+  // update() sequences ~20 mutating phases by hand-numbered comments; ArenaScene chains order-dependent
+  // calls. A reorder compiles + lints clean and silently changes the sim. This drives a FIXED, fully-seeded
+  // scenario and digests the final state, so a reorder that shifts any value fails the gate. Math.random is
+  // backed by a seeded mulberry32 (map gen + spawn director + spreads all deterministic). The digest rounds
+  // FP to integers: a phase reorder moves whole HP/positions; cross-platform libm noise (CI is Linux, dev is
+  // Windows) stays sub-pixel and rounds away — so this is robust without a brittle byte-hash.
+  function runScript(): Record<string, unknown> {
+    const rng = makeRng(0x1234abcd);
+    const spy = vi.spyOn(Math, "random").mockImplementation(() => rng.next());
+    try {
+      const h = makeRoom({ dimensionId: "wild-west" });
+      h.join("p1");
+      h.join("p2");
+      // Manually plant two critters on the clear spawn disc (deterministic ints — no spawn-ring libm in the
+      // sensitive path), then run a scripted attack cadence. The spawn director still runs (exercised), but
+      // the digest's HP/positions come from this controlled duel.
+      for (const [id, dx] of [
+        ["c1", 70],
+        ["c2", -70],
+      ] as const) {
+        const e = new EnemyState();
+        e.id = id;
+        e.kind = "critter";
+        e.hp = 12;
+        e.x = h.room.map.spawnX + dx;
+        e.y = h.room.map.spawnY;
+        h.state().enemies.set(id, e);
+      }
+      for (let t = 0; t < 60; t++) {
+        if (t % 6 === 0) h.send("p1", "attack", { aimX: 1, aimY: 0 });
+        if (t % 6 === 3) h.send("p2", "attack", { aimX: -1, aimY: 0 });
+        h.tick(1);
+      }
+      const s = h.state();
+      const players = [...s.players.values()]
+        // biome-ignore lint/suspicious/noExplicitAny: schema rows, read in the test harness.
+        .map((p: any) => ({
+          id: p.id,
+          alive: p.alive,
+          hp: Math.round(p.hp),
+          x: Math.round(p.x),
+          y: Math.round(p.y),
+          level: p.level,
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      return {
+        outcome: s.outcome,
+        mode: s.mode,
+        dimensionId: s.dimensionId,
+        elapsed: Math.round(s.elapsed * 100) / 100,
+        players,
+        plantedAlive: ["c1", "c2"].filter((id) => s.enemies.has(id)).length,
+        portalOpen: s.portalOpen,
+        bossSpawned: h.room.bossSpawned,
+      };
+    } finally {
+      spy.mockRestore();
+    }
+  }
+
+  it("is fully deterministic under a seeded RNG (no un-seeded random source leaks into the tick)", () => {
+    expect(runScript()).toEqual(runScript());
+  });
+
+  it("matches the golden digest (a phase reorder would shift this)", () => {
+    expect(runScript()).toMatchInlineSnapshot(`
+      {
+        "bossSpawned": false,
+        "dimensionId": "wild-west",
+        "elapsed": 3,
+        "mode": "arena",
+        "outcome": "active",
+        "plantedAlive": 2,
+        "players": [
+          {
+            "alive": true,
+            "hp": 100,
+            "id": "p1",
+            "level": 1,
+            "x": 1336,
+            "y": 1142,
+          },
+          {
+            "alive": true,
+            "hp": 88,
+            "id": "p2",
+            "level": 1,
+            "x": 1239,
+            "y": 1112,
+          },
+        ],
+        "portalOpen": false,
+      }
+    `);
   });
 });
 

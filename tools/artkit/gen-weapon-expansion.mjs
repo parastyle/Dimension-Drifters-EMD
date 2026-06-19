@@ -4,9 +4,10 @@
 // WeaponDef flagged `expansion:true` so it's held OUT of the active roster (WEAPON_IDS) until curated in.
 //
 //   node tools/artkit/gen-weapon-expansion.mjs
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -186,11 +187,13 @@ const banner =
 const body =
   `import type { WeaponDef } from "./weapons.js";\n\n` +
   `export const EXPANSION_WEAPONS: Record<string, WeaponDef> = ${JSON.stringify(out, null, 2)};\n`;
-writeFileSync(OUT, `${banner}\n${body}`);
+emit(OUT, `${banner}\n${body}`, "weapons-expansion.generated.ts");
 
-const byType = { melee: 0, ranged: 0, caster: 0 };
-for (const id of Object.keys(out)) byType[out[id].tags.classPool]++;
-console.log(
-  `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons ` +
-    `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ${dupes} dupe ids skipped`,
-);
+if (!isCheck) {
+  const byType = { melee: 0, ranged: 0, caster: 0 };
+  for (const id of Object.keys(out)) byType[out[id].tags.classPool]++;
+  console.log(
+    `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons ` +
+      `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ${dupes} dupe ids skipped`,
+  );
+}
