@@ -4,10 +4,15 @@ import {
   ENEMY_KINDS,
   EnemyState,
   getDimension,
+  isPitAtPx,
   makeRng,
+  PIT_FALL_DAMAGE_FRAC,
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
+  TILE_GROUND,
+  TILE_PIT,
+  WEAPONS,
   ZONE_RADIUS,
   ZONE_TTL,
   ZoneState,
@@ -225,6 +230,10 @@ describe("GameRoom — §17 shifter-incursion director", () => {
   it("phases a tier-1 shifter IN on the timer, then phases it OUT after its window", () => {
     const h = makeRoom();
     h.join("p1");
+    // Pave the arena (all ground) so the shifter — which spawns far on the ring then drifts toward the
+    // player — can't wander onto a random pit and pit-die the same tick (terrain noise vs the lifecycle
+    // under test; only the boss is pit-immune by design).
+    h.room.map.tiles.fill(TILE_GROUND);
     // Fast-forward to the first incursion: tier-0 (early) → the weakest shifter (Marshal).
     h.state().elapsed = 10;
     h.room.shifterCd = 0.01;
@@ -471,6 +480,115 @@ describe("GameRoom — §6/§15 run-ending + rule-defining transitions", () => {
       h.tick(1);
     }
     expect(p.hp).toBeLessThan(100); // the puddle ignored the i-frames
+  });
+});
+
+describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
+  // These run in TRAINING mode: it disables the arena spawn director (§21), so the only entities in play are
+  // the ones the test plants — no random horde to chip the player or fall in our test pit. The pitfall /
+  // pit-death / reload phases themselves run mode-agnostically, so the rules under test are unchanged.
+  function training() {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "toggleTraining");
+    return h;
+  }
+  // Force the tile under a world-px point to a pit (post-gen override — bypasses the cleared spawn disc).
+  function forcePit(h: ReturnType<typeof makeRoom>, px: number, py: number, rad = 0) {
+    const m = h.room.map;
+    const tx = Math.floor(px / m.tileSize);
+    const ty = Math.floor(py / m.tileSize);
+    for (let dy = -rad; dy <= rad; dy++)
+      for (let dx = -rad; dx <= rad; dx++) m.tiles[(ty + dy) * m.cols + (tx + dx)] = TILE_PIT;
+  }
+
+  it("a GROUNDED player over a pit falls: chip damage + snap-back to last ground + fellSeq", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const sx = h.room.map.spawnX;
+    const sy = h.room.map.spawnY;
+    p.x = sx;
+    p.y = sy;
+    h.tick(1); // stand on cleared ground → records lastGround at (sx,sy)
+    const fellBefore = p.fellSeq;
+    // Open a pit 3 tiles south and step onto it, grounded.
+    const pitY = sy + 3 * h.room.map.tileSize;
+    forcePit(h, sx, pitY);
+    p.x = sx;
+    p.y = pitY;
+    p.height = 0;
+    h.room.combat.get("p1").pitGrace = 0;
+    h.tick(1);
+    expect(p.fellSeq).toBeGreaterThan(fellBefore); // the fall fired
+    expect(isPitAtPx(h.room.map, p.x, p.y)).toBe(false); // snapped back onto solid ground
+    expect(Math.round(p.x)).toBe(Math.round(sx)); // … specifically the last-ground spot
+    expect(Math.round(p.y)).toBe(Math.round(sy));
+    expect(p.hp).toBeCloseTo(PLAYER_MAX_HP * (1 - PIT_FALL_DAMAGE_FRAC), 0); // took the chip (± a regen tick)
+  });
+
+  it("an AIRBORNE player (mid-jump) clears the pit — no fall", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const sx = h.room.map.spawnX;
+    const sy = h.room.map.spawnY;
+    const pitY = sy + 3 * h.room.map.tileSize;
+    forcePit(h, sx, pitY);
+    p.x = sx;
+    p.y = pitY;
+    p.height = 100; // mid-hop, well above GROUND_EPSILON
+    const fellBefore = p.fellSeq;
+    h.tick(1);
+    expect(p.fellSeq).toBe(fellBefore); // the hop carried over the gap
+    expect(p.hp).toBe(PLAYER_MAX_HP); // no chip
+  });
+
+  it("a non-boss enemy that ends a tick over a pit DIES with NO xp (terrain kill, §17)", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const sx = h.room.map.spawnX;
+    const sy = h.room.map.spawnY;
+    p.x = sx;
+    p.y = sy;
+    const xpBefore = p.xp;
+    const levelBefore = p.level;
+    // A 3x3 pit block 3 tiles east; plant a critter dead-centre so one tick of chase can't walk it off.
+    const pitX = sx + 3 * h.room.map.tileSize;
+    forcePit(h, pitX, sy, 1);
+    const e = new EnemyState();
+    e.id = "doomed";
+    e.kind = "critter";
+    e.hp = 999;
+    e.x = pitX;
+    e.y = sy;
+    h.state().enemies.set("doomed", e);
+    h.tick(1);
+    expect(h.state().enemies.has("doomed")).toBe(false); // fell in → despawned
+    expect(p.xp).toBe(xpBefore); // terrain kills are free CC, not score
+    expect(p.level).toBe(levelBefore);
+  });
+
+  it("a gun empties to a reload, then refills the magazine after reloadSeconds (§9)", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const gunId = "x-gun-revolver-cannon";
+    const gun = WEAPONS[gunId].gun;
+    if (!gun) throw new Error("fixture weapon is not a gun");
+    p.weapon = gunId;
+    h.tick(1); // equip → ammo readout initialises to the magazine
+    expect(p.maxCharges).toBe(gun.magazine);
+    expect(p.charges).toBe(gun.magazine);
+    const c = h.room.combat.get("p1");
+    let emptied = false;
+    for (let i = 0; i < 240 && !emptied; i++) {
+      h.send("p1", "attack", { aimX: 1, aimY: 0 }); // hold the trigger: `attacking` is one-shot, re-arm each tick
+      h.tick(1);
+      if (p.charges === 0) emptied = true;
+    }
+    expect(emptied).toBe(true); // spent the whole magazine
+    expect(c.reloadCd).toBeGreaterThan(0); // reload armed on empty
+    // Release the trigger (stop sending attack) and let the reload timer run out.
+    h.tick(Math.ceil(gun.reloadSeconds / 0.05) + 2);
+    expect(p.charges).toBe(p.maxCharges); // magazine refilled
   });
 });
 
