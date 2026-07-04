@@ -7,6 +7,7 @@ import {
   isPitAtPx,
   makeRng,
   PIT_FALL_DAMAGE_FRAC,
+  PickupState,
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
@@ -589,6 +590,190 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // Release the trigger (stop sending attack) and let the reload timer run out.
     h.tick(Math.ceil(gun.reloadSeconds / 0.05) + 2);
     expect(p.charges).toBe(p.maxCharges); // magazine refilled
+  });
+});
+
+describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-lose, depth scaling)", () => {
+  // Open both gates ON the clear spawn disc so a planted player can deterministically step into either.
+  function openGatesAtSpawn(h: ReturnType<typeof makeRoom>) {
+    const st = h.state();
+    st.portalOpen = true;
+    st.portalX = h.room.map.spawnX;
+    st.portalY = h.room.map.spawnY;
+    st.riftOpen = true;
+    st.riftX = h.room.map.spawnX;
+    st.riftY = h.room.map.spawnY;
+  }
+
+  it("killing the boss opens BOTH gates: the extract portal AND the deeper rift", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "gravediggers-spade";
+    h.tick(1);
+    h.send("p1", "spawnBoss");
+    h.tick(1);
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+        e.hp = 1;
+        e.x = h.room.map.spawnX + 100;
+        e.y = h.room.map.spawnY;
+      }
+    });
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4);
+    expect(h.state().portalOpen).toBe(true);
+    expect(h.state().riftOpen).toBe(true); // the greed decision has two doors
+    expect(h.state().riftX).not.toBe(0); // rift placed somewhere real
+  });
+
+  it("a rift descent: depth+1, NEW dimension + seeds, field cleared, squad carried, run still active", () => {
+    const h = makeRoom({ dimensionId: "wild-west" });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.level = 7; // mid-run progression that must SURVIVE the descent
+    p.salvaged = 5;
+    p.weapon = "gravediggers-spade";
+    p.hp = 61;
+    const e = new EnemyState(); // some horde that must NOT follow through the rift
+    e.id = "left-behind";
+    e.kind = "critter";
+    e.hp = 99;
+    e.x = h.room.map.spawnX + 2000; // far away — can't reach + shove the channeler mid-hold
+    e.y = h.room.map.spawnY;
+    h.state().enemies.set("left-behind", e);
+    const seedBefore = h.state().seedTerrain;
+    // HOLD the rift — it's a channel (RIFT_CHANNEL_SECONDS), not a tripwire.
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    openGatesAtSpawn(h);
+    h.state().portalOpen = false; // isolate the rift path (both gates share the spawn point here)
+    h.tick(10); // ~0.5s — mid-channel: charged but NOT committed
+    expect(h.state().depth).toBe(1);
+    expect(h.state().riftCharge).toBeGreaterThan(0);
+    h.tick(30); // past the 1.6s channel → the squad commits
+    const st = h.state();
+    expect(st.depth).toBe(2);
+    expect(st.dimensionId).not.toBe("wild-west"); // moved to a FRESH dimension
+    expect(st.seedTerrain).not.toBe(seedBefore); // new map minted
+    expect(st.enemies.size).toBe(0); // the old horde stayed behind
+    expect(st.outcome).toBe("active"); // the run continues
+    expect(st.portalOpen).toBe(false);
+    expect(st.riftOpen).toBe(false);
+    // The squad carried through intact — that's the greed (levels, arsenal, carried salvage, chip damage).
+    expect(p.level).toBe(7);
+    expect(p.salvaged).toBe(5);
+    expect(p.weapon).toBe("gravediggers-spade");
+    expect(p.hp).toBeGreaterThanOrEqual(61); // chip damage carried (+ ~2s of always-on regen while channeling)…
+    expect(p.hp).toBeLessThan(80); // …NOT healed back to full by the descent
+    // Repositioned onto the NEW map's clear spawn disc.
+    const d = Math.hypot(p.x - h.room.map.spawnX, p.y - h.room.map.spawnY);
+    expect(d).toBeLessThanOrEqual(150);
+  });
+
+  it("extraction BANKS the squad's carried salvage (victory reserves the bank)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.salvaged = 7;
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    openGatesAtSpawn(h);
+    h.state().riftOpen = false; // isolate the extract path
+    h.tick(1);
+    expect(h.state().outcome).toBe("victory");
+    expect(h.state().bankedSalvage).toBe(7); // banked…
+    expect(p.salvaged).toBe(0); // …and no longer carried
+  });
+
+  it("a WIPE loses everything carried (bank-or-LOSE) — banked survives", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    h.state().bankedSalvage = 12; // an earlier extraction's bank
+    p.salvaged = 9; // this run's carry
+    p.hp = 0;
+    h.tick(1);
+    expect(h.state().outcome).toBe("defeat");
+    expect(p.salvaged).toBe(0); // carried salvage is GONE
+    expect(h.state().bankedSalvage).toBe(12); // the bank is safe
+  });
+
+  it("stepping OUT of the rift drains the channel — no accidental commit", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    openGatesAtSpawn(h);
+    h.state().portalOpen = false;
+    h.tick(10); // build some charge…
+    expect(h.state().riftCharge).toBeGreaterThan(0);
+    // …then step OUT — beyond the 90px rift ring but INSIDE the 240px guaranteed-clear spawn disc
+    // (any further and a random pit could snap the player straight back into the rift → flaky).
+    p.x = h.room.map.spawnX + 150;
+    h.tick(30);
+    expect(h.state().depth).toBe(1); // never committed
+    expect(h.state().riftCharge).toBe(0); // charge drained
+  });
+
+  it("EXPLOIT GUARD: a cycled (conjured) weapon salvages for NOTHING; an enemy drop pays (provenance)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    // The old infinite-money loop: cycle a weapon out of thin air, salvage it, repeat.
+    h.send("p1", "cycleWeapon", { dir: 1 });
+    h.send("p1", "salvageWeapon");
+    h.send("p1", "cycleWeapon", { dir: 1 });
+    h.send("p1", "salvageWeapon");
+    expect(p.salvaged).toBe(0); // conjured weapons are worthless — the printer is dead
+    // An ENEMY-DROPPED weapon carries provenance → it pays.
+    const pk = new PickupState();
+    pk.id = "drop900";
+    pk.weapon = "gravediggers-spade";
+    pk.x = p.x;
+    pk.y = p.y;
+    h.state().pickups.set("drop900", pk);
+    h.room.earnedPickups.add("drop900"); // as maybeDropWeapon marks it
+    h.send("p1", "grabWeapon");
+    h.send("p1", "salvageWeapon");
+    expect(p.salvaged).toBe(1); // earned → banked-able
+  });
+
+  it("EXPLOIT GUARD: toggling into the Testing Grounds ABORTS the run — carried salvage is lost", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    h.state().bankedSalvage = 4;
+    p.salvaged = 9; // deep-run carry someone tries to launder through the workshop
+    h.send("p1", "toggleTraining");
+    expect(p.salvaged).toBe(0); // the expedition is over — only extraction banks
+    expect(h.state().bankedSalvage).toBe(4); // the bank itself is untouched
+  });
+
+  it("deeper spawns are spongier: a depth-3 spawn carries more HP than depth-1", () => {
+    const h = makeRoom();
+    h.join("p1");
+    // Compare the same kind's spawn HP at depth 1 vs 3 via the live spawn path.
+    const hpAt = (depth: number) => {
+      h.state().depth = depth;
+      h.state().enemies.clear();
+      // Spawn many so at least one lands regardless of tough rolls; take a non-tough one's hp.
+      for (let i = 0; i < 12; i++)
+        h.room.spawnEnemy([{ x: h.room.map.spawnX, y: h.room.map.spawnY }]);
+      let hp = 0;
+      h.state().enemies.forEach((e: EnemyState) => {
+        if (!e.tough && e.kind === "critter") hp = Math.max(hp, e.hp);
+      });
+      return hp;
+    };
+    const shallow = hpAt(1);
+    const deep = hpAt(3);
+    if (shallow > 0 && deep > 0) expect(deep).toBeGreaterThan(shallow); // ×1.5 at depth 3
   });
 });
 

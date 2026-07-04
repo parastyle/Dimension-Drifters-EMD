@@ -4,6 +4,7 @@ import {
   CON_REGEN_PER,
   deriveStats,
   isAttr,
+  LEVEL_CAP,
   PLAYER_MAX_HP,
   PLAYER_REGEN,
   XP_BASE,
@@ -22,6 +23,17 @@ describe("xpToNextLevel (§12 curve)", () => {
   });
   it("treats level < 1 as level 1 (no negative exponent)", () => {
     expect(xpToNextLevel(0)).toBe(XP_BASE);
+  });
+
+  // H1 (audit, v0.103): the curve's REACHABILITY is the contract, not its exact shape. At the old 1.45
+  // growth the cap cost ~638k XP while kills pay 1-3 — the §8 signature loop (a pick every 5 levels) was
+  // unreachable in a real run. This pins the whole-curve cost to a band a §6 chain run can actually earn
+  // (kills pay ~45-90 XP/min at horde scale → cap in roughly 25-50 min of play, first picks by boss 1).
+  it("cumulative XP to the L30 cap stays in the reachable band (H1)", () => {
+    let total = 0;
+    for (let lvl = 1; lvl < LEVEL_CAP; lvl++) total += xpToNextLevel(lvl);
+    expect(total).toBeGreaterThan(1200); // not trivial — capping still takes a long, deep run
+    expect(total).toBeLessThan(4000); // but REACHABLE — the augment loop gets exercised
   });
 });
 

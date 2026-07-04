@@ -1,7 +1,12 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  BOSS_SPAWN_FLOOR,
+  BOSS_SPAWN_SECONDS,
+  bossSpawnAt,
   coneAngles,
+  DEPTH_HP_PER,
+  depthHpScale,
   ENEMY_KINDS,
   ENEMY_RADIUS,
   effectiveMelee,
@@ -142,6 +147,32 @@ describe("difficulty ramps (§6)", () => {
   it("spawnInterval shrinks over the run (faster spawns)", () => {
     expect(spawnInterval(0)).toBeGreaterThan(spawnInterval(9999));
     expect(spawnInterval(9999)).toBeGreaterThan(0);
+  });
+});
+
+// §6 chain DEPTH scaling (v0.103, audit H2) — every escalation lever gains a depth axis on top of the
+// clock/player axes, and depth 1 is exactly the pre-chain behaviour (backwards-compatible defaults).
+describe("difficulty scales with §6 chain depth (v0.103)", () => {
+  it("depthHpScale: 1.0 at depth 1, rising per depth, sub-1 depths clamp to 1", () => {
+    expect(depthHpScale(1)).toBeCloseTo(1, 6);
+    expect(depthHpScale(0)).toBeCloseTo(1, 6);
+    expect(depthHpScale(3)).toBeGreaterThan(depthHpScale(2));
+    expect(depthHpScale(3)).toBeCloseTo(1 + DEPTH_HP_PER * 2, 6);
+  });
+  it("toughChance rises with depth (elite-denser), still capped at 0.8", () => {
+    expect(toughChance(60, 1, 3)).toBeGreaterThan(toughChance(60, 1, 1));
+    expect(toughChance(60, 1, 1)).toBeCloseTo(toughChance(60, 1), 6); // depth 1 = the old behaviour
+    expect(toughChance(9999, 8, 50)).toBeLessThanOrEqual(0.8);
+  });
+  it("spawnInterval compresses with depth (faster pressure), never non-positive", () => {
+    expect(spawnInterval(60, 3)).toBeLessThan(spawnInterval(60, 1));
+    expect(spawnInterval(60, 1)).toBeCloseTo(spawnInterval(60), 6);
+    expect(spawnInterval(9999, 30)).toBeGreaterThan(0);
+  });
+  it("bossSpawnAt: sooner per depth, floored, depth 1 = the base clock", () => {
+    expect(bossSpawnAt(1)).toBe(BOSS_SPAWN_SECONDS);
+    expect(bossSpawnAt(2)).toBeLessThan(bossSpawnAt(1));
+    expect(bossSpawnAt(99)).toBe(BOSS_SPAWN_FLOOR);
   });
 });
 

@@ -6,7 +6,7 @@ import {
   type Attr,
   AUGMENTS,
   BOSS_SLAM_RADIUS,
-  BOSS_SPAWN_SECONDS,
+  bossSpawnAt,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
@@ -130,6 +130,8 @@ export class ArenaScene extends Phaser.Scene {
   private poiSprites: PoiSprite[] = [];
   /** §17 v0.102 off-screen extraction-portal locator (a 4800² arena needs a pointer, not just copy). */
   private portalArrow: Phaser.GameObjects.Container | null = null;
+  /** §6 v0.103 the matching violet locator for the DEEPER rift. */
+  private riftArrow: Phaser.GameObjects.Container | null = null;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
@@ -170,7 +172,14 @@ export class ArenaScene extends Phaser.Scene {
   /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
    *  the baked floor graphics. Built once the seeds arrive. */
   private arenaMap?: ArenaMap;
-  private floorBuilt = false;
+  /** §6 chain (v0.103): the seed+dimension fingerprint the CURRENT floor was baked from — when the synced
+   *  values diverge (rift descent / run restart re-mints the map), the floor is torn down and rebuilt. */
+  private lastSeedKey = "";
+  /** Every game object the floor bake created, so a rebuild can destroy the lot. */
+  private floorObjs: Phaser.GameObjects.GameObject[] = [];
+  /** §6 v0.103: until this clock, enemy-REMOVAL VFX are muted — a rift descent bulk-clears the old
+   *  dimension's horde and the removals must read as "left behind", not a mass death celebration. */
+  private removalFxMuteUntil = 0;
   /** §17 Codex tile textures (gen-tiles.mjs) that failed to load (absent on disk) — fall back to flat fill. */
   private readonly tilesMissing = new Set<string>();
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
@@ -191,6 +200,8 @@ export class ArenaScene extends Phaser.Scene {
   private bossText!: Phaser.GameObjects.Text;
   private victoryText!: Phaser.GameObjects.Text;
   private portal?: Phaser.GameObjects.Container;
+  /** §6 chain (v0.103): the violet DEEPER rift — the other half of the extract-vs-push decision. */
+  private rift?: Phaser.GameObjects.Container;
   private bannerShownFor = "";
   private prevBossPresent = false;
   /** §20/§28 4K-widescreen UI: last-applied HUD scale factor (-1 = not yet applied). The HUD is authored at
@@ -282,6 +293,9 @@ export class ArenaScene extends Phaser.Scene {
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.poiSprites = []; // scene-restart safety: never keep handles to destroyed landmark sprites
     this.portalArrow = null;
+    this.riftArrow = null;
+    this.floorObjs = [];
+    this.lastSeedKey = "";
     this.vfxPlayer = new VfxPlayer(this);
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
@@ -483,11 +497,10 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100002)
       .setVisible(false);
 
-    // Victory banner (§16) — shown once a player extracts.
-    // §6: no "win" screen — extraction BANKS your salvage and ends this run; the greed loop is
-    // "bank now vs push deeper." (Deeper-dimension continue + real salvage land with §13.)
+    // Victory banner (§16) — shown once a player extracts. §6 v0.103: the LIVE text (depth reached +
+    // total banked) is set in updateRunState; this is just the placeholder styling.
     this.victoryText = this.add
-      .text(0, 0, "EXTRACTED ✦ salvage banked\n(press R for another run)", {
+      .text(0, 0, "", {
         fontSize: "28px",
         color: "#ffd479",
         fontStyle: "bold",
@@ -609,11 +622,19 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /** §17 once the server's seeds arrive, regenerate the IDENTICAL map client-side + bake the floor once. */
+  /** §17 once the server's seeds arrive, regenerate the IDENTICAL map client-side + bake the floor. §6
+   *  chain (v0.103): the seeds/dimension CHANGE mid-run on a rift descent (and on run restart) — tear the
+   *  old floor down and rebuild for the new dimension, with a violet flash to sell the transition. */
   private maybeBuildFloor(): void {
-    if (this.floorBuilt || !this.room) return;
+    if (!this.room) return;
     const s = this.room.state;
     if (!s.seedTerrain) return; // seeds not synced yet (0 = "no map")
+    const seedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${s.dimensionId}`;
+    if (seedKey === this.lastSeedKey) return; // current floor is the right one
+    const descending = this.lastSeedKey !== ""; // not the first build → a rift descent / restart
+    for (const o of this.floorObjs) o.destroy();
+    this.floorObjs = [];
+    this.poiSprites = [];
     this.arenaMap = generateArena({
       seedTerrain: s.seedTerrain,
       seedHazard: s.seedHazard,
@@ -622,10 +643,26 @@ export class ArenaScene extends Phaser.Scene {
     });
     // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
     const palette = getDimension(s.dimensionId).palette;
-    drawArena(this, (k) => this.hasTile(k), palette);
-    buildArenaFloor(this, this.arenaMap, palette);
-    this.poiSprites = buildPois(this, this.arenaMap);
-    this.floorBuilt = true;
+    this.floorObjs.push(...drawArena(this, (k) => this.hasTile(k), palette));
+    this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, palette));
+    const pois = buildPois(this, this.arenaMap);
+    this.poiSprites = pois.sprites;
+    this.floorObjs.push(...pois.objs);
+    this.lastSeedKey = seedKey;
+    if (descending) {
+      this.cameras.main.flash(500, 96, 48, 160); // violet wash sells any mid-session terrain swap
+      // Mute the enemy-REMOVAL VFX briefly: the server just bulk-cleared the old dimension's horde, and
+      // without this every cleared enemy death-pops at old-map coordinates on the new floor (corpse storm).
+      this.removalFxMuteUntil = this.time.now + 900;
+      // The descent banner is only true copy for an actual rift descent (depth ≥ 2) — a run RESTART also
+      // re-mints the map (fresh terrain each run) but starts back at depth 1.
+      if (s.depth > 1) {
+        this.flashBanner(
+          `⇓  DEPTH ${s.depth} — ${getDimension(s.dimensionId).name.toUpperCase()}  ⇓`,
+          "#b478ff",
+        );
+      }
+    }
   }
 
   /** §17 fire the fall VFX when a player's synced `fellSeq` ticks: a dust poof at the landing tile, plus a
@@ -842,6 +879,12 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyHp.delete(id);
         this.enemyAtk.delete(id);
         if (rig) {
+          // §6 v0.103: a rift descent bulk-clears the horde — those removals are "left behind", not
+          // kills. During the mute window they vanish silently (no pop/poof/hit-stop celebration).
+          if (this.time.now < this.removalFxMuteUntil) {
+            rig.destroy();
+            continue;
+          }
           if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y)) {
             spawnFallStreak(this, rig.x, rig.y); // fell over a pit → sinks into the void, no pop
             rig.destroy();
@@ -1103,37 +1146,70 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Show/hide the extraction portal (§16) at its authoritative position when it's open. */
+  /** Build one pulsing gate marker (shared by the extraction portal + the §6 deeper rift). */
+  private buildGate(
+    x: number,
+    y: number,
+    ring: number,
+    core: number,
+    text: string,
+    textColor: string,
+  ): Phaser.GameObjects.Container {
+    const outer = this.add.circle(0, 0, EXTRACT_RADIUS, ring, 0.16).setStrokeStyle(3, ring, 0.7);
+    const inner = this.add
+      .circle(0, 0, EXTRACT_RADIUS * 0.5, core, 0.22)
+      .setStrokeStyle(2, core, 0.9);
+    const label = this.add
+      .text(0, -EXTRACT_RADIUS - 16, text, {
+        fontSize: "16px",
+        color: textColor,
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const c = this.add.container(x, y, [outer, inner, label]).setDepth(1);
+    this.tweens.add({
+      targets: inner,
+      scale: 1.35,
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+    return c;
+  }
+
+  /** Show/hide BOTH gates of the §6 greed decision at their authoritative positions: the amber EXTRACT
+   *  portal (bank & end) and the violet DEEPER rift (v0.103 — descend to the next dimension, harder). */
   private syncPortal(): void {
     if (!this.room) return;
     const st = this.room.state;
     if (st.portalOpen && !this.portal) {
-      const outer = this.add
-        .circle(0, 0, EXTRACT_RADIUS, 0x6fd6ff, 0.16)
-        .setStrokeStyle(3, 0x6fd6ff, 0.7);
-      const inner = this.add
-        .circle(0, 0, EXTRACT_RADIUS * 0.5, 0xffd479, 0.22)
-        .setStrokeStyle(2, 0xffd479, 0.9);
-      const label = this.add
-        .text(0, -EXTRACT_RADIUS - 16, "▼ EXTRACT — bank salvage & end run", {
-          fontSize: "16px",
-          color: "#ffd479",
-          fontStyle: "bold",
-        })
-        .setOrigin(0.5);
-      this.portal = this.add.container(st.portalX, st.portalY, [outer, inner, label]).setDepth(1);
-      this.tweens.add({
-        targets: inner,
-        scale: 1.35,
-        duration: 760,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.inOut",
-      });
+      this.portal = this.buildGate(
+        st.portalX,
+        st.portalY,
+        0x6fd6ff,
+        0xffd479,
+        "▼ EXTRACT — bank salvage & end run",
+        "#ffd479",
+      );
     }
     if (!st.portalOpen && this.portal) {
       this.portal.destroy();
       this.portal = undefined;
+    }
+    if (st.riftOpen && !this.rift) {
+      this.rift = this.buildGate(
+        st.riftX,
+        st.riftY,
+        0xb478ff,
+        0x8a4dff,
+        "⇓ RIFT — push deeper (harder, richer)",
+        "#b478ff",
+      );
+    }
+    if (!st.riftOpen && this.rift) {
+      this.rift.destroy();
+      this.rift = undefined;
     }
   }
 
@@ -1171,10 +1247,16 @@ export class ArenaScene extends Phaser.Scene {
     if (!present) this.bannerShownFor = "";
     this.prevBossPresent = present;
 
-    // Victory screen.
+    // Victory screen — §6 v0.103: report the extraction's REAL payload (depth reached + total banked).
     const won = this.room.state.outcome === "victory";
     this.victoryText.setVisible(won);
-    if (won) this.victoryText.setPosition(this.screenW() / 2, this.screenH() / 2);
+    if (won) {
+      this.victoryText
+        .setText(
+          `EXTRACTED at depth ${this.room.state.depth} ✦ ${this.room.state.bankedSalvage} salvage banked\n(Restart Run — top-right)`,
+        )
+        .setPosition(this.screenW() / 2, this.screenH() / 2);
+    }
   }
 
   /** A big transient centered banner that fades (boss approach, etc.). */
@@ -1801,6 +1883,21 @@ export class ArenaScene extends Phaser.Scene {
       g.lineStyle(2 + 1.5 * k, 0xffffff, 0.35 + 0.5 * k);
       g.strokeCircle(px, py, 22 - 13 * k); // ring tightens onto the slug as it arrives
     });
+    // §6 v0.103 rift CHANNEL readout: the descent is a hold, not a tripwire — draw the synced 0→1 charge
+    // as a violet arc filling clockwise around the rift while someone stands in it.
+    const st = this.room.state;
+    if (st.riftOpen && st.riftCharge > 0) {
+      g.lineStyle(7, 0xb478ff, 0.95);
+      g.beginPath();
+      g.arc(
+        st.riftX,
+        st.riftY,
+        EXTRACT_RADIUS + 10,
+        -Math.PI / 2,
+        -Math.PI / 2 + st.riftCharge * Math.PI * 2,
+      );
+      g.strokePath();
+    }
   }
 
   /** §17 v0.102 landmark occlusion fade: an L/XL structure is taller than the viewport, so when the LOCAL
@@ -1821,35 +1918,42 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** §17 v0.102 off-screen portal locator: on a 4800² arena the open extraction portal can be thousands of
-   *  px away — when it's outside the viewport, pin an amber chevron + distance to the screen edge along
-   *  the bearing so the §6 bank-or-push decision has a direction, not just a line of copy. */
-  private updatePortalArrow(): void {
-    const st = this.room?.state;
+  /** One edge-of-screen locator chevron: pinned to the viewport edge along the bearing to (tx,ty), with
+   *  a distance readout. Created lazily into `slot`, hidden when the target is on-screen/absent. */
+  private updateEdgeArrow(
+    slot: "portalArrow" | "riftArrow",
+    open: boolean,
+    tx: number,
+    ty: number,
+    color: number,
+    colorCss: string,
+    word: string,
+  ): void {
     const selfId = this.room?.sessionId;
-    const self = selfId ? st?.players.get(selfId) : undefined;
+    const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const cam = this.cameras.main;
     const onScreen =
-      !!st?.portalOpen &&
-      st.portalX > cam.worldView.x &&
-      st.portalX < cam.worldView.right &&
-      st.portalY > cam.worldView.y &&
-      st.portalY < cam.worldView.bottom;
-    if (!st?.portalOpen || onScreen || !self?.alive) {
-      this.portalArrow?.setVisible(false);
+      open &&
+      tx > cam.worldView.x &&
+      tx < cam.worldView.right &&
+      ty > cam.worldView.y &&
+      ty < cam.worldView.bottom;
+    if (!open || onScreen || !self?.alive) {
+      this[slot]?.setVisible(false);
       return;
     }
-    if (!this.portalArrow) {
-      const tri = this.add.triangle(0, 0, 0, -13, 11, 9, -11, 9, 0xffd479, 0.95);
+    if (!this[slot]) {
+      const tri = this.add.triangle(0, 0, 0, -13, 11, 9, -11, 9, color, 0.95);
       const label = this.add
-        .text(0, 26, "", { fontSize: "13px", color: "#ffd479", fontStyle: "bold" })
+        .text(0, 26, "", { fontSize: "13px", color: colorCss, fontStyle: "bold" })
         .setOrigin(0.5);
-      this.portalArrow = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
+      this[slot] = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
     }
-    const dx = st.portalX - self.x;
-    const dy = st.portalY - self.y;
+    const arrow = this[slot] as Phaser.GameObjects.Container;
+    const dx = tx - self.x;
+    const dy = ty - self.y;
     const ang = Math.atan2(dy, dx);
-    // Pin to the screen edge along the bearing (padded), rotate the chevron to point at the portal.
+    // Pin to the screen edge along the bearing (padded), rotate the chevron to point at the target.
     const pad = 46;
     const w = this.screenW();
     const h = this.screenH();
@@ -1859,11 +1963,28 @@ export class ArenaScene extends Phaser.Scene {
       Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6)),
       Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6)),
     );
-    this.portalArrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
-    (this.portalArrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
-    (this.portalArrow.list[1] as Phaser.GameObjects.Text).setText(
-      `portal ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
+    arrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
+    (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
+    (arrow.list[1] as Phaser.GameObjects.Text).setText(
+      `${word} ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
     );
+  }
+
+  /** §17/§6 off-screen locators: the amber EXTRACT portal + the violet DEEPER rift each get an edge
+   *  chevron when open + out of view, so the greed decision has directions, not just copy. */
+  private updatePortalArrow(): void {
+    const st = this.room?.state;
+    if (!st) return;
+    this.updateEdgeArrow(
+      "portalArrow",
+      st.portalOpen,
+      st.portalX,
+      st.portalY,
+      0xffd479,
+      "#ffd479",
+      "bank",
+    );
+    this.updateEdgeArrow("riftArrow", st.riftOpen, st.riftX, st.riftY, 0xb478ff, "#b478ff", "rift");
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
@@ -2150,23 +2271,30 @@ export class ArenaScene extends Phaser.Scene {
     // LMB parry) ride on the always-on line so there's a path to learning the controls.
     const st = this.room?.state;
     const elapsed = st?.elapsed ?? 0;
+    const depth = st?.depth ?? 1;
     const bossActive = (st?.bossPhase ?? 0) >= 1;
     let objective: string;
     if (st?.portalOpen) {
-      objective = "▼ portal OPEN — step in to bank salvage & end the run";
+      objective = "▼ bank & end · ⇓ rift: push deeper";
     } else if (bossActive) {
-      objective = "⚠ BOSS — defeat it to open the extraction portal";
+      objective = "⚠ BOSS — defeat it to open the gates";
     } else {
-      const left = Math.max(0, BOSS_SPAWN_SECONDS - elapsed);
+      const left = Math.max(0, bossSpawnAt(depth) - elapsed);
       const mmss = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}`;
-      objective = `survive — boss approaches in ${mmss}`;
+      objective = `survive — boss in ${mmss}`;
     }
+    // §6 chain HUD: depth + the carried (at-risk) vs banked salvage — the stakes of the greed decision.
+    let carried = 0;
+    st?.players.forEach((p) => {
+      carried += p.salvaged;
+    });
+    const stakes = `⛏ ${carried} carried · ${st?.bankedSalvage ?? 0} banked`;
     this.modeText
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
           ? `⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : `${dimName} · ${objective} · RMB fire · LMB parry · Space jump · B boss · T grounds${who}`,
+          : `${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
       )
       .setColor(training ? "#33e6ff" : "#5a6472");
 

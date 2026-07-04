@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 3; // v0.102 — arena 4800² + POI size classes change what generateArena(seeds) MEANS; a stale bundle would regenerate a different map from the same seeds
+export const SCHEMA_VERSION = 4; // v0.103 — §6 dimension chain: +depth/rift/bankedSalvage synced fields
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -209,10 +209,43 @@ export const TOUGH_XP_MULT = 4;
 export const TOUGH_SCALE = 1.7;
 
 /**
- * Run loop (§6/§16): the boss OLD RUST spawns at this mark, and clearing it opens an extraction
- * portal — step into it to WIN the run. The capstone goal that turns survival into a run. (tuning)
+ * Run loop (§6/§16): the dimension boss spawns at this mark, and clearing it opens the EXTRACTION
+ * portal (bank & end) plus the DEEPER rift (§6 chain — push into the next dimension, harder). (tuning)
  */
 export const BOSS_SPAWN_SECONDS = 120;
+
+/**
+ * §6 DIMENSION CHAIN (v0.103, audit C1/H2/H6) — the greed loop. Clearing a boss offers TWO portals:
+ * EXTRACT (bank the squad's carried salvage, run ends in victory) or the RIFT (descend: depth+1, a new
+ * dimension + freshly-seeded map, same squad/levels/weapons/HP — risk it all for a bigger bank).
+ * Difficulty scales with DEPTH on top of the clock/player scaling: enemy+boss HP, tough chance, and a
+ * faster boss clock. A WIPE loses everything carried ("bank or lose"). All tuning.
+ */
+/** Extra enemy/boss HP per depth beyond 1 (depth 3 → ×1.5). */
+export const DEPTH_HP_PER = 0.25;
+/** Extra enemy DAMAGE per depth beyond 1 (contact/melee/projectile/DoT/slam). Without a damage axis the
+ *  chain punishes patience, not skill — player EHP grows ~+40% per 10 levels while enemy damage sat flat. */
+export const DEPTH_DMG_PER = 0.12;
+/** §6 the chain's WAGES (v0.103) — what pushing deeper actually EARNS. Every living player pockets
+ *  carried salvage on the two capstone moments, scaled by depth: bank it at the portal or gamble it
+ *  deeper. (A depth-5 chain carries ~5+10+15+20+25 = 75 from bosses alone vs 5 for bank-at-1.) */
+export const BOSS_SALVAGE_PER_DEPTH = 5;
+export const SHIFTER_SALVAGE_PER_DEPTH = 3;
+/** §6 the rift is a CHANNEL, not a tripwire: a living player must hold the rift for this long (a synced
+ *  0→1 charge the client draws) before the squad commits — one misstep or one griefer can't yank four
+ *  players into depth+1. Extraction stays instant (it's the benign direction). */
+export const RIFT_CHANNEL_SECONDS = 1.6;
+/** Extra tough-spawn chance per depth beyond 1 (additive percentage points). */
+export const DEPTH_TOUGH_PER = 0.06;
+/** Spawn-interval multiplier per depth beyond 1 (0.92 → each depth spawns ~8% faster, floored). */
+export const DEPTH_SPAWN_MULT = 0.92;
+/** The boss clock shortens this many seconds per depth beyond 1 (deeper = the capstone comes sooner)… */
+export const DEPTH_BOSS_ACCEL = 15;
+/** …but never below this floor (the squad always gets a breath to level + loot). */
+export const BOSS_SPAWN_FLOOR = 70;
+/** How far from the extraction portal the DEEPER rift opens (px) — apart enough that standing in one
+ *  can never read as choosing the other. */
+export const RIFT_OFFSET = 420;
 /** §16 OLD RUST multi-phase fight tuning (all placeholders). P1/P3 = bullet-wall fire cadence (sec); the
  *  wall fans `BOSS_WALL_COUNT` slugs across `BOSS_WALL_ARC` rad with a 2-wide weave-gap at `BOSS_BULLET_SPEED`.
  *  P2 punch-slam: telegraph `BOSS_SLAM_TELEGRAPH` sec then an UNPARRYABLE `BOSS_SLAM_DAMAGE` hit inside

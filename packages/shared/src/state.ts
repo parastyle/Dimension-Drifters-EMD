@@ -169,10 +169,23 @@ export class ArenaState extends Schema {
   @type("string") dimensionId = DEFAULT_DIMENSION;
   /** Run outcome (§16): "active" while playing, "victory" once a player extracts, "defeat" on a §6 wipe. */
   @type("string") outcome = "active";
-  /** Extraction portal — opened when the boss OLD RUST falls; step in to win. */
+  /** Extraction portal — opened when the dimension boss falls; step in to BANK the squad's carried
+   *  salvage and end the run in victory (§6 "bank now"). */
   @type("boolean") portalOpen = false;
   @type("number") portalX = 0;
   @type("number") portalY = 0;
+  /** §6 chain (v0.103): the DEEPER rift — opens beside the extraction portal; HOLD it (a channel, not a
+   *  tripwire) to DESCEND the squad to depth+1 (same squad/levels/weapons/HP, harder everything, bigger
+   *  potential bank). `riftCharge` is the synced 0→1 channel progress the client draws as a filling ring. */
+  @type("boolean") riftOpen = false;
+  @type("number") riftX = 0;
+  @type("number") riftY = 0;
+  @type("number") riftCharge = 0;
+  /** §6 chain depth — 1 on a fresh run, +1 per rift descent. Drives the H2 difficulty scaling + the HUD. */
+  @type("uint8") depth = 1;
+  /** §6/§13 the squad's BANKED salvage (v0.103 "bank or lose"): carried `player.salvaged` is deposited
+   *  here on extraction and LOST on a wipe. Survives restarts within the room session (the M0 "account"). */
+  @type("number") bankedSalvage = 0;
   /** §16 OLD RUST phase (0 = no boss · 1 paces/bullet-walls · 2 +punch-slams · 3 enrage). Drives the
    *  client's heat-haze/aggression tell. */
   @type("number") bossPhase = 0;

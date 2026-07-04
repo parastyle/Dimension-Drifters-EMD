@@ -26,13 +26,15 @@ import { POI_IDS } from "../../sprites/poi-manifest.js";
  * pits+rim(-14) · rail(-12). Entities use depth = world Y (≥ 0), so the whole floor sits behind them.
  */
 
-/** Base ground bed + low-contrast grid (map-independent), drawn once in create(). `hasTile` is the scene's
- *  missing-texture guard so we fall back to the grid when the painted tile isn't installed. */
+/** Base ground bed + low-contrast grid (map-independent). `hasTile` is the scene's missing-texture guard
+ *  so we fall back to the grid when the painted tile isn't installed. Returns every created object so the
+ *  scene can DESTROY the floor on a §6 rift descent (v0.103 — new dimension mid-run = full floor rebuild). */
 export function drawArena(
   scene: Phaser.Scene,
   hasTile: (key: string) => boolean,
   palette: DimensionPalette,
-): void {
+): Phaser.GameObjects.GameObject[] {
+  const out: Phaser.GameObjects.GameObject[] = [];
   const cx = ARENA_WIDTH / 2;
   const cy = ARENA_HEIGHT / 2;
   // Base ground bed + low-contrast grid (map-independent). The §17 procedural PITS, the rim telegraph,
@@ -41,7 +43,7 @@ export function drawArena(
   // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
   // (-14, so the telegraph stays visible over litter) · rail(-12). Colours come from the active §17
   // dimension palette (a re-skin of the "Dust & The Drop" slots) — Wild West's are the defaults.
-  scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, palette.groundBed).setDepth(-20);
+  out.push(scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, palette.groundBed).setDepth(-20));
   if (hasTile("tile-ground")) {
     // §17 PAINTED ground — a SEAMLESS Codex dust tile (gen-tiles.mjs), GPU-tiled across the arena PLUS a
     // wide margin so 4K/ultrawide viewports always show ground, never the void. One draw, scrolls free.
@@ -51,28 +53,34 @@ export function drawArena(
       .setDepth(-19);
     ts.tileScaleX = 0.5;
     ts.tileScaleY = 0.5;
+    out.push(ts);
   } else {
     // Fallback (no tile art installed yet): the low-contrast themed grid.
-    scene.add
-      .grid(
-        cx,
-        cy,
-        ARENA_WIDTH,
-        ARENA_HEIGHT,
-        128,
-        128,
-        palette.gridColor1,
-        1,
-        palette.gridColor2,
-        0.5,
-      )
-      .setDepth(-19);
+    out.push(
+      scene.add
+        .grid(
+          cx,
+          cy,
+          ARENA_WIDTH,
+          ARENA_HEIGHT,
+          128,
+          128,
+          palette.gridColor1,
+          1,
+          palette.gridColor2,
+          0.5,
+        )
+        .setDepth(-19),
+    );
   }
   // Arena boundary — a themed rail (marks the playable bound; the ground extends past it on big screens).
-  scene.add
-    .rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT)
-    .setStrokeStyle(6, palette.boundaryRail)
-    .setDepth(-12);
+  out.push(
+    scene.add
+      .rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT)
+      .setStrokeStyle(6, palette.boundaryRail)
+      .setDepth(-12),
+  );
+  return out;
 }
 
 /** A placed landmark sprite + its collision radius, returned to the scene so it can run the per-frame
@@ -85,13 +93,17 @@ export type PoiSprite = { img: Phaser.GameObjects.Image; x: number; y: number; r
  *  size-class function the server collides with), so the art's base width ≈ the blocker you bump into.
  *  Art is PARTITIONED by class (squat art → S accents, tall art → M/L/XL structures) so the same windmill
  *  never appears at both 0.8× and 1.9× in one arena, and a soft shadow ellipse grounds every base. */
-export function buildPois(scene: Phaser.Scene, map: ArenaMap): PoiSprite[] {
+export function buildPois(
+  scene: Phaser.Scene,
+  map: ArenaMap,
+): { sprites: PoiSprite[]; objs: Phaser.GameObjects.GameObject[] } {
   // Map each landmark's `kind` through the BUILD-TIME manifest so the kind→sprite choice is identical
   // on every client (collision is server-authoritative; this is just the matching visual). A POI whose
   // specific texture failed to load skips its own draw rather than shifting every other POI's sprite.
   const ids: readonly string[] = POI_IDS; // widen the const tuple so the empty-pack guard is honest
   const out: PoiSprite[] = [];
-  if (ids.length === 0) return out;
+  const objs: Phaser.GameObjects.GameObject[] = [];
+  if (ids.length === 0) return { sprites: out, objs };
   // Partition the pack by silhouette: SQUAT art (aspect < 1.4 — boulders/ruins) suits the S accents; TALL
   // art (towers/trees) suits the M/L/XL structures. Falls back to the whole pack if a bucket is empty.
   const squat: string[] = [];
@@ -117,7 +129,9 @@ export function buildPois(scene: Phaser.Scene, map: ArenaMap): PoiSprite[] {
     const tex = scene.textures.get(id).getSourceImage() as { width: number; height: number };
     const sc = (r * 2 * BASE_OVERHANG) / Math.max(1, tex.width);
     // Grounding shadow — centred ON the anchor so its south rim always covers the sprite's sink-in.
-    scene.add.ellipse(poi.x, poi.y, r * 2.1, r * 0.9, 0x000000, 0.28).setDepth(poi.y - 1);
+    objs.push(
+      scene.add.ellipse(poi.x, poi.y, r * 2.1, r * 0.9, 0x000000, 0.28).setDepth(poi.y - 1),
+    );
     // Sink the base a FIXED 0.12r into the ground regardless of the art's aspect (a flat origin fraction
     // sank tall towers ~0.38r — past their own shadow). originY = 1 − sink/displayHeight.
     const displayH = tex.height * sc;
@@ -128,9 +142,10 @@ export function buildPois(scene: Phaser.Scene, map: ArenaMap): PoiSprite[] {
       .setDepth(poi.y)
       .setScale(sc);
     if (poi.kind % 2 === 0) img.setFlipX(true);
+    objs.push(img);
     out.push({ img, x: poi.x, y: poi.y, r });
   }
-  return out;
+  return { sprites: out, objs };
 }
 
 /**
@@ -143,7 +158,8 @@ export function buildArenaFloor(
   scene: Phaser.Scene,
   map: ArenaMap,
   palette: DimensionPalette,
-): void {
+): Phaser.GameObjects.GameObject[] {
+  const out: Phaser.GameObjects.GameObject[] = [];
   const T = map.tileSize;
   const cls = classifyPitRegions(map);
   const ground = (gx: number, gy: number): boolean =>
@@ -157,6 +173,7 @@ export function buildArenaFloor(
   // pits stay a clean flat void — it reads better than a busy texture, and a near-black pit tile is
   // visually indistinguishable from this anyway.
   const g = scene.add.graphics().setDepth(-14); // pit void + rim + spawn, above the ground + the litter
+  out.push(g);
   g.fillStyle(palette.pitVoid, 1);
   for (let y = 0; y < map.rows; y++)
     for (let x = 0; x < map.cols; x++)
@@ -214,17 +231,23 @@ export function buildArenaFloor(
   g.lineStyle(3, palette.spawnRingSafe, 0.85);
   g.strokeCircle(map.spawnX, map.spawnY, sr);
 
-  scatterDecor(scene, map, palette);
+  out.push(...scatterDecor(scene, map, palette));
+  return out;
 }
 
 /** Seeded ground litter (dust drifts + rocks/scrub), kept OFF the pits. Seeded from the map so every
  *  client dresses the floor identically. Low depth — players + enemies render over it. */
-export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: DimensionPalette): void {
+export function scatterDecor(
+  scene: Phaser.Scene,
+  map: ArenaMap,
+  palette: DimensionPalette,
+): Phaser.GameObjects.GameObject[] {
   const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
   const between = (a: number, b: number): number => a + rng.next() * (b - a);
   // Densities were authored on the original 2400² arena — scale the counts with the area so a bigger
   // arena stays as dressed (not sparser). Deterministic: AREA is a build-time constant on every client.
   const AREA = (ARENA_WIDTH * ARENA_HEIGHT) / (2400 * 2400);
+  const out: Phaser.GameObjects.GameObject[] = [];
   for (let i = 0; i < Math.round(40 * AREA); i++) {
     // Draw the full RNG sequence first (fixed cadence → deterministic across clients), THEN decide.
     const dx = rng.next() * ARENA_WIDTH;
@@ -233,7 +256,7 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: Dimens
     const h = between(110, 240);
     const a = between(0.03, 0.07);
     if (isPitAtPx(map, dx, dy)) continue; // keep the haze centre off the void (matches "kept OFF the pits")
-    scene.add.ellipse(dx, dy, w, h, palette.dustDrift).setAlpha(a).setDepth(-16);
+    out.push(scene.add.ellipse(dx, dy, w, h, palette.dustDrift).setAlpha(a).setDepth(-16));
   }
   // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
   // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal
@@ -252,6 +275,7 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: Dimens
       if (isPitAtPx(map, x, y) || !id || !scene.textures.exists(id)) continue;
       const img = scene.add.image(x, y, id).setScale(sc).setRotation(rot).setDepth(-15);
       if (flip) img.setFlipX(true);
+      out.push(img);
     }
   } else {
     for (let i = 0; i < Math.round(90 * AREA); i++) {
@@ -260,21 +284,28 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: Dimens
       if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit
       if (rng.next() < 0.4) {
         const r = between(10, 20);
-        scene.add
-          .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
-          .setStrokeStyle(3, 0x22251b)
-          .setDepth(-15);
+        out.push(
+          scene.add
+            .ellipse(x, y, r * 1.4, r * 2.1, 0x6e7042)
+            .setStrokeStyle(3, 0x22251b)
+            .setDepth(-15),
+        );
       } else {
         const r = between(12, 30);
-        scene.add
-          .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
-          .setAlpha(0.5)
-          .setDepth(-15);
-        scene.add
-          .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
-          .setStrokeStyle(3, 0x22252b)
-          .setDepth(-15);
+        out.push(
+          scene.add
+            .ellipse(x, y + r * 0.4, r * 1.7, r * 0.7, 0x1f1c17)
+            .setAlpha(0.5)
+            .setDepth(-15),
+        );
+        out.push(
+          scene.add
+            .ellipse(x, y, r * 1.5, r, rng.next() < 0.5 ? 0x3a4049 : 0x5a6472)
+            .setStrokeStyle(3, 0x22252b)
+            .setDepth(-15),
+        );
       }
     }
   }
+  return out;
 }

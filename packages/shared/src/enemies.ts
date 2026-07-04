@@ -1,6 +1,13 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  BOSS_SPAWN_FLOOR,
+  BOSS_SPAWN_SECONDS,
+  DEPTH_BOSS_ACCEL,
+  DEPTH_DMG_PER,
+  DEPTH_HP_PER,
+  DEPTH_SPAWN_MULT,
+  DEPTH_TOUGH_PER,
   DUMMY_HP,
   DUMMY_RADIUS,
   ENEMY_HP_PER_PLAYER,
@@ -399,10 +406,15 @@ export function coneAngles(baseAngle: number, count: number, arc: number): numbe
 
 /** Probability [0,1] that a freshly-spawned enemy is TOUGH — ramps with run time AND player count
  *  (§6 "more players → more toughs"). Pure. */
-export function toughChance(elapsedSeconds: number, playerCount = 1): number {
+export function toughChance(elapsedSeconds: number, playerCount = 1, depth = 1): number {
   const t = Math.min(1, Math.max(0, elapsedSeconds) / TOUGH_RAMP_SECONDS);
   const players = Math.max(1, playerCount);
-  return Math.min(0.8, TOUGH_CHANCE_MAX * t + TOUGH_CHANCE_PER_PLAYER * (players - 1));
+  return Math.min(
+    0.8,
+    TOUGH_CHANCE_MAX * t +
+      TOUGH_CHANCE_PER_PLAYER * (players - 1) +
+      DEPTH_TOUGH_PER * (Math.max(1, depth) - 1), // v0.103 §6 chain: deeper runs elite-denser
+  );
 }
 
 /** §6 enemy HP multiplier from player count — spongier with more players (1.0 solo). Pure. */
@@ -410,8 +422,32 @@ export function enemyHpScale(playerCount: number): number {
   return 1 + ENEMY_HP_PER_PLAYER * (Math.max(1, playerCount) - 1);
 }
 
-/** Seconds-between-spawns given run elapsed — linear escalation to a floor (§6). */
-export function spawnInterval(elapsedSeconds: number): number {
+/** §6 chain-depth HP multiplier (v0.103) — every dimension pushed makes enemies AND the boss spongier.
+ *  Multiplies WITH enemyHpScale: independent axes (squad size vs how deep you've greeded). Pure. */
+export function depthHpScale(depth: number): number {
+  return 1 + DEPTH_HP_PER * (Math.max(1, depth) - 1);
+}
+
+/** §6 chain-depth DAMAGE multiplier (v0.103) — every hostile hit (contact/melee/projectile/DoT/slam)
+ *  scales up per depth, so deep dimensions threaten a levelled squad instead of just out-sponging it. Pure. */
+export function depthDamageScale(depth: number): number {
+  return 1 + DEPTH_DMG_PER * (Math.max(1, depth) - 1);
+}
+
+/** Seconds-between-spawns given run elapsed — linear escalation to a floor (§6); §6 chain depth
+ *  (v0.103) compresses the whole curve multiplicatively (each depth ~8% faster), HARD-floored at 0.25s
+ *  so absurd depths can't collapse the interval toward zero (an instant-refill horde every tick). Pure. */
+export function spawnInterval(elapsedSeconds: number, depth = 1): number {
   const t = Math.min(1, Math.max(0, elapsedSeconds) / SPAWN_RAMP_SECONDS);
-  return SPAWN_INTERVAL_START + (SPAWN_INTERVAL_MIN - SPAWN_INTERVAL_START) * t;
+  const base = SPAWN_INTERVAL_START + (SPAWN_INTERVAL_MIN - SPAWN_INTERVAL_START) * t;
+  return Math.max(0.25, base * DEPTH_SPAWN_MULT ** (Math.max(1, depth) - 1));
+}
+
+/** §6/§16 when the dimension boss arrives, by chain depth (v0.103): DEPTH_BOSS_ACCEL seconds sooner per
+ *  depth pushed, floored so the squad always gets a breath to level + loot before the capstone. Pure. */
+export function bossSpawnAt(depth: number): number {
+  return Math.max(
+    BOSS_SPAWN_FLOOR,
+    BOSS_SPAWN_SECONDS - DEPTH_BOSS_ACCEL * (Math.max(1, depth) - 1),
+  );
 }

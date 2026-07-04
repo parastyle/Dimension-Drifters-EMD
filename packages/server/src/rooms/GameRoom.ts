@@ -13,11 +13,11 @@ import {
   BOSS_BULLET_SPEED,
   BOSS_P1_FIRE_CD,
   BOSS_P3_FIRE_CD,
+  BOSS_SALVAGE_PER_DEPTH,
   BOSS_SLAM_CD,
   BOSS_SLAM_DAMAGE,
   BOSS_SLAM_RADIUS,
   BOSS_SLAM_TELEGRAPH,
-  BOSS_SPAWN_SECONDS,
   BOSS_WALL_ARC,
   BOSS_WALL_COUNT,
   BRAND_DAMAGE_MULT,
@@ -26,6 +26,7 @@ import {
   bladeAngleAt,
   bladeHitsCircle,
   bossPhaseForHp,
+  bossSpawnAt,
   bulletWallAngles,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
@@ -36,10 +37,14 @@ import {
   coneAngles,
   countAugment,
   DEBUG_SPAWN_MAX,
+  DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
+  DIMENSIONS,
   DROP_GRACE_SECONDS,
   DUMMY_HP,
   DUMMY_RADIUS,
+  depthDamageScale,
+  depthHpScale,
   deriveStats,
   draftAugments,
   EMBERGUARD_BASE_DMG,
@@ -110,6 +115,8 @@ import {
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
   REVIVE_HP_FRAC,
+  RIFT_CHANNEL_SECONDS,
+  RIFT_OFFSET,
   randomSeed,
   resolveBodyCollisions,
   resolvePoiCollision,
@@ -119,6 +126,7 @@ import {
   SHIFTER_HP_PER_WAVE,
   SHIFTER_INTERVAL,
   SHIFTER_KIND_IDS,
+  SHIFTER_SALVAGE_PER_DEPTH,
   SHIFTER_TIER_SECONDS,
   SPAWN_RING,
   safeSpawnPos,
@@ -191,6 +199,10 @@ interface CombatState {
   hairStreak: number;
   /** §8 Hair-Trigger: run-elapsed (sec) of the last parry, for the streak window. */
   lastParryAt: number;
+  /** §13 salvage PROVENANCE (v0.103 anti-exploit): true only while the held weapon traces back to an
+   *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
+   *  cycle→salvage loop can't mint bankable salvage from thin air. */
+  heldEarned: boolean;
 }
 
 /**
@@ -263,6 +275,9 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
+  /** §13 v0.103 salvage provenance: pickup ids whose weapon came off an ENEMY (earned → salvageable).
+   *  Gallery/conjured pickups are never in here. Pruned with the pickup; cleared with the transients. */
+  private readonly earnedPickups = new Set<string>();
   /** §8 Conflagration: pending deferred Emberguard re-pulses (the "burning zone" POC). Each fires one more
    *  fire-wave cone once `state.elapsed >= at`. Processed + pruned each tick. */
   private readonly burnPulses: {
@@ -285,6 +300,11 @@ export class GameRoom extends Room<ArenaState> {
   private map!: ArenaMap;
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
   private bossSpawned = false;
+  /** §6 chain (v0.103): dimensions this run has already visited — rift descents prefer fresh ones. */
+  private readonly visitedDims = new Set<string>();
+  /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
+   *  (a wipe deep in the chain shouldn't strand the next expedition in a random dimension). */
+  private homeDimension = DEFAULT_DIMENSION;
   private bossId: string | null = null;
   /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
    *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
@@ -306,23 +326,12 @@ export class GameRoom extends Room<ArenaState> {
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
     // syncs on ArenaState so the client reproduces the matching palette + asset set.
     this.state.dimensionId = getDimension(options?.dimensionId).id;
+    this.homeDimension = this.state.dimensionId; // restarts return HERE, not wherever the chain died
 
-    // §17 mint the procedural arena ONCE. The four seeds are synced on ArenaState so every client feeds
-    // them to the same shared `generateArena` and reproduces a byte-identical map — no tile streaming.
-    this.state.seedTerrain = randomSeed();
-    this.state.seedHazard = randomSeed();
-    this.state.seedTheme = randomSeed();
-    this.state.seedDecor = randomSeed();
-    this.map = generateArena({
-      seedTerrain: this.state.seedTerrain,
-      seedHazard: this.state.seedHazard,
-      seedTheme: this.state.seedTheme,
-      seedDecor: this.state.seedDecor,
-    });
-    // The generator guarantees a connected, spawn-clear map; assert it (cheap) so a future regression
-    // surfaces loudly instead of shipping an unplayable arena.
-    const v = validateArena(this.map);
-    if (!v.ok) console.error(`[room ${this.roomId}] mapgen produced an invalid arena: ${v.reason}`);
+    // §17 mint the procedural arena. The four seeds are synced on ArenaState so every client feeds them
+    // to the same shared `generateArena` and reproduces a byte-identical map — no tile streaming. Re-run
+    // on every §6 rift descent + run restart (v0.103): fresh seeds → the client rebuilds its floor.
+    this.mintMap();
 
     this.onMessage("input", (client, message: MoveInput) => {
       // Trust nothing off the wire; coerce to finite numbers. stepPlayerMovement
@@ -395,12 +404,15 @@ export class GameRoom extends Room<ArenaState> {
       this.applyParryAugments(player, c);
     });
 
-    // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0).
+    // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0). A cycled weapon is
+    // CONJURED, not earned — it carries no salvage value (v0.103 provenance, see `heldEarned`).
     this.onMessage("cycleWeapon", (client, message: { dir?: number }) => {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
       player.weapon =
         (message?.dir ?? 1) < 0 ? prevWeapon(player.weapon) : nextWeapon(player.weapon);
+      const c = this.combat.get(client.sessionId);
+      if (c) c.heldEarned = false;
     });
 
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
@@ -411,6 +423,8 @@ export class GameRoom extends Room<ArenaState> {
 
     // §9/§13 R-TAP = DROP the held weapon on the floor (grabbable) in front of you; you fall back to
     // FISTS (§9). The drop gets a brief grace so it doesn't snap straight back to you (DROP_GRACE_SECONDS).
+    // Provenance (v0.103): the dropped pickup INHERITS the held weapon's earned flag, so an earned drop
+    // stays salvageable after a re-grab but a conjured one can never launder into salvage value.
     this.onMessage("dropWeapon", (client) => {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
@@ -428,15 +442,22 @@ export class GameRoom extends Room<ArenaState> {
       );
       this.state.pickups.set(pk.id, pk);
       this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
+      if (c?.heldEarned) this.earnedPickups.add(pk.id);
+      if (c) c.heldEarned = false;
       player.weapon = FISTS_WEAPON;
     });
 
-    // §13 R-HOLD = SALVAGE the held weapon into the salvage bag (consumed, no pickup) → fall back to
-    // FISTS. The parts economy (§13) isn't built yet, so this just tallies `salvaged` for HUD feedback.
+    // §13 R-HOLD = SALVAGE the held weapon (consumed, no pickup) → fall back to FISTS. §6 v0.103: salvage
+    // is now the BANKABLE run currency, so it only pays for weapons that trace back to an ENEMY DROP
+    // (`heldEarned` provenance) — an unearned weapon still salvages away (QoL) but is worth nothing.
     this.onMessage("salvageWeapon", (client) => {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
-      player.salvaged += 1;
+      const c = this.combat.get(client.sessionId);
+      if (c?.heldEarned) {
+        player.salvaged += 1;
+        c.heldEarned = false;
+      }
       player.weapon = FISTS_WEAPON;
     });
 
@@ -459,9 +480,14 @@ export class GameRoom extends Room<ArenaState> {
       if (!best) return;
       const grabbed = best as PickupState;
       player.weapon = grabbed.weapon;
+      // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
+      // gallery + conjured drops are not.
+      const c = this.combat.get(client.sessionId);
+      if (c) c.heldEarned = this.earnedPickups.has(grabbed.id);
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
+        this.earnedPickups.delete(grabbed.id);
       }
     });
 
@@ -555,6 +581,7 @@ export class GameRoom extends Room<ArenaState> {
     this.comboState.clear();
     this.meleeSwings.clear();
     this.pickupGrace.clear();
+    this.earnedPickups.clear();
     this.burnPulses.length = 0;
   }
 
@@ -578,6 +605,21 @@ export class GameRoom extends Room<ArenaState> {
     this.clearTransients();
     this.state.outcome = "active";
     this.state.portalOpen = false;
+    this.state.riftOpen = false; // §6 chain — the Testing Grounds sits outside the run structure
+    this.state.depth = 1;
+    this.visitedDims.clear();
+    // §6 bank-or-lose (v0.103): stepping OUT of a live run into the workshop ABORTS the expedition —
+    // everything carried is lost (only extraction banks). Without this, T is a wipe-panic button that
+    // launders deep-run salvage through a depth reset (adversarial-verify finding F2). Also clear the
+    // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
+    this.state.players.forEach((p) => {
+      p.salvaged = 0;
+    });
+    this.combat.forEach((c) => {
+      c.lastParryAt = -999;
+      c.hairStreak = 0;
+      c.heldEarned = false;
+    });
     this.bossSpawned = false;
     this.bossId = null;
     this.resetShifters();
@@ -636,17 +678,30 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.clear();
     this.state.projectiles.clear();
     this.state.zones.clear();
+    // A fresh map means old drops would float over unrelated terrain — clear them with the field.
+    this.state.pickups.clear();
     this.clearTransients();
     this.state.elapsed = 0;
     this.state.outcome = "active";
     this.state.portalOpen = false;
+    // §6 chain (v0.103): a fresh RUN resets the chain — depth 1, rift closed, visited wiped, back to the
+    // menu-picked HOME dimension, and a freshly-minted map (every run gets new terrain). Only
+    // `bankedSalvage` survives (the M0 "account").
+    this.state.riftOpen = false;
+    this.state.riftCharge = 0;
+    this.state.depth = 1;
+    this.visitedDims.clear();
+    this.state.dimensionId = this.homeDimension;
+    this.mintMap();
     this.bossSpawned = false;
     this.bossId = null;
     this.resetShifters();
     this.spawnAccum = 0;
     this.enemySeq = 0;
     this.state.players.forEach((player, id) => {
-      // Fresh run → reset progression + attributes to the 1/1/1/1/1 start (§11/§12).
+      // Fresh run → reset progression + attributes to the 1/1/1/1/1 start (§11/§12); carried salvage
+      // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue).
+      player.salvaged = 0;
       player.level = 1;
       player.xp = 0;
       player.xpToNext = xpToNextLevel(1);
@@ -785,6 +840,7 @@ export class GameRoom extends Room<ArenaState> {
       hairStreak: 0,
       lastParryAt: -999,
       vh: 0,
+      heldEarned: false,
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
@@ -889,16 +945,19 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
         this.state.elapsed += dt;
-        // Boss director (§16): OLD RUST arrives at the time mark, once per run.
-        if (!this.bossSpawned && this.state.elapsed >= BOSS_SPAWN_SECONDS) this.spawnBoss();
+        // Boss director (§16): the dimension boss arrives at the depth-scaled mark (§6 chain — deeper
+        // dimensions bring the capstone sooner), once per dimension.
+        if (!this.bossSpawned && this.state.elapsed >= bossSpawnAt(this.state.depth))
+          this.spawnBoss();
         // The horde keeps coming until the boss falls; once the portal opens it eases off so the
-        // run can be cleanly extracted.
+        // greed decision (bank vs descend) can be made cleanly.
         if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
         // §17 cross-dimensional SHIFTER incursions (roaming invaders) — phase one in on a timer, phase it
         // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
         // owns lifecycle.
         this.stepShifters(dt, bodies);
         this.checkExtraction(bodies);
+        this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
       }
     }
 
@@ -1046,7 +1105,7 @@ export class GameRoom extends Room<ArenaState> {
         const dy = enemy.y - player.y;
         const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
         if (dx * dx + dy * dy <= reach * reach) {
-          player.hp -= kind.contactDamage * dmgMul * dt;
+          player.hp -= kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt;
           // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
           if (kind.contactDamage > 0) {
             const d = Math.hypot(dx, dy) || 1;
@@ -1081,6 +1140,17 @@ export class GameRoom extends Room<ArenaState> {
       !anyAlive
     ) {
       this.state.outcome = "defeat";
+      // §6 "bank or LOSE" (v0.103): a wipe drops everything the squad was carrying — only what was
+      // banked at an extraction survives. This is the teeth of the extract-vs-descend decision.
+      let lost = 0;
+      this.state.players.forEach((p) => {
+        lost += p.salvaged;
+        p.salvaged = 0;
+      });
+      if (lost > 0)
+        console.log(
+          `[room ${this.roomId}] squad WIPED at depth ${this.state.depth} — ${lost} carried salvage lost`,
+        );
     }
 
     // §8 Conflagration: fire any deferred burn re-pulses whose delay has elapsed (the "lingering" wave).
@@ -1351,7 +1421,10 @@ export class GameRoom extends Room<ArenaState> {
   private fireBulletWall(boss: EnemyState, target: Vec2): void {
     const base = Math.atan2(target.y - boss.y, target.x - boss.x);
     const gapIdx = this.bossWallSeq++ % (BOSS_WALL_COUNT - 1); // walk the gap around so it's not always centred
-    const dmg = (ENEMY_KINDS[boss.kind]?.ranged?.damage ?? 10) * 0.55; // per-slug, lighter than the single spit
+    const dmg =
+      (ENEMY_KINDS[boss.kind]?.ranged?.damage ?? 10) *
+      0.55 * // per-slug, lighter than the single spit
+      depthDamageScale(this.state.depth);
     for (const ang of bulletWallAngles(base, BOSS_WALL_COUNT, BOSS_WALL_ARC, gapIdx)) {
       this.fireProjectile(
         boss,
@@ -1370,7 +1443,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
-      p.hp -= BOSS_SLAM_DAMAGE; // §16 unparryable — dodge it, don't block it
+      p.hp -= BOSS_SLAM_DAMAGE * depthDamageScale(this.state.depth); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(
         p,
@@ -1394,7 +1467,7 @@ export class GameRoom extends Room<ArenaState> {
       const e = new EnemyState();
       e.id = `e${this.enemySeq++}`;
       e.kind = "mote-swarm";
-      e.hp = kind.hp * enemyHpScale(players);
+      e.hp = kind.hp * enemyHpScale(players) * depthHpScale(this.state.depth);
       const ex = clamp(boss.x + Math.cos(a) * r, kind.radius, ARENA_WIDTH - kind.radius);
       const ey = clamp(boss.y + Math.sin(a) * r, kind.radius, ARENA_HEIGHT - kind.radius);
       const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
@@ -1427,7 +1500,10 @@ export class GameRoom extends Room<ArenaState> {
       }
       const target = nearestPoint(enemy, bodies);
       if (target && Math.hypot(target.x - enemy.x, target.y - enemy.y) <= ranged.range) {
-        const dmg = ranged.damage * (enemy.tough ? TOUGH_DAMAGE_MULT : 1);
+        const dmg =
+          ranged.damage *
+          (enemy.tough ? TOUGH_DAMAGE_MULT : 1) *
+          depthDamageScale(this.state.depth);
         if (ranged.spread && ranged.spread.count > 1) {
           // §15 Gatlin shotgun: fan a cone of pellets toward the target in one volley.
           const base = Math.atan2(target.y - enemy.y, target.x - enemy.x);
@@ -1608,6 +1684,14 @@ export class GameRoom extends Room<ArenaState> {
       return 0;
     }
     if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") this.openPortal(enemy.x, enemy.y);
+    // §6/§17 v0.103: putting DOWN a shifter incursion (instead of just outlasting its window) pays the
+    // squad a depth-scaled bounty — the chain's second wage source, and it rewards engaging the elite.
+    if (ENEMY_KINDS[enemy.kind]?.shifter) {
+      const bounty = SHIFTER_SALVAGE_PER_DEPTH * this.state.depth;
+      this.state.players.forEach((p) => {
+        if (p.alive) p.salvaged += bounty;
+      });
+    }
     this.maybeDropWeapon(enemy); // §13 ronin sword drop
     kills.push(eid);
     return (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
@@ -1843,7 +1927,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
       // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
-      player.hp -= m.damage * dmgMul;
+      player.hp -= m.damage * dmgMul * depthDamageScale(this.state.depth);
       const hx = player.x - enemy.x;
       const hy = player.y - enemy.y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -1868,6 +1952,7 @@ export class GameRoom extends Room<ArenaState> {
     pk.x = enemy.x;
     pk.y = enemy.y;
     this.state.pickups.set(pk.id, pk);
+    this.earnedPickups.add(pk.id); // §13 v0.103: an ENEMY drop is EARNED — it carries salvage value
   }
 
   /** Advance every projectile, expire at TTL/arena edge. HOSTILE projectiles hit players (parry-/
@@ -2030,7 +2115,8 @@ export class GameRoom extends Room<ArenaState> {
         if (!player.alive || this.inLevelWindow(player)) return;
         const dx = player.x - zone.x;
         const dy = player.y - zone.y;
-        if (dx * dx + dy * dy <= r2) player.hp -= ZONE_DPS * dt;
+        if (dx * dx + dy * dy <= r2)
+          player.hp -= ZONE_DPS * depthDamageScale(this.state.depth) * dt;
       });
     });
     for (const id of doomed) {
@@ -2039,11 +2125,12 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** Spawn enemies on a ring around a random player, accelerating with run time (§5/§6). */
+  /** Spawn enemies on a ring around a random player, accelerating with run time (§5/§6) and pressing
+   *  harder per §6 chain depth (v0.103). */
   private runSpawnDirector(dt: number, anchors: Vec2[]): void {
     if (anchors.length === 0) return; // nobody to hunt — pause spawning
     this.spawnAccum += dt;
-    const interval = spawnInterval(this.state.elapsed);
+    const interval = spawnInterval(this.state.elapsed, this.state.depth);
     while (this.spawnAccum >= interval && this.state.enemies.size < MAX_ENEMIES) {
       this.spawnAccum -= interval;
       this.spawnEnemy(anchors);
@@ -2065,11 +2152,16 @@ export class GameRoom extends Room<ArenaState> {
     const enemy = new EnemyState();
     enemy.id = `e${this.enemySeq++}`;
     enemy.kind = kindId;
-    // Tough tier (§15): rolls more likely with run time AND player count (§6). Swarm stays trash.
+    // Tough tier (§15): rolls more likely with run time AND player count AND §6 chain depth. Swarm stays trash.
     enemy.tough =
-      kind.archetype !== "swarm" && Math.random() < toughChance(this.state.elapsed, players);
-    // §6: spongier with more players (equalises death rate vs combined DPS). 1.0 solo.
-    enemy.hp = kind.hp * (enemy.tough ? TOUGH_HP_MULT : 1) * enemyHpScale(players);
+      kind.archetype !== "swarm" &&
+      Math.random() < toughChance(this.state.elapsed, players, this.state.depth);
+    // §6: spongier with more players (equalises death rate vs combined DPS) × depth (the chain's escalation).
+    enemy.hp =
+      kind.hp *
+      (enemy.tough ? TOUGH_HP_MULT : 1) *
+      enemyHpScale(players) *
+      depthHpScale(this.state.depth);
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
     // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
@@ -2119,7 +2211,8 @@ export class GameRoom extends Room<ArenaState> {
     const boss = new EnemyState();
     boss.id = `boss${this.enemySeq++}`;
     boss.kind = bossKind;
-    boss.hp = kind.hp * enemyHpScale(this.state.players.size); // §6 boss HP-sponge × players
+    // §6 boss HP-sponge × players × chain depth (v0.103 — deeper capstones are meaner).
+    boss.hp = kind.hp * enemyHpScale(this.state.players.size) * depthHpScale(this.state.depth);
     this.bossMaxHp = boss.hp; // §16 frozen for the phase-fraction thresholds
     this.bossFireCd = 0;
     this.bossSlamCd = BOSS_SLAM_CD;
@@ -2146,12 +2239,14 @@ export class GameRoom extends Room<ArenaState> {
     console.log(`[room ${this.roomId}] ⚠ boss approaches — ${bossKind}`);
   }
 
-  /** Reset the §17 shifter director for a fresh run (first incursion timer, no active incursion, wave 0). */
-  private resetShifters(): void {
+  /** Reset the §17 shifter director (first incursion timer, no active incursion). `keepWaves` (a §6 rift
+   *  descent) preserves the per-incursion HP ramp — descending IS "deeper into the chain"; only a fresh
+   *  run/training toggle zeroes it. */
+  private resetShifters(keepWaves = false): void {
     this.shifterCd = SHIFTER_FIRST_SECONDS;
     this.shifterId = null;
     this.shifterTimer = 0;
-    this.shifterWaves = 0;
+    if (!keepWaves) this.shifterWaves = 0;
   }
 
   /** §17 SHIFTER director: manage the active incursion (phase it out when its hunt window expires) and, in
@@ -2182,13 +2277,15 @@ export class GameRoom extends Room<ArenaState> {
     this.spawnShifter(bodies);
   }
 
-  /** Phase a shifter in at the arena edge near a living drifter. Tier escalates with run time; HP ramps per
-   *  incursion (§17 "tougher deeper into the chain"). It hunts for `shifter.window` sec, then phases out. */
+  /** Phase a shifter in at the arena edge near a living drifter. Tier escalates with run time AND §6 chain
+   *  depth (v0.103 — a depth-3 dimension opens with a mid-tier invader, matching the world around it); HP
+   *  ramps per incursion across the WHOLE run (shifterWaves survives descents — "tougher deeper into the
+   *  chain") and scales with depth like everything else. Hunts for `shifter.window` sec, then phases out. */
   private spawnShifter(bodies: Vec2[]): void {
     if (SHIFTER_KIND_IDS.length === 0 || bodies.length === 0) return;
     const tier = Math.min(
       SHIFTER_KIND_IDS.length - 1,
-      Math.floor(this.state.elapsed / SHIFTER_TIER_SECONDS),
+      this.state.depth - 1 + Math.floor(this.state.elapsed / SHIFTER_TIER_SECONDS),
     );
     const kindId = SHIFTER_KIND_IDS[tier];
     const kind = kindId ? ENEMY_KINDS[kindId] : undefined;
@@ -2204,6 +2301,7 @@ export class GameRoom extends Room<ArenaState> {
     s.hp =
       kind.hp *
       enemyHpScale(this.state.players.size) *
+      depthHpScale(this.state.depth) *
       (1 + SHIFTER_HP_PER_WAVE * this.shifterWaves);
     const m = kind.radius + 4;
     const sx = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
@@ -2221,12 +2319,108 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Open the extraction portal where the boss fell (§16). */
+  /** §17 mint fresh map seeds + regenerate the server's arena from them (the client mirrors via the
+   *  synced seeds). Called at room create, on every §6 rift descent, and on run restart. */
+  private mintMap(): void {
+    this.state.seedTerrain = randomSeed();
+    this.state.seedHazard = randomSeed();
+    this.state.seedTheme = randomSeed();
+    this.state.seedDecor = randomSeed();
+    this.map = generateArena({
+      seedTerrain: this.state.seedTerrain,
+      seedHazard: this.state.seedHazard,
+      seedTheme: this.state.seedTheme,
+      seedDecor: this.state.seedDecor,
+    });
+    // The generator guarantees a connected, spawn-clear map; assert it (cheap) so a future regression
+    // surfaces loudly instead of shipping an unplayable arena.
+    const v = validateArena(this.map);
+    if (!v.ok) console.error(`[room ${this.roomId}] mapgen produced an invalid arena: ${v.reason}`);
+  }
+
+  /** §6 the boss falls → open BOTH gates of the greed decision: the amber EXTRACTION portal (bank the
+   *  carried salvage, end in victory) and the violet DEEPER rift (descend to depth+1 — harder, richer).
+   *  The rift opens RIFT_OFFSET away, nudged onto safe ground, so a step into one can't read as the other.
+   *  The boss ALSO pays the chain's real wage (v0.103 — the "richer" in the rift's promise): every living
+   *  player pockets BOSS_SALVAGE_PER_DEPTH × depth carried salvage — bank it now or gamble it deeper. */
   private openPortal(x: number, y: number): void {
+    const wage = BOSS_SALVAGE_PER_DEPTH * this.state.depth;
+    this.state.players.forEach((p) => {
+      if (p.alive) p.salvaged += wage;
+    });
     this.state.portalOpen = true;
     this.state.portalX = x;
     this.state.portalY = y;
+    // Aim the rift's offset back toward the arena centre so it never lands clamped into the border rail.
+    const cx = ARENA_WIDTH / 2 - x;
+    const cy = ARENA_HEIGHT / 2 - y;
+    const d = Math.hypot(cx, cy) || 1;
+    const rp = safeSpawnPos(
+      this.map,
+      x + (cx / d) * RIFT_OFFSET,
+      y + (cy / d) * RIFT_OFFSET,
+      EXTRACT_RADIUS,
+    );
+    this.state.riftOpen = true;
+    this.state.riftX = rp.x;
+    this.state.riftY = rp.y;
     this.bossId = null;
-    console.log(`[room ${this.roomId}] OLD RUST defeated — extraction portal open`);
+    console.log(
+      `[room ${this.roomId}] boss defeated — extraction portal + deeper rift open (depth ${this.state.depth})`,
+    );
+  }
+
+  /** §6 rift descent (v0.103, the chain): depth+1, a NEW dimension + freshly-seeded map, the same squad —
+   *  levels/attributes/weapons/augments/carried salvage/HP all persist (that's the greed: you push in
+   *  whatever shape the last fight left you). The field is cleared, the clock and boss director reset. */
+  private transitionDimension(): void {
+    this.state.depth = Math.min(250, this.state.depth + 1);
+    // Next dimension: prefer one the chain hasn't visited; once all are seen, any OTHER dimension.
+    this.visitedDims.add(this.state.dimensionId);
+    const all = Object.keys(DIMENSIONS);
+    const fresh = all.filter((id) => !this.visitedDims.has(id));
+    const pool = fresh.length > 0 ? fresh : all.filter((id) => id !== this.state.dimensionId);
+    this.state.dimensionId =
+      pool[Math.floor(Math.random() * pool.length)] ?? this.state.dimensionId;
+    // Fresh battlefield: new seeds/map, cleared field, reset clock + directors.
+    this.mintMap();
+    this.state.enemies.clear();
+    this.state.projectiles.clear();
+    this.state.zones.clear();
+    this.state.pickups.clear();
+    this.clearTransients();
+    this.state.elapsed = 0;
+    this.spawnAccum = 0;
+    this.state.outcome = "active";
+    this.state.portalOpen = false;
+    this.state.riftOpen = false;
+    this.bossSpawned = false;
+    this.bossId = null;
+    this.state.bossPhase = 0;
+    this.state.bossSlamT = 0;
+    this.resetShifters(true); // keep the per-incursion HP ramp — a descent IS "deeper into the chain"
+    // Carry the whole squad through the rift — downed bodies come too, arriving STILL DOWN at the new
+    // spawn (the rez-or-dead rule doesn't soften mid-chain; a rez weapon works on the far side).
+    this.state.players.forEach((player, id) => {
+      player.x = this.map.spawnX + (Math.random() * 200 - 100);
+      player.y = this.map.spawnY + (Math.random() * 200 - 100);
+      player.vx = 0;
+      player.vy = 0;
+      player.height = 0;
+      const c = this.combat.get(id);
+      if (c) {
+        c.lastGroundX = player.x;
+        c.lastGroundY = player.y;
+        c.pitGrace = 0;
+        // The Hair-Trigger streak timestamps ride the elapsed clock, which just reset — clear them or the
+        // first parry in the new dimension inherits the old dimension's streak (verify finding).
+        c.lastParryAt = -999;
+        c.hairStreak = 0;
+      }
+    });
+    console.log(
+      `[room ${this.roomId}] ⇓ rift descent — depth ${this.state.depth}, dimension ${this.state.dimensionId}`,
+    );
   }
 
   /** Step a living player into the open portal → run complete (§16). */
@@ -2238,14 +2432,54 @@ export class GameRoom extends Room<ArenaState> {
       const dy = b.y - this.state.portalY;
       if (dx * dx + dy * dy <= r2) {
         this.state.outcome = "victory";
+        // §6 BANK (v0.103, "bank or lose"): everything the squad carried is deposited — the win's payload.
+        let banked = 0;
+        this.state.players.forEach((p) => {
+          banked += p.salvaged;
+          p.salvaged = 0;
+        });
+        this.state.bankedSalvage += banked;
         // Clean the field for the win screen.
         this.state.enemies.clear();
         this.state.projectiles.clear();
         this.projectileMeta.clear();
         this.enemyFireCd.clear();
-        console.log(`[room ${this.roomId}] run extracted — VICTORY`);
+        this.state.riftOpen = false; // the choice is made — the rift closes
+        console.log(
+          `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked} salvage banked, ${this.state.bankedSalvage} total)`,
+        );
         return;
       }
+    }
+  }
+
+  /** §6 the other half of the greed decision (v0.103): the DEEPER rift is a CHANNEL — a living player
+   *  must HOLD it for RIFT_CHANNEL_SECONDS (the synced `riftCharge` fills 0→1, drawn by the client) before
+   *  the whole squad commits. Leaving the ring drains the charge — one misstep or one griefer can't yank
+   *  four players into depth+1. Extraction stays instant (it's the benign direction). */
+  private checkDescend(dt: number, bodies: Vec2[]): void {
+    if (!this.state.riftOpen || this.state.outcome !== "active") {
+      if (this.state.riftCharge !== 0) this.state.riftCharge = 0;
+      return;
+    }
+    const r2 = EXTRACT_RADIUS * EXTRACT_RADIUS;
+    let holding = false;
+    for (const b of bodies) {
+      const dx = b.x - this.state.riftX;
+      const dy = b.y - this.state.riftY;
+      if (dx * dx + dy * dy <= r2) {
+        holding = true;
+        break;
+      }
+    }
+    if (holding) {
+      this.state.riftCharge = Math.min(1, this.state.riftCharge + dt / RIFT_CHANNEL_SECONDS);
+      if (this.state.riftCharge >= 1) {
+        this.state.riftCharge = 0;
+        this.transitionDimension();
+      }
+    } else if (this.state.riftCharge > 0) {
+      this.state.riftCharge = Math.max(0, this.state.riftCharge - (dt / RIFT_CHANNEL_SECONDS) * 2);
     }
   }
 }

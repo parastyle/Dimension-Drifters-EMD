@@ -8,8 +8,12 @@ import { PLAYER_MAX_HP, PLAYER_REGEN } from "./constants.js";
 
 /** XP needed to go from level 1 → 2. */
 export const XP_BASE = 6;
-/** Each level needs XP_GROWTH× more than the last (geometric curve; final shape OPEN, §12). */
-export const XP_GROWTH = 1.45;
+/** Each level needs XP_GROWTH× more than the last. v0.103 (audit H1): 1.45 → 1.15 — the old curve needed
+ *  ~638k cumulative XP to cap while kills pay 1-3, so a real run reached ~L8 and the §8 signature loop
+ *  (a pick every 5 levels) was unreachable. At 1.15 the cap costs ~2.3k XP: roughly L13-15 by the first
+ *  boss (2-3 signature picks — the design intent) and L30 over a deep §6 chain run, since levels PERSIST
+ *  across dimension pushes (only a fresh run resets to L1). A test pins the curve's reachability band. */
+export const XP_GROWTH = 1.15;
 /** Per-run level cap (§12 [LOCKED]). */
 export const LEVEL_CAP = 30;
 /** Seconds to pick in the level-up window before it auto-resolves (§12 [LOCKED]). */
