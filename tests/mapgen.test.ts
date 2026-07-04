@@ -6,13 +6,15 @@ import {
   isPitAtPx,
   MAP_MAX_JUMP_TILES,
   MAP_POI_COUNT,
-  MAP_POI_RADIUS,
+  MAP_POI_GAP,
   MAP_POI_SPACING_TILES,
   MAP_POI_SPAWN_CLEAR_TILES,
   MAP_TILE,
   nearestGroundPx,
   pitFraction,
   poiAt,
+  poiRadius,
+  poiScale,
   resolvePoiCollision,
   safeSpawnPos,
   TILE_GROUND,
@@ -117,23 +119,48 @@ describe("mapgen — pit helpers (fall + rim)", () => {
   });
 });
 
-describe("mapgen — POI landmarks", () => {
-  it("places POIs on GROUND, spaced apart, clear of spawn, within the cap", () => {
+describe("mapgen — POI landmarks (v0.102 size classes)", () => {
+  it("poiScale is a deterministic size-class map with real variety (S/M/L/XL all occur)", () => {
+    const classes = new Set<number>();
+    for (let k = 0; k < 200; k++) {
+      const sc = poiScale(k);
+      expect(sc).toBe(poiScale(k)); // pure
+      expect(sc).toBeGreaterThan(0.5);
+      expect(sc).toBeLessThan(2.5);
+      classes.add(sc);
+    }
+    expect(classes.size).toBe(4); // S, M, L, XL
+  });
+
+  it("places POIs on GROUND (whole footprint), radius-aware spaced with a walk gap, clear of spawn", () => {
     for (const s of SAMPLES.slice(0, 80)) {
       const map = generateArena(s);
       expect(map.pois.length).toBeLessThanOrEqual(MAP_POI_COUNT);
-      const minPx = MAP_POI_SPACING_TILES * MAP_TILE;
+      const floorPx = MAP_POI_SPACING_TILES * MAP_TILE;
       const spawnClearPx = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE;
       for (let i = 0; i < map.pois.length; i++) {
         const p = map.pois[i];
         if (!p) continue;
-        expect(isPitAtPx(map, p.x, p.y), "POI must stand on ground").toBe(false);
+        const r = poiRadius(p.kind);
+        // The WHOLE collision footprint stands on ground — probe the centre + the 4 cardinal rim points.
+        expect(isPitAtPx(map, p.x, p.y), "POI centre must be ground").toBe(false);
+        for (const [ox, oy] of [
+          [r - 1, 0],
+          [-(r - 1), 0],
+          [0, r - 1],
+          [0, -(r - 1)],
+        ] as const) {
+          expect(isPitAtPx(map, p.x + ox, p.y + oy), "POI rim hangs over a pit").toBe(false);
+        }
         expect(Math.hypot(p.x - map.spawnX, p.y - map.spawnY)).toBeGreaterThan(
-          spawnClearPx - MAP_TILE,
+          spawnClearPx + r - MAP_TILE,
         );
         for (let j = i + 1; j < map.pois.length; j++) {
           const q = map.pois[j];
-          if (q) expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThanOrEqual(minPx);
+          if (!q) continue;
+          // Pairwise rule: both footprints + the guaranteed walking gap (or the legacy tile floor).
+          const need = Math.max(floorPx, r + poiRadius(q.kind) + MAP_POI_GAP);
+          expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeGreaterThanOrEqual(need);
         }
       }
     }
@@ -146,10 +173,22 @@ describe("mapgen — POI landmarks", () => {
     if (!p) return;
     const r = 24;
     const out = resolvePoiCollision(map, p.x + 5, p.y, r); // start INSIDE the obstacle
-    expect(Math.hypot(out.x - p.x, out.y - p.y)).toBeGreaterThanOrEqual(MAP_POI_RADIUS + r - 0.5);
+    expect(Math.hypot(out.x - p.x, out.y - p.y)).toBeGreaterThanOrEqual(
+      poiRadius(p.kind) + r - 0.5,
+    );
     // A point far from every POI is returned unchanged.
     const far = resolvePoiCollision(map, map.spawnX, map.spawnY, r);
     expect([far.x, far.y]).toEqual([map.spawnX, map.spawnY]);
+  });
+
+  it("resolvePoiCollision never leaves a body inside ANY landmark (multi-POI settle)", () => {
+    for (const s of SAMPLES.slice(0, 30)) {
+      const map = generateArena(s);
+      for (const p of map.pois) {
+        const out = resolvePoiCollision(map, p.x + 3, p.y - 2, 24);
+        expect(poiAt(map, out.x, out.y), "body left inside a landmark").toBeUndefined();
+      }
+    }
   });
 
   it("isInsidePoi blocks a projectile inside a landmark, passes clear ground (§17 cover)", () => {
@@ -158,7 +197,7 @@ describe("mapgen — POI landmarks", () => {
     const p = map.pois[0];
     if (!p) return;
     expect(isInsidePoi(map, p.x, p.y)).toBe(true); // dead centre = blocked
-    expect(isInsidePoi(map, p.x + MAP_POI_RADIUS + 5, p.y)).toBe(false); // just outside the footprint
+    expect(isInsidePoi(map, p.x + poiRadius(p.kind) + 5, p.y)).toBe(false); // just outside the footprint
     expect(isInsidePoi(map, map.spawnX, map.spawnY)).toBe(false); // spawn is clear of POIs
   });
 
@@ -208,11 +247,11 @@ describe("mapgen — safeSpawnPos (§17 spawn nudge)", () => {
 });
 
 describe("mapgen — shape sanity", () => {
-  it("uses the expected 30×30 grid", () => {
+  it("uses the expected 60×60 grid (v0.102 roominess: 4800² arena / 80px tiles)", () => {
     const map = generateArena(seeds(1, 2, 3, 4));
-    expect(map.cols).toBe(30);
-    expect(map.rows).toBe(30);
-    expect(map.tiles.length).toBe(900);
+    expect(map.cols).toBe(60);
+    expect(map.rows).toBe(60);
+    expect(map.tiles.length).toBe(3600);
   });
 
   it("the jump-reach constant is the conservative ~2 tiles the design assumes", () => {

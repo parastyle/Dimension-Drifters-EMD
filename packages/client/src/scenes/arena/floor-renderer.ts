@@ -8,6 +8,8 @@ import {
   MAP_SPAWN_CLEAR_TILES,
   makeRng,
   mixSeeds,
+  poiRadius,
+  poiScale,
   TILE_PIT,
 } from "@dd/shared";
 import type Phaser from "phaser";
@@ -73,22 +75,62 @@ export function drawArena(
     .setDepth(-12);
 }
 
+/** A placed landmark sprite + its collision radius, returned to the scene so it can run the per-frame
+ *  occlusion fade (an XL is taller than the viewport — fade it when the local player walks behind it). */
+export type PoiSprite = { img: Phaser.GameObjects.Image; x: number; y: number; r: number };
+
 /** §17 place the POI landmark sprites — base at the map position (origin bottom-centre), depth = its y so
  *  players + enemies depth-sort around them (walk BEHIND a tower's upper structure, IN FRONT of its base).
- *  Collision is server-authoritative (the static obstacle circle); this is the matching visual. */
-export function buildPois(scene: Phaser.Scene, map: ArenaMap): void {
+ *  v0.102 WYSIWYG: each sprite's scale is derived FROM its collision radius (`poiRadius(kind)` — the same
+ *  size-class function the server collides with), so the art's base width ≈ the blocker you bump into.
+ *  Art is PARTITIONED by class (squat art → S accents, tall art → M/L/XL structures) so the same windmill
+ *  never appears at both 0.8× and 1.9× in one arena, and a soft shadow ellipse grounds every base. */
+export function buildPois(scene: Phaser.Scene, map: ArenaMap): PoiSprite[] {
   // Map each landmark's `kind` through the BUILD-TIME manifest so the kind→sprite choice is identical
   // on every client (collision is server-authoritative; this is just the matching visual). A POI whose
   // specific texture failed to load skips its own draw rather than shifting every other POI's sprite.
   const ids: readonly string[] = POI_IDS; // widen the const tuple so the empty-pack guard is honest
-  if (ids.length === 0) return;
-  for (const poi of map.pois) {
-    const id = ids[poi.kind % ids.length] ?? ids[0];
-    if (!id || !scene.textures.exists(id)) continue;
-    const sc = 0.78 + (poi.kind % 5) * 0.05; // gentle per-landmark size variety
-    const img = scene.add.image(poi.x, poi.y, id).setOrigin(0.5, 1).setDepth(poi.y).setScale(sc);
-    if (poi.kind % 2 === 0) img.setFlipX(true);
+  const out: PoiSprite[] = [];
+  if (ids.length === 0) return out;
+  // Partition the pack by silhouette: SQUAT art (aspect < 1.4 — boulders/ruins) suits the S accents; TALL
+  // art (towers/trees) suits the M/L/XL structures. Falls back to the whole pack if a bucket is empty.
+  const squat: string[] = [];
+  const tall: string[] = [];
+  for (const id of ids) {
+    if (!scene.textures.exists(id)) continue;
+    const t = scene.textures.get(id).getSourceImage() as { width: number; height: number };
+    (t.height / Math.max(1, t.width) < 1.4 ? squat : tall).push(id);
   }
+  // Sprites are wider at the canopy/structure than at the trunk/base — size the TEXTURE width a bit past
+  // the collision diameter so the standable base visually matches the circle you collide with.
+  const BASE_OVERHANG = 1.3;
+  for (const poi of map.pois) {
+    const pool = (poiScale(poi.kind) <= 0.8 ? squat : tall).length
+      ? poiScale(poi.kind) <= 0.8
+        ? squat
+        : tall
+      : [...squat, ...tall];
+    // The class lives in kind%7 (fixed per slot) — pick art from the UPPER bits so it stays varied.
+    const id = pool[Math.floor(poi.kind / 7) % pool.length];
+    if (!id || !scene.textures.exists(id)) continue;
+    const r = poiRadius(poi.kind);
+    const tex = scene.textures.get(id).getSourceImage() as { width: number; height: number };
+    const sc = (r * 2 * BASE_OVERHANG) / Math.max(1, tex.width);
+    // Grounding shadow — centred ON the anchor so its south rim always covers the sprite's sink-in.
+    scene.add.ellipse(poi.x, poi.y, r * 2.1, r * 0.9, 0x000000, 0.28).setDepth(poi.y - 1);
+    // Sink the base a FIXED 0.12r into the ground regardless of the art's aspect (a flat origin fraction
+    // sank tall towers ~0.38r — past their own shadow). originY = 1 − sink/displayHeight.
+    const displayH = tex.height * sc;
+    const originY = 1 - (r * 0.12) / Math.max(1, displayH);
+    const img = scene.add
+      .image(poi.x, poi.y, id)
+      .setOrigin(0.5, originY)
+      .setDepth(poi.y)
+      .setScale(sc);
+    if (poi.kind % 2 === 0) img.setFlipX(true);
+    out.push({ img, x: poi.x, y: poi.y, r });
+  }
+  return out;
 }
 
 /**
@@ -180,7 +222,10 @@ export function buildArenaFloor(
 export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: DimensionPalette): void {
   const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
   const between = (a: number, b: number): number => a + rng.next() * (b - a);
-  for (let i = 0; i < 40; i++) {
+  // Densities were authored on the original 2400² arena — scale the counts with the area so a bigger
+  // arena stays as dressed (not sparser). Deterministic: AREA is a build-time constant on every client.
+  const AREA = (ARENA_WIDTH * ARENA_HEIGHT) / (2400 * 2400);
+  for (let i = 0; i < Math.round(40 * AREA); i++) {
     // Draw the full RNG sequence first (fixed cadence → deterministic across clients), THEN decide.
     const dx = rng.next() * ARENA_WIDTH;
     const dy = rng.next() * ARENA_HEIGHT;
@@ -197,7 +242,7 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: Dimens
   // set — so the RNG draw sequence is identical on every client even if one client missed a texture
   // load. A texture that failed to load just skips its own draw; positions stay in lockstep.
   if (DECAL_IDS.length > 0) {
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < Math.round(70 * AREA); i++) {
       const x = between(60, ARENA_WIDTH - 60);
       const y = between(60, ARENA_HEIGHT - 60);
       const id = DECAL_IDS[Math.floor(rng.next() * DECAL_IDS.length)] ?? DECAL_IDS[0];
@@ -209,7 +254,7 @@ export function scatterDecor(scene: Phaser.Scene, map: ArenaMap, palette: Dimens
       if (flip) img.setFlipX(true);
     }
   } else {
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < Math.round(90 * AREA); i++) {
       const x = between(60, ARENA_WIDTH - 60);
       const y = between(60, ARENA_HEIGHT - 60);
       if (isPitAtPx(map, x, y)) continue; // no litter floating in a pit

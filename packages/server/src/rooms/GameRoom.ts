@@ -39,6 +39,7 @@ import {
   DEFAULT_WEAPON,
   DROP_GRACE_SECONDS,
   DUMMY_HP,
+  DUMMY_RADIUS,
   deriveStats,
   draftAugments,
   EMBERGUARD_BASE_DMG,
@@ -73,7 +74,6 @@ import {
   JUMP_VELOCITY,
   LEVELUP_WINDOW_SECONDS,
   M0_CLASS_ATTR,
-  MAP_POI_RADIUS,
   MAX_ENEMIES,
   MAX_PLAYERS,
   MELEE_BLADE_HALFWIDTH,
@@ -105,6 +105,7 @@ import {
   ProjectileState,
   pickEnemyKind,
   poiAt,
+  poiRadius,
   prevWeapon,
   QUAKE_REACH,
   RESPAWN_CLEAR_RADIUS,
@@ -587,13 +588,22 @@ export class GameRoom extends Room<ArenaState> {
       this.state.mode = "training";
       this.state.elapsed = 0;
       this.spawnAccum = 0;
-      // Weapon pickups in a row (one per roster weapon), and dummies below them.
+      // Weapon pickups in a row (one per roster weapon), and dummies below them. Each placement runs
+      // through safeSpawnPos — the fixed grid ignores the procgen terrain, so on a random map a slot can
+      // land over a pit (pickup unreachable) or inside a landmark (ungrabbable: closest approach =
+      // poiRadius + PLAYER_RADIUS > PICKUP_RADIUS); the nudge lands it on the nearest clear ground.
       WEAPON_IDS.forEach((weaponId, i) => {
         const pk = new PickupState();
         pk.id = `pk${i}`;
         pk.weapon = weaponId;
-        pk.x = cx + (i - (WEAPON_IDS.length - 1) / 2) * 150;
-        pk.y = cy - 200;
+        const sp = safeSpawnPos(
+          this.map,
+          cx + (i - (WEAPON_IDS.length - 1) / 2) * 150,
+          cy - 200,
+          PICKUP_RADIUS,
+        );
+        pk.x = sp.x;
+        pk.y = sp.y;
         this.state.pickups.set(pk.id, pk);
       });
       for (let i = 0; i < 3; i++) {
@@ -601,8 +611,10 @@ export class GameRoom extends Room<ArenaState> {
         dummy.id = `dummy${i}`;
         dummy.kind = "dummy";
         dummy.hp = DUMMY_HP;
-        dummy.x = cx + (i - 1) * 200;
-        dummy.y = cy + 170;
+        // A dummy is a non-boss enemy — over a pit the §17 terrain-death rule would delete it on tick 1.
+        const sp = safeSpawnPos(this.map, cx + (i - 1) * 200, cy + 170, DUMMY_RADIUS);
+        dummy.x = sp.x;
+        dummy.y = sp.y;
         this.state.enemies.set(dummy.id, dummy);
       }
       // Reset players to the center, full HP, so they start clear of everything.
@@ -1907,8 +1919,8 @@ export class GameRoom extends Room<ArenaState> {
           const dot = pr.vx * ux + pr.vy * uy;
           pr.vx -= 2 * dot * ux;
           pr.vy -= 2 * dot * uy;
-          pr.x = hitPoi.x + ux * (MAP_POI_RADIUS + PROJECTILE_RADIUS);
-          pr.y = hitPoi.y + uy * (MAP_POI_RADIUS + PROJECTILE_RADIUS);
+          pr.x = hitPoi.x + ux * (poiRadius(hitPoi.kind) + PROJECTILE_RADIUS);
+          pr.y = hitPoi.y + uy * (poiRadius(hitPoi.kind) + PROJECTILE_RADIUS);
           meta.hit.clear();
           meta.pierce = meta.pierceMax ?? meta.pierce;
           meta.ttl += meta.legTtl ?? 0;

@@ -25,6 +25,8 @@ import {
   MAP_PIT_SPACING_TILES,
   MAP_PIT_TARGET,
   MAP_POI_COUNT,
+  MAP_POI_GAP,
+  MAP_POI_GROUND_CLEARANCE,
   MAP_POI_RADIUS,
   MAP_POI_SPACING_TILES,
   MAP_POI_SPAWN_CLEAR_TILES,
@@ -77,8 +79,10 @@ const CARDINALS: ReadonlyArray<readonly [number, number]> = [
 function pitSites(rng: Rng, cols: number, rows: number, target: number): Array<[number, number]> {
   const sites: Array<[number, number]> = [];
   const spacing2 = MAP_PIT_SPACING_TILES * MAP_PIT_SPACING_TILES;
-  // Roughly one site per (target-scaled) area; each grows into a small blob downstream.
-  const wanted = Math.max(4, Math.round((cols * rows * target) / 9));
+  // Roughly one site per (target-scaled) area; each grows into a blob downstream. The divisor is the
+  // MEASURED per-blob footprint (~20 cells at radius 2–3 AFTER the two dilating smooth() passes —
+  // calibrated empirically over 2000 seeds so real coverage lands on the target, not 25% above it).
+  const wanted = Math.max(4, Math.round((cols * rows * target) / 20));
   const attempts = wanted * 12;
   for (let a = 0; a < attempts && sites.length < wanted; a++) {
     const x = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
@@ -97,7 +101,8 @@ function pitSites(rng: Rng, cols: number, rows: number, target: number): Array<[
   return sites;
 }
 
-/** Grow a site into an organic pit blob: a jittered disc with probabilistic falloff toward the edge. */
+/** Grow a site into an organic pit blob: a jittered disc with probabilistic falloff toward the edge.
+ *  v0.102: radius 2–3 (was 1–2) — fewer, GRANDER pit features that read as deliberate terrain, not noise. */
 function growBlob(
   tiles: Uint8Array,
   cols: number,
@@ -106,7 +111,7 @@ function growBlob(
   cy: number,
   rng: Rng,
 ): void {
-  const r = rng.int(1, 2);
+  const r = rng.int(2, 3);
   for (let dy = -r; dy <= r; dy++) {
     for (let dx = -r; dx <= r; dx++) {
       const x = cx + dx;
@@ -323,8 +328,38 @@ function ensureConnected(tiles: Uint8Array, cols: number, rows: number, spawn: n
     if (tiles[i] === TILE_GROUND && !reached[i]) tiles[i] = TILE_PIT;
 }
 
-/** Place §17 POI landmarks: rejection-sample GROUND tiles, spread out (min spacing) + clear of the spawn
- *  disc. Deterministic (its own seed stream). Each gets a `kind` the client maps to a sprite. */
+/**
+ * §17 per-landmark SIZE CLASS, derived deterministically from `kind` so server collision + client visual
+ * always agree (both sides call this — no sync needed). Distribution over kind%7: three M (the everyday
+ * blocker), two L, one XL (a genuinely building-sized landmark), one S (scrub/boulder accent). "Bigger
+ * clipping obstacles" (v0.102): the collision footprint scales with the class AND the client derives the
+ * sprite's visual scale FROM the collision radius, so what blocks you is what you see (WYSIWYG).
+ */
+export function poiScale(kind: number): number {
+  const c = ((kind % 7) + 7) % 7;
+  if (c === 6) return 0.8; // S — scrub / boulder
+  if (c === 5) return 1.9; // XL — the landmark you navigate BY
+  if (c >= 3) return 1.45; // L
+  return 1.0; // M (c 0..2)
+}
+
+/** §17 a landmark's collision radius (px) — the M-class base scaled by its size class. */
+export function poiRadius(kind: number): number {
+  return MAP_POI_RADIUS * poiScale(kind);
+}
+
+/** The size-class deal order: the c-value (kind%7) each successive landmark is FORCED to, cycling. An iid
+ *  roll made XL a lottery (4% of maps had zero "landmark you navigate BY"); dealing from a fixed cycle
+ *  guarantees every map the same S/M/L/XL mix (per 7: 1×XL, 3×M, 2×L, 1×S) while the art stays random. */
+const POI_CLASS_CYCLE = [5, 0, 3, 1, 6, 4, 2] as const; // XL, M, L, M, S, L, M
+
+/** Place §17 POI landmarks: rejection-sample GROUND tiles, spread out (pairwise radius-aware spacing with
+ *  a guaranteed walking gap) + clear of the spawn disc + the landmark's whole footprint AND a
+ *  `MAP_POI_GROUND_CLEARANCE` ring on solid ground — the ring is where resolvePoiCollision parks pushed-out
+ *  bodies (centre at r+bodyRadius), so without it an XL on a pit lip shoves players/enemies into the void.
+ *  Deterministic (its own seed stream; all distance rejects compare SQUARED distances — Math.hypot is
+ *  implementation-approximated per ECMA-262, sqrt/mul are correctly rounded, so this stays engine-exact).
+ *  Each landmark's size class is dealt from POI_CLASS_CYCLE; the art roll stays random via the kind. */
 function placePois(
   tiles: Uint8Array,
   cols: number,
@@ -334,17 +369,51 @@ function placePois(
   rng: Rng,
 ): PoiInstance[] {
   const pois: PoiInstance[] = [];
-  const minPx = MAP_POI_SPACING_TILES * MAP_TILE;
-  const attempts = MAP_POI_COUNT * 40;
+  const floorPx = MAP_POI_SPACING_TILES * MAP_TILE; // legacy tile floor — the radius-aware rule usually exceeds it
+  const attempts = MAP_POI_COUNT * 60;
+  const groundAt = (gx: number, gy: number): boolean =>
+    inBounds(gx, gy, cols, rows) && tiles[idx(gx, gy, cols)] === TILE_GROUND;
   for (let a = 0; a < attempts && pois.length < MAP_POI_COUNT; a++) {
     const tx = rng.int(MAP_BORDER_TILES + 1, cols - MAP_BORDER_TILES - 2);
     const ty = rng.int(MAP_BORDER_TILES + 1, rows - MAP_BORDER_TILES - 2);
+    const roll = rng.int(0, 999); // draw BEFORE any reject so the RNG cadence stays fixed per attempt
+    // Deal the size class from the cycle (keyed by how many landmarks are already placed); keep the roll's
+    // entropy in the upper bits for the client's art pick.
+    const cls = POI_CLASS_CYCLE[pois.length % POI_CLASS_CYCLE.length] as number;
+    const kind = roll - (roll % 7) + cls;
     if (tiles[idx(tx, ty, cols)] !== TILE_GROUND) continue; // stand on solid ground
-    if (Math.hypot(tx - spawnCol, ty - spawnRow) <= MAP_POI_SPAWN_CLEAR_TILES) continue; // clear of spawn
     const cx = (tx + 0.5) * MAP_TILE;
     const cy = (ty + 0.5) * MAP_TILE;
-    if (!pois.every((p) => Math.hypot(p.x - cx, p.y - cy) >= minPx)) continue; // spaced from other POIs
-    pois.push({ x: cx, y: cy, kind: rng.int(0, 999) });
+    const r = poiRadius(kind);
+    // Spawn clearance scales with the landmark's own footprint so an XL can't loom over the safe disc.
+    const spawnNeed = MAP_POI_SPAWN_CLEAR_TILES * MAP_TILE + r;
+    const sdx = (tx - spawnCol) * MAP_TILE;
+    const sdy = (ty - spawnRow) * MAP_TILE;
+    if (sdx * sdx + sdy * sdy <= spawnNeed * spawnNeed) continue;
+    // The collision footprint PLUS the push-out clearance ring must sit on ground — check every tile that
+    // disc overlaps (proper circle-vs-tile-rect test: nearest point on the tile's rect to the centre;
+    // a centre-only check misses edge-clipped tiles).
+    const guard = r + MAP_POI_GROUND_CLEARANCE;
+    const rt = Math.ceil(guard / MAP_TILE) + 1;
+    let footprintOk = true;
+    for (let dy = -rt; dy <= rt && footprintOk; dy++)
+      for (let dx = -rt; dx <= rt && footprintOk; dx++) {
+        const x0 = (tx + dx) * MAP_TILE;
+        const y0 = (ty + dy) * MAP_TILE;
+        const nx = Math.max(x0, Math.min(cx, x0 + MAP_TILE)) - cx;
+        const ny = Math.max(y0, Math.min(cy, y0 + MAP_TILE)) - cy;
+        if (nx * nx + ny * ny < guard * guard && !groundAt(tx + dx, ty + dy)) footprintOk = false;
+      }
+    if (!footprintOk) continue;
+    // Pairwise spacing: both footprints + a guaranteed walking gap (or the legacy tile floor if larger).
+    const spaced = pois.every((p) => {
+      const need = Math.max(floorPx, r + poiRadius(p.kind) + MAP_POI_GAP);
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      return dx * dx + dy * dy >= need * need;
+    });
+    if (!spaced) continue;
+    pois.push({ x: cx, y: cy, kind });
   }
   return pois;
 }
@@ -398,13 +467,14 @@ export function isPitAtPx(map: ArenaMap, px: number, py: number): boolean {
   return tileAtPx(map, px, py) === TILE_PIT;
 }
 
-/** §17 the POI whose obstacle footprint contains a world px point, or undefined. PURE. */
+/** §17 the POI whose obstacle footprint contains a world px point, or undefined. Radius is per-landmark
+ *  (size classes — `poiRadius(kind)`). PURE. */
 export function poiAt(map: ArenaMap, x: number, y: number): PoiInstance | undefined {
-  const r2 = MAP_POI_RADIUS * MAP_POI_RADIUS;
   for (const p of map.pois) {
+    const r = poiRadius(p.kind);
     const dx = x - p.x;
     const dy = y - p.y;
-    if (dx * dx + dy * dy < r2) return p;
+    if (dx * dx + dy * dy < r * r) return p;
   }
   return undefined;
 }
@@ -416,24 +486,38 @@ export function isInsidePoi(map: ArenaMap, x: number, y: number): boolean {
 }
 
 /** §17 push an entity (centre x,y + body radius) OUT of any overlapping POI obstacle, returning the
- *  corrected position. POIs are spaced > 2 radii apart so an entity can overlap at most one. PURE. */
+ *  corrected position. Radii are per-landmark (size classes); placement guarantees a walking gap between
+ *  footprints, but a push-out CAN nudge a body toward a neighbour, so resolve against every POI (a second
+ *  pass settles the rare double-touch — bounded, deterministic). PURE. */
 export function resolvePoiCollision(
   map: ArenaMap,
   x: number,
   y: number,
   radius: number,
 ): { x: number; y: number } {
-  for (const p of map.pois) {
-    const min = MAP_POI_RADIUS + radius;
-    const dx = x - p.x;
-    const dy = y - p.y;
-    const d2 = dx * dx + dy * dy;
-    if (d2 >= min * min) continue;
-    const d = Math.sqrt(d2);
-    if (d < 1e-4) return { x: p.x, y: p.y - min }; // dead centre → pop straight out
-    return { x: p.x + (dx / d) * min, y: p.y + (dy / d) * min };
+  let nx = x;
+  let ny = y;
+  for (let pass = 0; pass < 2; pass++) {
+    let touched = false;
+    for (const p of map.pois) {
+      const min = poiRadius(p.kind) + radius;
+      const dx = nx - p.x;
+      const dy = ny - p.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= min * min) continue;
+      touched = true;
+      const d = Math.sqrt(d2);
+      if (d < 1e-4) {
+        nx = p.x;
+        ny = p.y - min; // dead centre → pop straight out
+      } else {
+        nx = p.x + (dx / d) * min;
+        ny = p.y + (dy / d) * min;
+      }
+    }
+    if (!touched) break;
   }
-  return { x, y };
+  return { x: nx, y: ny };
 }
 
 /** Fraction of the grid that is pit — for tuning + tests. */
@@ -488,15 +572,21 @@ export function safeSpawnPos(
 ): { x: number; y: number } {
   let nx = x;
   let ny = y;
-  if (isPitAtPx(map, nx, ny)) {
-    const g = nearestGroundPx(map, nx, ny);
-    nx = g.x;
-    ny = g.y;
-  }
-  if (isInsidePoi(map, nx, ny)) {
-    const safe = resolvePoiCollision(map, nx, ny, radius);
-    nx = safe.x;
-    ny = safe.y;
+  // Two settle rounds: pit-snap can land inside a POI's (all-ground) footprint, and a POI push-out could in
+  // principle end over a pit — placement's MAP_POI_GROUND_CLEARANCE ring makes that near-impossible, but
+  // this stays correct even if a future body outgrows the ring. Round 2 re-checks both; bounded + pure.
+  for (let round = 0; round < 2; round++) {
+    if (isPitAtPx(map, nx, ny)) {
+      const g = nearestGroundPx(map, nx, ny);
+      nx = g.x;
+      ny = g.y;
+    }
+    if (isInsidePoi(map, nx, ny)) {
+      const safe = resolvePoiCollision(map, nx, ny, radius);
+      nx = safe.x;
+      ny = safe.y;
+    }
+    if (!isPitAtPx(map, nx, ny) && !isInsidePoi(map, nx, ny)) break; // settled
   }
   return { x: nx, y: ny };
 }

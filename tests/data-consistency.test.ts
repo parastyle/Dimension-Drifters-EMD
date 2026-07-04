@@ -4,6 +4,9 @@ import {
   DIMENSIONS,
   ENEMY_KINDS,
   EXPANSION_WEAPON_IDS,
+  MAP_POI_GAP,
+  MAP_POI_GROUND_CLEARANCE,
+  PLAYER_RADIUS,
   SHIFTER_KIND_IDS,
   WEAPONS,
 } from "@dd/shared";
@@ -107,5 +110,22 @@ describe("§17 dimension registry ↔ ENEMY_KINDS", () => {
       expect(kind, `shifter "${id}"`).toBeDefined();
       expect(kind?.shifter, `shifter "${id}" flag`).toBeDefined();
     }
+  });
+});
+
+// §17 v0.102 the POI landmark geometry only stays wedge-free while every BODY fits the guarantees:
+// resolvePoiCollision's 2-pass settle needs the walking gap to exceed any body's settle reach, and the
+// placement ground-clearance ring must cover the push-out parking spot (poiRadius + bodyRadius). A future
+// enemy bigger than these bounds would silently re-enable stuck-between-landmarks / pushed-over-a-pit —
+// make adding one fail the BUILD with a pointer at the two constants to retune.
+describe("§17 POI geometry ↔ largest body (wedge/push-out guards)", () => {
+  const maxBodyRadius = Math.max(PLAYER_RADIUS, ...Object.values(ENEMY_KINDS).map((k) => k.radius));
+
+  it(`the walking gap (${MAP_POI_GAP}px) fits the largest body (r=${maxBodyRadius}) with settle room`, () => {
+    expect(maxBodyRadius).toBeLessThan(MAP_POI_GAP / 2);
+  });
+
+  it("the placement ground-clearance ring covers the push-out parking spot for every body", () => {
+    expect(maxBodyRadius).toBeLessThanOrEqual(MAP_POI_GROUND_CLEARANCE);
   });
 });

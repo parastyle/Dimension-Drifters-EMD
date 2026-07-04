@@ -17,7 +17,9 @@ import { describe, expect, it } from "vitest";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SHARED_SRC = join(HERE, "..", "packages", "shared", "src");
-const REPLICATED_MODULES = ["combat.ts", "melee.ts", "enemies.ts"];
+// mapgen.ts is the highest-stakes replicated module: server + client each run generateArena from the
+// synced seeds and MUST produce byte-identical maps — one stray Math.random desyncs the whole floor.
+const REPLICATED_MODULES = ["combat.ts", "melee.ts", "enemies.ts", "mapgen.ts"];
 
 describe("§4 replicated-helper purity boundary", () => {
   it("the client-replicated shared modules contain NO Math.random (would desync co-op VFX)", () => {

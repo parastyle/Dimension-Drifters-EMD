@@ -59,7 +59,7 @@ import { POI_IDS } from "../sprites/poi-manifest.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
-import { buildArenaFloor, buildPois, drawArena } from "./arena/floor-renderer.js";
+import { buildArenaFloor, buildPois, drawArena, type PoiSprite } from "./arena/floor-renderer.js";
 import {
   GUN_FX,
   makeBullet,
@@ -126,6 +126,10 @@ export class ArenaScene extends Phaser.Scene {
   private parryGfx!: Phaser.GameObjects.Graphics;
   /** H10 `time.now` of the last parry press, so the ring can flash bright through the i-frame window. */
   private lastParryPress = -9999;
+  /** §17 v0.102 placed landmark sprites — faded when the local player walks behind one (see-through cover). */
+  private poiSprites: PoiSprite[] = [];
+  /** §17 v0.102 off-screen extraction-portal locator (a 4800² arena needs a pointer, not just copy). */
+  private portalArrow: Phaser.GameObjects.Container | null = null;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
@@ -276,6 +280,8 @@ export class ArenaScene extends Phaser.Scene {
   create(): void {
     // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
+    this.poiSprites = []; // scene-restart safety: never keep handles to destroyed landmark sprites
+    this.portalArrow = null;
     this.vfxPlayer = new VfxPlayer(this);
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
@@ -618,7 +624,7 @@ export class ArenaScene extends Phaser.Scene {
     const palette = getDimension(s.dimensionId).palette;
     drawArena(this, (k) => this.hasTile(k), palette);
     buildArenaFloor(this, this.arenaMap, palette);
-    buildPois(this, this.arenaMap);
+    this.poiSprites = buildPois(this, this.arenaMap);
     this.floorBuilt = true;
   }
 
@@ -781,6 +787,8 @@ export class ArenaScene extends Phaser.Scene {
     this.sendAttack();
     this.sendParry();
     this.renderParryState();
+    this.updatePoiOcclusion(); // §17 v0.102 fade a landmark the local player is hidden behind
+    this.updatePortalArrow(); // §17 v0.102 edge-of-screen pointer to an off-screen open portal
     this.updateCombatFx();
     this.updateHud();
     this.updateRunState();
@@ -1793,6 +1801,69 @@ export class ArenaScene extends Phaser.Scene {
       g.lineStyle(2 + 1.5 * k, 0xffffff, 0.35 + 0.5 * k);
       g.strokeCircle(px, py, 22 - 13 * k); // ring tightens onto the slug as it arrives
     });
+  }
+
+  /** §17 v0.102 landmark occlusion fade: an L/XL structure is taller than the viewport, so when the LOCAL
+   *  player walks behind one (inside the sprite's bounds, above its base), it eases to ~45% alpha — cover
+   *  you can see yourself behind, the standard top-down-action treatment. Eases back to opaque when clear. */
+  private updatePoiOcclusion(): void {
+    const selfId = this.room?.sessionId;
+    const self = selfId ? this.room?.state.players.get(selfId) : undefined;
+    for (const p of this.poiSprites) {
+      let target = 1;
+      if (self?.alive) {
+        const halfW = p.img.displayWidth / 2;
+        const top = p.y - p.img.displayHeight;
+        // "Behind" = horizontally within the sprite and standing between its top and its base line.
+        if (self.y < p.y && self.y > top && Math.abs(self.x - p.x) < halfW) target = 0.45;
+      }
+      p.img.alpha = Phaser.Math.Linear(p.img.alpha, target, 0.18);
+    }
+  }
+
+  /** §17 v0.102 off-screen portal locator: on a 4800² arena the open extraction portal can be thousands of
+   *  px away — when it's outside the viewport, pin an amber chevron + distance to the screen edge along
+   *  the bearing so the §6 bank-or-push decision has a direction, not just a line of copy. */
+  private updatePortalArrow(): void {
+    const st = this.room?.state;
+    const selfId = this.room?.sessionId;
+    const self = selfId ? st?.players.get(selfId) : undefined;
+    const cam = this.cameras.main;
+    const onScreen =
+      !!st?.portalOpen &&
+      st.portalX > cam.worldView.x &&
+      st.portalX < cam.worldView.right &&
+      st.portalY > cam.worldView.y &&
+      st.portalY < cam.worldView.bottom;
+    if (!st?.portalOpen || onScreen || !self?.alive) {
+      this.portalArrow?.setVisible(false);
+      return;
+    }
+    if (!this.portalArrow) {
+      const tri = this.add.triangle(0, 0, 0, -13, 11, 9, -11, 9, 0xffd479, 0.95);
+      const label = this.add
+        .text(0, 26, "", { fontSize: "13px", color: "#ffd479", fontStyle: "bold" })
+        .setOrigin(0.5);
+      this.portalArrow = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
+    }
+    const dx = st.portalX - self.x;
+    const dy = st.portalY - self.y;
+    const ang = Math.atan2(dy, dx);
+    // Pin to the screen edge along the bearing (padded), rotate the chevron to point at the portal.
+    const pad = 46;
+    const w = this.screenW();
+    const h = this.screenH();
+    const cx = w / 2;
+    const cy = h / 2;
+    const t = Math.min(
+      Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6)),
+      Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6)),
+    );
+    this.portalArrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
+    (this.portalArrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
+    (this.portalArrow.list[1] as Phaser.GameObjects.Text).setText(
+      `portal ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
+    );
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's

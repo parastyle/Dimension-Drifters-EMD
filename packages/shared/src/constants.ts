@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3; // v0.102 — arena 4800² + POI size classes change what generateArena(seeds) MEANS; a stale bundle would regenerate a different map from the same seeds
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -20,13 +20,16 @@ export const TICK_MS = 1000 / TICK_RATE;
 /** Flat player move speed in px/sec. §7 [LOCKED]: flat move speed, no sprint layer. (tuning) */
 export const MOVE_SPEED = 320;
 
-/** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning) */
-export const ARENA_WIDTH = 2400;
-export const ARENA_HEIGHT = 2400;
+/** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning)
+ *  v0.102 "release-roominess" pass: 2400² → 4800² (4× the area) so the arena reads as a WORLD you roam,
+ *  not a pen — combat density is unchanged (enemies spawn on a ring around the players), the extra space
+ *  is breathing room between the terrain features. */
+export const ARENA_WIDTH = 4800;
+export const ARENA_HEIGHT = 4800;
 
 /**
  * §17 procedural arena tiling. The map is a coarse integer grid of `MAP_TILE`-px cells (chosen to divide
- * the arena evenly: 2400 / 80 = 30 → a 30×30 grid). Generation (mapgen.ts) is server-seeded + shared so
+ * the arena evenly: 4800 / 80 = 60 → a 60×60 grid). Generation (mapgen.ts) is server-seeded + shared so
  * every client reproduces the identical map. All TUNING. Phase 0 only produces + validates the grid; pit
  * rendering/collision is the §17 Phase 1 follow-up.
  */
@@ -35,13 +38,15 @@ export const MAP_TILE = 80;
 export const MAP_SPAWN_CLEAR_TILES = 3;
 /** A solid ground ring this many tiles deep around the arena edge (no pit flush against the wall). */
 export const MAP_BORDER_TILES = 1;
-/** Target pit coverage of the interior (fraction) — the generator aims near this. */
-export const MAP_PIT_TARGET = 0.16;
+/** Target pit coverage of the interior (fraction) — the generator aims near this. Kept LOW on purpose
+ *  (roominess): pits are fewer, GRANDER features with open lanes between, not scattered pixel noise. */
+export const MAP_PIT_TARGET = 0.13;
 /** Hard ceiling on pit coverage — if blob growth + smoothing overshoot, an erosion pass trims pits back
  *  under this so the arena stays mostly playable (never swiss cheese). */
-export const MAP_PIT_MAX = 0.26;
-/** Minimum spacing between pit "seed" sites (tiles), so hazards spread out instead of clumping. */
-export const MAP_PIT_SPACING_TILES = 4;
+export const MAP_PIT_MAX = 0.22;
+/** Minimum spacing between pit "seed" sites (tiles), so hazards spread out instead of clumping — wide
+ *  enough that clear traversal lanes always exist between neighbouring pit features. */
+export const MAP_PIT_SPACING_TILES = 7;
 /**
  * Widest pit GAP (tiles) a player may be REQUIRED to cross by jumping — the connectivity guarantee treats
  * any straight gap up to this as "hoppable" and bridges anything wider with ground, so no region is ever
@@ -51,15 +56,27 @@ export const MAP_PIT_SPACING_TILES = 4;
 export const MAP_MAX_JUMP_TILES = 2;
 
 /**
- * §17 POI LANDMARKS — a few big standing structures (oil derrick / windmill / dead tree / adobe ruin /
+ * §17 POI LANDMARKS — big standing structures (oil derrick / windmill / dead tree / adobe ruin /
  * water tower / rock spire) placed deterministically in the arena for cover + orientation. Players AND
  * enemies COLLIDE with them (static circle obstacles), so they read as real cover. (tuning)
+ *
+ * v0.102 size-class system: every landmark gets a deterministic size class from its `kind`
+ * (`poiScale(kind)` in mapgen.ts — S/M/L/XL), its collision radius scales with it (`poiRadius(kind)`),
+ * and the client derives each sprite's visual scale FROM the collision radius (WYSIWYG — the art's base
+ * width matches the blocker you actually collide with). MAP_POI_RADIUS is the M-class BASE radius.
  */
-export const MAP_POI_COUNT = 7;
-/** Minimum spacing between POIs (tiles), so landmarks spread out instead of clumping. */
+export const MAP_POI_COUNT = 28;
+/** Minimum spacing between POIs (tiles) — a floor; the real rule is pairwise radius-aware (mapgen). */
 export const MAP_POI_SPACING_TILES = 5;
-/** POI collision radius (px) — a chunky obstacle (~2× the player radius). */
-export const MAP_POI_RADIUS = 52;
+/** BASE (M-class) POI collision radius (px) — size classes multiply this (S 0.8× → XL 1.9×). */
+export const MAP_POI_RADIUS = 58;
+/** Guaranteed clear WALKING gap (px) between any two landmark footprints — wide enough that a player
+ *  (and the horde chasing them) can always thread between neighbouring blockers without wedging. */
+export const MAP_POI_GAP = 150;
+/** GROUND ring guaranteed around each landmark's footprint (px) — must exceed the LARGEST body radius,
+ *  because resolvePoiCollision parks a pushed-out body's centre at `poiRadius + bodyRadius`: without this
+ *  ring an XL landmark on a pit lip shoves the body straight over the edge (adversarial-verify finding). */
+export const MAP_POI_GROUND_CLEARANCE = 72;
 /** Keep POIs this many tiles clear of the spawn disc so they never trap a spawning player. */
 export const MAP_POI_SPAWN_CLEAR_TILES = 5;
 
