@@ -6,8 +6,10 @@ import {
   JUMP_VELOCITY,
   MOVE_SPEED,
   PLAYER_RADIUS,
+  steerVelocity,
   stepImpulse,
   stepPlayerMovement,
+  stepSteeredMovement,
   stepVertical,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -44,6 +46,82 @@ describe("stepPlayerMovement", () => {
   it("does not move with zero input", () => {
     const result = stepPlayerMovement({ x: 500, y: 500 }, { dx: 0, dy: 0 }, 1);
     expect(result).toEqual({ x: 500, y: 500 });
+  });
+});
+
+// §7 v0.105 STEERED movement — the "directional combination course correction". The authoritative tick
+// now blends velocity toward the input target instead of snapping, so direction changes TRANSITION
+// (forward→up sweeps through the diagonal), taps ease in, and releases settle to an exact stop.
+describe("steerVelocity / stepSteeredMovement (§7 course correction)", () => {
+  const TICK = 0.05; // the server's 20Hz dt
+
+  it("accelerates from rest toward the target, reaching ~full speed within ~350ms", () => {
+    let v = { vx: 0, vy: 0 };
+    const speeds: number[] = [];
+    for (let i = 0; i < 7; i++) {
+      v = steerVelocity(v, { dx: 1, dy: 0 }, TICK);
+      speeds.push(v.vx);
+    }
+    for (let i = 1; i < speeds.length; i++) {
+      expect(speeds[i]).toBeGreaterThan(speeds[i - 1] ?? 0); // monotonic spin-up
+    }
+    expect(v.vx).toBeGreaterThan(MOVE_SPEED * 0.95); // ~full speed after 7 ticks (350ms)
+    expect(v.vy).toBe(0);
+  });
+
+  it("COURSE-CORRECTS a right→up turn through the diagonal (the transition Mike asked for)", () => {
+    // Run at full speed to the right, then hold UP: the velocity must pass through a state where it
+    // still carries rightward momentum AND upward motion — a sweep, not a snap.
+    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // settle at full right
+    expect(v.vx).toBeCloseTo(MOVE_SPEED, 0);
+    v = steerVelocity(v, { dx: 0, dy: -1 }, TICK); // now steer UP
+    expect(v.vx).toBeGreaterThan(0); // still gliding right…
+    expect(v.vy).toBeLessThan(0); // …while already curving upward — the diagonal transition
+    // And it converges: after ~400ms of held UP the heading is essentially vertical.
+    for (let i = 0; i < 8; i++) v = steerVelocity(v, { dx: 0, dy: -1 }, TICK);
+    expect(Math.abs(v.vx)).toBeLessThan(MOVE_SPEED * 0.05);
+    expect(v.vy).toBeLessThan(-MOVE_SPEED * 0.95);
+  });
+
+  it("NEVER exceeds the §7 flat-speed ceiling, even mid-turn", () => {
+    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2);
+    for (let i = 0; i < 20; i++) {
+      v = steerVelocity(v, { dx: i % 2 ? 1 : 0, dy: i % 2 ? 0 : -1 }, TICK); // thrash the stick
+      expect(Math.hypot(v.vx, v.vy)).toBeLessThanOrEqual(MOVE_SPEED + 1e-9);
+    }
+  });
+
+  it("releasing the keys settles to an EXACT stop (no ice-skating, no residual drift)", () => {
+    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2);
+    for (let i = 0; i < 8; i++) v = steerVelocity(v, { dx: 0, dy: 0 }, TICK);
+    expect(v.vx).toBe(0); // snapped to exactly zero, not 0.0003
+    expect(v.vy).toBe(0);
+  });
+
+  it("is frame-rate independent (two 25ms steps ≡ one 50ms step, exactly)", () => {
+    const start = { vx: 100, vy: -40 };
+    const input = { dx: 0.6, dy: 0.8 };
+    const one = steerVelocity(start, input, 0.05);
+    const half = steerVelocity(steerVelocity(start, input, 0.025), input, 0.025);
+    expect(half.vx).toBeCloseTo(one.vx, 9);
+    expect(half.vy).toBeCloseTo(one.vy, 9);
+  });
+
+  it("stepSteeredMovement integrates the steered velocity + clamps to the arena", () => {
+    const r = stepSteeredMovement(
+      { x: ARENA_WIDTH - PLAYER_RADIUS, y: 1000 },
+      { vx: MOVE_SPEED, vy: 0 },
+      { dx: 1, dy: 0 },
+      1,
+    );
+    expect(r.x).toBe(ARENA_WIDTH - PLAYER_RADIUS); // wall holds
+    expect(r.vx).toBeGreaterThan(0); // velocity itself keeps steering (the wall clamps position only)
+  });
+
+  it("over-unit input cannot buy speed (anti speed-hack holds through the steering layer)", () => {
+    let v = { vx: 0, vy: 0 };
+    for (let i = 0; i < 40; i++) v = steerVelocity(v, { dx: 99, dy: 0 }, TICK);
+    expect(v.vx).toBeLessThanOrEqual(MOVE_SPEED + 1e-9);
   });
 });
 

@@ -1,4 +1,4 @@
-import type { WeaponDef } from "@dd/shared";
+import { MOVE_SPEED, type WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 
@@ -34,6 +34,9 @@ export interface RigAnim {
   /** Movement direction this frame (≈0 length when idle). */
   moveX: number;
   moveY: number;
+  /** §7 v0.105 RAW render speed (px/s) — drives the gait blend so the walk cycle ramps with actual speed
+   *  and fully stops when you do (not a binary flag that runs full-stride for ~1.3s after key-release). */
+  speed?: number;
   /** Aim direction toward the cursor (local player only). */
   aimX: number;
   aimY: number;
@@ -76,6 +79,19 @@ export class SpriteRig {
   private readonly label?: Phaser.GameObjects.Text;
   private readonly phase: number;
   private facing = 1;
+  /** §7 v0.105 de-clunk — smoothed 0..1 GAIT (≈ speed/MOVE_SPEED): scales the stride/lift/lean so the walk
+   *  cycle ramps in + fades out instead of snapping on a binary flag (the old check was dead code that kept
+   *  the jog running ~1.3s after you stopped). */
+  private gait = 0;
+  /** §7 v0.105 de-clunk — eased facing (−1..1). The mirror glides through 0 (reads as a TURN) instead of a
+   *  one-frame full-body flip; `facing` stays the committed ±1 (drives aim math + keeps the label readable). */
+  private facingBlend = 1;
+  /** §7 v0.105 de-clunk — landing squash (0..1, decays) fired when the hop returns to the ground. */
+  private landSquash = 0;
+  /** §7 v0.105 de-clunk — last `animate` clock (ms) to derive a frame dt for the eased blends; -1 = first. */
+  private prevAnimMs = -1;
+  /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
+  private static readonly BRACE_DUR = 450;
   /** Held weapon piece(s) — one per hand (dual-wield = two). Live INSIDE the container so the
    *  hand renders over the hilt and the facing-flip applies automatically. */
   private weapons: {
@@ -88,8 +104,10 @@ export class SpriteRig {
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
   /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
-   *  the camera + depth-sort use the ground position; only the visible parts rise. */
+   *  the camera + depth-sort use the ground position; only the visible parts rise. §7 v0.105 de-clunk:
+   *  `hopPx` now EASES toward `hopTarget` (the synced height) so the 20Hz jump doesn't stair-step. */
   private hopPx = 0;
+  private hopTarget = 0;
   /** §5/§20 ground shadow — stays grounded while the art lifts, so the gap reads as HEIGHT (jump /
    *  parry-launch / death-pop). Shrinks + fades as the rig rises. */
   private readonly shadow: Phaser.GameObjects.Ellipse;
@@ -175,7 +193,7 @@ export class SpriteRig {
   /** §5 jump hop: lift the rendered art by `px` (peak of the arc). The container's logical position is
    *  untouched, so the camera + depth-sort stay grounded — only the visible body/hands/feet/weapon rise. */
   setHop(px: number): void {
-    this.hopPx = px;
+    this.hopTarget = px;
   }
 
   /** §20 DEATH-POP (Stage B): launch the corpse — slide along (vx,vy), arc UP under a fake gravity, spin,
@@ -237,6 +255,9 @@ export class SpriteRig {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
+    // swing carries into the NEW weapon's (different-length) timeline, so a fresh grab could pop mid-swing.
+    this.swingStart = -1e9;
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
@@ -294,7 +315,11 @@ export class SpriteRig {
    *  a guard, and dip into a brace, held ~the i-frame window. Purely a STANCE (no VFX yet; on-parry
    *  effects arrive with the level-up parry augments). */
   triggerBrace(timeMs: number): void {
-    this.braceStart = timeMs;
+    // §7 v0.105 de-clunk: on a CHAIN parry (a press landing while the guard is still up), don't restart the
+    // envelope from 0 — that re-ramps the raise over ~81ms and flickers the guard OFF for a frame right in
+    // the Sekiro rhythm. Restart at the PLATEAU time instead so the guard holds continuously.
+    this.braceStart =
+      timeMs - this.braceStart < SpriteRig.BRACE_DUR ? timeMs - 0.18 * SpriteRig.BRACE_DUR : timeMs;
   }
 
   /** §8 Brand augment: a persistent ember-orange tint marking a Marked enemy (takes more damage). */
@@ -355,19 +380,33 @@ export class SpriteRig {
 
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
-    const moving = Math.hypot(anim.moveX, anim.moveY) > 0.02;
+    // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
+    // clamped so a hit-stop gap or first frame can't produce a jump.
+    const dtMs = this.prevAnimMs < 0 ? 16 : Math.min(100, timeMs - this.prevAnimMs);
+    this.prevAnimMs = timeMs;
     const s = this.scale;
+
+    // §7 v0.105 GAIT: ease a 0..1 gait toward the real render speed (speed/MOVE_SPEED). Stride/lift/lean all
+    // scale by it, so the walk ramps in + fully fades out with speed instead of a binary flag that ran the
+    // full-stride jog for ~1.3s after key-release (and teleported a foot on the flip to idle).
+    const targetGait = Math.min(1, (anim.speed ?? 0) / MOVE_SPEED);
+    this.gait += (targetGait - this.gait) * (1 - Math.exp((-8 * dtMs) / 1000)); // τ≈125ms
+    const gait = this.gait;
 
     // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
     const dirX = anim.isSelf ? anim.aimX : this.weaponDef?.gun ? Math.cos(anim.aimDir) : anim.moveX;
-    if (Math.abs(dirX) > 0.05) this.facing = dirX >= 0 ? 1 : -1;
-    // UNIFORM scale on both axes (baseScale), facing = a pure horizontal MIRROR — never a stretch,
-    // so the hand-painted art keeps its aspect ratio at any size (§28.4).
-    this.root.scaleX = this.facing * this.baseScale;
+    // §7 v0.105 de-clunk: HYSTERESIS — commit a new facing only past 0.18 (a wide deadzone) so near-vertical
+    // aim doesn't strobe the whole body on consecutive frames; `facing` stays the committed ±1.
+    if (Math.abs(dirX) > 0.18) this.facing = dirX >= 0 ? 1 : -1;
+    // §7 v0.105 de-clunk: EASE the visual mirror toward the committed facing, passing through scaleX≈0 —
+    // that reads as a TURN, not a one-frame full-body flip. UNIFORM baseScale on both axes = a pure mirror,
+    // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).
+    this.facingBlend += (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
+    this.root.scaleX = this.facingBlend * this.baseScale;
     this.root.scaleY = this.baseScale;
-    if (this.label) this.label.scaleX = this.facing; // keep text readable through the flip
+    if (this.label) this.label.scaleX = this.facing; // keep text readable (discrete, not the blend)
 
     // Vertical "look" toward the cursor — local player only (others have no synced aim). aimY is screen
     // space (−up / +down) and is NOT touched by the facing mirror, so it leans correctly both ways.
@@ -378,8 +417,9 @@ export class SpriteRig {
     this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
     this.body.scaleX = s * (1 + bob * 0.04);
     this.body.scaleY = s * (1 - bob * 0.06);
-    // Body leans back looking up, forward looking down (+ the existing movement lean).
-    this.body.rotation = (moving ? anim.moveX * 0.16 : 0) + lookY * BODY_LOOK_LEAN;
+    // Body leans back looking up, forward looking down (+ the movement lean, scaled by gait so it eases
+    // in/out with speed rather than snapping ±0.16rad on the walk↔idle flip).
+    this.body.rotation = anim.moveX * 0.16 * gait + lookY * BODY_LOOK_LEAN;
 
     // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
     // knockback). The whole body already slides via the server position; this is the additive flinch on
@@ -398,7 +438,7 @@ export class SpriteRig {
     let brace = 0;
     {
       const bel = timeMs - this.braceStart;
-      const bdur = 450; // ≈ PARRY_IFRAMES (0.45s)
+      const bdur = SpriteRig.BRACE_DUR; // ≈ PARRY_IFRAMES (0.45s)
       if (bel >= 0 && bel < bdur) {
         const tt = bel / bdur;
         brace = tt < 0.18 ? tt / 0.18 : tt > 0.7 ? 1 - (tt - 0.7) / 0.3 : 1;
@@ -424,7 +464,10 @@ export class SpriteRig {
       const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
       weaponAngle = restA + Math.sin(t * 2.6) * 0.04; // gentle idle sway
       const el = timeMs - this.swingStart;
-      const dur = def.cooldown * 470;
+      // §7 v0.105 de-clunk: a touch longer than the old cooldown×470 so the last stretch can EASE BACK to
+      // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
+      // (×1000), so the swing always finishes before the next one can start.
+      const dur = def.cooldown * 640;
       if (el >= 0 && el < dur) {
         // §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE AIM (frozen at swing-start), so the
         // sprite passes through exactly what the server's swept hitbox damages. World aim → local (mirrored).
@@ -438,10 +481,17 @@ export class SpriteRig {
         const end = aimLocal + def.swingArc / 2;
         const back = start - 0.3; // a quick wind-back just past the start of the sweep
         const tt = el / dur;
-        weaponAngle =
-          tt < 0.16
-            ? restA + (back - restA) * (tt / 0.16) // wind up
-            : back + (end - back) * (1 - (1 - (tt - 0.16) / 0.84) ** 2); // ease-out sweep through the arc
+        if (tt < 0.16) {
+          weaponAngle = restA + (back - restA) * (tt / 0.16); // wind up
+        } else if (tt < 0.74) {
+          const p = (tt - 0.16) / 0.58;
+          weaponAngle = back + (end - back) * (1 - (1 - p) ** 2); // ease-out sweep through the arc
+        } else {
+          // §7 v0.105 de-clunk: ease the blade BACK to the rest tilt over the tail of the swing (arrives at
+          // restA exactly at tt=1), so there's no discontinuity when the swing window closes.
+          const p = (tt - 0.74) / 0.26;
+          weaponAngle = end + (restA - end) * (p * (2 - p)); // easeOut return
+        }
       }
     }
     // Brace overrides the swing: raise the weapon toward a near-horizontal block (business end up).
@@ -483,21 +533,18 @@ export class SpriteRig {
       }
     }
 
-    // Feet: alternating walk when moving (lift + a small forward/back stride + a toe pivot),
-    // gentle float when idle. A touch more life than a pure vertical bob.
+    // Feet: alternating walk (lift + a small forward/back stride + a toe pivot) BLENDED by gait with a
+    // gentle idle float. §7 v0.105 de-clunk: everything scales by `gait`, so the stride/lift/pivot shrink
+    // smoothly to zero as you stop (no full-stride jog for a second after release, no foot teleport on the
+    // walk↔idle flip); the idle float fades in as (1−gait).
     for (let i = 0; i < this.feet.length; i++) {
       const ft = this.feet[i];
       if (!ft) continue;
-      if (moving) {
-        const ph = t * 11 + i * Math.PI; // legs out of phase
-        ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16;
-        ft.img.x = ft.ox + Math.cos(ph) * s * 7; // stride
-        ft.img.rotation = Math.cos(ph) * 0.14; // slight pivot
-      } else {
-        ft.img.y = ft.oy + Math.sin(t * 3 + i) * s * 4;
-        ft.img.x = ft.ox;
-        ft.img.rotation = 0;
-      }
+      const ph = t * 11 + i * Math.PI; // legs out of phase
+      const idle = Math.sin(t * 3 + i) * s * 4 * (1 - gait);
+      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16 * gait + idle;
+      ft.img.x = ft.ox + Math.cos(ph) * s * 7 * gait; // stride
+      ft.img.rotation = Math.cos(ph) * 0.14 * gait; // slight pivot
     }
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
@@ -509,8 +556,16 @@ export class SpriteRig {
       w.img.rotation = weaponAngle + off;
     }
 
-    // §5 jump hop: after every part is positioned, lift the whole rig's ART up the arc. Feet lift most
-    // (they leave the ground), so the silhouette reads as "off the ground" rather than just sliding up.
+    // §5 jump hop: §7 v0.105 de-clunk — the synced height arrives in raw 20Hz Euler steps (~15px jumps),
+    // visibly chunkier than the smoothed x/y. EASE the rendered lift toward the target (τ≈45ms) so the arc
+    // reads continuous, and fire a brief LANDING SQUASH when it returns to the ground.
+    const prevHop = this.hopPx;
+    this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
+    if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
+    if (prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1) this.landSquash = 1; // touched down
+    this.landSquash = Math.max(0, this.landSquash - dtMs / 110); // decays over ~110ms
+    // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
+    // ground), so the silhouette reads as "off the ground" rather than just sliding up.
     if (this.hopPx > 0.01) {
       const lift = this.hopPx;
       for (const p of this.parts) p.y -= lift;
@@ -518,6 +573,7 @@ export class SpriteRig {
       // A touch of squash relief at the apex sells the leap (body stretches up slightly mid-air).
       this.body.scaleY *= 1 + Math.min(0.12, lift / 300);
     }
+    if (this.landSquash > 0.01) this.body.scaleY *= 1 - 0.14 * this.landSquash; // squash on touchdown
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
     const shrink = Math.max(0.42, 1 - this.hopPx / 420);

@@ -10,6 +10,17 @@ import { gunFx } from "./projectile-factory.js";
  * level-up celebration stays in the scene (it reads screen-space HUD dimensions).
  */
 
+/** §7 v0.105 de-clunk (adversarial-verify fix): route a camera shake through ArenaScene's PRIORITIZED
+ *  `shakeCam` so it participates in the same force/priority arbitration as every other shake site — a raw
+ *  `cameras.main.shake()` here (no `force`) is silently dropped whenever another shake is running, AND it
+ *  never updates the scene's shake bookkeeping, so a later weaker shake would stomp it. Falls back to a
+ *  forced raw shake if the host scene isn't an ArenaScene (defensive — e.g. a different scene reusing these). */
+function shakeVia(scene: Phaser.Scene, duration: number, intensity: number): void {
+  const s = scene as unknown as { shakeCam?: (d: number, i: number) => void };
+  if (typeof s.shakeCam === "function") s.shakeCam(duration, intensity);
+  else scene.cameras.main.shake(duration, intensity, true);
+}
+
 /** §9 per-gun MUZZLE FLASH — the shaped 8-prong caged-fire star (the same geometry as the engine
  *  `drawMuzzleFlash`) drawn at the barrel, sized + tinted per gun, with a hot core + white centre, then
  *  faded out fast. Cheap (one Graphics + a tween) so it survives the gatling's fire rate. */
@@ -374,7 +385,7 @@ export function spawnQuakeHero(
     });
   }
 
-  scene.cameras.main.shake(220, 0.02 * vfx.shake);
+  shakeVia(scene, 220, 0.02 * vfx.shake);
 }
 
 /** Procedural quake fallback (golden ground shockwave) for quake weapons without a VFX skin. */
@@ -418,7 +429,7 @@ export function spawnQuakeProcedural(
       onComplete: () => p.destroy(),
     });
   }
-  scene.cameras.main.shake(220, 0.012);
+  shakeVia(scene, 220, 0.012);
 }
 
 /** Floating combat text that rises and fades (world-space, over the target). */

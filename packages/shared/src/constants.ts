@@ -20,6 +20,31 @@ export const TICK_MS = 1000 / TICK_RATE;
 /** Flat player move speed in px/sec. §7 [LOCKED]: flat move speed, no sprint layer. (tuning) */
 export const MOVE_SPEED = 320;
 
+/**
+ * §7 STEERED movement (v0.105 — "directional combination course correction"): the body no longer snaps
+ * to a new input direction; its velocity STEERS toward the target exponentially, so forward→up sweeps
+ * through the diagonal (a readable turn), tapping a key eases in, and releasing eases out. Rates are
+ * per-second exponential constants (frame-rate independent): time-to-90% ≈ 2.3/rate. ACCEL 14 → a turn
+ * or spin-up completes in ~165ms (weighty but never mushy); DECEL 24 → releasing the keys stops in
+ * ~95ms (crisp, no ice-skating). Top speed stays hard-clamped at MOVE_SPEED (the §7 flat-speed law —
+ * steering shapes the transition, never the ceiling). (tuning)
+ */
+export const MOVE_STEER_ACCEL = 14;
+export const MOVE_STEER_DECEL = 24;
+
+/**
+ * §7 v0.105 de-clunk — CLIENT render-lerp teleport SNAP thresholds (px). The client smooths each rig
+ * toward its authoritative position with a τ≈154ms exponential lerp (great for the ~sub-49px
+ * frame-to-frame gap), but when the SERVER teleports an entity — a rift descent (~3000px), a run
+ * restart, a pit snap-back — that same lerp turns into a multi-second camera fly-by across the map. If
+ * the gap exceeds the threshold it's a teleport, not motion: hard-snap instead of gliding. Set well above
+ * any legitimate single-tick move so knockback never false-snaps: players top out at IMPULSE_MAX
+ * (780px/s → ~39px/tick) plus a little hit-stop catch-up; enemies get parry-knocked up to
+ * PARRY_KNOCKBACK×1.6 (~154px) in one tick, so their floor is higher. (tuning)
+ */
+export const INTERP_SNAP_PLAYER = 200;
+export const INTERP_SNAP_ENEMY = 260;
+
 /** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning)
  *  v0.102 "release-roominess" pass: 2400² → 4800² (4× the area) so the arena reads as a WORLD you roam,
  *  not a pen — combat density is unchanged (enemies spawn on a ring around the players), the extra space
@@ -143,6 +168,11 @@ export const JUMP_AIRTIME = 0.45;
 export const JUMP_COOLDOWN = 0.7;
 /** Peak visual hop height (px) the client lifts the rig at the top of the arc. */
 export const JUMP_HOP_HEIGHT = 34;
+/** §7 v0.105 de-clunk — INPUT BUFFER (sec): a SPACE pressed while still airborne / on cooldown is
+ *  QUEUED, not dropped, and fires the instant the player is grounded + ready. Sized just over the
+ *  post-landing dead window (JUMP_COOLDOWN 0.7s − airtime ~0.45s ≈ 0.25s) so a press a beat early still
+ *  hops instead of silently eating the input. */
+export const JUMP_BUFFER_SECONDS = 0.25;
 
 /** §5/§20 VERTICAL physics (Stage B) — the jump is now a real upward impulse under gravity, generalising
  *  the old fixed-duration hop into a HEIGHT axis (px above ground) that the §17 pit layer + the later
@@ -309,6 +339,13 @@ export const PARRY_IFRAMES = 0.45;
 export const PARRY_COOLDOWN = 0.6;
 export const PARRY_RADIUS = 135;
 export const PARRY_KNOCKBACK = 96;
+/** §7 v0.105 de-clunk — INPUT BUFFER windows (sec). The 20Hz tick + client cooldown gating means a press
+ *  that lands one tick before the server cooldown clears used to be silently EATEN (a visible swing/brace
+ *  that did nothing). Instead a press is QUEUED for this long and fires the instant the cooldown drains —
+ *  the "held trigger" and off-grid melee cadences stop dropping hits, and a chain-parry press that beats
+ *  the round-trip is honoured. Small so it never fires a stale attack a beat after you let go. */
+export const ATTACK_BUFFER_SECONDS = 0.15;
+export const PARRY_BUFFER_SECONDS = 0.15;
 /** §8 parry FLOW (Stage C): a SUCCESSFUL parry of a telegraphed attack refreshes the cooldown to this small
  *  value (vs the full PARRY_COOLDOWN miss-penalty), so you can immediately parry the next swing — that's how
  *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */

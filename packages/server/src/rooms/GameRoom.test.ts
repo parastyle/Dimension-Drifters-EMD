@@ -4,9 +4,11 @@ import {
   DUMMY_HP,
   ENEMY_KINDS,
   EnemyState,
+  FISTS_WEAPON,
   getDimension,
   isPitAtPx,
   makeRng,
+  PARRY_IFRAMES,
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
@@ -37,6 +39,7 @@ vi.mock("colyseus", () => {
     setSimulationInterval() {}
     setPatchRate() {}
     broadcast() {}
+    broadcastPatch() {}
   }
   return { Room, Client: class {} };
 });
@@ -583,7 +586,7 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     const c = h.room.combat.get("p1");
     let emptied = false;
     for (let i = 0; i < 240 && !emptied; i++) {
-      h.send("p1", "attack", { aimX: 1, aimY: 0 }); // hold the trigger: `attacking` is one-shot, re-arm each tick
+      h.send("p1", "attack", { aimX: 1, aimY: 0 }); // hold the trigger: the attack buffer re-arms each tick
       h.tick(1);
       if (p.charges === 0) emptied = true;
     }
@@ -592,6 +595,79 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // Release the trigger (stop sending attack) and let the reload timer run out.
     h.tick(Math.ceil(gun.reloadSeconds / 0.05) + 2);
     expect(p.charges).toBe(p.maxCharges); // magazine refilled
+  });
+});
+
+describe("GameRoom — §7 v0.105 de-clunk input buffering (attack / parry / jump)", () => {
+  // The bug: a press that lands one tick BEFORE the server cooldown clears used to be silently EATEN —
+  // the client had already played the whole swing/brace/hop, so the input felt dropped. These pin the fix:
+  // a press is queued for a short window and fires the instant the cooldown drains, WITHOUT re-sending.
+  function armedFister() {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.weapon = FISTS_WEAPON; // a plain melee weapon (no ammo/charges), cooldown 0.32s
+    h.tick(1); // let the weapon (re)initialise so it doesn't reset cd on the tick under test
+    return { h, p, c: h.room.combat.get("p1") };
+  }
+
+  it("BUFFERS an attack that arrives a tick early and fires it when the cooldown drains", () => {
+    const { h, c } = armedFister();
+    const fists = WEAPONS[FISTS_WEAPON];
+    if (!fists) throw new Error("fists weapon missing from the arsenal");
+    const fistsCd = fists.cooldown;
+    c.cd = 0.08; // just over one tick out — the message arrives while still on cooldown
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    expect(c.attackBuffer).toBeGreaterThan(0); // queued, not consumed yet (cd still > 0)
+    h.tick(2); // drain the cd over two ticks — NO re-send
+    expect(c.cd).toBeCloseTo(fistsCd, 5); // the buffered swing fired → cooldown re-armed to the weapon's
+    expect(c.attackBuffer).toBe(0); // and the buffer was consumed
+  });
+
+  it("DROPS a buffered attack on a weapon SWAP (no free cooldown-bypassing hit on the new weapon)", () => {
+    const { h, c } = armedFister();
+    c.cd = 0.5; // the OLD (slow) weapon is mid-cooldown
+    h.send("p1", "attack", { aimX: 1, aimY: 0 }); // queue a press for the OLD weapon
+    expect(c.attackBuffer).toBeGreaterThan(0);
+    h.send("p1", "cycleWeapon", { dir: 1 }); // swap within the buffer window (the swap zeroes cd)
+    h.tick(1);
+    expect(c.attackBuffer).toBe(0); // the stale buffer was dropped on the swap...
+    expect(c.cd).toBeLessThanOrEqual(0); // ...so the new weapon did NOT auto-fire (cd never re-armed)
+  });
+
+  it("does NOT fire a STALE attack once the buffer window lapses (no phantom swing after release)", () => {
+    const { h, c } = armedFister();
+    c.cd = 0.5; // far out — well past the ~0.15s buffer window
+    h.send("p1", "attack", { aimX: 1, aimY: 0 }); // a single press, never re-sent
+    h.tick(12); // 0.6s: buffer expires (~0.15s) long before the cd (0.5s) drains
+    expect(c.attackBuffer).toBe(0); // decayed away
+    expect(c.cd).toBeLessThanOrEqual(0); // cd drained and STAYED drained — the stale press never fired
+  });
+
+  it("BUFFERS a parry pressed during its cooldown and fires it when the cd clears (chain-parry desync fix)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const c = h.room.combat.get("p1");
+    c.parryCd = 0.08; // a chain press lands while the parry is still cooling down
+    h.send("p1", "parry");
+    expect(c.parryBuffer).toBeGreaterThan(0); // queued (not dropped)
+    h.tick(2); // drain the parry cd — NO re-send
+    expect(c.invuln).toBeGreaterThan(PARRY_IFRAMES - 0.11); // the buffered parry fired → i-frames granted
+    expect(c.parryBuffer).toBe(0);
+  });
+
+  it("BUFFERS a jump pressed on cooldown and hops the instant the player is grounded + ready", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const c = h.room.combat.get("p1");
+    const p = h.state().players.get("p1");
+    c.jumpCd = 0.08; // pressed during the post-landing dead window
+    p.height = 0; // grounded
+    h.send("p1", "jump");
+    expect(c.jumpBuffer).toBeGreaterThan(0); // queued
+    h.tick(2); // drain the jump cd — NO re-send
+    expect(p.height).toBeGreaterThan(0); // lifted off → the buffered hop fired
+    expect(c.jumpBuffer).toBe(0);
   });
 });
 

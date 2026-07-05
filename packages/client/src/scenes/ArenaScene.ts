@@ -29,9 +29,12 @@ import {
   getDimension,
   gunMuzzleReach,
   hasAugment,
+  INTERP_SNAP_ENEMY,
+  INTERP_SNAP_PLAYER,
   inMeleeArc,
   isPitAtPx,
   LEVELUP_WINDOW_SECONDS,
+  lootCooldownMult,
   lootDamageMult,
   PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
@@ -144,12 +147,20 @@ export class ArenaScene extends Phaser.Scene {
   private lastBossSlamT = 0;
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
+  /** §7 v0.105 de-clunk — per-enemy SMOOTHED windup (0..1) so the parry telegraph doesn't stair-step at
+   *  20Hz. Eased up toward the synced value, snapped to 0 on the strike; pruned with the enemy. */
+  private readonly enemyWindup = new Map<string, number>();
   private keys!: Record<
     "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
   private lastSent = { dx: Number.NaN, dy: Number.NaN };
   private selfAim = { x: 1, y: 0 };
+  /** §7 v0.105 de-clunk — spectate camera easing: which teammate we're trailing while downed, plus a
+   *  from-point + 0..1 blend so a switch to a new target GLIDES (~0.32s) instead of hard-cutting the view. */
+  private spectateId = "";
+  private camFrom = { x: 0, y: 0 };
+  private camBlend = 1;
   /** Pointer position read straight off the DOM (robust aim — bypasses Phaser's input pipeline,
    *  which was dropping mouse movement that began while a key was held). */
   private readonly pointerScreen = { x: 0, y: 0, set: false };
@@ -159,6 +170,17 @@ export class ArenaScene extends Phaser.Scene {
   private localAtkCd = 0;
   private localParryCd = 0;
   private frozenUntil = 0;
+  /** §7 v0.105 de-clunk — animation clock (ms) that does NOT advance during a hit-stop freeze. Rig swing /
+   *  brace timing rides this instead of the wall clock so a freeze never skips frames of a swing/guard. */
+  private animClock = 0;
+  /** §7 v0.105 de-clunk — prioritized camera-shake bookkeeping (see `shakeCam`): a weaker shake never
+   *  stomps a stronger one still running, and every shake FORCE-restarts past Phaser's drop-if-busy guard. */
+  private shakeUntil = 0;
+  private shakeIntensity = 0;
+  /** §7 v0.105 de-clunk — hit-stop budget (leaky bucket): non-priority freezes (kill crunches) may spend at
+   *  most FREEZE_BUDGET_MS of every FREEZE_WINDOW_MS, so a horde clear can't freeze ~40% of the time. */
+  private freezeSpent = 0;
+  private freezeSpentAt = 0;
   /** H3 hit-stop throttle — kills crunch at most this often so a horde-clearing AoE can't lock the screen. */
   private lastKillStop = 0;
   private deltaSec = 0;
@@ -214,6 +236,10 @@ export class ArenaScene extends Phaser.Scene {
   /** §6 chain (v0.103): the violet DEEPER rift — the other half of the extract-vs-push decision. */
   private rift?: Phaser.GameObjects.Container;
   private bannerShownFor = "";
+  /** §7 v0.105 de-clunk — banner stacking: rotating vertical slot + last-shown clock so banners that land
+   *  within the fade window stack instead of overprinting the same point. */
+  private bannerSlot = 0;
+  private lastBannerAt = -9999;
   private prevBossPresent = false;
   /** §20/§28 4K-widescreen UI: last-applied HUD scale factor (-1 = not yet applied). The HUD is authored at
    *  a 1× baseline and `applyHudScale` grows every element on big viewports so it stays proportionate; we
@@ -340,7 +366,11 @@ export class ArenaScene extends Phaser.Scene {
     // RMB fires the weapon (§9) — suppress the browser context menu on the canvas.
     this.game.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-    this.cameras.main.setBounds(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+    // §7 v0.105 de-clunk: NO setBounds. Phaser's per-frame bounds clamp uses origin-0.5 math, but this scene
+    // renders with camera origin (0,0) + a RENDER_DPR zoom, so at DPR>1 it clamps max-scroll short by
+    // viewW·(DPR−1)/2 — the local player walks off-screen near the right/bottom walls. `centerCam` already
+    // does a correct zoom-aware arena clamp (and centres the field on 4K/ultrawide), so bounds are both
+    // redundant AND the source of the hi-DPI edge bug. Leave scroll entirely to centerCam.
     this.cameras.main.setBackgroundColor("#17140f"); // dark earth beyond the arena
     // §28 hi-DPI: the camera viewport == the DPR-scaled drawing buffer; zooming by RENDER_DPR keeps the
     // visible world area identical (worldView stays the CSS size) but renders it at device resolution.
@@ -700,7 +730,13 @@ export class ArenaScene extends Phaser.Scene {
       if (def && manifest && !this.failedArt.has(spriteId)) {
         // §13 v0.104 an expansion drop's art loads on demand — hold off equipping until it lands
         // (this runs per frame, so the weapon appears in hand a beat after the grab).
-        if (!this.ensureWeaponArt(spriteId)) return;
+        if (!this.ensureWeaponArt(spriteId)) {
+          // §7 v0.105 de-clunk: don't keep drawing + SWINGING the OLD weapon while the new art loads (the rig
+          // was mid-swap running the stale weapon's timing during the loot celebration). Drop to the new
+          // weapon's empty-hands pose now; the sprite pops in a beat later once its art lands.
+          rig.unequip(def);
+          return;
+        }
         rig.equipWeapon(spriteId, def, manifest);
         this.equipped.set(id, player.weapon);
       } else if (def) {
@@ -763,10 +799,21 @@ export class ArenaScene extends Phaser.Scene {
       const prev = this.lastFell.get(id);
       this.lastFell.set(id, player.fellSeq);
       if (prev === undefined || prev === player.fellSeq) return;
-      spawnFallStreak(this, player.x, player.y);
+      // §17/§7 v0.105 de-clunk: the fall + the snap-back arrive in the SAME patch, so the rig is still
+      // rendered out over the pit (pre-snap) right now. Play the sink-dust HERE (over the pit, where you
+      // actually fell), then hard-snap the rig to the authoritative safe tile so the following interpolate
+      // doesn't rubber-band you backwards out of the void over ~350ms. Runs before interpolate() (see update).
+      const rig = this.blobs.get(id);
+      if (rig) {
+        spawnFallStreak(this, rig.x, rig.y);
+        rig.setPosition(player.x, player.y);
+        this.prevPos.set(id, { x: player.x, y: player.y });
+      } else {
+        spawnFallStreak(this, player.x, player.y);
+      }
       if (id === selfId) {
         this.cameras.main.flash(170, 90, 16, 16);
-        this.cameras.main.shake(150, 0.006);
+        this.shakeCam(150, 0.006);
       }
     });
   }
@@ -901,11 +948,14 @@ export class ArenaScene extends Phaser.Scene {
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
     if (this.time.now >= this.frozenUntil) {
+      // §7 v0.105 de-clunk: advance the ANIMATION clock only on UNFROZEN frames, so a hit-stop pauses the
+      // rig's swing/brace/idle timing too (they ride `animClock`) instead of skipping ~a third of a swing.
+      this.animClock += deltaMs;
       this.interpolate(deltaMs);
       this.interpolateEnemies(deltaMs);
       this.moveProjectiles(this.deltaSec);
-      this.animateBlobs();
-      this.animateEnemies();
+      this.animateBlobs(deltaMs);
+      this.animateEnemies(deltaMs);
       this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
     }
     this.followSelf();
@@ -954,7 +1004,20 @@ export class ArenaScene extends Phaser.Scene {
       // Trigger a swing animation each time the server bumps the duelist's atkSeq (combo hit).
       if (enemy.atkSeq !== this.enemyAtk.get(id)) {
         this.enemyAtk.set(id, enemy.atkSeq);
-        this.enemies.get(id)?.triggerSwing(this.time.now);
+        // §7 v0.105 de-clunk: aim the sweep at the nearest LIVING player (the server's cone tracks that
+        // target too) — without an aimWorld the mirror math pinned the slash to world +x, so a left-facing
+        // ronin cut behind its own back. `animClock` so a hit-stop doesn't skip frames of the swing.
+        let aimWorld: number | undefined;
+        let bestD = Number.POSITIVE_INFINITY;
+        this.room?.state.players.forEach((p) => {
+          if (!p.alive) return;
+          const d = (p.x - enemy.x) ** 2 + (p.y - enemy.y) ** 2;
+          if (d < bestD) {
+            bestD = d;
+            aimWorld = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+          }
+        });
+        this.enemies.get(id)?.triggerSwing(this.animClock, aimWorld);
       }
     });
     for (const id of [...this.enemies.keys()]) {
@@ -966,6 +1029,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyPrev.delete(id);
         this.enemyHp.delete(id);
         this.enemyAtk.delete(id);
+        this.enemyWindup.delete(id);
         if (rig) {
           // §6 v0.103: a rift descent bulk-clears the horde — those removals are "left behind", not
           // kills. During the mute window they vanish silently (no pop/poof/hit-stop celebration).
@@ -1018,17 +1082,27 @@ export class ArenaScene extends Phaser.Scene {
     this.room.state.enemies.forEach((enemy, id) => {
       const rig = this.enemies.get(id);
       if (!rig) return;
+      // §7 v0.105 de-clunk: snap a teleport-sized gap (a spawn/reposition) rather than glide across it. The
+      // floor is above any single-tick move — enemies can be parry-knocked ~154px in one tick, so the
+      // threshold clears that comfortably (INTERP_SNAP_ENEMY) and only fires on real repositions.
+      if (Math.hypot(enemy.x - rig.x, enemy.y - rig.y) > INTERP_SNAP_ENEMY) {
+        rig.setPosition(enemy.x, enemy.y);
+        this.enemyPrev.set(id, { x: enemy.x, y: enemy.y });
+        return;
+      }
       rig.setPosition(Phaser.Math.Linear(rig.x, enemy.x, t), Phaser.Math.Linear(rig.y, enemy.y, t));
     });
   }
 
   /** Drive each enemy's procedural animation from its render-velocity (faces its travel dir). */
-  private animateEnemies(): void {
+  private animateEnemies(deltaMs: number): void {
     this.telegraphGfx.clear(); // §8 redraw the white-tell layer fresh each frame
+    const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait
     for (const [id, rig] of this.enemies) {
       const prev = this.enemyPrev.get(id) ?? { x: rig.x, y: rig.y };
       let mx = rig.x - prev.x;
       let my = rig.y - prev.y;
+      const speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) drives the gait blend
       const ml = Math.hypot(mx, my);
       if (ml > 0.001) {
         mx /= ml;
@@ -1038,9 +1112,10 @@ export class ArenaScene extends Phaser.Scene {
         my = 0;
       }
       this.enemyPrev.set(id, { x: rig.x, y: rig.y });
-      rig.animate(this.time.now, {
+      rig.animate(this.animClock, {
         moveX: mx,
         moveY: my,
+        speed,
         aimX: 0,
         aimY: 0,
         aimDir: 0,
@@ -1052,7 +1127,18 @@ export class ArenaScene extends Phaser.Scene {
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
       // §8 white-tell (Stage C): a glowing-white disc + a rhythm ring that SHRINKS to the body as the
       // windup peaks — the §8 "white = parryable" cue. Parry as the ring tightens to negate the swing.
-      const w = es?.windup ?? 0;
+      // §7 v0.105 de-clunk: the synced windup is a raw 20Hz float, so the one cue you time a 0.45s parry
+      // against was stair-stepping in ~10 discrete jumps while everything around it ran per-frame. Smooth
+      // the RENDERED windup toward the synced value over ~one patch interval — but SNAP down to 0 so the
+      // telegraph vanishes crisply at the strike (a lingering ghost ring would misread as "still parryable").
+      const wSynced = es?.windup ?? 0;
+      const wPrev = this.enemyWindup.get(id) ?? 0;
+      const w =
+        wSynced < wPrev
+          ? wSynced
+          : Phaser.Math.Linear(wPrev, wSynced, 1 - 0.02 ** (deltaMs / 1000));
+      if (w <= 0.005) this.enemyWindup.delete(id);
+      else this.enemyWindup.set(id, w);
       if (w > 0.01) {
         const g = this.telegraphGfx;
         // §20 "white gradient leading flash": a directional cone toward the targeted player showing EXACTLY
@@ -1107,7 +1193,7 @@ export class ArenaScene extends Phaser.Scene {
     // A high telegraph snapping to 0 = the slam fired this frame → impact ring + a hard shake.
     if (this.lastBossSlamT > 0.6 && t < 0.001) {
       spawnExplosion(this, st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
-      this.cameras.main.shake(200, 0.014);
+      this.shakeCam(200, 0.014);
     }
     this.lastBossSlamT = t;
   }
@@ -1349,9 +1435,14 @@ export class ArenaScene extends Phaser.Scene {
 
   /** A big transient centered banner that fades (boss approach, etc.). */
   private flashBanner(msg: string, color: string): void {
-    const cam = this.cameras.main;
+    // §7 v0.105 de-clunk: STACK banners that land within the fade window instead of overprinting the exact
+    // same point (a loot reveal + a depth banner used to render on top of each other, unreadable). Reset the
+    // slot once enough time has passed that the previous banner has faded.
+    const now = this.time.now;
+    this.bannerSlot = now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
+    this.lastBannerAt = now;
     const t = this.add
-      .text(this.screenW() / 2, this.screenH() / 2 - 80, msg, {
+      .text(this.screenW() / 2, this.screenH() / 2 - 80 + this.bannerSlot * 40, msg, {
         fontSize: "32px",
         color,
         fontStyle: "bold",
@@ -1366,7 +1457,8 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Cubic.easeIn",
       onComplete: () => t.destroy(),
     });
-    cam.shake(180, 0.006);
+    // §7 v0.105 de-clunk: NO camera shake on a banner. Shaking the whole screen for a pure UI event (boss
+    // approach, loot reveal, depth) fought the gun/hit shakes for the same channel and read as noise.
   }
 
   /** §12/§8 level-up window: while the local player owes a FLEX stat point, show the attribute pick; once
@@ -1725,6 +1817,13 @@ export class ArenaScene extends Phaser.Scene {
     this.room.state.players.forEach((player, id) => {
       const blob = this.blobs.get(id);
       if (!blob) return;
+      // §7 v0.105 de-clunk: a gap this large isn't motion, it's a TELEPORT (rift descent, run restart, pit
+      // snap-back) — hard-snap instead of gliding the rig (and the camera) across the map for ~a second.
+      if (Math.hypot(player.x - blob.x, player.y - blob.y) > INTERP_SNAP_PLAYER) {
+        blob.setPosition(player.x, player.y);
+        this.prevPos.set(id, { x: player.x, y: player.y }); // don't read the jump as render-velocity
+        return;
+      }
       blob.setPosition(
         Phaser.Math.Linear(blob.x, player.x, t),
         Phaser.Math.Linear(blob.y, player.y, t),
@@ -1737,18 +1836,49 @@ export class ArenaScene extends Phaser.Scene {
     const id = this.room?.sessionId;
     if (!id) return;
     // §6 spectate-follow: while DOWNED, the camera trails a living squadmate (you watch the squad until a
-    // teammate with a rez weapon revives you). Falls back to your own downed body if nobody's up.
+    // teammate with a rez weapon revives you). §7 v0.105 de-clunk: pick the NEAREST living teammate (not
+    // whoever happens to be first in map order) and, on a target SWITCH, glide from the current view to the
+    // new focus over ~0.32s instead of hard-cutting across the map.
     const me = this.room?.state.players.get(id);
     if (me && !me.alive) {
-      let target: SpriteRig | undefined;
+      let bx = 0;
+      let by = 0;
+      let bestD = Number.POSITIVE_INFINITY;
+      let bestId = "";
       this.room?.state.players.forEach((p, pid) => {
-        if (!target && p.alive && pid !== id) target = this.blobs.get(pid);
+        if (!p.alive || pid === id) return;
+        const rig = this.blobs.get(pid);
+        if (!rig) return;
+        const d = (rig.x - me.x) ** 2 + (rig.y - me.y) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          bx = rig.x;
+          by = rig.y;
+          bestId = pid;
+        }
       });
-      if (target) {
-        this.centerCam(target.x, target.y);
+      if (bestId) {
+        if (bestId !== this.spectateId) {
+          const cam = this.cameras.main;
+          // start the glide from wherever the camera currently looks (its world-centre)
+          this.camFrom = {
+            x: cam.scrollX + cam.width / cam.zoom / 2,
+            y: cam.scrollY + cam.height / cam.zoom / 2,
+          };
+          this.camBlend = 0;
+          this.spectateId = bestId;
+        }
+        this.camBlend = Math.min(1, this.camBlend + this.deltaSec / 0.32);
+        const e = this.camBlend * (2 - this.camBlend); // easeOutQuad — snappy start, soft arrival
+        this.centerCam(
+          Phaser.Math.Linear(this.camFrom.x, bx, e),
+          Phaser.Math.Linear(this.camFrom.y, by, e),
+        );
         return;
       }
     }
+    this.spectateId = "";
+    this.camBlend = 1;
     const self = this.blobs.get(id);
     if (self) this.centerCam(self.x, self.y);
   }
@@ -1772,10 +1902,11 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Drive each character's procedural animation from its render-velocity + the cursor aim. */
-  private animateBlobs(): void {
+  private animateBlobs(deltaMs: number): void {
     const selfId = this.room?.sessionId;
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
+    const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait blend
 
     let aimX = 0;
     let aimY = 0;
@@ -1797,6 +1928,7 @@ export class ArenaScene extends Phaser.Scene {
       const prev = this.prevPos.get(id) ?? { x: blob.x, y: blob.y };
       let mx = blob.x - prev.x;
       let my = blob.y - prev.y;
+      const speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) for the gait blend
       const ml = Math.hypot(mx, my);
       if (ml > 0.001) {
         mx /= ml;
@@ -1822,9 +1954,10 @@ export class ArenaScene extends Phaser.Scene {
       }
 
       const isSelf = id === selfId;
-      blob.animate(this.time.now, {
+      blob.animate(this.animClock, {
         moveX: mx,
         moveY: my,
+        speed,
         aimX: isSelf ? aimX : 0,
         aimY: isSelf ? aimY : 0,
         aimDir: pl?.aimDir ?? 0, // §9 remote gun pose tracks the synced aim
@@ -1848,11 +1981,16 @@ export class ArenaScene extends Phaser.Scene {
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
     if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
-    this.localAtkCd = weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3;
+    // §10 v0.104 de-clunk: fold in the held weapon's affix cooldown multiplier — the SERVER gates fire on
+    // `cooldown × lootCooldownMult`, so if the client's send cadence ignores it, a Heavy/slow weapon sends
+    // faster than the server accepts (half the swings become ghosts) and a Swift/fast one can never send at
+    // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
+    const cdMul = lootCooldownMult(self.weaponAffix);
+    this.localAtkCd = (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
     const rig = this.blobs.get(selfId);
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
-    if (!weapon?.gun) rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x));
+    if (!weapon?.gun) rig?.triggerSwing(this.animClock, Math.atan2(this.selfAim.y, this.selfAim.x));
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
@@ -1868,12 +2006,20 @@ export class ArenaScene extends Phaser.Scene {
         QUAKE_REACH,
       );
       spawnQuake(this, ep.x, ep.y, weapon.quake);
-      this.hitStop(130);
+      // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — the old
+      // unconditional hitStop(130) fired on every click, so swinging a quake weapon at air was a rhythmic
+      // 130ms judder. A real impact is a skill beat → priority (bypasses the freeze budget).
+      const qr = weapon.quake.radius;
+      let connected = false;
+      this.room.state.enemies.forEach((en) => {
+        if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
+      });
+      if (connected) this.hitStop(130, true);
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
       // The muzzle flash + bullet render off the server-spawned projectile (syncProjectiles).
-      this.cameras.main.shake(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
+      this.shakeCam(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
     } else if (weapon && !weapon.thrown) {
       // Plain melee swing → the weapon's authored swing VFX (§14). If the weapon is authored "spawn at
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
@@ -1905,7 +2051,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
     const rig = this.blobs.get(selfId);
-    rig?.triggerBrace(this.time.now);
+    rig?.triggerBrace(this.animClock);
     // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
   }
@@ -2121,9 +2267,39 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Hit-stop (§20): hold the visuals for `ms` on impactful events. */
-  private hitStop(ms: number): void {
-    this.frozenUntil = Math.max(this.frozenUntil, this.time.now + ms);
+  /** Hit-stop (§20): hold the visuals for `ms` on impactful events. §7 v0.105 de-clunk: `priority` events
+   *  (the parry beat, a quake activation that connected) always freeze; NON-priority ones (kill crunches)
+   *  spend from a rolling budget (FREEZE_BUDGET_MS per FREEZE_WINDOW_MS, a leaky bucket) so a horde clear
+   *  can't chain 45ms crunches into ~40%-of-the-time frozen judder. */
+  private static readonly FREEZE_BUDGET_MS = 250;
+  private static readonly FREEZE_WINDOW_MS = 1000;
+  private hitStop(ms: number, priority = false): void {
+    const now = this.time.now;
+    if (!priority) {
+      // Refill the bucket at BUDGET/WINDOW per ms since the last spend, then reject if this freeze would
+      // overflow it. (Priority freezes bypass the bucket AND don't deplete it — the skill beats are sacred.)
+      const refill =
+        ((now - this.freezeSpentAt) * ArenaScene.FREEZE_BUDGET_MS) / ArenaScene.FREEZE_WINDOW_MS;
+      this.freezeSpent = Math.max(0, this.freezeSpent - refill);
+      this.freezeSpentAt = now;
+      if (this.freezeSpent + ms > ArenaScene.FREEZE_BUDGET_MS) return; // over budget — skip this crunch
+      this.freezeSpent += ms;
+    }
+    this.frozenUntil = Math.max(this.frozenUntil, now + ms);
+  }
+
+  /** §7 v0.105 de-clunk — PRIORITIZED camera shake. Phaser's `ShakeEffect` ignores a new shake while one is
+   *  already running unless `force` is passed, and every call site omitted it — so while the gun's per-shot
+   *  shake ran (up to 70% duty on a gatling), got-hit / boss-slam / fall / explosion shakes were silently
+   *  swallowed. Route every shake here: one at least as strong as the running shake FORCE-restarts (the
+   *  important hit always lands); a weaker one is dropped (a tracer stream can't stomp a boss slam). */
+  shakeCam(duration: number, intensity: number): void {
+    const now = this.time.now;
+    if (now >= this.shakeUntil || intensity >= this.shakeIntensity) {
+      this.cameras.main.shake(duration, intensity, true);
+      this.shakeUntil = now + duration;
+      this.shakeIntensity = intensity;
+    }
   }
 
   /** Hit feedback driven off authoritative state diffs: enemy hp drops → flash + damage number;
@@ -2151,7 +2327,7 @@ export class ArenaScene extends Phaser.Scene {
         this.spawnParrySpark(p.x, p.y);
         if (id === this.room?.sessionId) {
           this.localParryCd = Math.min(this.localParryCd, PARRY_CHAIN_CD);
-          this.hitStop(100); // H3 §20: the parry is the skill beat — freeze a touch longer than a kill
+          this.hitStop(100, true); // H3 §20: the parry is the skill beat — always freeze (bypass the budget)
         }
       }
     });
@@ -2165,7 +2341,7 @@ export class ArenaScene extends Phaser.Scene {
         this.time.now - this.lastHurt > 180
       ) {
         this.blobs.get(selfId)?.flash();
-        this.cameras.main.shake(100, 0.005);
+        this.shakeCam(100, 0.005);
         this.lastHurt = this.time.now;
       }
       this.prevSelfHp = self.hp;
@@ -2267,7 +2443,9 @@ export class ArenaScene extends Phaser.Scene {
         onComplete: () => spark.destroy(),
       });
     }
-    const cam = this.cameras.main;
+    // §7 v0.105 de-clunk: render ABOVE the level-up modal dim (depth 100010) — the toast used to spawn the
+    // same frame the 0.66-alpha dim opens at depth 100003, so ~66% of the celebration was greyed out. No
+    // camera shake either: a level-up is a UI beat, not an impact (it fought the combat shake channel).
     const toast = this.add
       .text(this.screenW() / 2, this.screenH() / 2 - 120, "LEVEL UP!", {
         fontSize: "30px",
@@ -2276,7 +2454,7 @@ export class ArenaScene extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setOrigin(0.5)
-      .setDepth(100003);
+      .setDepth(100013);
     this.tweens.add({
       targets: toast,
       y: this.screenH() / 2 - 150,
@@ -2285,7 +2463,6 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Cubic.easeOut",
       onComplete: () => toast.destroy(),
     });
-    cam.shake(120, 0.004);
   }
 
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */

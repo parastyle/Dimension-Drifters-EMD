@@ -3,6 +3,7 @@ import {
   ARENA_WIDTH,
   type ArenaMap,
   ArenaState,
+  ATTACK_BUFFER_SECONDS,
   AUG_PROJECTILE_DAMAGE,
   AUG_PROJECTILE_PIERCE,
   AUG_PROJECTILE_SPEED,
@@ -77,6 +78,7 @@ import {
   isAttr,
   isAugment,
   isPitAtPx,
+  JUMP_BUFFER_SECONDS,
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
   LEVELUP_WINDOW_SECONDS,
@@ -89,13 +91,13 @@ import {
   MAX_PLAYERS,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
-  MOVE_SPEED,
   type MoveInput,
   meleeSwingActive,
   nearestGroundPx,
   nearestPoint,
   nextCharacter,
   nextWeapon,
+  PARRY_BUFFER_SECONDS,
   PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
@@ -146,7 +148,7 @@ import {
   stepEnemyChase,
   stepEnemyKite,
   stepImpulse,
-  stepPlayerMovement,
+  stepSteeredMovement,
   stepVertical,
   TICK_MS,
   TOUGH_DAMAGE_MULT,
@@ -168,10 +170,14 @@ import {
 import { type Client, Room } from "colyseus";
 import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 
-/** Latest input received from each client, applied every tick. */
+/** Latest input received from each client, applied every tick — plus the player's PERSISTENT steered
+ *  movement velocity (§7 v0.105 course correction): the tick blends it toward the input's target so
+ *  direction changes transition instead of snapping. Server-side only (the client renders positions). */
 interface InputState {
   dx: number;
   dy: number;
+  mvx: number;
+  mvy: number;
 }
 
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
@@ -181,8 +187,17 @@ interface CombatState {
   /** Cursor world target (for slam-at-cursor weapons; clamped to QUAKE_REACH server-side). */
   targetX: number;
   targetY: number;
-  /** Set by an "attack" message, consumed (and cleared) each tick. */
-  attacking: boolean;
+  /** §7 v0.105 de-clunk — remaining ATTACK BUFFER (sec). An "attack" message sets it to
+   *  ATTACK_BUFFER_SECONDS; the tick fires the swing the instant the cooldown drains and it's still >0
+   *  (a press one tick early is queued, not eaten), then zeroes it. Decays otherwise so a stale press
+   *  can't fire a beat after release. */
+  attackBuffer: number;
+  /** §7 v0.105 de-clunk — remaining PARRY BUFFER (sec). A "parry" that arrives during the parry cooldown
+   *  is queued here and fires when the cooldown drains (fixes the chain-parry client/server desync). */
+  parryBuffer: number;
+  /** §7 v0.105 de-clunk — remaining JUMP BUFFER (sec). A SPACE pressed mid-air / on cooldown is queued and
+   *  hops the instant the player is grounded + ready (kills the ~0.25s post-landing dead window). */
+  jumpBuffer: number;
   /** Remaining weapon cooldown, sec. */
   cd: number;
   /** Remaining respawn countdown while dead, sec. */
@@ -345,11 +360,14 @@ export class GameRoom extends Room<ArenaState> {
     this.mintMap();
 
     this.onMessage("input", (client, message: MoveInput) => {
-      // Trust nothing off the wire; coerce to finite numbers. stepPlayerMovement
-      // clamps magnitude + bounds, so a hostile client cannot speed-hack from here.
-      const dx = Number.isFinite(message?.dx) ? message.dx : 0;
-      const dy = Number.isFinite(message?.dy) ? message.dy : 0;
-      this.inputs.set(client.sessionId, { dx, dy });
+      // Trust nothing off the wire; coerce to finite numbers. The steered movement step clamps input
+      // magnitude + speed + bounds, so a hostile client cannot speed-hack from here. MUTATE the record —
+      // replacing it would wipe the persistent steering velocity (mvx/mvy) 60×/sec and kill the
+      // course-correction transitions.
+      const rec = this.inputs.get(client.sessionId);
+      if (!rec) return;
+      rec.dx = Number.isFinite(message?.dx) ? message.dx : 0;
+      rec.dy = Number.isFinite(message?.dy) ? message.dy : 0;
     });
 
     // RMB fires the equipped weapon (§9). Tick gates it by cooldown + resolves the arc/quake
@@ -360,7 +378,10 @@ export class GameRoom extends Room<ArenaState> {
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
         if (!c) return;
-        c.attacking = true;
+        // §7 v0.105 de-clunk: QUEUE the attack rather than latch a boolean — the tick fires it the instant
+        // the cooldown drains, so a press that lands a tick early (off-grid melee cadences, held trigger)
+        // is honoured instead of silently eaten.
+        c.attackBuffer = ATTACK_BUFFER_SECONDS;
         c.aimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
         c.aimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
         // Trust nothing off the wire: NORMALIZE aim to a unit vector. It feeds the melee-arc direction
@@ -391,28 +412,15 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("parry", (client) => {
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
-      if (!player?.alive || !c || c.parryCd > 0) return;
-      // §8 Iron Stance (stacks): wider i-frame window + bigger knockback.
-      const iron = countAugment(player.augments, "iron-stance");
-      c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
-      c.parryCd = PARRY_COOLDOWN;
-      const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
-      const r2 = PARRY_RADIUS * PARRY_RADIUS;
-      this.state.enemies.forEach((enemy) => {
-        const dx = enemy.x - player.x;
-        const dy = enemy.y - player.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 > 0 && d2 <= r2) {
-          const d = Math.sqrt(d2);
-          enemy.x = clamp(enemy.x + (dx / d) * knockback, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
-          enemy.y = clamp(
-            enemy.y + (dy / d) * knockback,
-            ENEMY_RADIUS,
-            ARENA_HEIGHT - ENEMY_RADIUS,
-          );
-        }
-      });
-      this.applyParryAugments(player, c);
+      if (!player?.alive || !c) return;
+      // §7 v0.105 de-clunk: if the parry is still on cooldown, QUEUE it (the tick fires it the moment the
+      // cd drains) instead of silently dropping — this closes the chain-parry desync where the client's
+      // local cooldown clears ~a round-trip after the server's, so a valid chain press was being eaten.
+      if (c.parryCd > 0) {
+        c.parryBuffer = PARRY_BUFFER_SECONDS;
+        return;
+      }
+      this.executeParry(player, c);
     });
 
     // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0). A cycled weapon is
@@ -519,13 +527,12 @@ export class GameRoom extends Room<ArenaState> {
     // movement, NOT a dodge (no i-frames — the parry stays the defensive tool). The §17 pitfall layer reads
     // `airborne` to let a hopping player clear a gap.
     this.onMessage("jump", (client) => {
-      const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
-      if (!player?.alive || this.inLevelWindow(player) || !c) return;
-      // §5/§20 (Stage B): only jump when GROUNDED + off cooldown; seed the upward velocity, gravity arcs it.
-      if (c.jumpCd > 0 || player.height > GROUND_EPSILON) return;
-      c.vh = JUMP_VELOCITY;
-      c.jumpCd = JUMP_COOLDOWN;
+      if (!c) return;
+      // §7 v0.105 de-clunk: QUEUE the hop — the tick fires it the instant the player is grounded + off
+      // cooldown, so a SPACE pressed a beat early (during the ~0.25s post-landing dead window) still hops
+      // instead of vanishing. (`alive` / level-window / grounded / cooldown are all re-checked on consume.)
+      c.jumpBuffer = JUMP_BUFFER_SECONDS;
     });
 
     // Toggle the Testing Grounds (§21): stop spawns, swap the swarm for dummies + weapon pickups.
@@ -588,9 +595,11 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
-    // Pin the patch (state-broadcast) rate to the sim tick explicitly — otherwise it sits at the
-    // Colyseus default (50ms) and silently diverges from the sim if TICK_MS ever changes.
-    this.setPatchRate(TICK_MS);
+    // §7 v0.105 de-clunk: DISABLE the independent patch timer and broadcast at the END of each tick
+    // instead (`this.broadcastPatch()` in `update`). Colyseus's default patch interval is a SECOND 50ms
+    // timer whose phase drifts against the sim, so a fresh tick's results could wait up to a full extra
+    // 50ms before being sent (the "sometimes snappy, sometimes laggy" +0–50ms). Tick-locking removes it.
+    this.setPatchRate(0);
   }
 
   /** Reset every NON-synced per-entity collection at a run boundary (restart / training toggle) so no
@@ -702,11 +711,12 @@ export class GameRoom extends Room<ArenaState> {
         this.state.enemies.set(dummy.id, dummy);
       }
       // Reset players to the center, full HP, so they start clear of everything.
-      this.state.players.forEach((player) => {
+      this.state.players.forEach((player, id) => {
         player.alive = true;
         player.hp = player.maxHp;
         player.x = cx;
         player.y = cy + 20;
+        this.zeroMoveVel(id); // §7 the reposition is a teleport — don't glide out of it
       });
     } else {
       this.state.mode = "arena";
@@ -773,13 +783,16 @@ export class GameRoom extends Room<ArenaState> {
       if (c) {
         c.respawn = 0;
         c.cd = 0;
-        c.attacking = false;
+        c.attackBuffer = 0;
+        c.parryBuffer = 0;
+        c.jumpBuffer = 0;
         c.reloadCd = 0;
         c.lastWeapon = ""; // forces charge re-init next tick
         c.hairStreak = 0;
         c.lastParryAt = -999;
         c.vh = 0;
       }
+      this.zeroMoveVel(id); // §7 fresh run, fresh momentum
     });
     console.log(`[room ${this.roomId}] run restarted`);
   }
@@ -865,13 +878,15 @@ export class GameRoom extends Room<ArenaState> {
     player.y = this.map.spawnY + (Math.random() * 200 - 100);
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
-    this.inputs.set(client.sessionId, { dx: 0, dy: 0 });
+    this.inputs.set(client.sessionId, { dx: 0, dy: 0, mvx: 0, mvy: 0 });
     this.combat.set(client.sessionId, {
       aimX: 1,
       aimY: 0,
       targetX: 0,
       targetY: 0,
-      attacking: false,
+      attackBuffer: 0,
+      parryBuffer: 0,
+      jumpBuffer: 0,
       cd: 0,
       respawn: 0,
       invuln: 0,
@@ -919,7 +934,11 @@ export class GameRoom extends Room<ArenaState> {
       if (!player.alive || this.inLevelWindow(player)) return;
       const input = this.inputs.get(id);
       if (!input) return;
-      const next = stepPlayerMovement(player, input, dt, MOVE_SPEED);
+      // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
+      // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
+      const next = stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input, dt);
+      input.mvx = next.vx;
+      input.mvy = next.vy;
       // §20 momentum layer (Stage A): integrate the impulse shove (recoil / knockback) on top of WASD,
       // then decay it. The authoritative position is the input base PLUS the shove.
       const imp = stepImpulse(next, player, dt);
@@ -983,6 +1002,7 @@ export class GameRoom extends Room<ArenaState> {
       c.lastGroundY = safe.y;
       c.pitGrace = PIT_FALL_GRACE;
       c.invuln = Math.max(c.invuln, PIT_FALL_GRACE); // brief mercy on landing
+      this.zeroMoveVel(id); // §7 the snap-back is a teleport — carried steering would glide you back in
       player.fellSeq++;
     });
 
@@ -1025,6 +1045,22 @@ export class GameRoom extends Room<ArenaState> {
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
       c.jumpCd = Math.max(0, c.jumpCd - dt);
+      // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
+      c.attackBuffer = Math.max(0, c.attackBuffer - dt);
+      c.parryBuffer = Math.max(0, c.parryBuffer - dt);
+      c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
+      const acting = player.alive && !this.inLevelWindow(player);
+      // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
+      if (acting && c.parryBuffer > 0 && c.parryCd <= 0) {
+        c.parryBuffer = 0;
+        this.executeParry(player, c);
+      }
+      // BUFFERED JUMP — seed the hop BEFORE stepVertical so it lifts off this same tick (grounded + ready).
+      if (acting && c.jumpBuffer > 0 && c.jumpCd <= 0 && player.height <= GROUND_EPSILON) {
+        c.jumpBuffer = 0;
+        c.vh = JUMP_VELOCITY;
+        c.jumpCd = JUMP_COOLDOWN;
+      }
       // §5/§20 (Stage B): integrate the real height axis under gravity (the jump + later parry-launch).
       const vert = stepVertical(player.height, c.vh, dt);
       player.height = vert.height;
@@ -1037,12 +1073,19 @@ export class GameRoom extends Room<ArenaState> {
         c.lastWeapon = player.weapon;
         c.cd = 0; // clear the previous weapon's leftover cooldown so the new one can act immediately
         c.reloadCd = 0;
+        // §7 v0.105 de-clunk (adversarial-verify fix): also DROP any attack buffered on the OLD weapon.
+        // The swap zeroes cd, so a stale buffered press would otherwise auto-fire the NEW weapon with no
+        // input for it — a free cooldown-bypassing hit you could farm by attack→cycle→attack→cycle.
+        c.attackBuffer = 0;
         const max = weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
         player.charges = max;
         player.maxCharges = max;
       }
 
-      const canAct = player.alive && !this.inLevelWindow(player) && c.attacking && c.cd <= 0;
+      // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
+      // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
+      // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
+      const canAct = acting && c.attackBuffer > 0 && c.cd <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
@@ -1052,6 +1095,7 @@ export class GameRoom extends Room<ArenaState> {
           if (c.reloadCd <= 0) player.charges = player.maxCharges;
         }
         if (canAct && player.charges > 0) {
+          c.attackBuffer = 0;
           this.fireGun(player, c, weapon);
           player.charges -= 1;
           c.cd += weapon.gun.fireRate * cdMul; // ACCUMULATE (not assign) so the sub-tick remainder carries
@@ -1064,16 +1108,17 @@ export class GameRoom extends Room<ArenaState> {
           if (c.reloadCd <= 0) player.charges = player.maxCharges;
         }
         if (canAct && player.charges > 0) {
+          c.attackBuffer = 0;
           this.throwWeapon(player, c, weapon);
           player.charges -= 1;
           c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
           if (player.charges <= 0) c.reloadCd = weapon.thrown.refillSeconds;
         }
       } else if (weapon && canAct) {
+        c.attackBuffer = 0;
         this.resolveSwing(player, c, weapon);
         c.cd = weapon.cooldown * cdMul; // flat cooldown — DEX scales DAMAGE (via §10 grades), not speed
       }
-      c.attacking = false;
     });
 
     // 4.6 §20 advance in-flight swept melee blades (edge damage over the swing's active window).
@@ -1215,6 +1260,10 @@ export class GameRoom extends Room<ArenaState> {
 
     // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
     this.tickLevelWindows(dt);
+
+    // §7 v0.105 de-clunk: broadcast this tick's state NOW, tick-locked (patchRate is 0 — see onCreate), so
+    // fresh results never wait on a drifting second timer. Must be the LAST line of update().
+    this.broadcastPatch();
   }
 
   /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps
@@ -1329,6 +1378,11 @@ export class GameRoom extends Room<ArenaState> {
     if (!best) return;
     const ally: PlayerState = best;
     ally.alive = true;
+    // §7 v0.105 de-clunk (adversarial-verify fix): a downed player's steered velocity is FROZEN at the
+    // heading they died on (the movement loop skips non-alive players, so it never decays). Zero it on
+    // revive — otherwise stepSteeredMovement resumes from that stale velocity and slides the player
+    // uncommanded for ~100ms on the first tick back, feeding that tick's pit/wall checks.
+    this.zeroMoveVel(ally.id);
     ally.hp = Math.max(1, Math.round(ally.maxHp * REVIVE_HP_FRAC));
     ally.revivedSeq = (ally.revivedSeq + 1) % 100000;
     this.clearEnemiesNear(ally.x, ally.y, RESPAWN_CLEAR_RADIUS);
@@ -1762,6 +1816,17 @@ export class GameRoom extends Room<ArenaState> {
     return (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
   }
 
+  /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (pit
+   *  snap-back, rift descent, restart, training reposition) so carried momentum can't glide the body
+   *  away from where it was authoritatively placed. */
+  private zeroMoveVel(id: string): void {
+    const inp = this.inputs.get(id);
+    if (inp) {
+      inp.mvx = 0;
+      inp.mvy = 0;
+    }
+  }
+
   /** §11/§13 the squad's best LUK — loot is squad-shared, so the luckiest living drifter carries the
    *  rarity table for every roll. */
   private bestLuk(): number {
@@ -1820,6 +1885,29 @@ export class GameRoom extends Room<ArenaState> {
     });
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
+  }
+
+  /** §7/§8 execute a parry — grant i-frames, knock nearby enemies back, and fire the owned augments. Split
+   *  out of the message handler (v0.105 de-clunk) so a BUFFERED parry (one that arrived during the cooldown)
+   *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
+  private executeParry(player: PlayerState, c: CombatState): void {
+    // §8 Iron Stance (stacks): wider i-frame window + bigger knockback.
+    const iron = countAugment(player.augments, "iron-stance");
+    c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
+    c.parryCd = PARRY_COOLDOWN;
+    const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
+    const r2 = PARRY_RADIUS * PARRY_RADIUS;
+    this.state.enemies.forEach((enemy) => {
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > 0 && d2 <= r2) {
+        const d = Math.sqrt(d2);
+        enemy.x = clamp(enemy.x + (dx / d) * knockback, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
+        enemy.y = clamp(enemy.y + (dy / d) * knockback, ENEMY_RADIUS, ARENA_HEIGHT - ENEMY_RADIUS);
+      }
+    });
+    this.applyParryAugments(player, c);
   }
 
   /** §8 apply the player's owned parry AUGMENTS on a successful parry (Iron Stance is handled at the call
@@ -2516,6 +2604,7 @@ export class GameRoom extends Room<ArenaState> {
         c.lastParryAt = -999;
         c.hairStreak = 0;
       }
+      this.zeroMoveVel(id); // §7 the descent repositions the body — momentum doesn't cross dimensions
     });
     console.log(
       `[room ${this.roomId}] ⇓ rift descent — depth ${this.state.depth}, dimension ${this.state.dimensionId}`,
