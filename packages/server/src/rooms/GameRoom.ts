@@ -72,6 +72,8 @@ import {
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
+  INPUT_MSGS_PER_TICK,
+  INPUT_QUEUE_MAX,
   IRON_STANCE_IFRAME_PER,
   IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
@@ -91,7 +93,6 @@ import {
   MAX_PLAYERS,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
-  type MoveInput,
   meleeSwingActive,
   nearestGroundPx,
   nearestPoint,
@@ -170,12 +171,24 @@ import {
 import { type Client, Room } from "colyseus";
 import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 
-/** Latest input received from each client, applied every tick — plus the player's PERSISTENT steered
- *  movement velocity (§7 v0.105 course correction): the tick blends it toward the input's target so
- *  direction changes transition instead of snapping. Server-side only (the client renders positions). */
-interface InputState {
+/** §4 v0.107 one sequence-numbered input COMMAND from a client (~one per 50ms client tick). `jump` rides
+ *  the command (not a separate message) so its consume tick is part of the acked timeline (review #5). */
+interface InputCmd {
+  seq: number;
   dx: number;
   dy: number;
+  jump: boolean;
+}
+
+/** Per-client input pipeline + the player's PERSISTENT steered movement velocity (§7 course correction).
+ *  §4 v0.107: commands queue here (bounded), the tick consumes toward ONE per fixed sub-step and falls
+ *  back to `held` when starved (preserving the original held-input semantics); `lastSeq` enforces
+ *  monotonicity (drops replays/garbage), `msgBudget` rate-caps the message handler per tick. */
+interface InputState {
+  queue: InputCmd[];
+  held: InputCmd;
+  lastSeq: number;
+  msgBudget: number;
   mvx: number;
   mvy: number;
 }
@@ -234,10 +247,12 @@ interface CombatState {
 /**
  * Authoritative PvE room (§4 RoR2-style host-authoritative sync via Colyseus).
  *
- * Netcode-handshake POC scope (build order §27.3 step 2): server owns player position,
- * integrates it at the locked 20Hz tick, and broadcasts ArenaState. Clients send input
- * and interpolate toward the authoritative position. No client prediction yet — added
- * once this baseline feels right (prediction reuses shared `stepPlayerMovement`).
+ * §4 v0.107 ONLINE NETCODE (docs/NETCODE_DESIGN.md): the server runs a FIXED 50ms timestep,
+ * consumes one sequence-numbered input command per player per sub-step (validated, bounded,
+ * drain-to-newest), integrates with the shared pure steppers, and mirrors ackSeq/mvx/mvy/vh/
+ * teleportSeq on state so the owning client PREDICTS its own movement and reconciles exactly.
+ * Remote entities interpolate between tick-stamped snapshots (`ArenaState.tick`). The server
+ * stays fully authoritative — prediction is display-only; damage/economy never leave the tick.
  */
 export class GameRoom extends Room<ArenaState> {
   override maxClients = MAX_PLAYERS;
@@ -359,16 +374,40 @@ export class GameRoom extends Room<ArenaState> {
     // on every §6 rift descent + run restart (v0.103): fresh seeds → the client rebuilds its floor.
     this.mintMap();
 
-    this.onMessage("input", (client, message: MoveInput) => {
-      // Trust nothing off the wire; coerce to finite numbers. The steered movement step clamps input
-      // magnitude + speed + bounds, so a hostile client cannot speed-hack from here. MUTATE the record —
-      // replacing it would wipe the persistent steering velocity (mvx/mvy) 60×/sec and kill the
-      // course-correction transitions.
-      const rec = this.inputs.get(client.sessionId);
-      if (!rec) return;
-      rec.dx = Number.isFinite(message?.dx) ? message.dx : 0;
-      rec.dy = Number.isFinite(message?.dy) ? message.dy : 0;
-    });
+    // §4 v0.107 sequence-numbered input COMMANDS (~one per client 50ms tick). Trust nothing off the wire:
+    // every field is coerced (a non-number `seq` assigned raw into the uint32 `ackSeq` would THROW inside
+    // the schema setter and, uncaught, kill the process — review #4), seq is forced MONOTONIC (drops
+    // replays/regressions and keeps ackSeq meaningful), and a per-tick message budget caps handler CPU
+    // against floods (review #18). The steered movement step still clamps magnitude + speed + bounds, so
+    // none of this trusts direction values either. Legacy seq-less messages (the test harness) get a
+    // synthetic next-seq so held-input semantics keep working.
+    this.onMessage(
+      "input",
+      (client, message: { seq?: number; dx?: number; dy?: number; jump?: boolean }) => {
+        const rec = this.inputs.get(client.sessionId);
+        if (!rec) return;
+        if (rec.msgBudget <= 0) return; // over the per-tick budget — ignore (flood guard)
+        rec.msgBudget--;
+        const seq = Number.isFinite(message?.seq) ? (message?.seq as number) >>> 0 : 0;
+        // Monotonic AND bounded, WRAP-AWARE: the uint32 forward delta must be 1..10000. This drops
+        // replays/regressions (delta 0 or huge), drops hostile negatives (coerce to ~4.29e9 → huge
+        // delta) so they can't poison lastSeq, drops seq-less messages (coerce 0 → delta 0 once any
+        // command landed... and a fresh join expects seq ≥ 1), and survives the uint32 wrap (delta
+        // arithmetic in >>>0 space: 0xFFFFFFFF → 0 is delta 1). A real client increments by 1 per 50ms
+        // over reliable ordered transport; a jump beyond +10000 (~8 min of commands) is a payload.
+        const delta = (seq - rec.lastSeq) >>> 0;
+        if (delta === 0 || delta > 10000) return;
+        rec.lastSeq = seq;
+        rec.queue.push({
+          seq,
+          dx: Number.isFinite(message?.dx) ? (message?.dx as number) : 0,
+          dy: Number.isFinite(message?.dy) ? (message?.dy as number) : 0,
+          jump: message?.jump === true,
+        });
+        // Bounded queue: shed the OLDEST beyond the cap (the freshest intent must survive).
+        while (rec.queue.length > INPUT_QUEUE_MAX) rec.queue.shift();
+      },
+    );
 
     // RMB fires the equipped weapon (§9). Tick gates it by cooldown + resolves the arc/quake
     // authoritatively — the client only requests + sends its aim.
@@ -887,7 +926,14 @@ export class GameRoom extends Room<ArenaState> {
     player.y = this.map.spawnY + (Math.random() * 200 - 100);
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
-    this.inputs.set(client.sessionId, { dx: 0, dy: 0, mvx: 0, mvy: 0 });
+    this.inputs.set(client.sessionId, {
+      queue: [],
+      held: { seq: 0, dx: 0, dy: 0, jump: false },
+      lastSeq: 0,
+      msgBudget: INPUT_MSGS_PER_TICK,
+      mvx: 0,
+      mvy: 0,
+    });
     this.combat.set(client.sessionId, {
       aimX: 1,
       aimY: 0,
@@ -932,22 +978,86 @@ export class GameRoom extends Room<ArenaState> {
     return player.flexPending > 0 || player.sigPending > 0;
   }
 
-  private update(deltaMs: number): void {
-    // Clamp the step so one GC/CPU stall can't produce a giant dt (point-sampled projectiles would
-    // tunnel + enemies teleport). Cap at ~2.5 ticks; a longer stall is absorbed as a brief slow-mo.
-    const dt = Math.min(deltaMs, TICK_MS * 2.5) / 1000;
+  /** §4 v0.107 defense-in-depth (review #4): WITHOUT this, Colyseus does not wrap the simulation-interval
+   *  or message handlers in try/catch — a single uncaught throw (e.g. a hostile payload reaching a schema
+   *  setter) escapes the timer and kills the whole Node process (every room, every player). With it, the
+   *  error degrades to a log line. Input validation is still the first line — this is the seatbelt. */
+  override onUncaughtException(error: Error, methodName: string): void {
+    console.error(`[room ${this.roomId}] uncaught exception in ${methodName}:`, error);
+  }
 
-    // 1. Integrate each LIVING player's authoritative movement from their latest input.
-    //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
+  /** §4 v0.107 FIXED-TIMESTEP accumulator (review #1). Colyseus's simulation interval reports REAL elapsed
+   *  wall-clock time (50-55ms+ of jitter under load) — but client-side prediction replays exact 50ms steps,
+   *  so the sim must integrate in exact 50ms sub-steps too or the two can never agree. Accumulate the real
+   *  delta, run whole TICK_MS sub-steps, broadcast once after the batch. Capped at 3 sub-steps + remainder
+   *  per invocation (a longer stall is absorbed as brief slow-mo — same posture as the old 2.5-tick clamp),
+   *  and a stall's backlog CATCHES UP over following invocations instead of stretching dt. */
+  private simAccMs = 0;
+  private update(deltaMs: number): void {
+    this.simAccMs = Math.min(this.simAccMs + deltaMs, TICK_MS * 3.5);
+    let stepped = false;
+    while (this.simAccMs >= TICK_MS) {
+      this.simAccMs -= TICK_MS;
+      this.stepSim(TICK_MS / 1000);
+      stepped = true;
+    }
+    // §7 v0.105 de-clunk: broadcast tick-locked (patchRate is 0 — see onCreate), once per batch, so fresh
+    // results never wait on a drifting second timer. Every sub-step bumps `state.tick`, so there is always
+    // a change to send — the owning client's reconcile cadence is guaranteed.
+    if (stepped) this.broadcastPatch();
+  }
+
+  /** One EXACT 50ms authoritative sub-step. The hand-numbered phase order is a CONTRACT (golden test). */
+  private stepSim(dt: number): void {
+    // 0. §4 v0.107 the sim-tick counter (the snapshot timeline) + per-tick input plumbing: refill each
+    //    player's message budget, then consume toward ONE command per sub-step for EVERY player — alive,
+    //    downed, or frozen (review #3: consumption must never stall, or queues pin at cap during a level
+    //    window and replay ~400ms of stale directions on resume). A backlog drains by jumping straight to
+    //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
+    this.state.tick = (this.state.tick + 1) >>> 0;
     this.state.players.forEach((player, id) => {
-      if (!player.alive || this.inLevelWindow(player)) return;
       const input = this.inputs.get(id);
       if (!input) return;
+      input.msgBudget = INPUT_MSGS_PER_TICK;
+      if (input.queue.length > 1) input.queue.splice(0, input.queue.length - 1);
+      const cmd = input.queue.shift();
+      if (cmd) {
+        input.held = cmd;
+        player.ackSeq = cmd.seq;
+        // The jump intent rides the command (review #5) — same buffered-jump semantics as the SPACE
+        // message (the consume gate re-checks grounded/cooldown/alive/level-window).
+        if (cmd.jump) {
+          const c = this.combat.get(id);
+          if (c) c.jumpBuffer = JUMP_BUFFER_SECONDS;
+        }
+      }
+    });
+
+    // 1. Integrate each LIVING player's authoritative movement from their held input command.
+    //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
+    this.state.players.forEach((player, id) => {
+      const input = this.inputs.get(id);
+      if (!input) return;
+      if (!player.alive || this.inLevelWindow(player)) {
+        // §7 a freeze/down is an INTENTIONAL stop — zero the steering velocity so the player doesn't
+        // glide on a stale heading when they resume (same bug class as the v0.105 tryRez fix), and keep
+        // the synced mirror coherent for the predicting client.
+        input.mvx = 0;
+        input.mvy = 0;
+        player.mvx = 0;
+        player.mvy = 0;
+        return;
+      }
       // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
       // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
-      const next = stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input, dt);
+      const next = stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt);
       input.mvx = next.vx;
       input.mvy = next.vy;
+      // §4 v0.107 mirror the steering velocity onto synced state — the owning client REBASES its
+      // prediction from these at every patch (review #2: local-history reconstruction breaks under
+      // queue starvation/drain, so the server publishes the truth instead).
+      player.mvx = next.vx;
+      player.mvy = next.vy;
       // §20 momentum layer (Stage A): integrate the impulse shove (recoil / knockback) on top of WASD,
       // then decay it. The authoritative position is the input base PLUS the shove.
       const imp = stepImpulse(next, player, dt);
@@ -1074,6 +1184,7 @@ export class GameRoom extends Room<ArenaState> {
       const vert = stepVertical(player.height, c.vh, dt);
       player.height = vert.height;
       c.vh = vert.vh;
+      player.vh = vert.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
@@ -1269,10 +1380,6 @@ export class GameRoom extends Room<ArenaState> {
 
     // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
     this.tickLevelWindows(dt);
-
-    // §7 v0.105 de-clunk: broadcast this tick's state NOW, tick-locked (patchRate is 0 — see onCreate), so
-    // fresh results never wait on a drifting second timer. Must be the LAST line of update().
-    this.broadcastPatch();
   }
 
   /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps
@@ -1826,13 +1933,24 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (pit
-   *  snap-back, rift descent, restart, training reposition) so carried momentum can't glide the body
-   *  away from where it was authoritatively placed. */
+   *  snap-back, rift descent, restart, training reposition, revive) so carried momentum can't glide the
+   *  body away from where it was authoritatively placed. §4 v0.107: also DROPS the queued/held input
+   *  direction (a teleport must not replay stale pre-teleport intent; the next command lands ≤50ms later),
+   *  mirrors the zeroed velocity to synced state, and bumps `teleportSeq` — the ONE hard-resync signal the
+   *  predicting client watches, so every current and future teleport site is covered by construction. */
   private zeroMoveVel(id: string): void {
     const inp = this.inputs.get(id);
     if (inp) {
       inp.mvx = 0;
       inp.mvy = 0;
+      inp.queue.length = 0;
+      inp.held = { seq: inp.held.seq, dx: 0, dy: 0, jump: false };
+    }
+    const player = this.state.players.get(id);
+    if (player) {
+      player.mvx = 0;
+      player.mvy = 0;
+      player.teleportSeq = (player.teleportSeq + 1) >>> 0;
     }
   }
 

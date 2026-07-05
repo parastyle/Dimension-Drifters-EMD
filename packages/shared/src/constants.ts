@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 5; // v0.104 — §10/§13 loot: +pickup rarity/affix/known, +player weaponRarity/weaponAffix
+export const SCHEMA_VERSION = 6; // v0.107 — §4 netcode: +player ackSeq/mvx/mvy/vh/teleportSeq, +arena tick
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -44,6 +44,38 @@ export const MOVE_STEER_DECEL = 24;
  */
 export const INTERP_SNAP_PLAYER = 200;
 export const INTERP_SNAP_ENEMY = 260;
+
+/**
+ * §4 v0.107 ONLINE NETCODE — client prediction + reconciliation + snapshot interpolation. The design was
+ * adversarially reviewed pre-implementation (docs/NETCODE_DESIGN.md is the binding amended spec).
+ *
+ * Protocol: the client sends one sequence-numbered input command per 50ms sim tick ({seq, dx, dy, jump},
+ * ~20/s over Colyseus's reliable ordered WebSocket). The server queues them (bounded), consumes toward
+ * ONE per fixed sub-step, integrates with ITS OWN fixed dt (input only sets direction — a fast client
+ * clock cannot buy speed), and mirrors `ackSeq`/`mvx/mvy/vh`/`teleportSeq` on PlayerState so the owning
+ * client can rebase its prediction exactly. Remote entities interpolate between tick-stamped snapshots.
+ */
+/** Server-side input command queue cap per player. Above it the queue drops to the NEWEST command (the
+ *  freshest intent wins; a backlog must never ratchet input latency — review #3). */
+export const INPUT_QUEUE_MAX = 8;
+/** Per-tick budget of accepted "input" messages per player (≈ 4×20 = 80/s ceiling; a legit client sends
+ *  ~20/s). Beyond it messages are IGNORED — a flood can't burn server CPU (review #18). */
+export const INPUT_MSGS_PER_TICK = 4;
+/** Client pending-prediction buffer cap (~3.2s of un-acked commands). Overflow = the connection has
+ *  stalled; the predictor flags itself for a hard resync on the next patch (review #13). */
+export const PRED_PENDING_MAX = 64;
+/** Client render delay (ms) behind the server-tick timeline for REMOTE entities — 2 patch intervals +
+ *  jitter margin. Remote players/enemies render this far in the past, interpolated between real
+ *  snapshots (PvE: server hit-tests server positions, so this is purely visual). */
+export const INTERP_DELAY_MS = 120;
+/** Max extrapolation (ms) past the newest snapshot when the buffer starves (a TCP burst-stall) before
+ *  the renderer HOLDS — bounded guessing, never runaway. */
+export const INTERP_EXTRAP_MAX_MS = 60;
+/** Snapshot ring depth per entity (~400ms at 20Hz) — rides a burst arrival without dropping brackets. */
+export const SNAPSHOT_DEPTH = 8;
+/** Exponential decay rate (per second) of the predictor's visual error offset — a reconciliation
+ *  correction GLIDES over ~⅓s tail instead of popping (review #11/#14 fold corrections through this). */
+export const PRED_ERR_DECAY = 12;
 
 /** One big arena per stage (§5). Server-seeded procedural arenas come later (§4/§17). (tuning)
  *  v0.102 "release-roominess" pass: 2400² → 4800² (4× the area) so the arena reads as a WORLD you roam,

@@ -83,6 +83,22 @@ export class PlayerState extends Schema {
   /** §6 rez counter: increments each time this player is REVIVED by a rez weapon (Gravedigger's Spade).
    *  Synced ONLY as a client VFX trigger (the revive pop) — the heal itself is in `hp`/`alive`. */
   @type("number") revivedSeq = 0;
+  // ── §4 v0.107 ONLINE NETCODE (client prediction + reconciliation) — all APPENDED (Colyseus serializes
+  // by field order; appending keeps old offsets stable, and the SCHEMA_VERSION bump forces a reload anyway).
+  /** Seq of the last input command the server CONSUMED for this player (uint32, client-minted, validated
+   *  monotonic server-side). The owning client uses it to trim its pending-prediction buffer and rebase. */
+  @type("uint32") ackSeq = 0;
+  /** §7 the server's STEERED movement velocity (px/s) — the reconciliation rebase source. The owning
+   *  client adopts these at each patch instead of reconstructing them from local history (the history
+   *  reconstruction breaks under queue starvation / drop-to-newest — design review finding #2). */
+  @type("number") mvx = 0;
+  @type("number") mvy = 0;
+  /** §5 vertical velocity (px/s) — synced so the predicting client can rebase its jump arc exactly. */
+  @type("number") vh = 0;
+  /** Bumped INSIDE `zeroMoveVel` — i.e. on EVERY server-side teleport/reposition (pit snap-back, rift
+   *  descent, restart, training toggle, revive, and any future site). The owning client hard-resyncs its
+   *  predictor on a change instead of hand-mirroring the server's teleport call sites (review #7). */
+  @type("uint32") teleportSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -207,4 +223,9 @@ export class ArenaState extends Schema {
   @type("number") bossSlamX = 0;
   @type("number") bossSlamY = 0;
   @type("number") bossSlamT = 0;
+  /** §4 v0.107 the authoritative SIM TICK counter — +1 per fixed 50ms sub-step, unconditionally (unlike
+   *  `elapsed`, which freezes outside active arena play). The client's snapshot-interpolation timeline:
+   *  every patch is stamped `tick × TICK_MS` so remote entities interpolate on the SERVER's clock, immune
+   *  to TCP burst-arrival jitter (review #6). Also guarantees every tick's patch has a change to send. */
+  @type("uint32") tick = 0;
 }

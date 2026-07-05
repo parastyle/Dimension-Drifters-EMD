@@ -19,7 +19,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SHARED_SRC = join(HERE, "..", "packages", "shared", "src");
 // mapgen.ts is the highest-stakes replicated module: server + client each run generateArena from the
 // synced seeds and MUST produce byte-identical maps — one stray Math.random desyncs the whole floor.
-const REPLICATED_MODULES = ["combat.ts", "melee.ts", "enemies.ts", "mapgen.ts"];
+// §4 v0.107: movement.ts + collision.ts + math.ts joined the boundary — CLIENT-SIDE PREDICTION replays
+// the movement steppers + POI pushout bit-identically to the server tick (docs/NETCODE_DESIGN.md #9);
+// an impurity there reads as constant, maddening micro-rubber-banding, not a test failure.
+const REPLICATED_MODULES = [
+  "combat.ts",
+  "melee.ts",
+  "enemies.ts",
+  "mapgen.ts",
+  "movement.ts",
+  "collision.ts",
+  "math.ts",
+];
 
 describe("§4 replicated-helper purity boundary", () => {
   it("the client-replicated shared modules contain NO Math.random (would desync co-op VFX)", () => {

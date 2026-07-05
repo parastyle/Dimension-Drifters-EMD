@@ -49,6 +49,7 @@ import {
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   selectChainTargets,
+  TICK_MS,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
@@ -58,6 +59,8 @@ import {
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { partTexture, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
+import { SelfPredictor, type ServerView } from "../net/prediction.js";
+import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { DECAL_IDS } from "../sprites/decal-manifest.js";
@@ -69,6 +72,7 @@ import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import { buildArenaFloor, buildPois, drawArena, type PoiSprite } from "./arena/floor-renderer.js";
 import {
   GUN_FX,
+  gunFx,
   makeBullet,
   makeCounter,
   makeMagma,
@@ -154,7 +158,32 @@ export class ArenaScene extends Phaser.Scene {
     "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
-  private lastSent = { dx: Number.NaN, dy: Number.NaN };
+  // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
+  /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
+   *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
+  private predictor: SelfPredictor | null = null;
+  /** Fixed 50ms input-command accumulator (clamped ≤3 ticks/frame — a tab-throttle wake must not burst
+   *  20 commands; a >250ms frame gap resets it and hard-resyncs, mirroring the server's own dt clamp). */
+  private inputAccMs = 0;
+  /** SPACE pressed since the last minted command — the jump intent rides the next {seq,dx,dy,jump}. */
+  private jumpQueued = false;
+  /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
+  private curDx = 0;
+  private curDy = 0;
+  /** Self height from the predictor this frame (the rig hop for SELF; remotes use synced height). */
+  private selfPredHeight = 0;
+  /** Whether the previous frame was hit-stop-frozen — on the unfreeze edge the accrued prediction
+   *  displacement folds into the error offset so it glides instead of popping (review #11). */
+  private wasFrozen = false;
+  /** Server-tick timeline mapper + per-entity snapshot rings for REMOTE players and enemies. */
+  private readonly timeline = new TimelineSync();
+  private readonly playerBufs = new Map<string, SnapshotBuffer>();
+  private readonly enemyBufs = new Map<string, SnapshotBuffer>();
+  /** Last-seen fellSeq per REMOTE player — a pit snap-back purges + reseeds their snapshot ring so the
+   *  interpolator can't re-walk them into the pit (review #10). (Self dust/flash stays in checkFalls.) */
+  private readonly snapFell = new Map<string, number>();
+  /** Suppress the state-driven muzzle flash for SELF for a beat after a locally-predicted one. */
+  private lastSelfMuzzleAt = -9999;
   private selfAim = { x: 1, y: 0 };
   /** §7 v0.105 de-clunk — spectate camera easing: which teammate we're trailing while downed, plus a
    *  from-point + 0..1 blend so a switch to a new target GLIDES (~0.32s) instead of hard-cutting the view. */
@@ -339,6 +368,20 @@ export class ArenaScene extends Phaser.Scene {
     this.riftArrow = null;
     this.floorObjs = [];
     this.lastSeedKey = "";
+    // §4 v0.107 scene-restart safety for the netcode layer: Phaser REUSES the scene instance across
+    // scene.start(), so class-field state survives a menu→arena re-entry. A NEW room means a new tick
+    // timeline + fresh seqs — stale predictor/rings would brick movement (the carried-over seq counter
+    // would trip the server's monotonic gate) and hold remotes on a dead timeline for ~3s.
+    this.predictor = null;
+    this.timeline.reset();
+    this.playerBufs.clear();
+    this.enemyBufs.clear();
+    this.snapFell.clear();
+    this.inputAccMs = 0;
+    this.jumpQueued = false;
+    this.wasFrozen = false;
+    this.lastSelfMuzzleAt = -9999;
+    this.selfPredHeight = 0;
     this.vfxPlayer = new VfxPlayer(this);
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
@@ -781,6 +824,11 @@ export class ArenaScene extends Phaser.Scene {
     this.poiSprites = pois.sprites;
     this.floorObjs.push(...pois.objs);
     this.lastSeedKey = seedKey;
+    // §4 v0.107: a re-minted map = a new world — the predictor must collide against the NEW landmarks
+    // (review #15) and every snapshot ring holds coordinates from the OLD map (review #16). Swap + clear.
+    this.predictor?.setMap(this.arenaMap);
+    this.playerBufs.clear();
+    this.enemyBufs.clear();
     if (descending) {
       this.cameras.main.flash(500, 96, 48, 160); // violet wash sells any mid-session terrain swap
       // Mute the enemy-REMOVAL VFX briefly: the server just bulk-cleared the old dimension's horde, and
@@ -852,6 +900,10 @@ export class ArenaScene extends Phaser.Scene {
             console.error(`[client] ${msg}`);
           }
         });
+        // §4 v0.107: every patch is one completed server tick (tick-locked broadcast) — stamp the
+        // snapshot timeline + rings and reconcile the self predictor. DATA ONLY in here (never move a
+        // rig from inside a patch callback — the render step owns positions; review #10).
+        this.room.onStateChange((state) => this.onPatch(state));
         if (status) status.textContent = `connected · you are ${this.room.sessionId.slice(0, 4)}`;
         return;
       } catch (err) {
@@ -884,6 +936,8 @@ export class ArenaScene extends Phaser.Scene {
     this.prevPos.delete(id);
     this.equipped.delete(id);
     this.charOf.delete(id);
+    this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
+    this.snapFell.delete(id);
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -946,7 +1000,9 @@ export class ArenaScene extends Phaser.Scene {
     }
     this.updateDropBar(canSalvage);
     this.renderGrabHighlight();
-    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.room.send("jump"); // §5 traversal hop
+    // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
+    // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
+    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
@@ -961,7 +1017,7 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
-    this.sendInput();
+    this.stepNetInput(deltaMs); // §4 v0.107 mint/send/predict this frame's input commands
     this.syncBlobs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
@@ -973,6 +1029,17 @@ export class ArenaScene extends Phaser.Scene {
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
     if (this.time.now >= this.frozenUntil) {
+      // §4 v0.107 UNFREEZE edge: the predictor kept ticking through the freeze but the rig didn't move —
+      // fold the accrued displacement into the error offset so the catch-up GLIDES instead of popping
+      // ~42px on the exact frame that was supposed to feel weighty (review #11).
+      if (this.wasFrozen && this.predictor) {
+        const selfRig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
+        if (selfRig) {
+          const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
+          this.predictor.foldError(selfRig.x - r.x, selfRig.y - r.y);
+        }
+      }
+      this.wasFrozen = false;
       // §7 v0.105 de-clunk: advance the ANIMATION clock only on UNFROZEN frames, so a hit-stop pauses the
       // rig's swing/brace/idle timing too (they ride `animClock`) instead of skipping ~a third of a swing.
       this.animClock += deltaMs;
@@ -982,6 +1049,8 @@ export class ArenaScene extends Phaser.Scene {
       this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
       this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
+    } else {
+      this.wasFrozen = true;
     }
     this.followSelf();
     this.sendAttack();
@@ -1055,6 +1124,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyHp.delete(id);
         this.enemyAtk.delete(id);
         this.enemyWindup.delete(id);
+        this.enemyBufs.delete(id); // §4 v0.107 ids RECYCLE (restart resets enemySeq) — never bracket stale snaps
         if (rig) {
           // §6 v0.103: a rift descent bulk-clears the horde — those removals are "left behind", not
           // kills. During the mute window they vanish silently (no pop/poof/hit-stop celebration).
@@ -1101,21 +1171,19 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private interpolateEnemies(deltaMs: number): void {
+  private interpolateEnemies(_deltaMs: number): void {
     if (!this.room) return;
-    const t = 1 - 0.0015 ** (deltaMs / 1000);
+    // §4 v0.107: the horde renders its snapshot rings at the delayed server-tick timeline — smooth,
+    // faithful motion between real 20Hz positions (no τ-trail, no jitter rubber-band). A bracket gap
+    // wider than INTERP_SNAP_ENEMY (a reposition; parry-knock ~154px/tick stays under it) CUTS instead
+    // of tweening. Fallback = raw state while the timeline warms up.
+    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
     this.room.state.enemies.forEach((enemy, id) => {
       const rig = this.enemies.get(id);
       if (!rig) return;
-      // §7 v0.105 de-clunk: snap a teleport-sized gap (a spawn/reposition) rather than glide across it. The
-      // floor is above any single-tick move — enemies can be parry-knocked ~154px in one tick, so the
-      // threshold clears that comfortably (INTERP_SNAP_ENEMY) and only fires on real repositions.
-      if (Math.hypot(enemy.x - rig.x, enemy.y - rig.y) > INTERP_SNAP_ENEMY) {
-        rig.setPosition(enemy.x, enemy.y);
-        this.enemyPrev.set(id, { x: enemy.x, y: enemy.y });
-        return;
-      }
-      rig.setPosition(Phaser.Math.Linear(rig.x, enemy.x, t), Phaser.Math.Linear(rig.y, enemy.y, t));
+      const s = rt >= 0 ? this.enemyBufs.get(id)?.sample(rt, INTERP_SNAP_ENEMY) : null;
+      if (s) rig.setPosition(s.x, s.y);
+      else rig.setPosition(enemy.x, enemy.y);
     });
   }
 
@@ -1257,19 +1325,24 @@ export class ArenaScene extends Phaser.Scene {
         });
         if (shooter && !flashedShooters.has(shooter)) {
           flashedShooters.add(shooter);
+          // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
+          // when the authoritative projectile lands a round-trip later.
+          const isSelf = shooter === this.room.sessionId;
+          const suppressed = isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
           const p = this.room.state.players.get(shooter);
-          if (p) {
+          if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
-            // Flash at the shooter's BARREL TIP (per-gun reach × the holder's rig scale), matching where the
-            // server spawned the shot (both call the same shared reach with the same character scale).
+            // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
+            // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
+            const srig = this.blobs.get(shooter);
             const reach = gunMuzzleReach(
               WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON],
               characterScale(p.character),
             );
             spawnMuzzleFlash(
               this,
-              p.x + Math.cos(ang) * reach,
-              p.y + Math.sin(ang) * reach,
+              (srig?.x ?? p.x) + Math.cos(ang) * reach,
+              (srig?.y ?? p.y) + Math.sin(ang) * reach,
               ang,
               fx.size,
               fx.color,
@@ -1837,22 +1910,25 @@ export class ArenaScene extends Phaser.Scene {
 
   private interpolate(deltaMs: number): void {
     if (!this.room) return;
-    // Frame-rate-independent smoothing toward the authoritative position.
-    const t = 1 - 0.0015 ** (deltaMs / 1000);
+    // §4 v0.107: SELF renders the PREDICTOR (instant response — no lerp, no round-trip); REMOTES render
+    // their snapshot rings at the delayed server-tick timeline (faithful motion under jitter — no
+    // τ-trailing, no rubber-banding). Teleport cuts live inside both paths (predictor hard-resync on
+    // teleportSeq / ring gap-snap + fellSeq reset). Fallback = raw state (pre-timeline first frames).
+    const selfId = this.room.sessionId;
+    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
     this.room.state.players.forEach((player, id) => {
       const blob = this.blobs.get(id);
       if (!blob) return;
-      // §7 v0.105 de-clunk: a gap this large isn't motion, it's a TELEPORT (rift descent, run restart, pit
-      // snap-back) — hard-snap instead of gliding the rig (and the camera) across the map for ~a second.
-      if (Math.hypot(player.x - blob.x, player.y - blob.y) > INTERP_SNAP_PLAYER) {
-        blob.setPosition(player.x, player.y);
-        this.prevPos.set(id, { x: player.x, y: player.y }); // don't read the jump as render-velocity
+      if (id === selfId && this.predictor) {
+        this.predictor.decayError(deltaMs / 1000);
+        const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
+        blob.setPosition(r.x, r.y);
+        this.selfPredHeight = r.height;
         return;
       }
-      blob.setPosition(
-        Phaser.Math.Linear(blob.x, player.x, t),
-        Phaser.Math.Linear(blob.y, player.y, t),
-      );
+      const s = rt >= 0 ? this.playerBufs.get(id)?.sample(rt, INTERP_SNAP_PLAYER) : null;
+      if (s) blob.setPosition(s.x, s.y);
+      else blob.setPosition(player.x, player.y);
     });
   }
 
@@ -1964,10 +2040,12 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.prevPos.set(id, { x: blob.x, y: blob.y });
 
-      // §5/§20 (Stage B): lift the rig by the synced HEIGHT (a real gravity arc, server-integrated) — the
-      // jump, and later the §8 parry-launch, just raise this value; the client renders whatever height is.
+      // §5/§20 (Stage B): lift the rig by the HEIGHT arc. §4 v0.107: SELF rides the PREDICTED arc (the
+      // hop starts the frame you press SPACE — no round-trip); remotes ride the synced height (smoothed
+      // by the v0.105 hop lerp in the rig).
       const pl = this.room?.state.players.get(id);
-      blob.setHop(pl?.height ?? 0);
+      const isSelfPred = id === selfId && this.predictor !== null;
+      blob.setHop(isSelfPred ? this.selfPredHeight : (pl?.height ?? 0));
 
       // §6 DOWNED look + revive pop. A downed body greys out + fades; a rez (revivedSeq tick) pops it green.
       const alive = pl?.alive ?? true;
@@ -2043,8 +2121,26 @@ export class ArenaScene extends Phaser.Scene {
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
-      // The muzzle flash + bullet render off the server-spawned projectile (syncProjectiles).
       this.shakeCam(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
+      // §4 v0.107 PREDICTED muzzle flash: fire feedback on the CLICK at the rendered barrel (the old
+      // path waited a full round-trip for the synced projectile — ~60-125ms of "did it fire?" online).
+      // The authoritative bullet still renders from state; syncProjectiles suppresses its duplicate
+      // flash for self for a beat. Cosmetic only — damage is server-side.
+      if (rig) {
+        const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
+        const reach = gunMuzzleReach(weapon, characterScale(self.character));
+        const fx = gunFx(weapon.gun.bulletKind);
+        spawnMuzzleFlash(
+          this,
+          rig.x + Math.cos(ang) * reach,
+          rig.y + Math.sin(ang) * reach,
+          ang,
+          fx.size,
+          fx.color,
+          fx.style,
+        );
+        this.lastSelfMuzzleAt = this.time.now;
+      }
     } else if (weapon && !weapon.thrown) {
       // Plain melee swing → the weapon's authored swing VFX (§14). If the weapon is authored "spawn at
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
@@ -2177,13 +2273,18 @@ export class ArenaScene extends Phaser.Scene {
   private updatePoiOcclusion(): void {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
+    // §4 v0.107: read the RENDERED self position (the predicted rig), not raw state — post-prediction the
+    // rig LEADS state by ~RTT/2, so a state-based fade would start visibly late walking behind a landmark.
+    const rig = selfId ? this.blobs.get(selfId) : undefined;
+    const sx = rig?.x ?? self?.x ?? 0;
+    const sy = rig?.y ?? self?.y ?? 0;
     for (const p of this.poiSprites) {
       let target = 1;
       if (self?.alive) {
         const halfW = p.img.displayWidth / 2;
         const top = p.y - p.img.displayHeight;
         // "Behind" = horizontally within the sprite and standing between its top and its base line.
-        if (self.y < p.y && self.y > top && Math.abs(self.x - p.x) < halfW) target = 0.45;
+        if (sy < p.y && sy > top && Math.abs(sx - p.x) < halfW) target = 0.45;
       }
       p.img.alpha = Phaser.Math.Linear(p.img.alpha, target, 0.18);
     }
@@ -2221,8 +2322,10 @@ export class ArenaScene extends Phaser.Scene {
       this[slot] = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
     }
     const arrow = this[slot] as Phaser.GameObjects.Container;
-    const dx = tx - self.x;
-    const dy = ty - self.y;
+    // §4 v0.107: bearing/distance from the RENDERED self (predicted rig), not the ~RTT/2-stale state.
+    const rig = selfId ? this.blobs.get(selfId) : undefined;
+    const dx = tx - (rig?.x ?? self.x);
+    const dy = ty - (rig?.y ?? self.y);
     const ang = Math.atan2(dy, dx);
     // Pin to the screen edge along the bearing (padded), rotate the chevron to point at the target.
     const pad = 46;
@@ -2622,14 +2725,19 @@ export class ArenaScene extends Phaser.Scene {
       carried += p.salvaged;
     });
     const stakes = `⛏ ${carried} carried · ${st?.bankedSalvage ?? 0} banked`;
+    // §4 v0.107 connection-degraded hint (amendment #13): >~1.2s of un-acked input commands = the link
+    // is stalling — tell the player WHY their character stopped responding instead of failing silently.
+    const lagging =
+      this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
+    const lagPrefix = lagging ? "⚠ CONNECTION LAG · " : "";
     this.modeText
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
-          ? `⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : `${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
+          ? `${lagPrefix}⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
+          : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
       )
-      .setColor(training ? "#33e6ff" : "#5a6472");
+      .setColor(lagging ? "#ff8a2b" : training ? "#33e6ff" : "#5a6472");
 
     // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;
@@ -2862,16 +2970,95 @@ export class ArenaScene extends Phaser.Scene {
     const enemies = this.room ? this.room.state.enemies.size : 0;
     const elapsed = this.room ? Math.floor(this.room.state.elapsed) : 0;
     const fps = Math.round(this.game.loop.actualFps);
-    this.debugEl.textContent = `run ${elapsed}s · fps ${fps} · players ${players} · enemies ${enemies} · mouseMoves ${this.pointerMoves}`;
+    // §4 v0.107 netcode health: un-acked command depth (≈ RTT in ticks) + current reconcile error (px).
+    const net = this.predictor
+      ? ` · net ${this.predictor.stats.pending}q/${this.predictor.stats.errPx.toFixed(0)}px`
+      : "";
+    this.debugEl.textContent = `run ${elapsed}s · fps ${fps} · players ${players} · enemies ${enemies} · mouseMoves ${this.pointerMoves}${net}`;
   }
 
-  private sendInput(): void {
-    const dx = (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
-    const dy = (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
-    // Send only on change — the server holds the last input until told otherwise.
-    if (dx !== this.lastSent.dx || dy !== this.lastSent.dy) {
-      this.room?.send("input", { dx, dy });
-      this.lastSent = { dx, dy };
+  /** §4 v0.107 one PATCH = one completed server tick. Stamp the snapshot timeline + remote rings and
+   *  reconcile the self predictor. Data only — rigs are moved by the render step, never from here. */
+  private onPatch(state: ArenaState): void {
+    const now = this.time.now;
+    if (state.tick <= 0) return; // pre-sim state (menu/handshake)
+    this.timeline.onPatch(state.tick, now);
+    const t = state.tick * TICK_MS;
+    const selfId = this.room?.sessionId;
+    state.players.forEach((p, id) => {
+      if (id === selfId) return; // self renders from the predictor, not snapshots
+      let buf = this.playerBufs.get(id);
+      if (!buf) {
+        buf = new SnapshotBuffer();
+        this.playerBufs.set(id, buf);
+      }
+      // A pit snap-back must CUT the remote's ring, not leave a path back into the pit (review #10).
+      const prevFell = this.snapFell.get(id);
+      if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p.x, p.y);
+      else buf.push(t, p.x, p.y);
+      this.snapFell.set(id, p.fellSeq);
+    });
+    state.enemies.forEach((e, id) => {
+      let buf = this.enemyBufs.get(id);
+      if (!buf) {
+        buf = new SnapshotBuffer();
+        this.enemyBufs.set(id, buf);
+      }
+      buf.push(t, e.x, e.y);
+    });
+    // Self: create the predictor on the first patch that carries us, then reconcile every patch.
+    if (selfId) {
+      const self = state.players.get(selfId);
+      if (self) {
+        const view = ArenaScene.serverView(self);
+        if (this.predictor) {
+          this.predictor.reconcile(view);
+        } else {
+          this.predictor = new SelfPredictor(view);
+          this.predictor.setMap(this.arenaMap);
+        }
+      }
+    }
+  }
+
+  /** The predictor's slice of the synced self row (frozen = the §12 level-window movement pause). */
+  private static serverView(p: PlayerState): ServerView {
+    return {
+      x: p.x,
+      y: p.y,
+      mvx: p.mvx,
+      mvy: p.mvy,
+      vx: p.vx,
+      vy: p.vy,
+      height: p.height,
+      vh: p.vh,
+      ackSeq: p.ackSeq,
+      teleportSeq: p.teleportSeq,
+      alive: p.alive,
+      frozen: p.flexPending > 0 || p.sigPending > 0,
+    };
+  }
+
+  /** §4 v0.107 the fixed 50ms INPUT-COMMAND loop: sample WASD once per frame, mint + send + predict one
+   *  sequence-numbered command per elapsed 50ms (clamped ≤3/frame — a throttled-tab wake must not burst
+   *  its whole backlog; the server would drain-to-newest anyway, and the predictor hard-resyncs). */
+  private stepNetInput(deltaMs: number): void {
+    this.curDx = (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
+    this.curDy = (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+    if (!this.room || !this.predictor) return;
+    if (deltaMs > 250) {
+      // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
+      // predictor on the next patch — its pending window is stale by the whole gap (amendment #12).
+      this.inputAccMs = 0;
+      this.predictor.forceResync();
+    }
+    this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
+    while (this.inputAccMs >= TICK_MS) {
+      this.inputAccMs -= TICK_MS;
+      const cmd = this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued);
+      this.jumpQueued = false;
+      this.room.send("input", cmd);
+      this.predictor.tick(cmd);
     }
   }
 }

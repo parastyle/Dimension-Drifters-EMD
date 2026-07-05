@@ -598,6 +598,124 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
   });
 });
 
+describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed timestep / hostile payloads)", () => {
+  it("consumes one command per tick and mirrors ackSeq + mvx/mvy on synced state", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    h.send("p1", "input", { seq: 1, dx: 1, dy: 0 });
+    h.tick(1);
+    expect(p.ackSeq).toBe(1); // consumed + acked
+    expect(p.mvx).toBeGreaterThan(0); // steering velocity mirrored for the predicting client
+    const mv1 = p.mvx;
+    h.tick(1); // queue starved → held fallback keeps steering (ack unchanged)
+    expect(p.ackSeq).toBe(1);
+    expect(p.mvx).toBeGreaterThan(mv1); // still accelerating on the held command
+  });
+
+  it("drains a BURST straight to the newest command (no latency ratchet) and acks its seq", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    // 3 commands in one tick window (within the per-tick message budget — the client's own burst clamp
+    // sends at most ~3 after a stall): the tick must jump to the FRESHEST, not chew 1-per-tick.
+    for (let s = 1; s <= 3; s++) h.send("p1", "input", { seq: s, dx: 1, dy: 0 });
+    h.tick(1);
+    expect(p.ackSeq).toBe(3); // the freshest intent, not seq 1 with a +100ms backlog behind it
+  });
+
+  it("SURVIVES hostile input payloads (garbage seq/dx, replays, floods) without crashing or moving", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const x0 = p.x;
+    // Garbage seq types + NaN dx — must not throw (a raw assignment into uint32 ackSeq would kill the
+    // process) and must not move the player.
+    h.send("p1", "input", { seq: "x", dx: "boom", dy: Number.NaN });
+    h.send("p1", "input", { seq: Number.NaN, dx: 1, dy: 0 });
+    h.send("p1", "input", { seq: -5, dx: 1, dy: 0 });
+    h.tick(2);
+    expect(p.ackSeq).toBe(0); // nothing legitimate consumed
+    expect(Math.abs(p.x - x0)).toBeLessThan(0.001);
+    // Replayed / regressed seqs are dropped (monotonicity).
+    h.send("p1", "input", { seq: 10, dx: 1, dy: 0 });
+    h.tick(1);
+    expect(p.ackSeq).toBe(10);
+    h.send("p1", "input", { seq: 10, dx: -1, dy: 0 }); // replay — dropped
+    h.send("p1", "input", { seq: 9, dx: -1, dy: 0 }); // regression — dropped
+    h.tick(1);
+    expect(p.ackSeq).toBe(10); // still the original
+    // Flood: hundreds of messages in one tick — budget caps acceptance, queue caps memory, no throw.
+    for (let i = 0; i < 300; i++) h.send("p1", "input", { seq: 100 + i, dx: 0, dy: 1 });
+    const rec = h.room.inputs.get("p1");
+    expect(rec.queue.length).toBeLessThanOrEqual(8);
+    h.tick(1);
+    expect(p.ackSeq).toBeGreaterThan(10); // the freshest accepted command landed
+  });
+
+  it("survives the uint32 seq WRAP: 0xFFFFFFFF → 0 continues the stream (channel never bricks)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const rec = h.room.inputs.get("p1");
+    rec.lastSeq = 0xffffffff; // a marathon session at the counter's edge
+    h.send("p1", "input", { seq: 0, dx: 1, dy: 0 }); // the wrapped next seq
+    h.tick(1);
+    expect(rec.lastSeq).toBe(0); // accepted — wrap-aware delta, not a plain <= compare
+    expect(p.mvx).toBeGreaterThan(0); // and it actually steered
+    h.send("p1", "input", { seq: 1, dx: 1, dy: 0 }); // stream continues normally past the wrap
+    h.tick(1);
+    expect(p.ackSeq).toBe(1);
+  });
+
+  it("consumes + acks even while FROZEN in the level window (queues must never pin), but does not move", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.flexPending = 1; // freeze (level-up window)
+    p.flexTimer = 999;
+    const x0 = p.x;
+    h.send("p1", "input", { seq: 1, dx: 1, dy: 0 });
+    h.tick(1);
+    expect(p.ackSeq).toBe(1); // acked through the freeze
+    expect(p.x).toBe(x0); // but no movement
+    expect(p.mvx).toBe(0); // and the steering velocity is held at zero (no glide on unfreeze)
+  });
+
+  it("a teleport bumps teleportSeq and drops queued/held intent (the client's hard-resync signal)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const ts0 = p.teleportSeq;
+    h.send("p1", "input", { seq: 1, dx: 1, dy: 0 });
+    h.tick(1);
+    expect(p.mvx).toBeGreaterThan(0);
+    h.room.zeroMoveVel("p1"); // any teleport site (pit / rift / restart / training / revive)
+    expect(p.teleportSeq).toBe(ts0 + 1);
+    expect(p.mvx).toBe(0);
+    h.tick(1); // the held direction was dropped too — no stale-intent glide after the teleport
+    expect(p.mvx).toBe(0);
+  });
+
+  it("FIXED TIMESTEP: a 150ms stall integrates as three exact 50ms sub-steps (catch-up, not dt-stretch)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const t0 = h.state().tick;
+    const e0 = h.state().elapsed;
+    h.room.update(150); // one laggy invocation
+    expect(h.state().tick).toBe(t0 + 3); // 3 whole sub-steps ran
+    expect(h.state().elapsed).toBeCloseTo(e0 + 0.15, 5);
+    // And two 25ms invocations accumulate into exactly one sub-step (no drift, no double-step).
+    const t1 = h.state().tick;
+    h.room.update(25);
+    expect(h.state().tick).toBe(t1); // not enough accumulated yet
+    h.room.update(25);
+    expect(h.state().tick).toBe(t1 + 1);
+    void p;
+  });
+});
+
 describe("GameRoom — §7 v0.105 de-clunk input buffering (attack / parry / jump)", () => {
   // The bug: a press that lands one tick BEFORE the server cooldown clears used to be silently EATEN —
   // the client had already played the whole swing/brace/hop, so the input felt dropped. These pin the fix:
