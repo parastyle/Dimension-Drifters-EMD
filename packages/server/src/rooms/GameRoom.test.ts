@@ -932,6 +932,41 @@ describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drop
     expect(p.weaponAffix).toBe("");
   });
 
+  it("A11: grabbing while holding a weapon SWAPS — the held weapon drops as a pickup, not destroyed", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    // Holding an EARNED Legendary Keen weapon.
+    p.weapon = "tombstone-greatsword";
+    p.weaponRarity = 4;
+    p.weaponAffix = "keen";
+    const c = h.room.combat.get("p1");
+    c.heldEarned = true;
+    // A plain Common weapon on the floor, in reach.
+    const pk = new PickupState();
+    pk.id = "drop700";
+    pk.weapon = "rusty-cleaver";
+    pk.x = p.x;
+    pk.y = p.y;
+    h.state().pickups.set("drop700", pk);
+    h.send("p1", "grabWeapon");
+    // Now wielding the grabbed weapon (unearned — the floor pickup carried no provenance)...
+    expect(p.weapon).toBe("rusty-cleaver");
+    expect(c.heldEarned).toBe(false);
+    // ...and the Legendary was NOT destroyed — it's back on the floor as a grabbable pickup with its
+    // full identity + earned provenance intact (the data-loss booby trap is closed).
+    let dropped: PickupState | undefined;
+    h.state().pickups.forEach((x: PickupState) => {
+      if (x.weapon === "tombstone-greatsword") dropped = x;
+    });
+    expect(dropped).toBeDefined();
+    expect(dropped?.rarity).toBe(4);
+    expect(dropped?.affix).toBe("keen");
+    expect(h.room.earnedPickups.has(dropped?.id ?? "")).toBe(true);
+  });
+
   it("a rarity/affix genuinely changes dealt damage (Legendary Keen > plain, WYSIWYG)", () => {
     const hitFor = (rarity: number, affix: string) => {
       const h = makeRoom();

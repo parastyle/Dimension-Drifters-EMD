@@ -260,6 +260,12 @@ export class ArenaScene extends Phaser.Scene {
   // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
   private rHold = 0;
   private rSalvaged = false;
+  /** §13 v0.106 (A11): latch so a JustDown grab suppresses the release-time drop (one press = one grab). */
+  private rGrabbed = false;
+  /** §13 v0.106 (A11): the nearest grabbable pickup this frame (world px), for the highlight ring. */
+  private grabTarget: { x: number; y: number } | null = null;
+  /** §13 v0.106 (A11): the pulsing amber ring drawn on the pickup R will take. */
+  private grabGfx!: Phaser.GameObjects.Graphics;
   private dropBar?: Phaser.GameObjects.Graphics;
   private dropBarLabel?: Phaser.GameObjects.Text;
   // §9 card carousel — held card big with full stats. Each card holds its LIVE elements (one equation
@@ -340,6 +346,8 @@ export class ArenaScene extends Phaser.Scene {
     // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
     // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
     this.parryGfx = this.add.graphics().setDepth(99989);
+    // §13 v0.106 (A11): the grab-highlight ring on the pickup R will take (just under the parry ring).
+    this.grabGfx = this.add.graphics().setDepth(99988);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
@@ -888,18 +896,34 @@ export class ArenaScene extends Phaser.Scene {
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
     const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
-    // Is a grabbable pickup within arm's reach? (Then R means "grab", not "drop/salvage".)
+    // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
+    // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
     let nearPickup = false;
+    this.grabTarget = null;
     if (selfP && alive) {
-      const r2 = PICKUP_RADIUS * PICKUP_RADIUS;
+      let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
       this.room.state.pickups.forEach((pk) => {
         const dx = pk.x - selfP.x;
         const dy = pk.y - selfP.y;
-        if (dx * dx + dy * dy <= r2) nearPickup = true;
+        const d = dx * dx + dy * dy;
+        if (d <= bestD) {
+          bestD = d;
+          nearPickup = true;
+          this.grabTarget = { x: pk.x, y: pk.y };
+        }
       });
     }
     const canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
-    if (this.keys.R.isDown && canSalvage) {
+    // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
+    // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
+    if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
+      this.room.send("grabWeapon");
+      this.rGrabbed = true;
+    }
+    // `!rGrabbed`: if this R-press already fired a grab (JustDown), it does nothing else for the rest of the
+    // hold — one press = one grab, so walking off a pickup mid-hold can't then accidentally salvage the
+    // weapon you just picked up.
+    if (this.keys.R.isDown && canSalvage && !this.rGrabbed) {
       this.rHold += this.deltaSec;
       if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
         this.room.send("salvageWeapon");
@@ -907,20 +931,21 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
-      if (alive && nearPickup) {
-        this.room.send("grabWeapon"); // standing on a dropped weapon: pick it up
-      } else if (
+      if (
+        !this.rGrabbed &&
         !this.rSalvaged &&
         this.rHold > 0.02 &&
         this.rHold < SALVAGE_HOLD_SECONDS &&
         holdingWeapon
       ) {
-        this.room.send("dropWeapon"); // a quick tap = drop
+        this.room.send("dropWeapon"); // a quick tap (not a grab, not a salvage-hold) = drop
       }
       this.rHold = 0;
       this.rSalvaged = false;
+      this.rGrabbed = false;
     }
     this.updateDropBar(canSalvage);
+    this.renderGrabHighlight();
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.room.send("jump"); // §5 traversal hop
     if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
@@ -2054,6 +2079,18 @@ export class ArenaScene extends Phaser.Scene {
     rig?.triggerBrace(this.animClock);
     // §8 local-player parry-augment VFX (server owns the damage; this reads the owned set + live aim).
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
+  }
+
+  /** §13 v0.106 (A11) grab highlight: a pulsing amber ring on the nearest reachable pickup — the one an R
+   *  tap will GRAB — so the swap is a deliberate choice, not a blind one. Hidden when nothing's in reach. */
+  private renderGrabHighlight(): void {
+    const g = this.grabGfx;
+    g.clear();
+    const t = this.grabTarget;
+    if (!t) return;
+    const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
+    g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
+    g.strokeCircle(t.x, t.y, PICKUP_RADIUS * (0.7 + 0.06 * pulse));
   }
 
   /** H10 §20 parry-state ring under the LOCAL drifter so the timing is learnable: a bright flash through the

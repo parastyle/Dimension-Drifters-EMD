@@ -448,29 +448,8 @@ export class GameRoom extends Room<ArenaState> {
     // stays salvageable after a re-grab but a conjured one can never launder into salvage value.
     this.onMessage("dropWeapon", (client) => {
       const player = this.state.players.get(client.sessionId);
-      if (!player?.alive || player.weapon === FISTS_WEAPON) return;
-      const c = this.combat.get(client.sessionId);
-      const ax = c?.aimX ?? 1;
-      const ay = c?.aimY ?? 0;
-      const pk = new PickupState();
-      pk.id = `drop${this.pickupSeq++}`;
-      pk.weapon = player.weapon;
-      // The player KNOWS what they dropped — identity + its rolled loot identity ride the pickup.
-      pk.rarity = player.weaponRarity;
-      pk.affix = player.weaponAffix;
-      pk.x = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
-      pk.y = clamp(
-        player.y + ay * PICKUP_RADIUS * 1.6,
-        PICKUP_RADIUS,
-        ARENA_HEIGHT - PICKUP_RADIUS,
-      );
-      this.state.pickups.set(pk.id, pk);
-      this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
-      if (c?.heldEarned) this.earnedPickups.add(pk.id);
-      if (c) c.heldEarned = false;
-      player.weapon = FISTS_WEAPON;
-      player.weaponRarity = RARITY_COMMON;
-      player.weaponAffix = "";
+      if (!player?.alive) return;
+      this.dropHeldWeapon(player, this.combat.get(client.sessionId));
     });
 
     // §13 R-HOLD = SALVAGE the held weapon (consumed, no pickup) → fall back to FISTS. §6 v0.103: salvage
@@ -507,6 +486,12 @@ export class GameRoom extends Room<ArenaState> {
       });
       if (!best) return;
       const grabbed = best as PickupState;
+      const c = this.combat.get(client.sessionId);
+      // §13 v0.106 (A11 de-clunk): grabbing is a SWAP, not a replace. If we're already holding a weapon,
+      // DROP it on the floor first (as a grabbable pickup carrying its loot identity + earned provenance +
+      // a re-grab grace) — otherwise grabbing a Common off the ground while holding a Legendary silently
+      // DESTROYED the Legendary. No-op on fists (empty hands = a plain pickup, nothing to drop).
+      this.dropHeldWeapon(player, c);
       player.weapon = grabbed.weapon;
       // §10 v0.104 the grab is the mystery REVEAL: the drop's rolled rarity + affix become the held
       // weapon's loot identity (the server multiplies damage/cooldown from these synced fields).
@@ -514,7 +499,6 @@ export class GameRoom extends Room<ArenaState> {
       player.weaponAffix = grabbed.affix;
       // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
       // gallery + conjured drops are not.
-      const c = this.combat.get(client.sessionId);
       if (c) c.heldEarned = this.earnedPickups.has(grabbed.id);
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
@@ -616,6 +600,31 @@ export class GameRoom extends Room<ArenaState> {
     this.pickupGrace.clear();
     this.earnedPickups.clear();
     this.burnPulses.length = 0;
+  }
+
+  /** §13 v0.106 (A11) spawn the player's currently-held weapon on the floor as a grabbable pickup in front
+   *  of them, inheriting its rolled loot identity + earned provenance + a brief re-grab GRACE, then reset the
+   *  hands to FISTS. No-op on fists (nothing to drop). Shared by the R-tap DROP and the grab-while-holding
+   *  SWAP, so a grab can never silently DESTROY a held (possibly Legendary) weapon. */
+  private dropHeldWeapon(player: PlayerState, c: CombatState | undefined): void {
+    if (player.weapon === FISTS_WEAPON) return;
+    const ax = c?.aimX ?? 1;
+    const ay = c?.aimY ?? 0;
+    const pk = new PickupState();
+    pk.id = `drop${this.pickupSeq++}`;
+    pk.weapon = player.weapon;
+    // The player KNOWS what they dropped — identity + its rolled loot identity ride the pickup.
+    pk.rarity = player.weaponRarity;
+    pk.affix = player.weaponAffix;
+    pk.x = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
+    pk.y = clamp(player.y + ay * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_HEIGHT - PICKUP_RADIUS);
+    this.state.pickups.set(pk.id, pk);
+    this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
+    if (c?.heldEarned) this.earnedPickups.add(pk.id);
+    if (c) c.heldEarned = false;
+    player.weapon = FISTS_WEAPON;
+    player.weaponRarity = RARITY_COMMON;
+    player.weaponAffix = "";
   }
 
   /** §10 v0.104 per-source damage multiplier INCLUDING the held weapon's loot identity: attribute grades ×
