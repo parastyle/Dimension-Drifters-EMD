@@ -57,6 +57,12 @@ export class PlayerState extends Schema {
   /** Thrown-weapon charges remaining + max (§9/§10 charge readout). 0/0 = not a thrown weapon. */
   @type("number") charges = 0;
   @type("number") maxCharges = 0;
+  /** §10 v0.104 the HELD weapon's loot identity: rarity tier (indexes shared RARITIES) + the single
+   *  Terraria affix id. Rolled on the drop, applied on grab; a cycled/conjured weapon is Common/plain.
+   *  The server multiplies every damage source + the cooldown by the derived loot mults; the card shows
+   *  the same numbers (WYSIWYG). */
+  @type("uint8") weaponRarity = 0;
+  @type("string") weaponAffix = "";
   /** §13 salvage-bag stub: count of weapons salvaged (hold-drop). The real parts economy (§13) isn't
    *  built yet — this just tallies + drives the HUD readout so the hold-to-salvage action has feedback. */
   @type("number") salvaged = 0;
@@ -108,12 +114,19 @@ export class ZoneState extends Schema {
   @type("number") radius = 0;
 }
 
-/** A weapon lying on the ground in Testing Grounds — walk over it to equip (§21). */
+/** A weapon lying on the ground — the Testing-Grounds gallery, a player drop, or (v0.104 §13) an in-run
+ *  LOOT drop. Loot drops are MYSTERY: `known=false` hides the identity client-side (the pickup renders as
+ *  a rarity-tinted bundle, cursed = the §10 ghostly-purple gamble cue) until it's grabbed; the gallery,
+ *  player drops, and wielding-enemy drops stay identity-known. `rarity` indexes shared RARITIES; `affix`
+ *  is the §10 single Terraria affix id rolled at drop time. */
 export class PickupState extends Schema {
   @type("string") id = "";
   @type("number") x = 0;
   @type("number") y = 0;
   @type("string") weapon = "";
+  @type("uint8") rarity = 0;
+  @type("string") affix = "";
+  @type("boolean") known = true;
 }
 
 /**

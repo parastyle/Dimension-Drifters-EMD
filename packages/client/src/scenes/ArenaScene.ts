@@ -5,6 +5,7 @@ import {
   type ArenaState,
   type Attr,
   AUGMENTS,
+  affixById,
   BOSS_SLAM_RADIUS,
   bossSpawnAt,
   CHAIN_MAX_RANGE,
@@ -31,12 +32,15 @@ import {
   inMeleeArc,
   isPitAtPx,
   LEVELUP_WINDOW_SECONDS,
+  lootDamageMult,
   PARRY_CHAIN_CD,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
+  RARITIES,
+  RARITY_CURSED,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
@@ -180,6 +184,13 @@ export class ArenaScene extends Phaser.Scene {
   /** §6 v0.103: until this clock, enemy-REMOVAL VFX are muted — a rift descent bulk-clears the old
    *  dimension's horde and the removals must read as "left behind", not a mass death celebration. */
   private removalFxMuteUntil = 0;
+  /** §10 v0.104 last-seen held-loot fingerprint — the mystery-grab REVEAL banner fires when it changes. */
+  private prevHeldLoot = "";
+  /** §13 v0.104 expansion sprites already queued for runtime lazy-load (don't double-queue). */
+  private readonly pendingArt = new Set<string>();
+  /** §13 v0.104 sprites whose lazy-load FAILED (missing on disk / 404) — equip falls through to empty
+   *  hands instead of retrying forever with an invisible weapon (adversarial-verify hardening). */
+  private readonly failedArt = new Set<string>();
   /** §17 Codex tile textures (gen-tiles.mjs) that failed to load (absent on disk) — fall back to flat fill. */
   private readonly tilesMissing = new Set<string>();
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
@@ -524,9 +535,24 @@ export class ArenaScene extends Phaser.Scene {
     state.forEach((pk, id) => {
       if (this.pickups.has(id)) return;
       const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
-      const part = manifest?.parts[0];
       const def = WEAPONS[pk.weapon];
-      const accent = WEAPON_ACCENT[pk.weapon] ?? 0xffd479;
+      // §10/§13 v0.104 LOOT identity: a MYSTERY drop (known=false) telegraphs TYPE + RARITY but hides
+      // which weapon until grabbed; a known pickup with rolled rarity shows its tier color + affix.
+      // Cursed = the ghostly-purple gamble cue (§10), pulsing so it reads as "knowingly haunted".
+      const isMystery = !pk.known;
+      const rarity = RARITIES[pk.rarity] ?? {
+        name: "Common",
+        color: 0x9aa5b1,
+        dmg: 1,
+        weight: 0,
+        salvage: 1,
+        id: "common",
+      };
+      // A KNOWN pickup renders its real art — but an expansion weapon's parts lazy-load at runtime, so
+      // fall back to the tier-tinted bundle (with the true name label) until/unless the art exists.
+      const part = isMystery || !this.ensureWeaponArt(pk.weapon) ? undefined : manifest?.parts[0];
+      const accent =
+        isMystery || pk.rarity > 0 ? rarity.color : (WEAPON_ACCENT[pk.weapon] ?? 0xffd479);
       const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
       const baseScale = part ? 72 / part.w : 1;
 
@@ -534,10 +560,17 @@ export class ArenaScene extends Phaser.Scene {
       const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
       const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
       const tx = part ? partTexture(this, pk.weapon, part.role) : null;
+      // Mystery = a rarity-tinted sealed ORB (+ "?"), NOT the weapon art. A circle spins cleanly under
+      // the faux-3D scaleX tween (a rotated rect collapsed into a diagonal sliver — verify finding).
       const img =
         part && tx
           ? this.add.image(0, 0, tx.key, tx.frame).setScale(baseScale)
-          : this.add.rectangle(0, 0, 50, 12, accent);
+          : this.add.circle(0, 0, 20, accent, 0.9).setStrokeStyle(2, 0x1a1410, 0.6);
+      const mysteryMark = isMystery
+        ? this.add
+            .text(0, 0, "?", { fontSize: "22px", color: "#1a1410", fontStyle: "bold" })
+            .setOrigin(0.5)
+        : null;
       const shine =
         part && tx
           ? this.add
@@ -548,15 +581,37 @@ export class ArenaScene extends Phaser.Scene {
               .setBlendMode(ADD)
               .setAlpha(0)
           : null;
+      // Label: mystery → tier + weapon CLASS glyph (type is telegraphed, identity isn't); known → name
+      // (+ its rolled affix). §13 "type + rarity via visual cues but not exactly which weapon."
+      const classGlyph =
+        def?.tags.classPool === "ranged" ? "➶" : def?.tags.classPool === "caster" ? "✦" : "⚔";
+      const affixName = pk.affix ? affixById(pk.affix).name : "";
+      const labelText = isMystery
+        ? `${rarity.name} ${classGlyph}`
+        : `${def?.name ?? pk.weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
       const label = this.add
-        .text(0, 42, def?.name ?? pk.weapon, {
+        .text(0, 42, labelText, {
           fontSize: "11px",
           color: accentHex,
           fontStyle: "bold",
         })
         .setOrigin(0.5);
-      const spinner = this.add.container(0, 0, shine ? [glow, img, shine] : [glow, img]);
+      const spinnerKids: Phaser.GameObjects.GameObject[] = [glow, img];
+      if (shine) spinnerKids.push(shine);
+      if (mysteryMark) spinnerKids.push(mysteryMark);
+      const spinner = this.add.container(0, 0, spinnerKids);
       const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
+      // §10 cursed gamble cue: the whole pickup breathes a ghostly fade — haunted, and it knows you know.
+      if (pk.rarity === RARITY_CURSED) {
+        this.tweens.add({
+          targets: container,
+          alpha: 0.45,
+          duration: 950,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.inOut",
+        });
+      }
 
       this.tweens.add({
         targets: spinner,
@@ -602,6 +657,36 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Make each player rig hold the weapon its authoritative state says it has (re-equip on change). */
+  /** §13 v0.104 lazy-load a weapon's sliced parts at RUNTIME (the +300 expansion arsenal is not
+   *  boot-loaded — a mystery drop is the first time the client learns it needs this art). Returns true
+   *  when the art is ready; false while the load is in flight (caller retries next frame — equipWeapons
+   *  and syncPickups both re-run per frame, so the art pops in within a beat). */
+  private ensureWeaponArt(spriteId: string): boolean {
+    const manifest = SPRITES[spriteId as keyof typeof SPRITES];
+    if (!manifest) return false;
+    const first = manifest.parts[0];
+    if (!first) return false;
+    const tx = partTexture(this, spriteId, first.role);
+    if (this.textures.exists(tx.key)) return true;
+    if (this.failedArt.has(spriteId)) return false; // 404'd — don't retry forever
+    if (!this.pendingArt.has(spriteId)) {
+      this.pendingArt.add(spriteId);
+      for (const part of manifest.parts) {
+        this.load.image(`${spriteId}:${part.role}`, `sprites/${spriteId}/${part.file}`);
+      }
+      // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
+      // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
+      this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+        if (!this.textures.exists(`${spriteId}:${first.role}`)) {
+          this.failedArt.add(spriteId);
+          console.warn(`[dd] weapon art failed to lazy-load: ${spriteId}`);
+        }
+      });
+      this.load.start(); // Phaser allows queueing loads after boot; fires normally
+    }
+    return false;
+  }
+
   private equipWeapons(): void {
     if (!this.room) return;
     this.room.state.players.forEach((player, id) => {
@@ -612,11 +697,14 @@ export class ArenaScene extends Phaser.Scene {
       // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
       const spriteId = def?.sprite ?? player.weapon;
       const manifest = SPRITES[spriteId as keyof typeof SPRITES];
-      if (def && manifest) {
+      if (def && manifest && !this.failedArt.has(spriteId)) {
+        // §13 v0.104 an expansion drop's art loads on demand — hold off equipping until it lands
+        // (this runs per frame, so the weapon appears in hand a beat after the grab).
+        if (!this.ensureWeaponArt(spriteId)) return;
         rig.equipWeapon(spriteId, def, manifest);
         this.equipped.set(id, player.weapon);
       } else if (def) {
-        rig.unequip(def); // §9 fists / any weapon with no held sprite → empty hands
+        rig.unequip(def); // §9 fists / missing-art fallback / no held sprite → empty hands
         this.equipped.set(id, player.weapon);
       }
     });
@@ -2088,6 +2176,26 @@ export class ArenaScene extends Phaser.Scene {
         if (rig) this.spawnLevelUp(rig.x, rig.y);
       }
       this.prevLevel = self.level;
+
+      // §10 v0.104 the mystery-grab REVEAL: when the held loot identity changes to something with a
+      // tier OR an affix, banner it in the tier's color — "RARE KEEN NEON KATANA" is the dopamine beat.
+      // (An affixed Common still reveals — ~a third of drops are Common with a real affix.)
+      const heldKey = `${self.weapon}:${self.weaponRarity}:${self.weaponAffix}`;
+      if (
+        this.prevHeldLoot !== "" &&
+        heldKey !== this.prevHeldLoot &&
+        (self.weaponRarity > 0 || self.weaponAffix !== "")
+      ) {
+        const rar = RARITIES[self.weaponRarity];
+        const tierName = self.weaponRarity > 0 ? `${rar?.name ?? ""} ` : "";
+        const affix = self.weaponAffix ? `${affixById(self.weaponAffix).name} ` : "";
+        const name = WEAPONS[self.weapon]?.name ?? self.weapon;
+        this.flashBanner(
+          `${tierName}${affix}${name}`.toUpperCase(),
+          `#${(rar?.color ?? 0xffd479).toString(16).padStart(6, "0")}`,
+        );
+      }
+      this.prevHeldLoot = heldKey;
     }
   }
 
@@ -2231,17 +2339,28 @@ export class ArenaScene extends Phaser.Scene {
       else
         charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
     }
+    // §10 v0.104 the held weapon's LOOT identity rides the readout: "Rare Keen Neon Katana", tinted by
+    // its rarity tier (loot-less holds stay plain).
+    const heldRar = self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
+    const heldAffix = self?.weaponAffix ? affixById(self.weaponAffix).name : "";
+    const lootPrefix = [heldRar?.name ?? "", heldAffix].filter(Boolean).join(" ");
     this.weaponText
       .setPosition(barX, xpY - 24 * s)
       .setText(
-        self ? `⚔ ${WEAPONS[self.weapon]?.name ?? self.weapon}${charges}   ·   Q to cycle` : "",
+        self
+          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${WEAPONS[self.weapon]?.name ?? self.weapon}${charges}   ·   Q to cycle`
+          : "",
       );
-    // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else green.
-    if (self && self.maxCharges > 0) {
-      const lowAt = Math.max(1, Math.ceil(self.maxCharges * 0.25));
-      this.weaponText.setColor(
-        self.charges <= 0 ? "#ff5d5d" : self.charges <= lowAt ? "#ff8a2b" : "#9cff3b",
-      );
+    // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else
+    // green — with a rarity tint when the weapon carries one and ammo is healthy.
+    if (
+      self &&
+      self.maxCharges > 0 &&
+      self.charges <= Math.max(1, Math.ceil(self.maxCharges * 0.25))
+    ) {
+      this.weaponText.setColor(self.charges <= 0 ? "#ff5d5d" : "#ff8a2b");
+    } else if (heldRar) {
+      this.weaponText.setColor(`#${heldRar.color.toString(16).padStart(6, "0")}`);
     } else {
       this.weaponText.setColor("#9cff3b");
     }
@@ -2390,12 +2509,18 @@ export class ArenaScene extends Phaser.Scene {
       const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
       // §11 unmet requirements PENALISE every source's damage (the enforcement rule) — fold it into the
       // shown total so the card is WYSIWYG, and tint the equation amber when the weapon is under-statted.
+      // §10 v0.104: the HELD card also folds in its rolled loot identity (rarity × affix) — the equation
+      // always equals the damage the server actually deals.
       const pen = def ? requirementPenalty(def, attrs) : 1;
+      const loot =
+        isSel && self && card.id === self.weapon
+          ? lootDamageMult(self.weaponRarity, self.weaponAffix)
+          : 1;
       for (const s of card.sources) {
-        const mult = damageMultFromGrades(s.src.grades, attrs) * pen;
+        const mult = damageMultFromGrades(s.src.grades, attrs) * pen * loot;
         const total = s.src.base * mult;
         s.text.setText(`${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`);
-        s.text.setColor(pen < 1 ? "#ffb24a" : "#ffd479");
+        s.text.setColor(pen < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
       }
       // Requirements: green when met by the player's live attributes, red when unmet.
       for (const tk of card.reqTokens) {

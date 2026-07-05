@@ -1,5 +1,6 @@
 import {
   DEFAULT_WEAPON,
+  DROP_POOL,
   DUMMY_HP,
   ENEMY_KINDS,
   EnemyState,
@@ -11,6 +12,7 @@ import {
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
+  salvageValue,
   TILE_GROUND,
   TILE_PIT,
   WEAPONS,
@@ -774,6 +776,153 @@ describe("GameRoom — §6 dimension chain (v0.103: extract-vs-descend, bank-or-
     const shallow = hpAt(1);
     const deep = hpAt(3);
     if (shallow > 0 && deep > 0) expect(deep).toBeGreaterThan(shallow); // ×1.5 at depth 3
+  });
+});
+
+describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drops, provenance value)", () => {
+  it("killing the BOSS guarantees a mystery drop with a rolled rarity/affix (earned)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.weapon = "gravediggers-spade";
+    h.tick(1);
+    h.send("p1", "spawnBoss");
+    h.tick(1);
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+        e.hp = 1;
+        e.x = h.room.map.spawnX + 100;
+        e.y = h.room.map.spawnY;
+      }
+    });
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4);
+    let loot: PickupState | undefined;
+    h.state().pickups.forEach((pk: PickupState) => {
+      if (!pk.known) loot = pk;
+    });
+    expect(loot).toBeDefined(); // §13 "no guaranteed weapon drops except bosses" — this IS the boss
+    expect(loot?.known).toBe(false); // mystery: type+rarity telegraphed, identity hidden
+    expect(DROP_POOL).toContain(loot?.weapon); // identity comes from the power-banded pool
+    expect(h.room.earnedPickups.has(loot?.id)).toBe(true); // loot drops carry salvage value
+  });
+
+  it("grabbing a drop applies its rolled rarity + affix to the held weapon (the reveal)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    const pk = new PickupState();
+    pk.id = "drop800";
+    pk.weapon = "tombstone-greatsword";
+    pk.rarity = 4; // Legendary
+    pk.affix = "keen";
+    pk.known = false;
+    pk.x = p.x;
+    pk.y = p.y;
+    h.state().pickups.set("drop800", pk);
+    h.room.earnedPickups.add("drop800");
+    h.send("p1", "grabWeapon");
+    expect(p.weapon).toBe("tombstone-greatsword");
+    expect(p.weaponRarity).toBe(4);
+    expect(p.weaponAffix).toBe("keen");
+  });
+
+  it("salvaging an earned weapon pays its RARITY value; cycling shreds the loot identity", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    const pk = new PickupState();
+    pk.id = "drop801";
+    pk.weapon = "tombstone-greatsword";
+    pk.rarity = 4; // Legendary → salvage 8
+    pk.affix = "keen";
+    pk.x = p.x;
+    pk.y = p.y;
+    h.state().pickups.set("drop801", pk);
+    h.room.earnedPickups.add("drop801");
+    h.send("p1", "grabWeapon");
+    h.send("p1", "salvageWeapon");
+    expect(p.salvaged).toBe(salvageValue(4)); // 8 — the tier drives the parts value
+    expect(p.weaponRarity).toBe(0); // identity shredded with the weapon
+    // A cycled (conjured) weapon carries NO loot identity.
+    h.send("p1", "cycleWeapon", { dir: 1 });
+    expect(p.weaponRarity).toBe(0);
+    expect(p.weaponAffix).toBe("");
+  });
+
+  it("a rarity/affix genuinely changes dealt damage (Legendary Keen > plain, WYSIWYG)", () => {
+    const hitFor = (rarity: number, affix: string) => {
+      const h = makeRoom();
+      h.join("p1");
+      const p = h.state().players.get("p1");
+      p.x = h.room.map.spawnX;
+      p.y = h.room.map.spawnY;
+      p.weapon = "gravediggers-spade";
+      p.weaponRarity = rarity;
+      p.weaponAffix = affix;
+      h.tick(1);
+      const e = new EnemyState();
+      e.id = "victim";
+      e.kind = "critter";
+      e.hp = 500;
+      e.x = h.room.map.spawnX + 50;
+      e.y = h.room.map.spawnY;
+      h.state().enemies.set("victim", e);
+      h.send("p1", "attack", { aimX: 1, aimY: 0 });
+      h.tick(4);
+      return 500 - (h.state().enemies.get("victim")?.hp ?? 0);
+    };
+    const plain = hitFor(0, "");
+    const legendary = hitFor(4, "keen");
+    expect(plain).toBeGreaterThan(0);
+    expect(legendary).toBeCloseTo(plain * 1.45 * 1.12, 1); // exactly rarity × affix
+  });
+
+  it("EXPLOIT GUARD: the Testing Grounds mints NO loot — not from toughs, debug BOSSES, or wielders", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "toggleTraining");
+    const before = h.state().pickups.size;
+    // Kill toughs, a BOSS, and a weapon-WIELDER in training — none may mint a drop (the verify-found
+    // laundering exploit: reroll boss loot risk-free in the workshop, then carry it into the run).
+    for (let i = 0; i < 40; i++) {
+      const e = new EnemyState();
+      e.id = `t${i}`;
+      e.kind = "critter";
+      e.hp = 0.0001;
+      e.tough = true;
+      h.state().enemies.set(e.id, e);
+      h.room.damageEnemy(e, e.id, 1, []);
+    }
+    for (let i = 0; i < 12; i++) {
+      const b = new EnemyState();
+      b.id = `b${i}`;
+      b.kind = "old-rust"; // archetype boss — dropLoot(…,1) path
+      b.hp = 0.0001;
+      h.state().enemies.set(b.id, b);
+      h.room.damageEnemy(b, b.id, 1, []);
+      const r = new EnemyState();
+      r.id = `r${i}`;
+      r.kind = "ronin"; // wieldsWeapon — maybeDropWeapon path
+      r.hp = 0.0001;
+      h.state().enemies.set(r.id, r);
+      h.room.damageEnemy(r, r.id, 1, []);
+    }
+    expect(h.state().pickups.size).toBe(before); // ZERO drops of any kind in the workshop
+    // And a loot identity acquired elsewhere is SHED on entering training (no power laundering).
+    const p = h.state().players.get("p1");
+    p.weaponRarity = 5;
+    p.weaponAffix = "frenzied";
+    h.send("p1", "toggleTraining"); // back to arena
+    h.send("p1", "toggleTraining"); // into training again — sheds the loot identity
+    expect(p.weaponRarity).toBe(0);
+    expect(p.weaponAffix).toBe("");
   });
 });
 

@@ -40,6 +40,8 @@ import {
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
   DIMENSIONS,
+  DROP_CHANCE_TOUGH,
+  DROP_CHANCE_TRASH,
   DROP_GRACE_SECONDS,
   DUMMY_HP,
   DUMMY_RADIUS,
@@ -78,6 +80,10 @@ import {
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
   LEVELUP_WINDOW_SECONDS,
+  LOOT_TIER_LUK_BOSS,
+  LOOT_TIER_LUK_TOUGH,
+  lootCooldownMult,
+  lootDamageMult,
   M0_CLASS_ATTR,
   MAX_ENEMIES,
   MAX_PLAYERS,
@@ -113,6 +119,7 @@ import {
   poiRadius,
   prevWeapon,
   QUAKE_REACH,
+  RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
   REVIVE_HP_FRAC,
   RIFT_CHANNEL_SECONDS,
@@ -120,6 +127,9 @@ import {
   randomSeed,
   resolveBodyCollisions,
   resolvePoiCollision,
+  rollAffix,
+  rollDropWeapon,
+  rollRarity,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
   SHIFTER_FIRST_SECONDS,
@@ -130,6 +140,7 @@ import {
   SHIFTER_TIER_SECONDS,
   SPAWN_RING,
   safeSpawnPos,
+  salvageValue,
   selectChainTargets,
   spawnInterval,
   stepEnemyChase,
@@ -411,6 +422,8 @@ export class GameRoom extends Room<ArenaState> {
       if (!player) return;
       player.weapon =
         (message?.dir ?? 1) < 0 ? prevWeapon(player.weapon) : nextWeapon(player.weapon);
+      player.weaponRarity = RARITY_COMMON; // conjured = plain Common (loot identity lives on DROPS)
+      player.weaponAffix = "";
       const c = this.combat.get(client.sessionId);
       if (c) c.heldEarned = false;
     });
@@ -434,6 +447,9 @@ export class GameRoom extends Room<ArenaState> {
       const pk = new PickupState();
       pk.id = `drop${this.pickupSeq++}`;
       pk.weapon = player.weapon;
+      // The player KNOWS what they dropped — identity + its rolled loot identity ride the pickup.
+      pk.rarity = player.weaponRarity;
+      pk.affix = player.weaponAffix;
       pk.x = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
       pk.y = clamp(
         player.y + ay * PICKUP_RADIUS * 1.6,
@@ -445,6 +461,8 @@ export class GameRoom extends Room<ArenaState> {
       if (c?.heldEarned) this.earnedPickups.add(pk.id);
       if (c) c.heldEarned = false;
       player.weapon = FISTS_WEAPON;
+      player.weaponRarity = RARITY_COMMON;
+      player.weaponAffix = "";
     });
 
     // §13 R-HOLD = SALVAGE the held weapon (consumed, no pickup) → fall back to FISTS. §6 v0.103: salvage
@@ -455,10 +473,12 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       const c = this.combat.get(client.sessionId);
       if (c?.heldEarned) {
-        player.salvaged += 1;
+        player.salvaged += salvageValue(player.weaponRarity); // §13 v0.104: rarity drives the parts value
         c.heldEarned = false;
       }
       player.weapon = FISTS_WEAPON;
+      player.weaponRarity = RARITY_COMMON;
+      player.weaponAffix = "";
     });
 
     // §13 R-TAP near a ground weapon = GRAB it (the client only sends this when a pickup is in reach).
@@ -480,6 +500,10 @@ export class GameRoom extends Room<ArenaState> {
       if (!best) return;
       const grabbed = best as PickupState;
       player.weapon = grabbed.weapon;
+      // §10 v0.104 the grab is the mystery REVEAL: the drop's rolled rarity + affix become the held
+      // weapon's loot identity (the server multiplies damage/cooldown from these synced fields).
+      player.weaponRarity = grabbed.rarity;
+      player.weaponAffix = grabbed.affix;
       // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
       // gallery + conjured drops are not.
       const c = this.combat.get(client.sessionId);
@@ -585,6 +609,20 @@ export class GameRoom extends Room<ArenaState> {
     this.burnPulses.length = 0;
   }
 
+  /** §10 v0.104 per-source damage multiplier INCLUDING the held weapon's loot identity: attribute grades ×
+   *  §11 requirement penalty × (rarity × affix). Every damage source of the held weapon flows through this
+   *  so a Legendary Keen blade hits harder on its edge AND its chain AND its quake — WYSIWYG with the card. */
+  private heldDamageMult(
+    weapon: WeaponDef,
+    grades: Parameters<typeof effectiveDamageMult>[1],
+    player: PlayerState,
+  ): number {
+    return (
+      effectiveDamageMult(weapon, grades, player) *
+      lootDamageMult(player.weaponRarity, player.weaponAffix)
+    );
+  }
+
   /** §6 count of LIVING players — what the TRASH horde difficulty scales on, so a mostly-downed squad faces
    *  a beatable horde and rezzes stay achievable (the rez-or-dead death-spiral fix). The boss keeps the
    *  full-squad `players.size` high-water-mark (a capstone shouldn't soften because allies are down). */
@@ -614,6 +652,10 @@ export class GameRoom extends Room<ArenaState> {
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
       p.salvaged = 0;
+      // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
+      // risk-free reroll booth whose Legendary rides back into the real run (adversarial-verify).
+      p.weaponRarity = RARITY_COMMON;
+      p.weaponAffix = "";
     });
     this.combat.forEach((c) => {
       c.lastParryAt = -999;
@@ -700,8 +742,11 @@ export class GameRoom extends Room<ArenaState> {
     this.enemySeq = 0;
     this.state.players.forEach((player, id) => {
       // Fresh run → reset progression + attributes to the 1/1/1/1/1 start (§11/§12); carried salvage
-      // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue).
+      // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue), and the
+      // held weapon sheds its rolled loot identity (drops are per-run).
       player.salvaged = 0;
+      player.weaponRarity = RARITY_COMMON;
+      player.weaponAffix = "";
       player.level = 1;
       player.xp = 0;
       player.xpToNext = xpToNextLevel(1);
@@ -998,6 +1043,8 @@ export class GameRoom extends Room<ArenaState> {
       }
 
       const canAct = player.alive && !this.inLevelWindow(player) && c.attacking && c.cd <= 0;
+      // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
+      const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
         // §9 GUN: fire-rate-gated bullets that spend ammo; on empty, RELOAD (refill the magazine).
         if (player.charges <= 0 && c.reloadCd > 0) {
@@ -1007,7 +1054,7 @@ export class GameRoom extends Room<ArenaState> {
         if (canAct && player.charges > 0) {
           this.fireGun(player, c, weapon);
           player.charges -= 1;
-          c.cd += weapon.gun.fireRate; // ACCUMULATE (not assign) so the sub-tick remainder carries (exact cadence)
+          c.cd += weapon.gun.fireRate * cdMul; // ACCUMULATE (not assign) so the sub-tick remainder carries
           if (player.charges <= 0) c.reloadCd = weapon.gun.reloadSeconds;
         }
       } else if (weapon?.thrown) {
@@ -1019,12 +1066,12 @@ export class GameRoom extends Room<ArenaState> {
         if (canAct && player.charges > 0) {
           this.throwWeapon(player, c, weapon);
           player.charges -= 1;
-          c.cd = weapon.cooldown; // flat (DEX is damage-only now; attack-speed scaling source OPEN)
+          c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
           if (player.charges <= 0) c.reloadCd = weapon.thrown.refillSeconds;
         }
       } else if (weapon && canAct) {
         this.resolveSwing(player, c, weapon);
-        c.cd = weapon.cooldown; // flat cooldown — DEX scales DAMAGE (via §10 grades), not speed
+        c.cd = weapon.cooldown * cdMul; // flat cooldown — DEX scales DAMAGE (via §10 grades), not speed
       }
       c.attacking = false;
     });
@@ -1177,7 +1224,7 @@ export class GameRoom extends Room<ArenaState> {
   private resolveSwing(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
     // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
-    const edgePower = effectiveDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
+    const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
     const aim0 = Math.atan2(c.aimY, c.aimX);
     // Register the swept edge — the blade sweeps from `aim0 − swingArc/2` to `+swingArc/2` over `active`,
     // origin tracked live from the player. Replaces any in-flight swing (cooldown ≥ active, so no overlap).
@@ -1188,7 +1235,7 @@ export class GameRoom extends Room<ArenaState> {
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
       elapsed: 0,
-      active: meleeSwingActive(weapon.cooldown),
+      active: meleeSwingActive(weapon.cooldown * lootCooldownMult(player.weaponAffix)),
       hit: new Set<string>(),
     });
 
@@ -1221,7 +1268,7 @@ export class GameRoom extends Room<ArenaState> {
       });
       if (seedFound) {
         const cl = weapon.chainLightning;
-        const clPower = effectiveDamageMult(weapon, cl.scalingGrades, player);
+        const clPower = this.heldDamageMult(weapon, cl.scalingGrades, player);
         const candidates: ChainCandidate[] = [];
         this.state.enemies.forEach((enemy, eid) => {
           candidates.push({ id: eid, x: enemy.x, y: enemy.y });
@@ -1249,7 +1296,7 @@ export class GameRoom extends Room<ArenaState> {
     // the shared `detonate` (same kill/XP/portal bookkeeping). The client matches the epicentre via the
     // SAME shared clampQuakeEpicenter.
     if (weapon.quake) {
-      const qPower = effectiveDamageMult(weapon, weapon.quake.scalingGrades, player);
+      const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player);
       const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
       this.detonate(ep.x, ep.y, weapon.quake.radius, weapon.quake.damage * qPower);
     }
@@ -1570,13 +1617,13 @@ export class GameRoom extends Room<ArenaState> {
   private fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const g = weapon.gun;
     if (!g) return;
-    const dmg = g.damage * effectiveDamageMult(weapon, g.scalingGrades, player);
+    const dmg = g.damage * this.heldDamageMult(weapon, g.scalingGrades, player);
     const explode = g.explode
       ? {
           radius: g.explode.radius,
           damage:
             g.explode.damage *
-            effectiveDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player),
+            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player),
         }
       : undefined;
     const pellets = Math.max(1, g.pellets ?? 1);
@@ -1620,7 +1667,7 @@ export class GameRoom extends Room<ArenaState> {
   private throwWeapon(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const t = weapon.thrown;
     if (!t) return;
-    const dmg = t.damage * effectiveDamageMult(weapon, t.scalingGrades, player); // §14 source grades × §11 req penalty
+    const dmg = t.damage * this.heldDamageMult(weapon, t.scalingGrades, player); // §14 source grades × §11 req penalty
     const ttl = t.range / t.speed;
     this.fireProjectile(
       { x: player.x, y: player.y },
@@ -1640,7 +1687,7 @@ export class GameRoom extends Room<ArenaState> {
   private fireScatter(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const sc = weapon.scatter;
     if (!sc) return;
-    const ballDmg = sc.damage * effectiveDamageMult(weapon, sc.scalingGrades, player);
+    const ballDmg = sc.damage * this.heldDamageMult(weapon, sc.scalingGrades, player);
     const pierce = sc.pierce ?? 1;
     // The blast inherits the scatter's grades unless it overrides them; bake its damage once here.
     const explode = sc.explode
@@ -1648,7 +1695,7 @@ export class GameRoom extends Room<ArenaState> {
           radius: sc.explode.radius,
           damage:
             sc.explode.damage *
-            effectiveDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player),
+            this.heldDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player),
         }
       : undefined;
     const baseAng = Math.atan2(c.aimY, c.aimX);
@@ -1683,18 +1730,65 @@ export class GameRoom extends Room<ArenaState> {
       enemy.hp = DUMMY_HP;
       return 0;
     }
-    if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") this.openPortal(enemy.x, enemy.y);
+    const kind = ENEMY_KINDS[enemy.kind];
+    if (kind?.archetype === "boss") {
+      this.openPortal(enemy.x, enemy.y);
+      // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
+      // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
+      // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
+      // training reroll-laundering exploit).
+      if (this.state.mode === "arena") this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_LUK_BOSS);
+    }
     // §6/§17 v0.103: putting DOWN a shifter incursion (instead of just outlasting its window) pays the
     // squad a depth-scaled bounty — the chain's second wage source, and it rewards engaging the elite.
-    if (ENEMY_KINDS[enemy.kind]?.shifter) {
+    if (kind?.shifter) {
       const bounty = SHIFTER_SALVAGE_PER_DEPTH * this.state.depth;
       this.state.players.forEach((p) => {
         if (p.alive) p.salvaged += bounty;
       });
+    } else if (kind?.archetype !== "boss" && this.state.mode === "arena" && !this.bossId) {
+      // §13 v0.104: ANY enemy can drop — tier drives the rate AND up-weights the rarity table (toughs
+      // roll richer). SUPPRESSED while the boss is ALIVE: without that, kiting an unkilled boss makes
+      // the pre-portal arena an unbounded salvage farm (adversarial-verify) — kill it to loot again.
+      this.dropLoot(
+        enemy.x,
+        enemy.y,
+        enemy.tough ? DROP_CHANCE_TOUGH : DROP_CHANCE_TRASH,
+        enemy.tough ? LOOT_TIER_LUK_TOUGH : 0,
+      );
     }
-    this.maybeDropWeapon(enemy); // §13 ronin sword drop
+    this.maybeDropWeapon(enemy); // §13 wielding enemies drop the SPECIFIC weapon they carry
     kills.push(eid);
-    return (ENEMY_KINDS[enemy.kind]?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+    return (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
+  }
+
+  /** §11/§13 the squad's best LUK — loot is squad-shared, so the luckiest living drifter carries the
+   *  rarity table for every roll. */
+  private bestLuk(): number {
+    let best = 1;
+    this.state.players.forEach((p) => {
+      if (p.alive && p.luk > best) best = p.luk;
+    });
+    return best;
+  }
+
+  /** §13 v0.104 roll an in-run MYSTERY loot drop at (x,y) with the given chance: identity from the
+   *  power-banded DROP_POOL; rarity from squad-best LUK (§11) plus the killer's TIER bonus (§13 "tier
+   *  affects drop rate AND rarity"); the single §10 affix rolled here-and-now. The pickup telegraphs
+   *  type + rarity but hides WHICH weapon until grabbed (mystery dopamine); cursed reads ghostly purple. */
+  private dropLoot(x: number, y: number, chance: number, tierLukBonus = 0): void {
+    if (chance < 1 && Math.random() > chance) return;
+    const pk = new PickupState();
+    pk.id = `drop${this.pickupSeq++}`;
+    pk.weapon = rollDropWeapon(Math.random());
+    pk.rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
+    pk.affix = rollAffix(Math.random(), pk.rarity).id;
+    pk.known = false;
+    const sp = safeSpawnPos(this.map, x, y, PICKUP_RADIUS);
+    pk.x = sp.x;
+    pk.y = sp.y;
+    this.state.pickups.set(pk.id, pk);
+    this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
   }
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
@@ -1943,12 +2037,17 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §13 weapon drop: when a wielding enemy dies, roll its `dropWeapon` chance → spawn a grabbable pickup. */
   private maybeDropWeapon(enemy: EnemyState): void {
+    if (this.state.mode !== "arena") return; // debug-summoned wielders in training mint NO loot (verify)
     const kind = ENEMY_KINDS[enemy.kind];
     if (!kind?.wieldsWeapon || !kind.dropWeapon) return;
     if (Math.random() > kind.dropWeapon) return;
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
     pk.weapon = kind.wieldsWeapon;
+    // §13 the wielder's drop is identity-KNOWN (you saw the sword it swung) but its rarity/affix still
+    // roll on drop (v0.104) — same squad-LUK table as the mystery channel (one rarity economy).
+    pk.rarity = rollRarity(Math.random(), this.bestLuk());
+    pk.affix = rollAffix(Math.random(), pk.rarity).id;
     pk.x = enemy.x;
     pk.y = enemy.y;
     this.state.pickups.set(pk.id, pk);

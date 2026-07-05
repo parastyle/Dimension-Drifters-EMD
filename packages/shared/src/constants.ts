@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 4; // v0.103 — §6 dimension chain: +depth/rift/bankedSalvage synced fields
+export const SCHEMA_VERSION = 5; // v0.104 — §10/§13 loot: +pickup rarity/affix/known, +player weaponRarity/weaponAffix
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -235,6 +235,24 @@ export const SHIFTER_SALVAGE_PER_DEPTH = 3;
  *  0→1 charge the client draws) before the squad commits — one misstep or one griefer can't yank four
  *  players into depth+1. Extraction stays instant (it's the benign direction). */
 export const RIFT_CHANNEL_SECONDS = 1.6;
+
+/**
+ * §10/§13 IN-RUN LOOT (v0.104) — drop rates + the LUK hook. Any enemy can drop (§13); tier drives the
+ * rate; bosses GUARANTEE a drop; shifters keep their identity-known wielded-weapon drop on top. Drops are
+ * MYSTERY pickups (type + rarity telegraphed, identity revealed on grab). All tuning.
+ */
+/** Chance a TRASH kill drops a mystery weapon. */
+export const DROP_CHANCE_TRASH = 0.012;
+/** Chance a TOUGH kill drops a mystery weapon. */
+export const DROP_CHANCE_TOUGH = 0.055;
+/** §11 LUK: each point above 1 multiplies every rarity tier above Common by (1 + this)^tier — the
+ *  dormant attribute finally reads into something (rarity odds), per "LUK = rarity/luck effects". */
+export const LUK_RARITY_PER = 0.06;
+/** §13 "tier affects drop rate AND rarity": the killer's tier rolls the rarity table as bonus LUK — a
+ *  TOUGH rolls like +2 LUK, a BOSS like +8, so the guaranteed capstone drop rarely lands Common-plain.
+ *  (This also gives depth an organic rarity gradient — tough-share ramps with depth.) */
+export const LOOT_TIER_LUK_TOUGH = 2;
+export const LOOT_TIER_LUK_BOSS = 8;
 /** Extra tough-spawn chance per depth beyond 1 (additive percentage points). */
 export const DEPTH_TOUGH_PER = 0.06;
 /** Spawn-interval multiplier per depth beyond 1 (0.92 → each depth spawns ~8% faster, floored). */
