@@ -432,29 +432,59 @@ export function spawnQuakeProcedural(
   shakeVia(scene, 220, 0.012);
 }
 
-/** Floating combat text that rises and fades (world-space, over the target). */
-export function spawnDamageNumber(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  amount: number,
-  color: string,
-): void {
+/** §19 v0.108 floating combat text — MAGNITUDE-DRIVEN so hits read as weak vs crushing. Size + color +
+ *  travel scale with the number, and the top band gets a BIG-HIT pop (overshoot-in from 1.6× + a longer
+ *  rise + a red-stroked white-hot tint). Purely cosmetic off a number the client already has — no balance
+ *  change. A small x-jitter fans rapid hits so they don't stack into an unreadable pillar. */
+export function spawnDamageNumber(scene: Phaser.Scene, x: number, y: number, amount: number): void {
+  const dmg = Math.max(1, Math.round(amount));
+  // Bands: chip / normal / heavy / crushing.
+  let size = 13;
+  let color = "#d9b45a";
+  let stroke: string | undefined;
+  if (dmg >= 40) {
+    size = 28;
+    color = "#fff2c0";
+    stroke = "#ff5a3c";
+  } else if (dmg >= 20) {
+    size = 22;
+    color = "#ffab3b";
+  } else if (dmg >= 8) {
+    size = 17;
+    color = "#ffe08a";
+  }
+  const big = dmg >= 40;
+  const jx = (Math.random() - 0.5) * 12;
+  const style: Phaser.Types.GameObjects.Text.TextStyle = {
+    fontSize: `${size}px`,
+    color,
+    fontStyle: "bold",
+  };
+  if (stroke) {
+    style.stroke = stroke;
+    style.strokeThickness = 3;
+  }
   const text = scene.add
-    .text(x, y, String(Math.max(1, Math.round(amount))), {
-      fontSize: "16px",
-      color,
-      fontStyle: "bold",
-    })
+    .text(x + jx, y, String(dmg), style)
     .setOrigin(0.5)
     .setDepth(100000);
+  if (big) text.setScale(1.6);
   scene.tweens.add({
     targets: text,
-    y: y - 30,
-    alpha: 0,
-    duration: 550,
-    ease: "Cubic.easeOut",
-    onComplete: () => text.destroy(),
+    scale: 1,
+    y: y - (big ? 40 : 30),
+    duration: big ? 140 : 120,
+    ease: "Back.easeOut",
+    onComplete: () => {
+      scene.tweens.add({
+        targets: text,
+        y: text.y - 14,
+        alpha: 0,
+        duration: big ? 620 : 480,
+        ease: "Cubic.easeOut",
+        onComplete: () => text.destroy(),
+      });
+    },
   });
 }
 

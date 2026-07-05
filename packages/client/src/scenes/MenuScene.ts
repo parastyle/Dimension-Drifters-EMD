@@ -1,5 +1,6 @@
 import { DEFAULT_DIMENSION, DIMENSION_IDS, getDimension } from "@dd/shared";
 import Phaser from "phaser";
+import { AudioBus } from "../audio/AudioBus.js";
 import { RENDER_DPR } from "../render-dpr.js";
 
 /**
@@ -30,13 +31,25 @@ export class MenuScene extends Phaser.Scene {
   private subtitle!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private cards: MenuCard[] = [];
+  /** §19 v0.108 the shared AudioBus (registry-backed) + its settings row. */
+  private audio!: AudioBus;
+  private audioLabel?: Phaser.GameObjects.Text;
+  private audioRow?: Phaser.GameObjects.Container;
+  private launching = false;
 
   constructor() {
     super("menu");
   }
 
   create(): void {
+    this.launching = false; // reset the launch latch in case the menu is ever re-entered (Phaser reuses the instance)
     this.cameras.main.setBackgroundColor("#0f0c14");
+    this.cameras.main.fadeIn(360, 0, 0, 0);
+    // §19 v0.108 one AudioBus shared with ArenaScene via the registry. Resume its context on the first
+    // real gesture (a menu click), then wire the volume/mute row.
+    this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
+    this.game.registry.set("audio", this.audio);
+    this.input.on("pointerdown", () => this.audio.resume());
     // Mirror ArenaScene's hi-DPI camera: zoom by RENDER_DPR + origin (0,0) so screen-space UI maps 1:1 to
     // CSS px and we lay everything out in `screenW()/screenH()` (the visible CSS size).
     this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
@@ -79,7 +92,68 @@ export class MenuScene extends Phaser.Scene {
       }
     });
 
+    // §19 v0.108 a slow breathing pulse on the title — the menu reads as alive, not a static poster.
+    this.tweens.add({
+      targets: this.title,
+      scale: 1.02,
+      duration: 2400,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+
+    this.buildAudioRow();
     this.layout();
+  }
+
+  /** §19 v0.108 audio settings row (bottom-left): −/+ volume + a mute toggle, reflecting the persisted
+   *  AudioBus setting. Clickable text chips (reliable hit areas), no drag needed. */
+  private buildAudioRow(): void {
+    const mk = (label: string, w: number, onClick: () => void): Phaser.GameObjects.Container => {
+      const bg = this.add.rectangle(0, 0, w, 26, 0x1b1822, 0.9).setStrokeStyle(1.5, 0x3a3550);
+      const txt = this.add
+        .text(0, 0, label, { fontSize: "14px", color: "#c9c2d4", fontStyle: "bold" })
+        .setOrigin(0.5);
+      const c = this.add.container(0, 0, [bg, txt]);
+      bg.setInteractive({ useHandCursor: true })
+        .on("pointerover", () => bg.setFillStyle(0x2a2436, 1))
+        .on("pointerout", () => bg.setFillStyle(0x1b1822, 0.9))
+        .on("pointerdown", () => {
+          this.audio.resume();
+          onClick();
+        });
+      c.setData("txt", txt);
+      return c;
+    };
+    this.audioLabel = this.add
+      .text(0, 0, "", { fontSize: "14px", color: "#9aa0ac" })
+      .setOrigin(0, 0.5);
+    const minus = mk("−", 26, () => {
+      this.audio.setVolume(Math.round((this.audio.vol - 0.1) * 10) / 10);
+      this.refreshAudioRow();
+    }).setPosition(132, 0);
+    const plus = mk("+", 26, () => {
+      this.audio.setVolume(Math.round((this.audio.vol + 0.1) * 10) / 10);
+      this.refreshAudioRow();
+    }).setPosition(164, 0);
+    const mute = mk("MUTE", 64, () => {
+      this.audio.toggleMute();
+      this.refreshAudioRow();
+    }).setPosition(214, 0);
+    this.audioLabel.setPosition(0, 0);
+    this.audioRow = this.add.container(0, 0, [this.audioLabel, minus, plus, mute]);
+    this.audioRow.setData("mute", mute);
+    this.refreshAudioRow();
+  }
+
+  private refreshAudioRow(): void {
+    if (!this.audioLabel) return;
+    this.audioLabel.setText(`🔊 Volume ${Math.round(this.audio.vol * 100)}%`);
+    const mute = this.audioRow?.getData("mute") as Phaser.GameObjects.Container | undefined;
+    const txt = mute?.getData("txt") as Phaser.GameObjects.Text | undefined;
+    txt
+      ?.setText(this.audio.isMuted ? "UNMUTE" : "MUTE")
+      .setColor(this.audio.isMuted ? "#ff8a6a" : "#c9c2d4");
   }
 
   /** Build one themed dimension card at its FINAL size (frame + name + tagline + palette swatch strip), all
@@ -160,11 +234,19 @@ export class MenuScene extends Phaser.Scene {
     });
 
     const lastRowY = startY + (rows - 1) * (CARD_H + gapY) + CARD_H / 2;
-    this.hint.setPosition(w / 2, Math.min(h - 26, lastRowY + 34));
+    this.hint.setPosition(w / 2, Math.min(h - 44, lastRowY + 34));
+    // §19 v0.108 audio settings row pinned bottom-left.
+    this.audioRow?.setPosition(24, h - 26);
   }
 
   private launch(id: string): void {
-    this.scene.start("arena", { dimensionId: id });
+    if (this.launching) return; // guard the key+click double-fire
+    this.launching = true;
+    // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
+    this.cameras.main.fadeOut(280, 0, 0, 0);
+    this.cameras.main.once("camerafadeoutcomplete", () =>
+      this.scene.start("arena", { dimensionId: id }),
+    );
   }
 
   private screenW(): number {

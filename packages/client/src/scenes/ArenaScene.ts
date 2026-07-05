@@ -58,6 +58,7 @@ import {
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
+import { AudioBus } from "../audio/AudioBus.js";
 import { partTexture, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
 import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
@@ -131,6 +132,9 @@ export class ArenaScene extends Phaser.Scene {
   private readonly enemies = new Map<string, SpriteRig>();
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
+  /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
+   *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
+  private audio!: AudioBus;
   /** §8 white-tell telegraph layer (Stage C) — redrawn each frame from enemies' synced `windup`. */
   private telegraphGfx!: Phaser.GameObjects.Graphics;
   /** H10 §20 parry-state ring under the LOCAL drifter — active i-frame flash + cooldown-recovery arc. */
@@ -155,7 +159,7 @@ export class ArenaScene extends Phaser.Scene {
    *  20Hz. Eased up toward the synced value, snapped to 0 on the strike; pruned with the enemy. */
   private readonly enemyWindup = new Map<string, number>();
   private keys!: Record<
-    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
+    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "M" | "TAB" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
@@ -184,6 +188,15 @@ export class ArenaScene extends Phaser.Scene {
   private readonly snapFell = new Map<string, number>();
   /** Suppress the state-driven muzzle flash for SELF for a beat after a locally-predicted one. */
   private lastSelfMuzzleAt = -9999;
+  /** §19 v0.108 polish — low-HP red screen vignette (built in create, alpha driven each frame) + a 0..1
+   *  hurt punch that spikes on a hit and decays, so both danger and impact read at the screen edges. */
+  private dangerVignette!: Phaser.GameObjects.Graphics;
+  private hurtFlash = 0;
+  /** §19 v0.108 polish — smoothed bar fills (lerp toward the true ratio), so hits/heals/XP read as
+   *  motion, not a per-patch jump. -1 = uninitialised (snap on the first frame). */
+  private hpShown = -1;
+  private xpShown = -1;
+  private bossShown = -1;
   private selfAim = { x: 1, y: 0 };
   /** §7 v0.105 de-clunk — spectate camera easing: which teammate we're trailing while downed, plus a
    *  from-point + 0..1 blend so a switch to a new target GLIDES (~0.32s) instead of hard-cutting the view. */
@@ -270,6 +283,8 @@ export class ArenaScene extends Phaser.Scene {
   private bannerSlot = 0;
   private lastBannerAt = -9999;
   private prevBossPresent = false;
+  /** §19 v0.108 last-seen victory state — fire the extract sting once on the transition, not every frame. */
+  private prevWon = false;
   /** §20/§28 4K-widescreen UI: last-applied HUD scale factor (-1 = not yet applied). The HUD is authored at
    *  a 1× baseline and `applyHudScale` grows every element on big viewports so it stays proportionate; we
    *  only re-apply when `uiScale()` actually changes (a resize), not every frame. */
@@ -391,16 +406,32 @@ export class ArenaScene extends Phaser.Scene {
     this.parryGfx = this.add.graphics().setDepth(99989);
     // §13 v0.106 (A11): the grab-highlight ring on the pickup R will take (just under the parry ring).
     this.grabGfx = this.add.graphics().setDepth(99988);
+    // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
+    this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
+    this.hurtFlash = 0;
+    this.hpShown = -1;
+    this.xpShown = -1;
+    this.bossShown = -1;
+
+    // §19 v0.108 audio — ONE AudioBus shared across scene re-entries via the game registry (so the
+    // volume/mute setting + the live AudioContext survive a menu round-trip). Resumed on the first user
+    // gesture below (autoplay policy).
+    this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
+    this.game.registry.set("audio", this.audio);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,TAB,SPACE") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "TAB" | "SPACE",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,M,TAB,SPACE") as Record<
+      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "M" | "TAB" | "SPACE",
       Phaser.Input.Keyboard.Key
     >;
     // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
     keyboard.addCapture("TAB");
     this.input.setDefaultCursor("crosshair");
+    // Create/resume the AudioContext on the first real gesture (click or key) — the browser autoplay
+    // policy blocks it otherwise. Idempotent + cheap, so wiring it to both is harmless.
+    this.input.on("pointerdown", () => this.audio.resume());
+    keyboard.on("keydown", () => this.audio.resume());
 
     // Read the cursor straight from the DOM for aiming. Phaser's pointer pipeline was dropping
     // mouse movement that *started* while a movement key was held; raw window listeners don't.
@@ -432,11 +463,36 @@ export class ArenaScene extends Phaser.Scene {
     this.scale.on("resize", (size: Phaser.Structs.Size) => {
       this.cameras.main.setSize(size.width, size.height);
       this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
+      this.drawVignette(); // §19 v0.108 re-fit the screen-space danger vignette to the new viewport
     });
 
     this.buildHud();
     this.buildCarousel();
+    this.drawVignette();
+    // §19 v0.108 every run start feels intentional — a short black fade-in.
+    this.cameras.main.fadeIn(420, 0, 0, 0);
     void this.connect();
+  }
+
+  /** §19 v0.108 (re)draw the low-HP DANGER vignette to the current screen size — four red edge gradients
+   *  fading inward. One Graphics object; its `alpha` is what animates (driven in updateHud), so this only
+   *  runs on build + resize (cheap). */
+  private drawVignette(): void {
+    const g = this.dangerVignette;
+    if (!g) return;
+    const w = this.screenW();
+    const h = this.screenH();
+    const band = Math.min(w, h) * 0.24;
+    const red = 0xff2a1e;
+    g.clear();
+    g.fillGradientStyle(red, red, red, red, 0.85, 0.85, 0, 0); // top: opaque edge → clear inward
+    g.fillRect(0, 0, w, band);
+    g.fillGradientStyle(red, red, red, red, 0, 0, 0.85, 0.85); // bottom
+    g.fillRect(0, h - band, w, band);
+    g.fillGradientStyle(red, red, red, red, 0.85, 0, 0.85, 0); // left
+    g.fillRect(0, 0, band, h);
+    g.fillGradientStyle(red, red, red, red, 0, 0.85, 0, 0.85); // right
+    g.fillRect(w - band, 0, band, h);
   }
 
   /** Screen-space UI width/height in CSS px (§28 hi-DPI). The camera viewport is the DPR-scaled buffer,
@@ -837,6 +893,7 @@ export class ArenaScene extends Phaser.Scene {
       // The descent banner is only true copy for an actual rift descent (depth ≥ 2) — a run RESTART also
       // re-mints the map (fresh terrain each run) but starts back at depth 1.
       if (s.depth > 1) {
+        this.audio.play("descent"); // §19 the downward whoosh into the next dimension
         this.flashBanner(
           `⇓  DEPTH ${s.depth} — ${getDimension(s.dimensionId).name.toUpperCase()}  ⇓`,
           "#b478ff",
@@ -870,6 +927,7 @@ export class ArenaScene extends Phaser.Scene {
       if (id === selfId) {
         this.cameras.main.flash(170, 90, 16, 16);
         this.shakeCam(150, 0.006);
+        this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
       }
     });
   }
@@ -944,6 +1002,11 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
 
     this.deltaSec = deltaMs / 1000;
+    // §19 v0.108 refresh the audio pan reference to the camera's world centre BEFORE this frame's play()
+    // calls (so a sound's stereo position tracks where it happens on screen; end-of-update ordering panned
+    // against the prior frame + origin-0 on frame one — adversarial-verify finding).
+    const cam = this.cameras.main;
+    this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
     // §9/§13 R — context-sensitive: if a dropped weapon is within reach, TAP = GRAB it (equip). Otherwise,
     // with a weapon held, TAP = drop it on the floor and HOLD = salvage it into the bag. Spacebar = jump.
     // (Restart the run is now the on-screen button, top-right.)
@@ -973,6 +1036,7 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
       this.room.send("grabWeapon");
       this.rGrabbed = true;
+      this.audio.play("grab"); // §19 a soft two-note pickup blip
     }
     // `!rGrabbed`: if this R-press already fired a grab (JustDown), it does nothing else for the rest of the
     // hold — one press = one grab, so walking off a pickup mid-hold can't then accidentally salvage the
@@ -1007,6 +1071,11 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
+    // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
+    if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
+      const muted = this.audio.toggleMute();
+      this.flashBanner(muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON", "#8fdcff");
+    }
     // §21 Tab toggles the dev summon menu — Testing Grounds only (the server rejects it elsewhere anyway).
     if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
       const training = this.room?.state.mode === "training";
@@ -1134,9 +1203,11 @@ export class ArenaScene extends Phaser.Scene {
           }
           if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y)) {
             spawnFallStreak(this, rig.x, rig.y); // fell over a pit → sinks into the void, no pop
+            this.audio.play("pitdeath", { x: rig.x }); // §19 downward "whoo" into the void
             rig.destroy();
           } else {
             spawnPoof(this, rig.x, rig.y); // dust at the kill point
+            this.audio.play("death", { x: rig.x }); // §19 kill crunch (throttled for horde clears)
             // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
             let ax = Math.random() - 0.5;
             let ay = Math.random() - 0.5;
@@ -1287,6 +1358,7 @@ export class ArenaScene extends Phaser.Scene {
     if (this.lastBossSlamT > 0.6 && t < 0.001) {
       spawnExplosion(this, st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
       this.shakeCam(200, 0.014);
+      this.audio.play("bossslam", { x: st.bossSlamX }); // §19 the deep boom under the shake
     }
     this.lastBossSlamT = t;
   }
@@ -1348,6 +1420,9 @@ export class ArenaScene extends Phaser.Scene {
               fx.color,
               fx.style,
             );
+            // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
+            // `suppressed` gates this the same way it gates the flash, so self never double-fires).
+            this.audio.play(`shot:${pr.kind}`, { x: p.x });
           }
         }
       }
@@ -1499,14 +1574,19 @@ export class ArenaScene extends Phaser.Scene {
     const dimName = getDimension(this.room.state.dimensionId).name;
     const present = !!boss;
     if (present && boss) {
+      const bossRatio = Math.max(0, Math.min(1, boss.hp / bossMax));
+      // §19 v0.108 A8: the boss bar DRAINS smoothly instead of stepping down per 20Hz patch.
+      if (this.bossShown < 0) this.bossShown = bossRatio;
+      this.bossShown = Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
       this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
       this.bossBarFill.setPosition(this.screenW() / 2 - 258 * s, 48 * s).setVisible(true);
-      this.bossBarFill.width = 516 * s * Math.max(0, Math.min(1, boss.hp / bossMax));
+      this.bossBarFill.width = 516 * s * this.bossShown;
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
         .setText(`${dimName.toUpperCase()} BOSS`)
         .setVisible(true);
     } else {
+      this.bossShown = -1;
       this.bossBarBg.setVisible(false);
       this.bossBarFill.setVisible(false);
       this.bossText.setVisible(false);
@@ -1521,6 +1601,9 @@ export class ArenaScene extends Phaser.Scene {
 
     // Victory screen — §6 v0.103: report the extraction's REAL payload (depth reached + total banked).
     const won = this.room.state.outcome === "victory";
+    // §19 v0.108 an ascending triumphant sting the moment the run is banked (once, on the transition).
+    if (won && !this.prevWon) this.audio.play("extract");
+    this.prevWon = won;
     this.victoryText.setVisible(won);
     if (won) {
       this.victoryText
@@ -1539,21 +1622,36 @@ export class ArenaScene extends Phaser.Scene {
     const now = this.time.now;
     this.bannerSlot = now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
     this.lastBannerAt = now;
+    const baseY = this.screenH() / 2 - 80 + this.bannerSlot * 40;
     const t = this.add
-      .text(this.screenW() / 2, this.screenH() / 2 - 80 + this.bannerSlot * 40, msg, {
+      .text(this.screenW() / 2, baseY, msg, {
         fontSize: "32px",
         color,
         fontStyle: "bold",
       })
       .setScrollFactor(0)
       .setOrigin(0.5)
-      .setDepth(100003);
+      .setDepth(100003)
+      .setScale(1.25)
+      .setAlpha(0);
+    // §19 v0.108 A10: a snappy entrance POP (overshoot-in) before the long fade — lifts every transient
+    // banner (boss approach, loot reveal, depth) from "appears" to "arrives".
     this.tweens.add({
       targets: t,
-      alpha: 0,
-      duration: 2200,
-      ease: "Cubic.easeIn",
-      onComplete: () => t.destroy(),
+      scale: 1,
+      alpha: 1,
+      duration: 180,
+      ease: "Back.easeOut",
+      onComplete: () => {
+        this.tweens.add({
+          targets: t,
+          y: baseY - 24,
+          alpha: 0,
+          duration: 2100,
+          ease: "Cubic.easeIn",
+          onComplete: () => t.destroy(),
+        });
+      },
     });
     // §7 v0.105 de-clunk: NO camera shake on a banner. Shaking the whole screen for a pure UI event (boss
     // approach, loot reveal, depth) fought the gun/hit shakes for the same channel and read as noise.
@@ -2052,7 +2150,10 @@ export class ArenaScene extends Phaser.Scene {
       blob.setDowned(!alive);
       const rs = pl?.revivedSeq ?? 0;
       if (this.lastRevived.get(id) !== rs) {
-        if (this.lastRevived.has(id) && alive) blob.flash(170, 0x9cff3b);
+        if (this.lastRevived.has(id) && alive) {
+          blob.flash(170, 0x9cff3b);
+          this.audio.play("revive", { x: blob.x }); // §19 a warm rising 2-note chord = life
+        }
         this.lastRevived.set(id, rs);
       }
 
@@ -2139,6 +2240,7 @@ export class ArenaScene extends Phaser.Scene {
           fx.color,
           fx.style,
         );
+        this.audio.play(`shot:${weapon.gun.bulletKind}`, { x: rig.x }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
     } else if (weapon && !weapon.thrown) {
@@ -2451,8 +2553,12 @@ export class ArenaScene extends Phaser.Scene {
       if (prev !== undefined && enemy.hp < prev) {
         const rig = this.enemies.get(id);
         if (rig) {
-          rig.flash();
-          spawnDamageNumber(this, rig.x, rig.y - 26, prev - enemy.hp, "#FFE08A");
+          const dmg = prev - enemy.hp;
+          const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
+          rig.flash(big ? 120 : 80, 0xffffff);
+          spawnDamageNumber(this, rig.x, rig.y - 26, dmg);
+          this.audio.play(big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
+          if (big) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
         }
       }
       this.enemyHp.set(id, enemy.hp);
@@ -2465,7 +2571,10 @@ export class ArenaScene extends Phaser.Scene {
       this.lastParried.set(id, p.parriedSeq);
       if (prev !== undefined && prev !== p.parriedSeq) {
         this.spawnParrySpark(p.x, p.y);
-        if (id === this.room?.sessionId) {
+        const isSelf = id === this.room?.sessionId;
+        // §19 the parry ding is the crispest sound in the game — full for your own, quieter for a mate's.
+        this.audio.play("parry", { x: p.x, amt: isSelf ? 1 : 0.4 });
+        if (isSelf) {
           this.localParryCd = Math.min(this.localParryCd, PARRY_CHAIN_CD);
           this.hitStop(100, true); // H3 §20: the parry is the skill beat — always freeze (bypass the budget)
         }
@@ -2482,6 +2591,11 @@ export class ArenaScene extends Phaser.Scene {
       ) {
         this.blobs.get(selfId)?.flash();
         this.shakeCam(100, 0.005);
+        // §19 a muffled "oof" scaled by the damage taken; §20 punch the low-HP vignette on the hit.
+        this.audio.play("hurt", {
+          amt: Math.min(1, (this.prevSelfHp - self.hp) / self.maxHp / 0.2),
+        });
+        this.hurtFlash = 1;
         this.lastHurt = this.time.now;
       }
       this.prevSelfHp = self.hp;
@@ -2490,6 +2604,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.prevLevel >= 0 && self.level > this.prevLevel) {
         const rig = this.blobs.get(selfId);
         if (rig) this.spawnLevelUp(rig.x, rig.y);
+        this.audio.play("levelup");
       }
       this.prevLevel = self.level;
 
@@ -2510,9 +2625,29 @@ export class ArenaScene extends Phaser.Scene {
           `${tierName}${affix}${name}`.toUpperCase(),
           `#${(rar?.color ?? 0xffd479).toString(16).padStart(6, "0")}`,
         );
+        // §19 the loot chime rises in pitch with rarity — a Legendary literally sounds better than a Common.
+        this.audio.play("loot", { amt: self.weaponRarity / 6 });
       }
       this.prevHeldLoot = heldKey;
     }
+  }
+
+  /** §19 v0.108 a crushing-blow shock ring — a quick white expanding ring on a top-band (BIG-HIT) damage
+   *  instance, so a heavy hit reads at a glance. Cosmetic; fired only on the ≥40 damage band. */
+  private spawnImpactRing(x: number, y: number): void {
+    const ring = this.add
+      .circle(x, y, 14)
+      .setStrokeStyle(4, 0xfff2c0, 0.9)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(99994);
+    this.tweens.add({
+      targets: ring,
+      scale: 2.8,
+      alpha: 0,
+      duration: 240,
+      ease: "Quad.easeOut",
+      onComplete: () => ring.destroy(),
+    });
   }
 
   /** §8 successful-parry flash (Stage C) — a crisp WHITE ring burst + sparks where a player parried a
@@ -2628,16 +2763,33 @@ export class ArenaScene extends Phaser.Scene {
     const hp = self ? Math.max(0, self.hp) : 0;
     const maxHp = self ? self.maxHp : 100;
     const ratio = maxHp > 0 ? hp / maxHp : 0;
-    this.hpBarFill.width = 236 * s * ratio;
+    // §19 v0.108 A8: the fill LERPS toward the true ratio (hits/heals read as motion, not a jump); the
+    // COLOR flips off the true ratio so the threshold read stays crisp.
+    if (this.hpShown < 0) this.hpShown = ratio;
+    this.hpShown = Phaser.Math.Linear(this.hpShown, ratio, 0.25);
+    this.hpBarFill.width = 236 * s * this.hpShown;
     // Green → amber → red as it drains.
     this.hpBarFill.fillColor = ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
     this.hpText.setText(`${Math.ceil(hp)} / ${maxHp}`);
+
+    // §19 v0.108 A7: low-HP DANGER vignette + hurt punch. Below 30% HP the screen edges glow red (with a
+    // heartbeat pulse under 25%); a fresh hit spikes `hurtFlash` (set in updateCombatFx) for a punch that
+    // reads even at full HP. Reads HP only — changes nothing.
+    this.hurtFlash = Math.max(0, this.hurtFlash - (this.deltaSec || 0.016) * 3.5);
+    const aliveSelf = !!self && self.alive;
+    let vig = aliveSelf && ratio < 0.3 ? Math.min(1, (0.3 - ratio) / 0.3) * 0.5 : 0;
+    if (aliveSelf && ratio < 0.25) vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
+    vig = Math.max(vig, aliveSelf ? this.hurtFlash * 0.32 : 0);
+    this.dangerVignette.setAlpha(Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18));
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
     this.xpBarFill.setPosition(barX + 2 * s, xpY);
     const xpRatio = self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
-    this.xpBarFill.width = 236 * s * xpRatio;
+    // §19 v0.108 A8: XP fill eases up on a kill (satisfying), but SNAPS on a level reset (ratio drops).
+    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05) this.xpShown = xpRatio;
+    else this.xpShown = Phaser.Math.Linear(this.xpShown, xpRatio, 0.25);
+    this.xpBarFill.width = 236 * s * this.xpShown;
     this.levelText
       .setPosition(barX, xpY - 9 * s)
       .setText(
