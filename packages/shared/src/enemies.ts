@@ -221,6 +221,56 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     xpValue: 38,
     renderScale: 1.25,
   },
+  // Nul the Sightline — LARGE stationary beam-sweeper (one enormous eye).
+  "nul-sightline": {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 0,
+    hp: 440,
+    radius: 66,
+    contactDamage: 8,
+    weight: 0,
+    xpValue: 40,
+    renderScale: 2.7,
+  },
+  // The Metronome — LARGE stationary expanding-ring rhythm boss.
+  metronome: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 0,
+    hp: 440,
+    radius: 64,
+    contactDamage: 8,
+    weight: 0,
+    xpValue: 40,
+    renderScale: 2.7,
+  },
+  // Grull the Unchained — LARGE chain-dash berserker (lumbers between charges).
+  grull: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 70,
+    hp: 470,
+    radius: 70,
+    contactDamage: 12,
+    weight: 0,
+    xpValue: 42,
+    renderScale: 2.6,
+  },
+  // Quickdraw Vane — CHARACTER-SIZED strafing gunslinger. `ranged` supplies the controller's strafe orbit
+  // range only (the boss fires via its BossDef, not the generic spitter path, which skips the boss).
+  "quickdraw-vane": {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 150,
+    hp: 320,
+    radius: 26,
+    contactDamage: 6,
+    weight: 0,
+    xpValue: 38,
+    renderScale: 1.3,
+    ranged: { range: 700, preferredRange: 340, cooldown: 2, damage: 6, projectileSpeed: 320 },
+  },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
   // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig

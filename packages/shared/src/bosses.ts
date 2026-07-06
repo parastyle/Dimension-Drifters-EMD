@@ -318,11 +318,243 @@ const CORVANE: BossDef = {
   ],
 };
 
-/** The boss-definition registry — keyed by `kind`. Slice 2 adds the other 7 styles + their new primitives. */
+/** §16 Nul the Sightline (LARGE) — a single enormous eye that charges + SWEEPS a death-beam across the
+ *  arena. The whole fight is watching the aim and running perpendicular to the sweep. */
+const NUL: BossDef = {
+  kind: "nul-sightline",
+  name: "Nul the Sightline",
+  move: "stationary",
+  phases: [
+    {
+      hpAbove: 0.55,
+      modules: [
+        {
+          primitive: "beamSweep",
+          cooldown: 2.6,
+          windup: 0.95,
+          params: { length: 1000, halfWidth: 42, sweepArc: 0, duration: 0.5, dps: 34 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.25,
+      modules: [
+        {
+          primitive: "beamSweep",
+          cooldown: 3,
+          windup: 0.9,
+          params: { length: 1000, halfWidth: 44, sweepArc: 1.4, duration: 1.4, dps: 30 },
+        },
+        {
+          primitive: "aimedVolley",
+          cooldown: 2.2,
+          firstDelay: 1,
+          params: { pellets: 3, arc: 0.5, speed: 340, damage: 7 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      modules: [
+        {
+          primitive: "beamSweep",
+          cooldown: 2.6,
+          windup: 0.8,
+          params: { length: 1000, halfWidth: 46, sweepArc: 2, duration: 1.6, dps: 30 },
+        },
+        {
+          primitive: "landingZone",
+          cooldown: 4.5,
+          windup: 0.8,
+          firstDelay: 2,
+          params: { count: 1, radius: 150, damage: 20, knockback: 640, spread: 0 },
+        },
+      ],
+    },
+  ],
+};
+
+/** §16 The Metronome (LARGE) — a clockwork heart beating expanding rings with a rotating safe gap. A rhythm
+ *  boss: time your dashes to the beat, thread each ring's gap. */
+const METRONOME: BossDef = {
+  kind: "metronome",
+  name: "The Metronome",
+  move: "stationary",
+  phases: [
+    {
+      hpAbove: 0.55,
+      modules: [
+        {
+          primitive: "expandingRing",
+          cooldown: 2.4,
+          windup: 0.5,
+          params: { maxR: 540, bandHalf: 44, gapAngle: 0.62, duration: 1.1, dps: 26 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.25,
+      modules: [
+        {
+          primitive: "expandingRing",
+          cooldown: 1.9,
+          windup: 0.45,
+          params: { maxR: 560, bandHalf: 46, gapAngle: 0.55, duration: 1.0, dps: 28 },
+        },
+        {
+          primitive: "radialBurst",
+          cooldown: 2.6,
+          windup: 0.4,
+          firstDelay: 1,
+          params: { count: 10, speed: 250, damage: 7 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      modules: [
+        {
+          primitive: "expandingRing",
+          cooldown: 1.6,
+          windup: 0.4,
+          params: { maxR: 560, bandHalf: 48, gapAngle: 0.48, duration: 0.95, dps: 28 },
+        },
+        {
+          primitive: "landingZone",
+          cooldown: 4,
+          windup: 0.8,
+          firstDelay: 2,
+          params: { count: 1, radius: 150, damage: 20, knockback: 640, spread: 0 },
+        },
+      ],
+    },
+  ],
+};
+
+/** §16 Grull the Unchained (LARGE) — a hulking brute that CHAINS dash-lunges across the arena, building
+ *  momentum. Bait him into overshooting; sidestep each red charge. */
+const GRULL: BossDef = {
+  kind: "grull",
+  name: "Grull the Unchained",
+  move: "chase",
+  phases: [
+    {
+      hpAbove: 0.6,
+      modules: [
+        {
+          primitive: "dashCharge",
+          cooldown: 3.2,
+          windup: 0.6,
+          params: { reach: 650, halfWidth: 60, duration: 0.4, damage: 55, knockback: 720 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.3,
+      speedMult: 1.1,
+      modules: [
+        {
+          primitive: "dashCharge",
+          cooldown: 2.2,
+          windup: 0.5,
+          params: { reach: 680, halfWidth: 62, duration: 0.38, damage: 55, knockback: 740 },
+        },
+        {
+          primitive: "dashCharge",
+          cooldown: 2.6,
+          windup: 0.5,
+          firstDelay: 1.1,
+          params: { reach: 680, halfWidth: 62, duration: 0.38, damage: 55, knockback: 740 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      speedMult: 1.25,
+      modules: [
+        {
+          primitive: "dashCharge",
+          cooldown: 1.6,
+          windup: 0.42,
+          params: { reach: 700, halfWidth: 64, duration: 0.34, damage: 55, knockback: 760 },
+        },
+        {
+          primitive: "corrosivePool",
+          cooldown: 2,
+          windup: 0.4,
+          firstDelay: 0.8,
+          params: { count: 1, radius: 96, ttl: 4, spread: 260 },
+        },
+      ],
+    },
+  ],
+};
+
+/** §16 Quickdraw Vane (CHARACTER) — a circle-strafing gunslinger who suppresses your movement with red no-go
+ *  LANES while peppering aimed shots. Positioning pressure, not raw bullet count. */
+const QUICKDRAW: BossDef = {
+  kind: "quickdraw-vane",
+  name: "Quickdraw Vane",
+  move: "strafe",
+  phases: [
+    {
+      hpAbove: 0.6,
+      modules: [
+        {
+          primitive: "aimedVolley",
+          cooldown: 1,
+          params: { pellets: 1, arc: 0, speed: 420, damage: 8 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.3,
+      modules: [
+        {
+          primitive: "aimedVolley",
+          cooldown: 0.9,
+          params: { pellets: 1, arc: 0, speed: 440, damage: 8 },
+        },
+        {
+          primitive: "beamSweep",
+          cooldown: 3,
+          windup: 0.7,
+          firstDelay: 1,
+          params: { length: 820, halfWidth: 46, sweepArc: 0, duration: 0.45, dps: 34 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      speedMult: 1.15,
+      modules: [
+        {
+          primitive: "aimedVolley",
+          cooldown: 1.6,
+          params: { pellets: 7, arc: 0.9, speed: 360, damage: 7 },
+        },
+        {
+          primitive: "beamSweep",
+          cooldown: 2.6,
+          windup: 0.6,
+          firstDelay: 0.8,
+          params: { length: 820, halfWidth: 48, sweepArc: 0, duration: 0.45, dps: 34 },
+        },
+      ],
+    },
+  ],
+};
+
+/** The boss-definition registry — keyed by `kind`. Slice 3 adds the melee trio (Kaido / Nihil / Blade Twins)
+ *  once the duelist-combo machine is refactored for the controller. */
 export const BOSSES: Record<string, BossDef> = {
   verkaln: VERKALN,
   choirmath: CHOIRMATH,
   corvane: CORVANE,
+  "nul-sightline": NUL,
+  metronome: METRONOME,
+  grull: GRULL,
+  "quickdraw-vane": QUICKDRAW,
 };
 
 /** The def for a boss `kind`, or `CLASSIC_BOSS` for any kind without a bespoke def (every current dimension

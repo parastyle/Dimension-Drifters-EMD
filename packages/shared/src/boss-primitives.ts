@@ -1,5 +1,11 @@
 import { bulletWallAngles } from "./boss.js";
-import { ARENA_HEIGHT, ARENA_WIDTH, ENEMY_RADIUS, TELEGRAPH_DODGE } from "./constants.js";
+import {
+  ARENA_HEIGHT,
+  ARENA_WIDTH,
+  ENEMY_RADIUS,
+  RING_BAND_HALF,
+  TELEGRAPH_DODGE,
+} from "./constants.js";
 import { coneAngles } from "./enemies.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
@@ -77,14 +83,34 @@ export interface AoeSpec {
   knockback: number;
 }
 
+/** §16 v0.109 Slice 2 — an ACTIVE HAZARD that persists after the windup, dealing continuous damage over a
+ *  LIVE window while its geometry evolves (a beam sweeps, a ring expands, the boss dashes). The controller
+ *  spawns one on resolve, KEEPS the telegraph row as the live danger indicator (updating its geometry each
+ *  tick), hit-tests players each tick, and expires it after `duration`. Unparryable by §8 (dodge-only).
+ *  Fields are interpreted per `kind` (see the primitives) — all lengths in px, angles in radians. */
+export interface ActiveSpec {
+  kind: number; // 0 beam · 1 ring · 2 dash
+  duration: number; // seconds LIVE (after the windup)
+  dps: number; // BASE damage per second (beam/ring) or one-time contact damage (dash); controller depth-scales
+  x: number; // origin: beam pivot / ring centre / dash START
+  y: number;
+  a: number; // beam+dash length · ring maxR
+  b: number; // beam+dash HALF-WIDTH · ring band half-thickness
+  rot0: number; // beam start angle · dash direction · (ring: unused)
+  rotEnd: number; // beam END angle (== rot0 for a static lane); ring/dash unused
+  gapCenter: number; // ring safe-gap centre angle
+  gapHalf: number; // ring safe-gap half-width (rad); 0 = no safe gap
+  knockback: number; // dash knockback impulse
+}
+
 /** The payload a cast applies when its windup resolves. All optional; a bullet primitive uses `projectiles`,
- *  a landing zone uses `aoe`, a hazard uses `zones`, a summon uses `adds`, a dash uses `moveBoss`. */
+ *  a landing zone uses `aoe`, a hazard uses `zones`, a summon uses `adds`, a beam/ring/dash uses `active`. */
 export interface Emits {
   projectiles?: FireSpec[];
   zones?: ZoneSpec[];
   adds?: AddSpec[];
   aoe?: AoeSpec[];
-  moveBoss?: Vec2;
+  active?: ActiveSpec;
 }
 
 /** A single cast: the telegraphs shown DURING the windup + the payload applied WHEN it resolves. Both are
@@ -291,8 +317,182 @@ export const summonAdds: BossPrimitive = (ctx) => {
   return { telegraphs, emits: { adds } };
 };
 
-/** The Slice-1 primitive registry (emit-based casts). Slice 2 adds the stateful/new-sim primitives
- *  (meleeCombo, expandingRing, beamSweep, dashCharge). */
+// ── §16 v0.109 Slice 2: ACTIVE-HAZARD geometry + primitives (beams / rings / dashes) ──────────────────
+
+/** Is (px,py) inside an oriented rectangle rooted at (ox,oy), extending `len` along `rot`, `halfW` to each
+ *  side? PURE — the beam + dash hit test (server-authoritative). Point-blank along the axis counts. */
+export function pointInOrientedRect(
+  px: number,
+  py: number,
+  ox: number,
+  oy: number,
+  len: number,
+  halfW: number,
+  rot: number,
+): boolean {
+  const dx = px - ox;
+  const dy = py - oy;
+  const c = Math.cos(rot);
+  const s = Math.sin(rot);
+  const along = dx * c + dy * s; // projection onto the beam axis
+  const perp = -dx * s + dy * c; // perpendicular offset
+  return along >= 0 && along <= len && Math.abs(perp) <= halfW;
+}
+
+/** Is (px,py) in the DANGER band of an expanding ring — within `bandHalf` of radius `bandR` AND OUTSIDE the
+ *  safe gap wedge (centred `gapCenter`, half-width `gapHalf`)? PURE — the ring hit test. */
+export function pointInAnnulusGap(
+  px: number,
+  py: number,
+  cx: number,
+  cy: number,
+  bandR: number,
+  bandHalf: number,
+  gapCenter: number,
+  gapHalf: number,
+): boolean {
+  const dx = px - cx;
+  const dy = py - cy;
+  const dist = Math.hypot(dx, dy);
+  if (dist < bandR - bandHalf || dist > bandR + bandHalf) return false;
+  if (gapHalf <= 0) return true;
+  let da = Math.atan2(dy, dx) - gapCenter;
+  da = Math.atan2(Math.sin(da), Math.cos(da)); // wrap to [-π, π]
+  return Math.abs(da) > gapHalf; // outside the safe wedge → in danger
+}
+
+/** §16 a hitscan BEAM that charges (windup) then SWEEPS across the arena. A rect lane telegraphs at the
+ *  start angle; during the live window the beam rotates from rot0→rot0+sweepArc (0 = a static lane),
+ *  damaging anyone inside each tick. Params: length, halfWidth, sweepArc, duration, dps. Dodge (unparryable). */
+export const beamSweep: BossPrimitive = (ctx) => {
+  const t = aimTarget(ctx);
+  const aim = Math.atan2(t.y - ctx.boss.y, t.x - ctx.boss.x);
+  const length = p(ctx, "length", 900);
+  const halfW = p(ctx, "halfWidth", 40);
+  const sweepArc = p(ctx, "sweepArc", 0);
+  const duration = p(ctx, "duration", 0.5);
+  const dps = p(ctx, "dps", 34);
+  const rot0 = aim - sweepArc / 2; // sweep passes THROUGH the target
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Rect,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: length,
+        b: halfW,
+        rot: rot0,
+        danger: TELEGRAPH_DODGE,
+        kindTag: 4,
+      },
+    ],
+    emits: {
+      active: {
+        kind: 0,
+        duration,
+        dps,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: length,
+        b: halfW,
+        rot0,
+        rotEnd: rot0 + sweepArc,
+        gapCenter: 0,
+        gapHalf: 0,
+        knockback: 0,
+      },
+    },
+  };
+};
+
+/** §16 an EXPANDING RING — a growing donut of damage with a safe gap wedge you dash through. A ring
+ *  telegraphs at the boss; during the live window the damage band expands 0→maxR, hitting anyone in the band
+ *  outside the gap. Params: maxR, bandHalf, gapAngle (safe half-width), duration, dps. Dodge (unparryable). */
+export const expandingRing: BossPrimitive = (ctx) => {
+  const maxR = p(ctx, "maxR", 520);
+  const bandHalf = RING_BAND_HALF; // SHARED so the client's drawn band == the server's hit band (WYSIWYG)
+  const gapAngle = p(ctx, "gapAngle", 0.5);
+  const duration = p(ctx, "duration", 1.1);
+  const dps = p(ctx, "dps", 28);
+  const gapCenter = ctx.rng.range(-Math.PI, Math.PI); // the safe wedge points a fresh way each ring
+  return {
+    // The telegraph row's `b` carries the safe-gap half-width (so the client can draw the gap); `rot` is the
+    // gap centre. The true band thickness (bandHalf) rides in the ActiveSpec for the server hit test only.
+    telegraphs: [
+      {
+        shape: TgShape.Ring,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: maxR,
+        b: gapAngle,
+        rot: gapCenter,
+        danger: TELEGRAPH_DODGE,
+        kindTag: 5,
+      },
+    ],
+    emits: {
+      active: {
+        kind: 1,
+        duration,
+        dps,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: maxR,
+        b: bandHalf,
+        rot0: 0,
+        rotEnd: 0,
+        gapCenter,
+        gapHalf: gapAngle,
+        knockback: 0,
+      },
+    },
+  };
+};
+
+/** §16 a DASH-CHARGE — the boss telegraphs a lane toward the target, then hurtles along it, contact-damaging
+ *  + shoving anyone in the lane. Params: reach, halfWidth, duration, damage, knockback. Dodge (unparryable). */
+export const dashCharge: BossPrimitive = (ctx) => {
+  const t = aimTarget(ctx);
+  const rot0 = Math.atan2(t.y - ctx.boss.y, t.x - ctx.boss.x);
+  const reach = p(ctx, "reach", 600);
+  const halfW = p(ctx, "halfWidth", 60);
+  const duration = p(ctx, "duration", 0.36);
+  const damage = p(ctx, "damage", 60); // applied as dps over the short window → grazing takes less
+  const knockback = p(ctx, "knockback", 700);
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Rect,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: reach,
+        b: halfW,
+        rot: rot0,
+        danger: TELEGRAPH_DODGE,
+        kindTag: 4,
+      },
+    ],
+    emits: {
+      active: {
+        kind: 2,
+        duration,
+        dps: damage,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: reach,
+        b: halfW,
+        rot0,
+        rotEnd: rot0,
+        gapCenter: 0,
+        gapHalf: 0,
+        knockback,
+      },
+    },
+  };
+};
+
+/** The primitive registry. Slice 1 = emit casts; Slice 2 = the active-hazard casts (beam/ring/dash). The
+ *  melee-combo primitive lands in Slice 3 (it drives the shared duelist machine, not a one-shot cast). */
 export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   bulletFan,
   radialBurst,
@@ -301,6 +501,9 @@ export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   landingZone,
   corrosivePool,
   summonAdds,
+  beamSweep,
+  expandingRing,
+  dashCharge,
 };
 
 /** Which telegraph danger a shape defaults to when a spec omits it (AoE/zones dodge; parryable only when

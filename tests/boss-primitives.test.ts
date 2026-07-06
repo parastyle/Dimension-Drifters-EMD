@@ -1,11 +1,17 @@
 import {
   aimedVolley,
   BOSS_PRIMITIVES,
+  beamSweep,
   bulletFan,
   corrosivePool,
+  dashCharge,
+  expandingRing,
   landingZone,
   makeRng,
   type PrimitiveCtx,
+  pointInAnnulusGap,
+  pointInOrientedRect,
+  RING_BAND_HALF,
   radialBurst,
   spiral,
   summonAdds,
@@ -119,6 +125,56 @@ describe("summonAdds (§16 pre-warned conjuring)", () => {
   });
 });
 
+describe("active-hazard primitives (§16 Slice 2)", () => {
+  it("beamSweep produces a rect telegraph + a beam active-spec swept through the target", () => {
+    const plan = beamSweep(
+      ctx({ params: { length: 900, halfWidth: 40, sweepArc: 1.4, duration: 0.5, dps: 30 } }),
+    );
+    expect(plan.telegraphs[0]?.shape).toBe(TgShape.Rect);
+    expect(plan.emits.active?.kind).toBe(0);
+    // sweep is centred on the target aim (straight right = 0): rot0 = -sweepArc/2, rotEnd = +sweepArc/2.
+    expect(plan.emits.active?.rot0).toBeCloseTo(-0.7, 5);
+    expect(plan.emits.active?.rotEnd).toBeCloseTo(0.7, 5);
+  });
+
+  it("expandingRing produces a ring telegraph carrying the gap half-width in `b` + a ring active-spec", () => {
+    const plan = expandingRing(
+      ctx({ params: { maxR: 500, bandHalf: 40, gapAngle: 0.5, duration: 1, dps: 26 } }),
+    );
+    expect(plan.telegraphs[0]?.shape).toBe(TgShape.Ring);
+    expect(plan.telegraphs[0]?.b).toBe(0.5); // gap half-width for the client, not band thickness
+    expect(plan.emits.active?.kind).toBe(1);
+    expect(plan.emits.active?.gapHalf).toBe(0.5);
+    expect(plan.emits.active?.b).toBe(RING_BAND_HALF); // band thickness = shared constant (WYSIWYG w/ client)
+  });
+
+  it("dashCharge aims its lane at the target + carries knockback", () => {
+    const plan = dashCharge(
+      ctx({ params: { reach: 600, halfWidth: 60, duration: 0.4, damage: 55, knockback: 700 } }),
+    );
+    expect(plan.emits.active?.kind).toBe(2);
+    expect(plan.emits.active?.rot0).toBeCloseTo(0, 5); // target straight right
+    expect(plan.emits.active?.knockback).toBe(700);
+  });
+});
+
+describe("hazard geometry (§16 pure hit tests)", () => {
+  it("pointInOrientedRect: inside the lane vs off to the side / behind", () => {
+    // lane from origin along +x, length 100, half-width 20
+    expect(pointInOrientedRect(50, 0, 0, 0, 100, 20, 0)).toBe(true);
+    expect(pointInOrientedRect(50, 25, 0, 0, 100, 20, 0)).toBe(false); // outside half-width
+    expect(pointInOrientedRect(-10, 0, 0, 0, 100, 20, 0)).toBe(false); // behind the origin
+    expect(pointInOrientedRect(150, 0, 0, 0, 100, 20, 0)).toBe(false); // past the end
+  });
+
+  it("pointInAnnulusGap: in the band outside the gap = danger; in the gap or off-band = safe", () => {
+    // band at radius 100 ±20, gap centred at angle 0 (±0.4 rad)
+    expect(pointInAnnulusGap(100, 0, 0, 0, 100, 20, 0, 0.4)).toBe(false); // in the safe gap (angle 0)
+    expect(pointInAnnulusGap(0, 100, 0, 0, 100, 20, 0, 0.4)).toBe(true); // in the band, angle π/2 (outside gap)
+    expect(pointInAnnulusGap(0, 50, 0, 0, 100, 20, 0, 0.4)).toBe(false); // inside the band radius (too close)
+  });
+});
+
 describe("primitive purity + registry", () => {
   it("every primitive is deterministic under a fixed seed", () => {
     for (const [name, prim] of Object.entries(BOSS_PRIMITIVES)) {
@@ -128,12 +184,15 @@ describe("primitive purity + registry", () => {
     }
   });
 
-  it("registers the Slice-1 primitive set", () => {
+  it("registers the full primitive set (Slice 1 emit casts + Slice 2 active hazards)", () => {
     expect(Object.keys(BOSS_PRIMITIVES).sort()).toEqual(
       [
         "aimedVolley",
+        "beamSweep",
         "bulletFan",
         "corrosivePool",
+        "dashCharge",
+        "expandingRing",
         "landingZone",
         "radialBurst",
         "spiral",

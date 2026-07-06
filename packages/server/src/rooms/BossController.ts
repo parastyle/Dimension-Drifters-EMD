@@ -1,10 +1,14 @@
 import {
+  type ActiveSpec,
+  ARENA_HEIGHT,
+  ARENA_WIDTH,
   BOSS_ADD_CAP,
   BOSS_PRIMITIVES,
   BOSS_PROJECTILE_BUDGET,
   type BossDef,
   type BossPhase,
   type CastPlan,
+  clamp,
   depthDamageScale,
   ENEMY_KINDS,
   type EnemyState,
@@ -51,6 +55,28 @@ export interface BossEmitSink {
   dropZone(x: number, y: number, radius: number, ttl: number): void;
   spawnAdds(kind: string, spots: readonly Vec2[]): void;
   applyAoE(x: number, y: number, radius: number, damage: number, knockback: number): void;
+  /** Reposition/reshape a LIVE telegraph row (an active beam/ring hazard whose danger geometry moves). */
+  updateTelegraphGeom(id: string, x: number, y: number, a: number, b: number, rot: number): void;
+  /** Damage every living player inside an oriented rect (a beam / dash lane) + shove them perpendicular out. */
+  damageRect(
+    x: number,
+    y: number,
+    len: number,
+    halfW: number,
+    rot: number,
+    damage: number,
+    knockback: number,
+  ): void;
+  /** Damage every living player in an expanding ring's danger band (outside the safe gap wedge). */
+  damageAnnulus(
+    cx: number,
+    cy: number,
+    bandR: number,
+    bandHalf: number,
+    gapCenter: number,
+    gapHalf: number,
+    damage: number,
+  ): void;
   /** Current live HOSTILE projectile count (boss + horde + spitters) — the budget gate reads this. */
   hostileProjectiles(): number;
   /** Current live non-boss enemy (add) count — the add-cap gate reads this. */
@@ -78,9 +104,19 @@ interface ModuleRuntime {
   fires: number;
 }
 
+/** A LIVE active hazard (a beam sweeping, a ring expanding, the boss dashing) that deals continuous damage
+ *  over its window while its synced telegraph geometry evolves. Owns the telegraph row until it expires. */
+interface ActiveHazard {
+  spec: ActiveSpec;
+  telegraphId: string;
+  elapsed: number;
+}
+
 export class BossController {
   private phaseIndex = -1;
   private modules: ModuleRuntime[] = [];
+  /** §16 v0.109 Slice 2 — the boss's live beam/ring/dash hazards, advanced each tick. */
+  private active: ActiveHazard[] = [];
 
   constructor(
     private readonly def: BossDef,
@@ -134,8 +170,15 @@ export class BossController {
         for (const id of rt.pending.ids) sink.setTelegraphProgress(id, t);
         if (rt.pending.remaining <= 0) {
           for (const id of rt.pending.ids) sink.setTelegraphProgress(id, 1); // pin full so the client edge-fires
-          this.applyPayload(rt.pending, dmgScale, sink);
-          rt.pending.settled = true; // KEEP the rows one more tick (removed above next tick)
+          const act = rt.pending.plan.emits.active;
+          if (act && rt.pending.ids[0]) {
+            // The cast becomes a LIVE hazard: it takes over the telegraph row (kept until the hazard expires).
+            this.active.push({ spec: { ...act }, telegraphId: rt.pending.ids[0], elapsed: 0 });
+            rt.pending = null;
+          } else {
+            this.applyPayload(rt.pending, dmgScale, sink);
+            rt.pending.settled = true; // KEEP the rows one more tick (removed above next tick)
+          }
         }
         continue;
       }
@@ -145,15 +188,80 @@ export class BossController {
       if (rt.cd <= 0) rt.cd = mod.cooldown; // guard against a pathological dt ≥ cooldown
       this.trigger(mod, i, boss, targets, tick, dmgScale, sink);
     }
+    this.stepActiveHazards(dt, boss, dmgScale, sink);
     return idx + 1;
   }
 
-  /** Cancel any in-flight telegraphs (e.g. on boss death) so no rows are orphaned. */
+  /** Advance every live beam/ring/dash: evolve its geometry, sync the telegraph, hit-test players, expire it. */
+  private stepActiveHazards(
+    dt: number,
+    boss: EnemyState,
+    dmgScale: number,
+    sink: BossEmitSink,
+  ): void {
+    if (!this.active.length) return;
+    const survivors: ActiveHazard[] = [];
+    for (const h of this.active) {
+      h.elapsed += dt;
+      const frac = h.spec.duration > 0 ? Math.min(1, h.elapsed / h.spec.duration) : 1;
+      const dmg = h.spec.dps * dt * dmgScale;
+      if (h.spec.kind === 0) {
+        // BEAM — sweep the lane from rot0→rotEnd, damaging anyone inside.
+        const rot = h.spec.rot0 + (h.spec.rotEnd - h.spec.rot0) * frac;
+        sink.updateTelegraphGeom(h.telegraphId, h.spec.x, h.spec.y, h.spec.a, h.spec.b, rot);
+        sink.damageRect(h.spec.x, h.spec.y, h.spec.a, h.spec.b, rot, dmg, 0);
+      } else if (h.spec.kind === 1) {
+        // RING — expand the damage band outward, hitting the band outside the safe gap. The telegraph row's
+        // `b` carries the safe-gap HALF-WIDTH (rot = gap centre) so the client can draw the gap; the true
+        // band thickness (spec.b) is only used for the server hit test.
+        const bandR = h.spec.a * frac;
+        sink.updateTelegraphGeom(
+          h.telegraphId,
+          h.spec.x,
+          h.spec.y,
+          bandR,
+          h.spec.gapHalf,
+          h.spec.gapCenter,
+        );
+        sink.damageAnnulus(
+          h.spec.x,
+          h.spec.y,
+          bandR,
+          h.spec.b,
+          h.spec.gapCenter,
+          h.spec.gapHalf,
+          dmg,
+        );
+      } else {
+        // DASH — hurtle the boss body along the fixed lane; anyone in the lane takes damage + a shove.
+        const along = h.spec.a * frac;
+        const r = ENEMY_KINDS[boss.kind]?.radius ?? 24;
+        boss.x = clamp(h.spec.x + Math.cos(h.spec.rot0) * along, r, ARENA_WIDTH - r);
+        boss.y = clamp(h.spec.y + Math.sin(h.spec.rot0) * along, r, ARENA_HEIGHT - r);
+        sink.damageRect(
+          h.spec.x,
+          h.spec.y,
+          h.spec.a,
+          h.spec.b,
+          h.spec.rot0,
+          dmg,
+          h.spec.knockback * dt,
+        );
+      }
+      if (h.elapsed >= h.spec.duration) sink.removeTelegraph(h.telegraphId);
+      else survivors.push(h);
+    }
+    this.active = survivors;
+  }
+
+  /** Cancel any in-flight telegraphs + live hazards (e.g. on boss death) so no rows are orphaned. */
   dispose(sink: BossEmitSink): void {
     for (const rt of this.modules) {
       if (rt.pending) for (const id of rt.pending.ids) sink.removeTelegraph(id);
       rt.pending = null;
     }
+    for (const h of this.active) sink.removeTelegraph(h.telegraphId);
+    this.active = [];
   }
 
   // ── internals ─────────────────────────────────────────────────────────────────────────────────────
@@ -185,11 +293,30 @@ export class BossController {
     if (speed <= 0 || this.def.move === "stationary") return;
     const target = nearestPoint(boss, targets);
     if (!target) return;
+    if (this.def.move === "strafe") {
+      // ORBIT the target: a radial term holds the preferred range + a tangential term circles it — so the
+      // gunslinger is always sliding sideways, never chargeable head-on.
+      const r = kind?.radius ?? 24;
+      const pref = kind?.ranged?.preferredRange ?? 340;
+      const dx = target.x - boss.x;
+      const dy = target.y - boss.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const radial = dist > pref ? 1 : dist < pref * 0.85 ? -1 : 0;
+      let vx = nx * radial + -ny * 0.85; // tangential drift (fixed orbit sense)
+      let vy = ny * radial + nx * 0.85;
+      const vl = Math.hypot(vx, vy) || 1;
+      vx /= vl;
+      vy /= vl;
+      boss.x = clamp(boss.x + vx * speed * dt, r, ARENA_WIDTH - r);
+      boss.y = clamp(boss.y + vy * speed * dt, r, ARENA_HEIGHT - r);
+      return;
+    }
     const next =
       this.def.move === "kite"
         ? stepEnemyKite(boss, target, speed, kind?.ranged?.preferredRange ?? 360, dt)
-        : // "chase" and (Slice-1) "strafe" both close in via the chase stepper.
-          stepEnemyChase(boss, target, speed, dt);
+        : stepEnemyChase(boss, target, speed, dt);
     boss.x = next.x;
     boss.y = next.y;
   }
@@ -268,8 +395,6 @@ export class BossController {
       const spots = e.adds.slice(0, room).map((a) => ({ x: a.x, y: a.y }));
       if (spots.length) sink.spawnAdds(pending.addKind, spots);
     }
-    if (e.moveBoss) {
-      // scripted reposition (dash) — Slice 2 primitives; applied directly via the sink there.
-    }
+    // `active` (beam/ring/dash) is handled in the step loop (transitioned to a live hazard), not here.
   }
 }

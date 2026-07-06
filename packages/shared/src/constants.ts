@@ -352,6 +352,10 @@ export const BOSS_ADD_CAP = 12;
 /** §16 v0.109 telegraph danger channels: 0 = parryable (WHITE, §8), 1 = unparryable (RED, dodge). */
 export const TELEGRAPH_PARRYABLE = 0;
 export const TELEGRAPH_DODGE = 1;
+/** §16 v0.110 expanding-ring band HALF-thickness (px). SHARED so the WYSIWYG contract holds: the server
+ *  hit test damages ±this around the band radius AND the client draws a stroke of exactly `2×` this — the
+ *  visible danger band equals the real hit band. Fixed (not per-boss) so the client needn't sync it. */
+export const RING_BAND_HALF = 46;
 
 /**
  * §17 DIMENSION SHIFTER incursions — the roaming cross-dimensional antagonists (TimeSplitters-style). One

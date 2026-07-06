@@ -12,6 +12,9 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     addTelegraph: [] as TgSpec[],
     setTelegraphProgress: [] as { id: string; t: number }[],
     removeTelegraph: [] as string[],
+    updateTelegraphGeom: [] as { id: string; a: number; rot: number }[],
+    damageRect: [] as { rot: number; damage: number; knockback: number }[],
+    damageAnnulus: [] as { bandR: number; gapHalf: number; damage: number }[],
     dropZone: [] as unknown[][],
     spawnAdds: [] as { kind: string; spots: readonly Vec2[] }[],
     applyAoE: [] as unknown[][],
@@ -25,6 +28,11 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     },
     setTelegraphProgress: (id, t) => calls.setTelegraphProgress.push({ id, t }),
     removeTelegraph: (id) => calls.removeTelegraph.push(id),
+    updateTelegraphGeom: (id, _x, _y, a, _b, rot) => calls.updateTelegraphGeom.push({ id, a, rot }),
+    damageRect: (_x, _y, _len, _halfW, rot, damage, knockback) =>
+      calls.damageRect.push({ rot, damage, knockback }),
+    damageAnnulus: (_cx, _cy, bandR, _bandHalf, _gapCenter, gapHalf, damage) =>
+      calls.damageAnnulus.push({ bandR, gapHalf, damage }),
     dropZone: (...a) => calls.dropZone.push(a),
     spawnAdds: (kind, spots) => calls.spawnAdds.push({ kind, spots }),
     applyAoE: (...a) => calls.applyAoE.push(a),
@@ -152,6 +160,70 @@ describe("BossController — budget rails", () => {
     expect(calls.spawnAdds.length).toBe(1);
     expect(calls.spawnAdds[0]?.spots.length).toBe(1);
     expect(calls.spawnAdds[0]?.kind).toBe("mote-swarm");
+  });
+});
+
+describe("BossController — active hazards (beam / ring / dash)", () => {
+  const hazardDef = (primitive: string, params: Record<string, number>): BossDef => ({
+    kind: "nul-sightline",
+    name: "Hazard Test",
+    move: "stationary",
+    phases: [{ hpAbove: 0, modules: [{ primitive, cooldown: 99, windup: 0.3, params }] }],
+  });
+
+  it("a beamSweep goes LIVE after its windup, sweeps its lane, damages, then expires the row", () => {
+    const c = new BossController(
+      hazardDef("beamSweep", { length: 800, halfWidth: 40, sweepArc: 1, duration: 0.5, dps: 30 }),
+      100,
+      1,
+    );
+    const { sink, calls } = mockSink();
+    for (let t = 0; t < 20; t++) c.step(0.05, boss(100), TARGETS, 1, t, sink);
+    expect(calls.damageRect.length).toBeGreaterThan(0); // dealt damage while live
+    // the beam rotated across its sweep (first vs last synced angle differ)
+    const rots = calls.updateTelegraphGeom.map((u) => u.rot);
+    expect(Math.abs((rots.at(-1) ?? 0) - (rots[0] ?? 0))).toBeGreaterThan(0.3);
+    expect(calls.removeTelegraph).toContain("tg0"); // expired + cleaned up
+  });
+
+  it("an expandingRing grows its damage band outward, then expires", () => {
+    const c = new BossController(
+      hazardDef("expandingRing", {
+        maxR: 500,
+        bandHalf: 40,
+        gapAngle: 0.5,
+        duration: 0.5,
+        dps: 26,
+      }),
+      100,
+      1,
+    );
+    const { sink, calls } = mockSink();
+    for (let t = 0; t < 20; t++) c.step(0.05, boss(100), TARGETS, 1, t, sink);
+    expect(calls.damageAnnulus.length).toBeGreaterThan(0);
+    const bands = calls.damageAnnulus.map((d) => d.bandR);
+    expect(bands.at(-1) ?? 0).toBeGreaterThan(bands[0] ?? 999); // band expanded outward
+    expect(calls.removeTelegraph).toContain("tg0");
+  });
+
+  it("a dashCharge hurtles the boss body along its lane + shoves with knockback", () => {
+    const c = new BossController(
+      hazardDef("dashCharge", {
+        reach: 600,
+        halfWidth: 60,
+        duration: 0.4,
+        damage: 55,
+        knockback: 700,
+      }),
+      100,
+      1,
+    );
+    const { sink, calls } = mockSink();
+    const b = boss(100); // at (1000,1000); target at (1300,1000) → dashes +x
+    for (let t = 0; t < 20; t++) c.step(0.05, b, TARGETS, 1, t, sink);
+    expect(b.x).toBeGreaterThan(1000); // the body moved down the lane
+    expect(calls.damageRect.some((d) => d.knockback > 0)).toBe(true); // shove applied
+    expect(calls.removeTelegraph).toContain("tg0");
   });
 });
 

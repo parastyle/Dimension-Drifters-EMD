@@ -1,0 +1,32 @@
+[
+  {
+    "id": "verkaln",
+    "name": "Ver'Kaln the Descending",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Ver'Kaln the Descending — a VERY LARGE siege-golem BOSS, limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140). A massive heavy cracked slate-grey stone body (one big rounded pill torso), a glowing dull-amber seam running down the belly, a blunt brow ridge reading as a dark horizontal band with NO visible eyes. TWO oversized detached blob FISTS float clear OUTSIDE the silhouette, knuckles forward, each clearly heavier than the head, with a flat-green gap around them. Small wide-set detached blob feet below. Imposing and top-heavy, roughly 2.7x a normal enemy. ~5 colours (slate grey, darker grey shadow, dull-amber seam, dull bronze, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked glow beyond the flat amber seam fill, NO VFX, NO rendered shockwaves.",
+    "palette": { "primary": "#5A6472", "accent": "#F0A73C" },
+    "tags": ["enemy", "boss", "large", "wild-west"]
+  },
+  {
+    "id": "choirmath",
+    "name": "The Choirmath",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "The Choirmath — a LARGE serene astronomer-idol BOSS, limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140). A tall imposing deep-indigo body with a single large CLOSED golden eye-crescent and thin concentric ring-carvings on the belly suggesting an orrery. Detached blob hands float clear OUTSIDE the silhouette, one raised palm-up cupping a small gold star, with a flat-green gap around each. Small detached blob feet below, not touching the body. Top-heavy and calm, roughly 2.7x a normal enemy. ~5 colours (deep indigo, gold, off-white, dark teal shadow, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked glow, NO VFX, NO rendered bullets or spirals.",
+    "palette": { "primary": "#2E2A55", "accent": "#E8C24A" },
+    "tags": ["enemy", "boss", "large", "wild-west"]
+  },
+  {
+    "id": "corvane",
+    "name": "Cor-Vane the Hive-Mind",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Cor-Vane the Hive-Mind — a CHARACTER-SIZED nimble conductor BOSS (roughly a normal enemy's height, NOT enlarged), limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140). A slender agile deep-teal body with a hooded brow, a single sly narrow eye, and thin pale conductor-marks like circuitry on the chest. Detached slim blob hands float clear OUTSIDE the silhouette, one raised mid-gesture as if summoning, with a flat-green gap around each. Detached small poised feet, light on their toes. ~5 colours (deep teal, pale cyan marks, off-white eye, dark navy shadow, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked glow, NO summon VFX.",
+    "palette": { "primary": "#1E6E72", "accent": "#7FE6FF" },
+    "tags": ["enemy", "boss", "character", "wild-west"]
+  }
+]

@@ -45,6 +45,7 @@ import {
   QUAKE_REACH,
   RARITIES,
   RARITY_CURSED,
+  RING_BAND_HALF,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
@@ -1371,7 +1372,18 @@ export class ArenaScene extends Phaser.Scene {
     const live = new Set<string>();
     st.telegraphs.forEach((row, id) => {
       live.add(id);
-      this.drawTelegraph(g, row.shape, row.x, row.y, row.a, row.b, row.rot, row.t, row.danger);
+      this.drawTelegraph(
+        g,
+        row.shape,
+        row.x,
+        row.y,
+        row.a,
+        row.b,
+        row.rot,
+        row.t,
+        row.danger,
+        row.kindTag,
+      );
       // `sawFull` sticks once the server pins the row to full fill (t=1) on the resolve tick — the server
       // LINGERS a resolved row one tick at t=1 so we observe it, while a CANCEL (phase-change/boss death)
       // removes the row without ever reaching t=1. So `sawFull` cleanly separates "it fired" from "cancelled".
@@ -1393,22 +1405,25 @@ export class ArenaScene extends Phaser.Scene {
       if (live.has(id)) continue;
       this.telegraphCache.delete(id);
       if (!c.sawFull) continue; // cancelled mid-windup → no phantom impact
-      if (c.kindTag === 1) {
+      if (c.kindTag === 0) {
+        // slam / landing-zone — the full impact: burst + camera shake + the deep boom.
+        spawnExplosion(this, c.x, c.y, Math.max(24, c.a));
+        this.shakeCam(200, 0.014);
+        this.audio.play("bossslam", { x: c.x }); // §19 the deep boom under the shake
+      } else if (c.kindTag === 1) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
         spawnExplosion(this, c.x, c.y, Math.min(40, c.a * 0.4));
       } else if (c.kindTag === 2 || c.kindTag === 3) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
         spawnExplosion(this, c.x, c.y, 22);
-      } else {
-        // slam / landing-zone (kindTag 0) — the full impact: burst + camera shake + the deep boom.
-        spawnExplosion(this, c.x, c.y, Math.max(24, c.a));
-        this.shakeCam(200, 0.014);
-        this.audio.play("bossslam", { x: c.x }); // §19 the deep boom under the shake
       }
+      // kindTag 4 (beam/dash) + 5 (ring) end silently — the sweeping/expanding hazard was its own visual.
     }
   }
 
-  /** Draw one telegraph shape, coloured by §8 danger, filled to `t`. Shared "ease alpha+size to t" path. */
+  /** Draw one telegraph shape, coloured by §8 danger, filled to `t`. Shared "ease alpha+size to t" path.
+   *  `kindTag` disambiguates two producers that share `shape: Ring` — the expandingRing hazard (5, an
+   *  annulus with a safe gap) vs the radialBurst pre-flash (3, a plain warning disc). */
   private drawTelegraph(
     g: Phaser.GameObjects.Graphics,
     shape: number,
@@ -1419,6 +1434,7 @@ export class ArenaScene extends Phaser.Scene {
     rot: number,
     t: number,
     danger: number,
+    kindTag: number,
   ): void {
     const fill = danger === 0 ? 0xffffff : 0xff3b2f;
     const line = danger === 0 ? 0xffffff : 0xff5d3b;
@@ -1444,8 +1460,20 @@ export class ArenaScene extends Phaser.Scene {
       g.restore();
       return;
     }
-    // Circle (landing zone / slam) and Ring (pre-flash) share the disc path: danger grows to the edge at
-    // impact, with a fixed outline at the full radius so you read the safe boundary early.
+    if (shape === TgShape.Ring && kindTag === 5) {
+      // Expanding-ring HAZARD (Slice 2) — a thick danger band at radius `a`, leaving a SAFE GAP wedge
+      // (half-width `b` radians, centred `rot`) you dash through. A stroked arc that skips the gap. The
+      // stroke thickness is EXACTLY the server's ±RING_BAND_HALF hit band (WYSIWYG — you're hit iff you
+      // touch the drawn band).
+      const gapHalf = b;
+      g.lineStyle(RING_BAND_HALF * 2, line, 0.34 + 0.4 * t);
+      g.beginPath();
+      g.arc(x, y, Math.max(2, a), rot + gapHalf, rot - gapHalf + Math.PI * 2);
+      g.strokePath();
+      return;
+    }
+    // Circle (landing zone / slam) + the radialBurst pre-flash Ring (kindTag 3, `b` = a pixel radius, no gap)
+    // share the disc path: danger grows to the edge at impact, with a fixed outline at the full radius.
     g.fillStyle(fill, 0.1 + 0.24 * t);
     g.fillCircle(x, y, a * t);
     g.lineStyle(3, line, 0.5 + 0.5 * t);

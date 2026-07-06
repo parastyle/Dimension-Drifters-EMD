@@ -107,6 +107,8 @@ import {
   ProjectileState,
   pickEnemyKind,
   poiAt,
+  pointInAnnulusGap,
+  pointInOrientedRect,
   poiRadius,
   prevWeapon,
   QUAKE_REACH,
@@ -1641,6 +1643,20 @@ export class GameRoom extends Room<ArenaState> {
           if (row) row.t = t;
         },
         removeTelegraph: (id) => this.state.telegraphs.delete(id),
+        updateTelegraphGeom: (id, x, y, a, b, rot) => {
+          const row = this.state.telegraphs.get(id);
+          if (row) {
+            row.x = x;
+            row.y = y;
+            row.a = a;
+            row.b = b;
+            row.rot = rot;
+          }
+        },
+        damageRect: (x, y, len, halfW, rot, damage, knockback) =>
+          this.damageBeamRect(x, y, len, halfW, rot, damage, knockback),
+        damageAnnulus: (cx, cy, bandR, bandHalf, gapCenter, gapHalf, damage) =>
+          this.damageRingBand(cx, cy, bandR, bandHalf, gapCenter, gapHalf, damage),
         dropZone: (x, y, radius, ttl) => this.dropBossZone(x, y, radius, ttl),
         spawnAdds: (kind, spots) => {
           for (const s of spots) this.spawnBossAddAt(kind, s.x, s.y);
@@ -1685,6 +1701,50 @@ export class GameRoom extends Room<ArenaState> {
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
+    });
+  }
+
+  /** §16 v0.109 Slice 2 — damage every living player inside an oriented rect (a beam / dash lane). `damage`
+   *  is ALREADY the per-tick depth-scaled amount. `knockback` (dash) shoves them PERPENDICULAR out of the lane. */
+  private damageBeamRect(
+    x: number,
+    y: number,
+    len: number,
+    halfW: number,
+    rot: number,
+    damage: number,
+    knockback: number,
+  ): void {
+    const nx = -Math.sin(rot); // lane-perpendicular unit
+    const ny = Math.cos(rot);
+    this.state.players.forEach((p) => {
+      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!pointInOrientedRect(p.x, p.y, x, y, len, halfW, rot)) return;
+      p.hp -= damage;
+      if (knockback > 0) {
+        const side = (p.x - x) * nx + (p.y - y) * ny >= 0 ? 1 : -1; // shove to the side they're already on
+        const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
+        p.vx = k.vx;
+        p.vy = k.vy;
+      }
+    });
+  }
+
+  /** §16 v0.109 Slice 2 — damage every living player in an expanding ring's danger band (outside the safe
+   *  gap wedge). `damage` is the per-tick depth-scaled amount. */
+  private damageRingBand(
+    cx: number,
+    cy: number,
+    bandR: number,
+    bandHalf: number,
+    gapCenter: number,
+    gapHalf: number,
+    damage: number,
+  ): void {
+    this.state.players.forEach((p) => {
+      if (!p.alive || this.inLevelWindow(p)) return;
+      if (!pointInAnnulusGap(p.x, p.y, cx, cy, bandR, bandHalf, gapCenter, gapHalf)) return;
+      p.hp -= damage;
     });
   }
 
