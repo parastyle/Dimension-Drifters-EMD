@@ -6,7 +6,8 @@ import {
   type Attr,
   AUGMENTS,
   affixById,
-  BOSS_SLAM_RADIUS,
+  BOSS_DEF_IDS,
+  BOSSES,
   bossSpawnAt,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
@@ -49,6 +50,7 @@ import {
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   selectChainTargets,
+  TgShape,
   TICK_MS,
   TOUGH_SCALE,
   VFX_RADIUS_DEFAULT,
@@ -151,8 +153,22 @@ export class ArenaScene extends Phaser.Scene {
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
   private readonly lastRevived = new Map<string, number>();
-  /** §16 last-seen boss punch-slam telegraph progress, to fire the impact burst when it lands. */
-  private lastBossSlamT = 0;
+  /** §16 v0.109 last-seen geometry of each synced telegraph row, so when a row is REMOVED (the attack
+   *  resolved) we can edge-fire its impact VFX from the cached shape even though the row is already gone
+   *  from state. Keyed by telegraph id; pruned as rows vanish. */
+  private readonly telegraphCache = new Map<
+    string,
+    {
+      t: number;
+      shape: number;
+      x: number;
+      y: number;
+      a: number;
+      danger: number;
+      kindTag: number;
+      sawFull: boolean;
+    }
+  >();
   private readonly prevPos = new Map<string, { x: number; y: number }>();
   private readonly enemyPrev = new Map<string, { x: number; y: number }>();
   /** §7 v0.105 de-clunk — per-enemy SMOOTHED windup (0..1) so the parry telegraph doesn't stair-step at
@@ -1338,29 +1354,102 @@ export class ArenaScene extends Phaser.Scene {
       }
       rig.setDepth(rig.y);
     }
-    this.renderBossSlam();
+    this.renderTelegraphs();
   }
 
-  /** §16 P2 punch-slam: draw the RED warning ring at the synced epicentre (the danger fills to the hit
-   *  radius as the telegraph peaks), and burst + shake when it lands (bossSlamT drops high → 0). */
-  private renderBossSlam(): void {
+  /** §16 v0.109 GENERIC TELEGRAPH renderer — draws EVERY boss's danger footprints from the synced
+   *  `telegraphs` map, so any boss's landing zones / rings / bullet-warnings show up with no per-boss code.
+   *  Colour is the §8 parry-language: danger 0 = WHITE (parryable), danger 1 = RED (dodge-only). Each shape
+   *  eases its fill toward the authoritative `t`; when a row is REMOVED (the attack resolved) we edge-fire
+   *  the impact VFX from the cached geometry — the same "was high, now gone → it fired" trick the old
+   *  bossSlam used. All clients read the identical authoritative rows, so the danger is frame-consistent
+   *  even though the boss body renders ~120ms behind on interp. */
+  private renderTelegraphs(): void {
     const st = this.room?.state;
     if (!st) return;
-    const t = st.bossSlamT;
-    if (t > 0.001) {
-      const g = this.telegraphGfx;
-      g.fillStyle(0xff3b2f, 0.1 + 0.24 * t);
-      g.fillCircle(st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS * t); // danger grows to the edge at impact
-      g.lineStyle(3, 0xff5d3b, 0.5 + 0.5 * t);
-      g.strokeCircle(st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
+    const g = this.telegraphGfx;
+    const live = new Set<string>();
+    st.telegraphs.forEach((row, id) => {
+      live.add(id);
+      this.drawTelegraph(g, row.shape, row.x, row.y, row.a, row.b, row.rot, row.t, row.danger);
+      // `sawFull` sticks once the server pins the row to full fill (t=1) on the resolve tick — the server
+      // LINGERS a resolved row one tick at t=1 so we observe it, while a CANCEL (phase-change/boss death)
+      // removes the row without ever reaching t=1. So `sawFull` cleanly separates "it fired" from "cancelled".
+      const prev = this.telegraphCache.get(id);
+      this.telegraphCache.set(id, {
+        t: row.t,
+        shape: row.shape,
+        x: row.x,
+        y: row.y,
+        a: row.a,
+        danger: row.danger,
+        kindTag: row.kindTag,
+        sawFull: (prev?.sawFull ?? false) || row.t >= 0.999,
+      });
+    });
+    // A cached row no longer live = removed. Edge-fire the impact ONLY if it completed (sawFull) — never for
+    // a cancel — and branch the VFX by kindTag so a corrosive/summon/burst telegraph doesn't fake a slam.
+    for (const [id, c] of this.telegraphCache) {
+      if (live.has(id)) continue;
+      this.telegraphCache.delete(id);
+      if (!c.sawFull) continue; // cancelled mid-windup → no phantom impact
+      if (c.kindTag === 1) {
+        // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
+        spawnExplosion(this, c.x, c.y, Math.min(40, c.a * 0.4));
+      } else if (c.kindTag === 2 || c.kindTag === 3) {
+        // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
+        spawnExplosion(this, c.x, c.y, 22);
+      } else {
+        // slam / landing-zone (kindTag 0) — the full impact: burst + camera shake + the deep boom.
+        spawnExplosion(this, c.x, c.y, Math.max(24, c.a));
+        this.shakeCam(200, 0.014);
+        this.audio.play("bossslam", { x: c.x }); // §19 the deep boom under the shake
+      }
     }
-    // A high telegraph snapping to 0 = the slam fired this frame → impact ring + a hard shake.
-    if (this.lastBossSlamT > 0.6 && t < 0.001) {
-      spawnExplosion(this, st.bossSlamX, st.bossSlamY, BOSS_SLAM_RADIUS);
-      this.shakeCam(200, 0.014);
-      this.audio.play("bossslam", { x: st.bossSlamX }); // §19 the deep boom under the shake
+  }
+
+  /** Draw one telegraph shape, coloured by §8 danger, filled to `t`. Shared "ease alpha+size to t" path. */
+  private drawTelegraph(
+    g: Phaser.GameObjects.Graphics,
+    shape: number,
+    x: number,
+    y: number,
+    a: number,
+    b: number,
+    rot: number,
+    t: number,
+    danger: number,
+  ): void {
+    const fill = danger === 0 ? 0xffffff : 0xff3b2f;
+    const line = danger === 0 ? 0xffffff : 0xff5d3b;
+    if (shape === TgShape.PointWarn) {
+      // A small marker where an add/bullet will erupt — a filled dot + a tightening ring.
+      g.fillStyle(fill, 0.3 + 0.4 * t);
+      g.fillCircle(x, y, 4 + a * 0.12 * t);
+      g.lineStyle(2, line, 0.5 + 0.4 * t);
+      g.strokeCircle(x, y, Math.max(6, a * (1 - 0.5 * t)));
+      return;
     }
-    this.lastBossSlamT = t;
+    if (shape === TgShape.Rect) {
+      // Beam / dash lane (Slice 2) — a filling rotated bar. Drawn with a transform so it orients to `rot`.
+      const len = a;
+      const halfW = b;
+      g.save();
+      g.translateCanvas(x, y);
+      g.rotateCanvas(rot);
+      g.fillStyle(fill, 0.1 + 0.24 * t);
+      g.fillRect(0, -halfW, len * t, halfW * 2);
+      g.lineStyle(3, line, 0.5 + 0.5 * t);
+      g.strokeRect(0, -halfW, len, halfW * 2);
+      g.restore();
+      return;
+    }
+    // Circle (landing zone / slam) and Ring (pre-flash) share the disc path: danger grows to the edge at
+    // impact, with a fixed outline at the full radius so you read the safe boundary early.
+    g.fillStyle(fill, 0.1 + 0.24 * t);
+    g.fillCircle(x, y, a * t);
+    g.lineStyle(3, line, 0.5 + 0.5 * t);
+    g.strokeCircle(x, y, a);
   }
 
   /** Reconcile rendered projectiles vs authoritative state; splat on removal (hit/expire). */
@@ -1572,6 +1661,8 @@ export class ArenaScene extends Phaser.Scene {
     const s = this.uiScale();
     const bossMax = boss ? (ENEMY_KINDS[boss.kind]?.hp ?? 420) : 420;
     const dimName = getDimension(this.room.state.dimensionId).name;
+    // §16 v0.109 label with the boss DEF's name when it's a bespoke boss; else the dimension's generic boss.
+    const bossDefName = BOSSES[this.room.state.bossKind]?.name;
     const present = !!boss;
     if (present && boss) {
       const bossRatio = Math.max(0, Math.min(1, boss.hp / bossMax));
@@ -1583,7 +1674,7 @@ export class ArenaScene extends Phaser.Scene {
       this.bossBarFill.width = 516 * s * this.bossShown;
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
-        .setText(`${dimName.toUpperCase()} BOSS`)
+        .setText(bossDefName ? bossDefName.toUpperCase() : `${dimName.toUpperCase()} BOSS`)
         .setVisible(true);
     } else {
       this.bossShown = -1;
@@ -1981,6 +2072,50 @@ export class ArenaScene extends Phaser.Scene {
           tough: this.summonTough,
         }),
       );
+      this.summonObjects.push(btn, t);
+    });
+
+    // §16 v0.109 BOSS PICKER row — spawn any bespoke boss def to playtest its style (host-gated server-side).
+    const gridRows = Math.ceil(kinds.length / perRow);
+    const bossRowY = cy - 56 + gridRows * (H + gap) + 18;
+    const bossLabel = this.add
+      .text(cx, bossRowY - 4, "BOSS PICKER — click to summon (swaps any live boss)", {
+        fontSize: "13px",
+        color: "#ffb24a",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100022);
+    this.summonObjects.push(bossLabel);
+    const bossIds = BOSS_DEF_IDS;
+    const BW = 208;
+    bossIds.forEach((id, i) => {
+      const col = i % perRow;
+      const row = Math.floor(i / perRow);
+      const rowCount = Math.min(perRow, bossIds.length - row * perRow);
+      const rowWidth = rowCount * (BW + gap) - gap;
+      const x = cx - rowWidth / 2 + BW / 2 + col * (BW + gap);
+      const y = bossRowY + 24 + row * (H + gap);
+      const btn = this.add
+        .rectangle(x, y, BW, H, 0x241a10, 0.98)
+        .setScrollFactor(0)
+        .setStrokeStyle(2, 0xffb24a)
+        .setDepth(100021)
+        .setInteractive({ useHandCursor: true });
+      const t = this.add
+        .text(x, y, BOSSES[id]?.name ?? id, {
+          fontSize: "13px",
+          color: "#ffe0b0",
+          align: "center",
+          wordWrap: { width: BW - 16 },
+        })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100022);
+      btn.on("pointerover", () => btn.setFillStyle(0x352513, 1));
+      btn.on("pointerout", () => btn.setFillStyle(0x241a10, 0.98));
+      btn.on("pointerdown", () => this.room?.send("spawnBossDef", { kind: id }));
       this.summonObjects.push(btn, t);
     });
   }

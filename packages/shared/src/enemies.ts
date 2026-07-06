@@ -181,6 +181,46 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       projectileSpeed: 320,
     },
   },
+  // §16 v0.109 DATA-DRIVEN BOSS BODIES — the framework's showcase styles (BossDef in bosses.ts drives their
+  // attacks; these entries only supply the body). POC stand-in art = the scaled boothill boss rig; bespoke
+  // Codex art swaps in via the manifest with no code change. weight 0 = never randomly spawned (director
+  // + debug picker only). archetype "boss" → boss bar + no derived lunge (the BossController owns attacks).
+  // Ver'Kaln — LARGE landing-zone titan.
+  verkaln: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 60,
+    hp: 480,
+    radius: 72,
+    contactDamage: 12,
+    weight: 0,
+    xpValue: 42,
+    renderScale: 2.9,
+  },
+  // The Choirmath — LARGE bullet-hell spiral god (stationary).
+  choirmath: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 0,
+    hp: 440,
+    radius: 66,
+    contactDamage: 8,
+    weight: 0,
+    xpValue: 40,
+    renderScale: 2.7,
+  },
+  // Cor-Vane the Hive-Mind — CHARACTER-SIZED fragile summoner (kites).
+  corvane: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 150,
+    hp: 300,
+    radius: 26,
+    contactDamage: 6,
+    weight: 0,
+    xpValue: 38,
+    renderScale: 1.25,
+  },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
   // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig

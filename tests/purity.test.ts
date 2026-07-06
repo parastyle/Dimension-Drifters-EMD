@@ -30,6 +30,9 @@ const REPLICATED_MODULES = [
   "movement.ts",
   "collision.ts",
   "math.ts",
+  // §16 v0.109 the boss attack primitives are PURE geometry (RNG injected by the controller) — no
+  // Math.random, so the golden-tick determinism + a future client-derived pattern path stay honest.
+  "boss-primitives.ts",
 ];
 
 describe("§4 replicated-helper purity boundary", () => {

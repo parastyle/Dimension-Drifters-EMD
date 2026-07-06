@@ -1,5 +1,7 @@
 export * from "./augments.js";
 export * from "./boss.js";
+export * from "./boss-primitives.js";
+export * from "./bosses.js";
 export * from "./characters.js";
 export * from "./collision.js";
 export * from "./combat.js";

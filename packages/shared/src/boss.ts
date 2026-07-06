@@ -6,10 +6,11 @@
  *   P3 (≤20%): ENRAGE — faster walls + spawns Mote adds (a DPS check).
  */
 
-export type BossPhase = 1 | 2 | 3;
+export type BossPhaseTier = 1 | 2 | 3;
 
-/** The §16 phase for a boss at `frac` of max HP. Thresholds: ≤0.2 enrage, ≤0.5 slam, else paces. */
-export function bossPhaseForHp(frac: number): BossPhase {
+/** The §16 phase for a boss at `frac` of max HP. Thresholds: ≤0.2 enrage, ≤0.5 slam, else paces. (Legacy —
+ *  the data-driven `BossDef` in bosses.ts generalises this; kept for the OLD RUST phase unit tests.) */
+export function bossPhaseForHp(frac: number): BossPhaseTier {
   if (frac <= 0.2) return 3;
   if (frac <= 0.5) return 2;
   return 1;

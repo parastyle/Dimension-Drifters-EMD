@@ -130,6 +130,43 @@ export class ZoneState extends Schema {
   @type("number") radius = 0;
 }
 
+/**
+ * §16 GENERIC TELEGRAPH — one synced danger footprint the client renders. The backbone of the
+ * data-driven boss framework's "show the landing zone": ANY boss can broadcast N heterogeneous
+ * danger shapes at once (landing circles, expanding rings, cones, beam/dash lanes, bullet-origin
+ * warnings), replacing the single hardcoded `bossSlam` triple. A row is CREATED when a windup
+ * begins and DELETED the tick the attack resolves; the client edge-fires the impact VFX on removal
+ * (the same pattern `renderBossSlam` used on `bossSlamT` high→0). Only `t` (the fill) mutates per
+ * tick, so a live telegraph costs ~1 changed field/tick — as cheap as `bossSlamT` was.
+ *
+ * CRUCIAL: telegraphs are AUTHORITATIVE state read DIRECTLY (never snapshot-interpolated like a
+ * body, never client-guessed), and every row is authored at a FIXED world coord (the predicted
+ * LAND point), so all clients paint the identical danger at the identical fill even though the
+ * boss body renders ~120ms behind on interp (§4). `danger` carries the §8 parry-language colour.
+ */
+export class TelegraphState extends Schema {
+  /** "tg{seq}" minted server-side, like projectile ids. */
+  @type("string") id = "";
+  /** 0 circle · 1 ring (expanding donut) · 2 cone/wedge · 3 rect (beam/dash lane) · 4 arc-sweep ·
+   *  5 point-warn (bullet origin). The client switches its geometry on this; all share one fill-to-`t` path. */
+  @type("uint8") shape = 0;
+  /** Epicentre / lane origin — a FIXED world coordinate, never parented to the moving body. */
+  @type("number") x = 0;
+  @type("number") y = 0;
+  /** Primary size: circle/ring radius · rect length · cone reach. */
+  @type("number") a = 0;
+  /** Secondary size: rect half-width · cone half-arc (rad) · ring inner-radius · 0 if unused. */
+  @type("number") b = 0;
+  /** Orientation radians (cone/rect/beam aim) — authored server-side, never derived from stale facing. */
+  @type("number") rot = 0;
+  /** Fill progress 0→1 over the windup; the client eases the danger fill toward this. Replaces `bossSlamT`. */
+  @type("number") t = 0;
+  /** 0 = parryable (WHITE, §8) · 1 = unparryable (RED, dodge-only). Carries the §8 colour into the sync. */
+  @type("uint8") danger = 0;
+  /** Cosmetic sub-style for the renderer (slam vs beam vs summon-marker) — art differs without new shapes. */
+  @type("uint8") kindTag = 0;
+}
+
 /** A weapon lying on the ground — the Testing-Grounds gallery, a player drop, or (v0.104 §13) an in-run
  *  LOOT drop. Loot drops are MYSTERY: `known=false` hides the identity client-side (the pickup renders as
  *  a rarity-tinted bundle, cursed = the §10 ghostly-purple gamble cue) until it's grabbed; the gallery,
@@ -228,4 +265,12 @@ export class ArenaState extends Schema {
    *  every patch is stamped `tick × TICK_MS` so remote entities interpolate on the SERVER's clock, immune
    *  to TCP burst-arrival jitter (review #6). Also guarantees every tick's patch has a change to send. */
   @type("uint32") tick = 0;
+  /** §16 v0.109 GENERIC TELEGRAPH map — every active boss danger footprint (landing zones / rings / beams /
+   *  dash lanes / bullet warnings). Appended after `tick` (append-only: field offsets before it are frozen).
+   *  Replaces the single `bossSlamX/Y/T` triple, which stays at 0 forever (kept only for offset stability).
+   *  The client renders these generically via `renderTelegraphs` regardless of which boss is up. */
+  @type({ map: TelegraphState }) telegraphs = new MapSchema<TelegraphState>();
+  /** §16 v0.109 the active BOSS DEFINITION id (keys the shared `BOSSES` registry) — lets the client label the
+   *  boss bar with the real boss name + pick per-boss cosmetic tints. "" while no boss is up. */
+  @type("string") bossKind = "";
 }

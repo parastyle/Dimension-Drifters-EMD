@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 6; // v0.107 — §4 netcode: +player ackSeq/mvx/mvy/vh/teleportSeq, +arena tick
+export const SCHEMA_VERSION = 7; // v0.109 — §16 boss framework: +TelegraphState map, +arena bossKind; bossSlam* deprecated (kept at 0)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -341,6 +341,17 @@ export const BOSS_SLAM_RADIUS = 150;
 export const BOSS_SLAM_DAMAGE = 22;
 export const BOSS_ADD_CD = 3.5;
 export const BOSS_ADD_COUNT = 2;
+
+/** §16 v0.109 DATA-DRIVEN BOSS FRAMEWORK budget rails (feasibility, load-bearing — no AoI yet, so every
+ *  projectile is broadcast to every client). The BossController enforces these so no boss def can flood the
+ *  10-player wire: a hard ceiling on concurrent HOSTILE projectiles arena-wide (boss + horde + spitters),
+ *  and a per-boss cap on live adds regardless of player count (resolveEnemyCollisions is ~O(n²)). Spectacle
+ *  comes from cheap TELEGRAPHED zones/beams/dashes, not bullet density. */
+export const BOSS_PROJECTILE_BUDGET = 120;
+export const BOSS_ADD_CAP = 12;
+/** §16 v0.109 telegraph danger channels: 0 = parryable (WHITE, §8), 1 = unparryable (RED, dodge). */
+export const TELEGRAPH_PARRYABLE = 0;
+export const TELEGRAPH_DODGE = 1;
 
 /**
  * §17 DIMENSION SHIFTER incursions — the roaming cross-dimensional antagonists (TimeSplitters-style). One

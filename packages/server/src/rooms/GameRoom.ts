@@ -9,26 +9,14 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
-  BOSS_ADD_CD,
-  BOSS_ADD_COUNT,
-  BOSS_BULLET_SPEED,
-  BOSS_P1_FIRE_CD,
-  BOSS_P3_FIRE_CD,
   BOSS_SALVAGE_PER_DEPTH,
-  BOSS_SLAM_CD,
-  BOSS_SLAM_DAMAGE,
-  BOSS_SLAM_RADIUS,
-  BOSS_SLAM_TELEGRAPH,
-  BOSS_WALL_ARC,
-  BOSS_WALL_COUNT,
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
   bladeAngleAt,
   bladeHitsCircle,
-  bossPhaseForHp,
+  bossDefFor,
   bossSpawnAt,
-  bulletWallAngles,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   CONFLAG_DELAY,
@@ -151,6 +139,7 @@ import {
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
+  TelegraphState,
   TICK_MS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
@@ -169,6 +158,7 @@ import {
   ZoneState,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
+import { BossController, type BossEmitSink } from "./BossController.js";
 import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 
 /** §4 v0.107 one sequence-numbered input COMMAND from a client (~one per 50ms client tick). `jump` rides
@@ -261,13 +251,17 @@ export class GameRoom extends Room<ArenaState> {
   private readonly combat = new Map<string, CombatState>();
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
   private readonly enemyFireCd = new Map<string, number>();
-  /** §16 OLD RUST phase timers (boss-internal). `bossSlamElapsed` > 0 while a punch-slam is telegraphing. */
-  private bossFireCd = 0;
-  private bossSlamCd = BOSS_SLAM_CD;
-  private bossSlamElapsed = 0;
-  private bossAddCd = BOSS_ADD_CD;
-  private bossWallSeq = 0;
-  private bossMaxHp = 1;
+  /** §16 v0.109 the active boss's data-driven controller (replaces the hardcoded OLD RUST phase timers).
+   *  Constructed in `spawnBoss` from the boss kind's `BossDef`; nulled on boss death. Runs the phase machine
+   *  + telegraph windups deterministically. `null` while no boss is up. */
+  private bossController: BossController | null = null;
+  /** §16 v0.109 monotonic id source for synced telegraph rows (`tg{n}`). */
+  private telegraphSeq = 0;
+  /** §16 v0.109 ids of adds the boss summoned — so the add-cap counts only boss adds, not the horde. Pruned
+   *  lazily as adds die. */
+  private readonly bossAddIds = new Set<string>();
+  /** §16 v0.109 the injected boss emit-surface, built lazily (see `bossSink`). */
+  private _bossSink: BossEmitSink | null = null;
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
    *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
@@ -575,6 +569,15 @@ export class GameRoom extends Room<ArenaState> {
       if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
     });
 
+    // §16 v0.109 Debug BOSS PICKER: spawn a SPECIFIC boss def by kind to playtest its style (works in arena
+    // OR training; re-spawns/swaps a live boss). Host-only + kind validated (must be a real boss body).
+    this.onMessage("spawnBossDef", (client, message: { kind?: string }) => {
+      if (!this.isHost(client)) return;
+      const kindId = message?.kind;
+      if (typeof kindId !== "string" || ENEMY_KINDS[kindId]?.archetype !== "boss") return;
+      this.spawnBoss(kindId);
+    });
+
     // §21 Dev summon (Tab menu): spawn N of a chosen enemy kind on a ring around the requester, optionally
     // TOUGH. Training-mode ONLY — it's a sandbox affordance (so any client may summon; both players test),
     // and gating to training keeps it out of a live survival run. All fields validated (untrusted client).
@@ -720,7 +723,7 @@ export class GameRoom extends Room<ArenaState> {
       c.heldEarned = false;
     });
     this.bossSpawned = false;
-    this.bossId = null;
+    this.clearBoss();
     this.resetShifters();
     const cx = ARENA_WIDTH / 2;
     const cy = ARENA_HEIGHT / 2;
@@ -794,7 +797,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.dimensionId = this.homeDimension;
     this.mintMap();
     this.bossSpawned = false;
-    this.bossId = null;
+    this.clearBoss();
     this.resetShifters();
     this.spawnAccum = 0;
     this.enemySeq = 0;
@@ -1246,11 +1249,12 @@ export class GameRoom extends Room<ArenaState> {
 
     // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
-    this.state.enemies.forEach((enemy) => {
+    this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
       // §20 lunge-enemies (duelists + the derived rusher/swarm/zoner lunge) move via stepDuelists; this
-      // generic pass only chases/kites the rest (ranged spitters kite; the boss is stepped separately).
-      if (!kind || effectiveMelee(kind)) return;
+      // generic pass only chases/kites the rest (ranged spitters kite). §16 v0.109 the boss is stepped by
+      // its BossController (which owns movement), so skip it here to avoid a double-move.
+      if (!kind || effectiveMelee(kind) || id === this.bossId) return;
       const target = nearestPoint(enemy, bodies);
       const next = kind.ranged
         ? stepEnemyKite(
@@ -1573,125 +1577,148 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  /** §16 OLD RUST phase machine: escalate the fight by HP fraction + fire the phase's pattern on a cadence.
-   *  P1 bullet-walls · P2 (+) telegraphed punch-slams · P3 enrage (faster walls + Mote adds). */
+  /** §16 v0.109 run the active boss's data-driven controller (replaces the hardcoded OLD RUST machine). It
+   *  owns the boss's movement + phase escalation + telegraphed attacks; the GameRoom only wires the emit
+   *  sink (projectiles/AoE/zones/adds/telegraphs) so hit + damage plumbing stays here. When the boss is
+   *  gone (killed/removed), tears down: null the controller, clear its telegraphs, blank the synced label. */
   private stepBoss(dt: number, bodies: Vec2[]): void {
-    if (!this.bossId) {
+    if (!this.bossId || !this.bossController) {
       if (this.state.bossPhase !== 0) this.state.bossPhase = 0;
       return;
     }
     const boss = this.state.enemies.get(this.bossId);
     if (!boss) {
-      this.bossId = null;
-      this.state.bossPhase = 0;
-      this.state.bossSlamT = 0;
-      this.bossSlamElapsed = 0;
+      this.clearBoss();
       return;
     }
-    const frac = this.bossMaxHp > 0 ? boss.hp / this.bossMaxHp : 1;
-    const phase = bossPhaseForHp(frac);
-    this.state.bossPhase = phase;
-    const target = nearestPoint(boss, bodies);
-    if (!target) return;
-
-    // P1+ — minigun BULLET-WALLS with a weave-gap (faster at P3 enrage).
-    this.bossFireCd -= dt;
-    if (this.bossFireCd <= 0) {
-      this.fireBulletWall(boss, target);
-      this.bossFireCd = phase === 3 ? BOSS_P3_FIRE_CD : BOSS_P1_FIRE_CD;
-    }
-
-    // P2+ — a telegraphed RED PUNCH-SLAM shockwave (unparryable) between sweeps. Telegraph at the target's
-    // position, then detonate when it peaks.
-    if (phase >= 2) {
-      if (this.bossSlamElapsed > 0) {
-        this.bossSlamElapsed += dt;
-        this.state.bossSlamT = Math.min(1, this.bossSlamElapsed / BOSS_SLAM_TELEGRAPH);
-        if (this.bossSlamElapsed >= BOSS_SLAM_TELEGRAPH) {
-          this.bossSlam(this.state.bossSlamX, this.state.bossSlamY);
-          this.bossSlamElapsed = 0;
-          this.state.bossSlamT = 0;
-          this.bossSlamCd = BOSS_SLAM_CD;
-        }
-      } else {
-        this.bossSlamCd -= dt;
-        if (this.bossSlamCd <= 0) {
-          this.state.bossSlamX = target.x;
-          this.state.bossSlamY = target.y;
-          this.bossSlamElapsed = dt; // begin telegraphing this tick
-          this.state.bossSlamT = Math.min(1, this.bossSlamElapsed / BOSS_SLAM_TELEGRAPH);
-        }
-      }
-    }
-
-    // P3 — ENRAGE: spawn Mote adds (a DPS check).
-    if (phase === 3) {
-      this.bossAddCd -= dt;
-      if (this.bossAddCd <= 0) {
-        this.spawnBossAdds(boss);
-        this.bossAddCd = BOSS_ADD_CD;
-      }
-    }
+    this.state.bossPhase = this.bossController.step(
+      dt,
+      boss,
+      bodies,
+      this.state.depth,
+      this.state.tick,
+      this.bossSink,
+    );
   }
 
-  /** §16 P1 fire one minigun BULLET-WALL toward `target` — a fan of slugs with a moving weave-gap. */
-  private fireBulletWall(boss: EnemyState, target: Vec2): void {
-    const base = Math.atan2(target.y - boss.y, target.x - boss.x);
-    const gapIdx = this.bossWallSeq++ % (BOSS_WALL_COUNT - 1); // walk the gap around so it's not always centred
-    const dmg =
-      (ENEMY_KINDS[boss.kind]?.ranged?.damage ?? 10) *
-      0.55 * // per-slug, lighter than the single spit
-      depthDamageScale(this.state.depth);
-    for (const ang of bulletWallAngles(base, BOSS_WALL_COUNT, BOSS_WALL_ARC, gapIdx)) {
-      this.fireProjectile(
-        boss,
-        { x: boss.x + Math.cos(ang), y: boss.y + Math.sin(ang) },
-        BOSS_BULLET_SPEED,
-        dmg,
-      );
-    }
+  /** Tear down the active boss: dispose the controller (removes its in-flight telegraphs), reset the synced
+   *  boss fields. Called when the boss dies/vanishes or the run restarts. */
+  private clearBoss(): void {
+    this.bossController?.dispose(this.bossSink);
+    this.bossController = null;
+    this.bossId = null;
+    this.bossAddIds.clear();
+    this.state.bossPhase = 0;
+    this.state.bossKind = "";
+    this.state.bossSlamT = 0; // §16 deprecated slam scalars stay at 0
+    this.state.telegraphs.clear();
   }
 
-  /** §16 P2 the punch-slam shockwave lands: UNPARRYABLE damage + a hard knockback to every player inside. */
-  private bossSlam(x: number, y: number): void {
-    const r2 = BOSS_SLAM_RADIUS * BOSS_SLAM_RADIUS;
+  /** §16 v0.109 the emit surface handed to the BossController — turns a boss def's abstract "casts" into real
+   *  sim: hostile projectiles, telegraph rows, corrosive zones, adds, and unparryable AoE. Built once, lazily. */
+  private get bossSink(): BossEmitSink {
+    if (!this._bossSink) {
+      this._bossSink = {
+        fireProjectile: (x, y, aimX, aimY, speed, damage) =>
+          this.fireProjectile({ x, y }, { x: x + aimX, y: y + aimY }, speed, damage),
+        addTelegraph: (spec) => {
+          const t = new TelegraphState();
+          t.id = `tg${this.telegraphSeq++}`;
+          t.shape = spec.shape;
+          t.x = spec.x;
+          t.y = spec.y;
+          t.a = spec.a ?? 0;
+          t.b = spec.b ?? 0;
+          t.rot = spec.rot ?? 0;
+          t.t = 0;
+          t.danger = spec.danger ?? 1;
+          t.kindTag = spec.kindTag ?? 0;
+          this.state.telegraphs.set(t.id, t);
+          return t.id;
+        },
+        setTelegraphProgress: (id, t) => {
+          const row = this.state.telegraphs.get(id);
+          if (row) row.t = t;
+        },
+        removeTelegraph: (id) => this.state.telegraphs.delete(id),
+        dropZone: (x, y, radius, ttl) => this.dropBossZone(x, y, radius, ttl),
+        spawnAdds: (kind, spots) => {
+          for (const s of spots) this.spawnBossAddAt(kind, s.x, s.y);
+        },
+        applyAoE: (x, y, radius, damage, knockback) =>
+          this.applyBossAoE(x, y, radius, damage, knockback),
+        hostileProjectiles: () => {
+          let n = 0;
+          this.state.projectiles.forEach((p) => {
+            if (p.hostile) n++;
+          });
+          return n;
+        },
+        aliveAdds: () => {
+          for (const id of [...this.bossAddIds]) {
+            if (!this.state.enemies.has(id)) this.bossAddIds.delete(id);
+          }
+          return this.bossAddIds.size;
+        },
+      };
+    }
+    return this._bossSink;
+  }
+
+  /** §16 an unparryable radius AoE (the generalised punch-slam): flat damage + a hard radial knockback to
+   *  every living player inside. `damage` arrives already depth-scaled from the controller. */
+  private applyBossAoE(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    knockback: number,
+  ): void {
+    const r2 = radius * radius;
     this.state.players.forEach((p) => {
       if (!p.alive || this.inLevelWindow(p)) return;
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
-      p.hp -= BOSS_SLAM_DAMAGE * depthDamageScale(this.state.depth); // §16 unparryable — dodge it, don't block it
+      p.hp -= damage; // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
-      const k = addImpulse(
-        p,
-        (dx / d) * HIT_KNOCKBACK_IMPULSE * 2.2,
-        (dy / d) * HIT_KNOCKBACK_IMPULSE * 2.2,
-      );
+      const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
       p.vy = k.vy;
     });
   }
 
-  /** §16 P3 enrage: conjure a few Mote adds in a ring around the boss (a DPS check). */
-  private spawnBossAdds(boss: EnemyState): void {
-    const kind = ENEMY_KINDS["mote-swarm"];
+  /** §16 drop a corrosive DoT puddle (reuses ZoneState + the zoner DoT machinery) at a boss-authored spot. */
+  private dropBossZone(x: number, y: number, radius: number, ttl: number): void {
+    const zone = new ZoneState();
+    zone.id = `z${this.zoneSeq++}`;
+    zone.x = x;
+    zone.y = y;
+    zone.radius = radius;
+    this.state.zones.set(zone.id, zone);
+    this.zoneMeta.set(zone.id, ttl); // §15 zoneMeta stores the remaining TTL as a plain number
+  }
+
+  /** §16 conjure one boss ADD at a telegraphed spot (HP scaled to living count × depth), tracked so the
+   *  add-cap counts only boss-summoned adds. Lands on solid ground clear of POIs. */
+  private spawnBossAddAt(kindId: string, x: number, y: number): void {
+    const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.livingCount(); // §6 scale adds to who can fight, not who's connected
-    const bossRadius = ENEMY_KINDS[boss.kind]?.radius ?? ENEMY_RADIUS;
-    for (let i = 0; i < BOSS_ADD_COUNT; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = bossRadius + 44 + Math.random() * 70;
-      const e = new EnemyState();
-      e.id = `e${this.enemySeq++}`;
-      e.kind = "mote-swarm";
-      e.hp = kind.hp * enemyHpScale(players) * depthHpScale(this.state.depth);
-      const ex = clamp(boss.x + Math.cos(a) * r, kind.radius, ARENA_WIDTH - kind.radius);
-      const ey = clamp(boss.y + Math.sin(a) * r, kind.radius, ARENA_HEIGHT - kind.radius);
-      const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
-      e.x = sp.x;
-      e.y = sp.y;
-      this.state.enemies.set(e.id, e);
-    }
+    const e = new EnemyState();
+    e.id = `e${this.enemySeq++}`;
+    e.kind = kindId;
+    e.hp = kind.hp * enemyHpScale(players) * depthHpScale(this.state.depth);
+    const sp = safeSpawnPos(
+      this.map,
+      clamp(x, kind.radius, ARENA_WIDTH - kind.radius),
+      clamp(y, kind.radius, ARENA_HEIGHT - kind.radius),
+      kind.radius,
+    );
+    e.x = sp.x;
+    e.y = sp.y;
+    this.state.enemies.set(e.id, e);
+    this.bossAddIds.add(e.id);
   }
 
   /** Spitters fire a projectile at the nearest living player on a cooldown (§15 ranged threat). */
@@ -1902,6 +1929,11 @@ export class GameRoom extends Room<ArenaState> {
     }
     const kind = ENEMY_KINDS[enemy.kind];
     if (kind?.archetype === "boss") {
+      // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
+      // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
+      // telegraphs (never resolved) + a leaked controller — stepBoss early-returns once bossId is null and
+      // never reaches its own cleanup. clearBoss is idempotent + also nulls bossId / blanks bossKind.
+      if (enemy.id === this.bossId) this.clearBoss();
       this.openPortal(enemy.x, enemy.y);
       // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
       // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
@@ -2508,11 +2540,23 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(enemy.id, enemy);
   }
 
-  /** Spawn the active dimension's BOSS on a ring around a player (§16) — the run's capstone threat. */
-  private spawnBoss(): void {
-    const bossKind = getDimension(this.state.dimensionId).boss;
+  /** Spawn a BOSS on a ring around a player (§16) — the run's capstone threat. `overrideKind` (the debug
+   *  picker) spawns a specific boss BODY; otherwise the active dimension's boss. The body kind supplies the
+   *  sprite/hp/radius; its `BossDef` (or CLASSIC_BOSS fallback) drives the attacks via the BossController. */
+  private spawnBoss(overrideKind?: string): void {
+    const bossKind =
+      overrideKind && ENEMY_KINDS[overrideKind]?.archetype === "boss"
+        ? overrideKind
+        : getDimension(this.state.dimensionId).boss;
     const kind = ENEMY_KINDS[bossKind];
     if (!kind) return;
+    // A picker re-spawn while a boss is up: retire the old one, its adds, and its telegraphs first. Evicting
+    // the tracked adds (not just clearing the Set) stops them lingering off-cap under the new boss.
+    if (this.bossId) {
+      this.state.enemies.delete(this.bossId);
+      for (const addId of this.bossAddIds) this.state.enemies.delete(addId);
+      this.clearBoss();
+    }
     const anchors: Vec2[] = [];
     this.state.players.forEach((pl) => {
       if (pl.alive) anchors.push({ x: pl.x, y: pl.y });
@@ -2527,12 +2571,6 @@ export class GameRoom extends Room<ArenaState> {
     boss.kind = bossKind;
     // §6 boss HP-sponge × players × chain depth (v0.103 — deeper capstones are meaner).
     boss.hp = kind.hp * enemyHpScale(this.state.players.size) * depthHpScale(this.state.depth);
-    this.bossMaxHp = boss.hp; // §16 frozen for the phase-fraction thresholds
-    this.bossFireCd = 0;
-    this.bossSlamCd = BOSS_SLAM_CD;
-    this.bossSlamElapsed = 0;
-    this.bossAddCd = BOSS_ADD_CD;
-    this.bossWallSeq = 0;
     const bx = clamp(
       anchor.x + Math.cos(angle) * SPAWN_RING,
       kind.radius,
@@ -2550,7 +2588,12 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
-    console.log(`[room ${this.roomId}] ⚠ boss approaches — ${bossKind}`);
+    // §16 v0.109 the data-driven controller runs this boss's def (CLASSIC_BOSS = OLD RUST for any kind
+    // without a bespoke def, so every dimension boss keeps its behaviour). maxHp frozen for phase thresholds.
+    const def = bossDefFor(bossKind);
+    this.bossController = new BossController(def, boss.hp, randomSeed());
+    this.state.bossKind = bossKind; // client labels the boss bar from this
+    console.log(`[room ${this.roomId}] ⚠ boss approaches — ${bossKind} (${def.name})`);
   }
 
   /** Reset the §17 shifter director (first incursion timer, no active incursion). `keepWaves` (a §6 rift
@@ -2709,9 +2752,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.portalOpen = false;
     this.state.riftOpen = false;
     this.bossSpawned = false;
-    this.bossId = null;
-    this.state.bossPhase = 0;
-    this.state.bossSlamT = 0;
+    this.clearBoss(); // §16 v0.109 also resets bossPhase/bossKind + clears telegraphs
     this.resetShifters(true); // keep the per-incursion HP ramp — a descent IS "deeper into the chain"
     // Carry the whole squad through the rift — downed bodies come too, arriving STILL DOWN at the new
     // spawn (the rez-or-dead rule doesn't soften mid-chain; a rez weapon works on the far side).
