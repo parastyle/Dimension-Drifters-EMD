@@ -25,6 +25,9 @@ export function partTexture(
 
 /** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
 const TARGET_BODY_H = 84;
+/** §7 v0.112 procedural gait — px travelled per full stride cycle (2 steps). Distance-based, so the step
+ *  cadence MATCHES actual speed (no jog-in-place, no fixed loop that runs after you stop). (tuning) */
+const STRIDE_LEN = 150;
 /** Vertical "look" toward the cursor (local player): how far the torso leans + the held weapon tilts
  *  with the aim's up/down. Subtle by design — "to some degree". (tuning) */
 const BODY_LOOK_LEAN = 0.14;
@@ -98,6 +101,16 @@ export class SpriteRig {
   private turnCommit = 0;
   private turnDirX = 1;
   private turnDirY = 0;
+  /** §7 v0.112 procedural gait state: `velX/velY` = fast-smoothed render velocity, `slowVelX/slowVelY` =
+   *  slow-smoothed. Their DIFFERENCE is an inertia signal — nonzero only while accelerating / decelerating /
+   *  turning — that trails the hands + feet behind the body's motion (limbs with weight, reacting to input,
+   *  not a fixed loop). `strideT` is the DISTANCE-accumulated stride phase (radians) so the walk cadence
+   *  tracks real speed and stops when you do. */
+  private velX = 0;
+  private velY = 0;
+  private slowVelX = 0;
+  private slowVelY = 0;
+  private strideT = 0;
   /** §7 v0.105 de-clunk — last `animate` clock (ms) to derive a frame dt for the eased blends; -1 = first. */
   private prevAnimMs = -1;
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
@@ -392,7 +405,9 @@ export class SpriteRig {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
     // clamped so a hit-stop gap or first frame can't produce a jump.
-    const dtMs = this.prevAnimMs < 0 ? 16 : Math.min(100, timeMs - this.prevAnimMs);
+    // §7 v0.112 clamp to [0,100]: a scene restart / clock reset can make timeMs < prevAnimMs → a NEGATIVE dt
+    // that would flip the exponential-blend signs and blow every eased value to infinity. Never allow that.
+    const dtMs = this.prevAnimMs < 0 ? 16 : Math.max(0, Math.min(100, timeMs - this.prevAnimMs));
     this.prevAnimMs = timeMs;
     const s = this.scale;
 
@@ -426,6 +441,24 @@ export class SpriteRig {
     }
     const commit = this.turnCommit;
 
+    // §7 v0.112 PROCEDURAL GAIT: track the render velocity at two smoothings; their difference is an inertia
+    // signal (nonzero only while the speed is CHANGING) that trails the limbs behind the body — free-moving
+    // weight that reacts to input, not a hard-set loop. `strideT` accumulates by DISTANCE so the step cadence
+    // matches real speed exactly (and freezes when you stop). `lagX/Y` are ~[-1,1] world-space inertia.
+    const dtS = Math.max(0.001, dtMs / 1000);
+    const spd = anim.speed ?? 0;
+    const rvx = anim.moveX * spd;
+    const rvy = anim.moveY * spd;
+    this.velX += (rvx - this.velX) * (1 - Math.exp(-26 * dtS)); // fast (τ≈38ms)
+    this.velY += (rvy - this.velY) * (1 - Math.exp(-26 * dtS));
+    this.slowVelX += (rvx - this.slowVelX) * (1 - Math.exp(-7 * dtS)); // slow (τ≈140ms)
+    this.slowVelY += (rvy - this.slowVelY) * (1 - Math.exp(-7 * dtS));
+    const lagX = Math.max(-1.4, Math.min(1.4, (this.velX - this.slowVelX) / MOVE_SPEED));
+    const lagY = Math.max(-1.4, Math.min(1.4, (this.velY - this.slowVelY) / MOVE_SPEED));
+    this.strideT += ((spd * dtS) / STRIDE_LEN) * Math.PI * 2;
+    if (this.strideT > Math.PI * 2e6) this.strideT -= Math.PI * 2e6; // keep it bounded over a long session
+    const legPh = this.strideT;
+
     // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
@@ -445,14 +478,15 @@ export class SpriteRig {
     // space (−up / +down) and is NOT touched by the facing mirror, so it leans correctly both ways.
     const lookY = anim.isSelf ? Math.max(-1, Math.min(1, anim.aimY)) : 0;
 
-    // Bob + squash/stretch on the body (scale multiplies the base part scale).
-    const bob = Math.sin(t * 6);
+    // §7 v0.112 Bob + squash/stretch: the bob is STRIDE-synced when moving (two dips per stride = one per
+    // footfall) and a slow breathing sway when idle — so it never runs a fixed loop out of step with the feet.
+    const bob = gait * Math.sin(legPh * 2) + (1 - gait) * Math.sin(t * 2.2) * 0.55;
     this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
     this.body.scaleX = s * (1 + bob * 0.04);
     this.body.scaleY = s * (1 - bob * 0.06);
-    // Body leans back looking up, forward looking down (+ the movement lean, scaled by gait so it eases
-    // in/out with speed rather than snapping ±0.16rad on the walk↔idle flip).
-    this.body.rotation = anim.moveX * 0.16 * gait + lookY * BODY_LOOK_LEAN;
+    // Body leans back looking up, forward looking down (+ the movement lean scaled by gait + an ACCEL lean:
+    // the torso pitches into a speed-up and rocks back on a stop, from the inertia signal — weight, not a loop).
+    this.body.rotation = anim.moveX * 0.16 * gait + lagX * 0.32 + lookY * BODY_LOOK_LEAN;
 
     // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
     // knockback). The whole body already slides via the server position; this is the additive flinch on
@@ -541,31 +575,38 @@ export class SpriteRig {
       weaponAngle += (guard - weaponAngle) * brace;
     }
 
-    // Hands drift independently; the front hand reaches toward the cursor. Reach is SHORT when
-    // holding a weapon so the weapon stays tucked against the body (not floating far out).
+    // §7 v0.112 Hands: the front hand still reaches toward the cursor (the aim anchor, direct — no lag on
+    // aiming), but the SECONDARY motion is now procedural + input-driven: a fore-aft ARM SWING synced to the
+    // stride (opposite its leg), a slow breathing sway when idle, and an INERTIA TRAIL that drags the hands
+    // behind the body on any speed/direction change — so the arms read as free-moving weight, not a fixed loop.
     const reach = TARGET_BODY_H * (this.weapons.length > 0 ? 0.1 : 0.28);
     for (const hnd of this.hands) {
-      const drift = Math.sin(t * 4.5 + (hnd.front ? 0 : 1)) * s * 8;
+      const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
+      const swingX = Math.cos(armPh) * s * 5 * gait; // fore-aft arm swing with the walk
+      const bobY = Math.abs(Math.sin(legPh)) * s * 2 * gait; // a little vertical with each footfall
+      const idleY = Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
+      const trailX = -lagX * this.facing * s * 20; // inertia drag (× facing → local mirrored x)
+      const trailY = -lagY * s * 20;
+      let hx = hnd.ox + swingX + trailX;
+      let hy = hnd.oy + bobY + idleY + trailY;
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
-        hnd.img.x = hnd.ox + anim.aimX * this.facing * reach;
-        hnd.img.y = hnd.oy + anim.aimY * reach + drift;
-      } else {
-        hnd.img.x = hnd.ox;
-        hnd.img.y = hnd.oy + drift;
+        hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
+        hy += anim.aimY * reach;
       }
-      // §7 v0.111 turn-commit HANDS ("pull the reins"): yank both hands toward the new heading as the turn
-      // commits, then release as it decays. `× facing` on x since hand-x is in the mirrored local space.
+      // §7 v0.111 turn-commit HANDS ("pull the reins"): yank both hands toward the new heading on a hard turn.
       if (commit > 0.01) {
-        hnd.img.x += this.turnDirX * this.facing * commit * s * 13;
-        hnd.img.y += this.turnDirY * commit * s * 13;
+        hx += this.turnDirX * this.facing * commit * s * 13;
+        hy += this.turnDirY * commit * s * 13;
       }
       // Brace: draw both hands forward + up into a guard in front of the body.
       if (brace > 0) {
         const bx = TARGET_BODY_H * 0.16;
         const by = hnd.oy - TARGET_BODY_H * 0.08;
-        hnd.img.x += (bx - hnd.img.x) * brace;
-        hnd.img.y += (by - hnd.img.y) * brace;
+        hx += (bx - hx) * brace;
+        hy += (by - hy) * brace;
       }
+      hnd.img.x = hx;
+      hnd.img.y = hy;
     }
 
     // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
@@ -584,14 +625,19 @@ export class SpriteRig {
     // gentle idle float. §7 v0.105 de-clunk: everything scales by `gait`, so the stride/lift/pivot shrink
     // smoothly to zero as you stop (no full-stride jog for a second after release, no foot teleport on the
     // walk↔idle flip); the idle float fades in as (1−gait).
+    // §7 v0.112 the step CADENCE is driven by `legPh` (accumulated by DISTANCE, so it matches real speed and
+    // freezes when you stop — no jog-in-place). Each foot lifts + strides fore-aft, plus an INERTIA TRAIL that
+    // drags the planted foot as the body accelerates/turns (weight), and a breathing float when idle.
     for (let i = 0; i < this.feet.length; i++) {
       const ft = this.feet[i];
       if (!ft) continue;
-      const ph = t * 11 + i * Math.PI; // legs out of phase
-      const idle = Math.sin(t * 3 + i) * s * 4 * (1 - gait);
-      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16 * gait + idle;
-      ft.img.x = ft.ox + Math.cos(ph) * s * 7 * gait; // stride
-      ft.img.rotation = Math.cos(ph) * 0.14 * gait; // slight pivot
+      const ph = legPh + i * Math.PI; // legs out of phase
+      const idle = Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
+      const trailX = -lagX * this.facing * s * 13; // planted feet drag against a speed/direction change
+      const trailY = -lagY * s * 9;
+      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16 * gait + idle + trailY;
+      ft.img.x = ft.ox + Math.cos(ph) * s * 8 * gait + trailX; // stride + drag
+      ft.img.rotation = Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.12; // pivot + lean into accel
     }
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
