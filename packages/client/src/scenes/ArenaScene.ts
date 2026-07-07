@@ -1467,6 +1467,26 @@ export class ArenaScene extends Phaser.Scene {
       g.restore();
       return;
     }
+    if (shape === TgShape.Cone) {
+      // §16 Slice 3 — a PARRYABLE melee wedge (the boss meleeCombo). From (x,y), aimed at `rot`, half-arc `b`,
+      // reach `a`. Fills WHITE (danger 0) as `t`→1 = the parry-tell; a bold edge reads the swing arc so the
+      // player knows to PARRY (not dodge) this one.
+      const start = rot - b;
+      const end = rot + b;
+      g.fillStyle(fill, 0.12 + 0.34 * t);
+      g.beginPath();
+      g.moveTo(x, y);
+      g.arc(x, y, a * (0.55 + 0.45 * t), start, end);
+      g.closePath();
+      g.fillPath();
+      g.lineStyle(3, line, 0.5 + 0.5 * t);
+      g.beginPath();
+      g.moveTo(x, y);
+      g.arc(x, y, a, start, end);
+      g.closePath();
+      g.strokePath();
+      return;
+    }
     if (shape === TgShape.Ring && kindTag === 5) {
       // Expanding-ring HAZARD (Slice 2) — a thick danger band at radius `a`, leaving a SAFE GAP wedge
       // (half-width `b` radians, centred `rot`) you dash through. A stroked arc that skips the gap. The

@@ -18,6 +18,8 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     dropZone: [] as unknown[][],
     spawnAdds: [] as { kind: string; spots: readonly Vec2[] }[],
     applyAoE: [] as unknown[][],
+    applyMelee: [] as { x: number; y: number; range: number; halfArc: number; damage: number }[],
+    moveBoss: [] as { x: number; y: number }[],
   };
   let seq = 0;
   const sink: BossEmitSink = {
@@ -36,6 +38,9 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     dropZone: (...a) => calls.dropZone.push(a),
     spawnAdds: (kind, spots) => calls.spawnAdds.push({ kind, spots }),
     applyAoE: (...a) => calls.applyAoE.push(a),
+    applyMelee: (x, y, _aimX, _aimY, range, halfArc, damage, _knockback) =>
+      calls.applyMelee.push({ x, y, range, halfArc, damage }),
+    moveBoss: (x, y) => calls.moveBoss.push({ x, y }),
     hostileProjectiles: () => over.hostile ?? 0,
     aliveAdds: () => over.adds ?? 0,
   };
@@ -224,6 +229,82 @@ describe("BossController — active hazards (beam / ring / dash)", () => {
     expect(b.x).toBeGreaterThan(1000); // the body moved down the lane
     expect(calls.damageRect.some((d) => d.knockback > 0)).toBe(true); // shove applied
     expect(calls.removeTelegraph).toContain("tg0");
+  });
+});
+
+describe("BossController — §16 Slice 3 melee trio (meleeCombo / blinkStrike)", () => {
+  const meleeDef: BossDef = {
+    kind: "kaido",
+    name: "Melee Test",
+    move: "chase",
+    phases: [
+      {
+        hpAbove: 0,
+        modules: [
+          {
+            primitive: "meleeCombo",
+            cooldown: 99,
+            windup: 0.4,
+            params: { range: 200, halfArc: 0.7, damage: 15, knockback: 440 },
+          },
+        ],
+      },
+    ],
+  };
+
+  it("a meleeCombo raises a PARRYABLE white cone, then resolves ONE melee arc at peak", () => {
+    const c = new BossController(meleeDef, 100, 1);
+    const { sink, calls } = mockSink();
+    for (let t = 0; t < 12; t++) c.step(0.05, boss(100), TARGETS, 1, t, sink);
+    const cone = calls.addTelegraph[0];
+    expect(cone?.shape).toBe(2); // TgShape.Cone
+    expect(cone?.danger).toBe(0); // TELEGRAPH_PARRYABLE — you PARRY this one (white)
+    expect(cone?.kindTag).toBe(6); // parryable melee arc
+    expect(calls.applyMelee.length).toBe(1); // resolved a single swing
+    expect(calls.applyMelee[0]?.damage).toBeCloseTo(15); // depth 1 → base damage
+    expect(calls.removeTelegraph).toContain("tg0"); // row cleaned up
+  });
+
+  it("a boss PLANTS its feet while a meleeCombo winds up (the arc stays co-located)", () => {
+    const c = new BossController(meleeDef, 100, 1);
+    const { sink } = mockSink();
+    const b = boss(100); // at (1000,1000), target far to the +x → would normally chase
+    c.step(0.05, b, TARGETS, 1, 0, sink); // triggers the windup this tick
+    const xAfterTrigger = b.x;
+    for (let t = 1; t < 6; t++) c.step(0.05, b, TARGETS, 1, t, sink); // still winding up
+    expect(b.x).toBe(xAfterTrigger); // frozen — did not chase while the swing is committed
+  });
+
+  const blinkDef: BossDef = {
+    kind: "nihil",
+    name: "Blink Test",
+    move: "kite",
+    phases: [
+      {
+        hpAbove: 0,
+        modules: [
+          {
+            primitive: "blinkStrike",
+            cooldown: 99,
+            windup: 0.4,
+            params: { offset: 80, radius: 130, damage: 20, knockback: 620 },
+          },
+        ],
+      },
+    ],
+  };
+
+  it("a blinkStrike TELEPORTS the boss to the strike spot, then slams THERE", () => {
+    const c = new BossController(blinkDef, 100, 1);
+    const { sink, calls } = mockSink();
+    for (let t = 0; t < 12; t++) c.step(0.05, boss(100), TARGETS, 1, t, sink);
+    expect(calls.moveBoss.length).toBe(1); // it blinked once
+    expect(calls.applyAoE.length).toBe(1); // and slammed
+    const dest = calls.moveBoss[0];
+    const slam = calls.applyAoE[0]; // [x, y, radius, damage, knockback]
+    // WYSIWYG: the teleport destination and the slam share the same spot (near the target).
+    expect(slam?.[0]).toBeCloseTo(dest?.x ?? -1);
+    expect(slam?.[1]).toBeCloseTo(dest?.y ?? -1);
   });
 });
 

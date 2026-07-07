@@ -77,6 +77,21 @@ export interface BossEmitSink {
     gapHalf: number,
     damage: number,
   ): void;
+  /** §16 Slice 3 — resolve a PARRYABLE boss melee wedge: negate-on-parry (feed the §8 chain) else damage +
+   *  shove every living player inside the arc. `damage` is ALREADY depth-scaled. */
+  applyMelee(
+    x: number,
+    y: number,
+    aimX: number,
+    aimY: number,
+    range: number,
+    halfArc: number,
+    damage: number,
+    knockback: number,
+  ): void;
+  /** §16 Slice 3 — teleport the boss body (a blink). Snaps position; the client hard-snaps past its lerp
+   *  threshold so it reads as a poof, not a glide. */
+  moveBoss(x: number, y: number): void;
   /** Current live HOSTILE projectile count (boss + horde + spitters) — the budget gate reads this. */
   hostileProjectiles(): number;
   /** Current live non-boss enemy (add) count — the add-cap gate reads this. */
@@ -147,7 +162,10 @@ export class BossController {
     const phase = this.def.phases[idx];
     if (!phase) return idx + 1;
 
-    this.move(boss, targets, dt, phase);
+    // A boss winding up a PARRYABLE melee arc PLANTS its feet — freeze movement so the drawn wedge and the
+    // hit stay co-located (WYSIWYG) and the swing reads as a committed strike, not a moving smear.
+    const planting = this.modules.some((rt) => rt.pending && !!rt.pending.plan.emits.melee?.length);
+    if (!planting) this.move(boss, targets, dt, phase);
     const dmgScale = depthDamageScale(depth);
 
     for (let i = 0; i < this.modules.length; i++) {
@@ -377,6 +395,22 @@ export class BossController {
    *  telegraph rows — the step loop clears them one tick later (the settle-linger) so the client can edge-fire. */
   private applyPayload(pending: PendingCast, dmgScale: number, sink: BossEmitSink): void {
     const e = pending.plan.emits;
+    // Blink FIRST so a co-emitted slam (aoe) lands at the destination the boss just teleported to.
+    if (e.teleport) sink.moveBoss(e.teleport.x, e.teleport.y);
+    if (e.melee?.length) {
+      for (const m of e.melee) {
+        sink.applyMelee(
+          m.x,
+          m.y,
+          m.aimX,
+          m.aimY,
+          m.range,
+          m.halfArc,
+          m.damage * dmgScale,
+          m.knockback,
+        );
+      }
+    }
     if (e.projectiles?.length) {
       const budget = Math.max(0, BOSS_PROJECTILE_BUDGET - sink.hostileProjectiles());
       const shots: FireSpec[] = e.projectiles.slice(0, budget);

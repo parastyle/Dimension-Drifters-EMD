@@ -545,8 +545,220 @@ const QUICKDRAW: BossDef = {
   ],
 };
 
-/** The boss-definition registry — keyed by `kind`. Slice 3 adds the melee trio (Kaido / Nihil / Blade Twins)
- *  once the duelist-combo machine is refactored for the controller. */
+/** §16 Slice 3 — Kaido the Parry-Dancer (CHARACTER) — the marquee PARRY duel. His swings are WHITE, parryable
+ *  wedges (chain them for the v0.114 heal/riposte), interleaved with RED dash-lunges you must dodge. Reading
+ *  white-vs-red under pressure IS the fight. He plants to swing (the controller freezes his feet mid-cast). */
+const KAIDO: BossDef = {
+  kind: "kaido",
+  name: "Kaido the Parry-Dancer",
+  move: "chase",
+  phases: [
+    {
+      hpAbove: 0.6,
+      modules: [
+        {
+          primitive: "meleeCombo",
+          cooldown: 0.7,
+          windup: 0.5,
+          params: { range: 200, halfArc: 0.7, damage: 15, knockback: 440 },
+        },
+        {
+          primitive: "dashCharge",
+          cooldown: 4.5,
+          windup: 0.55,
+          firstDelay: 2.2,
+          params: { reach: 560, halfWidth: 52, duration: 0.34, damage: 45, knockback: 640 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.3,
+      speedMult: 1.1,
+      modules: [
+        // A faster flurry — the parry window tightens (shorter windup) and a second swing chases the first.
+        {
+          primitive: "meleeCombo",
+          cooldown: 0.52,
+          windup: 0.4,
+          params: { range: 210, halfArc: 0.75, damage: 15, knockback: 460 },
+        },
+        {
+          primitive: "dashCharge",
+          cooldown: 3.4,
+          windup: 0.5,
+          firstDelay: 1.4,
+          params: { reach: 600, halfWidth: 54, duration: 0.32, damage: 45, knockback: 680 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      speedMult: 1.2,
+      modules: [
+        {
+          primitive: "meleeCombo",
+          cooldown: 0.46,
+          windup: 0.34,
+          params: { range: 220, halfArc: 0.8, damage: 16, knockback: 480 },
+        },
+        {
+          primitive: "aimedVolley",
+          cooldown: 2.4,
+          firstDelay: 1,
+          params: { pellets: 3, arc: 0.4, speed: 380, damage: 7 },
+        },
+      ],
+    },
+  ],
+};
+
+/** §16 Slice 3 — Nihil the Blink Assassin (CHARACTER) — teleports beside a target and slams; parryable
+ *  shuriken fill the gaps. Watch the poof marker, vacate it, punish the recovery. Fragile. */
+const NIHIL: BossDef = {
+  kind: "nihil",
+  name: "Nihil the Blink Assassin",
+  move: "kite",
+  phases: [
+    {
+      hpAbove: 0.6,
+      modules: [
+        {
+          primitive: "blinkStrike",
+          cooldown: 3.4,
+          windup: 0.7,
+          params: { offset: 80, radius: 130, damage: 20, knockback: 620 },
+        },
+        {
+          primitive: "aimedVolley",
+          cooldown: 1.6,
+          firstDelay: 0.8,
+          params: { pellets: 3, arc: 0.5, speed: 360, damage: 7 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.3,
+      speedMult: 1.1,
+      modules: [
+        {
+          primitive: "blinkStrike",
+          cooldown: 2.6,
+          windup: 0.6,
+          params: { offset: 76, radius: 138, damage: 22, knockback: 660 },
+        },
+        {
+          primitive: "aimedVolley",
+          cooldown: 1.3,
+          params: { pellets: 5, arc: 0.7, speed: 380, damage: 7 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      speedMult: 1.15,
+      modules: [
+        // Twin blinks — two slams land in quick succession, so you can't just sidestep once.
+        {
+          primitive: "blinkStrike",
+          cooldown: 2,
+          windup: 0.5,
+          params: { offset: 72, radius: 140, damage: 22, knockback: 680 },
+        },
+        {
+          primitive: "radialBurst",
+          cooldown: 3,
+          windup: 0.4,
+          firstDelay: 1,
+          params: { count: 12, speed: 260, damage: 7 },
+        },
+      ],
+    },
+  ],
+};
+
+/** §16 Slice 3 — Castor & Pollux the Blade Twins (CHARACTER) — a twin-blade duelist striking with BOTH edges
+ *  at once: paired dash lanes (two reds to thread) plus a parryable cross-slash. Constant two-danger pressure.
+ *  (True dual-body / shared-pool is a schema-touching follow-up; this single body wields both blades.) */
+const TWINS: BossDef = {
+  kind: "blade-twins",
+  name: "Castor & Pollux the Blade Twins",
+  move: "chase",
+  phases: [
+    {
+      hpAbove: 0.55,
+      modules: [
+        // Two dash lanes fired a half-beat apart — Castor's blade, then Pollux's.
+        {
+          primitive: "dashCharge",
+          cooldown: 3.6,
+          windup: 0.55,
+          params: { reach: 600, halfWidth: 50, duration: 0.34, damage: 42, knockback: 640 },
+        },
+        {
+          primitive: "dashCharge",
+          cooldown: 3.6,
+          windup: 0.55,
+          firstDelay: 0.5,
+          params: { reach: 600, halfWidth: 50, duration: 0.34, damage: 42, knockback: 640 },
+        },
+        {
+          primitive: "meleeCombo",
+          cooldown: 1.4,
+          windup: 0.45,
+          firstDelay: 1.8,
+          params: { range: 210, halfArc: 0.9, damage: 14, knockback: 420 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0.25,
+      speedMult: 1.12,
+      modules: [
+        {
+          primitive: "dashCharge",
+          cooldown: 2.8,
+          windup: 0.5,
+          params: { reach: 640, halfWidth: 52, duration: 0.32, damage: 42, knockback: 680 },
+        },
+        {
+          primitive: "dashCharge",
+          cooldown: 2.8,
+          windup: 0.5,
+          firstDelay: 0.45,
+          params: { reach: 640, halfWidth: 52, duration: 0.32, damage: 42, knockback: 680 },
+        },
+        {
+          primitive: "meleeCombo",
+          cooldown: 1,
+          windup: 0.4,
+          firstDelay: 1.2,
+          params: { range: 220, halfArc: 0.95, damage: 14, knockback: 440 },
+        },
+      ],
+    },
+    {
+      hpAbove: 0,
+      speedMult: 1.24,
+      modules: [
+        {
+          primitive: "dashCharge",
+          cooldown: 2,
+          windup: 0.42,
+          params: { reach: 660, halfWidth: 54, duration: 0.3, damage: 42, knockback: 700 },
+        },
+        {
+          primitive: "meleeCombo",
+          cooldown: 0.7,
+          windup: 0.34,
+          params: { range: 230, halfArc: 1, damage: 15, knockback: 460 },
+        },
+      ],
+    },
+  ],
+};
+
+/** The boss-definition registry — keyed by `kind`. Slice 3 completes the roster with the melee trio
+ *  (Kaido / Nihil / Blade Twins) → 10 bespoke bosses. */
 export const BOSSES: Record<string, BossDef> = {
   verkaln: VERKALN,
   choirmath: CHOIRMATH,
@@ -555,6 +767,9 @@ export const BOSSES: Record<string, BossDef> = {
   metronome: METRONOME,
   grull: GRULL,
   "quickdraw-vane": QUICKDRAW,
+  kaido: KAIDO,
+  nihil: NIHIL,
+  "blade-twins": TWINS,
 };
 
 /** The def for a boss `kind`, or `CLASSIC_BOSS` for any kind without a bespoke def (every current dimension

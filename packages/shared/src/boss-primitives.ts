@@ -5,6 +5,7 @@ import {
   ENEMY_RADIUS,
   RING_BAND_HALF,
   TELEGRAPH_DODGE,
+  TELEGRAPH_PARRYABLE,
 } from "./constants.js";
 import { coneAngles } from "./enemies.js";
 import { clamp } from "./math.js";
@@ -103,14 +104,40 @@ export interface ActiveSpec {
   knockback: number; // dash knockback impulse
 }
 
+/** §16 v0.109 Slice 3 — a PARRYABLE melee arc (the boss duelist swing). A wedge from (x,y) toward `aim`, out
+ *  to `range`, ±`halfArc`. Routed through the SAME §8 parry path as the horde duelists: i-frames NEGATE it
+ *  (bump parriedSeq, feed the v0.114 parry-chain), else it deals `damage` (BASE, depth-scaled) + a shove.
+ *  This is the one boss attack you PARRY rather than dodge — the marquee of the melee trio. */
+export interface MeleeArcSpec {
+  x: number;
+  y: number;
+  aimX: number;
+  aimY: number;
+  range: number;
+  halfArc: number;
+  damage: number;
+  knockback: number;
+}
+
+/** §16 v0.109 Slice 3 — a boss BLINK: on resolve the controller teleports the boss body to (x,y) before the
+ *  rest of the payload lands (a slam at the same spot). Reuses no schema — it just sets boss.x/y. */
+export interface TeleportSpec {
+  x: number;
+  y: number;
+}
+
 /** The payload a cast applies when its windup resolves. All optional; a bullet primitive uses `projectiles`,
- *  a landing zone uses `aoe`, a hazard uses `zones`, a summon uses `adds`, a beam/ring/dash uses `active`. */
+ *  a landing zone uses `aoe`, a hazard uses `zones`, a summon uses `adds`, a beam/ring/dash uses `active`, a
+ *  duelist swing uses `melee`, a blink uses `teleport` (applied FIRST, so a co-emitted aoe lands at the
+ *  destination). */
 export interface Emits {
   projectiles?: FireSpec[];
   zones?: ZoneSpec[];
   adds?: AddSpec[];
   aoe?: AoeSpec[];
   active?: ActiveSpec;
+  melee?: MeleeArcSpec[];
+  teleport?: TeleportSpec;
 }
 
 /** A single cast: the telegraphs shown DURING the windup + the payload applied WHEN it resolves. Both are
@@ -491,8 +518,66 @@ export const dashCharge: BossPrimitive = (ctx) => {
   };
 };
 
-/** The primitive registry. Slice 1 = emit casts; Slice 2 = the active-hazard casts (beam/ring/dash). The
- *  melee-combo primitive lands in Slice 3 (it drives the shared duelist machine, not a one-shot cast). */
+/** §16 Slice 3 — a PARRYABLE melee swing toward the nearest target: a white wedge telegraph the player can
+ *  PARRY (feeds the v0.114 parry-chain) instead of dodge. Fired on a fast cadence it reads as a flurry — the
+ *  duelist boss's signature. Params: range, halfArc, damage, knockback. The `t` fill is the white parry-tell.
+ *  The wedge is anchored at trigger time; the controller freezes the boss's feet while a melee cast is
+ *  pending (it plants to swing), so the drawn arc and the hit stay co-located (WYSIWYG). */
+export const meleeCombo: BossPrimitive = (ctx) => {
+  const t = aimTarget(ctx);
+  const aimX = t.x - ctx.boss.x;
+  const aimY = t.y - ctx.boss.y;
+  const aim = Math.atan2(aimY, aimX);
+  const range = p(ctx, "range", 190);
+  const halfArc = p(ctx, "halfArc", 0.7);
+  const damage = p(ctx, "damage", 16);
+  const knockback = p(ctx, "knockback", 420);
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Cone,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: range,
+        b: halfArc,
+        rot: aim,
+        danger: TELEGRAPH_PARRYABLE, // WHITE — this one you PARRY
+        kindTag: 6, // parryable melee arc
+      },
+    ],
+    emits: {
+      melee: [{ x: ctx.boss.x, y: ctx.boss.y, aimX, aimY, range, halfArc, damage, knockback }],
+    },
+  };
+};
+
+/** §16 Slice 3 — a BLINK-STRIKE: the boss telegraphs a spot right beside the nearest target, then on resolve
+ *  TELEPORTS there and slams (a dodge landing-zone at the destination). The whole fight is watching where the
+ *  poof marker lands and vacating it. Params: offset (px from the target), radius, damage, knockback. */
+export const blinkStrike: BossPrimitive = (ctx) => {
+  const t = aimTarget(ctx);
+  const offset = p(ctx, "offset", 70);
+  const radius = p(ctx, "radius", 130);
+  const damage = p(ctx, "damage", 20);
+  const knockback = p(ctx, "knockback", 640);
+  const a = ctx.rng.range(-Math.PI, Math.PI); // a fresh approach angle each blink
+  const x = arenaClampX(t.x + Math.cos(a) * offset);
+  const y = arenaClampY(t.y + Math.sin(a) * offset);
+  return {
+    telegraphs: [
+      // The destination poof marker (summon-style dot) + the slam disc share the SAME spot.
+      { shape: TgShape.PointWarn, x, y, a: 30, danger: TELEGRAPH_DODGE, kindTag: 2 },
+      { shape: TgShape.Circle, x, y, a: radius, danger: TELEGRAPH_DODGE },
+    ],
+    emits: {
+      teleport: { x, y },
+      aoe: [{ x, y, radius, damage, knockback }],
+    },
+  };
+};
+
+/** The primitive registry. Slice 1 = emit casts; Slice 2 = the active-hazard casts (beam/ring/dash); Slice 3
+ *  = the melee trio's `meleeCombo` (parryable wedge) + `blinkStrike` (teleport slam). */
 export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   bulletFan,
   radialBurst,
@@ -504,6 +589,8 @@ export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   beamSweep,
   expandingRing,
   dashCharge,
+  meleeCombo,
+  blinkStrike,
 };
 
 /** Which telegraph danger a shape defaults to when a spec omits it (AoE/zones dodge; parryable only when

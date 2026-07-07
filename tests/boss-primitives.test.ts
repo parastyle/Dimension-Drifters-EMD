@@ -2,12 +2,14 @@ import {
   aimedVolley,
   BOSS_PRIMITIVES,
   beamSweep,
+  blinkStrike,
   bulletFan,
   corrosivePool,
   dashCharge,
   expandingRing,
   landingZone,
   makeRng,
+  meleeCombo,
   type PrimitiveCtx,
   pointInAnnulusGap,
   pointInOrientedRect,
@@ -16,6 +18,7 @@ import {
   spiral,
   summonAdds,
   TELEGRAPH_DODGE,
+  TELEGRAPH_PARRYABLE,
   TgShape,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -156,6 +159,43 @@ describe("active-hazard primitives (§16 Slice 2)", () => {
     expect(plan.emits.active?.rot0).toBeCloseTo(0, 5); // target straight right
     expect(plan.emits.active?.knockback).toBe(700);
   });
+
+  it("meleeCombo emits a PARRYABLE white cone + ONE melee arc aimed at the target (WYSIWYG co-located)", () => {
+    const plan = meleeCombo(
+      ctx({ params: { range: 200, halfArc: 0.7, damage: 15, knockback: 440 } }),
+    );
+    expect(plan.telegraphs).toHaveLength(1);
+    const tg = plan.telegraphs[0];
+    expect(tg?.shape).toBe(TgShape.Cone);
+    expect(tg?.danger).toBe(TELEGRAPH_PARRYABLE); // WHITE — parry it, don't dodge
+    expect(tg?.rot).toBeCloseTo(0, 5); // aimed straight right at the target
+    expect(plan.emits.melee).toHaveLength(1);
+    const m = plan.emits.melee?.[0];
+    // The cone telegraph and the melee arc share the boss origin + reach + aim (the mandatory rule).
+    expect(m?.x).toBe(tg?.x);
+    expect(m?.y).toBe(tg?.y);
+    expect(m?.range).toBe(200);
+    expect(m?.damage).toBe(15);
+  });
+
+  it("blinkStrike telegraphs a spot beside the target, teleports THERE, and slams the SAME spot", () => {
+    const plan = blinkStrike(
+      ctx({ params: { offset: 80, radius: 130, damage: 20, knockback: 620 } }),
+    );
+    // A poof marker + a slam disc, both at the destination; a teleport to that same spot; a slam aoe there.
+    expect(plan.telegraphs).toHaveLength(2);
+    const dest = plan.emits.teleport;
+    expect(dest).toBeDefined();
+    const disc = plan.telegraphs.find((t) => t.shape === TgShape.Circle);
+    expect(disc?.x).toBeCloseTo(dest?.x ?? -1, 5);
+    expect(disc?.y).toBeCloseTo(dest?.y ?? -1, 5);
+    expect(plan.emits.aoe?.[0]?.x).toBeCloseTo(dest?.x ?? -1, 5);
+    // The destination is within ~offset of the target (it strikes beside you, not across the map).
+    const target = { x: 1300, y: 1000 };
+    expect(Math.hypot((dest?.x ?? 0) - target.x, (dest?.y ?? 0) - target.y)).toBeLessThanOrEqual(
+      81,
+    );
+  });
 });
 
 describe("hazard geometry (§16 pure hit tests)", () => {
@@ -184,16 +224,18 @@ describe("primitive purity + registry", () => {
     }
   });
 
-  it("registers the full primitive set (Slice 1 emit casts + Slice 2 active hazards)", () => {
+  it("registers the full primitive set (Slice 1 emit casts + Slice 2 active hazards + Slice 3 melee/blink)", () => {
     expect(Object.keys(BOSS_PRIMITIVES).sort()).toEqual(
       [
         "aimedVolley",
         "beamSweep",
+        "blinkStrike",
         "bulletFan",
         "corrosivePool",
         "dashCharge",
         "expandingRing",
         "landingZone",
+        "meleeCombo",
         "radialBurst",
         "spiral",
         "summonAdds",

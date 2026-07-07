@@ -302,6 +302,45 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     renderScale: 1.3,
     ranged: { range: 700, preferredRange: 340, cooldown: 2, damage: 6, projectileSpeed: 320 },
   },
+  // §16 Slice 3 — Kaido the Parry-Dancer (CHARACTER). A relentless close-range duelist: he plants + swings
+  // PARRYABLE white arcs (parry-chain them) and mixes in red dash-lunges you must dodge. Fast, in-your-face.
+  kaido: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 170,
+    hp: 340,
+    radius: 26,
+    contactDamage: 6,
+    weight: 0,
+    xpValue: 40,
+    renderScale: 1.32,
+  },
+  // §16 Slice 3 — Nihil the Blink Assassin (CHARACTER). Teleports beside you and slams; peppers parryable
+  // shuriken between blinks. Watch the poof marker, vacate it. Fragile — punish the recovery.
+  nihil: {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 120,
+    hp: 300,
+    radius: 26,
+    contactDamage: 6,
+    weight: 0,
+    xpValue: 40,
+    renderScale: 1.28,
+  },
+  // §16 Slice 3 — Castor & Pollux the Blade Twins (CHARACTER). A twin-blade duelist that strikes with BOTH
+  // edges at once — paired dash lanes + a parryable cross-slash. Aggressive, two-danger-at-a-time pressure.
+  "blade-twins": {
+    sprite: "boothill",
+    archetype: "boss",
+    speed: 160,
+    hp: 380,
+    radius: 30,
+    contactDamage: 8,
+    weight: 0,
+    xpValue: 44,
+    renderScale: 1.4,
+  },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
   // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig

@@ -1725,6 +1725,15 @@ export class GameRoom extends Room<ArenaState> {
         },
         applyAoE: (x, y, radius, damage, knockback) =>
           this.applyBossAoE(x, y, radius, damage, knockback),
+        applyMelee: (x, y, aimX, aimY, range, halfArc, damage, knockback) =>
+          this.applyBossMelee(x, y, aimX, aimY, range, halfArc, damage, knockback),
+        moveBoss: (x, y) => {
+          const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
+          if (boss) {
+            boss.x = x;
+            boss.y = y;
+          }
+        },
         hostileProjectiles: () => {
           let n = 0;
           this.state.projectiles.forEach((p) => {
@@ -2440,60 +2449,9 @@ export class GameRoom extends Room<ArenaState> {
       if (!player.alive || this.inLevelWindow(player)) return;
       if (!inMeleeArc(enemy, aimX, aimY, player, m.range, m.halfArc)) return;
       const pc = this.combat.get(player.id);
-      if ((pc?.invuln ?? 0) > 0) {
-        // §8 PARRIED — negate + punish + FLOW: bump the feedback, refresh the parry cooldown so you can
-        // immediately parry the next swing (chain), and shove the attacker back hard.
-        player.parriedSeq = (player.parriedSeq + 1) % 100000;
-        const dx = enemy.x - player.x;
-        const dy = enemy.y - player.y;
-        const d = Math.hypot(dx, dy) || 1;
-        enemy.x = clamp(
-          enemy.x + (dx / d) * PARRY_KNOCKBACK * 1.6,
-          ENEMY_RADIUS,
-          ARENA_WIDTH - ENEMY_RADIUS,
-        );
-        enemy.y = clamp(
-          enemy.y + (dy / d) * PARRY_KNOCKBACK * 1.6,
-          ENEMY_RADIUS,
-          ARENA_HEIGHT - ENEMY_RADIUS,
-        );
-        if (pc) {
-          pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
-          // §20 Stage D — the parry LAUNCHES the parrier: an upward kick on the height axis (capped, so a
-          // chain stacks faster than gravity removes it = you ride the flurry UP), plus a horizontal shove
-          // along the attack vector (away from the attacker). Stop parrying → gravity reclaims you.
-          pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
-          const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
-          player.vx = k.vx;
-          player.vy = k.vy;
-          // §8 v0.114 PARRY COMBO: build the chain → heal a chain-scaled sliver, and once it reaches
-          // RIPOSTE_AT, STAGGER the parried attacker (break its flurry into a long recover) + an extra shove —
-          // parrying a combo turns from pure survival into tempo you seize.
-          pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
-          pc.parryChainT = PARRY_CHAIN_WINDOW;
-          player.hp = Math.min(
-            player.maxHp,
-            player.hp + PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS),
-          );
-          if (pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT) {
-            const est = this.comboState.get(enemyId);
-            if (est) {
-              est.phase = "recover";
-              est.t = 1; // interrupt: a full second of stagger before it can attack again
-              enemy.windup = 0;
-            }
-            enemy.x = clamp(
-              enemy.x + (dx / d) * PARRY_KNOCKBACK,
-              ENEMY_RADIUS,
-              ARENA_WIDTH - ENEMY_RADIUS,
-            );
-            enemy.y = clamp(
-              enemy.y + (dy / d) * PARRY_KNOCKBACK,
-              ENEMY_RADIUS,
-              ARENA_HEIGHT - ENEMY_RADIUS,
-            );
-          }
-        }
+      if (pc && pc.invuln > 0) {
+        // §8 PARRIED — negate + punish + FLOW + the v0.114 chain reward (shared with the boss meleeCombo).
+        this.resolveParry(player, pc, enemy, enemyId);
         return;
       }
       // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
@@ -2509,6 +2467,99 @@ export class GameRoom extends Room<ArenaState> {
       );
       player.vx = k.vx;
       player.vy = k.vy;
+    });
+  }
+
+  /** §8 apply a SUCCESSFUL parry of a telegraphed melee strike: negate + punish + FLOW + the v0.114 chain
+   *  reward. `attacker` is bump-knocked back; `attackerId` looks up its `comboState` for the high-chain
+   *  STAGGER (a boss has no comboState entry → no stagger, which is correct — bosses aren't stunlockable).
+   *  Shared by the horde duelist swing and the boss `meleeCombo` so the two parry paths can't drift. */
+  private resolveParry(
+    player: PlayerState,
+    pc: CombatState,
+    attacker: EnemyState,
+    attackerId: string,
+  ): void {
+    player.parriedSeq = (player.parriedSeq + 1) % 100000;
+    const dx = attacker.x - player.x;
+    const dy = attacker.y - player.y;
+    const d = Math.hypot(dx, dy) || 1;
+    attacker.x = clamp(
+      attacker.x + (dx / d) * PARRY_KNOCKBACK * 1.6,
+      ENEMY_RADIUS,
+      ARENA_WIDTH - ENEMY_RADIUS,
+    );
+    attacker.y = clamp(
+      attacker.y + (dy / d) * PARRY_KNOCKBACK * 1.6,
+      ENEMY_RADIUS,
+      ARENA_HEIGHT - ENEMY_RADIUS,
+    );
+    // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
+    // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
+    pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
+    pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+    const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
+    player.vx = k.vx;
+    player.vy = k.vy;
+    // §8 v0.114 PARRY COMBO: build the chain → heal a chain-scaled sliver, and at RIPOSTE_AT stagger the
+    // parried attacker (if it runs the combo machine) + an extra shove.
+    pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
+    pc.parryChainT = PARRY_CHAIN_WINDOW;
+    player.hp = Math.min(
+      player.maxHp,
+      player.hp + PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS),
+    );
+    if (pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT) {
+      const est = this.comboState.get(attackerId);
+      if (est) {
+        est.phase = "recover";
+        est.t = 1; // interrupt: a full second of stagger before it can attack again
+        attacker.windup = 0;
+      }
+      attacker.x = clamp(
+        attacker.x + (dx / d) * PARRY_KNOCKBACK,
+        ENEMY_RADIUS,
+        ARENA_WIDTH - ENEMY_RADIUS,
+      );
+      attacker.y = clamp(
+        attacker.y + (dy / d) * PARRY_KNOCKBACK,
+        ENEMY_RADIUS,
+        ARENA_HEIGHT - ENEMY_RADIUS,
+      );
+    }
+  }
+
+  /** §16 Slice 3 — resolve a PARRYABLE boss melee wedge (the `meleeCombo` primitive). Mirrors the horde
+   *  duelist swing: a player in the arc with parry i-frames PARRIES it (shared `resolveParry` reward),
+   *  otherwise takes the (already depth-scaled) hit + a knockback shove along the strike. */
+  private applyBossMelee(
+    x: number,
+    y: number,
+    aimX: number,
+    aimY: number,
+    range: number,
+    halfArc: number,
+    damage: number,
+    knockback: number,
+  ): void {
+    const origin = { x, y };
+    const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
+    this.state.players.forEach((player) => {
+      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!inMeleeArc(origin, aimX, aimY, player, range, halfArc)) return;
+      const pc = this.combat.get(player.id);
+      if (pc && pc.invuln > 0) {
+        if (boss && this.bossId) this.resolveParry(player, pc, boss, this.bossId);
+        else player.parriedSeq = (player.parriedSeq + 1) % 100000; // no body to knock — still flash the parry
+        return;
+      }
+      player.hp -= damage; // already depth-scaled by the controller
+      const hx = player.x - x;
+      const hy = player.y - y;
+      const hd = Math.hypot(hx, hy) || 1;
+      const kk = addImpulse(player, (hx / hd) * knockback, (hy / hd) * knockback);
+      player.vx = kk.vx;
+      player.vy = kk.vy;
     });
   }
 
