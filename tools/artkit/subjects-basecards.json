@@ -1,0 +1,79 @@
+[
+  {
+    "id": "x-sword-buzzsaw",
+    "name": "Buzzcutter",
+    "prompt": "Buzzcutter — a brutal circular-buzzsaw sword, a spinning toothed steel disc mounted on a stubby industrial haft, sparks + sawdust flinging off the whirring teeth.",
+    "palette": { "primary": "#b7bcc4", "accent": "#ffb02e" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-sword-anchor",
+    "name": "Drowned Anchor",
+    "prompt": "Drowned Anchor — a massive barnacle-crusted ship's anchor swung as a greatsword, rusted iron flukes trailing kelp and brine, immense and blunt.",
+    "palette": { "primary": "#5b7a78", "accent": "#c9a24b" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-sword-coffin",
+    "name": "Reaper's Lid",
+    "prompt": "Reaper's Lid — a coffin-lid slab wielded as a greatblade, weathered nailed planks edged in cold iron, funereal and heavy.",
+    "palette": { "primary": "#6b5842", "accent": "#8f9aa3" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-sword-railspike",
+    "name": "Spike Driver",
+    "prompt": "Spike Driver — a rail-spike maul-sword, a long iron railroad spike forged into a piercing blade on a hammer haft, industrial and merciless.",
+    "palette": { "primary": "#7d7369", "accent": "#c25a2e" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-sword-neon-katana",
+    "name": "Voltedge",
+    "prompt": "Voltedge — a neon-lit katana, its monomolecular blade crackling with electric-cyan energy along a hairline edge, sleek and futuristic.",
+    "palette": { "primary": "#2a2f3a", "accent": "#33e6ff" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-sword-bone",
+    "name": "Wyrmtooth",
+    "prompt": "Wyrmtooth — a jagged fang-blade carved from a dragon's tooth, ivory bone serrated and cruel with a sinew-wrapped grip, primal.",
+    "palette": { "primary": "#e6ddc4", "accent": "#a2402e" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-gun-revolver-cannon",
+    "name": "Revolver Cannon",
+    "prompt": "Revolver Cannon — an oversized break-action hand cannon, a fat rotating cylinder and a stubby wide muzzle, hefty gunmetal with brass fittings, smoking.",
+    "palette": { "primary": "#4a4e57", "accent": "#c9a24b" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-gun-coffin-shotgun",
+    "name": "Coffin Shotgun",
+    "prompt": "Coffin Shotgun — a sawn-off double-barrel shotgun clad in coffin-wood and iron nails, funereal and blunt, wisps of powder-smoke at the muzzles.",
+    "palette": { "primary": "#5a4a3a", "accent": "#8f9aa3" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-gun-gatling",
+    "name": "Gatling",
+    "prompt": "Gatling — a hand-cranked multi-barrel gatling gun, a spinning cluster of gunmetal barrels on a brass frame, belt-fed and ferocious, muzzle glow.",
+    "palette": { "primary": "#4a4e57", "accent": "#ffb02e" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-gun-nailgun",
+    "name": "Nailgun",
+    "prompt": "Nailgun — a pneumatic industrial nailgun repurposed as a weapon, a boxy body with a nail magazine and a compressed-air hose, spitting bright nails.",
+    "palette": { "primary": "#6a6f78", "accent": "#e2b93b" },
+    "tags": ["weapon"]
+  },
+  {
+    "id": "x-gun-ricochet-pistol",
+    "name": "Ricochet Pistol",
+    "prompt": "Ricochet Pistol — a sleek trick-shot revolver with a polished chrome barrel and angled deflector fins, rounds sparking off ricochet lines, showy.",
+    "palette": { "primary": "#8c929c", "accent": "#33e6ff" },
+    "tags": ["weapon"]
+  }
+]

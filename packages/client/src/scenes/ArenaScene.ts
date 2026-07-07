@@ -395,7 +395,7 @@ export class ArenaScene extends Phaser.Scene {
     // never queue 404s that flood the console and bury real errors. Expansion cards also load on-demand.
     for (const id of CARD_ART_IDS) {
       if (WEAPONS[id]?.expansion) continue;
-      this.load.image(`card-${id}`, `cards/${id}.png`);
+      this.load.image(`card-${id}`, `cards/${id}.jpg`);
     }
     // Authored per-weapon VFX assets — painted hero skins + scatter sheets (§14 CODE-8).
     VfxPlayer.preloadAssets(this);
