@@ -1,0 +1,32 @@
+[
+  {
+    "id": "kaido",
+    "name": "Kaido the Parry-Dancer",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Kaido the Parry-Dancer — a CHARACTER-SIZED wiry duelist BOSS (roughly a normal enemy's height, NOT enlarged), limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140), poised mid-stance. A lean slate-blue ronin-coat body with a crisp white sash and a topknot nub. Detached blob hands float clear OUTSIDE the silhouette, ONE gripping a long straight katana angled ready, the other open in a duelist's guard, each with a flat-green gap around it. Detached blob feet below in a wide bladed stance (one forward). ~5 colours (slate-blue coat, white sash, pale steel katana, dark-indigo shadow, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked slash-arc, NO glow, NO VFX — calm and coiled.",
+    "palette": { "primary": "#41506B", "accent": "#EDEDED" },
+    "tags": ["enemy", "boss", "character", "wild-west"]
+  },
+  {
+    "id": "nihil",
+    "name": "Nihil the Blink Assassin",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Nihil the Blink Assassin — a CHARACTER-SIZED lithe assassin BOSS (roughly a normal enemy's height, NOT enlarged), limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140), crouched to spring. A slim near-black shadow-cloak body with a thin violet-glow visor slit and a hood nub. Detached blob hands float clear OUTSIDE the silhouette, BOTH holding short curved tanto knives reversed-grip, with a flat-green gap around each. Detached blob feet below light on the toes. ~5 colours (near-black cloak, dark-charcoal folds, muted violet visor, cold-grey blades, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked smoke, NO teleport-trail, NO glow beyond the thin visor line, NO VFX.",
+    "palette": { "primary": "#1B1A24", "accent": "#7C5BD6" },
+    "tags": ["enemy", "boss", "character", "wild-west"]
+  },
+  {
+    "id": "blade-twins",
+    "name": "Castor & Pollux the Blade Twins",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Castor & Pollux the Blade Twins — a CHARACTER-SIZED twin-blade duelist BOSS (roughly a normal enemy's height, slightly broad, NOT enlarged), limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140), aggressive lean. A crimson-and-bone fencer body split down the middle — one half deep crimson, the other bone-white (mirror twins fused) — with a small twin-comet crest nub on top. Detached blob hands float clear OUTSIDE the silhouette, EACH gripping a slender rapier crossed outward (two blades at once), with a flat-green gap around each. Detached blob feet below in a lunging fencer stance. ~6 colours (deep crimson half, bone-white half, pale steel rapiers, dark-maroon shadow, gold crest, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked slash-arcs, NO glow, NO VFX.",
+    "palette": { "primary": "#8A2C2C", "accent": "#E8E2D0" },
+    "tags": ["enemy", "boss", "character", "wild-west"]
+  }
+]

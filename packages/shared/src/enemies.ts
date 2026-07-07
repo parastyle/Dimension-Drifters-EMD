@@ -305,7 +305,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // §16 Slice 3 — Kaido the Parry-Dancer (CHARACTER). A relentless close-range duelist: he plants + swings
   // PARRYABLE white arcs (parry-chain them) and mixes in red dash-lunges you must dodge. Fast, in-your-face.
   kaido: {
-    sprite: "boothill",
+    sprite: "kaido", // §16 v0.117 bespoke art harvest-installed
     archetype: "boss",
     speed: 170,
     hp: 340,
@@ -318,7 +318,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // §16 Slice 3 — Nihil the Blink Assassin (CHARACTER). Teleports beside you and slams; peppers parryable
   // shuriken between blinks. Watch the poof marker, vacate it. Fragile — punish the recovery.
   nihil: {
-    sprite: "boothill",
+    sprite: "nihil", // §16 v0.117 bespoke art harvest-installed
     archetype: "boss",
     speed: 120,
     hp: 300,
@@ -331,7 +331,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // §16 Slice 3 — Castor & Pollux the Blade Twins (CHARACTER). A twin-blade duelist that strikes with BOTH
   // edges at once — paired dash lanes + a parryable cross-slash. Aggressive, two-danger-at-a-time pressure.
   "blade-twins": {
-    sprite: "boothill",
+    sprite: "blade-twins", // §16 v0.117 bespoke art harvest-installed
     archetype: "boss",
     speed: 160,
     hp: 380,
