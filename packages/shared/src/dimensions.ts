@@ -44,7 +44,16 @@ const WILD_WEST: DimensionDef = {
   id: "wild-west",
   name: "Wild West",
   tagline: "Dust, rust, and the drop.",
-  roster: ["critter", "mote-swarm", "pricklepulp", "boothill", "ronin", "gatlin"],
+  roster: [
+    "critter",
+    "mote-swarm",
+    "pricklepulp",
+    "boothill",
+    "ronin",
+    "gatlin",
+    "vault-ronin",
+    "dust-ranger",
+  ],
   boss: "old-rust",
   hazard: {
     name: "Pitfall mineshafts",

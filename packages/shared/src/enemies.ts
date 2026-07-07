@@ -41,8 +41,20 @@ export interface EnemyKind {
   /** Sprite manifest id (matches an installed harvest-sliced sprite). */
   sprite: string;
   /** Behavioral archetype (§15). `dummy` = stationary training target (§21); `boss` = §16 OLD RUST;
-   *  `duelist` = a melee swordsman that closes, telegraphs, then strings a COMBO (see `melee`). */
-  archetype: "rusher" | "swarm" | "zoner" | "spitter" | "tough" | "duelist" | "dummy" | "boss";
+   *  `duelist` = a melee swordsman that closes, telegraphs, then strings a COMBO (see `melee`); `leaper`
+   *  (v0.113) = an elite that LEAPS to a telegraphed spot to announce its combo (see `leap`); `ranger`
+   *  (v0.113) = a kiting shooter that DODGE-ROLLS away when you close (see `dodge`). */
+  archetype:
+    | "rusher"
+    | "swarm"
+    | "zoner"
+    | "spitter"
+    | "tough"
+    | "duelist"
+    | "leaper"
+    | "ranger"
+    | "dummy"
+    | "boss";
   /** Render-size multiplier (§28.6: bosses/toughs are BIGGER, not more detailed). Default 1. */
   renderScale?: number;
   /** Move speed, px/sec. */
@@ -98,6 +110,25 @@ export interface EnemyKind {
     recover: number;
     /** §20 forward LUNGE distance (px) on each strike — the "steps forward each attack" advance. */
     step: number;
+  };
+  /** §15 v0.113 LEAP — a `leaper` elite closes to `range`, then telegraphs a red landing marker at the
+   *  target's spot (`windup` sec, an UNPARRYABLE dodge cue), LEAPS there over `airTime` sec, and on landing
+   *  immediately strings its `melee` combo. The leap ANNOUNCES the combo: clear the marker or eat the flurry.
+   *  `range` is the max distance it will commit a leap from; `cooldown` sec between leaps. */
+  leap?: {
+    range: number;
+    windup: number;
+    airTime: number;
+    cooldown: number;
+  };
+  /** §15 v0.113 DODGE-ROLL — a `ranger` kites + fires, but when a player closes within `range` (and the
+   *  `cooldown` is up) it ROLLS `distance` px away from the threat over `duration` sec (a fast evasive burst),
+   *  so it's slippery to pin down. Pure repositioning (no i-frames) — the payoff is catching it mid-roll. */
+  dodge?: {
+    range: number;
+    distance: number;
+    duration: number;
+    cooldown: number;
   };
   /** §9/§15 the enemy visibly WIELDS this weapon id (held-sprite on its rig, swung on each combo hit). */
   wieldsWeapon?: string;
@@ -321,6 +352,54 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       projectileSpeed: 320,
       spread: { count: 5, arc: 0.85 }, // 5-pellet cone, ~49° wide
     },
+  },
+  // §15 v0.113 VAULT-RONIN — a leaping duelist ELITE. Closes, then LEAPS to a telegraphed landing spot on
+  // you (announcing the combo), and on landing strings a fast 3-hit parryable flurry. Rare special threat.
+  "vault-ronin": {
+    sprite: "boothill",
+    archetype: "leaper",
+    renderScale: 1.22,
+    speed: 150,
+    hp: 44,
+    radius: 22,
+    contactDamage: 0, // attacks via the combo, not touch
+    weight: 0.55,
+    xpValue: 13,
+    wieldsWeapon: "x-sword-neon-katana",
+    dropWeapon: 0.3,
+    melee: {
+      approach: 140,
+      range: 140,
+      halfArc: 0.95,
+      damage: 12,
+      hits: 3,
+      windup: 0.46,
+      swingGap: 0.3,
+      recover: 0.85,
+      step: 66,
+    },
+    leap: { range: 540, windup: 0.5, airTime: 0.28, cooldown: 3.4 },
+  },
+  // §15 v0.113 DUST-RANGER — a kiting gunslinger that DODGE-ROLLS away when you close, so it's slippery to
+  // pin. Punishes lazy approach; reward = catch it mid-roll or corner it. A special threat, not horde filler.
+  "dust-ranger": {
+    sprite: "boothill",
+    archetype: "ranger",
+    renderScale: 1.15,
+    speed: 158,
+    hp: 40,
+    radius: 22,
+    contactDamage: 4,
+    weight: 0.55,
+    xpValue: 12,
+    ranged: {
+      range: 640,
+      preferredRange: 380,
+      cooldown: 1.35,
+      damage: 9,
+      projectileSpeed: 350,
+    },
+    dodge: { range: 250, distance: 230, duration: 0.26, cooldown: 2.6 },
   },
   // Training dummy (§21) — stationary, harmless, lots of HP (resets on depletion). weight 0 =
   // never chosen by the spawn director; only placed in Testing Grounds mode.

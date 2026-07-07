@@ -1966,6 +1966,8 @@ export class ArenaScene extends Phaser.Scene {
     { id: "boothill", label: "Boothill (spitter)" },
     { id: "gatlin", label: "Gatlin (scatter)" },
     { id: "ronin", label: "Ronin (duelist)" },
+    { id: "vault-ronin", label: "Vault-Ronin (leaper)" },
+    { id: "dust-ranger", label: "Dust-Ranger (dodge)" },
     { id: "old-rust", label: "OLD RUST (boss)" },
   ];
 

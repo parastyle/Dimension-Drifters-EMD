@@ -291,7 +291,23 @@ export class GameRoom extends Room<ArenaState> {
    *  now telegraphs (no standalone "swing" phase). Pruned with the enemy. */
   private readonly comboState = new Map<
     string,
-    { phase: "idle" | "windup" | "recover"; t: number; hits: number; wind: number }
+    {
+      phase: "idle" | "leapwind" | "leap" | "windup" | "recover";
+      t: number;
+      hits: number;
+      wind: number;
+      // §15 v0.113 LEAP (leaper elites): landing spot, the synced marker id, and the leap cooldown.
+      lx?: number;
+      ly?: number;
+      tg?: string;
+      leapCd?: number;
+    }
+  >();
+  /** §15 v0.113 DODGE-ROLL state per ranger id: `cd` = seconds until it can roll again, `t` = seconds left
+   *  in the current roll (>0 = rolling), `dx/dy` = the roll direction. Pruned with the enemy. */
+  private readonly dodgeState = new Map<
+    string,
+    { cd: number; t: number; dx: number; dy: number }
   >();
   /** §20 WYSIWYG melee: in-flight swept-blade swings per player id. A swing lives for its `active` window;
    *  `stepMeleeSwings` sweeps the blade across `swingArc` from `aim0` and edge-hits each enemy ONCE (`hit`).
@@ -640,10 +656,12 @@ export class GameRoom extends Room<ArenaState> {
     this.zonerDropCd.clear();
     this.zoneMeta.clear();
     this.comboState.clear();
+    this.dodgeState.clear(); // §15 v0.113
     this.meleeSwings.clear();
     this.pickupGrace.clear();
     this.earnedPickups.clear();
     this.burnPulses.length = 0;
+    this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
   }
 
   /** §13 v0.106 (A11) spawn the player's currently-held weapon on the floor as a grabbable pickup in front
@@ -1251,6 +1269,9 @@ export class GameRoom extends Room<ArenaState> {
 
     // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
+    for (const id of [...this.dodgeState.keys()]) {
+      if (!this.state.enemies.has(id)) this.dodgeState.delete(id);
+    }
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
       // §20 lunge-enemies (duelists + the derived rusher/swarm/zoner lunge) move via stepDuelists; this
@@ -1258,6 +1279,34 @@ export class GameRoom extends Room<ArenaState> {
       // its BossController (which owns movement), so skip it here to avoid a double-move.
       if (!kind || effectiveMelee(kind) || id === this.bossId) return;
       const target = nearestPoint(enemy, bodies);
+      // §15 v0.113 DODGE-ROLL (rangers): if a player has closed inside `dodge.range` and the roll is off
+      // cooldown, burst AWAY from them for `duration` sec — evasive repositioning that overrides the kite.
+      if (kind.dodge) {
+        const ds = this.dodgeState.get(id) ?? { cd: 0, t: 0, dx: 0, dy: 0 };
+        ds.cd = Math.max(0, ds.cd - dt);
+        const nd = target
+          ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
+          : Number.POSITIVE_INFINITY;
+        if (ds.t <= 0 && ds.cd <= 0 && target && nd < kind.dodge.range) {
+          const ax = enemy.x - target.x;
+          const ay = enemy.y - target.y;
+          const al = Math.hypot(ax, ay) || 1;
+          ds.dx = ax / al;
+          ds.dy = ay / al;
+          ds.t = kind.dodge.duration;
+          ds.cd = kind.dodge.cooldown + kind.dodge.duration;
+        }
+        if (ds.t > 0) {
+          ds.t -= dt;
+          const rollSpeed = kind.dodge.distance / kind.dodge.duration;
+          const r = kind.radius;
+          enemy.x = clamp(enemy.x + ds.dx * rollSpeed * dt, r, ARENA_WIDTH - r);
+          enemy.y = clamp(enemy.y + ds.dy * rollSpeed * dt, r, ARENA_HEIGHT - r);
+          this.dodgeState.set(id, ds);
+          return; // rolling — skip the normal kite this tick
+        }
+        this.dodgeState.set(id, ds);
+      }
       const next = kind.ranged
         ? stepEnemyKite(
             { x: enemy.x, y: enemy.y },
@@ -1679,6 +1728,41 @@ export class GameRoom extends Room<ArenaState> {
       };
     }
     return this._bossSink;
+  }
+
+  /** §16/§15 v0.113 create a synced telegraph row (used by boss casts AND enemy leaps). Returns its id. */
+  private addTelegraphRow(
+    shape: number,
+    x: number,
+    y: number,
+    a: number,
+    danger: number,
+    kindTag: number,
+  ): string {
+    const t = new TelegraphState();
+    t.id = `tg${this.telegraphSeq++}`;
+    t.shape = shape;
+    t.x = x;
+    t.y = y;
+    t.a = a;
+    t.b = 0;
+    t.rot = 0;
+    t.t = 0;
+    t.danger = danger;
+    t.kindTag = kindTag;
+    this.state.telegraphs.set(t.id, t);
+    return t.id;
+  }
+
+  /** Set a telegraph row's fill progress 0→1. */
+  private setTelegraphRowProgress(id: string, prog: number): void {
+    const row = this.state.telegraphs.get(id);
+    if (row) row.t = prog;
+  }
+
+  /** Remove a telegraph row (the client edge-fires its impact VFX if it had filled). */
+  private removeTelegraphRow(id: string): void {
+    this.state.telegraphs.delete(id);
   }
 
   /** §16 an unparryable radius AoE (the generalised punch-slam): flat damage + a hard radial knockback to
@@ -2199,7 +2283,11 @@ export class GameRoom extends Room<ArenaState> {
    *  an arc hit toward the nearest player), then `recover`. Movement + the combo state machine. */
   private stepDuelists(dt: number, bodies: Vec2[]): void {
     for (const id of [...this.comboState.keys()]) {
-      if (!this.state.enemies.has(id)) this.comboState.delete(id);
+      if (!this.state.enemies.has(id)) {
+        const dead = this.comboState.get(id);
+        if (dead?.tg) this.removeTelegraphRow(dead.tg); // §15 v0.113 a leaper killed mid-leap: clear its marker
+        this.comboState.delete(id);
+      }
     }
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
@@ -2229,9 +2317,50 @@ export class GameRoom extends Room<ArenaState> {
         enemy.y = next.y;
       }
       st.t -= dt;
+      const leap = kind.leap;
       if (st.phase === "idle") {
-        if (target && dist <= m.approach) {
+        st.leapCd = Math.max(0, (st.leapCd ?? 0) - dt);
+        if (leap && target && (st.leapCd ?? 0) <= 0 && dist > m.approach && dist <= leap.range) {
+          // §15 v0.113 LEAP: commit — telegraph a red landing marker ON the target (announcing the combo),
+          // then vault there and flurry on landing. Clear the marker or eat it.
+          st.lx = target.x;
+          st.ly = target.y;
+          st.tg = this.addTelegraphRow(0, st.lx, st.ly, m.range, 1, 2); // circle · dodge-red · light-poof land
+          st.phase = "leapwind";
+          st.t = leap.windup;
+        } else if (target && dist <= m.approach) {
           st.phase = "windup"; // begin the first telegraphed strike
+          st.hits = m.hits;
+          st.wind = m.windup;
+          st.t = m.windup;
+        }
+      } else if (st.phase === "leapwind") {
+        // Winding up the leap in place — fill the landing marker so the dodge window reads.
+        if (st.tg && leap)
+          this.setTelegraphRowProgress(st.tg, Math.max(0, Math.min(1, 1 - st.t / leap.windup)));
+        if (st.t <= 0) {
+          st.phase = "leap";
+          st.t = leap?.airTime ?? 0.28;
+        }
+      } else if (st.phase === "leap") {
+        // Airborne: cover the remaining distance to the landing spot over the remaining air time.
+        if (st.lx !== undefined && st.ly !== undefined) {
+          const dx = st.lx - enemy.x;
+          const dy = st.ly - enemy.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const remain = Math.max(dt, st.t + dt); // distance ÷ time-left = the speed to arrive on schedule
+          const stepD = Math.min(d, (d / remain) * dt);
+          const r = kind.radius;
+          enemy.x = clamp(enemy.x + (dx / d) * stepD, r, ARENA_WIDTH - r);
+          enemy.y = clamp(enemy.y + (dy / d) * stepD, r, ARENA_HEIGHT - r);
+        }
+        if (st.t <= 0) {
+          if (st.tg) {
+            this.removeTelegraphRow(st.tg);
+            st.tg = undefined;
+          }
+          st.leapCd = leap?.cooldown ?? 3;
+          st.phase = "windup"; // LAND → the combo begins
           st.hits = m.hits;
           st.wind = m.windup;
           st.t = m.windup;
