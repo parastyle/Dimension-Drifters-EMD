@@ -2656,6 +2656,9 @@ export class ArenaScene extends Phaser.Scene {
     const rig = selfId ? this.blobs.get(selfId) : undefined;
     const sx = rig?.x ?? self?.x ?? 0;
     const sy = rig?.y ?? self?.y ?? 0;
+    // §16 v0.117 Polish B — a gentle wind SWAY: the bottom-origin landmarks lean ±~1° on a slow sine, each
+    // offset by its position so they don't sway in lockstep. Subtle enough to read as wind, not a wobble.
+    const sway = this.time.now / 1000;
     for (const p of this.poiSprites) {
       let target = 1;
       if (self?.alive) {
@@ -2665,6 +2668,7 @@ export class ArenaScene extends Phaser.Scene {
         if (sy < p.y && sy > top && Math.abs(sx - p.x) < halfW) target = 0.45;
       }
       p.img.alpha = Phaser.Math.Linear(p.img.alpha, target, 0.18);
+      p.img.rotation = Math.sin(sway * 0.6 + p.x * 0.013) * 0.018;
     }
   }
 
