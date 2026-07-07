@@ -1,0 +1,42 @@
+[
+  {
+    "id": "nul-sightline",
+    "name": "Nul the Sightline",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Nul the Sightline — a LARGE sentinel BOSS, limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140). A bulbous dark-violet body DOMINATED by one huge lidless eye (pale-cyan iris, black slit pupil, off-white sclera), on a short thick stalk-neck at the base. Detached small blob hands float clear OUTSIDE the silhouette low at the sides, defensive, with a flat-green gap around each. Tiny detached blob feet below. Head-heavy and imposing, ~2.7x a normal enemy. ~5 colours (dark violet, pale cyan eye, off-white sclera, muted magenta shadow, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked beam, NO glow, NO VFX — the eye is calm and closed-lipped.",
+    "palette": { "primary": "#3A2E55", "accent": "#7FE6FF" },
+    "tags": ["enemy", "boss", "large", "wild-west"]
+  },
+  {
+    "id": "metronome",
+    "name": "The Metronome",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "The Metronome — a LARGE floating clockwork-heart BOSS, limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140). A burnished-brass body shaped like a rounded heart/bell with a single central clock-face on the belly (Roman-numeral ticks, one hand) and a wind-key nub on top. Detached small brass blob hands float clear OUTSIDE the silhouette, poised like a conductor's, with a flat-green gap around each. Minimal detached blob feet. Imposing, ~2.7x a normal enemy, floating. ~5 colours (warm brass, darker bronze shadow, cream clock-face, deep-red heart-core accent, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked glow, NO rings, NO VFX.",
+    "palette": { "primary": "#B8860B", "accent": "#C7402E" },
+    "tags": ["enemy", "boss", "large", "wild-west"]
+  },
+  {
+    "id": "grull",
+    "name": "Grull the Unchained",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Grull the Unchained — a LARGE hunched brute BOSS, limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140), leaning forward mid-charge. A massive rounded bruised-grey-green pill torso with cream tusks and a deep-red scar accent. Detached HUGE clenched blob fists float clear OUTSIDE the silhouette dragging low, one trailing a broken rust-brown chain, with a flat-green gap around each. Oversized splayed detached blob feet below in a charging stance. Immense, ~2.6x a normal enemy. ~6 colours (bruised grey-green hide, dark iron shackle-cuffs, rust-brown chain, cream tusks, deep-red scar, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked glow, NO dust VFX.",
+    "palette": { "primary": "#5B6B57", "accent": "#B5462E" },
+    "tags": ["enemy", "boss", "large", "wild-west"]
+  },
+  {
+    "id": "quickdraw-vane",
+    "name": "Quickdraw Vane",
+    "tier": "boss",
+    "dimension": "wild-west",
+    "styleRef": "out/drifter/identity-ref.png",
+    "prompt": "Quickdraw Vane — a CHARACTER-SIZED wiry gunslinger BOSS (roughly a normal enemy's height, NOT enlarged), limbless pill-blob construction, side-on facing RIGHT on flat green (#00b140), mid-strafe. A dusty-tan duster body with a dark-brown hat brim and a teal bandana. Detached blob hands float clear OUTSIDE the silhouette, BOTH holding stubby gunmetal revolvers angled outward, with a flat-green gap around each. Detached blob feet below mid-stride (one lifted). ~5 colours (dusty tan duster, dark-brown hat brim, teal bandana, gunmetal revolvers, gold cartridge-belt accent, black outline); bold uniform black outline, flat cel shading, two-tone. NO baked muzzle-flash, NO glow, NO VFX.",
+    "palette": { "primary": "#C2A26B", "accent": "#2E8B8B" },
+    "tags": ["enemy", "boss", "character", "wild-west"]
+  }
+]

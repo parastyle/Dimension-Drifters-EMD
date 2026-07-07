@@ -12,11 +12,13 @@ import type { Vec2 } from "./movement.js";
 
 /** Seconds the blade stays "live" and sweeping after a swing fires (clamped to the weapon's cooldown). */
 export const MELEE_SWING_ACTIVE = 0.18;
-/** Blade half-thickness (px). Generous enough that a graze along the flat counts, tight off the line. */
-export const MELEE_BLADE_HALFWIDTH = 16;
+/** Blade half-thickness (px). §20 v0.114 beefed 16→21 — a graze along the flat connects; fewer "looked like
+ *  a hit" whiffs. Generous but still tight off the line. */
+export const MELEE_BLADE_HALFWIDTH = 21;
 /** Max angular gap (rad) between super-sampled blade tests — keeps the swept band continuous between the
- *  20Hz ticks (a long blade at a wide arc would otherwise leave holes a small enemy could sit in). */
-export const MELEE_SAMPLE_STEP = 0.12;
+ *  20Hz ticks (a long blade at a wide arc would otherwise leave holes a small enemy could sit in). §20 v0.114
+ *  tightened 0.12→0.08 so a fast wide swing can't skip over a small enemy between samples. */
+export const MELEE_SAMPLE_STEP = 0.08;
 
 /** Effective swing-active window for a weapon: the blade can't stay live past its own cooldown (else a fast
  *  weapon's swings would overlap and the per-swing hit-set would never reset cleanly). */

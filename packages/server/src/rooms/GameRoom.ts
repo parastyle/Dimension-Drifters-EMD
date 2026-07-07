@@ -88,6 +88,10 @@ import {
   nextWeapon,
   PARRY_BUFFER_SECONDS,
   PARRY_CHAIN_CD,
+  PARRY_CHAIN_HEAL,
+  PARRY_CHAIN_HEAL_MAX_STACKS,
+  PARRY_CHAIN_RIPOSTE_AT,
+  PARRY_CHAIN_WINDOW,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
   PARRY_KNOCKBACK,
@@ -230,6 +234,11 @@ interface CombatState {
   hairStreak: number;
   /** §8 Hair-Trigger: run-elapsed (sec) of the last parry, for the streak window. */
   lastParryAt: number;
+  /** §8 v0.114 PARRY COMBO chain (independent of the Hair-Trigger augment): consecutive successful parries
+   *  within `PARRY_CHAIN_WINDOW`. Each parry heals a chain-scaled sliver + (at RIPOSTE_AT) ripostes the
+   *  attacker. `parryChainT` = seconds left before the chain lapses. */
+  parryChain: number;
+  parryChainT: number;
   /** §13 salvage PROVENANCE (v0.103 anti-exploit): true only while the held weapon traces back to an
    *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
    *  cycle→salvage loop can't mint bankable salvage from thin air. */
@@ -977,6 +986,8 @@ export class GameRoom extends Room<ArenaState> {
       pitGrace: 0,
       hairStreak: 0,
       lastParryAt: -999,
+      parryChain: 0,
+      parryChainT: 0,
       vh: 0,
       heldEarned: false,
     });
@@ -1186,6 +1197,8 @@ export class GameRoom extends Room<ArenaState> {
       c.cd = Math.max(-dt, c.cd - dt);
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
+      c.parryChainT = Math.max(0, c.parryChainT - dt);
+      if (c.parryChainT <= 0) c.parryChain = 0; // §8 v0.114 the parry chain lapses if you don't keep it up
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
@@ -2370,7 +2383,7 @@ export class GameRoom extends Room<ArenaState> {
           // Strike: LUNGE forward (capped so it stops at sword's length, never stacks on the player), swing,
           // then either telegraph the next hit (swingGap) or recover.
           this.duelistLunge(enemy, target, m, dist);
-          this.duelistSwing(enemy, target, m);
+          this.duelistSwing(enemy, id, target, m);
           st.hits -= 1;
           if (st.hits > 0) {
             st.phase = "windup";
@@ -2415,6 +2428,7 @@ export class GameRoom extends Room<ArenaState> {
    *  and `parriedSeq` ticks the client's white parry flash. (The parry's augment offense already fired.) */
   private duelistSwing(
     enemy: EnemyState,
+    enemyId: string,
     target: Vec2 | null,
     m: { range: number; halfArc: number; damage: number },
   ): void {
@@ -2452,6 +2466,33 @@ export class GameRoom extends Room<ArenaState> {
           const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
           player.vx = k.vx;
           player.vy = k.vy;
+          // §8 v0.114 PARRY COMBO: build the chain → heal a chain-scaled sliver, and once it reaches
+          // RIPOSTE_AT, STAGGER the parried attacker (break its flurry into a long recover) + an extra shove —
+          // parrying a combo turns from pure survival into tempo you seize.
+          pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
+          pc.parryChainT = PARRY_CHAIN_WINDOW;
+          player.hp = Math.min(
+            player.maxHp,
+            player.hp + PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS),
+          );
+          if (pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT) {
+            const est = this.comboState.get(enemyId);
+            if (est) {
+              est.phase = "recover";
+              est.t = 1; // interrupt: a full second of stagger before it can attack again
+              enemy.windup = 0;
+            }
+            enemy.x = clamp(
+              enemy.x + (dx / d) * PARRY_KNOCKBACK,
+              ENEMY_RADIUS,
+              ARENA_WIDTH - ENEMY_RADIUS,
+            );
+            enemy.y = clamp(
+              enemy.y + (dy / d) * PARRY_KNOCKBACK,
+              ENEMY_RADIUS,
+              ARENA_HEIGHT - ENEMY_RADIUS,
+            );
+          }
         }
         return;
       }

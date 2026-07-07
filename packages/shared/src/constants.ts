@@ -247,7 +247,7 @@ export const FISTS_COOLDOWN = 0.32;
  */
 export const PROJECTILE_SPEED = 300;
 export const PROJECTILE_DAMAGE = 8;
-export const PROJECTILE_RADIUS = 9;
+export const PROJECTILE_RADIUS = 10; // §20 v0.114 beefed a touch for more reliable hit registration
 /** Seconds a projectile lives before expiring (also culled at the arena edge). */
 export const PROJECTILE_TTL = 3.5;
 
@@ -391,17 +391,26 @@ export const EXTRACT_RADIUS = 90;
 
 /** Parry — the melee LMB signature (§7/§8). Base effect = i-frames + knockback; the parry *augments*
  *  (§12) are deferred — no telegraphed enemy attacks yet, so for now it's a defensive panic button. (tuning) */
-export const PARRY_IFRAMES = 0.45;
+export const PARRY_IFRAMES = 0.52; // §8 v0.114 EASE — a wider window so the parry timing is forgiving
 export const PARRY_COOLDOWN = 0.6;
 export const PARRY_RADIUS = 135;
 export const PARRY_KNOCKBACK = 96;
+/** §8 v0.114 PARRY COMBO: consecutive parries within `WINDOW` sec build a chain; each parry heals `HEAL`
+ *  (× the chain, capped by `HEAL_MAX_STACKS`), and once the chain reaches `RIPOSTE_AT` every parry fires a
+ *  `RIPOSTE_DMG` counter-strike into the parried attacker — parrying a flurry becomes offense, not just
+ *  survival. A dropped chain (window lapses) resets to 0. (tuning) */
+export const PARRY_CHAIN_WINDOW = 1.4;
+export const PARRY_CHAIN_HEAL = 3;
+export const PARRY_CHAIN_HEAL_MAX_STACKS = 5;
+export const PARRY_CHAIN_RIPOSTE_AT = 3;
+export const PARRY_RIPOSTE_DMG = 16;
 /** §7 v0.105 de-clunk — INPUT BUFFER windows (sec). The 20Hz tick + client cooldown gating means a press
  *  that lands one tick before the server cooldown clears used to be silently EATEN (a visible swing/brace
  *  that did nothing). Instead a press is QUEUED for this long and fires the instant the cooldown drains —
  *  the "held trigger" and off-grid melee cadences stop dropping hits, and a chain-parry press that beats
  *  the round-trip is honoured. Small so it never fires a stale attack a beat after you let go. */
 export const ATTACK_BUFFER_SECONDS = 0.15;
-export const PARRY_BUFFER_SECONDS = 0.15;
+export const PARRY_BUFFER_SECONDS = 0.2; // §8 v0.114 EASE — a slightly wider buffer so early presses land
 /** §8 parry FLOW (Stage C): a SUCCESSFUL parry of a telegraphed attack refreshes the cooldown to this small
  *  value (vs the full PARRY_COOLDOWN miss-penalty), so you can immediately parry the next swing — that's how
  *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */

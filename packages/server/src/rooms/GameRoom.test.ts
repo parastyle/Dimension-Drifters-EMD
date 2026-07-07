@@ -8,6 +8,7 @@ import {
   getDimension,
   isPitAtPx,
   makeRng,
+  PARRY_CHAIN_RIPOSTE_AT,
   PARRY_IFRAMES,
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
@@ -317,6 +318,37 @@ describe("GameRoom — §20 universal lunge", () => {
     h.state().enemies.set("lunger2", e);
     h.tick(14); // windup (~0.46s ≈ 9 ticks) → the jab connects ~tick 11; a few regen ticks can't refill 6.4
     expect(p.hp).toBeLessThan(96); // a real, regen-proof chunk of HP gone
+  });
+
+  it("§8 v0.114 consecutive parries BUILD a chain → heal + (at RIPOSTE_AT) STAGGER the attacker", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.hp = 40; // wounded — the chain-heal should visibly claw HP back on top of regen
+    const e = new EnemyState();
+    e.id = "flurry";
+    e.kind = "critter";
+    e.hp = 99999; // never dies — keep the flurry coming
+    h.state().enemies.set("flurry", e);
+    const pc = h.room.combat.get("p1");
+    let maxChain = 0;
+    // The map seed is non-deterministic per room, and each parry knocks the attacker back — so to isolate the
+    // CHAIN cadence from re-approach drift we PIN both bodies adjacent every tick. The combo machine's own
+    // rhythm (windup→swing→recover, one swing per ~1s < the 1.4s chain window) then gates the parries, so the
+    // chain builds deterministically past the riposte threshold regardless of map/run order.
+    for (let i = 0; i < 120; i++) {
+      p.x = h.room.map.spawnX;
+      p.y = h.room.map.spawnY;
+      e.x = h.room.map.spawnX + 30;
+      e.y = h.room.map.spawnY;
+      pc.invuln = 1; // always parrying → every connecting lunge is a parry
+      h.tick(1);
+      maxChain = Math.max(maxChain, pc.parryChain);
+    }
+    expect(p.parriedSeq).toBeGreaterThan(1); // multiple lunges were parried over the fight
+    // The chain climbed to at least the riposte threshold at some point → the heal + stagger branch ran.
+    expect(maxChain).toBeGreaterThanOrEqual(PARRY_CHAIN_RIPOSTE_AT);
+    expect(p.hp).toBeGreaterThan(40); // parrying the flurry clawed HP back (heal on top of regen)
   });
 });
 

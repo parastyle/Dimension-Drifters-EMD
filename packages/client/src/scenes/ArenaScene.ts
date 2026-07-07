@@ -38,6 +38,8 @@ import {
   lootCooldownMult,
   lootDamageMult,
   PARRY_CHAIN_CD,
+  PARRY_CHAIN_RIPOSTE_AT,
+  PARRY_CHAIN_WINDOW,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
   PICKUP_RADIUS,
@@ -228,6 +230,11 @@ export class ArenaScene extends Phaser.Scene {
   private lastHurt = 0;
   private localAtkCd = 0;
   private localParryCd = 0;
+  /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
+   *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
+   *  floating "PARRY ×N" pop that mirrors the server's heal/riposte escalation. */
+  private parryChain = 0;
+  private parryChainAt = 0;
   private frozenUntil = 0;
   /** §7 v0.105 de-clunk — animation clock (ms) that does NOT advance during a hit-stop freeze. Rig swing /
    *  brace timing rides this instead of the wall clock so a freeze never skips frames of a swing/guard. */
@@ -2742,6 +2749,14 @@ export class ArenaScene extends Phaser.Scene {
         if (isSelf) {
           this.localParryCd = Math.min(this.localParryCd, PARRY_CHAIN_CD);
           this.hitStop(100, true); // H3 §20: the parry is the skill beat — always freeze (bypass the budget)
+          // §8 v0.114 PARRY COMBO — mirror the server's chain: a parry within the window extends it; a lapse
+          // restarts at 1. From 2 up we pop "PARRY ×N" (brighter/bigger as it climbs) so the chain reads,
+          // and at RIPOSTE_AT the flourish reads as the riposte moment the server just dealt.
+          const now = this.time.now;
+          this.parryChain =
+            now - this.parryChainAt <= PARRY_CHAIN_WINDOW * 1000 ? this.parryChain + 1 : 1;
+          this.parryChainAt = now;
+          if (this.parryChain >= 2) this.spawnComboPop(p.x, p.y, this.parryChain);
         }
       }
     });
@@ -2857,6 +2872,41 @@ export class ArenaScene extends Phaser.Scene {
         onComplete: () => s.destroy(),
       });
     }
+  }
+
+  /** §8 v0.114 PARRY COMBO pop — a floating "PARRY ×N" that punches up over the drifter, growing bolder as
+   *  the chain climbs and flipping to a gold "RIPOSTE!" once the chain reaches the counter-strike threshold. */
+  private spawnComboPop(x: number, y: number, chain: number): void {
+    const riposte = chain >= PARRY_CHAIN_RIPOSTE_AT;
+    const label = riposte ? `RIPOSTE ×${chain}` : `PARRY ×${chain}`;
+    const color = riposte ? "#ffd479" : "#bfefff";
+    const size = Math.min(15 + chain * 3, 34);
+    const txt = this.add
+      .text(x, y - 42, label, {
+        fontFamily: "monospace",
+        fontSize: `${size}px`,
+        color,
+        fontStyle: "bold",
+        stroke: "#0a0a12",
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(99998)
+      .setScale(0.5);
+    this.tweens.add({
+      targets: txt,
+      y: y - 78,
+      scale: 1,
+      duration: 260,
+      ease: "Back.easeOut",
+    });
+    this.tweens.add({
+      targets: txt,
+      alpha: 0,
+      delay: 480,
+      duration: 320,
+      onComplete: () => txt.destroy(),
+    });
   }
 
   /** Level-up VFX: an expanding gold ring on the player + a brief "LEVEL N" toast. */
