@@ -52,35 +52,55 @@ describe("stepPlayerMovement", () => {
 // §7 v0.105 STEERED movement — the "directional combination course correction". The authoritative tick
 // now blends velocity toward the input target instead of snapping, so direction changes TRANSITION
 // (forward→up sweeps through the diagonal), taps ease in, and releases settle to an exact stop.
-describe("steerVelocity / stepSteeredMovement (§7 course correction)", () => {
+describe("steerVelocity / stepSteeredMovement (§7 v0.111 pivot / turn-hitch)", () => {
   const TICK = 0.05; // the server's 20Hz dt
 
-  it("accelerates from rest toward the target, reaching ~full speed within ~350ms", () => {
+  it("spins up from rest to ~full speed quickly (the responsive baseline, no continuous ramp)", () => {
     let v = { vx: 0, vy: 0 };
     const speeds: number[] = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 6; i++) {
       v = steerVelocity(v, { dx: 1, dy: 0 }, TICK);
       speeds.push(v.vx);
     }
     for (let i = 1; i < speeds.length; i++) {
-      expect(speeds[i]).toBeGreaterThan(speeds[i - 1] ?? 0); // monotonic spin-up
+      expect(speeds[i]).toBeGreaterThanOrEqual(speeds[i - 1] ?? 0); // monotonic spin-up
     }
-    expect(v.vx).toBeGreaterThan(MOVE_SPEED * 0.95); // ~full speed after 7 ticks (350ms)
+    expect(v.vx).toBeGreaterThan(MOVE_SPEED * 0.95); // ~full speed within ~5 ticks (250ms)
     expect(v.vy).toBe(0);
   });
 
-  it("COURSE-CORRECTS a right→up turn through the diagonal (the transition Mike asked for)", () => {
-    // Run at full speed to the right, then hold UP: the velocity must pass through a state where it
-    // still carries rightward momentum AND upward motion — a sweep, not a snap.
+  it("PIVOTS a right→up turn: heading SNAPS to up (direct), speed DIPS once, then recovers", () => {
+    // Run full-right, then hold UP (a 90° turn). The new model does NOT glide through the diagonal —
+    // the heading snaps to vertical immediately (responsive), but the speed hitches (dips) on the turn.
     let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // settle at full right
     expect(v.vx).toBeCloseTo(MOVE_SPEED, 0);
-    v = steerVelocity(v, { dx: 0, dy: -1 }, TICK); // now steer UP
-    expect(v.vx).toBeGreaterThan(0); // still gliding right…
-    expect(v.vy).toBeLessThan(0); // …while already curving upward — the diagonal transition
-    // And it converges: after ~400ms of held UP the heading is essentially vertical.
-    for (let i = 0; i < 8; i++) v = steerVelocity(v, { dx: 0, dy: -1 }, TICK);
-    expect(Math.abs(v.vx)).toBeLessThan(MOVE_SPEED * 0.05);
+    v = steerVelocity(v, { dx: 0, dy: -1 }, TICK); // now hold UP
+    expect(Math.abs(v.vx)).toBeLessThan(1e-6); // heading SNAPPED to vertical — no rightward glide
+    expect(v.vy).toBeLessThan(0); // moving up
+    const dipped = Math.hypot(v.vx, v.vy);
+    expect(dipped).toBeLessThan(MOVE_SPEED * 0.95); // the HITCH — speed dipped on the sharp turn
+    expect(dipped).toBeGreaterThan(MOVE_SPEED * 0.4); // a 90° turn dips only partway (not a full stop)
+    // …then it recovers to full speed up over the next few ticks (the "go").
+    for (let i = 0; i < 6; i++) v = steerVelocity(v, { dx: 0, dy: -1 }, TICK);
+    expect(Math.abs(v.vx)).toBeLessThan(1e-6);
     expect(v.vy).toBeLessThan(-MOVE_SPEED * 0.95);
+  });
+
+  it("a 180° REVERSAL dips harder than a 90° turn (the hitch scales with turn sharpness)", () => {
+    const full = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // full right
+    const after90 = steerVelocity(full, { dx: 0, dy: -1 }, TICK); // 90° turn
+    const after180 = steerVelocity(full, { dx: -1, dy: 0 }, TICK); // 180° reversal
+    expect(Math.hypot(after180.vx, after180.vy)).toBeLessThan(Math.hypot(after90.vx, after90.vy));
+  });
+
+  it("a SLOW arc never hitches — small per-tick angle changes keep full speed", () => {
+    let v = steerVelocity({ vx: 0, vy: 0 }, { dx: 1, dy: 0 }, 2); // full right
+    // Rotate the input a few degrees per tick (well under the 45° threshold) — a smooth arc.
+    for (let i = 1; i <= 12; i++) {
+      const a = i * 0.15 * -1; // ~8.6°/tick, downward-ish arc
+      v = steerVelocity(v, { dx: Math.cos(a), dy: Math.sin(a) }, TICK);
+      expect(Math.hypot(v.vx, v.vy)).toBeGreaterThan(MOVE_SPEED * 0.95); // never dipped
+    }
   });
 
   it("NEVER exceeds the §7 flat-speed ceiling, even mid-turn", () => {
@@ -98,9 +118,13 @@ describe("steerVelocity / stepSteeredMovement (§7 course correction)", () => {
     expect(v.vy).toBe(0);
   });
 
-  it("is frame-rate independent (two 25ms steps ≡ one 50ms step, exactly)", () => {
-    const start = { vx: 100, vy: -40 };
-    const input = { dx: 0.6, dy: 0.8 };
+  it("is deterministic + the linear recover composes across substeps (aligned, below the speed cap)", () => {
+    // The fixed-timestep netcode (v0.107) always steps at the SAME dt on server + predictor, so identical
+    // (vel,input,dt) MUST give identical output — pin that. And in the aligned recover region (no turn, below
+    // the cap) the linear accel composes exactly (two 25ms ≡ one 50ms), so a fractional preview stays honest.
+    const start = { vx: 100, vy: 0 }; // moving right, below the cap, input aligned → pure recover (no hitch)
+    const input = { dx: 1, dy: 0 };
+    expect(steerVelocity(start, input, 0.05)).toEqual(steerVelocity(start, input, 0.05)); // deterministic
     const one = steerVelocity(start, input, 0.05);
     const half = steerVelocity(steerVelocity(start, input, 0.025), input, 0.025);
     expect(half.vx).toBeCloseTo(one.vx, 9);

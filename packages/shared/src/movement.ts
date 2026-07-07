@@ -5,9 +5,12 @@ import {
   IMPULSE_EPSILON,
   IMPULSE_FRICTION,
   IMPULSE_MAX,
+  MOVE_HITCH_DIP,
+  MOVE_HITCH_MIN_ANGLE,
+  MOVE_HITCH_MIN_SPEED,
+  MOVE_RECOVER_ACCEL,
   MOVE_SPEED,
-  MOVE_STEER_ACCEL,
-  MOVE_STEER_DECEL,
+  MOVE_STOP_DECEL,
   PLAYER_RADIUS,
 } from "./constants.js";
 import { clamp } from "./math.js";
@@ -66,13 +69,15 @@ export interface Impulse {
 }
 
 /**
- * §7 v0.105 STEER a movement velocity toward the input's target — the "directional combination course
- * correction": instead of the body snapping to a new heading, its velocity blends exponentially toward
- * the target, so forward→up sweeps through the diagonal, key-taps ease in, and releases ease out. PURE +
- * deterministic + frame-rate independent (the exponential blend composes exactly: two 25ms steps ≡ one
- * 50ms step), so the server tick and (future) client prediction produce identical curves. The result is
- * hard-clamped to `speed` — steering shapes the TRANSITION, never the §7 flat-speed ceiling — and a
- * keys-released residual snaps to exactly 0 once negligible (the body fully settles, no ice-skating).
+ * §7 v0.111 PIVOT the movement velocity toward the input — the directional WEIGHT is a discrete turn-hitch,
+ * NOT a continuous path-curve (v0.105's steer, which felt mushy). The heading is DIRECT: the velocity snaps
+ * to the input direction every tick (responsive — vital for dodging). The WEIGHT is a one-time speed dip on
+ * a SHARP turn: if the angle between the current heading and the new input heading exceeds
+ * MOVE_HITCH_MIN_ANGLE (~45°), the speed dips to `1 − t·MOVE_HITCH_DIP` (t = 0 at the threshold → 1 at a
+ * 180° reversal), then RECOVERS toward top speed at MOVE_RECOVER_ACCEL. It fires ONCE per turn: after the
+ * dip the heading already matches input, so the next tick's angle is ~0 and the speed just recovers. A slow
+ * arc keeps each tick's angle small → never hitches. Released input decelerates to 0 (MOVE_STOP_DECEL, no
+ * ice-skating). PURE + deterministic; all state is the returned velocity, so client prediction is unchanged.
  */
 export function steerVelocity(
   vel: Impulse,
@@ -80,30 +85,42 @@ export function steerVelocity(
   dtSeconds: number,
   speed: number = MOVE_SPEED,
 ): Impulse {
-  let dx = input.dx;
-  let dy = input.dy;
-  const len = Math.hypot(dx, dy);
-  if (len > 1) {
-    dx /= len;
-    dy /= len;
+  const dx = input.dx;
+  const dy = input.dy;
+  const inLen = Math.hypot(dx, dy);
+  const curSpeed = Math.hypot(vel.vx, vel.vy);
+
+  // No input → crisp decel to a stop along the current heading (no ice-skating).
+  if (inLen < 1e-4) {
+    const ns = curSpeed - MOVE_STOP_DECEL * dtSeconds;
+    if (ns <= 1 || curSpeed < 1e-4) return { vx: 0, vy: 0 };
+    return { vx: (vel.vx / curSpeed) * ns, vy: (vel.vy / curSpeed) * ns };
   }
-  const tx = dx * speed;
-  const ty = dy * speed;
-  const idle = tx === 0 && ty === 0;
-  const rate = idle ? MOVE_STEER_DECEL : MOVE_STEER_ACCEL;
-  const k = 1 - Math.exp(-rate * dtSeconds);
-  let vx = vel.vx + (tx - vel.vx) * k;
-  let vy = vel.vy + (ty - vel.vy) * k;
-  const sp = Math.hypot(vx, vy);
-  if (sp > speed) {
-    vx = (vx / sp) * speed;
-    vy = (vy / sp) * speed;
+
+  // Desired heading (unit) — the body faces input INSTANTLY (direct). Input magnitude is clamped ≤1 for
+  // the flat-speed / anti-cheat posture, but the DIRECTION is always taken as a unit vector.
+  const inx = dx / inLen;
+  const iny = dy / inLen;
+
+  // TURN-HITCH: a sharp change vs the current heading dips the speed once (the "stop"). Skipped from ~rest
+  // (nothing to pivot from) — that just spins up via the recover path below.
+  if (curSpeed > MOVE_HITCH_MIN_SPEED) {
+    const vdx = vel.vx / curSpeed;
+    const vdy = vel.vy / curSpeed;
+    const dot = clamp(vdx * inx + vdy * iny, -1, 1);
+    const ang = Math.acos(dot); // 0 (same way) … π (full reversal)
+    if (ang > MOVE_HITCH_MIN_ANGLE) {
+      const t = clamp((ang - MOVE_HITCH_MIN_ANGLE) / (Math.PI - MOVE_HITCH_MIN_ANGLE), 0, 1);
+      const dipped = speed * (1 - t * MOVE_HITCH_DIP);
+      // snap the heading + dip the speed (but never SPEED UP on the turn tick).
+      const ns = Math.min(curSpeed, dipped);
+      return { vx: inx * ns, vy: iny * ns };
+    }
   }
-  if (idle && Math.hypot(vx, vy) < 1) {
-    vx = 0;
-    vy = 0;
-  }
-  return { vx, vy };
+
+  // Aligned / gentle turn / spin-up-from-rest → recover toward top speed (the "go"), heading = input.
+  const ns = Math.min(speed, curSpeed + MOVE_RECOVER_ACCEL * dtSeconds);
+  return { vx: inx * ns, vy: iny * ns };
 }
 
 /**

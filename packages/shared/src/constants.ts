@@ -21,16 +21,25 @@ export const TICK_MS = 1000 / TICK_RATE;
 export const MOVE_SPEED = 320;
 
 /**
- * §7 STEERED movement (v0.105 — "directional combination course correction"): the body no longer snaps
- * to a new input direction; its velocity STEERS toward the target exponentially, so forward→up sweeps
- * through the diagonal (a readable turn), tapping a key eases in, and releasing eases out. Rates are
- * per-second exponential constants (frame-rate independent): time-to-90% ≈ 2.3/rate. ACCEL 14 → a turn
- * or spin-up completes in ~165ms (weighty but never mushy); DECEL 24 → releasing the keys stops in
- * ~95ms (crisp, no ice-skating). Top speed stays hard-clamped at MOVE_SPEED (the §7 flat-speed law —
- * steering shapes the transition, never the ceiling). (tuning)
+ * §7 v0.111 PIVOT movement ("pull the reins"). Superseded the v0.105 continuous velocity-steer (which
+ * curved the PATH on every turn = mushy). The heading is now DIRECT — the body faces input instantly
+ * (responsive, essential for a dodge game) — and the directional WEIGHT is a discrete, ONE-TIME
+ * TURN-HITCH: a SHARP direction change (> MOVE_HITCH_MIN_ANGLE) briefly dips the speed (the "stop"),
+ * scaled by how sharp the turn is (a full reversal nearly stops; a 45° nudge barely dips), then speed
+ * recovers over MOVE_RECOVER_ACCEL (the "go"). A slow arc keeps each tick's turn angle small → never
+ * hitches. The dip fires ONCE because the heading snaps to input each tick (next tick already aligned
+ * → no re-dip). All state lives in the (synced) velocity, so client prediction is unchanged. (tuning)
  */
-export const MOVE_STEER_ACCEL = 14;
-export const MOVE_STEER_DECEL = 24;
+/** Sharp-turn threshold (rad). Below this the turn is smooth/free; above it dips the speed. ~45°. */
+export const MOVE_HITCH_MIN_ANGLE = Math.PI / 4;
+/** Max fraction the speed dips on the sharpest (180°) turn — 0.72 → a reversal drops to ~28% speed. */
+export const MOVE_HITCH_DIP = 0.72;
+/** Below this speed (px/s) a turn can't hitch — starting from ~rest just accelerates, never "pivots". */
+export const MOVE_HITCH_MIN_SPEED = 40;
+/** Speed recovery after a hitch / spin-up from rest (px/s²) — ~0.18s to top speed. The "go". */
+export const MOVE_RECOVER_ACCEL = 1800;
+/** Crisp stop when input is released (px/s²) — ~0.12s from top speed to 0, no ice-skating. */
+export const MOVE_STOP_DECEL = 2600;
 
 /**
  * §7 v0.105 de-clunk — CLIENT render-lerp teleport SNAP thresholds (px). The client smooths each rig

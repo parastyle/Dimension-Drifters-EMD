@@ -88,6 +88,16 @@ export class SpriteRig {
   private facingBlend = 1;
   /** §7 v0.105 de-clunk — landing squash (0..1, decays) fired when the hop returns to the ground. */
   private landSquash = 0;
+  /** §7 v0.111 TURN-COMMIT ("pull the reins") — the directional WEIGHT lives in the ANIMATION, not the
+   *  trajectory. `heading` tracks the smoothed run direction; when it swings hard while moving, `turnCommit`
+   *  fires a one-time decaying punch toward the new heading (`turnDir`) — the body plants + leans + the hands
+   *  yank into the turn, like a rider hauling the reins before the horse commits. The character's path across
+   *  the screen is UNCHANGED; this is pure procedural flourish. */
+  private headingX = 1;
+  private headingY = 0;
+  private turnCommit = 0;
+  private turnDirX = 1;
+  private turnDirY = 0;
   /** §7 v0.105 de-clunk — last `animate` clock (ms) to derive a frame dt for the eased blends; -1 = first. */
   private prevAnimMs = -1;
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
@@ -393,6 +403,29 @@ export class SpriteRig {
     this.gait += (targetGait - this.gait) * (1 - Math.exp((-8 * dtMs) / 1000)); // τ≈125ms
     const gait = this.gait;
 
+    // §7 v0.111 TURN-COMMIT ("pull the reins"): when the run HEADING swings hard, fire a one-time decaying
+    // punch toward the new direction — the WEIGHT of committing to a turn, shown in animation (the trajectory
+    // is untouched). Refractory via `turnCommit` so it fires ONCE per turn, not every frame while the tracked
+    // heading catches up. Sharper turn (smaller dot) → bigger pull; a full reversal → a full-strength haul.
+    this.turnCommit = Math.max(0, this.turnCommit - dtMs / 1000 / 0.24); // decays over ~0.24s
+    const mvLen = Math.hypot(anim.moveX, anim.moveY);
+    if (mvLen > 0.15) {
+      const nx = anim.moveX / mvLen;
+      const ny = anim.moveY / mvLen;
+      const dot = nx * this.headingX + ny * this.headingY; // 1 = same way … −1 = reversal
+      if (gait > 0.4 && dot < 0.72 && this.turnCommit < 0.06) {
+        this.turnCommit = Math.min(1, (1 - dot) * 0.9);
+        this.turnDirX = nx;
+        this.turnDirY = ny;
+        this.headingX = nx; // snap the tracked heading so the change doesn't re-trigger next frame
+        this.headingY = ny;
+      }
+      const hk = 1 - Math.exp((-6 * dtMs) / 1000);
+      this.headingX += (nx - this.headingX) * hk;
+      this.headingY += (ny - this.headingY) * hk;
+    }
+    const commit = this.turnCommit;
+
     // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
@@ -431,6 +464,14 @@ export class SpriteRig {
       this.body.rotation += Math.max(-1, Math.min(1, rcx / 520)) * 0.22;
       this.body.y += Math.max(-1, Math.min(1, rcy / 520)) * 5 * s;
       this.body.scaleX *= 1 + rk * 0.06;
+    }
+
+    // §7 v0.111 turn-commit BODY: an exaggerated one-time lean + plant-dip into the new heading (decays), on
+    // top of the steady movement lean above — reads as the rider hauling into the turn, then settling.
+    if (commit > 0.01) {
+      this.body.rotation += this.turnDirX * commit * 0.5; // haul the torso into the new direction
+      this.body.y += (3 + this.turnDirY * 4) * commit * s; // plant/dip (a touch more when turning downward)
+      this.body.scaleY *= 1 - commit * 0.06; // brief squash as the weight lands
     }
 
     // Parry BRACE (§8): a quick snap into a guard, hold through the i-frame window, ease out. Folds
@@ -511,6 +552,12 @@ export class SpriteRig {
       } else {
         hnd.img.x = hnd.ox;
         hnd.img.y = hnd.oy + drift;
+      }
+      // §7 v0.111 turn-commit HANDS ("pull the reins"): yank both hands toward the new heading as the turn
+      // commits, then release as it decays. `× facing` on x since hand-x is in the mirrored local space.
+      if (commit > 0.01) {
+        hnd.img.x += this.turnDirX * this.facing * commit * s * 13;
+        hnd.img.y += this.turnDirY * commit * s * 13;
       }
       // Brace: draw both hands forward + up into a guard in front of the body.
       if (brace > 0) {
