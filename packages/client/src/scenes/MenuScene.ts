@@ -76,16 +76,22 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5);
 
     for (const id of DIMENSION_IDS) this.cards.push(this.buildCard(id));
+    // §16 v0.116 a special BOSS RUSH card at the end of the grid — every bespoke boss, back-to-back.
+    this.cards.push(this.buildBossRushCard());
 
     this.hint = this.add
-      .text(0, 0, "Click a dimension — or press its number — to drift in.", {
+      .text(0, 0, "Click a dimension — or press its number — to drift in.  ·  B: BOSS RUSH", {
         fontSize: "15px",
         color: "#9aa0ac",
       })
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–9 → the nth dimension).
+    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+      if (e.key === "b" || e.key === "B") {
+        this.launch(DEFAULT_DIMENSION, true);
+        return;
+      }
       const n = Number.parseInt(e.key, 10);
       if (Number.isFinite(n) && n >= 1 && n <= DIMENSION_IDS.length) {
         this.launch(DIMENSION_IDS[n - 1] ?? DEFAULT_DIMENSION);
@@ -211,6 +217,50 @@ export class MenuScene extends Phaser.Scene {
     return { id, root };
   }
 
+  /** §16 v0.116 the BOSS RUSH card — a distinct crimson tile that launches the boss gauntlet (all 10
+   *  bespoke bosses back-to-back). Same footprint as a dimension card so it slots into the grid. */
+  private buildBossRushCard(): MenuCard {
+    const root = this.add.container(0, 0);
+    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, 0x1a0d10, 0.96).setOrigin(0.5);
+    const frame = this.add
+      .rectangle(0, 0, CARD_W, CARD_H, 0x000000, 0.001)
+      .setOrigin(0.5)
+      .setStrokeStyle(3, 0xff5d3b, 0.95);
+    const name = this.add
+      .text(0, -CARD_H / 2 + 32, "☠ BOSS RUSH", {
+        fontSize: "26px",
+        color: "#ff7a5c",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5, 0.5);
+    const tagline = this.add
+      .text(0, 4, "Every boss, back-to-back.\nNo horde. Escalating. Bank it all — or wipe.", {
+        fontSize: "14px",
+        color: "#e6c2b4",
+        align: "center",
+        wordWrap: { width: CARD_W - 36 },
+      })
+      .setOrigin(0.5, 0.5);
+    const badge = this.add
+      .text(0, CARD_H / 2 - 22, "press B", { fontSize: "13px", color: "#a06055" })
+      .setOrigin(0.5, 0.5);
+    root.add([bg, frame, name, tagline, badge]);
+    frame
+      .setInteractive({ useHandCursor: true })
+      .on("pointerover", () => {
+        frame.setStrokeStyle(4, 0xffab5c, 1);
+        bg.setFillStyle(0x2a1015, 1);
+        root.setScale(1.04);
+      })
+      .on("pointerout", () => {
+        frame.setStrokeStyle(3, 0xff5d3b, 0.95);
+        bg.setFillStyle(0x1a0d10, 0.96);
+        root.setScale(1);
+      })
+      .on("pointerdown", () => this.launch(DEFAULT_DIMENSION, true));
+    return { id: "__bossrush__", root };
+  }
+
   /** Re-flow the title + responsive card grid + hint for the current CSS viewport (positions only). */
   private layout(): void {
     const w = this.screenW();
@@ -239,13 +289,13 @@ export class MenuScene extends Phaser.Scene {
     this.audioRow?.setPosition(24, h - 26);
   }
 
-  private launch(id: string): void {
+  private launch(id: string, bossRush = false): void {
     if (this.launching) return; // guard the key+click double-fire
     this.launching = true;
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () =>
-      this.scene.start("arena", { dimensionId: id }),
+      this.scene.start("arena", { dimensionId: id, bossRush }),
     );
   }
 

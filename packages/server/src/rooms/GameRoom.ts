@@ -9,7 +9,10 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
+  BOSS_DEF_IDS,
   BOSS_SALVAGE_PER_DEPTH,
+  BOSSRUSH_BREATHER,
+  BOSSRUSH_HEAL_FRAC,
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
@@ -362,6 +365,10 @@ export class GameRoom extends Room<ArenaState> {
   private map!: ArenaMap;
   /** §16 boss/extraction run loop: has OLD RUST spawned this run, and its enemy id. */
   private bossSpawned = false;
+  /** §16 v0.116 BOSS RUSH — which boss of the gauntlet is up next (0-based index into `BOSS_DEF_IDS`) and
+   *  the countdown until it drops in (>0 = a breather between rounds; ≤0 = idle/nothing queued). */
+  private bossRushIndex = 0;
+  private bossRushNextTimer = 0;
   /** §6 chain (v0.103): dimensions this run has already visited — rift descents prefer fresh ones. */
   private readonly visitedDims = new Set<string>();
   /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
@@ -381,7 +388,7 @@ export class GameRoom extends Room<ArenaState> {
     return this.hostId === null || client.sessionId === this.hostId;
   }
 
-  override onCreate(options?: { dimensionId?: string }): void {
+  override onCreate(options?: { dimensionId?: string; bossRush?: boolean }): void {
     this.setState(new ArenaState());
 
     // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
@@ -389,6 +396,15 @@ export class GameRoom extends Room<ArenaState> {
     // syncs on ArenaState so the client reproduces the matching palette + asset set.
     this.state.dimensionId = getDimension(options?.dimensionId).id;
     this.homeDimension = this.state.dimensionId; // restarts return HERE, not wherever the chain died
+
+    // §16 v0.116 BOSS RUSH — a chained gauntlet of every bespoke boss. Set the mode + arm the first boss with
+    // a short lead so joiners finish loading before it drops. No horde, no boss clock — the tick's bossrush
+    // branch just counts down the breather between rounds.
+    if (options?.bossRush) {
+      this.state.mode = "bossrush";
+      this.bossRushIndex = 0;
+      this.bossRushNextTimer = BOSSRUSH_BREATHER;
+    }
 
     // §17 mint the procedural arena. The four seeds are synced on ArenaState so every client feeds them
     // to the same shared `generateArena` and reproduces a byte-identical map — no tile streaming. Re-run
@@ -874,6 +890,11 @@ export class GameRoom extends Room<ArenaState> {
       }
       this.zeroMoveVel(id); // §7 fresh run, fresh momentum
     });
+    // §16 v0.116 a restart in BOSS RUSH re-arms the gauntlet from boss 1 (mode is preserved across restart).
+    if (this.state.mode === "bossrush") {
+      this.bossRushIndex = 0;
+      this.bossRushNextTimer = BOSSRUSH_BREATHER;
+    }
     console.log(`[room ${this.roomId}] run restarted`);
   }
 
@@ -1177,6 +1198,16 @@ export class GameRoom extends Room<ArenaState> {
         this.checkExtraction(bodies);
         this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
       }
+    } else if (this.state.mode === "bossrush") {
+      // §16 v0.116 BOSS RUSH — no horde, no boss clock: just count down the breather and drop the next boss.
+      // The gauntlet advances in `advanceBossRush` (called from the boss death path).
+      if (this.state.outcome === "active") {
+        this.state.elapsed += dt;
+        if (this.bossRushNextTimer > 0) {
+          this.bossRushNextTimer -= dt;
+          if (this.bossRushNextTimer <= 0) this.spawnBossRushBoss();
+        }
+      }
     }
 
     // 3b. Pickups are grabbed with the R key now (§13 `grabWeapon`), not walk-over — here we just age the
@@ -1412,9 +1443,10 @@ export class GameRoom extends Room<ArenaState> {
       anyAlive = true;
       player.hp = Math.min(player.maxHp, player.hp + deriveStats(player).regen * dt);
     });
-    // §6 WIPE: in a live run, if there are players and NONE are still up, no one can rez → the run is over.
+    // §6 WIPE: in a live run (survival OR boss rush), if there are players and NONE are still up, no one can
+    // rez → the run is over.
     if (
-      this.state.mode === "arena" &&
+      (this.state.mode === "arena" || this.state.mode === "bossrush") &&
       this.state.outcome === "active" &&
       this.state.players.size > 0 &&
       !anyAlive
@@ -2100,12 +2132,17 @@ export class GameRoom extends Room<ArenaState> {
       // telegraphs (never resolved) + a leaked controller — stepBoss early-returns once bossId is null and
       // never reaches its own cleanup. clearBoss is idempotent + also nulls bossId / blanks bossKind.
       if (enemy.id === this.bossId) this.clearBoss();
-      this.openPortal(enemy.x, enemy.y);
-      // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
-      // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
-      // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
-      // training reroll-laundering exploit).
-      if (this.state.mode === "arena") this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_LUK_BOSS);
+      if (this.state.mode === "bossrush") {
+        // §16 v0.116 the gauntlet: heal + reward + queue the next boss (or win on the last).
+        this.advanceBossRush(enemy.x, enemy.y);
+      } else {
+        this.openPortal(enemy.x, enemy.y);
+        // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
+        // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
+        // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
+        // training reroll-laundering exploit).
+        if (this.state.mode === "arena") this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_LUK_BOSS);
+      }
     }
     // §6/§17 v0.103: putting DOWN a shifter incursion (instead of just outlasting its window) pays the
     // squad a depth-scaled bounty — the chain's second wage source, and it rewards engaging the elite.
@@ -2819,6 +2856,49 @@ export class GameRoom extends Room<ArenaState> {
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
+  }
+
+  /** §16 v0.116 BOSS RUSH — drop the boss at `bossRushIndex` in the gauntlet order (`BOSS_DEF_IDS`). Reuses
+   *  `spawnBoss` (ring-spawn near a living player, HP-scaled by the escalating depth), which also retires any
+   *  lingering previous boss. */
+  private spawnBossRushBoss(): void {
+    const kind = BOSS_DEF_IDS[this.bossRushIndex];
+    if (kind) this.spawnBoss(kind);
+  }
+
+  /** §16 v0.116 BOSS RUSH — a boss just fell: pay the squad a depth-scaled wage + a mid-run heal + a mystery
+   *  drop, then either QUEUE the next boss (escalating `depth`) or, on the final boss, WIN the run (bank + clean
+   *  the field, mirroring `checkExtraction`). */
+  private advanceBossRush(x: number, y: number): void {
+    const wage = BOSS_SALVAGE_PER_DEPTH * this.state.depth;
+    this.state.players.forEach((p) => {
+      if (!p.alive) return;
+      p.salvaged += wage;
+      p.hp = Math.min(p.maxHp, p.hp + p.maxHp * BOSSRUSH_HEAL_FRAC);
+    });
+    this.dropLoot(x, y, 1, LOOT_TIER_LUK_BOSS); // the reward for the clear (boss-tier rarity)
+    this.bossRushIndex++;
+    if (this.bossRushIndex >= BOSS_DEF_IDS.length) {
+      // GAUNTLET CLEARED → victory: bank everything carried + clear the field for the win screen.
+      this.state.outcome = "victory";
+      let banked = 0;
+      this.state.players.forEach((p) => {
+        banked += p.salvaged;
+        p.salvaged = 0;
+      });
+      this.state.bankedSalvage += banked;
+      this.state.enemies.clear();
+      this.state.projectiles.clear();
+      this.projectileMeta.clear();
+      this.enemyFireCd.clear();
+      console.log(
+        `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
+      );
+      return;
+    }
+    // Escalate the difficulty (HP + damage) with each round, and queue the next boss after a breather.
+    this.state.depth = Math.min(255, this.bossRushIndex + 1);
+    this.bossRushNextTimer = BOSSRUSH_BREATHER;
   }
 
   /** Spawn a BOSS on a ring around a player (§16) — the run's capstone threat. `overrideKind` (the debug

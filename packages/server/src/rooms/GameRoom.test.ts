@@ -51,7 +51,7 @@ const { GameRoom } = await import("./GameRoom.js");
 // biome-ignore lint/suspicious/noExplicitAny: the harness reaches private room internals (update/combat) on purpose.
 type AnyRoom = any;
 
-function makeRoom(options?: { dimensionId?: string }) {
+function makeRoom(options?: { dimensionId?: string; bossRush?: boolean }) {
   const room = new GameRoom() as AnyRoom;
   const handlers = new Map<string, (c: { sessionId: string }, m?: unknown) => void>();
   room.onMessage = (type: string, fn: (c: { sessionId: string }, m?: unknown) => void) =>
@@ -437,6 +437,75 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     h.tick(5);
     expect(h.state().enemies.has("v")).toBe(false); // killed
     expect(p.xp + (p.level - 1) * 1e6).toBeGreaterThan(before); // §12 xp granted
+  });
+});
+
+describe("GameRoom — §16 v0.116 BOSS RUSH gauntlet", () => {
+  /** Pin an invincible attacker on the spawn disc + keep it swing-ready (no level-up window stalls). */
+  function pinAttacker(h: ReturnType<typeof makeRoom>) {
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.maxHp = 1e9;
+    p.hp = 1e9;
+    p.flexPending = 0; // never let a level-up window block the test's attacks
+    p.sigPending = 0;
+    return p;
+  }
+
+  /** Drop the live boss to 1 HP within the spade's reach, then swing → it dies this beat. Returns false if
+   *  no boss is up. */
+  function killCurrentBoss(h: ReturnType<typeof makeRoom>): boolean {
+    let found = false;
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") {
+        e.hp = 1;
+        e.x = h.room.map.spawnX + 100;
+        e.y = h.room.map.spawnY;
+        found = true;
+      }
+    });
+    if (!found) return false;
+    h.send("p1", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4);
+    return true;
+  }
+
+  it("starts in bossrush mode + drops the first boss after the breather (NO trash horde)", () => {
+    const h = makeRoom({ bossRush: true });
+    h.join("p1");
+    pinAttacker(h);
+    expect(h.state().mode).toBe("bossrush");
+    h.tick(90); // 90 × 50ms = 4.5s > BOSSRUSH_BREATHER (3.5s) → the first boss drops
+    let bosses = 0;
+    let trash = 0;
+    h.state().enemies.forEach((e: EnemyState) => {
+      if (ENEMY_KINDS[e.kind]?.archetype === "boss") bosses++;
+      else trash++;
+    });
+    expect(bosses).toBe(1); // exactly one gauntlet boss
+    expect(trash).toBe(0); // the survival horde is suppressed in boss rush
+  });
+
+  it("killing a boss ADVANCES the gauntlet (no portal, depth escalates) and clearing all 10 WINS", () => {
+    const h = makeRoom({ bossRush: true });
+    h.join("p1");
+    const p = pinAttacker(h);
+    p.weapon = "gravediggers-spade"; // pure-edge melee
+    h.tick(90); // first boss in
+    expect(h.state().depth).toBe(1);
+    expect(killCurrentBoss(h)).toBe(true);
+    expect(h.state().portalOpen).toBe(false); // boss rush NEVER opens the extraction portal mid-gauntlet
+    expect(h.state().depth).toBe(2); // escalated to boss 2
+    // Grind the remaining gauntlet: wait each breather, re-pin the attacker, kill the boss.
+    let guard = 0;
+    while (h.state().outcome === "active" && guard++ < 40) {
+      h.tick(90); // the breather → the next boss drops
+      pinAttacker(h);
+      killCurrentBoss(h);
+    }
+    expect(h.state().outcome).toBe("victory"); // cleared all 10 bosses → banked win
+    expect(h.state().enemies.size).toBe(0); // field cleaned for the win screen
   });
 });
 

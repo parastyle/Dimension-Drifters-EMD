@@ -350,9 +350,13 @@ export class ArenaScene extends Phaser.Scene {
    *  the room as a join option — only the room CREATOR's pick takes effect; joiners inherit the host's
    *  synced `dimensionId`. Defaults to Wild West when the arena is launched directly (no menu). */
   private selectedDimension: string = DEFAULT_DIMENSION;
+  /** §16 v0.116 the menu launched BOSS RUSH — forwarded as a join option (only the room CREATOR's flag
+   *  takes effect; joiners inherit the host's synced `mode`). */
+  private bossRush = false;
 
-  init(data?: { dimensionId?: string }): void {
+  init(data?: { dimensionId?: string; bossRush?: boolean }): void {
     if (data?.dimensionId) this.selectedDimension = data.dimensionId;
+    this.bossRush = data?.bossRush ?? false;
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -970,6 +974,7 @@ export class ArenaScene extends Phaser.Scene {
         // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
         this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME, {
           dimensionId: this.selectedDimension,
+          bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
         });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -3087,6 +3092,7 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     const training = this.room?.state.mode === "training";
+    const bossrush = this.room?.state.mode === "bossrush";
     const who = self ? ` · C: swap character (${characterName(self.character)})` : "";
     const dimName = getDimension(this.room?.state.dimensionId).name;
     // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
@@ -3117,14 +3123,21 @@ export class ArenaScene extends Phaser.Scene {
     const lagging =
       this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
     const lagPrefix = lagging ? "⚠ CONNECTION LAG · " : "";
+    // §16 v0.116 BOSS RUSH — a dedicated objective line: which boss of 10 is up, or the breather between.
+    const BOSS_RUSH_TOTAL = 10;
+    const rushObjective = bossActive
+      ? `⚠ BOSS ${Math.min(depth, BOSS_RUSH_TOTAL)}/${BOSS_RUSH_TOTAL} — cut it down`
+      : `☠ BOSS RUSH — next boss incoming…`;
     this.modeText
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
           ? `${lagPrefix}⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
+          : bossrush
+            ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
+            : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
       )
-      .setColor(lagging ? "#ff8a2b" : training ? "#33e6ff" : "#5a6472");
+      .setColor(lagging ? "#ff8a2b" : training ? "#33e6ff" : bossrush ? "#ff5d3b" : "#5a6472");
 
     // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;

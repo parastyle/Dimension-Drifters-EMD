@@ -286,6 +286,16 @@ export const TOUGH_SCALE = 1.7;
 export const BOSS_SPAWN_SECONDS = 120;
 
 /**
+ * §16 v0.116 BOSS RUSH — a chained gauntlet of every bespoke boss back-to-back, no trash horde, difficulty
+ * escalating via `depth`. Between rounds the squad heals a chunk (a breather, not a full reset) and gets a
+ * short beat before the next boss drops in; clearing the final boss = victory (banks the run). (tuning)
+ */
+/** Seconds after a boss falls before the next one drops in (the breather + grab-your-drop window). */
+export const BOSSRUSH_BREATHER = 3.5;
+/** Fraction of max HP the squad heals after clearing each boss (rewards a clean clear, not a wipe-fest). */
+export const BOSSRUSH_HEAL_FRAC = 0.5;
+
+/**
  * §6 DIMENSION CHAIN (v0.103, audit C1/H2/H6) — the greed loop. Clearing a boss offers TWO portals:
  * EXTRACT (bank the squad's carried salvage, run ends in victory) or the RIFT (descend: depth+1, a new
  * dimension + freshly-seeded map, same squad/levels/weapons/HP — risk it all for a bigger bank).
