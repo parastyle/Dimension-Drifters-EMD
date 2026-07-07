@@ -218,7 +218,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // + debug picker only). archetype "boss" → boss bar + no derived lunge (the BossController owns attacks).
   // Ver'Kaln — LARGE landing-zone titan.
   verkaln: {
-    sprite: "boothill",
+    sprite: "verkaln", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 60,
     hp: 480,
@@ -230,7 +230,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   // The Choirmath — LARGE bullet-hell spiral god (stationary).
   choirmath: {
-    sprite: "boothill",
+    sprite: "choirmath", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 0,
     hp: 440,
@@ -242,7 +242,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   // Cor-Vane the Hive-Mind — CHARACTER-SIZED fragile summoner (kites).
   corvane: {
-    sprite: "boothill",
+    sprite: "corvane", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 150,
     hp: 300,
@@ -254,7 +254,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   // Nul the Sightline — LARGE stationary beam-sweeper (one enormous eye).
   "nul-sightline": {
-    sprite: "boothill",
+    sprite: "nul-sightline", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 0,
     hp: 440,
@@ -266,7 +266,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   // The Metronome — LARGE stationary expanding-ring rhythm boss.
   metronome: {
-    sprite: "boothill",
+    sprite: "metronome", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 0,
     hp: 440,
@@ -278,7 +278,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   },
   // Grull the Unchained — LARGE chain-dash berserker (lumbers between charges).
   grull: {
-    sprite: "boothill",
+    sprite: "grull", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 70,
     hp: 470,
@@ -291,7 +291,7 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   // Quickdraw Vane — CHARACTER-SIZED strafing gunslinger. `ranged` supplies the controller's strafe orbit
   // range only (the boss fires via its BossDef, not the generic spitter path, which skips the boss).
   "quickdraw-vane": {
-    sprite: "boothill",
+    sprite: "quickdraw-vane", // §16 v0.116 bespoke art harvest-installed
     archetype: "boss",
     speed: 150,
     hp: 320,
