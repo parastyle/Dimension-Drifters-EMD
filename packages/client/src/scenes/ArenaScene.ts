@@ -148,6 +148,18 @@ export class ArenaScene extends Phaser.Scene {
   private lastParryPress = -9999;
   /** §17 v0.102 placed landmark sprites — faded when the local player walks behind one (see-through cover). */
   private poiSprites: PoiSprite[] = [];
+  /** §16 v0.116 Polish B — a screen-space AMBIENT DUST layer (drifting motes tinted the dimension's dust
+   *  colour) that lends the arena atmosphere. Lazily built on the first update; purely cosmetic. */
+  private dustG?: Phaser.GameObjects.Graphics;
+  private readonly dust: {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    r: number;
+    a: number;
+    ph: number;
+  }[] = [];
   /** §17 v0.102 off-screen extraction-portal locator (a 4800² arena needs a pointer, not just copy). */
   private portalArrow: Phaser.GameObjects.Container | null = null;
   /** §6 v0.103 the matching violet locator for the DEEPER rift. */
@@ -296,6 +308,9 @@ export class ArenaScene extends Phaser.Scene {
   // §16 boss/extraction run loop.
   private bossBarBg!: Phaser.GameObjects.Rectangle;
   private bossBarFill!: Phaser.GameObjects.Rectangle;
+  /** §16 v0.116 Polish B — phase-threshold tick marks drawn over the boss bar (redrawn when the boss/kind
+   *  changes) so the player can SEE the HP gates where the fight escalates. */
+  private bossBarSegments!: Phaser.GameObjects.Graphics;
   private bossText!: Phaser.GameObjects.Text;
   private victoryText!: Phaser.GameObjects.Text;
   private portal?: Phaser.GameObjects.Container;
@@ -409,6 +424,8 @@ export class ArenaScene extends Phaser.Scene {
     this.poiSprites = []; // scene-restart safety: never keep handles to destroyed landmark sprites
     this.portalArrow = null;
     this.riftArrow = null;
+    this.dustG = undefined; // §16 v0.116 rebuild the ambient-dust layer fresh (old handle is destroyed)
+    this.dust.length = 0;
     this.floorObjs = [];
     this.lastSeedKey = "";
     // §4 v0.107 scene-restart safety for the netcode layer: Phaser REUSES the scene instance across
@@ -664,6 +681,12 @@ export class ArenaScene extends Phaser.Scene {
       .rectangle(0, 0, 516, 12, 0xff5d3b)
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
+      .setDepth(100002)
+      .setVisible(false);
+    // §16 v0.116 Polish B — phase-threshold ticks over the bar (drawn in run-space; positioned each frame).
+    this.bossBarSegments = this.add
+      .graphics()
+      .setScrollFactor(0)
       .setDepth(100002)
       .setVisible(false);
     this.bossText = this.add
@@ -1156,6 +1179,7 @@ export class ArenaScene extends Phaser.Scene {
     this.renderParryState();
     this.updatePoiOcclusion(); // §17 v0.102 fade a landmark the local player is hidden behind
     this.updatePortalArrow(); // §17 v0.102 edge-of-screen pointer to an off-screen open portal
+    this.updateAmbientDust(); // §16 v0.116 Polish B — drifting atmosphere motes
     this.updateCombatFx();
     this.updateHud();
     this.updateRunState();
@@ -1709,6 +1733,43 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** §16 v0.116 Polish B — the ambient DUST layer: ~48 screen-space motes drift on a gentle wind + bob,
+   *  wrapping around the viewport, tinted the dimension's `dustDrift` colour at a low alpha. Lazily built on
+   *  the first frame; pure atmosphere (no gameplay effect). */
+  private updateAmbientDust(): void {
+    if (!this.room) return;
+    const W = this.screenW();
+    const H = this.screenH();
+    if (!this.dustG) {
+      this.dustG = this.add.graphics().setScrollFactor(0).setDepth(90);
+      for (let i = 0; i < 48; i++) {
+        this.dust.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          vx: 6 + Math.random() * 14, // a slow prevailing wind (rightward)
+          vy: (Math.random() * 2 - 1) * 5,
+          r: 0.8 + Math.random() * 1.9,
+          a: 0.05 + Math.random() * 0.12,
+          ph: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+    const color = getDimension(this.room.state.dimensionId).palette.dustDrift;
+    const dt = Math.min(0.05, this.deltaSec);
+    const t = this.time.now / 1000;
+    const g = this.dustG;
+    g.clear();
+    for (const d of this.dust) {
+      d.x += d.vx * dt;
+      d.y += (d.vy + Math.sin(t * 0.6 + d.ph) * 6) * dt; // gentle vertical wander
+      if (d.x > W + 8) d.x = -8;
+      if (d.y < -8) d.y = H + 8;
+      else if (d.y > H + 8) d.y = -8;
+      g.fillStyle(color, d.a);
+      g.fillCircle(d.x, d.y, d.r);
+    }
+  }
+
   /** Boss health bar + approach banner + victory screen (§16). */
   private updateRunState(): void {
     if (!this.room) return;
@@ -1730,16 +1791,30 @@ export class ArenaScene extends Phaser.Scene {
       if (this.bossShown < 0) this.bossShown = bossRatio;
       this.bossShown = Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
       this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
-      this.bossBarFill.setPosition(this.screenW() / 2 - 258 * s, 48 * s).setVisible(true);
+      const barLeft = this.screenW() / 2 - 258 * s;
+      this.bossBarFill.setPosition(barLeft, 48 * s).setVisible(true);
       this.bossBarFill.width = 516 * s * this.bossShown;
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
         .setText(bossDefName ? bossDefName.toUpperCase() : `${dimName.toUpperCase()} BOSS`)
         .setVisible(true);
+      // §16 v0.116 Polish B — draw a tick at each PHASE threshold so the escalation gates are visible on the
+      // bar. The def's phases[i].hpAbove is the HP fraction where phase i+1 begins; skip the final 0-floor.
+      const phases = BOSSES[this.room.state.bossKind]?.phases ?? [];
+      this.bossBarSegments.setVisible(true).clear();
+      for (const ph of phases) {
+        if (ph.hpAbove <= 0 || ph.hpAbove >= 1) continue;
+        const x = barLeft + 516 * s * ph.hpAbove;
+        // A crossed threshold (fill drained past it) dims; an upcoming one glows — reads the fight's progress.
+        const passed = this.bossShown <= ph.hpAbove;
+        this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
+        this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
+      }
     } else {
       this.bossShown = -1;
       this.bossBarBg.setVisible(false);
       this.bossBarFill.setVisible(false);
+      this.bossBarSegments.setVisible(false);
       this.bossText.setVisible(false);
     }
     // Boss-approach toast on first appearance.
@@ -1757,9 +1832,13 @@ export class ArenaScene extends Phaser.Scene {
     this.prevWon = won;
     this.victoryText.setVisible(won);
     if (won) {
+      // §16 v0.116 Polish B — a distinct end-card for the BOSS RUSH gauntlet vs a normal extraction.
+      const bankedNow = this.room.state.bankedSalvage;
       this.victoryText
         .setText(
-          `EXTRACTED at depth ${this.room.state.depth} ✦ ${this.room.state.bankedSalvage} salvage banked\n(Restart Run — top-right)`,
+          this.room.state.mode === "bossrush"
+            ? `☠  GAUNTLET CLEARED  ☠\nall 10 bosses down ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`
+            : `EXTRACTED at depth ${this.room.state.depth} ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`,
         )
         .setPosition(this.screenW() / 2, this.screenH() / 2);
     }
