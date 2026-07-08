@@ -1650,10 +1650,7 @@ export class ArenaScene extends Phaser.Scene {
             // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
             // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
             const srig = this.blobs.get(shooter);
-            const reach = gunMuzzleReach(
-              WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON],
-              characterScale(p.character),
-            );
+            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]); // §29 fixed-size weapon
             spawnMuzzleFlash(
               this,
               (srig?.x ?? p.x) + Math.cos(ang) * reach,
@@ -2781,7 +2778,7 @@ export class ArenaScene extends Phaser.Scene {
       // flash for self for a beat. Cosmetic only — damage is server-side.
       if (rig) {
         const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
-        const reach = gunMuzzleReach(weapon, characterScale(self.character));
+        const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
         const fx = gunFx(weapon.gun.bulletKind);
         spawnMuzzleFlash(
           this,

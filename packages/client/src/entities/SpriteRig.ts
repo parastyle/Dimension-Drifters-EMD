@@ -120,6 +120,9 @@ export class SpriteRig {
   private weapons: {
     img: Phaser.GameObjects.Image;
     hand: { img: Phaser.GameObjects.Image; ox: number; oy: number };
+    /** The weapon's own display scale (displayLength/part.w). Applied each frame ÷ baseScale so the weapon
+     *  is a FIXED on-screen size regardless of which (larger/smaller) character holds it. */
+    baseScale: number;
   }[] = [];
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
@@ -291,9 +294,10 @@ export class SpriteRig {
       if (!part || !hand) return undefined;
       const tx = partTexture(this.scene, spriteId, part.role);
       const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
-      img.setOrigin(def.gripFrac, 0.5).setScale(def.displayLength / part.w);
+      const wScale = def.displayLength / part.w;
+      img.setOrigin(def.gripFrac, 0.5).setScale(wScale);
       this.root.add(img);
-      this.weapons.push({ img, hand });
+      this.weapons.push({ img, hand, baseScale: wScale });
       return img;
     };
     const frontWpn = attach(manifest.parts[0], frontHand);
@@ -484,9 +488,9 @@ export class SpriteRig {
     this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
     this.body.scaleX = s * (1 + bob * 0.04);
     this.body.scaleY = s * (1 - bob * 0.06);
-    // Body leans back looking up, forward looking down (+ the movement lean scaled by gait + an ACCEL lean:
-    // the torso pitches into a speed-up and rocks back on a stop, from the inertia signal — weight, not a loop).
-    this.body.rotation = anim.moveX * 0.16 * gait + lagX * 0.32 + lookY * BODY_LOOK_LEAN;
+    // §MADNESS the torso leans HARD into the run + accel — a loose, weighty forward pitch (Madness-Combat
+    // flash feel), not a stiff upright. Movement lean 0.16→0.34, accel lean 0.32→0.55.
+    this.body.rotation = anim.moveX * 0.34 * gait + lagX * 0.55 + lookY * BODY_LOOK_LEAN;
 
     // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
     // knockback). The whole body already slides via the server position; this is the additive flinch on
@@ -582,11 +586,13 @@ export class SpriteRig {
     const reach = TARGET_BODY_H * (this.weapons.length > 0 ? 0.1 : 0.28);
     for (const hnd of this.hands) {
       const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
-      const swingX = Math.cos(armPh) * s * 5 * gait; // fore-aft arm swing with the walk
+      const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
       const bobY = Math.abs(Math.sin(legPh)) * s * 2 * gait; // a little vertical with each footfall
       const idleY = Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
-      const trailX = -lagX * this.facing * s * 20; // inertia drag (× facing → local mirrored x)
-      const trailY = -lagY * s * 20;
+      // §MADNESS loose, dangly arms — a big inertia trail so the hands swing behind + overshoot the body on
+      // every speed/direction change (the flash-animation follow-through), then settle.
+      const trailX = -lagX * this.facing * s * 36;
+      const trailY = -lagY * s * 30;
       let hx = hnd.ox + swingX + trailX;
       let hy = hnd.oy + bobY + idleY + trailY;
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
@@ -633,11 +639,11 @@ export class SpriteRig {
       if (!ft) continue;
       const ph = legPh + i * Math.PI; // legs out of phase
       const idle = Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
-      const trailX = -lagX * this.facing * s * 13; // planted feet drag against a speed/direction change
-      const trailY = -lagY * s * 9;
-      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 16 * gait + idle + trailY;
-      ft.img.x = ft.ox + Math.cos(ph) * s * 8 * gait + trailX; // stride + drag
-      ft.img.rotation = Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.12; // pivot + lean into accel
+      const trailX = -lagX * this.facing * s * 20; // §MADNESS looser foot drag on a speed/direction change
+      const trailY = -lagY * s * 12;
+      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 19 * gait + idle + trailY; // §MADNESS higher foot lift
+      ft.img.x = ft.ox + Math.cos(ph) * s * 10 * gait + trailX; // stride + drag
+      ft.img.rotation = Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.18; // pivot + lean into accel
     }
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
@@ -647,6 +653,9 @@ export class SpriteRig {
       const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation = weaponAngle + off;
+      // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
+      // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
+      w.img.setScale(w.baseScale / (this.baseScale || 1));
     }
 
     // §5 jump hop: §7 v0.105 de-clunk — the synced height arrives in raw 20Hz Euler steps (~15px jumps),

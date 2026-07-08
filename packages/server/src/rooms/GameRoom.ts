@@ -1594,7 +1594,7 @@ export class GameRoom extends Room<ArenaState> {
     const aim0 = Math.atan2(c.aimY, c.aimX);
     // §20 WYSIWYG: the hit reach follows the RENDERED blade — floored at the sprite tip + scaled by the
     // holder's rig — so the point stops whiffing (guns already do this via gunMuzzleReach; melee was flat).
-    const reach = meleeReach(weapon, characterScale(player.character));
+    const reach = meleeReach(weapon); // §29 weapons are a FIXED size now (not char-scaled) → fixed reach
     // Register the swept edge — the blade sweeps from `aim0 − swingArc/2` to `+swingArc/2` over `active`,
     // origin tracked live from the player. Replaces any in-flight swing (cooldown ≥ active, so no overlap).
     this.meleeSwings.set(player.id, {
@@ -2131,7 +2131,7 @@ export class GameRoom extends Room<ArenaState> {
     const ttl = g.range / g.projectileSpeed;
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
-    const reach = gunMuzzleReach(weapon, characterScale(player.character));
+    const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
     const mx = player.x + c.aimX * reach;
     const my = player.y + c.aimY * reach;
     for (let i = 0; i < pellets; i++) {
