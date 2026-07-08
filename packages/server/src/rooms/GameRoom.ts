@@ -185,6 +185,7 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  weaponSetBonus,
   xpToNextLevel,
   ZONE_DPS,
   ZONE_RADIUS,
@@ -944,8 +945,19 @@ export class GameRoom extends Room<ArenaState> {
   ): number {
     return (
       effectiveDamageMult(weapon, grades, player) *
-      lootDamageMult(player.weaponRarity, player.weaponAffix)
+      lootDamageMult(player.weaponRarity, player.weaponAffix) *
+      weaponSetBonus(this.loadoutIds(player), player.weapon) // §30 class set-bonus (2/3-of-a-class)
     );
+  }
+
+  /** §30 the player's equipped loadout as weapon ids — the active slot reads the LIVE held weapon (slots are
+   *  only re-synced on swap), the others their stored weapon. Drives the class set-bonus count. */
+  private loadoutIds(player: PlayerState): string[] {
+    const out: string[] = [];
+    for (let i = 0; i < player.slots.length; i++) {
+      out.push(i === player.activeSlot ? player.weapon : (player.slots[i]?.weapon ?? ""));
+    }
+    return out;
   }
 
   /** §6 count of LIVING players — what the TRASH horde difficulty scales on, so a mostly-downed squad faces

@@ -58,6 +58,7 @@ import {
   RARITY_CURSED,
   scripValue,
   SHOP_RADIUS,
+  weaponSetBonus,
   RING_BAND_HALF,
   ROOM_NAME,
   requirementPenalty,
@@ -3873,9 +3874,13 @@ export class ArenaScene extends Phaser.Scene {
       }
       z.setPosition(x + chipW / 2, y + chipH / 2).setSize(chipW, chipH);
     }
-    // scrip + bag readout above the chips
+    // §30 class set-bonus for the current loadout (active slot = live held weapon, others = stored).
+    const loadout = [0, 1, 2].map((i) => this.slotView(self, i).wid);
+    const setB = weaponSetBonus(loadout, self.weapon);
+    const setTxt = setB > 1 ? `   ⚔ SET +${Math.round((setB - 1) * 100)}%` : "";
+    // scrip + bag + set-bonus readout above the chips
     const info = this.hudText(this.arsenalTexts, 6, 100049)
-      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab`)
+      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`)
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);

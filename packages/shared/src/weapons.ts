@@ -272,6 +272,30 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
   return renderScale * Math.max(weapon.range, spriteTip);
 }
 
+/** §30 v0.118 WEAPON CLASS SET-BONUS (Brotato parity #2): carrying multiple weapons of the same class
+ *  (melee/ranged/caster) in your loadout escalates that class's damage — turning a 3-slot loadout into a
+ *  build. Scaled to DD's small arsenal: 2-of-a-class and 3-of-a-class thresholds (vs Brotato's 2–6). */
+export const SET_BONUS_2 = 0.08; // +8% class damage at 2 of a class
+export const SET_BONUS_3 = 0.18; // +18% at 3 of a class
+
+/** How many equipped weapons share `cls`. Empty/unknown ids are ignored. PURE. */
+export function classCount(loadout: readonly string[], cls: WeaponDef["tags"]["classPool"]): number {
+  let n = 0;
+  for (const id of loadout) if (id && WEAPONS[id]?.tags.classPool === cls) n++;
+  return n;
+}
+
+/** The damage MULTIPLIER the held weapon earns from its class set-bonus, given the full equipped `loadout`
+ *  (the slot weapon ids). 1 = no bonus. PURE — server folds it into held damage, client shows it. */
+export function weaponSetBonus(loadout: readonly string[], heldWeaponId: string): number {
+  const held = WEAPONS[heldWeaponId];
+  if (!held) return 1;
+  const n = classCount(loadout, held.tags.classPool);
+  if (n >= 3) return 1 + SET_BONUS_3;
+  if (n >= 2) return 1 + SET_BONUS_2;
+  return 1;
+}
+
 /** Per-point damage multiplier contributed by each grade (tuning; B = the legacy 0.06/pt). */
 export const GRADE_DMG_COEFF: Record<Grade, number> = {
   S: 0.1,

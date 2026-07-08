@@ -23,8 +23,12 @@ import {
   SHIFTER_KIND_IDS,
   salvageValue,
   scripValue,
+  SET_BONUS_2,
+  SET_BONUS_3,
   TILE_GROUND,
   TILE_PIT,
+  weaponSetBonus,
+  WEAPON_IDS,
   WEAPONS,
   ZONE_RADIUS,
   ZONE_TTL,
@@ -1615,6 +1619,35 @@ describe("GameRoom — §30 crit", () => {
     h.room.damageEnemy(enemy, "e", 10, [], 0);
     expect(hp - enemy.hp).toBe(10);
     rng.mockRestore();
+  });
+});
+
+// ── §30 v0.118 weapon class SET-BONUS (Brotato parity #2): N-of-a-class in the loadout escalates that
+// class's held damage. ──
+describe("GameRoom — §30 weapon set-bonus", () => {
+  const melee = WEAPON_IDS.filter((id) => WEAPONS[id]?.tags.classPool === "melee");
+  const ranged = WEAPON_IDS.filter((id) => WEAPONS[id]?.tags.classPool === "ranged");
+
+  it("escalates the held weapon's class bonus at 2 and 3 of a class", () => {
+    const [m0, m1, m2] = melee;
+    expect(weaponSetBonus([m0, "", ""], m0)).toBe(1); // lone weapon → no bonus
+    expect(weaponSetBonus([m0, m1, ""], m0)).toBeCloseTo(1 + SET_BONUS_2, 5); // 2 of a class
+    expect(weaponSetBonus([m0, m1, m2], m0)).toBeCloseTo(1 + SET_BONUS_3, 5); // 3 of a class
+  });
+
+  it("counts only the HELD weapon's class — a mixed loadout gives no bonus", () => {
+    const m0 = melee[0];
+    const r0 = ranged[0];
+    // held is melee, but only ONE melee in the loadout (+ a ranged + empty) → no melee set-bonus.
+    expect(weaponSetBonus([m0, r0, ""], m0)).toBe(1);
+    // held is ranged with two ranged → ranged bonus (independent of the melee count).
+    if (ranged.length >= 2) expect(weaponSetBonus([r0, ranged[1], m0], r0)).toBeCloseTo(1 + SET_BONUS_2, 5);
+  });
+
+  it("unknown / empty ids are ignored", () => {
+    const m0 = melee[0];
+    expect(weaponSetBonus(["", "nope", ""], m0)).toBe(1); // held not even in the loadout list, count 0→ but held itself counts? no
+    expect(weaponSetBonus([m0, "nope", ""], m0)).toBe(1); // only 1 real melee
   });
 });
 
