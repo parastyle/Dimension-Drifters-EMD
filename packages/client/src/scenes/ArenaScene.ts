@@ -217,6 +217,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 the room-gate barrier graphic (drawn at the synced lock x) + last-seen room name for the banner. */
   private beltGate: Phaser.GameObjects.Graphics | null = null;
   private lastBeltRoom = "";
+  /** §29 the Codex-rendered sky-carrier backdrop image (pinned + sized to the viewport each frame). */
+  private beltBackdrop: Phaser.GameObjects.Image | null = null;
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -407,6 +409,11 @@ export class ArenaScene extends Phaser.Scene {
    *  instead of one per part (the genre's standard horde-render fix). SpriteRig reads frames via `partTexture`. */
   preload(): void {
     this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
+    if (this.belt) {
+      // §29 Codex-rendered belt art (docs/BEATEMUP_CONVERSION): sky-carrier backdrop + deck plating.
+      this.load.image("belt-sky", "belt/sky-carrier.png");
+      this.load.image("belt-deck", "belt/deck.png");
+    }
     for (const manifest of Object.values(SPRITES)) {
       // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
       // bloat VRAM). Only a CURATED one (expansion flag cleared) boot-loads its loose parts — SpriteRig then
@@ -2387,7 +2394,13 @@ export class ArenaScene extends Phaser.Scene {
    *  near/far collision edges (WYSIWYG: the railing you see is the edge you can't cross). Plus obstacles as
    *  depth-sorted props + a sky. Everything world-space so it scrolls with the belt; depth below the actors. */
   private buildBeltFloor(): void {
-    this.cameras.main.setBackgroundColor("#79bce9"); // sky
+    this.cameras.main.setBackgroundColor("#79bce9"); // sky (fallback behind the backdrop)
+    // §29 Codex sky-carrier backdrop — pinned + resized to the viewport each frame (beltCamera). Its sky +
+    // ship show ABOVE the opaque vector deck (which stays the collision-accurate walkable surface below).
+    if (this.textures.exists("belt-sky")) {
+      this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
+      this.floorObjs.push(this.beltBackdrop);
+    }
     const level = this.beltLevel ?? beltLevelFor("sky-carrier");
     const w = level.length;
     // Sample the near/far edges across the belt and build the deck polygon in projected (screen-plane) space.
@@ -2481,6 +2494,10 @@ export class ArenaScene extends Phaser.Scene {
     const a = 1 - Math.exp(-this.deltaSec / CAM_FOLLOW_TAU);
     this.camFocus.x += (wantX - this.camFocus.x) * a;
     cam.setScroll(this.camFocus.x, BELT_Y0 - BELT_SKY);
+    // Fill the viewport with the sky-carrier backdrop (world-space, repositioned to the scroll each frame).
+    this.beltBackdrop
+      ?.setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
+      .setDisplaySize(viewW, BELT_VIEW_H);
     this.drawBeltGate(lock);
     // §29 room banner on entering a new room.
     const roomName = this.room?.state.beltRoomName ?? "";
