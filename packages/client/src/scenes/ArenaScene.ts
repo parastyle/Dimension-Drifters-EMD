@@ -8,6 +8,7 @@ import {
   affixById,
   BELT_Y0,
   type BeltLevel,
+  BAG_CAP,
   beltBounds,
   beltLevelFor,
   BOSS_DEF_IDS,
@@ -205,7 +206,22 @@ export class ArenaScene extends Phaser.Scene {
    *  20Hz. Eased up toward the synced value, snapped to 0 on the strike; pruned with the enemy. */
   private readonly enemyWindup = new Map<string, number>();
   private keys!: Record<
-    "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "M" | "TAB" | "SPACE",
+    | "W"
+    | "A"
+    | "S"
+    | "D"
+    | "R"
+    | "Q"
+    | "E"
+    | "T"
+    | "B"
+    | "C"
+    | "M"
+    | "TAB"
+    | "SPACE"
+    | "ONE"
+    | "TWO"
+    | "THREE",
     Phaser.Input.Keyboard.Key
   >;
   /** §29 v0.118 BELT-SCROLLER mode (`?belt=1` or the menu's belt launch): renders the SAME game (all systems
@@ -388,6 +404,16 @@ export class ArenaScene extends Phaser.Scene {
   // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
   // from the player's current attributes every frame so the numbers track levelling.
   private carousel: Card[] = [];
+  // §29 belt arsenal HUD (replaces the carousel in belt mode): 3 slot chips + scrip/bag readout, and a
+  // Tab-toggled bag panel with clickable entries (click a bag weapon → equip into the active slot; click a
+  // slot → stash to bag). Immediate-mode Graphics + pooled Text; interactive zones rebuilt when the panel opens.
+  private arsenalG: Phaser.GameObjects.Graphics | null = null;
+  private arsenalTexts: Phaser.GameObjects.Text[] = [];
+  private bagOpen = false;
+  private bagG: Phaser.GameObjects.Graphics | null = null;
+  private bagTexts: Phaser.GameObjects.Text[] = [];
+  private bagZones: Phaser.GameObjects.Rectangle[] = [];
+  private slotZones: Phaser.GameObjects.Rectangle[] = [];
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -507,8 +533,23 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,M,TAB,SPACE") as Record<
-      "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "M" | "TAB" | "SPACE",
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,M,TAB,SPACE,ONE,TWO,THREE") as Record<
+      | "W"
+      | "A"
+      | "S"
+      | "D"
+      | "R"
+      | "Q"
+      | "E"
+      | "T"
+      | "B"
+      | "C"
+      | "M"
+      | "TAB"
+      | "SPACE"
+      | "ONE"
+      | "TWO"
+      | "THREE",
       Phaser.Input.Keyboard.Key
     >;
     // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
@@ -1170,8 +1211,18 @@ export class ArenaScene extends Phaser.Scene {
     // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
     // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
-    if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
-    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
+    // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
+    // keeps the roster carousel.
+    if (this.belt) {
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleSlot", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleSlot", { dir: -1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.THREE)) this.room?.send("swapSlot", { slot: 2 });
+    } else {
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
+    }
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
     // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
@@ -1179,11 +1230,15 @@ export class ArenaScene extends Phaser.Scene {
       const muted = this.audio.toggleMute();
       this.flashBanner(muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON", "#8fdcff");
     }
-    // §21 Tab toggles the dev summon menu — Testing Grounds only (the server rejects it elsewhere anyway).
+    // Tab: §29 belt opens the ARSENAL BAG overlay; elsewhere it's the §21 dev summon menu (Testing Grounds).
     if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
-      const training = this.room?.state.mode === "training";
-      if (training && !this.summonOpen) this.openSummonMenu();
-      else this.closeSummonMenu();
+      if (this.belt) {
+        this.bagOpen = !this.bagOpen;
+      } else {
+        const training = this.room?.state.mode === "training";
+        if (training && !this.summonOpen) this.openSummonMenu();
+        else this.closeSummonMenu();
+      }
     }
     if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
@@ -3618,6 +3673,12 @@ export class ArenaScene extends Phaser.Scene {
    *  rotated, fanned to the sides (prev left / next right, §9). */
   private updateCarousel(): void {
     if (!this.room || this.carousel.length === 0) return;
+    // §29 belt swaps the roster carousel for the compact 3-slot arsenal HUD — hide the fanned cards.
+    if (this.belt) {
+      if (this.carousel[0]?.container.visible) for (const c of this.carousel) c.container.setVisible(false);
+      this.updateArsenalHud();
+      return;
+    }
     const self = this.room.state.players.get(this.room.sessionId);
     const ids = WEAPON_IDS;
     const n = ids.length;
@@ -3681,6 +3742,151 @@ export class ArenaScene extends Phaser.Scene {
         card.resource.setText("");
       }
     }
+  }
+
+  /** §29 a pooled, screen-pinned HUD text (lazily created), used by the arsenal + bag readouts. */
+  private hudText(pool: Phaser.GameObjects.Text[], i: number, depth: number): Phaser.GameObjects.Text {
+    let t = pool[i];
+    if (!t) {
+      t = this.add
+        .text(0, 0, "", { fontFamily: "monospace", color: "#e8eef6" })
+        .setScrollFactor(0)
+        .setDepth(depth);
+      pool[i] = t;
+    }
+    return t;
+  }
+
+  /** The (weapon id, rarity) shown for slot `i` — the ACTIVE slot reads the live held weapon (the server only
+   *  re-syncs the slot on a swap/grab), the others read their stored slot. */
+  private slotView(self: PlayerState, i: number): { wid: string; rarity: number } {
+    if (i === self.activeSlot) return { wid: self.weapon, rarity: self.weaponRarity };
+    const sl = self.slots[i];
+    return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0 };
+  }
+
+  /** §29 belt ARSENAL HUD — 3 slot chips (active raised + bright rarity border, others dim) showing the
+   *  weapon name tinted by rarity + the slot key, plus a scrip + bag readout. Click a chip to swap to it (or,
+   *  with the bag open, to stash it). Immediate-mode Graphics + pooled Text + persistent click zones. */
+  private updateArsenalHud(): void {
+    const self = this.room?.state.players.get(this.room?.sessionId ?? "");
+    if (!self) return;
+    const s = this.uiScale();
+    if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
+    const g = this.arsenalG;
+    g.clear();
+    const chipW = 156 * s;
+    const chipH = 42 * s;
+    const gap = 10 * s;
+    const total = 3 * chipW + 2 * gap;
+    const x0 = this.screenW() / 2 - total / 2;
+    const baseY = this.screenH() - 84 * s;
+    for (let i = 0; i < 3; i++) {
+      const active = i === self.activeSlot;
+      const { wid, rarity } = this.slotView(self, i);
+      const empty = !wid || wid === "fists";
+      const col = empty ? 0x39424e : (RARITIES[rarity]?.color ?? 0x9aa5b1);
+      const x = x0 + i * (chipW + gap);
+      const y = baseY - (active ? 8 * s : 0);
+      g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(x, y, chipW, chipH, 7 * s);
+      g.lineStyle(active ? 3 * s : 1.5 * s, col, active ? 1 : 0.6).strokeRoundedRect(x, y, chipW, chipH, 7 * s);
+      // slot key
+      const key = this.hudText(this.arsenalTexts, i, 100049)
+        .setText(String(i + 1))
+        .setColor(active ? "#ffe27a" : "#5c6672")
+        .setPosition(x + 8 * s, y + 5 * s);
+      key.setFontSize(12 * s).setOrigin(0, 0);
+      // weapon name (rarity-tinted)
+      const nm = empty ? "—" : (WEAPONS[wid]?.name ?? wid);
+      const name = this.hudText(this.arsenalTexts, 3 + i, 100049)
+        .setText(nm)
+        .setColor(empty ? "#5c6672" : `#${col.toString(16).padStart(6, "0")}`)
+        .setPosition(x + chipW / 2, y + chipH / 2 + 3 * s);
+      name.setFontSize((nm.length > 16 ? 11 : 13) * s).setOrigin(0.5, 0.5);
+      // click zone (swap to this slot, or stash it when the bag is open)
+      let z = this.slotZones[i];
+      if (!z) {
+        z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100047).setInteractive();
+        z.on("pointerdown", () => {
+          if (this.bagOpen) this.room?.send("bagStore", { slot: i });
+          else this.room?.send("swapSlot", { slot: i });
+        });
+        this.slotZones[i] = z;
+      }
+      z.setPosition(x + chipW / 2, y + chipH / 2).setSize(chipW, chipH);
+    }
+    // scrip + bag readout above the chips
+    const info = this.hudText(this.arsenalTexts, 6, 100049)
+      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab`)
+      .setColor("#9fb0c2")
+      .setPosition(this.screenW() / 2, baseY - 16 * s);
+    info.setFontSize(12 * s).setOrigin(0.5, 1);
+    if (this.bagOpen) this.renderBagPanel(self, s);
+    else if (this.bagG?.visible) this.hideBagPanel();
+  }
+
+  /** §29 the Tab bag overlay — a grid of the bag's weapons; click one to EQUIP it into the active slot
+   *  (swapping whatever was there back to the bag). Click a slot chip (below) to STASH it. Zones are pooled
+   *  and repositioned each frame the panel is open; the unused tail is hidden. */
+  private renderBagPanel(self: PlayerState, s: number): void {
+    if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
+    const g = this.bagG.setVisible(true);
+    g.clear();
+    const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
+    const panelH = 210 * s;
+    const px = this.screenW() / 2 - panelW / 2;
+    const py = this.screenH() - 84 * s - panelH - 18 * s;
+    g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
+    g.lineStyle(2 * s, 0x2f3946, 1).strokeRoundedRect(px, py, panelW, panelH, 10 * s);
+    const title = this.hudText(this.bagTexts, 0, 100046)
+      .setText("BAG — click a weapon to equip · click a slot to stash · Tab to close")
+      .setColor("#9fb0c2")
+      .setPosition(px + 16 * s, py + 12 * s);
+    title.setFontSize(12 * s).setOrigin(0, 0);
+    const cols = 4;
+    const cellW = (panelW - 32 * s) / cols;
+    const cellH = 40 * s;
+    const gx = px + 16 * s;
+    const gy = py + 40 * s;
+    for (let i = 0; i < BAG_CAP; i++) {
+      const item = self.bag[i];
+      const zone = (() => {
+        let z = this.bagZones[i];
+        if (!z) {
+          z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100045).setInteractive();
+          z.on("pointerdown", () => {
+            if (this.bagOpen && i < self.bag.length) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
+          });
+          this.bagZones[i] = z;
+        }
+        return z;
+      })();
+      if (!item || !item.weapon) {
+        zone.setVisible(false);
+        continue;
+      }
+      const cx = gx + (i % cols) * cellW;
+      const cy = gy + Math.floor(i / cols) * (cellH + 6 * s);
+      const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
+      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
+      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
+      const nm = WEAPONS[item.weapon]?.name ?? item.weapon;
+      const t = this.hudText(this.bagTexts, 1 + i, 100046)
+        .setText(nm)
+        .setColor(`#${col.toString(16).padStart(6, "0")}`)
+        .setVisible(true)
+        .setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2);
+      t.setFontSize((nm.length > 14 ? 10 : 12) * s).setOrigin(0.5, 0.5);
+      zone.setVisible(true).setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2).setSize(cellW - 8 * s, cellH);
+    }
+  }
+
+  /** Hide the bag overlay + its zones/texts (panel closed). */
+  private hideBagPanel(): void {
+    this.bagG?.setVisible(false);
+    for (const z of this.bagZones) z.setVisible(false);
+    for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
+    this.bagTexts[0]?.setVisible(false);
   }
 
   /** Chain-lightning VFX (§10 on-hit proc, §14 client-predicted): a jagged teal bolt from the weapon
