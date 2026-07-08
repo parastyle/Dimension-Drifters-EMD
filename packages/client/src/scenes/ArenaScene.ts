@@ -2412,15 +2412,25 @@ export class ArenaScene extends Phaser.Scene {
       far.push({ x, y: this.beltY(BELT_Y0 + b.yMin) });
       near.push({ x, y: this.beltY(BELT_Y0 + b.yMax) });
     }
+    // Deck polygon (far edge L→R, then near edge R→L) — used BOTH as the plain fill and as the texture mask.
+    const deckPoly = (gg: Phaser.GameObjects.Graphics) => {
+      gg.beginPath();
+      gg.moveTo(far[0]!.x, far[0]!.y);
+      for (const p of far) gg.lineTo(p.x, p.y);
+      for (let i = near.length - 1; i >= 0; i--) gg.lineTo(near[i]!.x, near[i]!.y);
+      gg.closePath();
+    };
     const g = this.add.graphics().setDepth(60);
     // dark hull/void below the whole thing
     g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
-    // deck fill: far edge L→R, then near edge R→L
-    g.fillStyle(0x4c535c, 1).beginPath();
-    g.moveTo(far[0]!.x, far[0]!.y);
-    for (const p of far) g.lineTo(p.x, p.y);
-    for (let i = near.length - 1; i >= 0; i--) g.lineTo(near[i]!.x, near[i]!.y);
-    g.closePath().fillPath();
+    // Walkable deck fill — a crisp, collision-accurate trapezoid following the exact floor profile. (The
+    // Codex deck-PLATING texture is installed but not painted here yet: clipping it to this varying trapezoid
+    // needs a Phaser-4 geometry mask, and Phaser 4's setMask doesn't bind a GeometryMask2 to a TileSprite the
+    // way Phaser 3 did — a real blocker to solve before the texture can replace this without spilling into the
+    // sky at the catwalk. The vector deck + the Codex sky backdrop already read well.)
+    g.fillStyle(0x454c56, 1);
+    deckPoly(g);
+    g.fillPath();
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
     g.lineStyle(6, 0xffd24a, 0.55).beginPath();
     for (let i = 0; i < far.length; i++) g.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
