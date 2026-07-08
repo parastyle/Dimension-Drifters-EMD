@@ -1,6 +1,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  BELT_Y0,
   type ArenaMap,
   ArenaState,
   ATTACK_BUFFER_SECONDS,
@@ -31,6 +32,7 @@ import {
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
+  DEPTH_MAX,
   DIMENSIONS,
   DROP_CHANCE_TOUGH,
   DROP_CHANCE_TRASH,
@@ -83,6 +85,7 @@ import {
   M0_CLASS_ATTR,
   MAX_ENEMIES,
   MAX_PLAYERS,
+  MOVE_SPEED,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
   meleeSwingActive,
@@ -381,6 +384,10 @@ export class GameRoom extends Room<ArenaState> {
   /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
    *  (a wipe deep in the chain shouldn't strand the next expedition in a random dimension). */
   private homeDimension = DEFAULT_DIMENSION;
+  /** §29 v0.118 BELT mode — the SAME game, confined to a wide-shallow depth band + flat deck (no pits/POIs),
+   *  rendered belt-scroller by the client. Set from the `belt` join option; all combat/enemies/bosses/loot
+   *  are unchanged. */
+  private belt = false;
   private bossId: string | null = null;
   /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
    *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
@@ -395,8 +402,9 @@ export class GameRoom extends Room<ArenaState> {
     return this.hostId === null || client.sessionId === this.hostId;
   }
 
-  override onCreate(options?: { dimensionId?: string; bossRush?: boolean }): void {
+  override onCreate(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }): void {
     this.setState(new ArenaState());
+    this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, flat deck)
 
     // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
@@ -1112,7 +1120,18 @@ export class GameRoom extends Room<ArenaState> {
       }
       // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
       // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
-      const next = stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt);
+      // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
+      const next = this.belt
+        ? stepSteeredMovement(
+            player,
+            { vx: input.mvx, vy: input.mvy },
+            input.held,
+            dt,
+            MOVE_SPEED,
+            BELT_Y0,
+            BELT_Y0 + DEPTH_MAX,
+          )
+        : stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt);
       input.mvx = next.vx;
       input.mvy = next.vy;
       // §4 v0.107 mirror the steering velocity onto synced state — the owning client REBASES its
@@ -1149,17 +1168,20 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     // 2.4 §17 POI collision — push living players OUT of the landmark obstacles (cover you can't walk through).
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      const r = resolvePoiCollision(this.map, player.x, player.y, PLAYER_RADIUS);
-      player.x = r.x;
-      player.y = r.y;
-    });
+    // §29 belt mode has a FLAT deck — no landmarks or pits — so both terrain layers are skipped.
+    if (!this.belt)
+      this.state.players.forEach((player) => {
+        if (!player.alive) return;
+        const r = resolvePoiCollision(this.map, player.x, player.y, PLAYER_RADIUS);
+        player.x = r.x;
+        player.y = r.y;
+      });
 
     // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
-    this.state.players.forEach((player, id) => {
+    if (!this.belt)
+      this.state.players.forEach((player, id) => {
       if (!player.alive || this.inLevelWindow(player)) return;
       const c = this.combat.get(id);
       if (!c) return;
@@ -1392,28 +1414,31 @@ export class GameRoom extends Room<ArenaState> {
     // The BOSS is exempt (like the pit rule below): a boss body — especially the colossus (r=170, far bigger
     // than any landmark) — crushes through cover rather than wedging on it, and its size exceeds the §17
     // wedge/push-out guards that keep normal bodies un-stuck.
-    this.state.enemies.forEach((enemy, eid) => {
-      if (eid === this.bossId) return;
-      const r = resolvePoiCollision(
-        this.map,
-        enemy.x,
-        enemy.y,
-        ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
-      );
-      enemy.x = r.x;
-      enemy.y = r.y;
-    });
+    if (!this.belt)
+      this.state.enemies.forEach((enemy, eid) => {
+        if (eid === this.bossId) return;
+        const r = resolvePoiCollision(
+          this.map,
+          enemy.x,
+          enemy.y,
+          ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
+        );
+        enemy.x = r.x;
+        enemy.y = r.y;
+      });
 
     // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. This is
     // the "hazards hurt everything" rule (§17): kite the horde into a pit, or knock one in with a parry
     // (the knockback shoves it over the edge) = an instant kill. The boss is pit-immune. No XP — terrain
-    // kills are free crowd control, not score.
-    const fellIn: string[] = [];
-    this.state.enemies.forEach((enemy, eid) => {
-      if (eid === this.bossId) return;
-      if (isPitAtPx(this.map, enemy.x, enemy.y)) fellIn.push(eid);
-    });
-    for (const eid of fellIn) this.state.enemies.delete(eid);
+    // kills are free crowd control, not score. §29 belt has no pits (flat deck) — skipped.
+    if (!this.belt) {
+      const fellIn: string[] = [];
+      this.state.enemies.forEach((enemy, eid) => {
+        if (eid === this.bossId) return;
+        if (isPitAtPx(this.map, enemy.x, enemy.y)) fellIn.push(eid);
+      });
+      for (const eid of fellIn) this.state.enemies.delete(eid);
+    }
 
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
@@ -2922,6 +2947,14 @@ export class GameRoom extends Room<ArenaState> {
       enemyHpScale(players) *
       depthHpScale(this.state.depth);
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
+    if (this.belt) {
+      // §29 belt: come in from the SIDES along the belt (x), confined to the shallow depth band. No pit/POI
+      // avoidance (flat deck).
+      enemy.x = ex;
+      enemy.y = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, BELT_Y0 + m, BELT_Y0 + DEPTH_MAX - m);
+      this.state.enemies.set(enemy.id, enemy);
+      return;
+    }
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
     // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
     const sp = safeSpawnPos(this.map, ex, ey, kind.radius);

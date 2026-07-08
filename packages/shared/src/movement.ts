@@ -135,11 +135,15 @@ export function stepSteeredMovement(
   input: MoveInput,
   dtSeconds: number,
   speed: number = MOVE_SPEED,
+  yMin: number = PLAYER_RADIUS,
+  yMax: number = ARENA_HEIGHT - PLAYER_RADIUS,
 ): { x: number; y: number; vx: number; vy: number } {
+  // §29 belt mode passes a shallow [yMin, yMax] DEPTH BAND instead of the full arena, so the same movement
+  // sim confines players to the belt band; both the server and the client predictor pass identical bounds.
   const v = steerVelocity(vel, input, dtSeconds, speed);
   return {
     x: clamp(pos.x + v.vx * dtSeconds, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS),
-    y: clamp(pos.y + v.vy * dtSeconds, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS),
+    y: clamp(pos.y + v.vy * dtSeconds, yMin, yMax),
     vx: v.vx,
     vy: v.vy,
   };

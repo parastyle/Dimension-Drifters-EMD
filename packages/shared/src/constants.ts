@@ -183,6 +183,12 @@ export const DEPTH_TOL_ENEMY = 30;
 /** SoR4 trick: while a body is actively moving in DEPTH, its hurtbox depth shrinks by this factor, so
  *  repositioning genuinely dodges instead of getting clipped by a fat window. */
 export const DEPTH_DODGE_MULT = 0.5;
+/** §29 belt DEPTH BAND placement in the arena: belt-mode reuses the SAME flat sim, just confined to a
+ *  wide-shallow field. The playable depth band is `y ∈ [BELT_Y0, BELT_Y0 + DEPTH_MAX]`, centred in the
+ *  arena so movement-clamp + spawns keep everything in the band. `x` stays the long belt axis (full
+ *  ARENA_WIDTH). The client projects `(worldY − BELT_Y0)` as belt depth. Authoritative (both the server and
+ *  the client predictor clamp movement to this band in belt mode, so prediction stays in sync). */
+export const BELT_Y0 = (ARENA_HEIGHT - DEPTH_MAX) / 2;
 
 /** Networking. */
 export const DEFAULT_PORT = 2567;
