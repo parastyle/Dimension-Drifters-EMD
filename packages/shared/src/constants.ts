@@ -244,6 +244,10 @@ export const BAG_CAP = 12;
  *  (unearned/conjured weapons sell for nothing — same anti-launder rule as salvage). Indexed by rarity. */
 export const SHOP_RADIUS = 90;
 export const SCRIP_BY_RARITY = [4, 9, 18, 34, 60] as const;
+/** §30 v0.118 HARVEST (Brotato parity #3): extracting banks a BONUS on the carried salvage, scaled by the
+ *  squad's best LUK — rewarding the luck/greed axis without a new stat. +4%/LUK over 1, capped. */
+export const HARVEST_PER_LUK = 0.04;
+export const HARVEST_CAP = 0.5;
 /** §9/§13 drop & salvage: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
  *  drop at your feet doesn't snap straight back. */
 export const DROP_GRACE_SECONDS = 0.7;

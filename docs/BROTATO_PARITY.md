@@ -31,15 +31,13 @@ bosses ✓. DD is already juicy.
 
 ## Cheap, high-value parity (fits DD without a redesign) — ranked
 
-1. **Crit system** — DD has **no crits** today. Brotato's crit chance/mult is a big source of build
-   excitement and hit-feedback variety. Fits DD cleanly: add `critChance`/`critMult` to the damage
-   pipeline (`damageEnemy`), roll server-side, and give crits a distinct big/gold damage number +
-   extra hit-stop + knockback. Ties into the existing attribute system (LUK/DEX could grant crit).
-   *Medium effort, schema touch for the number styling only. Highest build-depth-per-cost.*
-2. **Weapon class set-bonuses** — DD weapons already have `tags` (classPool: melee/ranged/caster).
-   Brotato's "N of a class → escalating bonus" is ~15 numeric table rows and turns a loadout into a
-   *build*. DD carries fewer weapons at once than Brotato's 6, so scale the thresholds (2/3 not 2–6).
-   *Medium effort, pure-data + a stat-recompute hook.*
+1. **Crit system** — ✅ **DONE (§30, v0.118).** `critChanceFor(luk,dex)` (5% base, +2%/LUK, +0.8%/DEX,
+   cap 75%) + `CRIT_MULT=2`, rolled server-side per damage source in `damageEnemy`; a crit doubles the
+   hit, bumps the synced `EnemyState.critFlash`, and the client renders a bold GOLD `N!` number + gold
+   flash + shock ring + extra hit-stop.
+2. **Weapon class set-bonuses** — ✅ **DONE (§30, v0.118).** `weaponSetBonus(loadout, heldId)` off
+   `tags.classPool`: +8% at 2-of-a-class, +18% at 3 (scaled to DD's 3-slot loadout). Folded into
+   `heldDamageMult`; the belt arsenal HUD shows `⚔ SET +N%`.
 3. **Harvesting-style end-of-fight bank bonus** — DD already banks salvage at the portal; a small
    "harvest" stat that pays a scaling bonus at extract would reward the econ/greed axis. *Low effort.*
 4. **Pickup magnet** — Brotato's signature dopamine loop. **Does not map today**: DD has no material

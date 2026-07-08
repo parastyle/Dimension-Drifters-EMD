@@ -1629,25 +1629,59 @@ describe("GameRoom — §30 weapon set-bonus", () => {
   const ranged = WEAPON_IDS.filter((id) => WEAPONS[id]?.tags.classPool === "ranged");
 
   it("escalates the held weapon's class bonus at 2 and 3 of a class", () => {
-    const [m0, m1, m2] = melee;
+    const m0 = melee[0] as string;
+    const m1 = melee[1] as string;
+    const m2 = melee[2] as string;
     expect(weaponSetBonus([m0, "", ""], m0)).toBe(1); // lone weapon → no bonus
     expect(weaponSetBonus([m0, m1, ""], m0)).toBeCloseTo(1 + SET_BONUS_2, 5); // 2 of a class
     expect(weaponSetBonus([m0, m1, m2], m0)).toBeCloseTo(1 + SET_BONUS_3, 5); // 3 of a class
   });
 
   it("counts only the HELD weapon's class — a mixed loadout gives no bonus", () => {
-    const m0 = melee[0];
-    const r0 = ranged[0];
+    const m0 = melee[0] as string;
+    const r0 = ranged[0] as string;
     // held is melee, but only ONE melee in the loadout (+ a ranged + empty) → no melee set-bonus.
     expect(weaponSetBonus([m0, r0, ""], m0)).toBe(1);
     // held is ranged with two ranged → ranged bonus (independent of the melee count).
-    if (ranged.length >= 2) expect(weaponSetBonus([r0, ranged[1], m0], r0)).toBeCloseTo(1 + SET_BONUS_2, 5);
+    if (ranged.length >= 2)
+      expect(weaponSetBonus([r0, ranged[1] as string, m0], r0)).toBeCloseTo(1 + SET_BONUS_2, 5);
   });
 
   it("unknown / empty ids are ignored", () => {
-    const m0 = melee[0];
-    expect(weaponSetBonus(["", "nope", ""], m0)).toBe(1); // held not even in the loadout list, count 0→ but held itself counts? no
+    const m0 = melee[0] as string;
+    expect(weaponSetBonus(["", "nope", ""], m0)).toBe(1); // only the held's class counts; none in list
     expect(weaponSetBonus([m0, "nope", ""], m0)).toBe(1); // only 1 real melee
+  });
+});
+
+// ── §30 v0.118 HARVEST (Brotato parity #3): extraction banks a LUK-scaled premium on carried salvage. ──
+describe("GameRoom — §30 harvest bonus", () => {
+  it("banks a LUK-scaled premium at extraction (capped)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.luk = 6; // +4%/LUK over 1 → +20%
+    p.salvaged = 100;
+    h.state().portalOpen = true;
+    h.state().portalX = p.x;
+    h.state().portalY = p.y;
+    h.room.checkExtraction([{ x: p.x, y: p.y }]);
+    expect(h.state().outcome).toBe("victory");
+    expect(h.state().bankedSalvage).toBe(120); // 100 carried + 20% harvest
+    expect(p.salvaged).toBe(0); // banked out
+  });
+
+  it("no LUK investment → no harvest premium (just the carried salvage)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.luk = 1;
+    p.salvaged = 50;
+    h.state().portalOpen = true;
+    h.state().portalX = p.x;
+    h.state().portalY = p.y;
+    h.room.checkExtraction([{ x: p.x, y: p.y }]);
+    expect(h.state().bankedSalvage).toBe(50);
   });
 });
 

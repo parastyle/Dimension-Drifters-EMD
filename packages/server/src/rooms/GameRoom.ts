@@ -78,6 +78,8 @@ import {
   meleeReach,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
+  HARVEST_CAP,
+  HARVEST_PER_LUK,
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
   INPUT_MSGS_PER_TICK,
@@ -3724,7 +3726,12 @@ export class GameRoom extends Room<ArenaState> {
           banked += p.salvaged;
           p.salvaged = 0;
         });
-        this.state.bankedSalvage += banked;
+        // §30 HARVEST bonus (parity #3): a LUK-scaled premium on the extraction payload — the reward for
+        // building luck + taking the benign-greed exit (a wipe still loses everything).
+        const harvest = Math.round(
+          banked * Math.min(HARVEST_CAP, HARVEST_PER_LUK * (this.bestLuk() - 1)),
+        );
+        this.state.bankedSalvage += banked + harvest;
         // Clean the field for the win screen.
         this.state.enemies.clear();
         this.state.projectiles.clear();
@@ -3732,7 +3739,7 @@ export class GameRoom extends Room<ArenaState> {
         this.enemyFireCd.clear();
         this.state.riftOpen = false; // the choice is made — the rift closes
         console.log(
-          `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked} salvage banked, ${this.state.bankedSalvage} total)`,
+          `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked}+${harvest} harvest banked, ${this.state.bankedSalvage} total)`,
         );
         return;
       }
