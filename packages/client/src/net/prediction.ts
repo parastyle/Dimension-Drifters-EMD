@@ -1,5 +1,7 @@
 import {
   type ArenaMap,
+  type BeltLevel,
+  clampBeltFloorY,
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
   JUMP_BUFFER_SECONDS,
@@ -8,6 +10,7 @@ import {
   PLAYER_RADIUS,
   PRED_ERR_DECAY,
   PRED_PENDING_MAX,
+  resolveBeltObstacles,
   resolvePoiCollision,
   stepImpulse,
   stepSteeredMovement,
@@ -90,12 +93,19 @@ function stepHorizontal(
   dy: number,
   dt: number,
   map?: ArenaMap,
+  belt?: BeltLevel,
 ): PredState {
   const moved = stepSteeredMovement({ x: s.x, y: s.y }, { vx: s.mvx, vy: s.mvy }, { dx, dy }, dt);
   const imp = stepImpulse(moved, { vx: s.vx, vy: s.vy }, dt);
   let x = imp.x;
   let y = imp.y;
-  if (map) {
+  if (belt) {
+    // §29 belt: route out of deck obstacles + clamp DEPTH to the authored floor profile (mirrors the
+    // server's belt collision so local prediction lands where the server puts you — no edge rubber-band).
+    const o = resolveBeltObstacles(belt, x, y, PLAYER_RADIUS);
+    x = o.x;
+    y = clampBeltFloorY(belt, o.x, o.y, PLAYER_RADIUS);
+  } else if (map) {
     const r = resolvePoiCollision(map, x, y, PLAYER_RADIUS);
     x = r.x;
     y = r.y;
@@ -107,6 +117,8 @@ export class SelfPredictor {
   private pred: PredState;
   private readonly pending: PredCmd[] = [];
   private map?: ArenaMap;
+  /** §29 belt level (floor profile + obstacles) — when set, prediction uses belt collision, not POI. */
+  private belt?: BeltLevel;
   private lastTeleportSeq: number;
   /** Visual error offset — reconciliation corrections land here and decay (glide, don't pop). */
   private errX = 0;
@@ -150,6 +162,11 @@ export class SelfPredictor {
     this.map = map;
   }
 
+  /** §29 set the belt level so prediction uses the authored floor/obstacle collision (not POI). */
+  setBeltLevel(level: BeltLevel | undefined): void {
+    this.belt = level;
+  }
+
   /** Mint the next sequence-numbered command from this frame's sampled input. */
   mintCmd(dx: number, dy: number, jump: boolean): PredCmd {
     this.seq = (this.seq + 1) >>> 0;
@@ -159,7 +176,7 @@ export class SelfPredictor {
   /** Advance one exact 50ms predicted tick with `cmd` (the scene sends the same cmd to the server). */
   tick(cmd: PredCmd): void {
     if (this.paused || this.stalled) return; // dead/frozen/stalled — don't advance into the dark
-    this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map);
+    this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map, this.belt);
     // Vertical: mirror the server's buffered-jump semantics locally (instant hop on press).
     this.jumpCd = Math.max(0, this.jumpCd - DT);
     this.jumpBuf = Math.max(0, this.jumpBuf - DT);
@@ -240,7 +257,7 @@ export class SelfPredictor {
 
     // REPLAY the still-pending window (exact 50ms steps — the server integrates the same way).
     for (const cmd of this.pending) {
-      this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map);
+      this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map, this.belt);
     }
 
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
@@ -298,7 +315,7 @@ export class SelfPredictor {
       return { x: this.pred.x + this.errX, y: this.pred.y + this.errY, height: this.height };
     }
     const frac = Math.min(Math.max(sinceTickSec, 0), DT);
-    const p = frac > 0 ? stepHorizontal(this.pred, dx, dy, frac, this.map) : this.pred;
+    const p = frac > 0 ? stepHorizontal(this.pred, dx, dy, frac, this.map, this.belt) : this.pred;
     const vert =
       frac > 0 ? stepVertical(this.height, this.vh, frac) : { height: this.height, vh: 0 };
     return { x: p.x + this.errX, y: p.y + this.errY, height: vert.height };

@@ -7,6 +7,9 @@ import {
   AUGMENTS,
   affixById,
   BELT_Y0,
+  type BeltLevel,
+  beltBounds,
+  beltLevelFor,
   BOSS_DEF_IDS,
   BOSSES,
   bossSpawnAt,
@@ -208,6 +211,9 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 v0.118 BELT-SCROLLER mode (`?belt=1` or the menu's belt launch): renders the SAME game (all systems
    *  intact) in the 2.5D beat-'em-up view. Purely a render/camera/floor swap — the sim runs belt-shaped. */
   private belt = new URLSearchParams(location.search).has("belt");
+  /** §29 the authored belt level (floor profile + obstacles) — set when belt mode is on; drives the deck
+   *  render + is handed to the predictor so client collision matches the server. */
+  private beltLevel: BeltLevel | null = null;
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -945,10 +951,12 @@ export class ArenaScene extends Phaser.Scene {
     // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
     const palette = getDimension(s.dimensionId).palette;
     if (this.belt) {
-      // §29 belt: FLAT DECK — no ground tiles / pits / POIs. Build the belt deck + sky instead, and give the
-      // predictor NO map so it doesn't collide the local player against invisible (server-skipped) landmarks.
+      // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
+      // hand the level to the predictor (no POI map) so local collision matches the server exactly.
+      this.beltLevel = beltLevelFor("sky-carrier");
       this.buildBeltFloor();
       this.predictor?.setMap(undefined);
+      this.predictor?.setBeltLevel(this.beltLevel);
     } else {
       this.floorObjs.push(...drawArena(this, (k) => this.hasTile(k), palette));
       this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, palette));
@@ -2372,21 +2380,58 @@ export class ArenaScene extends Phaser.Scene {
     return BELT_Y0 + (worldY - BELT_Y0) * BELT_FORESHORTEN;
   }
 
-  /** §29 build the flat belt DECK + sky (replaces the top-down ground/pits/POIs). World-space rects that
-   *  scroll with the belt; depth kept BELOW the actors (which sort at depth = world y ≥ BELT_Y0). */
+  /** §29 draw the belt DECK from the authored floor PROFILE — the walkable shape follows the exact
+   *  near/far collision edges (WYSIWYG: the railing you see is the edge you can't cross). Plus obstacles as
+   *  depth-sorted props + a sky. Everything world-space so it scrolls with the belt; depth below the actors. */
   private buildBeltFloor(): void {
     this.cameras.main.setBackgroundColor("#79bce9"); // sky
-    const w = ARENA_WIDTH;
-    const bandTop = this.beltY(BELT_Y0); // far edge of the deck
-    const bandBot = this.beltY(BELT_Y0 + DEPTH_MAX); // near edge
-    const mk = (cy: number, h: number, color: number, depth: number) =>
-      this.add.rectangle(w / 2, cy, w, h, color).setDepth(depth);
-    const deck = mk((bandTop + bandBot) / 2, bandBot - bandTop, 0x4c535c, 100);
-    const wall = mk(bandTop, 30, 0x39424e, 101); // back wall at the far edge
-    const chevrons = mk((bandTop + bandBot) / 2, 8, 0xffd24a, 102).setAlpha(0.6); // centreline marking
-    const lip = mk(bandBot + 8, 16, 0xffd24a, 103); // near safety lip
-    const below = mk(bandBot + 1200, 2400, 0x22262c, 99); // dark hull under the deck
-    this.floorObjs.push(deck, wall, chevrons, lip, below);
+    const level = this.beltLevel ?? beltLevelFor("sky-carrier");
+    const w = level.length;
+    // Sample the near/far edges across the belt and build the deck polygon in projected (screen-plane) space.
+    const step = 48;
+    const far: { x: number; y: number }[] = []; // back edge (yMin)
+    const near: { x: number; y: number }[] = []; // front edge (yMax)
+    for (let x = 0; x <= w; x += step) {
+      const b = beltBounds(level, x);
+      far.push({ x, y: this.beltY(BELT_Y0 + b.yMin) });
+      near.push({ x, y: this.beltY(BELT_Y0 + b.yMax) });
+    }
+    const g = this.add.graphics().setDepth(60);
+    // dark hull/void below the whole thing
+    g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
+    // deck fill: far edge L→R, then near edge R→L
+    g.fillStyle(0x4c535c, 1).beginPath();
+    g.moveTo(far[0]!.x, far[0]!.y);
+    for (const p of far) g.lineTo(p.x, p.y);
+    for (let i = near.length - 1; i >= 0; i--) g.lineTo(near[i]!.x, near[i]!.y);
+    g.closePath().fillPath();
+    // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
+    g.lineStyle(6, 0xffd24a, 0.55).beginPath();
+    for (let i = 0; i < far.length; i++) g.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    g.strokePath();
+    g.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
+    g.moveTo(far[0]!.x, far[0]!.y);
+    for (const p of far) g.lineTo(p.x, p.y);
+    g.strokePath();
+    g.lineStyle(6, 0xffd24a, 0.9).beginPath(); // near safety lip
+    g.moveTo(near[0]!.x, near[0]!.y);
+    for (const p of near) g.lineTo(p.x, p.y);
+    g.strokePath();
+    this.floorObjs.push(g);
+    // Obstacles as depth-sorted props (sort with the actors so you can stand in front of / behind them).
+    for (const o of level.obstacles) {
+      const wy = BELT_Y0 + o.depth;
+      const sy = this.beltY(wy);
+      const col = o.kind === "barrel" ? 0x7a5a2e : 0x6b5030;
+      const shadow = this.add
+        .ellipse(o.x, sy, o.r * 2.1, o.r * 0.7, 0x0a1018, 0.35)
+        .setDepth(wy - 1);
+      const body = this.add
+        .ellipse(o.x, sy - o.r * 0.5, o.r * 1.9, o.r * 1.5, col)
+        .setStrokeStyle(3, 0x2a2016, 1)
+        .setDepth(wy);
+      this.floorObjs.push(shadow, body);
+    }
   }
 
   /** §29 belt render post-pass — after all positioning (which sets ABSOLUTE world coords each frame), remap
@@ -3643,7 +3688,12 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
-          this.predictor.setMap(this.arenaMap);
+          if (this.belt) {
+            this.predictor.setMap(undefined);
+            this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
+          } else {
+            this.predictor.setMap(this.arenaMap);
+          }
         }
       }
     }

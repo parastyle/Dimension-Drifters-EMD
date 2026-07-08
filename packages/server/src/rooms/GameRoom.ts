@@ -2,6 +2,10 @@ import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
   BELT_Y0,
+  type BeltLevel,
+  beltLevelFor,
+  clampBeltFloorY,
+  resolveBeltObstacles,
   type ArenaMap,
   ArenaState,
   ATTACK_BUFFER_SECONDS,
@@ -388,6 +392,8 @@ export class GameRoom extends Room<ArenaState> {
    *  rendered belt-scroller by the client. Set from the `belt` join option; all combat/enemies/bosses/loot
    *  are unchanged. */
   private belt = false;
+  /** §29 the authored belt level (floor-collision profile + obstacles) when in belt mode; null otherwise. */
+  private beltLevel: BeltLevel | null = null;
   private bossId: string | null = null;
   /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
    *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
@@ -404,7 +410,8 @@ export class GameRoom extends Room<ArenaState> {
 
   override onCreate(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }): void {
     this.setState(new ArenaState());
-    this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, flat deck)
+    this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, authored deck + collision)
+    this.beltLevel = this.belt ? beltLevelFor("sky-carrier") : null;
 
     // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
@@ -1167,21 +1174,30 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
-    // 2.4 §17 POI collision — push living players OUT of the landmark obstacles (cover you can't walk through).
-    // §29 belt mode has a FLAT deck — no landmarks or pits — so both terrain layers are skipped.
-    if (!this.belt)
+    // 2.4 COLLISION — top-down: §17 POI landmarks. Belt (§29): clamp DEPTH to the authored floor profile at
+    // this belt-x + route out of deck obstacles — the accurate edge/obstacle collision under the art.
+    if (this.belt && this.beltLevel) {
+      const level = this.beltLevel;
+      this.state.players.forEach((player) => {
+        if (!player.alive) return;
+        const o = resolveBeltObstacles(level, player.x, player.y, PLAYER_RADIUS);
+        player.x = o.x;
+        player.y = clampBeltFloorY(level, o.x, o.y, PLAYER_RADIUS);
+      });
+    } else if (!this.belt) {
       this.state.players.forEach((player) => {
         if (!player.alive) return;
         const r = resolvePoiCollision(this.map, player.x, player.y, PLAYER_RADIUS);
         player.x = r.x;
         player.y = r.y;
       });
+    }
 
     // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
-    if (!this.belt)
-      this.state.players.forEach((player, id) => {
+    this.state.players.forEach((player, id) => {
+      if (this.belt) return; // §29 belt has a FLAT deck — no pits
       if (!player.alive || this.inLevelWindow(player)) return;
       const c = this.combat.get(id);
       if (!c) return;
@@ -1414,7 +1430,18 @@ export class GameRoom extends Room<ArenaState> {
     // The BOSS is exempt (like the pit rule below): a boss body — especially the colossus (r=170, far bigger
     // than any landmark) — crushes through cover rather than wedging on it, and its size exceeds the §17
     // wedge/push-out guards that keep normal bodies un-stuck.
-    if (!this.belt)
+    if (this.belt && this.beltLevel) {
+      const level = this.beltLevel;
+      this.state.enemies.forEach((enemy, eid) => {
+        const er = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+        if (eid !== this.bossId) {
+          const o = resolveBeltObstacles(level, enemy.x, enemy.y, er); // boss crushes through obstacles
+          enemy.x = o.x;
+          enemy.y = o.y;
+        }
+        enemy.y = clampBeltFloorY(level, enemy.x, enemy.y, er); // everything stays on the deck
+      });
+    } else if (!this.belt) {
       this.state.enemies.forEach((enemy, eid) => {
         if (eid === this.bossId) return;
         const r = resolvePoiCollision(
@@ -1426,6 +1453,7 @@ export class GameRoom extends Room<ArenaState> {
         enemy.x = r.x;
         enemy.y = r.y;
       });
+    }
 
     // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. This is
     // the "hazards hurt everything" rule (§17): kite the horde into a pit, or knock one in with a parry
@@ -2947,11 +2975,15 @@ export class GameRoom extends Room<ArenaState> {
       enemyHpScale(players) *
       depthHpScale(this.state.depth);
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
-    if (this.belt) {
-      // §29 belt: come in from the SIDES along the belt (x), confined to the shallow depth band. No pit/POI
-      // avoidance (flat deck).
+    if (this.belt && this.beltLevel) {
+      // §29 belt: come in along the belt (x), confined to the authored floor DEPTH profile at that x.
       enemy.x = ex;
-      enemy.y = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, BELT_Y0 + m, BELT_Y0 + DEPTH_MAX - m);
+      enemy.y = clampBeltFloorY(
+        this.beltLevel,
+        ex,
+        anchor.y + Math.sin(angle) * SPAWN_RING,
+        kind.radius,
+      );
       this.state.enemies.set(enemy.id, enemy);
       return;
     }

@@ -1,4 +1,5 @@
 export * from "./augments.js";
+export * from "./belt-map.js";
 export * from "./boss.js";
 export * from "./boss-primitives.js";
 export * from "./bosses.js";
