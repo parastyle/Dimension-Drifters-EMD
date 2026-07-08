@@ -410,8 +410,10 @@ export class ArenaScene extends Phaser.Scene {
   preload(): void {
     this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     if (this.belt) {
-      // §29 Codex-rendered belt art (docs/BEATEMUP_CONVERSION): sky-carrier backdrop + deck plating.
+      // §29 Codex-rendered belt art (docs/BEATEMUP_CONVERSION): sky-carrier backdrop, storm-bridge boss
+      // backdrop, deck plating.
       this.load.image("belt-sky", "belt/sky-carrier.png");
+      this.load.image("belt-sky-bridge", "belt/sky-bridge.png");
       this.load.image("belt-deck", "belt/deck.png");
     }
     for (const manifest of Object.values(SPRITES)) {
@@ -2509,10 +2511,14 @@ export class ArenaScene extends Phaser.Scene {
       ?.setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
       .setDisplaySize(viewW, BELT_VIEW_H);
     this.drawBeltGate(lock);
-    // §29 room banner on entering a new room.
+    // §29 room banner on entering a new room + swap to the storm BRIDGE backdrop for the boss room.
     const roomName = this.room?.state.beltRoomName ?? "";
     if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
     this.lastBeltRoom = roomName;
+    if (this.beltBackdrop) {
+      const key = roomName === "The Bridge" ? "belt-sky-bridge" : "belt-sky";
+      if (this.beltBackdrop.texture.key !== key && this.textures.exists(key)) this.beltBackdrop.setTexture(key);
+    }
   }
 
   /** §29 draw the room GATE barrier at the locked x (a shimmering bulkhead across the deck) — hidden when
