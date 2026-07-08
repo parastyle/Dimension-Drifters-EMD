@@ -21,6 +21,7 @@ import {
   characterName,
   characterScale,
   clampQuakeEpicenter,
+  critChanceFor,
   DEBUG_SPAWN_MAX,
   DEPTH_MAX,
   DEFLECT_TTL,
@@ -2084,10 +2085,10 @@ export class ArenaScene extends Phaser.Scene {
   private static readonly ATTR_INFO: Record<string, { name: string; desc: string; color: number }> =
     {
       str: { name: "STR", desc: "+ melee damage", color: 0xff8a2b },
-      dex: { name: "DEX", desc: "+ finesse/ranged dmg", color: 0x6fd6ff },
+      dex: { name: "DEX", desc: "+ ranged dmg & crit", color: 0x6fd6ff },
       int: { name: "INT", desc: "+ spell / signature power", color: 0xb07bd6 },
       con: { name: "CON", desc: "+ max HP & regen", color: 0x9cff3b },
-      luk: { name: "LUK", desc: "+ luck & rarity", color: 0xffd479 },
+      luk: { name: "LUK", desc: "+ rarity, crit & harvest", color: 0xffd479 },
     };
 
   /** §8 augment flavor-tag → accent colour (riposte STR-orange · aegis CON-green · hex INT-purple). */
@@ -3548,7 +3549,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(barX, xpY - 9 * s)
       .setText(
         self
-          ? `Lv ${self.level}   STR ${self.str} · DEX ${self.dex} · INT ${self.int} · CON ${self.con} · LUK ${self.luk}`
+          ? `Lv ${self.level}   STR ${self.str} · DEX ${self.dex} · INT ${self.int} · CON ${self.con} · LUK ${self.luk}   ⚡${Math.round(critChanceFor(self.luk, self.dex) * 100)}% crit`
           : "",
       );
 
