@@ -9,8 +9,13 @@ dist/
 # artkit GENERATED SCRATCH (regenerable; ~1GB of Codex candidates). The promoted/sliced assets the
 # GAME uses are copied into packages/client/public/ (tracked) — out/ itself is not committed.
 tools/artkit/out/
+# The SLIM machine-transfer copy of out/ (built by pack-out.mjs) — scratch, moved by hand, never committed.
+tools/artkit/out-transfer/
+# The weapon-id allowlist temp file install-cards.mjs reads (regenerated from @dd/shared each run).
+tools/artkit/weapon-ids.tmp.json
 # Codex CLI working dirs + run logs/reports (may hold session/auth data) — never commit.
 tools/artkit/.artkit-tmp/
+tools/artkit/.artkit-codex-homes/
 .artkit-tmp/
 
 # scratch capture/preview files from verification runs
