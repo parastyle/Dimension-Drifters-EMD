@@ -103,6 +103,8 @@ import {
   PARRY_LAUNCH_MAX,
   PARRY_PUSH,
   PARRY_RADIUS,
+  DEFLECT_SPEED,
+  DEFLECT_TTL,
   PARRY_REFLECT_DMG_MULT,
   PARRY_REFLECT_MIN_DAMAGE,
   PARRY_REFLECT_PIERCE,
@@ -2756,11 +2758,13 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  /** §8 v0.117 PROJECTILE PARRY — turn an incoming hostile bullet into a FRIENDLY counter-shot aimed at the
-   *  nearest enemy (or straight back the way it came if the arena's empty), boosted in speed + damage so the
-   *  deflect reads as a hard *thwack* with real UMPH. Also fires the parry reward (flash + heal + FLOW cd +
-   *  chain build) so catching a spit chains into the next parry exactly like a melee parry. The projectile
-   *  keeps its id — the client sees `hostile`+`kind` flip mid-flight and re-skins it as a counter streak. */
+  /** §8 v0.117 PROJECTILE PARRY — a hostile bullet caught in the i-frame window is DEFLECTED. Two modes:
+   *  • BASE (no augment): it GLANCES off to the side and fades — like a round pinging off Superman. Pure
+   *    defense, zero enemy damage, a brief spark (kind "deflect", short TTL).
+   *  • `deflector` augment: it RICOCHETS BACK at the nearest enemy — a friendly counter-shot, boosted speed
+   *    + damage (kind "counter"), the offensive upgrade.
+   *  Either way it fires the parry reward (flash + heal + FLOW cd + chain build) so catching a spit chains
+   *  like a melee parry, and the client re-skins the bullet mid-flight (it sees `hostile`+`kind` flip). */
   private reflectProjectile(
     pr: ProjectileState,
     meta: {
@@ -2768,37 +2772,54 @@ export class GameRoom extends Room<ArenaState> {
       damage: number;
       pierce: number;
       pierceMax?: number;
+      ttl: number;
       hit: Set<string>;
     },
     player: PlayerState,
     pc: CombatState,
   ): void {
-    // Aim the return shot at the nearest enemy to the bullet; fall back to a straight reversal.
-    let tx = pr.x - pr.vx;
-    let ty = pr.y - pr.vy;
-    let bestD = Number.POSITIVE_INFINITY;
-    this.state.enemies.forEach((enemy) => {
-      const dx = enemy.x - pr.x;
-      const dy = enemy.y - pr.y;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < bestD) {
-        bestD = d2;
-        tx = enemy.x;
-        ty = enemy.y;
-      }
-    });
-    const dx = tx - pr.x;
-    const dy = ty - pr.y;
-    const len = Math.hypot(dx, dy) || 1;
-    pr.vx = (dx / len) * PARRY_REFLECT_SPEED;
-    pr.vy = (dy / len) * PARRY_REFLECT_SPEED;
     pr.hostile = false;
-    pr.kind = "counter";
     meta.hostile = false;
-    meta.damage = Math.max(PARRY_REFLECT_MIN_DAMAGE, meta.damage * PARRY_REFLECT_DMG_MULT);
-    meta.pierce = PARRY_REFLECT_PIERCE;
-    meta.pierceMax = PARRY_REFLECT_PIERCE;
     meta.hit.clear();
+    if (hasAugment(player.augments, "deflector")) {
+      // BOUNCE BACK — aim the counter at the nearest enemy to the bullet (fall back to a straight reversal).
+      let tx = pr.x - pr.vx;
+      let ty = pr.y - pr.vy;
+      let bestD = Number.POSITIVE_INFINITY;
+      this.state.enemies.forEach((enemy) => {
+        const dx = enemy.x - pr.x;
+        const dy = enemy.y - pr.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestD) {
+          bestD = d2;
+          tx = enemy.x;
+          ty = enemy.y;
+        }
+      });
+      const dx = tx - pr.x;
+      const dy = ty - pr.y;
+      const len = Math.hypot(dx, dy) || 1;
+      pr.vx = (dx / len) * PARRY_REFLECT_SPEED;
+      pr.vy = (dy / len) * PARRY_REFLECT_SPEED;
+      pr.kind = "counter";
+      meta.damage = Math.max(PARRY_REFLECT_MIN_DAMAGE, meta.damage * PARRY_REFLECT_DMG_MULT);
+      meta.pierce = PARRY_REFLECT_PIERCE;
+      meta.pierceMax = PARRY_REFLECT_PIERCE;
+    } else {
+      // GLANCE OFF to the side + fade — the Superman ping. Kick perpendicular to the incoming travel, toward
+      // the side that points AWAY from the player body, so it sprays outward; harmless (0 dmg) + short-lived.
+      const inAng = Math.atan2(pr.vy, pr.vx);
+      const perp = inAng + Math.PI / 2;
+      const away = Math.cos(perp) * (pr.x - player.x) + Math.sin(perp) * (pr.y - player.y);
+      const outAng = away >= 0 ? perp : inAng - Math.PI / 2;
+      pr.vx = Math.cos(outAng) * DEFLECT_SPEED;
+      pr.vy = Math.sin(outAng) * DEFLECT_SPEED;
+      pr.kind = "deflect";
+      meta.damage = 0;
+      meta.pierce = 999; // flies clean THROUGH everything doing nothing, then fades on its short TTL
+      meta.pierceMax = 999;
+      meta.ttl = DEFLECT_TTL;
+    }
     // §8 parry reward (ranged): flash + FLOW cd + chain build + a flat sliver heal. Kept a flat heal (not the
     // melee chain-scaled one) so parrying INTO a bullet-wall can't fully heal you — it's UMPH, not a fountain.
     player.parriedSeq = (player.parriedSeq + 1) % 100000;

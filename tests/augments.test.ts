@@ -12,10 +12,10 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("AUGMENTS registry (§8 parry pool)", () => {
-  it("has the 9 locked augments across the 3 flavor tags", () => {
-    expect(AUGMENT_IDS.length).toBe(9);
+  it("has the 10 augments across the 3 flavor tags (v0.117 +Deflector)", () => {
+    expect(AUGMENT_IDS.length).toBe(10);
     const tags = AUGMENT_IDS.map((id) => AUGMENTS[id]?.tag);
-    expect(tags.filter((t) => t === "riposte").length).toBe(3);
+    expect(tags.filter((t) => t === "riposte").length).toBe(4); // v0.117 Deflector joined the riposte tag
     expect(tags.filter((t) => t === "aegis").length).toBe(3);
     expect(tags.filter((t) => t === "hex").length).toBe(3);
   });

@@ -1,8 +1,9 @@
 /**
- * §8 Parry augment pool (M0) — the melee class signature. Base parry = i-frames + knockback; ALL offense
- * comes from augments. A flat, mix-and-matchable pool of 9 (NOT branch-gated): you pick ONE per signature
- * level (every 5th, §12), freely combining across the three flavor tags. Pool (9) > picks (6 at cap 30),
- * so every run builds a different custom parry. Augments STACK and synergize rather than gate each other.
+ * §8 Parry augment pool (M0) — the melee class signature. Base parry = i-frames + knockback + a Superman
+ * deflect (bullets glance off); ALL offense comes from augments. A flat, mix-and-matchable pool of 10 (NOT
+ * branch-gated): you pick ONE per signature level (every 5th, §12), freely combining across the three flavor
+ * tags. Pool (10) > picks (6 at cap 30), so every run builds a different custom parry. Augments STACK and
+ * synergize rather than gate each other.
  *
  * `[RULED v0.81]` Offer model: each signature pick is a **3-of-9 random draft** (roguelike) — Pool>picks
  * implies a constrained offer, and the draft forces build variety + reuses the level-up pick UI. The owned
@@ -48,6 +49,14 @@ export const AUGMENTS: Record<string, AugmentDef> = {
     name: "Hair-Trigger",
     tag: "riposte",
     desc: "Consecutive parries each add a projectile.",
+    icon: "shot",
+    stacks: false,
+  },
+  deflector: {
+    id: "deflector",
+    name: "Deflector",
+    tag: "riposte",
+    desc: "Parried bullets ricochet BACK at the nearest enemy (else they glance off + fade).",
     icon: "shot",
     stacks: false,
   },

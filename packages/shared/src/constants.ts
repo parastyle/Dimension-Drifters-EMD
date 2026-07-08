@@ -450,7 +450,13 @@ export const PARRY_CHAIN_CD = 0.12;
  *  them as they go through me." The old code let a bullet pass silently through the i-frames; now it becomes
  *  a FRIENDLY counter-shot rocketed back at the nearest enemy, so the block reads as a hard *thwack* and
  *  turns defense into offense (the parry's whole fantasy). All server-authoritative + tuning. */
-/** Reflected-bullet speed (px/s) — a hard, fast return so the deflect visibly SNAPS back out (the "UMPH"). */
+/** §8 v0.117 BASE parry deflect (no augment) — the bullet GLANCES OFF to the side and fades, like a round
+ *  pinging off Superman: pure defense, zero enemy damage. The offensive bounce-BACK is gated behind the
+ *  `deflector` level-up augment (see below). */
+export const DEFLECT_SPEED = 640; // px/s the glanced spark sprays sideways
+export const DEFLECT_TTL = 0.4; // sec — it fades out fast (a brief spark, not a live shot)
+/** §8 `deflector` augment — parried bullets RICOCHET BACK at the nearest enemy. Reflected-bullet speed
+ *  (px/s), a hard fast return so the deflect visibly SNAPS out (the "UMPH"). */
 export const PARRY_REFLECT_SPEED = 720;
 /** Reflected damage = the incoming projectile's damage × this (a parried shot hurts more than it would have
  *  hurt you — it rewards the read). Floored at PARRY_REFLECT_MIN_DAMAGE so even a weak spit stings. */

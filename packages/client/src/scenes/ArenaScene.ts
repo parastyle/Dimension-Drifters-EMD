@@ -10,7 +10,6 @@ import {
   BOSSES,
   bossSpawnAt,
   CAM_FOLLOW_TAU,
-  CAM_LOOKAHEAD,
   CAM_SNAP_DIST,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
@@ -18,6 +17,7 @@ import {
   characterScale,
   clampQuakeEpicenter,
   DEBUG_SPAWN_MAX,
+  DEFLECT_TTL,
   DEFAULT_DIMENSION,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
@@ -40,7 +40,6 @@ import {
   LEVELUP_WINDOW_SECONDS,
   lootCooldownMult,
   lootDamageMult,
-  MOVE_SPEED,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -1568,10 +1567,21 @@ export class ArenaScene extends Phaser.Scene {
           ? makeThrownCleaver(this, pr)
           : pr.kind === "magma"
             ? makeMagma(this, pr)
-            : pr.kind === "counter"
-              ? makeCounter(this, pr) // §8 Counterblade parry projectile
+            : pr.kind === "counter" || pr.kind === "deflect"
+              ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
               : makeSpit(this, pr);
       container.setData("kind", pr.kind);
+      // §8 v0.117 a BASE-parry "deflect" spark glances off + FADES OUT (bullet-off-Superman): tween its
+      // alpha + scale down over the deflect lifetime so it dissipates rather than flying off like a shot.
+      if (pr.kind === "deflect") {
+        this.tweens.add({
+          targets: container,
+          alpha: 0,
+          scale: 0.4,
+          duration: DEFLECT_TTL * 1000,
+          ease: "Quad.easeOut",
+        });
+      }
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
       this.projectiles.set(id, container);
@@ -2384,22 +2394,12 @@ export class ArenaScene extends Phaser.Scene {
     this.camBlend = 1;
     const self = this.blobs.get(id);
     if (!self) return;
-    // §7 v0.117 EASED follow (was a hard per-frame lock). The focus leads slightly in the move direction
-    // (look-ahead) and glides toward the player with a frame-rate-independent exponential smoothing — the
-    // camera reads as a real camera, not a rail. A teleport-sized jump snaps (no map-wide fly-by).
-    const selfState = this.room?.state.players.get(id);
-    let leadX = 0;
-    let leadY = 0;
-    if (selfState) {
-      const sp = Math.hypot(selfState.mvx, selfState.mvy);
-      if (sp > 1) {
-        const f = Math.min(1, sp / MOVE_SPEED);
-        leadX = (selfState.mvx / sp) * CAM_LOOKAHEAD * f;
-        leadY = (selfState.mvy / sp) * CAM_LOOKAHEAD * f;
-      }
-    }
-    const tx = self.x + leadX;
-    const ty = self.y + leadY;
+    // §7 v0.117 EASED follow (was a hard per-frame lock): the focus glides toward the player with a
+    // frame-rate-independent exponential smoothing so the camera reads as a real camera, not a rail. NO
+    // look-ahead — it just gracefully trails the character (playtest: don't lead toward the aim/move dir).
+    // A teleport-sized jump snaps (no map-wide fly-by).
+    const tx = self.x;
+    const ty = self.y;
     if (!this.camFocus) this.camFocus = { x: tx, y: ty };
     const dx = tx - this.camFocus.x;
     const dy = ty - this.camFocus.y;
