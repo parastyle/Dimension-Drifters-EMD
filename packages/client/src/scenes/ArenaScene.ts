@@ -1535,13 +1535,17 @@ export class ArenaScene extends Phaser.Scene {
     if (!st) return;
     const g = this.telegraphGfx;
     const live = new Set<string>();
+    // §29 belt: telegraphs are world-space graphics, but the belt deck is a PROJECTED band — draw each
+    // telegraph at its projected screen-plane y (like every other belt actor) so boss warnings land ON the
+    // deck under the fight instead of far below the visible band. Radii stay world-scale (readable circle).
+    const py = (y: number) => (this.belt ? this.beltY(y) : y);
     st.telegraphs.forEach((row, id) => {
       live.add(id);
       this.drawTelegraph(
         g,
         row.shape,
         row.x,
-        row.y,
+        py(row.y),
         row.a,
         row.b,
         row.rot,
@@ -1575,15 +1579,15 @@ export class ArenaScene extends Phaser.Scene {
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
         // screen harder than a normal slam — a big body hits like a big body (WYSIWYG weight).
         const scale = Math.max(0.8, Math.min(1.7, c.a / 150));
-        spawnExplosion(this, c.x, c.y, Math.max(24, c.a));
+        spawnExplosion(this, c.x, py(c.y), Math.max(24, c.a));
         this.shakeCam(200 * scale, 0.014 * scale);
         this.audio.play("bossslam", { x: c.x, amt: Math.min(1, scale) }); // §19 the deep boom under the shake
       } else if (c.kindTag === 1) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
-        spawnExplosion(this, c.x, c.y, Math.min(40, c.a * 0.4));
+        spawnExplosion(this, c.x, py(c.y), Math.min(40, c.a * 0.4));
       } else if (c.kindTag === 2 || c.kindTag === 3) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
-        spawnExplosion(this, c.x, c.y, 22);
+        spawnExplosion(this, c.x, py(c.y), 22);
       }
       // kindTag 4 (beam/dash) + 5 (ring) end silently — the sweeping/expanding hazard was its own visual.
     }
