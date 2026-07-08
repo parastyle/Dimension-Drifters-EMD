@@ -1,0 +1,20 @@
+[
+  {
+    "id": "belt-sky-carrier-vista",
+    "name": "Sky Carrier Vista",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 landscape environment backdrop for a 2.5D beat-'em-up level: the open deck of a colossal FLYING AIRCRAFT CARRIER high in a bright daytime sky. Riveted steel flight-deck stretching left-to-right, a towering island superstructure with radar masts and lit bridge windows off to one side, deck-edge safety railings, yellow warning chevrons painted on the plating. Behind and below: layered drifting clouds and a distant hazy horizon that sells the altitude. Gritty indie-arcade / dark-comic HD cel-shaded look, dramatic rim light, painterly but readable. NO characters, NO UI, NO frame — just the environment, full-bleed, as a game background.",
+    "palette": { "primary": "#4c5a68", "accent": "#ffd24a" },
+    "tags": ["scenery", "background", "belt", "sky-carrier", "widescreen"],
+    "cardartAction": "a sweeping wide establishing shot of the flight deck receding toward the island tower, clouds streaming past, sun flaring off wet steel"
+  },
+  {
+    "id": "belt-carrier-deck-plating",
+    "name": "Carrier Deck Plating",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 top-slightly-angled texture panel of a flying aircraft-carrier's steel FLIGHT DECK for a belt-scroller floor: riveted metal plating in weathered gunmetal, oil streaks and scorch marks, a painted yellow centreline with warning chevrons, panel seams running into the distance, deck-edge trim. Tileable feel, even lighting, no strong single light source, no horizon. Gritty indie-arcade HD cel-shaded. NO characters, NO frame — a clean floor-texture backdrop.",
+    "palette": { "primary": "#40464d", "accent": "#ffb02e" },
+    "tags": ["scenery", "floor", "belt", "sky-carrier", "widescreen"],
+    "cardartAction": "the deck plating filling the frame at a shallow belt-scroller angle, chevrons leading the eye left-to-right"
+  }
+]
