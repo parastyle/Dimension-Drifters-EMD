@@ -6,6 +6,7 @@ import {
   type Attr,
   AUGMENTS,
   affixById,
+  BELT_Y0,
   BOSS_DEF_IDS,
   BOSSES,
   bossSpawnAt,
@@ -17,6 +18,7 @@ import {
   characterScale,
   clampQuakeEpicenter,
   DEBUG_SPAWN_MAX,
+  DEPTH_MAX,
   DEFLECT_TTL,
   DEFAULT_DIMENSION,
   DEFAULT_PORT,
@@ -101,6 +103,13 @@ import {
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
+
+/** §29 belt-scroller render tuning. FORESHORTEN compresses the world DEPTH band onto the screen plane (a
+ *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
+ *  world px of sky above the band top. All client-only presentation. */
+const BELT_FORESHORTEN = 0.5;
+const BELT_VIEW_H = 640;
+const BELT_SKY = 176;
 
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
  *  harvest-installed yet (its manifest id isn't in SPRITES). Keeps every new dimension playable on day one
@@ -196,6 +205,9 @@ export class ArenaScene extends Phaser.Scene {
     "W" | "A" | "S" | "D" | "R" | "Q" | "E" | "T" | "B" | "C" | "M" | "TAB" | "SPACE",
     Phaser.Input.Keyboard.Key
   >;
+  /** §29 v0.118 BELT-SCROLLER mode (`?belt=1` or the menu's belt launch): renders the SAME game (all systems
+   *  intact) in the 2.5D beat-'em-up view. Purely a render/camera/floor swap — the sim runs belt-shaped. */
+  private belt = new URLSearchParams(location.search).has("belt");
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -375,9 +387,10 @@ export class ArenaScene extends Phaser.Scene {
    *  takes effect; joiners inherit the host's synced `mode`). */
   private bossRush = false;
 
-  init(data?: { dimensionId?: string; bossRush?: boolean }): void {
+  init(data?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }): void {
     if (data?.dimensionId) this.selectedDimension = data.dimensionId;
     this.bossRush = data?.bossRush ?? false;
+    if (data?.belt) this.belt = true; // §29 menu belt-launch (URL `?belt=1` is the other trigger)
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -931,15 +944,22 @@ export class ArenaScene extends Phaser.Scene {
     });
     // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
     const palette = getDimension(s.dimensionId).palette;
-    this.floorObjs.push(...drawArena(this, (k) => this.hasTile(k), palette));
-    this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, palette));
-    const pois = buildPois(this, this.arenaMap);
-    this.poiSprites = pois.sprites;
-    this.floorObjs.push(...pois.objs);
+    if (this.belt) {
+      // §29 belt: FLAT DECK — no ground tiles / pits / POIs. Build the belt deck + sky instead, and give the
+      // predictor NO map so it doesn't collide the local player against invisible (server-skipped) landmarks.
+      this.buildBeltFloor();
+      this.predictor?.setMap(undefined);
+    } else {
+      this.floorObjs.push(...drawArena(this, (k) => this.hasTile(k), palette));
+      this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, palette));
+      const pois = buildPois(this, this.arenaMap);
+      this.poiSprites = pois.sprites;
+      this.floorObjs.push(...pois.objs);
+      // §4 v0.107: a re-minted map = a new world — the predictor must collide against the NEW landmarks
+      // (review #15) and every snapshot ring holds coordinates from the OLD map (review #16). Swap + clear.
+      this.predictor?.setMap(this.arenaMap);
+    }
     this.lastSeedKey = seedKey;
-    // §4 v0.107: a re-minted map = a new world — the predictor must collide against the NEW landmarks
-    // (review #15) and every snapshot ring holds coordinates from the OLD map (review #16). Swap + clear.
-    this.predictor?.setMap(this.arenaMap);
     this.playerBufs.clear();
     this.enemyBufs.clear();
     if (descending) {
@@ -1004,6 +1024,7 @@ export class ArenaScene extends Phaser.Scene {
         this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME, {
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
+          belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
         });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -1175,6 +1196,7 @@ export class ArenaScene extends Phaser.Scene {
       this.moveProjectiles(this.deltaSec);
       this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
+      this.projectBelt(); // §29 belt mode: remap floor objects onto the depth band + depth-sort (no-op otherwise)
       this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
     } else {
       this.wasFrozen = true;
@@ -2345,9 +2367,76 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Keep the camera locked on the local player every frame (robust vs startFollow drift). */
+  /** §29 belt DEPTH projection: world y → foreshortened screen-plane y (world units). Pure. */
+  private beltY(worldY: number): number {
+    return BELT_Y0 + (worldY - BELT_Y0) * BELT_FORESHORTEN;
+  }
+
+  /** §29 build the flat belt DECK + sky (replaces the top-down ground/pits/POIs). World-space rects that
+   *  scroll with the belt; depth kept BELOW the actors (which sort at depth = world y ≥ BELT_Y0). */
+  private buildBeltFloor(): void {
+    this.cameras.main.setBackgroundColor("#79bce9"); // sky
+    const w = ARENA_WIDTH;
+    const bandTop = this.beltY(BELT_Y0); // far edge of the deck
+    const bandBot = this.beltY(BELT_Y0 + DEPTH_MAX); // near edge
+    const mk = (cy: number, h: number, color: number, depth: number) =>
+      this.add.rectangle(w / 2, cy, w, h, color).setDepth(depth);
+    const deck = mk((bandTop + bandBot) / 2, bandBot - bandTop, 0x4c535c, 100);
+    const wall = mk(bandTop, 30, 0x39424e, 101); // back wall at the far edge
+    const chevrons = mk((bandTop + bandBot) / 2, 8, 0xffd24a, 102).setAlpha(0.6); // centreline marking
+    const lip = mk(bandBot + 8, 16, 0xffd24a, 103); // near safety lip
+    const below = mk(bandBot + 1200, 2400, 0x22262c, 99); // dark hull under the deck
+    this.floorObjs.push(deck, wall, chevrons, lip, below);
+  }
+
+  /** §29 belt render post-pass — after all positioning (which sets ABSOLUTE world coords each frame), remap
+   *  every floor object's Y onto the belt band and DEPTH-SORT by world y (nearer = larger y = in front). Purely
+   *  visual + recomputed each frame, so it can't corrupt the interpolation's world-space velocity tracking. */
+  private projectBelt(): void {
+    if (!this.belt) return;
+    const project = (o: {
+      x: number;
+      y: number;
+      setPosition(x: number, y: number): void;
+      setDepth(d: number): void;
+    }) => {
+      const wy = o.y; // world y this frame (positioning ran just before us)
+      o.setPosition(o.x, this.beltY(wy));
+      o.setDepth(wy);
+    };
+    this.blobs.forEach((rig) => project(rig));
+    this.enemies.forEach((rig) => project(rig)); // includes the boss rig
+    this.projectiles.forEach((c) => project(c));
+    this.pickups.forEach((c) => project(c));
+    this.zones.forEach((c) => project(c));
+  }
+
+  /** §29 belt camera: scroll horizontally to follow the player (world x), lock the vertical to the deck, and
+   *  fit BELT_VIEW_H world-height to the screen. The player's world x is `rig.x` (only Y is projected). */
+  private beltCamera(): void {
+    const id = this.room?.sessionId;
+    if (!id) return;
+    const self = this.blobs.get(id);
+    if (!self) return;
+    const cam = this.cameras.main;
+    const zoom = cam.height / BELT_VIEW_H;
+    cam.setZoom(zoom);
+    const viewW = cam.width / zoom;
+    const maxX = Math.max(0, ARENA_WIDTH - viewW);
+    const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
+    if (!this.camFocus) this.camFocus = { x: wantX, y: 0 };
+    const a = 1 - Math.exp(-this.deltaSec / CAM_FOLLOW_TAU);
+    this.camFocus.x += (wantX - this.camFocus.x) * a;
+    cam.setScroll(this.camFocus.x, BELT_Y0 - BELT_SKY);
+  }
+
   private followSelf(): void {
     const id = this.room?.sessionId;
     if (!id) return;
+    if (this.belt) {
+      this.beltCamera();
+      return;
+    }
     // §6 spectate-follow: while DOWNED, the camera trails a living squadmate (you watch the squad until a
     // teammate with a rez weapon revives you). §7 v0.105 de-clunk: pick the NEAREST living teammate (not
     // whoever happens to be first in map order) and, on a target SWITCH, glide from the current view to the

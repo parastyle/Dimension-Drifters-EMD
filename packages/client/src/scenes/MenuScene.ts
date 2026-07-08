@@ -91,10 +91,11 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet; C → §29 belt-scroller beta.
+    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet; C → §29 belt-scroller beta
+    // (the SAME game rendered belt-scroller — all systems intact).
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       if (e.key === "c" || e.key === "C") {
-        this.scene.start("belt");
+        this.launch(DEFAULT_DIMENSION, false, true);
         return;
       }
       if (e.key === "b" || e.key === "B") {
@@ -298,13 +299,13 @@ export class MenuScene extends Phaser.Scene {
     this.audioRow?.setPosition(24, h - 26);
   }
 
-  private launch(id: string, bossRush = false): void {
+  private launch(id: string, bossRush = false, belt = false): void {
     if (this.launching) return; // guard the key+click double-fire
     this.launching = true;
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () =>
-      this.scene.start("arena", { dimensionId: id, bossRush }),
+      this.scene.start("arena", { dimensionId: id, bossRush, belt }),
     );
   }
 
