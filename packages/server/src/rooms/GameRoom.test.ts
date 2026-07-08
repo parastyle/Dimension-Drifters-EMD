@@ -1,5 +1,9 @@
 import {
+  beltLevelFor,
+  beltPitAtX,
+  BELT_Y0,
   DEFAULT_WEAPON,
+  DEPTH_MAX,
   DROP_POOL,
   DUMMY_HP,
   ENEMY_KINDS,
@@ -1523,6 +1527,22 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     h.send("p1", "sellWeapon", { from: "slot", index: 2 });
     expect(p.scrip).toBe(before); // +0
     expect(p.slots[2].weapon).toBe("");
+  });
+
+  it("belt loot drops land ON the deck band, nudged clear of pits", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const level = beltLevelFor("sky-carrier");
+    const before = new Set<string>(h.state().pickups.keys());
+    // Drop at a PIT x (1600 ∈ the 1560–1670 gap) with a y ABOVE the band — placePickupPos must nudge it
+    // onto solid deck and clamp it into the depth band (not scatter it via the procgen-map spawn).
+    h.room.dropLoot(1600, BELT_Y0 - 500, 1);
+    const id = [...h.state().pickups.keys()].find((k) => !before.has(k));
+    const pk = h.state().pickups.get(id);
+    expect(pk).toBeTruthy();
+    expect(beltPitAtX(level, pk.x)).toBe(false); // off the pit
+    expect(pk.y).toBeGreaterThanOrEqual(BELT_Y0); // inside the depth band
+    expect(pk.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
   });
 
   it("bagStore frees a slot into the bag; bagEquip pulls it back", () => {
