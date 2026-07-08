@@ -51,7 +51,7 @@ const { GameRoom } = await import("./GameRoom.js");
 // biome-ignore lint/suspicious/noExplicitAny: the harness reaches private room internals (update/combat) on purpose.
 type AnyRoom = any;
 
-function makeRoom(options?: { dimensionId?: string; bossRush?: boolean }) {
+function makeRoom(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }) {
   const room = new GameRoom() as AnyRoom;
   const handlers = new Map<string, (c: { sessionId: string }, m?: unknown) => void>();
   room.onMessage = (type: string, fn: (c: { sessionId: string }, m?: unknown) => void) =>
@@ -1409,6 +1409,109 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "portalOpen": false,
       }
     `);
+  });
+});
+
+// ── §29 v0.118 the 3-slot ARSENAL (belt mode): grabs accumulate into slots + bag; swap/cycle/stash move
+// weapons between hand, slots, and bag; loot identity + earned provenance ride along. ──
+describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
+  // Drop a fully-identified, earned pickup at the player's feet and grab it.
+  function grabAt(h: AnyRoom, pid: string, weapon: string, rarity = 2, affix = "keen", earned = true) {
+    const p = h.state().players.get("p1");
+    const pk = new PickupState();
+    pk.id = pid;
+    pk.weapon = weapon;
+    pk.rarity = rarity;
+    pk.affix = affix;
+    pk.x = p.x;
+    pk.y = p.y;
+    h.state().pickups.set(pid, pk);
+    if (earned) h.room.earnedPickups.add(pid);
+    h.send("p1", "grabWeapon");
+  }
+
+  it("seeds 3 slots — slot 0 = the starting weapon, 1 & 2 empty, active 0", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    expect(p.slots.length).toBe(3);
+    expect(p.slots[0].weapon).toBe(DEFAULT_WEAPON);
+    expect(p.slots[1].weapon).toBe("");
+    expect(p.slots[2].weapon).toBe("");
+    expect(p.activeSlot).toBe(0);
+  });
+
+  it("grabs ACCUMULATE into empty slots (no drop) and equip each grabbed weapon", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const before = h.state().pickups.size;
+    grabAt(h, "drop900", "tombstone-greatsword", 4, "keen");
+    // Filled slot 1, switched to it, held the new weapon — nothing dropped to the floor.
+    expect(p.activeSlot).toBe(1);
+    expect(p.weapon).toBe("tombstone-greatsword");
+    expect(p.weaponRarity).toBe(4);
+    expect(p.slots[0].weapon).toBe(DEFAULT_WEAPON); // starting weapon preserved
+    expect(h.state().pickups.size).toBe(before); // consumed the drop, dropped nothing new
+    grabAt(h, "drop901", "rusty-cleaver", 1, "");
+    expect(p.activeSlot).toBe(2);
+    expect(p.slots[2].weapon).toBe("rusty-cleaver");
+  });
+
+  it("swapSlot switches the held weapon and remembers each slot's loot identity", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    grabAt(h, "drop902", "tombstone-greatsword", 4, "keen"); // → slot 1, active 1
+    h.send("p1", "swapSlot", { slot: 0 });
+    expect(p.activeSlot).toBe(0);
+    expect(p.weapon).toBe(DEFAULT_WEAPON);
+    expect(p.weaponRarity).toBe(0); // the conjured starter carries no loot identity
+    h.send("p1", "swapSlot", { slot: 1 });
+    expect(p.weapon).toBe("tombstone-greatsword");
+    expect(p.weaponRarity).toBe(4);
+    expect(p.weaponAffix).toBe("keen");
+    expect(h.room.combat.get("p1").heldEarned).toBe(true); // provenance survives the round-trip
+  });
+
+  it("cycleSlot skips empty slots", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    grabAt(h, "drop903", "tombstone-greatsword", 4, "keen"); // slot1 filled, active 1; slot2 empty
+    h.send("p1", "cycleSlot", { dir: 1 }); // from 1 → skip empty 2 → wrap to filled 0
+    expect(p.activeSlot).toBe(0);
+    h.send("p1", "cycleSlot", { dir: 1 }); // 0 → 1 (skip empty 2 not reached first)
+    expect(p.activeSlot).toBe(1);
+  });
+
+  it("a 4th grab (all slots full) overflows the old active weapon to the BAG, never destroyed", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    grabAt(h, "drop904", "tombstone-greatsword", 4, "keen"); // slot1, active1
+    grabAt(h, "drop905", "rusty-cleaver", 1, ""); // slot2, active2
+    // slots: [starter, tombstone, cleaver], all full, active 2 (cleaver)
+    grabAt(h, "drop906", "wyrmtooth-dagger", 3, "swift"); // full → cleaver overflows to bag
+    expect(p.bag.length).toBe(1);
+    expect(p.bag[0].weapon).toBe("rusty-cleaver");
+    expect(p.slots[2].weapon).toBe("wyrmtooth-dagger");
+    expect(p.weapon).toBe("wyrmtooth-dagger");
+  });
+
+  it("bagStore frees a slot into the bag; bagEquip pulls it back", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    grabAt(h, "drop907", "tombstone-greatsword", 4, "keen"); // slot1, active1
+    h.send("p1", "bagStore", { slot: 1 }); // stash the active slot → bag
+    expect(p.slots[1].weapon).toBe("");
+    expect(p.weapon).toBe(FISTS_WEAPON); // active slot emptied → fists
+    expect(p.bag.length).toBe(1);
+    h.send("p1", "bagEquip", { index: 0, slot: 1 }); // pull it back into the (empty) slot 1
+    expect(p.slots[1].weapon).toBe("tombstone-greatsword");
+    expect(p.bag.length).toBe(0); // consumed (slot was empty)
+    expect(p.weapon).toBe("tombstone-greatsword"); // re-mirrored into the active hand
   });
 });
 

@@ -1,6 +1,17 @@
-import { MapSchema, Schema, type } from "@colyseus/schema";
+import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
 import { SCHEMA_VERSION } from "./constants.js";
 import { DEFAULT_DIMENSION } from "./dimensions.js";
+
+/** §29 v0.118 one stored weapon in a player's ARSENAL — a 3-slot loadout plus a bag. Mirrors the loot
+ *  identity carried on the held weapon (`weapon`/`weaponRarity`/`weaponAffix`) so a stowed weapon keeps its
+ *  rarity, affix, and earned-provenance while it's not in hand. `weapon === ""` = an empty slot / bag entry. */
+export class ArsenalSlot extends Schema {
+  @type("string") weapon = "";
+  @type("uint8") rarity = 0;
+  @type("string") affix = "";
+  /** §13 salvage/shop provenance — true only if this weapon traces back to an enemy drop (bankable value). */
+  @type("boolean") earned = false;
+}
 
 /**
  * Authoritative networked state (Colyseus Schema). Lives in `shared` so client and
@@ -99,6 +110,19 @@ export class PlayerState extends Schema {
    *  descent, restart, training toggle, revive, and any future site). The owning client hard-resyncs its
    *  predictor on a change instead of hand-mirroring the server's teleport call sites (review #7). */
   @type("uint32") teleportSeq = 0;
+  // ── §29 v0.118 ARSENAL: 3-slot loadout + a bag (replaces the roster carousel in belt play). The ACTIVE
+  // slot mirrors the held weapon (`weapon`/`weaponRarity`/`weaponAffix`); the other two remember stowed
+  // weapons you can swap to instantly. Appended (field-order stable). ──
+  /** The 3 loadout slots. `slots[activeSlot]` is re-synced from the held weapon on every swap/grab; the
+   *  inactive slots hold their stowed weapon. An empty slot has `weapon === ""`. */
+  @type([ArsenalSlot]) slots = new ArraySchema<ArsenalSlot>();
+  /** Which of the 3 slots is in hand (0–2). */
+  @type("uint8") activeSlot = 0;
+  /** Overflow storage — weapons carried but not in a slot. Sellable at a shopkeeper. */
+  @type([ArsenalSlot]) bag = new ArraySchema<ArsenalSlot>();
+  /** §10 SCRIP — the belt meta-currency earned by selling weapons to a shopkeeper (distinct from run
+   *  salvage). Synced for the HUD; the persistence layer (send-home) rides on top of this counter. */
+  @type("uint16") scrip = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

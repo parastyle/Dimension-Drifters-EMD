@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 8; // v0.118 — §29 belt: +ArenaState beltLockX + beltRoomName (room gates)
+export const SCHEMA_VERSION = 9; // v0.118 — §29 arsenal: +PlayerState slots/activeSlot/bag/scrip (3-slot loadout)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -236,6 +236,14 @@ export const REZ_RADIUS = 96;
 export const DUMMY_HP = 250;
 export const DUMMY_RADIUS = 30;
 export const PICKUP_RADIUS = 46;
+/** §29 v0.118 ARSENAL: a fixed 3-slot loadout (the belt "carry 3 weapons, swap instantly") plus a bag for
+ *  overflow you haul to a shopkeeper. */
+export const ARSENAL_SLOTS = 3;
+export const BAG_CAP = 12;
+/** §29 shopkeeper interaction reach (world px) + SCRIP paid per rarity tier when selling an EARNED weapon
+ *  (unearned/conjured weapons sell for nothing — same anti-launder rule as salvage). Indexed by rarity. */
+export const SHOP_RADIUS = 90;
+export const SCRIP_BY_RARITY = [4, 9, 18, 34, 60] as const;
 /** §9/§13 drop & salvage: after a player DROPS a weapon it can't be re-grabbed for this long (sec), so a
  *  drop at your feet doesn't snap straight back. */
 export const DROP_GRACE_SECONDS = 0.7;

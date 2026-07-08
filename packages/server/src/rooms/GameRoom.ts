@@ -10,6 +10,8 @@ import {
   resolveBeltObstacles,
   type ArenaMap,
   ArenaState,
+  ArsenalSlot,
+  ARSENAL_SLOTS,
   ATTACK_BUFFER_SECONDS,
   AUG_PROJECTILE_DAMAGE,
   AUG_PROJECTILE_PIERCE,
@@ -20,6 +22,7 @@ import {
   BOSS_SALVAGE_PER_DEPTH,
   BOSSRUSH_BREATHER,
   BOSSRUSH_HEAL_FRAC,
+  BAG_CAP,
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
@@ -160,6 +163,7 @@ import {
   SPAWN_RING,
   safeSpawnPos,
   salvageValue,
+  scripValue,
   selectChainTargets,
   spawnInterval,
   stepEnemyChase,
@@ -542,6 +546,76 @@ export class GameRoom extends Room<ArenaState> {
       if (c) c.heldEarned = false;
     });
 
+    // §29 v0.118 ARSENAL swap: switch which of the 3 slots is in hand (1/2/3 keys). Stows the current held
+    // weapon back into its slot first, so the two off-hand weapons are remembered exactly.
+    this.onMessage("swapSlot", (client, message: { slot?: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      const i = Math.floor(message?.slot ?? -1);
+      if (i < 0 || i >= ARSENAL_SLOTS || i === player.activeSlot) return;
+      const c = this.combat.get(client.sessionId);
+      this.syncActiveSlot(player, c);
+      this.loadSlot(player, c, i);
+    });
+
+    // §29 ARSENAL cycle: Q/E through the NON-EMPTY slots (dir < 0 = back). No-op if nothing else is filled.
+    this.onMessage("cycleSlot", (client, message: { dir?: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      const c = this.combat.get(client.sessionId);
+      this.syncActiveSlot(player, c);
+      const dir = (message?.dir ?? 1) < 0 ? -1 : 1;
+      for (let step = 1; step < ARSENAL_SLOTS; step++) {
+        const i = (((player.activeSlot + dir * step) % ARSENAL_SLOTS) + ARSENAL_SLOTS) % ARSENAL_SLOTS;
+        if (player.slots[i]?.weapon) {
+          this.loadSlot(player, c, i);
+          return;
+        }
+      }
+    });
+
+    // §29 ARSENAL bag STASH: move a slot's weapon into the bag (frees the slot; the active slot empties to
+    // fists). No-op if the slot is empty or the bag is full.
+    this.onMessage("bagStore", (client, message: { slot?: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      const i = Math.floor(message?.slot ?? -1);
+      if (i < 0 || i >= ARSENAL_SLOTS) return;
+      const c = this.combat.get(client.sessionId);
+      if (i === player.activeSlot) this.syncActiveSlot(player, c); // capture the live held weapon first
+      const s = player.slots[i]!;
+      if (!s.weapon || player.bag.length >= BAG_CAP) return;
+      const b = new ArsenalSlot();
+      this.copySlot(b, s);
+      player.bag.push(b);
+      this.copySlot(s, null);
+      if (i === player.activeSlot) this.loadSlot(player, c, i); // now empty → fists in hand
+    });
+
+    // §29 ARSENAL bag EQUIP: pull bag[index] into slot[slot], swapping whatever was there back into the bag
+    // (or consuming the bag entry when the slot was empty). Re-mirrors the held weapon if the slot is active.
+    this.onMessage("bagEquip", (client, message: { index?: number; slot?: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive) return;
+      const bi = Math.floor(message?.index ?? -1);
+      const si = Math.floor(message?.slot ?? player.activeSlot);
+      if (bi < 0 || bi >= player.bag.length || si < 0 || si >= ARSENAL_SLOTS) return;
+      const c = this.combat.get(client.sessionId);
+      if (si === player.activeSlot) this.syncActiveSlot(player, c);
+      const bagItem = player.bag[bi]!;
+      const slot = player.slots[si]!;
+      const hadWeapon = !!slot.weapon;
+      const stash = new ArsenalSlot();
+      this.copySlot(stash, slot); // remember the slot's old content
+      this.copySlot(slot, bagItem); // bag item → slot
+      if (hadWeapon) {
+        this.copySlot(bagItem, stash); // old slot weapon → the bag position (a true swap)
+      } else {
+        player.bag.splice(bi, 1); // slot was empty → the bag entry is consumed
+      }
+      if (si === player.activeSlot) this.loadSlot(player, c, si);
+    });
+
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
     this.onMessage("cycleCharacter", (client) => {
       const player = this.state.players.get(client.sessionId);
@@ -593,19 +667,25 @@ export class GameRoom extends Room<ArenaState> {
       if (!best) return;
       const grabbed = best as PickupState;
       const c = this.combat.get(client.sessionId);
-      // §13 v0.106 (A11 de-clunk): grabbing is a SWAP, not a replace. If we're already holding a weapon,
-      // DROP it on the floor first (as a grabbable pickup carrying its loot identity + earned provenance +
-      // a re-grab grace) — otherwise grabbing a Common off the ground while holding a Legendary silently
-      // DESTROYED the Legendary. No-op on fists (empty hands = a plain pickup, nothing to drop).
-      this.dropHeldWeapon(player, c);
-      player.weapon = grabbed.weapon;
-      // §10 v0.104 the grab is the mystery REVEAL: the drop's rolled rarity + affix become the held
-      // weapon's loot identity (the server multiplies damage/cooldown from these synced fields).
-      player.weaponRarity = grabbed.rarity;
-      player.weaponAffix = grabbed.affix;
-      // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
-      // gallery + conjured drops are not.
-      if (c) c.heldEarned = this.earnedPickups.has(grabbed.id);
+      if (this.belt) {
+        // §29 belt: grabs ACCUMULATE into the 3-slot arsenal (the carousel is gone) — fill an empty slot,
+        // overflow to the bag, only drop when everything is full.
+        this.grabIntoArsenal(player, c, grabbed);
+      } else {
+        // §13 v0.106 (A11 de-clunk): grabbing is a SWAP, not a replace. If we're already holding a weapon,
+        // DROP it on the floor first (as a grabbable pickup carrying its loot identity + earned provenance +
+        // a re-grab grace) — otherwise grabbing a Common off the ground while holding a Legendary silently
+        // DESTROYED the Legendary. No-op on fists (empty hands = a plain pickup, nothing to drop).
+        this.dropHeldWeapon(player, c);
+        player.weapon = grabbed.weapon;
+        // §10 v0.104 the grab is the mystery REVEAL: the drop's rolled rarity + affix become the held
+        // weapon's loot identity (the server multiplies damage/cooldown from these synced fields).
+        player.weaponRarity = grabbed.rarity;
+        player.weaponAffix = grabbed.affix;
+        // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
+        // gallery + conjured drops are not.
+        if (c) c.heldEarned = this.earnedPickups.has(grabbed.id);
+      }
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
@@ -742,6 +822,81 @@ export class GameRoom extends Room<ArenaState> {
     player.weapon = FISTS_WEAPON;
     player.weaponRarity = RARITY_COMMON;
     player.weaponAffix = "";
+  }
+
+  // ── §29 v0.118 ARSENAL helpers: the held weapon is the ACTIVE slot's live mirror; these keep the slots
+  // array in sync and move weapons between hand / slots / bag. ──
+  /** Copy one stored weapon into another (or clear `dst` when `src` is null). */
+  private copySlot(dst: ArsenalSlot, src: ArsenalSlot | null): void {
+    dst.weapon = src?.weapon ?? "";
+    dst.rarity = src?.rarity ?? 0;
+    dst.affix = src?.affix ?? "";
+    dst.earned = src?.earned ?? false;
+  }
+
+  /** Write the live held weapon (+ loot identity + earned provenance) INTO the active slot, so the slots
+   *  array reflects reality before a swap/grab/stash reads it. FISTS → an empty slot. */
+  private syncActiveSlot(player: PlayerState, c: CombatState | undefined): void {
+    const s = player.slots[player.activeSlot];
+    if (!s) return;
+    if (!player.weapon || player.weapon === FISTS_WEAPON) {
+      this.copySlot(s, null);
+    } else {
+      s.weapon = player.weapon;
+      s.rarity = player.weaponRarity;
+      s.affix = player.weaponAffix;
+      s.earned = !!c?.heldEarned;
+    }
+  }
+
+  /** Load slot `i` into the player's hands (sets it active + mirrors held weapon/loot/provenance). An empty
+   *  slot loads FISTS. */
+  private loadSlot(player: PlayerState, c: CombatState | undefined, i: number): void {
+    player.activeSlot = i;
+    const s = player.slots[i];
+    if (!s || !s.weapon) {
+      player.weapon = FISTS_WEAPON;
+      player.weaponRarity = RARITY_COMMON;
+      player.weaponAffix = "";
+      if (c) c.heldEarned = false;
+      return;
+    }
+    player.weapon = s.weapon;
+    player.weaponRarity = s.rarity;
+    player.weaponAffix = s.affix;
+    if (c) c.heldEarned = s.earned;
+  }
+
+  /** §29 BELT grab: ADD the grabbed weapon to the arsenal instead of the arena swap-drop. Fills the first
+   *  empty slot (and equips it); if all 3 are full, the current active weapon overflows to the bag (or drops
+   *  to the floor when the bag is full too — still never destroyed) and the grab takes the active slot. */
+  private grabIntoArsenal(player: PlayerState, c: CombatState | undefined, grabbed: PickupState): void {
+    this.syncActiveSlot(player, c);
+    const earned = this.earnedPickups.has(grabbed.id);
+    let target = -1;
+    for (let i = 0; i < ARSENAL_SLOTS; i++) {
+      if (!player.slots[i]?.weapon) {
+        target = i;
+        break;
+      }
+    }
+    if (target === -1) {
+      const old = player.slots[player.activeSlot]!;
+      if (old.weapon && player.bag.length < BAG_CAP) {
+        const b = new ArsenalSlot();
+        this.copySlot(b, old);
+        player.bag.push(b);
+      } else if (old.weapon) {
+        this.dropHeldWeapon(player, c); // no room anywhere → drop current (still grabbable, not destroyed)
+      }
+      target = player.activeSlot;
+    }
+    const s = player.slots[target]!;
+    s.weapon = grabbed.weapon;
+    s.rarity = grabbed.rarity;
+    s.affix = grabbed.affix;
+    s.earned = earned;
+    this.loadSlot(player, c, target);
   }
 
   /** §10 v0.104 per-source damage multiplier INCLUDING the held weapon's loot identity: attribute grades ×
@@ -1003,6 +1158,11 @@ export class GameRoom extends Room<ArenaState> {
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
+    // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
+    // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
+    for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
+    player.slots[0]!.weapon = DEFAULT_WEAPON;
+    player.activeSlot = 0;
     // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
     // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
     // (the mouth of room 0), mid-depth, so the room progression flows left→right.

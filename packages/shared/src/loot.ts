@@ -11,7 +11,7 @@
  * finally scales something. §13: drops telegraph type+rarity but hide identity until grab (mystery);
  * bosses guarantee a drop; loot is squad-shared.
  */
-import { LUK_RARITY_PER } from "./constants.js";
+import { LUK_RARITY_PER, SCRIP_BY_RARITY } from "./constants.js";
 import type { WeaponDef } from "./weapons.js";
 import { WEAPONS } from "./weapons.js";
 
@@ -124,6 +124,13 @@ export function lootCooldownMult(affixId: string): number {
 /** §13 carried-salvage value of salvaging an EARNED weapon of this rarity. */
 export function salvageValue(rarity: number): number {
   return RARITIES[rarity]?.salvage ?? 1;
+}
+
+/** §29 v0.118 SCRIP paid at a shopkeeper for SELLING a weapon. Only earned (enemy-dropped) weapons pay —
+ *  conjured/gallery weapons sell for nothing (the same anti-launder rule as salvage). */
+export function scripValue(rarity: number, earned: boolean): number {
+  if (!earned) return 0;
+  return SCRIP_BY_RARITY[Math.min(rarity, SCRIP_BY_RARITY.length - 1)] ?? SCRIP_BY_RARITY[0];
 }
 
 /**
