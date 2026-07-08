@@ -396,6 +396,9 @@ export class GameRoom extends Room<ArenaState> {
   private belt = false;
   /** §29 the authored belt level (floor-collision profile + obstacles) when in belt mode; null otherwise. */
   private beltLevel: BeltLevel | null = null;
+  /** §29 belt ROOM progression: current room index + phase (walk in → lock+fight the wave → clear → advance). */
+  private beltRoomIdx = 0;
+  private beltPhase: "enter" | "fight" | "cleared" = "enter";
   private bossId: string | null = null;
   /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
    *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
@@ -998,9 +1001,15 @@ export class GameRoom extends Room<ArenaState> {
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
     // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
-    // (±100px stays inside the cleared centre, never over a pit).
-    player.x = this.map.spawnX + (Math.random() * 200 - 100);
-    player.y = this.map.spawnY + (Math.random() * 200 - 100);
+    // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
+    // (the mouth of room 0), mid-depth, so the room progression flows left→right.
+    if (this.belt) {
+      player.x = 180 + Math.random() * 120;
+      player.y = BELT_Y0 + DEPTH_MAX * (0.4 + Math.random() * 0.2);
+    } else {
+      player.x = this.map.spawnX + (Math.random() * 200 - 100);
+      player.y = this.map.spawnY + (Math.random() * 200 - 100);
+    }
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, {
@@ -1180,11 +1189,14 @@ export class GameRoom extends Room<ArenaState> {
     // this belt-x + route out of deck obstacles — the accurate edge/obstacle collision under the art.
     if (this.belt && this.beltLevel) {
       const level = this.beltLevel;
+      // §29 room GATE — a closed gate (beltLockX>0) caps how far right the squad can advance until the
+      // room's wave is cleared; else the whole belt is open.
+      const rightBound = (this.state.beltLockX > 0 ? this.state.beltLockX : level.length) - PLAYER_RADIUS;
       this.state.players.forEach((player) => {
         if (!player.alive) return;
         const o = resolveBeltObstacles(level, player.x, player.y, PLAYER_RADIUS);
-        player.x = o.x;
-        player.y = clampBeltFloorY(level, o.x, o.y, PLAYER_RADIUS);
+        player.x = Math.min(o.x, rightBound);
+        player.y = clampBeltFloorY(level, player.x, o.y, PLAYER_RADIUS);
       });
     } else if (!this.belt) {
       this.state.players.forEach((player) => {
@@ -1247,19 +1259,25 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
         this.state.elapsed += dt;
-        // Boss director (§16): the dimension boss arrives at the depth-scaled mark (§6 chain — deeper
-        // dimensions bring the capstone sooner), once per dimension.
-        if (!this.bossSpawned && this.state.elapsed >= bossSpawnAt(this.state.depth))
-          this.spawnBoss();
-        // The horde keeps coming until the boss falls; once the portal opens it eases off so the
-        // greed decision (bank vs descend) can be made cleanly.
-        if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
-        // §17 cross-dimensional SHIFTER incursions (roaming invaders) — phase one in on a timer, phase it
-        // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
-        // owns lifecycle.
-        this.stepShifters(dt, bodies);
-        this.checkExtraction(bodies);
-        this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
+        if (this.belt) {
+          // §29 belt: room-gated progression REPLACES the continuous director + boss clock + shifters —
+          // walk into a room, the gate locks, clear the wave, the gate opens, advance; the last room = boss.
+          this.stepBeltRooms(dt, bodies);
+        } else {
+          // Boss director (§16): the dimension boss arrives at the depth-scaled mark (§6 chain — deeper
+          // dimensions bring the capstone sooner), once per dimension.
+          if (!this.bossSpawned && this.state.elapsed >= bossSpawnAt(this.state.depth))
+            this.spawnBoss();
+          // The horde keeps coming until the boss falls; once the portal opens it eases off so the
+          // greed decision (bank vs descend) can be made cleanly.
+          if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
+          // §17 cross-dimensional SHIFTER incursions (roaming invaders) — phase one in on a timer, phase it
+          // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
+          // owns lifecycle.
+          this.stepShifters(dt, bodies);
+          this.checkExtraction(bodies);
+          this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
+        }
       }
     } else if (this.state.mode === "bossrush") {
       // §16 v0.116 BOSS RUSH — no horde, no boss clock: just count down the breather and drop the next boss.
@@ -2953,6 +2971,80 @@ export class GameRoom extends Room<ArenaState> {
     for (const id of doomed) {
       this.state.zones.delete(id);
       this.zoneMeta.delete(id);
+    }
+  }
+
+  /** §29 belt ROOM state machine — walk into a room → the gate locks + its wave spawns → clear it → the gate
+   *  opens → advance; the last room drops the boss, and clearing it wins the run. Server-authoritative + the
+   *  lock x syncs so every client's camera + the gate render agree. */
+  private stepBeltRooms(_dt: number, bodies: Vec2[]): void {
+    const level = this.beltLevel;
+    if (!level) return;
+    const room = level.rooms[this.beltRoomIdx];
+    if (!room) return; // past the last room (shouldn't happen — the boss room ends the run)
+    const prevGate = this.beltRoomIdx === 0 ? 0 : (level.rooms[this.beltRoomIdx - 1]?.gateX ?? 0);
+    const trashAlive = this.beltTrashAlive();
+    if (this.beltPhase === "enter") {
+      // Wait for a living player to walk into the room, THEN lock the gate + spawn the wave.
+      if (bodies.some((b) => b.x >= prevGate + 90)) {
+        this.beltPhase = "fight";
+        this.state.beltLockX = room.gateX;
+        this.state.beltRoomName = room.name;
+        if (room.boss) this.spawnBoss();
+        else this.spawnBeltWave(room.wave, prevGate, room.gateX);
+      }
+    } else if (this.beltPhase === "fight") {
+      const bossAlive = room.boss ? this.bossId !== null : false;
+      if (!bossAlive && trashAlive === 0) {
+        this.beltPhase = "cleared";
+        this.state.beltLockX = 0; // gate opens
+        if (room.boss) this.state.outcome = "victory"; // §29 cleared the bridge → run won
+      }
+    } else {
+      // cleared → advance when a player crosses the (now-open) gate.
+      if (!room.boss && bodies.some((b) => b.x >= room.gateX)) {
+        this.beltRoomIdx++;
+        this.beltPhase = "enter";
+        this.state.beltRoomName = "";
+      }
+    }
+  }
+
+  /** Non-boss (trash) enemies currently alive — a belt room is cleared when this hits 0. */
+  private beltTrashAlive(): number {
+    let n = 0;
+    this.state.enemies.forEach((_e, id) => {
+      if (id !== this.bossId) n++;
+    });
+    return n;
+  }
+
+  /** §29 spawn a room's wave: `n` enemies spread across the room's belt x-range, on the authored floor. */
+  private spawnBeltWave(n: number, x0: number, x1: number): void {
+    const level = this.beltLevel;
+    if (!level || n <= 0) return;
+    const players = this.livingCount();
+    for (let i = 0; i < n; i++) {
+      const kindId = pickEnemyKind(Math.random(), getDimension(this.state.dimensionId).roster);
+      const kind = ENEMY_KINDS[kindId];
+      if (!kind) continue;
+      const enemy = new EnemyState();
+      enemy.id = `e${this.enemySeq++}`;
+      enemy.kind = kindId;
+      enemy.tough =
+        kind.archetype !== "swarm" &&
+        Math.random() < toughChance(this.state.elapsed, players, this.state.depth);
+      enemy.hp =
+        kind.hp *
+        (enemy.tough ? TOUGH_HP_MULT : 1) *
+        enemyHpScale(players) *
+        depthHpScale(this.state.depth);
+      // spread across the room x, avoiding pits; depth on the authored floor.
+      let ex = x0 + 100 + Math.random() * Math.max(1, x1 - x0 - 200);
+      if (beltPitAtX(level, ex)) ex = beltSafeX(level, ex, x0);
+      enemy.x = ex;
+      enemy.y = clampBeltFloorY(level, ex, BELT_Y0 + Math.random() * DEPTH_MAX, kind.radius);
+      this.state.enemies.set(enemy.id, enemy);
     }
   }
 

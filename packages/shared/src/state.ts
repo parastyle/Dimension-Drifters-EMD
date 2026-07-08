@@ -273,4 +273,9 @@ export class ArenaState extends Schema {
   /** §16 v0.109 the active BOSS DEFINITION id (keys the shared `BOSSES` registry) — lets the client label the
    *  boss bar with the real boss name + pick per-boss cosmetic tints. "" while no boss is up. */
   @type("string") bossKind = "";
+
+  /** §29 belt-scroller room progression. `beltLockX` = the world-x the camera + movement lock to while a
+   *  room's wave is uncleared (a closed gate); 0 = open (no lock). `beltRoomName` labels the room banner. */
+  @type("number") beltLockX = 0;
+  @type("string") beltRoomName = "";
 }

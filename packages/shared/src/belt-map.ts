@@ -35,6 +35,17 @@ export interface BeltPit {
   x1: number;
 }
 
+/** A ROOM the squad clears to advance (beat-'em-up progression). The camera + movement LOCK at `gateX`
+ *  while `wave` enemies are alive; clear them → the gate opens → walk on to the next room. `boss` rooms
+ *  spawn the dimension boss instead of a trash wave. Rooms are contiguous: room i spans (prev gateX, gateX]. */
+export interface BeltRoom {
+  gateX: number;
+  wave: number;
+  boss?: boolean;
+  /** Label for the "ROOM: …" banner. */
+  name: string;
+}
+
 export interface BeltLevel {
   id: string;
   name: string;
@@ -45,6 +56,8 @@ export interface BeltLevel {
   /** Jumpable pits (the only hazard) — gaps in the deck. */
   pits: readonly BeltPit[];
   obstacles: readonly BeltObstacle[];
+  /** Ordered rooms (clear-to-advance gates), last is the boss. */
+  rooms: readonly BeltRoom[];
 }
 
 /** Is belt position `x` over a pit gap? PURE. */
@@ -142,6 +155,14 @@ export const SKY_CARRIER: BeltLevel = {
     { x0: 4120, x1: 4235 },
   ],
   obstacles: [],
+  // Clear-to-advance rooms → boss on the bridge. Gates fall on the deck's natural beats (flight deck /
+  // catwalk mouth / arena mouth / bridge).
+  rooms: [
+    { gateX: 1900, wave: 4, name: "Flight Deck" },
+    { gateX: 3150, wave: 5, name: "The Catwalk" },
+    { gateX: 3750, wave: 6, name: "Arena Mouth" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Bridge" },
+  ],
 };
 
 export const BELT_LEVELS: Record<string, BeltLevel> = { "sky-carrier": SKY_CARRIER };

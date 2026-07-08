@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 7; // v0.109 — §16 boss framework: +TelegraphState map, +arena bossKind; bossSlam* deprecated (kept at 0)
+export const SCHEMA_VERSION = 8; // v0.118 — §29 belt: +ArenaState beltLockX + beltRoomName (room gates)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;

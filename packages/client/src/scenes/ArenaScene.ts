@@ -214,6 +214,9 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 the authored belt level (floor profile + obstacles) — set when belt mode is on; drives the deck
    *  render + is handed to the predictor so client collision matches the server. */
   private beltLevel: BeltLevel | null = null;
+  /** §29 the room-gate barrier graphic (drawn at the synced lock x) + last-seen room name for the banner. */
+  private beltGate: Phaser.GameObjects.Graphics | null = null;
+  private lastBeltRoom = "";
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -2469,12 +2472,35 @@ export class ArenaScene extends Phaser.Scene {
     const zoom = cam.height / BELT_VIEW_H;
     if (Math.abs(cam.zoom - zoom) > 1e-4) cam.setZoom(zoom); // only on resize, not every frame
     const viewW = cam.width / zoom;
-    const maxX = Math.max(0, ARENA_WIDTH - viewW);
+    // §29 a closed room gate (beltLockX>0) caps the camera's right reach so the barrier sits at the edge.
+    const lock = this.room?.state.beltLockX ?? 0;
+    const rightLimit = lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
+    const maxX = Math.max(0, rightLimit - viewW);
     const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
     if (!this.camFocus) this.camFocus = { x: wantX, y: 0 };
     const a = 1 - Math.exp(-this.deltaSec / CAM_FOLLOW_TAU);
     this.camFocus.x += (wantX - this.camFocus.x) * a;
     cam.setScroll(this.camFocus.x, BELT_Y0 - BELT_SKY);
+    this.drawBeltGate(lock);
+    // §29 room banner on entering a new room.
+    const roomName = this.room?.state.beltRoomName ?? "";
+    if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
+    this.lastBeltRoom = roomName;
+  }
+
+  /** §29 draw the room GATE barrier at the locked x (a shimmering bulkhead across the deck) — hidden when
+   *  the gate is open (lock 0). A synced-state read, so all clients see the same lock. */
+  private drawBeltGate(lockX: number): void {
+    if (!this.beltGate) this.beltGate = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 50);
+    const g = this.beltGate;
+    g.clear();
+    if (lockX <= 0 || !this.beltLevel) return;
+    const b = beltBounds(this.beltLevel, lockX);
+    const top = this.beltY(BELT_Y0 + b.yMin) - 40;
+    const bot = this.beltY(BELT_Y0 + b.yMax) + 8;
+    g.fillStyle(0xff5a2e, 0.16).fillRect(lockX - 10, top, 20, bot - top);
+    g.lineStyle(4, 0xffb02e, 0.9);
+    for (let y = top; y < bot; y += 26) g.strokeRect(lockX - 5, y, 10, 16);
   }
 
   private followSelf(): void {
