@@ -168,6 +168,22 @@ export const MAP_POI_SPAWN_CLEAR_TILES = 5;
 /** Blob body radius in px. Body collision is respected by all objects (§5) — added later. (tuning) */
 export const PLAYER_RADIUS = 24;
 
+/**
+ * §29 v0.118 BELT-SCROLLER floor plane (see docs/BEATEMUP_CONVERSION.md). The 2.5D conversion reinterprets
+ * the flat sim: `x` = horizontal along the belt, `y` = DEPTH into a SHALLOW band (not the old open arena).
+ * These are the AUTHORITATIVE sim values — the world depth extent + the combat depth-tolerances. The screen
+ * PROJECTION (horizon / depthScale) is CLIENT-ONLY and lives in the client's belt-projection module; it must
+ * never appear in sim/hit math. Stage 3 clamps `y` to [0, DEPTH_MAX]; Stage 5 uses the tolerances. (tuning)
+ */
+export const DEPTH_MAX = 696;
+/** Depth alignment (world units) an attack tolerates for a hit — GENEROUS for players, TIGHT for enemies
+ *  (the classic beat-'em-up fairness lever). A hit needs horizontal reach AND |Δdepth| ≤ this. */
+export const DEPTH_TOL_PLAYER = 48;
+export const DEPTH_TOL_ENEMY = 30;
+/** SoR4 trick: while a body is actively moving in DEPTH, its hurtbox depth shrinks by this factor, so
+ *  repositioning genuinely dodges instead of getting clipped by a fat window. */
+export const DEPTH_DODGE_MULT = 0.5;
+
 /** Networking. */
 export const DEFAULT_PORT = 2567;
 export const ROOM_NAME = "arena";

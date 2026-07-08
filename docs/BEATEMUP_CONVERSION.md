@@ -76,19 +76,22 @@ gets a small +bias. Shadow blob drawn at the floor row (ignores height) sells de
 - Ultrawide/4K fairness: anchor band to height %, cap the *gameplay* view to ~16:9–18:9, let extra
   ultrawide width show non-interactive parallax only (no combat-awareness advantage).
 
-## Decisions I need from you (materially change the build)
+## Decisions — LOCKED (2026-07-08)
 
-1. **Art path** — pixel-art **640×360** (crisp integer 4K, TMNT feel) vs **HD 1920×1080** hand-drawn
-   (SoR4 feel; closer to your current harvested/AI sprites). Recommend HD to reuse existing art style.
-2. **Run structure** — keep the existing **dimension-chain / boss-rush / shifter** run and just re-skin
-   it into rooms? Or a **linear stage→rooms→boss campaign** (more classic beat-'em-up, bigger change)?
-3. **Existing bosses** — keep the 11 data-driven bosses (re-projected telegraphs) or rebuild movesets
-   for the belt plane? Recommend keep + re-project (they're a big asset).
-4. **Meta progression** — what does "send stuff back for meta progression" bank into? (persistent
-   currency for permanent unlocks between runs? a home-base upgrade tree?) Shapes the shopkeeper + save.
+1. **Art path → HD 1920×1080 (SoR4 style).** Virtual canvas 1920×1080; the world-unit numbers above are
+   the 640×360 figures **×3**. Reuses the existing harvested/AI sprite style; least art rework.
+2. **Run structure → keep the dimension-chain, re-skinned as rooms.** Extract-or-descend greed loop,
+   boss clock, and shifters stay; each "dimension" becomes a sequence of belt rooms with wave gates.
+3. **Bosses → keep all 11 (incl. Gorogoth), re-project telegraphs** onto the depth band. Reuse the whole
+   `bosses.ts` / `boss-primitives.ts` / `BossController` framework.
+4. **Meta progression → persistent currency for permanent unlocks.** Shopkeepers convert sold gear into a
+   meta-currency banked across runs (a save) and spent on permanent unlocks/upgrades. Roguelite meta.
 
-I'll proceed on the **recommended** defaults (HD art, keep dimension-chain re-skinned into rooms, keep
-bosses re-projected) unless you say otherwise — but #4 (meta progression) I need your intent on.
+### HD numbers (×3 of the 640×360 figures)
+Virtual 1920×1080; `horizonY ≈ 642`, front ≈ 990, band ≈ 348px; **world depth `z ∈ [0, 696]`**;
+`depthScale ≈ 0.5`; depth hit tol **±48** (player) / **±30** (enemy); camera lerpX 0.10; parallax factors
+are ratios (unchanged); level width in viewports unchanged. The projection (horizon/depthScale) is
+CLIENT-ONLY — only `DEPTH_MAX = 696` and the depth tolerances live in the shared sim.
 
 ## Appendix — full belt-scroller research
 
