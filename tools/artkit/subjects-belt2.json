@@ -1,0 +1,20 @@
+[
+  {
+    "id": "belt-bridge-boss",
+    "name": "Sky Carrier Bridge (boss arena)",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 landscape backdrop for the BOSS ARENA of a 2.5D beat-'em-up: the open command bridge / forward flight-deck of a colossal FLYING AIRCRAFT CARRIER, seen side-on so the deck runs left-to-right. Dramatic: the towering island superstructure with the glowing lit BRIDGE windows looms large on one side, radar arrays and antenna masts against a moody dusk sky streaked with orange and violet, heavy storm clouds massing behind, warning lights blinking on the deck edge, yellow hazard chevrons on the steel plating. Higher stakes / final-showdown mood. Gritty indie-arcade / dark-comic HD cel-shaded, strong rim light. NO characters, NO UI, NO frame — the environment only, full-bleed.",
+    "palette": { "primary": "#3a3550", "accent": "#ff7a2e" },
+    "tags": ["scenery", "background", "belt", "sky-carrier", "boss", "widescreen"],
+    "cardartAction": "a dramatic side-on shot of the bridge tower over the deck at dusk, storm clouds and beacon lights, the deck running across the frame"
+  },
+  {
+    "id": "belt-sky-clouds-far",
+    "name": "Far Cloud Band (parallax)",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 horizontal band of DRIFTING CLOUDS against clear high-altitude sky, for a parallax background layer in a sky-set beat-'em-up. Layered cumulus catching warm daylight, soft depth haze, plenty of open blue between the clumps so it reads as a distant layer. Painterly HD cel-shaded to match a dark-comic game. NO ground, NO ship, NO characters, NO frame — just a clean, seamless-feeling cloud band that can scroll horizontally.",
+    "palette": { "primary": "#7cc0ec", "accent": "#eef6ff" },
+    "tags": ["scenery", "sky", "parallax", "belt", "widescreen"],
+    "cardartAction": "a wide serene band of sunlit clouds drifting across an open sky, distant and soft"
+  }
+]
