@@ -1545,6 +1545,20 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(pk.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
   });
 
+  it("belt join RESTORES persisted scrip (clamped to uint16); arena ignores it", () => {
+    const belt = makeRoom({ belt: true });
+    belt.room.clients.push({ sessionId: "pB" });
+    belt.room.onJoin({ sessionId: "pB" }, { scrip: 123 });
+    expect(belt.state().players.get("pB").scrip).toBe(123);
+    belt.room.clients.push({ sessionId: "pC" });
+    belt.room.onJoin({ sessionId: "pC" }, { scrip: 999999 });
+    expect(belt.state().players.get("pC").scrip).toBe(65535); // clamped
+    const arena = makeRoom();
+    arena.room.clients.push({ sessionId: "pA" });
+    arena.room.onJoin({ sessionId: "pA" }, { scrip: 500 });
+    expect(arena.state().players.get("pA").scrip).toBe(0); // non-belt never seeds
+  });
+
   it("bagStore frees a slot into the bag; bagEquip pulls it back", () => {
     const h = makeRoom({ belt: true });
     h.join("p1");

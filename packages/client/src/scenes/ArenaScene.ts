@@ -1100,6 +1100,7 @@ export class ArenaScene extends Phaser.Scene {
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
+          scrip: this.belt ? this.loadBankedScrip() : 0, // §29 restore the player's persisted meta-scrip
         });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -3770,6 +3771,25 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** §29 meta-progression bank: the player's SCRIP persisted in localStorage, restored on belt join and
+   *  re-saved whenever it changes. MVP persistence (client-local, single-machine) — a server/account bank
+   *  can replace it later without touching the earn/sell loop. Clamped to the uint16 sync ceiling. */
+  private loadBankedScrip(): number {
+    try {
+      const v = Number.parseInt(localStorage.getItem("dd.beltScrip") ?? "0", 10);
+      return Number.isFinite(v) ? Math.max(0, Math.min(65535, v)) : 0;
+    } catch {
+      return 0; // storage blocked (private mode / sandbox) → start fresh, no crash
+    }
+  }
+  private saveBankedScrip(scrip: number): void {
+    try {
+      localStorage.setItem("dd.beltScrip", String(Math.max(0, Math.min(65535, Math.floor(scrip)))));
+    } catch {
+      /* storage blocked — non-fatal, scrip just won't persist this session */
+    }
+  }
+
   /** §29 a pooled, screen-pinned HUD text (lazily created), used by the arsenal + bag readouts. */
   private hudText(pool: Phaser.GameObjects.Text[], i: number, depth: number): Phaser.GameObjects.Text {
     let t = pool[i];
@@ -3848,12 +3868,16 @@ export class ArenaScene extends Phaser.Scene {
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
-    // §29 sale feedback: flash the scrip gained + a pickup blip when the total ticks up.
-    if (this.lastScrip >= 0 && self.scrip > this.lastScrip) {
-      this.flashBanner(`+${self.scrip - this.lastScrip} ◈ SCRIP`, "#ffe27a");
-      this.audio.play("grab");
+    // §29 sale feedback: flash the scrip gained + a pickup blip when the total ticks up, and PERSIST the
+    // running scrip bank so it carries to the next run (meta-progression — "send stuff back").
+    if (self.scrip !== this.lastScrip) {
+      if (this.lastScrip >= 0 && self.scrip > this.lastScrip) {
+        this.flashBanner(`+${self.scrip - this.lastScrip} ◈ SCRIP`, "#ffe27a");
+        this.audio.play("grab");
+      }
+      this.saveBankedScrip(self.scrip);
+      this.lastScrip = self.scrip;
     }
-    this.lastScrip = self.scrip;
     this.updateShopkeeper(self, s);
     if (this.bagOpen || this.shopOpen) this.renderBagPanel(self, s);
     else if (this.bagG?.visible) this.hideBagPanel();

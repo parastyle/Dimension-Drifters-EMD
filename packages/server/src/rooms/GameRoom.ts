@@ -1182,13 +1182,18 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  override onJoin(client: Client): void {
+  override onJoin(client: Client, options?: { scrip?: number }): void {
     const player = new PlayerState();
     player.id = client.sessionId;
     player.hp = PLAYER_MAX_HP;
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
+    // §29 restore the player's persisted meta-scrip (belt only). Client-supplied → clamp to the uint16
+    // ceiling (a sane bound; the persistence model is an MVP, not a trusted economy).
+    if (this.belt && Number.isFinite(options?.scrip)) {
+      player.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
+    }
     // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
     // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
