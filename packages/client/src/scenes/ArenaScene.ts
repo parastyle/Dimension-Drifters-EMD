@@ -422,6 +422,7 @@ export class ArenaScene extends Phaser.Scene {
   private shopNpcG: Phaser.GameObjects.Graphics | null = null;
   private shopPromptText: Phaser.GameObjects.Text | null = null;
   private shopOpen = false;
+  private lastScrip = -1; // §29 track scrip to flash a "+N" confirmation on a sale (−1 = uninitialised)
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -3843,6 +3844,12 @@ export class ArenaScene extends Phaser.Scene {
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
+    // §29 sale feedback: flash the scrip gained + a pickup blip when the total ticks up.
+    if (this.lastScrip >= 0 && self.scrip > this.lastScrip) {
+      this.flashBanner(`+${self.scrip - this.lastScrip} ◈ SCRIP`, "#ffe27a");
+      this.audio.play("grab");
+    }
+    this.lastScrip = self.scrip;
     this.updateShopkeeper(self, s);
     if (this.bagOpen || this.shopOpen) this.renderBagPanel(self, s);
     else if (this.bagG?.visible) this.hideBagPanel();

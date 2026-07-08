@@ -54,14 +54,21 @@ gets a small +bias. Shadow blob drawn at the floor row (ignores height) sells de
   trailing player by > ~1 screen). Reuse the existing eased-follow scaffold.
 - **Stage 3 — Rooms + progression.** Server room model `{leftBound, rightBound, waves, gate}`; "clear
   the wave → gate opens → scroll to next room," boss arena at the end. Retire open-arena mapgen.
-- **Stage 4 — Parallax in-game.** Port the prototype into Phaser: TileSprite layers (sky/far/mid/
-  near/floor) + foreground occluders + **camera-independent drifting clouds**
-  (`tilePositionX = cam.scrollX * f + time * drift`). Theme #1 = **sky aircraft carrier**.
-- **Stage 5 — Depth-tolerance hit detection.** Attacks need horizontal reach **and** `|Δz| ≤ tol`;
-  player-generous / enemy-tight; SoR4 trick: shrink hurtbox depth while moving in `z` (real dodging).
-  Re-project boss telegraphs (they draw world-space geometry today).
-- **Stage 6 — Weapons: 3 slots + bag + shopkeepers.** Replace the carousel with 3 active slots; a bag
-  (menu open + hotswap into slots); shopkeepers per room to sell + bank for meta progression.
+- **Stage 4 — Parallax in-game.** ✅ *(v0.118)* Codex sky-carrier + storm-bridge backdrops pinned to the
+  viewport; a **procedural, transparent drifting-cloud band** over the upper sky (canvas radial puffs,
+  seam-wrapped TileSprite, `tilePositionX = camFocus.x * 0.35 + drift`) — camera-independent clouds, no
+  art dependency. Theme #1 = **sky aircraft carrier**. *(Deck-plating texture still vector-only: Phaser-4
+  GeometryMask2 won't bind to a TileSprite for the varying-trapezoid clip — documented blocker.)*
+- **Stage 5 — Depth-tolerance hit detection.** ✅ *(v0.118)* Belt melee is now a **lane hit** (forward
+  reach in the facing dir **and** `|Δy| ≤ DEPTH_TOL_PLAYER` + radius), enemy contact is tight
+  (`DEPTH_TOL_ENEMY`), and a body rolling/moving in depth shrinks its own hurtbox (`DEPTH_DODGE_MULT`)
+  for real dodges. Non-belt keeps the top-down angular sweep. *(Boss-telegraph re-projection still TODO.)*
+- **Stage 6 — Weapons: 3 slots + bag + shopkeepers.** ✅ *(v0.118)* `PlayerState.slots[3]` + `activeSlot`
+  + `bag` + `scrip` (`ArsenalSlot` carries rarity/affix/earned). Belt grabs ACCUMULATE into empty slots →
+  overflow to bag → drop only when full (never destroyed). Keys 1/2/3 + Q/E swap; Tab bag overlay
+  (equip/stash); shopkeeper NPC at `beltShopX` with an **F: TRADE** sell-for-scrip overlay
+  (proximity-gated, earned-only). Arena/training keep the carousel. *(Cross-run meta-persistence of scrip
+  still TODO — currently per-session.)*
 - **Stage 7 — Art pass.** ¾-view feet-anchored character/enemy sprites, floor-band art, shadow polish.
 
 ## Numeric starting points (from research; 640×360 internal, ×3 for HD)
