@@ -58,6 +58,8 @@ export interface BeltLevel {
   obstacles: readonly BeltObstacle[];
   /** Ordered rooms (clear-to-advance gates), last is the boss. */
   rooms: readonly BeltRoom[];
+  /** §29 v0.118 world-x of the SHOPKEEPER (sell bag/slot weapons for scrip). Omitted / 0 = no vendor. */
+  shopX?: number;
 }
 
 /** Is belt position `x` over a pit gap? PURE. */
@@ -163,6 +165,9 @@ export const SKY_CARRIER: BeltLevel = {
     { gateX: 3750, wave: 6, name: "Arena Mouth" },
     { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Bridge" },
   ],
+  // Vendor at the mouth of the Catwalk (just past the first gate) — you reach them with loot from the
+  // Flight Deck fight, and can always backtrack to sell. On clear deck (clear of the 1560–1670 pit).
+  shopX: 2050,
 };
 
 export const BELT_LEVELS: Record<string, BeltLevel> = { "sky-carrier": SKY_CARRIER };

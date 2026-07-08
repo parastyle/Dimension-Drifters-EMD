@@ -16,6 +16,7 @@ import {
   REVIVE_HP_FRAC,
   SHIFTER_KIND_IDS,
   salvageValue,
+  scripValue,
   TILE_GROUND,
   TILE_PIT,
   WEAPONS,
@@ -1497,6 +1498,31 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(p.bag[0].weapon).toBe("rusty-cleaver");
     expect(p.slots[2].weapon).toBe("wyrmtooth-dagger");
     expect(p.weapon).toBe("wyrmtooth-dagger");
+  });
+
+  it("sellWeapon pays SCRIP by rarity at the shopkeeper — earned only, proximity-gated", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const shopX = h.state().beltShopX;
+    expect(shopX).toBeGreaterThan(0); // the level places a vendor
+    grabAt(h, "drop910", "tombstone-greatsword", 4, "keen", true); // earned Legendary → slot 1
+    grabAt(h, "drop911", "rusty-cleaver", 1, "", false); // UNEARNED → slot 2
+    // Too far from the vendor → rejected.
+    p.x = shopX + 400;
+    h.send("p1", "sellWeapon", { from: "slot", index: 1 });
+    expect(p.scrip).toBe(0);
+    expect(p.slots[1].weapon).toBe("tombstone-greatsword");
+    // At the vendor → the earned Legendary pays its tier's scrip.
+    p.x = shopX;
+    h.send("p1", "sellWeapon", { from: "slot", index: 1 });
+    expect(p.scrip).toBe(scripValue(4, true));
+    expect(p.slots[1].weapon).toBe(""); // sold → slot cleared
+    // The unearned cleaver sells for NOTHING (still removed).
+    const before = p.scrip;
+    h.send("p1", "sellWeapon", { from: "slot", index: 2 });
+    expect(p.scrip).toBe(before); // +0
+    expect(p.slots[2].weapon).toBe("");
   });
 
   it("bagStore frees a slot into the bag; bagEquip pulls it back", () => {

@@ -160,6 +160,7 @@ import {
   SHIFTER_KIND_IDS,
   SHIFTER_SALVAGE_PER_DEPTH,
   SHIFTER_TIER_SECONDS,
+  SHOP_RADIUS,
   SPAWN_RING,
   safeSpawnPos,
   salvageValue,
@@ -424,6 +425,7 @@ export class GameRoom extends Room<ArenaState> {
     this.setState(new ArenaState());
     this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, authored deck + collision)
     this.beltLevel = this.belt ? beltLevelFor("sky-carrier") : null;
+    this.state.beltShopX = this.beltLevel?.shopX ?? 0; // §29 sync the shopkeeper's world-x (0 = no vendor)
 
     // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
@@ -614,6 +616,32 @@ export class GameRoom extends Room<ArenaState> {
         player.bag.splice(bi, 1); // slot was empty → the bag entry is consumed
       }
       if (si === player.activeSlot) this.loadSlot(player, c, si);
+    });
+
+    // §29 ARSENAL SELL: trade a bag or slot weapon to the shopkeeper for SCRIP. Gated on proximity to the
+    // vendor (beltShopX) + alive; only EARNED weapons pay (anti-launder). Selling the active slot empties the
+    // hand to fists.
+    this.onMessage("sellWeapon", (client, message: { from?: "bag" | "slot"; index?: number }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive || !this.belt) return;
+      const shopX = this.state.beltShopX;
+      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return; // not at the vendor
+      const idx = Math.floor(message?.index ?? -1);
+      const c = this.combat.get(client.sessionId);
+      if (message?.from === "slot") {
+        if (idx < 0 || idx >= ARSENAL_SLOTS) return;
+        if (idx === player.activeSlot) this.syncActiveSlot(player, c);
+        const s = player.slots[idx]!;
+        if (!s.weapon) return;
+        player.scrip = Math.min(65535, player.scrip + scripValue(s.rarity, s.earned));
+        this.copySlot(s, null);
+        if (idx === player.activeSlot) this.loadSlot(player, c, idx);
+      } else {
+        if (idx < 0 || idx >= player.bag.length) return;
+        const b = player.bag[idx]!;
+        player.scrip = Math.min(65535, player.scrip + scripValue(b.rarity, b.earned));
+        player.bag.splice(idx, 1);
+      }
     });
 
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).

@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 9; // v0.118 — §29 arsenal: +PlayerState slots/activeSlot/bag/scrip (3-slot loadout)
+export const SCHEMA_VERSION = 10; // v0.118 — §29 shop: +ArenaState beltShopX (belt shopkeeper)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;

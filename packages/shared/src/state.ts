@@ -302,4 +302,7 @@ export class ArenaState extends Schema {
    *  room's wave is uncleared (a closed gate); 0 = open (no lock). `beltRoomName` labels the room banner. */
   @type("number") beltLockX = 0;
   @type("string") beltRoomName = "";
+  /** §29 v0.118 world-x of the belt SHOPKEEPER (0 = none). Synced so every client draws the vendor + gates
+   *  the sell interaction on proximity. */
+  @type("number") beltShopX = 0;
 }

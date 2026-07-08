@@ -56,6 +56,8 @@ import {
   QUAKE_REACH,
   RARITIES,
   RARITY_CURSED,
+  scripValue,
+  SHOP_RADIUS,
   RING_BAND_HALF,
   ROOM_NAME,
   requirementPenalty,
@@ -213,6 +215,7 @@ export class ArenaScene extends Phaser.Scene {
     | "R"
     | "Q"
     | "E"
+    | "F"
     | "T"
     | "B"
     | "C"
@@ -414,6 +417,11 @@ export class ArenaScene extends Phaser.Scene {
   private bagTexts: Phaser.GameObjects.Text[] = [];
   private bagZones: Phaser.GameObjects.Rectangle[] = [];
   private slotZones: Phaser.GameObjects.Rectangle[] = [];
+  // §29 shopkeeper: a world-space vendor drawn at state.beltShopX; `shopOpen` is the SELL overlay (F near
+  // the vendor). When open, the same slot/bag zones sell for scrip instead of swapping/equipping.
+  private shopNpcG: Phaser.GameObjects.Graphics | null = null;
+  private shopPromptText: Phaser.GameObjects.Text | null = null;
+  private shopOpen = false;
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -533,7 +541,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,T,B,C,M,TAB,SPACE,ONE,TWO,THREE") as Record<
+    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE") as Record<
       | "W"
       | "A"
       | "S"
@@ -541,6 +549,7 @@ export class ArenaScene extends Phaser.Scene {
       | "R"
       | "Q"
       | "E"
+      | "F"
       | "T"
       | "B"
       | "C"
@@ -1234,11 +1243,23 @@ export class ArenaScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
       if (this.belt) {
         this.bagOpen = !this.bagOpen;
+        if (this.bagOpen) this.shopOpen = false; // one overlay at a time
       } else {
         const training = this.room?.state.mode === "training";
         if (training && !this.summonOpen) this.openSummonMenu();
         else this.closeSummonMenu();
       }
+    }
+    // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
+    if (this.belt) {
+      const shopX = this.room?.state.beltShopX ?? 0;
+      const selfX = this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
+      const nearShop = shopX > 0 && Math.abs(selfX - shopX) <= SHOP_RADIUS;
+      if (Phaser.Input.Keyboard.JustDown(this.keys.F) && nearShop) {
+        this.shopOpen = !this.shopOpen;
+        if (this.shopOpen) this.bagOpen = false;
+      }
+      if (!nearShop) this.shopOpen = false;
     }
     if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
     if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
@@ -3808,7 +3829,8 @@ export class ArenaScene extends Phaser.Scene {
       if (!z) {
         z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100047).setInteractive();
         z.on("pointerdown", () => {
-          if (this.bagOpen) this.room?.send("bagStore", { slot: i });
+          if (this.shopOpen) this.room?.send("sellWeapon", { from: "slot", index: i });
+          else if (this.bagOpen) this.room?.send("bagStore", { slot: i });
           else this.room?.send("swapSlot", { slot: i });
         });
         this.slotZones[i] = z;
@@ -3821,8 +3843,54 @@ export class ArenaScene extends Phaser.Scene {
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
-    if (this.bagOpen) this.renderBagPanel(self, s);
+    this.updateShopkeeper(self, s);
+    if (this.bagOpen || this.shopOpen) this.renderBagPanel(self, s);
     else if (this.bagG?.visible) this.hideBagPanel();
+  }
+
+  /** §29 draw the world-space SHOPKEEPER at state.beltShopX (a lit market stall + keeper), a "Press F"
+   *  prompt when the local player is in range, and re-tint when the SELL overlay is open. */
+  private updateShopkeeper(self: PlayerState, s: number): void {
+    const shopX = this.room?.state.beltShopX ?? 0;
+    if (shopX <= 0 || !this.beltLevel) {
+      this.shopNpcG?.setVisible(false);
+      this.shopPromptText?.setVisible(false);
+      return;
+    }
+    if (!this.shopNpcG) {
+      // WORLD space (scrolls with the camera) — depth just above the deck so the stall sits on the floor.
+      this.shopNpcG = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 5);
+      const midDepth = BELT_Y0 + DEPTH_MAX * 0.5;
+      const gy = this.beltY(midDepth); // screen-plane ground line at the stall's depth
+      const gx = shopX;
+      const g = this.shopNpcG;
+      // awning
+      g.fillStyle(0x8a2f3a, 1).fillRect(gx - 54, gy - 150, 108, 20);
+      for (let i = 0; i < 6; i++)
+        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(gx - 54 + i * 18, gy - 132, 18, 12);
+      // posts + counter
+      g.fillStyle(0x5a4632, 1).fillRect(gx - 52, gy - 130, 6, 130).fillRect(gx + 46, gy - 130, 6, 130);
+      g.fillStyle(0x6b503a, 1).fillRect(gx - 56, gy - 44, 112, 16);
+      // keeper (head + cloak)
+      g.fillStyle(0x2a3550, 1).fillRect(gx - 16, gy - 96, 32, 52);
+      g.fillStyle(0xe3b58f, 1).fillCircle(gx, gy - 104, 13);
+      g.fillStyle(0x1d2740, 1).fillRect(gx - 15, gy - 118, 30, 10); // hood brim
+      // sign
+      g.fillStyle(0x101722, 0.9).fillRect(gx - 30, gy - 176, 60, 20);
+      this.shopPromptText = this.add
+        .text(gx, gy - 166, "SHOP", { fontFamily: "monospace", color: "#ffd479" })
+        .setOrigin(0.5, 0.5)
+        .setDepth(BELT_Y0 + DEPTH_MAX + 6);
+      this.shopPromptText.setFontSize(13);
+    }
+    this.shopNpcG.setVisible(true);
+    // Proximity prompt (screen-pinned would need a second object; reuse the world sign text swapping label).
+    const near = Math.abs(self.x - shopX) <= SHOP_RADIUS;
+    if (this.shopPromptText) {
+      this.shopPromptText
+        .setText(this.shopOpen ? "TRADING" : near ? "◈ F: TRADE" : "SHOP")
+        .setColor(near ? "#9cff6a" : "#ffd479");
+    }
   }
 
   /** §29 the Tab bag overlay — a grid of the bag's weapons; click one to EQUIP it into the active slot
@@ -3839,8 +3907,12 @@ export class ArenaScene extends Phaser.Scene {
     g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
     g.lineStyle(2 * s, 0x2f3946, 1).strokeRoundedRect(px, py, panelW, panelH, 10 * s);
     const title = this.hudText(this.bagTexts, 0, 100046)
-      .setText("BAG — click a weapon to equip · click a slot to stash · Tab to close")
-      .setColor("#9fb0c2")
+      .setText(
+        this.shopOpen
+          ? "SHOP — click a weapon or a slot to SELL for scrip · F to close"
+          : "BAG — click a weapon to equip · click a slot to stash · Tab to close",
+      )
+      .setColor(this.shopOpen ? "#ffd479" : "#9fb0c2")
       .setPosition(px + 16 * s, py + 12 * s);
     title.setFontSize(12 * s).setOrigin(0, 0);
     const cols = 4;
@@ -3855,7 +3927,9 @@ export class ArenaScene extends Phaser.Scene {
         if (!z) {
           z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100045).setInteractive();
           z.on("pointerdown", () => {
-            if (this.bagOpen && i < self.bag.length) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
+            if (i >= self.bag.length) return;
+            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: i });
+            else if (this.bagOpen) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
           });
           this.bagZones[i] = z;
         }
@@ -3870,7 +3944,9 @@ export class ArenaScene extends Phaser.Scene {
       const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
       g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
       g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
-      const nm = WEAPONS[item.weapon]?.name ?? item.weapon;
+      const baseName = WEAPONS[item.weapon]?.name ?? item.weapon;
+      const price = scripValue(item.rarity, item.earned);
+      const nm = this.shopOpen ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}` : baseName;
       const t = this.hudText(this.bagTexts, 1 + i, 100046)
         .setText(nm)
         .setColor(`#${col.toString(16).padStart(6, "0")}`)
