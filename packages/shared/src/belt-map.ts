@@ -27,6 +27,14 @@ export interface BeltFloorKey {
   yMax: number;
 }
 
+/** A jumpable PIT — a gap in the deck spanning belt x ∈ [x0, x1] (full depth). A GROUNDED body over it falls
+ *  (chip + snap-back for players, death for enemies, §17); an AIRBORNE body (mid-jump) clears it. Sized
+ *  under the jump reach (~run-speed × airtime) so a running jump always makes it across. */
+export interface BeltPit {
+  x0: number;
+  x1: number;
+}
+
 export interface BeltLevel {
   id: string;
   name: string;
@@ -34,7 +42,25 @@ export interface BeltLevel {
   length: number;
   /** Floor profile, sorted by `x`. */
   floor: readonly BeltFloorKey[];
+  /** Jumpable pits (the only hazard) — gaps in the deck. */
+  pits: readonly BeltPit[];
   obstacles: readonly BeltObstacle[];
+}
+
+/** Is belt position `x` over a pit gap? PURE. */
+export function beltPitAtX(level: BeltLevel, x: number): boolean {
+  for (const p of level.pits) if (x >= p.x0 && x <= p.x1) return true;
+  return false;
+}
+
+/** Nearest safe belt x OUTSIDE any pit, given a fall-back reference `fromX` (the last grounded x) — used to
+ *  snap a fallen body back to solid deck (before the pit it walked into). PURE. */
+export function beltSafeX(level: BeltLevel, x: number, fromX: number): number {
+  if (!beltPitAtX(level, x)) return x;
+  for (const p of level.pits) {
+    if (x >= p.x0 && x <= p.x1) return fromX <= p.x0 ? p.x0 - 4 : p.x1 + 4; // step back to the edge you came from
+  }
+  return x;
 }
 
 /** Walkable depth band [yMin, yMax] (band-relative) at belt position `x`, linearly interpolated. PURE. */
@@ -108,11 +134,14 @@ export const SKY_CARRIER: BeltLevel = {
     { x: 3750, yMin: 40, yMax: DEPTH_MAX - 40 }, // open → boss arena
     { x: ARENA_WIDTH, yMin: 40, yMax: DEPTH_MAX - 40 },
   ],
-  obstacles: [
-    { x: 1050, depth: DEPTH_MAX * 0.3, r: 62, kind: "crate" },
-    { x: 1400, depth: DEPTH_MAX * 0.72, r: 62, kind: "crate" },
-    { x: 4300, depth: DEPTH_MAX * 0.5, r: 82, kind: "barrel" },
+  // Jumpable pits — the only hazard (§29). Placed in the WIDE sections (never the catwalk); ~110px wide so
+  // a running jump (~144px reach) clears them. Kite enemies in — they can't jump, so pits are free kills.
+  pits: [
+    { x0: 1180, x1: 1290 },
+    { x0: 1560, x1: 1670 },
+    { x0: 4120, x1: 4235 },
   ],
+  obstacles: [],
 };
 
 export const BELT_LEVELS: Record<string, BeltLevel> = { "sky-carrier": SKY_CARRIER };

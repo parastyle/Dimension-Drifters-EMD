@@ -2417,21 +2417,23 @@ export class ArenaScene extends Phaser.Scene {
     g.moveTo(near[0]!.x, near[0]!.y);
     for (const p of near) g.lineTo(p.x, p.y);
     g.strokePath();
-    this.floorObjs.push(g);
-    // Obstacles as depth-sorted props (sort with the actors so you can stand in front of / behind them).
-    for (const o of level.obstacles) {
-      const wy = BELT_Y0 + o.depth;
-      const sy = this.beltY(wy);
-      const col = o.kind === "barrel" ? 0x7a5a2e : 0x6b5030;
-      const shadow = this.add
-        .ellipse(o.x, sy, o.r * 2.1, o.r * 0.7, 0x0a1018, 0.35)
-        .setDepth(wy - 1);
-      const body = this.add
-        .ellipse(o.x, sy - o.r * 0.5, o.r * 1.9, o.r * 1.5, col)
-        .setStrokeStyle(3, 0x2a2016, 1)
-        .setDepth(wy);
-      this.floorObjs.push(shadow, body);
+    // §29 PIT GAPS — cut the void into the deck at each authored pit x-range (WYSIWYG: the hole you see is
+    // the gap you fall through), edged with hazard stripes.
+    for (const pit of level.pits) {
+      const b = beltBounds(level, (pit.x0 + pit.x1) / 2);
+      const top = this.beltY(BELT_Y0 + b.yMin);
+      const bot = this.beltY(BELT_Y0 + b.yMax);
+      g.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
+      g.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
+      g.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
+      g.beginPath();
+      g.moveTo(pit.x0, top);
+      g.lineTo(pit.x0, bot);
+      g.moveTo(pit.x1, top);
+      g.lineTo(pit.x1, bot);
+      g.strokePath();
     }
+    this.floorObjs.push(g);
   }
 
   /** §29 belt render post-pass — after all positioning (which sets ABSOLUTE world coords each frame), remap

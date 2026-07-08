@@ -4,6 +4,8 @@ import {
   BELT_Y0,
   type BeltLevel,
   beltLevelFor,
+  beltPitAtX,
+  beltSafeX,
   clampBeltFloorY,
   resolveBeltObstacles,
   type ArenaMap,
@@ -1197,12 +1199,28 @@ export class GameRoom extends Room<ArenaState> {
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
     this.state.players.forEach((player, id) => {
-      if (this.belt) return; // §29 belt has a FLAT deck — no pits
       if (!player.alive || this.inLevelWindow(player)) return;
       const c = this.combat.get(id);
       if (!c) return;
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
       if (player.height > GROUND_EPSILON) return; // airborne (mid-jump) — the hop carries you over
+      // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
+      // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
+      if (this.belt && this.beltLevel) {
+        if (!beltPitAtX(this.beltLevel, player.x)) {
+          c.lastGroundX = player.x;
+          return;
+        }
+        if (c.pitGrace > 0) return;
+        player.hp = Math.max(0, player.hp - player.maxHp * PIT_FALL_DAMAGE_FRAC);
+        player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
+        c.lastGroundX = player.x;
+        c.pitGrace = PIT_FALL_GRACE;
+        c.invuln = Math.max(c.invuln, PIT_FALL_GRACE);
+        this.zeroMoveVel(id);
+        player.fellSeq++;
+        return;
+      }
       const overPit = isPitAtPx(this.map, player.x, player.y);
       if (!overPit) {
         c.lastGroundX = player.x; // standing on solid ground → remember it
@@ -1455,18 +1473,19 @@ export class GameRoom extends Room<ArenaState> {
       });
     }
 
-    // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. This is
-    // the "hazards hurt everything" rule (§17): kite the horde into a pit, or knock one in with a parry
-    // (the knockback shoves it over the edge) = an instant kill. The boss is pit-immune. No XP — terrain
-    // kills are free crowd control, not score. §29 belt has no pits (flat deck) — skipped.
-    if (!this.belt) {
-      const fellIn: string[] = [];
-      this.state.enemies.forEach((enemy, eid) => {
-        if (eid === this.bossId) return;
-        if (isPitAtPx(this.map, enemy.x, enemy.y)) fellIn.push(eid);
-      });
-      for (const eid of fellIn) this.state.enemies.delete(eid);
-    }
+    // 5.6 §17 PITFALL — a non-boss enemy whose body ends the tick over a pit falls in and DIES. Kite the
+    // horde into a pit (they can't jump) or knock one in with a parry = an instant kill. Boss is pit-immune.
+    // No XP — terrain kills are free crowd control. §29 belt uses the level's authored pit x-ranges.
+    const fellIn: string[] = [];
+    this.state.enemies.forEach((enemy, eid) => {
+      if (eid === this.bossId) return;
+      const over =
+        this.belt && this.beltLevel
+          ? beltPitAtX(this.beltLevel, enemy.x)
+          : !this.belt && isPitAtPx(this.map, enemy.x, enemy.y);
+      if (over) fellIn.push(eid);
+    });
+    for (const eid of fellIn) this.state.enemies.delete(eid);
 
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
