@@ -841,8 +841,11 @@ export class GameRoom extends Room<ArenaState> {
     // The player KNOWS what they dropped — identity + its rolled loot identity ride the pickup.
     pk.rarity = player.weaponRarity;
     pk.affix = player.weaponAffix;
-    pk.x = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
-    pk.y = clamp(player.y + ay * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_HEIGHT - PICKUP_RADIUS);
+    const dropX = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
+    const dropY = clamp(player.y + ay * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_HEIGHT - PICKUP_RADIUS);
+    const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck (band + off pits)
+    pk.x = sp.x;
+    pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
     if (c?.heldEarned) this.earnedPickups.add(pk.id);
@@ -2538,11 +2541,22 @@ export class GameRoom extends Room<ArenaState> {
     pk.rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
     pk.affix = rollAffix(Math.random(), pk.rarity).id;
     pk.known = false;
-    const sp = safeSpawnPos(this.map, x, y, PICKUP_RADIUS);
+    const sp = this.placePickupPos(x, y);
     pk.x = sp.x;
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
+  }
+
+  /** §29 place a dropped pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
+   *  pit gap) in belt mode, else the procgen arena's safe-spawn nudge. Keeps loot grabbable, never in a pit
+   *  or off the walkable floor. */
+  private placePickupPos(x: number, y: number): { x: number; y: number } {
+    if (this.belt && this.beltLevel) {
+      const bx = beltSafeX(this.beltLevel, x, x);
+      return { x: bx, y: clampBeltFloorY(this.beltLevel, bx, y, PICKUP_RADIUS) };
+    }
+    return safeSpawnPos(this.map, x, y, PICKUP_RADIUS);
   }
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
@@ -2940,8 +2954,9 @@ export class GameRoom extends Room<ArenaState> {
     // roll on drop (v0.104) — same squad-LUK table as the mystery channel (one rarity economy).
     pk.rarity = rollRarity(Math.random(), this.bestLuk());
     pk.affix = rollAffix(Math.random(), pk.rarity).id;
-    pk.x = enemy.x;
-    pk.y = enemy.y;
+    const sp = this.placePickupPos(enemy.x, enemy.y);
+    pk.x = sp.x;
+    pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // §13 v0.103: an ENEMY drop is EARNED — it carries salvage value
   }
