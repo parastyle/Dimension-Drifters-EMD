@@ -25,6 +25,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/artkit/review/server.mjs"],
       "port": 8190
+    },
+    {
+      "name": "proto",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5199", "--directory", "docs/prototypes"],
+      "port": 5199
     }
   ]
 }
