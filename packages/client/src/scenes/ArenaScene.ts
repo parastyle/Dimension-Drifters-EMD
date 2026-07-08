@@ -3638,11 +3638,14 @@ export class ArenaScene extends Phaser.Scene {
       .setText(
         training
           ? `${lagPrefix}⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
-          : bossrush
-            ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
-            : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
+          : this.belt
+            ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
+              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · R grab · 1/2/3 swap · Tab bag · F trade${who}`
+            : bossrush
+              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
+              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
       )
-      .setColor(lagging ? "#ff8a2b" : training ? "#33e6ff" : bossrush ? "#ff5d3b" : "#5a6472");
+      .setColor(lagging ? "#ff8a2b" : this.belt ? "#7fb0d8" : training ? "#33e6ff" : bossrush ? "#ff5d3b" : "#5a6472");
 
     // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;
