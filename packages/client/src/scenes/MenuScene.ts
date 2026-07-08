@@ -80,14 +80,23 @@ export class MenuScene extends Phaser.Scene {
     this.cards.push(this.buildBossRushCard());
 
     this.hint = this.add
-      .text(0, 0, "Click a dimension — or press its number — to drift in.  ·  B: BOSS RUSH", {
-        fontSize: "15px",
-        color: "#9aa0ac",
-      })
+      .text(
+        0,
+        0,
+        "Click a dimension — or press its number — to drift in.  ·  B: BOSS RUSH  ·  C: SKY CARRIER (belt beta)",
+        {
+          fontSize: "15px",
+          color: "#9aa0ac",
+        },
+      )
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet.
+    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet; C → §29 belt-scroller beta.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+      if (e.key === "c" || e.key === "C") {
+        this.scene.start("belt");
+        return;
+      }
       if (e.key === "b" || e.key === "B") {
         this.launch(DEFAULT_DIMENSION, true);
         return;

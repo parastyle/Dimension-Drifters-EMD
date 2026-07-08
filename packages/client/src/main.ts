@@ -1,7 +1,11 @@
 import Phaser from "phaser";
 import { RENDER_DPR } from "./render-dpr.js";
 import { ArenaScene } from "./scenes/ArenaScene.js";
+import { BeltScene } from "./scenes/BeltScene.js";
 import { MenuScene } from "./scenes/MenuScene.js";
+
+// §29 v0.118 belt-scroller beta — `?belt=1` boots straight into the belt view for quick iteration.
+const BELT_FIRST = new URLSearchParams(location.search).has("belt");
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -9,7 +13,8 @@ const game = new Phaser.Game({
   backgroundColor: "#1a1320",
   // §17 MenuScene is FIRST → it auto-starts (Phaser starts only the first scene in the list); picking a
   // dimension calls scene.start("arena", { dimensionId }). ArenaScene stays registered but dormant.
-  scene: [MenuScene, ArenaScene],
+  // §29 BeltScene (belt-scroller beta) is registered too — reached from a menu button or `?belt=1`.
+  scene: BELT_FIRST ? [BeltScene, MenuScene, ArenaScene] : [MenuScene, ArenaScene, BeltScene],
   scale: {
     // §28 crispness: the DRAWING BUFFER is the window size × RENDER_DPR (so it matches the physical
     // display), but the canvas is DISPLAYED at the CSS window size (`zoom = 1/RENDER_DPR`). RESIZE mode
