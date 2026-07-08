@@ -8,6 +8,7 @@ import {
   GRADE_DMG_COEFF,
   GUN_HAND_FORWARD,
   gunMuzzleReach,
+  meleeReach,
   nextWeapon,
   prevWeapon,
   REQ_PENALTY_FLOOR,
@@ -429,5 +430,33 @@ describe("prevWeapon (§9 cycle — E back-cycle)", () => {
     // indexOf → -1, (0 - 1 + n) % n = n-1 → the last roster weapon; for an empty roster, DEFAULT_WEAPON.
     const out = prevWeapon(FISTS_WEAPON);
     expect(out).toBe(WEAPON_IDS[WEAPON_IDS.length - 1] ?? DEFAULT_WEAPON);
+  });
+});
+
+// §20 v0.117 WYSIWYG melee reach — the swept-blade hit must reach the RENDERED tip (playtest: "the tips of
+// some melee weapons don't hit"). meleeReach floors at the sprite tip + scales with the holder's rig.
+describe("meleeReach (§20 WYSIWYG — the blade tip must connect)", () => {
+  it("never falls short of the authored range for any roster weapon", () => {
+    for (const id of WEAPON_IDS) {
+      const w = WEAPONS[id];
+      // max(range, spriteTip) × 1 ≥ range — the hit reach can only be EXTENDED to the art, never shrunk.
+      expect(meleeReach(w, 1)).toBeGreaterThanOrEqual(w.range);
+    }
+  });
+
+  it("floors the reach at the rendered sprite tip so an OVERHANGING blade still connects", () => {
+    // driftblade authors range 300 but its sprite is 320 long → the point used to whiff just past the hit
+    // segment. The reach must now cover the visible tip ((1−gripFrac)×displayLength), not stop at `range`.
+    const w = WEAPONS.driftblade;
+    const tip = (1 - w.gripFrac) * w.displayLength;
+    expect(w.displayLength).toBeGreaterThan(w.range); // guard: this weapon's art overhangs its authored range
+    expect(meleeReach(w, 1)).toBeGreaterThanOrEqual(tip);
+    expect(meleeReach(w, 1)).toBeGreaterThan(w.range); // strictly extended past the authored range
+  });
+
+  it("scales linearly with the holder's rig (a big character's blade hits as far as it looks)", () => {
+    const w = WEAPONS.driftblade;
+    expect(meleeReach(w, 2)).toBeCloseTo(2 * meleeReach(w, 1), 6);
+    expect(meleeReach(w, 1.25)).toBeCloseTo(1.25 * meleeReach(w, 1), 6);
   });
 });

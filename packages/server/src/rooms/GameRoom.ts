@@ -59,6 +59,7 @@ import {
   generateArena,
   getDimension,
   gunMuzzleReach,
+  meleeReach,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HIT_KNOCKBACK_IMPULSE,
@@ -102,6 +103,10 @@ import {
   PARRY_LAUNCH_MAX,
   PARRY_PUSH,
   PARRY_RADIUS,
+  PARRY_REFLECT_DMG_MULT,
+  PARRY_REFLECT_MIN_DAMAGE,
+  PARRY_REFLECT_PIERCE,
+  PARRY_REFLECT_SPEED,
   PICKUP_RADIUS,
   PIT_FALL_DAMAGE_FRAC,
   PIT_FALL_GRACE,
@@ -1382,7 +1387,11 @@ export class GameRoom extends Room<ArenaState> {
     this.resolveEnemyCollisions();
 
     // 5.55 §17 POI collision — enemies are blocked by the landmarks too (they bunch up + flow around them).
-    this.state.enemies.forEach((enemy) => {
+    // The BOSS is exempt (like the pit rule below): a boss body — especially the colossus (r=170, far bigger
+    // than any landmark) — crushes through cover rather than wedging on it, and its size exceeds the §17
+    // wedge/push-out guards that keep normal bodies un-stuck.
+    this.state.enemies.forEach((enemy, eid) => {
+      if (eid === this.bossId) return;
       const r = resolvePoiCollision(
         this.map,
         enemy.x,
@@ -1491,11 +1500,14 @@ export class GameRoom extends Room<ArenaState> {
     // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
     const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
     const aim0 = Math.atan2(c.aimY, c.aimX);
+    // §20 WYSIWYG: the hit reach follows the RENDERED blade — floored at the sprite tip + scaled by the
+    // holder's rig — so the point stops whiffing (guns already do this via gunMuzzleReach; melee was flat).
+    const reach = meleeReach(weapon, characterScale(player.character));
     // Register the swept edge — the blade sweeps from `aim0 − swingArc/2` to `+swingArc/2` over `active`,
     // origin tracked live from the player. Replaces any in-flight swing (cooldown ≥ active, so no overlap).
     this.meleeSwings.set(player.id, {
       aim0,
-      range: weapon.range,
+      range: reach,
       swingArc: weapon.swingArc,
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
@@ -1509,7 +1521,7 @@ export class GameRoom extends Room<ArenaState> {
     // SELECTION is the shared `selectChainTargets` (the client re-runs the identical pick for the bolt VFX).
     if (weapon.chainLightning) {
       const halfSweep = weapon.swingArc / 2;
-      const r2 = weapon.range * weapon.range;
+      const r2 = reach * reach;
       const wedge = new Set<string>();
       let seedX = 0;
       let seedY = 0;
@@ -2679,28 +2691,38 @@ export class GameRoom extends Room<ArenaState> {
         }
       }
       if (meta.hostile) {
-        let hit = false;
+        let consumed = false; // the bullet is spent (landed a hit) → doom it
+        let reflected = false; // …unless it was PARRIED — then it lives on as a friendly counter-shot
         this.state.players.forEach((player) => {
-          if (hit || !player.alive || this.inLevelWindow(player)) return;
-          if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry dodges it
+          if (consumed || !player.alive) return;
           const reach = PROJECTILE_RADIUS + PLAYER_RADIUS;
           const dx = pr.x - player.x;
           const dy = pr.y - player.y;
-          if (dx * dx + dy * dy <= reach * reach) {
-            player.hp -= meta.damage;
-            // §20 knockback (Stage A): a sharp bump along the bullet's travel direction.
-            const sp = Math.hypot(pr.vx, pr.vy) || 1;
-            const k = addImpulse(
-              player,
-              (pr.vx / sp) * HIT_KNOCKBACK_IMPULSE,
-              (pr.vy / sp) * HIT_KNOCKBACK_IMPULSE,
-            );
-            player.vx = k.vx;
-            player.vy = k.vy;
-            hit = true;
+          if (dx * dx + dy * dy > reach * reach) return; // no overlap with this player
+          // §12 level-up invincibility: the bullet phases harmlessly through (not a parry — no reflect).
+          if (this.inLevelWindow(player)) return;
+          const pc = this.combat.get(player.id);
+          // §8 v0.117 PROJECTILE PARRY: a bullet caught inside the parry i-frame window is DEFLECTED into a
+          // friendly counter-shot rocketed back at the horde — the block lands with UMPH, not a silent phase.
+          if ((pc?.invuln ?? 0) > 0 && pc) {
+            this.reflectProjectile(pr, meta, player, pc);
+            reflected = true;
+            consumed = true;
+            return;
           }
+          player.hp -= meta.damage;
+          // §20 knockback (Stage A): a sharp bump along the bullet's travel direction.
+          const sp = Math.hypot(pr.vx, pr.vy) || 1;
+          const k = addImpulse(
+            player,
+            (pr.vx / sp) * HIT_KNOCKBACK_IMPULSE,
+            (pr.vy / sp) * HIT_KNOCKBACK_IMPULSE,
+          );
+          player.vx = k.vx;
+          player.vy = k.vy;
+          consumed = true;
         });
-        if (hit) doomed.push(id);
+        if (consumed && !reflected) doomed.push(id);
       } else {
         // Friendly throw: damage each fresh enemy it touches until pierce runs out.
         const kills: string[] = [];
@@ -2732,6 +2754,58 @@ export class GameRoom extends Room<ArenaState> {
       this.state.projectiles.delete(id);
       this.projectileMeta.delete(id);
     }
+  }
+
+  /** §8 v0.117 PROJECTILE PARRY — turn an incoming hostile bullet into a FRIENDLY counter-shot aimed at the
+   *  nearest enemy (or straight back the way it came if the arena's empty), boosted in speed + damage so the
+   *  deflect reads as a hard *thwack* with real UMPH. Also fires the parry reward (flash + heal + FLOW cd +
+   *  chain build) so catching a spit chains into the next parry exactly like a melee parry. The projectile
+   *  keeps its id — the client sees `hostile`+`kind` flip mid-flight and re-skins it as a counter streak. */
+  private reflectProjectile(
+    pr: ProjectileState,
+    meta: {
+      hostile: boolean;
+      damage: number;
+      pierce: number;
+      pierceMax?: number;
+      hit: Set<string>;
+    },
+    player: PlayerState,
+    pc: CombatState,
+  ): void {
+    // Aim the return shot at the nearest enemy to the bullet; fall back to a straight reversal.
+    let tx = pr.x - pr.vx;
+    let ty = pr.y - pr.vy;
+    let bestD = Number.POSITIVE_INFINITY;
+    this.state.enemies.forEach((enemy) => {
+      const dx = enemy.x - pr.x;
+      const dy = enemy.y - pr.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD) {
+        bestD = d2;
+        tx = enemy.x;
+        ty = enemy.y;
+      }
+    });
+    const dx = tx - pr.x;
+    const dy = ty - pr.y;
+    const len = Math.hypot(dx, dy) || 1;
+    pr.vx = (dx / len) * PARRY_REFLECT_SPEED;
+    pr.vy = (dy / len) * PARRY_REFLECT_SPEED;
+    pr.hostile = false;
+    pr.kind = "counter";
+    meta.hostile = false;
+    meta.damage = Math.max(PARRY_REFLECT_MIN_DAMAGE, meta.damage * PARRY_REFLECT_DMG_MULT);
+    meta.pierce = PARRY_REFLECT_PIERCE;
+    meta.pierceMax = PARRY_REFLECT_PIERCE;
+    meta.hit.clear();
+    // §8 parry reward (ranged): flash + FLOW cd + chain build + a flat sliver heal. Kept a flat heal (not the
+    // melee chain-scaled one) so parrying INTO a bullet-wall can't fully heal you — it's UMPH, not a fountain.
+    player.parriedSeq = (player.parriedSeq + 1) % 100000;
+    pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
+    pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
+    pc.parryChainT = PARRY_CHAIN_WINDOW;
+    player.hp = Math.min(player.maxHp, player.hp + PARRY_CHAIN_HEAL);
   }
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */

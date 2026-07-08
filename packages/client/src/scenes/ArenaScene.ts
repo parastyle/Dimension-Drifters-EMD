@@ -9,6 +9,9 @@ import {
   BOSS_DEF_IDS,
   BOSSES,
   bossSpawnAt,
+  CAM_FOLLOW_TAU,
+  CAM_LOOKAHEAD,
+  CAM_SNAP_DIST,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   characterName,
@@ -37,6 +40,7 @@ import {
   LEVELUP_WINDOW_SECONDS,
   lootCooldownMult,
   lootDamageMult,
+  MOVE_SPEED,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -234,6 +238,9 @@ export class ArenaScene extends Phaser.Scene {
   private spectateId = "";
   private camFrom = { x: 0, y: 0 };
   private camBlend = 1;
+  /** §7 v0.117 smoothed camera focus (world px) — the point the camera eases toward each frame instead of
+   *  hard-locking on the player. Null until the first follow; snaps on a teleport-sized jump. */
+  private camFocus: { x: number; y: number } | null = null;
   /** Pointer position read straight off the DOM (robust aim — bypasses Phaser's input pipeline,
    *  which was dropping mouse movement that began while a key was held). */
   private readonly pointerScreen = { x: 0, y: 0, set: false };
@@ -1442,10 +1449,13 @@ export class ArenaScene extends Phaser.Scene {
       this.telegraphCache.delete(id);
       if (!c.sawFull) continue; // cancelled mid-windup → no phantom impact
       if (c.kindTag === 0) {
-        // slam / landing-zone — the full impact: burst + camera shake + the deep boom.
+        // slam / landing-zone — the full impact: burst + camera shake + the deep boom. v0.117: scale the
+        // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
+        // screen harder than a normal slam — a big body hits like a big body (WYSIWYG weight).
+        const scale = Math.max(0.8, Math.min(1.7, c.a / 150));
         spawnExplosion(this, c.x, c.y, Math.max(24, c.a));
-        this.shakeCam(200, 0.014);
-        this.audio.play("bossslam", { x: c.x }); // §19 the deep boom under the shake
+        this.shakeCam(200 * scale, 0.014 * scale);
+        this.audio.play("bossslam", { x: c.x, amt: Math.min(1, scale) }); // §19 the deep boom under the shake
       } else if (c.kindTag === 1) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
         spawnExplosion(this, c.x, c.y, Math.min(40, c.a * 0.4));
@@ -1542,7 +1552,15 @@ export class ArenaScene extends Phaser.Scene {
     const state = this.room.state.projectiles;
     const flashedShooters = new Set<string>(); // one muzzle flash per shooter per frame (= per shot)
     state.forEach((pr, id) => {
-      if (this.projectiles.has(id)) return;
+      const existing = this.projectiles.get(id);
+      if (existing) {
+        // §8 v0.117 a bullet can flip `kind` mid-flight when PARRIED (hostile spit → friendly counter):
+        // rebuild its visual so the deflect is visible — it visibly rockets back out as a cyan counter
+        // streak. (The parriedSeq handler already popped the white flash + the crisp parry ding.)
+        if (existing.getData("kind") === pr.kind) return;
+        existing.destroy();
+        this.projectiles.delete(id);
+      }
       const fx = GUN_FX[pr.kind];
       const container = fx
         ? makeBullet(this, pr)
@@ -1775,7 +1793,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
     // Locate the boss (if any) — §17 ANY dimension's boss (archetype "boss"), not just OLD RUST — and total
     // its max HP from the roster. The nameplate + approach toast read the active dimension's name.
-    let boss: { hp: number; kind: string } | undefined;
+    let boss: { hp: number; kind: string; x: number; y: number } | undefined;
     this.room.state.enemies.forEach((e) => {
       if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
     });
@@ -1788,7 +1806,17 @@ export class ArenaScene extends Phaser.Scene {
     if (present && boss) {
       const bossRatio = Math.max(0, Math.min(1, boss.hp / bossMax));
       // §19 v0.108 A8: the boss bar DRAINS smoothly instead of stepping down per 20Hz patch.
-      if (this.bossShown < 0) this.bossShown = bossRatio;
+      if (this.bossShown < 0) {
+        this.bossShown = bossRatio;
+        // §16 v0.117 boss ENTRANCE juice — the first frame a boss appears, the ground quakes + the screen
+        // flashes + a deep boom announces it. The COLOSSUS (renderScale ≥5) gets a far heavier, longer quake
+        // so a "massive boss" ARRIVES like a cataclysm, not just another spawn.
+        const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
+        const titanic = rs >= 5;
+        this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
+        this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
+        this.audio.play("bossslam", { x: boss.x, amt: 1 });
+      }
       this.bossShown = Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
       this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
       const barLeft = this.screenW() / 2 - 258 * s;
@@ -2345,17 +2373,45 @@ export class ArenaScene extends Phaser.Scene {
         }
         this.camBlend = Math.min(1, this.camBlend + this.deltaSec / 0.32);
         const e = this.camBlend * (2 - this.camBlend); // easeOutQuad — snappy start, soft arrival
-        this.centerCam(
-          Phaser.Math.Linear(this.camFrom.x, bx, e),
-          Phaser.Math.Linear(this.camFrom.y, by, e),
-        );
+        const fx = Phaser.Math.Linear(this.camFrom.x, bx, e);
+        const fy = Phaser.Math.Linear(this.camFrom.y, by, e);
+        this.camFocus = { x: fx, y: fy }; // keep in sync so the eased follow resumes cleanly on revive
+        this.centerCam(fx, fy);
         return;
       }
     }
     this.spectateId = "";
     this.camBlend = 1;
     const self = this.blobs.get(id);
-    if (self) this.centerCam(self.x, self.y);
+    if (!self) return;
+    // §7 v0.117 EASED follow (was a hard per-frame lock). The focus leads slightly in the move direction
+    // (look-ahead) and glides toward the player with a frame-rate-independent exponential smoothing — the
+    // camera reads as a real camera, not a rail. A teleport-sized jump snaps (no map-wide fly-by).
+    const selfState = this.room?.state.players.get(id);
+    let leadX = 0;
+    let leadY = 0;
+    if (selfState) {
+      const sp = Math.hypot(selfState.mvx, selfState.mvy);
+      if (sp > 1) {
+        const f = Math.min(1, sp / MOVE_SPEED);
+        leadX = (selfState.mvx / sp) * CAM_LOOKAHEAD * f;
+        leadY = (selfState.mvy / sp) * CAM_LOOKAHEAD * f;
+      }
+    }
+    const tx = self.x + leadX;
+    const ty = self.y + leadY;
+    if (!this.camFocus) this.camFocus = { x: tx, y: ty };
+    const dx = tx - this.camFocus.x;
+    const dy = ty - this.camFocus.y;
+    if (dx * dx + dy * dy > CAM_SNAP_DIST * CAM_SNAP_DIST) {
+      this.camFocus.x = tx;
+      this.camFocus.y = ty;
+    } else {
+      const a = 1 - Math.exp(-this.deltaSec / CAM_FOLLOW_TAU);
+      this.camFocus.x += dx * a;
+      this.camFocus.y += dy * a;
+    }
+    this.centerCam(this.camFocus.x, this.camFocus.y);
   }
 
   /** Center the camera on (x,y) — ZOOM-AWARE + arena-clamped. Phaser's `centerOn` divides by the

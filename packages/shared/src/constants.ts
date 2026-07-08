@@ -32,12 +32,15 @@ export const MOVE_SPEED = 320;
  */
 /** Sharp-turn threshold (rad). Below this the turn is smooth/free; above it dips the speed. ~45°. */
 export const MOVE_HITCH_MIN_ANGLE = Math.PI / 4;
-/** Max fraction the speed dips on the sharpest (180°) turn — 0.72 → a reversal drops to ~28% speed. */
-export const MOVE_HITCH_DIP = 0.72;
+/** Max fraction the speed dips on the sharpest (180°) turn. v0.117 playtest EASE — 0.72→0.42 so a full
+ *  reversal keeps ~58% speed (was ~28%): direction-swap dodging stops feeling like wading through mud while
+ *  the pivot still reads as WEIGHT, not a dead stop. A 90° turn now dips only to ~85%. */
+export const MOVE_HITCH_DIP = 0.42;
 /** Below this speed (px/s) a turn can't hitch — starting from ~rest just accelerates, never "pivots". */
 export const MOVE_HITCH_MIN_SPEED = 40;
-/** Speed recovery after a hitch / spin-up from rest (px/s²) — ~0.18s to top speed. The "go". */
-export const MOVE_RECOVER_ACCEL = 1800;
+/** Speed recovery after a hitch / spin-up from rest (px/s²). v0.117 EASE 1800→2600 (~0.12s to top, was
+ *  ~0.18s) so the "go" snaps back fast after a swap — responsiveness is king in a dodge game. */
+export const MOVE_RECOVER_ACCEL = 2600;
 /** Crisp stop when input is released (px/s²) — ~0.12s from top speed to 0, no ice-skating. */
 export const MOVE_STOP_DECEL = 2600;
 
@@ -53,6 +56,22 @@ export const MOVE_STOP_DECEL = 2600;
  */
 export const INTERP_SNAP_PLAYER = 200;
 export const INTERP_SNAP_ENEMY = 260;
+
+/**
+ * §7 v0.117 CAMERA FOLLOW feel (client-only presentation — never touches sync). Playtest: "the camera
+ * follows the character too rigidly." The old `followSelf` hard-centred on the player every frame; now the
+ * camera focus EASES toward the player with a frame-rate-independent exponential smoothing, plus a subtle
+ * look-AHEAD so you see a touch more of where you're heading (vital in a bullet-dodge game). All tuning.
+ */
+/** Follow smoothing time-constant (sec): lower = tighter/snappier, higher = floatier. ~0.13s trails just
+ *  enough to read as a real camera without feeling laggy or sea-sick. */
+export const CAM_FOLLOW_TAU = 0.13;
+/** Look-ahead lead (px at full move speed): the focus leads along the move direction. Small on purpose —
+ *  enough to open up the approach, not so much it swims. Scales down with speed (0 at a standstill). */
+export const CAM_LOOKAHEAD = 74;
+/** A focus jump beyond this (px) is a TELEPORT (rift descent, respawn, pit snap-back), not motion — snap
+ *  the camera instead of gliding it across the whole map. Set above any legit single-frame move. */
+export const CAM_SNAP_DIST = 600;
 
 /**
  * §4 v0.107 ONLINE NETCODE — client prediction + reconciliation + snapshot interpolation. The design was
@@ -425,6 +444,20 @@ export const PARRY_BUFFER_SECONDS = 0.2; // §8 v0.114 EASE — a slightly wider
  *  value (vs the full PARRY_COOLDOWN miss-penalty), so you can immediately parry the next swing — that's how
  *  you chain-parry a combo / a flurry from multiple sources. A whiff still eats the full cooldown. */
 export const PARRY_CHAIN_CD = 0.12;
+
+/** §8 v0.117 PROJECTILE PARRY — a hostile bullet caught inside the parry i-frame window is DEFLECTED, not
+ *  merely dodged. Playtest: "projectiles need more UMPH when parrying — I'm not sure I've actually parried
+ *  them as they go through me." The old code let a bullet pass silently through the i-frames; now it becomes
+ *  a FRIENDLY counter-shot rocketed back at the nearest enemy, so the block reads as a hard *thwack* and
+ *  turns defense into offense (the parry's whole fantasy). All server-authoritative + tuning. */
+/** Reflected-bullet speed (px/s) — a hard, fast return so the deflect visibly SNAPS back out (the "UMPH"). */
+export const PARRY_REFLECT_SPEED = 720;
+/** Reflected damage = the incoming projectile's damage × this (a parried shot hurts more than it would have
+ *  hurt you — it rewards the read). Floored at PARRY_REFLECT_MIN_DAMAGE so even a weak spit stings. */
+export const PARRY_REFLECT_DMG_MULT = 2.2;
+export const PARRY_REFLECT_MIN_DAMAGE = 14;
+/** Enemies a reflected counter-shot punches through before dying (a satisfying skewer through a line). */
+export const PARRY_REFLECT_PIERCE = 2;
 
 /**
  * §8/§20 UNIVERSAL LUNGE — every melee/contact monster (rusher/swarm/zoner) telegraphs then JUMPS at you,

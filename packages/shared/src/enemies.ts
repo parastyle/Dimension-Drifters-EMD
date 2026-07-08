@@ -341,6 +341,21 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     xpValue: 44,
     renderScale: 1.4,
   },
+  // §16 v0.117 GOROGOTH, THE DIMENSION-ENDER — the COLOSSUS: a boss so vast it barely fits on screen. The
+  // existing "LARGE" bosses sit at renderScale ~2.7 (radius ~70); this one is 6.4× / radius 170 — a walking
+  // mountain the squad orbits, dodging screen-wide shockwaves and craters. Borrows the `grull` brute
+  // silhouette at colossal scale until bespoke art is harvest-installed. Ponderous (slow) but hits like a god.
+  "dimensional-colossus": {
+    sprite: "grull", // placeholder silhouette — a hulking brute reads right at titan scale
+    archetype: "boss",
+    speed: 46,
+    hp: 1300,
+    radius: 170,
+    contactDamage: 16,
+    weight: 0,
+    xpValue: 90,
+    renderScale: 6.4,
+  },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
   // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig

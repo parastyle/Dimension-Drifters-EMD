@@ -257,6 +257,21 @@ export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): 
   return renderScale * (GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength);
 }
 
+/** §20 WYSIWYG melee reach: the effective hit `range` of a swept blade, in world px from the player centre.
+ *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): the blade SPRITE is drawn
+ *  at `displayLength` scaled by the holder's rig (`characterScale`, §7), so on every character (all sit at
+ *  1.06–1.25×) the visible edge reaches further than the FLAT authored `range` the hit test used — the point
+ *  whiffs. Two corrections, mirroring `gunMuzzleReach`:
+ *    1. floor the reach at the rendered sprite TIP (`(1−gripFrac)×displayLength` forward of the grip), so a
+ *       weapon whose ART overhangs its authored range (driftblade 320>300, coffin 200>166) still hits on the
+ *       tip instead of just short of it — never SHRINKS a weapon whose range already exceeds its sprite;
+ *    2. scale the whole reach by the holder's `renderScale`, so a big character's longer-drawn blade hits as
+ *       far as it looks. Pure + shared so the server hit test and any client preview can't drift. */
+export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
+  const spriteTip = (1 - weapon.gripFrac) * weapon.displayLength;
+  return renderScale * Math.max(weapon.range, spriteTip);
+}
+
 /** Per-point damage multiplier contributed by each grade (tuning; B = the legacy 0.06/pt). */
 export const GRADE_DMG_COEFF: Record<Grade, number> = {
   S: 0.1,

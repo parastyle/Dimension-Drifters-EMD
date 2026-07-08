@@ -352,6 +352,44 @@ describe("GameRoom — §20 universal lunge", () => {
   });
 });
 
+describe("GameRoom — §8 v0.117 PROJECTILE PARRY (deflect, don't phase through)", () => {
+  it("a hostile bullet caught in the parry i-frame window REFLECTS into a friendly counter (no damage taken)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.hp = 100;
+    const pc = h.room.combat.get("p1");
+    pc.invuln = 1; // holding a parry stance → i-frames up
+    // A hostile spit born right on the player: after one tick's move it overlaps → it must DEFLECT, not pass.
+    h.room.fireProjectile({ x: p.x, y: p.y }, { x: p.x + 100, y: p.y }, 300, 8);
+    h.tick(1);
+    let counter: { hostile: boolean; kind: string } | undefined;
+    h.state().projectiles.forEach((pr: { hostile: boolean; kind: string }) => {
+      counter = pr;
+    });
+    expect(counter).toBeDefined(); // the bullet LIVES ON (reflected), not doomed
+    expect(counter?.hostile).toBe(false); // turned friendly — it now hunts the horde
+    expect(counter?.kind).toBe("counter"); // re-skinned as the cyan counter streak (client shows the deflect)
+    expect(p.parriedSeq).toBeGreaterThan(0); // the parry registered → flash + crisp ding fire
+    expect(p.hp).toBe(100); // NOT the old silent phase-through: a parried bullet deals you zero
+  });
+
+  it("without parry i-frames the same bullet HITS (the deflect is earned, not free)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = h.room.map.spawnX;
+    p.y = h.room.map.spawnY;
+    p.hp = 100;
+    h.room.combat.get("p1").invuln = 0; // NOT parrying
+    h.room.fireProjectile({ x: p.x, y: p.y }, { x: p.x + 100, y: p.y }, 300, 8);
+    h.tick(1);
+    expect(p.hp).toBeLessThan(100); // it landed — a real hit
+  });
+});
+
 describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)", () => {
   // Place the boss `dx` px right of the clear spawn disc centre, at 1 HP. The boss is pit-immune, but the
   // PLAYER who must reach it is not — anchoring to spawnX/spawnY keeps the attacker on guaranteed ground.

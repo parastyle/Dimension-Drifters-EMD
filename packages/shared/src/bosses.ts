@@ -757,8 +757,99 @@ const TWINS: BossDef = {
   ],
 };
 
+/** §16 v0.117 GOROGOTH, THE DIMENSION-ENDER — the COLOSSUS. A walking mountain (renderScale 6.4, radius 170)
+ *  the squad orbits. Its whole kit is HUGE + telegraphed: screen-wide crater slams, expanding shockwave rings
+ *  you dash the gap of, a sweeping gaze-beam across the whole arena, blooming bullet rings, and — at enrage —
+ *  summoned voidspawn + double shockwaves. Ponderous body, godlike reach. The biggest fight in the game. */
+const COLOSSUS: BossDef = {
+  kind: "dimensional-colossus",
+  name: "Gorogoth, the Dimension-Ender",
+  move: "chase",
+  phases: [
+    // P1 (>66%) — the mountain wakes: ground-splitting crater slams + a slow, screen-wide shockwave ring.
+    {
+      hpAbove: 0.66,
+      modules: [
+        {
+          primitive: "landingZone",
+          cooldown: 3.4,
+          windup: 1.0,
+          params: { count: 2, radius: 220, damage: 26, knockback: 900, spread: 520 },
+        },
+        {
+          primitive: "expandingRing",
+          cooldown: 5.2,
+          windup: 0.7,
+          firstDelay: 2.2,
+          params: { maxR: 620, gapAngle: 0.75, duration: 1.5, dps: 30 },
+        },
+      ],
+    },
+    // P2 (>33%) — it lashes out: a sweeping gaze-beam across the arena, blooming bullet rings, heavier slams.
+    {
+      hpAbove: 0.33,
+      speedMult: 1.08,
+      modules: [
+        {
+          primitive: "landingZone",
+          cooldown: 3.0,
+          windup: 0.9,
+          params: { count: 3, radius: 220, damage: 28, knockback: 940, spread: 620 },
+        },
+        {
+          primitive: "beamSweep",
+          cooldown: 4.2,
+          windup: 1.0,
+          firstDelay: 1.4,
+          params: { length: 1500, halfWidth: 70, sweepArc: 1.7, duration: 1.8, dps: 34 },
+        },
+        {
+          primitive: "radialBurst",
+          cooldown: 3.0,
+          windup: 0.5,
+          firstDelay: 2.4,
+          params: { count: 20, speed: 250, damage: 8 },
+        },
+      ],
+    },
+    // P3 (enrage) — the arena becomes a maelstrom: summoned voidspawn, double shockwaves, a rain of craters.
+    {
+      hpAbove: 0,
+      speedMult: 1.18,
+      modules: [
+        {
+          primitive: "landingZone",
+          cooldown: 2.4,
+          windup: 0.75,
+          params: { count: 4, radius: 210, damage: 28, knockback: 940, spread: 720 },
+        },
+        {
+          primitive: "expandingRing",
+          cooldown: 3.4,
+          windup: 0.55,
+          params: { maxR: 660, gapAngle: 0.6, duration: 1.3, dps: 32 },
+        },
+        {
+          primitive: "radialBurst",
+          cooldown: 2.6,
+          windup: 0.45,
+          firstDelay: 1.0,
+          params: { count: 26, speed: 260, damage: 8, spin: 0.14 },
+        },
+        {
+          primitive: "summonAdds",
+          cooldown: 6.0,
+          addKind: "mote-swarm",
+          firstDelay: 2.0,
+          params: { count: 4, ringRadius: 300, ringJitter: 90 },
+        },
+      ],
+    },
+  ],
+};
+
 /** The boss-definition registry — keyed by `kind`. Slice 3 completes the roster with the melee trio
- *  (Kaido / Nihil / Blade Twins) → 10 bespoke bosses. */
+ *  (Kaido / Nihil / Blade Twins) → 10 bespoke bosses; v0.117 adds GOROGOTH the colossus → 11. */
 export const BOSSES: Record<string, BossDef> = {
   verkaln: VERKALN,
   choirmath: CHOIRMATH,
@@ -770,6 +861,7 @@ export const BOSSES: Record<string, BossDef> = {
   kaido: KAIDO,
   nihil: NIHIL,
   "blade-twins": TWINS,
+  "dimensional-colossus": COLOSSUS,
 };
 
 /** The def for a boss `kind`, or `CLASSIC_BOSS` for any kind without a bespoke def (every current dimension
