@@ -38,7 +38,9 @@ import {
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
+  DEPTH_DODGE_MULT,
   DEPTH_MAX,
+  DEPTH_TOL_PLAYER,
   DIMENSIONS,
   DROP_CHANCE_TOUGH,
   DROP_CHANCE_TRASH,
@@ -1724,6 +1726,29 @@ export class GameRoom extends Room<ArenaState> {
       const p0 = Math.min(1, sw.elapsed / sw.active);
       sw.elapsed += dt;
       const p1 = Math.min(1, sw.elapsed / sw.active);
+      if (this.belt) {
+        // §29 BELT melee is LANE-based (SoR4 model), not the top-down angular sweep: a hit needs horizontal
+        // reach in the facing direction AND depth alignment |Δy| ≤ DEPTH_TOL_PLAYER (+ the target radius).
+        // A blade that whiffs because the mob is a hair nearer/farther in the shallow band feels awful; this
+        // is the fairness lever the belt constants were authored for. Tested once/tick (persist over `active`,
+        // hit-once via `sw.hit`) so a mob walking into your swing still gets clipped.
+        const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
+        this.state.enemies.forEach((enemy, eid) => {
+          if (sw.hit.has(eid) || enemy.hp <= 0) return; // once per swing; skip corpses pending deletion
+          const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+          const fx = (enemy.x - player.x) * facing; // forward distance along the belt (in front = positive)
+          if (fx < -r * 0.5 || fx > sw.range) return; // behind us, or beyond blade reach
+          // Depth window: generous for the attacker, but a mob actively rolling in depth (dodgeState) shrinks
+          // its own hurtbox depth (DEPTH_DODGE_MULT) so a well-timed roll genuinely slips the swing.
+          const rolling = (this.dodgeState.get(eid)?.t ?? 0) > 0;
+          const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
+          if (Math.abs(enemy.y - player.y) > depthWin) return;
+          sw.hit.add(eid);
+          xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills);
+        });
+        if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
+        continue;
+      }
       const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
       const wielder = { x: player.x, y: player.y };
       for (let s = 1; s <= steps; s++) {
