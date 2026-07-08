@@ -40,6 +40,7 @@ import {
   DEFAULT_WEAPON,
   DEPTH_DODGE_MULT,
   DEPTH_MAX,
+  DEPTH_TOL_ENEMY,
   DEPTH_TOL_PLAYER,
   DIMENSIONS,
   DROP_CHANCE_TOUGH,
@@ -1518,7 +1519,16 @@ export class GameRoom extends Room<ArenaState> {
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
         const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
-        if (dx * dx + dy * dy <= reach * reach) {
+        // §29 BELT: contact is LANE-gated too — horizontal touch AND a TIGHT depth alignment
+        // (DEPTH_TOL_ENEMY), so sidestepping in depth is a real dodge. A player actively repositioning in
+        // depth shrinks their own hurtbox (DEPTH_DODGE_MULT) — a juke slips the hit. (The other half of the
+        // SoR4 fairness lever: generous for the player's own swing, tight for what lands on them.)
+        const contact = this.belt
+          ? Math.abs(dx) <= reach &&
+            Math.abs(dy) <=
+              DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
+          : dx * dx + dy * dy <= reach * reach;
+        if (contact) {
           player.hp -= kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt;
           // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
           if (kind.contactDamage > 0) {
