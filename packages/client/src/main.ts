@@ -26,11 +26,14 @@ const game = new Phaser.Game({
   // launched without foreground), which froze the loop ("arena renders, nothing spawns").
   // setTimeout keeps firing — paired with the Electron shell's disable-background-timer-
   // throttling switch (packages/desktop/main.cjs), the sim/render run regardless of window
-  // state. (smoothStep:false avoids the rAF-timestamp delta path entirely.)
+  // state. §29 v0.118: smoothStep TRUE — the setTimeout clock jitters frame-to-frame, and feeding that raw
+  // delta into movement + the belt CAMERA SCROLL read as stutter (worst on the belt's horizontal scroll).
+  // Phaser's delta smoothing averages the timestep → smooth motion; the server stays authoritative so the
+  // smoothed client delta can't affect sim correctness.
   fps: {
     target: 60,
     forceSetTimeOut: true,
-    smoothStep: false,
+    smoothStep: true,
   },
   render: {
     // HD sprites are pre-sized to ~2x their on-screen footprint at install time (see

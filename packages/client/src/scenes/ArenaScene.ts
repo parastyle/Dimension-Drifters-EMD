@@ -2465,7 +2465,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!self) return;
     const cam = this.cameras.main;
     const zoom = cam.height / BELT_VIEW_H;
-    cam.setZoom(zoom);
+    if (Math.abs(cam.zoom - zoom) > 1e-4) cam.setZoom(zoom); // only on resize, not every frame
     const viewW = cam.width / zoom;
     const maxX = Math.max(0, ARENA_WIDTH - viewW);
     const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
@@ -2579,8 +2579,20 @@ export class ArenaScene extends Phaser.Scene {
     if (self) {
       const px = this.pointerScreen.set ? this.pointerScreen.x : pointer.x;
       const py = this.pointerScreen.set ? this.pointerScreen.y : pointer.y;
-      const ax = px + cam.scrollX - self.x;
-      const ay = py + cam.scrollY - self.y;
+      let ax: number;
+      let ay: number;
+      if (this.belt) {
+        // §29 the belt camera does NOT centre on the player (top-down did), so `px + scrollX` no longer
+        // lands under the cursor. Use the camera's proper world transform, aim relative to the PLAYER's
+        // world pos (self.x is world x; self.y is the PROJECTED depth — un-project both, which cancels to a
+        // /FORESHORTEN on the delta). Facing now flips over the CHARACTER, not the screen midpoint.
+        const wp = cam.getWorldPoint(px, py);
+        ax = wp.x - self.x;
+        ay = (wp.y - self.y) / BELT_FORESHORTEN;
+      } else {
+        ax = px + cam.scrollX - self.x;
+        ay = py + cam.scrollY - self.y;
+      }
       const len = Math.hypot(ax, ay);
       if (len > 0.001) {
         aimX = ax / len;
@@ -2665,13 +2677,26 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
     const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
-    const cwx = px + cam.scrollX;
-    const cwy = py + cam.scrollY;
+    // §29 belt: use the camera world transform + un-project depth (rig.y is the projected plane). Top-down
+    // keeps the simple screen+scroll (the camera centres on the player there).
+    let cwx: number;
+    let cwy: number;
+    let selfWy: number;
+    if (this.belt) {
+      const wp = cam.getWorldPoint(px, py);
+      cwx = wp.x;
+      cwy = BELT_Y0 + (wp.y - BELT_Y0) / BELT_FORESHORTEN;
+      selfWy = BELT_Y0 + ((rig?.y ?? self.y) - BELT_Y0) / BELT_FORESHORTEN;
+    } else {
+      cwx = px + cam.scrollX;
+      cwy = py + cam.scrollY;
+      selfWy = rig?.y ?? self.y;
+    }
     if (weapon?.quake) {
       // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp the
       // server uses, so the VFX lands exactly on the damage AoE.
       const ep = clampQuakeEpicenter(
-        { x: rig?.x ?? self.x, y: rig?.y ?? self.y },
+        { x: rig?.x ?? self.x, y: selfWy },
         { x: cwx, y: cwy },
         QUAKE_REACH,
       );
