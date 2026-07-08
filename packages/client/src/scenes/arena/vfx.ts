@@ -436,7 +436,13 @@ export function spawnQuakeProcedural(
  *  travel scale with the number, and the top band gets a BIG-HIT pop (overshoot-in from 1.6× + a longer
  *  rise + a red-stroked white-hot tint). Purely cosmetic off a number the client already has — no balance
  *  change. A small x-jitter fans rapid hits so they don't stack into an unreadable pillar. */
-export function spawnDamageNumber(scene: Phaser.Scene, x: number, y: number, amount: number): void {
+export function spawnDamageNumber(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  amount: number,
+  crit = false,
+): void {
   const dmg = Math.max(1, Math.round(amount));
   // Bands: chip / normal / heavy / crushing.
   let size = 13;
@@ -453,7 +459,14 @@ export function spawnDamageNumber(scene: Phaser.Scene, x: number, y: number, amo
     size = 17;
     color = "#ffe08a";
   }
-  const big = dmg >= 40;
+  // §30 CRIT overrides the band: a bold GOLD number with an amber stroke + a bang, always large — a crit
+  // reads instantly as a spike regardless of the raw amount.
+  if (crit) {
+    size = Math.max(size, 30);
+    color = "#ffe27a";
+    stroke = "#ff9e2c";
+  }
+  const big = dmg >= 40 || crit;
   const jx = (Math.random() - 0.5) * 12;
   const style: Phaser.Types.GameObjects.Text.TextStyle = {
     fontSize: `${size}px`,
@@ -462,13 +475,13 @@ export function spawnDamageNumber(scene: Phaser.Scene, x: number, y: number, amo
   };
   if (stroke) {
     style.stroke = stroke;
-    style.strokeThickness = 3;
+    style.strokeThickness = crit ? 4 : 3;
   }
   const text = scene.add
-    .text(x + jx, y, String(dmg), style)
+    .text(x + jx, y, crit ? `${dmg}!` : String(dmg), style)
     .setOrigin(0.5)
     .setDepth(100000);
-  if (big) text.setScale(1.6);
+  if (big) text.setScale(crit ? 1.9 : 1.6);
   scene.tweens.add({
     targets: text,
     scale: 1,

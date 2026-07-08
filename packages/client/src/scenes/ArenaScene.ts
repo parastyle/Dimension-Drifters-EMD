@@ -315,6 +315,8 @@ export class ArenaScene extends Phaser.Scene {
   private lastKillStop = 0;
   private deltaSec = 0;
   private readonly enemyHp = new Map<string, number>();
+  /** §30 last-seen crit-flash counter per enemy — a change (with an hp drop) means this hit CRIT. */
+  private readonly enemyCrit = new Map<string, number>();
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
@@ -1374,6 +1376,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemies.delete(id);
         this.enemyPrev.delete(id);
         this.enemyHp.delete(id);
+        this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
         this.enemyWindup.delete(id);
         this.enemyBufs.delete(id); // §4 v0.107 ids RECYCLE (restart resets enemySeq) — never bracket stale snaps
@@ -3256,14 +3259,19 @@ export class ArenaScene extends Phaser.Scene {
         const rig = this.enemies.get(id);
         if (rig) {
           const dmg = prev - enemy.hp;
+          // §30 CRIT: the synced critFlash counter ticked this frame → this hit was a critical. Gold number,
+          // a gold flash, extra hit-stop + a shock ring — a crit lands with weight even on a small number.
+          const crit = (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
           const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
-          rig.flash(big ? 120 : 80, 0xffffff);
-          spawnDamageNumber(this, rig.x, rig.y - 26, dmg);
-          this.audio.play(big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
-          if (big) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
+          rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff);
+          spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit);
+          this.audio.play(crit || big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
+          if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
+          if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
         }
       }
       this.enemyHp.set(id, enemy.hp);
+      this.enemyCrit.set(id, enemy.critFlash);
     });
 
     // §8 successful-parry flash (Stage C): a white burst when ANY player parries a telegraphed attack;

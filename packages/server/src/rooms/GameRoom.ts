@@ -38,6 +38,8 @@ import {
   clampQuakeEpicenter,
   coneAngles,
   countAugment,
+  CRIT_MULT,
+  critChanceFor,
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
@@ -316,6 +318,8 @@ export class GameRoom extends Room<ArenaState> {
       /** §9 ricochet: original pierce + per-leg lifetime, re-armed each carom so it keeps hunting. */
       pierceMax?: number;
       legTtl?: number;
+      /** §30 crit CHANCE captured at fire time (friendly shots) — each enemy hit / explosion rolls it. */
+      crit?: number;
     }
   >();
   /** Per-zoner puddle-drop cooldown (sec), keyed by enemy id; pruned with the enemy. */
@@ -1862,7 +1866,13 @@ export class GameRoom extends Room<ArenaState> {
         links.forEach((t, n) => {
           const enemy = this.state.enemies.get(t.id);
           if (enemy)
-            xp += this.damageEnemy(enemy, t.id, cl.damage * cl.falloff ** n * clPower, kills);
+            xp += this.damageEnemy(
+              enemy,
+              t.id,
+              cl.damage * cl.falloff ** n * clPower,
+              kills,
+              critChanceFor(player.luk, player.dex),
+            );
         });
         for (const eid of kills) this.state.enemies.delete(eid);
         if (xp > 0) this.grantXp(xp);
@@ -1875,7 +1885,13 @@ export class GameRoom extends Room<ArenaState> {
     if (weapon.quake) {
       const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player);
       const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
-      this.detonate(ep.x, ep.y, weapon.quake.radius, weapon.quake.damage * qPower);
+      this.detonate(
+        ep.x,
+        ep.y,
+        weapon.quake.radius,
+        weapon.quake.damage * qPower,
+        critChanceFor(player.luk, player.dex),
+      );
     }
 
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
@@ -1932,6 +1948,7 @@ export class GameRoom extends Room<ArenaState> {
       const p0 = Math.min(1, sw.elapsed / sw.active);
       sw.elapsed += dt;
       const p1 = Math.min(1, sw.elapsed / sw.active);
+      const critC = critChanceFor(player.luk, player.dex); // §30 the swinger's crit, rolled per edge hit
       if (this.belt) {
         // §29 BELT melee is LANE-based (SoR4 model), not the top-down angular sweep: a hit needs horizontal
         // reach in the facing direction AND depth alignment |Δy| ≤ DEPTH_TOL_PLAYER (+ the target radius).
@@ -1950,7 +1967,7 @@ export class GameRoom extends Room<ArenaState> {
           const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
           if (Math.abs(enemy.y - player.y) > depthWin) return;
           sw.hit.add(eid);
-          xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills);
+          xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
         });
         if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
         continue;
@@ -1964,7 +1981,7 @@ export class GameRoom extends Room<ArenaState> {
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
             sw.hit.add(eid);
-            xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills);
+            xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
           }
         });
       }
@@ -2314,6 +2331,7 @@ export class GameRoom extends Room<ArenaState> {
     ttl = PROJECTILE_TTL,
     explode?: { radius: number; damage: number },
     bounces = 0,
+    crit = 0,
   ): void {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -2338,6 +2356,7 @@ export class GameRoom extends Room<ArenaState> {
       bounces,
       pierceMax: pierce,
       legTtl: ttl,
+      crit,
     });
   }
 
@@ -2365,6 +2384,7 @@ export class GameRoom extends Room<ArenaState> {
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
     const mx = player.x + c.aimX * reach;
     const my = player.y + c.aimY * reach;
+    const crit = critChanceFor(player.luk, player.dex); // §30 capture the shooter's crit at fire time
     for (let i = 0; i < pellets; i++) {
       // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
       const ang =
@@ -2382,6 +2402,7 @@ export class GameRoom extends Room<ArenaState> {
         ttl,
         explode,
         g.bounces ?? 0,
+        crit,
       );
     }
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
@@ -2408,6 +2429,9 @@ export class GameRoom extends Room<ArenaState> {
       "cleaver",
       t.pierce,
       ttl,
+      undefined,
+      0,
+      critChanceFor(player.luk, player.dex), // §30 thrown weapons crit too
     );
   }
 
@@ -2429,6 +2453,7 @@ export class GameRoom extends Room<ArenaState> {
         }
       : undefined;
     const baseAng = Math.atan2(c.aimY, c.aimX);
+    const crit = critChanceFor(player.luk, player.dex); // §30
     for (let i = 0; i < sc.count; i++) {
       // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
       // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
@@ -2445,6 +2470,8 @@ export class GameRoom extends Room<ArenaState> {
         pierce,
         sc.range / spd, // expire after travelling ~range (then explode)
         explode,
+        0,
+        crit,
       );
     }
   }
@@ -2453,8 +2480,16 @@ export class GameRoom extends Room<ArenaState> {
    *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
    *  deletes after iterating). Returns XP earned (0 if it survived or was a dummy). The single damage
    *  primitive so Brand + drops + XP stay consistent across every source (swing / blast / projectile / wave). */
-  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[]): number {
-    enemy.hp -= raw * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1);
+  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit = 0): number {
+    // §30 CRIT: player-sourced damage passes its crit CHANCE; roll here so every damage source (edge,
+    // chain, quake, gun, thrown, riposte) can independently crit. A crit doubles the hit + bumps the
+    // synced critFlash so the client styles a gold number with extra juice. Non-player sources pass 0.
+    let dmg = raw;
+    if (crit > 0 && Math.random() < crit) {
+      dmg *= CRIT_MULT;
+      enemy.critFlash = (enemy.critFlash + 1) & 0xff;
+    }
+    enemy.hp -= dmg * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1);
     if (enemy.hp > 0) return 0;
     if (enemy.kind === "dummy") {
       enemy.hp = DUMMY_HP;
@@ -2566,7 +2601,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
    *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
-  private detonate(x: number, y: number, radius: number, damage: number): void {
+  private detonate(x: number, y: number, radius: number, damage: number, crit = 0): void {
     const r2 = radius * radius;
     const kills: string[] = [];
     let xpGained = 0;
@@ -2574,7 +2609,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = enemy.x - x;
       const dy = enemy.y - y;
       if (dx * dx + dy * dy > r2) return;
-      xpGained += this.damageEnemy(enemy, eid, damage, kills);
+      xpGained += this.damageEnemy(enemy, eid, damage, kills, crit);
     });
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
@@ -2583,12 +2618,19 @@ export class GameRoom extends Room<ArenaState> {
   /** §8 Emberguard fire wave — a cone of fire in front of `aim` (origin at the player), `dmg` to each enemy
    *  inside, kill bookkeeping via `damageEnemy`. The shared primitive for the on-parry wave AND the
    *  Conflagration re-pulse. */
-  private emberguardWave(x: number, y: number, aimX: number, aimY: number, dmg: number): void {
+  private emberguardWave(
+    x: number,
+    y: number,
+    aimX: number,
+    aimY: number,
+    dmg: number,
+    crit = 0,
+  ): void {
     const kills: string[] = [];
     let xpGained = 0;
     this.state.enemies.forEach((enemy, eid) => {
       if (inMeleeArc({ x, y }, aimX, aimY, enemy, EMBERGUARD_RANGE, EMBERGUARD_HALF_ARC)) {
-        xpGained += this.damageEnemy(enemy, eid, dmg, kills);
+        xpGained += this.damageEnemy(enemy, eid, dmg, kills, crit);
       }
     });
     for (const eid of kills) this.state.enemies.delete(eid);
@@ -2670,7 +2712,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (hasAugment(owned, "emberguard")) {
       const dmg = EMBERGUARD_BASE_DMG + EMBERGUARD_PER_INT * Math.max(0, player.int - 1);
-      this.emberguardWave(player.x, player.y, c.aimX, c.aimY, dmg);
+      this.emberguardWave(player.x, player.y, c.aimX, c.aimY, dmg, critChanceFor(player.luk, player.dex));
       if (hasAugment(owned, "conflagration")) {
         this.burnPulses.push({
           x: player.x,
@@ -3072,7 +3114,7 @@ export class GameRoom extends Room<ArenaState> {
             meta.pierce -= 1;
             // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
-            xpGained += this.damageEnemy(enemy, eid, meta.damage, kills);
+            xpGained += this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
           }
         });
         for (const eid of kills) this.state.enemies.delete(eid);
@@ -3085,7 +3127,8 @@ export class GameRoom extends Room<ArenaState> {
       const pr = this.state.projectiles.get(id);
       const meta = this.projectileMeta.get(id);
       // Detonate exploding projectiles (magma scatter) at their death position — §14 WYSIWYG.
-      if (pr && meta?.explode) this.detonate(pr.x, pr.y, meta.explode.radius, meta.explode.damage);
+      if (pr && meta?.explode)
+        this.detonate(pr.x, pr.y, meta.explode.radius, meta.explode.damage, meta.crit ?? 0);
       this.state.projectiles.delete(id);
       this.projectileMeta.delete(id);
     }

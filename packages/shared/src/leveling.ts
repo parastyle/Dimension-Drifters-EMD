@@ -44,6 +44,21 @@ export const M0_REQ_ATTR: Attr = "con";
 export const CON_HP_PER = 8; // +8 max HP per CON over 1
 export const CON_REGEN_PER = 0.7; // +0.7 HP/sec regen per CON over 1
 
+/** §30 v0.118 CRIT (Brotato parity #1): a chance for a damage source to strike for CRIT_MULT×, rolled
+ *  server-side per source. LUK is the primary crit stat (it already reads into loot rarity — now it also
+ *  reads into hit variety), DEX a minor contributor. Capped so it never becomes a guaranteed-crit build. */
+export const CRIT_BASE = 0.05; // 5% at the 1/1 baseline
+export const CRIT_PER_LUK = 0.02; // +2% per LUK over 1
+export const CRIT_PER_DEX = 0.008; // +0.8% per DEX over 1
+export const CRIT_CHANCE_CAP = 0.75;
+export const CRIT_MULT = 2; // a crit deals double — a big, readable spike (gold number + extra juice)
+
+/** A player's live crit CHANCE (0..CRIT_CHANCE_CAP) from LUK/DEX. PURE — server rolls it, client shows it. */
+export function critChanceFor(luk: number, dex: number): number {
+  const c = CRIT_BASE + CRIT_PER_LUK * (luk - 1) + CRIT_PER_DEX * (dex - 1);
+  return Math.max(0, Math.min(CRIT_CHANCE_CAP, c));
+}
+
 export interface DerivedStats {
   /** Max HP (CON). */
   maxHp: number;

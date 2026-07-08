@@ -144,6 +144,10 @@ export class EnemyState extends Schema {
    *  Synced so the client ramps the enemy WHITE + shrinks the rhythm ring; the swing lands (and is
    *  parryable) as it peaks at 1. The §8 universal cue: white = parryable. */
   @type("number") windup = 0;
+  /** §30 v0.118 CRIT flash: a counter bumped each time this enemy takes a CRITICAL hit. Synced ONLY as a
+   *  client VFX trigger — on a change (alongside an hp drop) the client styles that damage number gold +
+   *  adds extra hit-stop/ring. Appended (field-order stable). */
+  @type("uint8") critFlash = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

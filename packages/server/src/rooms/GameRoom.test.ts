@@ -2,6 +2,8 @@ import {
   beltLevelFor,
   beltPitAtX,
   BELT_Y0,
+  CRIT_MULT,
+  critChanceFor,
   DEFAULT_WEAPON,
   DEPTH_MAX,
   DROP_POOL,
@@ -1250,6 +1252,8 @@ describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drop
   });
 
   it("a rarity/affix genuinely changes dealt damage (Legendary Keen > plain, WYSIWYG)", () => {
+    // §30 suppress the crit roll (base 5%) so the damage assertion is deterministic — random ≥ crit chance.
+    const rng = vi.spyOn(Math, "random").mockReturnValue(1);
     const hitFor = (rarity: number, affix: string) => {
       const h = makeRoom();
       h.join("p1");
@@ -1275,6 +1279,7 @@ describe("GameRoom — §10/§13 loot spine (v0.104: rarity, affix, mystery drop
     const legendary = hitFor(4, "keen");
     expect(plain).toBeGreaterThan(0);
     expect(legendary).toBeCloseTo(plain * 1.45 * 1.12, 1); // exactly rarity × affix
+    rng.mockRestore();
   });
 
   it("EXPLOIT GUARD: the Testing Grounds mints NO loot — not from toughs, debug BOSSES, or wielders", () => {
@@ -1572,6 +1577,44 @@ describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
     expect(p.slots[1].weapon).toBe("tombstone-greatsword");
     expect(p.bag.length).toBe(0); // consumed (slot was empty)
     expect(p.weapon).toBe("tombstone-greatsword"); // re-mirrored into the active hand
+  });
+});
+
+// ── §30 v0.118 CRIT (Brotato parity): LUK/DEX crit chance, rolled per damage source in damageEnemy. ──
+describe("GameRoom — §30 crit", () => {
+  it("critChanceFor scales with LUK/DEX off a 5% base and caps", () => {
+    expect(critChanceFor(1, 1)).toBeCloseTo(0.05, 5); // baseline
+    expect(critChanceFor(6, 1)).toBeCloseTo(0.15, 5); // +2%/LUK × 5
+    expect(critChanceFor(1, 6)).toBeCloseTo(0.09, 5); // +0.8%/DEX × 5
+    expect(critChanceFor(99, 99)).toBe(0.75); // clamped
+  });
+
+  it("a landed crit DOUBLES damage and bumps critFlash; a miss does neither", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const enemy = new EnemyState();
+    enemy.id = "e";
+    enemy.kind = "grunt";
+    enemy.hp = 1000; // stays > 0 so damageEnemy returns before the kind/death path
+    h.state().enemies.set("e", enemy);
+    // Roll 0 < 0.5 → crit.
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0);
+    let hp = enemy.hp;
+    h.room.damageEnemy(enemy, "e", 10, [], 0.5);
+    expect(hp - enemy.hp).toBe(10 * CRIT_MULT);
+    expect(enemy.critFlash).toBe(1);
+    // Roll 0.9 ≥ 0.5 → no crit.
+    rng.mockReturnValue(0.9);
+    hp = enemy.hp;
+    h.room.damageEnemy(enemy, "e", 10, [], 0.5);
+    expect(hp - enemy.hp).toBe(10);
+    expect(enemy.critFlash).toBe(1); // unchanged
+    // crit chance 0 (non-player source) never crits even on a 0 roll.
+    rng.mockReturnValue(0);
+    hp = enemy.hp;
+    h.room.damageEnemy(enemy, "e", 10, [], 0);
+    expect(hp - enemy.hp).toBe(10);
+    rng.mockRestore();
   });
 });
 
