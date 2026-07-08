@@ -219,6 +219,10 @@ export class ArenaScene extends Phaser.Scene {
   private lastBeltRoom = "";
   /** §29 the Codex-rendered sky-carrier backdrop image (pinned + sized to the viewport each frame). */
   private beltBackdrop: Phaser.GameObjects.Image | null = null;
+  /** §29 drifting-cloud parallax band over the upper sky — a procedural (transparent) tile that scrolls
+   *  slower than the camera + drifts on its own, so the sky feels alive ("clouds passing by"). */
+  private beltClouds: Phaser.GameObjects.TileSprite | null = null;
+  private beltCloudDrift = 0;
   // ── §4 v0.107 online netcode (docs/NETCODE_DESIGN.md) ──
   /** Client-side prediction for the LOCAL player: created on the first patch that carries our player,
    *  ticked once per 50ms input command, reconciled on every patch. The self rig renders THIS. */
@@ -2392,6 +2396,51 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 draw the belt DECK from the authored floor PROFILE — the walkable shape follows the exact
    *  near/far collision edges (WYSIWYG: the railing you see is the edge you can't cross). Plus obstacles as
    *  depth-sorted props + a sky. Everything world-space so it scrolls with the belt; depth below the actors. */
+  /** §29 build the horizontally-tileable, transparent cloud strip used by the parallax band. Soft white
+   *  radial puffs on a clear canvas, wrapped across the seam so tilePositionX scrolls seamlessly, and faded
+   *  to nothing at the bottom so the band melts into the painted sky rather than ending on a hard line. */
+  private ensureCloudTexture(): void {
+    if (this.textures.exists("belt-clouds")) return;
+    const W = 1024;
+    const H = 256;
+    const canvas = this.textures.createCanvas("belt-clouds", W, H);
+    if (!canvas) return;
+    const ctx = canvas.getContext();
+    ctx.clearRect(0, 0, W, H);
+    const puff = (cx: number, cy: number, r: number, a: number) => {
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grd.addColorStop(0, `rgba(255,255,255,${a})`);
+      grd.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    // A dozen clumps, each a few overlapping puffs. Draw any clump near an edge a second time wrapped by ±W
+    // so the strip is seamless when tiled. Weighted toward the top so the bottom stays clear.
+    for (let i = 0; i < 12; i++) {
+      const bx = Math.random() * W;
+      const by = 20 + Math.random() * (H * 0.5);
+      const base = 34 + Math.random() * 40;
+      for (let j = 0; j < 5; j++) {
+        const dx = (Math.random() - 0.5) * base * 2;
+        const dy = (Math.random() - 0.5) * base;
+        const r = base * (0.5 + Math.random() * 0.6);
+        for (const off of [0, -W, W]) puff(bx + dx + off, by + dy, r, 0.16);
+      }
+    }
+    // Vertical fade-out toward the bottom (multiply alpha) so the band dissolves into the sky.
+    ctx.globalCompositeOperation = "destination-out";
+    const fade = ctx.createLinearGradient(0, 0, 0, H);
+    fade.addColorStop(0, "rgba(0,0,0,0)");
+    fade.addColorStop(0.6, "rgba(0,0,0,0)");
+    fade.addColorStop(1, "rgba(0,0,0,1)");
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "source-over";
+    canvas.refresh();
+  }
+
   private buildBeltFloor(): void {
     this.cameras.main.setBackgroundColor("#79bce9"); // sky (fallback behind the backdrop)
     // §29 Codex sky-carrier backdrop — pinned + resized to the viewport each frame (beltCamera). Its sky +
@@ -2400,6 +2449,14 @@ export class ArenaScene extends Phaser.Scene {
       this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
       this.floorObjs.push(this.beltBackdrop);
     }
+    // §29 parallax cloud band drifting across the upper sky (procedural, transparent → no art dependency).
+    this.ensureCloudTexture();
+    this.beltClouds = this.add
+      .tileSprite(0, 0, 1, 1, "belt-clouds")
+      .setOrigin(0, 0)
+      .setDepth(-190)
+      .setAlpha(0.32);
+    this.floorObjs.push(this.beltClouds);
     const level = this.beltLevel ?? beltLevelFor("sky-carrier");
     const w = level.length;
     // Sample the near/far edges across the belt and build the deck polygon in projected (screen-plane) space.
@@ -2507,6 +2564,16 @@ export class ArenaScene extends Phaser.Scene {
     this.beltBackdrop
       ?.setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
       .setDisplaySize(viewW, BELT_VIEW_H);
+    // §29 cloud band fills the upper ~48% of the sky; scrolls at 0.35× camera (distant parallax) plus a slow
+    // self-drift, so clouds keep passing even when the player is standing still.
+    if (this.beltClouds) {
+      const bandH = BELT_VIEW_H * 0.48;
+      this.beltCloudDrift += this.deltaSec * 9;
+      this.beltClouds
+        .setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
+        .setSize(viewW, bandH);
+      this.beltClouds.tilePositionX = this.camFocus.x * 0.35 + this.beltCloudDrift;
+    }
     this.drawBeltGate(lock);
     // §29 room banner on entering a new room + swap to the storm BRIDGE backdrop for the boss room.
     const roomName = this.room?.state.beltRoomName ?? "";
