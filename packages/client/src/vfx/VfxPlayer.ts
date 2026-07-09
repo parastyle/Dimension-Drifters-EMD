@@ -21,6 +21,64 @@ const DEFAULT_MELEE: WeaponVfx["suite"] = {
   "edge-trail": { on: true, params: { reach: 1.1, color: 0.55, len: 1 } },
 };
 
+// §35 ELEMENT-DRIVEN default VFX: the +300 expansion weapons carry no authored suite, so an un-authored
+// swing would look identical across all of them. Instead, tint the slash to the weapon's ELEMENT and add a
+// matching flourish (fire embers, shock arcs, holy sigils, void rings…) so every one reads unique + "cool"
+// with zero per-weapon authoring. Hue feeds the renderer's lerpHue (0 red → spectrum).
+const ELEMENT_HUE: Record<string, number> = {
+  physical: 0.55,
+  fire: 0.03,
+  frost: 0.54,
+  shock: 0.63,
+  holy: 0.13,
+  toxic: 0.32,
+  void: 0.8,
+  arcane: 0.72,
+};
+function buildElementSuite(element: string): WeaponVfx["suite"] {
+  const h = ELEMENT_HUE[element] ?? 0.55;
+  const suite: WeaponVfx["suite"] = {
+    "slash-arc": { on: true, params: { reach: 1, width: 6, color: h } },
+    "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
+  };
+  switch (element) {
+    case "fire":
+      suite["ember-rain"] = { on: true, params: { count: 14, color: h } };
+      suite["impact-flash"] = { on: true, params: { intensity: 0.6 } };
+      break;
+    case "shock":
+      suite["arc-bolt"] = { on: true, params: { color: h } };
+      suite["shockwave-ring"] = { on: true, params: { color: h, rings: 2 } };
+      break;
+    case "frost":
+      suite["hit-spark"] = { on: true, params: { count: 16, color: h } };
+      suite["impact-flash"] = { on: true, params: { intensity: 0.5 } };
+      break;
+    case "holy":
+      suite["sigil-ring"] = { on: true, params: { color: h, size: 1 } };
+      suite["impact-flash"] = { on: true, params: { intensity: 0.65 } };
+      break;
+    case "toxic":
+      suite["ember-rain"] = { on: true, params: { count: 12, color: h } };
+      suite["hit-spark"] = { on: true, params: { count: 10, color: h } };
+      break;
+    case "void":
+      suite["shockwave-ring"] = { on: true, params: { color: h, rings: 3 } };
+      suite["sigil-ring"] = { on: true, params: { color: h, size: 1.1 } };
+      break;
+    case "arcane":
+      suite["sigil-ring"] = { on: true, params: { color: h, size: 1.2 } };
+      suite["arc-bolt"] = { on: true, params: { color: h } };
+      break;
+    // physical → just the steel-tinted slash (no elemental flourish)
+  }
+  return suite;
+}
+/** Precomputed per-element fallback suites (built once). */
+const ELEMENT_SUITES: Record<string, WeaponVfx["suite"]> = Object.fromEntries(
+  Object.keys(ELEMENT_HUE).map((e) => [e, buildElementSuite(e)]),
+);
+
 interface Surface {
   container: Phaser.GameObjects.Container;
   S: VfxSurface;
@@ -116,15 +174,26 @@ export class VfxPlayer {
   /** Fire a weapon's swing VFX at world (x,y), pointing toward `aimRad`. The VFX SIZE is the weapon's
    *  authored fixed `vfxRadius` (§14 — never stat/level-scaled); `radius` is only a fallback for weapons
    *  with no baked entry at all. */
-  playSwing(weaponId: string, x: number, y: number, aimRad: number, radius: number): void {
+  playSwing(
+    weaponId: string,
+    x: number,
+    y: number,
+    aimRad: number,
+    radius: number,
+    element = "physical",
+  ): void {
     const VR = globalThis.VFXRENDER;
     if (!VR) return;
     const vfx: WeaponVfx | undefined = WEAPON_VFX[weaponId];
     const surf = this.acquire();
     surf.busy = true;
     const S = surf.S;
-    // Entries that carry only a vfxRadius (no enabled layers) still get the default slash.
-    S.suite = vfx?.suite && Object.keys(vfx.suite).length > 0 ? vfx.suite : DEFAULT_MELEE;
+    // Authored suite wins; else an ELEMENT-tinted fallback (§35) so every un-authored expansion weapon reads
+    // unique by its element; else the plain steel slash.
+    S.suite =
+      vfx?.suite && Object.keys(vfx.suite).length > 0
+        ? vfx.suite
+        : (ELEMENT_SUITES[element] ?? DEFAULT_MELEE);
     S.fired = {};
     S.R = vfx?.vfxRadius ?? radius; // authored fixed size wins
     S.heroEnabled = true;

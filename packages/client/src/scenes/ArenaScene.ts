@@ -4269,7 +4269,7 @@ export class ArenaScene extends Phaser.Scene {
     const sy = y + Math.sin(ang) * reach;
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
     // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
-    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT);
+    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT, weapon.tags?.element);
   }
 
   /** Live on-screen readout so the game loop's health is visible without a dev console. */
