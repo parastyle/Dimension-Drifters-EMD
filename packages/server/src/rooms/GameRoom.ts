@@ -2205,6 +2205,8 @@ export class GameRoom extends Room<ArenaState> {
         },
         applyAoE: (x, y, radius, damage, knockback) =>
           this.applyBossAoE(x, y, radius, damage, knockback),
+        applyQuake: (x, y, radius, damage, knockback) =>
+          this.applyBossQuake(x, y, radius, damage, knockback),
         applyMelee: (x, y, aimX, aimY, range, halfArc, damage, knockback) =>
           this.applyBossMelee(x, y, aimX, aimY, range, halfArc, damage, knockback),
         moveBoss: (x, y) => {
@@ -2283,6 +2285,36 @@ export class GameRoom extends Room<ArenaState> {
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
       p.hp -= damage; // §16 unparryable — dodge it, don't block it
+      const d = Math.hypot(dx, dy) || 1;
+      const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
+      p.vx = k.vx;
+      p.vy = k.vy;
+    });
+  }
+
+  /** §33 FOOTFALL QUAKE resolve: a ground shockwave you JUMP over or PARRY. Grounded, un-parried players in
+   *  the radius take it + a radial shove; AIRBORNE players (mid-jump) clear it; a player in a parry/i-frame
+   *  window NEGATES it (white flash — the timing reward). This is the colossus's whole rhythm. */
+  private applyBossQuake(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    knockback: number,
+  ): void {
+    const r2 = radius * radius;
+    this.state.players.forEach((p) => {
+      if (!p.alive || this.inLevelWindow(p)) return;
+      const dx = p.x - x;
+      const dy = p.y - y;
+      if (dx * dx + dy * dy > r2) return;
+      if (p.height > GROUND_EPSILON) return; // JUMPED — airborne clears the quake
+      const c = this.combat.get(p.id);
+      if (c && c.invuln > 0) {
+        p.parriedSeq += 1; // PARRIED (i-frame window) — negate + trigger the white parry flash
+        return;
+      }
+      p.hp -= damage;
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;

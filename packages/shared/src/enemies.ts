@@ -356,6 +356,19 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
     xpValue: 90,
     renderScale: 6.4,
   },
+  // §33 v0.118 VASTAGHAR — a boss so vast only his LOWER BODY fits on screen (renderScale 13). You fight at
+  // his feet; every ponderous FOOTSTEP drops a ground quake you jump over or parry. Slow, unstoppable.
+  "world-titan": {
+    sprite: "grull", // placeholder silhouette (the same hulking brute, rendered mountain-huge)
+    archetype: "boss",
+    speed: 40,
+    hp: 1900,
+    radius: 230,
+    contactDamage: 18,
+    weight: 0,
+    xpValue: 110,
+    renderScale: 13,
+  },
   // §15 melee DUELIST — a sword-wielding ronin (a tough-tier threat). Closes in, telegraphs, then
   // strings a 3-hit combo with a real arc hitbox (no passive contact DPS — it ATTACKS). Wields one of
   // our example swords (Voltedge) and has a chance to drop it on death (§13). POC art = boothill rig

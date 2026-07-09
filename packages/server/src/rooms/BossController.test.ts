@@ -18,6 +18,7 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     dropZone: [] as unknown[][],
     spawnAdds: [] as { kind: string; spots: readonly Vec2[] }[],
     applyAoE: [] as unknown[][],
+    applyQuake: [] as unknown[][],
     applyMelee: [] as { x: number; y: number; range: number; halfArc: number; damage: number }[],
     moveBoss: [] as { x: number; y: number }[],
   };
@@ -38,6 +39,7 @@ function mockSink(over: Partial<{ hostile: number; adds: number }> = {}) {
     dropZone: (...a) => calls.dropZone.push(a),
     spawnAdds: (kind, spots) => calls.spawnAdds.push({ kind, spots }),
     applyAoE: (...a) => calls.applyAoE.push(a),
+    applyQuake: (...a) => calls.applyQuake.push(a),
     applyMelee: (x, y, _aimX, _aimY, range, halfArc, damage, _knockback) =>
       calls.applyMelee.push({ x, y, range, halfArc, damage }),
     moveBoss: (x, y) => calls.moveBoss.push({ x, y }),

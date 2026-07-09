@@ -82,6 +82,9 @@ export interface AoeSpec {
   radius: number;
   damage: number;
   knockback: number;
+  /** §33 FOOTFALL QUAKE: a ground shockwave you JUMP over (airborne = immune) or PARRY (negates), instead of
+   *  the usual instant dodge-circle. Routed to `applyQuake` on resolve. */
+  quake?: boolean;
 }
 
 /** §16 v0.109 Slice 2 — an ACTIVE HAZARD that persists after the windup, dealing continuous damage over a
@@ -286,6 +289,28 @@ export const landingZone: BossPrimitive = (ctx) => {
     const y = i === 0 ? first.y : arenaClampY(first.y + ctx.rng.range(-spread, spread));
     telegraphs.push({ shape: TgShape.Circle, x, y, a: radius, danger: TELEGRAPH_DODGE });
     aoe.push({ x, y, radius, damage: dmg, knockback: knock });
+  }
+  return { telegraphs, emits: { aoe } };
+};
+
+/** §33 FOOTFALL QUAKE — the colossus's marquee: each thunderous footstep drops a ground shockwave you must
+ *  JUMP over (airborne = immune) or PARRY (negates, feeds the parry chain). The stomp lands at the giant's
+ *  foot (the boss body) with big-radius jittered aftershocks so a standing squad can't ignore it. White
+ *  parry-cue telegraph (kindTag 7 = quake). Params: count, radius, damage, knockback, spread. */
+export const footfallQuake: BossPrimitive = (ctx) => {
+  const count = Math.max(1, Math.floor(p(ctx, "count", 1)));
+  const radius = p(ctx, "radius", 300);
+  const dmg = p(ctx, "damage", 24);
+  const knock = p(ctx, "knockback", 900);
+  const spread = p(ctx, "spread", 320);
+  const telegraphs: TgSpec[] = [];
+  const aoe: AoeSpec[] = [];
+  for (let i = 0; i < count; i++) {
+    // The first shock lands under the giant's foot (the boss body); the rest are jittered aftershocks.
+    const x = i === 0 ? ctx.boss.x : arenaClampX(ctx.boss.x + ctx.rng.range(-spread, spread));
+    const y = i === 0 ? ctx.boss.y : arenaClampY(ctx.boss.y + ctx.rng.range(-spread, spread));
+    telegraphs.push({ shape: TgShape.Circle, x, y, a: radius, danger: TELEGRAPH_PARRYABLE, kindTag: 7 });
+    aoe.push({ x, y, radius, damage: dmg, knockback: knock, quake: true });
   }
   return { telegraphs, emits: { aoe } };
 };
@@ -584,6 +609,7 @@ export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   spiral,
   aimedVolley,
   landingZone,
+  footfallQuake,
   corrosivePool,
   summonAdds,
   beamSweep,

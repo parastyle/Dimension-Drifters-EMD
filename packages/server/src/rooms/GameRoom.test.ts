@@ -1745,5 +1745,40 @@ describe("GameRoom — §31 meta upgrades", () => {
   });
 });
 
+// ── §33 v0.118 FOOTFALL QUAKE — the colossus stomp you JUMP over or PARRY. ──
+describe("GameRoom — §33 footfall quake", () => {
+  it("hits grounded flat-footed players; airborne (jump) or i-frames (parry) negate it", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    p.x = 1000;
+    p.y = 1000;
+    p.hp = 100;
+    p.height = 0;
+    const c = h.room.combat.get("p1");
+    c.invuln = 0;
+    // grounded + flat-footed inside the radius → takes it.
+    h.room.applyBossQuake(1000, 1000, 300, 30, 500);
+    expect(p.hp).toBeLessThan(100);
+    // AIRBORNE (mid-jump) → immune.
+    p.hp = 100;
+    p.height = 50;
+    h.room.applyBossQuake(1000, 1000, 300, 30, 500);
+    expect(p.hp).toBe(100);
+    // grounded but PARRYING (i-frame window) → negated + white parry flash.
+    p.height = 0;
+    c.invuln = 0.2;
+    const seq = p.parriedSeq;
+    h.room.applyBossQuake(1000, 1000, 300, 30, 500);
+    expect(p.hp).toBe(100);
+    expect(p.parriedSeq).toBe(seq + 1);
+    // outside the radius → nothing.
+    p.x = 5000;
+    c.invuln = 0;
+    h.room.applyBossQuake(1000, 1000, 300, 30, 500);
+    expect(p.hp).toBe(100);
+  });
+});
+
 // Re-seed nothing between files — each makeRoom() is independent.
 beforeEach(() => {});

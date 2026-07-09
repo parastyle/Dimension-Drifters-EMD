@@ -55,6 +55,9 @@ export interface BossEmitSink {
   dropZone(x: number, y: number, radius: number, ttl: number): void;
   spawnAdds(kind: string, spots: readonly Vec2[]): void;
   applyAoE(x: number, y: number, radius: number, damage: number, knockback: number): void;
+  /** §33 FOOTFALL QUAKE resolve: damage grounded players in the radius, but AIRBORNE players (mid-jump) are
+   *  immune and PARRYING players negate it — jump over or parry the giant's stomp. */
+  applyQuake(x: number, y: number, radius: number, damage: number, knockback: number): void;
   /** Reposition/reshape a LIVE telegraph row (an active beam/ring hazard whose danger geometry moves). */
   updateTelegraphGeom(id: string, x: number, y: number, a: number, b: number, rot: number): void;
   /** Damage every living player inside an oriented rect (a beam / dash lane) + shove them perpendicular out. */
@@ -419,7 +422,11 @@ export class BossController {
       }
     }
     if (e.aoe?.length) {
-      for (const a of e.aoe) sink.applyAoE(a.x, a.y, a.radius, a.damage * dmgScale, a.knockback);
+      for (const a of e.aoe) {
+        // §33 quake stomps route to the jump-or-parry path; regular slams to the dodge AoE.
+        if (a.quake) sink.applyQuake(a.x, a.y, a.radius, a.damage * dmgScale, a.knockback);
+        else sink.applyAoE(a.x, a.y, a.radius, a.damage * dmgScale, a.knockback);
+      }
     }
     if (e.zones?.length) {
       for (const z of e.zones) sink.dropZone(z.x, z.y, z.radius, z.ttl);

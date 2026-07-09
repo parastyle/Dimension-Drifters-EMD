@@ -1608,6 +1608,15 @@ export class ArenaScene extends Phaser.Scene {
       } else if (c.kindTag === 2 || c.kindTag === 3) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
         spawnExplosion(this, c.x, py(c.y), 22);
+      } else if (c.kindTag === 7) {
+        // §33 FOOTFALL QUAKE landing — the giant's step hits: a big shock ring + dust burst + a HEAVY, low
+        // screen-quake and the deep boom. The whole screen jolts so the footstep reads as a footstep.
+        const ix = c.x;
+        const iy = py(c.y);
+        spawnExplosion(this, ix, iy, Math.max(40, c.a * 0.5));
+        this.spawnImpactRing(ix, iy);
+        this.shakeCam(280, 0.03); // heavier + longer than a slam — the ground itself buckles
+        this.audio.play("bossslam", { x: c.x, amt: 1 });
       }
       // kindTag 4 (beam/dash) + 5 (ring) end silently — the sweeping/expanding hazard was its own visual.
     }

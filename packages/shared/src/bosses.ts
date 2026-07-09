@@ -848,6 +848,78 @@ const COLOSSUS: BossDef = {
   ],
 };
 
+/** §33 v0.118 VASTAGHAR, THE WORLD-TREAD — a boss so vast only his lower body fits on screen (renderScale
+ *  13). You fight at his feet, and his whole rhythm is the FOOTSTEP: every ponderous stomp drops a ground
+ *  quake (`footfallQuake`) you must JUMP over (airborne = immune) or PARRY (white cue, negates + feeds the
+ *  chain). Stay grounded and flat-footed and the quake flattens you. The steps quicken + multiply as he
+ *  falls; supporting fire (crater slams / bullet fan / voidspawn) forces you to move between stomps. */
+const WORLD_TITAN: BossDef = {
+  kind: "world-titan",
+  name: "Vastaghar, the World-Tread",
+  move: "chase",
+  phases: [
+    // P1 (>60%) — the slow, thunderous march: one quake per footfall, the odd crater to make you move.
+    {
+      hpAbove: 0.6,
+      modules: [
+        {
+          primitive: "footfallQuake",
+          cooldown: 2.2,
+          windup: 0.95,
+          params: { count: 1, radius: 320, damage: 24, knockback: 950, spread: 0 },
+        },
+        {
+          primitive: "landingZone",
+          cooldown: 5.0,
+          windup: 1.0,
+          firstDelay: 2.6,
+          params: { count: 2, radius: 200, damage: 24, knockback: 850, spread: 560 },
+        },
+      ],
+    },
+    // P2 (>25%) — the stride quickens: double stomps (a foot + its aftershock) + a raking bullet fan.
+    {
+      hpAbove: 0.25,
+      speedMult: 1.06,
+      modules: [
+        {
+          primitive: "footfallQuake",
+          cooldown: 1.8,
+          windup: 0.85,
+          params: { count: 2, radius: 320, damage: 26, knockback: 1000, spread: 360 },
+        },
+        {
+          primitive: "bulletFan",
+          cooldown: 3.4,
+          windup: 0,
+          firstDelay: 1.6,
+          params: { count: 14, arc: 2.6, speed: 320, damage: 7 },
+        },
+      ],
+    },
+    // P3 (enrage) — a stampede: rapid triple-stomp quakes + summoned voidspawn between the tremors.
+    {
+      hpAbove: 0,
+      speedMult: 1.14,
+      modules: [
+        {
+          primitive: "footfallQuake",
+          cooldown: 1.4,
+          windup: 0.7,
+          params: { count: 3, radius: 320, damage: 26, knockback: 1000, spread: 460 },
+        },
+        {
+          primitive: "summonAdds",
+          cooldown: 6.0,
+          addKind: "mote-swarm",
+          firstDelay: 2.0,
+          params: { count: 4, ringRadius: 300, ringJitter: 90 },
+        },
+      ],
+    },
+  ],
+};
+
 /** The boss-definition registry — keyed by `kind`. Slice 3 completes the roster with the melee trio
  *  (Kaido / Nihil / Blade Twins) → 10 bespoke bosses; v0.117 adds GOROGOTH the colossus → 11. */
 export const BOSSES: Record<string, BossDef> = {
@@ -862,6 +934,7 @@ export const BOSSES: Record<string, BossDef> = {
   nihil: NIHIL,
   "blade-twins": TWINS,
   "dimensional-colossus": COLOSSUS,
+  "world-titan": WORLD_TITAN,
 };
 
 /** The def for a boss `kind`, or `CLASSIC_BOSS` for any kind without a bespoke def (every current dimension
