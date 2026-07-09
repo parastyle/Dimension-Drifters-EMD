@@ -1979,6 +1979,12 @@ export class ArenaScene extends Phaser.Scene {
         this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
         this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
         this.audio.play("bossslam", { x: boss.x, amt: 1 });
+        // §33 teach the colossus's footstep mechanic the moment he looms in — you can't out-DPS a quake.
+        if (boss.kind === "world-titan") {
+          this.time.delayedCall(900, () =>
+            this.flashBanner("⚠ JUMP or PARRY his footsteps", "#ffd24a"),
+          );
+        }
       }
       this.bossShown = Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
       this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
