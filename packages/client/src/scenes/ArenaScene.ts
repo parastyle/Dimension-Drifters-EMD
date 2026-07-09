@@ -1354,6 +1354,10 @@ export class ArenaScene extends Phaser.Scene {
         // Bosses use their own scale; tough kin scale up + glow (§15/§28.6 bigger not detailed).
         if (kind?.renderScale) rig.setRigScale(kind.renderScale);
         else if (enemy.tough) rig.setRigScale(TOUGH_SCALE);
+        // §33 a truly colossal boss (renderScale ≥10) frames feet-at-ground with its torso off the top —
+        // "you only see his lower body". ~0.45 body-heights lifts the torso up so the legs sit at ground
+        // level (0.5 = the very bottom at the ground line). Tunable knob if it wants more/less leg on screen.
+        if ((kind?.renderScale ?? 0) >= 10) rig.setLowerBodyFrame(0.45);
         if (enemy.tough) rig.addGlow(0xff5d3b);
         // §15 duelist (ronin): visibly WIELD its sword (held-sprite on the enemy rig).
         if (kind?.wieldsWeapon) {

@@ -134,6 +134,8 @@ export class SpriteRig {
    *  `hopPx` now EASES toward `hopTarget` (the synced height) so the 20Hz jump doesn't stair-step. */
   private hopPx = 0;
   private hopTarget = 0;
+  /** §33 permanent art-lift (local px) for colossus lower-body framing — added to the hop each frame. */
+  private baseLift = 0;
   /** §5/§20 ground shadow — stays grounded while the art lifts, so the gap reads as HEIGHT (jump /
    *  parry-launch / death-pop). Shrinks + fades as the rig rises. */
   private readonly shadow: Phaser.GameObjects.Ellipse;
@@ -220,6 +222,14 @@ export class SpriteRig {
    *  untouched, so the camera + depth-sort stay grounded — only the visible body/hands/feet/weapon rise. */
   setHop(px: number): void {
     this.hopTarget = px;
+  }
+
+  /** §33 COLOSSUS framing: a PERMANENT upward art-lift (in body-heights) so a giant renders feet-at-the-
+   *  ground with its torso towering off the top of the screen — "you only see his lower body". Like the hop,
+   *  it moves ONLY the visible art (logical position, depth-sort + the grounded shadow stay put). `frac` = how
+   *  many body-heights to lift; 0 = normal. */
+  setLowerBodyFrame(frac: number): void {
+    this.baseLift = frac * TARGET_BODY_H;
   }
 
   /** §20 DEATH-POP (Stage B): launch the corpse — slide along (vx,vy), arc UP under a fake gravity, spin,
@@ -668,12 +678,13 @@ export class SpriteRig {
     this.landSquash = Math.max(0, this.landSquash - dtMs / 110); // decays over ~110ms
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
     // ground), so the silhouette reads as "off the ground" rather than just sliding up.
-    if (this.hopPx > 0.01) {
-      const lift = this.hopPx;
+    // §33 the JUMP hop plus the permanent COLOSSUS lower-body lift both raise the art (never the shadow).
+    const lift = this.hopPx + this.baseLift;
+    if (lift > 0.01) {
       for (const p of this.parts) p.y -= lift;
       for (const w of this.weapons) w.img.y -= lift;
-      // A touch of squash relief at the apex sells the leap (body stretches up slightly mid-air).
-      this.body.scaleY *= 1 + Math.min(0.12, lift / 300);
+      // A touch of squash relief at the apex sells the leap (body stretches up) — from the JUMP only.
+      if (this.hopPx > 0.01) this.body.scaleY *= 1 + Math.min(0.12, this.hopPx / 300);
     }
     if (this.landSquash > 0.01) this.body.scaleY *= 1 - 0.14 * this.landSquash; // squash on touchdown
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
