@@ -3404,7 +3404,8 @@ export class GameRoom extends Room<ArenaState> {
         this.beltPhase = "fight";
         this.state.beltLockX = room.gateX;
         this.state.beltRoomName = room.name;
-        if (room.boss) this.spawnBoss();
+        if (room.boss)
+          this.spawnBoss("world-titan"); // §33 the Bridge finale IS the colossus — jump/parry his footsteps
         else this.spawnBeltWave(room.wave, prevGate, room.gateX);
       }
     } else if (this.beltPhase === "fight") {
@@ -3628,9 +3629,15 @@ export class GameRoom extends Room<ArenaState> {
       ARENA_HEIGHT - kind.radius,
     );
     // §17 land the boss on solid ground + clear of POIs so its grand entrance doesn't teleport-out next tick.
-    const sp = safeSpawnPos(this.map, bx, by, kind.radius);
-    boss.x = sp.x;
-    boss.y = sp.y;
+    // §33 belt: place it ON the deck — just ahead of the room gate, mid-depth — instead of the procgen map.
+    if (this.belt && this.beltLevel) {
+      boss.x = clamp((this.state.beltLockX || bx) - 260, kind.radius, this.beltLevel.length - kind.radius);
+      boss.y = clampBeltFloorY(this.beltLevel, boss.x, BELT_Y0 + DEPTH_MAX * 0.5, kind.radius);
+    } else {
+      const sp = safeSpawnPos(this.map, bx, by, kind.radius);
+      boss.x = sp.x;
+      boss.y = sp.y;
+    }
     this.state.enemies.set(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
