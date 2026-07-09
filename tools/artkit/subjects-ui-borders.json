@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ui-border-gilded",
+    "name": "Gilded Filigree Frame",
+    "kind": "scenery",
+    "prompt": "A single ornate rectangular UI BORDER FRAME for a video-game panel — GILDED FANTASY style: thick gold filigree scrollwork, engraved corners with a small gem boss, a beveled inner lip, weathered brass highlights. The frame is HOLLOW — its inner window is EMPTY. Render the frame centered on a FLAT PURE CHROMA-GREEN (#00ff00) background AND fill the hollow window with the SAME flat pure green, so only the border art remains after keying. Dark-comic HD cel-shaded, thick clean outline, readable. NO text, NO icons, NO content inside the window, NO drop shadow on the green — just the frame.",
+    "palette": { "primary": "#c9a24a", "accent": "#f2e6c8" },
+    "tags": ["ui", "border", "frame", "gilded", "fantasy"],
+    "cardartAction": "an ornate gold filigree panel frame, hollow centre, corners with gem bosses"
+  },
+  {
+    "id": "ui-border-techhud",
+    "name": "Sci-Fi Tech HUD Frame",
+    "kind": "scenery",
+    "prompt": "A single rectangular UI BORDER FRAME for a video-game panel — SCI-FI TECH HUD style: angular brushed-metal frame with clipped corners, thin neon-cyan accent lines, hexagonal rivets, a notch/tab detail on the top edge, subtle circuit etching. The frame is HOLLOW — inner window EMPTY. Render centered on FLAT PURE CHROMA-GREEN (#00ff00) and fill the hollow window with the SAME green so only the border remains after keying. Gritty indie-arcade HD cel-shaded, thick clean outline, glowing cyan edge light. NO text, NO icons, NO content inside, NO shadow on the green.",
+    "palette": { "primary": "#3a4652", "accent": "#33e6ff" },
+    "tags": ["ui", "border", "frame", "scifi", "hud"],
+    "cardartAction": "an angular neon-cyan tech HUD frame with clipped corners, hollow centre"
+  },
+  {
+    "id": "ui-border-grungesteel",
+    "name": "Grunge Riveted Steel Frame",
+    "kind": "scenery",
+    "prompt": "A single rectangular UI BORDER FRAME for a video-game panel — GRUNGY INDUSTRIAL style: heavy riveted gunmetal steel plating, weathered scratches, oil streaks, corner brackets bolted on, a hazard-stripe accent on one edge. The frame is HOLLOW — inner window EMPTY. Render centered on FLAT PURE CHROMA-GREEN (#00ff00) and fill the hollow window with the SAME green so only the border remains after keying. Dark grimy comic HD cel-shaded (Darkest-Dungeon grit), thick uneven outline, spot-blacks. NO text, NO icons, NO content inside, NO shadow on the green.",
+    "palette": { "primary": "#3a4049", "accent": "#a8482e" },
+    "tags": ["ui", "border", "frame", "grunge", "industrial"],
+    "cardartAction": "a bolted riveted steel panel frame with corner brackets, hollow centre"
+  },
+  {
+    "id": "ui-border-arcane",
+    "name": "Arcane Runic Frame",
+    "kind": "scenery",
+    "prompt": "A single rectangular UI BORDER FRAME for a video-game panel — ARCANE RUNIC style: a dark stone/obsidian frame carved with GLOWING violet-and-cyan runes, softly luminous sigils at the corners, faint magical wisps along the edges. The frame is HOLLOW — inner window EMPTY. Render centered on FLAT PURE CHROMA-GREEN (#00ff00) and fill the hollow window with the SAME green so only the border remains after keying. Dark-comic HD cel-shaded, thick outline, additive rune glow (arc-violet + cyber-cyan). NO text, NO icons, NO content inside, NO shadow on the green.",
+    "palette": { "primary": "#2a2540", "accent": "#b14bff" },
+    "tags": ["ui", "border", "frame", "arcane", "runic"],
+    "cardartAction": "an obsidian frame etched with glowing violet runes, hollow centre"
+  },
+  {
+    "id": "ui-border-bonegothic",
+    "name": "Bone Gothic Frame",
+    "kind": "scenery",
+    "prompt": "A single rectangular UI BORDER FRAME for a video-game panel — BONE GOTHIC style: a frame carved of pale bone and blackened iron, small skull motifs at the top corners, ribbed edges, gothic barbs, a muted-red wax-seal accent. The frame is HOLLOW — inner window EMPTY. Render centered on FLAT PURE CHROMA-GREEN (#00ff00) and fill the hollow window with the SAME green so only the border remains after keying. Grim dark-comic HD cel-shaded, thick uneven outline, spot-blacks, desaturated. NO text, NO icons, NO content inside, NO shadow on the green.",
+    "palette": { "primary": "#cfc6ae", "accent": "#9e3b36" },
+    "tags": ["ui", "border", "frame", "bone", "gothic"],
+    "cardartAction": "a carved bone-and-iron frame with skull corners, hollow centre"
+  },
+  {
+    "id": "ui-border-minimal",
+    "name": "Clean Minimal Frame",
+    "kind": "scenery",
+    "prompt": "A single rectangular UI BORDER FRAME for a video-game panel — CLEAN MINIMAL style: a thin elegant double-line border in off-white with subtle corner ticks and a single accent-color hairline, restrained and modern (roguelite deckbuilder UI feel). The frame is HOLLOW — inner window EMPTY. Render centered on FLAT PURE CHROMA-GREEN (#00ff00) and fill the hollow window with the SAME green so only the border remains after keying. HD cel-shaded, crisp thin outline, mostly negative space. NO text, NO icons, NO content inside, NO shadow on the green.",
+    "palette": { "primary": "#e8e4d8", "accent": "#33e6ff" },
+    "tags": ["ui", "border", "frame", "minimal", "clean"],
+    "cardartAction": "a thin elegant double-line frame with corner ticks, hollow centre"
+  }
+]
