@@ -95,6 +95,7 @@ import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import { buildArenaFloor, buildPois, drawArena, type PoiSprite } from "./arena/floor-renderer.js";
 import {
+  baseKind,
   GUN_FX,
   gunFx,
   makeBullet,
@@ -1720,7 +1721,7 @@ export class ArenaScene extends Phaser.Scene {
         existing.destroy();
         this.projectiles.delete(id);
       }
-      const fx = GUN_FX[pr.kind];
+      const fx = GUN_FX[baseKind(pr.kind)]; // §35 strip the ":element" tint suffix for the kind lookup
       const container = fx
         ? makeBullet(this, pr)
         : pr.kind === "cleaver"
@@ -1780,7 +1781,7 @@ export class ArenaScene extends Phaser.Scene {
             );
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
-            this.audio.play(`shot:${pr.kind}`, { x: p.x });
+            this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
           }
         }
       }
@@ -1790,10 +1791,11 @@ export class ArenaScene extends Phaser.Scene {
         const c = this.projectiles.get(id);
         if (c) {
           const k = c.getData("kind") as string;
+          const bk = baseKind(k); // §35 element-tint suffix stripped for the impact dispatch
           const er = (c.getData("explodeR") as number) ?? 0;
-          if (k === "magma" && er > 0) spawnExplosion(this, c.x, c.y, er);
-          else if (GUN_FX[k])
-            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0);
+          if (bk === "magma" && er > 0) spawnExplosion(this, c.x, c.y, er);
+          else if (GUN_FX[bk])
+            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
         }
         c?.destroy();
@@ -2997,7 +2999,9 @@ export class ArenaScene extends Phaser.Scene {
       if (rig) {
         const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
         const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
-        const fx = gunFx(weapon.gun.bulletKind);
+        // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
+        const el = weapon.tags?.element;
+        const fx = gunFx(el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind);
         spawnMuzzleFlash(
           this,
           rig.x + Math.cos(ang) * reach,

@@ -2513,6 +2513,10 @@ export class GameRoom extends Room<ArenaState> {
     const mx = player.x + c.aimX * reach;
     const my = player.y + c.aimY * reach;
     const crit = critChanceFor(player.luk, player.dex); // §30 capture the shooter's crit at fire time
+    // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
+    // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
+    const el = weapon.tags?.element;
+    const bulletKind = el && el !== "physical" ? `${g.bulletKind}:${el}` : g.bulletKind;
     for (let i = 0; i < pellets; i++) {
       // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
       const ang =
@@ -2525,7 +2529,7 @@ export class GameRoom extends Room<ArenaState> {
         g.projectileSpeed,
         dmg,
         false,
-        g.bulletKind,
+        bulletKind,
         g.pierce ?? 1,
         ttl,
         explode,

@@ -20,9 +20,33 @@ export const GUN_FX: Record<string, GunFx> = {
   ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
 };
 
-/** Resolve a bullet-kind's visual config, with a safe default for any unmapped kind. */
+/** §35 element tint for gun bullets: the server encodes a weapon's element onto the bullet kind as
+ *  "<kind>:<element>" (e.g. "tracer:fire"), so a fire gun and a frost gun read distinct even sharing a
+ *  bullet shape. The suffix only overrides the COLOUR; the shape/trail/size stay the kind's. */
+const ELEMENT_COLOR: Record<string, number> = {
+  fire: 0xff6a2a,
+  frost: 0x6fd6ff,
+  shock: 0xffe24a,
+  holy: 0xffe6a0,
+  toxic: 0x9cff3b,
+  void: 0xb14bff,
+  arcane: 0x8f6aff,
+};
+
+/** The base bullet-kind with any ":<element>" suffix stripped — for sprite/sound lookups keyed on the kind. */
+export function baseKind(kind: string): string {
+  const i = kind.indexOf(":");
+  return i < 0 ? kind : kind.slice(0, i);
+}
+
+/** Resolve a bullet-kind's visual config, with a safe default for any unmapped kind. An element suffix
+ *  (":fire" etc.) recolours the bullet to its element. */
 export function gunFx(kind: string): GunFx {
-  return GUN_FX[kind] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 };
+  const i = kind.indexOf(":");
+  const base = i < 0 ? kind : kind.slice(0, i);
+  const fx = GUN_FX[base] ?? { color: 0xffb24a, size: 20, style: "heavy", trail: 24, trailW: 7 };
+  const ec = i < 0 ? undefined : ELEMENT_COLOR[kind.slice(i + 1)];
+  return ec ? { ...fx, color: ec } : fx;
 }
 
 /** Enemy spit — full NEON so it reads as a THREAT against the olive scrub/dust (§28.7). */
@@ -131,7 +155,8 @@ export function makeBullet(
   scene: Phaser.Scene,
   pr: { x: number; y: number; vx: number; vy: number; kind: string },
 ): Phaser.GameObjects.Container {
-  const fx = gunFx(pr.kind);
+  const fx = gunFx(pr.kind); // handles the ":element" colour suffix
+  const k = baseKind(pr.kind); // shape switches on the base kind (element-agnostic)
   const ang = Math.atan2(pr.vy, pr.vx);
   const ADD = Phaser.BlendModes.ADD;
   const items: Phaser.GameObjects.GameObject[] = [];
@@ -147,24 +172,24 @@ export function makeBullet(
     .setRotation(ang)
     .setBlendMode(ADD);
   items.push(trail);
-  if (pr.kind === "nail") {
+  if (k === "nail") {
     // metallic dart — a thin steel rectangle aligned to flight + a white tip
     items.push(scene.add.rectangle(0, 0, 18, 2.6, 0xeef2f6).setRotation(ang));
     items.push(scene.add.circle(0, 0, 1.8, 0xffffff));
-  } else if (pr.kind === "tracer") {
+  } else if (k === "tracer") {
     // streak of light — a velocity-aligned hot capsule (reads opposite to the stubby pellet)
     items.push(scene.add.rectangle(0, 0, 15, 3, fx.color).setRotation(ang).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, 2, 0xffffff).setBlendMode(ADD));
-  } else if (pr.kind === "pellet") {
+  } else if (k === "pellet") {
     // buckshot — a small DENSE lead ball: dark rim under a tight hot core (reads heavy/stubby)
     items.push(scene.add.circle(0, 0, 4, 0x140a06, 0.5));
     items.push(scene.add.circle(0, 0, 3, blendHex(fx.color, 0x806040, 0.45)));
     items.push(scene.add.circle(0, 0, 1.6, 0xffe6c4));
   } else {
-    const big = pr.kind === "slug";
+    const big = k === "slug";
     items.push(scene.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, big ? 3.4 : 2.2, 0xffffff));
-    if (pr.kind === "ricochet")
+    if (k === "ricochet")
       items.push(scene.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
   }
   return scene.add.container(pr.x, pr.y, items).setDepth(99000);
