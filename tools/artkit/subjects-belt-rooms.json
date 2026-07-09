@@ -1,0 +1,20 @@
+[
+  {
+    "id": "belt-sky-catwalk",
+    "name": "Sky Carrier Catwalk",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 landscape environment backdrop for the SECOND room of a 2.5D beat-'em-up aboard a colossal FLYING AIRCRAFT CARRIER: a narrow exposed CATWALK / gangway running left-to-right between deck sections, high in a bright daytime sky. Steel grating underfoot hint, riveted side rails and support struts, cargo containers and a crane arm off to one side, antenna masts, yellow hazard chevrons. Behind and below: layered drifting clouds and a distant hazy horizon selling the altitude and the drop. Gritty indie-arcade / dark-comic HD cel-shaded, thick uneven outlines, flat cel shading, desaturated steel palette, dramatic rim light. NO characters, NO UI, NO frame, NO floor plane in front — just the environment, full-bleed, as a game background.",
+    "palette": { "primary": "#4c5a68", "accent": "#ffb02e" },
+    "tags": ["scenery", "background", "belt", "sky-carrier", "widescreen"],
+    "cardartAction": "a tense narrow catwalk between deck towers, containers and a crane, clouds streaming past below"
+  },
+  {
+    "id": "belt-sky-arena-mouth",
+    "name": "Sky Carrier Arena Mouth",
+    "kind": "scenery",
+    "prompt": "A WIDE 16:9 landscape environment backdrop for the THIRD room of a 2.5D beat-'em-up aboard a colossal FLYING AIRCRAFT CARRIER: the MOUTH of the forward launch bay opening onto the bridge approach, high in a bright daytime sky turning toward dusk. A huge blast door / hangar opening framed by steel buttresses, floodlights and warning beacons, launch-catapult tracks in the plating running toward the frame, the island superstructure looming larger ahead. Behind: massing clouds and a hazy horizon, warmer light than the open deck. Gritty indie-arcade / dark-comic HD cel-shaded, thick uneven outlines, flat cel shading, desaturated steel palette warming to orange, dramatic rim light. NO characters, NO UI, NO frame, NO floor plane in front — just the environment, full-bleed, as a game background.",
+    "palette": { "primary": "#454a55", "accent": "#ff8a2b" },
+    "tags": ["scenery", "background", "belt", "sky-carrier", "widescreen"],
+    "cardartAction": "the vast blast-door mouth of the launch bay, floodlights and catapult tracks leading toward the looming bridge tower at dusk"
+  }
+]

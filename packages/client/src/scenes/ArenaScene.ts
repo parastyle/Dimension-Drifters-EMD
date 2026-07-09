@@ -464,6 +464,8 @@ export class ArenaScene extends Phaser.Scene {
       // backdrop, deck plating.
       this.load.image("belt-sky", "belt/sky-carrier.png");
       this.load.image("belt-sky-bridge", "belt/sky-bridge.png");
+      this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
+      this.load.image("belt-sky-arena-mouth", "belt/sky-arena-mouth.png");
       this.load.image("belt-deck", "belt/deck.png");
     }
     for (const manifest of Object.values(SPRITES)) {
@@ -2675,7 +2677,15 @@ export class ArenaScene extends Phaser.Scene {
     if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
     this.lastBeltRoom = roomName;
     if (this.beltBackdrop) {
-      const key = roomName === "The Bridge" ? "belt-sky-bridge" : "belt-sky";
+      // §31 each room gets its own Codex backdrop (Flight Deck → Catwalk → Arena Mouth → the storm Bridge).
+      const key =
+        roomName === "The Bridge"
+          ? "belt-sky-bridge"
+          : roomName === "The Catwalk"
+            ? "belt-sky-catwalk"
+            : roomName === "Arena Mouth"
+              ? "belt-sky-arena-mouth"
+              : "belt-sky";
       if (this.beltBackdrop.texture.key !== key && this.textures.exists(key)) this.beltBackdrop.setTexture(key);
     }
   }
