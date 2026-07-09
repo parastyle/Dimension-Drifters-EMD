@@ -2855,13 +2855,16 @@ export class ArenaScene extends Phaser.Scene {
       let ax: number;
       let ay: number;
       if (this.belt) {
-        // §29 the belt camera does NOT centre on the player (top-down did), so `px + scrollX` no longer
-        // lands under the cursor. Use the camera's proper world transform, aim relative to the PLAYER's
-        // world pos (self.x is world x; self.y is the PROJECTED depth — un-project both, which cancels to a
-        // /FORESHORTEN on the delta). Facing now flips over the CHARACTER, not the screen midpoint.
+        // §34 AIM FIX: this runs in animateBlobs, BEFORE projectBelt — so `self.y` is the WORLD depth
+        // (interpolate set it) while the cursor `wp.y` is in the PROJECTED screen plane (where the deck is
+        // drawn). `selfAim` is the on-SCREEN aim (points the rig + all VFX straight at the cursor), so
+        // project self.y to compare like-for-like. The un-project to true sim-direction happens once, at
+        // SEND time (stepNetInput), so the server's projectile/melee direction still flows to the cursor.
+        // (The old code mixed a projected cursor with a world self and /FORESHORTEN'd it — every aim slewed
+        // steeply up/down.) Facing still flips over the CHARACTER, not the screen midpoint.
         const wp = cam.getWorldPoint(px, py);
         ax = wp.x - self.x;
-        ay = (wp.y - self.y) / BELT_FORESHORTEN;
+        ay = wp.y - this.beltY(self.y);
       } else {
         ax = px + cam.scrollX - self.x;
         ay = py + cam.scrollY - self.y;
@@ -3021,7 +3024,18 @@ export class ArenaScene extends Phaser.Scene {
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
       if (weapon.chainLightning) this.spawnChain(rx, ry, this.selfAim, weapon);
     }
-    this.room.send("attack", { aimX: this.selfAim.x, aimY: this.selfAim.y, tx: cwx, ty: cwy });
+    // §34 the server aims in SIM space (belt y = depth), so un-project the on-screen aim's depth component
+    // before sending — a projectile/melee then travels to the cursor's real world position, not a
+    // foreshortened one. (x is never projected; top-down needs no conversion.)
+    let saX = this.selfAim.x;
+    let saY = this.selfAim.y;
+    if (this.belt) {
+      saY /= BELT_FORESHORTEN;
+      const l = Math.hypot(saX, saY) || 1;
+      saX /= l;
+      saY /= l;
+    }
+    this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
   }
 
   /** LMB → the melee Parry signature (§7/§8). Server grants i-frames + knockback. NO VFX yet — the
