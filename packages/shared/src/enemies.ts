@@ -473,6 +473,44 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
   ...DIMENSION_ENEMY_KINDS,
 };
 
+// §32 v0.118 EVERY enemy wields one of our weapons — the one it DROPS irregularly on death. Assigned here
+// (post-merge, so it covers hand-authored AND generated dimension kinds) to any non-boss/dummy kind that
+// doesn't already carry a signature weapon. Melee archetypes get a blade, ranged get a gun; the pick is
+// hashed off the kind id so it's stable + varied. `wieldsWeapon` only drives the drop (server) + the
+// in-hand render (client) — no AI change — and handless "blob" rigs simply don't draw it (they still drop).
+const ENEMY_MELEE_POOL: readonly string[] = [
+  "rusty-cleaver",
+  "driftblade",
+  "twin-bowie-fangs",
+  "x-sword-buzzsaw",
+  "x-sword-anchor",
+  "rattler-sabre",
+  "x-sword-coffin",
+  "x-sword-railspike",
+  "x-sword-neon-katana",
+  "x-sword-bone",
+  "tombstone-greatsword",
+];
+const ENEMY_RANGED_POOL: readonly string[] = [
+  "x-gun-revolver-cannon",
+  "x-gun-coffin-shotgun",
+  "x-gun-gatling",
+  "x-gun-nailgun",
+  "x-gun-ricochet-pistol",
+];
+const MELEE_ARCHETYPES = new Set(["rusher", "swarm", "leaper", "duelist"]);
+function hashPick(seed: string, pool: readonly string[]): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return pool[h % pool.length] ?? pool[0]!;
+}
+for (const [id, kind] of Object.entries(ENEMY_KINDS)) {
+  if (kind.archetype === "boss" || kind.archetype === "dummy" || kind.wieldsWeapon) continue;
+  const pool = MELEE_ARCHETYPES.has(kind.archetype) ? ENEMY_MELEE_POOL : ENEMY_RANGED_POOL;
+  kind.wieldsWeapon = hashPick(id, pool);
+  kind.dropWeapon = kind.dropWeapon ?? 0.22; // irregular — most kills don't drop
+}
+
 export const ENEMY_KIND_IDS = Object.keys(ENEMY_KINDS);
 
 /** §17 the DIMENSION-SHIFTER kind ids, ordered by tier (1 = earliest/weakest Marshal → 3 = Warden). Derived
