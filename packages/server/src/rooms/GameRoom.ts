@@ -81,6 +81,11 @@ import {
   HARVEST_CAP,
   HARVEST_PER_LUK,
   HIT_KNOCKBACK_IMPULSE,
+  META_FORTUNE_LUK,
+  META_POWER_STR,
+  META_VITALITY_HP,
+  nextUpgradeCost,
+  sanitizeMetaLevels,
   hasAugment,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
@@ -651,6 +656,33 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
+    // §31 META BUY: spend scrip at the shopkeeper on a PERMANENT upgrade level (persists across runs). Gated
+    // on proximity + alive; server-authoritative cost check + stat application (the client can't grant itself
+    // a level — it only requests, and re-persists the synced result).
+    this.onMessage("buyUpgrade", (client, message: { id?: string }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player?.alive || !this.belt) return;
+      const shopX = this.state.beltShopX;
+      if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
+      const id = message?.id;
+      if (id !== "vitality" && id !== "fortune" && id !== "power") return;
+      const cur = id === "vitality" ? player.upVitality : id === "fortune" ? player.upFortune : player.upPower;
+      const cost = nextUpgradeCost(id, cur);
+      if (cost === null || player.scrip < cost) return; // maxed or can't afford
+      player.scrip -= cost;
+      if (id === "vitality") {
+        player.upVitality += 1;
+        player.maxHp += META_VITALITY_HP;
+        player.hp = Math.min(player.maxHp, player.hp + META_VITALITY_HP); // heal the new headroom
+      } else if (id === "fortune") {
+        player.upFortune += 1;
+        player.luk += META_FORTUNE_LUK;
+      } else {
+        player.upPower += 1;
+        player.str += META_POWER_STR;
+      }
+    });
+
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
     this.onMessage("cycleCharacter", (client) => {
       const player = this.state.players.get(client.sessionId);
@@ -952,6 +984,15 @@ export class GameRoom extends Room<ArenaState> {
     );
   }
 
+  /** §31 add the FULL stat bonus for the player's current permanent-upgrade levels (call ONCE at spawn on a
+   *  fresh player; per-purchase deltas are applied in the buyUpgrade handler). */
+  private applyMetaUpgrades(player: PlayerState): void {
+    player.maxHp += META_VITALITY_HP * player.upVitality;
+    player.hp = player.maxHp;
+    player.luk += META_FORTUNE_LUK * player.upFortune;
+    player.str += META_POWER_STR * player.upPower;
+  }
+
   /** §30 the player's equipped loadout as weapon ids — the active slot reads the LIVE held weapon (slots are
    *  only re-synced on swap), the others their stored weapon. Drives the class set-bonus count. */
   private loadoutIds(player: PlayerState): string[] {
@@ -1200,17 +1241,25 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
-  override onJoin(client: Client, options?: { scrip?: number }): void {
+  override onJoin(client: Client, options?: { scrip?: number; up?: unknown }): void {
     const player = new PlayerState();
     player.id = client.sessionId;
     player.hp = PLAYER_MAX_HP;
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
-    // §29 restore the player's persisted meta-scrip (belt only). Client-supplied → clamp to the uint16
-    // ceiling (a sane bound; the persistence model is an MVP, not a trusted economy).
+    // §29/§31 restore the player's persisted meta ACCOUNT (belt only): scrip bank + permanent upgrade
+    // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
+    // economy). The upgrades then apply their stat bonuses to this fresh player.
     if (this.belt && Number.isFinite(options?.scrip)) {
       player.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
+    }
+    if (this.belt) {
+      const lv = sanitizeMetaLevels(options?.up);
+      player.upVitality = lv.vitality;
+      player.upFortune = lv.fortune;
+      player.upPower = lv.power;
+      this.applyMetaUpgrades(player);
     }
     // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
     // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.

@@ -123,6 +123,11 @@ export class PlayerState extends Schema {
   /** §10 SCRIP — the belt meta-currency earned by selling weapons to a shopkeeper (distinct from run
    *  salvage). Synced for the HUD; the persistence layer (send-home) rides on top of this counter. */
   @type("uint16") scrip = 0;
+  /** §31 v0.118 META-PROGRESSION upgrade levels (permanent, bought with scrip). Synced so the shop UI +
+   *  HUD reflect purchases; seeded from the persisted account on join, applied to the starting stats. */
+  @type("uint8") upVitality = 0;
+  @type("uint8") upFortune = 0;
+  @type("uint8") upPower = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

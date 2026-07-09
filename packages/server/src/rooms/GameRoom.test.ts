@@ -14,6 +14,9 @@ import {
   getDimension,
   isPitAtPx,
   makeRng,
+  META_FORTUNE_LUK,
+  META_POWER_STR,
+  META_VITALITY_HP,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_IFRAMES,
   PIT_FALL_DAMAGE_FRAC,
@@ -1682,6 +1685,63 @@ describe("GameRoom — §30 harvest bonus", () => {
     h.state().portalY = p.y;
     h.room.checkExtraction([{ x: p.x, y: p.y }]);
     expect(h.state().bankedSalvage).toBe(50);
+  });
+});
+
+// ── §31 v0.118 META-PROGRESSION: permanent upgrades bought with scrip, seeded from the persisted account
+// on a belt join and applied to the starting stats. ──
+describe("GameRoom — §31 meta upgrades", () => {
+  it("seeds + applies persisted upgrade levels on a belt join (clamped)", () => {
+    const h = makeRoom({ belt: true });
+    h.room.clients.push({ sessionId: "pU" });
+    h.room.onJoin({ sessionId: "pU" }, { up: { vitality: 2, fortune: 1, power: 3 } });
+    const p = h.state().players.get("pU");
+    expect(p.upVitality).toBe(2);
+    expect(p.upFortune).toBe(1);
+    expect(p.upPower).toBe(3);
+    expect(p.maxHp).toBe(PLAYER_MAX_HP + 2 * META_VITALITY_HP);
+    expect(p.hp).toBe(p.maxHp);
+    expect(p.luk).toBe(1 + META_FORTUNE_LUK);
+    expect(p.str).toBe(1 + 3 * META_POWER_STR);
+    // over-max / garbage clamps.
+    h.room.clients.push({ sessionId: "pV" });
+    h.room.onJoin({ sessionId: "pV" }, { up: { vitality: 99, fortune: -5, power: "x" } });
+    const q = h.state().players.get("pV");
+    expect(q.upVitality).toBe(3); // catalog max
+    expect(q.upFortune).toBe(0);
+    expect(q.upPower).toBe(0);
+  });
+
+  it("non-belt ignores upgrades entirely", () => {
+    const h = makeRoom();
+    h.room.clients.push({ sessionId: "pU" });
+    h.room.onJoin({ sessionId: "pU" }, { up: { vitality: 3 } });
+    const p = h.state().players.get("pU");
+    expect(p.upVitality).toBe(0);
+    expect(p.maxHp).toBe(PLAYER_MAX_HP);
+  });
+
+  it("buyUpgrade at the shop deducts scrip + bumps the level & stat; rejects far / broke / maxed", () => {
+    const h = makeRoom({ belt: true });
+    h.join("pU");
+    const p = h.state().players.get("pU");
+    const shopX = h.state().beltShopX;
+    p.scrip = 100;
+    p.x = shopX;
+    h.send("pU", "buyUpgrade", { id: "vitality" }); // cost 30
+    expect(p.upVitality).toBe(1);
+    expect(p.scrip).toBe(70);
+    expect(p.maxHp).toBe(PLAYER_MAX_HP + META_VITALITY_HP);
+    // too far from the vendor → rejected.
+    p.x = shopX + 500;
+    h.send("pU", "buyUpgrade", { id: "vitality" });
+    expect(p.upVitality).toBe(1);
+    // can't afford → rejected.
+    p.x = shopX;
+    p.scrip = 5;
+    h.send("pU", "buyUpgrade", { id: "fortune" }); // cost 40
+    expect(p.upFortune).toBe(0);
+    expect(p.scrip).toBe(5);
   });
 });
 

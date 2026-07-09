@@ -55,8 +55,13 @@ import {
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
+  EMPTY_META,
+  META_UPGRADES,
+  type MetaLevels,
+  nextUpgradeCost,
   RARITIES,
   RARITY_CURSED,
+  sanitizeMetaLevels,
   scripValue,
   SHOP_RADIUS,
   weaponSetBonus,
@@ -427,6 +432,8 @@ export class ArenaScene extends Phaser.Scene {
   private shopPromptText: Phaser.GameObjects.Text | null = null;
   private shopOpen = false;
   private lastScrip = -1; // §29 track scrip to flash a "+N" confirmation on a sale (−1 = uninitialised)
+  private lastUpgradeSig = ""; // §31 track upgrade levels to persist on purchase
+  private buyZones: Phaser.GameObjects.Rectangle[] = []; // §31 shop upgrade-buy click zones
   private readonly debugEl = document.getElementById("debug");
 
   constructor() {
@@ -1105,6 +1112,7 @@ export class ArenaScene extends Phaser.Scene {
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
           scrip: this.belt ? this.loadBankedScrip() : 0, // §29 restore the player's persisted meta-scrip
+          up: this.belt ? this.loadUpgrades() : undefined, // §31 restore permanent upgrade levels
         });
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -3803,6 +3811,23 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** §31 the persisted permanent-upgrade levels (the meta "account"), restored on belt join + re-saved on
+   *  purchase. Client-local MVP (matches the scrip bank); a server/account store can replace the transport. */
+  private loadUpgrades(): MetaLevels {
+    try {
+      return sanitizeMetaLevels(JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"));
+    } catch {
+      return { ...EMPTY_META };
+    }
+  }
+  private saveUpgrades(levels: MetaLevels): void {
+    try {
+      localStorage.setItem("dd.beltUpgrades", JSON.stringify(sanitizeMetaLevels(levels)));
+    } catch {
+      /* storage blocked — non-fatal */
+    }
+  }
+
   /** §29 a pooled, screen-pinned HUD text (lazily created), used by the arsenal + bag readouts. */
   private hudText(pool: Phaser.GameObjects.Text[], i: number, depth: number): Phaser.GameObjects.Text {
     let t = pool[i];
@@ -3895,6 +3920,12 @@ export class ArenaScene extends Phaser.Scene {
       this.saveBankedScrip(self.scrip);
       this.lastScrip = self.scrip;
     }
+    // §31 persist permanent-upgrade levels whenever a purchase lands (the synced levels tick up).
+    const upSig = `${self.upVitality},${self.upFortune},${self.upPower}`;
+    if (upSig !== this.lastUpgradeSig) {
+      this.saveUpgrades({ vitality: self.upVitality, fortune: self.upFortune, power: self.upPower });
+      this.lastUpgradeSig = upSig;
+    }
     this.updateShopkeeper(self, s);
     if (this.bagOpen || this.shopOpen) this.renderBagPanel(self, s);
     else if (this.bagG?.visible) this.hideBagPanel();
@@ -3953,7 +3984,8 @@ export class ArenaScene extends Phaser.Scene {
     const g = this.bagG.setVisible(true);
     g.clear();
     const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
-    const panelH = 210 * s;
+    const bandH = this.shopOpen ? 74 * s : 0; // §31 the permanent-upgrade BUY band (shop only)
+    const panelH = 210 * s + bandH;
     const px = this.screenW() / 2 - panelW / 2;
     const py = this.screenH() - 84 * s - panelH - 18 * s;
     g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
@@ -3961,17 +3993,24 @@ export class ArenaScene extends Phaser.Scene {
     const title = this.hudText(this.bagTexts, 0, 100046)
       .setText(
         this.shopOpen
-          ? "SHOP — click a weapon or a slot to SELL for scrip · F to close"
+          ? "SHOP — buy permanent upgrades (persist across runs) · click a weapon or slot to SELL · F to close"
           : "BAG — click a weapon to equip · click a slot to stash · Tab to close",
       )
       .setColor(this.shopOpen ? "#ffd479" : "#9fb0c2")
       .setPosition(px + 16 * s, py + 12 * s);
     title.setFontSize(12 * s).setOrigin(0, 0);
+    if (this.shopOpen) {
+      this.renderUpgradeBand(self, s, px, py + 34 * s, panelW);
+    } else {
+      // Bag mode: make sure the shop's upgrade band (zones + texts) is hidden so it can't intercept clicks.
+      for (const z of this.buyZones) z.setVisible(false);
+      for (let i = 20; i <= 25; i++) this.bagTexts[i]?.setVisible(false);
+    }
     const cols = 4;
     const cellW = (panelW - 32 * s) / cols;
     const cellH = 40 * s;
     const gx = px + 16 * s;
-    const gy = py + 40 * s;
+    const gy = py + 40 * s + bandH;
     for (let i = 0; i < BAG_CAP; i++) {
       const item = self.bag[i];
       const zone = (() => {
@@ -4009,10 +4048,56 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** §31 the shop's permanent-upgrade BUY band: one card per META_UPGRADE with its owned level, effect, and
+   *  next-level scrip cost. Click to buy (server-authoritative). Amber = affordable, grey = broke, dim = maxed. */
+  private renderUpgradeBand(self: PlayerState, s: number, px: number, y: number, panelW: number): void {
+    const g = this.bagG;
+    if (!g) return;
+    const n = META_UPGRADES.length;
+    const colW = (panelW - 32 * s) / n;
+    const bx = px + 16 * s;
+    const h = 62 * s;
+    const curOf = (id: string) =>
+      id === "vitality" ? self.upVitality : id === "fortune" ? self.upFortune : self.upPower;
+    for (let i = 0; i < n; i++) {
+      const u = META_UPGRADES[i]!;
+      const cur = curOf(u.id);
+      const cost = nextUpgradeCost(u.id, cur);
+      const maxed = cost === null;
+      const afford = cost !== null && self.scrip >= cost;
+      const cx = bx + i * colW;
+      const w = colW - 8 * s;
+      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, y, w, h, 6 * s);
+      g.lineStyle(1.5 * s, maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47, 0.95).strokeRoundedRect(cx, y, w, h, 6 * s);
+      const label = this.hudText(this.bagTexts, 20 + i, 100046)
+        .setText(`${u.name}  ${cur}/${u.maxLevel}\n${u.desc}`)
+        .setColor("#cfe0f0")
+        .setVisible(true)
+        .setPosition(cx + w / 2, y + 8 * s);
+      label.setFontSize(10.5 * s).setOrigin(0.5, 0).setAlign("center");
+      const costT = this.hudText(this.bagTexts, 23 + i, 100046)
+        .setText(maxed ? "MAX" : `${cost} ◈`)
+        .setColor(maxed ? "#5a6472" : afford ? "#9cff6a" : "#7a8290")
+        .setVisible(true)
+        .setPosition(cx + w / 2, y + h - 7 * s);
+      costT.setFontSize(11 * s).setOrigin(0.5, 1);
+      let z = this.buyZones[i];
+      if (!z) {
+        z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100045).setInteractive();
+        z.on("pointerdown", () => {
+          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
+        });
+        this.buyZones[i] = z;
+      }
+      z.setVisible(true).setPosition(cx + w / 2, y + h / 2).setSize(w, h);
+    }
+  }
+
   /** Hide the bag overlay + its zones/texts (panel closed). */
   private hideBagPanel(): void {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
+    for (const z of this.buyZones) z.setVisible(false);
     for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);
   }
