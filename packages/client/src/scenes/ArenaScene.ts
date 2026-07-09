@@ -1244,6 +1244,10 @@ export class ArenaScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.THREE)) this.room?.send("swapSlot", { slot: 2 });
+    } else if (this.room?.state.mode === "training") {
+      // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("galleryPage", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("galleryPage", { dir: -1 });
     } else {
       if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
@@ -3685,7 +3689,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
-          ? `${lagPrefix}⛶ TESTING GROUNDS — Tab: summon monsters · R: grab weapon (hold: salvage) · Space: jump · T to exit${who}`
+          ? `${lagPrefix}⛶ TESTING GROUNDS — Q/E: browse weapon showroom (all 300+) · R: grab · Tab: summon · Space: jump · T: exit${who}`
           : this.belt
             ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
               `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · R grab · 1/2/3 swap · Tab bag · F trade${who}`

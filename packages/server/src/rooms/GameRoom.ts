@@ -189,6 +189,7 @@ import {
   toughChance,
   type Vec2,
   validateArena,
+  EXPANSION_WEAPON_IDS,
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
@@ -778,6 +779,14 @@ export class GameRoom extends Room<ArenaState> {
       if (this.isHost(client)) this.toggleTraining();
     });
 
+    // §31 SHOWROOM paging: cycle the Testing-Grounds weapon gallery to the next/prev page. Host-only +
+    // training-only (the shared gallery is a co-op-wide view).
+    this.onMessage("galleryPage", (client, message: { dir?: number }) => {
+      if (!this.isHost(client) || this.state.mode !== "training") return;
+      this.galleryPage += (message?.dir ?? 1) < 0 ? -1 : 1;
+      this.spawnGalleryPage();
+    });
+
     // Restart the run (playtest QoL): wipe the horde, reset the clock, revive everyone fresh.
     // Host-only — co-op shares one run, so one client must not be able to reset everyone's progress.
     this.onMessage("restart", (client) => {
@@ -1052,24 +1061,11 @@ export class GameRoom extends Room<ArenaState> {
       this.state.mode = "training";
       this.state.elapsed = 0;
       this.spawnAccum = 0;
-      // Weapon pickups in a row (one per roster weapon), and dummies below them. Each placement runs
-      // through safeSpawnPos — the fixed grid ignores the procgen terrain, so on a random map a slot can
-      // land over a pit (pickup unreachable) or inside a landmark (ungrabbable: closest approach =
-      // poiRadius + PLAYER_RADIUS > PICKUP_RADIUS); the nudge lands it on the nearest clear ground.
-      WEAPON_IDS.forEach((weaponId, i) => {
-        const pk = new PickupState();
-        pk.id = `pk${i}`;
-        pk.weapon = weaponId;
-        const sp = safeSpawnPos(
-          this.map,
-          cx + (i - (WEAPON_IDS.length - 1) / 2) * 150,
-          cy - 200,
-          PICKUP_RADIUS,
-        );
-        pk.x = sp.x;
-        pk.y = sp.y;
-        this.state.pickups.set(pk.id, pk);
-      });
+      // §31 SHOWROOM: browse EVERY arted weapon (active roster + the whole +300 expansion arsenal), one
+      // PAGE at a time (Q/E cycles pages). A full 314-pickup dump tanked the client to ~2fps (314 rigs +
+      // 297 lazy art loads at once), so it's paged — GALLERY_PAGE weapons per page, laid out in a grid.
+      this.galleryPage = 0;
+      this.spawnGalleryPage();
       for (let i = 0; i < 3; i++) {
         const dummy = new EnemyState();
         dummy.id = `dummy${i}`;
@@ -1095,6 +1091,43 @@ export class GameRoom extends Room<ArenaState> {
       this.spawnAccum = 0;
     }
     console.log(`[room ${this.roomId}] mode → ${this.state.mode}`);
+  }
+
+  /** §31 the full browsable weapon roster for the Testing-Grounds SHOWROOM: the active arsenal + every
+   *  arted expansion weapon. Shown one page at a time (perf: a full dump is ~2fps). */
+  private static readonly GALLERY_ROSTER: readonly string[] = [...WEAPON_IDS, ...EXPANSION_WEAPON_IDS];
+  private static readonly GALLERY_PAGE = 42; // weapons per page (14×3 grid) — comfortably performant
+  private galleryPage = 0;
+
+  /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
+   *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only. */
+  private spawnGalleryPage(): void {
+    for (const id of [...this.state.pickups.keys()]) {
+      if (id.startsWith("pk")) this.state.pickups.delete(id);
+    }
+    const roster = GameRoom.GALLERY_ROSTER;
+    const pages = Math.max(1, Math.ceil(roster.length / GameRoom.GALLERY_PAGE));
+    this.galleryPage = ((this.galleryPage % pages) + pages) % pages;
+    const start = this.galleryPage * GameRoom.GALLERY_PAGE;
+    const slice = roster.slice(start, start + GameRoom.GALLERY_PAGE);
+    const cx = ARENA_WIDTH / 2;
+    const cy = ARENA_HEIGHT / 2;
+    const COLS = 14;
+    const GAP = 150;
+    const rows = Math.ceil(slice.length / COLS);
+    slice.forEach((weaponId, i) => {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const pk = new PickupState();
+      pk.id = `pk${i}`;
+      pk.weapon = weaponId;
+      const gx = cx + (col - (COLS - 1) / 2) * GAP;
+      const gy = cy - 200 - (rows - 1 - row) * GAP; // stack UPWARD from just above the player
+      const sp = safeSpawnPos(this.map, gx, gy, PICKUP_RADIUS);
+      pk.x = sp.x;
+      pk.y = sp.y;
+      this.state.pickups.set(pk.id, pk);
+    });
   }
 
   private restartRun(): void {
