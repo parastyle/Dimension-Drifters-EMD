@@ -234,6 +234,7 @@ describe("primitive purity + registry", () => {
         "corrosivePool",
         "dashCharge",
         "expandingRing",
+        "footfallQuake",
         "landingZone",
         "meleeCombo",
         "radialBurst",
