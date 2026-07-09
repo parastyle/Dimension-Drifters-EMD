@@ -2596,6 +2596,26 @@ export class ArenaScene extends Phaser.Scene {
     g.moveTo(near[0]!.x, near[0]!.y);
     for (const p of near) g.lineTo(p.x, p.y);
     g.strokePath();
+    // §31 PLATING DETAIL: procedural panel seams + transverse plate joints drawn INSIDE the trapezoid (no
+    // texture mask needed — approximates the deck-plating look while the Phaser-4 TileSprite-mask blocker for
+    // a real texture stands). Longitudinal seams follow the perspective (far→near interpolation); transverse
+    // joints run across the deck at a regular pitch, fading with depth.
+    const deckYAt = (i: number, f: number) => far[i]!.y + (near[i]!.y - far[i]!.y) * f;
+    g.lineStyle(2, 0x363c45, 0.55); // subtle darker seam
+    for (const f of [0.22, 0.44, 0.66, 0.86]) {
+      g.beginPath();
+      g.moveTo(far[0]!.x, deckYAt(0, f));
+      for (let i = 1; i < far.length; i++) g.lineTo(far[i]!.x, deckYAt(i, f));
+      g.strokePath();
+    }
+    for (let i = 0; i < far.length; i += 3) {
+      // a transverse plate joint every ~144px of belt, from just inside the far rail to the near lip
+      g.lineStyle(1.5, 0x363c45, 0.4);
+      g.beginPath();
+      g.moveTo(far[i]!.x, deckYAt(i, 0.08));
+      g.lineTo(near[i]!.x, deckYAt(i, 0.94));
+      g.strokePath();
+    }
     // §29 PIT GAPS — cut the void into the deck at each authored pit x-range (WYSIWYG: the hole you see is
     // the gap you fall through), edged with hazard stripes.
     for (const pit of level.pits) {
