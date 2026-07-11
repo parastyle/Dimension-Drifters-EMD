@@ -937,10 +937,24 @@ export const BOSSES: Record<string, BossDef> = {
   "world-titan": WORLD_TITAN,
 };
 
-/** The def for a boss `kind`, or `CLASSIC_BOSS` for any kind without a bespoke def (every current dimension
- *  boss). Never returns undefined. */
+/** §36 DIMENSION FINALE FIGHTS — each dimension's themed boss KIND (art + name + HP stay keyed on the kind,
+ *  §17) reuses an existing, already-tested bespoke fight so every level's capstone PLAYS differently instead
+ *  of all sharing OLD RUST (CLASSIC_BOSS). Chosen for thematic fit: the wild-west drifter is a gun-duel, the
+ *  hollow king blinks like a void assassin, the moss golem is an unchained brute, the molten brute descends
+ *  in a volcanic rage, the warden-mech keeps a machine-precise rhythm. These map by KIND, not by def.kind, so
+ *  they stay OUT of BOSS_DEF_IDS (the dev picker) — no duplicate picker rows. */
+const DIMENSION_BOSS_DEFS: Record<string, BossDef> = {
+  "old-rust": QUICKDRAW,
+  "the-hollow-king": NIHIL,
+  "moss-stone-golem": GRULL,
+  "molten-brute": VERKALN,
+  "warden-mech": METRONOME,
+};
+
+/** The def for a boss `kind`: a bespoke picker def, else its dimension-finale fight, else `CLASSIC_BOSS`
+ *  (Old Rust) as the ultimate fallback. Never returns undefined. */
 export function bossDefFor(kind: string): BossDef {
-  return BOSSES[kind] ?? CLASSIC_BOSS;
+  return BOSSES[kind] ?? DIMENSION_BOSS_DEFS[kind] ?? CLASSIC_BOSS;
 }
 
 /** Ordered list of the DEBUG-picker-spawnable boss kinds (the ones with bespoke defs) — drives the dev menu. */

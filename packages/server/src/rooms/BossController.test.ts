@@ -1,4 +1,11 @@
-import { type BossDef, EnemyState, type TgSpec, type Vec2 } from "@dd/shared";
+import {
+  type BossDef,
+  DIMENSIONS,
+  EnemyState,
+  bossDefFor,
+  type TgSpec,
+  type Vec2,
+} from "@dd/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { BossController, type BossEmitSink } from "./BossController.js";
 
@@ -326,5 +333,21 @@ describe("BossController — determinism", () => {
     };
     expect(run()).toEqual(run());
     spy.mockRestore();
+  });
+});
+
+describe("§36 dimension finale bosses — each level plays a distinct fight", () => {
+  it("every dimension's boss resolves to a bespoke def (not the CLASSIC fallback)", () => {
+    for (const dim of Object.values(DIMENSIONS)) {
+      const def = bossDefFor(dim.boss);
+      // The CLASSIC fallback is named "Old Rust"; only the wild-west drifter may map onto a def whose
+      // NAME differs from its themed kind — but none may fall through to the generic classic clone.
+      expect(def, `${dim.id} boss "${dim.boss}"`).toBeDefined();
+      expect(def.kind, `${dim.id} boss "${dim.boss}" fell back to CLASSIC`).not.toBe("classic");
+    }
+  });
+  it("maps the five dimensions onto five DISTINCT fights (no two levels share a boss)", () => {
+    const kinds = Object.values(DIMENSIONS).map((d) => bossDefFor(d.boss).kind);
+    expect(new Set(kinds).size).toBe(kinds.length);
   });
 });
