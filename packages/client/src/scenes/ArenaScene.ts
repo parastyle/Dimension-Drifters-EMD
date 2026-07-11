@@ -3324,6 +3324,17 @@ export class ArenaScene extends Phaser.Scene {
    *  can't chain 45ms crunches into ~40%-of-the-time frozen judder. */
   private static readonly FREEZE_BUDGET_MS = 250;
   private static readonly FREEZE_WINDOW_MS = 1000;
+  /** §36 element→contact-spark colour (mirrors the gun-bullet element tints in projectile-factory so a
+   *  weapon's melee sparks and its bullets read the same hue). "physical"/unknown falls through to steel. */
+  private static readonly ELEMENT_SPARK: Record<string, number> = {
+    fire: 0xff6a2a,
+    frost: 0x6fd6ff,
+    shock: 0xffe24a,
+    holy: 0xffe6a0,
+    toxic: 0x9cff3b,
+    void: 0xb14bff,
+    arcane: 0x8f6aff,
+  };
   private hitStop(ms: number, priority = false): void {
     const now = this.time.now;
     if (!priority) {
@@ -3376,15 +3387,25 @@ export class ArenaScene extends Phaser.Scene {
           let bx = rig.x - 100;
           let by = rig.y;
           let best = Number.POSITIVE_INFINITY;
-          this.blobs.forEach((b) => {
+          let nearestId = "";
+          this.blobs.forEach((b, bid) => {
             const d = (rig.x - b.x) ** 2 + (rig.y - b.y) ** 2;
             if (d < best) {
               best = d;
               bx = b.x;
               by = b.y;
+              nearestId = bid;
             }
           });
-          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit);
+          // Tint by the LOCAL weapon's element when the nearest rig is us (the client only knows its own
+          // equipped element) — a fire build sparks orange, a frost build cyan. Others/unknown → steel.
+          let tint = 0xfff2c0;
+          if (nearestId === this.room?.sessionId) {
+            const selfRow = this.room?.state.players.get(nearestId);
+            const el = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
+            tint = ArenaScene.ELEMENT_SPARK[el ?? ""] ?? 0xfff2c0;
+          }
+          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint);
           if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
           if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
           if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
@@ -3493,9 +3514,15 @@ export class ArenaScene extends Phaser.Scene {
    *  reads as steel biting. Gold + a wider/hotter fan on crits. The impact RING (spawnImpactRing) stays
    *  reserved for the big/crit crunch; this is the per-hit contact beat. Cheap (4–6 short-lived quads).
    *  (Uses Math.random — this is pure client render, not the deterministic sim.) */
-  private spawnHitSpark(x: number, y: number, dirRad: number, crit: boolean): void {
+  private spawnHitSpark(
+    x: number,
+    y: number,
+    dirRad: number,
+    crit: boolean,
+    tint = 0xfff2c0,
+  ): void {
     const ADD = Phaser.BlendModes.ADD;
-    const col = crit ? 0xffdb63 : 0xfff2c0;
+    const col = crit ? 0xffdb63 : tint; // crit gold always wins; else the weapon's element tint (steel default)
     const n = crit ? 6 : 4;
     const core = this.add
       .circle(x, y, crit ? 7 : 5, 0xffffff, 0.85)
