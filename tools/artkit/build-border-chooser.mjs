@@ -27,6 +27,18 @@ const STYLES = [
     vibe: "Thin double-line, corner ticks, one accent hairline. Restrained modern roguelite.",
     accent: "#cfd6de",
   },
+  {
+    id: "arcane",
+    name: "Arcane Runic",
+    vibe: "Carved obsidian slabs, glowing violet & cyan runes, socketed corner gems. Spellcaster tomes — Hades / Noita.",
+    accent: "#9a6aff",
+  },
+  {
+    id: "grungesteel",
+    name: "Grunge Steel",
+    vibe: "Riveted scrap plate, weld scars, hazard chevrons. Post-apoc industrial — Deep Rock / Broforce.",
+    accent: "#e08a3c",
+  },
 ];
 
 const cards = STYLES.map(
@@ -119,15 +131,15 @@ const html = `<style>
   <header>
     <p class="eyebrow">Dimension Drifters · UI</p>
     <h1>UI Border Foundry</h1>
-    <p class="sub">Four Codex-rendered panel frames, keyed and installed in the game. Each is shown wrapping a
+    <p class="sub">Six Codex-rendered panel frames, keyed and installed in the game. Each is shown wrapping a
       real weapon card so you can read it in context. Pick the one you want as the game's panel frame — tap
       <em>Use this frame</em> and it messages me your choice.</p>
   </header>
   <div class="grid">${cards}</div>
   <footer>
-    All four are already installed at <code>public/ui/border-*.png</code> (transparent, ready to 9-slice). The
+    All six are already installed at <code>public/ui/border-*.png</code> (transparent, ready to 9-slice). The
     game reads a <code>borderStyle</code> setting — say the word and I'll wire your pick onto the shop, bag, and
-    level-up panels. Arcane-runic and grunge-steel styles are queued for a re-render if you want more options.
+    level-up panels.
   </footer>
 </div>
 <script>
