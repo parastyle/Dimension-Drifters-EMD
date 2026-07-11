@@ -2405,14 +2405,21 @@ export class GameRoom extends Room<ArenaState> {
     e.id = `e${this.enemySeq++}`;
     e.kind = kindId;
     e.hp = kind.hp * enemyHpScale(players) * depthHpScale(this.state.depth);
-    const sp = safeSpawnPos(
-      this.map,
-      clamp(x, kind.radius, ARENA_WIDTH - kind.radius),
-      clamp(y, kind.radius, ARENA_HEIGHT - kind.radius),
-      kind.radius,
-    );
-    e.x = sp.x;
-    e.y = sp.y;
+    // §36 belt: a boss's summoned adds must land ON the deck (the telegraphed spot may be off the depth band
+    // now that arena bosses run belt finales) — mirror the trash-spawn clamp. Arena keeps map-safe placement.
+    if (this.belt && this.beltLevel) {
+      e.x = clamp(x, kind.radius, this.beltLevel.length - kind.radius);
+      e.y = clampBeltFloorY(this.beltLevel, e.x, y, kind.radius);
+    } else {
+      const sp = safeSpawnPos(
+        this.map,
+        clamp(x, kind.radius, ARENA_WIDTH - kind.radius),
+        clamp(y, kind.radius, ARENA_HEIGHT - kind.radius),
+        kind.radius,
+      );
+      e.x = sp.x;
+      e.y = sp.y;
+    }
     this.state.enemies.set(e.id, e);
     this.bossAddIds.add(e.id);
   }

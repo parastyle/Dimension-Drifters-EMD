@@ -1810,6 +1810,20 @@ describe("GameRoom — §36 belt boss stays on the deck", () => {
     expect(boss.x).toBe(1234);
     expect(boss.y).toBe(5678);
   });
+  it("summoned boss ADDS land on the deck band (a telegraphed spot off the band is pulled in)", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    const level = h.room.beltLevel;
+    const kindId = getDimension(h.state().dimensionId).roster[0]; // a real trash kind for this dimension
+    h.room.spawnBossAddAt(kindId, 3000, -50_000); // telegraphed WAY above the deck
+    const add = [...h.state().enemies.values()].find((e: EnemyState) => e.kind === kindId);
+    expect(add, `${kindId} add spawned`).toBeTruthy();
+    const r = ENEMY_KINDS[kindId].radius;
+    expect(add.y).toBe(clampBeltFloorY(level, add.x, -50_000, r));
+    expect(add.y).toBeGreaterThanOrEqual(BELT_Y0);
+    expect(add.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
+    expect(add.x).toBeLessThanOrEqual(level.length - r);
+  });
 });
 
 // ── §36 every dimension's finale boss must be a REGISTERED kind AND run its (bespoke) fight in belt mode
