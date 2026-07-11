@@ -5,6 +5,7 @@
 // Each play spins up a pooled "surface" (a container + additive graphics + pooled emitters) at the
 // strike point, oriented to the aim, and drives the suite over one 0→1 sweep (swing trail → impact
 // burst → painted hero), then releases the surface. Weapons with no authored suite get a default slash.
+import { WEAPONS, type WeaponDef } from "@dd/shared";
 import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
@@ -14,17 +15,14 @@ import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
 const DEG = Math.PI / 180;
 const DURATION = 470; // ms — one swing's VFX window (matches the smith's IMPACT+VFX_DUR feel)
 
-// Fallback for melee weapons with no authored suite: a clean engine slash + afterglow (still the shared
-// renderer, so even un-authored swords read better than the old flat crescent).
-const DEFAULT_MELEE: WeaponVfx["suite"] = {
-  "slash-arc": { on: true, params: { reach: 1, width: 6, color: 0.55 } },
-  "edge-trail": { on: true, params: { reach: 1.1, color: 0.55, len: 1 } },
-};
-
-// §35 ELEMENT-DRIVEN default VFX: the +300 expansion weapons carry no authored suite, so an un-authored
-// swing would look identical across all of them. Instead, tint the slash to the weapon's ELEMENT and add a
-// matching flourish (fire embers, shock arcs, holy sigils, void rings…) so every one reads unique + "cool"
-// with zero per-weapon authoring. Hue feeds the renderer's lerpHue (0 red → spectrum).
+// §35/§36 ELEMENT + ARCHETYPE-DRIVEN fallback VFX: the +300 expansion weapons carry no authored suite, so an
+// un-authored swing would otherwise look identical across all of them. Instead we synthesize a suite that
+// reflects BOTH the weapon's ELEMENT (hue + a matching flourish — fire embers, shock arcs, holy sigils…) AND
+// its physical ARCHETYPE (a rapier/spear THRUSTS, a greatsword CLEAVES with a shockwave, a dual-grip does an
+// X twin-slash, a light blade leaves speed-lines) — so every one of the 300 reads unique with zero per-weapon
+// authoring. It composes the SAME authored layers the Weaponsmith exposes, so it stays WYSIWYG. Hue (0 red →
+// spectrum) feeds the renderer's lerpHue.
+type Suite = WeaponVfx["suite"];
 const ELEMENT_HUE: Record<string, number> = {
   physical: 0.55,
   fire: 0.03,
@@ -35,49 +33,108 @@ const ELEMENT_HUE: Record<string, number> = {
   void: 0.8,
   arcane: 0.72,
 };
-function buildElementSuite(element: string): WeaponVfx["suite"] {
-  const h = ELEMENT_HUE[element] ?? 0.55;
-  const suite: WeaponVfx["suite"] = {
-    "slash-arc": { on: true, params: { reach: 1, width: 6, color: h } },
-    "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
-  };
+
+/** The element FLOURISH (motion-agnostic sparks/rings/embers) overlaid on top of whatever swing SHAPE the
+ *  archetype picked — this is the layer that says "fire" / "holy" / "void" regardless of the weapon's shape. */
+function elementFlourish(element: string, h: number): Suite {
   switch (element) {
     case "fire":
-      suite["ember-rain"] = { on: true, params: { count: 14, color: h } };
-      suite["impact-flash"] = { on: true, params: { intensity: 0.6 } };
-      break;
+      return {
+        "ember-rain": { on: true, params: { count: 14, color: h } },
+        "impact-flash": { on: true, params: { intensity: 0.6 } },
+      };
     case "shock":
-      suite["arc-bolt"] = { on: true, params: { color: h } };
-      suite["shockwave-ring"] = { on: true, params: { color: h, rings: 2 } };
-      break;
+      return {
+        "arc-bolt": { on: true, params: { color: h } },
+        "shockwave-ring": { on: true, params: { color: h } },
+      };
     case "frost":
-      suite["hit-spark"] = { on: true, params: { count: 16, color: h } };
-      suite["impact-flash"] = { on: true, params: { intensity: 0.5 } };
-      break;
+      return {
+        "hit-spark": { on: true, params: { count: 16, color: h } },
+        "impact-flash": { on: true, params: { intensity: 0.5 } },
+      };
     case "holy":
-      suite["sigil-ring"] = { on: true, params: { color: h, size: 1 } };
-      suite["impact-flash"] = { on: true, params: { intensity: 0.65 } };
-      break;
+      return {
+        "sigil-ring": { on: true, params: { color: h, size: 1 } },
+        "impact-flash": { on: true, params: { intensity: 0.65 } },
+      };
     case "toxic":
-      suite["ember-rain"] = { on: true, params: { count: 12, color: h } };
-      suite["hit-spark"] = { on: true, params: { count: 10, color: h } };
-      break;
+      return {
+        "ember-rain": { on: true, params: { count: 12, color: h } },
+        "hit-spark": { on: true, params: { count: 10, color: h } },
+      };
     case "void":
-      suite["shockwave-ring"] = { on: true, params: { color: h, rings: 3 } };
-      suite["sigil-ring"] = { on: true, params: { color: h, size: 1.1 } };
-      break;
+      return {
+        "shockwave-ring": { on: true, params: { color: h } },
+        "sigil-ring": { on: true, params: { color: h, size: 1.1 } },
+      };
     case "arcane":
-      suite["sigil-ring"] = { on: true, params: { color: h, size: 1.2 } };
-      suite["arc-bolt"] = { on: true, params: { color: h } };
-      break;
-    // physical → just the steel-tinted slash (no elemental flourish)
+      return {
+        "sigil-ring": { on: true, params: { color: h, size: 1.2 } },
+        "arc-bolt": { on: true, params: { color: h } },
+      };
+    default:
+      return {}; // physical → the steel swing shape carries it, no elemental overlay
   }
-  return suite;
 }
-/** Precomputed per-element fallback suites (built once). */
-const ELEMENT_SUITES: Record<string, WeaponVfx["suite"]> = Object.fromEntries(
-  Object.keys(ELEMENT_HUE).map((e) => [e, buildElementSuite(e)]),
-);
+
+/** Build a weapon's fallback suite from its element + physical archetype (grip/size/rangeBand/family). */
+function buildWeaponSuite(element: string, tags?: WeaponDef["tags"]): Suite {
+  const h = ELEMENT_HUE[element] ?? 0.55;
+  const heavy = tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL");
+  // Only a "long" reach band is a true polearm/spear/whip THRUST; "mid" is an ordinary sword (→ default arc).
+  const reachy = tags?.rangeBand === "long";
+  const dual = tags?.grip === "dual";
+  const fast = tags?.size === "S"; // daggers / knives / light blades → snappy speed-lines
+  const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test((tags?.family ?? "").toLowerCase());
+  let base: Suite;
+  if (dual) {
+    // twin blades → an X twin-slash
+    base = {
+      "twin-slash": { on: true, params: { reach: 1, color: h } },
+      "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
+    };
+  } else if (reachy) {
+    // spear / polearm / whip → a long forward THRUST streak
+    base = {
+      "thrust-streak": { on: true, params: { reach: 1.35, color: h } },
+      "edge-trail": { on: true, params: { reach: 1.3, color: h, len: 1.3 } },
+    };
+  } else if (heavy) {
+    // greatsword / maul → a WIDE cleave with a ground shockwave
+    base = {
+      "slash-arc": { on: true, params: { reach: 1.2, width: 10, color: h } },
+      "cleave-flash": { on: true, params: { intensity: 0.85 } },
+      "shockwave-ring": { on: true, params: { color: h } },
+    };
+  } else if (fast) {
+    // dagger / light blade → a crisp crescent + speed-line blade-trail
+    base = {
+      "slash-arc": { on: true, params: { reach: 0.95, width: 5, color: h } },
+      "blade-trail": { on: true, params: { reach: 1, color: h, lines: 4 } },
+    };
+  } else {
+    // ordinary sword (the proven crescent + afterglow) — the safe default for everything unclassified
+    base = {
+      "slash-arc": { on: true, params: { reach: 1, width: 6, color: h } },
+      "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
+    };
+  }
+  if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } }; // plasma/laser glow pop
+  return { ...base, ...elementFlourish(element, h) };
+}
+
+/** Memoized per-weapon fallback suites (built once per weapon id; element-only if the id is unknown). */
+const FALLBACK_CACHE = new Map<string, Suite>();
+function fallbackSuiteFor(weaponId: string, element: string): Suite {
+  const key = weaponId || `el:${element}`;
+  let s = FALLBACK_CACHE.get(key);
+  if (!s) {
+    s = buildWeaponSuite(element, WEAPONS[weaponId]?.tags);
+    FALLBACK_CACHE.set(key, s);
+  }
+  return s;
+}
 
 interface Surface {
   container: Phaser.GameObjects.Container;
@@ -188,12 +245,12 @@ export class VfxPlayer {
     const surf = this.acquire();
     surf.busy = true;
     const S = surf.S;
-    // Authored suite wins; else an ELEMENT-tinted fallback (§35) so every un-authored expansion weapon reads
-    // unique by its element; else the plain steel slash.
+    // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
+    // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
     S.suite =
       vfx?.suite && Object.keys(vfx.suite).length > 0
         ? vfx.suite
-        : (ELEMENT_SUITES[element] ?? DEFAULT_MELEE);
+        : fallbackSuiteFor(weaponId, element);
     S.fired = {};
     S.R = vfx?.vfxRadius ?? radius; // authored fixed size wins
     S.heroEnabled = true;
