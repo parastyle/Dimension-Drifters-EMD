@@ -270,11 +270,44 @@ export const NEON_UNDERGRID: BeltLevel = {
   shopX: 1850,
 };
 
+/** §36 ASHLAND FORGE — a live volcanic foundry. Lava-gap pits, the cinder roster, the Molten Brute (Ver'Kaln
+ *  the Descending). Tight pour-line catwalk in the middle, an open crucible at the end. */
+export const ASHLAND_FORGE: BeltLevel = {
+  id: "ashland-forge",
+  name: "Ashland Forge",
+  dimensionId: "ashlands",
+  blurb: "Cross a live foundry. Leap the lava gaps — the cinder-born wade them, you won't. Ver'Kaln waits at the pour.",
+  length: ARENA_WIDTH,
+  floor: [
+    { x: 0, yMin: 56, yMax: DEPTH_MAX - 56 },
+    { x: 1650, yMin: 56, yMax: DEPTH_MAX - 56 }, // foundry floor
+    { x: 2150, yMin: 230, yMax: DEPTH_MAX - 230 }, // pinch → the pour-line catwalk
+    { x: 3100, yMin: 230, yMax: DEPTH_MAX - 230 },
+    { x: 3600, yMin: 46, yMax: DEPTH_MAX - 46 }, // open → the crucible
+    { x: ARENA_WIDTH, yMin: 46, yMax: DEPTH_MAX - 46 },
+  ],
+  pits: [
+    { x0: 1000, x1: 1110 },
+    { x0: 1400, x1: 1510 },
+    { x0: 3750, x1: 3862 },
+    { x0: 4150, x1: 4260 },
+  ],
+  obstacles: [],
+  rooms: [
+    { gateX: 1700, wave: 5, name: "Foundry Floor" },
+    { gateX: 3100, wave: 6, name: "The Pour-Line" },
+    { gateX: 3600, wave: 7, name: "Crucible Gate" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Crucible" },
+  ],
+  shopX: 1880,
+};
+
 export const BELT_LEVELS: Record<string, BeltLevel> = {
   "sky-carrier": SKY_CARRIER,
   "frost-chasm": FROST_CHASM,
   "verdant-ruin": VERDANT_RUIN,
   "neon-undergrid": NEON_UNDERGRID,
+  "ashland-forge": ASHLAND_FORGE,
 };
 
 /** §36 the belt level ids in menu order — drives the level-select. */

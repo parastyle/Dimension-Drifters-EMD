@@ -1,4 +1,5 @@
 import {
+  BELT_LEVEL_IDS,
   beltLevelFor,
   beltPitAtX,
   BELT_Y0,
@@ -1841,6 +1842,24 @@ describe("GameRoom — §36 dimension finale bosses run in belt mode", () => {
       expect(boss, `${dim.boss} is a registered boss kind`).toBeTruthy();
       expect(boss.kind).toBe(dim.boss); // the override was accepted (not silently defaulted)
       expect(() => h.tick(60, 50)).not.toThrow(); // 3s of the fight's primitives, on the deck
+    });
+  }
+});
+
+// ── §36 every belt level must resolve to a REAL dimension whose finale boss is a registered kind (a typo'd
+// dimensionId silently falls back to wild-west; an unregistered boss kind spawns nothing). ──
+describe("GameRoom — §36 belt levels are well-formed", () => {
+  for (const id of BELT_LEVEL_IDS) {
+    it(`${id}: real dimension + a registered boss finale`, () => {
+      const level = beltLevelFor(id);
+      expect(level.id).toBe(id);
+      const dim = getDimension(level.dimensionId);
+      expect(dim.id, `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`).toBe(
+        level.dimensionId,
+      );
+      expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("boss");
+      expect(level.rooms.some((r) => r.boss)).toBe(true); // has a boss finale room
+      expect(level.rooms.length).toBeGreaterThanOrEqual(2);
     });
   }
 });
