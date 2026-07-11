@@ -42,6 +42,9 @@ export interface BeltRoom {
   gateX: number;
   wave: number;
   boss?: boolean;
+  /** §36 the boss KIND this finale room spawns (an ENEMY_KINDS boss id). Omitted → the level's dimension
+   *  boss. Lets each level end on a different capstone (the Sky Carrier ends on the colossus world-titan). */
+  bossKind?: string;
   /** Label for the "ROOM: …" banner. */
   name: string;
 }
@@ -49,6 +52,11 @@ export interface BeltRoom {
 export interface BeltLevel {
   id: string;
   name: string;
+  /** §36 the DIMENSION this level scopes — its enemy roster (spawnBeltWave), palette + default boss. Each
+   *  belt level is themed by a dimension so the four levels feel distinct (frost mobs vs cyber mobs …). */
+  dimensionId: string;
+  /** One-line flavour for the level-select card. */
+  blurb?: string;
   /** Belt length in world px (the playable x extent). */
   length: number;
   /** Floor profile, sorted by `x`. */
@@ -140,6 +148,8 @@ export function resolveBeltObstacles(
 export const SKY_CARRIER: BeltLevel = {
   id: "sky-carrier",
   name: "Sky Carrier",
+  dimensionId: "wild-west",
+  blurb: "Board a flying dreadnought. Fight up the flight deck to the bridge — and the World-Tread.",
   length: ARENA_WIDTH,
   floor: [
     { x: 0, yMin: 44, yMax: DEPTH_MAX - 44 },
@@ -163,14 +173,112 @@ export const SKY_CARRIER: BeltLevel = {
     { gateX: 1900, wave: 4, name: "Flight Deck" },
     { gateX: 3150, wave: 5, name: "The Catwalk" },
     { gateX: 3750, wave: 6, name: "Arena Mouth" },
-    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Bridge" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, bossKind: "world-titan", name: "The Bridge" },
   ],
   // Vendor at the mouth of the Catwalk (just past the first gate) — you reach them with loot from the
   // Flight Deck fight, and can always backtrack to sell. On clear deck (clear of the 1560–1670 pit).
   shopX: 2050,
 };
 
-export const BELT_LEVELS: Record<string, BeltLevel> = { "sky-carrier": SKY_CARRIER };
+/** §36 FROSTFELL DESCENT — a glacier chasm. Narrow crevasse pinches, more pits, frost roster, Hollow King. */
+export const FROST_CHASM: BeltLevel = {
+  id: "frost-chasm",
+  name: "Frostfell Descent",
+  dimensionId: "frostfell",
+  blurb: "Cross a shattered glacier. Mind the crevasses — a running jump clears them, the frostbitten can't.",
+  length: ARENA_WIDTH,
+  floor: [
+    { x: 0, yMin: 60, yMax: DEPTH_MAX - 60 },
+    { x: 1500, yMin: 60, yMax: DEPTH_MAX - 60 }, // wide shelf
+    { x: 2000, yMin: 240, yMax: DEPTH_MAX - 240 }, // pinch → the crevasse
+    { x: 2900, yMin: 240, yMax: DEPTH_MAX - 240 },
+    { x: 3400, yMin: 50, yMax: DEPTH_MAX - 50 }, // open → the throne
+    { x: ARENA_WIDTH, yMin: 50, yMax: DEPTH_MAX - 50 },
+  ],
+  pits: [
+    { x0: 900, x1: 1010 },
+    { x0: 1300, x1: 1410 },
+    { x0: 3600, x1: 3712 },
+    { x0: 4000, x1: 4110 },
+  ],
+  obstacles: [],
+  rooms: [
+    { gateX: 1600, wave: 4, name: "Glacier Shelf" },
+    { gateX: 2900, wave: 5, name: "The Crevasse" },
+    { gateX: 3400, wave: 6, name: "Frost Gate" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Hollow Throne" },
+  ],
+  shopX: 1780,
+};
+
+/** §36 VERDANT OVERGROWTH — a sunken ruin swallowed by jungle. Root-choked, few pits, verdant roster. */
+export const VERDANT_RUIN: BeltLevel = {
+  id: "verdant-ruin",
+  name: "Verdant Overgrowth",
+  dimensionId: "verdant-ruins",
+  blurb: "Push through a ruin the jungle reclaimed. Vine-lashers swarm the root halls to the Moss-Stone Golem.",
+  length: ARENA_WIDTH,
+  floor: [
+    { x: 0, yMin: 50, yMax: DEPTH_MAX - 50 },
+    { x: 1700, yMin: 120, yMax: DEPTH_MAX - 120 },
+    { x: 2600, yMin: 120, yMax: DEPTH_MAX - 120 }, // root corridor
+    { x: 3300, yMin: 200, yMax: DEPTH_MAX - 60 }, // canted floor → ruin mouth
+    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
+  ],
+  pits: [
+    { x0: 2050, x1: 2160 },
+    { x0: 3050, x1: 3160 },
+  ],
+  obstacles: [],
+  rooms: [
+    { gateX: 1800, wave: 5, name: "Root Hall" },
+    { gateX: 2900, wave: 6, name: "Canopy Walk" },
+    { gateX: 3600, wave: 6, name: "Ruin Mouth" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Heart-Stone" },
+  ],
+  shopX: 1980,
+};
+
+/** §36 NEON UNDERGRID — a cyber sublevel. Long clean sightlines, catwalk pits over the void, cyber roster. */
+export const NEON_UNDERGRID: BeltLevel = {
+  id: "neon-undergrid",
+  name: "Neon Undergrid",
+  dimensionId: "neon-cyber",
+  blurb: "Descend a server sublevel. Ranged synth-mobs hold the conduits down to the Warden's reactor core.",
+  length: ARENA_WIDTH,
+  floor: [
+    { x: 0, yMin: 70, yMax: DEPTH_MAX - 70 },
+    { x: 1600, yMin: 70, yMax: DEPTH_MAX - 70 }, // server farm
+    { x: 2100, yMin: 260, yMax: DEPTH_MAX - 260 }, // data conduit (tight)
+    { x: 3400, yMin: 260, yMax: DEPTH_MAX - 260 },
+    { x: 3800, yMin: 40, yMax: DEPTH_MAX - 40 }, // reactor floor
+    { x: ARENA_WIDTH, yMin: 40, yMax: DEPTH_MAX - 40 },
+  ],
+  pits: [
+    { x0: 1150, x1: 1260 },
+    { x0: 2500, x1: 2610 },
+    { x0: 3000, x1: 3110 },
+    { x0: 4180, x1: 4290 },
+  ],
+  obstacles: [],
+  rooms: [
+    { gateX: 1700, wave: 5, name: "Server Farm" },
+    { gateX: 3400, wave: 6, name: "Data Conduit" },
+    { gateX: 3800, wave: 7, name: "Reactor Gate" },
+    { gateX: ARENA_WIDTH, wave: 0, boss: true, name: "The Core" },
+  ],
+  shopX: 1850,
+};
+
+export const BELT_LEVELS: Record<string, BeltLevel> = {
+  "sky-carrier": SKY_CARRIER,
+  "frost-chasm": FROST_CHASM,
+  "verdant-ruin": VERDANT_RUIN,
+  "neon-undergrid": NEON_UNDERGRID,
+};
+
+/** §36 the belt level ids in menu order — drives the level-select. */
+export const BELT_LEVEL_IDS: readonly string[] = Object.keys(BELT_LEVELS);
 
 /** The belt level for an id, defaulting to Sky Carrier. Never undefined. */
 export function beltLevelFor(id: string): BeltLevel {

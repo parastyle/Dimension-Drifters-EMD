@@ -434,16 +434,25 @@ export class GameRoom extends Room<ArenaState> {
     return this.hostId === null || client.sessionId === this.hostId;
   }
 
-  override onCreate(options?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }): void {
+  override onCreate(options?: {
+    dimensionId?: string;
+    bossRush?: boolean;
+    belt?: boolean;
+    beltLevel?: string;
+  }): void {
     this.setState(new ArenaState());
     this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, authored deck + collision)
-    this.beltLevel = this.belt ? beltLevelFor("sky-carrier") : null;
+    // §36 the SELECTED belt level (menu level-select). Each level scopes its own dimension (roster/palette),
+    // so no two selections are the same run. Unknown id → Sky Carrier.
+    this.beltLevel = this.belt ? beltLevelFor(options?.beltLevel ?? "sky-carrier") : null;
     this.state.beltShopX = this.beltLevel?.shopX ?? 0; // §29 sync the shopkeeper's world-x (0 = no vendor)
 
-    // §17 the run's DIMENSION — picked at the menu and passed as a join option. `getDimension` resolves an
+    // §17 the run's DIMENSION — a belt level fixes its own; else the menu pick. `getDimension` resolves an
     // unknown/missing id back to Wild West, so a stale client can't desync the roster/boss/palette. The id
     // syncs on ArenaState so the client reproduces the matching palette + asset set.
-    this.state.dimensionId = getDimension(options?.dimensionId).id;
+    this.state.dimensionId = this.beltLevel
+      ? getDimension(this.beltLevel.dimensionId).id
+      : getDimension(options?.dimensionId).id;
     this.homeDimension = this.state.dimensionId; // restarts return HERE, not wherever the chain died
 
     // §16 v0.116 BOSS RUSH — a chained gauntlet of every bespoke boss. Set the mode + arm the first boss with
@@ -3409,7 +3418,9 @@ export class GameRoom extends Room<ArenaState> {
         this.state.beltLockX = room.gateX;
         this.state.beltRoomName = room.name;
         if (room.boss)
-          this.spawnBoss("world-titan"); // §33 the Bridge finale IS the colossus — jump/parry his footsteps
+          // §36 the finale boss: the room's authored kind (Sky Carrier → the colossus), else the level's
+          // dimension boss — so each level ends on its own capstone.
+          this.spawnBoss(room.bossKind ?? getDimension(this.state.dimensionId).boss);
         else this.spawnBeltWave(room.wave, prevGate, room.gateX);
       }
     } else if (this.beltPhase === "fight") {

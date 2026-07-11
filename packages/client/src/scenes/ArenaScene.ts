@@ -445,14 +445,20 @@ export class ArenaScene extends Phaser.Scene {
    *  the room as a join option — only the room CREATOR's pick takes effect; joiners inherit the host's
    *  synced `dimensionId`. Defaults to Wild West when the arena is launched directly (no menu). */
   private selectedDimension: string = DEFAULT_DIMENSION;
+  /** §36 the belt level chosen at the menu (level-select). Threaded to the server + used for prediction. */
+  private selectedBeltLevel = "sky-carrier";
   /** §16 v0.116 the menu launched BOSS RUSH — forwarded as a join option (only the room CREATOR's flag
    *  takes effect; joiners inherit the host's synced `mode`). */
   private bossRush = false;
 
-  init(data?: { dimensionId?: string; bossRush?: boolean; belt?: boolean }): void {
+  init(data?: { dimensionId?: string; bossRush?: boolean; belt?: boolean; beltLevel?: string }): void {
     if (data?.dimensionId) this.selectedDimension = data.dimensionId;
     this.bossRush = data?.bossRush ?? false;
     if (data?.belt) this.belt = true; // §29 menu belt-launch (URL `?belt=1` is the other trigger)
+    // §36 the SELECTED belt level (menu level-select). URL `?belt=<id>` also picks it.
+    const urlLevel = new URLSearchParams(location.search).get("belt");
+    this.selectedBeltLevel =
+      data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : this.selectedBeltLevel);
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -1034,7 +1040,7 @@ export class ArenaScene extends Phaser.Scene {
     if (this.belt) {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
       // hand the level to the predictor (no POI map) so local collision matches the server exactly.
-      this.beltLevel = beltLevelFor("sky-carrier");
+      this.beltLevel = beltLevelFor(this.selectedBeltLevel);
       this.buildBeltFloor();
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
@@ -1114,6 +1120,7 @@ export class ArenaScene extends Phaser.Scene {
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
+          beltLevel: this.belt ? this.selectedBeltLevel : undefined, // §36 which belt level to load
           scrip: this.belt ? this.loadBankedScrip() : 0, // §29 restore the player's persisted meta-scrip
           up: this.belt ? this.loadUpgrades() : undefined, // §31 restore permanent upgrade levels
         });
@@ -2515,6 +2522,20 @@ export class ArenaScene extends Phaser.Scene {
     return BELT_Y0 + (worldY - BELT_Y0) * BELT_FORESHORTEN;
   }
 
+  /** §36 per-level belt palette (sky bg + vector-deck fill), keyed by the level's dimension so the four
+   *  levels read distinct without per-level art. Sky Carrier keeps its Codex backdrop on top of this. */
+  private beltTheme(): { sky: number; deck: number } {
+    const dim = (this.beltLevel ?? beltLevelFor(this.selectedBeltLevel)).dimensionId;
+    const map: Record<string, { sky: number; deck: number }> = {
+      "wild-west": { sky: 0x79bce9, deck: 0x454c56 },
+      frostfell: { sky: 0x9fc4e0, deck: 0x4a5560 },
+      "verdant-ruins": { sky: 0x2f4a34, deck: 0x3f4a3a },
+      ashlands: { sky: 0x3a2622, deck: 0x4a3a32 },
+      "neon-cyber": { sky: 0x141220, deck: 0x2a2f3c },
+    };
+    return map[dim] ?? map["wild-west"]!;
+  }
+
   /** §29 draw the belt DECK from the authored floor PROFILE — the walkable shape follows the exact
    *  near/far collision edges (WYSIWYG: the railing you see is the edge you can't cross). Plus obstacles as
    *  depth-sorted props + a sky. Everything world-space so it scrolls with the belt; depth below the actors. */
@@ -2564,22 +2585,24 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private buildBeltFloor(): void {
-    this.cameras.main.setBackgroundColor("#79bce9"); // sky (fallback behind the backdrop)
-    // §29 Codex sky-carrier backdrop — pinned + resized to the viewport each frame (beltCamera). Its sky +
-    // ship show ABOVE the opaque vector deck (which stays the collision-accurate walkable surface below).
-    if (this.textures.exists("belt-sky")) {
+    const theme = this.beltTheme();
+    this.cameras.main.setBackgroundColor(theme.sky); // §36 dimension-themed sky (behind any backdrop)
+    // §29/§36 Codex sky-carrier backdrop + drifting clouds are the SKY-CARRIER look; other levels get a
+    // dimension-palette sky + vector deck (themed, no per-level art needed yet).
+    const skyCarrier = this.selectedBeltLevel === "sky-carrier";
+    if (skyCarrier && this.textures.exists("belt-sky")) {
       this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
       this.floorObjs.push(this.beltBackdrop);
+      // §29 parallax cloud band drifting across the upper sky (procedural, transparent → no art dependency).
+      this.ensureCloudTexture();
+      this.beltClouds = this.add
+        .tileSprite(0, 0, 1, 1, "belt-clouds")
+        .setOrigin(0, 0)
+        .setDepth(-190)
+        .setAlpha(0.32);
+      this.floorObjs.push(this.beltClouds);
     }
-    // §29 parallax cloud band drifting across the upper sky (procedural, transparent → no art dependency).
-    this.ensureCloudTexture();
-    this.beltClouds = this.add
-      .tileSprite(0, 0, 1, 1, "belt-clouds")
-      .setOrigin(0, 0)
-      .setDepth(-190)
-      .setAlpha(0.32);
-    this.floorObjs.push(this.beltClouds);
-    const level = this.beltLevel ?? beltLevelFor("sky-carrier");
+    const level = this.beltLevel ?? beltLevelFor(this.selectedBeltLevel);
     const w = level.length;
     // Sample the near/far edges across the belt and build the deck polygon in projected (screen-plane) space.
     const step = 48;
@@ -2606,7 +2629,7 @@ export class ArenaScene extends Phaser.Scene {
     // needs a Phaser-4 geometry mask, and Phaser 4's setMask doesn't bind a GeometryMask2 to a TileSprite the
     // way Phaser 3 did — a real blocker to solve before the texture can replace this without spilling into the
     // sky at the catwalk. The vector deck + the Codex sky backdrop already read well.)
-    g.fillStyle(0x454c56, 1);
+    g.fillStyle(theme.deck, 1); // §36 dimension-themed deck fill
     deckPoly(g);
     g.fillPath();
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
