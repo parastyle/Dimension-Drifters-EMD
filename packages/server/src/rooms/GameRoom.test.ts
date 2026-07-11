@@ -2,6 +2,7 @@ import {
   beltLevelFor,
   beltPitAtX,
   BELT_Y0,
+  clampBeltFloorY,
   CRIT_MULT,
   critChanceFor,
   DEFAULT_WEAPON,
@@ -1777,6 +1778,36 @@ describe("GameRoom — §33 footfall quake", () => {
     c.invuln = 0;
     h.room.applyBossQuake(1000, 1000, 300, 30, 500);
     expect(p.hp).toBe(100);
+  });
+});
+
+// ── §36 belt bosses (bespoke arena fights now run belt finales) must stay ON the deck when they reposition. ──
+describe("GameRoom — §36 belt boss stays on the deck", () => {
+  it("moveBoss clamps a repositioning boss to the level length + floor band", () => {
+    const h = makeRoom({ belt: true });
+    h.join("p1");
+    h.room.spawnBoss(); // belt path lands it on the deck
+    const boss = h.room.bossId ? h.state().enemies.get(h.room.bossId) : undefined;
+    expect(boss).toBeTruthy();
+    const level = h.room.beltLevel;
+    const r = ENEMY_KINDS[boss.kind]?.radius ?? 40;
+    // A blink/charge primitive drives moveBoss WAY off the deck: past the level, far below the depth band.
+    h.room.bossSink.moveBoss(9_999_999, -9_999_999);
+    expect(boss.x).toBeGreaterThanOrEqual(r);
+    expect(boss.x).toBeLessThanOrEqual(level.length - r);
+    expect(boss.y).toBe(clampBeltFloorY(level, boss.x, -9_999_999, r)); // pulled onto the floor band
+    expect(boss.y).toBeGreaterThanOrEqual(BELT_Y0);
+    expect(boss.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
+  });
+  it("in the top-down arena moveBoss is unclamped (exact passthrough)", () => {
+    const h = makeRoom(); // non-belt
+    h.join("p1");
+    h.room.spawnBoss();
+    const boss = h.room.bossId ? h.state().enemies.get(h.room.bossId) : undefined;
+    expect(boss).toBeTruthy();
+    h.room.bossSink.moveBoss(1234, 5678);
+    expect(boss.x).toBe(1234);
+    expect(boss.y).toBe(5678);
   });
 });
 

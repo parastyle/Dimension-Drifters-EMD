@@ -2221,8 +2221,17 @@ export class GameRoom extends Room<ArenaState> {
         moveBoss: (x, y) => {
           const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
           if (boss) {
-            boss.x = x;
-            boss.y = y;
+            // §36 belt: keep a REPOSITIONING boss on the deck. Bespoke arena bosses now run belt finales, and
+            // some (Nihil's blink, Grull's charge) drive moveBoss — un-clamped they'd leave the depth band or
+            // float over a pit. Clamp x to the level and y to the floor band (no-op in top-down arena).
+            if (this.belt && this.beltLevel) {
+              const r = ENEMY_KINDS[boss.kind]?.radius ?? 40;
+              boss.x = clamp(x, r, this.beltLevel.length - r);
+              boss.y = clampBeltFloorY(this.beltLevel, boss.x, y, r);
+            } else {
+              boss.x = x;
+              boss.y = y;
+            }
           }
         },
         hostileProjectiles: () => {
