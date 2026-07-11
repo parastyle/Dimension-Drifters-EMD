@@ -1815,10 +1815,11 @@ describe("GameRoom — §36 belt boss stays on the deck", () => {
     h.join("p1");
     const level = h.room.beltLevel;
     const kindId = getDimension(h.state().dimensionId).roster[0]; // a real trash kind for this dimension
+    if (!kindId) throw new Error("dimension roster is empty");
     h.room.spawnBossAddAt(kindId, 3000, -50_000); // telegraphed WAY above the deck
     const add = [...h.state().enemies.values()].find((e: EnemyState) => e.kind === kindId);
     expect(add, `${kindId} add spawned`).toBeTruthy();
-    const r = ENEMY_KINDS[kindId].radius;
+    const r = ENEMY_KINDS[kindId]?.radius ?? 40;
     expect(add.y).toBe(clampBeltFloorY(level, add.x, -50_000, r));
     expect(add.y).toBeGreaterThanOrEqual(BELT_Y0);
     expect(add.y).toBeLessThanOrEqual(BELT_Y0 + DEPTH_MAX);
