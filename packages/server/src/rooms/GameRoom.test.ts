@@ -7,6 +7,7 @@ import {
   critChanceFor,
   DEFAULT_WEAPON,
   DEPTH_MAX,
+  DIMENSIONS,
   DROP_POOL,
   DUMMY_HP,
   ENEMY_KINDS,
@@ -1809,6 +1810,24 @@ describe("GameRoom — §36 belt boss stays on the deck", () => {
     expect(boss.x).toBe(1234);
     expect(boss.y).toBe(5678);
   });
+});
+
+// ── §36 every dimension's finale boss must be a REGISTERED kind AND run its (bespoke) fight in belt mode
+// without throwing — the primitives (dashes/fans/telegraphs) were authored for the arena, so this pins that
+// they survive on the deck. ──
+describe("GameRoom — §36 dimension finale bosses run in belt mode", () => {
+  for (const dim of Object.values(DIMENSIONS)) {
+    it(`${dim.id}: boss "${dim.boss}" spawns + survives 60 belt ticks`, () => {
+      const h = makeRoom({ belt: true });
+      h.join("p1");
+      h.join("p2");
+      h.room.spawnBoss(dim.boss);
+      const boss = h.room.bossId ? h.state().enemies.get(h.room.bossId) : undefined;
+      expect(boss, `${dim.boss} is a registered boss kind`).toBeTruthy();
+      expect(boss.kind).toBe(dim.boss); // the override was accepted (not silently defaulted)
+      expect(() => h.tick(60, 50)).not.toThrow(); // 3s of the fight's primitives, on the deck
+    });
+  }
 });
 
 // Re-seed nothing between files — each makeRoom() is independent.
