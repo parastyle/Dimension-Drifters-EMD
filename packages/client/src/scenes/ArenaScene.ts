@@ -3370,7 +3370,23 @@ export class ArenaScene extends Phaser.Scene {
           rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff);
           spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit);
           this.audio.play(crit || big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
+          // §36 directional contact spark — thrown along the blow vector (nearest live player-rig → enemy,
+          // both in the SAME render space so it's correct in belt mode too). Every hit gets steel-bite; the
+          // heavier RING/stinger stay gated to the crunch below.
+          let bx = rig.x - 100;
+          let by = rig.y;
+          let best = Number.POSITIVE_INFINITY;
+          this.blobs.forEach((b) => {
+            const d = (rig.x - b.x) ** 2 + (rig.y - b.y) ** 2;
+            if (d < best) {
+              best = d;
+              bx = b.x;
+              by = b.y;
+            }
+          });
+          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit);
           if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
+          if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
           if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
         }
       }
@@ -3470,6 +3486,77 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Quad.easeOut",
       onComplete: () => ring.destroy(),
     });
+  }
+
+  /** §36 v0.118 (game-feel research) — a DIRECTIONAL contact spark on every damaging hit: a short fan of
+   *  additive steel slivers thrown along the blow vector + a tiny white core pop, so even a small number
+   *  reads as steel biting. Gold + a wider/hotter fan on crits. The impact RING (spawnImpactRing) stays
+   *  reserved for the big/crit crunch; this is the per-hit contact beat. Cheap (4–6 short-lived quads).
+   *  (Uses Math.random — this is pure client render, not the deterministic sim.) */
+  private spawnHitSpark(x: number, y: number, dirRad: number, crit: boolean): void {
+    const ADD = Phaser.BlendModes.ADD;
+    const col = crit ? 0xffdb63 : 0xfff2c0;
+    const n = crit ? 6 : 4;
+    const core = this.add
+      .circle(x, y, crit ? 7 : 5, 0xffffff, 0.85)
+      .setBlendMode(ADD)
+      .setDepth(99995);
+    this.tweens.add({
+      targets: core,
+      scale: 1.8,
+      alpha: 0,
+      duration: 130,
+      onComplete: () => core.destroy(),
+    });
+    for (let i = 0; i < n; i++) {
+      const a = dirRad + (Math.random() - 0.5) * (crit ? 1.6 : 1.2); // cone around the blow vector
+      const len = (crit ? 26 : 20) + Math.random() * 16;
+      const s = this.add
+        .rectangle(x, y, 12, 2.2, col, 0.95)
+        .setRotation(a)
+        .setBlendMode(ADD)
+        .setDepth(99996);
+      this.tweens.add({
+        targets: s,
+        x: x + Math.cos(a) * len,
+        y: y + Math.sin(a) * len,
+        alpha: 0,
+        duration: 150 + Math.random() * 90,
+        ease: "Quad.easeOut",
+        onComplete: () => s.destroy(),
+      });
+    }
+  }
+
+  /** §36 v0.118 (game-feel research §7) — a brief "focus" burst of radial speed-lines CONVERGING on a heavy
+   *  hit: a ring of thin additive streaks that rush inward toward the impact point over ~4–6 frames and fade,
+   *  the anime/AAA cue that says "this one mattered". Reserved for big/crit so it never dilutes routine hits;
+   *  gold on crit, hot-white otherwise. Screen-space-cheap (8–10 short-lived quads, no camera/zoom math). */
+  private spawnSpeedLines(x: number, y: number, crit: boolean): void {
+    const ADD = Phaser.BlendModes.ADD;
+    const col = crit ? 0xffe27a : 0xffffff;
+    const n = crit ? 10 : 8;
+    const r0 = 70; // streaks start out here...
+    const r1 = 30; // ...and rush in to here as they fade (converging = "focus")
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      const line = this.add
+        .rectangle(x + c * r0, y + s * r0, 20, 2.4, col, 0.85)
+        .setRotation(a) // aligned radially so it reads as a streak pointing at the impact
+        .setBlendMode(ADD)
+        .setDepth(99997);
+      this.tweens.add({
+        targets: line,
+        x: x + c * r1,
+        y: y + s * r1,
+        alpha: 0,
+        duration: 110 + Math.random() * 50,
+        ease: "Quad.easeIn",
+        onComplete: () => line.destroy(),
+      });
+    }
   }
 
   /** §8 successful-parry flash (Stage C) — a crisp WHITE ring burst + sparks where a player parried a
