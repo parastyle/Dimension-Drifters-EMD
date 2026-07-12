@@ -1690,6 +1690,13 @@ export class GameRoom extends Room<ArenaState> {
           c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
           if (player.charges <= 0) c.reloadCd = weapon.thrown.refillSeconds;
         }
+      } else if (weapon?.cast) {
+        // §38 CASTER: conjure a piercing arcane bolt on a flat cooldown (no ammo/reload) — INT-scaled.
+        if (canAct) {
+          c.attackBuffer = 0;
+          this.fireCast(player, c, weapon);
+          c.cd = weapon.cast.cooldown * cdMul;
+        }
       } else if (weapon && canAct) {
         c.attackBuffer = 0;
         this.resolveSwing(player, c, weapon);
@@ -2569,6 +2576,35 @@ export class GameRoom extends Room<ArenaState> {
     const r = addImpulse(player, -c.aimX * kick, -c.aimY * kick);
     player.vx = r.vx;
     player.vy = r.vy;
+  }
+
+  /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (INT-scaled, no ammo). Distinct from a gun
+   *  (no magazine/spread; pierces the whole line) and from melee (ranged). Spawns from the same muzzle reach. */
+  private fireCast(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+    const cast = weapon.cast;
+    if (!cast) return;
+    const dmg = cast.damage * this.heldDamageMult(weapon, cast.scalingGrades, player);
+    const ttl = cast.range / cast.speed;
+    const reach = gunMuzzleReach(weapon);
+    const mx = player.x + c.aimX * reach;
+    const my = player.y + c.aimY * reach;
+    const crit = critChanceFor(player.luk, player.dex);
+    // §35 element-tint the bolt (arcane/shock/void…) so different caster weapons read distinct.
+    const el = weapon.tags?.element;
+    const bulletKind = el && el !== "physical" ? `orb:${el}` : "orb";
+    this.fireProjectile(
+      { x: mx, y: my },
+      { x: mx + c.aimX, y: my + c.aimY },
+      cast.speed,
+      dmg,
+      false,
+      bulletKind,
+      cast.pierce ?? 99,
+      ttl,
+      undefined,
+      0,
+      crit,
+    );
   }
 
   /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */

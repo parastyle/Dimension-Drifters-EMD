@@ -153,6 +153,28 @@ export interface WeaponDef {
     };
   };
   /**
+   * §38 CASTER delivery — the caster-class signature mechanic. RMB conjures a piercing ARCANE BOLT down aim
+   * on a flat COOLDOWN (no magazine/reload, unlike a gun; ranged, unlike melee). The bolt tears through the
+   * whole line of enemies (`pierce`), INT-scaled via its own grades — so a Caster character's auto-grown INT
+   * (§38 classes) finally has a weapon that reads it. Per §14 size/speed are FIXED; only damage scales.
+   */
+  cast?: {
+    /** Damage per bolt, before scaling. */
+    damage: number;
+    /** Bolt speed, px/sec (slower + bigger than a bullet, so it reads "arcane", not "gunfire"). */
+    speed: number;
+    /** Travel distance before the bolt expires, px. */
+    range: number;
+    /** Flat cooldown between casts, sec (the pacing lever — there is no ammo). */
+    cooldown: number;
+    /** Enemies a single bolt tears through before dying (default 99 = pierces the whole line). */
+    pierce?: number;
+    /** The client bullet-kind for the bolt's look (e.g. "orb"). */
+    bulletKind: string;
+    /** Per-source scaling (§14) — INT-forward for casters. */
+    scalingGrades?: Partial<Record<Attr, Grade>>;
+  };
+  /**
    * §9/§10/§15 GUN delivery — RMB fires bullets down-barrel on a fire-rate cadence, spending AMMO from a
    * magazine that RELOADS when empty (the charges/maxCharges readout doubles as the ammo counter). Each
    * gun has its own bullet feel + muzzle flash (`bulletKind`/`muzzle`). Server-authoritative projectiles
@@ -904,6 +926,83 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       family: "pistol",
       rangeBand: "long",
       scaling: ["DEX", "STR"],
+    },
+  },
+  // ── CASTERS (§38) — the caster class's signature weapons. RMB conjures a piercing arcane BOLT on a flat
+  // cooldown (no ammo), INT-scaled, so a Caster character's auto-grown INT (§38) finally has a payoff. Art
+  // borrows the 2H haft placeholder until bespoke staff/tome sprites land. ────────────────────────────────
+  "x-staff-arcane-lance": {
+    id: "x-staff-arcane-lance",
+    name: "Arcanist's Lance",
+    sprite: "tombstone-greatsword", // placeholder 2H haft until a bespoke staff is generated
+    scalingGrades: { int: "B" },
+    requirements: { int: 6 },
+    durability: 80,
+    damage: 5, // staff-bonk fallback; the cast block is the identity
+    range: 96,
+    halfArc: 0.5,
+    cooldown: 0.5,
+    displayLength: 128,
+    swingArc: 1.1,
+    gripFrac: 0.12,
+    twoHanded: true,
+    vfxRadius: 60,
+    cast: {
+      damage: 16, // a heavy line-clearing bolt
+      speed: 620,
+      range: 720,
+      cooldown: 0.62,
+      pierce: 99, // tears through the whole line
+      bulletKind: "orb",
+      scalingGrades: { int: "A" },
+    },
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "projectile",
+      fireMode: "tap-charge",
+      element: "arcane",
+      classPool: "caster",
+      family: "staff",
+      rangeBand: "long",
+      scaling: ["INT"],
+    },
+  },
+  "x-staff-storm-rod": {
+    id: "x-staff-storm-rod",
+    name: "Stormcaller Rod",
+    sprite: "tombstone-greatsword", // placeholder 2H haft
+    scalingGrades: { int: "C" },
+    requirements: { int: 5 },
+    durability: 70,
+    damage: 4,
+    range: 88,
+    halfArc: 0.5,
+    cooldown: 0.4,
+    displayLength: 116,
+    swingArc: 1.0,
+    gripFrac: 0.14,
+    twoHanded: true,
+    vfxRadius: 56,
+    cast: {
+      damage: 10, // faster, lighter bolts than the Lance
+      speed: 760,
+      range: 640,
+      cooldown: 0.32,
+      pierce: 3,
+      bulletKind: "orb",
+      scalingGrades: { int: "B" },
+    },
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "projectile",
+      fireMode: "auto",
+      element: "shock",
+      classPool: "caster",
+      family: "rod",
+      rangeBand: "long",
+      scaling: ["INT"],
     },
   },
   "x-gun-coffin-shotgun": {

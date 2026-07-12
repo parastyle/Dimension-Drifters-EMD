@@ -3068,6 +3068,17 @@ export class ArenaScene extends Phaser.Scene {
         this.audio.play(`shot:${weapon.gun.bulletKind}`, { x: rig.x }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
+    } else if (weapon?.cast) {
+      // §38 predicted CAST feedback: a small arcane flash at the staff tip on the click (the real piercing
+      // orb renders from state a round-trip later). Tinted to the weapon's element — no gunpowder look.
+      if (rig) {
+        const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
+        const reach = gunMuzzleReach(weapon);
+        const el = weapon.tags?.element;
+        const fx = gunFx(el && el !== "physical" ? `orb:${el}` : "orb");
+        spawnMuzzleFlash(this, rig.x + Math.cos(ang) * reach, rig.y + Math.sin(ang) * reach, ang, fx.size, fx.color, fx.style);
+        this.lastSelfMuzzleAt = this.time.now;
+      }
     } else if (weapon && !weapon.thrown) {
       // Plain melee swing → the weapon's authored swing VFX (§14). If the weapon is authored "spawn at
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.

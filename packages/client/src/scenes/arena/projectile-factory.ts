@@ -18,6 +18,7 @@ export const GUN_FX: Record<string, GunFx> = {
   tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
   nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
   ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
+  orb: { color: 0x8f6aff, size: 22, style: "arcane", trail: 30, trailW: 11 }, // §38 caster: soft arcane sphere
 };
 
 /** §35 element tint for gun bullets: the server encodes a weapon's element onto the bullet kind as
@@ -185,6 +186,12 @@ export function makeBullet(
     items.push(scene.add.circle(0, 0, 4, 0x140a06, 0.5));
     items.push(scene.add.circle(0, 0, 3, blendHex(fx.color, 0x806040, 0.45)));
     items.push(scene.add.circle(0, 0, 1.6, 0xffe6c4));
+  } else if (k === "orb") {
+    // §38 arcane orb — a big soft glowing sphere: outer haze, saturated body, bright white core (reads
+    // "spell", not "bullet"). The element tint (via fx.color) recolours the whole orb.
+    items.push(scene.add.circle(0, 0, 13, fx.color, 0.3).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 8.5, fx.color, 0.6).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 3.4, 0xffffff).setBlendMode(ADD));
   } else {
     const big = k === "slug";
     items.push(scene.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));

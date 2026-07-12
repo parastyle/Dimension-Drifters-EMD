@@ -772,6 +772,30 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     h.tick(Math.ceil(gun.reloadSeconds / 0.05) + 2);
     expect(p.charges).toBe(p.maxCharges); // magazine refilled
   });
+
+  it("§38 a CASTER weapon conjures a piercing arcane orb on a cooldown (no ammo)", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    const staffId = "x-staff-arcane-lance";
+    const staff = WEAPONS[staffId];
+    if (!staff?.cast) throw new Error("fixture weapon is not a caster");
+    p.weapon = staffId;
+    h.tick(1);
+    let sawOrb = false;
+    let orbEl = "";
+    for (let i = 0; i < 60 && !sawOrb; i++) {
+      h.send("p1", "attack", { aimX: 1, aimY: 0 }); // hold the cast trigger
+      h.tick(1);
+      h.state().projectiles.forEach((pr: { kind: string }) => {
+        if (pr.kind.startsWith("orb")) {
+          sawOrb = true;
+          orbEl = pr.kind;
+        }
+      });
+    }
+    expect(sawOrb).toBe(true); // the cast delivery fired a projectile (not a melee swing)
+    expect(orbEl).toBe("orb:arcane"); // element-tinted per the weapon
+  });
 });
 
 describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed timestep / hostile payloads)", () => {
