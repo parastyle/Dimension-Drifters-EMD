@@ -486,7 +486,14 @@ export class SpriteRig {
     this.facingBlend += (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
     this.root.scaleX = this.facingBlend * this.baseScale;
     this.root.scaleY = this.baseScale;
-    if (this.label) this.label.scaleX = this.facing; // keep text readable (discrete, not the blend)
+    // Keep the "you" label a FIXED on-screen size + readable regardless of the character's rig scale: the
+    // label is a child of the root (scaled by baseScale), so counter baseScale on both axes — else a bigger
+    // character blows the text up (weapons counter the same way, §29). scaleX also counters the facing mirror.
+    if (this.label) {
+      const inv = 1 / (this.baseScale || 1);
+      this.label.scaleX = this.facing * inv;
+      this.label.scaleY = inv;
+    }
 
     // Vertical "look" toward the cursor — local player only (others have no synced aim). aimY is screen
     // space (−up / +down) and is NOT touched by the facing mirror, so it leans correctly both ways.
