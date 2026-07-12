@@ -23,6 +23,10 @@ export interface AugmentDef {
   icon: string;
   /** Can a player own more than one (each pick adds a stack)? */
   stacks: boolean;
+  /** §38 weapon-CLASS signature gate. Unset = a PARRY augment, offered to everyone (parry is the universal
+   *  LMB skill). Set = a weapon-delivery augment, ONLY offered while wielding that delivery + only procs there
+   *  (a gunslinger draft for guns, a caster draft for casts) — this is how ranged/caster get a signature too. */
+  weapon?: "gun" | "cast";
 }
 
 /** The M0 pool (§8 `[LOCKED]`). Order groups the three flavor tags. */
@@ -110,6 +114,44 @@ export const AUGMENTS: Record<string, AugmentDef> = {
     icon: "blast",
     stacks: false,
   },
+  // §38 GUNSLINGER (ranged signature) — offered + active only while wielding a GUN.
+  hollowpoints: {
+    id: "hollowpoints",
+    name: "Hollow-Points",
+    tag: "riposte",
+    desc: "Your bullets pierce +1 enemy. Stacks.",
+    icon: "shot",
+    stacks: true,
+    weapon: "gun",
+  },
+  "ricochet-rounds": {
+    id: "ricochet-rounds",
+    name: "Ricochet Rounds",
+    tag: "riposte",
+    desc: "Your bullets ricochet +1 time to another enemy. Stacks.",
+    icon: "spark",
+    stacks: true,
+    weapon: "gun",
+  },
+  // §38 CASTER signature — offered + active only while wielding a CAST weapon.
+  overcharge: {
+    id: "overcharge",
+    name: "Overcharge",
+    tag: "hex",
+    desc: "Your arcane bolts deal +25% damage. Stacks.",
+    icon: "magma",
+    stacks: true,
+    weapon: "cast",
+  },
+  "arc-split": {
+    id: "arc-split",
+    name: "Arc Split",
+    tag: "hex",
+    desc: "Your cast fires +1 forked bolt. Stacks (to a cap).",
+    icon: "blast",
+    stacks: true,
+    weapon: "cast",
+  },
 };
 
 export const AUGMENT_IDS = Object.keys(AUGMENTS);
@@ -152,6 +194,15 @@ export const BRAND_DAMAGE_MULT = 1.3;
 /** Conflagration: the fire wave LINGERS — it re-erupts a second time after this delay (sec), so the area
  *  keeps burning. POC of the "burning zone" (a deferred second pulse vs a persistent synced zone). */
 export const CONFLAG_DELAY = 0.55;
+/** §38 Hollow-Points: +pierce per stack. Ricochet Rounds: +bounce per stack. */
+export const AUG_GUN_PIERCE_PER = 1;
+export const AUG_GUN_BOUNCE_PER = 1;
+/** §38 Overcharge: +cast damage per stack. Arc Split: +forked bolts per stack, capped. */
+export const AUG_CAST_DMG_PER = 0.25;
+export const AUG_CAST_SPLIT_PER = 1;
+export const AUG_CAST_SPLIT_MAX = 3;
+/** §38 the extra forked bolts' angular spacing (rad) around aim. */
+export const AUG_CAST_SPLIT_SPREAD = 0.14;
 
 /** Parse the owned-augment CSV (repeats = stacks). */
 export function parseAugments(csv: string): string[] {
@@ -171,9 +222,15 @@ export function hasAugment(csv: string, id: string): boolean {
 }
 
 /** Roll a signature draft — `AUG_DRAFT_SIZE` DISTINCT augments from the pool. `roll` is a 0..1 source
- *  (server passes `Math.random`; the offer is server-authoritative + synced, so it need not be seeded). */
-export function draftAugments(roll: () => number): string[] {
-  const pool = [...AUGMENT_IDS];
+ *  (server passes `Math.random`; the offer is server-authoritative + synced, so it need not be seeded).
+ *  §38 `weaponKind` gates the WEAPON-specific augments: the universal PARRY augments (no `weapon`) are always
+ *  eligible, plus the gun/cast augments matching the wielded delivery — so a gunner can draft gunslinger
+ *  perks, a caster caster perks, and a meleer neither (they'd be dead picks). */
+export function draftAugments(roll: () => number, weaponKind?: "gun" | "cast"): string[] {
+  const pool = AUGMENT_IDS.filter((id) => {
+    const w = AUGMENTS[id]?.weapon;
+    return !w || w === weaponKind;
+  });
   const out: string[] = [];
   for (let i = 0; i < AUG_DRAFT_SIZE && pool.length > 0; i++) {
     const idx = Math.floor(roll() * pool.length);

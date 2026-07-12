@@ -1,7 +1,9 @@
 import {
+  AUGMENTS,
   BELT_LEVEL_IDS,
   beltLevelFor,
   beltPitAtX,
+  draftAugments,
   BELT_Y0,
   clampBeltFloorY,
   CRIT_MULT,
@@ -1886,6 +1888,34 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
       expect(level.rooms.length).toBeGreaterThanOrEqual(2);
     });
   }
+});
+
+// §38 the signature draft is WEAPON-GATED: parry augments are universal, gun/cast augments only offered to
+// the matching delivery (so ranged/caster get a signature, and melee never draws a dead gun/cast pick).
+describe("GameRoom — §38 weapon-gated signature draft", () => {
+  const GUN_AUGS = Object.values(AUGMENTS).filter((a) => a.weapon === "gun").map((a) => a.id);
+  const CAST_AUGS = Object.values(AUGMENTS).filter((a) => a.weapon === "cast").map((a) => a.id);
+  /** All ids that can EVER appear across many draws for a given weapon kind. */
+  const seen = (weaponKind?: "gun" | "cast") => {
+    const s = new Set<string>();
+    for (let i = 0; i < 400; i++) for (const id of draftAugments(Math.random, weaponKind)) s.add(id);
+    return s;
+  };
+  it("melee (no weapon kind) never offers gun OR cast augments", () => {
+    const s = seen(undefined);
+    for (const id of [...GUN_AUGS, ...CAST_AUGS]) expect(s.has(id)).toBe(false);
+    expect(s.size).toBeGreaterThan(0); // still offers the parry pool
+  });
+  it("a gun draft can offer gunslinger augments but never caster ones", () => {
+    const s = seen("gun");
+    expect(GUN_AUGS.some((id) => s.has(id))).toBe(true);
+    for (const id of CAST_AUGS) expect(s.has(id)).toBe(false);
+  });
+  it("a cast draft can offer caster augments but never gunslinger ones", () => {
+    const s = seen("cast");
+    expect(CAST_AUGS.some((id) => s.has(id))).toBe(true);
+    for (const id of GUN_AUGS) expect(s.has(id)).toBe(false);
+  });
 });
 
 // Re-seed nothing between files — each makeRoom() is independent.

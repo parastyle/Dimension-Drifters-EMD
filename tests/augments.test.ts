@@ -12,12 +12,12 @@ import {
 import { describe, expect, it } from "vitest";
 
 describe("AUGMENTS registry (§8 parry pool)", () => {
-  it("has the 10 augments across the 3 flavor tags (v0.117 +Deflector)", () => {
-    expect(AUGMENT_IDS.length).toBe(10);
-    const tags = AUGMENT_IDS.map((id) => AUGMENTS[id]?.tag);
-    expect(tags.filter((t) => t === "riposte").length).toBe(4); // v0.117 Deflector joined the riposte tag
-    expect(tags.filter((t) => t === "aegis").length).toBe(3);
-    expect(tags.filter((t) => t === "hex").length).toBe(3);
+  it("has 14 augments: 10 universal parry + §38 weapon-gated (2 gun, 2 cast)", () => {
+    expect(AUGMENT_IDS.length).toBe(14);
+    const parry = AUGMENT_IDS.filter((id) => !AUGMENTS[id]?.weapon);
+    expect(parry.length).toBe(10); // the universal parry pool is unchanged
+    expect(AUGMENT_IDS.filter((id) => AUGMENTS[id]?.weapon === "gun").length).toBe(2);
+    expect(AUGMENT_IDS.filter((id) => AUGMENTS[id]?.weapon === "cast").length).toBe(2);
   });
 
   it("each def is self-consistent (id matches key, has name/desc/icon, valid tag)", () => {
@@ -32,9 +32,17 @@ describe("AUGMENTS registry (§8 parry pool)", () => {
     }
   });
 
-  it("the stackable augments are the ones that read as repeatable (twin-fang/iron-stance/second-wind)", () => {
+  it("the stackable augments read as repeatable (parry stacks + all §38 weapon augments stack)", () => {
     const stackable = AUGMENT_IDS.filter((id) => AUGMENTS[id]?.stacks).sort();
-    expect(stackable).toEqual(["iron-stance", "second-wind", "twin-fang"]);
+    expect(stackable).toEqual([
+      "arc-split",
+      "hollowpoints",
+      "iron-stance",
+      "overcharge",
+      "ricochet-rounds",
+      "second-wind",
+      "twin-fang",
+    ]);
   });
 });
 
@@ -71,15 +79,25 @@ describe("draftAugments (3-of-9 signature draft)", () => {
     expect(draftAugments(mk())).toEqual(draftAugments(mk()));
   });
 
-  it("can surface every augment across enough rolls (the whole pool is reachable)", () => {
+  it("can surface every augment across enough rolls, when each weapon kind is drafted (§38 gating)", () => {
     const seen = new Set<string>();
     let i = 0;
     const roll = () => {
       i = (i * 9301 + 49297) % 233280; // tiny LCG → spread across [0,1)
       return i / 233280;
     };
-    for (let k = 0; k < 400; k++) for (const id of draftAugments(roll)) seen.add(id);
+    // The ungated (parry) draft can't reach the gun/cast augments — draft every weapon kind to cover the pool.
+    for (let k = 0; k < 400; k++)
+      for (const wk of [undefined, "gun", "cast"] as const)
+        for (const id of draftAugments(roll, wk)) seen.add(id);
     expect(seen.size).toBe(AUGMENT_IDS.length);
+  });
+
+  it("§38 the ungated (parry) draft never surfaces a weapon-gated augment", () => {
+    const seen = new Set<string>();
+    for (let k = 0; k < 400; k++) for (const id of draftAugments(Math.random)) seen.add(id);
+    for (const id of seen) expect(AUGMENTS[id]?.weapon).toBeUndefined();
+    expect(seen.size).toBe(10); // exactly the universal parry pool
   });
 });
 

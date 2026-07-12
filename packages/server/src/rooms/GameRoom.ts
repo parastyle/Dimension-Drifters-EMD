@@ -13,6 +13,12 @@ import {
   ArsenalSlot,
   ARSENAL_SLOTS,
   ATTACK_BUFFER_SECONDS,
+  AUG_CAST_DMG_PER,
+  AUG_CAST_SPLIT_MAX,
+  AUG_CAST_SPLIT_PER,
+  AUG_CAST_SPLIT_SPREAD,
+  AUG_GUN_BOUNCE_PER,
+  AUG_GUN_PIERCE_PER,
   AUG_PROJECTILE_DAMAGE,
   AUG_PROJECTILE_PIERCE,
   AUG_PROJECTILE_SPEED,
@@ -2117,7 +2123,10 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((player) => {
       // Open the augment draft for any signature pick that doesn't have one yet (server-authoritative roll).
       if (player.sigPending > 0 && !player.sigOffer) {
-        player.sigOffer = draftAugments(Math.random).join(",");
+        // §38 gate the draft by the wielded delivery so gunners/casters draft THEIR signature perks too.
+        const w = WEAPONS[player.weapon];
+        const wk = w?.gun ? "gun" : w?.cast ? "cast" : undefined;
+        player.sigOffer = draftAugments(Math.random, wk).join(",");
       }
       if (!this.inLevelWindow(player)) return;
       player.flexTimer -= dt;
@@ -2539,6 +2548,9 @@ export class GameRoom extends Room<ArenaState> {
     const spread = g.spread ?? 0;
     const baseAng = Math.atan2(c.aimY, c.aimX);
     const ttl = g.range / g.projectileSpeed;
+    // §38 GUNSLINGER signature augments: Hollow-Points add pierce, Ricochet Rounds add bounces (per stack).
+    const pierce = (g.pierce ?? 1) + AUG_GUN_PIERCE_PER * countAugment(player.augments, "hollowpoints");
+    const bounces = (g.bounces ?? 0) + AUG_GUN_BOUNCE_PER * countAugment(player.augments, "ricochet-rounds");
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
@@ -2562,10 +2574,10 @@ export class GameRoom extends Room<ArenaState> {
         dmg,
         false,
         bulletKind,
-        g.pierce ?? 1,
+        pierce, // §38 base + Hollow-Points
         ttl,
         explode,
-        g.bounces ?? 0,
+        bounces, // §38 base + Ricochet Rounds
         crit,
       );
     }
@@ -2583,7 +2595,10 @@ export class GameRoom extends Room<ArenaState> {
   private fireCast(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const cast = weapon.cast;
     if (!cast) return;
-    const dmg = cast.damage * this.heldDamageMult(weapon, cast.scalingGrades, player);
+    // §38 CASTER signature augments: Overcharge boosts bolt damage, Arc Split adds forked bolts (per stack).
+    const dmgMul = 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge");
+    const dmg = cast.damage * this.heldDamageMult(weapon, cast.scalingGrades, player) * dmgMul;
+    const forks = Math.min(AUG_CAST_SPLIT_MAX, AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"));
     const ttl = cast.range / cast.speed;
     const reach = gunMuzzleReach(weapon);
     const mx = player.x + c.aimX * reach;
@@ -2592,19 +2607,24 @@ export class GameRoom extends Room<ArenaState> {
     // §35 element-tint the bolt (arcane/shock/void…) so different caster weapons read distinct.
     const el = weapon.tags?.element;
     const bulletKind = el && el !== "physical" ? `orb:${el}` : "orb";
-    this.fireProjectile(
-      { x: mx, y: my },
-      { x: mx + c.aimX, y: my + c.aimY },
-      cast.speed,
-      dmg,
-      false,
-      bulletKind,
-      cast.pierce ?? 99,
-      ttl,
-      undefined,
-      0,
-      crit,
-    );
+    const baseAng = Math.atan2(c.aimY, c.aimX);
+    // The main bolt + `forks` extra bolts fanned symmetrically around aim (Arc Split).
+    for (let i = 0; i <= forks; i++) {
+      const ang = baseAng + (i === 0 ? 0 : (i % 2 === 1 ? 1 : -1) * Math.ceil(i / 2) * AUG_CAST_SPLIT_SPREAD);
+      this.fireProjectile(
+        { x: mx, y: my },
+        { x: mx + Math.cos(ang), y: my + Math.sin(ang) },
+        cast.speed,
+        dmg,
+        false,
+        bulletKind,
+        cast.pierce ?? 99,
+        ttl,
+        undefined,
+        0,
+        crit,
+      );
+    }
   }
 
   /** Hurl a thrown weapon at the player's aim — a friendly, STR-scaled, piercing projectile (§10). */
