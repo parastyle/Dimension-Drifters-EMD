@@ -36,6 +36,7 @@ import {
   characterScale,
   clamp,
   clampQuakeEpicenter,
+  classForCharacter,
   coneAngles,
   countAugment,
   CRIT_MULT,
@@ -103,7 +104,6 @@ import {
   LOOT_TIER_LUK_TOUGH,
   lootCooldownMult,
   lootDamageMult,
-  M0_CLASS_ATTR,
   MAX_ENEMIES,
   MAX_PLAYERS,
   MOVE_SPEED,
@@ -2117,7 +2117,7 @@ export class GameRoom extends Room<ArenaState> {
       if (player.flexTimer > 0) return;
       // Timed out → auto-resolve one pending pick of each kind, then refresh/close the window.
       if (player.flexPending > 0) {
-        allocate(player, M0_CLASS_ATTR, 1); // default the flex point to the class attr
+        allocate(player, classForCharacter(player.character).classAttr, 1); // §38 default flex → class attr
         player.flexPending = Math.max(0, player.flexPending - 1);
       }
       if (player.sigPending > 0) {

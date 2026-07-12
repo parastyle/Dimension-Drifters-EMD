@@ -20,6 +20,7 @@ import {
   type ChainCandidate,
   characterName,
   characterScale,
+  classForCharacter,
   clampQuakeEpicenter,
   critChanceFor,
   DEBUG_SPAWN_MAX,
@@ -3854,7 +3855,10 @@ export class ArenaScene extends Phaser.Scene {
 
     const training = this.room?.state.mode === "training";
     const bossrush = this.room?.state.mode === "bossrush";
-    const who = self ? ` · C: swap character (${characterName(self.character)})` : "";
+    // §38 show the worn character's CLASS so the swap reads as a build choice, not just a skin.
+    const who = self
+      ? ` · C: ${characterName(self.character)} [${classForCharacter(self.character).name}] — grows ${classForCharacter(self.character).classAttr.toUpperCase()}`
+      : "";
     const dimName = getDimension(this.room?.state.dimensionId).name;
     // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
     // fight, then what stepping into the portal actually DOES (bank + end). H9: the two core verbs (RMB fire,

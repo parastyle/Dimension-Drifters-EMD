@@ -100,3 +100,40 @@ describe("consumeFlex (§12 pick window)", () => {
     expect(p.flexTimer).toBe(LEVELUP_WINDOW_SECONDS); // sig still owed → window stays open
   });
 });
+
+// §38 per-character CLASSES: level-up auto-growth follows the worn character's archetype (was hardcoded STR+CON).
+describe("§38 character classes drive level-up growth", () => {
+  it("the default drifter is a Bruiser (STR+CON) — preserves the old M0 behaviour", () => {
+    const p = fresh();
+    levelUpPlayer(p, p.xpToNext);
+    expect(p.str).toBe(2);
+    expect(p.con).toBe(2);
+    expect(p.int).toBe(1);
+  });
+  it("a Caster grows INT+CON, a Scoundrel LUK+DEX, a Duelist DEX+LUK, a Warden CON+STR", () => {
+    const caster = fresh();
+    caster.character = "cc-pyra-cinderhowl-the-flame-caster";
+    levelUpPlayer(caster, caster.xpToNext);
+    expect(caster.int).toBe(2);
+    expect(caster.con).toBe(2);
+    expect(caster.str).toBe(1);
+
+    const scoundrel = fresh();
+    scoundrel.character = "cc-the-bandida-la-sombra";
+    levelUpPlayer(scoundrel, scoundrel.xpToNext);
+    expect(scoundrel.luk).toBe(2);
+    expect(scoundrel.dex).toBe(2);
+
+    const duelist = fresh();
+    duelist.character = "cc-s-jiro-the-wayward-blade";
+    levelUpPlayer(duelist, duelist.xpToNext);
+    expect(duelist.dex).toBe(2);
+    expect(duelist.luk).toBe(2);
+
+    const warden = fresh();
+    warden.character = "cc-sir-galloway-the-unbending";
+    levelUpPlayer(warden, warden.xpToNext);
+    expect(warden.con).toBe(2);
+    expect(warden.str).toBe(2);
+  });
+});

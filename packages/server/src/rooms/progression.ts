@@ -1,10 +1,9 @@
 import {
   type Attr,
+  classForCharacter,
   deriveStats,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
-  M0_CLASS_ATTR,
-  M0_REQ_ATTR,
   type PlayerState,
   SIGNATURE_INTERVAL,
   xpToNextLevel,
@@ -38,9 +37,12 @@ export function levelUpPlayer(player: PlayerState, amount: number): void {
   while (player.xp >= player.xpToNext && player.level < LEVEL_CAP) {
     player.xp -= player.xpToNext;
     player.level += 1;
-    // 2 auto points: +1 class attr, +1 requirement attr (§12). The 3rd is the FLEX pick.
-    allocate(player, M0_CLASS_ATTR, 1);
-    allocate(player, M0_REQ_ATTR, 1);
+    // 2 auto points: +1 class attr, +1 requirement attr (§12/§38). Which attrs depends on the worn
+    // character's CLASS — a Bruiser grows STR+CON, a Caster INT+CON, a Scoundrel LUK+DEX, etc. Read live so
+    // swapping character (C) re-aims future growth. The 3rd point is the FLEX pick.
+    const cls = classForCharacter(player.character);
+    allocate(player, cls.classAttr, 1);
+    allocate(player, cls.reqAttr, 1);
     player.flexPending += 1;
     // §8 every 5th level ALSO grants a signature pick (an augment draft) — same window. The offer CSV is
     // rolled server-side once the window is open (GameRoom.openSigOffers).
