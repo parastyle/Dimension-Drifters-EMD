@@ -24,7 +24,7 @@ export function partTexture(
 }
 
 /** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
-const TARGET_BODY_H = 84;
+const TARGET_BODY_H = 76; // §37 slightly smaller characters (was 84) — reads better in the zoomed-out belt
 /** §7 v0.112 procedural gait — px travelled per full stride cycle (2 steps). Distance-based, so the step
  *  cadence MATCHES actual speed (no jog-in-place, no fixed loop that runs after you stop). (tuning) */
 const STRIDE_LEN = 150;

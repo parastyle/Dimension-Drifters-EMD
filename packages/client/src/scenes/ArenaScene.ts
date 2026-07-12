@@ -122,7 +122,7 @@ const PLAYER_SPRITE = "drifter";
  *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
  *  world px of sky above the band top. All client-only presentation. */
 const BELT_FORESHORTEN = 0.5;
-const BELT_VIEW_H = 640;
+const BELT_VIEW_H = 840; // §37 zoomed out (was 640) — fits the deeper deck band + more of the belt on screen
 const BELT_SKY = 176;
 
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
@@ -1818,9 +1818,20 @@ export class ArenaScene extends Phaser.Scene {
     this.room.state.projectiles.forEach((pr, id) => {
       const c = this.projectiles.get(id);
       if (!c) return;
-      const px = c.x + pr.vx * dtSec;
-      const py = c.y + pr.vy * dtSec;
-      c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
+      if (this.belt) {
+        // §36 belt: dead-reckon in WORLD space. x is never projected (container x == world x), but projectBelt
+        // overwrites the container y with the projected SCREEN y every frame — so read the WORLD y back from
+        // the tracked data (not c.y) or the projection compounds and bullets drift toward the deck back,
+        // missing the cursor. Write the new world coords; projectBelt re-projects them this frame.
+        const wyPrev = (c.getData("beltWorldY") as number | undefined) ?? pr.y;
+        const wx = Phaser.Math.Linear(c.x + pr.vx * dtSec, pr.x, 0.18);
+        const wy = Phaser.Math.Linear(wyPrev + pr.vy * dtSec, pr.y, 0.18);
+        c.setPosition(wx, wy);
+      } else {
+        const px = c.x + pr.vx * dtSec;
+        const py = c.y + pr.vy * dtSec;
+        c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
+      }
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
     });
   }
@@ -2621,7 +2632,11 @@ export class ArenaScene extends Phaser.Scene {
       for (let i = near.length - 1; i >= 0; i--) gg.lineTo(near[i]!.x, near[i]!.y);
       gg.closePath();
     };
-    const g = this.add.graphics().setDepth(60);
+    // §36 the deck is "the ground" — it must sit BELOW ground-level VFX (quake eruptions depth 4-8, splats,
+    // zones) and entities (depth = projected worldY, ~2000+), exactly like the top-down floor (groundBed -20).
+    // At the old +60 it occluded every low-depth ground VFX in belt (they render "under the map"). Above the
+    // sky backdrop (-200) / clouds (-190), below everything on the deck.
+    const g = this.add.graphics().setDepth(-20);
     // dark hull/void below the whole thing
     g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
     // Walkable deck fill — a crisp, collision-accurate trapezoid following the exact floor profile. (The
@@ -2688,21 +2703,36 @@ export class ArenaScene extends Phaser.Scene {
    *  visual + recomputed each frame, so it can't corrupt the interpolation's world-space velocity tracking. */
   private projectBelt(): void {
     if (!this.belt) return;
-    const project = (o: {
+    // LIVE actors (rigs/enemies) re-establish their WORLD y every frame in interpolate()/animateBlobs() just
+    // before us, so their current .y IS the world y — project it directly.
+    const projectLive = (o: {
       x: number;
       y: number;
       setPosition(x: number, y: number): void;
       setDepth(d: number): void;
     }) => {
-      const wy = o.y; // world y this frame (positioning ran just before us)
+      const wy = o.y;
       o.setPosition(o.x, this.beltY(wy));
       o.setDepth(wy);
     };
-    this.blobs.forEach((rig) => project(rig));
-    this.enemies.forEach((rig) => project(rig)); // includes the boss rig
-    this.projectiles.forEach((c) => project(c));
-    this.pickups.forEach((c) => project(c));
-    this.zones.forEach((c) => project(c));
+    // TRACKED containers (projectiles move via data; pickups/zones are static) are NOT repositioned to a fresh
+    // world y every frame — so if we projected off their .y we'd re-project our OWN output next frame and the
+    // value would compound (drift toward BELT_Y0). Keep the world y in data and only adopt a NEW .y when the
+    // owner actually moved the object (o.y changed since our last projection).
+    const projectTracked = (c: Phaser.GameObjects.Container) => {
+      const lastScreen = c.getData("beltScreenY") as number | undefined;
+      const wy = lastScreen !== undefined && c.y === lastScreen ? (c.getData("beltWorldY") as number) : c.y;
+      const sy = this.beltY(wy);
+      c.setData("beltWorldY", wy);
+      c.setData("beltScreenY", sy);
+      c.setPosition(c.x, sy);
+      c.setDepth(wy);
+    };
+    this.blobs.forEach((rig) => projectLive(rig));
+    this.enemies.forEach((rig) => projectLive(rig)); // includes the boss rig
+    this.projectiles.forEach((c) => projectTracked(c));
+    this.pickups.forEach((c) => projectTracked(c));
+    this.zones.forEach((c) => projectTracked(c));
   }
 
   /** §29 belt camera: scroll horizontally to follow the player (world x), lock the vertical to the deck, and

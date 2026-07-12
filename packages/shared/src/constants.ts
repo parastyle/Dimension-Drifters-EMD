@@ -175,11 +175,12 @@ export const PLAYER_RADIUS = 24;
  * PROJECTION (horizon / depthScale) is CLIENT-ONLY and lives in the client's belt-projection module; it must
  * never appear in sim/hit math. Stage 3 clamps `y` to [0, DEPTH_MAX]; Stage 5 uses the tolerances. (tuning)
  */
-export const DEPTH_MAX = 696;
+export const DEPTH_MAX = 870; // §37 more room to walk in depth (was 696); tolerances scale with it (below)
 /** Depth alignment (world units) an attack tolerates for a hit — GENEROUS for players, TIGHT for enemies
- *  (the classic beat-'em-up fairness lever). A hit needs horizontal reach AND |Δdepth| ≤ this. */
-export const DEPTH_TOL_PLAYER = 48;
-export const DEPTH_TOL_ENEMY = 30;
+ *  (the classic beat-'em-up fairness lever). A hit needs horizontal reach AND |Δdepth| ≤ this. Kept
+ *  proportional to DEPTH_MAX so the deeper band (§37) doesn't make hits feel stingier. */
+export const DEPTH_TOL_PLAYER = 60;
+export const DEPTH_TOL_ENEMY = 38;
 /** SoR4 trick: while a body is actively moving in DEPTH, its hurtbox depth shrinks by this factor, so
  *  repositioning genuinely dodges instead of getting clipped by a fat window. */
 export const DEPTH_DODGE_MULT = 0.5;
