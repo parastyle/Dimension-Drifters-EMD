@@ -1152,14 +1152,20 @@ export class ArenaScene extends Phaser.Scene {
       try {
         // §17 pass the menu's dimension pick as a join option (the room creator scopes the run to it; a
         // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
-        this.room = await client.joinOrCreate<ArenaState>(ROOM_NAME, {
+        const joinOpts = {
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
           beltLevel: this.belt ? this.selectedBeltLevel : undefined, // §36 which belt level to load
           scrip: this.belt ? this.loadBankedScrip() : 0, // §29 restore the player's persisted meta-scrip
           up: this.belt ? this.loadUpgrades() : undefined, // §31 restore permanent upgrade levels
-        });
+        };
+        // §39 a DEV-PORTAL deep-link gets its OWN fresh room via create() (never joinOrCreate) — otherwise it
+        // lands in a live/other-tab co-op room as a NON-host, and the host-only dev messages (spawnBossDef,
+        // toggleTraining) are silently dropped (looks like "boss never spawned / empty arena").
+        this.room = this.devLaunch
+          ? await client.create<ArenaState>(ROOM_NAME, joinOpts)
+          : await client.joinOrCreate<ArenaState>(ROOM_NAME, joinOpts);
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
