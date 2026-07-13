@@ -477,9 +477,11 @@ export class SpriteRig {
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
     const dirX = anim.isSelf ? anim.aimX : this.weaponDef?.gun ? Math.cos(anim.aimDir) : anim.moveX;
-    // §7 v0.105 de-clunk: HYSTERESIS — commit a new facing only past 0.18 (a wide deadzone) so near-vertical
-    // aim doesn't strobe the whole body on consecutive frames; `facing` stays the committed ±1.
-    if (Math.abs(dirX) > 0.18) this.facing = dirX >= 0 ? 1 : -1;
+    // §37 HYSTERESIS deadzone — commit a new facing only past this |dirX| so a near-vertical aim doesn't
+    // strobe the body. The old 0.18 (~10° off vertical) was too wide for the belt: aiming at something close
+    // or nearly overhead left the character facing the WRONG way and not following the cursor. 0.05 (~3°) is
+    // snappy; the facingBlend ease below still smooths any flip into a TURN so it never reads as a strobe.
+    if (Math.abs(dirX) > 0.05) this.facing = dirX >= 0 ? 1 : -1;
     // §7 v0.105 de-clunk: EASE the visual mirror toward the committed facing, passing through scaleX≈0 —
     // that reads as a TURN, not a one-frame full-body flip. UNIFORM baseScale on both axes = a pure mirror,
     // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).

@@ -2532,6 +2532,17 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§15 fire a GUN — spend one ammo to launch `pellets` friendly bullets down-barrel (a cone for
    *  shotguns / a touch of inaccuracy for autos), each WYSIWYG-scaled, piercing/bouncing/exploding per
    *  the gun's block. Ammo + reload are handled by the caller (mirrors the thrown charge model). */
+  /** §37 the PRECISE firing direction: from the shooter's AUTHORITATIVE body toward the CURSOR WORLD POINT the
+   *  client sent (targetX/Y), not the client's rig-derived aim VECTOR. The predicted/interpolated rig can lead
+   *  the real body while moving, so a direction-only aim skews slightly off the cursor; aiming at the sent
+   *  point lands the shot ON the cursor. Falls back to the aim vector if no target was sent. Unit vector. */
+  private aimDir(player: PlayerState, c: CombatState): { x: number; y: number } {
+    const dx = c.targetX - player.x;
+    const dy = c.targetY - player.y;
+    const l = Math.hypot(dx, dy);
+    return l > 1e-3 ? { x: dx / l, y: dy / l } : { x: c.aimX, y: c.aimY };
+  }
+
   private fireGun(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
     const g = weapon.gun;
     if (!g) return;
@@ -2546,7 +2557,8 @@ export class GameRoom extends Room<ArenaState> {
       : undefined;
     const pellets = Math.max(1, g.pellets ?? 1);
     const spread = g.spread ?? 0;
-    const baseAng = Math.atan2(c.aimY, c.aimX);
+    const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
+    const baseAng = Math.atan2(aim.y, aim.x);
     const ttl = g.range / g.projectileSpeed;
     // §38 GUNSLINGER signature augments: Hollow-Points add pierce, Ricochet Rounds add bounces (per stack).
     const pierce = (g.pierce ?? 1) + AUG_GUN_PIERCE_PER * countAugment(player.augments, "hollowpoints");
@@ -2554,8 +2566,8 @@ export class GameRoom extends Room<ArenaState> {
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
-    const mx = player.x + c.aimX * reach;
-    const my = player.y + c.aimY * reach;
+    const mx = player.x + aim.x * reach;
+    const my = player.y + aim.y * reach;
     const crit = critChanceFor(player.luk, player.dex); // §30 capture the shooter's crit at fire time
     // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
     // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
@@ -2585,7 +2597,7 @@ export class GameRoom extends Room<ArenaState> {
     // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
     // so a slow heavy gun punches once while a gatling stream accumulates a steady shove (capped).
     const kick = GUN_RECOIL_IMPULSE * ((g.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE);
-    const r = addImpulse(player, -c.aimX * kick, -c.aimY * kick);
+    const r = addImpulse(player, -aim.x * kick, -aim.y * kick);
     player.vx = r.vx;
     player.vy = r.vy;
   }
@@ -2601,13 +2613,14 @@ export class GameRoom extends Room<ArenaState> {
     const forks = Math.min(AUG_CAST_SPLIT_MAX, AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"));
     const ttl = cast.range / cast.speed;
     const reach = gunMuzzleReach(weapon);
-    const mx = player.x + c.aimX * reach;
-    const my = player.y + c.aimY * reach;
+    const aim = this.aimDir(player, c); // §37 aim at the cursor POINT
+    const mx = player.x + aim.x * reach;
+    const my = player.y + aim.y * reach;
     const crit = critChanceFor(player.luk, player.dex);
     // §35 element-tint the bolt (arcane/shock/void…) so different caster weapons read distinct.
     const el = weapon.tags?.element;
     const bulletKind = el && el !== "physical" ? `orb:${el}` : "orb";
-    const baseAng = Math.atan2(c.aimY, c.aimX);
+    const baseAng = Math.atan2(aim.y, aim.x);
     // The main bolt + `forks` extra bolts fanned symmetrically around aim (Arc Split).
     for (let i = 0; i <= forks; i++) {
       const ang = baseAng + (i === 0 ? 0 : (i % 2 === 1 ? 1 : -1) * Math.ceil(i / 2) * AUG_CAST_SPLIT_SPREAD);
@@ -2633,9 +2646,10 @@ export class GameRoom extends Room<ArenaState> {
     if (!t) return;
     const dmg = t.damage * this.heldDamageMult(weapon, t.scalingGrades, player); // §14 source grades × §11 req penalty
     const ttl = t.range / t.speed;
+    const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
     this.fireProjectile(
       { x: player.x, y: player.y },
-      { x: player.x + c.aimX, y: player.y + c.aimY },
+      { x: player.x + aim.x, y: player.y + aim.y },
       t.speed,
       dmg,
       false,
@@ -2665,7 +2679,8 @@ export class GameRoom extends Room<ArenaState> {
             this.heldDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player),
         }
       : undefined;
-    const baseAng = Math.atan2(c.aimY, c.aimX);
+    const aim = this.aimDir(player, c); // §37 aim the cone at the cursor POINT
+    const baseAng = Math.atan2(aim.y, aim.x);
     const crit = critChanceFor(player.luk, player.dex); // §30
     for (let i = 0; i < sc.count; i++) {
       // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.

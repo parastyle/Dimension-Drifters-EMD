@@ -798,6 +798,36 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(sawOrb).toBe(true); // the cast delivery fired a projectile (not a melee swing)
     expect(orbEl).toBe("orb:arcane"); // element-tinted per the weapon
   });
+
+  it("§37 a shot flies at the CURSOR POINT (tx/ty), not the client's aim vector", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    p.weapon = "x-gun-revolver-cannon";
+    h.tick(1);
+    const px = p.x; // wherever the player actually is after equip
+    const py = p.y;
+    // The aim VECTOR says "straight right" (aimX=1); the cursor POINT is straight UP from the real player.
+    // The §37 fix makes the bullet follow the POINT (flies up) — before the fix it followed the vector (right).
+    const tx = px;
+    const ty = py - 400;
+    let vx = 0;
+    let vy = 0;
+    let got = false;
+    for (let i = 0; i < 30 && !got; i++) {
+      h.send("p1", "attack", { aimX: 1, aimY: 0, tx, ty });
+      h.tick(1);
+      h.state().projectiles.forEach((pr: { kind: string; vx: number; vy: number }) => {
+        if (pr.kind.startsWith("slug")) {
+          vx = pr.vx;
+          vy = pr.vy;
+          got = true;
+        }
+      });
+    }
+    expect(got).toBe(true);
+    expect(vy).toBeLessThan(0); // flew UP toward the cursor point
+    expect(Math.abs(vx)).toBeLessThan(Math.abs(vy) * 0.2); // mostly vertical — NOT the rightward aim vector
+  });
 });
 
 describe("GameRoom — §4 v0.107 seq'd input protocol (queue / ack / fixed timestep / hostile payloads)", () => {
