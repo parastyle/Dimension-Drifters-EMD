@@ -21,18 +21,15 @@ const game = new Phaser.Game({
     height: window.innerHeight * RENDER_DPR,
     zoom: 1 / RENDER_DPR,
   },
-  // Drive the game loop with setTimeout instead of requestAnimationFrame. rAF is parked by
-  // the OS/compositor whenever a window isn't being presented (unfocused, occluded, or
-  // launched without foreground), which froze the loop ("arena renders, nothing spawns").
-  // setTimeout keeps firing — paired with the Electron shell's disable-background-timer-
-  // throttling switch (packages/desktop/main.cjs), the sim/render run regardless of window
-  // state. §29 v0.118: smoothStep TRUE — the setTimeout clock jitters frame-to-frame, and feeding that raw
-  // delta into movement + the belt CAMERA SCROLL read as stutter (worst on the belt's horizontal scroll).
-  // Phaser's delta smoothing averages the timestep → smooth motion; the server stays authoritative so the
-  // smoothed client delta can't affect sim correctness.
+  // §37 loop driver: requestAnimationFrame in a BROWSER (vsync-locked, smooth, and the browser tab is
+  // presented so rAF never parks), but setTimeout under the ELECTRON desktop shell — there rAF is throttled
+  // when the window is unfocused/occluded (froze the loop: "arena renders, nothing spawns"), and the shell's
+  // disable-background-timer-throttling switch keeps setTimeout firing. Forcing setTimeout in a plain browser
+  // tab caps + stutters FPS (no vsync, ~4ms clamp), so only force it where it's actually needed.
+  // smoothStep TRUE either way — averaging the timestep keeps movement + belt camera scroll smooth.
   fps: {
     target: 60,
-    forceSetTimeOut: true,
+    forceSetTimeOut: /electron/i.test(navigator.userAgent),
     smoothStep: true,
   },
   render: {
@@ -41,7 +38,10 @@ const game = new Phaser.Game({
     // a little during animation, so the residual minification needs proper filtering:
     antialias: true, // LINEAR texture filtering (not NEAREST/pixel-art) — smooth scaling
     mipmapFilter: "LINEAR_MIPMAP_LINEAR", // trilinear mips kill the rotate/downscale shimmer (WebGL2 NPOT)
-    antialiasGL: true, // MSAA on the framebuffer — smooths rotated sprite edges
+    // §37 MSAA OFF — the framebuffer-resolve cost scales with the hi-DPI buffer and the big textured belt
+    // deck/backdrop; `antialias` (linear filtering) + trilinear mips already carry most of the smoothing, so
+    // dropping MSAA is a real GPU win for only a slight softening of rotated sprite edges.
+    antialiasGL: false,
     roundPixels: false, // sub-pixel placement so motion stays smooth, not steppy
   },
 });
