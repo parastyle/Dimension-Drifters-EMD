@@ -595,8 +595,15 @@ export class ArenaScene extends Phaser.Scene {
     // mouse movement that *started* while a movement key was held; raw window listeners don't.
     const onMove = (e: MouseEvent): void => {
       const rect = this.game.canvas.getBoundingClientRect();
-      this.pointerScreen.x = e.clientX - rect.left;
-      this.pointerScreen.y = e.clientY - rect.top;
+      // §37 DPR FIX: game-space coords = CSS px × (internal buffer / CSS size). The §28 hi-DPI buffer is
+      // window×RENDER_DPR displayed at CSS size (main.ts zoom=1/DPR), so the raw clientX/Y MUST be scaled —
+      // unscaled, every cursor-derived point (projectile target tx/ty, the facing-flip line, quake epicenter)
+      // landed short of the true cursor by the DPR factor on any scaled display (Windows 125%/150%, 4K).
+      // Phaser's own pointer.x does this transform; this raw DOM listener (CODE-7 aim-freeze fix) didn't.
+      const sx = rect.width > 0 ? this.scale.width / rect.width : 1;
+      const sy = rect.height > 0 ? this.scale.height / rect.height : 1;
+      this.pointerScreen.x = (e.clientX - rect.left) * sx;
+      this.pointerScreen.y = (e.clientY - rect.top) * sy;
       this.pointerScreen.set = true;
       this.pointerMoves++;
     };
@@ -2914,6 +2921,7 @@ export class ArenaScene extends Phaser.Scene {
 
     let aimX = 0;
     let aimY = 0;
+    let aimDxPx = 0; // §37 raw horizontal cursor offset from the character (drives the facing flip)
     const self = selfId ? this.blobs.get(selfId) : undefined;
     if (self) {
       const px = this.pointerScreen.set ? this.pointerScreen.x : pointer.x;
@@ -2935,6 +2943,7 @@ export class ArenaScene extends Phaser.Scene {
         ax = px + cam.scrollX - self.x;
         ay = py + cam.scrollY - self.y;
       }
+      aimDxPx = ax; // raw px — the facing flip commits on the sign of THIS, at the character's midpoint
       const len = Math.hypot(ax, ay);
       if (len > 0.001) {
         aimX = ax / len;
@@ -2984,6 +2993,7 @@ export class ArenaScene extends Phaser.Scene {
         speed,
         aimX: isSelf ? aimX : 0,
         aimY: isSelf ? aimY : 0,
+        aimDxPx: isSelf ? aimDxPx : undefined, // §37 raw offset → the flip commits at the midpoint
         aimDir: pl?.aimDir ?? 0, // §9 remote gun pose tracks the synced aim
         isSelf,
         recoilX: pl?.vx ?? 0, // §20 momentum flinch (gun recoil / hit knockback)

@@ -43,6 +43,10 @@ export interface RigAnim {
   /** Aim direction toward the cursor (local player only). */
   aimX: number;
   aimY: number;
+  /** §37 RAW horizontal cursor offset from the character (px, unnormalized) — drives the facing FLIP so it
+   *  commits exactly as the mouse crosses the character's midpoint (a normalized-aim threshold goes sticky
+   *  when the cursor is far above/below: |aimX| stays tiny however clearly the midpoint was crossed). */
+  aimDxPx?: number;
   /** §9 synced aim angle (radians) — points a REMOTE player's gun (the local player uses aimX/aimY). */
   aimDir: number;
   isSelf: boolean;
@@ -477,11 +481,15 @@ export class SpriteRig {
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
     const dirX = anim.isSelf ? anim.aimX : this.weaponDef?.gun ? Math.cos(anim.aimDir) : anim.moveX;
-    // §37 HYSTERESIS deadzone — commit a new facing only past this |dirX| so a near-vertical aim doesn't
-    // strobe the body. The old 0.18 (~10° off vertical) was too wide for the belt: aiming at something close
-    // or nearly overhead left the character facing the WRONG way and not following the cursor. 0.05 (~3°) is
-    // snappy; the facingBlend ease below still smooths any flip into a TURN so it never reads as a strobe.
-    if (Math.abs(dirX) > 0.05) this.facing = dirX >= 0 ? 1 : -1;
+    // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
+    // (±6px hysteresis kills strobe at the exact centre) — a normalized-|aimX| threshold went sticky when the
+    // cursor sat far above/below (|aimX|≈0 however clearly the midpoint was crossed). Remotes/enemies keep the
+    // small normalized deadzone (they aim from synced angles/movement, not a cursor).
+    if (anim.isSelf && anim.aimDxPx !== undefined) {
+      if (Math.abs(anim.aimDxPx) > 6) this.facing = anim.aimDxPx >= 0 ? 1 : -1;
+    } else if (Math.abs(dirX) > 0.05) {
+      this.facing = dirX >= 0 ? 1 : -1;
+    }
     // §7 v0.105 de-clunk: EASE the visual mirror toward the committed facing, passing through scaleX≈0 —
     // that reads as a TURN, not a one-frame full-body flip. UNIFORM baseScale on both axes = a pure mirror,
     // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).
