@@ -123,8 +123,10 @@ const PLAYER_SPRITE = "drifter";
  *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
  *  world px of sky above the band top. All client-only presentation. */
 const BELT_FORESHORTEN = 0.5;
-// §37 640 → 840 → 1060: fits the +50% deeper deck band (DEPTH_MAX 1300 projects to 650) + sky + hull lip.
-const BELT_VIEW_H = 1060;
+// §37 the world-height fit to the screen = SKY (176) + projected deck (DEPTH_MAX·FORESHORTEN = 650) + a thin
+// hull LIP (~54) = 880. 1060 left ~22% of the screen as dead gray hull below the deck; 880 fills it with the
+// deck + just a sliver of depth-lip, and zooms the characters up a touch as a bonus.
+const BELT_VIEW_H = 880;
 const BELT_SKY = 176;
 
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
