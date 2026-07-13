@@ -123,7 +123,8 @@ const PLAYER_SPRITE = "drifter";
  *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
  *  world px of sky above the band top. All client-only presentation. */
 const BELT_FORESHORTEN = 0.5;
-const BELT_VIEW_H = 840; // §37 zoomed out (was 640) — fits the deeper deck band + more of the belt on screen
+// §37 640 → 840 → 1060: fits the +50% deeper deck band (DEPTH_MAX 1300 projects to 650) + sky + hull lip.
+const BELT_VIEW_H = 1060;
 const BELT_SKY = 176;
 
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
@@ -475,6 +476,13 @@ export class ArenaScene extends Phaser.Scene {
       this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
       this.load.image("belt-sky-arena-mouth", "belt/sky-arena-mouth.png");
       this.load.image("belt-deck", "belt/deck.png");
+      // §37 themed-level Codex backdrop (gen-belt-backdrops.mjs) — one vista per non-sky-carrier level.
+      // init() ran before preload, so the selected level is known; only its own art loads. The key is
+      // PER-LEVEL (texture keys outlive scene restarts — a shared "belt-bg" key would show the previous
+      // level's vista on the next run).
+      if (this.selectedBeltLevel !== "sky-carrier") {
+        this.load.image(`belt-bg:${this.selectedBeltLevel}`, `belt/bg-${this.selectedBeltLevel}.png`);
+      }
     }
     for (const manifest of Object.values(SPRITES)) {
       // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
@@ -2616,8 +2624,9 @@ export class ArenaScene extends Phaser.Scene {
   private buildBeltFloor(): void {
     const theme = this.beltTheme();
     this.cameras.main.setBackgroundColor(theme.sky); // §36 dimension-themed sky (behind any backdrop)
-    // §29/§36 Codex sky-carrier backdrop + drifting clouds are the SKY-CARRIER look; other levels get a
-    // dimension-palette sky + vector deck (themed, no per-level art needed yet).
+    // §29/§36/§37 Codex backdrops: sky-carrier keeps its per-room sky set + drifting clouds; every other
+    // level now gets its OWN Codex vista (belt/bg-<levelId>.png, gen-belt-backdrops.mjs), with the palette
+    // sky as the fallback if the art didn't load.
     const skyCarrier = this.selectedBeltLevel === "sky-carrier";
     if (skyCarrier && this.textures.exists("belt-sky")) {
       this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
@@ -2630,6 +2639,12 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(-190)
         .setAlpha(0.32);
       this.floorObjs.push(this.beltClouds);
+    } else if (!skyCarrier && this.textures.exists(`belt-bg:${this.selectedBeltLevel}`)) {
+      this.beltBackdrop = this.add
+        .image(0, 0, `belt-bg:${this.selectedBeltLevel}`)
+        .setOrigin(0, 0)
+        .setDepth(-200);
+      this.floorObjs.push(this.beltBackdrop);
     }
     const level = this.beltLevel ?? beltLevelFor(this.selectedBeltLevel);
     const w = level.length;
@@ -2792,8 +2807,10 @@ export class ArenaScene extends Phaser.Scene {
     const roomName = this.room?.state.beltRoomName ?? "";
     if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
     this.lastBeltRoom = roomName;
-    if (this.beltBackdrop) {
-      // §31 each room gets its own Codex backdrop (Flight Deck → Catwalk → Arena Mouth → the storm Bridge).
+    if (this.beltBackdrop && this.selectedBeltLevel === "sky-carrier") {
+      // §31 each SKY-CARRIER room gets its own Codex backdrop (Flight Deck → Catwalk → Arena Mouth → the
+      // storm Bridge). §37: gated to sky-carrier — the room names would never match on a themed level and the
+      // fallback would stomp its bg-<level> vista with the sky-carrier sky.
       const key =
         roomName === "The Bridge"
           ? "belt-sky-bridge"

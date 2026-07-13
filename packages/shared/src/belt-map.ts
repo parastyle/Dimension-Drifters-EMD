@@ -151,13 +151,14 @@ export const SKY_CARRIER: BeltLevel = {
   dimensionId: "wild-west",
   blurb: "Board a flying dreadnought. Fight up the flight deck to the bridge — and the World-Tread.",
   length: ARENA_WIDTH,
+  // §37 margins ×1.5 with the deeper DEPTH_MAX so the wide/pinch proportions hold (+50% room everywhere).
   floor: [
-    { x: 0, yMin: 44, yMax: DEPTH_MAX - 44 },
-    { x: 1900, yMin: 44, yMax: DEPTH_MAX - 44 }, // wide flight deck
-    { x: 2450, yMin: 214, yMax: DEPTH_MAX - 214 }, // pinch → catwalk
-    { x: 3150, yMin: 214, yMax: DEPTH_MAX - 214 },
-    { x: 3750, yMin: 40, yMax: DEPTH_MAX - 40 }, // open → boss arena
-    { x: ARENA_WIDTH, yMin: 40, yMax: DEPTH_MAX - 40 },
+    { x: 0, yMin: 66, yMax: DEPTH_MAX - 66 },
+    { x: 1900, yMin: 66, yMax: DEPTH_MAX - 66 }, // wide flight deck
+    { x: 2450, yMin: 320, yMax: DEPTH_MAX - 320 }, // pinch → catwalk
+    { x: 3150, yMin: 320, yMax: DEPTH_MAX - 320 },
+    { x: 3750, yMin: 60, yMax: DEPTH_MAX - 60 }, // open → boss arena
+    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
   ],
   // Jumpable pits — the only hazard (§29). Placed in the WIDE sections (never the catwalk); ~110px wide so
   // a running jump (~144px reach) clears them. Kite enemies in — they can't jump, so pits are free kills.
@@ -188,12 +189,12 @@ export const FROST_CHASM: BeltLevel = {
   blurb: "Cross a shattered glacier. Mind the crevasses — a running jump clears them, the frostbitten can't.",
   length: ARENA_WIDTH,
   floor: [
-    { x: 0, yMin: 60, yMax: DEPTH_MAX - 60 },
-    { x: 1500, yMin: 60, yMax: DEPTH_MAX - 60 }, // wide shelf
-    { x: 2000, yMin: 240, yMax: DEPTH_MAX - 240 }, // pinch → the crevasse
-    { x: 2900, yMin: 240, yMax: DEPTH_MAX - 240 },
-    { x: 3400, yMin: 50, yMax: DEPTH_MAX - 50 }, // open → the throne
-    { x: ARENA_WIDTH, yMin: 50, yMax: DEPTH_MAX - 50 },
+    { x: 0, yMin: 90, yMax: DEPTH_MAX - 90 },
+    { x: 1500, yMin: 90, yMax: DEPTH_MAX - 90 }, // wide shelf
+    { x: 2000, yMin: 360, yMax: DEPTH_MAX - 360 }, // pinch → the crevasse
+    { x: 2900, yMin: 360, yMax: DEPTH_MAX - 360 },
+    { x: 3400, yMin: 75, yMax: DEPTH_MAX - 75 }, // open → the throne
+    { x: ARENA_WIDTH, yMin: 75, yMax: DEPTH_MAX - 75 },
   ],
   pits: [
     { x0: 900, x1: 1010 },
@@ -219,11 +220,11 @@ export const VERDANT_RUIN: BeltLevel = {
   blurb: "Push through a ruin the jungle reclaimed. Vine-lashers swarm the root halls to the Moss-Stone Golem.",
   length: ARENA_WIDTH,
   floor: [
-    { x: 0, yMin: 50, yMax: DEPTH_MAX - 50 },
-    { x: 1700, yMin: 120, yMax: DEPTH_MAX - 120 },
-    { x: 2600, yMin: 120, yMax: DEPTH_MAX - 120 }, // root corridor
-    { x: 3300, yMin: 200, yMax: DEPTH_MAX - 60 }, // canted floor → ruin mouth
-    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
+    { x: 0, yMin: 75, yMax: DEPTH_MAX - 75 },
+    { x: 1700, yMin: 180, yMax: DEPTH_MAX - 180 },
+    { x: 2600, yMin: 180, yMax: DEPTH_MAX - 180 }, // root corridor
+    { x: 3300, yMin: 300, yMax: DEPTH_MAX - 90 }, // canted floor → ruin mouth
+    { x: ARENA_WIDTH, yMin: 90, yMax: DEPTH_MAX - 90 },
   ],
   pits: [
     { x0: 2050, x1: 2160 },
@@ -247,12 +248,12 @@ export const NEON_UNDERGRID: BeltLevel = {
   blurb: "Descend a server sublevel. Ranged synth-mobs hold the conduits down to the Warden's reactor core.",
   length: ARENA_WIDTH,
   floor: [
-    { x: 0, yMin: 70, yMax: DEPTH_MAX - 70 },
-    { x: 1600, yMin: 70, yMax: DEPTH_MAX - 70 }, // server farm
-    { x: 2100, yMin: 260, yMax: DEPTH_MAX - 260 }, // data conduit (tight)
-    { x: 3400, yMin: 260, yMax: DEPTH_MAX - 260 },
-    { x: 3800, yMin: 40, yMax: DEPTH_MAX - 40 }, // reactor floor
-    { x: ARENA_WIDTH, yMin: 40, yMax: DEPTH_MAX - 40 },
+    { x: 0, yMin: 105, yMax: DEPTH_MAX - 105 },
+    { x: 1600, yMin: 105, yMax: DEPTH_MAX - 105 }, // server farm
+    { x: 2100, yMin: 390, yMax: DEPTH_MAX - 390 }, // data conduit (tight)
+    { x: 3400, yMin: 390, yMax: DEPTH_MAX - 390 },
+    { x: 3800, yMin: 60, yMax: DEPTH_MAX - 60 }, // reactor floor
+    { x: ARENA_WIDTH, yMin: 60, yMax: DEPTH_MAX - 60 },
   ],
   pits: [
     { x0: 1150, x1: 1260 },
@@ -279,12 +280,12 @@ export const ASHLAND_FORGE: BeltLevel = {
   blurb: "Cross a live foundry. Leap the lava gaps — the cinder-born wade them, you won't. Ver'Kaln waits at the pour.",
   length: ARENA_WIDTH,
   floor: [
-    { x: 0, yMin: 56, yMax: DEPTH_MAX - 56 },
-    { x: 1650, yMin: 56, yMax: DEPTH_MAX - 56 }, // foundry floor
-    { x: 2150, yMin: 230, yMax: DEPTH_MAX - 230 }, // pinch → the pour-line catwalk
-    { x: 3100, yMin: 230, yMax: DEPTH_MAX - 230 },
-    { x: 3600, yMin: 46, yMax: DEPTH_MAX - 46 }, // open → the crucible
-    { x: ARENA_WIDTH, yMin: 46, yMax: DEPTH_MAX - 46 },
+    { x: 0, yMin: 84, yMax: DEPTH_MAX - 84 },
+    { x: 1650, yMin: 84, yMax: DEPTH_MAX - 84 }, // foundry floor
+    { x: 2150, yMin: 345, yMax: DEPTH_MAX - 345 }, // pinch → the pour-line catwalk
+    { x: 3100, yMin: 345, yMax: DEPTH_MAX - 345 },
+    { x: 3600, yMin: 69, yMax: DEPTH_MAX - 69 }, // open → the crucible
+    { x: ARENA_WIDTH, yMin: 69, yMax: DEPTH_MAX - 69 },
   ],
   pits: [
     { x0: 1000, x1: 1110 },
