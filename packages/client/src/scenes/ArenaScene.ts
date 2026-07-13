@@ -2161,6 +2161,16 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(100010)
       .setInteractive();
+    // §37 a framed backdrop panel (Clean Minimal) behind the title + cards, so the level-up window carries the
+    // same border identity as the bag/shop. Sits above the dim, below the interactive cards.
+    const pw = Math.min(this.screenW() - 60, 780);
+    const ph = 400;
+    const pgx = cx - pw / 2;
+    const pgy = cy - 208;
+    const pg = this.add.graphics().setScrollFactor(0).setDepth(100010.5);
+    pg.fillStyle(0x0a0812, 0.92).fillRoundedRect(pgx, pgy, pw, ph, 14);
+    this.drawPanelFrame(pg, pgx, pgy, pw, ph, 1);
+    this.levelWinObjects.push(pg);
     const title = this.add
       .text(cx, cy - 170, `LEVEL ${self.level}`, {
         fontSize: "30px",
@@ -4232,6 +4242,49 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 the Tab bag overlay — a grid of the bag's weapons; click one to EQUIP it into the active slot
    *  (swapping whatever was there back to the bag). Click a slot chip (below) to STASH it. Zones are pooled
    *  and repositioned each frame the panel is open; the unused tail is hidden. */
+  /** §37 CLEAN MINIMAL panel border (the chosen UI frame) — drawn procedurally so it's crisp at any panel
+   *  size + resolution: a thin double outline, four accent corner ticks, and one accent hairline across the
+   *  top. Vector, no texture (the rendered art frames are ornate styles for later; minimal reads best drawn).
+   *  Call right after the panel's fill, into the same immediate-mode Graphics `g`. */
+  private drawPanelFrame(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    s: number,
+  ): void {
+    const ink = 0xcfd6de;
+    const accent = 0x33e6ff;
+    const r = 10 * s;
+    // thin double line
+    g.lineStyle(1.5 * s, ink, 0.85).strokeRoundedRect(x, y, w, h, r);
+    g.lineStyle(1 * s, ink, 0.35).strokeRoundedRect(x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, r - 2 * s);
+    // accent corner ticks — a short L just inside each corner
+    const t = 14 * s;
+    const o = 9 * s;
+    g.lineStyle(2 * s, accent, 0.95);
+    const corners: [number, number, number, number][] = [
+      [x + o, y + o, 1, 1],
+      [x + w - o, y + o, -1, 1],
+      [x + o, y + h - o, 1, -1],
+      [x + w - o, y + h - o, -1, -1],
+    ];
+    for (const [cx, cy, sx, sy] of corners) {
+      g.beginPath();
+      g.moveTo(cx + sx * t, cy);
+      g.lineTo(cx, cy);
+      g.lineTo(cx, cy + sy * t);
+      g.strokePath();
+    }
+    // one accent hairline across the top
+    g.lineStyle(1 * s, accent, 0.45);
+    g.beginPath();
+    g.moveTo(x + 22 * s, y + 2.5 * s);
+    g.lineTo(x + w - 22 * s, y + 2.5 * s);
+    g.strokePath();
+  }
+
   private renderBagPanel(self: PlayerState, s: number): void {
     if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
     const g = this.bagG.setVisible(true);
@@ -4242,7 +4295,7 @@ export class ArenaScene extends Phaser.Scene {
     const px = this.screenW() / 2 - panelW / 2;
     const py = this.screenH() - 84 * s - panelH - 18 * s;
     g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
-    g.lineStyle(2 * s, 0x2f3946, 1).strokeRoundedRect(px, py, panelW, panelH, 10 * s);
+    this.drawPanelFrame(g, px, py, panelW, panelH, s); // §37 Clean Minimal border
     const title = this.hudText(this.bagTexts, 0, 100046)
       .setText(
         this.shopOpen
