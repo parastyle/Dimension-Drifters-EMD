@@ -1060,7 +1060,14 @@ export class ArenaScene extends Phaser.Scene {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
       // hand the level to the predictor (no POI map) so local collision matches the server exactly.
       this.beltLevel = beltLevelFor(this.selectedBeltLevel);
-      this.buildBeltFloor();
+      // §37 never let a floor-build failure (e.g. a themed-level texture/canvas issue on some GPUs) throw out
+      // of create() and black the whole scene — log it so it's diagnosable, and keep the level playable.
+      try {
+        this.buildBeltFloor();
+      } catch (e) {
+        console.error("[belt] buildBeltFloor failed — level renders without its floor art", e);
+        this.cameras.main.setBackgroundColor(this.beltTheme().sky);
+      }
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
     } else {
@@ -1538,6 +1545,10 @@ export class ArenaScene extends Phaser.Scene {
       else this.enemyWindup.set(id, w);
       if (w > 0.01) {
         const g = this.telegraphGfx;
+        // §37 this runs BEFORE projectBelt, so rig.y is still WORLD depth; draw the tell at the PROJECTED
+        // enemy position (beltY) or it lands at the bottom of the screen, far below the enemy.
+        const tx = rig.x;
+        const ty = this.belt ? this.beltY(rig.y) : rig.y;
         // §20 "white gradient leading flash": a directional cone toward the targeted player showing EXACTLY
         // where the strike lands (the enemy's real melee range/arc) — WYSIWYG danger, brightening as it peaks.
         // M1: read effectiveMelee (not raw .melee) so the DERIVED lunges (rusher/swarm/zoner) draw the same
@@ -1556,18 +1567,19 @@ export class ArenaScene extends Phaser.Scene {
               ny = p.y - rig.y;
             }
           });
+          if (this.belt) ny *= BELT_FORESHORTEN; // §37 SCREEN-space cone direction (depth is compressed)
           const ang = Math.atan2(ny, nx);
           g.fillStyle(0xffffff, 0.06 + 0.22 * w);
           g.beginPath();
-          g.moveTo(rig.x, rig.y);
-          g.arc(rig.x, rig.y, mel.range, ang - mel.halfArc, ang + mel.halfArc);
+          g.moveTo(tx, ty);
+          g.arc(tx, ty, mel.range, ang - mel.halfArc, ang + mel.halfArc);
           g.closePath();
           g.fillPath();
         }
         g.fillStyle(0xffffff, w * 0.4);
-        g.fillCircle(rig.x, rig.y, 24);
+        g.fillCircle(tx, ty, 24);
         g.lineStyle(2.5 + 2 * w, 0xffffff, 0.55 + 0.45 * w);
-        g.strokeCircle(rig.x, rig.y, 52 - 30 * w);
+        g.strokeCircle(tx, ty, 52 - 30 * w);
       }
       rig.setDepth(rig.y);
     }
@@ -2685,7 +2697,15 @@ export class ArenaScene extends Phaser.Scene {
     // bake (canvas 2D clip + repeating pattern), sidestepping the old Phaser-4 GeometryMask2-on-TileSprite
     // blocker entirely. Sky-carrier uses its original deck.png; themed levels their deck-<id>.png strips.
     const deckKey = skyCarrier ? "belt-deck" : `belt-deck:${this.selectedBeltLevel}`;
-    const plated = this.textures.exists(deckKey) && this.bakeDeckPlating(deckKey, far, near, w);
+    // §37 the canvas bake uploads big textures — on a low-VRAM GPU that can throw. NEVER let it abort the
+    // floor build (that blacked out themed levels); on any failure fall back to the procedural vector deck.
+    let plated = false;
+    try {
+      plated = this.textures.exists(deckKey) && this.bakeDeckPlating(deckKey, far, near, w);
+    } catch (e) {
+      console.warn("[belt] deck plating bake failed — using the vector deck", e);
+      plated = false;
+    }
     // Gameplay markings + telegraphs live ABOVE the plating (its own layer at -18).
     const gl = this.add.graphics().setDepth(-18);
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
