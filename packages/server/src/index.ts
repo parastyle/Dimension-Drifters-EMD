@@ -7,7 +7,11 @@ const gameServer = new Server({
   transport: new WebSocketTransport(),
 });
 
-gameServer.define(ROOM_NAME, GameRoom);
+// §39 MATCHMAKING: joinOrCreate must only match rooms created with the SAME mode/level — without filterBy it
+// joined ANY live room, so picking Frost Chasm while another tab held a Sky Carrier (or top-down) room joined
+// THAT room: the client drew the picked level, the server simulated a different one (black screen / wrong
+// roster), and the non-host's dev/boss messages were dropped. Same-option picks still share a room (co-op).
+gameServer.define(ROOM_NAME, GameRoom).filterBy(["belt", "beltLevel", "dimensionId", "bossRush"]);
 
 gameServer
   .listen(DEFAULT_PORT)
