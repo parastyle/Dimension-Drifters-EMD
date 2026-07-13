@@ -476,12 +476,13 @@ export class ArenaScene extends Phaser.Scene {
       this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
       this.load.image("belt-sky-arena-mouth", "belt/sky-arena-mouth.png");
       this.load.image("belt-deck", "belt/deck.png");
-      // §37 themed-level Codex backdrop (gen-belt-backdrops.mjs) — one vista per non-sky-carrier level.
-      // init() ran before preload, so the selected level is known; only its own art loads. The key is
-      // PER-LEVEL (texture keys outlive scene restarts — a shared "belt-bg" key would show the previous
-      // level's vista on the next run).
+      // §37 themed-level Codex art (gen-belt-backdrops.mjs + gen-belt-decks.mjs) — a vista + a deck-plating
+      // strip per non-sky-carrier level. init() ran before preload, so the selected level is known; only its
+      // own art loads. Keys are PER-LEVEL (texture keys outlive scene restarts — a shared key would show the
+      // previous level's art on the next run).
       if (this.selectedBeltLevel !== "sky-carrier") {
         this.load.image(`belt-bg:${this.selectedBeltLevel}`, `belt/bg-${this.selectedBeltLevel}.png`);
+        this.load.image(`belt-deck:${this.selectedBeltLevel}`, `belt/deck-${this.selectedBeltLevel}.png`);
       }
     }
     for (const manifest of Object.values(SPRITES)) {
@@ -2672,63 +2673,126 @@ export class ArenaScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(-20);
     // dark hull/void below the whole thing
     g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
-    // Walkable deck fill — a crisp, collision-accurate trapezoid following the exact floor profile. (The
-    // Codex deck-PLATING texture is installed but not painted here yet: clipping it to this varying trapezoid
-    // needs a Phaser-4 geometry mask, and Phaser 4's setMask doesn't bind a GeometryMask2 to a TileSprite the
-    // way Phaser 3 did — a real blocker to solve before the texture can replace this without spilling into the
-    // sky at the catwalk. The vector deck + the Codex sky backdrop already read well.)
+    // Walkable deck BASE fill — a crisp, collision-accurate trapezoid following the exact floor profile.
+    // Stays under the plating bake as the fallback (and covers any hairline the clip might miss).
     g.fillStyle(theme.deck, 1); // §36 dimension-themed deck fill
     deckPoly(g);
     g.fillPath();
+    this.floorObjs.push(g);
+    // §37 CODEX PLATING: paint the level's authored deck texture INSIDE the trapezoid via a one-time canvas
+    // bake (canvas 2D clip + repeating pattern), sidestepping the old Phaser-4 GeometryMask2-on-TileSprite
+    // blocker entirely. Sky-carrier uses its original deck.png; themed levels their deck-<id>.png strips.
+    const deckKey = skyCarrier ? "belt-deck" : `belt-deck:${this.selectedBeltLevel}`;
+    const plated = this.textures.exists(deckKey) && this.bakeDeckPlating(deckKey, far, near, w);
+    // Gameplay markings + telegraphs live ABOVE the plating (its own layer at -18).
+    const gl = this.add.graphics().setDepth(-18);
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
-    g.lineStyle(6, 0xffd24a, 0.55).beginPath();
-    for (let i = 0; i < far.length; i++) g.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
-    g.strokePath();
-    g.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
-    g.moveTo(far[0]!.x, far[0]!.y);
-    for (const p of far) g.lineTo(p.x, p.y);
-    g.strokePath();
-    g.lineStyle(6, 0xffd24a, 0.9).beginPath(); // near safety lip
-    g.moveTo(near[0]!.x, near[0]!.y);
-    for (const p of near) g.lineTo(p.x, p.y);
-    g.strokePath();
-    // §31 PLATING DETAIL: procedural panel seams + transverse plate joints drawn INSIDE the trapezoid (no
-    // texture mask needed — approximates the deck-plating look while the Phaser-4 TileSprite-mask blocker for
-    // a real texture stands). Longitudinal seams follow the perspective (far→near interpolation); transverse
-    // joints run across the deck at a regular pitch, fading with depth.
-    const deckYAt = (i: number, f: number) => far[i]!.y + (near[i]!.y - far[i]!.y) * f;
-    g.lineStyle(2, 0x363c45, 0.55); // subtle darker seam
-    for (const f of [0.22, 0.44, 0.66, 0.86]) {
-      g.beginPath();
-      g.moveTo(far[0]!.x, deckYAt(0, f));
-      for (let i = 1; i < far.length; i++) g.lineTo(far[i]!.x, deckYAt(i, f));
-      g.strokePath();
-    }
-    for (let i = 0; i < far.length; i += 3) {
-      // a transverse plate joint every ~144px of belt, from just inside the far rail to the near lip
-      g.lineStyle(1.5, 0x363c45, 0.4);
-      g.beginPath();
-      g.moveTo(far[i]!.x, deckYAt(i, 0.08));
-      g.lineTo(near[i]!.x, deckYAt(i, 0.94));
-      g.strokePath();
+    gl.lineStyle(6, 0xffd24a, 0.55).beginPath();
+    for (let i = 0; i < far.length; i++) gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    gl.strokePath();
+    gl.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
+    gl.moveTo(far[0]!.x, far[0]!.y);
+    for (const p of far) gl.lineTo(p.x, p.y);
+    gl.strokePath();
+    gl.lineStyle(6, 0xffd24a, 0.9).beginPath(); // near safety lip
+    gl.moveTo(near[0]!.x, near[0]!.y);
+    for (const p of near) gl.lineTo(p.x, p.y);
+    gl.strokePath();
+    if (!plated) {
+      // §31 PROCEDURAL plating detail — only when no authored texture landed (the pre-§37 look): panel seams
+      // following the perspective + transverse plate joints at a regular pitch.
+      const deckYAt = (i: number, f: number) => far[i]!.y + (near[i]!.y - far[i]!.y) * f;
+      gl.lineStyle(2, 0x363c45, 0.55); // subtle darker seam
+      for (const f of [0.22, 0.44, 0.66, 0.86]) {
+        gl.beginPath();
+        gl.moveTo(far[0]!.x, deckYAt(0, f));
+        for (let i = 1; i < far.length; i++) gl.lineTo(far[i]!.x, deckYAt(i, f));
+        gl.strokePath();
+      }
+      for (let i = 0; i < far.length; i += 3) {
+        // a transverse plate joint every ~144px of belt, from just inside the far rail to the near lip
+        gl.lineStyle(1.5, 0x363c45, 0.4);
+        gl.beginPath();
+        gl.moveTo(far[i]!.x, deckYAt(i, 0.08));
+        gl.lineTo(near[i]!.x, deckYAt(i, 0.94));
+        gl.strokePath();
+      }
     }
     // §29 PIT GAPS — cut the void into the deck at each authored pit x-range (WYSIWYG: the hole you see is
-    // the gap you fall through), edged with hazard stripes.
+    // the gap you fall through), edged with hazard stripes. Drawn over the plating so the hole punches through.
     for (const pit of level.pits) {
       const b = beltBounds(level, (pit.x0 + pit.x1) / 2);
       const top = this.beltY(BELT_Y0 + b.yMin);
       const bot = this.beltY(BELT_Y0 + b.yMax);
-      g.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
-      g.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
-      g.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
-      g.beginPath();
-      g.moveTo(pit.x0, top);
-      g.lineTo(pit.x0, bot);
-      g.moveTo(pit.x1, top);
-      g.lineTo(pit.x1, bot);
-      g.strokePath();
+      gl.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
+      gl.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
+      gl.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
+      gl.beginPath();
+      gl.moveTo(pit.x0, top);
+      gl.lineTo(pit.x0, bot);
+      gl.moveTo(pit.x1, top);
+      gl.lineTo(pit.x1, bot);
+      gl.strokePath();
     }
-    this.floorObjs.push(g);
+    this.floorObjs.push(gl);
+  }
+
+  /** §37 one-time CANVAS BAKE of the level's Codex deck texture, clipped to the deck trapezoid: per ≤2048px
+   *  chunk, clip the polygon path on a 2D canvas, fill with the texture as a world-anchored repeating
+   *  pattern, and add it as an image at plating depth (-19, between the base fill and the markings). Canvas
+   *  clip+pattern replaces the unavailable GeometryMask2-on-TileSprite. Returns false if the bake can't run
+   *  (no 2D context / bad texture) so the caller keeps the procedural seams. */
+  private bakeDeckPlating(
+    key: string,
+    far: { x: number; y: number }[],
+    near: { x: number; y: number }[],
+    w: number,
+  ): boolean {
+    const src = this.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const sw = src.width;
+    const sh = src.height;
+    if (!sw || !sh) return false;
+    const step = 48; // must match the far/near sample stride above
+    const CHUNK = 2048; // stay under conservative GPU texture limits
+    // Anchor the pattern's vertical phase to ONE fixed projected y so all chunks align seamlessly.
+    const anchorY = Math.floor(this.beltY(BELT_Y0));
+    for (let cx = 0; cx < w; cx += CHUNK) {
+      const cw = Math.min(CHUNK, w - cx);
+      const i0 = Math.max(0, Math.floor(cx / step) - 1);
+      const i1 = Math.min(far.length - 1, Math.ceil((cx + cw) / step) + 1);
+      let top = Number.POSITIVE_INFINITY;
+      let bot = Number.NEGATIVE_INFINITY;
+      for (let i = i0; i <= i1; i++) {
+        top = Math.min(top, far[i]!.y);
+        bot = Math.max(bot, near[i]!.y);
+      }
+      top = Math.floor(top) - 2;
+      bot = Math.ceil(bot) + 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = bot - top;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return false;
+      ctx.beginPath();
+      ctx.moveTo(far[i0]!.x - cx, far[i0]!.y - top);
+      for (let i = i0; i <= i1; i++) ctx.lineTo(far[i]!.x - cx, far[i]!.y - top);
+      for (let i = i1; i >= i0; i--) ctx.lineTo(near[i]!.x - cx, near[i]!.y - top);
+      ctx.closePath();
+      ctx.clip();
+      const pat = ctx.createPattern(src, "repeat");
+      if (!pat) return false;
+      // Shift so pattern space aligns with WORLD space (x) + the fixed anchor (y) — chunk borders then match.
+      const dx = ((cx % sw) + sw) % sw;
+      const dy = (((top - anchorY) % sh) + sh) % sh;
+      ctx.translate(-dx, -dy);
+      ctx.fillStyle = pat;
+      ctx.fillRect(0, 0, cw + sw, bot - top + sh);
+      const texKey = `deckbake:${this.selectedBeltLevel}:${cx}`;
+      if (this.textures.exists(texKey)) this.textures.remove(texKey); // scene restarts re-bake cleanly
+      this.textures.addCanvas(texKey, canvas);
+      this.floorObjs.push(this.add.image(cx, top, texKey).setOrigin(0, 0).setDepth(-19));
+    }
+    return true;
   }
 
   /** §29 belt render post-pass — after all positioning (which sets ABSOLUTE world coords each frame), remap
@@ -3062,14 +3126,15 @@ export class ArenaScene extends Phaser.Scene {
       selfWy = rig?.y ?? self.y;
     }
     if (weapon?.quake) {
-      // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp the
-      // server uses, so the VFX lands exactly on the damage AoE.
+      // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp (in WORLD
+      // space) the server's damage uses. §37: the VFX renders on the PROJECTED plane, so belt-project the
+      // epicenter's y for the draw — unprojected it erupted visibly BELOW the cursor.
       const ep = clampQuakeEpicenter(
         { x: rig?.x ?? self.x, y: selfWy },
         { x: cwx, y: cwy },
         QUAKE_REACH,
       );
-      spawnQuake(this, ep.x, ep.y, weapon.quake);
+      spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, weapon.quake);
       // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — the old
       // unconditional hitStop(130) fired on every click, so swinging a quake weapon at air was a rhythmic
       // 130ms judder. A real impact is a skill beat → priority (bypasses the freeze budget).
@@ -3122,8 +3187,10 @@ export class ArenaScene extends Phaser.Scene {
       const rx = rig?.x ?? self.x;
       const ry = rig?.y ?? self.y;
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
-        const ep = clampQuakeEpicenter({ x: rx, y: ry }, { x: cwx, y: cwy }, QUAKE_REACH);
-        this.spawnSlash(ep.x, ep.y, this.selfAim, weapon, true);
+        // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
+        // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
+        const ep = clampQuakeEpicenter({ x: rx, y: selfWy }, { x: cwx, y: cwy }, QUAKE_REACH);
+        this.spawnSlash(ep.x, this.belt ? this.beltY(ep.y) : ep.y, this.selfAim, weapon, true);
       } else {
         this.spawnSlash(rx, ry, this.selfAim, weapon);
       }
