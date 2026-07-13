@@ -48,6 +48,13 @@ export class MenuScene extends Phaser.Scene {
 
   create(): void {
     this.launching = false; // reset the launch latch in case the menu is ever re-entered (Phaser reuses the instance)
+    // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
+    // straight into a Testing-Grounds sandbox (top-down arena, full room to fight) with that asset applied.
+    const dev = new URLSearchParams(location.search).get("dev");
+    if (dev) {
+      this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev });
+      return;
+    }
     this.cameras.main.setBackgroundColor("#0f0c14");
     this.cameras.main.fadeIn(360, 0, 0, 0);
     // §19 v0.108 one AudioBus shared with ArenaScene via the registry. Resume its context on the first

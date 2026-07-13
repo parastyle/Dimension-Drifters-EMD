@@ -43,6 +43,7 @@ import {
   clamp,
   clampQuakeEpicenter,
   classForCharacter,
+  isPlayableCharacter,
   coneAngles,
   countAugment,
   CRIT_MULT,
@@ -574,6 +575,25 @@ export class GameRoom extends Room<ArenaState> {
       player.weaponAffix = "";
       const c = this.combat.get(client.sessionId);
       if (c) c.heldEarned = false;
+    });
+
+    // §39 DEV PORTAL: jump straight to a specific weapon / character by id (Testing-Grounds only, so it can't
+    // touch a live run). Both ids are validated against the real catalogs; a bad id is ignored.
+    this.onMessage("devEquip", (client, message: { weapon?: string; character?: string }) => {
+      if (this.state.mode !== "training") return;
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+      if (typeof message?.weapon === "string" && WEAPONS[message.weapon]) {
+        player.weapon = message.weapon;
+        player.weaponRarity = RARITY_COMMON;
+        player.weaponAffix = "";
+        if (player.slots[player.activeSlot]) player.slots[player.activeSlot]!.weapon = message.weapon;
+        const c = this.combat.get(client.sessionId);
+        if (c) c.heldEarned = false;
+      }
+      if (typeof message?.character === "string" && isPlayableCharacter(message.character)) {
+        player.character = message.character;
+      }
     });
 
     // §29 v0.118 ARSENAL swap: switch which of the 3 slots is in hand (1/2/3 keys). Stows the current held

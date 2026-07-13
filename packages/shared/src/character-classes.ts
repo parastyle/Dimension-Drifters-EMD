@@ -10,7 +10,13 @@
  *
  * Kept in its OWN file (not the auto-generated characters.ts) so re-running the roster generator can't clobber it.
  */
+import { PLAYABLE_CHARACTERS } from "./characters.js";
 import type { Attr } from "./leveling.js";
+
+/** §39 untrusted-id guard → a real playable character id (dev-portal deep-links, network messages). */
+export function isPlayableCharacter(id: string): boolean {
+  return (PLAYABLE_CHARACTERS as readonly string[]).includes(id);
+}
 
 export type CharClassId = "bruiser" | "duelist" | "caster" | "warden" | "scoundrel";
 

@@ -454,8 +454,16 @@ export class ArenaScene extends Phaser.Scene {
   /** §16 v0.116 the menu launched BOSS RUSH — forwarded as a join option (only the room CREATOR's flag
    *  takes effect; joiners inherit the host's synced `mode`). */
   private bossRush = false;
+  /** §39 pending dev-portal deep-link ("boss:<kind>" | "weapon:<id>" | "char:<id>"); applied once, then nulled. */
+  private devLaunch: string | null = null;
 
-  init(data?: { dimensionId?: string; bossRush?: boolean; belt?: boolean; beltLevel?: string }): void {
+  init(data?: {
+    dimensionId?: string;
+    bossRush?: boolean;
+    belt?: boolean;
+    beltLevel?: string;
+    dev?: string;
+  }): void {
     if (data?.dimensionId) this.selectedDimension = data.dimensionId;
     this.bossRush = data?.bossRush ?? false;
     if (data?.belt) this.belt = true; // §29 menu belt-launch (URL `?belt=1` is the other trigger)
@@ -463,6 +471,8 @@ export class ArenaScene extends Phaser.Scene {
     const urlLevel = new URLSearchParams(location.search).get("belt");
     this.selectedBeltLevel =
       data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : this.selectedBeltLevel);
+    // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
+    this.devLaunch = data?.dev ?? new URLSearchParams(location.search).get("dev") ?? null;
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -1160,6 +1170,7 @@ export class ArenaScene extends Phaser.Scene {
             if (status) status.textContent = msg;
             console.error(`[client] ${msg}`);
           }
+          this.applyDevLaunch(); // §39 dev-portal deep-link → training sandbox + the requested asset
         });
         // §4 v0.107: every patch is one completed server tick (tick-locked broadcast) — stamp the
         // snapshot timeline + rings and reconcile the self predictor. DATA ONLY in here (never move a
@@ -4625,6 +4636,41 @@ export class ArenaScene extends Phaser.Scene {
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
     // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
     this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT, weapon.tags?.element);
+  }
+
+  /** §39 DEV PORTAL: apply a `?dev=` deep-link once the room is live — enter Testing Grounds, then spawn the
+   *  boss / equip the weapon / wear the character the portal requested. Messages process server-side in order,
+   *  but we delay the target a beat so `mode` is definitely `training` when its guard checks. */
+  private applyDevLaunch(): void {
+    if (!this.devLaunch || !this.room) return;
+    const spec = this.devLaunch;
+    this.devLaunch = null;
+    const i = spec.indexOf(":");
+    const kind = i < 0 ? spec : spec.slice(0, i);
+    const arg = i < 0 ? "" : spec.slice(i + 1);
+    const target = (): void => {
+      const room = this.room;
+      if (!room) return;
+      if (kind === "boss" && arg) room.send("spawnBossDef", { kind: arg });
+      else if (kind === "weapon" && arg) room.send("devEquip", { weapon: arg });
+      else if (kind === "char" && arg) room.send("devEquip", { character: arg });
+      else if (kind === "enemy" && arg) room.send("debugSpawn", { kind: arg, count: 3 });
+      this.flashBanner(`▶  DEV: ${kind} ${arg}`, "#33e6ff");
+    };
+    // toggleTraining is a TOGGLE — send it AT MOST ONCE (re-sending before the mode syncs back over the
+    // round-trip flips it back and forth). Then just WAIT for the synced confirmation before firing the target.
+    if (this.room.state.mode === "training") {
+      this.time.delayedCall(250, target);
+      return;
+    }
+    this.room.send("toggleTraining");
+    let tries = 0;
+    const wait = (): void => {
+      if (!this.room || tries++ > 40) return;
+      if (this.room.state.mode === "training") target();
+      else this.time.delayedCall(100, wait);
+    };
+    this.time.delayedCall(100, wait);
   }
 
   /** Live on-screen readout so the game loop's health is visible without a dev console. */

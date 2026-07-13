@@ -31,6 +31,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5199", "--directory", "docs/prototypes"],
       "port": 5199
+    },
+    {
+      "name": "portal",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5300", "--directory", "tools/portal"],
+      "port": 5300
     }
   ]
 }
