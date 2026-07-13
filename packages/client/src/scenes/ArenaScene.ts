@@ -1219,7 +1219,10 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
-    if (!this.room) return;
+    // §39 the room resolves BEFORE its first state patch — in that window state.players is still undefined,
+    // and an unguarded read threw every frame (killing the scene's step = permanent black screen; hit on real
+    // machines where the first patch lands a frame late, never in the fast local preview). Wait for the sync.
+    if (!this.room || !this.room.state.players) return;
 
     this.deltaSec = deltaMs / 1000;
     // §19 v0.108 refresh the audio pan reference to the camera's world centre BEFORE this frame's play()
