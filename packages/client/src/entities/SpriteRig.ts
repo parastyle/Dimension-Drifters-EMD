@@ -617,24 +617,42 @@ export class SpriteRig {
         } else if (style === "chop") {
           // OVERHEAD CHOP (quake/slam weapons — matches the ground-eruption VFX): raise the blade up-behind
           // over the head, SLAM it down-forward, hold the landed pose a beat, then settle back to rest.
+          // §40.1 the BODY swings it too (paper-character posing, applied additively — the frame's base body
+          // transform was set above): wind-up leans BACK + rises onto the toes; the slam hauls the torso
+          // FORWARD and drives it down into a squat; the hold keeps the crouch while the quake erupts.
           const raiseA = -Math.PI / 2 - 0.85; // up + tilted behind the head
           const slamA = 0.85 + lookY * 0.25; // down-forward (biased a touch by the cursor's vertical)
           const lift = TARGET_BODY_H * 0.2;
           if (tt < 0.3) {
             const p = tt / 0.3;
-            weaponAngle = restA + (raiseA - restA) * (p * (2 - p)); // ease the raise
+            const e = p * (2 - p);
+            weaponAngle = restA + (raiseA - restA) * e; // ease the raise
             this.swingOffY = -lift * p; // grip climbs as the blade goes overhead
+            this.body.rotation -= 0.16 * e; // lean back behind the lift
+            this.body.y -= 3.5 * s * e; // up onto the toes
+            this.body.scaleY *= 1 + 0.05 * e; // slight stretch
           } else if (tt < 0.52) {
             const p = (tt - 0.3) / 0.22;
-            weaponAngle = raiseA + (slamA - raiseA) * p * p; // ACCELERATE into the slam
-            this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * p * p; // grip drives down past rest
+            const e = p * p;
+            weaponAngle = raiseA + (slamA - raiseA) * e; // ACCELERATE into the slam
+            this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * e; // grip drives down past rest
+            this.body.rotation += -0.16 + 0.38 * e; // haul the torso through: back → forward
+            this.body.y += (-3.5 + 9.5 * e) * s; // toes → driven down
+            this.body.scaleY *= 1 + 0.05 - 0.15 * e; // stretch → squash
           } else if (tt < 0.7) {
             weaponAngle = slamA; // the blade sits buried a beat — the quake erupts here
             this.swingOffY = TARGET_BODY_H * 0.06;
+            this.body.rotation += 0.22; // held forward
+            this.body.y += 6 * s; // held squat
+            this.body.scaleY *= 0.9;
           } else {
             const p = (tt - 0.7) / 0.3;
+            const e = 1 - p * (2 - p);
             weaponAngle = slamA + (restA - slamA) * (p * (2 - p));
-            this.swingOffY = TARGET_BODY_H * 0.06 * (1 - p * (2 - p));
+            this.swingOffY = TARGET_BODY_H * 0.06 * e;
+            this.body.rotation += 0.22 * e;
+            this.body.y += 6 * s * e;
+            this.body.scaleY *= 1 - 0.1 * e;
           }
         } else if (style === "pivot") {
           // CLAW PIVOT — the weapon whips a fast slash ABOUT THE GRIP only: pure rotation at the hand, the
@@ -651,6 +669,11 @@ export class SpriteRig {
             const p = (tt - 0.62) / 0.38;
             weaponAngle = end + (restA - end) * (p * (2 - p));
           }
+          // §40.1 body: a sharp SHOULDER JAB with the whip — a quick paper-twist of the chest (scaleX dip)
+          // that peaks with the slash and releases. The hand still doesn't move; the torso snaps behind it.
+          const jab = tt < 0.62 ? Math.sin((Math.min(tt, 0.62) / 0.62) * Math.PI) : 0;
+          this.body.scaleX *= 1 - 0.14 * jab;
+          this.body.rotation += 0.09 * jab;
         } else if (style === "thrust") {
           // THRUST — rapier/spear lunge: the blade locks along the aim and the grip STABS forward and back.
           weaponAngle = aimLocal;
@@ -663,6 +686,13 @@ export class SpriteRig {
                 : 1 - ((tt - 0.38) / 0.62) * (2 - (tt - 0.38) / 0.62); // ease back to rest
           this.swingOffX = Math.cos(aimLocal) * lunge * env;
           this.swingOffY = Math.sin(aimLocal) * lunge * env;
+          // §40.1 body: the fencer LUNGES behind the stab — lean into the aim + a paper-stretch of the
+          // torso along the thrust (scaleX up, scaleY in), sinking slightly as the front leg plants.
+          const e = Math.max(0, env);
+          this.body.rotation += 0.15 * e * Math.cos(aimLocal);
+          this.body.scaleX *= 1 + 0.07 * e;
+          this.body.scaleY *= 1 - 0.05 * e;
+          this.body.y += 2.5 * s * e;
         } else {
           // ARC (the classic flat sweep) — §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE
           // AIM (frozen at swing-start), so the sprite passes through exactly what the swept hitbox damages.
@@ -680,6 +710,9 @@ export class SpriteRig {
             const p = (tt - 0.74) / 0.26;
             weaponAngle = end + (restA - end) * (p * (2 - p)); // easeOut return
           }
+          // §40.1 body: a light LEAN-THROUGH with the sweep — back on the windup, through on the follow.
+          const sw = tt < 0.16 ? -(tt / 0.16) : tt < 0.74 ? -1 + 2 * ((tt - 0.16) / 0.58) : 1 - (tt - 0.74) / 0.26;
+          this.body.rotation += 0.07 * sw;
         }
       }
     }
@@ -708,6 +741,13 @@ export class SpriteRig {
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
+      }
+      // §40.1 the FRONT hand GRIPS the weapon through the style's positional motion (chop lift/drive, thrust
+      // lunge) — the weapon rides this hand, and the 2H block chains the back hand after it, so BOTH hands
+      // visibly operate a two-handed swing instead of the blade detaching from a static arm.
+      if (hnd.front) {
+        hx += this.swingOffX;
+        hy += this.swingOffY;
       }
       // §7 v0.111 turn-commit HANDS ("pull the reins"): yank both hands toward the new heading on a hard turn.
       if (commit > 0.01) {
@@ -798,15 +838,28 @@ export class SpriteRig {
         w.img.setPosition(gx, gy);
         w.img.rotation = rot;
         w.img.setScale(base * rlen, base); // foreshorten the LENGTH only — the paper-sword effect
-        // Both hands ride the haft (the orbit owns them during the spin).
+        // Both hands ride the haft (the orbit owns them during the spin). §40.1 the back hand's spacing keeps
+        // a MINIMUM separation — a fully foreshortened radial collapsed both grips onto one point, reading as
+        // a one-handed swing; clamping the projected haft (plus a tiny fixed split) keeps two visible grips.
         const front = this.hands.find((h) => h.front);
         const back = this.hands.find((h) => !h.front);
         if (front) front.img.setPosition(gx, gy);
         if (back) {
-          const haft = TARGET_BODY_H * 0.42;
-          back.img.setPosition(gx + rx * haft, gy + ry * haft);
+          const haft = TARGET_BODY_H * 0.42 * Math.max(rlen, 0.5);
+          const ux = rlen > 1e-4 ? rx / rlen : 1;
+          const uy = rlen > 1e-4 ? ry / rlen : 0;
+          back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
           back.img.rotation = 0;
         }
+        // §40.1 the BODY spins the swing (paper-character posing, additive on this frame's base transform):
+        // the chest TURNS WITH the blade — the same scale-through-a-plane trick as the facing flip, driven by
+        // the blade's azimuth (full profile when the blade sweeps the sides, narrowed as it crosses front/
+        // back) — while the whole torso crouches into the spin and leans wherever the blade currently is.
+        const spinT = Math.sin(Math.PI * Math.min(1, this.orbitT / 0.9)); // rises, peaks mid-spin, settles
+        this.body.scaleX *= 1 - 0.24 * (1 - Math.abs(rx)) * spinT; // paper-twist: chest follows the blade
+        this.body.rotation += 0.1 * Math.sin(th) * spinT + 0.05 * rx * spinT; // lean toward the blade
+        this.body.y += 4.5 * s * spinT; // crouch into the spin
+        this.body.scaleY *= 1 - 0.07 * spinT;
         // Depth: the far half of the orbit passes BEHIND the body.
         const behind = Math.sin(th) < 0;
         if (behind !== this.orbitBehind) {
@@ -822,8 +875,9 @@ export class SpriteRig {
         this.root.moveAbove(w.img, this.body);
       }
       const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
-      // §40 swingOff carries the style's positional motion (chop lift/drive, thrust lunge); 0 otherwise.
-      w.img.setPosition(w.hand.img.x + this.swingOffX, w.hand.img.y + this.swingOffY);
+      // §40.1 the FRONT HAND already carries swingOff (it grips the weapon through the motion) — the weapon
+      // just rides its hand, so blade + both hands travel together.
+      w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation = weaponAngle + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
