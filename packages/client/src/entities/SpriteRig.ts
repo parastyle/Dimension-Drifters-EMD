@@ -151,6 +151,9 @@ export class SpriteRig {
   private orbitBehind = false;
   /** §40.3 GAREN-SPIN mode for the orbit pass: full revolutions + the body whirls (signed mirror-turns). */
   private orbitSpin = false;
+  /** §41 this swing started while (or right as) the previous one ended — a SPAMMED chain. Spins drop their
+   *  wind-in and run linear so back-to-back presses read as ONE continuous whirlwind. */
+  private swingChained = false;
   /** §40 per-frame weapon POSITION offset from the hand (chop lift / thrust lunge). Reset each frame. */
   private swingOffX = 0;
   private swingOffY = 0;
@@ -372,6 +375,17 @@ export class SpriteRig {
    *  aim AT swing-start so the blade sweeps the same arc the server's swept hitbox uses (§20 WYSIWYG); omit
    *  for a swing with no captured aim (the animate loop then falls back to the live/synced aim). */
   triggerSwing(timeMs: number, aimWorld?: number): void {
+    // §41 CHAIN detection: this press landed while (or within a beat of) the previous swing's window — a
+    // spammed sequence. Spins use it to drop their wind-in and hold the whirl, so held/spammed RMB reads as
+    // one continuous whirlwind instead of restarting the spin-up every press.
+    if (this.weaponDef) {
+      const prevDur =
+        this.weaponDef.cooldown *
+        (swingStyleFor(this.weaponDef) === "spin" ? 1000 : SWING_WINDOW_FRAC * 1000);
+      this.swingChained = timeMs - this.swingStart <= prevDur + 150;
+    } else {
+      this.swingChained = false;
+    }
     this.swingStart = timeMs;
     this.swingAimWorld = aimWorld ?? Number.NaN;
   }
@@ -602,10 +616,13 @@ export class SpriteRig {
       // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
       // (×1000), so the swing always finishes before the next one can start. §40.2 the window is the SHARED
       // constant — the server's delayed quake detonation + the client's eruption VFX run on the same clock.
-      const dur = def.cooldown * SWING_WINDOW_FRAC * 1000;
+      // §41 EXCEPT spins: their window IS the full cooldown, so a held/spammed trigger starts the next
+      // revolution the instant this one ends — a seamless continuous whirlwind.
+      const style = swingStyleFor(def);
+      const dur = def.cooldown * (style === "spin" ? 1000 : SWING_WINDOW_FRAC * 1000);
       if (el >= 0 && el < dur) {
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
-        // (arc / orbit / chop / pivot / thrust). World aim → local (mirrored) shared by every style.
+        // (arc / orbit / chop / pivot / thrust / spin). World aim → local (mirrored) shared by every style.
         const tt = el / dur;
         const aimW = Number.isNaN(this.swingAimWorld)
           ? anim.isSelf
@@ -613,7 +630,6 @@ export class SpriteRig {
             : anim.aimDir
           : this.swingAimWorld;
         const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
-        const style = swingStyleFor(def);
         if (style === "orbit") {
           // Fake-3D WAIST ORBIT (the facing flip's scale-through-a-plane trick generalized) — flagged here,
           // fully rendered by the weapon pass below (position + rotation + foreshortening + depth swap).
@@ -830,14 +846,19 @@ export class SpriteRig {
         // The aim's azimuth on the GROUND circle (un-squash the screen direction).
         const azAim = Math.atan2(Math.sin(aimLocal) / SQ, Math.cos(aimLocal));
         const tt = this.orbitT;
-        const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whirl through, settle out
         let th: number;
         if (this.orbitSpin) {
           // §40.3 WHIRLWIND: full revolutions matching the weapon's full-circle swingArc (2π per turn) —
           // the visual blade edge sweeps exactly what the server's swept damage does. Starts at the aim.
+          // §41 SEAMLESS SPAM: a fresh spin eases in then runs LINEAR (constant whirl, no settle-out); a
+          // CHAINED spin (spammed/held trigger) is pure linear — since each spin is integer revolutions, the
+          // next one starts exactly where this one ends, angle- AND speed-continuous. One endless whirlwind.
+          const a = 0.18; // ease-in fraction (C1-continuous into the linear run)
+          const e = this.swingChained ? tt : tt < a ? (tt * tt) / (a * (2 - a)) : (2 * tt - a) / (2 - a);
           const turns = Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
           th = azAim + turns * Math.PI * 2 * e;
         } else {
+          const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out
           const windup = 1.5; // start this far behind the damage arc…
           const follow = 0.9; // …and carry through past it
           th = azAim - def.swingArc / 2 - windup + (def.swingArc + windup + follow) * e;
@@ -866,8 +887,14 @@ export class SpriteRig {
           back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
           back.img.rotation = 0;
         }
-        // §40.1/§40.3 the BODY spins the swing (paper-character posing, additive on the frame's base):
-        const spinT = Math.sin(Math.PI * Math.min(1, this.orbitT / 0.9)); // rises, peaks mid-spin, settles
+        // §40.1/§40.3 the BODY spins the swing (paper-character posing, additive on the frame's base).
+        // §41 spins HOLD the whirl to the very end (each revolution set lands facing-normal, so there's no
+        // pop) — and a CHAINED spin skips the entry ramp entirely, keeping the body whirling through spam.
+        const spinT = this.orbitSpin
+          ? this.swingChained
+            ? 1
+            : Math.min(1, this.orbitT / 0.12)
+          : Math.sin(Math.PI * Math.min(1, this.orbitT / 0.9)); // rises, peaks mid-swing, settles
         if (this.orbitSpin) {
           // §40.3 GAREN SPIN — the body WHIRLS with the blade: the facing flip's signed scale-through-zero,
           // continuously. cos(θ) sweeps +1 → 0 → −1 → 0 → +1 each revolution: the torso narrows edge-on and

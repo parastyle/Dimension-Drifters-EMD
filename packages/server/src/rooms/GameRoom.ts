@@ -1976,7 +1976,13 @@ export class GameRoom extends Room<ArenaState> {
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
       elapsed: 0,
-      active: meleeSwingActive(weapon.cooldown * lootCooldownMult(player.weaponAffix)),
+      // §41 a SPIN weapon's swept edge tracks its whirling blade across (nearly) the whole cooldown — the
+      // capped default would complete the full-circle damage in ~0.2s while the visual whirls for a second,
+      // and enemies walking INTO the circle mid-spin would wrongly be safe.
+      active:
+        weapon.swingStyle === "spin"
+          ? weapon.cooldown * lootCooldownMult(player.weaponAffix) * 0.95
+          : meleeSwingActive(weapon.cooldown * lootCooldownMult(player.weaponAffix)),
       hit: new Set<string>(),
     });
 
