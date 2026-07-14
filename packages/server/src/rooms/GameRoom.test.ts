@@ -799,6 +799,22 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(orbEl).toBe("orb:arcane"); // element-tinted per the weapon
   });
 
+  it("§40.3 the WHIRLWIND's full-circle sweep hits an enemy BEHIND the aim", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    p.weapon = "x-sword-whirlwind";
+    h.tick(1);
+    const dummy = [...h.state().enemies.values()].find((e: { kind: string }) => e.kind === "dummy");
+    if (!dummy) throw new Error("no training dummy");
+    // Stand just RIGHT of the dummy and aim FURTHER RIGHT — the dummy sits directly BEHIND the aim.
+    p.x = dummy.x + 100;
+    p.y = dummy.y;
+    const hp0 = dummy.hp;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 400, ty: p.y });
+    h.tick(16); // the 4π swept edge crosses the full circle over the swing's active window
+    expect(dummy.hp).toBeLessThan(hp0); // a flat-arc weapon aimed away could never hit this
+  });
+
   it("§40.2 a QUAKE detonates when the chop's blade LANDS, not at click (shared delay)", () => {
     const h = training();
     const p = h.state().players.get("p1");

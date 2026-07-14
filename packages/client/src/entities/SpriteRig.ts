@@ -149,6 +149,8 @@ export class SpriteRig {
   private orbitT = -1;
   /** Whether the orbiting blade is currently on the FAR side of the body (rendered behind it). */
   private orbitBehind = false;
+  /** §40.3 GAREN-SPIN mode for the orbit pass: full revolutions + the body whirls (signed mirror-turns). */
+  private orbitSpin = false;
   /** §40 per-frame weapon POSITION offset from the hand (chop lift / thrust lunge). Reset each frame. */
   private swingOffX = 0;
   private swingOffY = 0;
@@ -581,6 +583,7 @@ export class SpriteRig {
     // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
+    this.orbitSpin = false;
     this.swingOffX = 0;
     this.swingOffY = 0;
     if (this.weaponDef?.gun && this.weapons.length > 0) {
@@ -615,6 +618,10 @@ export class SpriteRig {
           // Fake-3D WAIST ORBIT (the facing flip's scale-through-a-plane trick generalized) — flagged here,
           // fully rendered by the weapon pass below (position + rotation + foreshortening + depth swap).
           this.orbitT = tt;
+        } else if (style === "spin") {
+          // §40.3 GAREN SPIN — the orbit machinery in whirlwind mode: full revolutions, body mirror-turns.
+          this.orbitT = tt;
+          this.orbitSpin = true;
         } else if (style === "chop") {
           // OVERHEAD CHOP (quake/slam weapons — matches the ground-eruption VFX): raise the blade up-behind
           // over the head, SLAM it down-forward, hold the landed pose a beat, then settle back to rest.
@@ -822,13 +829,19 @@ export class SpriteRig {
         const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
         // The aim's azimuth on the GROUND circle (un-squash the screen direction).
         const azAim = Math.atan2(Math.sin(aimLocal) / SQ, Math.cos(aimLocal));
-        const windup = 1.5; // start this far behind the damage arc…
-        const follow = 0.9; // …and carry through past it
-        const t0 = azAim - def.swingArc / 2 - windup;
-        const sweep = def.swingArc + windup + follow;
         const tt = this.orbitT;
-        const e = tt * tt * (3 - 2 * tt); // smoothstep — heavy wind-in, whip through, settle out
-        const th = t0 + sweep * e;
+        const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whirl through, settle out
+        let th: number;
+        if (this.orbitSpin) {
+          // §40.3 WHIRLWIND: full revolutions matching the weapon's full-circle swingArc (2π per turn) —
+          // the visual blade edge sweeps exactly what the server's swept damage does. Starts at the aim.
+          const turns = Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
+          th = azAim + turns * Math.PI * 2 * e;
+        } else {
+          const windup = 1.5; // start this far behind the damage arc…
+          const follow = 0.9; // …and carry through past it
+          th = azAim - def.swingArc / 2 - windup + (def.swingArc + windup + follow) * e;
+        }
         const rx = Math.cos(th);
         const ry = Math.sin(th) * SQ;
         const rlen = Math.hypot(rx, ry); // projected radial length: 1 sideways → SQ toward/away
@@ -853,15 +866,27 @@ export class SpriteRig {
           back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
           back.img.rotation = 0;
         }
-        // §40.1 the BODY spins the swing (paper-character posing, additive on this frame's base transform):
-        // the chest TURNS WITH the blade — the same scale-through-a-plane trick as the facing flip, driven by
-        // the blade's azimuth (full profile when the blade sweeps the sides, narrowed as it crosses front/
-        // back) — while the whole torso crouches into the spin and leans wherever the blade currently is.
+        // §40.1/§40.3 the BODY spins the swing (paper-character posing, additive on the frame's base):
         const spinT = Math.sin(Math.PI * Math.min(1, this.orbitT / 0.9)); // rises, peaks mid-spin, settles
-        this.body.scaleX *= 1 - 0.24 * (1 - Math.abs(rx)) * spinT; // paper-twist: chest follows the blade
-        this.body.rotation += 0.1 * Math.sin(th) * spinT + 0.05 * rx * spinT; // lean toward the blade
-        this.body.y += 4.5 * s * spinT; // crouch into the spin
-        this.body.scaleY *= 1 - 0.07 * spinT;
+        if (this.orbitSpin) {
+          // §40.3 GAREN SPIN — the body WHIRLS with the blade: the facing flip's signed scale-through-zero,
+          // continuously. cos(θ) sweeps +1 → 0 → −1 → 0 → +1 each revolution: the torso narrows edge-on and
+          // MIRRORS on the far half — on paper art that reads as the character turning full circles. A hard
+          // athletic crouch + a dizzy wobble sell the commitment; the label/root are untouched (no UI flip).
+          const c = Math.cos(th);
+          this.body.scaleX *= (Math.abs(c) < 0.18 ? 0.18 : Math.abs(c)) * (c < 0 ? -1 : 1) * spinT +
+            (1 - spinT); // blend the whirl in/out so entry/exit don't pop
+          this.body.rotation += 0.06 * Math.sin(th * 2) * spinT; // slight wobble
+          this.body.y += 5.5 * s * spinT; // dug-in crouch
+          this.body.scaleY *= 1 - 0.09 * spinT;
+        } else {
+          // ORBIT: the chest TURNS WITH the blade — scale-through-a-plane on the torso (full profile when
+          // the blade sweeps the sides, narrowed crossing front/back) + a crouch + lean toward the blade.
+          this.body.scaleX *= 1 - 0.24 * (1 - Math.abs(rx)) * spinT; // paper-twist: chest follows the blade
+          this.body.rotation += 0.1 * Math.sin(th) * spinT + 0.05 * rx * spinT; // lean toward the blade
+          this.body.y += 4.5 * s * spinT; // crouch into the spin
+          this.body.scaleY *= 1 - 0.07 * spinT;
+        }
         // Depth: the far half of the orbit passes BEHIND the body.
         const behind = Math.sin(th) < 0;
         if (behind !== this.orbitBehind) {

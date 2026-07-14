@@ -41,9 +41,11 @@ export interface WeaponDef {
    * §40 which SWING ANIMATION STYLE this weapon plays (cosmetic — damage geometry is unchanged). One weapon,
    * one animation; omitted → derived from the weapon's shape: quake→chop (overhead slam), claw/gauntlet/
    * fist→pivot (spins about the hand, the hand doesn't move), rapier/spear→thrust (lunge along aim),
-   * two-handed→orbit (fake-3D waist orbit), else→arc (the classic flat sweep).
+   * two-handed→orbit (fake-3D waist orbit), else→arc (the classic flat sweep). "spin" (authored-only) is the
+   * Garen-style whirlwind: the BODY whirls through full revolutions (paper mirror-turns) with the blade
+   * extended — pair it with a full-circle `swingArc` (2π per revolution) so the swept damage matches.
    */
-  swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust";
+  swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust" | "spin";
   /** Where the grip sits along the sprite length (0 = left tip) — the in-hand pivot. */
   gripFrac: number;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */
@@ -628,6 +630,38 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       family: "sword",
       rangeBand: "close",
       scaling: ["STR"],
+    },
+  },
+  // §40.3 the WHIRLWIND (Garen-spin) demonstration: swingStyle "spin" whirls the whole BODY through two
+  // full revolutions with the blade extended, and the swept-edge damage matches — swingArc 4π = TWO real
+  // 360° damage sweeps (the hit-set still caps each enemy at one hit per swing). Everything around you,
+  // no aim required; slower cooldown pays for the coverage. Borrows the tombstone haft art for now.
+  "x-sword-whirlwind": {
+    id: "x-sword-whirlwind",
+    name: "Dervish Greatblade",
+    sprite: "tombstone-greatsword", // placeholder 2H blade until a bespoke dervish sword is generated
+    scalingGrades: { str: "B", dex: "D" },
+    requirements: { str: 7 },
+    durability: 85,
+    damage: 9, // per enemy, once per spin — the value is hitting EVERYTHING in the circle
+    range: 150,
+    halfArc: Math.PI, // full-circle contact fallback
+    cooldown: 1.0, // a long committed spin
+    displayLength: 118,
+    swingArc: Math.PI * 4, // TWO full revolutions of swept edge — WYSIWYG with the two-turn spin animation
+    gripFrac: 0.12,
+    twoHanded: true,
+    swingStyle: "spin",
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "melee-arc",
+      fireMode: "tap-charge",
+      element: "physical",
+      classPool: "melee",
+      family: "greatsword",
+      rangeBand: "close",
+      scaling: ["STR", "DEX"],
     },
   },
   // The "really long sword" demonstration (§10): a Masamune-homage nodachi — an absurdly LONG, THIN
