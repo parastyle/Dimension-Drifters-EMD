@@ -56,6 +56,7 @@ import {
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
+  quakeImpactDelaySec,
   EMPTY_META,
   META_UPGRADES,
   type MetaLevels,
@@ -3184,16 +3185,21 @@ export class ArenaScene extends Phaser.Scene {
         { x: cwx, y: cwy },
         QUAKE_REACH,
       );
-      spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, weapon.quake);
-      // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — the old
-      // unconditional hitStop(130) fired on every click, so swinging a quake weapon at air was a rhythmic
-      // 130ms judder. A real impact is a skill beat → priority (bypasses the freeze budget).
-      const qr = weapon.quake.radius;
-      let connected = false;
-      this.room.state.enemies.forEach((en) => {
-        if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
+      // §40.2 the eruption fires when the CHOP's blade LANDS, not at click — the same shared clock as the
+      // rig animation and the server's (now equally delayed) detonation, so blade / boom / damage all sync.
+      const quake = weapon.quake;
+      this.time.delayedCall(quakeImpactDelaySec(weapon.cooldown) * 1000, () => {
+        if (!this.room) return;
+        spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, quake);
+        // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
+        // real impact is a skill beat → priority (bypasses the freeze budget).
+        const qr = quake.radius;
+        let connected = false;
+        this.room.state.enemies.forEach((en) => {
+          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
+        });
+        if (connected) this.hitStop(130, true);
       });
-      if (connected) this.hitStop(130, true);
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).

@@ -799,6 +799,26 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(orbEl).toBe("orb:arcane"); // element-tinted per the weapon
   });
 
+  it("§40.2 a QUAKE detonates when the chop's blade LANDS, not at click (shared delay)", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    p.weapon = "tombstone-greatsword";
+    h.tick(1);
+    // Park a dummy-adjacent target: use the training dummy itself (it sits in the Testing Grounds).
+    const dummy = [...h.state().enemies.values()].find((e: { kind: string }) => e.kind === "dummy");
+    if (!dummy) throw new Error("no training dummy");
+    const hp0 = dummy.hp;
+    // Swing AT the dummy (cursor point on it, within QUAKE_REACH of the player — move the player next to it).
+    p.x = dummy.x - 100;
+    p.y = dummy.y;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: dummy.x, ty: dummy.y });
+    h.tick(1); // the swing resolves THIS tick — pre-§40.2 the quake damaged here
+    expect(dummy.hp).toBe(hp0); // blade still in the air → no damage yet
+    // delay = cooldown 0.78 × SWING_WINDOW_FRAC 0.64 × CHOP_IMPACT_FRAC 0.52 ≈ 0.26s ≈ 5.2 ticks @50ms
+    h.tick(7);
+    expect(dummy.hp).toBeLessThan(hp0); // the blade landed → the quake erupted
+  });
+
   it("§37 a shot flies at the CURSOR POINT (tx/ty), not the client's aim vector", () => {
     const h = training();
     const p = h.state().players.get("p1");

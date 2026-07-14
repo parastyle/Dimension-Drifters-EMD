@@ -157,6 +157,7 @@ import {
   poiRadius,
   prevWeapon,
   QUAKE_REACH,
+  quakeImpactDelaySec,
   RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
   REVIVE_HP_FRAC,
@@ -381,6 +382,16 @@ export class GameRoom extends Room<ArenaState> {
       hit: Set<string>;
     }
   >();
+  /** §40.2 quakes awaiting their blade-LANDING moment (damage/epicenter captured at swing time; detonated
+   *  when `t` drains — the same shared clock the chop animation + the client's eruption VFX run on). */
+  private readonly pendingQuakes: {
+    t: number;
+    x: number;
+    y: number;
+    radius: number;
+    damage: number;
+    crit: number;
+  }[] = [];
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
@@ -904,6 +915,7 @@ export class GameRoom extends Room<ArenaState> {
     this.comboState.clear();
     this.dodgeState.clear(); // §15 v0.113
     this.meleeSwings.clear();
+    this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pickupGrace.clear();
     this.earnedPickups.clear();
     this.burnPulses.length = 0;
@@ -1732,6 +1744,16 @@ export class GameRoom extends Room<ArenaState> {
 
     // 4.6 §20 advance in-flight swept melee blades (edge damage over the swing's active window).
     this.stepMeleeSwings(dt);
+    // 4.65 §40.2 detonate quakes whose blade has LANDED (delay captured at swing time; see resolveSwing).
+    for (let i = this.pendingQuakes.length - 1; i >= 0; i--) {
+      const q = this.pendingQuakes[i];
+      if (!q) continue;
+      q.t -= dt;
+      if (q.t <= 0) {
+        this.detonate(q.x, q.y, q.radius, q.damage, q.crit);
+        this.pendingQuakes.splice(i, 1);
+      }
+    }
 
     // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
@@ -2019,17 +2041,20 @@ export class GameRoom extends Room<ArenaState> {
 
     // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor); AoE via
     // the shared `detonate` (same kill/XP/portal bookkeeping). The client matches the epicentre via the
-    // SAME shared clampQuakeEpicenter.
+    // SAME shared clampQuakeEpicenter. §40.2 the detonation is DELAYED to the moment the chop's blade LANDS
+    // (shared quakeImpactDelaySec — the same clock as the rig animation + the client's eruption VFX), so the
+    // slam is a real telegraphed windup: damage/epicenter are captured NOW, the ground erupts when it hits.
     if (weapon.quake) {
       const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player);
       const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
-      this.detonate(
-        ep.x,
-        ep.y,
-        weapon.quake.radius,
-        weapon.quake.damage * qPower,
-        critChanceFor(player.luk, player.dex),
-      );
+      this.pendingQuakes.push({
+        t: quakeImpactDelaySec(weapon.cooldown),
+        x: ep.x,
+        y: ep.y,
+        radius: weapon.quake.radius,
+        damage: weapon.quake.damage * qPower,
+        crit: critChanceFor(player.luk, player.dex),
+      });
     }
 
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.

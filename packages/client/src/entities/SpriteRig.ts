@@ -1,4 +1,4 @@
-import { MOVE_SPEED, type WeaponDef } from "@dd/shared";
+import { CHOP_IMPACT_FRAC, MOVE_SPEED, SWING_WINDOW_FRAC, type WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 
@@ -597,8 +597,9 @@ export class SpriteRig {
       const el = timeMs - this.swingStart;
       // §7 v0.105 de-clunk: a touch longer than the old cooldown×470 so the last stretch can EASE BACK to
       // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
-      // (×1000), so the swing always finishes before the next one can start.
-      const dur = def.cooldown * 640;
+      // (×1000), so the swing always finishes before the next one can start. §40.2 the window is the SHARED
+      // constant — the server's delayed quake detonation + the client's eruption VFX run on the same clock.
+      const dur = def.cooldown * SWING_WINDOW_FRAC * 1000;
       if (el >= 0 && el < dur) {
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
         // (arc / orbit / chop / pivot / thrust). World aim → local (mirrored) shared by every style.
@@ -631,8 +632,9 @@ export class SpriteRig {
             this.body.rotation -= 0.16 * e; // lean back behind the lift
             this.body.y -= 3.5 * s * e; // up onto the toes
             this.body.scaleY *= 1 + 0.05 * e; // slight stretch
-          } else if (tt < 0.52) {
-            const p = (tt - 0.3) / 0.22;
+          } else if (tt < CHOP_IMPACT_FRAC) {
+            // §40.2 the blade LANDS exactly at CHOP_IMPACT_FRAC — the shared moment the quake detonates.
+            const p = (tt - 0.3) / (CHOP_IMPACT_FRAC - 0.3);
             const e = p * p;
             weaponAngle = raiseA + (slamA - raiseA) * e; // ACCELERATE into the slam
             this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * e; // grip drives down past rest
