@@ -92,6 +92,7 @@ import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { POI_IDS } from "../sprites/poi-manifest.js";
+import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
@@ -481,6 +482,7 @@ export class ArenaScene extends Phaser.Scene {
    *  instead of one per part (the genre's standard horde-render fix). SpriteRig reads frames via `partTexture`. */
   preload(): void {
     this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
+    preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     if (this.belt) {
       // §29 Codex-rendered belt art (docs/BEATEMUP_CONVERSION): sky-carrier backdrop, storm-bridge boss
       // backdrop, deck plating.
@@ -3602,12 +3604,13 @@ export class ArenaScene extends Phaser.Scene {
           // Tint by the LOCAL weapon's element when the nearest rig is us (the client only knows its own
           // equipped element) — a fire build sparks orange, a frost build cyan. Others/unknown → steel.
           let tint = 0xfff2c0;
+          let hitEl: string | undefined;
           if (nearestId === this.room?.sessionId) {
             const selfRow = this.room?.state.players.get(nearestId);
-            const el = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
-            tint = ArenaScene.ELEMENT_SPARK[el ?? ""] ?? 0xfff2c0;
+            hitEl = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
+            tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
           }
-          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint);
+          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
           if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
           if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
           if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
@@ -3722,10 +3725,22 @@ export class ArenaScene extends Phaser.Scene {
     dirRad: number,
     crit: boolean,
     tint = 0xfff2c0,
+    element?: string,
   ): void {
     const ADD = Phaser.BlendModes.ADD;
     const col = crit ? 0xffdb63 : tint; // crit gold always wins; else the weapon's element tint (steel default)
     const n = crit ? 6 : 4;
+    // §41 PAINTED element shards fly with the procedural slivers — a fire hit throws painted embers, frost
+    // throws ice shards, physical/unknown throws hot steel (elementPack falls back). No-op until packs load.
+    particleBurst(this, elementPack(element, "shard"), x, y, {
+      count: crit ? 4 : 2,
+      dirRad,
+      spread: 0.7,
+      speed: 190,
+      scale: crit ? 0.5 : 0.38,
+      lifeMs: 340,
+      sink: 10,
+    });
     const core = this.add
       .circle(x, y, crit ? 7 : 5, 0xffffff, 0.85)
       .setBlendMode(ADD)

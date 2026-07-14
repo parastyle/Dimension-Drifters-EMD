@@ -1,5 +1,6 @@
 import type { WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
+import { elementPack, particleBurst } from "../../vfx/particles.js";
 import { blendHex } from "./draw-util.js";
 import { gunFx } from "./projectile-factory.js";
 
@@ -128,6 +129,23 @@ export function spawnBulletImpact(
   ang = 0,
 ): void {
   const fx = gunFx(kind);
+  // §41 PAINTED element burst on top of the procedural impact — the ":element" bullet-kind suffix picks the
+  // pack (fire embers, frost shards, arcane motes for the caster orb…); physical bullets throw steel motes.
+  {
+    const ci = kind.indexOf(":");
+    const el = ci < 0 ? undefined : kind.slice(ci + 1);
+    const shape = kind.startsWith("orb") ? "mote" : "shard";
+    particleBurst(scene, elementPack(el, shape), x, y, {
+      count: 3,
+      dirRad: ang + Math.PI, // spray back against the flight direction
+      spread: 0.8,
+      speed: 160,
+      scale: 0.34,
+      lifeMs: 300,
+      additive: shape === "mote",
+      sink: 8,
+    });
+  }
   const ADD = Phaser.BlendModes.ADD;
   const flash = (r: number, sc: number, dur: number) => {
     const f = scene.add.circle(x, y, r, 0xfff0d0, 0.9).setBlendMode(ADD).setDepth(99400);
