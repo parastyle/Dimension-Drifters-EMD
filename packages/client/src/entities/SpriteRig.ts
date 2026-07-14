@@ -33,6 +33,20 @@ const STRIDE_LEN = 150;
 const BODY_LOOK_LEAN = 0.14;
 const WEAPON_LOOK_TILT = 0.6;
 
+/** §40 which swing ANIMATION a weapon plays — one weapon, one animation, drawn from the per-type vocabulary.
+ *  An authored `def.swingStyle` wins; otherwise derive from the weapon's shape: quake weapons CHOP (overhead
+ *  slam, matching their ground-eruption VFX), claws/gauntlets/fists PIVOT about the hand, rapiers/spears
+ *  THRUST, two-handed weapons ORBIT the waist in fake 3D, everything else does the classic flat ARC. */
+function swingStyleFor(def: WeaponDef): NonNullable<WeaponDef["swingStyle"]> {
+  if (def.swingStyle) return def.swingStyle;
+  if (def.quake) return "chop";
+  const fam = def.tags?.family ?? "";
+  if (/claw|talon|gauntlet|fist|knuckle|mitt/i.test(fam)) return "pivot";
+  if (/rapier|lance|spear|pike|estoc|needle/i.test(fam)) return "thrust";
+  if (def.twoHanded) return "orbit";
+  return "arc";
+}
+
 export interface RigAnim {
   /** Movement direction this frame (≈0 length when idle). */
   moveX: number;
@@ -135,6 +149,9 @@ export class SpriteRig {
   private orbitT = -1;
   /** Whether the orbiting blade is currently on the FAR side of the body (rendered behind it). */
   private orbitBehind = false;
+  /** §40 per-frame weapon POSITION offset from the hand (chop lift / thrust lunge). Reset each frame. */
+  private swingOffX = 0;
+  private swingOffY = 0;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -563,7 +580,9 @@ export class SpriteRig {
     // Weapon angle — guns AIM along the cursor; melee weapons sit upright at rest then wind-up + chop on
     // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
-    this.orbitT = -1; // §40 re-armed below only while a two-handed swing window is live
+    this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
+    this.swingOffX = 0;
+    this.swingOffY = 0;
     if (this.weaponDef?.gun && this.weapons.length > 0) {
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
@@ -580,34 +599,87 @@ export class SpriteRig {
       // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
       // (×1000), so the swing always finishes before the next one can start.
       const dur = def.cooldown * 640;
-      if (el >= 0 && el < dur && def.twoHanded) {
-        // §40 TWO-HANDED weapons swing as a fake-3D WAIST ORBIT instead of the flat screen arc — the same
-        // scale-through-a-plane trick as the facing flip, generalized: the weapon render pass (below) drives
-        // the grip around an ellipse and foreshortens the blade's length by its projected radial.
-        this.orbitT = el / dur;
-      } else if (el >= 0 && el < dur) {
-        // §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE AIM (frozen at swing-start), so the
-        // sprite passes through exactly what the server's swept hitbox damages. World aim → local (mirrored).
+      if (el >= 0 && el < dur) {
+        // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
+        // (arc / orbit / chop / pivot / thrust). World aim → local (mirrored) shared by every style.
+        const tt = el / dur;
         const aimW = Number.isNaN(this.swingAimWorld)
           ? anim.isSelf
             ? Math.atan2(anim.aimY, anim.aimX)
             : anim.aimDir
           : this.swingAimWorld;
         const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
-        const start = aimLocal - def.swingArc / 2;
-        const end = aimLocal + def.swingArc / 2;
-        const back = start - 0.3; // a quick wind-back just past the start of the sweep
-        const tt = el / dur;
-        if (tt < 0.16) {
-          weaponAngle = restA + (back - restA) * (tt / 0.16); // wind up
-        } else if (tt < 0.74) {
-          const p = (tt - 0.16) / 0.58;
-          weaponAngle = back + (end - back) * (1 - (1 - p) ** 2); // ease-out sweep through the arc
+        const style = swingStyleFor(def);
+        if (style === "orbit") {
+          // Fake-3D WAIST ORBIT (the facing flip's scale-through-a-plane trick generalized) — flagged here,
+          // fully rendered by the weapon pass below (position + rotation + foreshortening + depth swap).
+          this.orbitT = tt;
+        } else if (style === "chop") {
+          // OVERHEAD CHOP (quake/slam weapons — matches the ground-eruption VFX): raise the blade up-behind
+          // over the head, SLAM it down-forward, hold the landed pose a beat, then settle back to rest.
+          const raiseA = -Math.PI / 2 - 0.85; // up + tilted behind the head
+          const slamA = 0.85 + lookY * 0.25; // down-forward (biased a touch by the cursor's vertical)
+          const lift = TARGET_BODY_H * 0.2;
+          if (tt < 0.3) {
+            const p = tt / 0.3;
+            weaponAngle = restA + (raiseA - restA) * (p * (2 - p)); // ease the raise
+            this.swingOffY = -lift * p; // grip climbs as the blade goes overhead
+          } else if (tt < 0.52) {
+            const p = (tt - 0.3) / 0.22;
+            weaponAngle = raiseA + (slamA - raiseA) * p * p; // ACCELERATE into the slam
+            this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * p * p; // grip drives down past rest
+          } else if (tt < 0.7) {
+            weaponAngle = slamA; // the blade sits buried a beat — the quake erupts here
+            this.swingOffY = TARGET_BODY_H * 0.06;
+          } else {
+            const p = (tt - 0.7) / 0.3;
+            weaponAngle = slamA + (restA - slamA) * (p * (2 - p));
+            this.swingOffY = TARGET_BODY_H * 0.06 * (1 - p * (2 - p));
+          }
+        } else if (style === "pivot") {
+          // CLAW PIVOT — the weapon whips a fast slash ABOUT THE GRIP only: pure rotation at the hand, the
+          // hand/arm doesn't move at all (the weapon img's origin is the grip, so rotating it IS the pivot).
+          const spin = Math.max(def.swingArc * 1.5, 3.6);
+          const start = aimLocal - spin * 0.72;
+          const end = aimLocal + spin * 0.28; // whips THROUGH the aim late in the sweep
+          if (tt < 0.1) {
+            weaponAngle = restA + (start - restA) * (tt / 0.1); // snap-wind
+          } else if (tt < 0.62) {
+            const p = (tt - 0.1) / 0.52;
+            weaponAngle = start + (end - start) * (1 - (1 - p) ** 3); // vicious ease-out whip
+          } else {
+            const p = (tt - 0.62) / 0.38;
+            weaponAngle = end + (restA - end) * (p * (2 - p));
+          }
+        } else if (style === "thrust") {
+          // THRUST — rapier/spear lunge: the blade locks along the aim and the grip STABS forward and back.
+          weaponAngle = aimLocal;
+          const lunge = TARGET_BODY_H * 0.55;
+          const env =
+            tt < 0.14
+              ? -0.18 * (tt / 0.14) // small draw-back
+              : tt < 0.38
+                ? -0.18 + 1.18 * (((tt - 0.14) / 0.24) ** 2 * (3 - 2 * ((tt - 0.14) / 0.24))) // stab OUT
+                : 1 - ((tt - 0.38) / 0.62) * (2 - (tt - 0.38) / 0.62); // ease back to rest
+          this.swingOffX = Math.cos(aimLocal) * lunge * env;
+          this.swingOffY = Math.sin(aimLocal) * lunge * env;
         } else {
-          // §7 v0.105 de-clunk: ease the blade BACK to the rest tilt over the tail of the swing (arrives at
-          // restA exactly at tt=1), so there's no discontinuity when the swing window closes.
-          const p = (tt - 0.74) / 0.26;
-          weaponAngle = end + (restA - end) * (p * (2 - p)); // easeOut return
+          // ARC (the classic flat sweep) — §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE
+          // AIM (frozen at swing-start), so the sprite passes through exactly what the swept hitbox damages.
+          const start = aimLocal - def.swingArc / 2;
+          const end = aimLocal + def.swingArc / 2;
+          const back = start - 0.3; // a quick wind-back just past the start of the sweep
+          if (tt < 0.16) {
+            weaponAngle = restA + (back - restA) * (tt / 0.16); // wind up
+          } else if (tt < 0.74) {
+            const p = (tt - 0.16) / 0.58;
+            weaponAngle = back + (end - back) * (1 - (1 - p) ** 2); // ease-out sweep through the arc
+          } else {
+            // §7 v0.105 de-clunk: ease the blade BACK to the rest tilt over the tail of the swing (arrives
+            // at restA exactly at tt=1), so there's no discontinuity when the swing window closes.
+            const p = (tt - 0.74) / 0.26;
+            weaponAngle = end + (restA - end) * (p * (2 - p)); // easeOut return
+          }
         }
       }
     }
@@ -750,7 +822,8 @@ export class SpriteRig {
         this.root.moveAbove(w.img, this.body);
       }
       const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
-      w.img.setPosition(w.hand.img.x, w.hand.img.y);
+      // §40 swingOff carries the style's positional motion (chop lift/drive, thrust lunge); 0 otherwise.
+      w.img.setPosition(w.hand.img.x + this.swingOffX, w.hand.img.y + this.swingOffY);
       w.img.rotation = weaponAngle + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.

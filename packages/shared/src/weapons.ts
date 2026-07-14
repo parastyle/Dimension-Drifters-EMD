@@ -37,6 +37,13 @@ export interface WeaponDef {
   vfxRadius?: number;
   /** Visual sweep of the swing animation (radians). */
   swingArc: number;
+  /**
+   * §40 which SWING ANIMATION STYLE this weapon plays (cosmetic — damage geometry is unchanged). One weapon,
+   * one animation; omitted → derived from the weapon's shape: quake→chop (overhead slam), claw/gauntlet/
+   * fist→pivot (spins about the hand, the hand doesn't move), rapier/spear→thrust (lunge along aim),
+   * two-handed→orbit (fake-3D waist orbit), else→arc (the classic flat sweep).
+   */
+  swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust";
   /** Where the grip sits along the sprite length (0 = left tip) — the in-hand pivot. */
   gripFrac: number;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */
