@@ -3063,8 +3063,13 @@ export class ArenaScene extends Phaser.Scene {
         ax = wp.x - self.x;
         ay = wp.y - this.beltY(self.y);
       } else {
-        ax = px + cam.scrollX - self.x;
-        ay = py + cam.scrollY - self.y;
+        // §39 TOP-DOWN aim through getWorldPoint too: `px + scrollX` was only correct while the pointer was
+        // CSS px and the RENDER_DPR camera zoom cancelled it — the §37 DPR listener fix (pointer now in
+        // internal px) made the shortcut off by the DPR factor on scaled displays, so the facing flip line sat
+        // far from the character and cursor aim skewed. getWorldPoint handles zoom/scroll/origin exactly.
+        const wp = cam.getWorldPoint(px, py);
+        ax = wp.x - self.x;
+        ay = wp.y - self.y;
       }
       aimDxPx = ax; // raw px — the facing flip commits on the sign of THIS, at the character's midpoint
       const len = Math.hypot(ax, ay);
@@ -3152,8 +3157,10 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
     const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
-    // §29 belt: use the camera world transform + un-project depth (rig.y is the projected plane). Top-down
-    // keeps the simple screen+scroll (the camera centres on the player there).
+    // §29/§39 the cursor's WORLD position via the camera transform in BOTH modes (belt additionally
+    // un-projects depth). The old top-down `px + scrollX` shortcut was only correct while the pointer was
+    // CSS px and the RENDER_DPR zoom cancelled it — post-§37 (pointer in internal px) it skewed attack
+    // targets by the DPR factor on scaled displays.
     let cwx: number;
     let cwy: number;
     let selfWy: number;
@@ -3163,8 +3170,9 @@ export class ArenaScene extends Phaser.Scene {
       cwy = BELT_Y0 + (wp.y - BELT_Y0) / BELT_FORESHORTEN;
       selfWy = BELT_Y0 + ((rig?.y ?? self.y) - BELT_Y0) / BELT_FORESHORTEN;
     } else {
-      cwx = px + cam.scrollX;
-      cwy = py + cam.scrollY;
+      const wp = cam.getWorldPoint(px, py);
+      cwx = wp.x;
+      cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
     if (weapon?.quake) {
