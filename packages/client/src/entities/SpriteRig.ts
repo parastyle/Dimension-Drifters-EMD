@@ -130,6 +130,11 @@ export class SpriteRig {
   }[] = [];
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
+  /** §40 fake-3D ORBIT slash (two-handed melee): 0..1 progress while active, −1 otherwise. Set by the
+   *  weapon-angle pass, consumed by the weapon render pass (which overrides position/rotation/scale/depth). */
+  private orbitT = -1;
+  /** Whether the orbiting blade is currently on the FAR side of the body (rendered behind it). */
+  private orbitBehind = false;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -558,6 +563,7 @@ export class SpriteRig {
     // Weapon angle — guns AIM along the cursor; melee weapons sit upright at rest then wind-up + chop on
     // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
+    this.orbitT = -1; // §40 re-armed below only while a two-handed swing window is live
     if (this.weaponDef?.gun && this.weapons.length > 0) {
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
@@ -574,7 +580,12 @@ export class SpriteRig {
       // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
       // (×1000), so the swing always finishes before the next one can start.
       const dur = def.cooldown * 640;
-      if (el >= 0 && el < dur) {
+      if (el >= 0 && el < dur && def.twoHanded) {
+        // §40 TWO-HANDED weapons swing as a fake-3D WAIST ORBIT instead of the flat screen arc — the same
+        // scale-through-a-plane trick as the facing flip, generalized: the weapon render pass (below) drives
+        // the grip around an ellipse and foreshortens the blade's length by its projected radial.
+        this.orbitT = el / dur;
+      } else if (el >= 0 && el < dur) {
         // §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE AIM (frozen at swing-start), so the
         // sprite passes through exactly what the server's swept hitbox damages. World aim → local (mirrored).
         const aimW = Number.isNaN(this.swingAimWorld)
@@ -643,7 +654,8 @@ export class SpriteRig {
     }
 
     // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
-    if (this.weaponDef?.twoHanded) {
+    // §40: skipped while an ORBIT slash is live — the orbit pass below owns both hands.
+    if (this.weaponDef?.twoHanded && this.orbitT < 0) {
       const front = this.hands.find((h) => h.front);
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
@@ -677,12 +689,72 @@ export class SpriteRig {
     for (let i = 0; i < this.weapons.length; i++) {
       const w = this.weapons[i];
       if (!w) continue;
+      const base = w.baseScale / (this.baseScale || 1); // fixed on-screen weapon size (§29)
+      if (this.orbitT >= 0 && i === 0 && this.weaponDef) {
+        // §40 FAKE-3D WAIST-ORBIT SLASH — the facing flip's "scale through a plane" trick generalized.
+        // The grip travels an ELLIPSE around the waist (the ground circle seen by the game's tilted camera:
+        // x = cosθ, y = sinθ·SQ) while the blade points RADIALLY outward. On screen a radial ground vector
+        // projects to (cosθ, sinθ·SQ), so the blade's rotation follows that direction and its LENGTH scales
+        // by that vector's magnitude — full profile when sweeping left/right, foreshortened "paper sword"
+        // pointing toward/away from camera. The far half renders BEHIND the body. Sweep is centred on the
+        // frozen aim so the blade still passes through exactly the arc the server damages (§20 WYSIWYG).
+        const def = this.weaponDef;
+        const SQ = 0.34; // camera tilt: how much a ground circle squashes vertically
+        const aimW = Number.isNaN(this.swingAimWorld)
+          ? anim.isSelf
+            ? Math.atan2(anim.aimY, anim.aimX)
+            : anim.aimDir
+          : this.swingAimWorld;
+        const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
+        // The aim's azimuth on the GROUND circle (un-squash the screen direction).
+        const azAim = Math.atan2(Math.sin(aimLocal) / SQ, Math.cos(aimLocal));
+        const windup = 1.5; // start this far behind the damage arc…
+        const follow = 0.9; // …and carry through past it
+        const t0 = azAim - def.swingArc / 2 - windup;
+        const sweep = def.swingArc + windup + follow;
+        const tt = this.orbitT;
+        const e = tt * tt * (3 - 2 * tt); // smoothstep — heavy wind-in, whip through, settle out
+        const th = t0 + sweep * e;
+        const rx = Math.cos(th);
+        const ry = Math.sin(th) * SQ;
+        const rlen = Math.hypot(rx, ry); // projected radial length: 1 sideways → SQ toward/away
+        const rot = Math.atan2(ry, rx);
+        const waistY = TARGET_BODY_H * 0.06;
+        const gripR = TARGET_BODY_H * 0.3;
+        const gx = rx * gripR;
+        const gy = waistY + ry * gripR;
+        w.img.setPosition(gx, gy);
+        w.img.rotation = rot;
+        w.img.setScale(base * rlen, base); // foreshorten the LENGTH only — the paper-sword effect
+        // Both hands ride the haft (the orbit owns them during the spin).
+        const front = this.hands.find((h) => h.front);
+        const back = this.hands.find((h) => !h.front);
+        if (front) front.img.setPosition(gx, gy);
+        if (back) {
+          const haft = TARGET_BODY_H * 0.42;
+          back.img.setPosition(gx + rx * haft, gy + ry * haft);
+          back.img.rotation = 0;
+        }
+        // Depth: the far half of the orbit passes BEHIND the body.
+        const behind = Math.sin(th) < 0;
+        if (behind !== this.orbitBehind) {
+          this.orbitBehind = behind;
+          if (behind) this.root.moveBelow(w.img, this.body);
+          else this.root.moveAbove(w.img, this.body);
+        }
+        continue;
+      }
+      // Orbit just ended → restore the weapon above the body once.
+      if (this.orbitBehind && this.orbitT < 0) {
+        this.orbitBehind = false;
+        this.root.moveAbove(w.img, this.body);
+      }
       const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation = weaponAngle + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
-      w.img.setScale(w.baseScale / (this.baseScale || 1));
+      w.img.setScale(base);
     }
 
     // §5 jump hop: §7 v0.105 de-clunk — the synced height arrives in raw 20Hz Euler steps (~15px jumps),

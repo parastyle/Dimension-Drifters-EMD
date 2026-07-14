@@ -1,9 +1,4 @@
-import {
-  BELT_LEVEL_IDS,
-  beltLevelFor,
-  DEFAULT_DIMENSION,
-  getDimension,
-} from "@dd/shared";
+import { beltLevelFor, DEFAULT_DIMENSION, DIMENSION_IDS, getDimension } from "@dd/shared";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 import { RENDER_DPR } from "../render-dpr.js";
@@ -55,6 +50,13 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev });
       return;
     }
+    // §40 BELT is shelved from the menu (user ruling: top-down is the primary mode) but stays reachable for
+    // dev/testing via `?belt=<levelId>` — auto-launches that belt level directly (the Dev Portal links use it).
+    const beltParam = new URLSearchParams(location.search).get("belt");
+    if (beltParam && beltParam !== "1") {
+      this.launchBelt(beltParam);
+      return;
+    }
     this.cameras.main.setBackgroundColor("#0f0c14");
     this.cameras.main.fadeIn(360, 0, 0, 0);
     // §19 v0.108 one AudioBus shared with ArenaScene via the registry. Resume its context on the first
@@ -87,7 +89,8 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0.5);
 
-    for (const id of BELT_LEVEL_IDS) this.cards.push(this.buildCard(id));
+    // §40 the menu leads with the DIMENSIONS as top-down arena runs (the primary mode); belt is URL-only.
+    for (const id of DIMENSION_IDS) this.cards.push(this.buildCard(id));
     // §16 v0.116 a special BOSS RUSH card at the end of the grid — every bespoke boss, back-to-back.
     this.cards.push(this.buildBossRushCard());
 
@@ -95,7 +98,7 @@ export class MenuScene extends Phaser.Scene {
       .text(
         0,
         0,
-        "Choose a LEVEL — click it, or press its number — to drift in.  ·  B: BOSS RUSH",
+        "Choose a DIMENSION — click it, or press its number — to drift in.  ·  B: BOSS RUSH",
         {
           fontSize: "15px",
           color: "#9aa0ac",
@@ -103,17 +106,15 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–9 → the nth dimension); B → the boss-rush gauntlet; C → §29 belt-scroller beta
-    // (the SAME game rendered belt-scroller — all systems intact).
+    // Number-key shortcuts (1–5 → the nth DIMENSION, a top-down run); B → the boss-rush gauntlet.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       if (e.key === "b" || e.key === "B") {
         this.launch(DEFAULT_DIMENSION, true);
         return;
       }
-      // §36 number keys pick a BELT LEVEL (the game is a belt-scroller; each level is its own themed run).
       const n = Number.parseInt(e.key, 10);
-      if (Number.isFinite(n) && n >= 1 && n <= BELT_LEVEL_IDS.length) {
-        this.launchBelt(BELT_LEVEL_IDS[n - 1] ?? "sky-carrier");
+      if (Number.isFinite(n) && n >= 1 && n <= DIMENSION_IDS.length) {
+        this.launch(DIMENSION_IDS[n - 1] ?? DEFAULT_DIMENSION);
       }
     });
 
@@ -183,10 +184,9 @@ export class MenuScene extends Phaser.Scene {
 
   /** Build one themed dimension card at its FINAL size (frame + name + tagline + palette swatch strip), all
    *  positioned in container-local space. Interactivity lives on the full-size frame (hit area matches). */
-  private buildCard(levelId: string): MenuCard {
-    // §36 a BELT LEVEL card — the level's name + blurb, themed by its dimension's palette.
-    const level = beltLevelFor(levelId);
-    const dim = getDimension(level.dimensionId);
+  private buildCard(dimensionId: string): MenuCard {
+    // §40 a DIMENSION card — a top-down arena run themed by the dimension's palette (the primary mode).
+    const dim = getDimension(dimensionId);
     const p = dim.palette;
     const root = this.add.container(0, 0);
 
@@ -196,14 +196,14 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setStrokeStyle(3, p.boundaryRail, 0.9);
     const name = this.add
-      .text(0, -CARD_H / 2 + 30, level.name, {
+      .text(0, -CARD_H / 2 + 30, dim.name, {
         fontSize: "23px",
         color: "#f4eee0",
         fontStyle: "bold",
       })
       .setOrigin(0.5, 0.5);
     const tagline = this.add
-      .text(0, -CARD_H / 2 + 54, level.blurb ?? dim.tagline, {
+      .text(0, -CARD_H / 2 + 54, dim.tagline, {
         fontSize: "13px",
         color: "#c9c2b4",
         align: "center",
@@ -234,8 +234,8 @@ export class MenuScene extends Phaser.Scene {
         bg.setFillStyle(p.groundBed, 0.96);
         root.setScale(1);
       })
-      .on("pointerdown", () => this.launchBelt(levelId));
-    return { id: levelId, root };
+      .on("pointerdown", () => this.launch(dimensionId));
+    return { id: dimensionId, root };
   }
 
   /** §36 launch a specific belt LEVEL (belt mode, the level's own dimension roster/palette). */
