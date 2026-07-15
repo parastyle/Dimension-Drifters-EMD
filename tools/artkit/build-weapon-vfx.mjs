@@ -5,10 +5,12 @@
 // generated snapshot (re-run after authoring). Counterpart to harvest-install / install-cards.
 //
 //   node build-weapon-vfx.mjs
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync, readdirSync } from "node:fs";
+// `--check` skips with a warning when untracked painted/scatter authoring artifacts are unavailable.
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -27,7 +29,31 @@ const LAYERS = (globalThis.VFXLAYERS || {}).LAYERS || {};
 const defaultsFor = (lid) => Object.fromEntries((LAYERS[lid]?.params || []).map((p) => [p.key, p.def]));
 
 const assignments = JSON.parse(readFileSync(ASSIGN, "utf8"));
-mkdirSync(CLIENT_VFX_PUB, { recursive: true });
+if (isCheck && existsSync(GEN_TS)) {
+  const committed = readFileSync(GEN_TS, "utf8");
+  const requiredArtifacts = [];
+  for (const match of committed.matchAll(/hero: "vfx\/([^"/]+)\.png"/g)) {
+    const id = match[1];
+    const assignment = assignments[id];
+    const vfx = assignment?.vfxSubject || `vfx-${id}`;
+    requiredArtifacts.push(join(OUT, vfx, "sheets", assignment?.image || "candidate-1.keyed.png"));
+  }
+  for (const match of committed.matchAll(/url: "vfx\/([^"/]+)-scatter\.png"/g)) {
+    const id = match[1];
+    const vfx = assignments[id]?.vfxSubject || `vfx-${id}`;
+    requiredArtifacts.push(join(OUT, vfx, "scatter", "meta.json"));
+    requiredArtifacts.push(join(OUT, vfx, "scatter", "sheet.png"));
+  }
+  const missingArtifacts = requiredArtifacts.filter((file) => !existsSync(file));
+  if (missingArtifacts.length > 0) {
+    console.warn(
+      `⚠ weapon-vfx.generated.ts check SKIPPED — ${missingArtifacts.length} untracked VFX authoring ` +
+        "artifact(s) are unavailable under tools/artkit/out/.",
+    );
+    process.exit(0);
+  }
+}
+if (!isCheck) mkdirSync(CLIENT_VFX_PUB, { recursive: true });
 
 const hasPaintedCandidates = (vfx) => {
   const dir = join(OUT, vfx, "sheets");
@@ -74,13 +100,16 @@ for (const [id, a] of Object.entries(assignments)) {
   if (painted) {
     const img = a.image || "candidate-1.keyed.png";
     const src = join(OUT, vfx, "sheets", img);
-    if (existsSync(src)) { copyFileSync(src, join(CLIENT_VFX_PUB, `${id}.png`)); entry.hero = `vfx/${id}.png`; }
+    if (existsSync(src)) {
+      if (!isCheck) copyFileSync(src, join(CLIENT_VFX_PUB, `${id}.png`));
+      entry.hero = `vfx/${id}.png`;
+    }
   }
   // Copy the scatter spritesheet → public/vfx/<id>-scatter.png
   if (scatterMeta) {
     const src = join(OUT, vfx, "scatter", "sheet.png");
     if (existsSync(src)) {
-      copyFileSync(src, join(CLIENT_VFX_PUB, `${id}-scatter.png`));
+      if (!isCheck) copyFileSync(src, join(CLIENT_VFX_PUB, `${id}-scatter.png`));
       entry.scatter = { url: `vfx/${id}-scatter.png`, frameWidth: scatterMeta.frameWidth, frameHeight: scatterMeta.frameHeight, count: scatterMeta.count };
     }
   }
@@ -127,10 +156,20 @@ const types =
   "  hero?: string;\n" +
   "  scatter?: { url: string; frameWidth: number; frameHeight: number; count: number };\n" +
   "}\n";
-writeFileSync(GEN_TS, `${banner}\n${types}\nexport const WEAPON_VFX: Record<string, WeaponVfx> = ${JSON.stringify(out, null, 2)};\n`);
+emit(
+  GEN_TS,
+  `${banner}\n${types}\nexport const WEAPON_VFX: Record<string, WeaponVfx> = ${JSON.stringify(out, null, 2)};\n`,
+  "weapon-vfx.generated.ts",
+);
 
 const ids = Object.keys(out);
-console.log(
-  `wrote weapon-vfx.generated.ts — ${ids.length} weapon(s), ${overrideCount} override(s) applied: ${ids.join(", ")}`,
-);
-for (const id of ids) console.log(`  ${id}: ${Object.keys(out[id].suite).filter((k) => out[id].suite[k].on).join("+") || "(no layers)"}${out[id].hero ? " +hero" : ""}${out[id].scatter ? " +scatter" : ""}`);
+if (!isCheck) {
+  console.log(
+    `wrote weapon-vfx.generated.ts — ${ids.length} weapon(s), ${overrideCount} override(s) applied: ${ids.join(", ")}`,
+  );
+  for (const id of ids) {
+    console.log(
+      `  ${id}: ${Object.keys(out[id].suite).filter((k) => out[id].suite[k].on).join("+") || "(no layers)"}${out[id].hero ? " +hero" : ""}${out[id].scatter ? " +scatter" : ""}`,
+    );
+  }
+}

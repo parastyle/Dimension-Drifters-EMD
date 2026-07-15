@@ -3,9 +3,11 @@
 // sprites (the manifest) + the concept names. Run after promoting + harvest-installing new characters:
 //   node tools/artkit/gen-character-roster.mjs
 // Playable = the Drifter + every installed `cc-*` (concept characters); enemies are excluded.
-import { readFileSync, writeFileSync } from "node:fs";
+// `--check` skips with a warning when untracked out/*/parts/parts.json inputs are absent (fresh checkout).
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const manifestTs = resolve(here, "../../packages/client/src/sprites/manifest.ts");
@@ -16,6 +18,15 @@ const manifest = readFileSync(manifestTs, "utf8");
 const ids = [...manifest.matchAll(/^\s{2}"?([a-z0-9][a-z0-9-]*)"?:\s*\{\s*$/gm)].map((m) => m[1]);
 const ccs = ids.filter((id) => id.startsWith("cc-")).sort();
 const roster = ["drifter", ...ccs];
+const partsFile = (id) => resolve(here, `out/${id}/parts/parts.json`);
+const missingParts = roster.filter((id) => !existsSync(partsFile(id)));
+if (isCheck && missingParts.length > 0) {
+  console.warn(
+    `⚠ characters.ts check SKIPPED — ${missingParts.length} untracked sprite-parts artifact(s) ` +
+      "are unavailable under tools/artkit/out/.",
+  );
+  process.exit(0);
+}
 
 let names = {};
 try {
@@ -42,7 +53,7 @@ const nameOf = (id) => pretty[id] ?? names[id] ?? id;
 // nobody looks shrunk. Future-proof: newly-promoted small characters auto-correct on the next gen.
 function footprint(id) {
   try {
-    const p = JSON.parse(readFileSync(resolve(here, `out/${id}/parts/parts.json`), "utf8"));
+    const p = JSON.parse(readFileSync(partsFile(id), "utf8"));
     let top = Infinity,
       bot = -Infinity,
       left = Infinity,
@@ -115,5 +126,7 @@ ${Object.entries(scales)
   .join("\n")}
 };
 `;
-writeFileSync(outFile, body, "utf8");
-console.log(`character roster: ${roster.length} playable (drifter + ${ccs.length} cc-*) -> ${outFile}`);
+emit(outFile, body, "characters.ts");
+if (!isCheck) {
+  console.log(`character roster: ${roster.length} playable (drifter + ${ccs.length} cc-*) -> ${outFile}`);
+}

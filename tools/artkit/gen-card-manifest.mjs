@@ -5,9 +5,10 @@
 // sprite/icon card cleanly — no 404 flood masking real errors (§28.5 two-pass art).
 //
 // Run after card art lands (harvest-install / manual drop): `node tools/artkit/gen-card-manifest.mjs`.
-import { readdirSync, writeFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cardsDir = resolve(here, "../../packages/client/public/cards");
@@ -32,5 +33,5 @@ ${ids.map((id) => `  ${JSON.stringify(id)},`).join("\n")}
 ] as const;
 `;
 
-writeFileSync(outFile, body, "utf8");
-console.log(`card-manifest: ${ids.length} card(s) -> ${outFile}`);
+emit(outFile, body, "card-manifest.ts");
+if (!isCheck) console.log(`card-manifest: ${ids.length} card(s) -> ${outFile}`);

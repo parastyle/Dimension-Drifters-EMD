@@ -8,9 +8,11 @@
 //
 //   node tools/artkit/gen-vfx-subjects.mjs
 //   SUBJECTS=subjects-vfx-300.json CANDIDATES=3 PARALLEL=20 node tools/artkit/orchestrate.mjs
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+// `--check` skips with a warning when untracked out/<weapon>/ reference art is unavailable (fresh checkout).
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -65,6 +67,16 @@ function vfxPrompt(w) {
 }
 
 const data = JSON.parse(readFileSync(SRC, "utf8"));
+const missingRefs = data.weapons.filter(
+  (w) => w.id && !existsSync(join(ROOT, `out/${w.id}/identity-ref.png`)),
+);
+if (isCheck && missingRefs.length > 0) {
+  console.warn(
+    `⚠ subjects-vfx-300.json check SKIPPED — ${missingRefs.length} untracked weapon reference ` +
+      `artifact(s) are unavailable under tools/artkit/out/.`,
+  );
+  process.exit(0);
+}
 const subjects = [];
 let missing = 0;
 for (const w of data.weapons) {
@@ -86,13 +98,15 @@ for (const w of data.weapons) {
   subjects.push(subj);
 }
 
-writeFileSync(OUT, `${JSON.stringify(subjects, null, 2)}\n`);
+emit(OUT, `${JSON.stringify(subjects, null, 2)}\n`, "subjects-vfx-300.json");
 const byKind = data.weapons.reduce((m, w) => {
   const k = (w.behavior && w.behavior.kind) || "edge";
   m[k] = (m[k] || 0) + 1;
   return m;
 }, {});
-console.log(
-  `wrote subjects-vfx-300.json — ${subjects.length} VFX subjects` +
-    `${missing ? ` (${missing} skipped: no reference art)` : ""} · by move ${JSON.stringify(byKind)}`,
-);
+if (!isCheck) {
+  console.log(
+    `wrote subjects-vfx-300.json — ${subjects.length} VFX subjects` +
+      `${missing ? ` (${missing} skipped: no reference art)` : ""} · by move ${JSON.stringify(byKind)}`,
+  );
+}

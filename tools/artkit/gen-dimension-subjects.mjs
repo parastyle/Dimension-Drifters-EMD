@@ -5,9 +5,10 @@
 // the universal Drifter style-anchor (out/drifter/identity-ref.png) so construction stays on-model. Run:
 //   node tools/artkit/gen-dimension-subjects.mjs
 //   SUBJECTS=subjects-dimensions.json node tools/artkit/orchestrate.mjs --promote=1
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { emit, isCheck } from "./lib/emit.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
@@ -57,8 +58,10 @@ for (const s of SHIFTERS.shifters) {
   );
 }
 
-writeFileSync(OUT, `${JSON.stringify(subjects, null, 2)}\n`);
+emit(OUT, `${JSON.stringify(subjects, null, 2)}\n`, "subjects-dimensions.json");
 const byTier = subjects.reduce((m, s) => ((m[s.tier] = (m[s.tier] || 0) + 1), m), {});
-console.log(
-  `wrote subjects-dimensions.json — ${subjects.length} subjects (low ${byTier.low || 0} / medium ${byTier.medium || 0} / high ${byTier.high || 0})`,
-);
+if (!isCheck) {
+  console.log(
+    `wrote subjects-dimensions.json — ${subjects.length} subjects (low ${byTier.low || 0} / medium ${byTier.medium || 0} / high ${byTier.high || 0})`,
+  );
+}

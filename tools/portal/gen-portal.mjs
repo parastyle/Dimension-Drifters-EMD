@@ -7,13 +7,22 @@
 //   node tools/portal/gen-portal.mjs        # → tools/portal/index.html (serve it, open it, play)
 //
 // Data is read from the built shared package, so the catalog is always in sync with the real game.
-import { mkdirSync, writeFileSync } from "node:fs";
+// `--check` skips with a warning when packages/shared/dist is unavailable (fresh checkout before build).
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { emit, isCheck } from "../artkit/lib/emit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, "../..");
-const shared = await import(pathToFileURL(resolve(REPO, "packages/shared/dist/index.js")).href);
+const sharedDist = resolve(REPO, "packages/shared/dist/index.js");
+if (isCheck && !existsSync(sharedDist)) {
+  console.warn(
+    "⚠ tools/portal/index.html check SKIPPED — packages/shared/dist/index.js is unavailable.",
+  );
+  process.exit(0);
+}
+const shared = await import(pathToFileURL(sharedDist).href);
 
 const {
   BOSSES,
@@ -31,9 +40,11 @@ const {
 // ── Build the catalog ────────────────────────────────────────────────────────────────────────────────
 // Bosses: the bespoke picker defs + each dimension's themed finale (deduped, richer names).
 const bossSet = new Map();
-for (const id of BOSS_DEF_IDS) bossSet.set(id, { id, name: BOSSES[id]?.name ?? id, tag: "bespoke" });
+for (const id of BOSS_DEF_IDS)
+  bossSet.set(id, { id, name: BOSSES[id]?.name ?? id, tag: "bespoke" });
 for (const dim of Object.values(DIMENSIONS)) {
-  if (!bossSet.has(dim.boss)) bossSet.set(dim.boss, { id: dim.boss, name: bossNameFor(dim.boss), tag: dim.name });
+  if (!bossSet.has(dim.boss))
+    bossSet.set(dim.boss, { id: dim.boss, name: bossNameFor(dim.boss), tag: dim.name });
 }
 function bossNameFor(kind) {
   // dimension bosses resolve to a bespoke fight; show the themed kind + its fight name if different.
@@ -46,7 +57,15 @@ const weapons = [...WEAPON_IDS, ...EXPANSION_WEAPON_IDS]
   .map((id) => {
     const w = WEAPONS[id];
     const t = w?.tags ?? {};
-    const delivery = w?.gun ? "gun" : w?.cast ? "cast" : w?.thrown ? "thrown" : w?.quake ? "quake" : "melee";
+    const delivery = w?.gun
+      ? "gun"
+      : w?.cast
+        ? "cast"
+        : w?.thrown
+          ? "thrown"
+          : w?.quake
+            ? "quake"
+            : "melee";
     return {
       id,
       name: w?.name ?? prettyId(id),
@@ -70,7 +89,9 @@ const levels = Object.values(BELT_LEVELS).map((l) => ({
   id: l.id,
   name: l.name,
   blurb: l.blurb ?? "",
-  boss: bossNameFor(l.rooms?.find?.((r) => r.boss)?.bossKind ?? DIMENSIONS[l.dimensionId]?.boss ?? ""),
+  boss: bossNameFor(
+    l.rooms?.find?.((r) => r.boss)?.bossKind ?? DIMENSIONS[l.dimensionId]?.boss ?? "",
+  ),
 }));
 
 function prettyId(id) {
@@ -84,9 +105,21 @@ const CATALOG = { bosses, weapons, characters, levels };
 
 // External tools (started separately; the portal just links to them).
 const TOOLS = [
-  { name: "Weaponsmith", url: "http://localhost:5050", desc: "Author each weapon's VFX suite (hero skin + layer presets)." },
-  { name: "Art Review", url: "http://localhost:8190", desc: "Browse + review generated art candidates." },
-  { name: "Border Chooser", url: "http://localhost:5180/border-chooser.html", desc: "The 6 UI panel-frame styles (dev-served)." },
+  {
+    name: "Weaponsmith",
+    url: "http://localhost:5050",
+    desc: "Author each weapon's VFX suite (hero skin + layer presets).",
+  },
+  {
+    name: "Art Review",
+    url: "http://localhost:8190",
+    desc: "Browse + review generated art candidates.",
+  },
+  {
+    name: "Border Chooser",
+    url: "http://localhost:5180/border-chooser.html",
+    desc: "The 6 UI panel-frame styles (dev-served).",
+  },
 ];
 
 // ── Render ───────────────────────────────────────────────────────────────────────────────────────────
@@ -210,8 +243,10 @@ document.getElementById("gameUrl").addEventListener("change", render);
 render();
 </script></body></html>`;
 
-mkdirSync(here, { recursive: true });
-writeFileSync(resolve(here, "index.html"), html);
-console.log(
-  `dev portal → tools/portal/index.html  (bosses ${bosses.length} · weapons ${weapons.length} · characters ${characters.length} · levels ${levels.length})`,
-);
+if (!isCheck) mkdirSync(here, { recursive: true });
+emit(resolve(here, "index.html"), html, "tools/portal/index.html");
+if (!isCheck) {
+  console.log(
+    `dev portal → tools/portal/index.html  (bosses ${bosses.length} · weapons ${weapons.length} · characters ${characters.length} · levels ${levels.length})`,
+  );
+}
