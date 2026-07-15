@@ -2124,3 +2124,109 @@ describe("GameRoom — §44 safety gates", () => {
     expect(p.upPower).toBe(0);
   });
 });
+
+const { BOSS_PROJECTILE_BUDGET: HOSTILE_PROJECTILE_CEILING } = await import("@dd/shared");
+
+// ── §46 terminal-room quiescence + arena-wide hostile-projectile admission (audit follow-up). ────────────
+describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", () => {
+  it("a WIPE clears every combat transient, idles enemy AI, and restart revives the full simulation", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const rangedEntry = Object.entries(ENEMY_KINDS).find(([, kind]) => Boolean(kind.ranged));
+    if (!rangedEntry) throw new Error("test roster needs a ranged enemy");
+    const [kindId, kind] = rangedEntry;
+
+    const enemy = new EnemyState();
+    enemy.id = "terminal-spitter";
+    enemy.kind = kindId;
+    enemy.hp = kind.hp;
+    enemy.x = h.room.map.spawnX + 120;
+    enemy.y = h.room.map.spawnY;
+    h.state().enemies.set(enemy.id, enemy);
+    h.room.fireProjectile(enemy, p, 0, 1);
+
+    const zone = new ZoneState();
+    zone.id = "terminal-zone";
+    zone.x = p.x;
+    zone.y = p.y;
+    zone.radius = ZONE_RADIUS;
+    h.state().zones.set(zone.id, zone);
+    h.room.zoneMeta.set(zone.id, ZONE_TTL);
+    h.room.addTelegraphRow(0, p.x, p.y, 100, 1, 0);
+    h.room.pendingQuakes.push({ t: 10, x: p.x, y: p.y, radius: 100, damage: 10, crit: 0 });
+
+    const enemyAi = vi.spyOn(h.room, "stepSpitters");
+    p.hp = 0;
+    h.tick(1); // phase 7 detects the wipe and enters the shared terminal teardown
+    expect(h.state().outcome).toBe("defeat");
+
+    enemyAi.mockClear();
+    h.tick(8);
+    expect(h.state().enemies.size).toBe(0);
+    expect(h.state().projectiles.size).toBe(0);
+    expect(h.state().zones.size).toBe(0);
+    expect(h.state().telegraphs.size).toBe(0);
+    expect(h.room.pendingQuakes).toHaveLength(0);
+    expect(enemyAi).not.toHaveBeenCalled(); // terminal ticks never enter phase 5 AI
+
+    h.send("p1", "restart");
+    expect(h.state().outcome).toBe("active");
+    expect(p.alive).toBe(true);
+    enemyAi.mockClear();
+    h.tick(1);
+    expect(h.state().elapsed).toBeGreaterThan(0);
+    expect(enemyAi).toHaveBeenCalledOnce(); // restart restored the ordinary phase pipeline
+  });
+
+  it("spitter volleys obey the hostile ceiling, and a parry-reflection frees exactly one slot", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const safe = { x: h.room.map.spawnX + 120, y: h.room.map.spawnY };
+
+    // Saturate through the central primitive: excess hostile shots are rejected before ids/state are minted.
+    for (let i = 0; i < HOSTILE_PROJECTILE_CEILING + 20; i++)
+      h.room.fireProjectile(safe, { x: safe.x + 1, y: safe.y }, 0, 1);
+    expect(h.room.bossSink.hostileProjectiles()).toBe(HOSTILE_PROJECTILE_CEILING);
+    expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING);
+
+    const rangedEntry =
+      Object.entries(ENEMY_KINDS).find(([, kind]) => (kind.ranged?.spread?.count ?? 0) > 1) ??
+      Object.entries(ENEMY_KINDS).find(([, kind]) => Boolean(kind.ranged));
+    if (!rangedEntry) throw new Error("test roster needs a ranged enemy");
+    const [kindId, kind] = rangedEntry;
+    const spitter = new EnemyState();
+    spitter.id = "budget-spitter";
+    spitter.kind = kindId;
+    spitter.hp = kind.hp;
+    spitter.x = p.x + 100;
+    spitter.y = p.y;
+    h.state().enemies.set(spitter.id, spitter);
+    h.room.enemyFireCd.set(spitter.id, 0);
+    h.room.stepSpitters(0.05, [{ x: p.x, y: p.y }]);
+    expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING); // full volley rejected
+
+    const reflected = [...h.state().projectiles.values()][0];
+    if (!reflected) throw new Error("expected a projectile to reflect");
+    reflected.x = p.x;
+    reflected.y = p.y;
+    reflected.vx = 0;
+    reflected.vy = 0;
+    h.room.combat.get("p1").invuln = 1;
+    h.room.stepProjectiles(0.05);
+    expect(reflected.hostile).toBe(false);
+    expect(h.room.bossSink.hostileProjectiles()).toBe(HOSTILE_PROJECTILE_CEILING - 1);
+
+    h.room.enemyFireCd.set(spitter.id, 0);
+    h.room.stepSpitters(0.05, [{ x: p.x, y: p.y }]);
+    expect(h.room.bossSink.hostileProjectiles()).toBe(HOSTILE_PROJECTILE_CEILING);
+    expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING + 1); // one friendly + ceiling hostile
+
+    h.room.enemyFireCd.set(spitter.id, 0);
+    h.room.stepSpitters(0.05, [{ x: p.x, y: p.y }]);
+    expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING + 1);
+    h.room.fireProjectile(safe, { x: safe.x + 1, y: safe.y }, 0, 1, false, "friendly");
+    expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING + 2); // friendlies are never capped
+  });
+});

@@ -25,6 +25,7 @@ import {
   AUG_PROJECTILE_SPREAD,
   addImpulse,
   BOSS_DEF_IDS,
+  BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
   BOSSRUSH_BREATHER,
   BOSSRUSH_HEAL_FRAC,
@@ -357,6 +358,9 @@ export class GameRoom extends Room<ArenaState> {
       crit?: number;
     }
   >();
+  /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
+   *  spitter path and BossController admission read the hard ceiling in O(1). Friendly shots never count. */
+  private hostileProjectileCount = 0;
   /** Per-zoner puddle-drop cooldown (sec), keyed by enemy id; pruned with the enemy. */
   private readonly zonerDropCd = new Map<string, number>();
   /** Per-zone remaining lifetime (sec), keyed by zone id. */
@@ -977,6 +981,7 @@ export class GameRoom extends Room<ArenaState> {
    *  lifecycle, not run transients, so they're left alone.) */
   private clearTransients(): void {
     this.projectileMeta.clear();
+    this.hostileProjectileCount = 0;
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.zoneMeta.clear();
@@ -988,6 +993,23 @@ export class GameRoom extends Room<ArenaState> {
     this.earnedPickups.clear();
     this.burnPulses.length = 0;
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
+    this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
+  }
+
+  /** §6 terminal combat teardown shared by wipes and every victory route. Pickups/player state remain for the
+   *  result screen; all damage-producing bodies and their non-synced machines are retired together. */
+  private clearCombatEntities(): void {
+    this.clearBoss();
+    this.state.enemies.clear();
+    this.state.projectiles.clear();
+    this.state.zones.clear();
+    this.clearTransients();
+  }
+
+  /** §6 enter a terminal result exactly once through the full combat teardown path. */
+  private enterTerminalOutcome(outcome: "defeat" | "victory"): void {
+    this.state.outcome = outcome;
+    this.clearCombatEntities();
   }
 
   /** §13 v0.106 (A11) spawn the player's currently-held weapon on the floor as a grabbable pickup in front
@@ -1592,7 +1614,6 @@ export class GameRoom extends Room<ArenaState> {
     //    window and replay ~400ms of stale directions on resume). A backlog drains by jumping straight to
     //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
     this.state.tick = (this.state.tick + 1) >>> 0;
-    this.rebuildEnemyGrid(); // §45 exactly once/sub-step; all later enemy motion updates cell membership
     this.state.players.forEach((player, id) => {
       const input = this.inputs.get(id);
       if (!input) return;
@@ -1611,6 +1632,13 @@ export class GameRoom extends Room<ArenaState> {
         }
       }
     });
+    // §6 TERMINAL HOLD: keep input acknowledgements/action budgets alive so the host can restart, but retire
+    // any combat entity an out-of-band action tried to create and skip every movement/AI/damage machine.
+    if (this.state.outcome !== "active") {
+      this.clearCombatEntities();
+      return;
+    }
+    this.rebuildEnemyGrid(); // §45 exactly once/ACTIVE sub-step; later enemy motion updates cell membership
 
     // 1. Integrate each LIVING player's authoritative movement from their held input command.
     //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
@@ -1781,6 +1809,8 @@ export class GameRoom extends Room<ArenaState> {
         }
       }
     }
+    // §6 belt-final/extraction victories can resolve inside phase 3; do not fall through into combat phases.
+    if (this.state.outcome !== "active") return;
 
     // 3b. Pickups are grabbed with the R key now (§13 `grabWeapon`), not walk-over — here we just age the
     // per-DROP grace window (a just-dropped weapon can't be re-grabbed until it expires).
@@ -1807,7 +1837,8 @@ export class GameRoom extends Room<ArenaState> {
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
       c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
-      const acting = player.alive && !this.inLevelWindow(player);
+      const acting =
+        this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
       if (acting && c.parryBuffer > 0 && c.parryCd <= 0) {
         c.parryBuffer = 0;
@@ -1886,9 +1917,18 @@ export class GameRoom extends Room<ArenaState> {
         c.cd = weapon.cooldown * cdMul; // flat cooldown — DEX scales DAMAGE (via §10 grades), not speed
       }
     });
+    // §6 a synchronous player hit can clear the last boss-rush round from inside resolveSwing.
+    if (this.state.outcome !== "active") {
+      this.clearCombatEntities();
+      return;
+    }
 
     // 4.6 §20 advance in-flight swept melee blades (edge damage over the swing's active window).
     this.stepMeleeSwings(dt);
+    if (this.state.outcome !== "active") {
+      this.clearCombatEntities();
+      return;
+    }
     // 4.65 §40.2 detonate quakes whose blade has LANDED (delay captured at swing time; see resolveSwing).
     for (let i = this.pendingQuakes.length - 1; i >= 0; i--) {
       const q = this.pendingQuakes[i];
@@ -1964,6 +2004,10 @@ export class GameRoom extends Room<ArenaState> {
     this.stepSpitters(dt, bodies);
     // 5.3 Advance projectiles + apply hits (server-authoritative damage).
     this.stepProjectiles(dt);
+    if (this.state.outcome !== "active") {
+      this.clearCombatEntities();
+      return;
+    }
     // 5.4 Zoners drop corrosive puddles; puddles DoT players inside + expire (§15 area denial).
     this.stepZoners(dt);
     this.stepZones(dt);
@@ -2071,7 +2115,6 @@ export class GameRoom extends Room<ArenaState> {
       this.state.players.size > 0 &&
       !anyAlive
     ) {
-      this.state.outcome = "defeat";
       // §6 "bank or LOSE" (v0.103): a wipe drops everything the squad was carrying — only what was
       // banked at an extraction survives. This is the teeth of the extract-vs-descend decision.
       let lost = 0;
@@ -2083,6 +2126,8 @@ export class GameRoom extends Room<ArenaState> {
         console.log(
           `[room ${this.roomId}] squad WIPED at depth ${this.state.depth} — ${lost} carried salvage lost`,
         );
+      this.enterTerminalOutcome("defeat");
+      return;
     }
 
     // §8 Conflagration: fire any deferred burn re-pulses whose delay has elapsed (the "lingering" wave).
@@ -2465,11 +2510,7 @@ export class GameRoom extends Room<ArenaState> {
           }
         },
         hostileProjectiles: () => {
-          let n = 0;
-          this.state.projectiles.forEach((p) => {
-            if (p.hostile) n++;
-          });
-          return n;
+          return this.hostileProjectileCount;
         },
         aliveAdds: () => {
           for (const id of [...this.bossAddIds]) {
@@ -2717,6 +2758,13 @@ export class GameRoom extends Room<ArenaState> {
     bounces = 0,
     crit = 0,
   ): void {
+    // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
+    // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
+    if (
+      this.state.outcome !== "active" ||
+      (hostile && this.hostileProjectileCount >= BOSS_PROJECTILE_BUDGET)
+    )
+      return;
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const len = Math.hypot(dx, dy) || 1;
@@ -2742,6 +2790,16 @@ export class GameRoom extends Room<ArenaState> {
       legTtl: ttl,
       crit,
     });
+    if (hostile) this.hostileProjectileCount++;
+  }
+
+  /** §16 remove one live projectile while keeping the O(1) hostile admission count exact. */
+  private removeProjectile(id: string): void {
+    const meta = this.projectileMeta.get(id);
+    if (meta?.hostile)
+      this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
+    this.state.projectiles.delete(id);
+    this.projectileMeta.delete(id);
   }
 
   /** §9/§15 fire a GUN — spend one ammo to launch `pellets` friendly bullets down-barrel (a cone for
@@ -3591,8 +3649,7 @@ export class GameRoom extends Room<ArenaState> {
       // Detonate exploding projectiles (magma scatter) at their death position — §14 WYSIWYG.
       if (pr && meta?.explode)
         this.detonate(pr.x, pr.y, meta.explode.radius, meta.explode.damage, meta.crit ?? 0);
-      this.state.projectiles.delete(id);
-      this.projectileMeta.delete(id);
+      this.removeProjectile(id);
     }
   }
 
@@ -3616,6 +3673,8 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     pc: CombatState,
   ): void {
+    if (meta.hostile)
+      this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
     pr.hostile = false;
     meta.hostile = false;
     meta.hit.clear();
@@ -3749,7 +3808,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!bossAlive && trashAlive === 0) {
         this.beltPhase = "cleared";
         this.state.beltLockX = 0; // gate opens
-        if (room.boss) this.state.outcome = "victory"; // §29 cleared the bridge → run won
+        if (room.boss) this.enterTerminalOutcome("victory"); // §29 cleared the bridge → run won
       }
     } else {
       // cleared → advance when a player crosses the (now-open) gate.
@@ -3909,17 +3968,13 @@ export class GameRoom extends Room<ArenaState> {
     this.bossRushIndex++;
     if (this.bossRushIndex >= BOSS_DEF_IDS.length) {
       // GAUNTLET CLEARED → victory: bank everything carried + clear the field for the win screen.
-      this.state.outcome = "victory";
       let banked = 0;
       this.state.players.forEach((p) => {
         banked += p.salvaged;
         p.salvaged = 0;
       });
       this.state.bankedSalvage += banked;
-      this.state.enemies.clear();
-      this.state.projectiles.clear();
-      this.projectileMeta.clear();
-      this.enemyFireCd.clear();
+      this.enterTerminalOutcome("victory");
       console.log(
         `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
       );
@@ -4185,7 +4240,6 @@ export class GameRoom extends Room<ArenaState> {
       const dx = b.x - this.state.portalX;
       const dy = b.y - this.state.portalY;
       if (dx * dx + dy * dy <= r2) {
-        this.state.outcome = "victory";
         // §6 BANK (v0.103, "bank or lose"): everything the squad carried is deposited — the win's payload.
         let banked = 0;
         this.state.players.forEach((p) => {
@@ -4199,11 +4253,8 @@ export class GameRoom extends Room<ArenaState> {
         );
         this.state.bankedSalvage += banked + harvest;
         // Clean the field for the win screen.
-        this.state.enemies.clear();
-        this.state.projectiles.clear();
-        this.projectileMeta.clear();
-        this.enemyFireCd.clear();
         this.state.riftOpen = false; // the choice is made — the rift closes
+        this.enterTerminalOutcome("victory");
         console.log(
           `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked}+${harvest} harvest banked, ${this.state.bankedSalvage} total)`,
         );
