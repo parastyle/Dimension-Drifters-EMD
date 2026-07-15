@@ -214,6 +214,15 @@ import {
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
 import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
+import { SpatialGrid } from "./SpatialGrid.js";
+
+/** §45 one tick-wide horde broad phase. 128px keeps ordinary enemy separation in the same/adjacent cells;
+ *  the radius ceiling keeps boss/projectile/melee queries conservative for the oversized boss roster. */
+const ENEMY_GRID_CELL_SIZE = 128;
+const MAX_ENEMY_RADIUS = Math.max(
+  ENEMY_RADIUS,
+  ...Object.values(ENEMY_KINDS).map((kind) => kind.radius),
+);
 
 /** §4 v0.107 one sequence-numbered input COMMAND from a client (~one per 50ms client tick). `jump` rides
  *  the command (not a separate message) so its consume tick is part of the acked timeline (review #5). */
@@ -309,6 +318,10 @@ interface CombatState {
 export class GameRoom extends Room<ArenaState> {
   override maxClients = MAX_PLAYERS;
 
+  /** §45 rebuilt once per fixed sub-step, then maintained in-place as that tick moves/spawns enemies. */
+  private readonly enemyGrid = new SpatialGrid<string>(ENEMY_GRID_CELL_SIZE);
+  private readonly enemyCandidates: string[] = [];
+  private readonly oversizedEnemyIds: string[] = [];
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
@@ -1178,6 +1191,7 @@ export class GameRoom extends Room<ArenaState> {
         dummy.x = sp.x;
         dummy.y = sp.y;
         this.state.enemies.set(dummy.id, dummy);
+        this.insertEnemyGrid(dummy.id, dummy);
       }
       // Reset players to the center, full HP, so they start clear of everything.
       this.state.players.forEach((player, id) => {
@@ -1345,17 +1359,59 @@ export class GameRoom extends Room<ArenaState> {
     for (const id of doomed) this.state.enemies.delete(id);
   }
 
-  /** §5 body collision for the horde: enemy↔enemy separation + enemies pushed out of players. */
+  /** §45 rebuild the ONE enemy broad phase for this fixed tick. Later movement uses `update`, not a rebuild. */
+  private rebuildEnemyGrid(): void {
+    this.enemyGrid.clear();
+    this.oversizedEnemyIds.length = 0;
+    this.state.enemies.forEach((enemy, id) => {
+      this.insertEnemyGrid(id, enemy);
+    });
+  }
+
+  private insertEnemyGrid(id: string, enemy: EnemyState): void {
+    this.enemyGrid.insert(id, enemy.x, enemy.y);
+    const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    if (radius > ENEMY_GRID_CELL_SIZE / 2 && !this.oversizedEnemyIds.includes(id)) {
+      this.oversizedEnemyIds.push(id);
+    }
+  }
+
+  private updateEnemyGrid(id: string, enemy: EnemyState): void {
+    this.enemyGrid.update(id, enemy.x, enemy.y);
+  }
+
+  /** §5/§45 body collision for the horde: two identical relaxation passes, grid-filtered broad phase, then
+   *  enemies pushed out of players. Candidate sorting retains the old MapSchema `i < j` pair order. */
   private resolveEnemyCollisions(): void {
-    const list = [...this.state.enemies.values()];
     const rad = (e: EnemyState): number => ENEMY_KINDS[e.kind]?.radius ?? ENEMY_RADIUS;
     for (let iter = 0; iter < 2; iter++) {
-      for (let i = 0; i < list.length; i++) {
-        const a = list[i];
-        if (!a) continue;
+      this.state.enemies.forEach((a, aid) => {
         const ra = rad(a);
-        for (let j = i + 1; j < list.length; j++) {
-          const b = list[j];
+        const aOrder = this.enemyGrid.orderOf(aid);
+        if (ra > ENEMY_GRID_CELL_SIZE / 2) {
+          // Colossi can overlap bodies beyond one neighboring cell, so only their own query expands.
+          this.enemyGrid.queryRadius(
+            a.x,
+            a.y,
+            ra + MAX_ENEMY_RADIUS,
+            this.enemyCandidates,
+          );
+        } else {
+          // Ordinary horde bodies only inspect the current 128px cell and its eight neighbors.
+          this.enemyGrid.queryRadius(a.x, a.y, ENEMY_GRID_CELL_SIZE, this.enemyCandidates);
+          for (const id of this.oversizedEnemyIds) {
+            if (this.state.enemies.has(id) && !this.enemyCandidates.includes(id)) {
+              this.enemyCandidates.push(id);
+            }
+          }
+          this.enemyCandidates.sort(
+            (left, right) =>
+              (this.enemyGrid.orderOf(left) ?? 0) - (this.enemyGrid.orderOf(right) ?? 0),
+          );
+        }
+        for (const bid of this.enemyCandidates) {
+          if ((this.enemyGrid.orderOf(bid) ?? -1) <= (aOrder ?? -1)) continue;
+          const b = this.state.enemies.get(bid);
           if (!b) continue;
           const min = ra + rad(b);
           let dx = b.x - a.x;
@@ -1372,6 +1428,8 @@ export class GameRoom extends Room<ArenaState> {
             a.y -= (dy / d) * push;
             b.x += (dx / d) * push;
             b.y += (dy / d) * push;
+            this.updateEnemyGrid(aid, a);
+            this.updateEnemyGrid(bid, b);
           }
         }
         // Push the enemy out of any living player (the player stays put — authoritative).
@@ -1389,14 +1447,16 @@ export class GameRoom extends Room<ArenaState> {
           if (d < min) {
             a.x = p.x + (dx / d) * min;
             a.y = p.y + (dy / d) * min;
+            this.updateEnemyGrid(aid, a);
           }
         });
-      }
+      });
     }
-    for (const e of list) {
+    this.state.enemies.forEach((e, id) => {
       e.x = clamp(e.x, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
       e.y = clamp(e.y, ENEMY_RADIUS, ARENA_HEIGHT - ENEMY_RADIUS);
-    }
+      this.updateEnemyGrid(id, e);
+    });
   }
 
   override onJoin(client: Client, options?: { scrip?: number; up?: unknown }): void {
@@ -1532,6 +1592,7 @@ export class GameRoom extends Room<ArenaState> {
     //    window and replay ~400ms of stale directions on resume). A backlog drains by jumping straight to
     //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
     this.state.tick = (this.state.tick + 1) >>> 0;
+    this.rebuildEnemyGrid(); // §45 exactly once/sub-step; all later enemy motion updates cell membership
     this.state.players.forEach((player, id) => {
       const input = this.inputs.get(id);
       if (!input) return;
@@ -1874,6 +1935,7 @@ export class GameRoom extends Room<ArenaState> {
           const r = kind.radius;
           enemy.x = clamp(enemy.x + ds.dx * rollSpeed * dt, r, ARENA_WIDTH - r);
           enemy.y = clamp(enemy.y + ds.dy * rollSpeed * dt, r, ARENA_HEIGHT - r);
+          this.updateEnemyGrid(id, enemy);
           this.dodgeState.set(id, ds);
           return; // rolling — skip the normal kite this tick
         }
@@ -1890,6 +1952,7 @@ export class GameRoom extends Room<ArenaState> {
         : stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed, dt);
       enemy.x = next.x;
       enemy.y = next.y;
+      this.updateEnemyGrid(id, enemy);
     });
 
     // 5.1 Duelists (ronin): close in, telegraph, then string a melee COMBO (§15).
@@ -2209,34 +2272,49 @@ export class GameRoom extends Room<ArenaState> {
         // is the fairness lever the belt constants were authored for. Tested once/tick (persist over `active`,
         // hit-once via `sw.hit`) so a mob walking into your swing still gets clipped.
         const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
-        this.state.enemies.forEach((enemy, eid) => {
-          if (sw.hit.has(eid) || enemy.hp <= 0) return; // once per swing; skip corpses pending deletion
+        this.enemyGrid.queryAabb(
+          player.x - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range),
+          player.y - DEPTH_TOL_PLAYER - MAX_ENEMY_RADIUS,
+          player.x + (facing > 0 ? sw.range : MAX_ENEMY_RADIUS * 0.5),
+          player.y + DEPTH_TOL_PLAYER + MAX_ENEMY_RADIUS,
+          this.enemyCandidates,
+        );
+        for (const eid of this.enemyCandidates) {
+          const enemy = this.state.enemies.get(eid);
+          if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           const fx = (enemy.x - player.x) * facing; // forward distance along the belt (in front = positive)
-          if (fx < -r * 0.5 || fx > sw.range) return; // behind us, or beyond blade reach
+          if (fx < -r * 0.5 || fx > sw.range) continue; // behind us, or beyond blade reach
           // Depth window: generous for the attacker, but a mob actively rolling in depth (dodgeState) shrinks
           // its own hurtbox depth (DEPTH_DODGE_MULT) so a well-timed roll genuinely slips the swing.
           const rolling = (this.dodgeState.get(eid)?.t ?? 0) > 0;
           const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
-          if (Math.abs(enemy.y - player.y) > depthWin) return;
+          if (Math.abs(enemy.y - player.y) > depthWin) continue;
           sw.hit.add(eid);
           xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
-        });
+        }
         if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
         continue;
       }
       const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
       const wielder = { x: player.x, y: player.y };
+      this.enemyGrid.queryRadius(
+        player.x,
+        player.y,
+        sw.range + sw.halfWidth + MAX_ENEMY_RADIUS,
+        this.enemyCandidates,
+      );
       for (let s = 1; s <= steps; s++) {
         const angle = bladeAngleAt(sw.aim0, sw.swingArc, p0 + ((p1 - p0) * s) / steps);
-        this.state.enemies.forEach((enemy, eid) => {
-          if (sw.hit.has(eid) || enemy.hp <= 0) return; // once per swing; skip corpses pending deletion
+        for (const eid of this.enemyCandidates) {
+          const enemy = this.state.enemies.get(eid);
+          if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
             sw.hit.add(eid);
             xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
           }
-        });
+        }
       }
       if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
     }
@@ -2303,6 +2381,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.tick,
       this.bossSink,
     );
+    this.updateEnemyGrid(this.bossId, boss);
   }
 
   /** Tear down the active boss: dispose the controller (removes its in-flight telegraphs), reset the synced
@@ -2572,6 +2651,7 @@ export class GameRoom extends Room<ArenaState> {
       e.y = sp.y;
     }
     this.state.enemies.set(e.id, e);
+    this.insertEnemyGrid(e.id, e);
     this.bossAddIds.add(e.id);
   }
 
@@ -2974,12 +3054,15 @@ export class GameRoom extends Room<ArenaState> {
     const r2 = radius * radius;
     const kills: string[] = [];
     let xpGained = 0;
-    this.state.enemies.forEach((enemy, eid) => {
+    this.enemyGrid.queryRadius(x, y, radius, this.enemyCandidates);
+    for (const eid of this.enemyCandidates) {
+      const enemy = this.state.enemies.get(eid);
+      if (!enemy) continue;
       const dx = enemy.x - x;
       const dy = enemy.y - y;
-      if (dx * dx + dy * dy > r2) return;
+      if (dx * dx + dy * dy > r2) continue;
       xpGained += this.damageEnemy(enemy, eid, damage, kills, crit);
-    });
+    }
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);
   }
@@ -3016,7 +3099,7 @@ export class GameRoom extends Room<ArenaState> {
     c.parryCd = PARRY_COOLDOWN;
     const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
-    this.state.enemies.forEach((enemy) => {
+    this.state.enemies.forEach((enemy, id) => {
       const dx = enemy.x - player.x;
       const dy = enemy.y - player.y;
       const d2 = dx * dx + dy * dy;
@@ -3024,6 +3107,7 @@ export class GameRoom extends Room<ArenaState> {
         const d = Math.sqrt(d2);
         enemy.x = clamp(enemy.x + (dx / d) * knockback, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
         enemy.y = clamp(enemy.y + (dy / d) * knockback, ENEMY_RADIUS, ARENA_HEIGHT - ENEMY_RADIUS);
+        this.updateEnemyGrid(id, enemy);
       }
     });
     this.applyParryAugments(player, c);
@@ -3204,6 +3288,7 @@ export class GameRoom extends Room<ArenaState> {
       // so the client fills a white rhythm ring + whitens the enemy before EACH hit — a parryable beat.
       enemy.windup =
         st.phase === "windup" && st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
+      this.updateEnemyGrid(id, enemy);
     });
   }
 
@@ -3473,8 +3558,16 @@ export class GameRoom extends Room<ArenaState> {
         // Friendly throw: damage each fresh enemy it touches until pierce runs out.
         const kills: string[] = [];
         let xpGained = 0;
-        this.state.enemies.forEach((enemy, eid) => {
-          if (meta.pierce <= 0 || meta.hit.has(eid)) return;
+        this.enemyGrid.queryRadius(
+          pr.x,
+          pr.y,
+          PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+          this.enemyCandidates,
+        );
+        for (const eid of this.enemyCandidates) {
+          if (meta.pierce <= 0 || meta.hit.has(eid)) continue;
+          const enemy = this.state.enemies.get(eid);
+          if (!enemy) continue;
           const reach = (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) + PROJECTILE_RADIUS;
           const dx = pr.x - enemy.x;
           const dy = pr.y - enemy.y;
@@ -3485,7 +3578,7 @@ export class GameRoom extends Room<ArenaState> {
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
             xpGained += this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
           }
-        });
+        }
         for (const eid of kills) this.state.enemies.delete(eid);
         if (xpGained > 0) this.grantXp(xpGained);
         // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
@@ -3703,6 +3796,7 @@ export class GameRoom extends Room<ArenaState> {
       enemy.x = ex;
       enemy.y = clampBeltFloorY(level, ex, BELT_Y0 + Math.random() * DEPTH_MAX, kind.radius);
       this.state.enemies.set(enemy.id, enemy);
+      this.insertEnemyGrid(enemy.id, enemy);
     }
   }
 
@@ -3754,6 +3848,7 @@ export class GameRoom extends Room<ArenaState> {
         kind.radius,
       );
       this.state.enemies.set(enemy.id, enemy);
+      this.insertEnemyGrid(enemy.id, enemy);
       return;
     }
     const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
@@ -3762,6 +3857,7 @@ export class GameRoom extends Room<ArenaState> {
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
+    this.insertEnemyGrid(enemy.id, enemy);
   }
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
@@ -3788,6 +3884,7 @@ export class GameRoom extends Room<ArenaState> {
     enemy.x = sp.x;
     enemy.y = sp.y;
     this.state.enemies.set(enemy.id, enemy);
+    this.insertEnemyGrid(enemy.id, enemy);
   }
 
   /** §16 v0.116 BOSS RUSH — drop the boss at `bossRushIndex` in the gauntlet order (`BOSS_DEF_IDS`). Reuses
@@ -3885,6 +3982,7 @@ export class GameRoom extends Room<ArenaState> {
       boss.y = sp.y;
     }
     this.state.enemies.set(boss.id, boss);
+    this.insertEnemyGrid(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
     // §16 v0.109 the data-driven controller runs this boss's def (CLASSIC_BOSS = OLD RUST for any kind
@@ -3966,6 +4064,7 @@ export class GameRoom extends Room<ArenaState> {
     s.x = sp.x;
     s.y = sp.y;
     this.state.enemies.set(s.id, s);
+    this.insertEnemyGrid(s.id, s);
     this.shifterId = s.id;
     this.shifterTimer = kind.shifter?.window ?? 20;
     this.shifterWaves++;
