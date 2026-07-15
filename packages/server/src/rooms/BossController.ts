@@ -223,9 +223,11 @@ export class BossController {
     if (!this.active.length) return;
     const survivors: ActiveHazard[] = [];
     for (const h of this.active) {
+      const previousElapsed = h.elapsed;
+      const stepDt = Math.max(0, Math.min(dt, h.spec.duration - previousElapsed));
       h.elapsed += dt;
       const frac = h.spec.duration > 0 ? Math.min(1, h.elapsed / h.spec.duration) : 1;
-      const dmg = h.spec.dps * dt * dmgScale;
+      const dmg = h.spec.dps * stepDt * dmgScale;
       if (h.spec.kind === 0) {
         // BEAM — sweep the lane from rot0→rotEnd, damaging anyone inside.
         const rot = h.spec.rot0 + (h.spec.rotEnd - h.spec.rot0) * frac;
@@ -266,7 +268,7 @@ export class BossController {
           h.spec.b,
           h.spec.rot0,
           dmg,
-          h.spec.knockback * dt,
+          h.spec.knockback * stepDt,
         );
       }
       if (h.elapsed >= h.spec.duration) sink.removeTelegraph(h.telegraphId);

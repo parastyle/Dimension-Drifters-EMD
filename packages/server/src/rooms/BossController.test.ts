@@ -200,6 +200,25 @@ describe("BossController — active hazards (beam / ring / dash)", () => {
     expect(calls.removeTelegraph).toContain("tg0"); // expired + cleaned up
   });
 
+  it("limits hazard damage to a non-tick-aligned authored duration", () => {
+    const c = new BossController(
+      hazardDef("beamSweep", {
+        length: 800,
+        halfWidth: 40,
+        sweepArc: 1,
+        duration: 0.38,
+        dps: 100,
+      }),
+      100,
+      1,
+    );
+    const { sink, calls } = mockSink();
+    for (let t = 0; t < 20; t++) c.step(0.05, boss(100), TARGETS, 1, t, sink);
+
+    const totalDamage = calls.damageRect.reduce((sum, hit) => sum + hit.damage, 0);
+    expect(totalDamage).toBeCloseTo(0.38 * 100, 10); // 0.38s of DPS, not a rounded-up 0.40s
+  });
+
   it("an expandingRing grows its damage band outward, then expires", () => {
     const c = new BossController(
       hazardDef("expandingRing", {
