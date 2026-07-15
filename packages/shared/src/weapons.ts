@@ -1088,6 +1088,51 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       scaling: ["STR", "DEX"],
     },
   },
+  // §41 the EXPLOSIVE-round demonstration: a stubby break-action grenade gun. Slow, fat, tumbling shell;
+  // weak on a direct hit — the payload is the AoE ERUPTION where it lands (gun.explode → the server's
+  // detonate + the §41 element explosion composite, quake-family visuals). Fire element → fiery blast.
+  "x-gun-hand-mortar": {
+    id: "x-gun-hand-mortar",
+    name: "Hand Mortar",
+    sprite: "x-gun-coffin-shotgun", // placeholder stubby 2H art until a bespoke mortar is generated
+    scalingGrades: { str: "C" },
+    requirements: { str: 6 },
+    durability: 65,
+    damage: 5, // stock-whack fallback
+    range: 78,
+    halfArc: 0.55,
+    cooldown: 0.65,
+    displayLength: 104,
+    swingArc: 1.1,
+    gripFrac: 0.15,
+    vfxRadius: 70,
+    gun: {
+      damage: 6, // the direct plink — the blast below is the weapon
+      projectileSpeed: 470, // slow lobbed shell (readable, dodgeable)
+      range: 560,
+      fireRate: 0.95, // one heavy THOOMP at a time
+      pierce: 1,
+      magazine: 3,
+      reloadSeconds: 1.8,
+      bulletKind: "grenade",
+      muzzle: "boom",
+      muzzleColor: 0xffb24a,
+      recoil: 0.005, // the heaviest kick in the rack
+      explode: { radius: 130, damage: 15, scalingGrades: { str: "C" } },
+      scalingGrades: { str: "D" },
+    },
+    tags: {
+      grip: "2H",
+      size: "L",
+      delivery: "projectile",
+      fireMode: "tap-charge",
+      element: "fire",
+      classPool: "ranged",
+      family: "hand-cannon",
+      rangeBand: "mid",
+      scaling: ["STR"],
+    },
+  },
   "x-gun-gatling": {
     id: "x-gun-gatling",
     name: "Gatling",

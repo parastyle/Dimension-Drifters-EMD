@@ -1854,8 +1854,12 @@ export class ArenaScene extends Phaser.Scene {
           const k = c.getData("kind") as string;
           const bk = baseKind(k); // §35 element-tint suffix stripped for the impact dispatch
           const er = (c.getData("explodeR") as number) ?? 0;
-          if (bk === "magma" && er > 0) spawnExplosion(this, c.x, c.y, er);
-          else if (GUN_FX[bk])
+          if (er > 0) {
+            // §41 ANY exploding projectile erupts (was magma-only — explosive gun rounds got a plain
+            // bullet ping). Element from the ":element" kind suffix; magma keeps its classic fire look.
+            const ci = k.indexOf(":");
+            spawnExplosion(this, c.x, c.y, er, ci < 0 ? "fire" : k.slice(ci + 1));
+          } else if (GUN_FX[bk])
             spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
         }

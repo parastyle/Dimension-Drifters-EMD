@@ -116,6 +116,37 @@ export function spawnMuzzleFlash(
     ease: "Quad.out",
     onComplete: () => g.destroy(),
   });
+  // §41 best-practice gunfeel: a BRASS CASING ejects perpendicular to the barrel on every shot — a tiny
+  // tumbling rectangle arcing out and dropping (the classic shooter tell that a round was spent) — and the
+  // heavy/boom shots leave a lingering painted smoke wisp curling off the muzzle.
+  {
+    const side = Math.random() < 0.5 ? 1 : -1; // eject to either side
+    const ej = ang + (side * Math.PI) / 2 + (Math.random() - 0.5) * 0.4;
+    const casing = scene.add
+      .rectangle(x - Math.cos(ang) * size * 0.4, y - Math.sin(ang) * size * 0.4, 5, 2.5, 0xd8a94e)
+      .setStrokeStyle(0.8, 0x8a6a2a)
+      .setDepth(99450);
+    scene.tweens.add({
+      targets: casing,
+      x: casing.x + Math.cos(ej) * (16 + Math.random() * 14),
+      y: casing.y + Math.sin(ej) * (10 + Math.random() * 8) + 14, // arcs out, then falls
+      angle: (Math.random() - 0.5) * 540, // tumbles
+      alpha: 0,
+      duration: 330 + Math.random() * 120,
+      ease: "Quad.easeIn",
+      onComplete: () => casing.destroy(),
+    });
+    if (style === "heavy" || style === "boom") {
+      particleBurst(scene, "steel-wisp", x + Math.cos(ang) * size * 0.6, y + Math.sin(ang) * size * 0.6, {
+        count: 1,
+        dirRad: ang - Math.PI / 2 + (Math.random() - 0.5) * 0.6, // curls upward off the barrel
+        spread: 0.2,
+        speed: 40,
+        scale: 0.5,
+        lifeMs: 700,
+      });
+    }
+  }
 }
 
 /** §9 bullet IMPACT — a per-gun hit effect where a bullet died (hit / wall / max range): the slug
@@ -228,11 +259,81 @@ export function spawnBulletImpact(
   });
 }
 
-/** Fiery AoE explosion where a magma ball died — a flash + a shockwave ring expanding to EXACTLY the
- *  blast radius (the server hitbox) + a hot footprint disc + flung sparks. §14 WYSIWYG: visual = hitbox. */
-export function spawnExplosion(scene: Phaser.Scene, x: number, y: number, radius: number): void {
+/** §41 element accent colours for the explosion composite (flash/ring/disc tint). Fire is the default. */
+const FIRE_TINT = { hot: 0xffe6b0, mid: 0xff8a2b };
+const EXPLODE_TINT: Record<string, { hot: number; mid: number }> = {
+  fire: FIRE_TINT,
+  frost: { hot: 0xe8fbff, mid: 0x6fd6ff },
+  shock: { hot: 0xfffbe0, mid: 0xffe24a },
+  holy: { hot: 0xfff8e8, mid: 0xffe6a0 },
+  toxic: { hot: 0xeaffd0, mid: 0x9cff3b },
+  void: { hot: 0xe8d0ff, mid: 0xb14bff },
+  arcane: { hot: 0xe6dcff, mid: 0x8f6aff },
+};
+
+/** AoE EXPLOSION where an exploding projectile died (§14 WYSIWYG: the ring expands to EXACTLY the blast
+ *  radius = the server hitbox). §41 upgraded to a real eruption in the quake's family: the procedural
+ *  flash/shockwave/footprint/sparks now carry PAINTED element debris (shards flung past the rim), rising
+ *  smoke WISPS, a painted halo RING punch, a lingering scorch, and a radius-scaled camera shake. Pass the
+ *  projectile's element for frost/void/arcane… blasts; omitted = the classic fire look. */
+export function spawnExplosion(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  radius: number,
+  element = "fire",
+): void {
+  const tint = EXPLODE_TINT[element] ?? FIRE_TINT;
+  // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
+  // rising and lingering, plus ONE painted ring frame punched up as the halo. All degrade to no-ops
+  // pre-load; the procedural composite below always renders.
+  particleBurst(scene, elementPack(element, "shard"), x, y, {
+    count: Math.round(6 + radius / 22),
+    speed: radius * 2.6,
+    scale: 0.55,
+    lifeMs: 420,
+    sink: 14,
+  });
+  particleBurst(scene, elementPack(element, "mote"), x, y, {
+    count: 6,
+    speed: radius * 1.4,
+    scale: 0.4,
+    lifeMs: 360,
+    additive: true,
+  });
+  particleBurst(scene, elementPack(element, "wisp"), x, y, {
+    count: 3,
+    dirRad: -Math.PI / 2, // smoke drifts UP
+    spread: 0.5,
+    speed: 55,
+    scale: 0.7,
+    lifeMs: 900,
+  });
+  particleBurst(scene, elementPack(element, "ring"), x, y, {
+    count: 1,
+    speed: 0,
+    scale: radius / 60,
+    lifeMs: 340,
+    additive: true,
+  });
+  // Lingering scorch footprint (reads as the blast having HAPPENED, after the light fades).
+  const scorch = scene.add.circle(x, y, radius * 0.55, 0x120c08, 0.4).setDepth(2);
+  scene.tweens.add({ targets: scorch, alpha: 0, duration: 2600, onComplete: () => scorch.destroy() });
+  // Radius-scaled kick through the scene's prioritized shake.
+  shakeVia(scene, 200, Math.min(0.02, 0.006 + radius / 9000));
+  spawnExplosionCore(scene, x, y, radius, tint);
+}
+
+/** The procedural explosion composite (flash + shockwave + footprint + sparks), element-tinted. */
+function spawnExplosionCore(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  radius: number,
+  tint: { hot: number; mid: number },
+): void {
   const flash = scene.add
-    .circle(x, y, radius * 0.5, 0xffe6b0, 0.9)
+    .circle(x, y, radius * 0.5, tint.hot, 0.9)
     .setDepth(99002)
     .setBlendMode(Phaser.BlendModes.ADD);
   scene.tweens.add({
@@ -245,7 +346,7 @@ export function spawnExplosion(scene: Phaser.Scene, x: number, y: number, radius
   });
   const ring = scene.add
     .circle(x, y, radius)
-    .setStrokeStyle(4, 0xff8a2b, 0.95)
+    .setStrokeStyle(4, tint.mid, 0.95)
     .setScale(0.2)
     .setDepth(99002)
     .setBlendMode(Phaser.BlendModes.ADD);
@@ -258,7 +359,7 @@ export function spawnExplosion(scene: Phaser.Scene, x: number, y: number, radius
     onComplete: () => ring.destroy(),
   });
   const disc = scene.add
-    .circle(x, y, radius, 0xff5a1e, 0.32)
+    .circle(x, y, radius, tint.mid, 0.3)
     .setDepth(99001)
     .setBlendMode(Phaser.BlendModes.ADD);
   scene.tweens.add({
@@ -272,7 +373,7 @@ export function spawnExplosion(scene: Phaser.Scene, x: number, y: number, radius
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
     const spark = scene.add
-      .circle(x, y, 2.5, 0xffd9a0, 0.9)
+      .circle(x, y, 2.5, tint.hot, 0.9)
       .setDepth(99002)
       .setBlendMode(Phaser.BlendModes.ADD);
     scene.tweens.add({

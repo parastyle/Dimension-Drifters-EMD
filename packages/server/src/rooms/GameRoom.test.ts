@@ -799,6 +799,30 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(orbEl).toBe("orb:arcane"); // element-tinted per the weapon
   });
 
+  it("§41 the HAND MORTAR's shell explodes — AoE damages an enemy NEAR the impact, not just on the line", () => {
+    const h = training();
+    const p = h.state().players.get("p1");
+    p.weapon = "x-gun-hand-mortar";
+    h.tick(1);
+    const dummy = [...h.state().enemies.values()].find((e: { kind: string }) => e.kind === "dummy");
+    if (!dummy) throw new Error("no training dummy");
+    const hp0 = dummy.hp;
+    // Fire from far enough that the shell EXPIRES level with the dummy (muzzle reach ~90 + range 560),
+    // offset 90px to the side — a plain bullet on that line never touches it, but the 130px blast where
+    // the shell dies must catch it.
+    p.x = dummy.x - 650;
+    p.y = dummy.y + 90;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 600, ty: p.y });
+    // The dummy REGENERATES, so assert the blast by catching the hp DIP tick-by-tick (a single check after
+    // the full flight would see it healed back).
+    let dipped = false;
+    for (let i = 0; i < 44 && !dipped; i++) {
+      h.tick(1);
+      if (dummy.hp < hp0) dipped = true;
+    }
+    expect(dipped).toBe(true);
+  });
+
   it("§40.3 the WHIRLWIND's full-circle sweep hits an enemy BEHIND the aim", () => {
     const h = training();
     const p = h.state().players.get("p1");

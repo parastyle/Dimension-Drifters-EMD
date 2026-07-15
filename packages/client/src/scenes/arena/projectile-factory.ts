@@ -19,6 +19,7 @@ export const GUN_FX: Record<string, GunFx> = {
   nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
   ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
   orb: { color: 0x8f6aff, size: 22, style: "arcane", trail: 30, trailW: 11 }, // §38 caster: soft arcane sphere
+  grenade: { color: 0xffb24a, size: 24, style: "boom", trail: 22, trailW: 8 }, // §41 mortar: fat lobbed shell
 };
 
 /** §35 element tint for gun bullets: the server encodes a weapon's element onto the bullet kind as
@@ -161,11 +162,15 @@ export function makeBullet(
   const ang = Math.atan2(pr.vy, pr.vx);
   const ADD = Phaser.BlendModes.ADD;
   const items: Phaser.GameObjects.GameObject[] = [];
+  // §41 best-practice tracers: the trail STRETCHES with velocity (a 900px/s slug streaks ~1×; a slow lobbed
+  // shell barely smears) so speed reads directly off the bullet, like every modern 2D shooter.
+  const vStretch = Math.min(1.7, Math.max(0.55, Math.hypot(pr.vx, pr.vy) / 900));
+  const trailLen = fx.trail * vStretch;
   const trail = scene.add
     .ellipse(
-      -Math.cos(ang) * fx.trail * 0.5,
-      -Math.sin(ang) * fx.trail * 0.5,
-      fx.trail,
+      -Math.cos(ang) * trailLen * 0.5,
+      -Math.sin(ang) * trailLen * 0.5,
+      trailLen,
       fx.trailW,
       fx.color,
       0.5,
@@ -192,6 +197,14 @@ export function makeBullet(
     items.push(scene.add.circle(0, 0, 13, fx.color, 0.3).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, 8.5, fx.color, 0.6).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, 3.4, 0xffffff).setBlendMode(ADD));
+  } else if (k === "grenade") {
+    // §41 mortar shell — a FAT dark tumbling round with a hot fuse glint: reads "payload", not "bullet".
+    const shell = scene.add.ellipse(0, 0, 15, 10, 0x2b2622).setStrokeStyle(1.5, 0x14100c);
+    const band = scene.add.rectangle(0, 0, 3.5, 10, fx.color, 0.9);
+    const fuse = scene.add.circle(6, -3, 2.2, 0xffe6a0, 0.95).setBlendMode(ADD);
+    items.push(shell, band, fuse);
+    scene.tweens.add({ targets: [shell, band], angle: 360, duration: 700, repeat: -1, ease: "Linear" });
+    scene.tweens.add({ targets: fuse, alpha: 0.3, duration: 90, yoyo: true, repeat: -1 }); // sputtering fuse
   } else {
     const big = k === "slug";
     items.push(scene.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
