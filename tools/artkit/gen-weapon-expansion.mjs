@@ -3,6 +3,12 @@
 // (data/weapon-concepts-300.json) into a typed module the game merges into WEAPONS. Each entry is a valid
 // WeaponDef flagged `expansion:true` so it's held OUT of the active roster (WEAPON_IDS) until curated in.
 //
+// §43 STRICT MODE (Sol audit P0s): this generator FAILS — with every error listed — instead of repairing
+// bad authoring. Unknown keys, sibling mechanic blocks (the bug that silently erased 11 weapons' kits),
+// invalid enums, malformed grades/requirements, and duplicate ids all abort the run with exit 1. The ONE
+// permitted repair is numeric CLAMPING to the design-law bands (§14 fixed bounds) — clamps are counted
+// and reported, and tests/data-consistency.test.ts re-derives them independently so a drift fails CI.
+//
 //   node tools/artkit/gen-weapon-expansion.mjs
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -14,172 +20,287 @@ const REPO = resolve(ROOT, "..", "..");
 const SRC = join(REPO, "data", "weapon-concepts-300.json");
 const OUT = join(REPO, "packages", "shared", "src", "weapons-expansion.generated.ts");
 
-const clamp = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
-const GRADES = new Set(["S", "A", "B", "C", "D", "E"]);
-const ATTRS = ["str", "dex", "int", "con", "luk"];
+// ── validation state ──────────────────────────────────────────────────────────────────────────────
+const errors = [];
+let clampCount = 0;
+const clampSamples = [];
+/** Current weapon id, for error paths. */
+let CUR = "?";
+const fail = (msg) => errors.push(`${CUR}: ${msg}`);
 
-/** Keep only valid {attr: GRADE} pairs (lowercase attr key, S–E grade). */
-function cleanGrades(g, fallback) {
+const GRADES = new Set(["S", "A", "B", "C", "D", "E"]);
+const ATTRS = new Set(["str", "dex", "int", "con", "luk"]);
+const TYPES = new Set(["melee", "ranged", "caster"]);
+const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
+const SIZES = new Set(["S", "M", "L", "XL"]);
+const BANDS = new Set(["close", "mid", "long"]);
+const KINDS = new Set(["edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam"]);
+const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark"]);
+const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
+
+// Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
+const TOP_KEYS = new Set([
+  "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
+  "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
+  "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned",
+]);
+// The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
+// silently ignored, shipping 11 weapons with default kits. Now an instant failure.
+const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
+const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLength", "swingArc", "gripFrac"]);
+const BEHAVIOR_KEYS = {
+  edge: new Set(["kind"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "scalingGrades"]),
+  quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
+  chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
+  scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
+  gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
+    "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
+    "scalingGrades", "explode"]),
+  beam: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "tickRate", "pellets", "spread",
+    "pierce", "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
+    "scalingGrades", "explode"]),
+};
+const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+
+const checkKeys = (obj, allowed, path) => {
+  for (const k of Object.keys(obj)) if (!allowed.has(k)) fail(`unknown key ${path}.${k}`);
+};
+const enumOf = (v, set, path) => {
+  if (!set.has(v)) fail(`${path} = ${JSON.stringify(v)} is not one of [${[...set].join(", ")}]`);
+  return v;
+};
+/** Numeric with design-law clamping (§14 fixed bands) — the ONE permitted repair, counted + reported.
+ *  A missing value takes the default; a NON-numeric value is a failure. */
+const num = (v, lo, hi, d, path) => {
+  if (v === undefined) return d;
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    fail(`${path} = ${JSON.stringify(v)} is not a number`);
+    return d;
+  }
+  const c = Math.min(hi, Math.max(lo, n));
+  if (c !== n) {
+    clampCount++;
+    if (clampSamples.length < 8) clampSamples.push(`${CUR} ${path} ${n}→${c}`);
+  }
+  return c;
+};
+const int = (v, lo, hi, d, path) => Math.round(num(v, lo, hi, d, path));
+
+/** STRICT scaling grades: `{attr: GRADE}` — malformed entries FAIL (they used to vanish). */
+function grades(g, path, fallback) {
+  if (g === undefined) return fallback;
+  if (!g || typeof g !== "object") {
+    fail(`${path} is not an object`);
+    return fallback;
+  }
   const out = {};
-  if (g && typeof g === "object") {
-    for (const a of ATTRS) {
-      const v = typeof g[a] === "string" ? g[a].toUpperCase() : null;
-      if (v && GRADES.has(v)) out[a] = v;
+  for (const [a, v] of Object.entries(g)) {
+    if (!ATTRS.has(a)) {
+      fail(`${path}.${a} is not an attribute (str/dex/int/con/luk)`);
+      continue;
     }
+    const grade = typeof v === "string" ? v.toUpperCase() : v;
+    if (!GRADES.has(grade)) {
+      fail(`${path}.${a} = ${JSON.stringify(v)} is not a grade (S–E)`);
+      continue;
+    }
+    out[a] = grade;
   }
   return Object.keys(out).length ? out : fallback;
 }
-/** Keep only valid {attr: number≥1} requirement pairs. */
-function cleanReqs(r) {
+/** STRICT requirements: `{attr: n}`, n numeric (clamped 2..20) — malformed entries FAIL. */
+function reqs(r, path) {
+  if (r === undefined) return undefined;
+  if (!r || typeof r !== "object") {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
   const out = {};
-  if (r && typeof r === "object") {
-    for (const a of ATTRS) {
-      const n = Math.round(Number(r[a]));
-      if (Number.isFinite(n) && n > 1) out[a] = Math.min(20, n);
+  for (const [a, v] of Object.entries(r)) {
+    if (!ATTRS.has(a)) {
+      fail(`${path}.${a} is not an attribute`);
+      continue;
     }
+    const n = int(v, 2, 20, 0, `${path}.${a}`);
+    if (n > 1) out[a] = n;
   }
   return Object.keys(out).length ? out : undefined;
 }
-
-const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+/** Nested explode block (scatter/gun) — validated + fully emitted (scalingGrades included). */
+function explodeOf(e, path, rMax) {
+  if (e === undefined) return undefined;
+  checkKeys(e, EXPLODE_KEYS, path);
+  const out = {
+    radius: num(e.radius, 30, rMax, 56, `${path}.radius`),
+    damage: num(e.damage, 1, 30, 6, `${path}.damage`),
+  };
+  const g = grades(e.scalingGrades, `${path}.scalingGrades`, undefined);
+  if (g) out.scalingGrades = g;
+  return out;
+}
 
 function mapWeapon(w) {
-  const s = w.stats || {};
-  const b = w.behavior || { kind: "edge" };
-  const kind = b.kind || "edge";
-  const type = w.type === "ranged" || w.type === "caster" ? w.type : "melee";
-  const grip = ["1H", "2H", "dual", "mounted"].includes(w.grip) ? w.grip : "1H";
-  const size = ["S", "M", "L", "XL"].includes(w.size) ? w.size : "M";
+  checkKeys(w, TOP_KEYS, "");
+  for (const k of MECH_SIBLINGS)
+    if (w[k] !== undefined)
+      fail(`mechanic block "${k}" is a SIBLING of behavior — its stats would be IGNORED; author them inside behavior`);
+
+  const s = w.stats ?? {};
+  checkKeys(s, STATS_KEYS, "stats");
+  const b = w.behavior ?? { kind: "edge" };
+  const kind = enumOf(b.kind ?? "edge", KINDS, "behavior.kind");
+  checkKeys(b, BEHAVIOR_KEYS[kind] ?? BEHAVIOR_KEYS.edge, `behavior(${kind})`);
+  const type = enumOf(w.type, TYPES, "type");
+  const grip = enumOf(w.grip, GRIPS, "grip");
+  const size = enumOf(w.size, SIZES, "size");
+  const rangeBand = enumOf(w.rangeBand, BANDS, "rangeBand");
   const isGun = kind === "gun" || kind === "beam" || type === "ranged";
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
-  const damage = clamp(num(s.damage, 8), 1, 40, 8);
-  const range = clamp(num(s.range, type === "ranged" ? 600 : 140), 40, 1200, 140);
+  const damage = num(s.damage, 1, 40, 8, "stats.damage");
   const def = {
     id: w.id,
     name: w.name,
     expansion: true,
-    scalingGrades: cleanGrades(w.scalingGrades, { str: "B" }),
+    scalingGrades: grades(w.scalingGrades, "scalingGrades", { str: "B" }),
     damage,
-    range: type === "ranged" ? clamp(num(s.range, 140), 80, 320, 140) : range,
-    halfArc: clamp(num(s.halfArc, 0.85), 0.3, 1.4, 0.85),
-    cooldown: clamp(num(s.cooldown, 0.4), 0.12, 1.5, 0.4),
-    displayLength: clamp(num(s.displayLength, 90), 40, 400, 90),
-    swingArc: clamp(num(s.swingArc, 2.6), 1.8, 3.4, 2.6),
-    gripFrac: clamp(num(s.gripFrac, 0.12), 0.04, 0.5, 0.12),
+    range: type === "ranged"
+      ? num(s.range, 80, 320, 140, "stats.range")
+      : num(s.range, 40, 1200, 140, "stats.range"),
+    halfArc: num(s.halfArc, 0.3, 1.4, 0.85, "stats.halfArc"),
+    cooldown: num(s.cooldown, 0.12, 1.5, 0.4, "stats.cooldown"),
+    displayLength: num(s.displayLength, 40, 400, 90, "stats.displayLength"),
+    swingArc: num(s.swingArc, 1.8, 3.4, 2.6, "stats.swingArc"),
+    gripFrac: num(s.gripFrac, 0.04, 0.5, 0.12, "stats.gripFrac"),
     tags: {
       grip,
       size,
-      delivery: isGun
-        ? "projectile"
-        : kind === "thrown"
-          ? "thrown"
-          : kind === "quake"
-            ? "melee-slam"
-            : "melee-arc",
+      delivery: isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
       fireMode: isGun ? "auto" : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
       classPool: type,
       family: typeof w.family === "string" ? w.family : "exotic",
-      rangeBand: ["close", "mid", "long"].includes(w.rangeBand) ? w.rangeBand : "close",
+      rangeBand,
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
-  const reqs = cleanReqs(w.requirements);
-  if (reqs) def.requirements = reqs;
+  const rq = reqs(w.requirements, "requirements");
+  if (rq) def.requirements = rq;
   if (grip === "2H") def.twoHanded = true;
   if (grip === "dual") def.dual = true;
   if (type === "melee") def.durability = grip === "2H" ? 90 : 75;
 
-  // Behavior block.
+  // Behavior block — EVERY authored field the WeaponDef schema supports is emitted (§43: dropping a
+  // supported field is the bug class that shipped 71 muzzle colors and 38 per-source gradings to /dev/null).
   if (isGun) {
-    // `gun` for ranged + the `beam` casters (mapped to a fast tracer stream).
+    // `gun` for ranged + the `beam` casters (a beam is a fast tracer stream: tickRate IS its fire rate).
     const beam = kind === "beam";
     def.gun = {
-      damage: clamp(num(b.damage, damage), 1, 40, 8),
-      projectileSpeed: clamp(num(b.projectileSpeed, beam ? 1200 : 900), 400, 1600, 900),
-      range: clamp(num(b.range, num(s.range, 620)), 280, 1100, 620),
-      fireRate: clamp(num(b.fireRate, beam ? 0.1 : 0.3), 0.05, 0.9, 0.3),
-      magazine: clamp(Math.round(num(b.magazine, beam ? 30 : 8)), 1, 80, 8),
-      reloadSeconds: clamp(num(b.reloadSeconds, 1.4), 0.6, 3, 1.4),
-      bulletKind: ["slug", "pellet", "tracer", "nail", "ricochet"].includes(b.bulletKind)
-        ? b.bulletKind
-        : beam
-          ? "tracer"
-          : "slug",
-      muzzle: ["heavy", "boom", "rapid", "punch", "spark"].includes(b.muzzle)
-        ? b.muzzle
-        : beam
-          ? "spark"
-          : "punch",
-      recoil: clamp(num(b.recoil, 0.0016), 0.0004, 0.005, 0.0016),
+      damage: num(b.damage, 1, 40, damage, "behavior.damage"),
+      projectileSpeed: num(b.projectileSpeed, 400, 1600, beam ? 1200 : 900, "behavior.projectileSpeed"),
+      range: num(b.range ?? s.range, 280, 1100, 620, "behavior.range"),
+      fireRate: num(b.fireRate ?? b.tickRate, 0.05, 0.9, beam ? 0.1 : 0.3, "behavior.fireRate"),
+      magazine: int(b.magazine, 1, 80, beam ? 30 : 8, "behavior.magazine"),
+      reloadSeconds: num(b.reloadSeconds, 0.6, 3, 1.4, "behavior.reloadSeconds"),
+      bulletKind: b.bulletKind === undefined ? (beam ? "tracer" : "slug")
+        : enumOf(b.bulletKind, BULLET_KINDS, "behavior.bulletKind"),
+      muzzle: b.muzzle === undefined ? (beam ? "spark" : "punch")
+        : enumOf(b.muzzle, MUZZLES, "behavior.muzzle"),
+      recoil: num(b.recoil, 0.0004, 0.005, 0.0016, "behavior.recoil"),
     };
-    const pellets = Math.round(num(b.pellets, 1));
+    const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");
     if (pellets > 1) {
-      def.gun.pellets = Math.min(12, pellets);
-      def.gun.spread = clamp(num(b.spread, 0.4), 0.1, 0.9, 0.4);
+      def.gun.pellets = pellets;
+      def.gun.spread = num(b.spread, 0.1, 0.9, 0.4, "behavior.spread");
     }
-    const pierce = Math.round(num(b.pierce, 1));
-    if (pierce > 1) def.gun.pierce = Math.min(6, pierce);
-    if (b.explode && Number.isFinite(num(b.explode.radius, NaN))) {
-      def.gun.explode = {
-        radius: clamp(num(b.explode.radius, 56), 30, 90, 56),
-        damage: clamp(num(b.explode.damage, 6), 1, 30, 6),
-      };
-    }
+    const pierce = int(b.pierce, 1, 6, 1, "behavior.pierce");
+    if (pierce > 1) def.gun.pierce = pierce;
+    const bounces = int(b.bounces, 0, 6, 0, "behavior.bounces");
+    if (bounces > 0) def.gun.bounces = bounces;
+    const mc = b.muzzleColor === undefined ? undefined : int(b.muzzleColor, 0, 0xffffff, 0, "behavior.muzzleColor");
+    if (mc !== undefined) def.gun.muzzleColor = mc;
+    const gg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (gg) def.gun.scalingGrades = gg;
+    const ex = explodeOf(b.explode, "behavior.explode", 90);
+    if (ex) def.gun.explode = ex;
   } else if (kind === "thrown") {
     def.thrown = {
-      speed: clamp(num(b.speed, 680), 300, 1200, 680),
-      range: clamp(num(b.range, 520), 200, 900, 520),
-      damage: clamp(num(b.damage, damage), 1, 40, 8),
-      charges: clamp(Math.round(num(b.charges, 3)), 1, 6, 3),
-      refillSeconds: clamp(num(b.refillSeconds, 1.5), 0.6, 4, 1.5),
-      pierce: clamp(Math.round(num(b.pierce, 1)), 1, 5, 1),
+      speed: num(b.speed, 300, 1200, 680, "behavior.speed"),
+      range: num(b.range, 200, 900, 520, "behavior.range"),
+      damage: num(b.damage, 1, 40, damage, "behavior.damage"),
+      charges: int(b.charges, 1, 6, 3, "behavior.charges"),
+      refillSeconds: num(b.refillSeconds, 0.6, 4, 1.5, "behavior.refillSeconds"),
+      pierce: int(b.pierce, 1, 5, 1, "behavior.pierce"),
     };
+    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (g) def.thrown.scalingGrades = g;
   } else if (kind === "quake") {
     def.quake = {
-      radius: clamp(num(b.radius, 130), 70, 220, 130),
-      damage: clamp(num(b.damage, 7), 1, 30, 7),
+      radius: num(b.radius, 70, 220, 130, "behavior.radius"),
+      damage: num(b.damage, 1, 30, 7, "behavior.damage"),
     };
+    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (g) def.quake.scalingGrades = g;
   } else if (kind === "chainLightning") {
     def.chainLightning = {
-      jumps: clamp(Math.round(num(b.jumps, 3)), 1, 6, 3),
-      range: clamp(num(b.range, 180), 100, 240, 180),
-      damage: clamp(num(b.damage, 5), 1, 24, 5),
-      falloff: clamp(num(b.falloff, 0.8), 0.5, 1, 0.8),
+      jumps: int(b.jumps, 1, 6, 3, "behavior.jumps"),
+      range: num(b.range, 100, 240, 180, "behavior.range"),
+      damage: num(b.damage, 1, 24, 5, "behavior.damage"),
+      falloff: num(b.falloff, 0.5, 1, 0.8, "behavior.falloff"),
     };
-  } else if (kind === "scatter") {
-    def.scatter = {
-      count: clamp(Math.round(num(b.count, 6)), 2, 10, 6),
-      spread: clamp(num(b.spread, 0.5), 0.2, 0.9, 0.5),
-      speed: clamp(num(b.speed, 560), 300, 1000, 560),
-      range: clamp(num(b.range, 360), 150, 700, 360),
-      damage: clamp(num(b.damage, 5), 1, 24, 5),
-    };
-    if (b.explode && Number.isFinite(num(b.explode.radius, NaN))) {
-      def.scatter.explode = {
-        radius: clamp(num(b.explode.radius, 56), 30, 80, 56),
-        damage: clamp(num(b.explode.damage, 6), 1, 24, 6),
+    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (g) def.chainLightning.scalingGrades = g;
+    if (b.vfx !== undefined) {
+      checkKeys(b.vfx, new Set(["color", "jag", "life"]), "behavior.vfx");
+      def.chainLightning.vfx = {
+        color: num(b.vfx.color, 0, 1, 0.5, "behavior.vfx.color"),
+        jag: num(b.vfx.jag, 0, 1, 0.25, "behavior.vfx.jag"),
+        life: num(b.vfx.life, 60, 600, 200, "behavior.vfx.life"),
       };
     }
+  } else if (kind === "scatter") {
+    def.scatter = {
+      count: int(b.count, 2, 10, 6, "behavior.count"),
+      spread: num(b.spread, 0.2, 0.9, 0.5, "behavior.spread"),
+      speed: num(b.speed, 300, 1000, 560, "behavior.speed"),
+      range: num(b.range, 150, 700, 360, "behavior.range"),
+      damage: num(b.damage, 1, 24, 5, "behavior.damage"),
+    };
+    const pierce = int(b.pierce, 1, 5, 1, "behavior.pierce");
+    if (pierce > 1) def.scatter.pierce = pierce;
+    const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (g) def.scatter.scalingGrades = g;
+    const ex = explodeOf(b.explode, "behavior.explode", 80);
+    if (ex) def.scatter.explode = ex;
   }
-  // kind "edge"/unknown → plain melee (no behavior block).
+  // kind "edge" → plain melee (no behavior block).
   return def;
 }
 
 const data = JSON.parse(readFileSync(SRC, "utf8"));
 const out = {};
-let dupes = 0;
 for (const w of data.weapons) {
-  if (!w.id || !w.name) continue;
+  CUR = w.id ?? w.name ?? "<missing id>";
+  if (!w.id || !w.name) {
+    fail("missing id or name");
+    continue;
+  }
   // A concept flagged `banned: true` is CUT from the game by design ruling — it stays in the data file as
   // the record, but never codegens into the roster. (2026-07-14: the whips — user ruling, "too sexual".)
   if (w.banned) continue;
   if (out[w.id]) {
-    dupes++;
+    fail("duplicate id");
     continue;
   }
   out[w.id] = mapWeapon(w);
+}
+
+if (errors.length) {
+  console.error(`gen-weapon-expansion: ${errors.length} authoring error(s) — nothing written:`);
+  for (const e of errors) console.error("  ✗ " + e);
+  process.exit(1);
 }
 
 const banner =
@@ -197,6 +318,8 @@ if (!isCheck) {
   for (const id of Object.keys(out)) byType[out[id].tags.classPool]++;
   console.log(
     `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons ` +
-      `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ${dupes} dupe ids skipped`,
+      `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ` +
+      `${clampCount} value(s) clamped to design bands` +
+      (clampSamples.length ? ` (e.g. ${clampSamples.slice(0, 3).join("; ")})` : ""),
   );
 }

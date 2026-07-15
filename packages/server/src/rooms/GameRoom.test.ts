@@ -823,6 +823,29 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(dipped).toBe(true);
   });
 
+  it("§43 the HAILSHOT HAND-MAUL's recovered explosive gun fires — the sibling-block data-loss stays fixed", () => {
+    // This weapon shipped as a default 6-damage slug for months: its authored 16-damage explosive gun
+    // lived in a `gun` block NEXT TO behavior, which the old generator silently ignored (Sol audit P0).
+    // Prove the recovered kit end-to-end in the sim: the shell explodes, catching a dummy OFF the line.
+    const h = training();
+    const p = h.state().players.get("p1");
+    p.weapon = "x2-hailshot-hand-maul";
+    h.tick(1);
+    const dummy = [...h.state().enemies.values()].find((e: { kind: string }) => e.kind === "dummy");
+    if (!dummy) throw new Error("no training dummy");
+    const hp0 = dummy.hp;
+    // Shell expires ~muzzle reach + range 540 past spawn; 45px off the line, only the 60px blast reaches.
+    p.x = dummy.x - 630;
+    p.y = dummy.y + 45;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 600, ty: p.y });
+    let dipped = false;
+    for (let i = 0; i < 44 && !dipped; i++) {
+      h.tick(1);
+      if (dummy.hp < hp0) dipped = true;
+    }
+    expect(dipped).toBe(true);
+  });
+
   it("§40.3 the WHIRLWIND's full-circle sweep hits an enemy BEHIND the aim", () => {
     const h = training();
     const p = h.state().players.get("p1");

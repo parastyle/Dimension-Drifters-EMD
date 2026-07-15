@@ -11,8 +11,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Sandsong Saber",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 6,
     "range": 134,
@@ -75,12 +75,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "dual": true,
     "durability": 75,
     "thrown": {
-      "speed": 680,
-      "range": 520,
-      "damage": 4,
+      "speed": 700,
+      "range": 540,
+      "damage": 7,
       "charges": 3,
-      "refillSeconds": 1.5,
-      "pierce": 1
+      "refillSeconds": 1.4,
+      "pierce": 2
     }
   },
   "x2-brimstone-falcata": {
@@ -186,7 +186,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "quake": {
-      "radius": 130,
+      "radius": 150,
       "damage": 7
     }
   },
@@ -226,10 +226,15 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
-      "jumps": 3,
-      "range": 180,
-      "damage": 5,
-      "falloff": 0.8
+      "jumps": 4,
+      "range": 210,
+      "damage": 4,
+      "falloff": 0.75,
+      "vfx": {
+        "color": 0.72,
+        "jag": 0.32,
+        "life": 190
+      }
     }
   },
   "x2-reverent-broadsword": {
@@ -302,8 +307,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "durability": 90,
     "quake": {
-      "radius": 130,
-      "damage": 7
+      "radius": 175,
+      "damage": 9
     }
   },
   "x2-hexbloom-rapier": {
@@ -375,11 +380,15 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     },
     "durability": 75,
     "scatter": {
-      "count": 6,
-      "spread": 0.5,
-      "speed": 560,
-      "range": 360,
-      "damage": 5
+      "count": 4,
+      "spread": 0.32,
+      "speed": 620,
+      "range": 300,
+      "damage": 5,
+      "pierce": 2,
+      "scalingGrades": {
+        "int": "B"
+      }
     }
   },
   "x2-mirage-hardlight-saber": {
@@ -452,9 +461,16 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "scatter": {
       "count": 6,
       "spread": 0.5,
-      "speed": 560,
-      "range": 360,
-      "damage": 5
+      "speed": 380,
+      "range": 240,
+      "damage": 5,
+      "scalingGrades": {
+        "int": "B"
+      },
+      "explode": {
+        "radius": 52,
+        "damage": 6
+      }
     }
   },
   "x2-saltbrand-cutlass": {
@@ -497,8 +513,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Cinderfang Wakizashi Pair",
     "expansion": true,
     "scalingGrades": {
-      "str": "E",
-      "dex": "A"
+      "dex": "A",
+      "str": "E"
     },
     "damage": 4,
     "range": 100,
@@ -597,8 +613,13 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "chainLightning": {
       "jumps": 3,
       "range": 180,
-      "damage": 5,
-      "falloff": 0.8
+      "damage": 4,
+      "falloff": 0.8,
+      "vfx": {
+        "color": 0.12,
+        "jag": 0.18,
+        "life": 200
+      }
     }
   },
   "x2-bonewhisper-jian": {
@@ -636,11 +657,15 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     },
     "durability": 75,
     "scatter": {
-      "count": 6,
-      "spread": 0.5,
+      "count": 5,
+      "spread": 0.4,
       "speed": 560,
-      "range": 360,
-      "damage": 5
+      "range": 260,
+      "damage": 4,
+      "pierce": 2,
+      "scalingGrades": {
+        "int": "B"
+      }
     }
   },
   "x2-stormpetal-odachi": {
@@ -648,8 +673,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Stormpetal Odachi",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "A"
+      "dex": "A",
+      "str": "D"
     },
     "damage": 9,
     "range": 300,
@@ -673,16 +698,21 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 12
+      "dex": 12,
+      "str": 6
     },
     "twoHanded": true,
     "durability": 90,
     "chainLightning": {
-      "jumps": 3,
-      "range": 180,
+      "jumps": 4,
+      "range": 200,
       "damage": 5,
-      "falloff": 0.8
+      "falloff": 0.78,
+      "vfx": {
+        "color": 0.7,
+        "jag": 0.34,
+        "life": 185
+      }
     }
   },
   "x2-toxinwell-khopesh": {
@@ -827,6 +857,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 360,
       "range": 210,
       "damage": 5,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 54,
         "damage": 6
@@ -838,8 +871,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Permafrost Bardiche",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 9,
     "range": 250,
@@ -863,8 +896,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 9
+      "dex": 9,
+      "str": 6
     },
     "twoHanded": true,
     "durability": 90
@@ -1028,6 +1061,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 320,
       "range": 190,
       "damage": 6,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 60,
         "damage": 7
@@ -1119,8 +1155,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Brimstone Doubleheader",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 5,
     "range": 100,
@@ -1144,8 +1180,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "dual": true,
     "durability": 75
@@ -1191,8 +1227,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Dustdevil Whirlbits",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 104,
@@ -1216,8 +1252,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 5
+      "dex": 5,
+      "str": 5
     },
     "dual": true,
     "durability": 75
@@ -1332,6 +1368,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 200,
       "damage": 4,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 50,
         "damage": 5
@@ -1461,6 +1500,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 220,
       "damage": 5,
+      "scalingGrades": {
+        "int": "A"
+      },
       "explode": {
         "radius": 58,
         "damage": 6
@@ -1508,8 +1550,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Boothook Harpoon",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 12,
     "range": 150,
@@ -1533,8 +1575,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 7
+      "dex": 7,
+      "str": 5
     },
     "durability": 75,
     "thrown": {
@@ -1551,8 +1593,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Dustdevil Glaive",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 10,
     "range": 190,
@@ -1576,8 +1618,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 7
+      "dex": 7,
+      "str": 6
     },
     "twoHanded": true,
     "durability": 90,
@@ -1627,8 +1669,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Rimethorn Naginata",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 9,
     "range": 200,
@@ -1652,8 +1694,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 8
+      "dex": 8,
+      "str": 5
     },
     "twoHanded": true,
     "durability": 90
@@ -1741,8 +1783,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Venomtongue Trident",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 9,
     "range": 195,
@@ -1766,8 +1808,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 7
+      "dex": 7,
+      "str": 4
     },
     "twoHanded": true,
     "durability": 90
@@ -1777,8 +1819,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Hexglyph Partisan",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 9,
     "range": 190,
@@ -1802,8 +1844,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 5,
-      "int": 7
+      "int": 7,
+      "dex": 5
     },
     "twoHanded": true,
     "durability": 90,
@@ -1824,8 +1866,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Nullspike Pike",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 11,
     "range": 295,
@@ -1849,8 +1891,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 6,
-      "int": 8
+      "int": 8,
+      "dex": 6
     },
     "twoHanded": true,
     "durability": 90
@@ -2264,8 +2306,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Riftcaller Naginata",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 11,
     "range": 300,
@@ -2289,8 +2331,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 6,
-      "int": 9
+      "int": 9,
+      "dex": 6
     },
     "twoHanded": true,
     "durability": 90
@@ -2654,8 +2696,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Revenant Knuckle",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 6,
     "range": 110,
@@ -2679,8 +2721,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "dual": true,
     "durability": 75
@@ -2759,15 +2801,19 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "dex": 5
     },
     "gun": {
-      "damage": 6,
-      "projectileSpeed": 900,
-      "range": 280,
-      "fireRate": 0.3,
-      "magazine": 8,
-      "reloadSeconds": 1.4,
+      "damage": 16,
+      "projectileSpeed": 720,
+      "range": 540,
+      "fireRate": 0.55,
+      "magazine": 5,
+      "reloadSeconds": 1.5,
       "bulletKind": "slug",
-      "muzzle": "punch",
-      "recoil": 0.0016
+      "muzzle": "heavy",
+      "recoil": 0.004,
+      "explode": {
+        "radius": 60,
+        "damage": 8
+      }
     }
   },
   "x2-gravelthroat-repeater": {
@@ -2805,15 +2851,17 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 6,
-      "projectileSpeed": 900,
-      "range": 280,
-      "fireRate": 0.3,
-      "magazine": 8,
-      "reloadSeconds": 1.4,
-      "bulletKind": "slug",
-      "muzzle": "punch",
-      "recoil": 0.0016
+      "damage": 4,
+      "projectileSpeed": 680,
+      "range": 400,
+      "fireRate": 0.6,
+      "magazine": 3,
+      "reloadSeconds": 1.7,
+      "bulletKind": "pellet",
+      "muzzle": "boom",
+      "recoil": 0.0035,
+      "pellets": 6,
+      "spread": 0.32
     }
   },
   "x2-dustdevil-warmaul": {
@@ -2861,8 +2909,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Locust Flail",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 7,
     "range": 146,
@@ -2886,8 +2934,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "durability": 75
   },
@@ -3011,8 +3059,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Static Tomahawk",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 116,
@@ -3036,8 +3084,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "durability": 75,
     "thrown": {
@@ -3094,8 +3142,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Snakebite Lash",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 7,
     "range": 230,
@@ -3421,8 +3469,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Wendigo Claws",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 105,
@@ -3446,8 +3494,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "dual": true,
     "durability": 75
@@ -3600,8 +3648,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Cinder Briar",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 7,
     "range": 220,
@@ -3625,8 +3673,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 7
+      "dex": 7,
+      "str": 4
     },
     "durability": 75,
     "scatter": {
@@ -3720,8 +3768,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Mistral Kusarigama",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 8,
     "range": 210,
@@ -3745,8 +3793,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 7
+      "dex": 7,
+      "str": 5
     },
     "durability": 75
   },
@@ -3755,8 +3803,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Dust-Devil Flail",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 10,
     "range": 235,
@@ -3780,8 +3828,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 8
+      "dex": 8,
+      "str": 6
     },
     "durability": 75,
     "chainLightning": {
@@ -3796,8 +3844,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Ashfall Peacemaker",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 6,
     "range": 80,
@@ -3832,7 +3880,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.3,
       "bulletKind": "slug",
       "muzzle": "heavy",
-      "recoil": 0.0032
+      "recoil": 0.0032,
+      "muzzleColor": 16691274
     }
   },
   "x2-grit-snubnose": {
@@ -3876,7 +3925,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1,
       "bulletKind": "slug",
       "muzzle": "punch",
-      "recoil": 0.0018
+      "recoil": 0.0018,
+      "muzzleColor": 13684950
     }
   },
   "x2-mesa-hand-cannon": {
@@ -3922,7 +3972,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.004,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 11028526
     }
   },
   "x2-cinderfang-derringer": {
@@ -3970,6 +4021,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0026,
       "pellets": 2,
       "spread": 0.14,
+      "muzzleColor": 16747563,
       "explode": {
         "radius": 44,
         "damage": 5
@@ -4017,7 +4069,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.5,
       "bulletKind": "slug",
       "muzzle": "rapid",
-      "recoil": 0.0012
+      "recoil": 0.0012,
+      "muzzleColor": 3401983
     }
   },
   "x2-voltcaster-machine-pistol": {
@@ -4059,7 +4112,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.8,
       "bulletKind": "tracer",
       "muzzle": "rapid",
-      "recoil": 0.0008
+      "recoil": 0.0008,
+      "muzzleColor": 11619071
     }
   },
   "x2-sidewinder-spitfire": {
@@ -4103,7 +4157,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.7,
       "bulletKind": "nail",
       "muzzle": "rapid",
-      "recoil": 0.0009
+      "recoil": 0.0009,
+      "muzzleColor": 10288955
     }
   },
   "x2-sunbrand-hogleg": {
@@ -4149,7 +4204,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "heavy",
       "recoil": 0.0028,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 16751915
     }
   },
   "x2-gravewind-rimfire": {
@@ -4195,7 +4251,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "spark",
       "recoil": 0.0024,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 11619071
     }
   },
   "x2-fool-s-gold-revolver": {
@@ -4203,8 +4260,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Fool's Gold Revolver",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "luk": "A"
+      "luk": "A",
+      "dex": "C"
     },
     "damage": 6,
     "range": 80,
@@ -4228,8 +4285,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 5,
-      "luk": 9
+      "luk": 9,
+      "dex": 5
     },
     "gun": {
       "damage": 10,
@@ -4240,7 +4297,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.2,
       "bulletKind": "tracer",
       "muzzle": "spark",
-      "recoil": 0.0022
+      "recoil": 0.0022,
+      "muzzleColor": 15264472
     }
   },
   "x2-quicksilver-fanner": {
@@ -4282,7 +4340,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.1,
       "bulletKind": "slug",
       "muzzle": "rapid",
-      "recoil": 0.0009
+      "recoil": 0.0009,
+      "muzzleColor": 15264472
     }
   },
   "x2-brimstone-bull": {
@@ -4328,6 +4387,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
+      "muzzleColor": 16747563,
       "explode": {
         "radius": 56,
         "damage": 6
@@ -4378,7 +4438,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.0034,
       "pellets": 6,
-      "spread": 0.36
+      "spread": 0.36,
+      "muzzleColor": 16751915
     }
   },
   "x2-tumbleweed-skipper": {
@@ -4386,8 +4447,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Tumbleweed Skipper",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "luk": "B"
+      "luk": "B",
+      "dex": "C"
     },
     "damage": 6,
     "range": 80,
@@ -4424,7 +4485,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "spark",
       "recoil": 0.002,
-      "pierce": 2
+      "pierce": 2,
+      "bounces": 3,
+      "muzzleColor": 3401983
     }
   },
   "x2-coyote-stinger": {
@@ -4467,7 +4530,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.5,
       "bulletKind": "tracer",
       "muzzle": "rapid",
-      "recoil": 0.0008
+      "recoil": 0.0008,
+      "muzzleColor": 11028526
     }
   },
   "x2-hollowpoint-hex": {
@@ -4475,8 +4539,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Hollowpoint Hex",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 6,
     "range": 80,
@@ -4500,8 +4564,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 5,
-      "int": 8
+      "int": 8,
+      "dex": 5
     },
     "gun": {
       "damage": 8,
@@ -4513,6 +4577,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
+      "muzzleColor": 16726996,
       "explode": {
         "radius": 48,
         "damage": 5
@@ -4524,8 +4589,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Frostbite Volley-Gun",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 6,
     "range": 80,
@@ -4549,8 +4614,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 7
+      "int": 7,
+      "dex": 4
     },
     "gun": {
       "damage": 6,
@@ -4563,7 +4628,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.003,
       "pellets": 4,
-      "spread": 0.3
+      "spread": 0.3,
+      "muzzleColor": 3401983
     }
   },
   "x2-iron-marshal": {
@@ -4571,8 +4637,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Iron Marshal",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 80,
@@ -4596,8 +4662,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 8
+      "dex": 8,
+      "str": 6
     },
     "gun": {
       "damage": 10,
@@ -4609,7 +4675,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0026,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 15264472
     }
   },
   "x2-buzzard-s-burnout": {
@@ -4651,7 +4718,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 2.2,
       "bulletKind": "tracer",
       "muzzle": "rapid",
-      "recoil": 0.0006
+      "recoil": 0.0006,
+      "muzzleColor": 10288955
     }
   },
   "x2-reliquary-repeater": {
@@ -4659,8 +4727,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Reliquary Repeater",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 5,
     "range": 80,
@@ -4684,8 +4752,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 7,
-      "int": 7
+      "int": 7,
+      "dex": 7
     },
     "gun": {
       "damage": 5,
@@ -4696,7 +4764,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
       "muzzle": "spark",
-      "recoil": 0.001
+      "recoil": 0.001,
+      "muzzleColor": 16751915
     }
   },
   "x2-dustline-lever-action": {
@@ -4704,8 +4773,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Dustline Lever-Action",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 13,
     "range": 320,
@@ -4729,8 +4798,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 6
+      "dex": 6,
+      "str": 4
     },
     "twoHanded": true,
     "gun": {
@@ -4830,7 +4899,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0035,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 3401983
     }
   },
   "x2-sunbreaker-railgun": {
@@ -4877,7 +4947,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
-      "pierce": 5
+      "pierce": 5,
+      "muzzleColor": 16747563
     }
   },
   "x2-hollowpoint-repeater": {
@@ -4924,7 +4995,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0026,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 11619071
     }
   },
   "x2-quicksilver-slugthrower": {
@@ -4968,7 +5040,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.003,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 3401983
     }
   },
   "x2-thunderhead-lever-gun": {
@@ -5015,7 +5088,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 3401983
     }
   },
   "x2-cinderbore-longrifle": {
@@ -5023,8 +5097,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Cinderbore Longrifle",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 15,
     "range": 320,
@@ -5048,8 +5122,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 8
+      "dex": 8,
+      "str": 6
     },
     "twoHanded": true,
     "gun": {
@@ -5063,6 +5137,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.0038,
       "pierce": 2,
+      "muzzleColor": 16747563,
       "explode": {
         "radius": 60,
         "damage": 7
@@ -5110,7 +5185,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0012,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 10288955
     }
   },
   "x2-tracer-saint-carbine": {
@@ -5154,7 +5230,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "rapid",
       "recoil": 0.001,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 16760891
     }
   },
   "x2-ironhide-buffalo-gun": {
@@ -5201,7 +5278,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 12886362
     }
   },
   "x2-mirage-coilrifle": {
@@ -5248,7 +5326,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0028,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 11619071
     }
   },
   "x2-rustwidow-pump-rifle": {
@@ -5342,7 +5421,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0038,
-      "pierce": 6
+      "pierce": 6,
+      "muzzleColor": 11619071
     }
   },
   "x2-sidewinder-twin-rifles": {
@@ -5385,7 +5465,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.5,
       "bulletKind": "tracer",
       "muzzle": "rapid",
-      "recoil": 0.001
+      "recoil": 0.001,
+      "muzzleColor": 3401983
     }
   },
   "x2-gravelung-punt-rifle": {
@@ -5429,6 +5510,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.004,
+      "muzzleColor": 16747563,
       "explode": {
         "radius": 68,
         "damage": 9
@@ -5476,7 +5558,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0032,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 3960426
     }
   },
   "x2-brasswork-volley-rifle": {
@@ -5484,8 +5567,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Brasswork Volley Rifle",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 9,
     "range": 320,
@@ -5509,8 +5592,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 7
+      "dex": 7,
+      "str": 4
     },
     "twoHanded": true,
     "gun": {
@@ -5524,7 +5607,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0016,
       "pellets": 3,
-      "spread": 0.1
+      "spread": 0.1,
+      "muzzleColor": 16760891
     }
   },
   "x2-hexbore-witchrifle": {
@@ -5532,8 +5616,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Hexbore Witchrifle",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "A"
+      "int": "A",
+      "dex": "C"
     },
     "damage": 15,
     "range": 320,
@@ -5557,8 +5641,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 5,
-      "int": 10
+      "int": 10,
+      "dex": 5
     },
     "twoHanded": true,
     "gun": {
@@ -5571,7 +5655,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0026,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 11619071
     }
   },
   "x2-boneash-scattergun-rifle": {
@@ -5579,8 +5664,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Boneash Scattergun-Rifle",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 11,
     "range": 320,
@@ -5604,8 +5689,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 7
+      "dex": 7,
+      "str": 5
     },
     "twoHanded": true,
     "gun": {
@@ -5619,6 +5704,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.0028,
       "pierce": 2,
+      "muzzleColor": 10288955,
       "explode": {
         "radius": 58,
         "damage": 6
@@ -5766,6 +5852,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0036,
       "pellets": 8,
       "spread": 0.4,
+      "muzzleColor": 16746026,
       "explode": {
         "radius": 48,
         "damage": 4
@@ -5817,7 +5904,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0026,
       "pellets": 6,
-      "spread": 0.3
+      "spread": 0.3,
+      "muzzleColor": 3397375
     }
   },
   "x2-galvanic-coachgun": {
@@ -5866,7 +5954,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.003,
       "pellets": 7,
       "spread": 0.33,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 3397375
     }
   },
   "x2-spore-spitter-blunderbuss": {
@@ -5915,6 +6004,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.003,
       "pellets": 8,
       "spread": 0.45,
+      "muzzleColor": 10288955,
       "explode": {
         "radius": 44,
         "damage": 3
@@ -5949,8 +6039,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 10
+      "dex": 10,
+      "str": 5
     },
     "twoHanded": true,
     "gun": {
@@ -6012,7 +6102,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0032,
       "pellets": 7,
-      "spread": 0.31
+      "spread": 0.31,
+      "muzzleColor": 16757307
     }
   },
   "x2-hollowpoint-voidgun": {
@@ -6061,7 +6152,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0034,
       "pellets": 6,
       "spread": 0.36,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 11620351
     }
   },
   "x2-twin-maw-greenerbore": {
@@ -6250,6 +6342,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0018,
       "pellets": 5,
       "spread": 0.32,
+      "muzzleColor": 10288955,
       "explode": {
         "radius": 40,
         "damage": 2
@@ -6302,6 +6395,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0032,
       "pellets": 7,
       "spread": 0.36,
+      "muzzleColor": 16746026,
       "explode": {
         "radius": 42,
         "damage": 3
@@ -6353,7 +6447,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "spark",
       "recoil": 0.0028,
       "pellets": 6,
-      "spread": 0.3
+      "spread": 0.3,
+      "bounces": 2,
+      "muzzleColor": 3397375
     }
   },
   "x2-boomstick-saddlegun": {
@@ -6450,7 +6546,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0016,
       "pellets": 5,
       "spread": 0.31,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 3397375
     }
   },
   "x2-glasswidow-punchgun": {
@@ -6496,7 +6593,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0024,
       "pellets": 6,
-      "spread": 0.34
+      "spread": 0.34,
+      "muzzleColor": 3397375
     }
   },
   "x2-pearlbreech-volleygun": {
@@ -6504,8 +6602,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Pearlbreech Volleygun",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "C"
+      "dex": "C",
+      "str": "C"
     },
     "damage": 7,
     "range": 320,
@@ -6529,8 +6627,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 7
+      "dex": 7,
+      "str": 6
     },
     "twoHanded": true,
     "gun": {
@@ -6544,7 +6642,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.0038,
       "pellets": 9,
-      "spread": 0.4
+      "spread": 0.4,
+      "muzzleColor": 16757307
     }
   },
   "x2-dustdevil-riotgun": {
@@ -6552,8 +6651,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Dustdevil Riotgun",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 6,
     "range": 320,
@@ -6577,8 +6676,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 9
+      "dex": 9,
+      "str": 5
     },
     "twoHanded": true,
     "gun": {
@@ -6600,8 +6699,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Hellbore Gatling",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 4,
     "range": 80,
@@ -6625,8 +6724,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 8,
-      "dex": 11
+      "dex": 11,
+      "str": 8
     },
     "twoHanded": true,
     "gun": {
@@ -6894,8 +6993,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Ironhail Pepperbox",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "C"
+      "dex": "C",
+      "str": "C"
     },
     "damage": 5,
     "range": 80,
@@ -6919,8 +7018,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 7
+      "dex": 7,
+      "str": 5
     },
     "gun": {
       "damage": 6,
@@ -6977,6 +7076,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "boom",
       "recoil": 0.003,
+      "bounces": 2,
       "explode": {
         "radius": 62,
         "damage": 9
@@ -7129,8 +7229,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Plaguespitter Flak Gun",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 5,
     "range": 80,
@@ -7154,8 +7254,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 5,
-      "int": 8
+      "int": 8,
+      "dex": 5
     },
     "twoHanded": true,
     "gun": {
@@ -7276,8 +7376,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Scattershell Duster",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "C"
+      "dex": "C",
+      "str": "C"
     },
     "damage": 5,
     "range": 80,
@@ -7301,8 +7401,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "dex": 6
+      "dex": 6,
+      "str": 6
     },
     "dual": true,
     "gun": {
@@ -7328,8 +7428,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Stormcaller Tesla Gatling",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 4,
     "range": 80,
@@ -7353,8 +7453,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 8,
-      "int": 10
+      "int": 10,
+      "dex": 8
     },
     "twoHanded": true,
     "gun": {
@@ -7479,8 +7579,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Permafrost Siege Lobber",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "int": "B"
+      "int": "B",
+      "str": "D"
     },
     "damage": 6,
     "range": 80,
@@ -7504,8 +7604,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "int": 9
+      "int": 9,
+      "str": 6
     },
     "twoHanded": true,
     "gun": {
@@ -7529,8 +7629,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Boneyard Ricochet Mortar",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "luk": "B"
+      "luk": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 80,
@@ -7568,6 +7668,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "boom",
       "recoil": 0.0028,
+      "bounces": 3,
       "explode": {
         "radius": 58,
         "damage": 8
@@ -7579,8 +7680,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Coffinnail Driver",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "dex": "B"
+      "dex": "B",
+      "str": "D"
     },
     "damage": 5,
     "range": 80,
@@ -7604,8 +7705,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 4,
-      "dex": 5
+      "dex": 5,
+      "str": 4
     },
     "gun": {
       "damage": 6,
@@ -7617,7 +7718,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "punch",
       "recoil": 0.0013,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 13754086,
+      "scalingGrades": {
+        "dex": "B",
+        "str": "D"
+      }
     }
   },
   "x2-carom-king": {
@@ -7663,7 +7769,13 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "spark",
       "recoil": 0.0022,
-      "pierce": 2
+      "pierce": 2,
+      "bounces": 4,
+      "muzzleColor": 3397375,
+      "scalingGrades": {
+        "dex": "B",
+        "luk": "C"
+      }
     }
   },
   "x2-widowmaker-arbalest": {
@@ -7671,8 +7783,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Widowmaker Arbalest",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "A"
+      "dex": "A",
+      "str": "C"
     },
     "damage": 6,
     "range": 82,
@@ -7696,8 +7808,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 8,
-      "dex": 11
+      "dex": 11,
+      "str": 8
     },
     "twoHanded": true,
     "gun": {
@@ -7710,7 +7822,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0035,
-      "pierce": 5
+      "pierce": 5,
+      "muzzleColor": 14803168,
+      "scalingGrades": {
+        "dex": "A",
+        "str": "C"
+      }
     }
   },
   "x2-quill-storm-repeater": {
@@ -7753,7 +7870,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.6,
       "bulletKind": "nail",
       "muzzle": "rapid",
-      "recoil": 0.0008
+      "recoil": 0.0008,
+      "muzzleColor": 13013344,
+      "scalingGrades": {
+        "dex": "B"
+      }
     }
   },
   "x2-leviathan-harpoon-gun": {
@@ -7800,7 +7921,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0034,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 3960426,
+      "scalingGrades": {
+        "str": "B",
+        "dex": "C"
+      }
     }
   },
   "x2-hornet-s-nest-bolter": {
@@ -7847,7 +7973,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.0028,
       "pellets": 8,
-      "spread": 0.42
+      "spread": 0.42,
+      "muzzleColor": 10288955,
+      "scalingGrades": {
+        "dex": "C",
+        "luk": "C"
+      }
     }
   },
   "x2-embernail-repeater": {
@@ -7855,8 +7986,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Embernail Repeater",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 5,
     "range": 80,
@@ -7880,8 +8011,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 6
+      "dex": 6,
+      "str": 5
     },
     "gun": {
       "damage": 6,
@@ -7894,6 +8025,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "punch",
       "recoil": 0.0016,
       "pierce": 2,
+      "muzzleColor": 16746027,
+      "scalingGrades": {
+        "dex": "B",
+        "str": "C"
+      },
       "explode": {
         "radius": 44,
         "damage": 4
@@ -7944,7 +8080,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
-      "pierce": 6
+      "pierce": 6,
+      "muzzleColor": 11627775,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "C"
+      }
     }
   },
   "x2-snakebite-dart-slinger": {
@@ -7990,7 +8131,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0009,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 3960426,
+      "scalingGrades": {
+        "dex": "B",
+        "luk": "C"
+      }
     }
   },
   "x2-pinwheel-caromer": {
@@ -8036,7 +8182,13 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.1,
       "bulletKind": "ricochet",
       "muzzle": "spark",
-      "recoil": 0.0012
+      "recoil": 0.0012,
+      "bounces": 3,
+      "muzzleColor": 3397375,
+      "scalingGrades": {
+        "dex": "B",
+        "luk": "B"
+      }
     }
   },
   "x2-frostfang-speargun": {
@@ -8083,7 +8235,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0026,
-      "pierce": 4
+      "pierce": 4,
+      "muzzleColor": 3397375,
+      "scalingGrades": {
+        "dex": "A",
+        "int": "C"
+      }
     }
   },
   "x2-reliquary-nailcaster": {
@@ -8129,7 +8286,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "spark",
       "recoil": 0.0011,
-      "pierce": 3
+      "pierce": 3,
+      "muzzleColor": 15239408,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "C"
+      }
     }
   },
   "x2-buckshot-bramble-bow": {
@@ -8137,8 +8299,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Buckshot Bramble Bow",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "dex": "B"
+      "dex": "B",
+      "str": "C"
     },
     "damage": 5,
     "range": 80,
@@ -8162,8 +8324,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "dex": 6
+      "dex": 6,
+      "str": 5
     },
     "twoHanded": true,
     "gun": {
@@ -8178,7 +8340,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.0026,
       "pellets": 6,
       "spread": 0.38,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 12884058,
+      "scalingGrades": {
+        "dex": "B",
+        "str": "C"
+      }
     }
   },
   "x2-thunderhead-spikecaster": {
@@ -8225,7 +8392,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "heavy",
       "recoil": 0.003,
-      "pierce": 5
+      "pierce": 5,
+      "muzzleColor": 3397375,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "B"
+      }
     }
   },
   "x2-magpie-scattergun": {
@@ -8233,8 +8405,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Magpie Scattergun",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "luk": "B"
+      "luk": "B",
+      "dex": "C"
     },
     "damage": 5,
     "range": 80,
@@ -8258,8 +8430,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "luk": 7
+      "luk": 7,
+      "dex": 4
     },
     "gun": {
       "damage": 4,
@@ -8272,7 +8444,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "boom",
       "recoil": 0.003,
       "pellets": 7,
-      "spread": 0.5
+      "spread": 0.5,
+      "muzzleColor": 11028526,
+      "scalingGrades": {
+        "luk": "B",
+        "dex": "C"
+      }
     }
   },
   "x2-whisperbarb-hand-crossbow": {
@@ -8316,7 +8493,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0007,
-      "pierce": 2
+      "pierce": 2,
+      "muzzleColor": 13619126,
+      "scalingGrades": {
+        "dex": "A"
+      }
     }
   },
   "x2-grave-anchor-harpoon": {
@@ -8364,6 +8545,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "heavy",
       "recoil": 0.004,
       "pierce": 6,
+      "muzzleColor": 11627775,
+      "scalingGrades": {
+        "str": "B",
+        "int": "B"
+      },
       "explode": {
         "radius": 60,
         "damage": 8
@@ -8412,7 +8598,12 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.2,
       "bulletKind": "nail",
       "muzzle": "rapid",
-      "recoil": 0.0008
+      "recoil": 0.0008,
+      "muzzleColor": 16746027,
+      "scalingGrades": {
+        "dex": "B",
+        "int": "D"
+      }
     }
   },
   "x2-ricochet-roulette": {
@@ -8420,8 +8611,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Ricochet Roulette",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "luk": "A"
+      "luk": "A",
+      "dex": "C"
     },
     "damage": 6,
     "range": 80,
@@ -8445,8 +8636,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 6,
-      "luk": 9
+      "luk": 9,
+      "dex": 6
     },
     "gun": {
       "damage": 13,
@@ -8458,7 +8649,13 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "spark",
       "recoil": 0.0024,
-      "pierce": 2
+      "pierce": 2,
+      "bounces": 5,
+      "muzzleColor": 11627775,
+      "scalingGrades": {
+        "luk": "A",
+        "dex": "C"
+      }
     }
   },
   "x2-tidehook-bombarpoon": {
@@ -8506,6 +8703,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "heavy",
       "recoil": 0.0038,
       "pierce": 3,
+      "muzzleColor": 3397375,
+      "scalingGrades": {
+        "str": "A",
+        "dex": "C"
+      },
       "explode": {
         "radius": 64,
         "damage": 10
@@ -8681,8 +8883,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Rimebound Folio",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 6,
     "range": 140,
@@ -8959,8 +9161,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Twin Whispervolumes",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 6,
     "range": 145,
@@ -9201,8 +9403,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Voltscript Codicil",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "A"
+      "int": "A",
+      "dex": "D"
     },
     "damage": 7,
     "range": 150,
@@ -9314,6 +9516,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 360,
       "range": 240,
       "damage": 5,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 52,
         "damage": 5
@@ -9325,8 +9530,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Brinequill Tidescepter",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "A"
+      "int": "A",
+      "dex": "D"
     },
     "damage": 4,
     "range": 90,
@@ -9356,7 +9561,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 4,
       "projectileSpeed": 1200,
       "range": 520,
-      "fireRate": 0.1,
+      "fireRate": 0.12,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -9520,6 +9725,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 320,
       "range": 220,
       "damage": 4,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 60,
         "damage": 4
@@ -9531,8 +9739,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Anvil-Heart Quake Maul-Staff",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "int": "A"
+      "int": "A",
+      "str": "C"
     },
     "damage": 5,
     "range": 130,
@@ -9556,8 +9764,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "int": 10
+      "int": 10,
+      "str": 6
     },
     "twoHanded": true,
     "quake": {
@@ -9570,8 +9778,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Hollowbarrel Spell-Scattergun Staff",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "A"
+      "int": "A",
+      "dex": "D"
     },
     "damage": 5,
     "range": 150,
@@ -9595,8 +9803,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 8
+      "int": 8,
+      "dex": 4
     },
     "twoHanded": true,
     "scatter": {
@@ -9605,6 +9813,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 420,
       "range": 230,
       "damage": 4,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 48,
         "damage": 3
@@ -9645,7 +9856,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 7,
       "projectileSpeed": 1200,
       "range": 760,
-      "fireRate": 0.1,
+      "fireRate": 0.14,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -9692,6 +9903,10 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 250,
       "damage": 5,
+      "scalingGrades": {
+        "int": "B",
+        "luk": "C"
+      },
       "explode": {
         "radius": 50,
         "damage": 4
@@ -9886,7 +10101,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 5,
       "projectileSpeed": 1200,
       "range": 740,
-      "fireRate": 0.1,
+      "fireRate": 0.11,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -9930,6 +10145,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 400,
       "range": 250,
       "damage": 6,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 54,
         "damage": 5
@@ -9977,8 +10195,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Gilded Hourglass Frost Scepter",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "A"
+      "int": "A",
+      "dex": "D"
     },
     "damage": 5,
     "range": 95,
@@ -10008,7 +10226,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 5,
       "projectileSpeed": 1200,
       "range": 700,
-      "fireRate": 0.1,
+      "fireRate": 0.13,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -10053,6 +10271,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 230,
       "damage": 5,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 64,
         "damage": 5
@@ -10165,7 +10386,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 5,
       "projectileSpeed": 1200,
       "range": 720,
-      "fireRate": 0.1,
+      "fireRate": 0.12,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -10422,8 +10643,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Mesa-Heart Geodes",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 6,
     "range": 360,
@@ -10447,8 +10668,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 7
+      "int": 7,
+      "dex": 4
     },
     "dual": true,
     "chainLightning": {
@@ -10499,8 +10720,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Tumbleweed Static-Bauble",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 6,
     "range": 320,
@@ -10524,8 +10745,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 6
+      "int": 6,
+      "dex": 4
     },
     "scatter": {
       "count": 6,
@@ -10573,7 +10794,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 5,
       "projectileSpeed": 1200,
       "range": 740,
-      "fireRate": 0.1,
+      "fireRate": 0.11,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -10900,6 +11121,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 210,
       "damage": 5,
+      "scalingGrades": {
+        "int": "A"
+      },
       "explode": {
         "radius": 50,
         "damage": 5
@@ -10979,7 +11203,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 7,
       "projectileSpeed": 1200,
       "range": 720,
-      "fireRate": 0.1,
+      "fireRate": 0.12,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -11028,8 +11252,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Carrion Effigy",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 4,
     "range": 240,
@@ -11053,8 +11277,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 7
+      "int": 7,
+      "dex": 4
     },
     "scatter": {
       "count": 7,
@@ -11062,6 +11286,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 420,
       "range": 240,
       "damage": 4,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 44,
         "damage": 4
@@ -11188,9 +11415,13 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "fireRate": 0.16,
       "magazine": 18,
       "reloadSeconds": 1.4,
-      "bulletKind": "slug",
+      "bulletKind": "spark",
       "muzzle": "spark",
-      "recoil": 0.001
+      "recoil": 0.001,
+      "muzzleColor": 16746027,
+      "scalingGrades": {
+        "int": "B"
+      }
     }
   },
   "x2-cairn-of-hollow-names": {
@@ -11271,9 +11502,16 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 400,
       "range": 230,
       "damage": 6,
+      "scalingGrades": {
+        "int": "B"
+      },
       "explode": {
         "radius": 58,
-        "damage": 7
+        "damage": 7,
+        "scalingGrades": {
+          "luk": "C",
+          "int": "C"
+        }
       }
     }
   },
@@ -11349,6 +11587,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 340,
       "range": 200,
       "damage": 4,
+      "scalingGrades": {
+        "int": "A"
+      },
       "explode": {
         "radius": 48,
         "damage": 4
@@ -11360,8 +11601,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Godsbone Pillar",
     "expansion": true,
     "scalingGrades": {
-      "str": "D",
-      "int": "A"
+      "int": "A",
+      "str": "D"
     },
     "damage": 14,
     "range": 178,
@@ -11385,8 +11626,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "int": 12
+      "int": 12,
+      "str": 6
     },
     "twoHanded": true,
     "quake": {
@@ -11431,6 +11672,9 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 380,
       "range": 235,
       "damage": 5,
+      "scalingGrades": {
+        "int": "A"
+      },
       "explode": {
         "radius": 60,
         "damage": 6
@@ -11518,7 +11762,11 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "reloadSeconds": 1.6,
       "bulletKind": "tracer",
       "muzzle": "rapid",
-      "recoil": 0.0007
+      "recoil": 0.0007,
+      "muzzleColor": 16746027,
+      "scalingGrades": {
+        "int": "B"
+      }
     }
   },
   "x2-mawstone-cairn-idol": {
@@ -11595,7 +11843,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 8,
       "projectileSpeed": 1200,
       "range": 740,
-      "fireRate": 0.1,
+      "fireRate": 0.11,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -11642,9 +11890,15 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "speed": 360,
       "range": 220,
       "damage": 4,
+      "scalingGrades": {
+        "int": "A"
+      },
       "explode": {
         "radius": 52,
-        "damage": 5
+        "damage": 5,
+        "scalingGrades": {
+          "int": "A"
+        }
       }
     }
   },
@@ -11653,8 +11907,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Sparkknuckle Hex-Mitt",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 4,
     "range": 150,
@@ -11734,8 +11988,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Voltvein Conductors",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 3,
     "range": 430,
@@ -11759,8 +12013,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 5
+      "int": 5,
+      "dex": 4
     },
     "dual": true,
     "gun": {
@@ -11780,8 +12034,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Pyreclap Mauler",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "int": "A"
+      "int": "A",
+      "str": "C"
     },
     "damage": 6,
     "range": 200,
@@ -11805,8 +12059,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "int": 9
+      "int": 9,
+      "str": 6
     },
     "twoHanded": true,
     "quake": {
@@ -11987,8 +12241,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Stormcradle Faradaygloves",
     "expansion": true,
     "scalingGrades": {
-      "dex": "C",
-      "int": "B"
+      "int": "B",
+      "dex": "C"
     },
     "damage": 4,
     "range": 175,
@@ -12012,8 +12266,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 5
+      "int": 5,
+      "dex": 4
     },
     "dual": true,
     "scatter": {
@@ -12062,7 +12316,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 3,
       "projectileSpeed": 1200,
       "range": 440,
-      "fireRate": 0.1,
+      "fireRate": 0.12,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -12159,8 +12413,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Ironbrand Heatfist",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "int": "B"
+      "int": "B",
+      "str": "C"
     },
     "damage": 6,
     "range": 145,
@@ -12184,8 +12438,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 5,
-      "int": 6
+      "int": 6,
+      "str": 5
     },
     "quake": {
       "radius": 120,
@@ -12241,8 +12495,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Wyrmscale Hex-Talon",
     "expansion": true,
     "scalingGrades": {
-      "dex": "D",
-      "int": "B"
+      "int": "B",
+      "dex": "D"
     },
     "damage": 5,
     "range": 195,
@@ -12266,8 +12520,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "dex": 4,
-      "int": 7
+      "int": 7,
+      "dex": 4
     },
     "scatter": {
       "count": 5,
@@ -12317,7 +12571,7 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "damage": 3,
       "projectileSpeed": 1200,
       "range": 400,
-      "fireRate": 0.1,
+      "fireRate": 0.13,
       "magazine": 30,
       "reloadSeconds": 1.4,
       "bulletKind": "tracer",
@@ -12330,8 +12584,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "name": "Thunderhead Stormfists",
     "expansion": true,
     "scalingGrades": {
-      "str": "C",
-      "int": "A"
+      "int": "A",
+      "str": "C"
     },
     "damage": 6,
     "range": 200,
@@ -12355,8 +12609,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "requirements": {
-      "str": 6,
-      "int": 9
+      "int": 9,
+      "str": 6
     },
     "twoHanded": true,
     "quake": {
@@ -12449,7 +12703,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "spark",
       "recoil": 0.0015,
-      "pierce": 2
+      "pierce": 2,
+      "bounces": 3
     }
   },
   "x2-permafrost-cryo-bracer": {

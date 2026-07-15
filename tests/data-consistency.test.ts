@@ -88,6 +88,160 @@ describe("weapon-data cross-references (codegen SoT)", () => {
   });
 });
 
+/**
+ * §43 FIELD-LEVEL codegen guard (Sol audit data P0s #1/#2). The bijection test above only proves the id
+ * SETS match — it passed for months while 11 weapons shipped with their entire mechanic block dropped
+ * (stats authored as SIBLINGS of `behavior`) and 200+ supported fields (muzzleColor, bounces, per-source
+ * scalingGrades…) silently vanished in the mapper. This test re-derives the authored→emitted mapping
+ * INDEPENDENTLY (the clamp bands are duplicated here on purpose — two encodings must agree) and compares
+ * every gameplay-bearing field. A generator that drops or mis-clamps a field now fails the BUILD.
+ */
+describe("§43 expansion codegen: every authored gameplay field survives into the WeaponDef", () => {
+  type Grades = Record<string, string> | undefined;
+  type Behavior = Record<string, unknown> & { kind?: string };
+  type Concept = {
+    id: string;
+    banned?: boolean;
+    type: string;
+    behavior?: Behavior;
+    stats?: Record<string, number>;
+    scalingGrades?: Grades;
+    requirements?: Record<string, number>;
+  };
+  const concepts = (readJson("../data/weapon-concepts-300.json") as { weapons: Concept[] }).weapons;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const iclamp = (v: number, lo: number, hi: number) => Math.round(clamp(v, lo, hi));
+
+  const upGrades = (g: Grades) =>
+    g && Object.fromEntries(Object.entries(g).map(([a, v]) => [a, v.toUpperCase()]));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkFields = (id: string, got: any, authored: Behavior, spec: Record<string, unknown>) => {
+    for (const [field, rule] of Object.entries(spec) as [string, any][]) {
+      const a = authored[field];
+      if (a === undefined) continue; // defaults are the generator's business; DROPS are the bug
+      const path = `${id}.${field}`;
+      if (rule.grades) expect(got?.[field], path).toEqual(upGrades(a as Grades));
+      else if (rule.eq) expect(got?.[field], path).toBe(a);
+      else if (rule.int)
+        expect(got?.[field] ?? rule.absentAs, path).toBe(iclamp(a as number, rule.int[0], rule.int[1]));
+      else expect(got?.[field] ?? rule.absentAs, path).toBe(clamp(a as number, rule.num[0], rule.num[1]));
+    }
+  };
+
+  const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
+  it("no concept authors a mechanic block as a SIBLING of behavior (the 11-weapon data-loss bug)", () => {
+    for (const w of concepts)
+      for (const k of MECH_SIBLINGS)
+        expect((w as Record<string, unknown>)[k], `${w.id}.${k} must live INSIDE behavior`).toBeUndefined();
+  });
+
+  for (const w of concepts.filter((w) => !w.banned)) {
+    it(`${w.id}: authored fields all reach the generated def`, () => {
+      const def = WEAPONS[w.id];
+      expect(def, w.id).toBeDefined();
+      if (!def) return;
+      const b = w.behavior ?? { kind: "edge" };
+      const kind = b.kind ?? "edge";
+      const s = w.stats ?? {};
+      const ranged = w.type === "ranged";
+
+      // Held-swing baseline (stats.*)
+      checkFields(w.id, def, s as Behavior, {
+        damage: { num: [1, 40] },
+        range: { num: ranged ? [80, 320] : [40, 1200] },
+        halfArc: { num: [0.3, 1.4] },
+        cooldown: { num: [0.12, 1.5] },
+        displayLength: { num: [40, 400] },
+        swingArc: { num: [1.8, 3.4] },
+        gripFrac: { num: [0.04, 0.5] },
+      });
+      if (w.scalingGrades) expect(def.scalingGrades, `${w.id}.scalingGrades`).toEqual(upGrades(w.scalingGrades));
+      if (w.requirements)
+        for (const [a, v] of Object.entries(w.requirements))
+          expect(def.requirements?.[a as never], `${w.id}.requirements.${a}`).toBe(iclamp(v, 2, 20));
+
+      // Mechanic block
+      if (kind === "gun" || kind === "beam" || ranged) {
+        expect(def.gun, `${w.id}.gun`).toBeDefined();
+        checkFields(w.id, def.gun, b, {
+          damage: { num: [1, 40] },
+          projectileSpeed: { num: [400, 1600] },
+          range: { num: [280, 1100] },
+          fireRate: { num: [0.05, 0.9] },
+          magazine: { int: [1, 80] },
+          reloadSeconds: { num: [0.6, 3] },
+          bulletKind: { eq: true },
+          muzzle: { eq: true },
+          muzzleColor: { int: [0, 0xffffff] },
+          recoil: { num: [0.0004, 0.005] },
+          pellets: { int: [1, 12], absentAs: 1 },
+          pierce: { int: [1, 6], absentAs: 1 },
+          bounces: { int: [0, 6], absentAs: 0 },
+          scalingGrades: { grades: true },
+        });
+        // beams map tickRate onto fireRate
+        if (kind === "beam" && b.tickRate !== undefined && b.fireRate === undefined)
+          expect(def.gun?.fireRate, `${w.id}.gun.fireRate(from tickRate)`).toBe(
+            clamp(b.tickRate as number, 0.05, 0.9),
+          );
+        if (b.explode)
+          checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
+            radius: { num: [30, 90] },
+            damage: { num: [1, 30] },
+            scalingGrades: { grades: true },
+          });
+      } else if (kind === "thrown") {
+        checkFields(w.id, def.thrown, b, {
+          speed: { num: [300, 1200] },
+          range: { num: [200, 900] },
+          damage: { num: [1, 40] },
+          charges: { int: [1, 6] },
+          refillSeconds: { num: [0.6, 4] },
+          pierce: { int: [1, 5] },
+          scalingGrades: { grades: true },
+        });
+      } else if (kind === "quake") {
+        checkFields(w.id, def.quake, b, {
+          radius: { num: [70, 220] },
+          damage: { num: [1, 30] },
+          scalingGrades: { grades: true },
+        });
+      } else if (kind === "chainLightning") {
+        checkFields(w.id, def.chainLightning, b, {
+          jumps: { int: [1, 6] },
+          range: { num: [100, 240] },
+          damage: { num: [1, 24] },
+          falloff: { num: [0.5, 1] },
+          scalingGrades: { grades: true },
+        });
+        if (b.vfx)
+          checkFields(w.id, def.chainLightning?.vfx, b.vfx as Behavior, {
+            color: { num: [0, 1] },
+            jag: { num: [0, 1] },
+            life: { num: [60, 600] },
+          });
+      } else if (kind === "scatter") {
+        checkFields(w.id, def.scatter, b, {
+          count: { int: [2, 10] },
+          spread: { num: [0.2, 0.9] },
+          speed: { num: [300, 1000] },
+          range: { num: [150, 700] },
+          damage: { num: [1, 24] },
+          pierce: { int: [1, 5], absentAs: 1 },
+          scalingGrades: { grades: true },
+        });
+        if (b.explode)
+          checkFields(w.id, def.scatter?.explode, b.explode as Behavior, {
+            radius: { num: [30, 80] },
+            damage: { num: [1, 30] },
+            scalingGrades: { grades: true },
+          });
+      }
+    });
+  }
+});
+
 // §17 the dimension registry is partly codegen'd; its rosters/bosses are raw kind-id strings. A typo or a
 // renamed/removed kind would fail SILENTLY (pickEnemyKind thins the pool, a bad boss id → no boss spawns).
 // Turn that into a build failure instead of a dead dimension found mid-playtest.
