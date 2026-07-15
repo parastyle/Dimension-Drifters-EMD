@@ -1310,21 +1310,31 @@ export class ArenaScene extends Phaser.Scene {
     // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
     // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
     if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
+    // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
+    // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
+    // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
+    // up with E" handed you a seemingly random weapon. Cycle/browse stays on E only when clear of pickups.
+    const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
+    if (eDown && alive && nearPickup) {
+      this.room.send("grabWeapon");
+      this.audio.play("grab");
+    }
+    const eFree = eDown && !(alive && nearPickup);
     // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
     // keeps the roster carousel.
     if (this.belt) {
       if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleSlot", { dir: 1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleSlot", { dir: -1 });
+      if (eFree) this.room?.send("cycleSlot", { dir: -1 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
       if (Phaser.Input.Keyboard.JustDown(this.keys.THREE)) this.room?.send("swapSlot", { slot: 2 });
     } else if (this.room?.state.mode === "training") {
       // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
       if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("galleryPage", { dir: 1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("galleryPage", { dir: -1 });
+      if (eFree) this.room?.send("galleryPage", { dir: -1 });
     } else {
       if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.E)) this.room?.send("cycleWeapon", { dir: -1 });
+      if (eFree) this.room?.send("cycleWeapon", { dir: -1 });
     }
     if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
     if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
@@ -4104,7 +4114,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
-          ? `${lagPrefix}⛶ TESTING GROUNDS — Q/E: browse weapon showroom (all 300+) · R: grab · Tab: summon · Space: jump · T: exit${who}`
+          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse showroom pages (when clear) · Tab: summon · Space: jump · T: exit${who}`
           : this.belt
             ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
               `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · R grab · 1/2/3 swap · Tab bag · F trade${who}`

@@ -33,16 +33,26 @@ const STRIDE_LEN = 150;
 const BODY_LOOK_LEAN = 0.14;
 const WEAPON_LOOK_TILT = 0.6;
 
+/** §42 a WORN weapon (gauntlet/claw/glove/knuckles) is worn ON the hand, not held by the cuff: the rig
+ *  mounts its pivot where the hand sits INSIDE the glove and renders the art OVER the hand. Matched by
+ *  the gauntlet/fist FAMILIES plus worn WORDS in the name (the melee claws hide under "exotic-melee");
+ *  word-boundaries keep held gear out ("Knucklebone Censer-Orb" is a censer on a chain, not knuckles). */
+export function isWornWeapon(def: WeaponDef): boolean {
+  if (/^(gauntlet|fist)$/i.test(def.tags?.family ?? "")) return true;
+  return /\b(claws?|talons?|mitts?|gloves?|vambraces?|gauntlets?|knuckles?|cestus|fists?)\b/i.test(
+    def.name,
+  );
+}
+
 /** §40 which swing ANIMATION a weapon plays — one weapon, one animation, drawn from the per-type vocabulary.
  *  An authored `def.swingStyle` wins; otherwise derive from the weapon's shape: quake weapons CHOP (overhead
- *  slam, matching their ground-eruption VFX), claws/gauntlets/fists PIVOT about the hand, rapiers/spears
+ *  slam, matching their ground-eruption VFX), worn claws/gauntlets/fists PIVOT (the arm rake), rapiers/spears
  *  THRUST, two-handed weapons ORBIT the waist in fake 3D, everything else does the classic flat ARC. */
 function swingStyleFor(def: WeaponDef): NonNullable<WeaponDef["swingStyle"]> {
   if (def.swingStyle) return def.swingStyle;
   if (def.quake) return "chop";
-  const fam = def.tags?.family ?? "";
-  if (/claw|talon|gauntlet|fist|knuckle|mitt/i.test(fam)) return "pivot";
-  if (/rapier|lance|spear|pike|estoc|needle/i.test(fam)) return "thrust";
+  if (isWornWeapon(def)) return "pivot";
+  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? "")) return "thrust";
   if (def.twoHanded) return "orbit";
   return "arc";
 }
@@ -328,6 +338,10 @@ export class SpriteRig {
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
+    // §42 WORN gear pivots where the hand sits INSIDE the glove (~40% in from the cuff) instead of at the
+    // authored gripFrac (the cuff) — gripFrac-mounting a gauntlet read as holding it by the opening and
+    // smacking people with it, duel-challenge style.
+    const worn = isWornWeapon(def);
     const attach = (
       part: SpriteManifest["parts"][number] | undefined,
       hand: typeof frontHand,
@@ -336,7 +350,7 @@ export class SpriteRig {
       const tx = partTexture(this.scene, spriteId, part.role);
       const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
       const wScale = def.displayLength / part.w;
-      img.setOrigin(def.gripFrac, 0.5).setScale(wScale);
+      img.setOrigin(worn ? 0.4 : def.gripFrac, 0.5).setScale(wScale);
       this.root.add(img);
       this.weapons.push({ img, hand, baseScale: wScale });
       return img;
@@ -357,15 +371,29 @@ export class SpriteRig {
       if (frontHand) stack.push(frontHand.img);
     } else if (def.dual) {
       stack.push(this.body);
-      if (backWpn) stack.push(backWpn);
-      if (backHand) stack.push(backHand.img);
-      if (frontWpn) stack.push(frontWpn);
-      if (frontHand) stack.push(frontHand.img);
+      // §42 worn dual (twin claws): each glove renders OVER its hand — the hand is inside it.
+      if (worn) {
+        if (backHand) stack.push(backHand.img);
+        if (backWpn) stack.push(backWpn);
+        if (frontHand) stack.push(frontHand.img);
+        if (frontWpn) stack.push(frontWpn);
+      } else {
+        if (backWpn) stack.push(backWpn);
+        if (backHand) stack.push(backHand.img);
+        if (frontWpn) stack.push(frontWpn);
+        if (frontHand) stack.push(frontHand.img);
+      }
     } else {
       if (backHand) stack.push(backHand.img);
       stack.push(this.body);
-      if (frontWpn) stack.push(frontWpn);
-      if (frontHand) stack.push(frontHand.img);
+      // §42 worn single: the glove covers the hand (hand under, weapon on top); held: hand grips the hilt.
+      if (worn) {
+        if (frontHand) stack.push(frontHand.img);
+        if (frontWpn) stack.push(frontWpn);
+      } else {
+        if (frontWpn) stack.push(frontWpn);
+        if (frontHand) stack.push(frontHand.img);
+      }
     }
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
