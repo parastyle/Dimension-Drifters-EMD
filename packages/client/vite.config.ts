@@ -15,4 +15,18 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@dd/shared"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Stable vendor chunk names keep the heavyweight engine + net client cached across game updates.
+        manualChunks(id) {
+          const moduleId = id.replaceAll("\\", "/");
+          if (moduleId.includes("/node_modules/phaser/")) return "phaser";
+          if (moduleId.includes("/node_modules/colyseus.js/")) return "net";
+          // Shared state classes need the schema runtime at boot; keep that sliver from pulling in net.
+          if (moduleId.includes("/node_modules/@colyseus/schema/")) return "schema";
+        },
+      },
+    },
+  },
 });

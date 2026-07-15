@@ -520,13 +520,14 @@ export class ArenaScene extends Phaser.Scene {
     this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     if (this.belt) {
-      // §29 Codex-rendered belt art (docs/BEATEMUP_CONVERSION): sky-carrier backdrop, storm-bridge boss
-      // backdrop, deck plating.
-      this.load.image("belt-sky", "belt/sky-carrier.png");
-      this.load.image("belt-sky-bridge", "belt/sky-bridge.png");
-      this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
-      this.load.image("belt-sky-arena-mouth", "belt/sky-arena-mouth.png");
-      this.load.image("belt-deck", "belt/deck.png");
+      // §29 sky-carrier alone owns its four room backdrops + deck; themed levels must not download them.
+      if (this.selectedBeltLevel === "sky-carrier") {
+        this.load.image("belt-sky", "belt/sky-carrier.png");
+        this.load.image("belt-sky-bridge", "belt/sky-bridge.png");
+        this.load.image("belt-sky-catwalk", "belt/sky-catwalk.png"); // §31 per-room backdrops (Codex)
+        this.load.image("belt-sky-arena-mouth", "belt/sky-arena-mouth.png");
+        this.load.image("belt-deck", "belt/deck.png");
+      }
       // §37 themed-level Codex art (gen-belt-backdrops.mjs + gen-belt-decks.mjs) — a vista + a deck-plating
       // strip per non-sky-carrier level. init() ran before preload, so the selected level is known; only its
       // own art loads. Keys are PER-LEVEL (texture keys outlive scene restarts — a shared key would show the

@@ -17,6 +17,15 @@ import { RENDER_DPR } from "../render-dpr.js";
 
 const CARD_W = 288;
 const CARD_H = 172;
+let arenaSceneImport: Promise<typeof import("./ArenaScene.js").ArenaScene> | undefined;
+
+/** §17 payload diet: import the arena graph only when a run launches, then register its scene exactly once. */
+async function ensureArenaScene(scene: Phaser.Scenes.ScenePlugin): Promise<void> {
+  if (scene.get("arena")) return;
+  arenaSceneImport ??= import("./ArenaScene.js").then(({ ArenaScene }) => ArenaScene);
+  const ArenaSceneClass = await arenaSceneImport;
+  if (!scene.get("arena")) scene.add("arena", ArenaSceneClass, false);
+}
 const TITLE_COLOR = "#f0e6d2";
 const ACCENT = "#33e6ff";
 
@@ -55,7 +64,9 @@ export class MenuScene extends Phaser.Scene {
     // straight into a Testing-Grounds sandbox (top-down arena, full room to fight) with that asset applied.
     const dev = new URLSearchParams(location.search).get("dev");
     if (dev) {
-      this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev });
+      void ensureArenaScene(this.scene).then(() =>
+        this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev }),
+      );
       return;
     }
     // §40 BELT is shelved from the menu (user ruling: top-down is the primary mode) but stays reachable for
@@ -326,10 +337,11 @@ export class MenuScene extends Phaser.Scene {
   private launch(id: string, bossRush = false, belt = false, beltLevel?: string): void {
     if (this.launching) return; // guard the key+click double-fire
     this.launching = true;
+    const arenaReady = ensureArenaScene(this.scene);
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
     this.cameras.main.once("camerafadeoutcomplete", () =>
-      this.scene.start("arena", { dimensionId: id, bossRush, belt, beltLevel }),
+      void arenaReady.then(() => this.scene.start("arena", { dimensionId: id, bossRush, belt, beltLevel })),
     );
   }
 
