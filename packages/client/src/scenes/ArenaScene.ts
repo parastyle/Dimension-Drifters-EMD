@@ -84,7 +84,7 @@ import {
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
-import { partTexture, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
+import { partTexture, type RigAnim, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
 import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
@@ -226,8 +226,29 @@ export class ArenaScene extends Phaser.Scene {
       sawFull: boolean;
     }
   >();
-  private readonly prevPos = new Map<string, { x: number; y: number }>();
-  private readonly enemyPrev = new Map<string, { x: number; y: number }>();
+  /** §4 hot-loop scratch: one sample + animation input per call site; each loop consumes it synchronously. */
+  private readonly playerSample = { x: 0, y: 0 };
+  private readonly enemySample = { x: 0, y: 0 };
+  private readonly playerAnimInput: RigAnim = {
+    moveX: 0,
+    moveY: 0,
+    speed: 0,
+    aimX: 0,
+    aimY: 0,
+    aimDir: 0,
+    isSelf: false,
+    recoilX: 0,
+    recoilY: 0,
+  };
+  private readonly enemyAnimInput: RigAnim = {
+    moveX: 0,
+    moveY: 0,
+    speed: 0,
+    aimX: 0,
+    aimY: 0,
+    aimDir: 0,
+    isSelf: false,
+  };
   /** §7 v0.105 de-clunk — per-enemy SMOOTHED windup (0..1) so the parry telegraph doesn't stair-step at
    *  20Hz. Eased up toward the synced value, snapped to 0 on the strike; pruned with the enemy. */
   private readonly enemyWindup = new Map<string, number>();
@@ -433,6 +454,8 @@ export class ArenaScene extends Phaser.Scene {
   // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
   // from the player's current attributes every frame so the numbers track levelling.
   private carousel: Card[] = [];
+  /** §9 carousel z-order changes only with the held weapon; stable frames must not dirty display-list sort. */
+  private carouselDepthSelection = -1;
   // §29 belt arsenal HUD (replaces the carousel in belt mode): 3 slot chips + scrip/bag readout, and a
   // Tab-toggled bag panel with clickable entries (click a bag weapon → equip into the active slot; click a
   // slot → stash to bag). Immediate-mode Graphics + pooled Text; interactive zones rebuilt when the panel opens.
@@ -611,8 +634,6 @@ export class ArenaScene extends Phaser.Scene {
     this.lastParried.clear();
     this.lastRevived.clear();
     this.telegraphCache.clear();
-    this.prevPos.clear();
-    this.enemyPrev.clear();
     this.enemyWindup.clear();
     this.playerBufs.clear();
     this.enemyBufs.clear();
@@ -636,6 +657,7 @@ export class ArenaScene extends Phaser.Scene {
     this.levelWinObjects = [];
     this.summonObjects = [];
     this.carousel = [];
+    this.carouselDepthSelection = -1;
     this.arsenalTexts = [];
     this.bagTexts = [];
     this.bagZones = [];
@@ -697,7 +719,8 @@ export class ArenaScene extends Phaser.Scene {
     this.hpShown = -1;
     this.xpShown = -1;
     this.bossShown = -1;
-    this.selfAim = { x: 1, y: 0 };
+    this.selfAim.x = 1;
+    this.selfAim.y = 0;
     this.spectateId = "";
     this.camFrom = { x: 0, y: 0 };
     this.camBlend = 1;
@@ -1200,7 +1223,7 @@ export class ArenaScene extends Phaser.Scene {
       container.setData("spinTween", spinTween);
       this.pickups.set(id, container);
     });
-    for (const id of [...this.pickups.keys()]) {
+    for (const id of this.pickups.keys()) {
       if (!state.has(id)) {
         const pickup = this.pickups.get(id);
         if (pickup) this.destroyPickup(pickup);
@@ -1362,7 +1385,8 @@ export class ArenaScene extends Phaser.Scene {
       if (rig) {
         spawnFallStreak(this, rig.x, rig.y);
         rig.setPosition(player.x, player.y);
-        this.prevPos.set(id, { x: player.x, y: player.y });
+        rig.renderPrevX = player.x;
+        rig.renderPrevY = player.y;
       } else {
         spawnFallStreak(this, player.x, player.y);
       }
@@ -1474,14 +1498,12 @@ export class ArenaScene extends Phaser.Scene {
     rig.setRigScale(characterScale(charId)); // §7 bump small-footprint skins so none read as tiny
     this.blobs.set(id, rig);
     this.charOf.set(id, player.character);
-    this.prevPos.set(id, { x: player.x, y: player.y });
     if (isSelf) this.centerCam(player.x, player.y);
   }
 
   private removeBlob(id: string): void {
     this.blobs.get(id)?.destroy();
     this.blobs.delete(id);
-    this.prevPos.delete(id);
     this.equipped.delete(id);
     this.charOf.delete(id);
     this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
@@ -1704,7 +1726,6 @@ export class ArenaScene extends Phaser.Scene {
           if (wdef && wman) rig.equipWeapon(kind.wieldsWeapon, wdef, wman);
         }
         this.enemies.set(id, rig);
-        this.enemyPrev.set(id, { x: enemy.x, y: enemy.y });
         this.enemyAtk.set(id, enemy.atkSeq);
       }
       // Trigger a swing animation each time the server bumps the duelist's atkSeq (combo hit).
@@ -1726,13 +1747,12 @@ export class ArenaScene extends Phaser.Scene {
         this.enemies.get(id)?.triggerSwing(this.animClock, aimWorld);
       }
     });
-    for (const id of [...this.enemies.keys()]) {
+    for (const id of this.enemies.keys()) {
       if (!enemies.has(id)) {
         // Enemy gone from authoritative state → it died (or left view). Detach it from the animated set
         // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
         this.enemies.delete(id);
-        this.enemyPrev.delete(id);
         this.enemyHp.delete(id);
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
@@ -1796,7 +1816,10 @@ export class ArenaScene extends Phaser.Scene {
     this.room.state.enemies.forEach((enemy, id) => {
       const rig = this.enemies.get(id);
       if (!rig) return;
-      const s = rt >= 0 ? this.enemyBufs.get(id)?.sample(rt, INTERP_SNAP_ENEMY) : null;
+      const s =
+        rt >= 0
+          ? this.enemyBufs.get(id)?.sampleInto(rt, INTERP_SNAP_ENEMY, this.enemySample)
+          : null;
       if (s) rig.setPosition(s.x, s.y);
       else rig.setPosition(enemy.x, enemy.y);
     });
@@ -1807,9 +1830,8 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphGfx.clear(); // §8 redraw the white-tell layer fresh each frame
     const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait
     for (const [id, rig] of this.enemies) {
-      const prev = this.enemyPrev.get(id) ?? { x: rig.x, y: rig.y };
-      let mx = rig.x - prev.x;
-      let my = rig.y - prev.y;
+      let mx = rig.x - rig.renderPrevX;
+      let my = rig.y - rig.renderPrevY;
       const speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) drives the gait blend
       const ml = Math.hypot(mx, my);
       if (ml > 0.001) {
@@ -1819,16 +1841,13 @@ export class ArenaScene extends Phaser.Scene {
         mx = 0;
         my = 0;
       }
-      this.enemyPrev.set(id, { x: rig.x, y: rig.y });
-      rig.animate(this.animClock, {
-        moveX: mx,
-        moveY: my,
-        speed,
-        aimX: 0,
-        aimY: 0,
-        aimDir: 0,
-        isSelf: false,
-      });
+      rig.renderPrevX = rig.x;
+      rig.renderPrevY = rig.y;
+      const anim = this.enemyAnimInput;
+      anim.moveX = mx;
+      anim.moveY = my;
+      anim.speed = speed;
+      rig.animate(this.animClock, anim);
       const es = this.room?.state.enemies.get(id);
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
       const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
@@ -2128,7 +2147,7 @@ export class ArenaScene extends Phaser.Scene {
         }
       }
     });
-    for (const id of [...this.projectiles.keys()]) {
+    for (const id of this.projectiles.keys()) {
       if (!state.has(id)) {
         const c = this.projectiles.get(id);
         if (c) {
@@ -2202,7 +2221,7 @@ export class ArenaScene extends Phaser.Scene {
       });
       this.zones.set(id, c);
     });
-    for (const id of [...this.zones.keys()]) {
+    for (const id of this.zones.keys()) {
       if (!state.has(id)) {
         this.zones.get(id)?.destroy();
         this.zones.delete(id);
@@ -2847,7 +2866,7 @@ export class ArenaScene extends Phaser.Scene {
         this.addBlob(player, id);
       }
     });
-    for (const id of [...this.blobs.keys()]) {
+    for (const id of this.blobs.keys()) {
       if (!players.has(id)) this.removeBlob(id);
     }
   }
@@ -2870,7 +2889,10 @@ export class ArenaScene extends Phaser.Scene {
         this.selfPredHeight = r.height;
         return;
       }
-      const s = rt >= 0 ? this.playerBufs.get(id)?.sample(rt, INTERP_SNAP_PLAYER) : null;
+      const s =
+        rt >= 0
+          ? this.playerBufs.get(id)?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
+          : null;
       if (s) blob.setPosition(s.x, s.y);
       else blob.setPosition(player.x, player.y);
     });
@@ -3136,11 +3158,9 @@ export class ArenaScene extends Phaser.Scene {
       x: number;
       y: number;
       setPosition(x: number, y: number): void;
-      setDepth(d: number): void;
     }) => {
       const wy = o.y;
       o.setPosition(o.x, this.beltY(wy));
-      o.setDepth(wy);
     };
     // TRACKED containers (projectiles move via data; pickups/zones are static) are NOT repositioned to a fresh
     // world y every frame — so if we projected off their .y we'd re-project our OWN output next frame and the
@@ -3153,7 +3173,11 @@ export class ArenaScene extends Phaser.Scene {
       c.setData("beltWorldY", wy);
       c.setData("beltScreenY", sy);
       c.setPosition(c.x, sy);
-      c.setDepth(wy);
+      const depth = Math.round(wy);
+      if (c.getData("beltDepth") !== depth) {
+        c.setData("beltDepth", depth);
+        c.setDepth(depth);
+      }
     };
     this.blobs.forEach((rig) => projectLive(rig));
     this.enemies.forEach((rig) => projectLive(rig)); // includes the boss rig
@@ -3364,14 +3388,14 @@ export class ArenaScene extends Phaser.Scene {
       if (len > 0.001) {
         aimX = ax / len;
         aimY = ay / len;
-        this.selfAim = { x: aimX, y: aimY }; // remembered for the attack message
+        this.selfAim.x = aimX; // remembered for the attack message
+        this.selfAim.y = aimY;
       }
     }
 
     for (const [id, blob] of this.blobs) {
-      const prev = this.prevPos.get(id) ?? { x: blob.x, y: blob.y };
-      let mx = blob.x - prev.x;
-      let my = blob.y - prev.y;
+      let mx = blob.x - blob.renderPrevX;
+      let my = blob.y - blob.renderPrevY;
       const speed = Math.hypot(mx, my) * invDt; // §7 v0.105 raw render speed (px/s) for the gait blend
       const ml = Math.hypot(mx, my);
       if (ml > 0.001) {
@@ -3381,7 +3405,8 @@ export class ArenaScene extends Phaser.Scene {
         mx = 0;
         my = 0;
       }
-      this.prevPos.set(id, { x: blob.x, y: blob.y });
+      blob.renderPrevX = blob.x;
+      blob.renderPrevY = blob.y;
 
       // §5/§20 (Stage B): lift the rig by the HEIGHT arc. §4 v0.107: SELF rides the PREDICTED arc (the
       // hop starts the frame you press SPACE — no round-trip); remotes ride the synced height (smoothed
@@ -3403,18 +3428,18 @@ export class ArenaScene extends Phaser.Scene {
       }
 
       const isSelf = id === selfId;
-      blob.animate(this.animClock, {
-        moveX: mx,
-        moveY: my,
-        speed,
-        aimX: isSelf ? aimX : 0,
-        aimY: isSelf ? aimY : 0,
-        aimDxPx: isSelf ? aimDxPx : undefined, // §37 raw offset → the flip commits at the midpoint
-        aimDir: pl?.aimDir ?? 0, // §9 remote gun pose tracks the synced aim
-        isSelf,
-        recoilX: pl?.vx ?? 0, // §20 momentum flinch (gun recoil / hit knockback)
-        recoilY: pl?.vy ?? 0,
-      });
+      const anim = this.playerAnimInput;
+      anim.moveX = mx;
+      anim.moveY = my;
+      anim.speed = speed;
+      anim.aimX = isSelf ? aimX : 0;
+      anim.aimY = isSelf ? aimY : 0;
+      anim.aimDxPx = isSelf ? aimDxPx : undefined; // §37 raw offset → the flip commits at the midpoint
+      anim.aimDir = pl?.aimDir ?? 0; // §9 remote gun pose tracks the synced aim
+      anim.isSelf = isSelf;
+      anim.recoilX = pl?.vx ?? 0; // §20 momentum flinch (gun recoil / hit knockback)
+      anim.recoilY = pl?.vy ?? 0;
+      blob.animate(this.animClock, anim);
       blob.setDepth(blob.y);
     }
   }
@@ -4444,6 +4469,8 @@ export class ArenaScene extends Phaser.Scene {
     const ids = WEAPON_IDS;
     const n = ids.length;
     const si = Math.max(0, ids.indexOf(self?.weapon ?? ids[0] ?? ""));
+    const depthSelectionChanged = si !== this.carouselDepthSelection;
+    if (depthSelectionChanged) this.carouselDepthSelection = si;
     const cx = this.screenW() / 2;
     const selY = this.screenH() - 170;
     const arcR = 700;
@@ -4461,7 +4488,9 @@ export class ArenaScene extends Phaser.Scene {
       card.container.setRotation(isSel ? 0 : ang);
       card.container.setScale(isSel ? 1.0 : 0.62);
       card.container.setAlpha(isSel ? 1 : 0.82);
-      card.container.setDepth(100000 + (isSel ? 100 : 30 - Math.abs(off)));
+      if (depthSelectionChanged) {
+        card.container.setDepth(100000 + (isSel ? 100 : 30 - Math.abs(off)));
+      }
 
       const def = WEAPONS[card.id];
       const attrs: Record<Attr, number> = {

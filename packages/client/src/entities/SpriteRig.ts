@@ -97,6 +97,9 @@ export interface RigAnim {
  */
 export class SpriteRig {
   readonly root: Phaser.GameObjects.Container;
+  /** §4 caller-updated scalar render history; avoids replacing one `{x,y}` per rig per frame in the scene. */
+  renderPrevX: number;
+  renderPrevY: number;
   private readonly scene: Phaser.Scene;
   private readonly scale: number;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
@@ -113,6 +116,8 @@ export class SpriteRig {
   private readonly parts: Phaser.GameObjects.Image[] = [];
   private readonly label?: Phaser.GameObjects.Text;
   private readonly phase: number;
+  /** §29 quantized display-list depth last sent to Phaser; unchanged writes force a global re-sort. */
+  private lastDepth = Number.NaN;
   private facing = 1;
   /** §7 v0.105 de-clunk — smoothed 0..1 GAIT (≈ speed/MOVE_SPEED): scales the stride/lift/lean so the walk
    *  cycle ramps in + fades out instead of snapping on a binary flag (the old check was dead code that kept
@@ -247,6 +252,8 @@ export class SpriteRig {
     order.unshift(this.shadow);
 
     this.root = scene.add.container(x, y, order);
+    this.renderPrevX = x;
+    this.renderPrevY = y;
 
     // Per-rig phase offset so a crowd doesn't bob in lockstep. Derived from id (stable).
     let h = 0;
@@ -260,7 +267,10 @@ export class SpriteRig {
 
   /** Top-down draw order: lower on screen renders in front. */
   setDepth(d: number): void {
-    this.root.setDepth(d);
+    const depth = Math.round(d);
+    if (depth === this.lastDepth) return;
+    this.lastDepth = depth;
+    this.root.setDepth(depth);
   }
 
   /** §5 jump hop: lift the rendered art by `px` (peak of the arc). The container's logical position is

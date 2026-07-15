@@ -1,4 +1,4 @@
-import { INTERP_DELAY_MS, INTERP_EXTRAP_MAX_MS, TICK_MS } from "@dd/shared";
+import { INTERP_DELAY_MS, INTERP_EXTRAP_MAX_MS, SNAPSHOT_DEPTH, TICK_MS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import { SnapshotBuffer, TimelineSync } from "./snapshots.js";
 
@@ -12,6 +12,17 @@ describe("SnapshotBuffer", () => {
     const s = b.sample(125, 260);
     expect(s?.x).toBeCloseTo(50, 6);
     expect(s?.y).toBeCloseTo(25, 6);
+  });
+
+  it("sampleInto() writes into and returns the caller-owned point", () => {
+    const b = new SnapshotBuffer();
+    b.push(100, 0, 0);
+    b.push(150, 100, 50);
+    const out = { x: -1, y: -1 };
+    const s = b.sampleInto(125, 260, out);
+    expect(s).toBe(out);
+    expect(out.x).toBeCloseTo(50, 6);
+    expect(out.y).toBeCloseTo(25, 6);
   });
 
   it("treats a bracket gap wider than the snap threshold as a TELEPORT (jumps, never tweens across)", () => {
@@ -56,6 +67,14 @@ describe("SnapshotBuffer", () => {
     const s = b.sample(29 * TICK_MS, 260);
     expect(s?.x).toBe(29);
   });
+
+  it("overwrites the oldest typed-ring slot at capacity", () => {
+    const b = new SnapshotBuffer();
+    for (let i = 0; i < SNAPSHOT_DEPTH + 3; i++) b.push(i * TICK_MS, i, i * 2);
+    const s = b.sample(-1, 260); // before retained history → hold its oldest point
+    expect(s?.x).toBe(3);
+    expect(s?.y).toBe(6);
+  });
 });
 
 describe("TimelineSync", () => {
@@ -79,5 +98,22 @@ describe("TimelineSync", () => {
     ts.onPatch(13, burstAt);
     // The min-offset is still the clean 80ms one — burst arrivals (bigger offsets) don't shift it.
     expect(ts.renderTime(burstAt)).toBeCloseTo(burstAt - 80 - INTERP_DELAY_MS, 6);
+  });
+
+  it("rescans the ring minimum when the least-delayed arrival expires", () => {
+    const ts = new TimelineSync();
+    ts.onPatch(0, 80); // 80ms minimum, later allowed to age out of the 3s window
+    const laterAt = 64 * TICK_MS + 200;
+    ts.onPatch(64, laterAt); // 200ms offset; first arrival is now older than the window
+    expect(ts.renderTime(laterAt)).toBeCloseTo(64 * TICK_MS - INTERP_DELAY_MS, 6);
+  });
+
+  it("reset() clears readiness and learned offsets", () => {
+    const ts = new TimelineSync();
+    ts.onPatch(10, 10 * TICK_MS + 80);
+    expect(ts.ready).toBe(true);
+    ts.reset();
+    expect(ts.ready).toBe(false);
+    expect(ts.renderTime(9999)).toBe(0);
   });
 });
