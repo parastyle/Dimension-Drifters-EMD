@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { SPRITES } from "../../sprites/manifest.js";
+import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
+import { elementPack } from "../../vfx/particles.js";
 import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
 import { blendHex } from "./draw-util.js";
 
@@ -88,27 +90,32 @@ export function makeThrownCleaver(
   return scene.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
 }
 
-/** Magma scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered
- *  with the AUTHORED PAINTED magma-ball art (a random frame of the scatter sheet) so the projectile you
- *  see IS the painted ball. A hot additive glow + motion-blur trail sell the molten flight; the ball
- *  tumbles. Falls back to a procedural ember only if the scatter texture isn't loaded. */
+/** Scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered as PAINTED
+ *  art so the projectile you see IS the painted ball: fire/physical use the authored magma-ball sheet;
+ *  §41 an ":<element>" kind suffix (the frost Hailshard etc.) swaps in a painted element-orb frame and
+ *  tints the glow/trail — a frost caster must NOT shoot lava. Tumbles; falls back to a tinted ember. */
 export function makeMagma(
   scene: Phaser.Scene,
-  pr: { x: number; y: number; vx: number; vy: number },
+  pr: { x: number; y: number; vx: number; vy: number; kind: string },
 ): Phaser.GameObjects.Container {
+  const i = pr.kind.indexOf(":");
+  const element = i < 0 ? "fire" : pr.kind.slice(i + 1);
+  const molten = element === "fire"; // the classic magma look (also the bare-"magma" Wyrmtooth)
+  const tint = molten ? 0xff6a22 : (ELEMENT_COLOR[element] ?? 0xff6a22);
   const ang = Math.atan2(pr.vy, pr.vx);
   const trail = scene.add
-    .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, 0xff5a1e, 0.4)
+    .ellipse(-Math.cos(ang) * 18, -Math.sin(ang) * 18, 46, 13, molten ? 0xff5a1e : tint, 0.4)
     .setRotation(ang)
     .setBlendMode(Phaser.BlendModes.ADD);
-  const glow = scene.add.circle(0, 0, 17, 0xff6a22, 0.5).setBlendMode(Phaser.BlendModes.ADD);
-  // The painted magma ball (the authored scatter art) — the real projectile rendered as its own art.
-  const sc = WEAPON_VFX["x-sword-bone"]?.scatter;
-  const key = sc ? `scatter:${sc.url}` : null;
+  const glow = scene.add.circle(0, 0, 17, tint, 0.5).setBlendMode(Phaser.BlendModes.ADD);
+  // The painted ball: the authored magma sheet for the molten look, else a painted element-orb frame.
+  const sc = molten ? WEAPON_VFX["x-sword-bone"]?.scatter : null;
+  const pack = molten ? null : PARTICLE_PACKS[elementPack(element, "orb")];
+  const key = sc ? `scatter:${sc.url}` : pack ? `ptcl:${elementPack(element, "orb")}` : null;
   let ball: Phaser.GameObjects.GameObject;
   if (key && scene.textures.exists(key)) {
-    const frame = Math.floor(Math.random() * (sc?.count ?? 1));
-    const img = scene.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? 249));
+    const frame = Math.floor(Math.random() * (sc?.count ?? pack?.count ?? 1));
+    const img = scene.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? pack?.frameWidth ?? 249));
     scene.tweens.add({
       targets: img,
       angle: 360,
@@ -118,7 +125,7 @@ export function makeMagma(
     });
     ball = img;
   } else {
-    ball = scene.add.circle(0, 0, 7, 0xff8a2b); // fallback ember
+    ball = scene.add.circle(0, 0, 7, molten ? 0xff8a2b : tint); // fallback ember
   }
   const c = scene.add.container(pr.x, pr.y, [trail, glow, ball]).setDepth(99000);
   scene.tweens.add({

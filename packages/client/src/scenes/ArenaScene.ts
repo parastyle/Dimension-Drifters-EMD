@@ -1804,7 +1804,7 @@ export class ArenaScene extends Phaser.Scene {
         ? makeBullet(this, pr)
         : pr.kind === "cleaver"
           ? makeThrownCleaver(this, pr)
-          : pr.kind === "magma"
+          : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
             ? makeMagma(this, pr)
             : pr.kind === "counter" || pr.kind === "deflect"
               ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)

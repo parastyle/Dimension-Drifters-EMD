@@ -2757,6 +2757,12 @@ export class GameRoom extends Room<ArenaState> {
     const aim = this.aimDir(player, c); // §37 aim the cone at the cursor POINT
     const baseAng = Math.atan2(aim.y, aim.x);
     const crit = critChanceFor(player.luk, player.dex); // §30
+    // §41 the ball carries its weapon's ELEMENT on the kind ("magma:frost") so the client renders
+    // element-true balls + explosions — the frost Hailshard was shooting lava because every scatter
+    // weapon inherited the Wyrmtooth's magma visual. "physical" (the Wyrmtooth's literal magma) keeps
+    // the classic bare "magma".
+    const el = weapon.tags.element;
+    const kind = el && el !== "physical" ? `magma:${el}` : "magma";
     for (let i = 0; i < sc.count; i++) {
       // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
       // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
@@ -2769,7 +2775,7 @@ export class GameRoom extends Room<ArenaState> {
         spd,
         ballDmg,
         false,
-        "magma",
+        kind,
         pierce,
         sc.range / spd, // expire after travelling ~range (then explode)
         explode,
