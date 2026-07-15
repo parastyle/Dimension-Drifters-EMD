@@ -39,13 +39,14 @@ export interface WeaponDef {
   swingArc: number;
   /**
    * §40 which SWING ANIMATION STYLE this weapon plays (cosmetic — damage geometry is unchanged). One weapon,
-   * one animation; omitted → derived from the weapon's shape: quake→chop (overhead slam), claw/gauntlet/
-   * fist→pivot (spins about the hand, the hand doesn't move), rapier/spear→thrust (lunge along aim),
-   * two-handed→orbit (fake-3D waist orbit), else→arc (the classic flat sweep). "spin" (authored-only) is the
-   * Garen-style whirlwind: the BODY whirls through full revolutions (paper mirror-turns) with the blade
-   * extended — pair it with a full-circle `swingArc` (2π per revolution) so the swept damage matches.
+   * one animation; omitted → derived from the weapon's shape: quake→chop (overhead slam), worn claws/
+   * talons→pivot (the arm RAKE), other worn gauntlets/knuckles→punch (§42 the fist DRIVES — a roundhouse
+   * haymaker on 2H maulers), rapier/spear→thrust (lunge along aim), two-handed→orbit (fake-3D waist orbit),
+   * else→arc (the classic flat sweep). "spin" (authored-only) is the Garen-style whirlwind: the BODY whirls
+   * through full revolutions (paper mirror-turns) with the blade extended — pair it with a full-circle
+   * `swingArc` (2π per revolution) so the swept damage matches.
    */
-  swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust" | "spin";
+  swingStyle?: "arc" | "orbit" | "chop" | "pivot" | "thrust" | "spin" | "punch";
   /** Where the grip sits along the sprite length (0 = left tip) — the in-hand pivot. */
   gripFrac: number;
   /** Dual-wield: render a piece in EACH hand (uses sprite parts 1 & 2). */

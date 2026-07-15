@@ -46,12 +46,16 @@ export function isWornWeapon(def: WeaponDef): boolean {
 
 /** §40 which swing ANIMATION a weapon plays — one weapon, one animation, drawn from the per-type vocabulary.
  *  An authored `def.swingStyle` wins; otherwise derive from the weapon's shape: quake weapons CHOP (overhead
- *  slam, matching their ground-eruption VFX), worn claws/gauntlets/fists PIVOT (the arm rake), rapiers/spears
- *  THRUST, two-handed weapons ORBIT the waist in fake 3D, everything else does the classic flat ARC. */
+ *  slam, matching their ground-eruption VFX), worn CLAWS/talons PIVOT (the arm rake — dragging blades), other
+ *  worn gauntlets/knuckles PUNCH (§42 the fist drives; blunt gloves don't rake), rapiers/spears THRUST,
+ *  two-handed weapons ORBIT the waist in fake 3D, everything else does the classic flat ARC. */
 function swingStyleFor(def: WeaponDef): NonNullable<WeaponDef["swingStyle"]> {
   if (def.swingStyle) return def.swingStyle;
+  // §42 WORN beats quake: a quake GAUNTLET (Pyreclap Mauler) still PUNCHES — the fist drives the ground
+  // eruption; raising it overhead like a blade read as waving a dueling glove. The punch's full extension
+  // lands on CHOP_IMPACT_FRAC, so the shared detonation clock stays in sync.
+  if (isWornWeapon(def)) return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
   if (def.quake) return "chop";
-  if (isWornWeapon(def)) return "pivot";
   if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? "")) return "thrust";
   if (def.twoHanded) return "orbit";
   return "arc";
@@ -740,6 +744,49 @@ export class SpriteRig {
           this.body.scaleX *= 1 - 0.14 * jab;
           this.body.rotation += 0.11 * jab * Math.cos(aimLocal);
           this.body.y += 2 * s * jab;
+        } else if (style === "punch") {
+          // §42 PUNCH — worn blunt gauntlets/knuckles: the FIST drives, no blade to rake. Chamber (the
+          // fist pulls back and to the side, shoulders winding), then the punch WHIPS through the aim on
+          // a hook's curve and snaps back. Heavy (2H) maulers throw a full ROUNDHOUSE: deeper chamber,
+          // wider arc, the whole torso pivots behind the blow. The glove points along its travel, and
+          // swingOff carries the hand (§40.1) so the ARM visibly throws it.
+          const heavy = def.twoHanded ? 1 : 0;
+          const reach = TARGET_BODY_H * (0.5 + 0.25 * heavy);
+          const hook = 0.55 + 0.75 * heavy; // roundhouse curvature: how far around the fist sweeps
+          const wind = 0.16 + 0.08 * heavy; // chamber fraction of the swing window
+          // §40.2/§42 the fist CONNECTS at CHOP_IMPACT_FRAC — the shared moment a quake gauntlet's
+          // ground eruption detonates (server + VFX run on the same clock), so the blow SELLS the boom.
+          const imp = CHOP_IMPACT_FRAC;
+          let th = aimLocal; // fist direction from the shoulder
+          let r = 0; // fist extension
+          let drive = 0; // 0..1 body-commitment envelope
+          if (tt < wind) {
+            const p = tt / wind;
+            th = aimLocal - hook * p; // wind around AND back
+            r = reach * 0.3 * p;
+            drive = 0.3 * p;
+          } else if (tt < imp) {
+            const p = (tt - wind) / (imp - wind);
+            const e = 1 - (1 - p) ** 3; // explosive ease-out
+            th = aimLocal + hook * (-1 + 1.35 * e); // whips THROUGH the aim into follow-through
+            r = reach * (0.3 + 0.7 * e);
+            drive = 0.3 + 0.7 * e;
+          } else {
+            const p = (tt - imp) / (1 - imp);
+            const rec = 1 - p * (2 - p);
+            th = aimLocal + hook * 0.35 * rec;
+            r = reach * rec;
+            drive = rec;
+          }
+          weaponAngle = th; // the fist leads along its own travel
+          this.swingOffX = Math.cos(th) * r;
+          this.swingOffY = Math.sin(th) * r;
+          // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
+          // blow, a dug-in crouch. A mauler commits the whole frame.
+          this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive;
+          this.body.rotation += (0.1 + 0.09 * heavy) * drive * Math.cos(aimLocal);
+          this.body.y += (2.5 + 2.5 * heavy) * s * drive;
+          if (heavy) this.body.scaleY *= 1 - 0.06 * drive;
         } else if (style === "thrust") {
           // THRUST — rapier/spear lunge: the blade locks along the aim and the grip STABS forward and back.
           weaponAngle = aimLocal;
