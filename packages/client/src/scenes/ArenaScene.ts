@@ -89,9 +89,7 @@ import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
-import { DECAL_IDS } from "../sprites/decal-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
-import { POI_IDS } from "../sprites/poi-manifest.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
@@ -99,6 +97,7 @@ import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import {
   buildArenaFloor,
   buildPois,
+  dimensionPropPack,
   drawArena,
   type PoiSprite,
   terrainRimKey,
@@ -397,8 +396,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §13 v0.104 sprites whose lazy-load FAILED (missing on disk / 404) — equip falls through to empty
    *  hands instead of retrying forever with an invisible weapon (adversarial-verify hardening). */
   private readonly failedArt = new Set<string>();
-  /** §17 Codex tile textures (gen-tiles.mjs) that failed to load (absent on disk) — fall back to flat fill. */
-  private readonly tilesMissing = new Set<string>();
+  /** §17 optional terrain/prop files that failed to load — skip/fall back and never retry every frame. */
+  private readonly floorArtMissing = new Set<string>();
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
   private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
@@ -572,39 +571,51 @@ export class ArenaScene extends Phaser.Scene {
     // only its four 512px variants + one 1024×256 rim (the menu owns the sixth texture, its key-art JPG).
     // Missing/half-rendered kits are optional. Override only these files' decode-error hook because Vite may
     // answer a missing public asset with index.html (HTTP 200): Phaser's default hook logs each bad decode.
-    const queueOptionalTerrain = (key: string, url: string): void => {
-      const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
-      file.onProcessError = () => {
-        this.tilesMissing.add(key);
-        file.state = Phaser.Loader.FILE_ERRORED;
-        file.loader.fileProcessComplete(file);
-      };
-      this.load.addFile(file);
-    };
     const terrainDimensionId = getDimension(this.selectedDimension).id;
     for (let i = 0; i < 4; i++) {
       const key = terrainTileKey(terrainDimensionId, i);
-      if (!this.textures.exists(key) && !this.tilesMissing.has(key)) {
-        queueOptionalTerrain(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
+      if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
+        this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
       }
     }
     const rimKey = terrainRimKey(terrainDimensionId);
-    if (!this.textures.exists(rimKey) && !this.tilesMissing.has(rimKey)) {
-      queueOptionalTerrain(rimKey, `tiles/${terrainDimensionId}/rim.png`);
+    if (!this.textures.exists(rimKey) && !this.floorArtMissing.has(rimKey)) {
+      this.queueOptionalFloorArt(rimKey, `tiles/${terrainDimensionId}/rim.png`);
     }
-    // §17 P4 Codex prop-packs (gen-decals.mjs): DECAL ground litter + POI landmark structures.
-    for (const id of DECAL_IDS) this.load.image(id, `decals/${id}.png`);
-    for (const id of POI_IDS) this.load.image(id, `pois/${id}.png`);
+    // §17 P4 active-dimension prop pack: DECAL ground litter + POI landmarks. A joiner/rift whose synced
+    // dimension differs is covered by maybeBuildFloor's identical lazy-load gate below.
+    const propPack = dimensionPropPack(terrainDimensionId);
+    for (const id of propPack.decalIds) {
+      if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
+        this.queueOptionalFloorArt(id, `${propPack.decalDir}/${id}.png`);
+      }
+    }
+    for (const id of propPack.poiIds) {
+      if (!this.textures.exists(id) && !this.floorArtMissing.has(id)) {
+        this.queueOptionalFloorArt(id, `${propPack.poiDir}/${id}.png`);
+      }
+    }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
       if (/^(tile|decal|poi)-/.test(file.key) || file.key.startsWith("terrain:")) {
-        this.tilesMissing.add(file.key);
+        this.floorArtMissing.add(file.key);
       }
     });
   }
 
+  /** Queue optional floor art with a silent decode-error path (Vite may return index.html with HTTP 200). */
+  private queueOptionalFloorArt(key: string, url: string): void {
+    const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
+    file.onProcessError = () => {
+      this.floorArtMissing.add(key);
+      file.state = Phaser.Loader.FILE_ERRORED;
+      file.loader.fileProcessComplete(file);
+    };
+    this.load.addFile(file);
+  }
+
   /** §17 a Codex tile texture is usable only if it loaded AND isn't a missing-file stub. */
   private hasTile(key: string): boolean {
-    if (this.tilesMissing.has(key) || !this.textures.exists(key)) return false;
+    if (this.floorArtMissing.has(key) || !this.textures.exists(key)) return false;
     const w = this.textures.get(key).getSourceImage()?.width ?? 0;
     return w > 8;
   }
@@ -682,7 +693,7 @@ export class ArenaScene extends Phaser.Scene {
     this.zones.clear();
     this.lastFell.clear();
     this.pendingArt.clear();
-    // `failedArt` and `tilesMissing` deliberately follow Phaser's game-wide texture cache, not a run.
+    // `failedArt` and `floorArtMissing` deliberately follow Phaser's game-wide texture cache, not a run.
 
     // Display-object/UI pools and handles. The previous objects are already destroyed by Phaser.
     this.poiSprites = [];
@@ -1344,29 +1355,26 @@ export class ArenaScene extends Phaser.Scene {
     const s = this.room.state;
     if (!s.seedTerrain) return; // seeds not synced yet (0 = "no map")
     const dimension = getDimension(s.dimensionId);
+    const propPack = dimensionPropPack(dimension.id);
     // §17 a joiner can inherit the host's dimension, and a §6 rift changes it mid-scene. Preload covered the
-    // requested starting dimension; here the floor gate lazily queues a newly synced kit before teardown.
+    // requested starting dimension; here the floor gate lazily queues its terrain + props before teardown.
     // Network failures hit preload's loaderror guard; HTTP-200/non-image stubs use this silent decode hook.
-    const terrainFiles = [
+    const floorArtFiles = [
       ...Array.from({ length: 4 }, (_, i) => ({
         key: terrainTileKey(dimension.id, i),
         url: `tiles/${dimension.id}/tile-${i}.png`,
       })),
       { key: terrainRimKey(dimension.id), url: `tiles/${dimension.id}/rim.png` },
+      ...propPack.decalIds.map((id) => ({ key: id, url: `${propPack.decalDir}/${id}.png` })),
+      ...propPack.poiIds.map((id) => ({ key: id, url: `${propPack.poiDir}/${id}.png` })),
     ];
-    const terrainPending = terrainFiles.filter(
-      ({ key }) => !this.textures.exists(key) && !this.tilesMissing.has(key),
+    const floorArtPending = floorArtFiles.filter(
+      ({ key }) => !this.textures.exists(key) && !this.floorArtMissing.has(key),
     );
-    if (terrainPending.length > 0) {
+    if (floorArtPending.length > 0) {
       if (!this.load.isLoading()) {
-        for (const { key, url } of terrainPending) {
-          const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
-          file.onProcessError = () => {
-            this.tilesMissing.add(key);
-            file.state = Phaser.Loader.FILE_ERRORED;
-            file.loader.fileProcessComplete(file);
-          };
-          this.load.addFile(file);
+        for (const { key, url } of floorArtPending) {
+          this.queueOptionalFloorArt(key, url);
         }
         this.load.start();
       }
@@ -1407,7 +1415,7 @@ export class ArenaScene extends Phaser.Scene {
       this.floorObjs.push(
         ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
       );
-      const pois = buildPois(this, this.arenaMap);
+      const pois = buildPois(this, this.arenaMap, dimension.id);
       this.poiSprites = pois.sprites;
       this.floorObjs.push(...pois.objs);
       // §4 v0.107: a re-minted map = a new world — the predictor must collide against the NEW landmarks

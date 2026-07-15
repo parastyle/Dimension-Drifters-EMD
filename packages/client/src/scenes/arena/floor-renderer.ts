@@ -14,7 +14,15 @@ import {
 } from "@dd/shared";
 import type Phaser from "phaser";
 import { DECAL_IDS } from "../../sprites/decal-manifest.js";
+import { DECAL_IDS_ASHLANDS } from "../../sprites/decal-manifest-ashlands.js";
+import { DECAL_IDS_FROSTFELL } from "../../sprites/decal-manifest-frostfell.js";
+import { DECAL_IDS_NEON_CYBER } from "../../sprites/decal-manifest-neon-cyber.js";
+import { DECAL_IDS_VERDANT_RUINS } from "../../sprites/decal-manifest-verdant-ruins.js";
 import { POI_IDS } from "../../sprites/poi-manifest.js";
+import { POI_IDS_ASHLANDS } from "../../sprites/poi-manifest-ashlands.js";
+import { POI_IDS_FROSTFELL } from "../../sprites/poi-manifest-frostfell.js";
+import { POI_IDS_NEON_CYBER } from "../../sprites/poi-manifest-neon-cyber.js";
+import { POI_IDS_VERDANT_RUINS } from "../../sprites/poi-manifest-verdant-ruins.js";
 
 /**
  * §17 arena floor renderer — the "Dust & The Drop" look, extracted from ArenaScene so the scene stays a
@@ -28,6 +36,54 @@ import { POI_IDS } from "../../sprites/poi-manifest.js";
  */
 
 const PAINTED_TILE_SIZE = 512;
+
+export type DimensionPropPack = Readonly<{
+  poiIds: readonly string[];
+  decalIds: readonly string[];
+  poiDir: string;
+  decalDir: string;
+}>;
+
+/** §17 active-dimension prop registry. The original generic manifests ARE Wild West's authored pack;
+ *  every generated theme keeps its manifest order as the stable local kind/index → texture convention. */
+const WILD_WEST_PROP_PACK: DimensionPropPack = {
+  poiIds: POI_IDS,
+  decalIds: DECAL_IDS,
+  poiDir: "pois",
+  decalDir: "decals",
+};
+export const DIMENSION_PROP_PACKS: Readonly<Record<string, DimensionPropPack>> = {
+  "wild-west": WILD_WEST_PROP_PACK,
+  frostfell: {
+    poiIds: POI_IDS_FROSTFELL,
+    decalIds: DECAL_IDS_FROSTFELL,
+    poiDir: "pois/frostfell",
+    decalDir: "decals/frostfell",
+  },
+  "verdant-ruins": {
+    poiIds: POI_IDS_VERDANT_RUINS,
+    decalIds: DECAL_IDS_VERDANT_RUINS,
+    poiDir: "pois/verdant-ruins",
+    decalDir: "decals/verdant-ruins",
+  },
+  ashlands: {
+    poiIds: POI_IDS_ASHLANDS,
+    decalIds: DECAL_IDS_ASHLANDS,
+    poiDir: "pois/ashlands",
+    decalDir: "decals/ashlands",
+  },
+  "neon-cyber": {
+    poiIds: POI_IDS_NEON_CYBER,
+    decalIds: DECAL_IDS_NEON_CYBER,
+    poiDir: "pois/neon-cyber",
+    decalDir: "decals/neon-cyber",
+  },
+};
+
+/** Resolve stale/unknown ids exactly like shared `getDimension`: Wild West is the compatibility fallback. */
+export function dimensionPropPack(dimensionId: string): DimensionPropPack {
+  return DIMENSION_PROP_PACKS[dimensionId] ?? WILD_WEST_PROP_PACK;
+}
 
 /** §17 stable optional-terrain texture keys — shared with ArenaScene's active-dimension preload. */
 export function terrainTileKey(dimensionId: string, variant: number): string {
@@ -149,11 +205,12 @@ export type PoiSprite = { img: Phaser.GameObjects.Image; x: number; y: number; r
 export function buildPois(
   scene: Phaser.Scene,
   map: ArenaMap,
+  dimensionId: string,
 ): { sprites: PoiSprite[]; objs: Phaser.GameObjects.GameObject[] } {
-  // Map each landmark's `kind` through the BUILD-TIME manifest so the kind→sprite choice is identical
+  // Map each landmark's `kind` through the active dimension's BUILD-TIME manifest so the choice is identical
   // on every client (collision is server-authoritative; this is just the matching visual). A POI whose
   // specific texture failed to load skips its own draw rather than shifting every other POI's sprite.
-  const ids: readonly string[] = POI_IDS; // widen the const tuple so the empty-pack guard is honest
+  const ids = dimensionPropPack(dimensionId).poiIds;
   const out: PoiSprite[] = [];
   const objs: Phaser.GameObjects.GameObject[] = [];
   if (ids.length === 0) return { sprites: out, objs };
@@ -310,7 +367,7 @@ export function buildArenaFloor(
   g.lineStyle(3, palette.spawnRingSafe, 0.85);
   g.strokeCircle(map.spawnX, map.spawnY, sr);
 
-  out.push(...scatterDecor(scene, map, palette));
+  out.push(...scatterDecor(scene, map, palette, dimensionPropPack(dimensionId).decalIds));
   return out;
 }
 
@@ -320,6 +377,7 @@ export function scatterDecor(
   scene: Phaser.Scene,
   map: ArenaMap,
   palette: DimensionPalette,
+  decalIds: readonly string[],
 ): Phaser.GameObjects.GameObject[] {
   const rng = makeRng(mixSeeds(map.seeds.seedDecor, 0xdec0));
   const between = (a: number, b: number): number => a + rng.next() * (b - a);
@@ -340,14 +398,14 @@ export function scatterDecor(
   // §17 P4 painted Codex DECALS (rocks/scrub/bones/skull/cactus/wheel) — seeded scatter OFF the pits,
   // each with a random rotation/scale/flip so the same 9 props never read as repeated (decal
   // "tile-bombing"). Falls back to the procedural rock/scrub shapes if the pack isn't authored.
-  // Determinism: branch + index off the BUILD-TIME manifest `DECAL_IDS`, never the runtime-loaded
+  // Determinism: branch + index off the active dimension's BUILD-TIME manifest, never the runtime-loaded
   // set — so the RNG draw sequence is identical on every client even if one client missed a texture
   // load. A texture that failed to load just skips its own draw; positions stay in lockstep.
-  if (DECAL_IDS.length > 0) {
+  if (decalIds.length > 0) {
     for (let i = 0; i < Math.round(70 * AREA); i++) {
       const x = between(60, ARENA_WIDTH - 60);
       const y = between(60, ARENA_HEIGHT - 60);
-      const id = DECAL_IDS[Math.floor(rng.next() * DECAL_IDS.length)] ?? DECAL_IDS[0];
+      const id = decalIds[Math.floor(rng.next() * decalIds.length)] ?? decalIds[0];
       const sc = between(0.4, 0.82);
       const rot = rng.next() * Math.PI * 2;
       const flip = rng.next() < 0.5;
