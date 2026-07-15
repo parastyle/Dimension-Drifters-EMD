@@ -60,8 +60,12 @@ describe("weapon-data cross-references (codegen SoT)", () => {
   });
 
   it("the expansion roster is a 1:1 bijection with its concepts source (codegen is in sync)", () => {
-    const concepts = readJson("../data/weapon-concepts-300.json") as { weapons: { id: string }[] };
-    const conceptIds = new Set(concepts.weapons.map((w) => w.id));
+    const concepts = readJson("../data/weapon-concepts-300.json") as {
+      weapons: { id: string; banned?: boolean }[];
+    };
+    // §41 `banned: true` concepts are CUT from the game by design ruling (the generator skips them) but
+    // stay in the data file as the record — the bijection holds over the non-banned set.
+    const conceptIds = new Set(concepts.weapons.filter((w) => !w.banned).map((w) => w.id));
     const expansionIds = new Set(EXPANSION_WEAPON_IDS);
     for (const id of conceptIds)
       expect(

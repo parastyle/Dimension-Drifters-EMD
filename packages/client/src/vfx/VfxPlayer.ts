@@ -88,17 +88,17 @@ function buildWeaponSuite(element: string, tags?: WeaponDef["tags"]): Suite {
   const fast = tags?.size === "S"; // daggers / knives / light blades → snappy speed-lines
   const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test((tags?.family ?? "").toLowerCase());
   let base: Suite;
+  // §41 NOTE: the old fallbacks also layered "edge-trail" (a thin trailing arc line) on most swings — it
+  // read as "a weird narrow white line" (user), so it's dropped from every fallback. Authored suites keep it.
   if (dual) {
     // twin blades → an X twin-slash
     base = {
       "twin-slash": { on: true, params: { reach: 1, color: h } },
-      "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
     };
   } else if (reachy) {
-    // spear / polearm / whip → a long forward THRUST streak
+    // spear / polearm → a long forward THRUST streak
     base = {
       "thrust-streak": { on: true, params: { reach: 1.35, color: h } },
-      "edge-trail": { on: true, params: { reach: 1.3, color: h, len: 1.3 } },
     };
   } else if (heavy) {
     // greatsword / maul → a WIDE cleave with a ground shockwave
@@ -114,10 +114,9 @@ function buildWeaponSuite(element: string, tags?: WeaponDef["tags"]): Suite {
       "blade-trail": { on: true, params: { reach: 1, color: h, lines: 4 } },
     };
   } else {
-    // ordinary sword (the proven crescent + afterglow) — the safe default for everything unclassified
+    // ordinary sword — the clean crescent alone (the safe default for everything unclassified)
     base = {
       "slash-arc": { on: true, params: { reach: 1, width: 6, color: h } },
-      "edge-trail": { on: true, params: { reach: 1.1, color: h, len: 1 } },
     };
   }
   if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } }; // plasma/laser glow pop

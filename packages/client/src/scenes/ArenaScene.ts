@@ -865,7 +865,19 @@ export class ArenaScene extends Phaser.Scene {
     const ADD = Phaser.BlendModes.ADD;
     const state = this.room.state.pickups;
     state.forEach((pk, id) => {
-      if (this.pickups.has(id)) return;
+      const existing0 = this.pickups.get(id);
+      if (existing0) {
+        // §41 lazy-art RETRO-UPGRADE: a pickup built while its weapon art was still loading rendered the
+        // tier-bundle fallback FOREVER (a fresh showroom page of 42 expansion weapons showed all blobs —
+        // "assets missing"). Once the texture lands, rebuild the pickup with its real art.
+        const wantArt = existing0.getData("pendingArt") as string | undefined;
+        const wantRole = SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
+        if (!wantArt || !wantRole || !this.textures.exists(partTexture(this, wantArt, wantRole).key)) {
+          return;
+        }
+        existing0.destroy();
+        this.pickups.delete(id); // fall through — recreated below with the loaded art
+      }
       const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
       const def = WEAPONS[pk.weapon];
       // §10/§13 v0.104 LOOT identity: a MYSTERY drop (known=false) telegraphs TYPE + RARITY but hides
@@ -933,6 +945,11 @@ export class ArenaScene extends Phaser.Scene {
       if (mysteryMark) spinnerKids.push(mysteryMark);
       const spinner = this.add.container(0, 0, spinnerKids);
       const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
+      // §41 built with the fallback while the art is still lazy-loading → tag it so the sync pass rebuilds
+      // this pickup with its real art the moment the texture lands (see the retro-upgrade above).
+      if (!isMystery && manifest && !part && !this.failedArt.has(pk.weapon)) {
+        container.setData("pendingArt", pk.weapon);
+      }
       // §10 cursed gamble cue: the whole pickup breathes a ghostly fade — haunted, and it knows you know.
       if (pk.rarity === RARITY_CURSED) {
         this.tweens.add({

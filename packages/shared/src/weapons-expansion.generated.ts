@@ -3157,44 +3157,6 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     },
     "durability": 75
   },
-  "x2-galvanic-crackwhip": {
-    "id": "x2-galvanic-crackwhip",
-    "name": "Galvanic Crackwhip",
-    "expansion": true,
-    "scalingGrades": {
-      "dex": "A"
-    },
-    "damage": 6,
-    "range": 225,
-    "halfArc": 0.9,
-    "cooldown": 0.4,
-    "displayLength": 148,
-    "swingArc": 3,
-    "gripFrac": 0.1,
-    "tags": {
-      "grip": "1H",
-      "size": "M",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
-      "element": "shock",
-      "classPool": "melee",
-      "family": "exotic-melee",
-      "rangeBand": "mid",
-      "scaling": [
-        "DEX"
-      ]
-    },
-    "requirements": {
-      "dex": 11
-    },
-    "durability": 75,
-    "chainLightning": {
-      "jumps": 4,
-      "range": 200,
-      "damage": 4,
-      "falloff": 0.78
-    }
-  },
   "x2-nine-tail-razorlash": {
     "id": "x2-nine-tail-razorlash",
     "name": "Nine-Tail Razorlash",
@@ -11596,47 +11558,6 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "quake": {
       "radius": 150,
       "damage": 10
-    }
-  },
-  "x2-psalmstone-beadwhip": {
-    "id": "x2-psalmstone-beadwhip",
-    "name": "Psalmstone Beadwhip",
-    "expansion": true,
-    "scalingGrades": {
-      "dex": "C",
-      "int": "B"
-    },
-    "damage": 5,
-    "range": 160,
-    "halfArc": 0.7,
-    "cooldown": 0.32,
-    "displayLength": 58,
-    "swingArc": 2.2,
-    "gripFrac": 0.16,
-    "tags": {
-      "grip": "dual",
-      "size": "S",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
-      "element": "holy",
-      "classPool": "caster",
-      "family": "relic/totem",
-      "rangeBand": "mid",
-      "scaling": [
-        "INT",
-        "DEX"
-      ]
-    },
-    "requirements": {
-      "dex": 5,
-      "int": 7
-    },
-    "dual": true,
-    "chainLightning": {
-      "jumps": 3,
-      "range": 180,
-      "damage": 5,
-      "falloff": 0.85
     }
   },
   "x2-sanctum-brazier-staff": {

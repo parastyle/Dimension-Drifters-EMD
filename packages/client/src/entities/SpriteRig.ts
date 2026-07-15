@@ -680,25 +680,38 @@ export class SpriteRig {
             this.body.scaleY *= 1 - 0.1 * e;
           }
         } else if (style === "pivot") {
-          // CLAW PIVOT — the weapon whips a fast slash ABOUT THE GRIP only: pure rotation at the hand, the
-          // hand/arm doesn't move at all (the weapon img's origin is the grip, so rotating it IS the pivot).
-          const spin = Math.max(def.swingArc * 1.5, 3.6);
-          const start = aimLocal - spin * 0.72;
-          const end = aimLocal + spin * 0.28; // whips THROUGH the aim late in the sweep
+          // §41 CLAW RAKE — how claws are actually used: the whole ARM swipes. The hand travels a fast
+          // diagonal RAKE across the aim (side → across → side, pushing OUT at the middle of the swipe) while
+          // the claw's rotation whips through the same sweep — arm + claw slash together, like dragging
+          // talons across a target. (swingOff drives the front hand, §40.1, so the arm visibly moves.)
+          const spin = Math.max(def.swingArc * 1.1, 2.6);
+          const start = aimLocal - spin * 0.6;
+          const end = aimLocal + spin * 0.4; // whips THROUGH the aim past the middle
+          let prog = 0; // 0..1 across the active rake (drives both the whip and the arm path)
           if (tt < 0.1) {
             weaponAngle = restA + (start - restA) * (tt / 0.1); // snap-wind
           } else if (tt < 0.62) {
-            const p = (tt - 0.1) / 0.52;
-            weaponAngle = start + (end - start) * (1 - (1 - p) ** 3); // vicious ease-out whip
+            prog = 1 - (1 - (tt - 0.1) / 0.52) ** 3; // vicious ease-out
+            weaponAngle = start + (end - start) * prog;
           } else {
+            prog = 1;
             const p = (tt - 0.62) / 0.38;
             weaponAngle = end + (restA - end) * (p * (2 - p));
           }
-          // §40.1 body: a sharp SHOULDER JAB with the whip — a quick paper-twist of the chest (scaleX dip)
-          // that peaks with the slash and releases. The hand still doesn't move; the torso snaps behind it.
-          const jab = tt < 0.62 ? Math.sin((Math.min(tt, 0.62) / 0.62) * Math.PI) : 0;
+          // The ARM path: sweep laterally across the aim (perpendicular +R → −R) + a punch OUT along the
+          // aim that peaks mid-rake, then snap back home over the recovery tail.
+          const recover = tt < 0.62 ? 1 : 1 - (tt - 0.62) / 0.38;
+          const lat = TARGET_BODY_H * 0.26 * (1 - 2 * prog) * recover; // across the swipe
+          const out = TARGET_BODY_H * 0.3 * Math.sin(Math.PI * prog) * recover; // reach out mid-swipe
+          const px = -Math.sin(aimLocal);
+          const py = Math.cos(aimLocal);
+          this.swingOffX = px * lat + Math.cos(aimLocal) * out;
+          this.swingOffY = py * lat + Math.sin(aimLocal) * out;
+          // Body: the shoulder DRIVES the rake — paper-twist peaks with the slash, torso leans into the swipe.
+          const jab = Math.sin(Math.PI * Math.min(1, tt / 0.62)) * recover;
           this.body.scaleX *= 1 - 0.14 * jab;
-          this.body.rotation += 0.09 * jab;
+          this.body.rotation += 0.11 * jab * Math.cos(aimLocal);
+          this.body.y += 2 * s * jab;
         } else if (style === "thrust") {
           // THRUST — rapier/spear lunge: the blade locks along the aim and the grip STABS forward and back.
           weaponAngle = aimLocal;

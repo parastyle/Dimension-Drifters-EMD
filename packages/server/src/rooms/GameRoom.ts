@@ -102,6 +102,7 @@ import {
   inMeleeArc,
   isAttr,
   isAugment,
+  isInsidePoi,
   isPitAtPx,
   JUMP_BUFFER_SECONDS,
   JUMP_COOLDOWN,
@@ -1142,12 +1143,28 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §31 the full browsable weapon roster for the Testing-Grounds SHOWROOM: the active arsenal + every
    *  arted expansion weapon. Shown one page at a time (perf: a full dump is ~2fps). */
-  private static readonly GALLERY_ROSTER: readonly string[] = [...WEAPON_IDS, ...EXPANSION_WEAPON_IDS];
+  /** §41 the showroom roster, ORGANIZED: class → family → name, so every page reads as a coherent shelf
+   *  ("all the melee axes together") instead of concept-file order. Stable + deterministic. */
+  private static readonly GALLERY_ROSTER: readonly string[] = [
+    ...WEAPON_IDS,
+    ...EXPANSION_WEAPON_IDS,
+  ].sort((a, b) => {
+    const wa = WEAPONS[a];
+    const wb = WEAPONS[b];
+    const c = (wa?.tags?.classPool ?? "").localeCompare(wb?.tags?.classPool ?? "");
+    if (c !== 0) return c;
+    const f = (wa?.tags?.family ?? "").localeCompare(wb?.tags?.family ?? "");
+    if (f !== 0) return f;
+    return (wa?.name ?? a).localeCompare(wb?.name ?? b);
+  });
   private static readonly GALLERY_PAGE = 42; // weapons per page (14×3 grid) — comfortably performant
   private galleryPage = 0;
 
   /** §31 (re)spawn the current showroom PAGE: clear the gallery pickups (`pk*`) and lay out this page's
-   *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only. */
+   *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
+   *  §41 cells keep their EXACT grid position — a cell over a pit/POI is SKIPPED (the shelf shows a gap)
+   *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
+   *  neighbours, so R grabbed "the wrong thing" and pages read as disorganized. */
   private spawnGalleryPage(): void {
     for (const id of [...this.state.pickups.keys()]) {
       if (id.startsWith("pk")) this.state.pickups.delete(id);
@@ -1161,18 +1178,25 @@ export class GameRoom extends Room<ArenaState> {
     const cy = ARENA_HEIGHT / 2;
     const COLS = 14;
     const GAP = 150;
-    const rows = Math.ceil(slice.length / COLS);
+    // Safe EXACT grid cells — row 0 sits just above the player, rows grow upward; unsafe cells are gaps.
+    const cells: { x: number; y: number }[] = [];
+    for (let row = 0; cells.length < slice.length && row < 14; row++) {
+      for (let col = 0; col < COLS && cells.length < slice.length; col++) {
+        const gx = cx + (col - (COLS - 1) / 2) * GAP;
+        const gy = cy - 200 - row * GAP;
+        if (gx < PICKUP_RADIUS || gx > ARENA_WIDTH - PICKUP_RADIUS || gy < PICKUP_RADIUS) continue;
+        if (isPitAtPx(this.map, gx, gy) || isInsidePoi(this.map, gx, gy)) continue;
+        cells.push({ x: gx, y: gy });
+      }
+    }
     slice.forEach((weaponId, i) => {
-      const col = i % COLS;
-      const row = Math.floor(i / COLS);
+      const cell = cells[i];
+      if (!cell) return;
       const pk = new PickupState();
       pk.id = `pk${i}`;
       pk.weapon = weaponId;
-      const gx = cx + (col - (COLS - 1) / 2) * GAP;
-      const gy = cy - 200 - (rows - 1 - row) * GAP; // stack UPWARD from just above the player
-      const sp = safeSpawnPos(this.map, gx, gy, PICKUP_RADIUS);
-      pk.x = sp.x;
-      pk.y = sp.y;
+      pk.x = cell.x;
+      pk.y = cell.y;
       this.state.pickups.set(pk.id, pk);
     });
   }

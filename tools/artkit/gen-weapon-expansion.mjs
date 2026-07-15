@@ -172,6 +172,9 @@ const out = {};
 let dupes = 0;
 for (const w of data.weapons) {
   if (!w.id || !w.name) continue;
+  // A concept flagged `banned: true` is CUT from the game by design ruling — it stays in the data file as
+  // the record, but never codegens into the roster. (2026-07-14: the whips — user ruling, "too sexual".)
+  if (w.banned) continue;
   if (out[w.id]) {
     dupes++;
     continue;
