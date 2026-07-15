@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 import { elementPack } from "../../vfx/particles.js";
@@ -83,9 +84,12 @@ export function makeThrownCleaver(
   pr: { x: number; y: number },
 ): Phaser.GameObjects.Container {
   const part = SPRITES["rusty-cleaver"]?.parts[0];
-  const blade = part
-    ? scene.add.image(0, 0, "rusty-cleaver:part-1").setScale(108 / part.w)
-    : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
+  const tx = part ? partTexture(scene, "rusty-cleaver", part.role) : null;
+  // §10 the boot-installed cleaver lives in dd-sprites; retain loose-part fallback through partTexture.
+  const blade =
+    part && tx
+      ? scene.add.image(0, 0, tx.key, tx.frame).setScale(108 / part.w)
+      : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
   const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
   return scene.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
 }

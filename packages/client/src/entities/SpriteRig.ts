@@ -437,6 +437,8 @@ export class SpriteRig {
   private branded = false;
   /** §6 DOWNED state — fades + grey-tints the rig (it's a body on the ground until a rez revives it). */
   private downed = false;
+  /** §20 one reschedulable impact-flash expiry per rig — prevents timer races and teardown retention. */
+  private flashTimer?: Phaser.Time.TimerEvent;
 
   /** Toggle the §8 Brand tint. Cheap + idempotent — the scene calls it each frame off the synced state. */
   setBranded(on: boolean): void {
@@ -465,7 +467,12 @@ export class SpriteRig {
   /** Brief impact flash on every part (§20 hit feedback / §6 revive pop), then back to the resting tint. */
   flash(ms = 80, color = 0xffffff): void {
     for (const p of this.parts) p.setTint(color).setTintMode(Phaser.TintModes.FILL);
-    this.scene.time.delayedCall(ms, () => this.restTint());
+    // §20 a newer hit owns the flash window: cancel the prior expiry so it cannot clear this tint early.
+    this.flashTimer?.remove(false);
+    this.flashTimer = this.scene.time.delayedCall(ms, () => {
+      this.flashTimer = undefined;
+      this.restTint();
+    });
   }
 
   get x(): number {
@@ -485,6 +492,9 @@ export class SpriteRig {
   }
 
   destroy(): void {
+    // §20 the delayed callback closes over this rig; detach it before destroying the visible hierarchy.
+    this.flashTimer?.remove(false);
+    this.flashTimer = undefined;
     for (const w of this.weapons) w.img.destroy();
     this.root.destroy();
   }

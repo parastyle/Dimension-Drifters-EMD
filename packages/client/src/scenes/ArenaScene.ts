@@ -875,7 +875,7 @@ export class ArenaScene extends Phaser.Scene {
         if (!wantArt || !wantRole || !this.textures.exists(partTexture(this, wantArt, wantRole).key)) {
           return;
         }
-        existing0.destroy();
+        this.destroyPickup(existing0);
         this.pickups.delete(id); // fall through — recreated below with the loaded art
       }
       const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
@@ -980,7 +980,7 @@ export class ArenaScene extends Phaser.Scene {
         repeat: -1,
         ease: "Sine.inOut",
       });
-      this.tweens.addCounter({
+      const spinTween = this.tweens.addCounter({
         from: 0,
         to: TAU,
         duration: 1700,
@@ -995,14 +995,28 @@ export class ArenaScene extends Phaser.Scene {
           }
         },
       });
+      // §41 pickup spin owns a COUNTER tween whose target is Phaser's private `{ value }`, not the visible
+      // Container — destroying the pickup cannot auto-prune it. Keep the handle on the owner for both exits.
+      container.setData("spinTween", spinTween);
       this.pickups.set(id, container);
     });
     for (const id of [...this.pickups.keys()]) {
       if (!state.has(id)) {
-        this.pickups.get(id)?.destroy();
+        const pickup = this.pickups.get(id);
+        if (pickup) this.destroyPickup(pickup);
         this.pickups.delete(id);
       }
     }
+  }
+
+  /** §41 destroy a pickup AND its plain-object spin counter; Phaser cannot infer that ownership itself. */
+  private destroyPickup(pickup: Phaser.GameObjects.Container): void {
+    const spinTween = pickup.getData("spinTween") as Phaser.Tweens.Tween | undefined;
+    if (spinTween) {
+      spinTween.stop();
+      spinTween.remove();
+    }
+    pickup.destroy();
   }
 
   /** Make each player rig hold the weapon its authoritative state says it has (re-equip on change). */
@@ -1236,6 +1250,10 @@ export class ArenaScene extends Phaser.Scene {
     this.charOf.delete(id);
     this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
     this.snapFell.delete(id);
+    // §8/§6/§17 edge-trigger cursors are session-scoped too — a departed id must not live in these maps.
+    this.lastParried.delete(id);
+    this.lastRevived.delete(id);
+    this.lastFell.delete(id);
   }
 
   override update(_time: number, deltaMs: number): void {

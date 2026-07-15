@@ -1,5 +1,7 @@
 import { type Attr, type DamageSource, WEAPONS, weaponDamageSources } from "@dd/shared";
 import Phaser from "phaser";
+import { partTexture } from "../../entities/SpriteRig.js";
+import { SPRITES } from "../../sprites/manifest.js";
 
 /**
  * §9 weapon-card art + carousel-card builder, extracted from ArenaScene. Pure presentation: bakes the
@@ -66,6 +68,12 @@ export function bakeCardArt(
   ctx.roundRect(0, 0, W, H, R);
   ctx.clip();
   const tex = scene.textures.exists(`card-${id}`) ? `card-${id}` : null;
+  // §9 card ids are weapon ids, but several curated weapons borrow another sprite. Resolve that installed
+  // part exactly like the rig, including its frame coordinates inside the packed dd-sprites source page.
+  const spriteId = WEAPONS[id]?.sprite ?? id;
+  const part = SPRITES[spriteId as keyof typeof SPRITES]?.parts[0];
+  const tx = part ? partTexture(scene, spriteId, part.role) : null;
+  const atlasFrame = tx?.frame ? scene.textures.get(tx.key).get(tx.frame) : null;
   if (tex) {
     const src = scene.textures.get(tex).getSourceImage() as CanvasImageSource & {
       width: number;
@@ -75,12 +83,33 @@ export function bakeCardArt(
     const dw = src.width * sc;
     const dh = src.height * sc;
     ctx.drawImage(src, (W - dw) / 2, Math.min(0, (H - dh) * 0.12), dw, dh); // bias to the top
-  } else if (scene.textures.exists(`${id}:part-1`)) {
-    // No dedicated card art yet → show the installed weapon sprite (contain-fit, upper area) on a
-    // dark ground. Keeps newly-wired weapons (explore swords) legible until bespoke card art lands.
+  } else if (tx?.frame && atlasFrame) {
+    // No dedicated card art yet → contain-fit the atlas FRAME, not its whole multiatlas source page.
     ctx.fillStyle = "#15120d";
     ctx.fillRect(0, 0, W, H);
-    const src = scene.textures.get(`${id}:part-1`).getSourceImage() as CanvasImageSource & {
+    const src = scene.textures.get(tx.key).getSourceImage(tx.frame) as CanvasImageSource;
+    const availW = W * 0.86;
+    const availH = H * 0.5;
+    const sc = Math.min(availW / atlasFrame.cutWidth, availH / atlasFrame.cutHeight);
+    const dw = atlasFrame.cutWidth * sc;
+    const dh = atlasFrame.cutHeight * sc;
+    ctx.drawImage(
+      src,
+      atlasFrame.cutX,
+      atlasFrame.cutY,
+      atlasFrame.cutWidth,
+      atlasFrame.cutHeight,
+      (W - dw) / 2,
+      H * 0.07 + (availH - dh) / 2,
+      dw,
+      dh,
+    );
+  } else if (tx && scene.textures.exists(tx.key)) {
+    // No dedicated card art yet → show the installed weapon sprite (contain-fit, upper area) on a
+    // dark ground. §9 the loose-part path remains the fallback for runtime-loaded expansion art.
+    ctx.fillStyle = "#15120d";
+    ctx.fillRect(0, 0, W, H);
+    const src = scene.textures.get(tx.key).getSourceImage() as CanvasImageSource & {
       width: number;
       height: number;
     };
