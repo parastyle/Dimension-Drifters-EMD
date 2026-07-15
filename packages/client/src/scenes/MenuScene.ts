@@ -17,6 +17,7 @@ import { RENDER_DPR } from "../render-dpr.js";
 
 const CARD_W = 288;
 const CARD_H = 172;
+const MENU_ART_PREFIX = "menu-dimension:";
 let arenaSceneImport: Promise<typeof import("./ArenaScene.js").ArenaScene> | undefined;
 
 /** §17 payload diet: import the arena graph only when a run launches, then register its scene exactly once. */
@@ -44,10 +45,37 @@ export class MenuScene extends Phaser.Scene {
   private audio!: AudioBus;
   private audioLabel?: Phaser.GameObjects.Text;
   private audioRow?: Phaser.GameObjects.Container;
+  /** §17 P0.5 optional dimension key-art that failed to load; absent renders preserve the vector card. */
+  private readonly menuArtMissing = new Set<string>();
   private launching = false;
 
   constructor() {
     super("menu");
+  }
+
+  /** §17 P0.5 preload every level-select key frame. A detached render may not have installed all five yet;
+   *  loaderror is consumed into a missing set, and buildCard keeps the exact palette/vector fallback. */
+  preload(): void {
+    // Vite can serve index.html for an absent public asset (HTTP 200). Silence Phaser's default per-file
+    // decode console.error for these explicitly optional JPGs while retaining normal loader completion.
+    const queueOptionalArt = (key: string, url: string): void => {
+      const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
+      file.onProcessError = () => {
+        this.menuArtMissing.add(key);
+        file.state = Phaser.Loader.FILE_ERRORED;
+        file.loader.fileProcessComplete(file);
+      };
+      this.load.addFile(file);
+    };
+    for (const dimensionId of DIMENSION_IDS) {
+      const key = `${MENU_ART_PREFIX}${dimensionId}`;
+      if (!this.textures.exists(key) && !this.menuArtMissing.has(key)) {
+        queueOptionalArt(key, `ui/menu/${dimensionId}.jpg`);
+      }
+    }
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      if (file.key.startsWith(MENU_ART_PREFIX)) this.menuArtMissing.add(file.key);
+    });
   }
 
   create(): void {
@@ -210,6 +238,23 @@ export class MenuScene extends Phaser.Scene {
     const root = this.add.container(0, 0);
 
     const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, p.groundBed, 0.96).setOrigin(0.5);
+    // §17 P0.5 KEY ART: centre-crop (true cover-fit, no stretching), darken for copy contrast, and insert
+    // between the existing palette fallback and every existing frame/title/tagline/swatch layer.
+    const artKey = `${MENU_ART_PREFIX}${dimensionId}`;
+    let art: Phaser.GameObjects.Image | undefined;
+    if (!this.menuArtMissing.has(artKey) && this.textures.exists(artKey)) {
+      const source = this.textures.get(artKey).getSourceImage() as { width: number; height: number };
+      if (source.width > 8 && source.height > 8) {
+        const coverScale = Math.max(CARD_W / source.width, CARD_H / source.height);
+        const cropW = CARD_W / coverScale;
+        const cropH = CARD_H / coverScale;
+        art = this.add
+          .image(0, 0, artKey)
+          .setCrop((source.width - cropW) / 2, (source.height - cropH) / 2, cropW, cropH)
+          .setDisplaySize(CARD_W, CARD_H)
+          .setTint(0x999999);
+      }
+    }
     const frame = this.add
       .rectangle(0, 0, CARD_W, CARD_H, 0x000000, 0.001)
       .setOrigin(0.5)
@@ -239,7 +284,7 @@ export class MenuScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
 
-    root.add([bg, frame, name, tagline, ...swatches]);
+    root.add([bg, ...(art ? [art] : []), frame, name, tagline, ...swatches]);
 
     frame
       .setInteractive({ useHandCursor: true })

@@ -96,7 +96,14 @@ import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particl
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
-import { buildArenaFloor, buildPois, drawArena, type PoiSprite } from "./arena/floor-renderer.js";
+import {
+  buildArenaFloor,
+  buildPois,
+  drawArena,
+  type PoiSprite,
+  terrainRimKey,
+  terrainTileKey,
+} from "./arena/floor-renderer.js";
 import {
   baseKind,
   GUN_FX,
@@ -561,11 +568,37 @@ export class ArenaScene extends Phaser.Scene {
     // dev server returns index.html, which fails to decode; `loaderror` flags it so the floor falls back
     // to the flat fill instead of TileSpriting a broken stub.
     this.load.image("tile-ground", "tiles/ground.jpg");
+    // §17 P0.1 DIMENSION TERRAIN: init() has already selected the requested active dimension, so preload
+    // only its four 512px variants + one 1024×256 rim (the menu owns the sixth texture, its key-art JPG).
+    // Missing/half-rendered kits are optional. Override only these files' decode-error hook because Vite may
+    // answer a missing public asset with index.html (HTTP 200): Phaser's default hook logs each bad decode.
+    const queueOptionalTerrain = (key: string, url: string): void => {
+      const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
+      file.onProcessError = () => {
+        this.tilesMissing.add(key);
+        file.state = Phaser.Loader.FILE_ERRORED;
+        file.loader.fileProcessComplete(file);
+      };
+      this.load.addFile(file);
+    };
+    const terrainDimensionId = getDimension(this.selectedDimension).id;
+    for (let i = 0; i < 4; i++) {
+      const key = terrainTileKey(terrainDimensionId, i);
+      if (!this.textures.exists(key) && !this.tilesMissing.has(key)) {
+        queueOptionalTerrain(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
+      }
+    }
+    const rimKey = terrainRimKey(terrainDimensionId);
+    if (!this.textures.exists(rimKey) && !this.tilesMissing.has(rimKey)) {
+      queueOptionalTerrain(rimKey, `tiles/${terrainDimensionId}/rim.png`);
+    }
     // §17 P4 Codex prop-packs (gen-decals.mjs): DECAL ground litter + POI landmark structures.
     for (const id of DECAL_IDS) this.load.image(id, `decals/${id}.png`);
     for (const id of POI_IDS) this.load.image(id, `pois/${id}.png`);
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (/^(tile|decal|poi)-/.test(file.key)) this.tilesMissing.add(file.key);
+      if (/^(tile|decal|poi)-/.test(file.key) || file.key.startsWith("terrain:")) {
+        this.tilesMissing.add(file.key);
+      }
     });
   }
 
@@ -1310,6 +1343,35 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
     const s = this.room.state;
     if (!s.seedTerrain) return; // seeds not synced yet (0 = "no map")
+    const dimension = getDimension(s.dimensionId);
+    // §17 a joiner can inherit the host's dimension, and a §6 rift changes it mid-scene. Preload covered the
+    // requested starting dimension; here the floor gate lazily queues a newly synced kit before teardown.
+    // Network failures hit preload's loaderror guard; HTTP-200/non-image stubs use this silent decode hook.
+    const terrainFiles = [
+      ...Array.from({ length: 4 }, (_, i) => ({
+        key: terrainTileKey(dimension.id, i),
+        url: `tiles/${dimension.id}/tile-${i}.png`,
+      })),
+      { key: terrainRimKey(dimension.id), url: `tiles/${dimension.id}/rim.png` },
+    ];
+    const terrainPending = terrainFiles.filter(
+      ({ key }) => !this.textures.exists(key) && !this.tilesMissing.has(key),
+    );
+    if (terrainPending.length > 0) {
+      if (!this.load.isLoading()) {
+        for (const { key, url } of terrainPending) {
+          const file = new Phaser.Loader.FileTypes.ImageFile(this.load, key, url);
+          file.onProcessError = () => {
+            this.tilesMissing.add(key);
+            file.state = Phaser.Loader.FILE_ERRORED;
+            file.loader.fileProcessComplete(file);
+          };
+          this.load.addFile(file);
+        }
+        this.load.start();
+      }
+      return;
+    }
     const seedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${s.dimensionId}`;
     if (seedKey === this.lastSeedKey) return; // current floor is the right one
     const descending = this.lastSeedKey !== ""; // not the first build → a rift descent / restart
@@ -1323,7 +1385,7 @@ export class ArenaScene extends Phaser.Scene {
       seedDecor: s.seedDecor,
     });
     // §17 the active dimension's floor palette (re-skin of "Dust & The Drop"); unknown id → Wild West.
-    const palette = getDimension(s.dimensionId).palette;
+    const palette = dimension.palette;
     if (this.belt) {
       // §29 belt: build the authored DECK from the level's floor profile + obstacles (WYSIWYG collision), and
       // hand the level to the predictor (no POI map) so local collision matches the server exactly.
@@ -1339,8 +1401,12 @@ export class ArenaScene extends Phaser.Scene {
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
     } else {
-      this.floorObjs.push(...drawArena(this, (k) => this.hasTile(k), palette));
-      this.floorObjs.push(...buildArenaFloor(this, this.arenaMap, palette));
+      this.floorObjs.push(
+        ...drawArena(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+      );
+      this.floorObjs.push(
+        ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+      );
       const pois = buildPois(this, this.arenaMap);
       this.poiSprites = pois.sprites;
       this.floorObjs.push(...pois.objs);

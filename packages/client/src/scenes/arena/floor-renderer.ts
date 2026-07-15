@@ -22,15 +22,29 @@ import { POI_IDS } from "../../sprites/poi-manifest.js";
  * plus the synced `ArenaMap`, and draws into the world at the established NEGATIVE depths. The scene's
  * `maybeBuildFloor` gate still owns lifecycle (regen map from seeds → build once).
  *
- * Depth stack (back→front), unchanged: bed(-20) · grid/ground(-19) · dust(-16) · litter(-15) ·
- * pits+rim(-14) · rail(-12). Entities use depth = world Y (≥ 0), so the whole floor sits behind them.
+ * Depth stack (back→front): bed(-20) · painted base(-19.5) · grid/legacy ground(-19) · dust(-16) ·
+ * litter(-15) · pits+painted rim+vector accent(-14…-13.8) · rail(-12). Entities use depth = world Y
+ * (≥ 0), so the whole floor sits behind them.
  */
 
-/** Base ground bed + low-contrast grid (map-independent). `hasTile` is the scene's missing-texture guard
- *  so we fall back to the grid when the painted tile isn't installed. Returns every created object so the
- *  scene can DESTROY the floor on a §6 rift descent (v0.103 — new dimension mid-run = full floor rebuild). */
+const PAINTED_TILE_SIZE = 512;
+
+/** §17 stable optional-terrain texture keys — shared with ArenaScene's active-dimension preload. */
+export function terrainTileKey(dimensionId: string, variant: number): string {
+  return `terrain:${dimensionId}:tile-${variant}`;
+}
+
+export function terrainRimKey(dimensionId: string): string {
+  return `terrain:${dimensionId}:rim`;
+}
+
+/** Base ground bed + low-contrast grid. `hasTile` is the scene's missing-texture guard, so a partial or
+ *  absent painted kit takes the EXACT legacy tile-ground path. Returns every created object so the scene
+ *  can DESTROY the floor on a §6 rift descent (v0.103 — new dimension mid-run = full floor rebuild). */
 export function drawArena(
   scene: Phaser.Scene,
+  map: ArenaMap,
+  dimensionId: string,
   hasTile: (key: string) => boolean,
   palette: DimensionPalette,
 ): Phaser.GameObjects.GameObject[] {
@@ -40,11 +54,50 @@ export function drawArena(
   // Base ground bed + low-contrast grid (map-independent). The §17 procedural PITS, the rim telegraph,
   // the spawn safe-ring + seeded decor are baked in `buildArenaFloor` once the server's map seeds sync.
   // The whole floor stack lives at NEGATIVE depths so it always renders behind the entities (which use
-  // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · grid(-19) · dust(-16) · litter(-15) · pits+rim
-  // (-14, so the telegraph stays visible over litter) · rail(-12). Colours come from the active §17
+  // depth = world Y, ≥ 0). Stack, back→front: bed(-20) · painted tile base(-19.5) · grid/legacy ground
+  // (-19) · dust(-16) · litter(-15) · pits/rim(-14…-13.8) · rail(-12). Colours come from the active §17
   // dimension palette (a re-skin of the "Dust & The Drop" slots) — Wild West's are the defaults.
   out.push(scene.add.rectangle(cx, cy, ARENA_WIDTH, ARENA_HEIGHT, palette.groundBed).setDepth(-20));
-  if (hasTile("tile-ground")) {
+  const paintedKeys = Array.from({ length: 4 }, (_, i) => terrainTileKey(dimensionId, i));
+  if (paintedKeys.every(hasTile)) {
+    // §17 DIMENSION TERRAIN: cover the synced map's ground rectangle in 512px Images. Images are the cheap
+    // fit here (≈100 static objects, built once); unlike a Blitter bob they support the seeded quarter-turns.
+    // The final row/column deliberately overhangs the rail, matching the legacy TileSprite's outside margin.
+    const rng = makeRng(mixSeeds(map.seeds.seedTheme, map.seeds.seedDecor, 0x71e5));
+    const groundW = map.cols * map.tileSize;
+    const groundH = map.rows * map.tileSize;
+    for (let y = 0; y < groundH; y += PAINTED_TILE_SIZE) {
+      for (let x = 0; x < groundW; x += PAINTED_TILE_SIZE) {
+        const key = rng.pick(paintedKeys);
+        const quarterTurns = Math.floor(rng.next() * 4);
+        out.push(
+          scene.add
+            .image(x + PAINTED_TILE_SIZE / 2, y + PAINTED_TILE_SIZE / 2, key)
+            .setDisplaySize(PAINTED_TILE_SIZE, PAINTED_TILE_SIZE)
+            .setRotation(quarterTurns * (Math.PI / 2))
+            .setDepth(-19.5),
+        );
+      }
+    }
+    // Keep the existing 128px vector grid LINES above the painting; omit its opaque fallback cell fill so
+    // the new art remains visible. Stroke colour + alpha are the same as the legacy grid path below.
+    out.push(
+      scene.add
+        .grid(
+          cx,
+          cy,
+          ARENA_WIDTH,
+          ARENA_HEIGHT,
+          128,
+          128,
+          undefined,
+          undefined,
+          palette.gridColor2,
+          0.5,
+        )
+        .setDepth(-19),
+    );
+  } else if (hasTile("tile-ground")) {
     // §17 PAINTED ground — a SEAMLESS Codex dust tile (gen-tiles.mjs), GPU-tiled across the arena PLUS a
     // wide margin so 4K/ultrawide viewports always show ground, never the void. One draw, scrolls free.
     const margin = 3200;
@@ -157,6 +210,8 @@ export function buildPois(
 export function buildArenaFloor(
   scene: Phaser.Scene,
   map: ArenaMap,
+  dimensionId: string,
+  hasTile: (key: string) => boolean,
   palette: DimensionPalette,
 ): Phaser.GameObjects.GameObject[] {
   const out: Phaser.GameObjects.GameObject[] = [];
@@ -172,12 +227,12 @@ export function buildArenaFloor(
   // PIT FILL — the warm-black void (the §17 "absence" read). The painted GROUND tile fills the floor;
   // pits stay a clean flat void — it reads better than a busy texture, and a near-black pit tile is
   // visually indistinguishable from this anyway.
-  const g = scene.add.graphics().setDepth(-14); // pit void + rim + spawn, above the ground + the litter
-  out.push(g);
-  g.fillStyle(palette.pitVoid, 1);
+  const pitG = scene.add.graphics().setDepth(-14); // pit void, above the ground + the litter
+  out.push(pitG);
+  pitG.fillStyle(palette.pitVoid, 1);
   for (let y = 0; y < map.rows; y++)
     for (let x = 0; x < map.cols; x++)
-      if (map.tiles[y * map.cols + x] === TILE_PIT) g.fillRect(x * T, y * T, T, T);
+      if (map.tiles[y * map.cols + x] === TILE_PIT) pitG.fillRect(x * T, y * T, T, T);
 
   // Pit-edge segments (a pit-cell side bordering ground) + whether the run is hoppable.
   const seg: Array<{
@@ -202,6 +257,30 @@ export function buildArenaFloor(
       if (ground(x + 1, y))
         seg.push({ x1: ox + T, y1: oy, x2: ox + T, y2: oy + T, nx: -1, ny: 0, hop });
     }
+  // §17 PAINTED PIT RIM: the source is a horizontally tileable top-down strip (ground on its top half,
+  // drop on its bottom), so merge adjacent north-facing pit segments into runs. It sits over the flat void
+  // but under the established vector rust/lip/chevrons, which remain the crisp gameplay telegraph.
+  const rimKey = terrainRimKey(dimensionId);
+  if (hasTile(rimKey)) {
+    const topRuns: Array<{ x1: number; x2: number; y: number }> = [];
+    for (const s of seg) {
+      if (s.nx !== 0 || s.ny !== 1) continue;
+      const prev = topRuns[topRuns.length - 1];
+      if (prev && prev.y === s.y1 && prev.x2 === s.x1) prev.x2 = s.x2;
+      else topRuns.push({ x1: s.x1, x2: s.x2, y: s.y1 });
+    }
+    const rimSource = scene.textures.get(rimKey).getSourceImage() as { height?: number };
+    const rimH = rimSource.height ?? 256;
+    for (const run of topRuns) {
+      const rim = scene.add
+        .tileSprite((run.x1 + run.x2) / 2, run.y, run.x2 - run.x1, rimH, rimKey)
+        .setDepth(-13.9);
+      rim.tilePositionX = run.x1; // world-anchor the repeat so separate runs do not all restart at x=0
+      out.push(rim);
+    }
+  }
+  const g = scene.add.graphics().setDepth(-13.8); // legacy vector rim + spawn, above the painted rim
+  out.push(g);
   // Rust band (under) then hot amber lip (over) — opaque + static, so it reads as TERRAIN under the neon.
   g.lineStyle(T * 0.11, palette.pitRustBand, 1);
   for (const s of seg) g.lineBetween(s.x1, s.y1, s.x2, s.y2);
