@@ -68,6 +68,84 @@ painted + fully inside the frame, well separated, so they can be cut out individ
   },
 };
 
+// §47 CODEX FINAL RUN P0.2 — THEMED packs per dimension (the original two packs above are wild-west).
+// Same machinery: one render, chroma-key, island-extract. Style line shared so every dim reads as one game.
+const STYLE = `Style: HD cel-shaded, thick dark outlines, MUTED desaturated palette, each prop with a small
+SOFT dark contact shadow. EVEN flat lighting, no long cast shadows. The ENTIRE background is a FLAT PURE
+CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else — no ground, no texture, no gradient. Every prop fully
+painted, fully inside the frame, well separated so each can be cut out individually.`;
+const themedDecals = (dim, list) => ({
+  out: resolve(here, `out/decals-${dim}`),
+  public: resolve(REPO, `packages/client/public/decals/${dim}`),
+  manifest: resolve(REPO, `packages/client/src/sprites/decal-manifest-${dim}.ts`),
+  manifestConst: `DECAL_IDS_${dim.replace(/-/g, "_").toUpperCase()}`,
+  idPrefix: `decal-${dim}`,
+  max: 132,
+  keep: 11,
+  prompt: `Paint ONE wide image: a SPREAD of about NINE distinct TOP-DOWN GROUND PROPS viewed from DIRECTLY
+OVERHEAD (orthographic), arranged loosely with GENEROUS EMPTY SPACE between them — every prop a SEPARATE
+island that does NOT touch any other prop or the frame edge. Props (one each, varied sizes): ${list}.
+${STYLE}`,
+});
+const themedPois = (dim, list) => ({
+  out: resolve(here, `out/pois-${dim}`),
+  public: resolve(REPO, `packages/client/public/pois/${dim}`),
+  manifest: resolve(REPO, `packages/client/src/sprites/poi-manifest-${dim}.ts`),
+  manifestConst: `POI_IDS_${dim.replace(/-/g, "_").toUpperCase()}`,
+  idPrefix: `poi-${dim}`,
+  max: 280,
+  keep: 7,
+  prompt: `Paint ONE wide image: about SIX distinct LANDMARK STRUCTURES, each a SEPARATE island with GENEROUS
+empty space between them — none touching another or the frame edge. Draw each at a HIGH 3/4 ANGLE (standing
+in a top-down world, seen from above-and-slightly-in-front), base at the bottom, rising UP. Structures (one
+each): ${list}. ${STYLE}`,
+});
+PACKS["decals-frostfell"] = themedDecals(
+  "frostfell",
+  `a jagged blue ICE SHARD cluster; a snow-drift mound; a frozen-over small pond slick; a cracked ice plate;
+a frost-rimed dead shrub; scattered hail stones; a fallen icicle spear; a snow-buried stone; a pale frozen
+bone pile`,
+);
+PACKS["pois-frostfell"] = themedPois(
+  "frostfell",
+  `a towering blue GLACIER SPUR; a frozen WATERFALL column; an ancient ice-encased STANDING STONE; a snow-
+crushed wooden watchtower ruin; a colossal frost-heaved BOULDER; a leaning frozen PINE`,
+);
+PACKS["decals-verdant-ruins"] = themedDecals(
+  "verdant-ruins",
+  `a moss-swallowed fallen COLUMN drum; a cracked stone tablet with worn glyphs; a fern clump; a glowing
+green SPORE mushroom cluster; a coiled root knot; scattered temple rubble; a shallow leaf-choked puddle;
+a broken statue HAND; a flowering vine tangle`,
+);
+PACKS["pois-verdant-ruins"] = themedPois(
+  "verdant-ruins",
+  `a vine-strangled broken TEMPLE ARCH; a colossal mossy STATUE HEAD sunk to the chin; a crumbling stone
+STELE; a strangler-fig tree devouring a wall; a collapsed pillar leaning on its base; an overgrown fountain`,
+);
+PACKS["decals-ashlands"] = themedDecals(
+  "ashlands",
+  `a cooled ropey LAVA coil; an ember-cracked basalt slab; a charred tree stump; a sulfur-yellow crust
+patch; a slag heap; scattered obsidian shards; a smoldering ash pile with faint ember glow; a blackened
+ribcage; a heat-split boulder`,
+);
+PACKS["pois-ashlands"] = themedPois(
+  "ashlands",
+  `a jagged OBSIDIAN spire; a dormant fumarole CONE venting thin smoke; a charred dead TREE claw; a basalt
+column cluster (giant's-causeway style); a half-melted iron mining rig ruin; a cracked lava-rock arch`,
+);
+PACKS["decals-neon-cyber"] = themedDecals(
+  "neon-cyber",
+  `a burst steam VENT grate; a tangle of severed glowing CABLES; a shattered holo-sign panel face-up on the
+ground; an oil slick with faint neon sheen; a knocked-over traffic drone husk; scattered circuit debris; a
+glowing paint-tag GLYPH; a crushed vending crate; a manhole cover ajar with cyan underglow`,
+);
+PACKS["pois-neon-cyber"] = themedPois(
+  "neon-cyber",
+  `a rooftop HOLO-BILLBOARD tower (flickering magenta); an industrial AC/vent STACK cluster; a rusted
+water-tank on struts wrapped in cabling; a satellite-dish array mast; a neon SHRINE kiosk; a collapsed
+crane arm`,
+);
+
 const packName = (process.argv.find((a) => a.startsWith("--pack=")) ?? "--pack=decals").split("=")[1];
 const PACK = PACKS[packName];
 if (!PACK) {
