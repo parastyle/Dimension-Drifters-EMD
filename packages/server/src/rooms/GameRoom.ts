@@ -95,6 +95,7 @@ import {
   nextUpgradeCost,
   sanitizeMetaLevels,
   hasAugment,
+  ACTION_MSGS_PER_TICK,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
   IRON_STANCE_IFRAME_PER,
@@ -232,6 +233,9 @@ interface InputState {
   held: InputCmd;
   lastSeq: number;
   msgBudget: number;
+  /** §44 per-tick budget for ACTION messages (attack/parry/grab/cycle/…) — the input budget's sibling,
+   *  so a modified client can't monopolize the event loop with non-movement RPCs between ticks. */
+  actionBudget: number;
   mvx: number;
   mvy: number;
 }
@@ -453,6 +457,26 @@ export class GameRoom extends Room<ArenaState> {
     return this.hostId === null || client.sessionId === this.hostId;
   }
 
+  /** §44 dev-tool gate (Sol audit P0 #1): the debug RPCs (training toggle, boss picker, dev summon, dev
+   *  equip, B-key boss) are playtest affordances that must be UNREACHABLE on a public deploy — "host" is
+   *  just the first joiner, so one hostile client could otherwise flood the shared Node process with
+   *  entities. ON outside production (local dev, vitest) or when DD_DEV_TOOLS=1 (a staged playtest build).
+   *  Read per-call (not cached) so tests can flip the environment. */
+  private devToolsEnabled(): boolean {
+    return process.env.DD_DEV_TOOLS === "1" || process.env.NODE_ENV !== "production";
+  }
+
+  /** §44 spend one ACTION-message token for this client (attack/parry/grab/cycle/… — every gameplay RPC
+   *  except "input", which has its own budget). Refilled each tick; when dry the message is IGNORED, so a
+   *  modified client can't monopolize the event loop between ticks. Returns false when over budget. */
+  private takeAction(client: Client): boolean {
+    const rec = this.inputs.get(client.sessionId);
+    if (!rec) return false;
+    if (rec.actionBudget <= 0) return false;
+    rec.actionBudget--;
+    return true;
+  }
+
   override onCreate(options?: {
     dimensionId?: string;
     bossRush?: boolean;
@@ -528,6 +552,7 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage(
       "attack",
       (client, message: { aimX?: number; aimY?: number; tx?: number; ty?: number }) => {
+        if (!this.takeAction(client)) return; // §44 action budget
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
         if (!c) return;
@@ -563,9 +588,18 @@ export class GameRoom extends Room<ArenaState> {
     // from the §8 augment pool (applied below). (No telegraphed enemy attacks yet, so it's a defensive
     // button + augment offense; the white-tell parry-this-attack layer comes later.)
     this.onMessage("parry", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget (executeParry is an O(enemies) scan)
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || !c) return;
+      // §44 (Sol audit): NO parry inside the level-up window — the tick path already defines acting as
+      // alive AND not in the window, but this immediate path skipped that gate, so a frozen-invincible
+      // player could scan/knock the whole horde risk-free every cooldown. Queue it instead: the tick
+      // consumes the buffer under the common `acting` gate the moment the window closes.
+      if (this.inLevelWindow(player)) {
+        c.parryBuffer = PARRY_BUFFER_SECONDS;
+        return;
+      }
       // §7 v0.105 de-clunk: if the parry is still on cooldown, QUEUE it (the tick fires it the moment the
       // cd drains) instead of silently dropping — this closes the chain-parry desync where the client's
       // local cooldown clears ~a round-trip after the server's, so a valid chain press was being eaten.
@@ -579,6 +613,7 @@ export class GameRoom extends Room<ArenaState> {
     // Cycle through the roster (§9 arsenal). Q = forward, E = back (dir < 0). A cycled weapon is
     // CONJURED, not earned — it carries no salvage value (v0.103 provenance, see `heldEarned`).
     this.onMessage("cycleWeapon", (client, message: { dir?: number }) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
       player.weapon =
@@ -592,6 +627,8 @@ export class GameRoom extends Room<ArenaState> {
     // §39 DEV PORTAL: jump straight to a specific weapon / character by id (Testing-Grounds only, so it can't
     // touch a live run). Both ids are validated against the real catalogs; a bad id is ignored.
     this.onMessage("devEquip", (client, message: { weapon?: string; character?: string }) => {
+      // §44 dev-gated (defense in depth: training is itself unreachable without dev tools) + budgeted.
+      if (!this.devToolsEnabled() || !this.takeAction(client)) return;
       if (this.state.mode !== "training") return;
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
@@ -611,6 +648,7 @@ export class GameRoom extends Room<ArenaState> {
     // §29 v0.118 ARSENAL swap: switch which of the 3 slots is in hand (1/2/3 keys). Stows the current held
     // weapon back into its slot first, so the two off-hand weapons are remembered exactly.
     this.onMessage("swapSlot", (client, message: { slot?: number }) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       const i = Math.floor(message?.slot ?? -1);
@@ -622,6 +660,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // §29 ARSENAL cycle: Q/E through the NON-EMPTY slots (dir < 0 = back). No-op if nothing else is filled.
     this.onMessage("cycleSlot", (client, message: { dir?: number }) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       const c = this.combat.get(client.sessionId);
@@ -733,6 +772,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
     this.onMessage("cycleCharacter", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (player) player.character = nextCharacter(player.character);
     });
@@ -742,6 +782,7 @@ export class GameRoom extends Room<ArenaState> {
     // Provenance (v0.103): the dropped pickup INHERITS the held weapon's earned flag, so an earned drop
     // stays salvageable after a re-grab but a conjured one can never launder into salvage value.
     this.onMessage("dropWeapon", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget (each drop allocates a synced pickup)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       this.dropHeldWeapon(player, this.combat.get(client.sessionId));
@@ -751,6 +792,7 @@ export class GameRoom extends Room<ArenaState> {
     // is now the BANKABLE run currency, so it only pays for weapons that trace back to an ENEMY DROP
     // (`heldEarned` provenance) — an unearned weapon still salvages away (QoL) but is worth nothing.
     this.onMessage("salvageWeapon", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       const c = this.combat.get(client.sessionId);
@@ -767,6 +809,7 @@ export class GameRoom extends Room<ArenaState> {
     // Equips the nearest pickup; player drops (`drop*`) are consumed on grab, the Testing-Grounds gallery
     // (`pk*`) persists so you can keep swapping.
     this.onMessage("grabWeapon", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget (O(pickups) scan per call)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       let best: PickupState | null = null;
@@ -812,6 +855,7 @@ export class GameRoom extends Room<ArenaState> {
     // movement, NOT a dodge (no i-frames — the parry stays the defensive tool). The §17 pitfall layer reads
     // `airborne` to let a hopping player clear a gap.
     this.onMessage("jump", (client) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const c = this.combat.get(client.sessionId);
       if (!c) return;
       // §7 v0.105 de-clunk: QUEUE the hop — the tick fires it the instant the player is grounded + off
@@ -821,14 +865,18 @@ export class GameRoom extends Room<ArenaState> {
     });
 
     // Toggle the Testing Grounds (§21): stop spawns, swap the swarm for dummies + weapon pickups.
-    // Run-wide → host-only (a non-host can't yank everyone into/out of training).
+    // Run-wide → host-only (a non-host can't yank everyone into/out of training). §44 DEV-GATED: on a
+    // public deploy the Testing Grounds (and everything reachable only through it — dev summon, dev
+    // equip, the showroom) does not exist; "host" is just the first joiner, not a trust level.
     this.onMessage("toggleTraining", (client) => {
+      if (!this.devToolsEnabled() || !this.takeAction(client)) return;
       if (this.isHost(client)) this.toggleTraining();
     });
 
     // §31 SHOWROOM paging: cycle the Testing-Grounds weapon gallery to the next/prev page. Host-only +
     // training-only (the shared gallery is a co-op-wide view).
     this.onMessage("galleryPage", (client, message: { dir?: number }) => {
+      if (!this.takeAction(client)) return; // §44 budget (spawnGalleryPage rebuilds the whole shelf)
       if (!this.isHost(client) || this.state.mode !== "training") return;
       this.galleryPage += (message?.dir ?? 1) < 0 ? -1 : 1;
       this.spawnGalleryPage();
@@ -840,14 +888,17 @@ export class GameRoom extends Room<ArenaState> {
       if (this.isHost(client)) this.restartRun();
     });
 
-    // Debug/playtest: summon the boss now instead of waiting for the timed spawn (B key). Host-only.
+    // Debug/playtest: summon the boss now instead of waiting for the timed spawn (B key). Host-only,
+    // §44 dev-gated (a public run earns its boss on the timer).
     this.onMessage("spawnBoss", (client) => {
+      if (!this.devToolsEnabled() || !this.takeAction(client)) return;
       if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
     });
 
     // §16 v0.109 Debug BOSS PICKER: spawn a SPECIFIC boss def by kind to playtest its style (works in arena
-    // OR training; re-spawns/swaps a live boss). Host-only + kind validated (must be a real boss body).
+    // OR training; re-spawns/swaps a live boss). Host-only + kind validated + §44 dev-gated.
     this.onMessage("spawnBossDef", (client, message: { kind?: string }) => {
+      if (!this.devToolsEnabled() || !this.takeAction(client)) return;
       if (!this.isHost(client)) return;
       const kindId = message?.kind;
       if (typeof kindId !== "string" || ENEMY_KINDS[kindId]?.archetype !== "boss") return;
@@ -860,6 +911,7 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage(
       "debugSpawn",
       (client, message: { kind?: string; count?: number; tough?: boolean }) => {
+        if (!this.devToolsEnabled() || !this.takeAction(client)) return; // §44 dev-gated + budgeted
         if (this.state.mode !== "training") return;
         const player = this.state.players.get(client.sessionId);
         if (!player) return;
@@ -873,6 +925,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // §12 level-up window: the player spends their FLEX point on an attribute.
     this.onMessage("chooseAttribute", (client, message: { attr?: string }) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player || player.flexPending <= 0) return;
       const attr = message?.attr;
@@ -883,6 +936,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // §8 signature pick: the player chooses one augment from the offered 3-of-9 draft.
     this.onMessage("chooseAugment", (client, message: { id?: string }) => {
+      if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player || player.sigPending <= 0) return;
       const id = message?.id;
@@ -1355,10 +1409,14 @@ export class GameRoom extends Room<ArenaState> {
     // §29/§31 restore the player's persisted meta ACCOUNT (belt only): scrip bank + permanent upgrade
     // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
     // economy). The upgrades then apply their stat bonuses to this fresh player.
-    if (this.belt && Number.isFinite(options?.scrip)) {
+    // §44 (Sol audit): client-authored progression is only honoured while dev tools are on — on a public
+    // deploy any client could join claiming 65,535 scrip + max upgrades. INTERIM until an authenticated
+    // account store owns progression; production joins start at the defaults.
+    const trustMeta = this.belt && this.devToolsEnabled();
+    if (trustMeta && Number.isFinite(options?.scrip)) {
       player.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
     }
-    if (this.belt) {
+    if (trustMeta) {
       const lv = sanitizeMetaLevels(options?.up);
       player.upVitality = lv.vitality;
       player.upFortune = lv.fortune;
@@ -1387,6 +1445,7 @@ export class GameRoom extends Room<ArenaState> {
       held: { seq: 0, dx: 0, dy: 0, jump: false },
       lastSeq: 0,
       msgBudget: INPUT_MSGS_PER_TICK,
+      actionBudget: ACTION_MSGS_PER_TICK,
       mvx: 0,
       mvy: 0,
     });
@@ -1477,6 +1536,7 @@ export class GameRoom extends Room<ArenaState> {
       const input = this.inputs.get(id);
       if (!input) return;
       input.msgBudget = INPUT_MSGS_PER_TICK;
+      input.actionBudget = ACTION_MSGS_PER_TICK; // §44 refill the action budget alongside input's
       if (input.queue.length > 1) input.queue.splice(0, input.queue.length - 1);
       const cmd = input.queue.shift();
       if (cmd) {
@@ -3708,6 +3768,9 @@ export class GameRoom extends Room<ArenaState> {
    *  Mirrors spawnEnemy's placement (ring offset + pit/POI safe-spawn) but with a CHOSEN kind/tier so the
    *  Testing-Grounds Tab menu can conjure exactly what the playtester wants to fight. */
   private debugSpawnOne(kindId: string, tough: boolean, anchor: PlayerState): void {
+    // §44 HARD entity cap (Sol audit P0 #1): the spawn director respects MAX_ENEMIES but this path
+    // didn't — a summon flood could push the room into the quadratic collision loop unbounded.
+    if (this.state.enemies.size >= MAX_ENEMIES) return;
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.state.players.size;

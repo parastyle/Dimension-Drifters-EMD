@@ -1,4 +1,5 @@
 import {
+  ACTION_MSGS_PER_TICK,
   AUGMENTS,
   BELT_LEVEL_IDS,
   beltLevelFor,
@@ -19,6 +20,7 @@ import {
   getDimension,
   isPitAtPx,
   makeRng,
+  MAX_ENEMIES,
   META_FORTUNE_LUK,
   META_POWER_STR,
   META_VITALITY_HP,
@@ -2033,3 +2035,92 @@ describe("GameRoom — §38 weapon-gated signature draft", () => {
 
 // Re-seed nothing between files — each makeRoom() is independent.
 beforeEach(() => {});
+
+// ── §44 SERVER SAFETY (Sol audit Wave 2) — dev-gated debug RPCs, entity caps, the action-message budget,
+// and the parry/level-window gate. These are the "one hostile client DoSes the shared node process /
+// farms risk-free damage" holes; each test drives the real handler + tick paths. ──────────────────────
+describe("GameRoom — §44 safety gates", () => {
+  const asProd = (fn: () => void) => {
+    const prev = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      fn();
+    } finally {
+      process.env.NODE_ENV = prev;
+    }
+  };
+
+  it("action messages beyond the per-tick budget are IGNORED, and the budget refills next tick", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    // Spend the whole budget on right-aimed attacks…
+    for (let i = 0; i < ACTION_MSGS_PER_TICK; i++)
+      h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 100, ty: p.y });
+    expect(p.aimDir).toBe(0);
+    // …then an UP-aimed attack over budget: it must be ignored (aimDir unchanged).
+    h.send("p1", "attack", { aimX: 0, aimY: 1, tx: p.x, ty: p.y + 100 });
+    expect(p.aimDir).toBe(0);
+    // A tick refills the budget — the same message now lands.
+    h.tick(1);
+    h.send("p1", "attack", { aimX: 0, aimY: 1, tx: p.x, ty: p.y + 100 });
+    expect(p.aimDir).toBeCloseTo(Math.PI / 2, 5);
+  });
+
+  it("debug summon can NEVER push the room past MAX_ENEMIES (the spawn-director cap now binds it too)", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "toggleTraining");
+    // Flood: five max-count summons across ticks (each send costs one action token).
+    for (let i = 0; i < 5; i++) {
+      h.send("p1", "debugSpawn", { kind: "ronin", count: 30 });
+      h.tick(1);
+    }
+    expect(h.state().enemies.size).toBeLessThanOrEqual(MAX_ENEMIES);
+  });
+
+  it("parry during the level-up window is DEFERRED, not executed — no risk-free invulnerable horde-scan", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const p = h.state().players.get("p1");
+    const c = h.room.combat.get("p1");
+    p.flexPending = 1; // the frozen-invincible level window is open
+    h.send("p1", "parry");
+    expect(c.invuln).toBe(0); // executeParry did NOT run…
+    expect(c.parryBuffer).toBeGreaterThan(0); // …the press was queued instead
+    // The window closes → the tick consumes the buffer under the common `acting` gate.
+    p.flexPending = 0;
+    p.flexTimer = 0;
+    h.tick(1);
+    expect(c.invuln).toBeGreaterThan(0);
+  });
+
+  it("in PRODUCTION the debug RPCs are unreachable — training/summon/boss-picker/dev-equip all no-op", () => {
+    const h = makeRoom();
+    h.join("p1");
+    asProd(() => {
+      h.send("p1", "toggleTraining");
+      expect(h.state().mode).toBe("arena"); // the Testing Grounds do not exist on a public deploy
+      h.send("p1", "spawnBossDef", { kind: "moss-stone-golem" });
+      expect([...h.state().enemies.values()].some((e: { kind: string }) => e.kind === "moss-stone-golem")).toBe(false);
+      const before = h.state().players.get("p1").weapon;
+      h.send("p1", "devEquip", { weapon: "x-sword-bone" });
+      expect(h.state().players.get("p1").weapon).toBe(before);
+    });
+    // Back in dev the same client CAN enter training (the gate reads the env per call).
+    h.send("p1", "toggleTraining");
+    expect(h.state().mode).toBe("training");
+  });
+
+  it("in PRODUCTION belt joins ignore client-authored scrip/upgrades (no 65,535-scrip walk-ins)", () => {
+    const h = makeRoom({ belt: true });
+    asProd(() => {
+      h.room.clients.push({ sessionId: "rich" });
+      h.room.onJoin({ sessionId: "rich" }, { scrip: 65535, up: { vitality: 9, fortune: 9, power: 9 } });
+    });
+    const p = h.state().players.get("rich");
+    expect(p.scrip).toBe(0);
+    expect(p.upVitality).toBe(0);
+    expect(p.upPower).toBe(0);
+  });
+});

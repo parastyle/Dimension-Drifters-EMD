@@ -89,6 +89,11 @@ export const INPUT_QUEUE_MAX = 8;
 /** Per-tick budget of accepted "input" messages per player (≈ 4×20 = 80/s ceiling; a legit client sends
  *  ~20/s). Beyond it messages are IGNORED — a flood can't burn server CPU (review #18). */
 export const INPUT_MSGS_PER_TICK = 4;
+/** §44 per-tick budget of accepted ACTION messages per player (attack/parry/grab/cycle/… — everything
+ *  except "input", which has its own budget above). 8×20 = 160/s is far beyond any human cadence (a held
+ *  trigger re-arms ~20/s), but caps the handler CPU a modified client can burn between ticks — the Sol
+ *  audit's "only movement input has a message-rate budget" hole. Beyond it messages are IGNORED. */
+export const ACTION_MSGS_PER_TICK = 8;
 /** Client pending-prediction buffer cap (~3.2s of un-acked commands). Overflow = the connection has
  *  stalled; the predictor flags itself for a hard resync on the next patch (review #13). */
 export const PRED_PENDING_MAX = 64;
