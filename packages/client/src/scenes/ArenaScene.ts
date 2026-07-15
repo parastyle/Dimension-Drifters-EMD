@@ -165,6 +165,16 @@ function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): strin
  */
 export class ArenaScene extends Phaser.Scene {
   private room?: Room<ArenaState>;
+  /** §4 scene-lifecycle generation: every create/shutdown invalidates in-flight connection work. */
+  private connectionGeneration = 0;
+  /** §4 exact Colyseus callback removers for the currently installed room. */
+  private roomStateDisposers: (() => void)[] = [];
+  /** §4 raw/global listener references — Phaser cannot remove listeners it did not install. */
+  private pointerMoveHandler: ((event: MouseEvent) => void) | null = null;
+  private contextMenuHandler: ((event: MouseEvent) => void) | null = null;
+  private resizeHandler: ((size: Phaser.Structs.Size) => void) | null = null;
+  private resumeAudioPointerHandler: (() => void) | null = null;
+  private resumeAudioKeyHandler: (() => void) | null = null;
   private readonly blobs = new Map<string, SpriteRig>();
   private readonly enemies = new Map<string, SpriteRig>();
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
@@ -466,15 +476,18 @@ export class ArenaScene extends Phaser.Scene {
     beltLevel?: string;
     dev?: string;
   }): void {
-    if (data?.dimensionId) this.selectedDimension = data.dimensionId;
+    // §4 Phaser reuses this Scene instance: launch options must be derived afresh, never inherited from the
+    // previous run (notably a belt launch followed by a normal top-down launch).
+    this.selectedDimension = data?.dimensionId ?? DEFAULT_DIMENSION;
     this.bossRush = data?.bossRush ?? false;
-    if (data?.belt) this.belt = true; // §29 menu belt-launch (URL `?belt=1` is the other trigger)
+    const params = new URLSearchParams(location.search);
+    this.belt = data?.belt ?? params.has("belt"); // §29 menu belt-launch (URL `?belt=1` is the other trigger)
     // §36 the SELECTED belt level (menu level-select). URL `?belt=<id>` also picks it.
-    const urlLevel = new URLSearchParams(location.search).get("belt");
+    const urlLevel = params.get("belt");
     this.selectedBeltLevel =
-      data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : this.selectedBeltLevel);
+      data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
-    this.devLaunch = data?.dev ?? new URLSearchParams(location.search).get("dev") ?? null;
+    this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
 
   /** Load the sprite art. §28: ONE packed multiatlas (tools/artkit/pack-atlas.mjs) holds every non-expansion
@@ -539,30 +552,213 @@ export class ArenaScene extends Phaser.Scene {
     return w > 8;
   }
 
-  create(): void {
-    // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
-    // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
-    this.poiSprites = []; // scene-restart safety: never keep handles to destroyed landmark sprites
-    this.portalArrow = null;
-    this.riftArrow = null;
-    this.dustG = undefined; // §16 v0.116 rebuild the ambient-dust layer fresh (old handle is destroyed)
-    this.dust.length = 0;
-    this.floorObjs = [];
-    this.lastSeedKey = "";
-    // §4 v0.107 scene-restart safety for the netcode layer: Phaser REUSES the scene instance across
-    // scene.start(), so class-field state survives a menu→arena re-entry. A NEW room means a new tick
-    // timeline + fresh seqs — stale predictor/rings would brick movement (the carried-over seq counter
-    // would trip the server's monotonic gate) and hold remotes on a dead timeline for ~3s.
-    this.predictor = null;
-    this.timeline.reset();
+  /** §4 remove every callback installed on the active Colyseus state signal. */
+  private disposeRoomStateCallbacks(): void {
+    for (const dispose of this.roomStateDisposers.splice(0)) dispose();
+  }
+
+  /** §4 remove listeners whose owners outlive a Scene shutdown (DOM, ScaleManager, and input globals). */
+  private removeSceneListeners(): void {
+    if (this.pointerMoveHandler) {
+      window.removeEventListener("pointermove", this.pointerMoveHandler, true);
+      window.removeEventListener("mousemove", this.pointerMoveHandler, true);
+      this.pointerMoveHandler = null;
+    }
+    if (this.contextMenuHandler) {
+      this.game.canvas.removeEventListener("contextmenu", this.contextMenuHandler);
+      this.contextMenuHandler = null;
+    }
+    if (this.resizeHandler) {
+      this.scale.off("resize", this.resizeHandler);
+      this.resizeHandler = null;
+    }
+    if (this.resumeAudioPointerHandler) {
+      this.input.off("pointerdown", this.resumeAudioPointerHandler);
+      this.resumeAudioPointerHandler = null;
+    }
+    if (this.resumeAudioKeyHandler) {
+      this.input.keyboard?.off("keydown", this.resumeAudioKeyHandler);
+      this.resumeAudioKeyHandler = null;
+    }
+    this.input.keyboard?.removeCapture("TAB");
+  }
+
+  /** §4 leave the installed room after detaching callbacks, so no leave-time patch can touch this Scene. */
+  private leaveCurrentRoom(): void {
+    this.disposeRoomStateCallbacks();
+    const room = this.room;
+    this.room = undefined;
+    if (room) {
+      void room.leave().catch((err: unknown) =>
+        console.warn("[client] room leave during scene cleanup failed", err),
+      );
+    }
+  }
+
+  /**
+   * §4 scene-reuse reset. Phaser destroys display objects on shutdown but retains this class instance, so
+   * every run-owned reference, collection, clock, latch, and camera/net accumulator must return to its
+   * declaration-time value before the replacement run builds anything.
+   */
+  private resetSceneState(): void {
+    // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
+    this.removeSceneListeners();
+    this.leaveCurrentRoom();
+
+    // Entity, reconciliation, and event-history collections.
+    this.blobs.clear();
+    this.enemies.clear();
+    this.lastParried.clear();
+    this.lastRevived.clear();
+    this.telegraphCache.clear();
+    this.prevPos.clear();
+    this.enemyPrev.clear();
+    this.enemyWindup.clear();
     this.playerBufs.clear();
     this.enemyBufs.clear();
     this.snapFell.clear();
+    this.enemyHp.clear();
+    this.enemyCrit.clear();
+    this.enemyAtk.clear();
+    this.equipped.clear();
+    this.charOf.clear();
+    this.pickups.clear();
+    this.projectiles.clear();
+    this.zones.clear();
+    this.lastFell.clear();
+    this.pendingArt.clear();
+    // `failedArt` and `tilesMissing` deliberately follow Phaser's game-wide texture cache, not a run.
+
+    // Display-object/UI pools and handles. The previous objects are already destroyed by Phaser.
+    this.poiSprites = [];
+    this.dust.length = 0;
+    this.floorObjs = [];
+    this.levelWinObjects = [];
+    this.summonObjects = [];
+    this.carousel = [];
+    this.arsenalTexts = [];
+    this.bagTexts = [];
+    this.bagZones = [];
+    this.slotZones = [];
+    this.buyZones = [];
+    this.vfxPlayer = undefined!;
+    this.telegraphGfx = undefined!;
+    this.parryGfx = undefined!;
+    this.dustG = undefined;
+    this.portalArrow = null;
+    this.riftArrow = null;
+    this.keys = undefined!;
+    this.beltGate = null;
+    this.beltBackdrop = null;
+    this.beltClouds = null;
+    this.dangerVignette = undefined!;
+    this.weaponText = undefined!;
+    this.augmentText = undefined!;
+    this.modeText = undefined!;
+    this.hpBarBg = undefined!;
+    this.hpBarFill = undefined!;
+    this.hpText = undefined!;
+    this.xpBarBg = undefined!;
+    this.xpBarFill = undefined!;
+    this.levelText = undefined!;
+    this.bossBarBg = undefined!;
+    this.bossBarFill = undefined!;
+    this.bossBarSegments = undefined!;
+    this.bossText = undefined!;
+    this.victoryText = undefined!;
+    this.portal = undefined;
+    this.rift = undefined;
+    this.levelWinTimerBar = undefined;
+    this.deathText = undefined!;
+    this.restartBtn = undefined!;
+    this.grabGfx = undefined!;
+    this.dropBar = undefined;
+    this.dropBarLabel = undefined;
+    this.arsenalG = null;
+    this.bagG = null;
+    this.shopNpcG = null;
+    this.shopPromptText = null;
+
+    // Net/prediction, arena identity, clocks, one-shot latches, and camera state.
+    this.lastParryPress = -9999;
+    this.beltLevel = null;
+    this.lastBeltRoom = "";
+    this.beltCloudDrift = 0;
+    this.predictor = null;
+    this.timeline.reset();
     this.inputAccMs = 0;
     this.jumpQueued = false;
+    this.curDx = 0;
+    this.curDy = 0;
+    this.selfPredHeight = 0;
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
-    this.selfPredHeight = 0;
+    this.hurtFlash = 0;
+    this.hpShown = -1;
+    this.xpShown = -1;
+    this.bossShown = -1;
+    this.selfAim = { x: 1, y: 0 };
+    this.spectateId = "";
+    this.camFrom = { x: 0, y: 0 };
+    this.camBlend = 1;
+    this.camFocus = null;
+    this.pointerScreen.x = 0;
+    this.pointerScreen.y = 0;
+    this.pointerScreen.set = false;
+    this.pointerMoves = 0;
+    this.prevSelfHp = -1;
+    this.lastHurt = 0;
+    this.localAtkCd = 0;
+    this.localParryCd = 0;
+    this.parryChain = 0;
+    this.parryChainAt = 0;
+    this.frozenUntil = 0;
+    this.animClock = 0;
+    this.shakeUntil = 0;
+    this.shakeIntensity = 0;
+    this.freezeSpent = 0;
+    this.freezeSpentAt = 0;
+    this.lastKillStop = 0;
+    this.deltaSec = 0;
+    this.arenaMap = undefined;
+    this.lastSeedKey = "";
+    this.removalFxMuteUntil = 0;
+    this.prevHeldLoot = "";
+    this.prevLevel = -1;
+    this.bannerShownFor = "";
+    this.bannerSlot = 0;
+    this.lastBannerAt = -9999;
+    this.prevBossPresent = false;
+    this.prevWon = false;
+    this.hudScale = -1;
+    this.levelWinKey = "";
+    this.summonOpen = false;
+    this.summonCount = 1;
+    this.summonTough = false;
+    this.rHold = 0;
+    this.rSalvaged = false;
+    this.rGrabbed = false;
+    this.grabTarget = null;
+    this.bagOpen = false;
+    this.shopOpen = false;
+    this.lastScrip = -1;
+    this.lastUpgradeSig = "";
+  }
+
+  /** §4 the single shutdown path for globals and network ownership. */
+  private shutdownScene(): void {
+    this.connectionGeneration++;
+    this.removeSceneListeners();
+    this.leaveCurrentRoom();
+  }
+
+  create(): void {
+    this.resetSceneState();
+    const connectionGeneration = ++this.connectionGeneration;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
+
+    // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
+    // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
     // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
     // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
@@ -612,12 +808,14 @@ export class ArenaScene extends Phaser.Scene {
     this.input.setDefaultCursor("crosshair");
     // Create/resume the AudioContext on the first real gesture (click or key) — the browser autoplay
     // policy blocks it otherwise. Idempotent + cheap, so wiring it to both is harmless.
-    this.input.on("pointerdown", () => this.audio.resume());
-    keyboard.on("keydown", () => this.audio.resume());
+    this.resumeAudioPointerHandler = () => this.audio.resume();
+    this.resumeAudioKeyHandler = () => this.audio.resume();
+    this.input.on("pointerdown", this.resumeAudioPointerHandler);
+    keyboard.on("keydown", this.resumeAudioKeyHandler);
 
     // Read the cursor straight from the DOM for aiming. Phaser's pointer pipeline was dropping
     // mouse movement that *started* while a movement key was held; raw window listeners don't.
-    const onMove = (e: MouseEvent): void => {
+    this.pointerMoveHandler = (e: MouseEvent): void => {
       const rect = this.game.canvas.getBoundingClientRect();
       // §37 DPR FIX: game-space coords = CSS px × (internal buffer / CSS size). The §28 hi-DPI buffer is
       // window×RENDER_DPR displayed at CSS size (main.ts zoom=1/DPR), so the raw clientX/Y MUST be scaled —
@@ -632,10 +830,11 @@ export class ArenaScene extends Phaser.Scene {
       this.pointerMoves++;
     };
     // Capture phase so we see the event before Phaser's own canvas handler can consume it.
-    window.addEventListener("pointermove", onMove, { passive: true, capture: true });
-    window.addEventListener("mousemove", onMove, { passive: true, capture: true });
+    window.addEventListener("pointermove", this.pointerMoveHandler, { passive: true, capture: true });
+    window.addEventListener("mousemove", this.pointerMoveHandler, { passive: true, capture: true });
     // RMB fires the weapon (§9) — suppress the browser context menu on the canvas.
-    this.game.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    this.contextMenuHandler = (e: MouseEvent) => e.preventDefault();
+    this.game.canvas.addEventListener("contextmenu", this.contextMenuHandler);
 
     // §7 v0.105 de-clunk: NO setBounds. Phaser's per-frame bounds clamp uses origin-0.5 math, but this scene
     // renders with camera origin (0,0) + a RENDER_DPR zoom, so at DPR>1 it clamps max-scroll short by
@@ -649,18 +848,19 @@ export class ArenaScene extends Phaser.Scene {
     this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
 
     // Keep the camera viewport == the canvas buffer as it resizes, re-applying the hi-DPI zoom.
-    this.scale.on("resize", (size: Phaser.Structs.Size) => {
+    this.resizeHandler = (size: Phaser.Structs.Size) => {
       this.cameras.main.setSize(size.width, size.height);
       this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
       this.drawVignette(); // §19 v0.108 re-fit the screen-space danger vignette to the new viewport
-    });
+    };
+    this.scale.on("resize", this.resizeHandler);
 
     this.buildHud();
     this.buildCarousel();
     this.drawVignette();
     // §19 v0.108 every run start feels intentional — a short black fade-in.
     this.cameras.main.fadeIn(420, 0, 0, 0);
-    void this.connect();
+    void this.connect(connectionGeneration);
   }
 
   /** §19 v0.108 (re)draw the low-HP DANGER vignette to the current screen size — four red edge gradients
@@ -1174,9 +1374,11 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  private async connect(): Promise<void> {
+  private async connect(generation: number): Promise<void> {
     const status = document.getElementById("status");
-    const client = new Client(`ws://${location.hostname}:${DEFAULT_PORT}`);
+    // §4 secure deployments must use WSS; localhost/http development remains the same WS endpoint.
+    const scheme = location.protocol === "https:" ? "wss" : "ws";
+    const client = new Client(`${scheme}://${location.hostname}:${DEFAULT_PORT}`);
 
     // Retry with backoff: on a cold `pnpm dev`, the Vite client is ready seconds before
     // the Colyseus server finishes starting. Without retry, the first load throws and
@@ -1197,13 +1399,28 @@ export class ArenaScene extends Phaser.Scene {
         // §39 a DEV-PORTAL deep-link gets its OWN fresh room via create() (never joinOrCreate) — otherwise it
         // lands in a live/other-tab co-op room as a NON-host, and the host-only dev messages (spawnBossDef,
         // toggleTraining) are silently dropped (looks like "boss never spawned / empty arena").
-        this.room = this.devLaunch
+        const room = this.devLaunch
           ? await client.create<ArenaState>(ROOM_NAME, joinOpts)
           : await client.joinOrCreate<ArenaState>(ROOM_NAME, joinOpts);
+        // The Scene may have shut down while the join handshake was in flight. Never install that room.
+        if (generation !== this.connectionGeneration) {
+          void room.leave().catch((leaveErr: unknown) =>
+            console.warn("[client] stale joined room leave failed", leaveErr),
+          );
+          return;
+        }
+        this.room = room;
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
-        this.room.onStateChange.once((state) => {
+        let initialStateSubscribed = true;
+        const onInitialState = (state: ArenaState): void => {
+          // Colyseus's `once()` hides its wrapper, so use an explicitly removable one-shot callback.
+          if (initialStateSubscribed) {
+            initialStateSubscribed = false;
+            room.onStateChange.remove(onInitialState);
+          }
+          if (generation !== this.connectionGeneration || this.room !== room) return;
           const sv = state.schemaVersion;
           if (sv && sv !== SCHEMA_VERSION) {
             const msg = `⚠ version mismatch (server schema ${sv} ≠ client ${SCHEMA_VERSION}) — hard-reload this page (Ctrl+Shift+R)`;
@@ -1211,21 +1428,40 @@ export class ArenaScene extends Phaser.Scene {
             console.error(`[client] ${msg}`);
           }
           this.applyDevLaunch(); // §39 dev-portal deep-link → training sandbox + the requested asset
+        };
+        room.onStateChange(onInitialState);
+        this.roomStateDisposers.push(() => {
+          if (!initialStateSubscribed) return;
+          initialStateSubscribed = false;
+          room.onStateChange.remove(onInitialState);
         });
         // §4 v0.107: every patch is one completed server tick (tick-locked broadcast) — stamp the
         // snapshot timeline + rings and reconcile the self predictor. DATA ONLY in here (never move a
         // rig from inside a patch callback — the render step owns positions; review #10).
-        this.room.onStateChange((state) => this.onPatch(state));
-        if (status) status.textContent = `connected · you are ${this.room.sessionId.slice(0, 4)}`;
+        const onStateChange = (state: ArenaState): void => {
+          if (generation === this.connectionGeneration && this.room === room) this.onPatch(state);
+        };
+        room.onStateChange(onStateChange);
+        let stateSubscribed = true;
+        this.roomStateDisposers.push(() => {
+          if (!stateSubscribed) return;
+          stateSubscribed = false;
+          room.onStateChange.remove(onStateChange);
+        });
+        if (status) status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
         return;
       } catch (err) {
+        if (generation !== this.connectionGeneration) return;
         console.warn(`[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`, err);
         if (status) status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (generation !== this.connectionGeneration) return;
       }
     }
 
-    if (status) status.textContent = "connection failed — is the server running? (pnpm dev:server)";
+    if (generation === this.connectionGeneration && status) {
+      status.textContent = "connection failed — is the server running? (pnpm dev:server)";
+    }
   }
 
   private addBlob(player: PlayerState, id: string): void {

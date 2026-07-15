@@ -42,7 +42,15 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.launching = false; // reset the launch latch in case the menu is ever re-entered (Phaser reuses the instance)
+    // §17 Phaser reuses the MenuScene instance: discard every destroyed UI handle before an early launch or
+    // rebuilding the card grid, otherwise layout() walks roots owned by the previous entry.
+    this.cards = [];
+    this.title = undefined!;
+    this.subtitle = undefined!;
+    this.hint = undefined!;
+    this.audioLabel = undefined;
+    this.audioRow = undefined;
+    this.launching = false;
     // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
     // straight into a Testing-Grounds sandbox (top-down arena, full room to fight) with that asset applied.
     const dev = new URLSearchParams(location.search).get("dev");
