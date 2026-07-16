@@ -10,8 +10,8 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @dd/shared build && concurrently -n shared,server,client -c gray,blue,green \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/server dev\" \"pnpm --filter @dd/client dev\"",
-    "dev:server": "pnpm --filter @dd/shared build && pnpm --filter @dd/server dev",
-    "dev:client": "pnpm --filter @dd/shared build && pnpm --filter @dd/client dev",
+    "dev:server": "pnpm --filter @dd/shared build && concurrently -n shared,server -c gray,blue \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/server dev\"",
+    "dev:client": "pnpm --filter @dd/shared build && concurrently -n shared,client -c gray,green \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/client dev\"",
     "dev:desktop": "pnpm --filter @dd/shared build && concurrently -n shared,server,client,electron -c gray,blue,green,magenta \"pnpm --filter @dd/shared dev\" \"pnpm --filter @dd/server dev\" \"pnpm --filter @dd/client dev\" \"pnpm --filter @dd/desktop dev\"",
     "build": "pnpm -r build",
     "typecheck": "pnpm --filter @dd/shared build && pnpm -r typecheck",
@@ -21,7 +21,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "pnpm --filter @dd/shared build && vitest run",
-    "test:watch": "vitest"
+    "test:watch": "pnpm --filter @dd/shared build && concurrently -n shared,tests -c gray,yellow \"pnpm --filter @dd/shared dev\" \"vitest\""
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
