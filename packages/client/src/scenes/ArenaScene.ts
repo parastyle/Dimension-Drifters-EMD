@@ -224,6 +224,42 @@ const TelegraphKindTag = {
   Quake: 7,
 } as const;
 
+const MELEE_TELEGRAPH_PREFIX = "melee:";
+const MELEE_FULL_TELL_COUNT = 6;
+const MELEE_GLINT_LEAD_MS = 280;
+const MELEE_GLINT_CREST_MS = 60;
+
+interface EnemyWindupSample {
+  serverT: number;
+  previousT: number;
+  serverTick: number;
+  previousTick: number;
+  observedAtMs: number;
+  ratePerSecond: number;
+  shownT: number;
+  remainingMs: number;
+  durationMs: number;
+  lastAtkSeq: number;
+  step: number;
+  active: boolean;
+  aimWorld: number;
+  locked: boolean;
+  glintAtMs: number;
+}
+
+interface MeleeTellCandidate {
+  id: string;
+  containsSelf: boolean;
+  distance: number;
+  remainingMs: number;
+}
+
+function meleeTelegraphOwner(id: string): string | undefined {
+  return id.startsWith(MELEE_TELEGRAPH_PREFIX)
+    ? id.slice(MELEE_TELEGRAPH_PREFIX.length)
+    : undefined;
+}
+
 interface TelegraphEdgePath {
   points: { x: number; y: number }[];
   /** A second path no more than two screen pixels into the dangerous side of the exact boundary. */
@@ -675,9 +711,12 @@ export class ArenaScene extends Phaser.Scene {
     aimDir: 0,
     isSelf: false,
   };
-  /** §7 v0.105 de-clunk — per-enemy SMOOTHED windup (0..1) so the parry telegraph doesn't stair-step at
-   *  20Hz. Eased up toward the synced value, snapped to 0 on the strike; pruned with the enemy. */
-  private readonly enemyWindup = new Map<string, number>();
+  /** One-tick-bounded presentation sampler. It can smooth the 20 Hz stairs but cannot declare contact. */
+  private readonly enemyWindup = new Map<string, EnemyWindupSample>();
+  /** Stable nearest-six source salience; exact ground geometry is never culled. */
+  private meleeFullTells = new Set<string>();
+  private readonly meleeTellCandidates: MeleeTellCandidate[] = [];
+  private readonly meleeTellAnchor = { x: 0, y: 0 };
   private keys!: Record<
     | "W"
     | "A"
@@ -1139,6 +1178,8 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphCache.clear();
     this.telegraphForeshadows?.clear();
     this.enemyWindup.clear();
+    this.meleeFullTells.clear();
+    this.meleeTellCandidates.length = 0;
     this.playerBufs.clear();
     this.enemyBufs.clear();
     this.snapFell.clear();
@@ -2791,23 +2832,36 @@ export class ArenaScene extends Phaser.Scene {
         this.enemies.set(id, rig);
         this.enemyAtk.set(id, enemy.atkSeq);
       }
-      // Trigger a swing animation each time the server bumps the duelist's atkSeq (combo hit).
+      // `atkSeq` is the authoritative contact edge. Continue from the sampled loaded pose; never replay a
+      // complete swing from idle after the damage patch has already landed.
       if (enemy.atkSeq !== this.enemyAtk.get(id)) {
         this.enemyAtk.set(id, enemy.atkSeq);
-        // §7 v0.105 de-clunk: aim the sweep at the nearest LIVING player (the server's cone tracks that
-        // target too) — without an aimWorld the mirror math pinned the slash to world +x, so a left-facing
-        // ronin cut behind its own back. Scene time is the swing epoch; hit-stop holds then catches phase up.
-        let aimWorld: number | undefined;
-        let bestD = Number.POSITIVE_INFINITY;
-        this.room?.state.players.forEach((p) => {
-          if (!p.alive) return;
-          const d = (p.x - enemy.x) ** 2 + (p.y - enemy.y) ** 2;
-          if (d < bestD) {
-            bestD = d;
-            aimWorld = Math.atan2(p.y - enemy.y, p.x - enemy.x);
-          }
-        });
-        this.enemies.get(id)?.triggerSwing(this.time.now, aimWorld);
+        const sample = this.enemyWindup.get(id);
+        let aimWorld = sample?.aimWorld ?? 0;
+        if (!sample) {
+          let bestD = Number.POSITIVE_INFINITY;
+          this.room?.state.players.forEach((p) => {
+            if (!p.alive) return;
+            const d = (p.x - enemy.x) ** 2 + (p.y - enemy.y) ** 2;
+            if (d < bestD) {
+              bestD = d;
+              aimWorld = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+            }
+          });
+        }
+        if (sample?.active)
+          this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
+        if (sample) {
+          const melee = effectiveMelee(ENEMY_KINDS[enemy.kind]);
+          sample.step = melee ? (sample.step + 1) % melee.hits : 0;
+          sample.lastAtkSeq = enemy.atkSeq;
+          sample.serverT = 0;
+          sample.previousT = 0;
+          sample.shownT = 0;
+          sample.remainingMs = 0;
+          sample.active = false;
+          sample.locked = false;
+        }
       }
     });
     for (const id of this.enemies.keys()) {
@@ -2822,6 +2876,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
         this.enemyWindup.delete(id);
+        this.meleeFullTells.delete(id);
         this.enemyBufs.delete(id); // §4 v0.107 ids RECYCLE (restart resets enemySeq) — never bracket stale snaps
         if (rig) {
           // §6 v0.103: a rift descent bulk-clears the horde — those removals are "left behind", not
@@ -3058,6 +3113,60 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphGroundGfx.clear();
     this.telegraphGfx.clear(); // §8 redraw compact source/projectile timing cues fresh each frame
     this.resolveBossTelegraphPose();
+    const state = this.room?.state;
+    const now = this.time.now;
+    const tick = state?.tick ?? 0;
+    const self = state && this.room ? state.players.get(this.room.sessionId) : undefined;
+    this.meleeTellCandidates.length = 0;
+
+    // Sample every phase and rank salience once before any rig consumes it. Geometry/rhythm is never culled.
+    if (state) {
+      state.enemies.forEach((enemy, id) => {
+        const kind = ENEMY_KINDS[enemy.kind];
+        const melee = effectiveMelee(kind);
+        if (!melee) return;
+        const sample = this.sampleEnemyWindup(id, enemy, melee, tick, now);
+        if (!sample?.active || kind?.archetype === "boss") return;
+        const row = state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+        const cx = row?.x ?? enemy.x;
+        const cy = row?.y ?? enemy.y;
+        let containsSelf = false;
+        let distance = Number.POSITIVE_INFINITY;
+        if (self?.alive) {
+          const dx = self.x - cx;
+          const dy = self.y - cy;
+          const radial = Math.hypot(dx, dy);
+          if (row) {
+            containsSelf = inMeleeArc(
+              { x: cx, y: cy },
+              Math.cos(row.rot),
+              Math.sin(row.rot),
+              self,
+              melee.range,
+              melee.halfArc,
+            );
+            const angular = Math.abs(
+              Math.atan2(Math.sin(Math.atan2(dy, dx) - row.rot), Math.cos(Math.atan2(dy, dx) - row.rot)),
+            );
+            distance = Math.hypot(
+              Math.max(0, radial - melee.range),
+              Math.max(0, angular - melee.halfArc) * Math.min(radial, melee.range),
+            );
+          } else {
+            containsSelf = radial <= melee.range + melee.step;
+            distance = Math.max(0, radial - (melee.range + melee.step));
+          }
+        }
+        this.meleeTellCandidates.push({
+          id,
+          containsSelf,
+          distance,
+          remainingMs: sample.remainingMs,
+        });
+      });
+    }
+    this.selectMeleeFullTells();
+
     const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait
     for (const [id, rig] of this.enemies) {
       let mx = rig.x - rig.renderPrevX;
@@ -3083,6 +3192,19 @@ export class ArenaScene extends Phaser.Scene {
       anim.aimDir = 0;
       anim.isSelf = false;
       const es = this.room?.state.enemies.get(id);
+      const windup = this.enemyWindup.get(id);
+      if (es && windup?.active) {
+        const kind = ENEMY_KINDS[es.kind];
+        rig.setMeleeTell(
+          windup.shownT,
+          windup.aimWorld,
+          windup.remainingMs,
+          windup.locked,
+          kind?.archetype ?? "duelist",
+          windup.step,
+          this.meleeFullTells.has(id),
+        );
+      }
       if (es && es.kind === this.room?.state.bossKind)
         this.applyBossTelegraphPose(rig, es.kind, anim);
       rig.animate(this.animClock, anim);
@@ -3090,134 +3212,349 @@ export class ArenaScene extends Phaser.Scene {
       const enraged =
         es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
-      // §8 white-tell (Stage C): a glowing-white disc + a rhythm ring that SHRINKS to the body as the
-      // windup peaks — the §8 "white = parryable" cue. Parry as the ring tightens to negate the swing.
-      // §7 v0.105 de-clunk: the synced windup is a raw 20Hz float, so the one cue you time a 0.45s parry
-      // against was stair-stepping in ~10 discrete jumps while everything around it ran per-frame. Smooth
-      // the RENDERED windup toward the synced value over ~one patch interval — but SNAP down to 0 so the
-      // telegraph vanishes crisply at the strike (a lingering ghost ring would misread as "still parryable").
-      const wSynced = es?.windup ?? 0;
-      const wPrev = this.enemyWindup.get(id) ?? 0;
-      const w =
-        wSynced < wPrev
-          ? wSynced
-          : Phaser.Math.Linear(wPrev, wSynced, 1 - 0.02 ** (deltaMs / 1000));
-      if (w <= 0.005) this.enemyWindup.delete(id);
-      else this.enemyWindup.set(id, w);
-      if (w > 0.01) {
-        const g = this.telegraphGfx;
-        // §37 this runs BEFORE projectBelt, so rig.y is still WORLD depth; draw the tell at the PROJECTED
-        // enemy position (beltY) or it lands at the bottom of the screen, far below the enemy.
-        const tx = rig.x;
-        const ty = this.belt ? this.beltY(rig.y) : rig.y;
-        // §20 "white gradient leading flash": a directional cone toward the targeted player showing EXACTLY
-        // where the strike lands (the enemy's real melee range/arc) — WYSIWYG danger, brightening as it peaks.
-        // M1: read effectiveMelee (not raw .melee) so the DERIVED lunges (rusher/swarm/zoner) draw the same
-        // cone as the Ronin's explicit combo — every telegraphing enemy now shows where its jump lands.
-        const mel = effectiveMelee(ENEMY_KINDS[es?.kind ?? ""]);
-        if (mel) {
-          let nx = 1;
-          let ny = 0;
-          let bestD = Number.POSITIVE_INFINITY;
-          this.room?.state.players.forEach((p) => {
-            if (!p.alive) return;
-            const d = (p.x - rig.x) ** 2 + (p.y - rig.y) ** 2;
-            if (d < bestD) {
-              bestD = d;
-              nx = p.x - rig.x;
-              ny = p.y - rig.y;
-            }
-          });
-          const ang = Math.atan2(ny, nx);
-          this.strokeEnemyMeleeCone(
-            rig.x,
-            rig.y,
-            mel.range,
-            mel.halfArc,
-            ang,
-            w,
+      if (es && windup?.active) {
+        const melee = effectiveMelee(ENEMY_KINDS[es.kind]);
+        if (melee) {
+          const row = state?.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+          const pulse = now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS;
+          this.drawMeleeRangeRing(
+            row?.x ?? es.x,
+            row?.y ?? es.y,
+            melee.range,
+            melee.halfArc,
+            row?.rot ?? windup.aimWorld,
+            windup.shownT,
+            windup.remainingMs,
+            windup.remainingMs <= PARRY_IFRAMES * 1000,
+            pulse,
+            !!row,
           );
+          if (row) this.drawMeleeTravelStem(es.x, es.y, row.x, row.y);
+          if (this.meleeFullTells.has(id))
+            this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse);
         }
-        g.fillStyle(0xffffff, w * 0.4);
-        g.fillCircle(tx, ty, 24);
-        g.lineStyle(2.5 + 2 * w, 0xffffff, 0.55 + 0.45 * w);
-        g.strokeCircle(tx, ty, 52 - 30 * w);
       }
       rig.setDepth(rig.y);
     }
     this.renderTelegraphs();
   }
 
-  /** Enemy white wedge: full exact reach from Claim, with every sampled arc vertex projected in belt mode. */
-  private strokeEnemyMeleeCone(
+  private sampleEnemyWindup(
+    id: string,
+    enemy: { windup: number; atkSeq: number; x: number; y: number },
+    melee: { windup: number; swingGap: number; hits: number },
+    tick: number,
+    now: number,
+  ): EnemyWindupSample | undefined {
+    const synced = Math.max(0, Math.min(1, enemy.windup));
+    let sample = this.enemyWindup.get(id);
+    if (synced <= 0) {
+      if (sample?.active) {
+        // `syncEnemies` marks a real `atkSeq` resolve inactive before this pass. Anything still active here
+        // is a cancel/stagger and must not cross the contact keyframe.
+        this.enemies.get(id)?.cancelMeleeTell(now);
+        sample.active = false;
+        sample.step = 0;
+        sample.serverT = 0;
+        sample.shownT = 0;
+      }
+      return sample;
+    }
+
+    const step = sample?.step ?? enemy.atkSeq % Math.max(1, melee.hits);
+    const durationMs = (step === 0 ? melee.windup : melee.swingGap) * 1000;
+    const newEpoch = !sample || !sample.active || synced + 0.001 < sample.serverT;
+    if (!sample) {
+      sample = {
+        serverT: synced,
+        previousT: synced,
+        serverTick: tick,
+        previousTick: tick,
+        observedAtMs: now,
+        ratePerSecond: 1000 / Math.max(1, durationMs),
+        shownT: synced,
+        remainingMs: (1 - synced) * durationMs,
+        durationMs,
+        lastAtkSeq: enemy.atkSeq,
+        step,
+        active: true,
+        aimWorld: 0,
+        locked: false,
+        glintAtMs: -1e9,
+      };
+      this.enemyWindup.set(id, sample);
+    } else if (newEpoch) {
+      sample.serverT = synced;
+      sample.previousT = synced;
+      sample.serverTick = tick;
+      sample.previousTick = tick;
+      sample.observedAtMs = now;
+      sample.ratePerSecond = 1000 / Math.max(1, durationMs);
+      sample.shownT = synced;
+      sample.durationMs = durationMs;
+      sample.remainingMs = (1 - synced) * durationMs;
+      sample.lastAtkSeq = enemy.atkSeq;
+      sample.active = true;
+      sample.glintAtMs = -1e9;
+    } else if (tick !== sample.serverTick) {
+      const tickDelta = (tick - sample.serverTick) >>> 0;
+      if (synced > sample.serverT && tickDelta > 0) {
+        sample.ratePerSecond =
+          (synced - sample.serverT) / ((tickDelta * TICK_MS) / 1000);
+      }
+      sample.previousT = sample.serverT;
+      sample.previousTick = sample.serverTick;
+      sample.serverT = synced;
+      sample.serverTick = tick;
+      sample.observedAtMs = now;
+      sample.durationMs = durationMs;
+    }
+    const extrapolateMs = Math.max(0, Math.min(TICK_MS, now - sample.observedAtMs));
+    sample.shownT = Math.max(
+      sample.serverT,
+      Math.min(0.985, sample.serverT + sample.ratePerSecond * (extrapolateMs / 1000)),
+    );
+    const priorRemaining = sample.remainingMs;
+    sample.remainingMs = Math.max(0, (1 - sample.shownT) * durationMs);
+    if (
+      sample.glintAtMs < 0 &&
+      sample.remainingMs <= MELEE_GLINT_LEAD_MS &&
+      (newEpoch || priorRemaining > MELEE_GLINT_LEAD_MS)
+    ) {
+      sample.glintAtMs = now;
+    }
+
+    const row = this.room?.state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+    if (row) {
+      sample.aimWorld = row.rot;
+      sample.locked = true;
+    } else {
+      let best = Number.POSITIVE_INFINITY;
+      this.room?.state.players.forEach((player) => {
+        if (!player.alive) return;
+        const d = (player.x - enemy.x) ** 2 + (player.y - enemy.y) ** 2;
+        if (d < best) {
+          best = d;
+          sample!.aimWorld = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+        }
+      });
+      sample.locked = false;
+    }
+    return sample;
+  }
+
+  /** Keep incumbents unless a materially closer threat challenges; prevents the six source tells churning. */
+  private selectMeleeFullTells(): void {
+    const compare = (a: MeleeTellCandidate, b: MeleeTellCandidate): number =>
+      Number(b.containsSelf) - Number(a.containsSelf) ||
+      a.distance - b.distance ||
+      a.remainingMs - b.remainingMs ||
+      a.id.localeCompare(b.id);
+    this.meleeTellCandidates.sort(compare);
+    const next = new Set<string>();
+    for (const id of this.meleeFullTells) {
+      if (next.size >= MELEE_FULL_TELL_COUNT) break;
+      if (this.meleeTellCandidates.some((candidate) => candidate.id === id)) next.add(id);
+    }
+    for (const candidate of this.meleeTellCandidates) {
+      if (next.size >= MELEE_FULL_TELL_COUNT) break;
+      next.add(candidate.id);
+    }
+    for (const challenger of this.meleeTellCandidates) {
+      if (next.has(challenger.id) || next.size < MELEE_FULL_TELL_COUNT) continue;
+      let worst: MeleeTellCandidate | undefined;
+      for (const incumbentId of next) {
+        const incumbent = this.meleeTellCandidates.find((candidate) => candidate.id === incumbentId);
+        if (incumbent && (!worst || compare(incumbent, worst) > 0)) worst = incumbent;
+      }
+      if (!worst) continue;
+      const priorityJump = challenger.containsSelf && !worst.containsSelf;
+      const materiallyCloser =
+        challenger.containsSelf === worst.containsSelf && challenger.distance < worst.distance * 0.8;
+      if (priorityJump || materiallyCloser) {
+        next.delete(worst.id);
+        next.add(challenger.id);
+      }
+    }
+    this.meleeFullTells = next;
+  }
+
+  /** Stable real-reach ruler plus a separate inward beat; the full circle is visibly broken/approximate. */
+  private drawMeleeRangeRing(
     x: number,
     y: number,
     range: number,
     halfArc: number,
     rot: number,
     t: number,
+    remainingMs: number,
+    armed: boolean,
+    pulse: boolean,
+    locked: boolean,
   ): void {
     const g = this.telegraphGroundGfx;
     const zoom = Math.max(0.01, this.cameras.main.zoom);
     const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
-    g.lineStyle(4 / zoom, 0x17120f, 0.32);
-    this.traceProjectedCone(
+    const gap = 0.18;
+    const segment = (Math.PI * 2) / 8;
+    for (let pass = 0; pass < 2; pass++) {
+      g.lineStyle(
+        (pass === 0 ? 3.6 : pulse ? 2.7 : 1.35) / zoom,
+        pass === 0 ? 0x17120f : 0xffffff,
+        pass === 0
+          ? 0.3
+          : 0.13 + t * 0.16 + (armed ? 0.09 : 0) + (pulse ? 0.42 : 0),
+      );
+      for (let i = 0; i < 8; i++) {
+        const start = rot + i * segment + gap;
+        this.traceProjectedArc(g, x, y, range, start, rot + (i + 1) * segment - gap, projectionYScale, zoom);
+      }
+    }
+    // The weapon-facing interval is solid, while the rear/side envelope stays broken and secondary.
+    g.lineStyle(3.8 / zoom, 0x17120f, 0.34);
+    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot + halfArc, projectionYScale, zoom);
+    g.lineStyle((pulse ? 3 : 1.8) / zoom, 0xffffff, 0.22 + t * 0.22 + (pulse ? 0.42 : 0));
+    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot + halfArc, projectionYScale, zoom);
+    // Bright completion travels symmetrically from the sector ends toward the forward notch.
+    g.lineStyle((pulse ? 3.4 : 2.2) / zoom, 0xffffff, 0.32 + t * 0.42);
+    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot - halfArc + halfArc * t, projectionYScale, zoom);
+    this.traceProjectedArc(g, x, y, range, rot + halfArc - halfArc * t, rot + halfArc, projectionYScale, zoom);
+
+    // The final three server ticks pull a second ring inward; the fixed notched reach ruler remains behind.
+    if (remainingMs <= 150) {
+      const beat = Math.max(0, Math.min(1, remainingMs / 150));
+      const beatRange = range * (0.18 + beat * 0.82);
+      g.lineStyle((pulse ? 3 : 1.8) / zoom, 0xffffff, 0.24 + (1 - beat) * 0.34);
+      this.traceProjectedArc(g, x, y, beatRange, rot - halfArc, rot + halfArc, projectionYScale, zoom);
+    }
+    this.drawMeleeRangeNotches(
       g,
       x,
       y,
       range,
-      halfArc,
       rot,
       projectionYScale,
       zoom,
-    );
-    g.lineStyle(1.8 / zoom, 0xffffff, 0.18 + t * 0.28);
-    this.traceProjectedCone(
-      g,
-      x,
-      y,
-      range,
-      halfArc,
-      rot,
-      projectionYScale,
-      zoom,
-    );
-    g.lineStyle(1.1 / zoom, 0xffffff, 0.1 + t * 0.16);
-    this.traceProjectedCone(
-      g,
-      x,
-      y,
-      Math.max(2, range - 2 / zoom),
-      halfArc,
-      rot,
-      projectionYScale,
-      zoom,
+      t,
+      armed,
+      locked,
     );
   }
 
-  private traceProjectedCone(
+  private traceProjectedArc(
     g: Phaser.GameObjects.Graphics,
     x: number,
     y: number,
     range: number,
-    halfArc: number,
-    rot: number,
+    start: number,
+    end: number,
     projectionYScale: number,
     zoom: number,
   ): void {
-    const originY = projectTelegraphY(y, projectionYScale);
-    const samples = adaptiveArcSamples(range, halfArc * 2, zoom);
+    const span = Math.abs(end - start);
+    const samples = Math.max(
+      2,
+      Math.min(24, Math.ceil((span * Math.max(1, range * zoom)) / 12)),
+    );
     g.beginPath();
-    g.moveTo(x, originY);
+    g.moveTo(
+      x + Math.cos(start) * range,
+      projectTelegraphY(y + Math.sin(start) * range, projectionYScale),
+    );
     for (let i = 0; i <= samples; i++) {
-      const angle = rot - halfArc + (halfArc * 2 * i) / samples;
+      const angle = start + ((end - start) * i) / samples;
       g.lineTo(
         x + Math.cos(angle) * range,
         projectTelegraphY(y + Math.sin(angle) * range, projectionYScale),
       );
     }
-    g.closePath();
     g.strokePath();
+  }
+
+  private drawMeleeRangeNotches(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    range: number,
+    rot: number,
+    projectionYScale: number,
+    zoom: number,
+    t: number,
+    armed: boolean,
+    locked: boolean,
+  ): void {
+    const len = (locked ? 9 : 7) / zoom;
+    for (let pass = 0; pass < 2; pass++) {
+      g.lineStyle(
+        (pass === 0 ? 4 : armed ? 2.2 : 1.8) / zoom,
+        pass === 0 ? 0x17120f : 0xffffff,
+        pass === 0 ? 0.35 : 0.3 + t * 0.4 + (armed ? 0.12 : 0),
+      );
+      g.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const angle = rot + i * (Math.PI / 2);
+        const outerX = x + Math.cos(angle) * range;
+        const outerY = projectTelegraphY(y + Math.sin(angle) * range, projectionYScale);
+        const innerX = x + Math.cos(angle) * (range - len);
+        const innerY = projectTelegraphY(y + Math.sin(angle) * (range - len), projectionYScale);
+        g.moveTo(outerX, outerY);
+        g.lineTo(innerX, innerY);
+      }
+      g.strokePath();
+    }
+  }
+
+  private drawMeleeTravelStem(fromX: number, fromY: number, toX: number, toY: number): void {
+    const g = this.telegraphGroundGfx;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const sy = this.belt ? this.beltY(fromY) : fromY;
+    const ty = this.belt ? this.beltY(toY) : toY;
+    const dx = toX - fromX;
+    const dy = ty - sy;
+    for (let i = 0; i < 4; i++) {
+      const a = i / 4;
+      const b = Math.min(1, a + 0.13);
+      g.lineStyle(1.2 / zoom, 0xffffff, 0.13);
+      g.beginPath();
+      g.moveTo(fromX + dx * a, sy + dy * a);
+      g.lineTo(fromX + dx * b, sy + dy * b);
+      g.strokePath();
+    }
+  }
+
+  private drawMeleeImplementBracket(
+    rig: SpriteRig,
+    aimWorld: number,
+    phase: number,
+    pulse: boolean,
+  ): void {
+    rig.getMeleeTellAnchor(this.meleeTellAnchor);
+    const x = this.meleeTellAnchor.x;
+    const y = this.belt
+      ? this.beltY(rig.y) + (this.meleeTellAnchor.y - rig.y)
+      : this.meleeTellAnchor.y;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const nx = -Math.sin(aimWorld);
+    const ny = Math.cos(aimWorld);
+    const radius = (pulse ? 14 : 11 + phase * 2) / zoom;
+    const g = this.telegraphGfx;
+    for (let pass = 0; pass < 2; pass++) {
+      g.lineStyle(
+        (pass === 0 ? 5 : pulse ? 3 : 1.8) / zoom,
+        pass === 0 ? 0x17120f : 0xffffff,
+        pass === 0 ? 0.72 : pulse ? 0.98 : 0.42 + phase * 0.28,
+      );
+      g.beginPath();
+      g.moveTo(x + nx * radius, y + ny * radius);
+      g.lineTo(x + nx * radius * 0.34, y + ny * radius * 0.34);
+      g.moveTo(x - nx * radius, y - ny * radius);
+      g.lineTo(x - nx * radius * 0.34, y - ny * radius * 0.34);
+      g.strokePath();
+    }
+    if (pulse) {
+      g.fillStyle(0xffffff, 0.95);
+      g.fillCircle(x, y, 3.2 / zoom);
+    }
   }
 
   /** §TELEGRAPH exact hybrid renderer: invariant thin geometry plus optional retained painted preludes. */
@@ -3233,6 +3570,16 @@ export class ArenaScene extends Phaser.Scene {
     const zoom = Math.max(0.01, this.cameras.main.zoom);
     const frame = ++this.telegraphFrame;
     st.telegraphs.forEach((row, id) => {
+      const meleeOwner = meleeTelegraphOwner(id);
+      const meleeSample = meleeOwner ? this.enemyWindup.get(meleeOwner) : undefined;
+      const effectiveT = meleeOwner
+        ? (meleeSample?.shownT ?? st.enemies.get(meleeOwner)?.windup ?? row.t)
+        : row.t;
+      const meleePulse =
+        !!meleeOwner &&
+        !!meleeSample &&
+        this.time.now - meleeSample.glintAtMs >= 0 &&
+        this.time.now - meleeSample.glintAtMs <= MELEE_GLINT_CREST_MS;
       let cached = this.telegraphCache.get(id);
       const geometryChanged =
         !cached ||
@@ -3247,7 +3594,7 @@ export class ArenaScene extends Phaser.Scene {
         cached.zoom !== zoom;
       if (!cached) {
         cached = {
-          t: row.t,
+          t: effectiveT,
           shape: row.shape,
           x: row.x,
           y: row.y,
@@ -3290,27 +3637,30 @@ export class ArenaScene extends Phaser.Scene {
       this.drawTelegraph(
         g,
         cached.geometry,
-        row.t,
+        effectiveT,
         row.danger,
         row.kindTag,
         cached.hash,
+        meleePulse,
       );
-      this.telegraphForeshadows.update(
-        id,
-        row.shape,
-        row.kindTag,
-        row.x,
-        projectTelegraphY(row.y, projectionYScale),
-        row.a,
-        row.b,
-        row.rot,
-        row.t,
-        projectionYScale,
-      );
+      // Horde source charm is nearest-N rig-owned. Boss melee and every other row keep the shared paint pool.
+      if (!meleeOwner)
+        this.telegraphForeshadows.update(
+          id,
+          row.shape,
+          row.kindTag,
+          row.x,
+          projectTelegraphY(row.y, projectionYScale),
+          row.a,
+          row.b,
+          row.rot,
+          effectiveT,
+          projectionYScale,
+        );
       // `sawFull` sticks once the server pins the row to full fill (t=1) on the resolve tick — the server
       // LINGERS a resolved row one tick at t=1 so we observe it, while a CANCEL (phase-change/boss death)
       // removes the row without ever reaching t=1. So `sawFull` cleanly separates "it fired" from "cancelled".
-      cached.t = row.t;
+      cached.t = effectiveT;
       cached.shape = row.shape;
       cached.x = row.x;
       cached.y = row.y;
@@ -3319,7 +3669,7 @@ export class ArenaScene extends Phaser.Scene {
       cached.rot = row.rot;
       cached.danger = row.danger;
       cached.kindTag = row.kindTag;
-      cached.sawFull ||= row.t >= 0.999;
+      cached.sawFull ||= !meleeOwner && effectiveT >= 0.999;
       cached.seenFrame = frame;
       cached.projectionYScale = projectionYScale;
       cached.zoom = zoom;
@@ -3371,7 +3721,12 @@ export class ArenaScene extends Phaser.Scene {
     danger: number,
     kindTag: number,
     hash: number,
+    meleePulse = false,
   ): void {
+    if (danger === 0 && kindTag === TelegraphKindTag.Melee) {
+      this.drawMeleeExactFootprint(g, geometry, t, meleePulse);
+      return;
+    }
     const zoom = Math.max(0.01, this.cameras.main.zoom);
     const lockAt =
       kindTag === TelegraphKindTag.Charge
@@ -3404,6 +3759,82 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     this.drawTelegraphCadence(g, geometry, t, danger, hash, line, alpha, zoom);
+  }
+
+  /** The fairness layer: full static sector boundary, dominant range arc, forward notch, inward completion. */
+  private drawMeleeExactFootprint(
+    g: Phaser.GameObjects.Graphics,
+    geometry: TelegraphGeometry,
+    t: number,
+    pulse: boolean,
+  ): void {
+    const edge = geometry.edges[0];
+    if (!edge || edge.points.length < 4) return;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const points = edge.points;
+    const echo = edge.echo;
+    const firstArc = 1;
+    const lastArc = points.length - 1;
+    const midArc = Math.floor((firstArc + lastArc) / 2);
+    const alpha = 0.24 + t * 0.28 + (pulse ? 0.28 : 0);
+
+    // Exact sides remain visible but subordinate; the outer reach arc owns the floor read.
+    g.lineStyle(4 / zoom, 0x17120f, 0.38);
+    this.strokeTelegraphPath(g, points, true);
+    g.lineStyle(1.5 / zoom, 0xffffff, alpha * 0.65);
+    this.strokeTelegraphPath(g, points, true);
+    g.lineStyle(1.1 / zoom, 0xffffff, alpha * 0.42);
+    this.strokeTelegraphPath(g, echo, true);
+    g.lineStyle((pulse ? 3.2 : 2) / zoom, 0xffffff, alpha + 0.1);
+    this.strokeTelegraphPointRange(g, points, firstArc, lastArc);
+
+    // Progress advances from both angular limits and meets at the committed aim notch on contact.
+    const sideCount = Math.max(1, midArc - firstArc);
+    const fill = Math.min(sideCount, Math.ceil(sideCount * Math.max(0, Math.min(1, t))));
+    g.lineStyle((pulse ? 3.5 : 2.4) / zoom, 0xffffff, 0.42 + t * 0.42);
+    this.strokeTelegraphPointRange(g, points, firstArc, firstArc + fill);
+    this.strokeTelegraphPointRange(g, points, lastArc - fill, lastArc);
+
+    const origin = points[0]!;
+    const notch = points[midArc]!;
+    const ndx = origin.x - notch.x;
+    const ndy = origin.y - notch.y;
+    const nl = Math.hypot(ndx, ndy) || 1;
+    g.lineStyle((pulse ? 3.3 : 2) / zoom, 0xffffff, 0.55 + t * 0.35);
+    g.beginPath();
+    g.moveTo(notch.x, notch.y);
+    g.lineTo(notch.x + (ndx / nl) * (10 / zoom), notch.y + (ndy / nl) * (10 / zoom));
+    // Three paired ticks converge along the exact outer perimeter; structure/motion survives grayscale.
+    for (let i = 1; i <= 3; i++) {
+      const travel = Math.min(sideCount - 1, Math.floor(sideCount * t * (0.28 + i * 0.16)));
+      for (const index of [firstArc + travel, lastArc - travel]) {
+        const p = points[index];
+        if (!p) continue;
+        const ix = origin.x - p.x;
+        const iy = origin.y - p.y;
+        const il = Math.hypot(ix, iy) || 1;
+        g.moveTo(p.x, p.y);
+        g.lineTo(p.x + (ix / il) * (5.5 / zoom), p.y + (iy / il) * (5.5 / zoom));
+      }
+    }
+    g.strokePath();
+  }
+
+  private strokeTelegraphPointRange(
+    g: Phaser.GameObjects.Graphics,
+    points: readonly { x: number; y: number }[],
+    start: number,
+    end: number,
+  ): void {
+    const first = points[Math.max(0, Math.min(points.length - 1, start))];
+    if (!first) return;
+    g.beginPath();
+    g.moveTo(first.x, first.y);
+    for (let i = start + 1; i <= end && i < points.length; i++) {
+      const point = points[i];
+      if (point) g.lineTo(point.x, point.y);
+    }
+    g.strokePath();
   }
 
   private strokeTelegraphPath(

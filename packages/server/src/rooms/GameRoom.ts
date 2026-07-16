@@ -194,6 +194,7 @@ import {
   stepSteeredMovement,
   stepVertical,
   TelegraphState,
+  TgShape,
   TICK_MS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
@@ -217,6 +218,10 @@ import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
 import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
+
+/** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
+const MELEE_TELEGRAPH_PREFIX = "melee:";
+const MELEE_LOCK_PHASE = 0.65;
 
 /** §45 one tick-wide horde broad phase. 128px keeps ordinary enemy separation in the same/adjacent cells;
  *  the radius ceiling keeps boss/projectile/melee queries conservative for the oversized boss roster. */
@@ -384,6 +389,14 @@ export class GameRoom extends Room<ArenaState> {
       ly?: number;
       tg?: string;
       leapCd?: number;
+      /** Fixed post-lunge sector captured at Lock. The advertised row and damage consume these same values. */
+      strike?: {
+        x: number;
+        y: number;
+        aimX: number;
+        aimY: number;
+        tg: string;
+      };
     }
   >();
   /** §15 v0.113 DODGE-ROLL state per ranger id: `cd` = seconds until it can roll again, `t` = seconds left
@@ -2530,7 +2543,10 @@ export class GameRoom extends Room<ArenaState> {
     this.state.bossPhase = 0;
     this.state.bossKind = "";
     this.state.bossSlamT = 0; // §16 deprecated slam scalars stay at 0
-    this.state.telegraphs.clear();
+    // Boss disposal owns its rows. Preserve any independently winding horde sectors through a boss death.
+    for (const id of [...this.state.telegraphs.keys()]) {
+      if (!id.startsWith(MELEE_TELEGRAPH_PREFIX)) this.state.telegraphs.delete(id);
+    }
   }
 
   /** §16 v0.109 the emit surface handed to the BossController — turns a boss def's abstract "casts" into real
@@ -2636,6 +2652,33 @@ export class GameRoom extends Room<ArenaState> {
     t.kindTag = kindTag;
     this.state.telegraphs.set(t.id, t);
     return t.id;
+  }
+
+  /** Publish one fixed horde-melee sector without adding a second timing field to the wire contract. */
+  private addMeleeTelegraphRow(
+    enemyId: string,
+    x: number,
+    y: number,
+    range: number,
+    halfArc: number,
+    rot: number,
+    phase: number,
+  ): string {
+    const id = `${MELEE_TELEGRAPH_PREFIX}${enemyId}`;
+    const t = new TelegraphState();
+    t.id = id;
+    t.shape = TgShape.Cone;
+    t.x = x;
+    t.y = y;
+    t.a = range;
+    t.b = halfArc;
+    t.rot = rot;
+    // Creation-only snapshot; clients bind this row to its owner's existing windup scalar via the id.
+    t.t = phase;
+    t.danger = 0;
+    t.kindTag = 6;
+    this.state.telegraphs.set(id, t);
+    return id;
   }
 
   /** Set a telegraph row's fill progress 0→1. */
@@ -3093,6 +3136,9 @@ export class GameRoom extends Room<ArenaState> {
       enemy.hp = DUMMY_HP;
       return 0;
     }
+    const combo = this.comboState.get(eid);
+    if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
+    if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
     if (kind?.archetype === "boss") {
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
@@ -3347,6 +3393,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.state.enemies.has(id)) {
         const dead = this.comboState.get(id);
         if (dead?.tg) this.removeTelegraphRow(dead.tg); // §15 v0.113 a leaper killed mid-leap: clear its marker
+        if (dead?.strike) this.removeTelegraphRow(dead.strike.tg);
         this.comboState.delete(id);
       }
     }
@@ -3372,7 +3419,12 @@ export class GameRoom extends Room<ArenaState> {
         enemy.y = next.y;
       }
       // §20 Sekiro lean-in: creep slowly forward DURING a windup so the wind-up reads as "stepping into it".
-      if (st.phase === "windup" && target && dist > m.range * 0.45) {
+      if (
+        st.phase === "windup" &&
+        !st.strike &&
+        target &&
+        dist > m.range * 0.45
+      ) {
         const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed * 0.28, dt);
         enemy.x = next.x;
         enemy.y = next.y;
@@ -3394,6 +3446,7 @@ export class GameRoom extends Room<ArenaState> {
           st.hits = m.hits;
           st.wind = m.windup;
           st.t = m.windup;
+          st.strike = undefined;
         }
       } else if (st.phase === "leapwind") {
         // Winding up the leap in place — fill the landing marker so the dodge window reads.
@@ -3425,21 +3478,51 @@ export class GameRoom extends Room<ArenaState> {
           st.hits = m.hits;
           st.wind = m.windup;
           st.t = m.windup;
+          st.strike = undefined;
         }
       } else if (st.phase === "windup") {
+        const phase = st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
+        if (!st.strike && target && st.t > 0 && phase >= MELEE_LOCK_PHASE) {
+          const strike = this.planDuelistStrike(enemy, target, m);
+          const rot = Math.atan2(strike.aimY, strike.aimX);
+          const tg = this.addMeleeTelegraphRow(
+            id,
+            strike.x,
+            strike.y,
+            m.range,
+            m.halfArc,
+            rot,
+            phase,
+          );
+          st.strike = { ...strike, tg };
+        }
         if (st.t <= 0) {
-          // Strike: LUNGE forward (capped so it stops at sword's length, never stacks on the player), swing,
-          // then either telegraph the next hit (swingGap) or recover.
-          this.duelistLunge(enemy, target, m, dist);
-          this.duelistSwing(enemy, id, target, m);
-          st.hits -= 1;
-          if (st.hits > 0) {
-            st.phase = "windup";
-            st.wind = m.swingGap;
-            st.t = m.swingGap;
+          // Strike from the exact advertised Lock geometry. The fallback only covers a timer that somehow
+          // skipped the lock sample; normal 20 Hz authored windups always commit several ticks beforehand.
+          const strike = st.strike;
+          if (strike) {
+            enemy.x = strike.x;
+            enemy.y = strike.y;
+            this.removeTelegraphRow(strike.tg);
+            this.duelistSwing(enemy, id, target, m, strike);
           } else {
-            st.phase = "recover";
-            st.t = m.recover;
+            this.duelistLunge(enemy, target, m, dist);
+            this.duelistSwing(enemy, id, target, m);
+          }
+          st.strike = undefined;
+          // A riposte may have changed the combo to its one-second stagger inside `duelistSwing`.
+          const staggered =
+            this.comboState.get(id)?.phase === "recover" && st.t === 1;
+          if (!staggered) {
+            st.hits -= 1;
+            if (st.hits > 0) {
+              st.phase = "windup";
+              st.wind = m.swingGap;
+              st.t = m.swingGap;
+            } else {
+              st.phase = "recover";
+              st.t = m.recover;
+            }
           }
         }
       } else if (st.t <= 0) {
@@ -3451,6 +3534,32 @@ export class GameRoom extends Room<ArenaState> {
         st.phase === "windup" && st.wind > 0 ? Math.max(0, Math.min(1, 1 - st.t / st.wind)) : 0;
       this.updateEnemyGrid(id, enemy);
     });
+  }
+
+  /** Capture the exact capped-lunge origin and target-relative aim that both telegraph and hit will consume. */
+  private planDuelistStrike(
+    enemy: EnemyState,
+    target: Vec2,
+    m: { range: number; step: number },
+  ): { x: number; y: number; aimX: number; aimY: number } {
+    const dx = target.x - enemy.x;
+    const dy = target.y - enemy.y;
+    const dist = Math.hypot(dx, dy);
+    const nx = dist > 0.001 ? dx / dist : 1;
+    const ny = dist > 0.001 ? dy / dist : 0;
+    const floor = m.range * 0.45;
+    const move = Math.max(0, Math.min(m.step, dist - floor));
+    const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    const x = clamp(enemy.x + nx * move, r, ARENA_WIDTH - r);
+    const y = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
+    const aimX = target.x - x;
+    const aimY = target.y - y;
+    return {
+      x,
+      y,
+      aimX: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimX : nx,
+      aimY: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimY : ny,
+    };
   }
 
   /** §20 one duelist LUNGE: dash the enemy `m.step` px toward the target, but never inside `range×0.45`
@@ -3480,10 +3589,11 @@ export class GameRoom extends Room<ArenaState> {
     enemyId: string,
     target: Vec2 | null,
     m: { range: number; halfArc: number; damage: number },
+    committed?: { aimX: number; aimY: number },
   ): void {
     enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
-    const aimX = target ? target.x - enemy.x : 1;
-    const aimY = target ? target.y - enemy.y : 0;
+    const aimX = committed?.aimX ?? (target ? target.x - enemy.x : 1);
+    const aimY = committed?.aimY ?? (target ? target.y - enemy.y : 0);
     const dmgMul = enemy.tough ? TOUGH_DAMAGE_MULT : 1;
     this.state.players.forEach((player) => {
       if (!player.alive || this.inLevelWindow(player)) return;
@@ -3552,6 +3662,8 @@ export class GameRoom extends Room<ArenaState> {
     if (pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT) {
       const est = this.comboState.get(attackerId);
       if (est) {
+        if (est.strike) this.removeTelegraphRow(est.strike.tg);
+        est.strike = undefined;
         est.phase = "recover";
         est.t = 1; // interrupt: a full second of stagger before it can attack again
         attacker.windup = 0;
@@ -4175,6 +4287,8 @@ export class GameRoom extends Room<ArenaState> {
       this.shifterTimer -= dt;
       if (this.shifterTimer <= 0) {
         this.state.enemies.delete(this.shifterId);
+        const combo = this.comboState.get(this.shifterId);
+        if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
         this.comboState.delete(this.shifterId);
         this.enemyFireCd.delete(this.shifterId);
         console.log(`[room ${this.roomId}] ⌁ shifter phased out — ${this.shifterId}`);

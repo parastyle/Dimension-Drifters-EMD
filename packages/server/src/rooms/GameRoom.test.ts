@@ -1573,11 +1573,11 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
           },
           {
             "alive": true,
-            "hp": 88,
+            "hp": 89,
             "id": "p2",
             "level": 1,
-            "x": 2440,
-            "y": 2312,
+            "x": 2439,
+            "y": 2314,
           },
         ],
         "portalOpen": false,
@@ -2383,5 +2383,56 @@ describe("GameRoom — §50 spin re-hits per revolution", () => {
       }
     }
     expect(dips).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("GameRoom — melee parry telegraph commitment", () => {
+  it("advertises and resolves the same fixed post-lunge sector", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.room.map.tiles.fill(TILE_GROUND);
+    const p1 = h.state().players.get("p1");
+    p1.x = h.room.map.spawnX;
+    p1.y = h.room.map.spawnY;
+
+    const enemy = new EnemyState();
+    enemy.id = "locked-ronin";
+    enemy.kind = "ronin";
+    enemy.hp = 999;
+    enemy.x = p1.x + 140;
+    enemy.y = p1.y;
+    h.state().enemies.set(enemy.id, enemy);
+
+    let row: AnyRoom;
+    for (let i = 0; i < 16 && !row; i++) {
+      h.tick(1);
+      row = h.state().telegraphs.get(`melee:${enemy.id}`);
+    }
+    expect(row).toBeDefined();
+    expect(row.shape).toBe(2); // the authoritative player-center sector
+    const committed = {
+      x: row.x,
+      y: row.y,
+      range: row.a,
+      halfArc: row.b,
+      rot: row.rot,
+    };
+
+    // Move the original target away after Lock and place another player inside the advertised fixed sector.
+    p1.x = committed.x - Math.cos(committed.rot) * (committed.range + 80);
+    p1.y = committed.y - Math.sin(committed.rot) * (committed.range + 80);
+    h.join("p2");
+    const p2 = h.state().players.get("p2");
+    p2.x = committed.x + Math.cos(committed.rot) * committed.range * 0.55;
+    p2.y = committed.y + Math.sin(committed.rot) * committed.range * 0.55;
+    p2.hp = p2.maxHp;
+
+    const attackBefore = enemy.atkSeq;
+    for (let i = 0; i < 8 && enemy.atkSeq === attackBefore; i++) h.tick(1);
+    expect(enemy.atkSeq).toBe(attackBefore + 1);
+    expect(enemy.x).toBeCloseTo(committed.x, 6);
+    expect(enemy.y).toBeCloseTo(committed.y, 6);
+    expect(p2.hp).toBeLessThan(p2.maxHp);
+    expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
   });
 });

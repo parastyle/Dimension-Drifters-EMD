@@ -89,6 +89,8 @@ const WEAPON_LOOK_TILT = 0.6;
 const CLIENT_VISUAL_COMBOS = true;
 /** The authored guard eases to neutral only after accepted-cadence grace lapses. */
 const COMBO_HOLD_RELEASE_MS = 120;
+const MELEE_GLINT_LEAD_MS = 280;
+const MELEE_GLINT_CREST_MS = 60;
 
 type RigComboFamily = MeleeComboFamily | "none";
 
@@ -114,6 +116,11 @@ function cubicOut01(value: number): number {
 function backOut01(value: number): number {
   const p = clamp01(value) - 1;
   return 1 + p * p * (2.70158 * p + 1.70158);
+}
+
+function mixAngle(from: number, to: number, t: number): number {
+  const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + delta * clamp01(t);
 }
 
 function paperPopScaleX(elapsedMs: number, durationMs: number): number {
@@ -506,6 +513,9 @@ export class SpriteRig {
     /** The weapon's own display scale (displayLength/part.w). Applied each frame ÷ baseScale so the weapon
      *  is a FIXED on-screen size regardless of which (larger/smaller) character holds it. */
     baseScale: number;
+    /** Lazily-created full-tell separation/echo layers. Lite horde tells never allocate them. */
+    tellRim?: Phaser.GameObjects.Image;
+    tellEcho?: Phaser.GameObjects.Image;
   }[] = [];
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
@@ -572,6 +582,21 @@ export class SpriteRig {
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
+  /** Enemy-only parry performance. Synced windup supplies phase; resolve/cancel never start a fresh swing. */
+  private meleeTellMode: "none" | "windup" | "resolve" | "cancel" = "none";
+  private meleeTellPhase = 0;
+  private meleeTellRemainingMs = Number.POSITIVE_INFINITY;
+  private meleeTellDurationMs = 1;
+  private meleeTellAimWorld = 0;
+  private meleeTellLocked = false;
+  private meleeTellFull = false;
+  private meleeTellArchetype = "duelist";
+  private meleeTellStep = 0;
+  private meleeTellEdgeAtMs = -1e9;
+  private meleeTellGlintFired = false;
+  private meleeTellReleaseAtMs = -1e9;
+  private meleeTellCancelPhase = 0;
+  private meleeTellReleasePose = false;
   /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
    *  the camera + depth-sort use the ground position; only the visible parts rise. §7 v0.105 de-clunk:
    *  `hopPx` now EASES toward `hopTarget` (the synced height) so the 20Hz jump doesn't stair-step. */
@@ -767,6 +792,7 @@ export class SpriteRig {
   ): void {
     this.resetSwingCombo();
     this.resetSecondaryMotion();
+    this.clearMeleeTellState();
     this.spawnStartMs = -1;
     this.root.rotation = 0;
 
@@ -1012,6 +1038,7 @@ export class SpriteRig {
     def: WeaponDef,
     manifest: SpriteManifest,
   ): void {
+    this.destroyMeleeTellLayers();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
@@ -1019,6 +1046,7 @@ export class SpriteRig {
     // swing carries into the NEW weapon's timeline. §45 the combo/hold shares that exact lifetime boundary.
     this.resetSwingCombo();
     this.resetSecondaryMotion();
+    this.clearMeleeTellState();
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
@@ -1163,6 +1191,93 @@ export class SpriteRig {
     this.swingAimWorld = aimWorld ?? Number.NaN;
   }
 
+  /** Sample a horde-melee anticipation directly from the latest reconstructed authoritative phase. */
+  setMeleeTell(
+    phase: number,
+    aimWorld: number,
+    remainingMs: number,
+    locked: boolean,
+    archetype = "duelist",
+    step = 0,
+    full = true,
+  ): void {
+    const sampled = Math.max(0, Math.min(0.985, phase));
+    const newEpoch =
+      this.meleeTellMode !== "windup" || sampled + 0.04 < this.meleeTellPhase;
+    if (newEpoch) {
+      this.meleeTellGlintFired = false;
+      this.meleeTellEdgeAtMs = -1e9;
+    }
+    this.meleeTellMode = "windup";
+    this.meleeTellReleasePose = false;
+    this.meleeTellPhase = sampled;
+    this.meleeTellRemainingMs = Math.max(0, remainingMs);
+    this.meleeTellDurationMs = Math.max(1, remainingMs / Math.max(0.001, 1 - sampled));
+    this.meleeTellAimWorld = aimWorld;
+    this.meleeTellLocked = locked;
+    this.meleeTellArchetype = archetype;
+    this.meleeTellStep = Math.max(0, step | 0);
+    this.meleeTellFull = full;
+    if (full && !this.meleeTellGlintFired && remainingMs <= MELEE_GLINT_LEAD_MS) {
+      // A late first sample fires one shortened crest immediately; missed Claim frames are never replayed.
+      this.meleeTellGlintFired = true;
+      this.meleeTellEdgeAtMs = this.scene.time.now;
+    }
+    if (!full) this.clearMeleeTellTint();
+  }
+
+  /** Contact confirmation: keep the loaded vocabulary and run only its short follow-through. */
+  resolveMeleeTell(timeMs: number, aimWorld: number): void {
+    this.meleeTellReleasePose = this.meleeTellFull;
+    this.meleeTellAimWorld = aimWorld;
+    this.meleeTellMode = "resolve";
+    this.meleeTellPhase = 1;
+    this.meleeTellReleaseAtMs = timeMs;
+    this.meleeTellFull = true;
+    this.clearMeleeTellTint();
+  }
+
+  /** An authoritative reset without `atkSeq`: unwind the sampled chamber without crossing contact. */
+  cancelMeleeTell(timeMs: number): void {
+    if (this.meleeTellMode === "none") return;
+    this.meleeTellReleasePose = this.meleeTellFull;
+    this.meleeTellCancelPhase = this.meleeTellPhase;
+    this.meleeTellMode = "cancel";
+    this.meleeTellReleaseAtMs = timeMs;
+    this.meleeTellFull = false;
+    this.clearMeleeTellTint();
+  }
+
+  /** World-space striking-third anchor for the stable procedural bracket; returns false for handless rigs. */
+  getMeleeTellAnchor(out: { x: number; y: number }): boolean {
+    const weapon = this.weapons[0];
+    const front = this.hands.find((hand) => hand.front);
+    let localX: number;
+    let localY: number;
+    let hasImplement = false;
+    if (weapon) {
+      const tip = weapon.img.width * Math.abs(weapon.img.scaleX) * (1 - weapon.img.originX) * 0.78;
+      localX = weapon.img.x + Math.cos(weapon.img.rotation) * tip;
+      localY = weapon.img.y + Math.sin(weapon.img.rotation) * tip;
+      hasImplement = true;
+    } else if (front) {
+      localX = front.img.x;
+      localY = front.img.y;
+      hasImplement = true;
+    } else {
+      out.x = this.root.x + Math.cos(this.meleeTellAimWorld) * TARGET_BODY_H * 0.34;
+      out.y = this.root.y + Math.sin(this.meleeTellAimWorld) * TARGET_BODY_H * 0.34;
+      return false;
+    }
+    const sx = localX * this.root.scaleX;
+    const sy = localY * this.root.scaleY;
+    const c = Math.cos(this.root.rotation);
+    const s = Math.sin(this.root.rotation);
+    out.x = this.root.x + sx * c - sy * s;
+    out.y = this.root.y + sx * s + sy * c;
+    return hasImplement;
+  }
+
   /** Start a parry BRACE pose (§8) — raise the weapon to a horizontal block, draw the hands up into
    *  a guard, and dip into a brace, held ~the i-frame window. Purely a STANCE (no VFX yet; on-parry
    *  effects arrive with the level-up parry augments). */
@@ -1195,7 +1310,10 @@ export class SpriteRig {
     if (on === this.downed) return;
     this.downed = on;
     this.resetSecondaryMotion();
-    if (on) this.resetSwingCombo(); // §45 a down/death boundary cannot bank a held finisher for revival
+    if (on) {
+      this.resetSwingCombo(); // §45 a down/death boundary cannot bank a held finisher for revival
+      this.clearMeleeTellState();
+    }
     this.root.setAlpha(on ? 0.5 : 1);
     this.restTint();
   }
@@ -1208,6 +1326,103 @@ export class SpriteRig {
       else if (this.branded)
         p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
       else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    }
+  }
+
+  private clearMeleeTellState(): void {
+    this.meleeTellMode = "none";
+    this.meleeTellPhase = 0;
+    this.meleeTellRemainingMs = Number.POSITIVE_INFINITY;
+    this.meleeTellDurationMs = 1;
+    this.meleeTellLocked = false;
+    this.meleeTellFull = false;
+    this.meleeTellGlintFired = false;
+    this.meleeTellEdgeAtMs = -1e9;
+    this.meleeTellReleaseAtMs = -1e9;
+    this.meleeTellReleasePose = false;
+    this.clearMeleeTellTint();
+  }
+
+  private clearMeleeTellTint(): void {
+    for (const weapon of this.weapons) {
+      weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+      weapon.tellRim?.setVisible(false);
+      weapon.tellEcho?.setVisible(false);
+    }
+  }
+
+  private destroyMeleeTellLayers(): void {
+    for (const weapon of this.weapons) {
+      weapon.tellRim?.destroy();
+      weapon.tellEcho?.destroy();
+      weapon.tellRim = undefined;
+      weapon.tellEcho = undefined;
+    }
+  }
+
+  /** Full-tell layers are retained images; scale changes only thickness, never the weapon's painted length. */
+  private ensureMeleeTellLayers(weapon: (typeof this.weapons)[number]): void {
+    if (weapon.tellRim && weapon.tellEcho) return;
+    const frame = weapon.img.frame.name;
+    const rim = this.scene.add.image(0, 0, weapon.img.texture.key, frame);
+    const echo = this.scene.add.image(0, 0, weapon.img.texture.key, frame);
+    rim
+      .setOrigin(weapon.img.originX, weapon.img.originY)
+      .setTint(0x14100e)
+      .setTintMode(Phaser.TintModes.FILL)
+      .setVisible(false);
+    echo
+      .setOrigin(weapon.img.originX, weapon.img.originY)
+      .setTint(0xffffff)
+      .setTintMode(Phaser.TintModes.FILL)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    this.root.add(rim);
+    this.root.add(echo);
+    this.root.moveBelow(rim, weapon.img);
+    this.root.moveAbove(echo, weapon.img);
+    weapon.tellRim = rim;
+    weapon.tellEcho = echo;
+  }
+
+  private updateMeleeTellWeaponVisuals(sceneNow: number): void {
+    const show = this.meleeTellMode === "windup" && this.meleeTellFull;
+    const crest =
+      show &&
+      this.meleeTellGlintFired &&
+      sceneNow - this.meleeTellEdgeAtMs >= 0 &&
+      sceneNow - this.meleeTellEdgeAtMs <= MELEE_GLINT_CREST_MS;
+    for (const weapon of this.weapons) {
+      if (!show) {
+        weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+        weapon.tellRim?.setVisible(false);
+        weapon.tellEcho?.setVisible(false);
+        continue;
+      }
+      this.ensureMeleeTellLayers(weapon);
+      const rim = weapon.tellRim;
+      const echo = weapon.tellEcho;
+      if (!rim || !echo) continue;
+      const displayH = Math.max(1, weapon.img.height * Math.abs(weapon.img.scaleY));
+      const rimY = 1 + 5 / displayH;
+      const echoY = 1 + (crest ? 5 : 2.4) / displayH;
+      const load = smoothstep01(this.meleeTellPhase / 0.65);
+      const steady = this.meleeTellRemainingMs <= MELEE_GLINT_LEAD_MS ? 0.42 : 0.12 + load * 0.18;
+      rim
+        .setPosition(weapon.img.x, weapon.img.y)
+        .setRotation(weapon.img.rotation)
+        .setScale(weapon.img.scaleX, weapon.img.scaleY * rimY)
+        .setAlpha(0.72)
+        .setVisible(true);
+      echo
+        .setPosition(weapon.img.x, weapon.img.y)
+        .setRotation(weapon.img.rotation)
+        .setScale(weapon.img.scaleX, weapon.img.scaleY * echoY)
+        .setAlpha(crest ? 0.95 : steady + (this.meleeTellLocked ? 0.08 : 0))
+        .setVisible(true);
+      if (crest)
+        weapon.img.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      else weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     }
   }
 
@@ -1234,17 +1449,20 @@ export class SpriteRig {
   /** Drop to EMPTY HANDS (the §9 fists fallback) — clears any held weapon sprite but keeps `def` so the
    *  unarmed swing still animates with the fists range/arc. Used when a weapon is dropped/salvaged. */
   unequip(def: WeaponDef): void {
+    this.destroyMeleeTellLayers();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
     this.resetSwingCombo();
     this.resetSecondaryMotion();
+    this.clearMeleeTellState();
   }
 
   destroy(): void {
     // §20 the delayed callback closes over this rig; detach it before destroying the visible hierarchy.
     this.flashTimer?.remove(false);
     this.flashTimer = undefined;
+    this.destroyMeleeTellLayers();
     for (const w of this.weapons) w.img.destroy();
     this.root.destroy();
   }
@@ -1985,11 +2203,17 @@ export class SpriteRig {
     // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
-    const dirX = anim.isSelf
-      ? anim.aimX
-      : this.weaponDef?.gun
-        ? Math.cos(anim.aimDir)
-        : anim.moveX;
+    const tellFacesAim =
+      (this.meleeTellMode === "windup" && this.meleeTellFull) ||
+      ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
+        this.meleeTellReleasePose);
+    const dirX = tellFacesAim
+      ? Math.cos(this.meleeTellAimWorld)
+      : anim.isSelf
+        ? anim.aimX
+        : this.weaponDef?.gun
+          ? Math.cos(anim.aimDir)
+          : anim.moveX;
     // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
     // (±6px hysteresis kills strobe at the exact centre) — a normalized-|aimX| threshold went sticky when the
     // cursor sat far above/below (|aimX|≈0 however clearly the midpoint was crossed). Remotes/enemies keep the
@@ -2121,7 +2345,113 @@ export class SpriteRig {
     this.attackGripBoth = false;
     this.attackHandSpacing = TARGET_BODY_H * 0.42;
     this.signatureMotion = undefined;
-    if (this.weaponDef?.gun && this.weapons.length > 0) {
+    if (
+      this.meleeTellMode === "resolve" &&
+      sceneNow - this.meleeTellReleaseAtMs > 180
+    ) {
+      this.clearMeleeTellState();
+    } else if (
+      this.meleeTellMode === "cancel" &&
+      sceneNow - this.meleeTellReleaseAtMs > 90
+    ) {
+      this.clearMeleeTellState();
+    }
+    const meleePoseActive =
+      (this.meleeTellMode === "windup" && this.meleeTellFull) ||
+      ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
+        this.meleeTellReleasePose);
+    if (meleePoseActive) {
+      // Enemy attack archetype owns the pose before the randomly-assigned held weapon. This also suppresses
+      // a gun's ordinary muzzle-aim branch while a zoner chambers the stock for its parryable contact lunge.
+      const aimLocal = Math.atan2(
+        Math.sin(this.meleeTellAimWorld),
+        Math.cos(this.meleeTellAimWorld) * this.facing,
+      );
+      const restA = -Math.PI / 2 + 0.16;
+      const resolveT =
+        this.meleeTellMode === "resolve"
+          ? clamp01((sceneNow - this.meleeTellReleaseAtMs) / 150)
+          : 0;
+      const cancelBlend =
+        this.meleeTellMode === "cancel"
+          ? 1 - smoothstep01((sceneNow - this.meleeTellReleaseAtMs) / 80)
+          : 1;
+      const phase =
+        this.meleeTellMode === "cancel"
+          ? this.meleeTellCancelPhase
+          : this.meleeTellPhase;
+      const glintPhase = Math.max(
+        0.05,
+        Math.min(0.7, 1 - MELEE_GLINT_LEAD_MS / this.meleeTellDurationMs),
+      );
+      const load = smoothstep01(phase / glintPhase);
+      let incoming = 0;
+      if (this.meleeTellRemainingMs < MELEE_GLINT_LEAD_MS) {
+        incoming =
+          this.meleeTellRemainingMs > 90
+            ? ((MELEE_GLINT_LEAD_MS - this.meleeTellRemainingMs) /
+                (MELEE_GLINT_LEAD_MS - 90)) *
+              0.28
+            : 0.28 + ((90 - this.meleeTellRemainingMs) / 90) * 0.67;
+      }
+      if (this.meleeTellMode === "resolve") incoming = 1;
+      incoming = clamp01(incoming);
+      const direction = this.meleeTellStep % 3 === 1 ? -1 : 1;
+      const finalStep = this.meleeTellStep % 3 === 2;
+      const direct =
+        this.meleeTellArchetype === "rusher" ||
+        this.meleeTellArchetype === "swarm";
+      const shove = this.meleeTellArchetype === "zoner";
+      const heavy = !!this.weaponDef?.twoHanded;
+      let loadedA: number;
+      let contactA = aimLocal;
+      let followA: number;
+      if (direct) {
+        loadedA = aimLocal;
+        followA = aimLocal;
+      } else if (heavy || finalStep) {
+        loadedA = finalStep ? -Math.PI / 2 - direction * 0.58 : aimLocal - direction * 1.4;
+        contactA = aimLocal + direction * 0.08;
+        followA = aimLocal + direction * 0.82;
+      } else if (shove) {
+        loadedA = aimLocal - direction * 1.02;
+        contactA = aimLocal + direction * 0.12;
+        followA = aimLocal + direction * 0.68;
+      } else {
+        loadedA = aimLocal - direction * 1.22;
+        contactA = aimLocal + direction * 0.1;
+        followA = aimLocal + direction * 0.74;
+      }
+      let posedA = mixAngle(restA, loadedA, load);
+      if (incoming > 0) posedA = mixAngle(loadedA, contactA, incoming);
+      if (this.meleeTellMode === "resolve")
+        posedA = mixAngle(contactA, followA, smoothstep01(resolveT));
+      weaponAngle = mixAngle(restA, posedA, cancelBlend);
+
+      const fx = Math.cos(aimLocal);
+      const fy = Math.sin(aimLocal);
+      const retract = direct ? 0.24 : shove ? 0.18 : 0.2;
+      const advance = direct ? 0.24 : 0.12;
+      const travel =
+        (-retract * load * (1 - incoming) + advance * incoming + 0.08 * resolveT) *
+        TARGET_BODY_H *
+        cancelBlend;
+      this.swingOffX = fx * travel;
+      this.swingOffY = fy * travel - (finalStep ? TARGET_BODY_H * 0.12 * load : 0) * cancelBlend;
+      const ownership =
+        (this.meleeTellMode === "resolve"
+          ? 1 - smoothstep01(resolveT)
+          : smoothstep01(phase / Math.max(0.08, glintPhase))) * cancelBlend;
+      ownFront = ownership;
+      ownBack = heavy ? ownership : Math.max(ownBack, ownership * 0.35);
+      ownFeet = ownership;
+      this.body.rotation +=
+        (-direction * 0.1 * load + direction * 0.24 * incoming + direction * 0.08 * resolveT) *
+        cancelBlend;
+      this.body.y += (3 * load + 4 * incoming - 2 * resolveT) * s * cancelBlend;
+      this.body.scaleY *= 1 - (0.035 * load + 0.07 * incoming) * cancelBlend;
+      if (finalStep) this.body.scaleY *= 1 + 0.055 * load * cancelBlend;
+    } else if (this.weaponDef?.gun && this.weapons.length > 0) {
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
       if (this.weaponDef.twoHanded) ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
@@ -3215,6 +3545,8 @@ export class SpriteRig {
         weapon.img.rotation += weaponRotation;
       }
     }
+    // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
+    this.updateMeleeTellWeaponVisuals(sceneNow);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
     const shrink = Math.max(0.42, 1 - this.hopPx / 420);
