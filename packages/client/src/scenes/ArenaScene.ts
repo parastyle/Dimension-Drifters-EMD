@@ -126,6 +126,7 @@ import {
   spawnPoof,
   spawnQuake,
   spawnSplat,
+  spawnWeaponKillFx,
 } from "./arena/vfx.js";
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
@@ -1865,6 +1866,7 @@ export class ArenaScene extends Phaser.Scene {
             let ax = Math.random() - 0.5;
             let ay = Math.random() - 0.5;
             let best = Number.POSITIVE_INFINITY;
+            let killWeapon: WeaponDef | undefined;
             this.room?.state.players.forEach((p) => {
               if (!p.alive) return;
               const d = Math.hypot(rig.x - p.x, rig.y - p.y);
@@ -1872,8 +1874,13 @@ export class ArenaScene extends Phaser.Scene {
                 best = d;
                 ax = rig.x - p.x;
                 ay = rig.y - p.y;
+                killWeapon = WEAPONS[p.weapon];
               }
             });
+            // §49 state does not serialize a final-blow owner; reuse the established nearest-live-player
+            // killer approximation that already drives corpse launch, then let the pack's own frame gate
+            // keep storm/tesla, buzzsaw and tide-family horde clears subtle + bounded.
+            spawnWeaponKillFx(this, rig.x, rig.y, killWeapon);
             const al = Math.hypot(ax, ay) || 1;
             const dist = 70 + Math.random() * 60;
             rig.deathPop((ax / al) * dist, (ay / al) * dist);
@@ -2159,7 +2166,8 @@ export class ArenaScene extends Phaser.Scene {
   /** Reconcile rendered projectiles vs authoritative state; splat on removal (hit/expire). */
   private syncProjectiles(): void {
     if (!this.room) return;
-    const state = this.room.state.projectiles;
+    const room = this.room; // stable through the forEach callbacks below; disconnect swaps it after this tick
+    const state = room.state.projectiles;
     const flashedShooters = new Set<string>(); // one muzzle flash per shooter per frame (= per shot)
     state.forEach((pr, id) => {
       const existing = this.projectiles.get(id);
@@ -2196,24 +2204,30 @@ export class ArenaScene extends Phaser.Scene {
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
       this.projectiles.set(id, container);
-      // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
-      if (fx && this.room) {
-        let shooter: string | null = null;
-        let best = 140;
-        this.room.state.players.forEach((p, pid) => {
+      // §49 projectile rows do not sync an owner. Capture the nearest friendly shooter while the row is
+      // fresh so its WeaponDef.tags.element still exists when the projectile later dies and dispatches a pack.
+      let shooter: string | null = null;
+      if (!pr.hostile) {
+        let best = 220;
+        room.state.players.forEach((p, pid) => {
           const d = Math.hypot(p.x - pr.x, p.y - pr.y);
           if (d < best) {
             best = d;
             shooter = pid;
           }
         });
+      }
+      const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
+      if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
+      // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
+      if (fx) {
         if (shooter && !flashedShooters.has(shooter)) {
           flashedShooters.add(shooter);
           // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
           // when the authoritative projectile lands a round-trip later.
-          const isSelf = shooter === this.room.sessionId;
+          const isSelf = shooter === room.sessionId;
           const suppressed = isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
-          const p = this.room.state.players.get(shooter);
+          const p = room.state.players.get(shooter);
           if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
             // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
@@ -2245,9 +2259,12 @@ export class ArenaScene extends Phaser.Scene {
           const er = (c.getData("explodeR") as number) ?? 0;
           if (er > 0) {
             // §41 ANY exploding projectile erupts (was magma-only — explosive gun rounds got a plain
-            // bullet ping). Element from the ":element" kind suffix; magma keeps its classic fire look.
+            // bullet ping). Prefer its observed shooter's live WeaponDef tag; the wire suffix remains the
+            // fallback for a projectile first observed too far from its owner.
             const ci = k.indexOf(":");
-            spawnExplosion(this, c.x, c.y, er, ci < 0 ? "fire" : k.slice(ci + 1));
+            const sourceWeapon = WEAPONS[c.getData("sourceWeapon") as string];
+            const element = sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
+            spawnExplosion(this, c.x, c.y, er, element);
           } else if (GUN_FX[bk])
             spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
@@ -3595,7 +3612,7 @@ export class ArenaScene extends Phaser.Scene {
       const quake = weapon.quake;
       this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
-        spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, quake);
+        spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, quake, weapon);
         // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
         // real impact is a skill beat → priority (bypasses the freeze budget).
         const qr = quake.radius;

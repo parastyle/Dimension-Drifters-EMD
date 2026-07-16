@@ -1,5 +1,6 @@
 import type { WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
+import { playFxPack, type FxPackName } from "../../vfx/fx-composer.js";
 import { elementPack, particleBurst } from "../../vfx/particles.js";
 import { blendHex } from "./draw-util.js";
 import { gunFx } from "./projectile-factory.js";
@@ -339,6 +340,49 @@ const EXPLODE_TINT: Record<string, { hot: number; mid: number }> = {
   arcane: { hot: 0xe6dcff, mid: 0x8f6aff },
 };
 
+/** §49 blast tier/element dispatch: <100 keeps the established stack; ≥160 is the universal NUKE beat. */
+function explosionPack(radius: number, element: string): FxPackName | undefined {
+  if (radius < 100) return undefined;
+  if (radius >= 160) return "nuke";
+  switch (element) {
+    case "frost":
+      return "frost-nova";
+    case "shock":
+      return "lightning-ball";
+    case "void":
+      return "void-implosion";
+    case "holy":
+      return "holy-smite";
+    case "toxic":
+      return "toxic-burst";
+    default:
+      return "ember-eruption"; // fire/physical + forward-compatible unknown elements retain a hot blast
+  }
+}
+
+/** The tag taxonomy is intentionally broad for legacy/expansion rows (e.g. Buzzcutter is family "sword").
+ *  Family remains the primary semantic; stable weapon id/name fills the older rows' missing sub-family. */
+function weaponSemantic(weapon: WeaponDef): string {
+  return `${weapon.tags.family} ${weapon.id} ${weapon.name}`.toLowerCase();
+}
+
+/** Subtle death accent for semantic weapon families. The composer's shared frame gate handles horde kills. */
+export function spawnWeaponKillFx(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  weapon: WeaponDef | undefined,
+): boolean {
+  if (!weapon) return false;
+  const family = weaponSemantic(weapon);
+  let pack: FxPackName | undefined;
+  if (weapon.chainLightning || /storm|tesla/.test(family)) pack = "storm-call";
+  else if (weapon.tags.classPool === "melee" && /buzzsaw|buzzcutter|sawblade/.test(family))
+    pack = "buzzsaw-wake";
+  else if (/anchor|tide|harpoon/.test(family)) pack = "tide-crash";
+  return pack ? playFxPack(scene, pack, x, y, { intensity: 42 }) : false;
+}
+
 /** AoE EXPLOSION where an exploding projectile died (§14 WYSIWYG: the ring expands to EXACTLY the blast
  *  radius = the server hitbox). §41 upgraded to a real eruption in the quake's family: the procedural
  *  flash/shockwave/footprint/sparks now carry PAINTED element debris (shards flung past the rim), rising
@@ -352,6 +396,8 @@ export function spawnExplosion(
   element = "fire",
 ): void {
   const tint = EXPLODE_TINT[element] ?? FIRE_TINT;
+  const pack = explosionPack(radius, element);
+  if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
   // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
   // rising and lingering, plus ONE painted ring frame punched up as the halo. All degrade to no-ops
   // pre-load; the procedural composite below always renders.
@@ -477,7 +523,11 @@ export function spawnQuake(
   x: number,
   y: number,
   quake: NonNullable<WeaponDef["quake"]>,
+  weapon?: WeaponDef,
 ): void {
+  // §49 every quake gets the rock pack; gravekeeper/tombstone/grave semantics trade it for bone/soul art.
+  const grave = !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
+  playFxPack(scene, grave ? "grave-call" : "quake-burst", x, y, { intensity: quake.radius });
   if (quake.vfx && scene.textures.exists(quake.vfx.image)) {
     spawnQuakeHero(scene, x, y, quake.radius, quake.vfx);
   } else {

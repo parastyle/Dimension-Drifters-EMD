@@ -8,6 +8,7 @@
 import { WEAPONS, type SwingDescriptor, type WeaponDef } from "@dd/shared";
 import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
+import { preloadFxPacks } from "./fx-composer.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
 import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
@@ -195,6 +196,9 @@ export class VfxPlayer {
 
   /** Preload every authored hero skin + scatter sheet referenced by the baked VFX (call in scene.preload). */
   static preloadAssets(scene: Phaser.Scene): void {
+    // §49 the twelve component packs are deliberately all boot-queued: they are small, observed remote
+    // weapons can change without warning, and the optional loader/no-op composer absorbs absent files.
+    preloadFxPacks(scene);
     for (const [id, vfx] of Object.entries(WEAPON_VFX)) {
       if (vfx.hero) scene.load.image(`vfxhero:${id}`, vfx.hero);
       if (vfx.scatter) {
