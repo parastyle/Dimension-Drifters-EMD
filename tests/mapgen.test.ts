@@ -264,3 +264,226 @@ describe("mapgen — shape sanity", () => {
     expect(tileAtPx(map, 999999, 999999)).toBe(TILE_GROUND);
   });
 });
+
+// Natural-zone / authoritative-cluster coverage is intentionally appended so every legacy assertion above
+// remains an unchanged gate.
+import {
+  auditArenaNavigation,
+  MAP_ZONE_COMMONS,
+  MAP_ZONE_COUNT,
+  MAP_ZONE_COVER,
+  MAP_ZONE_SCAR,
+  PLAYER_RADIUS,
+  poiCollisionAt,
+  poiCollisionCircles,
+  zoneAtPx,
+  zoneAtTile,
+} from "@dd/shared";
+
+function connectedZoneSize(map: ReturnType<typeof generateArena>, zoneId: number): number {
+  const seed = map.zoneSeeds.find((entry) => entry.id === zoneId);
+  if (!seed) return 0;
+  const start = seed.row * map.cols + seed.col;
+  const seen = new Uint8Array(map.zoneIds.length);
+  const stack = [start];
+  seen[start] = 1;
+  let count = 0;
+  while (stack.length) {
+    const current = stack.pop() as number;
+    count++;
+    const col = current % map.cols;
+    const row = Math.floor(current / map.cols);
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const x = col + dx;
+      const y = row + dy;
+      if (x < 0 || y < 0 || x >= map.cols || y >= map.rows) continue;
+      const next = y * map.cols + x;
+      if (!seen[next] && map.zoneIds[next] === zoneId) {
+        seen[next] = 1;
+        stack.push(next);
+      }
+    }
+  }
+  return count;
+}
+
+function authorityDigest(map: ReturnType<typeof generateArena>): string {
+  let hash = 0x811c9dc5 >>> 0;
+  const addInt = (value: number): void => {
+    let word = value | 0;
+    for (let byte = 0; byte < 4; byte++) {
+      hash ^= word & 0xff;
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+      word >>>= 8;
+    }
+  };
+  for (const zoneId of map.zoneIds) {
+    hash ^= zoneId;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  for (const zone of map.zoneSeeds) {
+    addInt(zone.id);
+    addInt(zone.col);
+    addInt(zone.row);
+  }
+  for (const cluster of map.poiClusters) {
+    addInt(cluster.id);
+    addInt(cluster.x);
+    addInt(cluster.y);
+    addInt(cluster.zoneId);
+    addInt(Math.round(cluster.phase * 1_000_000));
+  }
+  for (const poi of map.pois) {
+    addInt(poi.x);
+    addInt(poi.y);
+    addInt(poi.kind);
+    addInt(poi.clusterId);
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+describe("mapgen — natural-zone authority", () => {
+  it("reproduces byte-identical zones, clusters, and POIs from the four synced seeds", () => {
+    for (const sample of SAMPLES.slice(0, 30)) {
+      const serverMap = generateArena(sample);
+      const clientMap = generateArena(sample);
+      expect(Array.from(clientMap.zoneIds)).toEqual(Array.from(serverMap.zoneIds));
+      expect(clientMap.zoneSeeds).toEqual(serverMap.zoneSeeds);
+      expect(clientMap.poiClusters).toEqual(serverMap.poiClusters);
+      expect(clientMap.pois).toEqual(serverMap.pois);
+      expect(Array.from(clientMap.tiles)).toEqual(Array.from(serverMap.tiles));
+    }
+  });
+
+  it("keeps one connected Commons, Cover, and Scar footprint with a forced neutral core", () => {
+    for (const sample of SAMPLES) {
+      const map = generateArena(sample);
+      expect(map.zoneIds.length).toBe(map.tiles.length);
+      expect(map.zoneSeeds.map((entry) => entry.id).sort()).toEqual([
+        MAP_ZONE_COMMONS,
+        MAP_ZONE_COVER,
+        MAP_ZONE_SCAR,
+      ]);
+      const counts = new Int32Array(MAP_ZONE_COUNT);
+      for (const zoneId of map.zoneIds) {
+        expect(zoneId).toBeGreaterThanOrEqual(0);
+        expect(zoneId).toBeLessThan(MAP_ZONE_COUNT);
+        counts[zoneId] = (counts[zoneId] ?? 0) + 1;
+      }
+      for (const zone of map.zoneSeeds) {
+        expect(zoneAtTile(map, zone.col, zone.row)).toBe(zone.id);
+        expect(connectedZoneSize(map, zone.id)).toBe(counts[zone.id]);
+        expect((counts[zone.id] ?? 0) / map.zoneIds.length).toBeGreaterThanOrEqual(0.08);
+      }
+      const centreCol = Math.floor(map.cols / 2);
+      const centreRow = Math.floor(map.rows / 2);
+      for (let row = centreRow - 5; row <= centreRow + 5; row++)
+        for (let col = centreCol - 5; col <= centreCol + 5; col++)
+          if ((col - centreCol) ** 2 + (row - centreRow) ** 2 <= 25)
+            expect(zoneAtTile(map, col, row)).toBe(MAP_ZONE_COMMONS);
+    }
+  });
+
+  it("correlates the existing risk exchanges: Scar owns pits and Cover owns landmarks", () => {
+    const cells = new Int32Array(MAP_ZONE_COUNT);
+    const pits = new Int32Array(MAP_ZONE_COUNT);
+    const pois = new Int32Array(MAP_ZONE_COUNT);
+    for (const sample of SAMPLES) {
+      const map = generateArena(sample);
+      for (let index = 0; index < map.tiles.length; index++) {
+        const zoneId = map.zoneIds[index] ?? MAP_ZONE_COMMONS;
+        cells[zoneId] = (cells[zoneId] ?? 0) + 1;
+        if (map.tiles[index] === TILE_PIT) pits[zoneId] = (pits[zoneId] ?? 0) + 1;
+      }
+      for (const poi of map.pois) {
+        const zoneId = zoneAtPx(map, poi.x, poi.y);
+        pois[zoneId] = (pois[zoneId] ?? 0) + 1;
+      }
+    }
+    const pitRate = (zoneId: number) => (pits[zoneId] ?? 0) / Math.max(1, cells[zoneId] ?? 0);
+    expect(pitRate(MAP_ZONE_SCAR)).toBeGreaterThan(pitRate(MAP_ZONE_COMMONS) * 1.8);
+    expect(pitRate(MAP_ZONE_COVER)).toBeLessThan(pitRate(MAP_ZONE_COMMONS) * 0.8);
+    expect(pois[MAP_ZONE_COVER] ?? 0).toBeGreaterThan((pois[MAP_ZONE_COMMONS] ?? 0) * 3);
+    expect(pois[MAP_ZONE_COVER] ?? 0).toBeGreaterThan((pois[MAP_ZONE_SCAR] ?? 0) * 3);
+  });
+
+  it("deals the full landmark budget into six navigable macro-clusters", () => {
+    for (const sample of SAMPLES) {
+      const map = generateArena(sample);
+      expect(map.pois).toHaveLength(MAP_POI_COUNT);
+      expect(map.poiClusters).toHaveLength(6);
+      const classes = new Int16Array(7);
+      for (const poi of map.pois) {
+        const classId = ((poi.kind % 7) + 7) % 7;
+        classes[classId] = (classes[classId] ?? 0) + 1;
+      }
+      expect(Array.from(classes)).toEqual([4, 4, 4, 4, 4, 4, 4]);
+      for (const cluster of map.poiClusters) {
+        const members = map.pois.filter((poi) => poi.clusterId === cluster.id);
+        expect(members.length).toBeGreaterThanOrEqual(3);
+        expect(members.length).toBeLessThanOrEqual(6);
+        expect(Math.min(...members.map((poi) => Math.hypot(poi.x - cluster.x, poi.y - cluster.y)))).toBe(
+          0,
+        );
+      }
+    }
+  });
+
+  it("proves player-radius navigation through every zone and cluster approach", () => {
+    for (const sample of SAMPLES) {
+      const map = generateArena(sample);
+      const audit = auditArenaNavigation(map, PLAYER_RADIUS);
+      expect(audit.ok, `seed ${JSON.stringify(sample)} failed: ${audit.reason}`).toBe(true);
+      expect(audit.reachableCells).toBe(audit.navigableCells);
+    }
+  });
+});
+
+describe("mapgen — compound landmark authority", () => {
+  it("uses shared compound children for large cover and settles bodies outside every child", () => {
+    let compound = 0;
+    for (const sample of SAMPLES.slice(0, 40)) {
+      const map = generateArena(sample);
+      for (const poi of map.pois) {
+        const circles = poiCollisionCircles(poi);
+        if (poiScale(poi.kind) >= 1.45) {
+          expect(circles).toHaveLength(3);
+          compound++;
+        } else {
+          expect(circles).toHaveLength(1);
+        }
+        for (const circle of circles) {
+          expect(poiCollisionAt(map, circle.x, circle.y)?.poi).toBe(poi);
+          expect(Math.hypot(circle.x - poi.x, circle.y - poi.y) + circle.radius).toBeLessThanOrEqual(
+            poiRadius(poi.kind) + 1e-6,
+          );
+          const settled = resolvePoiCollision(map, circle.x, circle.y, PLAYER_RADIUS);
+          for (const other of map.pois)
+            for (const child of poiCollisionCircles(other))
+              expect(Math.hypot(settled.x - child.x, settled.y - child.y)).toBeGreaterThanOrEqual(
+                child.radius + PLAYER_RADIUS - 0.01,
+              );
+        }
+      }
+    }
+    expect(compound).toBeGreaterThan(0);
+  });
+
+  it("locks golden zone/cluster/POI descriptors", () => {
+    expect(authorityDigest(generateArena(seeds(1, 2, 3, 4)))).toBe("543176bd");
+    expect(
+      authorityDigest(generateArena(seeds(0xdeadbeef, 0x12345678, 0xabcdef01, 0x31415926))),
+    ).toBe("845118fb");
+    expect(authorityDigest(generateArena(seeds(2654435761, 40510, 2, 18)))).toBe("90c9fa82");
+  });
+});
+
+// The appended 200-seed connected-component proof performs per-cell assertions; retain the full sample
+// rather than weakening it to fit Vitest's 5s default.
+import { vi } from "vitest";
+vi.setConfig({ testTimeout: 30_000 });

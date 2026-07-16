@@ -6,11 +6,16 @@ import {
   isPitAtPx,
   MAP_MAX_JUMP_TILES,
   MAP_SPAWN_CLEAR_TILES,
+  MAP_ZONE_COMMONS,
+  MAP_ZONE_COVER,
+  MAP_ZONE_SCAR,
   makeRng,
   mixSeeds,
+  poiCollisionCircles,
   poiRadius,
   poiScale,
   TILE_PIT,
+  zoneAtPx,
 } from "@dd/shared";
 import type Phaser from "phaser";
 import { DECAL_IDS } from "../../sprites/decal-manifest.js";
@@ -415,8 +420,10 @@ function distanceToSegmentSq(
 
 function pointClearsPois(map: ArenaMap, x: number, y: number, margin: number): boolean {
   for (const poi of map.pois) {
-    const r = poiRadius(poi.kind) + margin;
-    if ((x - poi.x) ** 2 + (y - poi.y) ** 2 < r * r) return false;
+    for (const circle of poiCollisionCircles(poi)) {
+      const r = circle.radius + margin;
+      if ((x - circle.x) ** 2 + (y - circle.y) ** 2 < r * r) return false;
+    }
   }
   return true;
 }
@@ -430,8 +437,10 @@ function segmentClearsPois(
   margin: number,
 ): boolean {
   for (const poi of map.pois) {
-    const r = poiRadius(poi.kind) + margin;
-    if (distanceToSegmentSq(poi.x, poi.y, ax, ay, bx, by) < r * r) return false;
+    for (const circle of poiCollisionCircles(poi)) {
+      const r = circle.radius + margin;
+      if (distanceToSegmentSq(circle.x, circle.y, ax, ay, bx, by) < r * r) return false;
+    }
   }
   return true;
 }
@@ -604,10 +613,17 @@ function materialZoneAt(
   return "base";
 }
 
-function zoneVariants(style: DimensionFloorStyle, zone: MaterialZone): readonly number[] {
-  if (zone === "edge") return style.tileEdge;
-  if (zone === "cluster") return style.tileCluster;
-  if (zone === "route") return style.tileRoute;
+function zoneVariants(
+  style: DimensionFloorStyle,
+  material: MaterialZone,
+  mapZoneId: number,
+): readonly number[] {
+  // Macro identity wins at long range; local routes/clusters still modulate the neutral Commons.
+  if (mapZoneId === MAP_ZONE_SCAR) return style.tileEdge;
+  if (mapZoneId === MAP_ZONE_COVER) return style.tileCluster;
+  if (material === "edge") return style.tileEdge;
+  if (material === "cluster") return style.tileCluster;
+  if (material === "route") return style.tileRoute;
   return style.tileBase;
 }
 
@@ -645,7 +661,11 @@ export function drawArena(
       for (let x = 0; x < groundW; x += PAINTED_TILE_SIZE) {
         const cx = x + PAINTED_TILE_SIZE / 2;
         const cy = y + PAINTED_TILE_SIZE / 2;
-        const variants = zoneVariants(style, materialZoneAt(map, routes, cx, cy));
+        const variants = zoneVariants(
+          style,
+          materialZoneAt(map, routes, cx, cy),
+          zoneAtPx(map, cx, cy),
+        );
         const variant = variants[Math.floor(rng.next() * variants.length)] ?? variants[0] ?? 0;
         const key = paintedKeys[variant] ?? paintedKeys[0] ?? terrainTileKey(dimensionId, 0);
         out.push(
@@ -794,7 +814,8 @@ function drawPoiGroundPatch(
   }
   // Quality-invariant fallback/collider cue: present even when the selected painted POI failed to load.
   g.lineStyle(Math.max(1.5, r * 0.022), style.colliderCue, 0.14);
-  g.strokeEllipse(poi.x, poi.y + r * 0.04, r * 2, r * 0.64);
+  for (const circle of poiCollisionCircles(poi))
+    g.strokeEllipse(circle.x, circle.y + r * 0.04, circle.radius * 2, circle.radius * 0.64);
 }
 
 function footprintGroundSafe(map: ArenaMap, x: number, y: number, radius: number): boolean {
@@ -830,7 +851,13 @@ function buildPoiGroundingCluster(
   if (!poi || pack.decalMeta.length === 0) return [];
   const r = poiRadius(poi.kind);
   const sizeClass = poiSizeClass(poi.kind);
-  const candidateCount = sizeClass === "S" ? 1 : sizeClass === "M" ? 3 : sizeClass === "L" ? 4 : 5;
+  const baseCandidateCount =
+    sizeClass === "S" ? 1 : sizeClass === "M" ? 3 : sizeClass === "L" ? 4 : 5;
+  const zoneId = zoneAtPx(map, poi.x, poi.y);
+  const candidateCount = Math.max(
+    1,
+    baseCandidateCount + (zoneId === MAP_ZONE_COVER ? 2 : zoneId === MAP_ZONE_SCAR ? -1 : 0),
+  );
   const flatCount = sizeClass === "S" ? 1 : 2;
   const flat = pack.decalMeta.filter(
     (meta) => meta.usable && !meta.pitOnly && meta.role === "flat" && !meta.accent,
@@ -927,7 +954,9 @@ export function buildPois(
     const preferred =
       sizeClass === "S" ? eligible.filter((meta) => meta.bucket === "squat") : eligible;
     const pool = preferred.length > 0 ? preferred : eligible;
-    const meta = pool[Math.floor(poi.kind / 7) % pool.length] ?? pool[0];
+    const zoneId = zoneAtPx(map, poi.x, poi.y);
+    const meta =
+      pool[(Math.floor(poi.kind / 7) + zoneId * 5 + poi.clusterId * 3) % pool.length] ?? pool[0];
     const entranceAngle = closestRouteAngle(map, routes, poi.x, poi.y);
     drawPoiGroundPatch(skirtG, map, poiIndex, r, pack.style, entranceAngle);
     objs.push(...buildPoiGroundingCluster(scene, map, pack, poiIndex, entranceAngle));
@@ -1307,6 +1336,83 @@ function buildPitDebris(
   return out;
 }
 
+type ZoneBoundarySegment = Readonly<{
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  nx: number;
+  ny: number;
+}>;
+
+/** One exact, static macro-geography layer. Broad low-alpha washes establish territory at camera scale;
+ * the 160px transition band and sparse flat stitches repeat the same shared cell boundary without implying
+ * collision or a hot damage phase. Pit lips and POI silhouettes remain the only danger/solid truth. */
+function buildMapZoneGround(
+  scene: Phaser.Scene,
+  map: ArenaMap,
+  palette: DimensionPalette,
+  style: DimensionFloorStyle,
+): Phaser.GameObjects.Graphics {
+  const T = map.tileSize;
+  const g = scene.add.graphics().setDepth(-18.9);
+  const wash = [
+    { color: mixColor(palette.groundBed, palette.spawnRingSafe, 0.32), alpha: 0.025 },
+    { color: mixColor(style.skirt, style.disturbance, 0.26), alpha: 0.095 },
+    { color: mixColor(style.disturbance, palette.groundBed, 0.18), alpha: 0.12 },
+  ] as const;
+  for (let row = 0; row < map.rows; row++) {
+    let runStart = 0;
+    let runZone = map.zoneIds[row * map.cols] ?? MAP_ZONE_COMMONS;
+    for (let col = 1; col <= map.cols; col++) {
+      const nextZone = col < map.cols ? (map.zoneIds[row * map.cols + col] ?? runZone) : -1;
+      if (nextZone === runZone) continue;
+      const treatment = wash[runZone] ?? wash[MAP_ZONE_COMMONS];
+      g.fillStyle(treatment.color, treatment.alpha);
+      g.fillRect(runStart * T, row * T, (col - runStart) * T, T);
+      runStart = col;
+      runZone = nextZone;
+    }
+  }
+  const boundaries: ZoneBoundarySegment[] = [];
+  for (let row = 0; row < map.rows; row++)
+    for (let col = 0; col < map.cols; col++) {
+      const here = map.zoneIds[row * map.cols + col] ?? MAP_ZONE_COMMONS;
+      if (col + 1 < map.cols && map.zoneIds[row * map.cols + col + 1] !== here) {
+        const x = (col + 1) * T;
+        boundaries.push({ x1: x, y1: row * T, x2: x, y2: (row + 1) * T, nx: 1, ny: 0 });
+      }
+      if (row + 1 < map.rows && map.zoneIds[(row + 1) * map.cols + col] !== here) {
+        const y = (row + 1) * T;
+        boundaries.push({ x1: col * T, y1: y, x2: (col + 1) * T, y2: y, nx: 0, ny: 1 });
+      }
+    }
+  // Two-cell transition: a material change, never a wall/hazard rail.
+  g.lineStyle(T * 2, style.shadow, 0.032);
+  for (const boundary of boundaries)
+    g.lineBetween(boundary.x1, boundary.y1, boundary.x2, boundary.y2);
+  g.lineStyle(3, style.disturbance, 0.24);
+  for (const boundary of boundaries) {
+    const mx = (boundary.x1 + boundary.x2) / 2;
+    const my = (boundary.y1 + boundary.y2) / 2;
+    const marker = mixSeeds(
+      map.seeds.seedTheme,
+      Math.floor(mx / T),
+      Math.floor(my / T),
+      0xb04de2,
+    );
+    if (marker % 6 !== 0) continue;
+    // A short flat stitch across the band. It is discontinuous by construction, never a fence.
+    g.lineBetween(
+      mx - boundary.nx * T * 0.2,
+      my - boundary.ny * T * 0.2,
+      mx + boundary.nx * T * 0.2,
+      my + boundary.ny * T * 0.2,
+    );
+  }
+  return g;
+}
+
 /**
  * §17 "Dust & The Drop" floor bake (the panel-winning look): warm-black PIT voids, a rust band + hot
  * amber lip on every pit edge with inward CHEVRON teeth on the wide (go-around) runs and a clean solid
@@ -1324,6 +1430,7 @@ export function buildArenaFloor(
   const T = map.tileSize;
   const pack = dimensionPropPack(dimensionId);
   const routes = buildWearRoutes(map);
+  out.push(buildMapZoneGround(scene, map, palette, pack.style));
   out.push(buildPathWear(scene, map, dimensionId, routes));
   // A quiet material clearing sits below the exact cool safety rail; dense dressing rejects this radius.
   const spawnPatch = scene.add.graphics().setDepth(-17.4);
@@ -1525,8 +1632,12 @@ export function scatterDecor(
     const scaleRoll = rng.next();
     const rotationRoll = rng.next();
     const flipRoll = rng.next();
+    const acceptanceRoll = rng.next();
     const meta = flat[Math.floor(idRoll * flat.length)] ?? flat[0];
     if (!meta) continue;
+    const zoneId = zoneAtPx(map, x, y);
+    const density = zoneId === MAP_ZONE_COVER ? 1 : zoneId === MAP_ZONE_SCAR ? 0.32 : 0.55;
+    if (acceptanceRoll >= density) continue;
     const scale = 0.24 + scaleRoll * 0.22;
     const footprint = meta.footprintPx * scale;
     if (!footprintGroundSafe(map, x, y, footprint / 2)) continue;
