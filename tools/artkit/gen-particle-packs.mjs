@@ -4,7 +4,7 @@
 // #00ff00 → chroma-key → connected-component dissection → an equal-cell horizontal spritesheet installed to
 // packages/client/public/particles/<pack>.png, plus ONE generated manifest the engine consumes.
 //
-//   node tools/artkit/gen-particle-packs.mjs                # the full 8×6 matrix (48 packs, ~480 particles)
+//   node tools/artkit/gen-particle-packs.mjs                # the full 12×8 matrix (96 packs, ~960 particles)
 //   node tools/artkit/gen-particle-packs.mjs fire-shard     # just one pack
 //
 // Output manifest: packages/client/src/vfx/particle-manifest.ts (PARTICLE_PACKS: id → {url, frameWidth, count}).
@@ -33,6 +33,10 @@ const ELEMENTS = {
   holy: "HOLY — warm radiant gold-white light (#ffe6a0 over #ffffff), soft glow, sacred",
   toxic: "TOXIC — virulent acid green (#9cff3b over #3a5f0b), dripping, caustic, bubbling",
   steel: "STEEL — hot metal sparks, silver-white slivers with orange friction heat (#eef2f6 + #ffb24a)",
+  blood: "BLOOD — deep crimson gore (#7a1020 over #c4313f), wet specular sheen, viscous, dark clotted edges",
+  sand: "SAND — dry tan grit (#c49a5a over #8a6840), dusty, granular, chalky wind-scoured edges",
+  water: "WATER — clear blue droplets and splashes (#6fd6ff over #1e6fa8), translucent highlights, fluid, fresh",
+  nature: "NATURE — living green leaves, spores, and petals (#6eaa42 over #d8ef9a), organic, buoyant, varied",
 };
 const SHAPES = {
   shard: "angular broken SHARDS / splinters, sharp jagged fragments in assorted sizes and angles",
@@ -41,6 +45,8 @@ const SHAPES = {
   mote: "small MOTES / sparks / specks, tiny simple glowing points and flecks, assorted tiny sizes",
   ring: "RINGS / circular halos, thin glowing loops and arcs, some broken/partial, assorted diameters",
   wisp: "curling WISPS / flame-tongue trails, soft S-curved streamers that taper, assorted curves",
+  spark: "tiny fast SPARKS / hot chips, short sharp directional flecks with bright cores, additive-friendly",
+  splat: "directional SPLATS / impact smears for kills and wall hits, wet or dry streaks with scattered flecks",
 };
 
 const packs = [];

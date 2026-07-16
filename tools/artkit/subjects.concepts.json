@@ -1625,5 +1625,82 @@
    "character",
    "Plant-folk"
   ]
+ },
+ {
+  "id": "old-rust",
+  "name": "OLD RUST, the Last Lawman",
+  "prompt": "Same Drifter rig and HD flat-cel look: a colossal rusted junk golem in bold side-profile facing right, built as one huge rounded barrel torso from mismatched frontier scrap plates, crushed boiler iron, wagon-wheel armour, and a battered sheriff-star breastplate under a short tattered duster mantle. A crooked stovepipe lawman hat shadows a faceless charcoal void with one solid ember-orange slit eye. EXACTLY two detached enormous blocky scrap-mitten hands and two detached iron stomp-feet float with wide flat-green gaps; no weapons held, no smoke, no sparks, no emission. Thick slightly uneven black outline, simple one-band cel shading, character-baseline detail despite boss scale. Palette: charcoal #22252B, gunmetal #3A4049, steel #5A6472, heavy rust #A8482E, tan #C49A5A cloth, one flat ember-orange #FF8A2B eye.",
+  "tags": [
+   "character",
+   "enemy",
+   "boss",
+   "Wild-west junk golem"
+  ]
+ },
+ {
+  "id": "world-titan",
+  "name": "Vastaghar, the World-Tread",
+  "prompt": "Same Drifter rig and HD flat-cel look: a continent-shouldered stone titan in monumental side-profile facing right, its one vast rounded mountain torso layered from a few colossal slate plates, cliff-like shoulder shelves, broken temple blocks, and a crown ridge like a distant mesa. The face is a deep charcoal fault with two tiny dull-teal mineral lights, never human. EXACTLY two detached boulder-mitten hands and two immense detached monolith feet are separated by broad flat-green gaps; no held weapon, no terrain base, no dust, no falling debris, no glow rays. Thick slightly uneven black outline and simple flat cel bands, deliberately low detail so size comes from silhouette. Palette: charcoal #22252B, gunmetal #3A4049, steel #5A6472, bone #CFC6AE strata, olive #6E7042 moss stains, tiny dull-teal #3C6E6A eyes.",
+  "tags": [
+   "character",
+   "enemy",
+   "boss",
+   "Stone world titan"
+  ]
+ },
+ {
+  "id": "ronin",
+  "name": "Ronin",
+  "prompt": "Same Drifter rig and HD flat-cel look: a wandering swordsman duelist in a clean bold side-profile facing right, generated EMPTY-HANDED because the runtime equips the sword separately. A compact rounded pill torso wears a weather-beaten charcoal duster cut like a short haori over simple rust-red lacquer plates, with a broad patched straw-and-steel kasa hiding the face in a dark void and one narrow off-white eye-mark. EXACTLY two detached rounded wrapped mitten-hands and two detached split-toe boot blobs float with clear flat-green gaps. Upright neutral planted stance, thick slightly uneven black outline, simple one-band cel shading, ~5 colours. Palette: charcoal #22252B, gunmetal #3A4049, rust #A8482E, tan #C49A5A straw, bone #CFC6AE wraps.",
+  "tags": [
+   "character",
+   "enemy",
+   "duelist",
+   "Wandering swordsman"
+  ]
+ },
+ {
+  "id": "gatlin",
+  "name": "Gatlin",
+  "prompt": "Same Drifter rig and HD flat-cel look: a gun-toting heavy spitter in bold side-profile facing right, generated EMPTY-HANDED because the runtime equips its firearm separately. A wide barrel-chested pill torso is wrapped in a short torn olive poncho, crossed brass cartridge belts, and a riveted gunmetal shoulder guard; a low iron kettle hat hides the face except for one hard off-white dot eye. EXACTLY two huge detached leather mitten-hands and two broad detached iron-shod boot blobs float with clear flat-green gaps. Upright neutral planted stance, thick slightly uneven black outline, simple flat cel shading, ~5 colours; no fused barrels, muzzle flash, or smoke. Palette: charcoal #22252B, gunmetal #3A4049, olive #6E7042, brass-tan #C49A5A, rust #A8482E.",
+  "tags": [
+   "character",
+   "enemy",
+   "spitter",
+   "Heavy gunner"
+  ]
+ },
+ {
+  "id": "vault-ronin",
+  "name": "Vault-Ronin",
+  "prompt": "Same Drifter rig and HD flat-cel look: an acrobatic leaping duelist shown in the required upright neutral side-profile facing right, generated EMPTY-HANDED because the runtime equips the sword separately. A light compact pill torso wears close-fitted gunmetal lamellar, a cropped muted-red waist sash, spring-braced shin guards, and a sharp swept-back half-kasa over a faceless dark mask with one cyber-cyan slash eye. EXACTLY two detached small wrapped mitten-hands and two detached wedge-shaped split-toe boots float with generous flat-green gaps. The narrow forward-canted silhouette suggests stored speed without posing mid-leap; thick uneven outline, flat cel, ~5 colours. Palette: charcoal #22252B, gunmetal #3A4049, steel #5A6472, muted-red #9E3B36, cyber-cyan #33E6FF.",
+  "tags": [
+   "character",
+   "enemy",
+   "leaper",
+   "Acrobatic duelist"
+  ]
+ },
+ {
+  "id": "dust-ranger",
+  "name": "Dust Ranger",
+  "prompt": "Same Drifter rig and HD flat-cel look: a dust-cloaked ranged skirmisher in bold side-profile facing right, generated EMPTY-HANDED because the runtime equips its gun separately. A lean rounded pill torso wears a close-hanging sun-bleached tan dust cape with a clean short hem, faded olive bandoliers, and a deep charcoal hood under a narrow ranger hat; the face is a dark void with one small amber dot eye behind a flat brass monocle plate. EXACTLY two detached slim leather mitten-hands and two detached pointed trail-boot blobs float with clear flat-green gaps. Upright neutral stance, thick slightly uneven outline, one-band flat cel shading, ~5 colours; no blowing cloth or dust VFX. Palette: charcoal #22252B, tan #C49A5A, bone #CFC6AE, olive #6E7042, rust #A8482E.",
+  "tags": [
+   "character",
+   "enemy",
+   "ranger",
+   "Dust skirmisher"
+  ]
+ },
+ {
+  "id": "dummy",
+  "name": "Training Dummy",
+  "prompt": "Same Drifter rig and HD flat-cel look: a friendly non-threatening training dummy in bold side-profile facing right, built from a plump rounded burlap practice torso strapped to a stout wooden post, with patchwork seams, a simple off-white painted target circle on the chest, and a small floppy padded hood with two harmless charcoal stitch-dots. EXACTLY two detached rounded burlap mitten-pads and two detached broad wooden block-feet float with clear flat-green gaps. Upright planted and empty-handed, thick slightly uneven black outline, simple one-band cel shading, ~4 colours; no weapon, floor stand, impact marks, stuffing spray, or VFX. Palette: burlap tan #C49A5A, bone #CFC6AE patches, olive #6E7042 straps, charcoal #22252B seams, rust #A8482E target ring.",
+  "tags": [
+   "character",
+   "enemy",
+   "dummy",
+   "Friendly training prop"
+  ]
  }
 ]

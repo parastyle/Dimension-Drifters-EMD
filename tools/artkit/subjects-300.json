@@ -6235,5 +6235,89 @@
       "long"
     ],
     "cardartAction": "the hand snapped forward, a single glittering pale-blue frost-needle lancing out in a precise straight shot"
+  },
+  {
+    "id": "x-sword-whirlwind",
+    "name": "Dervish Greatblade",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no background): a massive two-handed dervish greatblade with an extremely broad forward-swept steel blade, deep crescent cut-outs near the spine, a long dark leather two-hand grip, and a heavy brass counterweight pommel. Built for full-body whirlwind cuts: powerful, balanced, and unmistakably oversized without ornamental clutter. MEDIUM detail, ~4-6 colours. Flat orthographic full side-profile, blade TIP and cutting belly to the RIGHT, long grip and pommel on the LEFT.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#C49A5A"
+    },
+    "tags": [
+      "weapon",
+      "melee",
+      "greatsword",
+      "physical",
+      "2H",
+      "L",
+      "close"
+    ],
+    "cardartAction": "extended through a committed two-handed whirlwind, the huge edge carving two complete dust-laced circles around the wielder"
+  },
+  {
+    "id": "x-gun-hand-mortar",
+    "name": "Hand Mortar",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no background): a stubby brass break-action grenade hand-cannon with a huge short flared bore, thick riveted chamber, compact dark-wood shoulder grip, iron trigger guard, and a stout latch for loading fat mortar shells. Heavy frontier ordnance compressed into a hand-held silhouette. MEDIUM detail, ~4-6 colours. Flat orthographic full side-profile, oversized cannon MUZZLE to the RIGHT, wood grip and stock on the LEFT.",
+    "palette": {
+      "primary": "#C49A5A",
+      "accent": "#3A4049"
+    },
+    "tags": [
+      "weapon",
+      "ranged",
+      "heavy-ordnance",
+      "fire",
+      "2H",
+      "L",
+      "long"
+    ],
+    "cardartAction": "firing with a brutal upward kick, a fat tumbling grenade shell leaving the flared bore before erupting in an ember-orange blast"
+  },
+  {
+    "id": "x-staff-arcane-lance",
+    "name": "Arcanist's Lance",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no background): a long arcane channeling staff-lance with a dark steel-shod haft, violet leather grip wraps, and a narrow spear-like crystal head held inside three angular silver focusing prongs. Fine runic channels lead toward the solid arc-violet crystal point, making it read equally as ritual staff and precise spell-lance. MEDIUM detail, ~4-6 colours. Flat orthographic full side-profile, crystal lance HEAD and point to the RIGHT, butt-cap and grip on the LEFT.",
+    "palette": {
+      "primary": "#5A6472",
+      "accent": "#B14BFF"
+    },
+    "tags": [
+      "weapon",
+      "caster",
+      "staff",
+      "arcane",
+      "2H",
+      "L",
+      "long"
+    ],
+    "cardartAction": "leveled like a spear while a dense arc-violet lance of runic force channels through the prongs and tears down a whole enemy line"
+  },
+  {
+    "id": "x-staff-storm-rod",
+    "name": "Stormcaller Rod",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no background): a storm-calling conductor rod built around a long blackened-iron shaft, copper grip bands, ceramic insulators, and a forked lightning-cage crown surrounding a solid cyan conductor bead. Weathered metal vanes and a grounded spike make it read as portable frontier lightning apparatus, plain and inactive with no painted arcs or emission. MEDIUM detail, ~4-6 colours. Flat orthographic full side-profile, forked conductor HEAD to the RIGHT, grounded butt-spike and grip on the LEFT.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "weapon",
+      "caster",
+      "staff",
+      "shock",
+      "2H",
+      "L",
+      "long"
+    ],
+    "cardartAction": "raised into a black thunderhead as branching cyber-cyan bolts converge on the forked crown and fire forward in a rapid storm volley"
   }
 ]
