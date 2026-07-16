@@ -28,6 +28,22 @@ declare global {
     renderHero(scene: unknown, S: VfxSurface, p: number): void;
     R: Record<string, unknown>;
     PARTS: Record<string, unknown>;
+    makePerRope(scene: unknown): unknown;
+    updateLinearRope(
+      rope: unknown,
+      key: string,
+      frame: number,
+      quality: 4 | 8 | 12,
+      x0: number,
+      y0: number,
+      x1: number,
+      y1: number,
+      width: number,
+      alpha: number,
+      color: number,
+      phase?: number,
+      normalWobble?: number,
+    ): boolean;
   }
 
   interface VfxLayers {

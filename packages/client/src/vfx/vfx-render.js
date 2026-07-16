@@ -326,6 +326,53 @@
     rope.setDirty().setVisible(true);
     return true;
   }
+  /** Shared retained linear PER strip. BeamRenderer and the swing renderer use the same point banks,
+   * texture/UV patching, vertex tinting, and dirty-update path—there is no second Rope implementation. */
+  function updateLinearRope(
+    rope,
+    key,
+    textureFrame,
+    quality,
+    x0,
+    y0,
+    x1,
+    y1,
+    width,
+    alpha,
+    color,
+    phase = 0,
+    normalWobble = 0,
+  ) {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const pathLength = Math.hypot(dx, dy);
+    if (alpha <= 0 || width <= 0 || pathLength <= 1) {
+      rope.setVisible(false);
+      return false;
+    }
+    const scale = preparePerRope(
+      rope,
+      key,
+      textureFrame,
+      quality,
+      width,
+      pathLength,
+      1 /* FILL */,
+    );
+    const nx = -dy / pathLength;
+    const ny = dx / pathLength;
+    const points = rope.points;
+    for (let i = 0; i < points.length; i++) {
+      const f = i / (points.length - 1);
+      const envelope = Math.sin(Math.PI * f);
+      const wobble = Math.sin((f * 2.2 + phase) * TAU) * normalWobble * envelope;
+      points[i].x = (x0 + dx * f + nx * wobble) / scale;
+      points[i].y = (y0 + dy * f + ny * wobble) / scale;
+      writePerVertex(rope, i, alpha * (0.72 + 0.28 * envelope), color);
+    }
+    rope.setPosition(0, 0).setDirty().setVisible(true);
+    return true;
+  }
   function samplePerClock(S, p, params, profile, out) {
     const meta = S.per || PER_EMPTY;
     const swing = meta.swing;
@@ -1239,6 +1286,8 @@
     clamp01,
     burst,
     lerpHue,
+    makePerRope,
+    updateLinearRope,
     debug: PER_DEBUG,
   };
 })();

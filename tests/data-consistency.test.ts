@@ -103,6 +103,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     id: string;
     banned?: boolean;
     type: string;
+    size?: string;
     behavior?: Behavior;
     stats?: Record<string, number>;
     scalingGrades?: Grades;
@@ -130,6 +131,10 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
   };
 
   const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
+  const BEAM_GUN_IDS = new Set([
+    "x2-voltcaster-machine-pistol",
+    "x2-stormcaller-tesla-gatling",
+  ]);
   it("no concept authors a mechanic block as a SIBLING of behavior (the 11-weapon data-loss bug)", () => {
     for (const w of concepts)
       for (const k of MECH_SIBLINGS)
@@ -162,7 +167,51 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           expect(def.requirements?.[a as never], `${w.id}.requirements.${a}`).toBe(iclamp(v, 2, 20));
 
       // Mechanic block
-      if (kind === "gun" || kind === "beam" || ranged) {
+      const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
+      if (isBeam) {
+        expect(def.beam, `${w.id}.beam`).toBeDefined();
+        expect(def.gun, `${w.id}.gun (beam concepts are never projectile placeholders)`).toBeUndefined();
+
+        const sourceTick = clamp((b.tickRate ?? b.fireRate ?? 0.1) as number, 0.05, 0.25);
+        const normalizedTick = Number((Math.round(sourceTick / 0.05) * 0.05).toFixed(2));
+        const heldDamage = clamp(s.damage ?? 8, 1, 40);
+        const beamDamage = clamp((b.damage ?? heldDamage) as number, 1, 40);
+        const sizeWidth = { S: 32, M: 48, L: 56, XL: 64 }[w.size ?? "M"] ?? 48;
+        const sizeLag = { S: 0.16, M: 0.22, L: 0.28, XL: 0.35 }[w.size ?? "M"] ?? 0.22;
+
+        expect(def.beam?.damagePerSecond, `${w.id}.beam.damagePerSecond`).toBe(
+          beamDamage / sourceTick,
+        );
+        expect(def.beam?.tickRate, `${w.id}.beam.tickRate`).toBe(normalizedTick);
+        expect(def.beam?.width, `${w.id}.beam.width`).toBe(
+          clamp((b.width ?? sizeWidth) as number, 24, 64),
+        );
+        expect(def.beam?.range, `${w.id}.beam.range`).toBe(
+          clamp((b.range ?? s.range ?? 520) as number, 240, 640),
+        );
+        expect(def.beam?.chargeSeconds, `${w.id}.beam.chargeSeconds`).toBe(
+          clamp((b.chargeSeconds ?? 0.65) as number, 0.65, 1.25),
+        );
+        expect(def.beam?.sweepLagSeconds, `${w.id}.beam.sweepLagSeconds`).toBe(
+          clamp((b.sweepLagSeconds ?? sizeLag) as number, 0.05, 0.35),
+        );
+        expect(def.beam?.overheat, `${w.id}.beam.overheat`).toEqual({
+          maxChannelSeconds: 1.25,
+          heatPerSecond: 0.6,
+          coolPerSecond: 0.35,
+          ignitionHeat: 0.25,
+          lockSeconds: 1.5,
+          restartHeat: 0.35,
+        });
+        expect(def.beam?.movement, `${w.id}.beam.movement`).toEqual({
+          chargeMul: 0.55,
+          channelMul: 0.35,
+        });
+        if (b.scalingGrades)
+          expect(def.beam?.scalingGrades, `${w.id}.beam.scalingGrades`).toEqual(
+            upGrades(b.scalingGrades as Grades),
+          );
+      } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
         checkFields(w.id, def.gun, b, {
           damage: { num: [1, 40] },
@@ -180,11 +229,6 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           bounces: { int: [0, 6], absentAs: 0 },
           scalingGrades: { grades: true },
         });
-        // beams map tickRate onto fireRate
-        if (kind === "beam" && b.tickRate !== undefined && b.fireRate === undefined)
-          expect(def.gun?.fireRate, `${w.id}.gun.fireRate(from tickRate)`).toBe(
-            clamp(b.tickRate as number, 0.05, 0.9),
-          );
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
             radius: { num: [30, 90] },

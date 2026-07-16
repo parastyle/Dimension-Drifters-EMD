@@ -7,6 +7,8 @@ import {
   AUGMENTS,
   affixById,
   BAG_CAP,
+  BeamPhase,
+  BEAM_MIN_CHARGE_SECONDS,
   BELT_Y0,
   type BeltLevel,
   BOSS_DEF_IDS,
@@ -74,6 +76,7 @@ import {
   sanitizeMetaLevels,
   scripValue,
   selectChainTargets,
+  stepBeamAngle,
   swingDescriptorFor,
   TgShape,
   TICK_MS,
@@ -83,6 +86,7 @@ import {
   WEAPONS,
   type WeaponDef,
   weaponSetBonus,
+  weaponMuzzleReach,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
@@ -114,6 +118,10 @@ import {
   wrappedDockOffset,
 } from "../ui/weapon-dock-layout.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
+import {
+  BeamRenderer,
+  type PredictedBeamCharge,
+} from "../vfx/BeamRenderer.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
@@ -605,6 +613,27 @@ export class ArenaScene extends Phaser.Scene {
   private paperPeakObjects = 0;
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
+  private beamRenderer!: BeamRenderer;
+  private beamPredictionStartSeq = -1;
+  private beamPredictionHeld = false;
+  private beamPredictionAccepted = false;
+  private beamPredictionAngle = 0;
+  private beamPredictionProgress = 0;
+  private beamPredictionFadeAt = -1;
+  private readonly beamPredictionPending: { seq: number; aimX: number; aimY: number }[] = [];
+  private lastMintedInputSeq = 0;
+  private readonly predictedBeam: PredictedBeamCharge = {
+    ownerId: "",
+    weaponId: "",
+    startSeq: 0,
+    originX: 0,
+    originY: 0,
+    angle: 0,
+    progress: 0,
+    opacity: 1,
+    element: "physical",
+  };
+  private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
   /** Bounded painted renderer for the server-authoritative kill-XP Echo map. */
   private xpMotes!: XpMoteRenderer;
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
@@ -1176,6 +1205,7 @@ export class ArenaScene extends Phaser.Scene {
   private resetSceneState(): void {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.xpMotes?.destroy();
+    this.beamRenderer?.destroy();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
@@ -1227,6 +1257,7 @@ export class ArenaScene extends Phaser.Scene {
     this.slotZones = [];
     this.buyZones = [];
     this.vfxPlayer = undefined!;
+    this.beamRenderer = undefined!;
     this.xpMotes = undefined!;
     this.telegraphGroundGfx = undefined!;
     this.telegraphGfx = undefined!;
@@ -1292,6 +1323,14 @@ export class ArenaScene extends Phaser.Scene {
     this.selfPredHeight = 0;
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
+    this.beamPredictionStartSeq = -1;
+    this.beamPredictionHeld = false;
+    this.beamPredictionAccepted = false;
+    this.beamPredictionAngle = 0;
+    this.beamPredictionProgress = 0;
+    this.beamPredictionFadeAt = -1;
+    this.beamPredictionPending.length = 0;
+    this.lastMintedInputSeq = 0;
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -1363,6 +1402,8 @@ export class ArenaScene extends Phaser.Scene {
     this.connectionGeneration++;
     this.xpMotes?.destroy();
     this.xpMotes = undefined!;
+    this.beamRenderer?.destroy();
+    this.beamRenderer = undefined!;
     this.destroyPaperPagePool();
     this.clearLevelPaperCounters();
     this.removeSceneListeners();
@@ -1377,6 +1418,7 @@ export class ArenaScene extends Phaser.Scene {
     // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
+    this.beamRenderer = new BeamRenderer(this);
     // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
     this.telegraphGroundGfx = this.add.graphics().setDepth(3);
     this.telegraphForeshadows = new TelegraphForeshadowPool(this);
@@ -2839,6 +2881,7 @@ export class ArenaScene extends Phaser.Scene {
       this.wasFrozen = true;
     }
     // XP motion is server-timed and continues through local hit-stop; a frozen rig is a stable catch target.
+    this.updateBeams();
     this.updateXpMotes(deltaMs);
     this.updateXpReceiptLabels();
     this.followSelf();
@@ -5957,6 +6000,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+    if (weapon?.beam) return;
     // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
     if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
     // §10 v0.104 de-clunk: fold in the held weapon's affix cooldown multiplier — the SERVER gates fire on
@@ -8270,6 +8314,7 @@ export class ArenaScene extends Phaser.Scene {
             this.predictor.setMap(this.arenaMap);
           }
         }
+        this.reconcileBeamPrediction(state, self);
       }
     }
   }
@@ -8295,6 +8340,185 @@ export class ArenaScene extends Phaser.Scene {
   /** §4 v0.107 the fixed 50ms INPUT-COMMAND loop: sample WASD once per frame, mint + send + predict one
    *  sequence-numbered command per elapsed 50ms (clamped ≤3/frame — a throttled-tab wake must not burst
    *  its whole backlog; the server would drain-to-newest anyway, and the predictor hard-resyncs). */
+  /** Stable scratch shared by fixed input and the owner's non-damaging pre-acceptance charge. */
+  private currentBeamAim(): typeof this.beamAimCommand {
+    const out = this.beamAimCommand;
+    let aimX = this.selfAim.x;
+    let aimY = this.selfAim.y;
+    if (this.belt) {
+      aimY /= BELT_FORESHORTEN;
+      const length = Math.hypot(aimX, aimY) || 1;
+      aimX /= length;
+      aimY /= length;
+    }
+    const self = this.room?.state.players.get(this.room?.sessionId ?? "");
+    const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
+    const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
+    const world = this.cameras.main.getWorldPoint(px, py);
+    out.aimX = Number.isFinite(aimX) ? aimX : 1;
+    out.aimY = Number.isFinite(aimY) ? aimY : 0;
+    out.targetX = world.x;
+    out.targetY = this.belt
+      ? BELT_Y0 + (world.y - BELT_Y0) / BELT_FORESHORTEN
+      : world.y;
+    if (!Number.isFinite(out.targetX)) out.targetX = self?.x ?? 0;
+    if (!Number.isFinite(out.targetY)) out.targetY = self?.y ?? 0;
+    return out;
+  }
+
+  /** Rebase the owner's harmless charge preview on the accepted row, discard acknowledged aim commands,
+   * then replay only the unacknowledged tail with the same shared turn step as authority. */
+  private reconcileBeamPrediction(state: ArenaState, self: PlayerState): void {
+    if (this.beamPredictionStartSeq < 0) return;
+    const acked = (seq: number) => ((self.ackSeq - seq) >>> 0) < 0x80000000;
+    while (
+      this.beamPredictionPending.length > 0 &&
+      acked(this.beamPredictionPending[0]!.seq)
+    ) {
+      this.beamPredictionPending.shift();
+    }
+    const row = state.beams.get(self.id);
+    if (row?.startSeq === this.beamPredictionStartSeq) {
+      this.beamPredictionAccepted = true;
+      if (row.phase !== BeamPhase.Charging) return; // ignition and later phases are server-only visuals
+      if (this.beamPredictionHeld) this.beamPredictionFadeAt = -1;
+      const weapon = WEAPONS[row.weaponId];
+      if (!weapon?.beam) return;
+      this.beamPredictionAngle = row.angle;
+      this.beamPredictionProgress = row.intensity;
+      for (const cmd of this.beamPredictionPending) {
+        this.beamPredictionAngle = stepBeamAngle(
+          this.beamPredictionAngle,
+          Math.atan2(cmd.aimY, cmd.aimX),
+          weapon.beam.sweepLagSeconds,
+          TICK_MS / 1000,
+        );
+        this.beamPredictionProgress = Math.min(
+          0.95,
+          this.beamPredictionProgress +
+            TICK_MS /
+              1000 /
+              Math.max(
+                BEAM_MIN_CHARGE_SECONDS,
+                weapon.beam.chargeSeconds * lootCooldownMult(self.weaponAffix),
+              ),
+        );
+      }
+      return;
+    }
+    // The start command was consumed but no matching row exists: dead/frozen/heat/swap rejected it.
+    if (acked(this.beamPredictionStartSeq) && this.beamPredictionFadeAt < 0) {
+      this.beamPredictionFadeAt = this.time.now;
+    }
+  }
+
+  /** Advance the non-damaging owner preview from the exact fixed command sent to the room. */
+  private stepBeamPrediction(
+    cmd: { seq: number; fireHeld: boolean; aimX: number; aimY: number },
+    self: PlayerState | undefined,
+    weapon: WeaponDef | undefined,
+  ): void {
+    this.lastMintedInputSeq = cmd.seq;
+    if (!cmd.fireHeld || !self || !weapon?.beam) {
+      if (this.beamPredictionStartSeq >= 0 && this.beamPredictionFadeAt < 0) {
+        this.beamPredictionFadeAt = this.time.now;
+      }
+      return;
+    }
+    if (this.beamPredictionStartSeq < 0 || this.beamPredictionFadeAt >= 0) return;
+    this.beamPredictionPending.push({ seq: cmd.seq, aimX: cmd.aimX, aimY: cmd.aimY });
+    if (this.beamPredictionPending.length > 64) this.beamPredictionPending.shift();
+    this.beamPredictionAngle = stepBeamAngle(
+      this.beamPredictionAngle,
+      Math.atan2(cmd.aimY, cmd.aimX),
+      weapon.beam.sweepLagSeconds,
+      TICK_MS / 1000,
+    );
+    this.beamPredictionProgress = Math.min(
+      0.95,
+      this.beamPredictionProgress +
+        TICK_MS /
+          1000 /
+          Math.max(
+            BEAM_MIN_CHARGE_SECONDS,
+            weapon.beam.chargeSeconds * lootCooldownMult(self.weaponAffix),
+          ),
+    );
+  }
+
+  /** Replicated exact geometry for everyone; only the owner's non-damaging charge knot is predicted. */
+  private updateBeams(): void {
+    const room = this.room;
+    if (!room || !this.beamRenderer) return;
+    const self = room.state.players.get(room.sessionId);
+    const weapon = self ? WEAPONS[self.weapon] : undefined;
+    const held =
+      !!self?.alive &&
+      !this.inLevelWindow(self) &&
+      !this.levelWinInputReleaseLatch &&
+      !!weapon?.beam &&
+      this.input.activePointer.rightButtonDown();
+    const rising = held && !this.beamPredictionHeld;
+    if (rising && self && weapon?.beam) {
+      const aim = this.currentBeamAim();
+      this.beamPredictionStartSeq = (this.lastMintedInputSeq + 1) >>> 0;
+      this.beamPredictionAccepted = false;
+      this.beamPredictionAngle = Math.atan2(aim.aimY, aim.aimX);
+      this.beamPredictionProgress = 0;
+      this.beamPredictionFadeAt = -1;
+      this.beamPredictionPending.length = 0;
+    } else if (!held && this.beamPredictionStartSeq >= 0 && this.beamPredictionFadeAt < 0) {
+      this.beamPredictionFadeAt = this.time.now;
+    }
+
+    let predicted: PredictedBeamCharge | undefined;
+    const fade =
+      this.beamPredictionFadeAt < 0
+        ? 1
+        : 1 - (this.time.now - this.beamPredictionFadeAt) / 80;
+    const selfBeam = room.state.beams.get(room.sessionId);
+    const awaitingRelease =
+      !held &&
+      selfBeam?.startSeq === this.beamPredictionStartSeq &&
+      (selfBeam.phase === BeamPhase.Charging || selfBeam.phase === BeamPhase.Active);
+    if (fade <= 0 && !awaitingRelease) {
+      this.beamPredictionStartSeq = -1;
+      this.beamPredictionAccepted = false;
+      this.beamPredictionProgress = 0;
+      this.beamPredictionFadeAt = -1;
+      this.beamPredictionPending.length = 0;
+    } else if (self && weapon?.beam && this.beamPredictionStartSeq >= 0) {
+      const predictedPos = this.predictor?.renderPos(
+        this.curDx,
+        this.curDy,
+        this.inputAccMs / 1000,
+      );
+      const angle = this.beamPredictionAngle;
+      const reach = weaponMuzzleReach(weapon, characterScale(self.character));
+      this.predictedBeam.ownerId = room.sessionId;
+      this.predictedBeam.weaponId = weapon.id;
+      this.predictedBeam.startSeq = this.beamPredictionStartSeq;
+      this.predictedBeam.originX = (predictedPos?.x ?? self.x) + Math.cos(angle) * reach;
+      this.predictedBeam.originY = (predictedPos?.y ?? self.y) + Math.sin(angle) * reach;
+      this.predictedBeam.angle = angle;
+      this.predictedBeam.progress = this.beamPredictionProgress;
+      this.predictedBeam.opacity = Math.max(0, Math.min(1, fade));
+      this.predictedBeam.element = weapon.tags.element;
+      predicted = this.predictedBeam;
+    }
+    this.beamRenderer.update(
+      room.state.beams,
+      room.sessionId,
+      this.time.now,
+      this.deltaSec,
+      BELT_Y0,
+      this.belt ? BELT_FORESHORTEN : 1,
+      predicted,
+      awaitingRelease ? this.beamPredictionStartSeq : -1,
+    );
+    this.beamPredictionHeld = held;
+  }
+
   private stepNetInput(deltaMs: number, levelWindowOpen = false): void {
     this.curDx = levelWindowOpen ? 0 : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
     this.curDy = levelWindowOpen ? 0 : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
@@ -8309,8 +8533,25 @@ export class ArenaScene extends Phaser.Scene {
     this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
     while (this.inputAccMs >= TICK_MS) {
       this.inputAccMs -= TICK_MS;
-      const cmd = this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued);
+      const self = this.room.state.players.get(this.room.sessionId);
+      const weapon = self ? WEAPONS[self.weapon] : undefined;
+      const fireHeld =
+        !!self?.alive &&
+        !levelWindowOpen &&
+        !this.levelWinInputReleaseLatch &&
+        !!weapon?.beam &&
+        this.input.activePointer.rightButtonDown();
+      const aim = this.currentBeamAim();
+      const cmd = {
+        ...this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued),
+        fireHeld,
+        aimX: aim.aimX,
+        aimY: aim.aimY,
+        targetX: aim.targetX,
+        targetY: aim.targetY,
+      };
       this.jumpQueued = false;
+      this.stepBeamPrediction(cmd, self, weapon);
       this.room.send("input", cmd);
       this.predictor.tick(cmd);
     }

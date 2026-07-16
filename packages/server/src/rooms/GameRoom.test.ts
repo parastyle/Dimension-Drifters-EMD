@@ -2701,3 +2701,155 @@ describe("GameRoom — synced authoritative attack beat", () => {
     expect(h.state().projectiles.size).toBeGreaterThan(0);
   });
 });
+
+// BEAM PANEL REGRESSIONS — appended-only authoritative channel coverage.
+const {
+  BEAM_MIN_CHARGE_SECONDS: BEAM_CHARGE_SECONDS,
+  BEAM_OVERHEAT_LOCK_SECONDS: BEAM_LOCK_SECONDS,
+  BEAM_RESTART_HEAT: BEAM_RESTART_THRESHOLD,
+  BeamPhase: SyncedBeamPhase,
+} = await import("@dd/shared");
+
+const TEST_BEAM_WEAPON = "x2-mesa-spine-thunder-stave";
+
+function makeBeamRoom(sessionId: string) {
+  const h = makeRoom();
+  h.join(sessionId);
+  const player = h.state().players.get(sessionId);
+  player.x = h.room.map.spawnX;
+  player.y = h.room.map.spawnY;
+  player.weapon = TEST_BEAM_WEAPON;
+  h.room.map.pois.length = 0;
+  h.tick(1); // settle the swap before the first held edge
+  return { h, player, combat: h.room.combat.get(sessionId) };
+}
+
+function putBeamDummy(
+  h: ReturnType<typeof makeRoom>,
+  player: { x: number; y: number },
+  id = "beam-dummy",
+) {
+  const enemy = new EnemyState();
+  enemy.id = id;
+  enemy.kind = "dummy";
+  enemy.hp = 100_000;
+  enemy.x = player.x + 180;
+  enemy.y = player.y;
+  h.state().enemies.set(id, enemy);
+  return enemy;
+}
+
+function sendBeamFrame(
+  h: ReturnType<typeof makeRoom>,
+  sessionId: string,
+  seq: number,
+  fireHeld: boolean,
+) {
+  const player = h.state().players.get(sessionId);
+  h.send(sessionId, "input", {
+    seq,
+    dx: 0,
+    dy: 0,
+    jump: false,
+    fireHeld,
+    aimX: 1,
+    aimY: 0,
+    targetX: player.x + 500,
+    targetY: player.y,
+  });
+  h.tick(1);
+}
+
+describe("GameRoom — beam channel authority", () => {
+  it("keeps charge non-damaging and opens authority only after the 0.65s gate", () => {
+    const { h, player, combat } = makeBeamRoom("beam-charge");
+    const enemy = putBeamDummy(h, player);
+    const hp = enemy.hp;
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+
+    for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+    expect(enemy.hp).toBe(hp);
+    expect(combat.beamPhase).toBe(1);
+    expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Charging);
+
+    sendBeamFrame(h, player.id, chargeTicks, true);
+    expect(combat.beamPhase).toBe(2);
+    expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Active);
+    expect(enemy.hp).toBe(hp); // the first live slice is still held for the 0.25s crit quantum
+  });
+
+  it("deals actual-dt DPS through one swept-grid query per live server tick", () => {
+    const random = vi.spyOn(Math, "random").mockReturnValue(1);
+    try {
+      const { h, player, combat } = makeBeamRoom("beam-dps");
+      const enemy = putBeamDummy(h, player);
+      const hp = enemy.hp;
+      const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+      for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+
+      const query = vi.spyOn(h.room.enemyGrid, "queryAabb");
+      const queryCounts: number[] = [];
+      const originalSweep = h.room.damageBeamSweep.bind(h.room);
+      vi.spyOn(h.room, "damageBeamSweep").mockImplementation((...args: unknown[]) => {
+        const before = query.mock.calls.length;
+        const result = originalSweep(...args);
+        queryCounts.push(query.mock.calls.length - before);
+        return result;
+      });
+      sendBeamFrame(h, player.id, chargeTicks, true);
+      expect(enemy.hp).toBe(hp);
+      sendBeamFrame(h, player.id, chargeTicks + 1, true);
+      expect(hp - enemy.hp).toBeCloseTo(combat.beamDescriptor.damagePerSecond * 0.1, 6);
+      for (let i = 2; i < 20; i++) sendBeamFrame(h, player.id, chargeTicks + i, true);
+
+      expect(queryCounts).toHaveLength(20);
+      expect(queryCounts.every((count) => count === 1)).toBe(true);
+      expect(hp - enemy.hp).toBeCloseTo(combat.beamDescriptor.damagePerSecond, 6);
+      expect(combat.beamChannelT).toBeCloseTo(1, 8);
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it("overheats at the bounded channel cap, cannot queue while held, then cools to restart", () => {
+    const { h, player, combat } = makeBeamRoom("beam-heat");
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+    for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+    for (let i = 0; i < 25; i++) sendBeamFrame(h, player.id, chargeTicks + i, true);
+
+    const resource = combat.beamLedger.get(TEST_BEAM_WEAPON);
+    expect(combat.beamPhase).toBe(0);
+    expect(resource.heat).toBe(1);
+    expect(resource.lockT).toBeCloseTo(BEAM_LOCK_SECONDS, 8);
+    expect(resource.requireRelease).toBe(true);
+    expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Overheated);
+
+    let seq = chargeTicks + 25;
+    for (let i = 0; i < 40; i++) sendBeamFrame(h, player.id, seq++, true);
+    expect(combat.beamPhase).toBe(0);
+    expect(resource.heat).toBe(1); // no cooling and no queued restart while the trigger remains held
+
+    while (resource.heat > BEAM_RESTART_THRESHOLD) sendBeamFrame(h, player.id, seq++, false);
+    sendBeamFrame(h, player.id, seq, true);
+    expect(resource.requireRelease).toBe(false);
+    expect(combat.beamPhase).toBe(1);
+    expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Charging);
+  });
+
+  it("starts and stops through input state without spending ACTION_MSGS_PER_TICK", () => {
+    const { h, player, combat } = makeBeamRoom("beam-budget");
+    const input = h.room.inputs.get(player.id);
+    expect(input.actionBudget).toBe(ACTION_MSGS_PER_TICK);
+
+    for (let i = 0; i < ACTION_MSGS_PER_TICK * 2; i++) {
+      h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+    }
+    expect(input.actionBudget).toBe(ACTION_MSGS_PER_TICK);
+
+    sendBeamFrame(h, player.id, 1, true);
+    expect(combat.beamPhase).toBe(1);
+    sendBeamFrame(h, player.id, 2, false);
+    expect(combat.beamPhase).toBe(0);
+    expect(input.actionBudget).toBe(ACTION_MSGS_PER_TICK);
+  });
+});

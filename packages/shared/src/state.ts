@@ -280,6 +280,31 @@ export class ProjectileState extends Schema {
   @type("number") explodeR = 0;
 }
 
+/** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the
+ * authoritative WYSIWYG phase and footprint used by owners, teammates, spectators, and replays. */
+export class BeamState extends Schema {
+  @type("string") ownerId = "";
+  @type("string") weaponId = "";
+  @type("uint32") seq = 0;
+  @type("uint32") startSeq = 0;
+  @type("uint8") phase = 0;
+  @type("uint32") phaseStartTick = 0;
+  @type("number") originX = 0;
+  @type("number") originY = 0;
+  @type("number") previousAngle = 0;
+  @type("number") angle = 0;
+  @type("number") effectiveLength = 0;
+  @type("number") length = 0;
+  @type("number") width = 0;
+  @type("number") halfWidth = 0;
+  @type("number") heat = 0;
+  @type("number") intensity = 0;
+  @type("string") element = "physical";
+  @type("number") previousOriginX = 0;
+  @type("number") previousOriginY = 0;
+  @type("number") previousLength = 0;
+}
+
 export class ArenaState extends Schema {
   /** §4 schema handshake (audit) — FIRST field (index 0) so it stays decodable even if later fields get
    *  reordered; the client compares it to its own SCHEMA_VERSION on join and prompts a reload on mismatch
@@ -362,4 +387,6 @@ export class ArenaState extends Schema {
   @type("uint32") elapsedSeconds = 0;
   /** Authoritative kill-XP packets. APPENDED for wire safety; weapon pickups keep their separate contract. */
   @type({ map: XpEchoState }) xpEchoes = new MapSchema<XpEchoState>();
+  /** Friendly player beams. APPENDED for Colyseus field-order safety; keyed by owner/player id. */
+  @type({ map: BeamState }) beams = new MapSchema<BeamState>();
 }

@@ -460,3 +460,76 @@ describe("meleeReach (§20 WYSIWYG — the blade tip must connect)", () => {
     expect(meleeReach(w, 1.25)).toBeCloseTo(1.25 * meleeReach(w, 1), 6);
   });
 });
+
+// BEAM PANEL REGRESSIONS — appended-only contract coverage.
+const {
+  BEAM_AGGREGATE_TARGET_CAP: BEAM_TARGET_CAP,
+  BEAM_MAX_RANGE: BEAM_RANGE_CAP,
+  BEAM_MAX_TURN_RATE: BEAM_TURN_CAP,
+  BEAM_MAX_WIDTH: BEAM_WIDTH_CAP,
+  BEAM_MIN_CHARGE_SECONDS: BEAM_CHARGE_FLOOR,
+  beamDescriptorFor: makeBeamDescriptor,
+  beamStepDamage: beamDamageForStep,
+  stepBeamAngle: steerBeamAngle,
+} = await import("@dd/shared");
+
+describe("beam weapons — hard panel laws", () => {
+  const beamDefs = Object.values(WEAPONS).filter((weapon) => weapon.beam);
+
+  it("migrates all 21 authored caster placeholders plus the two named energy guns", () => {
+    expect(beamDefs.filter((weapon) => weapon.tags.classPool === "caster")).toHaveLength(21);
+    expect(WEAPONS["x2-voltcaster-machine-pistol"]?.beam).toBeDefined();
+    expect(WEAPONS["x2-stormcaller-tesla-gatling"]?.beam).toBeDefined();
+    expect(beamDefs).toHaveLength(23);
+    for (const weapon of beamDefs) expect(weapon.gun, weapon.id).toBeUndefined();
+  });
+
+  it("keeps every generated beam inside charge, width, range, movement, and heat laws", () => {
+    for (const weapon of beamDefs) {
+      const beam = weapon.beam!;
+      expect(beam.chargeSeconds, weapon.id).toBeGreaterThanOrEqual(BEAM_CHARGE_FLOOR);
+      expect(beam.width, weapon.id).toBeLessThanOrEqual(BEAM_WIDTH_CAP);
+      expect(beam.range, weapon.id).toBeLessThanOrEqual(BEAM_RANGE_CAP);
+      expect(beam.movement.chargeMul, weapon.id).toBeLessThanOrEqual(0.55);
+      expect(beam.movement.channelMul, weapon.id).toBeLessThanOrEqual(0.35);
+      expect(beam.overheat.ignitionHeat, weapon.id).toBeGreaterThanOrEqual(0.25);
+      expect(beam.overheat.heatPerSecond, weapon.id).toBeGreaterThanOrEqual(0.6);
+      expect(beam.overheat.maxChannelSeconds, weapon.id).toBeLessThanOrEqual(1.25);
+    }
+  });
+
+  it("enforces the caps again while constructing an immutable accepted descriptor", () => {
+    const source = WEAPONS["x2-mesa-spine-thunder-stave"]!;
+    const hostile = {
+      ...source,
+      beam: { ...source.beam!, width: 999, range: 9999, chargeSeconds: 0.01 },
+    };
+    const descriptor = makeBeamDescriptor(hostile, 12, 34);
+    expect(descriptor.width).toBe(BEAM_WIDTH_CAP);
+    expect(descriptor.range).toBe(BEAM_RANGE_CAP);
+    expect(descriptor.chargeSeconds).toBe(BEAM_CHARGE_FLOOR);
+    expect(Object.isFrozen(descriptor)).toBe(true);
+  });
+
+  it("caps live aim rotation at 75 degrees/second even with a zero-ish lag", () => {
+    const next = steerBeamAngle(0, Math.PI, 0.001, 0.05);
+    expect(Math.abs(next)).toBeCloseTo(BEAM_TURN_CAP * 0.05, 8);
+  });
+
+  it("normalizes DPS by actual dt and shares output above three contacts", () => {
+    expect(beamDamageForStep(40, 0.05, 1)).toBeCloseTo(2, 8);
+    expect(beamDamageForStep(40, 0.05, 4)).toBeCloseTo(1.5, 8);
+    expect(beamDamageForStep(40, 0.05, 100) * 100).toBeCloseTo(
+      40 * 0.05 * BEAM_TARGET_CAP,
+      8,
+    );
+  });
+
+  it("reports beam DPS as its own scaled card damage source", () => {
+    const weapon = WEAPONS["x2-mesa-spine-thunder-stave"]!;
+    const sources = weaponDamageSources(weapon);
+    expect(sources[0]?.label).toBe("beam DPS");
+    expect(sources[0]?.base).toBe(weapon.beam?.damagePerSecond);
+    expect(sources[0]?.grades).toEqual(weapon.beam?.scalingGrades ?? weapon.scalingGrades);
+  });
+});

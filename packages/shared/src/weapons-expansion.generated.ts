@@ -4090,8 +4090,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "ranged",
       "family": "machine-pistol",
@@ -4103,17 +4103,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "dex": 10
     },
-    "gun": {
-      "damage": 6,
-      "projectileSpeed": 820,
+    "beam": {
+      "damagePerSecond": 75,
+      "tickRate": 0.1,
+      "width": 48,
       "range": 560,
-      "fireRate": 0.08,
-      "magazine": 24,
-      "reloadSeconds": 1.8,
-      "bulletKind": "tracer",
-      "muzzle": "rapid",
-      "recoil": 0.0008,
-      "muzzleColor": 11619071
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-sidewinder-spitfire": {
@@ -7441,8 +7449,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "XL",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "ranged",
       "family": "heavy-ordnance",
@@ -7457,19 +7465,24 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "dex": 8
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 4,
-      "projectileSpeed": 1200,
+    "beam": {
+      "damagePerSecond": 33.333333333333336,
+      "tickRate": 0.1,
+      "width": 64,
       "range": 620,
-      "fireRate": 0.12,
-      "magazine": 40,
-      "reloadSeconds": 2.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0009,
-      "explode": {
-        "radius": 40,
-        "damage": 3
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.35,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
       }
     }
   },
@@ -8811,8 +8824,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "grimoire",
@@ -8824,16 +8837,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 12
     },
-    "gun": {
-      "damage": 4,
-      "projectileSpeed": 1200,
-      "range": 760,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 40,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-pyroglyph-spellbook": {
@@ -9018,8 +9040,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "psalter",
@@ -9032,16 +9054,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 13
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 820,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 50,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-pocket-hexicon": {
@@ -9293,8 +9324,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "frost",
       "classPool": "caster",
       "family": "compendium",
@@ -9307,16 +9338,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 12
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 4,
-      "projectileSpeed": 1200,
-      "range": 800,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 40,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-emberleaf-chapbook": {
@@ -9543,8 +9583,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "frost",
       "classPool": "caster",
       "family": "scepter",
@@ -9557,16 +9597,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 7
     },
-    "gun": {
-      "damage": 4,
-      "projectileSpeed": 1200,
+    "beam": {
+      "damagePerSecond": 33.333333333333336,
+      "tickRate": 0.1,
+      "width": 48,
       "range": 520,
-      "fireRate": 0.12,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-gravesinger-s-hex-wand": {
@@ -9663,8 +9712,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "staff",
@@ -9677,16 +9726,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 11
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 6,
-      "projectileSpeed": 1200,
-      "range": 700,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 60,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-marshlight-bog-censer-wand": {
@@ -9839,8 +9897,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "scepter",
@@ -9852,16 +9910,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 12
     },
-    "gun": {
-      "damage": 7,
-      "projectileSpeed": 1200,
-      "range": 760,
-      "fireRate": 0.14,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 49.99999999999999,
+      "tickRate": 0.15,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-glimmerdust-prospector-wand": {
@@ -9965,8 +10032,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "caster",
       "family": "wand",
@@ -9978,16 +10045,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 8
     },
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 720,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 50,
+      "tickRate": 0.1,
+      "width": 32,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.16,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-saint-bough-frost-crozier": {
@@ -10083,8 +10159,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "caster",
       "family": "staff",
@@ -10097,16 +10173,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 9
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 740,
-      "fireRate": 0.11,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 45.45454545454545,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-reliquary-lantern-wand": {
@@ -10208,8 +10293,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "frost",
       "classPool": "caster",
       "family": "scepter",
@@ -10222,16 +10307,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 9
     },
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 700,
-      "fireRate": 0.13,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 38.46153846153846,
+      "tickRate": 0.15,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-wormwood-hex-stave": {
@@ -10369,8 +10463,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "arcane",
       "classPool": "caster",
       "family": "focus",
@@ -10382,16 +10476,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 12
     },
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 720,
-      "fireRate": 0.12,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 41.66666666666667,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-cinderchoke-brazier-orb": {
@@ -10613,8 +10716,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "orb",
@@ -10626,16 +10729,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 11
     },
-    "gun": {
-      "damage": 6,
-      "projectileSpeed": 1200,
-      "range": 760,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 60,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-mesa-heart-geodes": {
@@ -10777,8 +10889,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "focus",
@@ -10790,16 +10902,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 10
     },
-    "gun": {
-      "damage": 5,
-      "projectileSpeed": 1200,
-      "range": 740,
-      "fireRate": 0.11,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 45.45454545454545,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-pyre-marble-bandolier": {
@@ -10937,8 +11058,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "focus",
@@ -10951,16 +11072,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 13
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 6,
-      "projectileSpeed": 1200,
-      "range": 780,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 60,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-frostbite-snowglobe": {
@@ -11060,8 +11190,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "orb",
@@ -11073,16 +11203,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 12
     },
-    "gun": {
-      "damage": 6,
-      "projectileSpeed": 1200,
-      "range": 800,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 60,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-censer-of-the-weeping-saint": {
@@ -11186,8 +11325,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "relic/totem",
@@ -11199,16 +11338,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 12
     },
-    "gun": {
-      "damage": 7,
-      "projectileSpeed": 1200,
-      "range": 720,
-      "fireRate": 0.12,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 58.333333333333336,
+      "tickRate": 0.1,
+      "width": 32,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.16,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-idol-of-the-pale-verdict": {
@@ -11352,8 +11500,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "mounted",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "relic/totem",
@@ -11365,16 +11513,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 13
     },
-    "gun": {
-      "damage": 9,
-      "projectileSpeed": 1200,
-      "range": 760,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 90,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-gravewax-twin-idols": {
@@ -11698,8 +11855,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "mounted",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "relic/totem",
@@ -11711,16 +11868,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 13
     },
-    "gun": {
-      "damage": 10,
-      "projectileSpeed": 1200,
-      "range": 800,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 100,
+      "tickRate": 0.1,
+      "width": 48,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-spitfire-censer-wand": {
@@ -11825,8 +11991,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "caster",
       "family": "relic/totem",
@@ -11839,16 +12005,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
       "int": 11
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 8,
-      "projectileSpeed": 1200,
-      "range": 740,
-      "fireRate": 0.11,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+    "beam": {
+      "damagePerSecond": 72.72727272727273,
+      "tickRate": 0.1,
+      "width": 56,
+      "range": 640,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.28,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-hollowmother-spore-totem": {
@@ -12299,8 +12474,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "holy",
       "classPool": "caster",
       "family": "gauntlet",
@@ -12312,16 +12487,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 8
     },
-    "gun": {
-      "damage": 3,
-      "projectileSpeed": 1200,
+    "beam": {
+      "damagePerSecond": 25,
+      "tickRate": 0.1,
+      "width": 48,
       "range": 440,
-      "fireRate": 0.12,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-blightgrip-spore-mitt": {
@@ -12383,8 +12567,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "gauntlet",
@@ -12396,16 +12580,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 9
     },
-    "gun": {
-      "damage": 4,
-      "projectileSpeed": 1200,
+    "beam": {
+      "damagePerSecond": 40,
+      "tickRate": 0.1,
+      "width": 48,
       "range": 460,
-      "fireRate": 0.1,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.22,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-ironbrand-heatfist": {
@@ -12553,8 +12746,8 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
       "family": "gauntlet",
@@ -12567,16 +12760,25 @@ export const EXPANSION_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 7
     },
-    "gun": {
-      "damage": 3,
-      "projectileSpeed": 1200,
+    "beam": {
+      "damagePerSecond": 23.076923076923077,
+      "tickRate": 0.15,
+      "width": 32,
       "range": 400,
-      "fireRate": 0.13,
-      "magazine": 30,
-      "reloadSeconds": 1.4,
-      "bulletKind": "tracer",
-      "muzzle": "spark",
-      "recoil": 0.0016
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.16,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      }
     }
   },
   "x2-thunderhead-stormfists": {

@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 15; // Player attack beat: accepted seq/tick + short held-state window
+export const SCHEMA_VERSION = 16; // Player beam rows: append-only authoritative channel geometry
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -135,6 +135,28 @@ export const INPUT_MSGS_PER_TICK = 4;
  *  trigger re-arms ~20/s), but caps the handler CPU a modified client can burn between ticks — the Sol
  *  audit's "only movement input has a message-rate budget" hole. Beyond it messages are IGNORED. */
 export const ACTION_MSGS_PER_TICK = 8;
+/** Player-beam genre-inversion guardrails. These are runtime laws, not authoring suggestions. */
+export const BEAM_MIN_CHARGE_SECONDS = 0.65;
+export const BEAM_CHARGE_MOVE_MUL = 0.55;
+export const BEAM_CHANNEL_MOVE_MUL = 0.35;
+export const BEAM_DEFAULT_WIDTH = 48;
+export const BEAM_MAX_WIDTH = 64;
+export const BEAM_DEFAULT_RANGE = 520;
+export const BEAM_MAX_RANGE = 640;
+export const BEAM_MAX_TURN_RATE = (75 * Math.PI) / 180;
+export const BEAM_IGNITION_HEAT = 0.25;
+export const BEAM_HEAT_PER_SECOND = 0.6;
+export const BEAM_MAX_CHANNEL_SECONDS = 1.25;
+export const BEAM_RECOVERY_SECONDS = 0.35;
+export const BEAM_EARLY_CANCEL_HEAT = 0.2;
+export const BEAM_OVERHEAT_LOCK_SECONDS = 1.5;
+export const BEAM_COOL_PER_SECOND = 0.35;
+export const BEAM_RESTART_HEAT = 0.35;
+export const BEAM_CRIT_QUANTUM_SECONDS = 0.25;
+export const BEAM_AGGREGATE_TARGET_CAP = 3;
+export const BEAM_STALE_INPUT_TICKS = 3;
+export const BEAM_MAX_SWEEP_SAMPLES = 16;
+export const BEAM_RELEASE_VISUAL_SECONDS = 0.08;
 /** Client pending-prediction buffer cap (~3.2s of un-acked commands). Overflow = the connection has
  *  stalled; the predictor flags itself for a hard resync on the next patch (review #13). */
 export const PRED_PENDING_MAX = 64;

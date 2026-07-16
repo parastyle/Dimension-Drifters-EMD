@@ -14,6 +14,32 @@ import {
 import type { Attr } from "./leveling.js";
 import { EXPANSION_WEAPONS } from "./weapons-expansion.generated.js";
 
+/** First-class held beam delivery. Width is the complete damaging diameter; damage is authored per second
+ * so simulation and feedback cadence cannot change throughput. V1 uses heat for staves and guns alike. */
+export interface BeamDef {
+  damagePerSecond: number;
+  /** Readability/damage feedback cadence; a positive multiple of the shared 50ms simulation step. */
+  tickRate: number;
+  width: number;
+  range: number;
+  chargeSeconds: number;
+  /** Exponential aim-follow time constant; live rotation also has a hard shared turn-rate ceiling. */
+  sweepLagSeconds: number;
+  overheat: {
+    maxChannelSeconds: number;
+    heatPerSecond: number;
+    coolPerSecond: number;
+    ignitionHeat: number;
+    lockSeconds: number;
+    restartHeat: number;
+  };
+  movement: {
+    chargeMul: number;
+    channelMul: number;
+  };
+  scalingGrades?: Partial<Record<Attr, Grade>>;
+}
+
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
@@ -184,6 +210,8 @@ export interface WeaponDef {
     /** Per-source scaling (§14) — INT-forward for casters. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
   };
+  /** Charge, ignite once, then sustain one server-authoritative swept capsule until release/overheat. */
+  beam?: BeamDef;
   /**
    * §9/§10/§15 GUN delivery — RMB fires bullets down-barrel on a fire-rate cadence, spending AMMO from a
    * magazine that RELOADS when empty (the charges/maxCharges readout doubles as the ammo counter). Each
@@ -288,6 +316,9 @@ export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): 
   if (!weapon) return GUN_HAND_FORWARD * renderScale;
   return renderScale * (GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength);
 }
+
+/** Shared held-implement tip for bullets, caster bolts, and beams. */
+export const weaponMuzzleReach = gunMuzzleReach;
 
 /** §20 WYSIWYG melee reach: the effective hit `range` of a swept blade, in world px from the player centre.
  *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): the blade SPRITE is drawn
@@ -430,7 +461,14 @@ export interface DamageSource {
  */
 export function weaponDamageSources(def: WeaponDef): DamageSource[] {
   const out: DamageSource[] = [];
-  if (def.gun) {
+  if (def.beam) {
+    out.push({
+      label: "beam DPS",
+      base: def.beam.damagePerSecond,
+      grades: def.beam.scalingGrades ?? def.scalingGrades,
+      count: 1,
+    });
+  } else if (def.gun) {
     out.push({
       label: "shot",
       base: def.gun.damage,

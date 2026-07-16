@@ -6,6 +6,12 @@ import {
   beltLevelFor,
   beltPitAtX,
   beltSafeX,
+  beamDescriptorFor,
+  beamStepDamage,
+  beamSweepSampleCount,
+  BeamPhase,
+  type BeamDescriptor,
+  BeamState,
   clampBeltFloorY,
   resolveBeltObstacles,
   type ArenaMap,
@@ -28,6 +34,11 @@ import {
   BOSS_DEF_IDS,
   BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
+  BEAM_CRIT_QUANTUM_SECONDS,
+  BEAM_EARLY_CANCEL_HEAT,
+  BEAM_RECOVERY_SECONDS,
+  BEAM_RESTART_HEAT,
+  BEAM_STALE_INPUT_TICKS,
   BOSSRUSH_BREATHER,
   BOSSRUSH_HEAL_FRAC,
   BAG_CAP,
@@ -157,6 +168,7 @@ import {
   ProjectileState,
   pickEnemyKind,
   poiCollisionAt,
+  poiCollisionCircles,
   pointInAnnulusGap,
   pointInOrientedRect,
   prevWeapon,
@@ -183,6 +195,7 @@ import {
   type SwingDescriptor,
   SHIFTER_SALVAGE_PER_DEPTH,
   SHIFTER_TIER_SECONDS,
+  shortestAngleDelta,
   SHOP_RADIUS,
   SPAWN_RING,
   safeSpawnPos,
@@ -192,6 +205,7 @@ import {
   spawnInterval,
   stepEnemyChase,
   stepEnemyKite,
+  stepBeamAngle,
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
@@ -208,6 +222,7 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  weaponMuzzleReach,
   weaponSetBonus,
   xpToNextLevel,
   ZONE_DPS,
@@ -267,6 +282,11 @@ interface InputCmd {
   dx: number;
   dy: number;
   jump: boolean;
+  fireHeld: boolean;
+  aimX: number;
+  aimY: number;
+  targetX: number;
+  targetY: number;
 }
 
 /** Per-client input pipeline + the player's PERSISTENT steered movement velocity (§7 course correction).
@@ -278,11 +298,19 @@ interface InputState {
   held: InputCmd;
   lastSeq: number;
   msgBudget: number;
+  lastFreshFireTick: number;
   /** §44 per-tick budget for ACTION messages (attack/parry/grab/cycle/…) — the input budget's sibling,
    *  so a modified client can't monopolize the event loop with non-movement RPCs between ticks. */
   actionBudget: number;
   mvx: number;
   mvy: number;
+}
+
+interface BeamResourceLedger {
+  heat: number;
+  recoveryT: number;
+  lockT: number;
+  requireRelease: boolean;
 }
 
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
@@ -339,6 +367,24 @@ interface CombatState {
    *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
    *  cycle→salvage loop can't mint bankable salvage from thin air. */
   heldEarned: boolean;
+  /** Beam channel runtime. The resource ledger survives swaps so heat debt cannot be bypassed. */
+  beamDescriptor?: BeamDescriptor;
+  beamPhase: 0 | 1 | 2;
+  beamPhaseT: number;
+  beamChannelT: number;
+  beamAngle: number;
+  beamPreviousAngle: number;
+  beamPreviousX: number;
+  beamPreviousY: number;
+  beamPreviousLength: number;
+  beamTeleportSeq: number;
+  beamInputWasHeld: boolean;
+  beamPulseT: number;
+  beamQuantumT: number;
+  beamCrit: number;
+  beamHitIds: Set<string>;
+  beamPendingDamage: Map<string, number>;
+  beamLedger: Map<string, BeamResourceLedger>;
 }
 
 /** Server-private launch geometry. The wire keeps only immutable epochs; this cache lets disconnect
@@ -369,6 +415,16 @@ export class GameRoom extends Room<ArenaState> {
   private readonly enemyGrid = new SpatialGrid<string>(ENEMY_GRID_CELL_SIZE);
   private readonly enemyCandidates: string[] = [];
   private readonly oversizedEnemyIds: string[] = [];
+  /** Reused swept-capsule samples (16 intervals + both endpoints); no per-beam/tick arrays. */
+  private readonly beamSampleX = new Float64Array(17);
+  private readonly beamSampleY = new Float64Array(17);
+  private readonly beamSampleAngle = new Float64Array(17);
+  private readonly beamSampleLength = new Float64Array(17);
+  /** Scratch endpoint for the active beam currently being stepped. Kept off CombatState so the
+   * previous pose remains intact until it has been published for remote swept-ribbon interpolation. */
+  private beamCurrentX = 0;
+  private beamCurrentY = 0;
+  private beamCurrentLength = 0;
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
@@ -609,7 +665,17 @@ export class GameRoom extends Room<ArenaState> {
     // synthetic next-seq so held-input semantics keep working.
     this.onMessage(
       "input",
-      (client, message: { seq?: number; dx?: number; dy?: number; jump?: boolean }) => {
+      (client, message: {
+        seq?: number;
+        dx?: number;
+        dy?: number;
+        jump?: boolean;
+        fireHeld?: boolean;
+        aimX?: number;
+        aimY?: number;
+        targetX?: number;
+        targetY?: number;
+      }) => {
         const rec = this.inputs.get(client.sessionId);
         if (!rec) return;
         if (rec.msgBudget <= 0) return; // over the per-tick budget — ignore (flood guard)
@@ -629,6 +695,15 @@ export class GameRoom extends Room<ArenaState> {
           dx: Number.isFinite(message?.dx) ? (message?.dx as number) : 0,
           dy: Number.isFinite(message?.dy) ? (message?.dy as number) : 0,
           jump: message?.jump === true,
+          fireHeld: message?.fireHeld === true,
+          aimX: Number.isFinite(message?.aimX) ? (message.aimX as number) : rec.held.aimX,
+          aimY: Number.isFinite(message?.aimY) ? (message.aimY as number) : rec.held.aimY,
+          targetX: Number.isFinite(message?.targetX)
+            ? (message.targetX as number)
+            : rec.held.targetX,
+          targetY: Number.isFinite(message?.targetY)
+            ? (message.targetY as number)
+            : rec.held.targetY,
         });
         // Bounded queue: shed the OLDEST beyond the cap (the freshest intent must survive).
         while (rec.queue.length > INPUT_QUEUE_MAX) rec.queue.shift();
@@ -640,6 +715,8 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage(
       "attack",
       (client, message: { aimX?: number; aimY?: number; tx?: number; ty?: number }) => {
+        const held = this.state.players.get(client.sessionId);
+        if (held && WEAPONS[held.weapon]?.beam) return;
         if (!this.takeAction(client)) return; // §44 action budget
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
@@ -1080,6 +1157,19 @@ export class GameRoom extends Room<ArenaState> {
     this.hiddenPickupIdentities.clear();
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
+    this.state.beams.clear();
+    for (const c of this.combat.values()) {
+      c.beamDescriptor = undefined;
+      c.beamPhase = 0;
+      c.beamPhaseT = 0;
+      c.beamChannelT = 0;
+      c.beamPulseT = 0;
+      c.beamQuantumT = 0;
+      c.beamPendingDamage.clear();
+      c.beamHitIds.clear();
+      c.beamLedger.clear();
+      c.beamInputWasHeld = false;
+    }
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
   }
@@ -1629,9 +1719,20 @@ export class GameRoom extends Room<ArenaState> {
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
     this.inputs.set(client.sessionId, {
       queue: [],
-      held: { seq: 0, dx: 0, dy: 0, jump: false },
+      held: {
+        seq: 0,
+        dx: 0,
+        dy: 0,
+        jump: false,
+        fireHeld: false,
+        aimX: 1,
+        aimY: 0,
+        targetX: 0,
+        targetY: 0,
+      },
       lastSeq: 0,
       msgBudget: INPUT_MSGS_PER_TICK,
+      lastFreshFireTick: 0,
       actionBudget: ACTION_MSGS_PER_TICK,
       mvx: 0,
       mvy: 0,
@@ -1660,11 +1761,31 @@ export class GameRoom extends Room<ArenaState> {
       parryChainT: 0,
       vh: 0,
       heldEarned: false,
+      beamPhase: 0,
+      beamPhaseT: 0,
+      beamChannelT: 0,
+      beamAngle: 0,
+      beamPreviousAngle: 0,
+      beamPreviousX: player.x,
+      beamPreviousY: player.y,
+      beamPreviousLength: 0,
+      beamTeleportSeq: player.teleportSeq,
+      beamInputWasHeld: false,
+      beamPulseT: 0,
+      beamQuantumT: 0,
+      beamCrit: 0,
+      beamHitIds: new Set<string>(),
+      beamPendingDamage: new Map<string, number>(),
+      beamLedger: new Map<string, BeamResourceLedger>(),
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
 
   override onLeave(client: Client): void {
+    const leaving = this.state.players.get(client.sessionId);
+    const leavingCombat = this.combat.get(client.sessionId);
+    if (leaving && leavingCombat) this.cancelBeam(leaving, client.sessionId, leavingCombat, false, true);
+    this.state.beams.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
@@ -1758,7 +1879,23 @@ export class GameRoom extends Room<ArenaState> {
       const cmd = input.queue.shift();
       if (cmd) {
         input.held = cmd;
+        input.lastFreshFireTick = this.state.tick;
         player.ackSeq = cmd.seq;
+        const beamAim = this.combat.get(id);
+        if (beamAim) {
+          const aimLength = Math.hypot(cmd.aimX, cmd.aimY);
+          if (aimLength > 1e-4) {
+            beamAim.aimX = cmd.aimX / aimLength;
+            beamAim.aimY = cmd.aimY / aimLength;
+          }
+          beamAim.targetX = Number.isFinite(cmd.targetX)
+            ? cmd.targetX
+            : player.x + beamAim.aimX;
+          beamAim.targetY = Number.isFinite(cmd.targetY)
+            ? cmd.targetY
+            : player.y + beamAim.aimY;
+          player.aimDir = Math.atan2(beamAim.aimY, beamAim.aimX);
+        }
         // The jump intent rides the command (review #5) — same buffered-jump semantics as the SPACE
         // message (the consume gate re-checks grounded/cooldown/alive/level-window).
         if (cmd.jump) {
@@ -1793,17 +1930,26 @@ export class GameRoom extends Room<ArenaState> {
       // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
       // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
       // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
+      const beamRuntime = this.combat.get(id);
+      const beamSpeed = beamRuntime?.beamDescriptor
+        ? MOVE_SPEED *
+          (beamRuntime.beamPhase === 1
+            ? beamRuntime.beamDescriptor.chargeMoveMul
+            : beamRuntime.beamPhase === 2
+              ? beamRuntime.beamDescriptor.channelMoveMul
+              : 1)
+        : MOVE_SPEED;
       const next = this.belt
         ? stepSteeredMovement(
             player,
             { vx: input.mvx, vy: input.mvy },
             input.held,
             dt,
-            MOVE_SPEED,
+            beamSpeed,
             BELT_Y0,
             BELT_Y0 + DEPTH_MAX,
           )
-        : stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt);
+        : stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt, beamSpeed);
       input.mvx = next.vx;
       input.mvy = next.vy;
       // §4 v0.107 mirror the steering velocity onto synced state — the owning client REBASES its
@@ -2000,6 +2146,9 @@ export class GameRoom extends Room<ArenaState> {
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
       // magazine as ammo; thrown weapons use charges; both share charges/maxCharges + the reload timer.
       if (c.lastWeapon !== player.weapon) {
+        if (c.beamPhase !== 0 || c.beamDescriptor) {
+          this.cancelBeam(player, id, c, true, true);
+        }
         c.lastWeapon = player.weapon;
         c.cd = 0; // clear the previous weapon's leftover cooldown so the new one can act immediately
         c.reloadCd = 0;
@@ -2011,6 +2160,15 @@ export class GameRoom extends Room<ArenaState> {
         player.charges = max;
         player.maxCharges = max;
       }
+
+      if (weapon?.beam) {
+        c.attackBuffer = 0;
+        this.stepPlayerBeam(player, id, c, weapon, dt, acting);
+        return;
+      }
+      this.stepBeamResources(c, player.weapon, false, dt);
+      c.beamInputWasHeld = false;
+      this.state.beams.delete(id);
 
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
       // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
@@ -2459,6 +2617,525 @@ export class GameRoom extends Room<ArenaState> {
   /** §20/§44 advance accepted descriptor time, sweeping only while the unchanged pose envelope is dangerous.
    *  A tick may cross wind-up, the whole fast active interval, or recovery; clamped progress preserves full
    *  arc supersampling and hit-once coverage in every case. The live player position still anchors the edge. */
+  /** Input held-state with the three-tick disconnect/stall watchdog applied. */
+  private beamHeld(id: string): boolean {
+    const input = this.inputs.get(id);
+    if (!input?.held.fireHeld) return false;
+    return ((this.state.tick - input.lastFreshFireTick) >>> 0) < BEAM_STALE_INPUT_TICKS;
+  }
+
+  private beamResource(c: CombatState, weaponId: string): BeamResourceLedger {
+    let resource = c.beamLedger.get(weaponId);
+    if (!resource) {
+      resource = { heat: 0, recoveryT: 0, lockT: 0, requireRelease: false };
+      c.beamLedger.set(weaponId, resource);
+    }
+    return resource;
+  }
+
+  /** Cool every inactive ledger after recovery/lock. Stowed beams cool too, but their debt is never erased. */
+  private stepBeamResources(
+    c: CombatState,
+    currentWeaponId: string,
+    currentHeld: boolean,
+    dt: number,
+  ): void {
+    for (const [weaponId, resource] of c.beamLedger) {
+      const activelyChanneling =
+        c.beamPhase !== 0 && c.beamDescriptor?.weaponId === weaponId;
+      if (activelyChanneling) continue;
+      if (resource.lockT > 0) {
+        resource.lockT = Math.max(0, resource.lockT - dt);
+        continue;
+      }
+      if (resource.recoveryT > 0) {
+        resource.recoveryT = Math.max(0, resource.recoveryT - dt);
+        continue;
+      }
+      const isCurrent = weaponId === currentWeaponId;
+      if (!isCurrent || !currentHeld) {
+        const cool = Math.min(0.35, WEAPONS[weaponId]?.beam?.overheat.coolPerSecond ?? 0.35);
+        resource.heat = Math.max(0, resource.heat - cool * dt);
+        resource.requireRelease = false;
+      }
+    }
+  }
+
+  /** Charge → authoritative ignition → sustained swept damage → recovery/overheat. */
+  private stepPlayerBeam(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    weapon: WeaponDef,
+    dt: number,
+    acting: boolean,
+  ): void {
+    const input = this.inputs.get(id);
+    if (!input || !weapon.beam) return;
+    const held = this.beamHeld(id);
+    const rising = held && !c.beamInputWasHeld;
+    const resource = this.beamResource(c, weapon.id);
+    this.stepBeamResources(c, weapon.id, held, dt);
+
+    if (!acting || c.beamTeleportSeq !== player.teleportSeq) {
+      if (c.beamPhase !== 0) this.cancelBeam(player, id, c, true, true);
+      else this.state.beams.delete(id);
+      c.beamInputWasHeld = held;
+      c.beamTeleportSeq = player.teleportSeq;
+      return;
+    }
+
+    if (
+      c.beamPhase === 0 &&
+      rising &&
+      resource.lockT <= 0 &&
+      resource.recoveryT <= 0 &&
+      !resource.requireRelease &&
+      resource.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat)
+    ) {
+      const classDamage =
+        weapon.tags.classPool === "caster"
+          ? 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge")
+          : 1;
+      c.beamDescriptor = beamDescriptorFor(
+        weapon,
+        this.state.tick,
+        input.held.seq,
+        this.heldDamageMult(weapon, weapon.beam.scalingGrades, player) * classDamage,
+        lootCooldownMult(player.weaponAffix),
+      );
+      c.beamPhase = 1;
+      c.beamPhaseT = 0;
+      c.beamChannelT = 0;
+      c.beamPulseT = 0;
+      c.beamQuantumT = 0;
+      c.beamPendingDamage.clear();
+      c.beamAngle = Math.atan2(c.aimY, c.aimX);
+      c.beamPreviousAngle = c.beamAngle;
+      const reach = weaponMuzzleReach(weapon, characterScale(player.character));
+      c.beamPreviousX = player.x + Math.cos(c.beamAngle) * reach;
+      c.beamPreviousY = player.y + Math.sin(c.beamAngle) * reach;
+      c.beamPreviousLength = this.clipBeamLength(
+        c.beamPreviousX,
+        c.beamPreviousY,
+        c.beamAngle,
+        c.beamDescriptor.range,
+        c.beamDescriptor.width / 2,
+      );
+      c.beamTeleportSeq = player.teleportSeq;
+    }
+
+    const descriptor = c.beamDescriptor;
+    if (c.beamPhase === 1 && descriptor) {
+      if (!held) {
+        this.cancelBeam(player, id, c, true, false);
+      } else {
+        c.beamAngle = stepBeamAngle(
+          c.beamAngle,
+          Math.atan2(c.aimY, c.aimX),
+          descriptor.sweepLagSeconds,
+          dt,
+          descriptor.maxTurnRate,
+        );
+        c.beamPhaseT += dt;
+        const chargeRow = this.syncBeamRow(
+          player,
+          id,
+          c,
+          descriptor,
+          BeamPhase.Charging,
+          0,
+          Math.min(0.95, c.beamPhaseT / descriptor.chargeSeconds),
+          resource.heat,
+        );
+        // Charge steers/moves the implement but is non-damaging; ignition begins from the latest accepted
+        // pose, never sweeps the whole anticipation path as a retroactive hit.
+        c.beamPreviousX = chargeRow.originX;
+        c.beamPreviousY = chargeRow.originY;
+        c.beamPreviousAngle = c.beamAngle;
+        c.beamPreviousLength = this.clipBeamLength(
+          chargeRow.originX,
+          chargeRow.originY,
+          c.beamAngle,
+          descriptor.range,
+          descriptor.width / 2,
+        );
+        if (c.beamPhaseT + 1e-9 >= descriptor.chargeSeconds) {
+          resource.heat = Math.min(1, resource.heat + descriptor.ignitionHeat);
+          c.beamPhase = 2;
+          c.beamPhaseT = 0;
+          c.beamChannelT = 0;
+          c.beamPulseT = 0;
+          c.beamQuantumT = 0;
+          c.beamCrit = critChanceFor(player.luk, player.dex);
+          const row = this.state.beams.get(id);
+          if (row) row.phaseStartTick = this.state.tick;
+          this.stepActiveBeam(player, id, c, descriptor, resource, dt);
+        }
+      }
+    } else if (c.beamPhase === 2 && descriptor) {
+      if (!held) this.finishBeam(player, id, c, resource, false);
+      else this.stepActiveBeam(player, id, c, descriptor, resource, dt);
+    } else if (c.beamPhase === 0) {
+      this.syncRestingBeamRow(player, id, c, weapon, resource);
+    }
+
+    c.beamInputWasHeld = held;
+  }
+
+  private stepActiveBeam(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    descriptor: BeamDescriptor,
+    resource: BeamResourceLedger,
+    dt: number,
+  ): void {
+    c.beamAngle = stepBeamAngle(
+      c.beamAngle,
+      Math.atan2(c.aimY, c.aimX),
+      descriptor.sweepLagSeconds,
+      dt,
+      descriptor.maxTurnRate,
+    );
+    const length = this.damageBeamSweep(player, c, descriptor, dt);
+    c.beamChannelT += dt;
+    resource.heat = Math.min(1, resource.heat + descriptor.heatPerSecond * dt);
+    this.syncBeamRow(
+      player,
+      id,
+      c,
+      descriptor,
+      BeamPhase.Active,
+      length,
+      1,
+      resource.heat,
+    );
+    c.beamPreviousX = this.beamCurrentX;
+    c.beamPreviousY = this.beamCurrentY;
+    c.beamPreviousAngle = c.beamAngle;
+    c.beamPreviousLength = this.beamCurrentLength;
+    if (
+      resource.heat >= 1 - 1e-9 ||
+      c.beamChannelT + 1e-9 >= descriptor.maxChannelSeconds
+    ) {
+      this.finishBeam(player, id, c, resource, true);
+    }
+  }
+
+  private finishBeam(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    resource: BeamResourceLedger,
+    overheated: boolean,
+  ): void {
+    this.flushBeamDamage(c, false);
+    c.beamPhase = 0;
+    c.beamPhaseT = 0;
+    c.beamChannelT = 0;
+    c.beamPulseT = 0;
+    c.beamQuantumT = 0;
+    if (overheated) {
+      resource.heat = 1;
+      resource.lockT = Math.max(resource.lockT, c.beamDescriptor?.lockSeconds ?? 1.5);
+      resource.requireRelease = true;
+    } else {
+      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS);
+    }
+    const weapon = WEAPONS[player.weapon];
+    if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon, resource);
+    else this.state.beams.delete(id);
+  }
+
+  /** Hard cancellation for swaps/death/teleports/parry. Early/escape cancels pay the 20-heat commitment. */
+  private cancelBeam(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    addCancelCost: boolean,
+    removeRow: boolean,
+  ): void {
+    this.flushBeamDamage(c, false);
+    const descriptor = c.beamDescriptor;
+    if (descriptor && addCancelCost) {
+      const resource = this.beamResource(c, descriptor.weaponId);
+      resource.heat = Math.min(1, resource.heat + BEAM_EARLY_CANCEL_HEAT);
+      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS);
+    }
+    c.beamPhase = 0;
+    c.beamPhaseT = 0;
+    c.beamChannelT = 0;
+    c.beamPulseT = 0;
+    c.beamQuantumT = 0;
+    c.beamPendingDamage.clear();
+    if (removeRow) {
+      c.beamDescriptor = undefined;
+      this.state.beams.delete(id);
+    } else if (descriptor && WEAPONS[player.weapon]?.beam) {
+      this.syncRestingBeamRow(
+        player,
+        id,
+        c,
+        WEAPONS[player.weapon]!,
+        this.beamResource(c, descriptor.weaponId),
+      );
+    }
+  }
+
+  private syncRestingBeamRow(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    weapon: WeaponDef,
+    resource: BeamResourceLedger,
+  ): void {
+    if (
+      resource.heat <= 0 &&
+      resource.recoveryT <= 0 &&
+      resource.lockT <= 0 &&
+      !resource.requireRelease
+    ) {
+      this.state.beams.delete(id);
+      if (c.beamPhase === 0) c.beamDescriptor = undefined;
+      return;
+    }
+    const descriptor =
+      c.beamDescriptor?.weaponId === weapon.id
+        ? c.beamDescriptor
+        : beamDescriptorFor(weapon, this.state.tick, 0, 1, 1);
+    const overheated = resource.lockT > 0 || resource.requireRelease;
+    this.syncBeamRow(
+      player,
+      id,
+      c,
+      descriptor,
+      overheated ? BeamPhase.Overheated : BeamPhase.Cooling,
+      c.beamPreviousLength,
+      overheated ? 1 : resource.heat,
+      resource.heat,
+    );
+  }
+
+  private syncBeamRow(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    descriptor: BeamDescriptor,
+    phase: number,
+    length: number,
+    intensity: number,
+    heat: number,
+  ): BeamState {
+    let row = this.state.beams.get(id);
+    if (!row) {
+      row = new BeamState();
+      row.ownerId = id;
+      this.state.beams.set(id, row);
+    }
+    if (row.phase !== phase) row.phaseStartTick = this.state.tick;
+    const reach = weaponMuzzleReach(WEAPONS[descriptor.weaponId], characterScale(player.character));
+    const originX = player.x + Math.cos(c.beamAngle) * reach;
+    const originY = player.y + Math.sin(c.beamAngle) * reach;
+    row.weaponId = descriptor.weaponId;
+    row.seq = descriptor.startSeq;
+    row.startSeq = descriptor.startSeq;
+    row.phase = phase;
+    row.originX = originX;
+    row.originY = originY;
+    row.previousAngle = c.beamPreviousAngle;
+    row.angle = c.beamAngle;
+    row.effectiveLength = length;
+    row.length = length;
+    row.width = descriptor.width;
+    row.halfWidth = descriptor.width / 2;
+    row.heat = Math.max(0, Math.min(1, heat));
+    row.intensity = Math.max(0, Math.min(1, intensity));
+    row.element = WEAPONS[descriptor.weaponId]?.tags.element ?? "physical";
+    row.previousOriginX = c.beamPreviousX;
+    row.previousOriginY = c.beamPreviousY;
+    row.previousLength = c.beamPreviousLength;
+    return row;
+  }
+
+  /** Exact ray truncation against arena edges and colliding POI/belt circles. */
+  private clipBeamLength(
+    ox: number,
+    oy: number,
+    angle: number,
+    authoredRange: number,
+    halfWidth: number,
+  ): number {
+    const dx = Math.cos(angle);
+    const dy = Math.sin(angle);
+    let length = authoredRange;
+    const minX = halfWidth;
+    const maxX = ARENA_WIDTH - halfWidth;
+    const minY = halfWidth;
+    const maxY = ARENA_HEIGHT - halfWidth;
+    if (dx > 1e-6) length = Math.min(length, (maxX - ox) / dx);
+    else if (dx < -1e-6) length = Math.min(length, (minX - ox) / dx);
+    if (dy > 1e-6) length = Math.min(length, (maxY - oy) / dy);
+    else if (dy < -1e-6) length = Math.min(length, (minY - oy) / dy);
+
+    if (this.belt && this.beltLevel) {
+      for (const obstacle of this.beltLevel.obstacles) {
+        length = this.rayCircleLength(
+          ox,
+          oy,
+          dx,
+          dy,
+          obstacle.x,
+          BELT_Y0 + obstacle.depth,
+          obstacle.r + halfWidth,
+          length,
+        );
+      }
+    } else {
+      for (const poi of this.map.pois) {
+        for (const circle of poiCollisionCircles(poi)) {
+          length = this.rayCircleLength(
+            ox,
+            oy,
+            dx,
+            dy,
+            circle.x,
+            circle.y,
+            circle.radius + halfWidth,
+            length,
+          );
+        }
+      }
+    }
+    return Math.max(0, Math.min(authoredRange, length));
+  }
+
+  private rayCircleLength(
+    ox: number,
+    oy: number,
+    dx: number,
+    dy: number,
+    cx: number,
+    cy: number,
+    radius: number,
+    current: number,
+  ): number {
+    const rx = ox - cx;
+    const ry = oy - cy;
+    const c = rx * rx + ry * ry - radius * radius;
+    if (c <= 0) return 0;
+    const b = rx * dx + ry * dy;
+    const disc = b * b - c;
+    if (disc < 0) return current;
+    const t = -b - Math.sqrt(disc);
+    return t >= 0 && t < current ? t : current;
+  }
+
+  /** One broad-phase query for the complete previous→current swept capsule union. */
+  private damageBeamSweep(
+    player: PlayerState,
+    c: CombatState,
+    descriptor: BeamDescriptor,
+    dt: number,
+  ): number {
+    const reach = weaponMuzzleReach(WEAPONS[descriptor.weaponId], characterScale(player.character));
+    const currentX = player.x + Math.cos(c.beamAngle) * reach;
+    const currentY = player.y + Math.sin(c.beamAngle) * reach;
+    const angularDelta = shortestAngleDelta(c.beamPreviousAngle, c.beamAngle);
+    const originTravel = Math.hypot(currentX - c.beamPreviousX, currentY - c.beamPreviousY);
+    const samples = beamSweepSampleCount(
+      originTravel,
+      angularDelta,
+      descriptor.range,
+      descriptor.width / 2,
+    );
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    for (let sample = 0; sample <= samples; sample++) {
+      const f = sample / samples;
+      const sx = c.beamPreviousX + (currentX - c.beamPreviousX) * f;
+      const sy = c.beamPreviousY + (currentY - c.beamPreviousY) * f;
+      const angle = c.beamPreviousAngle + angularDelta * f;
+      const length = this.clipBeamLength(sx, sy, angle, descriptor.range, descriptor.width / 2);
+      this.beamSampleX[sample] = sx;
+      this.beamSampleY[sample] = sy;
+      this.beamSampleAngle[sample] = angle;
+      this.beamSampleLength[sample] = length;
+      const ex = sx + Math.cos(angle) * length;
+      const ey = sy + Math.sin(angle) * length;
+      minX = Math.min(minX, sx, ex);
+      minY = Math.min(minY, sy, ey);
+      maxX = Math.max(maxX, sx, ex);
+      maxY = Math.max(maxY, sy, ey);
+    }
+    const broadPad = descriptor.width / 2 + MAX_ENEMY_RADIUS;
+    this.enemyGrid.queryAabb(
+      minX - broadPad,
+      minY - broadPad,
+      maxX + broadPad,
+      maxY + broadPad,
+      this.enemyCandidates,
+    );
+    c.beamHitIds.clear();
+    for (const enemyId of this.enemyCandidates) {
+      const enemy = this.state.enemies.get(enemyId);
+      if (!enemy || enemy.hp <= 0) continue;
+      const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+      for (let sample = 0; sample <= samples; sample++) {
+        if (
+          bladeHitsCircle(
+            { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
+            this.beamSampleAngle[sample]!,
+            this.beamSampleLength[sample]!,
+            enemy,
+            radius,
+            descriptor.width / 2,
+          )
+        ) {
+          c.beamHitIds.add(enemyId);
+          break;
+        }
+      }
+    }
+    const stepDamage = beamStepDamage(descriptor.damagePerSecond, dt, c.beamHitIds.size);
+    for (const enemyId of c.beamHitIds) {
+      c.beamPendingDamage.set(
+        enemyId,
+        (c.beamPendingDamage.get(enemyId) ?? 0) + stepDamage,
+      );
+    }
+    c.beamPulseT += dt;
+    c.beamQuantumT += dt;
+    if (c.beamPulseT + 1e-9 >= descriptor.tickRate) {
+      c.beamPulseT -= descriptor.tickRate;
+      const allowCrit = c.beamQuantumT + 1e-9 >= BEAM_CRIT_QUANTUM_SECONDS;
+      if (allowCrit) c.beamQuantumT -= BEAM_CRIT_QUANTUM_SECONDS;
+      this.flushBeamDamage(c, allowCrit);
+    }
+    this.beamCurrentX = currentX;
+    this.beamCurrentY = currentY;
+    this.beamCurrentLength = this.beamSampleLength[samples]!;
+    return this.beamCurrentLength;
+  }
+
+  private flushBeamDamage(c: CombatState, allowCrit: boolean): void {
+    if (c.beamPendingDamage.size === 0) return;
+    const kills: string[] = [];
+    for (const [enemyId, damage] of c.beamPendingDamage) {
+      const enemy = this.state.enemies.get(enemyId);
+      if (enemy && enemy.hp > 0 && damage > 0) {
+        this.damageEnemy(enemy, enemyId, damage, kills, allowCrit ? c.beamCrit : 0);
+      }
+    }
+    c.beamPendingDamage.clear();
+    for (const enemyId of kills) {
+      this.state.enemies.delete(enemyId);
+      this.enemyGrid.remove(enemyId);
+    }
+  }
+
   private stepMeleeSwings(dt: number): void {
     if (this.meleeSwings.size === 0) return;
     const kills: string[] = [];
@@ -3704,7 +4381,7 @@ export class GameRoom extends Room<ArenaState> {
       inp.mvx = 0;
       inp.mvy = 0;
       inp.queue.length = 0;
-      inp.held = { seq: inp.held.seq, dx: 0, dy: 0, jump: false };
+      inp.held = { ...inp.held, dx: 0, dy: 0, jump: false, fireHeld: false };
     }
     const player = this.state.players.get(id);
     if (player) {
@@ -3804,6 +4481,7 @@ export class GameRoom extends Room<ArenaState> {
    *  out of the message handler (v0.105 de-clunk) so a BUFFERED parry (one that arrived during the cooldown)
    *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
   private executeParry(player: PlayerState, c: CombatState): void {
+    if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // §8 Iron Stance (stacks): wider i-frame window + bigger knockback.
     const iron = countAugment(player.augments, "iron-stance");
     c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));

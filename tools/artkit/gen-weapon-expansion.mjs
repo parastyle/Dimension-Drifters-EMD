@@ -37,6 +37,12 @@ const BANDS = new Set(["close", "mid", "long"]);
 const KINDS = new Set(["edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam"]);
 const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark"]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
+// The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
+// these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
+const BEAM_GUN_IDS = new Set([
+  "x2-voltcaster-machine-pistol",
+  "x2-stormcaller-tesla-gatling",
+]);
 
 // Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
 const TOP_KEYS = new Set([
@@ -57,9 +63,8 @@ const BEHAVIOR_KEYS = {
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "scalingGrades", "explode"]),
-  beam: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "tickRate", "pellets", "spread",
-    "pierce", "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "scalingGrades", "explode"]),
+  beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
+    "scalingGrades"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
 
@@ -87,6 +92,15 @@ const num = (v, lo, hi, d, path) => {
   return c;
 };
 const int = (v, lo, hi, d, path) => Math.round(num(v, lo, hi, d, path));
+const beamTick = (v, path) => {
+  const raw = num(v, 0.05, 0.25, 0.1, path);
+  const tick = Number((Math.round(raw / 0.05) * 0.05).toFixed(2));
+  if (tick !== raw) {
+    clampCount++;
+    if (clampSamples.length < 8) clampSamples.push(`${CUR} ${path} ${raw}→${tick}`);
+  }
+  return tick;
+};
 
 /** STRICT scaling grades: `{attr: GRADE}` — malformed entries FAIL (they used to vanish). */
 function grades(g, path, fallback) {
@@ -156,7 +170,8 @@ function mapWeapon(w) {
   const grip = enumOf(w.grip, GRIPS, "grip");
   const size = enumOf(w.size, SIZES, "size");
   const rangeBand = enumOf(w.rangeBand, BANDS, "rangeBand");
-  const isGun = kind === "gun" || kind === "beam" || type === "ranged";
+  const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
+  const isGun = !isBeam && (kind === "gun" || type === "ranged");
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
@@ -177,8 +192,8 @@ function mapWeapon(w) {
     tags: {
       grip,
       size,
-      delivery: isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
-      fireMode: isGun ? "auto" : "tap-charge",
+      delivery: isBeam ? "beam" : isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
+      fireMode: isBeam ? "hold" : isGun ? "auto" : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
       classPool: type,
       family: typeof w.family === "string" ? w.family : "exotic",
@@ -194,19 +209,41 @@ function mapWeapon(w) {
 
   // Behavior block — EVERY authored field the WeaponDef schema supports is emitted (§43: dropping a
   // supported field is the bug class that shipped 71 muzzle colors and 38 per-source gradings to /dev/null).
-  if (isGun) {
-    // `gun` for ranged + the `beam` casters (a beam is a fast tracer stream: tickRate IS its fire rate).
-    const beam = kind === "beam";
+  if (isBeam) {
+    const sourceTick = num(b.tickRate ?? b.fireRate, 0.05, 0.25, 0.1, "behavior.tickRate");
+    const baseBeamDamage = num(b.damage, 1, 40, damage, "behavior.damage");
+    const sizeWidth = { S: 32, M: 48, L: 56, XL: 64 }[size] ?? 48;
+    const sizeLag = { S: 0.16, M: 0.22, L: 0.28, XL: 0.35 }[size] ?? 0.22;
+    def.beam = {
+      damagePerSecond: baseBeamDamage / sourceTick,
+      tickRate: beamTick(b.tickRate ?? b.fireRate, "behavior.tickRate"),
+      width: num(b.width, 24, 64, sizeWidth, "behavior.width"),
+      range: num(b.range ?? s.range, 240, 640, 520, "behavior.range"),
+      chargeSeconds: num(b.chargeSeconds, 0.65, 1.25, 0.65, "behavior.chargeSeconds"),
+      sweepLagSeconds: num(b.sweepLagSeconds, 0.05, 0.35, sizeLag, "behavior.sweepLagSeconds"),
+      overheat: {
+        maxChannelSeconds: 1.25,
+        heatPerSecond: 0.6,
+        coolPerSecond: 0.35,
+        ignitionHeat: 0.25,
+        lockSeconds: 1.5,
+        restartHeat: 0.35,
+      },
+      movement: { chargeMul: 0.55, channelMul: 0.35 },
+    };
+    const bg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
+    if (bg) def.beam.scalingGrades = bg;
+  } else if (isGun) {
     def.gun = {
       damage: num(b.damage, 1, 40, damage, "behavior.damage"),
-      projectileSpeed: num(b.projectileSpeed, 400, 1600, beam ? 1200 : 900, "behavior.projectileSpeed"),
+      projectileSpeed: num(b.projectileSpeed, 400, 1600, 900, "behavior.projectileSpeed"),
       range: num(b.range ?? s.range, 280, 1100, 620, "behavior.range"),
-      fireRate: num(b.fireRate ?? b.tickRate, 0.05, 0.9, beam ? 0.1 : 0.3, "behavior.fireRate"),
-      magazine: int(b.magazine, 1, 80, beam ? 30 : 8, "behavior.magazine"),
+      fireRate: num(b.fireRate, 0.05, 0.9, 0.3, "behavior.fireRate"),
+      magazine: int(b.magazine, 1, 80, 8, "behavior.magazine"),
       reloadSeconds: num(b.reloadSeconds, 0.6, 3, 1.4, "behavior.reloadSeconds"),
-      bulletKind: b.bulletKind === undefined ? (beam ? "tracer" : "slug")
+      bulletKind: b.bulletKind === undefined ? "slug"
         : enumOf(b.bulletKind, BULLET_KINDS, "behavior.bulletKind"),
-      muzzle: b.muzzle === undefined ? (beam ? "spark" : "punch")
+      muzzle: b.muzzle === undefined ? "punch"
         : enumOf(b.muzzle, MUZZLES, "behavior.muzzle"),
       recoil: num(b.recoil, 0.0004, 0.005, 0.0016, "behavior.recoil"),
     };
