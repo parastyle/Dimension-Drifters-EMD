@@ -87,6 +87,7 @@ import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 import {
+  type PaperDeathTreatment,
   partTexture,
   type RigAnim,
   SPRITE_ATLAS,
@@ -151,6 +152,55 @@ const PLAYER_SPRITE = "drifter";
 // gets ten authored contact stacks and at most 24 pooled labels, while every remaining target still flashes.
 const HIT_VFX_BUDGET = 10;
 const DAMAGE_NUMBER_BUDGET = 24;
+const PAPER_DEATH_FULL_BUDGET = 12;
+const PAPER_DEATH_ORDINARY_BUDGET = 10; // reserve two slots for tough/boss deaths
+const PAPER_PICKUP_EXIT_BUDGET = 8;
+const PAPER_SNAPSHOT_MAX_W = 1600;
+const PAPER_SNAPSHOT_MAX_H = 900;
+
+function paperClamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function paperSmoothstep(value: number): number {
+  const p = paperClamp01(value);
+  return p * p * (3 - 2 * p);
+}
+
+function paperCubicOut(value: number): number {
+  const p = paperClamp01(value);
+  return 1 - (1 - p) ** 3;
+}
+
+function paperBackOut(value: number): number {
+  const p = paperClamp01(value) - 1;
+  return 1 + p * p * (2.70158 * p + 1.70158);
+}
+
+function paperPopScaleX(elapsedMs: number, durationMs: number): number {
+  const q = paperClamp01(elapsedMs / durationMs);
+  if (q > 0.72) return 1;
+  return 0.82 + 0.18 * paperBackOut(q / 0.72);
+}
+
+function paperPopScaleY(elapsedMs: number, durationMs: number): number {
+  const q = paperClamp01(elapsedMs / durationMs);
+  if (q <= 0.72) return -0.04 + 1.12 * paperBackOut(q / 0.72);
+  return 1.08 - 0.08 * paperSmoothstep((q - 0.72) / 0.28);
+}
+
+function paperPopRotation(elapsedMs: number, durationMs: number): number {
+  const q = paperClamp01(elapsedMs / durationMs);
+  if (q > 0.72) return 0.045 * (1 - paperSmoothstep((q - 0.72) / 0.28));
+  return 0.045 * (1 - paperClamp01(paperBackOut(q / 0.72)));
+}
+
+function prefersReducedPaperMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 /** §29 belt-scroller render tuning. FORESHORTEN compresses the world DEPTH band onto the screen plane (a
  *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
@@ -185,6 +235,28 @@ interface TelegraphGeometry {
   edges: TelegraphEdgePath[];
   centerX: number;
   centerY: number;
+}
+
+interface PaperDeathEntry {
+  readonly rig: SpriteRig;
+  readonly full: boolean;
+}
+
+interface PaperWorldFold {
+  readonly textureKey: string;
+  readonly snapshot: Phaser.GameObjects.RenderTexture;
+  readonly top: Phaser.GameObjects.Image;
+  readonly bottom: Phaser.GameObjects.Image;
+  readonly crease: Phaser.GameObjects.Rectangle;
+  readonly screenW: number;
+  readonly screenH: number;
+  readonly captureScale: number;
+  readonly topScaleX: number;
+  readonly topScaleY: number;
+  readonly bottomScaleX: number;
+  readonly bottomScaleY: number;
+  readonly telegraphGroundDepth: number;
+  tween?: Phaser.Tweens.Tween;
 }
 
 function projectTelegraphY(y: number, projectionYScale: number): number {
@@ -492,6 +564,18 @@ export class ArenaScene extends Phaser.Scene {
   private resumeAudioKeyHandler: (() => void) | null = null;
   private readonly blobs = new Map<string, SpriteRig>();
   private readonly enemies = new Map<string, SpriteRig>();
+  /** Horde paper effects stay scalar/live or bounded/detached; priority 2=boss, 1=tough, 0=ordinary. */
+  private readonly enemyPaperPriority = new Map<string, 0 | 1 | 2>();
+  private readonly paperDeaths: PaperDeathEntry[] = [];
+  private readonly closingPickups = new Set<Phaser.GameObjects.Container>();
+  private paperWorldFold?: PaperWorldFold;
+  private paperPagePool?: {
+    readonly top: Phaser.GameObjects.Image;
+    readonly bottom: Phaser.GameObjects.Image;
+    readonly crease: Phaser.GameObjects.Rectangle;
+  };
+  private paperWorldFoldSeq = 0;
+  private paperPeakObjects = 0;
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
@@ -779,6 +863,9 @@ export class ArenaScene extends Phaser.Scene {
   private levelWinObjects: Phaser.GameObjects.GameObject[] = [];
   private levelWinKey = "";
   private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
+  /** Counter tweens target plain values, so the modal must explicitly remove them at every offer edge. */
+  private levelWinPaperCounters: Phaser.Tweens.Tween[] = [];
+  private levelWinSelectionSent = false;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
   // §21 Testing-Grounds Tab summon menu (dev): pick a monster kind + a multiplier to conjure it.
@@ -1038,10 +1125,15 @@ export class ArenaScene extends Phaser.Scene {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.removeSceneListeners();
     this.leaveCurrentRoom();
+    this.destroyPaperPagePool();
+    this.clearLevelPaperCounters();
 
     // Entity, reconciliation, and event-history collections.
     this.blobs.clear();
     this.enemies.clear();
+    this.enemyPaperPriority.clear();
+    this.paperDeaths.length = 0;
+    this.closingPickups.clear();
     this.lastParried.clear();
     this.lastRevived.clear();
     this.telegraphCache.clear();
@@ -1166,6 +1258,8 @@ export class ArenaScene extends Phaser.Scene {
     this.arenaMap = undefined;
     this.lastSeedKey = "";
     this.removalFxMuteUntil = 0;
+    this.paperWorldFoldSeq = 0;
+    this.paperPeakObjects = 0;
     this.prevHeldLoot = "";
     this.prevLevel = -1;
     this.bannerShownFor = "";
@@ -1175,6 +1269,7 @@ export class ArenaScene extends Phaser.Scene {
     this.prevWon = false;
     this.hudScale = -1;
     this.levelWinKey = "";
+    this.levelWinSelectionSent = false;
     this.summonOpen = false;
     this.summonCount = 1;
     this.summonTough = false;
@@ -1191,6 +1286,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §4 the single shutdown path for globals and network ownership. */
   private shutdownScene(): void {
     this.connectionGeneration++;
+    this.destroyPaperPagePool();
+    this.clearLevelPaperCounters();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
   }
@@ -1541,6 +1638,7 @@ export class ArenaScene extends Phaser.Scene {
     const TAU = Math.PI * 2;
     const ADD = Phaser.BlendModes.ADD;
     const state = this.room.state.pickups;
+    const reducedMotion = prefersReducedPaperMotion();
     state.forEach((pk, id) => {
       const existing0 = this.pickups.get(id);
       if (existing0) {
@@ -1597,6 +1695,9 @@ export class ArenaScene extends Phaser.Scene {
       const glow = this.add
         .ellipse(0, 0, 78, 78, accent, 0.32)
         .setBlendMode(ADD);
+      const edge = this.add
+        .rectangle(0, 0, 2, 44, 0xffffff, 0)
+        .setBlendMode(ADD);
       const tx = part ? partTexture(this, weapon, part.role) : null;
       // Mystery = a rarity-tinted sealed ORB (+ "?"), NOT the weapon art. A circle spins cleanly under
       // the faux-3D scaleX tween (a rotated rect collapsed into a diagonal sliver — verify finding).
@@ -1641,13 +1742,42 @@ export class ArenaScene extends Phaser.Scene {
           fontStyle: "bold",
         })
         .setOrigin(0.5);
-      const spinnerKids: Phaser.GameObjects.GameObject[] = [glow, img];
+      const spinnerKids: Phaser.GameObjects.GameObject[] = [glow, img, edge];
       if (shine) spinnerKids.push(shine);
       if (mysteryMark) spinnerKids.push(mysteryMark);
       const spinner = this.add.container(0, 0, spinnerKids);
       const container = this.add
         .container(pk.x, pk.y, [beam, halo, spinner, label])
         .setDepth(2);
+      container.setData({
+        spinner,
+        spinImg: img,
+        spinGlow: glow,
+        spinShine: shine,
+        spinEdge: edge,
+        mysteryMark,
+        pickupLabel: label,
+        baseScale,
+        spinTheta: 0,
+      });
+      if (!reducedMotion) {
+        const spawnTween = this.tweens.addCounter({
+          from: 0,
+          to: 220,
+          duration: 220,
+          onUpdate: (tw) => {
+            const elapsed = tw.getValue() ?? 0;
+            spinner.scaleX = paperPopScaleX(elapsed, 220);
+            spinner.scaleY = paperPopScaleY(elapsed, 220);
+            spinner.rotation = paperPopRotation(elapsed, 220);
+          },
+          onComplete: () => {
+            spinner.setScale(1).setRotation(0);
+            container.setData("spawnTween", undefined);
+          },
+        });
+        container.setData("spawnTween", spawnTween);
+      }
       // §41 built with the fallback while the art is still lazy-loading → tag it so the sync pass rebuilds
       // this pickup with its real art the moment the texture lands (see the retro-upgrade above).
       if (!isMystery && manifest && !part && !this.failedArt.has(weapon)) {
@@ -1683,30 +1813,42 @@ export class ArenaScene extends Phaser.Scene {
         repeat: -1,
         ease: "Sine.inOut",
       });
-      const spinTween = this.tweens.addCounter({
-        from: 0,
-        to: TAU,
-        duration: 1700,
-        repeat: -1,
-        onUpdate: (tw) => {
-          const c = Math.cos(tw.getValue() ?? 0);
-          img.scaleX = baseScale * c; // faux-3D Y-axis spin (squashes through edge-on)
-          glow.setScale(0.85 + 0.2 * Math.abs(c), 1);
-          if (shine) {
-            shine.scaleX = baseScale * c;
-            shine.setAlpha(Math.max(0, c) ** 5 * 0.75); // bright glint as it turns to face you
-          }
-        },
-      });
-      // §41 pickup spin owns a COUNTER tween whose target is Phaser's private `{ value }`, not the visible
-      // Container — destroying the pickup cannot auto-prune it. Keep the handle on the owner for both exits.
-      container.setData("spinTween", spinTween);
+      if (!reducedMotion) {
+        const spinTween = this.tweens.addCounter({
+          from: 0,
+          to: TAU,
+          duration: 1700,
+          repeat: -1,
+          onUpdate: (tw) => {
+            const theta = tw.getValue() ?? 0;
+            const c = Math.cos(theta);
+            const edgeAlpha = paperClamp01((0.12 - Math.abs(c)) / 0.12) * 0.9;
+            container.setData("spinTheta", theta);
+            img.scaleX = baseScale * c; // faux-3D Y-axis spin (squashes through edge-on)
+            glow.setScale(0.85 + 0.2 * Math.abs(c), 1);
+            edge
+              .setAlpha(edgeAlpha)
+              .setScale(1, 0.75 + 0.25 * Math.abs(Math.sin(theta)));
+            if (mysteryMark) {
+              mysteryMark.scaleX = Math.max(0.04, Math.abs(c));
+              mysteryMark.setAlpha(Math.max(0, c));
+            }
+            if (shine) {
+              shine.scaleX = baseScale * c;
+              shine.setAlpha(Math.max(0, c) ** 5 * 0.75); // bright glint as it turns to face you
+            }
+          },
+        });
+        // §41 pickup spin owns a COUNTER tween whose target is Phaser's private `{ value }`, not the visible
+        // Container — destroying the pickup cannot auto-prune it. Keep the handle on the owner for both exits.
+        container.setData("spinTween", spinTween);
+      }
       this.pickups.set(id, container);
     });
     for (const id of this.pickups.keys()) {
       if (!state.has(id)) {
         const pickup = this.pickups.get(id);
-        if (pickup) this.destroyPickup(pickup);
+        if (pickup) this.beginPickupExit(pickup);
         this.pickups.delete(id);
       }
     }
@@ -1714,13 +1856,98 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §41 destroy a pickup AND its plain-object spin counter; Phaser cannot infer that ownership itself. */
   private destroyPickup(pickup: Phaser.GameObjects.Container): void {
-    const spinTween = pickup.getData("spinTween") as
-      Phaser.Tweens.Tween | undefined;
-    if (spinTween) {
-      spinTween.stop();
-      spinTween.remove();
+    this.closingPickups.delete(pickup);
+    for (const key of ["spawnTween", "spinTween", "exitTween"]) {
+      const tween = pickup.getData(key) as Phaser.Tweens.Tween | undefined;
+      if (tween) {
+        tween.stop();
+        tween.remove();
+      }
     }
     pickup.destroy();
+  }
+
+  /** Authoritative removal folds only the inner art/label; the pickup target ring was already removed. */
+  private beginPickupExit(pickup: Phaser.GameObjects.Container): void {
+    if (this.closingPickups.has(pickup)) return;
+    const visible = Phaser.Geom.Rectangle.Contains(
+      this.cameras.main.worldView,
+      pickup.x,
+      pickup.y,
+    );
+    if (
+      prefersReducedPaperMotion() ||
+      !visible ||
+      this.closingPickups.size >= PAPER_PICKUP_EXIT_BUDGET
+    ) {
+      this.destroyPickup(pickup);
+      return;
+    }
+
+    for (const key of ["spawnTween", "spinTween"]) {
+      const tween = pickup.getData(key) as Phaser.Tweens.Tween | undefined;
+      if (tween) {
+        tween.stop();
+        tween.remove();
+        pickup.setData(key, undefined);
+      }
+    }
+    const spinner = pickup.getData("spinner") as Phaser.GameObjects.Container;
+    const img = pickup.getData("spinImg") as
+      Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
+    const glow = pickup.getData("spinGlow") as Phaser.GameObjects.Arc;
+    const shine = pickup.getData(
+      "spinShine",
+    ) as Phaser.GameObjects.Image | null;
+    const edge = pickup.getData("spinEdge") as Phaser.GameObjects.Rectangle;
+    const mysteryMark = pickup.getData(
+      "mysteryMark",
+    ) as Phaser.GameObjects.Text | null;
+    const label = pickup.getData("pickupLabel") as Phaser.GameObjects.Text;
+    const baseScale = pickup.getData("baseScale") as number;
+    const theta0 = (pickup.getData("spinTheta") as number | undefined) ?? 0;
+    const theta1 =
+      Math.PI / 2 +
+      (Math.floor((theta0 - Math.PI / 2) / Math.PI) + 1) * Math.PI;
+    spinner.setScale(1).setRotation(0);
+    const labelCenterY = label.y;
+    label.setOrigin(0.5, 0).setY(labelCenterY - label.height * 0.5);
+    this.closingPickups.add(pickup);
+    this.paperPeakObjects = Math.max(
+      this.paperPeakObjects,
+      this.paperDeaths.length +
+        this.closingPickups.size +
+        (this.paperWorldFold ? 4 : 0),
+    );
+    const exitTween = this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 120,
+      onUpdate: (tw) => {
+        const q = paperSmoothstep(tw.getValue() ?? 0);
+        const theta = theta0 + (theta1 - theta0) * q;
+        const c = Math.cos(theta);
+        img.scaleX = baseScale * c;
+        glow.setScale(0.85 + 0.2 * Math.abs(c), 1);
+        edge
+          .setAlpha(paperClamp01((0.12 - Math.abs(c)) / 0.12) * 0.9)
+          .setScale(1, 0.75 + 0.25 * Math.abs(Math.sin(theta)));
+        if (shine) {
+          shine.scaleX = baseScale * c;
+          shine.setAlpha(Math.max(0, c) ** 5 * 0.75);
+        }
+        if (mysteryMark) {
+          mysteryMark.scaleX = Math.max(0.04, Math.abs(c));
+          mysteryMark.setAlpha(Math.max(0, c));
+        }
+        label.scaleY = 1 - q;
+      },
+      onComplete: () => {
+        pickup.setData("exitTween", undefined);
+        this.destroyPickup(pickup);
+      },
+    });
+    pickup.setData("exitTween", exitTween);
   }
 
   /** Make each player rig hold the weapon its authoritative state says it has (re-equip on change). */
@@ -1786,9 +2013,260 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  /** §17 once the server's seeds arrive, regenerate the IDENTICAL map client-side + bake the floor. §6
-   *  chain (v0.103): the seeds/dimension CHANGE mid-run on a rift descent (and on run restart) — tear the
-   *  old floor down and rebuild for the new dimension, with a violet flash to sell the transition. */
+  /** Curated world-only capture list: HUD and exact telegraphs remain live above the folding sheet. */
+  private paperWorldObjects(): Phaser.GameObjects.GameObject[] {
+    const out: Phaser.GameObjects.GameObject[] = [...this.floorObjs];
+    for (const rig of this.blobs.values()) out.push(rig.root);
+    for (const rig of this.enemies.values()) out.push(rig.root);
+    for (const pickup of this.pickups.values()) out.push(pickup);
+    for (const projectile of this.projectiles.values()) out.push(projectile);
+    for (const zone of this.zones.values()) out.push(zone);
+    if (this.portal) out.push(this.portal);
+    if (this.rift) out.push(this.rift);
+    const camera = this.cameras.main;
+    return camera
+      .cull(out.filter((obj) => obj.active && obj.willRender(camera)))
+      .sort(
+        (a, b) =>
+          ((a as Phaser.GameObjects.GameObject & { depth?: number }).depth ??
+            0) -
+          ((b as Phaser.GameObjects.GameObject & { depth?: number }).depth ??
+            0),
+      );
+  }
+
+  /** Render one bounded snapshot with the live camera transform; no UI, masks, or per-rig textures. */
+  private drawPaperWorldSnapshot(fold: PaperWorldFold): void {
+    const camera = this.cameras.main;
+    fold.snapshot.clear().fill(0x17140f, 1);
+    fold.snapshot.camera
+      .setScroll(camera.scrollX, camera.scrollY)
+      .setZoom(camera.zoom * fold.captureScale);
+    for (const obj of this.paperWorldObjects()) fold.snapshot.draw(obj);
+    fold.snapshot.render();
+  }
+
+  /** Capture the accepted old world before its floor objects are torn down. */
+  private capturePaperWorldFold(): PaperWorldFold | undefined {
+    this.releasePaperWorldFold();
+    const screenW = Math.max(2, Math.round(this.screenW()));
+    const screenH = Math.max(2, Math.round(this.screenH()));
+    const captureScale = Math.min(
+      1,
+      PAPER_SNAPSHOT_MAX_W / screenW,
+      PAPER_SNAPSHOT_MAX_H / screenH,
+    );
+    const captureW = Math.max(2, Math.floor((screenW * captureScale) / 2) * 2);
+    const captureH = Math.max(2, Math.floor((screenH * captureScale) / 2) * 2);
+    const actualScale = Math.min(captureW / screenW, captureH / screenH);
+    const halfH = Math.floor(captureH / 2);
+    const textureKey = `paper-world-fold:${++this.paperWorldFoldSeq}`;
+    let snapshot: Phaser.GameObjects.RenderTexture | undefined;
+    let top: Phaser.GameObjects.Image | undefined;
+    let bottom: Phaser.GameObjects.Image | undefined;
+    let crease: Phaser.GameObjects.Rectangle | undefined;
+    try {
+      snapshot = this.add
+        .renderTexture(0, 0, captureW, captureH)
+        .setOrigin(0)
+        .setVisible(false);
+      const saved = snapshot.saveTexture(textureKey);
+      saved.add("top", 0, 0, 0, captureW, halfH);
+      saved.add("bottom", 0, 0, halfH, captureW, captureH - halfH);
+      if (!this.paperPagePool) {
+        this.paperPagePool = {
+          top: this.add.image(0, 0, "__WHITE").setVisible(false),
+          bottom: this.add.image(0, 0, "__WHITE").setVisible(false),
+          crease: this.add
+            .rectangle(0, 0, 2, 10, 0x8e4bd6, 0)
+            .setVisible(false),
+        };
+      }
+      top = this.paperPagePool.top
+        .setTexture(textureKey, "top")
+        .setPosition(screenW / 2, screenH / 2)
+        .setOrigin(0.5, 1)
+        .setScrollFactor(0)
+        .setDepth(99980)
+        .setDisplaySize(screenW, screenH / 2)
+        .setRotation(0)
+        .setAlpha(1)
+        .setVisible(true);
+      bottom = this.paperPagePool.bottom
+        .setTexture(textureKey, "bottom")
+        .setPosition(screenW / 2, screenH / 2)
+        .setOrigin(0.5, 0)
+        .setScrollFactor(0)
+        .setDepth(99980)
+        .setDisplaySize(screenW, screenH / 2)
+        .setRotation(0)
+        .setAlpha(1)
+        .setVisible(true);
+      crease = this.paperPagePool.crease
+        .setPosition(screenW / 2, screenH / 2)
+        .setDisplaySize(screenW, 10)
+        .setFillStyle(0x8e4bd6, 1)
+        .setAlpha(0)
+        .setVisible(true)
+        .setScrollFactor(0)
+        .setDepth(99981);
+      const fold: PaperWorldFold = {
+        textureKey,
+        snapshot,
+        top,
+        bottom,
+        crease,
+        screenW,
+        screenH,
+        captureScale: actualScale,
+        topScaleX: top.scaleX,
+        topScaleY: top.scaleY,
+        bottomScaleX: bottom.scaleX,
+        bottomScaleY: bottom.scaleY,
+        telegraphGroundDepth: this.telegraphGroundGfx.depth,
+      };
+      this.paperWorldFold = fold;
+      // Exact ground danger remains mathematically literal above the page during the accepted transition.
+      this.telegraphGroundGfx.setDepth(99989);
+      this.drawPaperWorldSnapshot(fold);
+      this.paperPeakObjects = Math.max(
+        this.paperPeakObjects,
+        this.paperDeaths.length + this.closingPickups.size + 4,
+      );
+      return fold;
+    } catch (err) {
+      console.warn(
+        "[paper] world snapshot failed; using the transition flash",
+        err,
+      );
+      if (this.paperWorldFold) this.releasePaperWorldFold();
+      else {
+        top?.setVisible(false).setTexture("__WHITE");
+        bottom?.setVisible(false).setTexture("__WHITE");
+        crease?.setVisible(false);
+        if (this.textures.exists(textureKey)) this.textures.remove(textureKey);
+        snapshot?.destroy();
+      }
+      return undefined;
+    }
+  }
+
+  private announcePaperDescent(depth: number, dimensionName: string): void {
+    this.audio.play("descent");
+    this.flashBanner(
+      `⇓  DEPTH ${depth} — ${dimensionName.toUpperCase()}  ⇓`,
+      "#b478ff",
+    );
+  }
+
+  /** Close the old snapshot, swap its pixels only while edge-on, then unfold the accepted new world. */
+  private playPaperWorldFold(
+    fold: PaperWorldFold,
+    depth: number,
+    dimensionName: string,
+  ): void {
+    if (prefersReducedPaperMotion()) {
+      fold.tween = this.tweens.add({
+        targets: [fold.top, fold.bottom, fold.crease],
+        alpha: 0,
+        duration: 100,
+        ease: "Quad.easeOut",
+        onComplete: () => {
+          fold.tween = undefined;
+          this.announcePaperDescent(depth, dimensionName);
+          this.releasePaperWorldFold(fold);
+        },
+      });
+      return;
+    }
+
+    fold.tween = this.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: 170,
+      onUpdate: (tw) => {
+        const q = paperSmoothstep(tw.getValue() ?? 0);
+        const foldY = 1 - 1.035 * q;
+        fold.top.scaleY = fold.topScaleY * foldY;
+        fold.bottom.scaleY = fold.bottomScaleY * foldY;
+        fold.top.y = fold.screenH / 2 + 5 * q;
+        fold.bottom.y = fold.screenH / 2 - 5 * q;
+        fold.top.rotation = 0.035 * q;
+        fold.bottom.rotation = -0.035 * q;
+        fold.crease.setAlpha(Math.sin(Math.PI * q) * 0.85);
+      },
+      onComplete: () => {
+        fold.tween = undefined;
+        if (this.paperWorldFold !== fold) return;
+        // The old/new texture handoff happens at |scaleY|=.035: the page is visually edge-on.
+        this.drawPaperWorldSnapshot(fold);
+        fold.top.scaleY = fold.topScaleY * -0.035;
+        fold.bottom.scaleY = fold.bottomScaleY * -0.035;
+        fold.top.y = fold.screenH / 2;
+        fold.bottom.y = fold.screenH / 2;
+        fold.top.rotation = 0;
+        fold.bottom.rotation = 0;
+        let announced = false;
+        fold.tween = this.tweens.addCounter({
+          from: 0,
+          to: 1,
+          duration: 250,
+          onUpdate: (tw) => {
+            const raw = tw.getValue() ?? 0;
+            const q = paperCubicOut(raw);
+            const openY = -0.035 + 1.035 * q;
+            fold.top.scaleY = fold.topScaleY * openY;
+            fold.bottom.scaleY = fold.bottomScaleY * openY;
+            fold.top.rotation = 0.035 * Math.sin(Math.PI * raw);
+            fold.bottom.rotation = -0.035 * Math.sin(Math.PI * raw);
+            fold.crease.setAlpha(Math.sin(Math.PI * raw) * 0.7);
+            if (!announced && raw >= 0.7) {
+              announced = true;
+              this.announcePaperDescent(depth, dimensionName);
+            }
+          },
+          onComplete: () => {
+            fold.tween = undefined;
+            if (!announced) this.announcePaperDescent(depth, dimensionName);
+            this.releasePaperWorldFold(fold);
+          },
+        });
+      },
+    });
+  }
+
+  /** Release consumers before their aliased DynamicTexture; a newer transition may replace an old one. */
+  private releasePaperWorldFold(fold = this.paperWorldFold): void {
+    if (!fold) return;
+    if (this.paperWorldFold === fold) this.paperWorldFold = undefined;
+    if (fold.tween) {
+      fold.tween.stop();
+      fold.tween.remove();
+      fold.tween = undefined;
+    }
+    if (this.telegraphGroundGfx?.active)
+      this.telegraphGroundGfx.setDepth(fold.telegraphGroundDepth);
+    if (fold.top.active)
+      fold.top.setVisible(false).setAlpha(1).setTexture("__WHITE");
+    if (fold.bottom.active)
+      fold.bottom.setVisible(false).setAlpha(1).setTexture("__WHITE");
+    if (fold.crease.active) fold.crease.setVisible(false).setAlpha(0);
+    if (this.textures.exists(fold.textureKey))
+      this.textures.remove(fold.textureKey);
+    if (fold.snapshot.active) fold.snapshot.destroy();
+  }
+
+  private destroyPaperPagePool(): void {
+    this.releasePaperWorldFold();
+    const pool = this.paperPagePool;
+    this.paperPagePool = undefined;
+    if (!pool) return;
+    if (pool.top.active) pool.top.destroy();
+    if (pool.bottom.active) pool.bottom.destroy();
+    if (pool.crease.active) pool.crease.destroy();
+  }
+
+  /** Regenerate the synced floor once; accepted rift seed changes fold one bounded world snapshot. */
   private maybeBuildFloor(): void {
     if (!this.room) return;
     const s = this.room.state;
@@ -1831,6 +2309,8 @@ export class ArenaScene extends Phaser.Scene {
     const seedKey = `${s.seedTerrain}:${s.seedHazard}:${s.seedTheme}:${s.seedDecor}:${s.dimensionId}`;
     if (seedKey === this.lastSeedKey) return; // current floor is the right one
     const descending = this.lastSeedKey !== ""; // not the first build → a rift descent / restart
+    const riftDescent = descending && s.depth > 1;
+    const worldFold = riftDescent ? this.capturePaperWorldFold() : undefined;
     for (const o of this.floorObjs) o.destroy();
     this.floorObjs = [];
     this.poiSprites = [];
@@ -1889,19 +2369,24 @@ export class ArenaScene extends Phaser.Scene {
     this.playerBufs.clear();
     this.enemyBufs.clear();
     if (descending) {
-      this.cameras.main.flash(500, 96, 48, 160); // violet wash sells any mid-session terrain swap
+      if (!worldFold) {
+        if (riftDescent) this.cameras.main.flash(260, 96, 48, 160);
+        else this.cameras.main.flash(220, 28, 22, 18);
+      }
       // Mute the enemy-REMOVAL VFX briefly: the server just bulk-cleared the old dimension's horde, and
       // without this every cleared enemy death-pops at old-map coordinates on the new floor (corpse storm).
       this.removalFxMuteUntil = this.time.now + 900;
       // The descent banner is only true copy for an actual rift descent (depth ≥ 2) — a run RESTART also
       // re-mints the map (fresh terrain each run) but starts back at depth 1.
-      if (s.depth > 1) {
+      if (riftDescent && !worldFold) {
         this.audio.play("descent"); // §19 the downward whoosh into the next dimension
         this.flashBanner(
           `⇓  DEPTH ${s.depth} — ${getDimension(s.dimensionId).name.toUpperCase()}  ⇓`,
           "#b478ff",
         );
       }
+      if (worldFold)
+        this.playPaperWorldFold(worldFold, s.depth, dimension.name);
     }
   }
 
@@ -2242,6 +2727,7 @@ export class ArenaScene extends Phaser.Scene {
       // §7 v0.105 de-clunk: advance the ANIMATION clock only on UNFROZEN frames, so a hit-stop pauses the
       // rig's swing/brace/idle timing too (they ride `animClock`) instead of skipping ~a third of a swing.
       this.animClock += deltaMs;
+      this.updatePaperDeaths(deltaMs);
       this.interpolate(deltaMs);
       this.interpolateEnemies(deltaMs);
       this.moveProjectiles(this.deltaSec);
@@ -2271,6 +2757,7 @@ export class ArenaScene extends Phaser.Scene {
   private syncEnemies(): void {
     if (!this.room) return;
     const enemies = this.room.state.enemies;
+    const reducedMotion = prefersReducedPaperMotion();
     enemies.forEach((enemy, id) => {
       if (!this.enemies.has(id)) {
         const kind = ENEMY_KINDS[enemy.kind];
@@ -2296,6 +2783,11 @@ export class ArenaScene extends Phaser.Scene {
           const wman = SPRITES[kind.wieldsWeapon as keyof typeof SPRITES];
           if (wdef && wman) rig.equipWeapon(kind.wieldsWeapon, wdef, wman);
         }
+        const paperPriority: 0 | 1 | 2 =
+          kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
+        this.enemyPaperPriority.set(id, paperPriority);
+        if (!reducedMotion)
+          rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
         this.enemies.set(id, rig);
         this.enemyAtk.set(id, enemy.atkSeq);
       }
@@ -2323,7 +2815,9 @@ export class ArenaScene extends Phaser.Scene {
         // Enemy gone from authoritative state → it died (or left view). Detach it from the animated set
         // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
+        const paperPriority = this.enemyPaperPriority.get(id) ?? 0;
         this.enemies.delete(id);
+        this.enemyPaperPriority.delete(id);
         this.enemyHp.delete(id);
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
@@ -2339,13 +2833,15 @@ export class ArenaScene extends Phaser.Scene {
           if (this.arenaMap && isPitAtPx(this.arenaMap, rig.x, rig.y)) {
             spawnFallStreak(this, rig.x, rig.y); // fell over a pit → sinks into the void, no pop
             this.audio.play("pitdeath", { x: rig.x }); // §19 downward "whoo" into the void
-            rig.destroy();
+            rig.deathPop(0, 0, "pit");
+            this.paperDeaths.push({ rig, full: false });
           } else {
             spawnPoof(this, rig.x, rig.y); // dust at the kill point
             this.audio.play("death", { x: rig.x }); // §19 kill crunch (throttled for horde clears)
             // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
-            let ax = Math.random() - 0.5;
-            let ay = Math.random() - 0.5;
+            const deathSeed = telegraphHash01(id);
+            let ax = Math.cos(deathSeed * Math.PI * 2);
+            let ay = Math.sin(deathSeed * Math.PI * 2);
             let best = Number.POSITIVE_INFINITY;
             let killWeapon: WeaponDef | undefined;
             this.room?.state.players.forEach((p) => {
@@ -2363,8 +2859,44 @@ export class ArenaScene extends Phaser.Scene {
             // keep storm/tesla, buzzsaw and tide-family horde clears subtle + bounded.
             spawnWeaponKillFx(this, rig.x, rig.y, killWeapon);
             const al = Math.hypot(ax, ay) || 1;
-            const dist = 70 + Math.random() * 60;
-            rig.deathPop((ax / al) * dist, (ay / al) * dist);
+            const dist = 70 + deathSeed * 60;
+            const visible = Phaser.Geom.Rectangle.Contains(
+              this.cameras.main.worldView,
+              rig.x,
+              rig.y,
+            );
+            const fullActive = this.paperDeaths.reduce(
+              (count, death) => count + (death.full ? 1 : 0),
+              0,
+            );
+            const fullLimit =
+              paperPriority > 0
+                ? PAPER_DEATH_FULL_BUDGET
+                : PAPER_DEATH_ORDINARY_BUDGET;
+            const full = visible && !reducedMotion && fullActive < fullLimit;
+            const variants: readonly PaperDeathTreatment[] = [
+              "crumple",
+              "flutter",
+              "tear",
+            ];
+            const treatment: PaperDeathTreatment = full
+              ? paperPriority > 0
+                ? "tear"
+                : (variants[Math.floor(deathSeed * variants.length)] ??
+                  "crumple")
+              : "lite";
+            if (visible) {
+              rig.deathPop((ax / al) * dist, (ay / al) * dist, treatment);
+              this.paperDeaths.push({ rig, full });
+              this.paperPeakObjects = Math.max(
+                this.paperPeakObjects,
+                this.paperDeaths.length +
+                  this.closingPickups.size +
+                  (this.paperWorldFold ? 4 : 0),
+              );
+            } else {
+              rig.destroy();
+            }
             // H3 §20 hit-stop: a brief crunch when a kill lands near YOU (≈ your kill). Throttled so a
             // horde-clearing AoE can't chain freezes into lag; parry/quake stops override via Math.max.
             const selfId = this.room?.sessionId;
@@ -2382,6 +2914,15 @@ export class ArenaScene extends Phaser.Scene {
           }
         }
       }
+    }
+  }
+
+  /** Detached corpses share the rig clock's freeze policy without adding Tween-manager records. */
+  private updatePaperDeaths(deltaMs: number): void {
+    for (let i = this.paperDeaths.length - 1; i >= 0; i--) {
+      const death = this.paperDeaths[i];
+      if (!death || death.rig.stepDeathPop(deltaMs)) continue;
+      this.paperDeaths.splice(i, 1);
     }
   }
 
@@ -3412,8 +3953,51 @@ export class ArenaScene extends Phaser.Scene {
     // approach, loot reveal, depth) fought the gun/hit shakes for the same channel and read as noise.
   }
 
-  /** §12/§8 level-up window: while the local player owes a FLEX stat point, show the attribute pick; once
-   *  that's spent but a SIGNATURE pick is still owed, show the §8 augment draft. Both freeze the player. */
+  private clearLevelPaperCounters(): void {
+    for (const tween of this.levelWinPaperCounters.splice(0)) {
+      tween.stop();
+      tween.remove();
+    }
+  }
+
+  /** P3 shell backing only; title, countdown, choice copy, and hit geometry stay face-on and literal. */
+  private animateLevelFolio(
+    dim: Phaser.GameObjects.Rectangle,
+    lower: Phaser.GameObjects.Container,
+    upper: Phaser.GameObjects.Container,
+  ): void {
+    if (prefersReducedPaperMotion()) return;
+    dim.setAlpha(0);
+    this.tweens.add({ targets: dim, alpha: 1, duration: 100 });
+    lower.setScale(0.82, -0.04).setRotation(0.045);
+    upper.setScale(1, -0.92).setRotation(-0.05);
+    let depthSwapped = false;
+    const counter = this.tweens.addCounter({
+      from: 0,
+      to: 320,
+      duration: 320,
+      onUpdate: (tw) => {
+        const elapsed = tw.getValue() ?? 0;
+        lower.scaleX = paperPopScaleX(elapsed, 210);
+        lower.scaleY = paperPopScaleY(elapsed, 210);
+        lower.rotation = paperPopRotation(elapsed, 210);
+        const u = paperSmoothstep((elapsed - 70) / 250);
+        upper.scaleY = -0.92 + 1.92 * u;
+        upper.rotation = 0.05 * Math.sin(Math.PI * u);
+        if (!depthSwapped && u >= 0.479) {
+          depthSwapped = true;
+          upper.setDepth(100010.7);
+        }
+      },
+      onComplete: () => {
+        lower.setScale(1).setRotation(0);
+        upper.setScale(1).setRotation(0);
+      },
+    });
+    this.levelWinPaperCounters.push(counter);
+  }
+
+  /** Show the owed FLEX pick, then the signature draft; the offer fingerprint owns every rebuild. */
   private updateLevelWindow(): void {
     if (!this.room) return;
     const self = this.room.state.players.get(this.room.sessionId);
@@ -3426,6 +4010,8 @@ export class ArenaScene extends Phaser.Scene {
         : "";
     if (key !== this.levelWinKey) {
       this.levelWinKey = key;
+      this.clearLevelPaperCounters();
+      this.levelWinSelectionSent = false;
       for (const o of this.levelWinObjects) o.destroy();
       this.levelWinObjects = [];
       this.levelWinTimerBar = undefined;
@@ -3482,7 +4068,6 @@ export class ArenaScene extends Phaser.Scene {
     const pg = this.add.graphics().setScrollFactor(0).setDepth(100010.5);
     pg.fillStyle(0x0a0812, 0.92).fillRoundedRect(pgx, pgy, pw, ph, 14);
     this.drawPanelFrame(pg, pgx, pgy, pw, ph, 1);
-    this.levelWinObjects.push(pg);
     const title = this.add
       .text(cx, cy - 170, `LEVEL ${self.level}`, {
         fontSize: "30px",
@@ -3507,8 +4092,96 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100012);
-    this.levelWinObjects.push(dim, title, subT, barBg, this.levelWinTimerBar);
+    const lowerHingeY = cy + 192;
+    pg.setPosition(-cx, -lowerHingeY);
+    const lower = this.add
+      .container(cx, lowerHingeY, [pg])
+      .setScrollFactor(0)
+      .setDepth(100010.5);
+    const seamY = cy - 16;
+    const upperG = this.add.graphics();
+    upperG
+      .fillStyle(0x0a0812, 0.96)
+      .fillRoundedRect(pgx, pgy, pw, seamY - pgy, 14);
+    this.drawPanelFrame(upperG, pgx, pgy, pw, seamY - pgy, 1);
+    upperG.setPosition(-cx, -seamY);
+    const upper = this.add
+      .container(cx, seamY, [upperG])
+      .setScrollFactor(0)
+      .setDepth(100010.4);
+    this.animateLevelFolio(dim, lower, upper);
+    this.levelWinObjects.push(
+      dim,
+      lower,
+      upper,
+      title,
+      subT,
+      barBg,
+      this.levelWinTimerBar,
+    );
     return { cx, cy };
+  }
+
+  /** Choice copy and the fixed Zone stay face-on; only the cardstock backing turns through the plane. */
+  private prepareLevelCard(
+    root: Phaser.GameObjects.Container,
+    face: Phaser.GameObjects.Rectangle,
+    zone: Phaser.GameObjects.Zone,
+    index: number,
+    side: number,
+    send: () => void,
+  ): void {
+    const restY = root.y;
+    root.setData("levelChoiceZone", zone);
+    if (!prefersReducedPaperMotion()) {
+      face.setScale(-0.06, 0.94).setRotation(side * 0.035);
+      this.tweens.add({
+        targets: face,
+        scaleX: 1,
+        scaleY: 1,
+        rotation: 0,
+        duration: 180,
+        delay: index * 42,
+        ease: "Back.easeOut",
+      });
+    }
+    zone.on("pointerover", () => {
+      this.tweens.killTweensOf([root, face]);
+      this.tweens.add({ targets: root, y: restY - 4, duration: 80 });
+      this.tweens.add({
+        targets: face,
+        scaleX: 0.965,
+        rotation: side * 0.04,
+        duration: 80,
+      });
+    });
+    zone.on("pointerout", () => {
+      this.tweens.killTweensOf([root, face]);
+      this.tweens.add({
+        targets: root,
+        y: restY,
+        duration: 110,
+        ease: "Sine.easeOut",
+      });
+      this.tweens.add({
+        targets: face,
+        scaleX: 1,
+        rotation: 0,
+        duration: 110,
+        ease: "Sine.easeOut",
+      });
+    });
+    zone.on("pointerdown", () => {
+      if (this.levelWinSelectionSent) return;
+      this.levelWinSelectionSent = true;
+      for (const obj of this.levelWinObjects) {
+        if (!(obj instanceof Phaser.GameObjects.Container)) continue;
+        const choiceZone = obj.getData("levelChoiceZone") as
+          Phaser.GameObjects.Zone | undefined;
+        choiceZone?.disableInteractive();
+      }
+      send(); // immediate; the authoritative offer edge owns the actual close
+    });
   }
 
   /** §8 build the dim overlay + 3 augment cards for the signature draft (every 5th level). */
@@ -3563,10 +4236,22 @@ export class ArenaScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setOrigin(0.5)
         .setDepth(100012);
-      card.on("pointerover", () => card.setScale(1.05));
-      card.on("pointerout", () => card.setScale(1));
-      card.on("pointerdown", () => this.room?.send("chooseAugment", { id }));
-      this.levelWinObjects.push(card, icon, name, tag, desc);
+      card.disableInteractive().setPosition(0, 0);
+      icon.setPosition(-x, -(cy + 30));
+      name.setPosition(0, -38);
+      tag.setPosition(0, -14);
+      desc.setPosition(0, 28);
+      const zone = this.add
+        .zone(0, 0, W, H)
+        .setInteractive({ useHandCursor: true });
+      const root = this.add
+        .container(x, cy + 30, [card, icon, name, tag, desc, zone])
+        .setScrollFactor(0)
+        .setDepth(100011);
+      this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
+        this.room?.send("chooseAugment", { id }),
+      );
+      this.levelWinObjects.push(root);
     });
   }
 
@@ -3620,12 +4305,21 @@ export class ArenaScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setOrigin(0.5)
         .setDepth(100012);
-      card.on("pointerover", () => card.setScale(1.05));
-      card.on("pointerout", () => card.setScale(1));
-      card.on("pointerdown", () =>
+      card.disableInteractive().setPosition(0, 0);
+      name.setPosition(0, -64);
+      val.setPosition(0, -26);
+      desc.setPosition(0, 18);
+      const zone = this.add
+        .zone(0, 0, W, H)
+        .setInteractive({ useHandCursor: true });
+      const root = this.add
+        .container(x, cy + 30, [card, name, val, desc, zone])
+        .setScrollFactor(0)
+        .setDepth(100011);
+      this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
         this.room?.send("chooseAttribute", { attr }),
       );
-      this.levelWinObjects.push(card, name, val, desc);
+      this.levelWinObjects.push(root);
     });
   }
 
@@ -6390,7 +7084,15 @@ export class ArenaScene extends Phaser.Scene {
     const net = this.predictor
       ? ` · net ${this.predictor.stats.pending}q/${this.predictor.stats.errPx.toFixed(0)}px`
       : "";
-    this.debugEl.textContent = `run ${elapsed}s · fps ${fps} · players ${players} · enemies ${enemies} · mouseMoves ${this.pointerMoves}${net}`;
+    const fullDeaths = this.paperDeaths.reduce(
+      (count, death) => count + (death.full ? 1 : 0),
+      0,
+    );
+    const snapshot = this.paperWorldFold
+      ? `${this.paperWorldFold.snapshot.width}x${this.paperWorldFold.snapshot.height}`
+      : "off";
+    const paper = ` · paper ${fullDeaths}/${this.paperDeaths.length}d ${this.closingPickups.size}p rt:${snapshot} peak:${this.paperPeakObjects}`;
+    this.debugEl.textContent = `run ${elapsed}s · fps ${fps} · players ${players} · enemies ${enemies} · mouseMoves ${this.pointerMoves}${net}${paper}`;
   }
 
   /** §4 v0.107 one PATCH = one completed server tick. Stamp the snapshot timeline + remote rings and

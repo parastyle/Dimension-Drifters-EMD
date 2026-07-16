@@ -111,6 +111,30 @@ function cubicOut01(value: number): number {
   return 1 - (1 - p) ** 3;
 }
 
+function backOut01(value: number): number {
+  const p = clamp01(value) - 1;
+  return 1 + p * p * (2.70158 * p + 1.70158);
+}
+
+function paperPopScaleX(elapsedMs: number, durationMs: number): number {
+  const q = clamp01(elapsedMs / durationMs);
+  if (q > 0.72) return 1;
+  return 0.82 + 0.18 * backOut01(q / 0.72);
+}
+
+function paperPopScaleY(elapsedMs: number, durationMs: number): number {
+  const q = clamp01(elapsedMs / durationMs);
+  if (q <= 0.72) return -0.04 + 1.12 * backOut01(q / 0.72);
+  return 1.08 - 0.08 * smoothstep01((q - 0.72) / 0.28);
+}
+
+/** Phaser's core display objects have no typed skew; a small counter-rotation supplies the shear cue. */
+function paperPopRotation(elapsedMs: number, durationMs: number): number {
+  const q = clamp01(elapsedMs / durationMs);
+  if (q > 0.72) return 0.045 * (1 - smoothstep01((q - 0.72) / 0.28));
+  return 0.045 * (1 - clamp01(backOut01(q / 0.72)));
+}
+
 /** Preserve the sign while preventing one invisible edge-on frame. Zero chooses the positive face. */
 function signedClamp(value: number, floor: number): number {
   return (value < 0 ? -1 : 1) * Math.max(Math.abs(value), floor);
@@ -368,6 +392,37 @@ export interface RigAnim {
   recoilY?: number;
 }
 
+export type PaperDeathTreatment =
+  "crumple" | "flutter" | "tear" | "lite" | "pit";
+
+interface PaperDeathPartPose {
+  readonly img: Phaser.GameObjects.Image;
+  readonly x: number;
+  readonly y: number;
+}
+
+interface PaperDeathState {
+  readonly treatment: PaperDeathTreatment;
+  readonly durationMs: number;
+  readonly x0: number;
+  readonly y0: number;
+  readonly vx: number;
+  readonly vy: number;
+  readonly scaleX: number;
+  readonly scaleY: number;
+  readonly alpha: number;
+  readonly rotation: number;
+  readonly phase: number;
+  readonly bodyX: number;
+  readonly bodyY: number;
+  readonly bodyScaleX: number;
+  readonly bodyScaleY: number;
+  readonly bodyRotation: number;
+  readonly tearParts: PaperDeathPartPose[];
+  readonly tearOther?: Phaser.GameObjects.Image;
+  elapsedMs: number;
+}
+
 /**
  * Sliced-procedural character/enemy rig (§18, §28.11). Renders a subject's harvest-sliced
  * parts (body + detached hands/feet, cut by tools/artkit/guards/slice.mjs) as separate
@@ -405,6 +460,11 @@ export class SpriteRig {
   /** §7 v0.105 de-clunk — eased facing (−1..1). The mirror glides through 0 (reads as a TURN) instead of a
    *  one-frame full-body flip; `facing` stays the committed ±1 (drives aim math + keeps the label readable). */
   private facingBlend = 1;
+  /** Paper arrival is composed into the live pose writer; no Tween owns root or part transforms. */
+  private spawnStartMs = -1;
+  private spawnDurationMs = 220;
+  /** Detached deaths advance only when ArenaScene advances its freeze-aware paper-death list. */
+  private paperDeath?: PaperDeathState;
   /** §7 v0.105 de-clunk — landing squash (0..1, decays) fired when the hop returns to the ground. */
   private landSquash = 0;
   /** §7 v0.111 TURN-COMMIT ("pull the reins") — the directional WEIGHT lives in the ANIMATION, not the
@@ -690,34 +750,168 @@ export class SpriteRig {
     this.baseLift = frac * TARGET_BODY_H;
   }
 
-  /** §20 DEATH-POP (Stage B): launch the corpse — slide along (vx,vy), arc UP under a fake gravity, spin,
-   *  and fade, then self-destroy. Purely client-local cosmetic (the enemy is already gone server-side, so
-   *  this is the momentum layer applied on death — the start of the "Madness" feel). The caller must have
-   *  already detached the rig from the animated set so `animate()` won't fight the tweens. */
-  deathPop(vx: number, vy: number): void {
+  /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
+  playSpawnUnfold(timeMs: number, durationMs = 220): void {
+    this.spawnDurationMs = Math.max(1, durationMs);
+    this.spawnStartMs = timeMs + Math.floor(this.phase * 70);
+    this.root.scaleX = this.baseScale * 0.82;
+    this.root.scaleY = this.baseScale * -0.04;
+    this.root.rotation = 0.045;
+  }
+
+  /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/pit fold. */
+  deathPop(
+    vx: number,
+    vy: number,
+    treatment: PaperDeathTreatment = "flutter",
+  ): void {
     this.resetSwingCombo();
     this.resetSecondaryMotion();
-    const dur = 520;
-    const spin = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3);
-    const peak = 36 + Math.random() * 34;
-    this.scene.tweens.add({
-      targets: this.root,
-      x: this.root.x + vx,
-      y: this.root.y + vy,
-      rotation: spin,
-      alpha: 0,
-      duration: dur,
-      ease: "Quad.easeOut",
-      onComplete: () => this.destroy(),
-    });
-    // The vertical arc rides the existing hop-lift (up at launch → 0 on landing).
-    this.scene.tweens.addCounter({
-      from: 0,
-      to: 1,
-      duration: dur,
-      onUpdate: (tw) =>
-        this.setHop(Math.sin((tw.getValue() ?? 0) * Math.PI) * peak),
-    });
+    this.spawnStartMs = -1;
+    this.root.rotation = 0;
+
+    let tearOther: Phaser.GameObjects.Image | undefined;
+    const tearParts: PaperDeathPartPose[] = [];
+    if (treatment === "tear") {
+      const frameW = Math.max(2, Math.floor(this.body.frame.width));
+      const frameH = Math.max(1, Math.floor(this.body.frame.height));
+      const split = Math.floor(frameW / 2);
+      tearOther = this.scene.add
+        .image(
+          this.body.x,
+          this.body.y,
+          this.body.texture.key,
+          this.body.frame.name,
+        )
+        .setOrigin(this.body.originX, this.body.originY)
+        .setScale(this.body.scaleX, this.body.scaleY)
+        .setRotation(this.body.rotation)
+        .setAlpha(this.body.alpha)
+        .setCrop(split, 0, frameW - split, frameH);
+      if (this.body.isTinted) tearOther.setTint(this.body.tintTopLeft);
+      this.body.setCrop(0, 0, split, frameH);
+      this.root.addAt(tearOther, this.root.getIndex(this.body) + 1);
+      for (const img of [
+        ...this.parts.filter((part) => part !== this.body),
+        ...this.weapons.map((weapon) => weapon.img),
+      ]) {
+        tearParts.push({ img, x: img.x, y: img.y });
+      }
+    }
+
+    this.paperDeath = {
+      treatment,
+      durationMs:
+        treatment === "lite" || treatment === "pit"
+          ? 160
+          : treatment === "crumple"
+            ? 240
+            : treatment === "tear" && this.baseScale >= 4
+              ? 720
+              : 520,
+      x0: this.root.x,
+      y0: this.root.y,
+      vx: treatment === "tear" && this.baseScale >= 4 ? vx * 1.4 : vx,
+      vy,
+      scaleX: this.root.scaleX,
+      scaleY: this.root.scaleY,
+      alpha: this.root.alpha,
+      rotation: this.root.rotation,
+      phase: this.phase * Math.PI * 2,
+      bodyX: this.body.x,
+      bodyY: this.body.y,
+      bodyScaleX: this.body.scaleX,
+      bodyScaleY: this.body.scaleY,
+      bodyRotation: this.body.rotation,
+      tearParts,
+      tearOther,
+      elapsedMs: 0,
+    };
+  }
+
+  /** Advance a detached paper death. Returns false after it destroys its rig. */
+  stepDeathPop(deltaMs: number): boolean {
+    const death = this.paperDeath;
+    if (!death) return false;
+    death.elapsedMs += Math.max(0, Math.min(100, deltaMs));
+    const q = clamp01(death.elapsedMs / death.durationMs);
+
+    if (death.treatment === "pit") {
+      this.root.x = death.x0;
+      this.root.y = death.y0 + 14 * q;
+      this.root.scaleX = death.scaleX * (1 - 0.25 * q);
+      this.root.scaleY = death.scaleY * Math.cos((Math.PI * q) / 2);
+      this.root.rotation = death.rotation + 0.07 * q;
+    } else if (death.treatment === "lite") {
+      const e = smoothstep01(q);
+      this.root.x = death.x0 + death.vx * q * 0.28;
+      this.root.y = death.y0 + death.vy * q * 0.28 + 10 * e;
+      this.root.scaleX = death.scaleX * (1 - 0.78 * e);
+      this.root.scaleY = death.scaleY * (1 - 1.04 * e);
+      this.root.rotation = death.rotation + 0.045 * Math.sin(Math.PI * q);
+      this.root.alpha = death.alpha * (1 - q);
+    } else if (death.treatment === "crumple") {
+      if (death.elapsedMs <= 90) {
+        const e = smoothstep01(death.elapsedMs / 90);
+        this.root.x = death.x0 + death.vx * 0.16 * e;
+        this.root.y = death.y0 + death.vy * 0.16 * e;
+        this.root.scaleX = death.scaleX * (1 + 0.12 * e);
+        this.root.scaleY = death.scaleY * (1 - 0.28 * e);
+        this.root.rotation =
+          death.rotation + (death.phase < Math.PI ? -1 : 1) * 0.07 * e;
+      } else {
+        const e = smoothstep01((death.elapsedMs - 90) / 150);
+        this.root.x = death.x0 + death.vx * (0.16 + 0.84 * e);
+        this.root.y = death.y0 + death.vy * (0.16 + 0.84 * e) + 12 * e;
+        this.root.scaleX = death.scaleX * (1.12 - 0.94 * e);
+        this.root.scaleY = death.scaleY * (0.72 - 0.52 * e);
+        this.root.rotation =
+          death.rotation + (death.phase < Math.PI ? -1 : 1) * 0.07 * (1 - e);
+        this.root.alpha = death.alpha * (1 - e);
+      }
+    } else {
+      // P4: signed scale crosses edge-on three times; rotation is only a restrained paper ruffle.
+      this.root.x =
+        death.x0 +
+        death.vx * q +
+        10 * (1 - q) * Math.sin(6 * Math.PI * q + death.phase);
+      this.root.y =
+        death.y0 + death.vy * q - 46 * Math.sin(Math.PI * q) + 18 * q * q;
+      this.root.scaleX = death.scaleX * Math.cos(3 * Math.PI * q);
+      this.root.scaleY = death.scaleY * (1 - 0.22 * Math.sin(Math.PI * q));
+      this.root.rotation =
+        death.rotation + 0.07 * Math.sin(4 * Math.PI * q + death.phase);
+      this.root.alpha = death.alpha * (1 - q) ** 1.6;
+
+      if (death.treatment === "tear" && death.tearOther) {
+        const sep = smoothstep01(Math.min(1, death.elapsedMs / 80));
+        const leftX = -9 * sep - 24 * q;
+        const rightX = 9 * sep + 24 * q;
+        this.body.x = death.bodyX + leftX;
+        this.body.y = death.bodyY + 8 * q;
+        this.body.scaleX = death.bodyScaleX;
+        this.body.scaleY = death.bodyScaleY;
+        this.body.rotation =
+          death.bodyRotation + 0.07 * Math.sin(4 * Math.PI * q + death.phase);
+        death.tearOther.x = death.bodyX + rightX;
+        death.tearOther.y = death.bodyY - 6 * q;
+        death.tearOther.scaleX = death.bodyScaleX;
+        death.tearOther.scaleY = death.bodyScaleY;
+        death.tearOther.rotation =
+          death.bodyRotation +
+          0.07 * Math.sin(4 * Math.PI * q + death.phase + Math.PI);
+        for (const part of death.tearParts) {
+          const side = part.x < death.bodyX ? -1 : 1;
+          part.img.x = part.x + (side < 0 ? leftX : rightX);
+          part.img.y = part.y + (side < 0 ? 8 : -6) * q;
+        }
+      }
+    }
+
+    if (q < 1) return true;
+    this.paperDeath = undefined;
+    this.destroy();
+    return false;
   }
 
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
@@ -1679,13 +1873,13 @@ export class SpriteRig {
     this.jigglePrevRootX = this.root.x;
     this.jigglePrevRootY = this.root.y;
     const view = this.scene.cameras.main.worldView;
-    const jiggleLodSkip =
-      PROCEDURAL_JIGGLE &&
+    const outsidePaperView =
       !anim.isSelf &&
       (this.root.x < view.left - JIGGLE_LOD_MARGIN_PX ||
         this.root.x > view.right + JIGGLE_LOD_MARGIN_PX ||
         this.root.y < view.top - JIGGLE_LOD_MARGIN_PX ||
         this.root.y > view.bottom + JIGGLE_LOD_MARGIN_PX);
+    const jiggleLodSkip = PROCEDURAL_JIGGLE && outsidePaperView;
 
     // Landing is measured before part integration so the one-shot compression enters this frame's springs;
     // the final art lift/shadow pass remains last. With the rollback flag off the arithmetic/order of writes
@@ -1810,8 +2004,25 @@ export class SpriteRig {
     // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).
     this.facingBlend +=
       (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
-    this.root.scaleX = this.facingBlend * this.baseScale;
-    this.root.scaleY = this.baseScale;
+    if (outsidePaperView && this.spawnStartMs >= 0) this.spawnStartMs = -1;
+    const spawnElapsedMs =
+      this.spawnStartMs >= 0
+        ? timeMs - this.spawnStartMs
+        : Number.POSITIVE_INFINITY;
+    const spawnActive = spawnElapsedMs < this.spawnDurationMs + 38;
+    const spawnScaleX = spawnActive
+      ? paperPopScaleX(spawnElapsedMs, this.spawnDurationMs)
+      : 1;
+    const spawnScaleY = spawnActive
+      ? paperPopScaleY(spawnElapsedMs, this.spawnDurationMs)
+      : 1;
+    const spawnRotation = spawnActive
+      ? paperPopRotation(spawnElapsedMs, this.spawnDurationMs)
+      : 0;
+    if (!spawnActive && this.spawnStartMs >= 0) this.spawnStartMs = -1;
+    this.root.scaleX = this.facingBlend * this.baseScale * spawnScaleX;
+    this.root.scaleY = this.baseScale * spawnScaleY;
+    this.root.rotation = spawnRotation;
     // Keep the "you" label a FIXED on-screen size + readable regardless of the character's rig scale: the
     // label is a child of the root (scaled by baseScale), so counter baseScale on both axes — else a bigger
     // character blows the text up (weapons counter the same way, §29). scaleX also counters the facing mirror.
@@ -2980,19 +3191,49 @@ export class SpriteRig {
       for (const p of this.parts) p.scaleY *= this.attackScaleY;
     }
     if (this.landSquash > 0.01) this.body.scaleY *= 1 - 0.14 * this.landSquash; // squash on touchdown
+    if (spawnActive) {
+      // Attachments open after the body card; only visible transforms change, so jiggle ownership is intact.
+      const handElapsed = spawnElapsedMs - 24;
+      const handScaleX = paperPopScaleX(handElapsed, this.spawnDurationMs);
+      const handScaleY = paperPopScaleY(handElapsed, this.spawnDurationMs);
+      const handRotation = paperPopRotation(handElapsed, this.spawnDurationMs);
+      for (const hand of this.hands) {
+        hand.img.scaleX *= handScaleX;
+        hand.img.scaleY *= handScaleY;
+        hand.img.rotation += handRotation;
+      }
+      const weaponElapsed = spawnElapsedMs - 38;
+      const weaponScaleX = paperPopScaleX(weaponElapsed, this.spawnDurationMs);
+      const weaponScaleY = paperPopScaleY(weaponElapsed, this.spawnDurationMs);
+      const weaponRotation = paperPopRotation(
+        weaponElapsed,
+        this.spawnDurationMs,
+      );
+      for (const weapon of this.weapons) {
+        weapon.img.scaleX *= weaponScaleX;
+        weapon.img.scaleY *= weaponScaleY;
+        weapon.img.rotation += weaponRotation;
+      }
+    }
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
     const shrink = Math.max(0.42, 1 - this.hopPx / 420);
+    const shadowOpen = spawnActive ? smoothstep01(spawnElapsedMs / 170) : 1;
+    const shadowSpawnX = 0.45 + 0.55 * shadowOpen;
+    const shadowSpawnY = 0.25 + 0.75 * shadowOpen;
+    const shadowAlpha = 0.08 + 0.22 * shadowOpen;
+    const shadowRootX = spawnActive ? Math.max(0.04, spawnScaleX) : 1;
+    const shadowRootY = spawnActive ? signedClamp(spawnScaleY, 0.04) : 1;
     this.shadow
       .setPosition(
-        this.attackShadowX,
-        TARGET_BODY_H * 0.42 + this.attackShadowY,
+        this.attackShadowX / shadowRootX,
+        (TARGET_BODY_H * 0.42 + this.attackShadowY) / shadowRootY,
       )
-      .setRotation(this.attackShadowRotation)
+      .setRotation(this.attackShadowRotation - spawnRotation)
       .setScale(
-        shrink * this.attackShadowScaleX,
-        shrink * this.attackShadowScaleY,
+        (shrink * this.attackShadowScaleX * shadowSpawnX) / shadowRootX,
+        (shrink * this.attackShadowScaleY * shadowSpawnY) / shadowRootY,
       )
-      .setAlpha(0.3 * shrink * this.attackShadowAlpha);
+      .setAlpha(shadowAlpha * shrink * this.attackShadowAlpha);
   }
 }
