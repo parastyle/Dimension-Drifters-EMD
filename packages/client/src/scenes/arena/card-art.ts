@@ -5,12 +5,11 @@ import { SPRITES } from "../../sprites/manifest.js";
 
 /**
  * §9 weapon-card art + carousel-card builder, extracted from ArenaScene. Pure presentation: bakes the
- * full-bleed card-art texture, draws the icon-driven §9 card, and returns the live Text handles the
- * scene's `updateCarousel` mutates each frame. The scene keeps `buildCarousel`/`updateCarousel`/the
- * drop-bar (those own the `carousel` array + read live player state); this module is the heavy layout.
+ * full-bleed card-art texture, draws the icon-driven §9 card and compact dock pieces, and returns the
+ * live Text handles the scene refreshes only while the inspector is visible.
  */
 
-/** One carousel card: its container + the live Text handles `updateCarousel` recolours/retexts. */
+/** One inspector card: its container plus the live Text handles refreshed from authoritative state. */
 export type Card = {
   id: string;
   container: Phaser.GameObjects.Container;
@@ -19,6 +18,31 @@ export type Card = {
   /** Min-requirement tokens, recoloured green/red vs the player's live attributes. */
   reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
   /** Charges (thrown, live) or durability (melee, static for now) readout. */
+  resource: Phaser.GameObjects.Text;
+};
+
+/** Lightweight, stat-free roster entry used by the mirrored-L dock. */
+export type DockChip = {
+  id: string;
+  container: Phaser.GameObjects.Container;
+  art: Phaser.GameObjects.Image;
+  paper: Phaser.GameObjects.Graphics;
+  name: Phaser.GameObjects.Text;
+  order: Phaser.GameObjects.Text;
+};
+
+/** The authoritative active-weapon core at the dock's bottom-right elbow. */
+export type DockJunction = {
+  container: Phaser.GameObjects.Container;
+  art: Phaser.GameObjects.Image;
+  chrome: Phaser.GameObjects.Container;
+  chromePaper: Phaser.GameObjects.Graphics;
+  emptyHands: Phaser.GameObjects.Graphics;
+  index: Phaser.GameObjects.Text;
+  truth: Phaser.GameObjects.Container;
+  truthPaper: Phaser.GameObjects.Graphics;
+  loot: Phaser.GameObjects.Text;
+  name: Phaser.GameObjects.Text;
   resource: Phaser.GameObjects.Text;
 };
 
@@ -125,6 +149,189 @@ export function bakeCardArt(
   }
   scene.textures.addCanvas(key, canvas);
   return key;
+}
+
+function dockTextResolution(): number {
+  return Math.max(2, Math.ceil(window.devicePixelRatio || 1));
+}
+
+/** Build a single mutable passive chip. Geometry is applied only when selection/viewport invalidates. */
+export function buildDockChip(scene: Phaser.Scene, id: string): DockChip {
+  const art = scene.add.image(0, 0, bakeCardArt(scene, id, 212, 296, 14));
+  const paper = scene.add.graphics();
+  const name = scene.add
+    .text(0, 0, WEAPONS[id]?.name ?? id, {
+      fontFamily: "monospace",
+      fontSize: "9px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+      align: "left",
+    })
+    .setOrigin(0, 1)
+    .setResolution(dockTextResolution());
+  const order = scene.add
+    .text(0, 0, "", {
+      fontFamily: "monospace",
+      fontSize: "8px",
+      color: "#cfc6ae",
+      fontStyle: "bold",
+    })
+    .setOrigin(1, 0)
+    .setResolution(dockTextResolution());
+  const container = scene.add.container(0, 0, [art, paper, name, order]);
+  return { id, container, art, paper, name, order };
+}
+
+function shortDockName(name: string, maxLength: number): string {
+  if (name.length <= maxLength) return name;
+  return `${name.slice(0, Math.max(1, maxLength - 1))}…`;
+}
+
+/** Resize/repaint one passive chip. This is deliberately event-driven rather than a frame update. */
+export function layoutDockChip(
+  chip: DockChip,
+  width: number,
+  height: number,
+  order: string,
+  showName: boolean,
+): void {
+  const accent = WEAPON_ACCENT[chip.id] ?? 0xb9975b;
+  const footerHeight = showName ? Math.max(11, Math.min(16, height * 0.34)) : 0;
+  chip.art.setCrop(0, 0, 212, 212).setDisplaySize(width, height);
+  chip.paper.clear();
+  chip.paper.fillStyle(0x000000, 0.22).fillRect(-width / 2 - 3, -height / 2 - 3, width, height);
+  if (footerHeight > 0) {
+    chip.paper
+      .fillStyle(0x0a0805, 0.9)
+      .fillRect(-width / 2, height / 2 - footerHeight, width, footerHeight);
+  }
+  chip.paper.lineStyle(1, accent, 0.82).strokeRect(-width / 2, -height / 2, width, height);
+  chip.paper
+    .lineStyle(1, 0xf1e8cf, 0.24)
+    .lineBetween(-width / 2 + 1, -height / 2 + 1, width / 2 - 1, -height / 2 + 1);
+
+  const maxName = width < 40 ? 4 : width < 52 ? 7 : 10;
+  chip.name
+    .setText(shortDockName(WEAPONS[chip.id]?.name ?? chip.id, maxName))
+    .setFontSize(Math.max(7, Math.min(10, footerHeight * 0.62)))
+    .setPosition(-width / 2 + 3, height / 2 - 2)
+    .setVisible(showName);
+  chip.order
+    .setText(order)
+    .setFontSize(Math.max(7, Math.min(9, height * 0.2)))
+    .setPosition(width / 2 - 3, -height / 2 + 2);
+}
+
+/** Build the fixed active core. Its truth layer remains opaque while art/chrome fade independently. */
+export function buildDockJunction(scene: Phaser.Scene): DockJunction {
+  const art = scene.add.image(0, 0, bakeCardArt(scene, "fists", 212, 296, 14));
+  const chromePaper = scene.add.graphics();
+  const emptyHands = scene.add.graphics();
+  const index = scene.add
+    .text(0, 0, "", {
+      fontFamily: "monospace",
+      fontSize: "9px",
+      color: "#cfc6ae",
+      fontStyle: "bold",
+    })
+    .setOrigin(0, 0)
+    .setResolution(dockTextResolution());
+  const chrome = scene.add.container(0, 0, [chromePaper, emptyHands, index]);
+  const truthPaper = scene.add.graphics();
+  const loot = scene.add
+    .text(0, 0, "", {
+      fontFamily: "monospace",
+      fontSize: "8px",
+      color: "#d8cfb8",
+      fontStyle: "bold",
+    })
+    .setOrigin(0, 1)
+    .setResolution(dockTextResolution());
+  const name = scene.add
+    .text(0, 0, "EMPTY HANDS", {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+    })
+    .setOrigin(0, 1)
+    .setResolution(dockTextResolution());
+  const resource = scene.add
+    .text(0, 0, "", {
+      fontFamily: "monospace",
+      fontSize: "9px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+    })
+    .setOrigin(1, 0)
+    .setResolution(dockTextResolution());
+  const truth = scene.add.container(0, 0, [truthPaper, loot, name, resource]);
+  const container = scene.add.container(0, 0, [art, chrome, truth]);
+  return {
+    container,
+    art,
+    chrome,
+    chromePaper,
+    emptyHands,
+    index,
+    truth,
+    truthPaper,
+    loot,
+    name,
+    resource,
+  };
+}
+
+/** Swap only the authoritative junction art; no predicted keypress ever calls this helper. */
+export function setDockJunctionWeapon(
+  scene: Phaser.Scene,
+  junction: DockJunction,
+  id: string,
+): void {
+  junction.art.setTexture(bakeCardArt(scene, id, 212, 296, 14)).setCrop(0, 0, 212, 212);
+}
+
+/** Repaint the junction's paper frame for its current responsive size and loot accent. */
+export function layoutDockJunction(
+  junction: DockJunction,
+  size: number,
+  accent: number,
+  unarmed: boolean,
+): void {
+  const half = size / 2;
+  const footerHeight = Math.max(23, size * 0.31);
+  junction.art.setDisplaySize(size, size);
+  junction.chromePaper.clear();
+  junction.chromePaper
+    .fillStyle(0x000000, 0.32)
+    .fillRect(-half - 5, -half - 5, size, size)
+    .lineStyle(1, 0xf1e8cf, 0.24)
+    .lineBetween(-half + 1, -half + 1, half - 1, -half + 1)
+    .lineStyle(1, 0xcfc6ae, 0.22)
+    .lineBetween(-half + 1, -half + 1, -half + 1, half - 1);
+  junction.truthPaper.clear();
+  junction.truthPaper
+    .fillStyle(0x0a0805, 0.9)
+    .fillRect(-half, half - footerHeight, size, footerHeight)
+    .lineStyle(3, accent, 0.98)
+    .strokeRect(-half, -half, size, size);
+
+  junction.emptyHands.clear().setVisible(unarmed);
+  if (unarmed) {
+    junction.emptyHands
+      .fillStyle(0x8f897a, 0.7)
+      .fillRoundedRect(-size * 0.18, -size * 0.17, size * 0.36, size * 0.29, size * 0.07)
+      .fillCircle(-size * 0.14, -size * 0.2, size * 0.075)
+      .fillCircle(-size * 0.045, -size * 0.23, size * 0.075)
+      .fillCircle(size * 0.05, -size * 0.22, size * 0.075)
+      .fillCircle(size * 0.14, -size * 0.18, size * 0.07);
+  }
+  junction.index.setFontSize(Math.max(8, size * 0.105)).setPosition(-half + 5, -half + 4);
+  junction.loot
+    .setFontSize(Math.max(7, size * 0.09))
+    .setPosition(-half + 5, half - footerHeight + size * 0.13);
+  junction.name.setFontSize(Math.max(9, size * 0.12)).setPosition(-half + 5, half - 4);
+  junction.resource.setFontSize(Math.max(8, size * 0.105)).setPosition(half - 5, -half + 4);
 }
 
 /** Tiny vector icons for the §9 card (icon-driven — no word labels, §9). Drawn into `g`, centred at

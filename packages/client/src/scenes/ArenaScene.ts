@@ -107,10 +107,27 @@ import {
   type LevelChoiceView,
   levelBuildContext,
 } from "../ui/level-up-model.js";
+import {
+  type WeaponDockLayout,
+  weaponDockLayout,
+  wrappedDockOffset,
+} from "../ui/weapon-dock-layout.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
-import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
+import {
+  buildCard,
+  buildDockChip,
+  buildDockJunction,
+  type Card,
+  type DockChip,
+  type DockJunction,
+  drawIcon,
+  layoutDockChip,
+  layoutDockJunction,
+  setDockJunctionWeapon,
+  WEAPON_ACCENT,
+} from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import {
   buildArenaFloor,
@@ -257,6 +274,40 @@ interface LevelChoiceControl {
   side: number;
   view: LevelChoiceView;
   send: () => void;
+}
+
+type CarouselDockState = "dormant" | "peek" | "focused" | "fading";
+
+interface CarouselDock {
+  root: Phaser.GameObjects.Container;
+  rails: Phaser.GameObjects.Container;
+  bottomArm: Phaser.GameObjects.Container;
+  rightArm: Phaser.GameObjects.Container;
+  ticks: Phaser.GameObjects.Graphics;
+  bottomTab: Phaser.GameObjects.Text;
+  rightTab: Phaser.GameObjects.Text;
+  elbow: Phaser.GameObjects.Container;
+  junction: DockJunction;
+  detailLayer: Phaser.GameObjects.Container;
+  chips: Map<string, DockChip>;
+  detailCards: Map<string, Card>;
+  detailLru: string[];
+  currentDetailId: string;
+  selectedId: string;
+  selectedIndex: number;
+  layoutSig: string;
+  activeSig: string;
+  heldSig: string;
+  liveSig: string;
+  layout?: WeaponDockLayout;
+  state: CarouselDockState;
+  fadeProgress: number;
+  fadeEvent?: Phaser.Time.TimerEvent;
+  fadeTween?: Phaser.Tweens.Tween;
+  focusTween?: Phaser.Tweens.Tween;
+  inspectKey?: "Q" | "E";
+  inspectStartedAt: number;
+  blocked: boolean;
 }
 
 interface MeleeTellCandidate {
@@ -892,12 +943,9 @@ export class ArenaScene extends Phaser.Scene {
   private grabGfx!: Phaser.GameObjects.Graphics;
   private dropBar?: Phaser.GameObjects.Graphics;
   private dropBarLabel?: Phaser.GameObjects.Text;
-  // §9 card carousel — held card big with full stats. Each card holds its LIVE elements (one equation
-  // line per §14 damage source, the requirement tokens, the charges/durability readout), recomputed
-  // from the player's current attributes every frame so the numbers track levelling.
-  private carousel: Card[] = [];
-  /** §9 carousel z-order changes only with the held weapon; stable frames must not dirty display-list sort. */
-  private carouselDepthSelection = -1;
+  // §9 non-belt navigator: a fixed mirrored-L dock, virtualized passive chips, and one lazy keyboard
+  // inspector. The synchronized player row is always the source of the elbow's identity and resources.
+  private carouselDock?: CarouselDock;
   // §29 belt arsenal HUD (replaces the carousel in belt mode): 3 slot chips + scrip/bag readout, and a
   // Tab-toggled bag panel with clickable entries (click a bag weapon → equip into the active slot; click a
   // slot → stash to bag). Immediate-mode Graphics + pooled Text; interactive zones rebuilt when the panel opens.
@@ -1157,8 +1205,7 @@ export class ArenaScene extends Phaser.Scene {
     this.levelWinObjects = [];
     this.levelWinChoices = [];
     this.summonObjects = [];
-    this.carousel = [];
-    this.carouselDepthSelection = -1;
+    this.carouselDock = undefined;
     this.arsenalTexts = [];
     this.bagTexts = [];
     this.bagZones = [];
@@ -2530,6 +2577,7 @@ export class ArenaScene extends Phaser.Scene {
       // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
       if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
         this.room.send("grabWeapon");
+        this.wakeCarouselDock();
         this.rGrabbed = true;
         this.audio.play("grab"); // §19 a soft two-note pickup blip
       }
@@ -2567,13 +2615,15 @@ export class ArenaScene extends Phaser.Scene {
       const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
       if (eDown && alive && nearPickup) {
         this.room.send("grabWeapon");
+        this.wakeCarouselDock();
         this.audio.play("grab");
       }
       const eFree = eDown && !(alive && nearPickup);
+      const qDown = Phaser.Input.Keyboard.JustDown(this.keys.Q);
       // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
       // keeps the roster carousel.
       if (this.belt) {
-        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleSlot", { dir: 1 });
+        if (qDown) this.room?.send("cycleSlot", { dir: 1 });
         if (eFree) this.room?.send("cycleSlot", { dir: -1 });
         if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
         if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
@@ -2581,11 +2631,17 @@ export class ArenaScene extends Phaser.Scene {
           this.room?.send("swapSlot", { slot: 2 });
       } else if (this.room?.state.mode === "training") {
         // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
-        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("galleryPage", { dir: 1 });
+        if (qDown) this.room?.send("galleryPage", { dir: 1 });
         if (eFree) this.room?.send("galleryPage", { dir: -1 });
       } else {
-        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
-        if (eFree) this.room?.send("cycleWeapon", { dir: -1 });
+        if (qDown) {
+          this.room?.send("cycleWeapon", { dir: 1 });
+          this.wakeCarouselDock("Q");
+        }
+        if (eFree) {
+          this.room?.send("cycleWeapon", { dir: -1 });
+          this.wakeCarouselDock("E");
+        }
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
       if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
@@ -6115,11 +6171,26 @@ export class ArenaScene extends Phaser.Scene {
     const h = this.screenH();
     const cx = w / 2;
     const cy = h / 2;
-    const t = Math.min(
-      Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6)),
-      Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6)),
-    );
-    arrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
+    const xEdgeT = Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6));
+    const yEdgeT = Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6));
+    const t = Math.min(xEdgeT, yEdgeT);
+    let arrowX = cx + Math.cos(ang) * t;
+    let arrowY = cy + Math.sin(ang) * t;
+    // Keep edge locators out of the mirrored-L corridor without changing their true bearing/rotation.
+    const dock = this.carouselDock;
+    const layout = dock?.layout;
+    if (layout && dock.root.visible && !this.belt) {
+      const clearance = 16 * layout.scale;
+      const hitsBottom = dy >= 0 && yEdgeT <= xEdgeT;
+      const hitsRight = dx >= 0 && xEdgeT <= yEdgeT;
+      if (hitsBottom && arrowX >= layout.bottomOccupiedLeft - clearance) {
+        arrowX = layout.bottomOccupiedLeft - clearance;
+      }
+      if (hitsRight && arrowY >= layout.rightOccupiedTop - clearance) {
+        arrowY = layout.rightOccupiedTop - clearance;
+      }
+    }
+    arrow.setVisible(true).setPosition(arrowX, arrowY);
     (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
     (arrow.list[1] as Phaser.GameObjects.Text).setText(
       `${word} ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
@@ -6830,10 +6901,70 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** §9 card carousel: one full infographic card per arsenal weapon (art + stats), fanned at the
-   *  bottom; the held card is centered, upright, enlarged + readable. */
+  /** §9 mirrored-L weapon dock. Passive entries are lightweight and the full card is built lazily. */
   private buildCarousel(): void {
-    for (const id of WEAPON_IDS) this.carousel.push(buildCard(this, id));
+    const root = this.add.container(0, 0).setScrollFactor(0).setDepth(100004);
+    const rails = this.add.container(0, 0);
+    const bottomArm = this.add.container(0, 0);
+    const rightArm = this.add.container(0, 0);
+    const ticks = this.add.graphics();
+    const tabStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontFamily: "monospace",
+      fontSize: "10px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+    };
+    const textResolution = Math.max(2, Math.ceil(RENDER_DPR));
+    const bottomTab = this.add
+      .text(0, 0, "← E", tabStyle)
+      .setOrigin(1, 0.5)
+      .setResolution(textResolution);
+    const rightTab = this.add
+      .text(0, 0, "Q ↑", tabStyle)
+      .setOrigin(0.5, 1)
+      .setResolution(textResolution);
+    const elbow = this.add.container(0, 0);
+    const junction = buildDockJunction(this);
+    elbow.add(junction.container);
+    const detailLayer = this.add.container(0, 0);
+    rails.add([bottomArm, rightArm, ticks]);
+    root.add([rails, bottomTab, rightTab, elbow, detailLayer]);
+
+    const chips = new Map<string, DockChip>();
+    for (const id of WEAPON_IDS) {
+      const chip = buildDockChip(this, id);
+      chip.container.setVisible(false);
+      bottomArm.add(chip.container);
+      chips.set(id, chip);
+    }
+    this.carouselDock = {
+      root,
+      rails,
+      bottomArm,
+      rightArm,
+      ticks,
+      bottomTab,
+      rightTab,
+      elbow,
+      junction,
+      detailLayer,
+      chips,
+      detailCards: new Map(),
+      detailLru: [],
+      currentDetailId: "",
+      selectedId: "",
+      selectedIndex: -1,
+      layoutSig: "",
+      activeSig: "",
+      heldSig: "",
+      liveSig: "",
+      state: "dormant",
+      fadeProgress: 0,
+      inspectStartedAt: 0,
+      blocked: false,
+    };
+    this.applyCarouselDockFade(0);
+    if (this.belt) root.setVisible(false);
   }
 
   /** §9/§13 draw the drop/salvage HOLD bar while R is held — a bar above the card carousel filling
@@ -6866,82 +6997,526 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(true);
   }
 
-  /** Fan the hand at the bottom: held card centered/upright/big with live charges; others smaller,
-   *  rotated, fanned to the sides (prev left / next right, §9). */
+  private stopCarouselDockFade(dock: CarouselDock): void {
+    dock.fadeEvent?.remove(false);
+    dock.fadeEvent = undefined;
+    if (dock.fadeTween) {
+      dock.fadeTween.stop();
+      dock.fadeTween.remove();
+      dock.fadeTween = undefined;
+    }
+  }
+
+  private applyCarouselDockFade(progress: number): void {
+    const dock = this.carouselDock;
+    if (!dock) return;
+    const p = paperClamp01(progress);
+    dock.fadeProgress = p;
+    dock.rails.setAlpha(0.1 + 0.9 * p);
+    dock.bottomTab.setAlpha(0.18 + 0.82 * p);
+    dock.rightTab.setAlpha(0.18 + 0.82 * p);
+    dock.junction.art.setAlpha(0.18 + 0.82 * p);
+    dock.junction.chrome.setAlpha(0.3 + 0.7 * p);
+    // Active identity, rarity treatment, and current resource state are combat truth and never fade.
+    dock.junction.truth.setAlpha(1);
+  }
+
+  /** Explicit non-aim activity wakes the compact rails; only ordinary-arena Q/E arms inspection. */
+  private wakeCarouselDock(inspectKey?: "Q" | "E"): void {
+    const dock = this.carouselDock;
+    if (!dock || this.belt || dock.blocked) return;
+    if (inspectKey) {
+      dock.inspectKey = inspectKey;
+      dock.inspectStartedAt = this.time.now;
+    }
+    this.stopCarouselDockFade(dock);
+    if (dock.state === "focused") {
+      this.applyCarouselDockFade(1);
+      return;
+    }
+    dock.state = "peek";
+    const duration = Math.max(1, 120 * (1 - dock.fadeProgress));
+    dock.fadeTween = this.tweens.add({
+      targets: dock,
+      fadeProgress: 1,
+      duration,
+      ease: "Cubic.easeOut",
+      onUpdate: () => this.applyCarouselDockFade(dock.fadeProgress),
+      onComplete: () => {
+        dock.fadeTween = undefined;
+      },
+    });
+    dock.fadeEvent = this.time.delayedCall(2400, () => this.fadeCarouselDock());
+  }
+
+  private fadeCarouselDock(): void {
+    const dock = this.carouselDock;
+    if (!dock || dock.blocked || dock.state === "focused") return;
+    this.stopCarouselDockFade(dock);
+    dock.state = "fading";
+    dock.fadeTween = this.tweens.add({
+      targets: dock,
+      fadeProgress: 0,
+      duration: 650,
+      ease: paperSmoothstep,
+      onUpdate: () => this.applyCarouselDockFade(dock.fadeProgress),
+      onComplete: () => {
+        dock.fadeTween = undefined;
+        dock.state = "dormant";
+        this.applyCarouselDockFade(0);
+      },
+    });
+  }
+
+  private setCarouselDockBlocked(blocked: boolean): void {
+    const dock = this.carouselDock;
+    if (!dock || blocked === dock.blocked) return;
+    dock.blocked = blocked;
+    this.stopCarouselDockFade(dock);
+    dock.inspectKey = undefined;
+    if (blocked) {
+      this.collapseCarouselDockFocus(true);
+      dock.state = "dormant";
+      this.applyCarouselDockFade(0);
+      dock.root.setVisible(false);
+    } else {
+      dock.root.setVisible(true);
+      dock.state = "dormant";
+      this.applyCarouselDockFade(0);
+    }
+  }
+
+  private carouselDockAccent(self: PlayerState): number {
+    return RARITIES[self.weaponRarity]?.color ?? WEAPON_ACCENT[self.weapon] ?? 0xb9975b;
+  }
+
+  private layoutCarouselDock(
+    self: PlayerState,
+    layout: WeaponDockLayout,
+    bottomIds: string[],
+    rightIds: string[],
+  ): void {
+    const dock = this.carouselDock;
+    if (!dock) return;
+    for (const chip of dock.chips.values()) {
+      if (chip.container.visible) chip.container.setVisible(false);
+    }
+    const showNames = WEAPON_IDS.length <= 13;
+    const place = (
+      id: string,
+      target: Phaser.GameObjects.Container,
+      point: { x: number; y: number },
+      width: number,
+      height: number,
+      order: string,
+    ) => {
+      const chip = dock.chips.get(id);
+      if (!chip) return;
+      if (chip.container.parentContainer !== target) {
+        chip.container.parentContainer?.remove(chip.container);
+        target.add(chip.container);
+      }
+      layoutDockChip(chip, width, height, order, showNames);
+      chip.container.setPosition(point.x, point.y).setRotation(0).setVisible(true);
+    };
+    layout.bottom.forEach((point, index) => {
+      const id = bottomIds[index];
+      if (id)
+        place(
+          id,
+          dock.bottomArm,
+          point,
+          layout.bottomChipWidth,
+          layout.bottomChipHeight,
+          `E${index + 1}`,
+        );
+    });
+    layout.right.forEach((point, index) => {
+      const id = rightIds[index];
+      if (id)
+        place(
+          id,
+          dock.rightArm,
+          point,
+          layout.rightChipWidth,
+          layout.rightChipHeight,
+          `Q${index + 1}`,
+        );
+    });
+
+    const bottomCulled = Math.max(0, bottomIds.length - layout.bottom.length);
+    const rightCulled = Math.max(0, rightIds.length - layout.right.length);
+    dock.bottomTab
+      .setText(bottomCulled > 0 ? `+${bottomCulled}  ← E` : "← E")
+      .setPosition(layout.bottomTab.x, layout.bottomTab.y)
+      .setFontSize(Math.max(8, 10 * layout.scale));
+    dock.rightTab
+      .setText(rightCulled > 0 ? `+${rightCulled}  Q ↑` : "Q ↑")
+      .setPosition(layout.rightTab.x, layout.rightTab.y)
+      .setFontSize(Math.max(8, 10 * layout.scale));
+
+    const n = WEAPON_IDS.length;
+    const tickGap = Math.max(1.5, Math.min(3, (layout.junctionSize - 10) / Math.max(1, n)));
+    const tickWidth = Math.max(1, tickGap - 0.6);
+    const total = n * tickGap;
+    const tickX = layout.junction.x - total / 2;
+    const tickY = layout.cornerTop - 3 * layout.scale;
+    const accent = this.carouselDockAccent(self);
+    dock.ticks.clear();
+    for (let index = 0; index < n; index++) {
+      dock.ticks
+        .lineStyle(
+          Math.max(1, 1.4 * layout.scale),
+          index === dock.selectedIndex ? accent : 0xcfc6ae,
+          index === dock.selectedIndex ? 1 : 0.38,
+        )
+        .lineBetween(tickX + index * tickGap, tickY, tickX + index * tickGap + tickWidth, tickY);
+    }
+
+    dock.elbow.setPosition(layout.junction.x, layout.junction.y);
+    layoutDockJunction(dock.junction, layout.junctionSize, accent, self.weapon === FISTS_WEAPON);
+    dock.layout = layout;
+    const focused = dock.currentDetailId ? dock.detailCards.get(dock.currentDetailId) : undefined;
+    if (focused?.container.visible) {
+      focused.container
+        .setPosition(layout.focus.x, layout.focus.y)
+        .setScale(layout.focus.scale)
+        .setRotation(0);
+    }
+  }
+
+  private updateCarouselDockJunction(self: PlayerState): void {
+    const dock = this.carouselDock;
+    if (!dock) return;
+    const unarmed = self.weapon === FISTS_WEAPON;
+    const def = WEAPONS[self.weapon];
+    const rarity = self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
+    const affix = self.weaponAffix ? affixById(self.weaponAffix).name : "";
+    const accent = this.carouselDockAccent(self);
+    dock.junction.index.setText(
+      dock.selectedIndex >= 0
+        ? `${dock.selectedIndex + 1}/${WEAPON_IDS.length}`
+        : `—/${WEAPON_IDS.length}`,
+    );
+    const rawName = unarmed ? "EMPTY HANDS" : (def?.name ?? self.weapon);
+    dock.junction.name.setText(rawName.length > 17 ? `${rawName.slice(0, 16)}…` : rawName);
+    dock.junction.loot
+      .setText([rarity?.name ?? "", affix].filter(Boolean).join(" ").toUpperCase())
+      .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
+    if (self.maxCharges > 0) {
+      dock.junction.resource
+        .setText(self.charges <= 0 ? "RELOAD" : `${self.charges}/${self.maxCharges}`)
+        .setColor(
+          self.charges <= 0
+            ? "#ff5d5d"
+            : self.charges <= Math.max(1, Math.ceil(self.maxCharges * 0.25))
+              ? "#ff8a2b"
+              : "#f1e8cf",
+        );
+    } else {
+      dock.junction.resource.setText("");
+    }
+    if (dock.layout) {
+      layoutDockJunction(dock.junction, dock.layout.junctionSize, accent, unarmed);
+    }
+  }
+
+  private carouselDockDetail(id: string): Card {
+    const dock = this.carouselDock as CarouselDock;
+    let card = dock.detailCards.get(id);
+    if (!card) {
+      card = buildCard(this, id);
+      card.container.setVisible(false).setDepth(0);
+      dock.detailLayer.add(card.container);
+      dock.detailCards.set(id, card);
+    }
+    dock.detailLru = dock.detailLru.filter((entry) => entry !== id);
+    dock.detailLru.push(id);
+    while (dock.detailLru.length > 3) {
+      const evicted = dock.detailLru.shift();
+      if (!evicted || evicted === id) continue;
+      const old = dock.detailCards.get(evicted);
+      old?.container.destroy(true);
+      dock.detailCards.delete(evicted);
+    }
+    return card;
+  }
+
+  private showCarouselDockFocus(): void {
+    const dock = this.carouselDock;
+    if (!dock || dock.blocked || !dock.layout || !dock.selectedId) return;
+    this.stopCarouselDockFade(dock);
+    if (dock.focusTween) {
+      dock.focusTween.stop();
+      dock.focusTween.remove();
+      dock.focusTween = undefined;
+    }
+    if (dock.currentDetailId && dock.currentDetailId !== dock.selectedId) {
+      dock.detailCards.get(dock.currentDetailId)?.container.setVisible(false);
+    }
+    const card = this.carouselDockDetail(dock.selectedId);
+    dock.currentDetailId = dock.selectedId;
+    dock.liveSig = "";
+    dock.state = "focused";
+    this.applyCarouselDockFade(1);
+    const { focus, junction } = dock.layout;
+    card.container.setVisible(true);
+    if (prefersReducedPaperMotion()) {
+      card.container.setPosition(focus.x, focus.y).setScale(focus.scale).setRotation(0).setAlpha(1);
+      return;
+    }
+    card.container
+      .setPosition(junction.x, junction.y)
+      .setScale(0.22)
+      .setRotation(-0.0436)
+      .setAlpha(0);
+    dock.focusTween = this.tweens.add({
+      targets: card.container,
+      x: focus.x,
+      y: focus.y,
+      scaleX: focus.scale,
+      scaleY: focus.scale,
+      rotation: 0,
+      alpha: 1,
+      duration: 190,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        dock.focusTween = undefined;
+      },
+    });
+  }
+
+  private collapseCarouselDockFocus(immediate = false): void {
+    const dock = this.carouselDock;
+    if (!dock) return;
+    if (dock.focusTween) {
+      dock.focusTween.stop();
+      dock.focusTween.remove();
+      dock.focusTween = undefined;
+    }
+    const id = dock.currentDetailId;
+    const card = id ? dock.detailCards.get(id) : undefined;
+    dock.currentDetailId = "";
+    dock.liveSig = "";
+    if (!card) return;
+    if (immediate || prefersReducedPaperMotion() || !dock.layout) {
+      card.container.setVisible(false).setAlpha(0).setRotation(0);
+      return;
+    }
+    dock.focusTween = this.tweens.add({
+      targets: card.container,
+      x: dock.layout.junction.x,
+      y: dock.layout.junction.y,
+      scaleX: 0.22,
+      scaleY: 0.22,
+      rotation: 0,
+      alpha: 0,
+      duration: 150,
+      ease: "Cubic.easeIn",
+      onComplete: () => {
+        card.container.setVisible(false);
+        dock.focusTween = undefined;
+      },
+    });
+  }
+
+  private updateCarouselDockInspect(): void {
+    const dock = this.carouselDock;
+    const keyName = dock?.inspectKey;
+    if (!dock || !keyName || dock.blocked) return;
+    if (!this.keys[keyName].isDown) {
+      dock.inspectKey = undefined;
+      if (dock.state === "focused") {
+        this.collapseCarouselDockFocus();
+        dock.state = "peek";
+        this.wakeCarouselDock();
+      }
+      return;
+    }
+    if (dock.state !== "focused" && this.time.now - dock.inspectStartedAt >= 320) {
+      this.showCarouselDockFocus();
+    }
+  }
+
+  /** Preserve the original WYSIWYG equations; only the one visible inspector is ever refreshed. */
+  private refreshCarouselDockCard(card: Card, def: WeaponDef | undefined, self: PlayerState): void {
+    const attrs: Record<Attr, number> = {
+      str: self.str,
+      dex: self.dex,
+      int: self.int,
+      con: self.con,
+      luk: self.luk,
+    };
+    const fmt = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
+    const penalty = def ? requirementPenalty(def, attrs) : 1;
+    const loot = card.id === self.weapon ? lootDamageMult(self.weaponRarity, self.weaponAffix) : 1;
+    for (const source of card.sources) {
+      const mult = damageMultFromGrades(source.src.grades, attrs) * penalty * loot;
+      const total = source.src.base * mult;
+      source.text.setText(
+        `${fmt(source.src.base)} + ${fmt(total - source.src.base)} = ${fmt(total)}`,
+      );
+      source.text.setColor(penalty < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
+    }
+    for (const token of card.reqTokens) {
+      token.text.setColor((attrs[token.attr] ?? 1) >= token.need ? "#9cff3b" : "#ff5a4a");
+    }
+    if (def?.thrown) {
+      const current = card.id === self.weapon ? self.charges : def.thrown.charges;
+      card.resource.setText(`${current} / ${def.thrown.charges}`);
+    } else if (def?.durability) {
+      card.resource.setText(String(def.durability));
+    } else {
+      card.resource.setText("");
+    }
+  }
+
+  /** Synchronize the fixed dock. Stable idle frames compare signatures and mutate no dock objects. */
   private updateCarousel(): void {
-    if (!this.room || this.carousel.length === 0) return;
-    // §29 belt swaps the roster carousel for the compact 3-slot arsenal HUD — hide the fanned cards.
+    const dock = this.carouselDock;
+    if (!this.room || !dock) return;
+    // Belt play remains a separate three-slot/bag product and owns all existing interaction contracts.
     if (this.belt) {
-      if (this.carousel[0]?.container.visible)
-        for (const c of this.carousel) c.container.setVisible(false);
+      if (dock.root.visible) {
+        this.collapseCarouselDockFocus(true);
+        dock.root.setVisible(false);
+      }
       this.updateArsenalHud();
       return;
     }
     const self = this.room.state.players.get(this.room.sessionId);
+    if (!self) return;
+    const blocked =
+      this.inLevelWindow(self) ||
+      this.levelWinInputReleaseLatch ||
+      this.summonOpen ||
+      !self.alive ||
+      this.room.state.outcome !== "active";
+    this.setCarouselDockBlocked(blocked);
+
     const ids = WEAPON_IDS;
     const n = ids.length;
-    const si = Math.max(0, ids.indexOf(self?.weapon ?? ids[0] ?? ""));
-    const depthSelectionChanged = si !== this.carouselDepthSelection;
-    if (depthSelectionChanged) this.carouselDepthSelection = si;
-    const cx = this.screenW() / 2;
-    const selY = this.screenH() - 170;
-    const arcR = 700;
-    const step = 0.26;
-    for (const card of this.carousel) {
-      let off = ids.indexOf(card.id) - si;
-      if (off > n / 2) off -= n;
-      if (off < -n / 2) off += n;
-      const isSel = off === 0;
-      const ang = off * step;
-      card.container.setPosition(
-        cx + Math.sin(ang) * arcR,
-        selY + arcR * (1 - Math.cos(ang)) - (isSel ? 24 : 0),
-      );
-      card.container.setRotation(isSel ? 0 : ang);
-      card.container.setScale(isSel ? 1.0 : 0.62);
-      card.container.setAlpha(isSel ? 1 : 0.82);
-      if (depthSelectionChanged) {
-        card.container.setDepth(100000 + (isSel ? 100 : 30 - Math.abs(off)));
-      }
+    const selectedId = self.weapon;
+    const selectedIndex = ids.indexOf(selectedId);
+    const selectionChanged = selectedId !== dock.selectedId || selectedIndex !== dock.selectedIndex;
+    if (selectionChanged) {
+      dock.selectedId = selectedId;
+      dock.selectedIndex = selectedIndex;
+      dock.layoutSig = "";
+      dock.liveSig = "";
+      setDockJunctionWeapon(this, dock.junction, selectedId);
+      dock.junction.art.setVisible(selectedId !== FISTS_WEAPON);
+    }
 
-      const def = WEAPONS[card.id];
-      const attrs: Record<Attr, number> = {
-        str: self?.str ?? 1,
-        dex: self?.dex ?? 1,
-        int: self?.int ?? 1,
-        con: self?.con ?? 1,
-        luk: self?.luk ?? 1,
-      };
-      // Show REAL (sub-integer) damage so every stat point visibly moves the number (§12). Each §14
-      // source scales off ITS OWN grades — so pumping INT grows Wyrmtooth's magma but not its blade.
-      const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
-      // §11 unmet requirements PENALISE every source's damage (the enforcement rule) — fold it into the
-      // shown total so the card is WYSIWYG, and tint the equation amber when the weapon is under-statted.
-      // §10 v0.104: the HELD card also folds in its rolled loot identity (rarity × affix) — the equation
-      // always equals the damage the server actually deals.
-      const pen = def ? requirementPenalty(def, attrs) : 1;
-      const loot =
-        isSel && self && card.id === self.weapon
-          ? lootDamageMult(self.weaponRarity, self.weaponAffix)
-          : 1;
-      for (const s of card.sources) {
-        const mult = damageMultFromGrades(s.src.grades, attrs) * pen * loot;
-        const total = s.src.base * mult;
-        s.text.setText(`${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`);
-        s.text.setColor(pen < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
+    const bottomIds: string[] = [];
+    const rightIds: string[] = [];
+    if (selectedIndex >= 0) {
+      const offsets = ids
+        .map((id, index) => ({ id, offset: wrappedDockOffset(index, selectedIndex, n) }))
+        .filter(({ offset }) => offset !== 0 && Math.abs(offset) <= 2);
+      bottomIds.push(
+        ...offsets
+          .filter(({ offset }) => offset < 0)
+          .sort((a, b) => Math.abs(a.offset) - Math.abs(b.offset))
+          .map(({ id }) => id),
+      );
+      rightIds.push(
+        ...offsets
+          .filter(({ offset }) => offset > 0)
+          .sort((a, b) => a.offset - b.offset)
+          .map(({ id }) => id),
+      );
+    } else {
+      const used = new Set<string>();
+      for (let index = 0; index < Math.min(2, n); index++) {
+        const id = ids[index];
+        if (id) {
+          rightIds.push(id);
+          used.add(id);
+        }
       }
-      // Requirements: green when met by the player's live attributes, red when unmet.
-      for (const tk of card.reqTokens) {
-        tk.text.setColor((attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a");
+      for (let index = n - 1; index >= 0 && bottomIds.length < 2; index--) {
+        const id = ids[index];
+        if (id && !used.has(id)) bottomIds.push(id);
       }
-      // Resource value (the icon conveys charges-vs-durability): live charges, or the durability number.
-      if (def?.thrown) {
-        const cur = isSel && self ? self.charges : def.thrown.charges;
-        card.resource.setText(`${cur} / ${def.thrown.charges}`);
-      } else if (def?.durability) {
-        card.resource.setText(String(def.durability));
-      } else {
-        card.resource.setText("");
+    }
+
+    const width = this.screenW();
+    const height = this.screenH();
+    const dockScale = Math.max(0.78, Math.min(1.25, Math.min(width / 1600, height / 900)));
+    const hudRight = Math.max(
+      20 * this.uiScale() + 240 * this.uiScale(),
+      this.levelText.x + this.levelText.displayWidth,
+      this.weaponText.x + this.weaponText.displayWidth,
+      this.augmentText.visible ? this.augmentText.x + this.augmentText.displayWidth : 0,
+    );
+    const leftStop = Math.max(16 * dockScale, hudRight + 16 * dockScale);
+    const topStop = Math.max(
+      56 * dockScale,
+      this.restartBtn.y + this.restartBtn.displayHeight + 12 * dockScale,
+    );
+    const layoutSig = [
+      Math.round(width * 2),
+      Math.round(height * 2),
+      selectedId,
+      selectedIndex,
+      Math.round(leftStop * 2),
+      Math.round(topStop * 2),
+      bottomIds.join(","),
+      rightIds.join(","),
+    ].join(":");
+    if (layoutSig !== dock.layoutSig) {
+      dock.layoutSig = layoutSig;
+      const layout = weaponDockLayout({
+        screenWidth: width,
+        screenHeight: height,
+        rosterCount: n,
+        bottomVisible: bottomIds.length,
+        rightVisible: rightIds.length,
+        leftStop,
+        topStop,
+      });
+      this.layoutCarouselDock(self, layout, bottomIds, rightIds);
+    }
+
+    const activeSig = [
+      self.weapon,
+      self.weaponRarity,
+      self.weaponAffix,
+      self.charges,
+      self.maxCharges,
+    ].join(":");
+    if (activeSig !== dock.activeSig) {
+      dock.activeSig = activeSig;
+      this.updateCarouselDockJunction(self);
+    }
+    const heldSig = `${self.weapon}:${self.weaponRarity}:${self.weaponAffix}`;
+    if (heldSig !== dock.heldSig) {
+      dock.heldSig = heldSig;
+      this.wakeCarouselDock();
+    }
+    if (selectionChanged && dock.state === "focused") this.showCarouselDockFocus();
+    if (blocked) return;
+
+    this.updateCarouselDockInspect();
+    if (dock.state === "focused" && dock.currentDetailId) {
+      const liveSig = [
+        dock.currentDetailId,
+        self.str,
+        self.dex,
+        self.int,
+        self.con,
+        self.luk,
+        self.weapon,
+        self.weaponRarity,
+        self.weaponAffix,
+        self.charges,
+        self.maxCharges,
+      ].join(":");
+      if (liveSig !== dock.liveSig) {
+        dock.liveSig = liveSig;
+        const card = dock.detailCards.get(dock.currentDetailId);
+        if (card) this.refreshCarouselDockCard(card, WEAPONS[card.id], self);
       }
     }
   }
