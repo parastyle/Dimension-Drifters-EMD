@@ -1,6 +1,6 @@
+import { CHOP_IMPACT_FRAC, SWING_WINDOW_FRAC } from "./constants.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
-import { CHOP_IMPACT_FRAC, SWING_WINDOW_FRAC } from "./constants.js";
 import type { WeaponDef } from "./weapons.js";
 
 /**
@@ -29,6 +29,286 @@ export const MELEE_BLADE_HALFWIDTH = 21;
 export const MELEE_SAMPLE_STEP = 0.08;
 
 export type SwingStyle = NonNullable<WeaponDef["swingStyle"]>;
+
+/** §45 Stage-1 combo vocabulary. These tables are inert authored DATA: the client consumes pose/timing,
+ *  while the server keeps resolving its one legacy centered sweep. `path` is deliberately carried now so a
+ *  later accepted descriptor can reuse the exact step table without trusting a client-authored finisher. */
+export type MeleeComboFamily = "arc" | "chop" | "rake" | "punch" | "thrust";
+export type MeleeComboMotion =
+  | "slash"
+  | "overhead"
+  | "shoulder-chop"
+  | "rising-chop"
+  | "execution-slam"
+  | "rake"
+  | "scissor"
+  | "jab"
+  | "hook"
+  | "haymaker"
+  | "lunge"
+  | "disengage"
+  | "impale";
+export type MeleeComboHand = "lead" | "off" | "both";
+export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
+
+export interface MeleeComboStep {
+  readonly name: string;
+  readonly motion: MeleeComboMotion;
+  /** +1 forehand/lead, −1 reverse/off-side, 0 opposing paths. Cosmetic until signed server paths land. */
+  readonly direction: -1 | 0 | 1;
+  readonly hand: MeleeComboHand;
+  readonly timing: {
+    readonly activeStart: number;
+    readonly activeEnd: number;
+    readonly impact?: number;
+    readonly followEnd: number;
+    /** Scissor's delayed second hand; absent for every single-path step. */
+    readonly secondaryActiveStart?: number;
+    readonly secondaryActiveEnd?: number;
+  };
+  /** Dormant authoritative-path authoring for Stage 3+. Stage 1 never reads damage/range/knockback. */
+  readonly path: {
+    readonly kind: MeleeComboPath;
+    readonly arcMultiplier: number;
+    readonly rangeMultiplier: number;
+    readonly damageMultiplier: number;
+    readonly knockback: number;
+  };
+}
+
+/** §45 section-B authored 3-hit cycles. Arrays/step roots are frozen and fields are readonly; all fractions
+ *  are normalized over the effective-cooldown pose so the eventual accepted descriptor can consume them. */
+export const MELEE_COMBO_SEQUENCES: Readonly<
+  Record<MeleeComboFamily, readonly Readonly<MeleeComboStep>[]>
+> = Object.freeze({
+  arc: Object.freeze([
+    Object.freeze({
+      name: "forehand cut",
+      motion: "slash" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.16, activeEnd: 0.66, followEnd: 0.8 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 1,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "reverse backhand",
+      motion: "slash" as const,
+      direction: -1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.1, activeEnd: 0.6, followEnd: 0.78 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: -1,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "overhead diagonal finisher",
+      motion: "overhead" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.28, activeEnd: 0.6, impact: 0.52, followEnd: 0.74 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 1.25,
+        rangeMultiplier: 1.08,
+        damageMultiplier: 1.2,
+        knockback: 72,
+      },
+    }),
+  ]),
+  chop: Object.freeze([
+    Object.freeze({
+      name: "shoulder chop",
+      motion: "shoulder-chop" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.24, activeEnd: 0.52, impact: 0.52, followEnd: 0.66 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 0.75,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "reverse rising cut",
+      motion: "rising-chop" as const,
+      direction: -1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.14, activeEnd: 0.5, impact: 0.5, followEnd: 0.7 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: -0.8,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "execution slam",
+      motion: "execution-slam" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.32, activeEnd: 0.56, impact: 0.56, followEnd: 0.74 },
+      path: {
+        kind: "fan" as const,
+        arcMultiplier: 1.15,
+        rangeMultiplier: 1.05,
+        damageMultiplier: 1.25,
+        knockback: 96,
+      },
+    }),
+  ]),
+  rake: Object.freeze([
+    Object.freeze({
+      name: "lead-hand rake",
+      motion: "rake" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.13, activeEnd: 0.58, followEnd: 0.76 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 1,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "off-hand reverse rake",
+      motion: "rake" as const,
+      direction: -1 as const,
+      hand: "off" as const,
+      timing: { activeStart: 0.09, activeEnd: 0.54, followEnd: 0.74 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: -1,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "scissor drag",
+      motion: "scissor" as const,
+      direction: 0,
+      hand: "both" as const,
+      timing: {
+        activeStart: 0.18,
+        activeEnd: 0.52,
+        secondaryActiveStart: 0.24,
+        secondaryActiveEnd: 0.58,
+        impact: 0.43,
+        followEnd: 0.76,
+      },
+      path: {
+        kind: "dual-sweep" as const,
+        arcMultiplier: 0.85,
+        rangeMultiplier: 1.05,
+        damageMultiplier: 1.18,
+        knockback: 64,
+      },
+    }),
+  ]),
+  punch: Object.freeze([
+    Object.freeze({
+      name: "lead jab",
+      motion: "jab" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.1, activeEnd: 0.36, impact: 0.36, followEnd: 0.44 },
+      path: {
+        kind: "capsule" as const,
+        arcMultiplier: 0,
+        rangeMultiplier: 0.92,
+        damageMultiplier: 0.95,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "cross / body hook",
+      motion: "hook" as const,
+      direction: -1 as const,
+      hand: "off" as const,
+      timing: { activeStart: 0.18, activeEnd: 0.48, impact: 0.48, followEnd: 0.68 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 1,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "haymaker / hammerfist",
+      motion: "haymaker" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.28, activeEnd: 0.56, impact: 0.56, followEnd: 0.72 },
+      path: {
+        kind: "sweep" as const,
+        arcMultiplier: 1,
+        rangeMultiplier: 1.05,
+        damageMultiplier: 1.25,
+        knockback: 88,
+      },
+    }),
+  ]),
+  thrust: Object.freeze([
+    Object.freeze({
+      name: "outside-line lunge",
+      motion: "lunge" as const,
+      direction: 1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.14, activeEnd: 0.42, impact: 0.42, followEnd: 0.5 },
+      path: {
+        kind: "capsule" as const,
+        arcMultiplier: 0,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "disengage thrust",
+      motion: "disengage" as const,
+      direction: -1 as const,
+      hand: "lead" as const,
+      timing: { activeStart: 0.18, activeEnd: 0.44, impact: 0.44, followEnd: 0.52 },
+      path: {
+        kind: "capsule" as const,
+        arcMultiplier: 0,
+        rangeMultiplier: 1,
+        damageMultiplier: 1,
+        knockback: 0,
+      },
+    }),
+    Object.freeze({
+      name: "step-through impale",
+      motion: "impale" as const,
+      direction: 1 as const,
+      hand: "both" as const,
+      timing: { activeStart: 0.24, activeEnd: 0.58, impact: 0.58, followEnd: 0.7 },
+      path: {
+        kind: "capsule" as const,
+        arcMultiplier: 0,
+        rangeMultiplier: 1.15,
+        damageMultiplier: 1.22,
+        knockback: 80,
+      },
+    }),
+  ]),
+});
 
 /** §44 the immutable clock accepted/predicted for ONE swing. Seconds are relative to that peer's accepted
  *  epoch: the server starts at `canAct`; the client predicts at send until an acceptance sequence exists.

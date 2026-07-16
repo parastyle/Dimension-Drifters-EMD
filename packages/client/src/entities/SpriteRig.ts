@@ -1,9 +1,12 @@
 import {
   CHOP_IMPACT_FRAC,
   isWornWeapon,
+  MELEE_COMBO_SEQUENCES,
+  type MeleeComboFamily,
+  type MeleeComboStep,
   MOVE_SPEED,
-  swingDescriptorFor,
   type SwingDescriptor,
+  swingDescriptorFor,
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
@@ -39,6 +42,25 @@ const STRIDE_LEN = 150;
  *  with the aim's up/down. Subtle by design — "to some degree". (tuning) */
 const BODY_LOOK_LEAN = 0.14;
 const WEAPON_LOOK_TILT = 0.6;
+/** §45 rollback switch for Stage-1 presentation, including empty-hand fist dispatch. No gameplay reads it. */
+const CLIENT_VISUAL_COMBOS = true;
+/** The authored guard eases to neutral only after accepted-cadence grace lapses. */
+const COMBO_HOLD_RELEASE_MS = 120;
+
+type RigComboFamily = MeleeComboFamily | "none";
+
+/** Stage 1 derives family from the already-shared resolved style; explicit weapon overrides wait for the
+ *  authoritative descriptor stage. Orbit/spin stay outside the matrix, preserving their existing paths. */
+function comboFamilyFor(style: SwingDescriptor["style"] | undefined): RigComboFamily {
+  if (style === "pivot") return "rake";
+  if (style === "arc" || style === "chop" || style === "punch" || style === "thrust") return style;
+  return "none";
+}
+
+/** `readyAt + grace`: 120–300ms, scaled by 35% of the accepted/predicted effective cooldown. */
+function comboGraceMs(effectiveCooldown: number): number {
+  return Math.min(0.3, Math.max(0.12, effectiveCooldown * 0.35)) * 1000;
+}
 
 /** §42 a WORN weapon (gauntlet/claw/glove/knuckles) is worn ON the hand, not held by the cuff: the rig
  *  mounts its pivot where the hand sits INSIDE the glove and renders the art OVER the hand. Matched by
@@ -159,11 +181,30 @@ export class SpriteRig {
   /** §40.3 GAREN-SPIN mode for the orbit pass: full revolutions + the body whirls (signed mirror-turns). */
   private orbitSpin = false;
   /** §41 this swing started while (or right as) the previous one ended — a SPAMMED chain. Spins drop their
-   *  wind-in and run linear so back-to-back presses read as ONE continuous whirlwind. */
+   *  wind-in and run linear so back-to-back presses read as ONE continuous whirlwind. Spin-only: ordinary
+   *  styles use the accepted-cadence combo state below and never consume this legacy Boolean. */
   private swingChained = false;
+  /** §45 predicted accepted-cadence chain. `comboStep` is the live zero-based step; `swingStep/direction`
+   *  snapshot it for the in-flight pose so timeout/next-step mutation cannot rewrite a rendered swing. */
+  private comboFamily: RigComboFamily = "none";
+  private comboStep = 0;
+  private comboExpiresAtMs = -1e9;
+  private comboWeaponId = "";
+  private swingStep = 0;
+  private swingDirection: -1 | 0 | 1 = 1;
+  /** End-pose snapshot survives the 0.64× pose window through readyAt+grace, then releases over 120ms. */
+  private comboHoldPose?: {
+    readonly family: MeleeComboFamily;
+    readonly step: number;
+    readonly direction: -1 | 0 | 1;
+    readonly expiresAtMs: number;
+  };
   /** §40 per-frame weapon POSITION offset from the hand (chop lift / thrust lunge). Reset each frame. */
   private swingOffX = 0;
   private swingOffY = 0;
+  /** Dual/off-hand counterpart used by alternating rakes, crosses, and the scissor finisher. */
+  private swingBackOffX = 0;
+  private swingBackOffY = 0;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -327,6 +368,26 @@ export class SpriteRig {
     });
   }
 
+  /** Weapon/scene lifetime boundary: no accepted cadence or held guard may cross it. */
+  private resetSwingCombo(): void {
+    this.swingStart = -1e9;
+    this.swing = undefined;
+    this.swingAimWorld = Number.NaN;
+    this.swingChained = false;
+    this.resetComboChain(true);
+  }
+
+  /** Timeout may preserve the old hold long enough to ease it out; swaps clear it immediately. */
+  private resetComboChain(clearHold: boolean): void {
+    this.comboFamily = "none";
+    this.comboStep = 0;
+    this.comboExpiresAtMs = -1e9;
+    this.comboWeaponId = "";
+    this.swingStep = 0;
+    this.swingDirection = 1;
+    if (clearHold) this.comboHoldPose = undefined;
+  }
+
   /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
    *  parts). Each piece is held UPRIGHT in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
@@ -335,9 +396,8 @@ export class SpriteRig {
     this.weapons = [];
     this.weaponDef = def;
     // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
-    // swing carries into the NEW weapon's (different-length) timeline, so a fresh grab could pop mid-swing.
-    this.swingStart = -1e9;
-    this.swing = undefined;
+    // swing carries into the NEW weapon's timeline. §45 the combo/hold shares that exact lifetime boundary.
+    this.resetSwingCombo();
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
@@ -404,19 +464,45 @@ export class SpriteRig {
 
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the scene clock accepted/predicted
    *  epoch, shared locally by rig/VFX/quake; `aimWorld` freezes aim. The optional descriptor is computed once
-  *  by ArenaScene from effective cooldown; server acceptance sync is the later protocol reconciliation. */
+   *  by ArenaScene from effective cooldown; server acceptance sync is the later protocol reconciliation. */
   triggerSwing(timeMs: number, aimWorld?: number, swing?: SwingDescriptor): void {
     const nextSwing =
       swing ??
       (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
-    // §41 CHAIN detection: this press landed while (or within a beat of) the previous swing's window — a
-    // spammed sequence. Spins use it to drop their wind-in and hold the whirl, so held/spammed RMB reads as
-    // one continuous whirlwind instead of restarting the spin-up every press.
-    if (this.swing) {
+    // §41 SPIN CHAIN remains byte-for-byte the old pose-window+150ms test. Ordinary styles no longer infer
+    // continuity from their short 0.64× visual: they advance below from effective accepted cadence+grace.
+    if (nextSwing?.style === "spin" && this.swing) {
       const prevDur = this.swing.poseSeconds * 1000;
       this.swingChained = timeMs - this.swingStart <= prevDur + 150;
     } else {
       this.swingChained = false;
+    }
+
+    const family = CLIENT_VISUAL_COMBOS ? comboFamilyFor(nextSwing?.style) : "none";
+    if (nextSwing && family !== "none" && this.weaponDef) {
+      const sequence = MELEE_COMBO_SEQUENCES[family];
+      const continues =
+        this.comboFamily === family &&
+        this.comboWeaponId === this.weaponDef.id &&
+        timeMs <= this.comboExpiresAtMs;
+      const step = continues ? (this.comboStep + 1) % sequence.length : 0;
+      const authored = sequence[step];
+      if (authored) {
+        // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
+        // grace. Early buffered requests only reach this method when locally fired; Stage 2 will reconcile
+        // this same `(weapon,family,step)` snapshot from authoritative swingSeq/comboStep.
+        const expiresAtMs =
+          timeMs + nextSwing.effectiveCooldown * 1000 + comboGraceMs(nextSwing.effectiveCooldown);
+        this.comboFamily = family;
+        this.comboStep = step;
+        this.comboExpiresAtMs = expiresAtMs;
+        this.comboWeaponId = this.weaponDef.id;
+        this.swingStep = step;
+        this.swingDirection = authored.direction;
+        this.comboHoldPose = { family, step, direction: authored.direction, expiresAtMs };
+      }
+    } else {
+      this.resetComboChain(true);
     }
     this.swingStart = timeMs;
     this.swing = nextSwing;
@@ -452,6 +538,7 @@ export class SpriteRig {
   setDowned(on: boolean): void {
     if (on === this.downed) return;
     this.downed = on;
+    if (on) this.resetSwingCombo(); // §45 a down/death boundary cannot bank a held finisher for revival
     this.root.setAlpha(on ? 0.5 : 1);
     this.restTint();
   }
@@ -490,6 +577,7 @@ export class SpriteRig {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    this.resetSwingCombo();
   }
 
   destroy(): void {
@@ -509,6 +597,13 @@ export class SpriteRig {
     const dtMs = this.prevAnimMs < 0 ? 16 : Math.max(0, Math.min(100, timeMs - this.prevAnimMs));
     this.prevAnimMs = timeMs;
     const s = this.scale;
+    const sceneNow = this.scene.time.now;
+    // The active counter resets as soon as readyAt+grace lapses. Its last authored guard remains only as a
+    // 120ms cosmetic release; it cannot make a late trigger continue because family/weapon are already clear.
+    if (this.comboFamily !== "none" && sceneNow > this.comboExpiresAtMs)
+      this.resetComboChain(false);
+    if (this.comboHoldPose && sceneNow >= this.comboHoldPose.expiresAtMs + COMBO_HOLD_RELEASE_MS)
+      this.comboHoldPose = undefined;
 
     // §7 v0.105 GAIT: ease a 0..1 gait toward the real render speed (speed/MOVE_SPEED). Stride/lift/lean all
     // scale by it, so the walk ramps in + fully fades out with speed instead of a binary flag that ran the
@@ -639,17 +734,23 @@ export class SpriteRig {
     // Weapon angle — guns AIM along the cursor; melee weapons sit upright at rest then wind-up + chop on
     // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
+    let backWeaponAngle = Number.NaN;
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
     this.swingOffY = 0;
+    this.swingBackOffX = 0;
+    this.swingBackOffY = 0;
     if (this.weaponDef?.gun && this.weapons.length > 0) {
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
       const aimAng = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
       weaponAngle = Math.atan2(Math.sin(aimAng), Math.cos(aimAng) * this.facing);
-    } else if (this.weaponDef && this.weapons.length > 0) {
+    } else if (
+      this.weaponDef &&
+      (this.weapons.length > 0 || (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
+    ) {
       const def = this.weaponDef;
       // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
       const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
@@ -660,16 +761,41 @@ export class SpriteRig {
       const el = this.scene.time.now - this.swingStart;
       const style = this.swing?.style;
       const dur = (this.swing?.poseSeconds ?? 0) * 1000;
-      if (style && el >= 0 && el < dur) {
+      let tt = -1;
+      let poseBlend = 1;
+      let comboPose: Readonly<MeleeComboStep> | undefined;
+      let poseDirection: -1 | 0 | 1 = 1;
+      const family = comboFamilyFor(style);
+      const hold = this.comboHoldPose;
+      if (CLIENT_VISUAL_COMBOS && family !== "none" && hold?.family === family && el >= 0) {
+        const snapshotStep = this.comboFamily === family ? this.swingStep : hold.step;
+        poseDirection = this.comboFamily === family ? this.swingDirection : hold.direction;
+        comboPose = MELEE_COMBO_SEQUENCES[family][snapshotStep];
+        if (dur > 0 && el < dur) tt = el / dur;
+        else if (sceneNow <= hold.expiresAtMs) tt = 1;
+        else if (sceneNow < hold.expiresAtMs + COMBO_HOLD_RELEASE_MS) {
+          tt = 1;
+          poseBlend = 1 - (sceneNow - hold.expiresAtMs) / COMBO_HOLD_RELEASE_MS;
+        }
+      } else if (style && el >= 0 && el < dur) {
+        tt = el / dur;
+      }
+      if (style && tt >= 0) {
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
         // (arc / orbit / chop / pivot / thrust / spin). World aim → local (mirrored) shared by every style.
-        const tt = el / dur;
         const aimW = Number.isNaN(this.swingAimWorld)
           ? anim.isSelf
             ? Math.atan2(anim.aimY, anim.aimX)
             : anim.aimDir
           : this.swingAimWorld;
         const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
+        const idleWeaponAngle = weaponAngle;
+        const bodyBaseRotation = this.body.rotation;
+        const bodyBaseY = this.body.y;
+        const bodyBaseScaleX = this.body.scaleX;
+        const bodyBaseScaleY = this.body.scaleY;
+        // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
+        // server damage still advances once through its untouched centered, positive single-sweep descriptor.
         if (style === "orbit") {
           // Fake-3D WAIST ORBIT (the facing flip's scale-through-a-plane trick generalized) — flagged here,
           // fully rendered by the weapon pass below (position + rotation + foreshortening + depth swap).
@@ -679,161 +805,403 @@ export class SpriteRig {
           this.orbitT = tt;
           this.orbitSpin = true;
         } else if (style === "chop") {
-          // OVERHEAD CHOP (quake/slam weapons — matches the ground-eruption VFX): raise the blade up-behind
-          // over the head, SLAM it down-forward, hold the landed pose a beat, then settle back to rest.
-          // §40.1 the BODY swings it too (paper-character posing, applied additively — the frame's base body
-          // transform was set above): wind-up leans BACK + rises onto the toes; the slam hauls the torso
-          // FORWARD and drives it down into a squat; the hold keeps the crouch while the quake erupts.
+          // §45 CHOP: shoulder diagonal → reverse rising load → execution slam. Each variation retains the
+          // existing lift/drive/squash vocabulary, but its section-B fractions and end guard are authored.
+          const pose = comboPose ?? MELEE_COMBO_SEQUENCES.chop[0];
           const raiseA = -Math.PI / 2 - 0.85; // up + tilted behind the head
           const slamA = 0.85 + lookY * 0.25; // down-forward (biased a touch by the cursor's vertical)
+          const lowGuardA = slamA - 0.18;
           const lift = TARGET_BODY_H * 0.2;
-          if (tt < 0.3) {
-            const p = tt / 0.3;
-            const e = p * (2 - p);
-            weaponAngle = restA + (raiseA - restA) * e; // ease the raise
-            this.swingOffY = -lift * p; // grip climbs as the blade goes overhead
-            this.body.rotation -= 0.16 * e; // lean back behind the lift
-            this.body.y -= 3.5 * s * e; // up onto the toes
-            this.body.scaleY *= 1 + 0.05 * e; // slight stretch
-          } else if (tt < CHOP_IMPACT_FRAC) {
-            // §40.2 the blade LANDS exactly at CHOP_IMPACT_FRAC — the shared moment the quake detonates.
-            const p = (tt - 0.3) / (CHOP_IMPACT_FRAC - 0.3);
-            const e = p * p;
-            weaponAngle = raiseA + (slamA - raiseA) * e; // ACCELERATE into the slam
-            this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * e; // grip drives down past rest
-            this.body.rotation += -0.16 + 0.38 * e; // haul the torso through: back → forward
-            this.body.y += (-3.5 + 9.5 * e) * s; // toes → driven down
-            this.body.scaleY *= 1 + 0.05 - 0.15 * e; // stretch → squash
-          } else if (tt < 0.7) {
-            weaponAngle = slamA; // the blade sits buried a beat — the quake erupts here
-            this.swingOffY = TARGET_BODY_H * 0.06;
-            this.body.rotation += 0.22; // held forward
-            this.body.y += 6 * s; // held squat
-            this.body.scaleY *= 0.9;
+          if (pose?.motion === "rising-chop") {
+            const a = pose.timing.activeStart;
+            const b = pose.timing.activeEnd;
+            if (tt < a) {
+              const p = tt / a;
+              weaponAngle = lowGuardA + 0.18 * Math.sin(Math.PI * p); // load from step-1's low guard
+              this.swingOffY = TARGET_BODY_H * 0.06 * (1 - p * 0.35);
+              this.body.rotation += 0.13 * (1 - p) + 0.06 * p;
+              this.body.y += (5 + 2 * p) * s;
+              this.body.scaleY *= 0.92 + 0.03 * p;
+            } else if (tt < b) {
+              const p = (tt - a) / (b - a);
+              const e = 1 - (1 - p) ** 2;
+              weaponAngle = lowGuardA + (raiseA - lowGuardA) * e;
+              this.swingOffY = TARGET_BODY_H * 0.04 - (lift + TARGET_BODY_H * 0.04) * e;
+              this.body.rotation += 0.06 - 0.25 * e; // mirrored unwind: low/right → high/left
+              this.body.y += (7 - 10 * e) * s;
+              this.body.scaleY *= 0.95 + 0.1 * e;
+            } else {
+              const carry = Math.min(1, (tt - b) / (pose.timing.followEnd - b));
+              weaponAngle = raiseA - 0.08 * Math.sin(Math.PI * carry);
+              this.swingOffY = -lift;
+              this.body.rotation -= 0.19;
+              this.body.y -= 3 * s;
+              this.body.scaleY *= 1.05;
+            }
           } else {
-            const p = (tt - 0.7) / 0.3;
-            const e = 1 - p * (2 - p);
-            weaponAngle = slamA + (restA - slamA) * (p * (2 - p));
-            this.swingOffY = TARGET_BODY_H * 0.06 * e;
-            this.body.rotation += 0.22 * e;
-            this.body.y += 6 * s * e;
-            this.body.scaleY *= 1 - 0.1 * e;
+            const execution = pose?.motion === "execution-slam";
+            const a = pose?.timing.activeStart ?? 0.24;
+            const b = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
+            const follow = pose?.timing.followEnd ?? 0.66;
+            const coilA = execution ? raiseA : -Math.PI / 2 - 0.35; // hang overhead vs weapon shoulder
+            const fromA = execution ? raiseA : lowGuardA;
+            if (tt < a) {
+              const p = tt / a;
+              const e = p * (2 - p);
+              weaponAngle = fromA + (coilA - fromA) * e;
+              this.swingOffY = execution
+                ? -lift * (1 + 0.08 * Math.sin(Math.PI * p))
+                : -lift * 0.55 * p;
+              this.body.rotation += execution ? -0.18 : 0.12 - 0.25 * e;
+              this.body.y += (execution ? -4 - 1.5 * Math.sin(Math.PI * p) : 5 - 7.5 * e) * s;
+              this.body.scaleY *= 1 + (execution ? 0.08 : 0.04) * e;
+            } else if (tt < b) {
+              const p = (tt - a) / (b - a);
+              const e = p * p;
+              weaponAngle = coilA + (slamA - coilA) * e;
+              this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.06) * e;
+              this.body.rotation += -0.18 + (execution ? 0.46 : 0.38) * e;
+              this.body.y += (-4 + (execution ? 12 : 10) * e) * s;
+              this.body.scaleY *= 1.08 - (execution ? 0.2 : 0.17) * e;
+            } else if (tt < follow) {
+              weaponAngle = slamA;
+              this.swingOffY = TARGET_BODY_H * 0.06;
+              this.body.rotation += execution ? 0.28 : 0.2;
+              this.body.y += (execution ? 8 : 6) * s;
+              this.body.scaleY *= execution ? 0.88 : 0.91;
+            } else {
+              const p = (tt - follow) / (1 - follow);
+              const e = p * (2 - p);
+              weaponAngle = slamA + (lowGuardA - slamA) * e; // settle to a chained low guard, not neutral
+              this.swingOffY = TARGET_BODY_H * 0.06 * (1 - 0.35 * e);
+              this.body.rotation += (execution ? 0.28 : 0.2) - (execution ? 0.16 : 0.08) * e;
+              this.body.y += ((execution ? 8 : 6) - (execution ? 3 : 1) * e) * s;
+              this.body.scaleY *= (execution ? 0.88 : 0.91) + 0.04 * e;
+            }
           }
         } else if (style === "pivot") {
-          // §41 CLAW RAKE — how claws are actually used: the whole ARM swipes. The hand travels a fast
-          // diagonal RAKE across the aim (side → across → side, pushing OUT at the middle of the swipe) while
-          // the claw's rotation whips through the same sweep — arm + claw slash together, like dragging
-          // talons across a target. (swingOff drives the front hand, §40.1, so the arm visibly moves.)
+          // §45 RAKE: the existing diagonal arm-whip alternates lead/off hand, then runs both copies on the
+          // authored stagger for a scissor. Dual claws move the actual rear glove; a single claw mirrors its
+          // visible arm. Both paths remain cosmetic and share the server's ONE legacy hit application.
+          const pose = comboPose ?? MELEE_COMBO_SEQUENCES.rake[0];
           const spin = Math.max(def.swingArc * 1.1, 2.6);
-          const start = aimLocal - spin * 0.6;
-          const end = aimLocal + spin * 0.4; // whips THROUGH the aim past the middle
-          let prog = 0; // 0..1 across the active rake (drives both the whip and the arm path)
-          if (tt < 0.1) {
-            weaponAngle = restA + (start - restA) * (tt / 0.1); // snap-wind
-          } else if (tt < 0.62) {
-            prog = 1 - (1 - (tt - 0.1) / 0.52) ** 3; // vicious ease-out
-            weaponAngle = start + (end - start) * prog;
-          } else {
-            prog = 1;
-            const p = (tt - 0.62) / 0.38;
-            weaponAngle = end + (restA - end) * (p * (2 - p));
-          }
-          // The ARM path: sweep laterally across the aim (perpendicular +R → −R) + a punch OUT along the
-          // aim that peaks mid-rake, then snap back home over the recovery tail.
-          const recover = tt < 0.62 ? 1 : 1 - (tt - 0.62) / 0.38;
-          const lat = TARGET_BODY_H * 0.26 * (1 - 2 * prog) * recover; // across the swipe
-          const out = TARGET_BODY_H * 0.3 * Math.sin(Math.PI * prog) * recover; // reach out mid-swipe
           const px = -Math.sin(aimLocal);
           const py = Math.cos(aimLocal);
-          this.swingOffX = px * lat + Math.cos(aimLocal) * out;
-          this.swingOffY = py * lat + Math.sin(aimLocal) * out;
-          // Body: the shoulder DRIVES the rake — paper-twist peaks with the slash, torso leans into the swipe.
-          const jab = Math.sin(Math.PI * Math.min(1, tt / 0.62)) * recover;
-          this.body.scaleX *= 1 - 0.14 * jab;
-          this.body.rotation += 0.11 * jab * Math.cos(aimLocal);
-          this.body.y += 2 * s * jab;
+          const rakePath = (
+            direction: -1 | 1,
+            activeStart: number,
+            activeEnd: number,
+            followEnd: number,
+          ): { angle: number; x: number; y: number; drive: number } => {
+            const start = aimLocal - direction * spin * 0.6;
+            const end = aimLocal + direction * spin * 0.4;
+            const prior = direction > 0 ? aimLocal + spin * 0.55 : aimLocal + spin * 0.4;
+            let prog = 0;
+            let angle: number;
+            if (tt < activeStart) {
+              const p = tt / activeStart;
+              angle = prior + (start - prior) * (p * (2 - p));
+            } else if (tt < activeEnd) {
+              prog = 1 - (1 - (tt - activeStart) / (activeEnd - activeStart)) ** 3;
+              angle = start + (end - start) * prog;
+            } else if (tt < followEnd) {
+              prog = 1;
+              const p = (tt - activeEnd) / (followEnd - activeEnd);
+              angle = end + direction * 0.1 * Math.sin(Math.PI * p);
+            } else {
+              prog = 1;
+              angle = end; // crossed guard held through accepted readyAt+grace
+            }
+            const wind = tt < activeStart ? tt / activeStart : 1;
+            const lat = TARGET_BODY_H * 0.26 * direction * (1 - 2 * prog) * wind;
+            const out = TARGET_BODY_H * (0.12 + 0.2 * Math.sin(Math.PI * prog)) * wind;
+            const drive = Math.sin(
+              Math.PI * Math.min(1, Math.max(0, (tt - activeStart) / (activeEnd - activeStart))),
+            );
+            return {
+              angle,
+              x: px * lat + Math.cos(aimLocal) * out,
+              y: py * lat + Math.sin(aimLocal) * out,
+              drive,
+            };
+          };
+
+          if (pose?.motion === "scissor") {
+            const first = rakePath(
+              1,
+              pose.timing.activeStart,
+              pose.timing.activeEnd,
+              pose.timing.followEnd,
+            );
+            const second = rakePath(
+              -1,
+              pose.timing.secondaryActiveStart ?? 0.24,
+              pose.timing.secondaryActiveEnd ?? 0.58,
+              pose.timing.followEnd,
+            );
+            weaponAngle = first.angle;
+            backWeaponAngle = second.angle;
+            this.swingOffX = first.x;
+            this.swingOffY = first.y;
+            this.swingBackOffX = second.x;
+            this.swingBackOffY = second.y;
+            const cross = Math.max(0, 1 - Math.abs(tt - (pose.timing.impact ?? 0.43)) / 0.25);
+            this.body.scaleX *= 1 - 0.2 * cross;
+            this.body.scaleY *= 1 - 0.07 * cross;
+            this.body.rotation += 0.045 * Math.sin((tt - 0.43) * Math.PI * 4) * cross;
+            this.body.y += 4.5 * s * cross;
+          } else if (pose) {
+            const direction = poseDirection < 0 ? -1 : 1;
+            const rake = rakePath(
+              direction,
+              pose.timing.activeStart,
+              pose.timing.activeEnd,
+              pose.timing.followEnd,
+            );
+            const offUsesBack = pose.hand === "off" && this.weapons.length > 1;
+            if (offUsesBack) {
+              // Lead glove settles from its prior crossed hold while the rear glove owns the reverse path.
+              const settle = Math.min(1, tt / pose.timing.activeStart);
+              weaponAngle = aimLocal + spin * 0.4 + (restA - aimLocal - spin * 0.4) * settle;
+              backWeaponAngle = rake.angle;
+              this.swingBackOffX = rake.x;
+              this.swingBackOffY = rake.y;
+            } else {
+              weaponAngle = rake.angle;
+              if (this.weapons.length > 1) backWeaponAngle = restA;
+              this.swingOffX = rake.x;
+              this.swingOffY = rake.y;
+            }
+            // Reverse rakes mirror the paper-twist/lean instead of replaying the lead-hand body envelope.
+            this.body.scaleX *= 1 - 0.14 * rake.drive;
+            this.body.rotation += direction * 0.11 * rake.drive * Math.cos(aimLocal);
+            this.body.y += 2 * s * rake.drive;
+          }
         } else if (style === "punch") {
-          // §42 PUNCH — worn blunt gauntlets/knuckles: the FIST drives, no blade to rake. Chamber (the
-          // fist pulls back and to the side, shoulders winding), then the punch WHIPS through the aim on
-          // a hook's curve and snaps back. Heavy (2H) maulers throw a full ROUNDHOUSE: deeper chamber,
-          // wider arc, the whole torso pivots behind the blow. The glove points along its travel, and
-          // swingOff carries the hand (§40.1) so the ARM visibly throws it.
+          // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
+          // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
+          const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
           const heavy = def.twoHanded ? 1 : 0;
-          const reach = TARGET_BODY_H * (0.5 + 0.25 * heavy);
-          const hook = 0.55 + 0.75 * heavy; // roundhouse curvature: how far around the fist sweeps
-          const wind = 0.16 + 0.08 * heavy; // chamber fraction of the swing window
-          // §40.2/§42 the fist CONNECTS at CHOP_IMPACT_FRAC — the shared moment a quake gauntlet's
-          // ground eruption detonates (server + VFX run on the same clock), so the blow SELLS the boom.
-          const imp = CHOP_IMPACT_FRAC;
+          const reach = TARGET_BODY_H * (pose?.motion === "jab" ? 0.48 : 0.55 + 0.25 * heavy);
+          const wind = pose?.timing.activeStart ?? 0.1;
+          const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
+          const follow = pose?.timing.followEnd ?? 0.44;
+          const direction = poseDirection < 0 ? -1 : 1;
           let th = aimLocal; // fist direction from the shoulder
           let r = 0; // fist extension
           let drive = 0; // 0..1 body-commitment envelope
-          if (tt < wind) {
-            const p = tt / wind;
-            th = aimLocal - hook * p; // wind around AND back
-            r = reach * 0.3 * p;
-            drive = 0.3 * p;
-          } else if (tt < imp) {
-            const p = (tt - wind) / (imp - wind);
-            const e = 1 - (1 - p) ** 3; // explosive ease-out
-            th = aimLocal + hook * (-1 + 1.35 * e); // whips THROUGH the aim into follow-through
-            r = reach * (0.3 + 0.7 * e);
-            drive = 0.3 + 0.7 * e;
+          let lateral = 0;
+          if (pose?.motion === "jab") {
+            if (tt < wind) {
+              const p = tt / wind;
+              r = reach * (-0.14 - 0.12 * p); // compact outside chamber
+              lateral = TARGET_BODY_H * 0.08 * p;
+              drive = 0.18 * p;
+            } else if (tt < imp) {
+              const p = (tt - wind) / (imp - wind);
+              const e = 1 - (1 - p) ** 3;
+              r = reach * (-0.26 + 1.26 * e);
+              lateral = TARGET_BODY_H * 0.08 * (1 - e);
+              drive = 0.18 + 0.72 * e;
+            } else if (tt < follow) {
+              r = reach;
+              drive = 0.9;
+            } else {
+              const p = (tt - follow) / (1 - follow);
+              const e = p * (2 - p);
+              r = reach * (1 - 1.14 * e); // retract to outside guard, not neutral
+              lateral = -TARGET_BODY_H * 0.08 * e;
+              drive = 0.9 * (1 - e) + 0.12 * e;
+            }
           } else {
-            const p = (tt - imp) / (1 - imp);
-            const rec = 1 - p * (2 - p);
-            th = aimLocal + hook * 0.35 * rec;
-            r = reach * rec;
-            drive = rec;
+            const haymaker = pose?.motion === "haymaker";
+            const hook = (haymaker ? 1.05 : 0.62) + 0.45 * heavy;
+            if (tt < wind) {
+              const p = tt / wind;
+              th = aimLocal - direction * hook * p;
+              r = reach * (0.12 + 0.2 * p);
+              drive = (haymaker ? 0.42 : 0.3) * p;
+            } else if (tt < imp) {
+              const p = (tt - wind) / (imp - wind);
+              const e = 1 - (1 - p) ** 3;
+              th = aimLocal + direction * hook * (-1 + (haymaker ? 1.5 : 1.35) * e);
+              r = reach * (0.32 + 0.68 * e);
+              drive = 0.3 + 0.7 * e;
+            } else if (tt < follow) {
+              const p = (tt - imp) / (follow - imp);
+              th = aimLocal + direction * hook * (haymaker ? 0.5 + 0.16 * p : 0.35 + 0.12 * p);
+              r = reach * (1 - 0.12 * p);
+              drive = 1 - 0.12 * p;
+            } else {
+              const p = (tt - follow) / (1 - follow);
+              const e = p * (2 - p);
+              const hold = haymaker && heavy ? 0.72 : 0.22;
+              th = aimLocal + direction * hook * ((haymaker ? 0.66 : 0.47) * (1 - e) + hold * e);
+              r = reach * (0.88 * (1 - e) + 0.16 * e);
+              drive = 0.88 * (1 - e) + (haymaker ? 0.3 : 0.18) * e;
+            }
           }
           weaponAngle = th; // the fist leads along its own travel
-          this.swingOffX = Math.cos(th) * r;
-          this.swingOffY = Math.sin(th) * r;
+          const ox = Math.cos(th) * r - Math.sin(aimLocal) * lateral;
+          const oy = Math.sin(th) * r + Math.cos(aimLocal) * lateral;
+          const offUsesBack =
+            pose?.hand === "off" && (this.weapons.length > 1 || def.id === "fists");
+          if (offUsesBack) {
+            backWeaponAngle = th;
+            weaponAngle = restA;
+            this.swingBackOffX = ox;
+            this.swingBackOffY = oy;
+          } else {
+            this.swingOffX = ox;
+            this.swingOffY = oy;
+            if (this.weapons.length > 1) backWeaponAngle = restA;
+          }
           // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
-          // blow, a dug-in crouch. A mauler commits the whole frame.
-          this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive;
-          this.body.rotation += (0.1 + 0.09 * heavy) * drive * Math.cos(aimLocal);
-          this.body.y += (2.5 + 2.5 * heavy) * s * drive;
-          if (heavy) this.body.scaleY *= 1 - 0.06 * drive;
+          // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
+          const commitScale =
+            pose?.motion === "jab" ? 0.55 : pose?.motion === "haymaker" ? 1.2 : 0.85;
+          this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive * commitScale;
+          this.body.rotation +=
+            direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
+          this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
+          if (heavy || pose?.motion === "haymaker")
+            this.body.scaleY *= 1 - 0.06 * drive * commitScale;
         } else if (style === "thrust") {
-          // THRUST — rapier/spear lunge: the blade locks along the aim and the grip STABS forward and back.
+          // §45 THRUST keeps the existing locked-blade lunge envelope, with an outside draw, mirrored
+          // disengage circle, and longer step-through/stick. Signed body tilt makes step 2 read distinctly.
+          const pose = comboPose ?? MELEE_COMBO_SEQUENCES.thrust[0];
           weaponAngle = aimLocal;
-          const lunge = TARGET_BODY_H * 0.55;
-          const env =
-            tt < 0.14
-              ? -0.18 * (tt / 0.14) // small draw-back
-              : tt < 0.38
-                ? -0.18 + 1.18 * (((tt - 0.14) / 0.24) ** 2 * (3 - 2 * ((tt - 0.14) / 0.24))) // stab OUT
-                : 1 - ((tt - 0.38) / 0.62) * (2 - (tt - 0.38) / 0.62); // ease back to rest
-          this.swingOffX = Math.cos(aimLocal) * lunge * env;
-          this.swingOffY = Math.sin(aimLocal) * lunge * env;
+          const a = pose?.timing.activeStart ?? 0.14;
+          const b = pose?.timing.activeEnd ?? 0.42;
+          const follow = pose?.timing.followEnd ?? 0.5;
+          const impale = pose?.motion === "impale";
+          const disengage = pose?.motion === "disengage";
+          const direction = poseDirection < 0 ? -1 : 1;
+          const lunge = TARGET_BODY_H * 0.55 * (impale ? 1.2 : 1);
+          let env: number;
+          let lateral = 0;
+          if (tt < a) {
+            const p = tt / a;
+            env = -(impale ? 0.28 : 0.18) * p;
+            // A compact ellipse around the imagined guard; bounded well inside the blade half-width.
+            if (disengage) lateral = direction * TARGET_BODY_H * 0.09 * Math.sin(Math.PI * 2 * p);
+          } else if (tt < b) {
+            const p = (tt - a) / (b - a);
+            const e = p * p * (3 - 2 * p);
+            env = -(impale ? 0.28 : 0.18) + (impale ? 1.28 : 1.18) * e;
+            if (disengage) lateral = direction * TARGET_BODY_H * 0.035 * (1 - e);
+          } else if (tt < follow) {
+            env = 1; // puncture/stick beat at authored full reach
+          } else {
+            const p = (tt - follow) / (1 - follow);
+            const e = p * (2 - p);
+            const guard = direction * (impale ? -0.2 : -0.12);
+            env = 1 + (guard - 1) * e;
+            lateral = disengage ? -direction * TARGET_BODY_H * 0.045 * e : 0;
+          }
+          this.swingOffX = Math.cos(aimLocal) * lunge * env - Math.sin(aimLocal) * lateral;
+          this.swingOffY = Math.sin(aimLocal) * lunge * env + Math.cos(aimLocal) * lateral;
+          if (pose?.hand === "both") {
+            this.swingBackOffX = this.swingOffX * 0.35;
+            this.swingBackOffY = this.swingOffY * 0.35;
+          }
           // §40.1 body: the fencer LUNGES behind the stab — lean into the aim + a paper-stretch of the
           // torso along the thrust (scaleX up, scaleY in), sinking slightly as the front leg plants.
           const e = Math.max(0, env);
-          this.body.rotation += 0.15 * e * Math.cos(aimLocal);
-          this.body.scaleX *= 1 + 0.07 * e;
-          this.body.scaleY *= 1 - 0.05 * e;
-          this.body.y += 2.5 * s * e;
+          const commitScale = impale ? 1.35 : 1;
+          this.body.rotation += direction * 0.15 * e * commitScale * Math.cos(aimLocal);
+          this.body.scaleX *= 1 + 0.07 * e * commitScale;
+          this.body.scaleY *= 1 - 0.05 * e * commitScale;
+          this.body.y += 2.5 * s * e * commitScale;
         } else {
-          // ARC (the classic flat sweep) — §20 WYSIWYG: sweep the blade across `swingArc` CENTRED ON THE
-          // AIM (frozen at swing-start), so the sprite passes through exactly what the swept hitbox damages.
-          const start = aimLocal - def.swingArc / 2;
-          const end = aimLocal + def.swingArc / 2;
-          const back = start - 0.3; // a quick wind-back just past the start of the sweep
-          if (tt < 0.16) {
-            weaponAngle = restA + (back - restA) * (tt / 0.16); // wind up
-          } else if (tt < 0.74) {
-            const p = (tt - 0.16) / 0.58;
-            weaponAngle = back + (end - back) * (1 - (1 - p) ** 2); // ease-out sweep through the arc
+          // §45 ARC: signed forehand → reverse → overhead diagonal, all using the existing angle/lean/lift
+          // envelopes and frozen aim.
+          const pose = comboPose ?? MELEE_COMBO_SEQUENCES.arc[0];
+          const a = pose?.timing.activeStart ?? 0.16;
+          const b = pose?.timing.activeEnd ?? 0.66;
+          const follow = pose?.timing.followEnd ?? 0.8;
+          if (pose?.motion === "overhead") {
+            const raiseA = -Math.PI / 2 - 0.8;
+            const fromA = aimLocal - def.swingArc * 0.5; // step-2 high/crossed hold
+            const plantA = aimLocal + def.swingArc * 0.625;
+            const lift = TARGET_BODY_H * 0.16;
+            if (tt < a) {
+              const p = tt / a;
+              const e = p * (2 - p);
+              weaponAngle = fromA + (raiseA - fromA) * e;
+              this.swingOffY = -lift * e;
+              this.body.rotation += -0.08 - 0.1 * e;
+              this.body.y -= 3.5 * s * e;
+              this.body.scaleY *= 1 + 0.06 * e;
+            } else if (tt < b) {
+              const p = (tt - a) / (b - a);
+              const e = p * p;
+              weaponAngle = raiseA + (plantA - raiseA) * e;
+              this.swingOffY = -lift + (lift + TARGET_BODY_H * 0.05) * e;
+              this.body.rotation += -0.18 + 0.4 * e;
+              this.body.y += (-3.5 + 10 * e) * s;
+              this.body.scaleY *= 1.06 - 0.15 * e;
+            } else if (tt < follow) {
+              weaponAngle = plantA;
+              this.swingOffY = TARGET_BODY_H * 0.05;
+              this.body.rotation += 0.22;
+              this.body.y += 6.5 * s;
+              this.body.scaleY *= 0.91;
+            } else {
+              const p = (tt - follow) / (1 - follow);
+              const e = p * (2 - p);
+              weaponAngle = plantA - 0.08 * e;
+              this.swingOffY = TARGET_BODY_H * 0.05 * (1 - 0.25 * e);
+              this.body.rotation += 0.22 - 0.04 * e;
+              this.body.y += (6.5 - 1.5 * e) * s;
+              this.body.scaleY *= 0.91 + 0.03 * e;
+            }
           } else {
-            // §7 v0.105 de-clunk: ease the blade BACK to the rest tilt over the tail of the swing (arrives
-            // at restA exactly at tt=1), so there's no discontinuity when the swing window closes.
-            const p = (tt - 0.74) / 0.26;
-            weaponAngle = end + (restA - end) * (p * (2 - p)); // easeOut return
+            const direction = poseDirection < 0 ? -1 : 1;
+            const start =
+              direction > 0 ? aimLocal - def.swingArc * 0.55 : aimLocal + def.swingArc * 0.5;
+            const end =
+              direction > 0 ? aimLocal + def.swingArc * 0.45 : aimLocal - def.swingArc * 0.5;
+            const back = start - direction * 0.3;
+            const prior =
+              direction < 0 ? aimLocal + def.swingArc * 0.45 : aimLocal + def.swingArc * 0.545; // finisher's planted low guard
+            if (tt < a) {
+              const p = tt / a;
+              const e = p * (2 - p);
+              weaponAngle = prior + (back - prior) * e;
+              const startLean = direction > 0 ? 0.18 : 0.08;
+              this.body.rotation += startLean + (-direction * 0.1 - startLean) * e;
+            } else if (tt < b) {
+              const p = (tt - a) / (b - a);
+              const e = 1 - (1 - p) ** 2;
+              weaponAngle = back + (end - back) * e;
+              this.body.rotation += -direction * 0.1 + direction * 0.18 * e;
+            } else if (tt < follow) {
+              const p = (tt - b) / (follow - b);
+              weaponAngle = end + direction * 0.08 * Math.sin(Math.PI * p);
+              this.body.rotation += direction * (0.08 + 0.025 * Math.sin(Math.PI * p));
+            } else {
+              weaponAngle = end; // crossed/high guard held for the next accepted cadence step
+              this.body.rotation += direction * 0.08;
+            }
           }
-          // §40.1 body: a light LEAN-THROUGH with the sweep — back on the windup, through on the follow.
-          const sw = tt < 0.16 ? -(tt / 0.16) : tt < 0.74 ? -1 + 2 * ((tt - 0.16) / 0.58) : 1 - (tt - 0.74) / 0.26;
-          this.body.rotation += 0.07 * sw;
+        }
+
+        // Once grace lapses, blend every additive fake-3D contribution back to the exact resting frame.
+        // Active/held poses run at 1; orbit/spin never enter comboPose and remain completely unchanged.
+        if (comboPose && poseBlend < 1) {
+          weaponAngle = idleWeaponAngle + (weaponAngle - idleWeaponAngle) * poseBlend;
+          if (!Number.isNaN(backWeaponAngle))
+            backWeaponAngle = idleWeaponAngle + (backWeaponAngle - idleWeaponAngle) * poseBlend;
+          this.swingOffX *= poseBlend;
+          this.swingOffY *= poseBlend;
+          this.swingBackOffX *= poseBlend;
+          this.swingBackOffY *= poseBlend;
+          this.body.rotation =
+            bodyBaseRotation + (this.body.rotation - bodyBaseRotation) * poseBlend;
+          this.body.y = bodyBaseY + (this.body.y - bodyBaseY) * poseBlend;
+          this.body.scaleX = bodyBaseScaleX + (this.body.scaleX - bodyBaseScaleX) * poseBlend;
+          this.body.scaleY = bodyBaseScaleY + (this.body.scaleY - bodyBaseScaleY) * poseBlend;
         }
       }
     }
@@ -863,12 +1231,14 @@ export class SpriteRig {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
       }
-      // §40.1 the FRONT hand GRIPS the weapon through the style's positional motion (chop lift/drive, thrust
-      // lunge) — the weapon rides this hand, and the 2H block chains the back hand after it, so BOTH hands
-      // visibly operate a two-handed swing instead of the blade detaching from a static arm.
+      // §40.1/§45 each hand carries its authored style offset. Most attacks drive the front; alternating rake/
+      // cross/scissor steps populate the rear channel. The 2H block below still chains the haft after this.
       if (hnd.front) {
         hx += this.swingOffX;
         hy += this.swingOffY;
+      } else {
+        hx += this.swingBackOffX;
+        hy += this.swingBackOffY;
       }
       // §7 v0.111 turn-commit HANDS ("pull the reins"): yank both hands toward the new heading on a hard turn.
       if (commit > 0.01) {
@@ -950,7 +1320,11 @@ export class SpriteRig {
           // CHAINED spin (spammed/held trigger) is pure linear — since each spin is integer revolutions, the
           // next one starts exactly where this one ends, angle- AND speed-continuous. One endless whirlwind.
           const a = 0.18; // ease-in fraction (C1-continuous into the linear run)
-          const e = this.swingChained ? tt : tt < a ? (tt * tt) / (a * (2 - a)) : (2 * tt - a) / (2 - a);
+          const e = this.swingChained
+            ? tt
+            : tt < a
+              ? (tt * tt) / (a * (2 - a))
+              : (2 * tt - a) / (2 - a);
           const turns = Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
           th = azAim + turns * Math.PI * 2 * e;
         } else {
@@ -997,8 +1371,8 @@ export class SpriteRig {
           // MIRRORS on the far half — on paper art that reads as the character turning full circles. A hard
           // athletic crouch + a dizzy wobble sell the commitment; the label/root are untouched (no UI flip).
           const c = Math.cos(th);
-          this.body.scaleX *= (Math.abs(c) < 0.18 ? 0.18 : Math.abs(c)) * (c < 0 ? -1 : 1) * spinT +
-            (1 - spinT); // blend the whirl in/out so entry/exit don't pop
+          this.body.scaleX *=
+            (Math.abs(c) < 0.18 ? 0.18 : Math.abs(c)) * (c < 0 ? -1 : 1) * spinT + (1 - spinT); // blend the whirl in/out so entry/exit don't pop
           this.body.rotation += 0.06 * Math.sin(th * 2) * spinT; // slight wobble
           this.body.y += 5.5 * s * spinT; // dug-in crouch
           this.body.scaleY *= 1 - 0.09 * spinT;
@@ -1028,7 +1402,8 @@ export class SpriteRig {
       // §40.1 the FRONT HAND already carries swingOff (it grips the weapon through the motion) — the weapon
       // just rides its hand, so blade + both hands travel together.
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
-      w.img.rotation = weaponAngle + off;
+      w.img.rotation =
+        (i === 1 && !Number.isNaN(backWeaponAngle) ? backWeaponAngle : weaponAngle) + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
       w.img.setScale(base);
