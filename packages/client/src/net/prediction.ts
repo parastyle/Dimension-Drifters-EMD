@@ -34,9 +34,9 @@ import {
  *   teleport-sized (or a `teleportSeq` bump — the server bumps it inside zeroMoveVel at every teleport
  *   site) hard-snaps.
  * - VERTICAL is predicted LOCALLY and only ADOPTED on divergence: jumps are deterministic off the
- *   command stream (buffer/cooldown mirrored from the shared constants), so instead of replaying the
- *   arc we keep our own height/vh and snap to the server's when they disagree beyond a threshold
- *   (a denied jump / parry-launch we didn't predict). Keeps the replay loop history-free.
+ *   command stream (buffer/cooldown mirrored from the shared constants), so reconciliation rebases at
+ *   the server's acked height/vh and replays every pending jump step. Only a residual beyond the height
+ *   threshold hard-snaps (a denied jump / parry-launch we didn't predict).
  * - Prediction PAUSES (and hard-resyncs) while dead or frozen in the level-up window — the server
  *   doesn't move us then, and it zeroes our steering velocity on the freeze edge.
  */
@@ -76,10 +76,53 @@ interface PredState {
   vy: number;
 }
 
+/** A pending command plus the local jump-control state immediately before its tick. The server does not
+ * sync cooldown/buffer timers, so retaining this deterministic rebase point lets reconciliation replay
+ * the exact buffered-jump phase over an authoritative height/vh without mistaking an un-acked hop for
+ * divergence. */
+interface PendingPredCmd extends PredCmd {
+  jumpCdBefore: number;
+  jumpBufBefore: number;
+}
+
+interface PredVerticalState {
+  height: number;
+  vh: number;
+  jumpCd: number;
+  jumpBuf: number;
+}
+
 const DT = TICK_MS / 1000;
 
 /** Height divergence (px) beyond which the local vertical prediction adopts the server's arc. */
 const HEIGHT_ADOPT_PX = 12;
+
+/** One vertical sim step in the server's phase order: latch this command's jump intent, age timers,
+ * trigger a buffered grounded jump when eligible, then integrate the shared height physics. */
+function stepPredictedVertical(
+  s: PredVerticalState,
+  jump: boolean,
+  dt: number,
+): PredVerticalState {
+  const jumpCd = Math.max(0, s.jumpCd - dt);
+  let jumpBuf = s.jumpBuf;
+  if (jump) jumpBuf = JUMP_BUFFER_SECONDS;
+  jumpBuf = Math.max(0, jumpBuf - dt);
+  let vh = s.vh;
+  let nextJumpCd = jumpCd;
+  if (jumpBuf > 0 && jumpCd <= 0 && s.height <= GROUND_EPSILON) {
+    vh = JUMP_VELOCITY;
+    nextJumpCd = JUMP_COOLDOWN;
+    jumpBuf = 0;
+  }
+  const vert = stepVertical(s.height, vh, dt);
+  return {
+    height: vert.height,
+    vh: vert.vh,
+    jumpCd: nextJumpCd,
+    jumpBuf,
+  };
+}
 
 /** One horizontal sim step — the same phase order as the server's movement block: steer+integrate+clamp,
  *  impulse on top, POI pushout. NOT replicated (server-only, corrections absorb them): pit teleports
@@ -115,7 +158,7 @@ function stepHorizontal(
 
 export class SelfPredictor {
   private pred: PredState;
-  private readonly pending: PredCmd[] = [];
+  private readonly pending: PendingPredCmd[] = [];
   private map?: ArenaMap;
   /** §29 belt level (floor profile + obstacles) — when set, prediction uses belt collision, not POI. */
   private belt?: BeltLevel;
@@ -177,19 +220,26 @@ export class SelfPredictor {
   tick(cmd: PredCmd): void {
     if (this.paused || this.stalled) return; // dead/frozen/stalled — don't advance into the dark
     this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map, this.belt);
-    // Vertical: mirror the server's buffered-jump semantics locally (instant hop on press).
-    this.jumpCd = Math.max(0, this.jumpCd - DT);
-    this.jumpBuf = Math.max(0, this.jumpBuf - DT);
-    if (cmd.jump) this.jumpBuf = JUMP_BUFFER_SECONDS;
-    if (this.jumpBuf > 0 && this.jumpCd <= 0 && this.height <= GROUND_EPSILON) {
-      this.vh = JUMP_VELOCITY;
-      this.jumpCd = JUMP_COOLDOWN;
-      this.jumpBuf = 0;
-    }
-    const vert = stepVertical(this.height, this.vh, DT);
+    const pending: PendingPredCmd = {
+      ...cmd,
+      jumpCdBefore: this.jumpCd,
+      jumpBufBefore: this.jumpBuf,
+    };
+    const vert = stepPredictedVertical(
+      {
+        height: this.height,
+        vh: this.vh,
+        jumpCd: this.jumpCd,
+        jumpBuf: this.jumpBuf,
+      },
+      cmd.jump,
+      DT,
+    );
     this.height = vert.height;
     this.vh = vert.vh;
-    this.pending.push(cmd);
+    this.jumpCd = vert.jumpCd;
+    this.jumpBuf = vert.jumpBuf;
+    this.pending.push(pending);
     if (this.pending.length > PRED_PENDING_MAX) {
       this.pending.shift();
       // The connection STALLED (~3.2s of un-acked commands): FREEZE prediction (tick() short-circuits
@@ -256,8 +306,17 @@ export class SelfPredictor {
     }
 
     // REPLAY the still-pending window (exact 50ms steps — the server integrates the same way).
+    // Vertical starts at the acked authoritative height/vh, not the already-predicted tip of the arc:
+    // otherwise a normal pre-jump patch sees the first ~15px hop as divergence and eats it.
+    let replayVert: PredVerticalState = {
+      height: server.height,
+      vh: server.vh,
+      jumpCd: this.pending[0]?.jumpCdBefore ?? this.jumpCd,
+      jumpBuf: this.pending[0]?.jumpBufBefore ?? this.jumpBuf,
+    };
     for (const cmd of this.pending) {
       this.pred = stepHorizontal(this.pred, cmd.dx, cmd.dy, DT, this.map, this.belt);
+      replayVert = stepPredictedVertical(replayVert, cmd.jump, DT);
     }
 
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
@@ -268,10 +327,11 @@ export class SelfPredictor {
       this.errY = 0;
     }
 
-    // Vertical: adopt the server's arc only on real divergence (a denied jump / an unpredicted launch).
-    if (Math.abs(server.height - this.height) > HEIGHT_ADOPT_PX) {
-      this.height = server.height;
-      this.vh = server.vh;
+    // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
+    // jump / an unpredicted launch). Adopt the replayed present, never the older acked-tick height.
+    if (Math.abs(replayVert.height - this.height) > HEIGHT_ADOPT_PX) {
+      this.height = replayVert.height;
+      this.vh = replayVert.vh;
     }
   }
 

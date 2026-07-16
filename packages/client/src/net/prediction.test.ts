@@ -1,8 +1,10 @@
 import {
   addImpulse,
   INTERP_SNAP_PLAYER,
+  JUMP_VELOCITY,
   stepImpulse,
   stepSteeredMovement,
+  stepVertical,
   TICK_MS,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -249,5 +251,58 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     expect(pred.renderPos(0, 0, 0).height).toBeGreaterThan(0); // airborne immediately, no round-trip
     for (let i = 0; i < 12; i++) pred.tick(pred.mintCmd(0, 0, false));
     expect(pred.renderPos(0, 0, 0).height).toBe(0); // full arc landed (~0.45s)
+  });
+
+  it("keeps an un-acked jump when a pre-jump authoritative patch arrives", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor(server.view());
+    const preJumpPatch = server.view();
+    const jump = pred.mintCmd(0, 0, true);
+
+    pred.tick(jump);
+    const predictedHop = pred.renderPos(0, 0, 0).height;
+    expect(predictedHop).toBeGreaterThan(12); // first step is ~15px: above the adoption threshold
+
+    pred.reconcile({ ...preJumpPatch, ackSeq: (jump.seq - 1) >>> 0, height: 0, vh: 0 });
+
+    expect(pred.stats.pending).toBe(1);
+    expect(pred.renderPos(0, 0, 0).height).toBeCloseTo(predictedHop, 9);
+  });
+
+  it("converges without a vertical snap when the post-jump ack follows the pre-jump patch", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor(server.view());
+    const preJumpPatch = server.view();
+    const jump = pred.mintCmd(0, 0, true);
+
+    pred.tick(jump);
+    pred.reconcile({ ...preJumpPatch, ackSeq: (jump.seq - 1) >>> 0, height: 0, vh: 0 });
+    const beforeAck = pred.renderPos(0, 0, 0).height;
+    const authoritativeHop = stepVertical(0, JUMP_VELOCITY, DT);
+
+    pred.reconcile({
+      ...server.view(),
+      ackSeq: jump.seq,
+      height: authoritativeHop.height,
+      vh: authoritativeHop.vh,
+    });
+
+    expect(pred.stats.pending).toBe(0);
+    expect(pred.renderPos(0, 0, 0).height).toBeCloseTo(beforeAck, 9);
+    expect(pred.renderPos(0, 0, 0).height).toBeCloseTo(authoritativeHop.height, 9);
+  });
+
+  it("still hard-snaps a genuine server height correction after replaying later pending commands", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor(server.view());
+    const jump = pred.mintCmd(0, 0, true);
+    pred.tick(jump);
+    pred.tick(pred.mintCmd(0, 0, false)); // remains pending after the server acks/rejects the jump
+    expect(pred.renderPos(0, 0, 0).height).toBeGreaterThan(12);
+
+    pred.reconcile({ ...server.view(), ackSeq: jump.seq, height: 0, vh: 0 });
+
+    expect(pred.stats.pending).toBe(1); // proves the correction was evaluated after a pending replay
+    expect(pred.renderPos(0, 0, 0).height).toBe(0);
   });
 });
