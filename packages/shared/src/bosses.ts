@@ -11,6 +11,10 @@ import {
   BOSS_WALL_COUNT,
   HIT_KNOCKBACK_IMPULSE,
 } from "./constants.js";
+import {
+  WormSegmentRole,
+  type WormEncounterDef,
+} from "./boss.js";
 
 /**
  * §16 v0.109 DATA-DRIVEN BOSS DEFINITIONS. A boss is a body (an `EnemyKind` supplying sprite / renderScale /
@@ -58,6 +62,9 @@ export interface BossDef {
    *  enemy steppers. */
   move: "chase" | "kite" | "stationary" | "strafe";
   phases: BossPhase[];
+  /** Dedicated encounter directors opt in explicitly; absent keeps the legacy module scheduler untouched. */
+  encounter?: "worm";
+  worm?: WormEncounterDef;
 }
 
 /** OLD RUST reproduced as data — the fallback for any boss kind without a bespoke def. P1 bullet-walls, P2
@@ -920,6 +927,67 @@ const WORLD_TITAN: BossDef = {
   ],
 };
 
+/** Serraketh keeps one compatibility EnemyState root while its twelve fixed slots own all hurt geometry. */
+const SERRAKETH: BossDef = {
+  kind: "seam-eater",
+  name: "Serraketh, the Seam-Eater",
+  move: "stationary",
+  encounter: "worm",
+  worm: {
+    baseCoreHp: 1500,
+    rootKind: "old-rust",
+    anatomy: {
+      [WormSegmentRole.Head]: {
+        role: WormSegmentRole.Head,
+        radius: 52,
+        localHpFraction: 0.04,
+        armorHpFraction: 0.035,
+        platedCoreMultiplier: 0.35,
+        exposedCoreMultiplier: 1.35,
+      },
+      [WormSegmentRole.Neck]: {
+        role: WormSegmentRole.Neck,
+        radius: 43,
+        localHpFraction: 0.05,
+        armorHpFraction: 0.025,
+        platedCoreMultiplier: 0.15,
+        exposedCoreMultiplier: 0.75,
+      },
+      [WormSegmentRole.Body]: {
+        role: WormSegmentRole.Body,
+        radius: 39,
+        localHpFraction: 0.045,
+        armorHpFraction: 0,
+        platedCoreMultiplier: 1,
+        exposedCoreMultiplier: 1,
+      },
+      [WormSegmentRole.Spinner]: {
+        role: WormSegmentRole.Spinner,
+        radius: 45,
+        localHpFraction: 0.04,
+        armorHpFraction: 0.03,
+        platedCoreMultiplier: 0.2,
+        exposedCoreMultiplier: 0.9,
+      },
+      [WormSegmentRole.Tail]: {
+        role: WormSegmentRole.Tail,
+        radius: 37,
+        localHpFraction: 0.055,
+        armorHpFraction: 0.02,
+        platedCoreMultiplier: 0.25,
+        exposedCoreMultiplier: 1,
+      },
+    },
+  },
+  // The dedicated director owns these thresholds/actions. Empty module rows keep shared phase data explicit.
+  phases: [
+    { hpAbove: 0.7, modules: [] },
+    { hpAbove: 0.35, modules: [] },
+    { hpAbove: 0.08, modules: [] },
+    { hpAbove: 0, modules: [] },
+  ],
+};
+
 /** The boss-definition registry — keyed by `kind`. Slice 3 completes the roster with the melee trio
  *  (Kaido / Nihil / Blade Twins) → 10 bespoke bosses; v0.117 adds GOROGOTH the colossus → 11. */
 export const BOSSES: Record<string, BossDef> = {
@@ -935,6 +1003,7 @@ export const BOSSES: Record<string, BossDef> = {
   "blade-twins": TWINS,
   "dimensional-colossus": COLOSSUS,
   "world-titan": WORLD_TITAN,
+  "seam-eater": SERRAKETH,
 };
 
 /** §36 DIMENSION FINALE FIGHTS — each dimension's themed boss KIND (art + name + HP stay keyed on the kind,

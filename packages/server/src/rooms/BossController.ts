@@ -21,6 +21,38 @@ import {
   stepEnemyKite,
   type TgSpec,
   type Vec2,
+  WormActionKind,
+  WormArmorBand,
+  type WormBossState,
+  WormBossMode,
+  WormChain,
+  type WormEncounterDef,
+  WORM_ANATOMY_XP_CAP,
+  WORM_BASE_SPEED,
+  WORM_CONTACT_EPOCH_TICKS,
+  WORM_DIVE_TICKS,
+  WORM_ERUPTION_CLAIM_TICKS,
+  WORM_ERUPTION_RADIUS,
+  WORM_MAX_SEGMENTS,
+  WORM_MAX_TURN_RADIANS_PER_SECOND,
+  WORM_MISSING_SEGMENT_SPEED_BONUS,
+  WORM_MISSING_SEGMENT_SPEED_CAP,
+  WORM_PATH_HISTORY_CAPACITY,
+  WORM_PATH_OVERLAP_FACTOR,
+  WORM_POSE_PUBLISH_TICKS,
+  WORM_RECONNECT_CATCHUP_PX,
+  WORM_RECONNECT_TICKS,
+  WORM_REGROW_TICKS,
+  WormSegmentCondition,
+  WormSegmentMode,
+  WormSegmentRole,
+  WormSegmentState,
+  WORM_SPLIT_PUNISH_TICKS,
+  WORM_SPLIT_TICKS,
+  WORM_START_SEGMENTS,
+  WORM_SURFACE_ARM_GRACE_TICKS,
+  WORM_UNDERGROUND_MAX_TICKS,
+  WORM_UNDERGROUND_MIN_TICKS,
 } from "@dd/shared";
 
 /**
@@ -99,6 +131,8 @@ export interface BossEmitSink {
   hostileProjectiles(): number;
   /** Current live non-boss enemy (add) count — the add-cap gate reads this. */
   aliveAdds(): number;
+  /** Clamp a committed worm emergence to valid solid ground. Omitted by unit-test sinks. */
+  validateWormPoint?(x: number, y: number, radius: number): Vec2;
 }
 
 /** One in-flight cast: the telegraph rows shown during the windup + the payload to apply at resolve.
@@ -131,11 +165,1283 @@ interface ActiveHazard {
   elapsed: number;
 }
 
+const WORM_INITIAL_ROLES = new Uint8Array([
+  WormSegmentRole.Head,
+  WormSegmentRole.Neck,
+  WormSegmentRole.Body,
+  WormSegmentRole.Spinner,
+  WormSegmentRole.Body,
+  WormSegmentRole.Body,
+  WormSegmentRole.Spinner,
+  WormSegmentRole.Body,
+  WormSegmentRole.Body,
+  WormSegmentRole.Tail,
+  WormSegmentRole.Body,
+  WormSegmentRole.Body,
+]);
+
+interface WormDamageLedgerEntry {
+  lastTick: number;
+  rawMax: number;
+  maxCoreMultiplier: number;
+  coreBooked: number;
+  contactMask: number;
+  localContacts: number;
+}
+
+export interface WormDamageResult {
+  accepted: boolean;
+  coreDamage: number;
+  destroyedMask: number;
+  rewardValue: number;
+  terminal: boolean;
+}
+
+/** Circular, cumulative-distance polyline. Every follower samples the current-tick head history. */
+class WormPathHistory {
+  private readonly xs = new Float64Array(WORM_PATH_HISTORY_CAPACITY);
+  private readonly ys = new Float64Array(WORM_PATH_HISTORY_CAPACITY);
+  private readonly distances = new Float64Array(WORM_PATH_HISTORY_CAPACITY);
+  private write = -1;
+  private count = 0;
+
+  clear(): void {
+    this.write = -1;
+    this.count = 0;
+  }
+
+  append(x: number, y: number): void {
+    const previous = this.write;
+    this.write = (this.write + 1) % WORM_PATH_HISTORY_CAPACITY;
+    const cumulative =
+      previous >= 0
+        ? this.distances[previous]! + Math.hypot(x - this.xs[previous]!, y - this.ys[previous]!)
+        : 0;
+    this.xs[this.write] = x;
+    this.ys[this.write] = y;
+    this.distances[this.write] = cumulative;
+    this.count = Math.min(WORM_PATH_HISTORY_CAPACITY, this.count + 1);
+  }
+
+  seedStraight(x: number, y: number, heading: number, retainedDistance: number): void {
+    this.clear();
+    const step = 6;
+    const points = Math.min(
+      WORM_PATH_HISTORY_CAPACITY,
+      Math.max(2, Math.ceil(retainedDistance / step) + 1),
+    );
+    for (let i = points - 1; i >= 0; i--) {
+      const d = (i / (points - 1)) * retainedDistance;
+      this.append(x - Math.cos(heading) * d, y - Math.sin(heading) * d);
+    }
+  }
+
+  sampleBehind(distance: number, out: Float64Array): void {
+    if (this.write < 0 || this.count === 0) {
+      out[0] = 0;
+      out[1] = 0;
+      return;
+    }
+    const newest = this.write;
+    const target = this.distances[newest]! - Math.max(0, distance);
+    let newer = newest;
+    for (let age = 1; age < this.count; age++) {
+      const older = (newest - age + WORM_PATH_HISTORY_CAPACITY) % WORM_PATH_HISTORY_CAPACITY;
+      const olderD = this.distances[older]!;
+      if (olderD <= target) {
+        const newerD = this.distances[newer]!;
+        const span = Math.max(1e-9, newerD - olderD);
+        const f = clamp((target - olderD) / span, 0, 1);
+        out[0] = this.xs[older]! + (this.xs[newer]! - this.xs[older]!) * f;
+        out[1] = this.ys[older]! + (this.ys[newer]! - this.ys[older]!) * f;
+        return;
+      }
+      newer = older;
+    }
+    out[0] = this.xs[newer]!;
+    out[1] = this.ys[newer]!;
+  }
+}
+
+/** Server-private fixed arrays and deterministic topology/motion operations for Serraketh. */
+export class WormBossRuntime {
+  readonly active = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly targetable = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly collidable = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly underground = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly rewardPaid = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly role = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly condition = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly armorBand = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly generation = new Uint16Array(WORM_MAX_SEGMENTS);
+  readonly chain = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly ordinal = new Uint8Array(WORM_MAX_SEGMENTS);
+  readonly localHp = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly localMaxHp = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly armorHp = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly armorMaxHp = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly x = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly y = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly previousX = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly previousY = new Float64Array(WORM_MAX_SEGMENTS);
+  readonly radius = new Float64Array(WORM_MAX_SEGMENTS);
+
+  private readonly mainOrder = new Int8Array(WORM_MAX_SEGMENTS);
+  private readonly stubOrder = new Int8Array(WORM_MAX_SEGMENTS);
+  private mainCountValue = 0;
+  private stubCountValue = 0;
+  private readonly reconnectUntil = new Uint32Array(WORM_MAX_SEGMENTS);
+  private readonly sample = new Float64Array(2);
+  private readonly mainPath = new WormPathHistory();
+  private readonly stubPath = new WormPathHistory();
+  private readonly damageLedger = new Map<string, WormDamageLedgerEntry>();
+  private heading = 0;
+  private stubHeading = 0;
+  private splitEverValue = false;
+  private regrowEverValue = false;
+  private budMask = 0;
+  private regrowResolveTick = 0;
+  private diveStartTick = 0;
+  private undergroundStartTick = 0;
+  private undergroundEndTick = 0;
+  private emergeStartTick = 0;
+  private emergeEndTick = 0;
+  private armGraceEndTick = 0;
+  private entryX = 0;
+  private entryY = 0;
+  private exitX = 0;
+  private exitY = 0;
+  private headExposedUntilTick = 0;
+  private pendingRewardValue = 0;
+  private pendingRewardX = 0;
+  private pendingRewardY = 0;
+  private anatomyXpPaid = 0;
+  private topologyCommitTick = -1;
+
+  constructor(
+    readonly state: WormBossState,
+    private readonly def: WormEncounterDef,
+    readonly maxHp: number,
+    private readonly seed: number,
+    ownerId: string,
+    spawnX: number,
+    spawnY: number,
+    heading: number,
+    tick: number,
+  ) {
+    this.heading = Number.isFinite(heading) ? heading : 0;
+    state.active = true;
+    state.ownerId = ownerId;
+    state.mode = WormBossMode.Surface;
+    state.splitActive = false;
+    state.splitExpireTick = 0;
+    while (state.segments.length < WORM_MAX_SEGMENTS) {
+      const row = new WormSegmentState();
+      row.slot = state.segments.length;
+      state.segments.push(row);
+    }
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      const role = (WORM_INITIAL_ROLES[slot] ?? WormSegmentRole.Body) as WormSegmentRole;
+      const anatomy = def.anatomy[role];
+      this.role[slot] = role;
+      this.radius[slot] = anatomy.radius;
+      this.localMaxHp[slot] = Math.max(1, maxHp * anatomy.localHpFraction);
+      this.localHp[slot] = this.localMaxHp[slot]!;
+      this.armorMaxHp[slot] = Math.max(0, maxHp * anatomy.armorHpFraction);
+      this.armorHp[slot] = this.armorMaxHp[slot]!;
+      this.condition[slot] = WormSegmentCondition.Intact;
+      this.armorBand[slot] =
+        this.armorMaxHp[slot]! > 0 ? WormArmorBand.Plated : WormArmorBand.None;
+      if (slot < WORM_START_SEGMENTS) {
+        this.active[slot] = 1;
+        this.targetable[slot] = 1;
+        this.generation[slot] = 1;
+        this.mainOrder[this.mainCountValue++] = slot;
+        this.setSlotMode(slot, WormSegmentMode.Surface, tick);
+      } else {
+        // Dormant regrowth-only slots never mint first-break XP.
+        this.rewardPaid[slot] = 1;
+        this.setSlotMode(slot, WormSegmentMode.Dormant, tick);
+      }
+    }
+    this.mainPath.seedStraight(spawnX, spawnY, this.heading, 1400);
+    this.x[0] = spawnX;
+    this.y[0] = spawnY;
+    this.solveChain(this.mainOrder, this.mainCountValue, this.mainPath, tick, false);
+    this.previousX.set(this.x);
+    this.previousY.set(this.y);
+    this.commitTopology((1 << WORM_START_SEGMENTS) - 1, tick);
+  }
+
+  get mode(): WormBossMode {
+    return this.state.mode as WormBossMode;
+  }
+
+  get activeCount(): number {
+    return this.mainCountValue + this.stubCountValue;
+  }
+
+  get mainCount(): number {
+    return this.mainCountValue;
+  }
+
+  get stubCount(): number {
+    return this.stubCountValue;
+  }
+
+  get activeBudCount(): number {
+    let n = 0;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) if ((this.budMask & (1 << slot)) !== 0) n++;
+    return n;
+  }
+
+  get effectiveBodyCount(): number {
+    return this.activeCount + this.activeBudCount;
+  }
+
+  get splitEver(): boolean {
+    return this.splitEverValue;
+  }
+
+  get regrowEver(): boolean {
+    return this.regrowEverValue;
+  }
+
+  orderSlot(chain: WormChain, index: number): number {
+    if (index < 0) return -1;
+    return chain === WormChain.Main
+      ? index < this.mainCountValue
+        ? this.mainOrder[index]!
+        : -1
+      : index < this.stubCountValue
+        ? this.stubOrder[index]!
+        : -1;
+  }
+
+  isBud(slot: number): boolean {
+    return slot >= 0 && slot < WORM_MAX_SEGMENTS && (this.budMask & (1 << slot)) !== 0;
+  }
+
+  isTargetable(slot: number): boolean {
+    return slot >= 0 && slot < WORM_MAX_SEGMENTS && this.targetable[slot] === 1;
+  }
+
+  segmentGeneration(slot: number): number {
+    return this.generation[slot] ?? 0;
+  }
+
+  segmentRadius(slot: number): number {
+    return this.radius[slot] ?? 0;
+  }
+
+  segmentIntersectsSweptCircle(slot: number, px: number, py: number, extraRadius: number): boolean {
+    return this.segmentIntersectsSweptCapsule(slot, px, py, px, py, extraRadius);
+  }
+
+  /** Continuous 20 Hz contact between a moving segment and a moving projectile/capsule centre. */
+  segmentIntersectsSweptCapsule(
+    slot: number,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    extraRadius: number,
+  ): boolean {
+    if (!this.isTargetable(slot)) return false;
+    // In relative coordinates the segment is stationary at the origin and the projectile travels from
+    // (projectilePrev - segmentPrev) to (projectileNow - segmentNow). The closest point is the exact
+    // same-tick continuous collision test, so neither fast shots nor lateral segment motion can tunnel.
+    const ax = fromX - this.previousX[slot]!;
+    const ay = fromY - this.previousY[slot]!;
+    const bx = toX - this.x[slot]!;
+    const by = toY - this.y[slot]!;
+    const vx = bx - ax;
+    const vy = by - ay;
+    const vv = vx * vx + vy * vy;
+    const t = vv > 1e-9 ? clamp(-(ax * vx + ay * vy) / vv, 0, 1) : 0;
+    const dx = ax + vx * t;
+    const dy = ay + vy * t;
+    const reach = this.radius[slot]! + Math.max(0, extraRadius);
+    return dx * dx + dy * dy <= reach * reach;
+  }
+
+  /** Advances motion/topology once. Returns true when EruptionClaim began this tick. */
+  advance(dt: number, boss: EnemyState, targets: Vec2[], tick: number): boolean {
+    this.previousX.set(this.x);
+    this.previousY.set(this.y);
+    this.expireReconnects(tick);
+    this.expireHeadExposure(tick);
+    const before = this.mode;
+    switch (before) {
+      case WormBossMode.Surface:
+      case WormBossMode.SurfaceArmGrace:
+        this.stepSurface(dt, boss, targets, tick);
+        if (before === WormBossMode.SurfaceArmGrace && tick >= this.armGraceEndTick) {
+          this.setSurface(tick);
+        }
+        break;
+      case WormBossMode.Split:
+        this.stepSurface(dt, boss, targets, tick);
+        this.stepStub(dt, tick);
+        if (this.state.splitActive && tick >= this.state.splitExpireTick) this.rejoinStub(tick);
+        break;
+      case WormBossMode.Regrow:
+        if (tick >= this.regrowResolveTick) this.resolveRegrow(tick);
+        break;
+      case WormBossMode.DiveWindup:
+      case WormBossMode.Submerging:
+        this.stepSurface(dt * 0.65, boss, targets, tick);
+        this.stepSubmerging(tick);
+        break;
+      case WormBossMode.Underground:
+        this.stepUnderground(boss, tick);
+        break;
+      case WormBossMode.Emerging:
+        this.stepEmerging(boss, tick);
+        break;
+      case WormBossMode.EruptionClaim:
+      case WormBossMode.Dead:
+      case WormBossMode.Inactive:
+        break;
+    }
+    this.publish(false, tick);
+    return before !== WormBossMode.EruptionClaim && this.mode === WormBossMode.EruptionClaim;
+  }
+
+  startDive(target: Vec2, tick: number, undergroundTicks: number): boolean {
+    if (this.mode !== WormBossMode.Surface || this.state.splitActive) return false;
+    this.entryX = this.x[this.mainOrder[0]!]!;
+    this.entryY = this.y[this.mainOrder[0]!]!;
+    this.exitX = clamp(target.x, this.radius[0]!, ARENA_WIDTH - this.radius[0]!);
+    this.exitY = clamp(target.y, this.radius[0]!, ARENA_HEIGHT - this.radius[0]!);
+    this.diveStartTick = tick;
+    const travel = clamp(
+      Math.floor(undergroundTicks),
+      WORM_UNDERGROUND_MIN_TICKS,
+      WORM_UNDERGROUND_MAX_TICKS,
+    );
+    this.undergroundStartTick = tick + WORM_DIVE_TICKS;
+    this.undergroundEndTick = this.undergroundStartTick + travel;
+    this.state.mode = WormBossMode.DiveWindup;
+    this.setAction(
+      WormActionKind.SeamDive,
+      tick,
+      this.undergroundStartTick,
+      this.undergroundEndTick,
+      this.mainOrder[0]!,
+      this.exitX,
+      this.exitY,
+    );
+    this.publish(true, tick);
+    return true;
+  }
+
+  resolveEruption(tick: number): void {
+    this.heading = Math.atan2(this.exitY - this.entryY, this.exitX - this.entryX);
+    if (!Number.isFinite(this.heading)) this.heading = 0;
+    this.mainPath.seedStraight(this.exitX, this.exitY, this.heading, 1400);
+    this.x[this.mainOrder[0]!] = this.exitX;
+    this.y[this.mainOrder[0]!] = this.exitY;
+    this.solveChain(this.mainOrder, this.mainCountValue, this.mainPath, tick, false);
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.targetable[slot] = i === 0 ? 1 : 0;
+      this.underground[slot] = i === 0 ? 0 : 1;
+      this.condition[slot] = this.condition[slot] ?? WormSegmentCondition.Intact;
+      this.setSlotMode(slot, i === 0 ? WormSegmentMode.Emerging : WormSegmentMode.Underground, tick);
+    }
+    this.armorBand[0] = WormArmorBand.Exposed;
+    this.headExposedUntilTick = tick + 27;
+    this.emergeStartTick = tick;
+    this.emergeEndTick = tick + Math.max(2, (this.mainCountValue - 1) * 2);
+    this.state.mode = WormBossMode.Emerging;
+    this.forceTopologyCut(this.currentActiveMask(), tick);
+  }
+
+  triggerSplit(preferredSeamSlot: number, tick: number): boolean {
+    if (this.splitEverValue || this.state.splitActive || this.mainCountValue < 4) return false;
+    let seamIndex = -1;
+    for (let i = 1; i < this.mainCountValue - 1; i++) {
+      const slot = this.mainOrder[i]!;
+      if (slot === preferredSeamSlot && this.role[slot] === WormSegmentRole.Body) seamIndex = i;
+    }
+    if (seamIndex < 0) {
+      const middle = Math.floor(this.mainCountValue / 2);
+      let best = Number.POSITIVE_INFINITY;
+      for (let i = 1; i < this.mainCountValue - 1; i++) {
+        const slot = this.mainOrder[i]!;
+        if (this.role[slot] !== WormSegmentRole.Body) continue;
+        const d = Math.abs(i - middle);
+        if (d < best) {
+          best = d;
+          seamIndex = i;
+        }
+      }
+    }
+    if (seamIndex < 0) return false;
+    const seam = this.mainOrder[seamIndex]!;
+    let changed = 1 << seam;
+    this.payFirstBreak(seam, tick);
+    this.active[seam] = 0;
+    this.targetable[seam] = 0;
+    this.condition[seam] = WormSegmentCondition.Destroyed;
+    this.setSlotMode(seam, WormSegmentMode.Destroyed, tick);
+    this.stubCountValue = 0;
+    for (let i = seamIndex + 1; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.stubOrder[this.stubCountValue++] = slot;
+      changed |= 1 << slot;
+    }
+    this.mainCountValue = seamIndex;
+    this.splitEverValue = true;
+    this.state.splitActive = this.stubCountValue > 0;
+    this.state.splitExpireTick = tick + WORM_SPLIT_TICKS;
+    this.state.mode = WormBossMode.Split;
+    this.seedPathFromOrder(this.stubPath, this.stubOrder, this.stubCountValue);
+    if (this.stubCountValue > 1) {
+      const a = this.stubOrder[0]!;
+      const b = this.stubOrder[1]!;
+      this.stubHeading = Math.atan2(this.y[a]! - this.y[b]!, this.x[a]! - this.x[b]!);
+    } else {
+      this.stubHeading = this.heading;
+    }
+    this.setAction(
+      WormActionKind.Split,
+      tick,
+      tick,
+      this.state.splitExpireTick,
+      seam,
+      this.x[seam]!,
+      this.y[seam]!,
+    );
+    this.commitTopology(changed, tick);
+    return true;
+  }
+
+  destroyStub(tick: number): boolean {
+    if (!this.state.splitActive || this.stubCountValue === 0) return false;
+    let changed = 0;
+    while (this.stubCountValue > 0) {
+      const slot = this.stubOrder[--this.stubCountValue]!;
+      changed |= 1 << slot;
+      this.active[slot] = 0;
+      this.targetable[slot] = 0;
+      this.condition[slot] = WormSegmentCondition.Destroyed;
+      this.setSlotMode(slot, WormSegmentMode.Destroyed, tick);
+      this.payFirstBreak(slot, tick);
+    }
+    this.completeStubDefeat(tick);
+    this.commitTopology(changed, tick);
+    return true;
+  }
+
+  beginRegrow(tick: number, playerCount: number): number {
+    if (this.regrowEverValue || this.state.splitActive || this.mode !== WormBossMode.Surface) return 0;
+    const wanted = playerCount <= 1 ? 2 : 3;
+    let made = 0;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS && made < wanted; slot++) {
+      if (this.active[slot] || this.role[slot] !== WormSegmentRole.Body) continue;
+      this.budMask |= 1 << slot;
+      this.targetable[slot] = 1;
+      this.underground[slot] = 0;
+      this.localMaxHp[slot] = Math.max(1, this.maxHp * 0.025);
+      this.localHp[slot] = this.localMaxHp[slot]!;
+      this.armorMaxHp[slot] = 0;
+      this.armorHp[slot] = 0;
+      this.armorBand[slot] = WormArmorBand.None;
+      this.condition[slot] = WormSegmentCondition.Regrown;
+      const angle = this.heading + Math.PI + (made - (wanted - 1) / 2) * 0.42;
+      const reach = 96 + made * 22;
+      this.x[slot] = clamp(this.x[0]! + Math.cos(angle) * reach, 24, ARENA_WIDTH - 24);
+      this.y[slot] = clamp(this.y[0]! + Math.sin(angle) * reach, 24, ARENA_HEIGHT - 24);
+      this.previousX[slot] = this.x[slot]!;
+      this.previousY[slot] = this.y[slot]!;
+      this.setSlotMode(slot, WormSegmentMode.Bud, tick);
+      made++;
+    }
+    if (made === 0) return 0;
+    this.regrowEverValue = true;
+    this.regrowResolveTick = tick + WORM_REGROW_TICKS;
+    this.state.mode = WormBossMode.Regrow;
+    this.setAction(
+      WormActionKind.GraftHunger,
+      tick,
+      this.regrowResolveTick,
+      this.regrowResolveTick,
+      0,
+      this.x[0]!,
+      this.y[0]!,
+    );
+    this.forceTopologyCut(this.budMask, tick);
+    return made;
+  }
+
+  resolveRegrow(tick: number): number {
+    if (this.budMask === 0) {
+      this.setSurface(tick);
+      return 0;
+    }
+    let activated = 0;
+    let changed = this.budMask;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      if ((this.budMask & (1 << slot)) === 0) continue;
+      this.targetable[slot] = 0;
+      if (this.activeCount < WORM_MAX_SEGMENTS && this.localHp[slot]! > 0) {
+        this.active[slot] = 1;
+        this.targetable[slot] = 1;
+        this.generation[slot] = (this.generation[slot]! + 1) & 0xffff;
+        this.rewardPaid[slot] = 1;
+        this.condition[slot] = WormSegmentCondition.Regrown;
+        this.setSlotMode(slot, WormSegmentMode.ArmGrace, tick);
+        this.reconnectUntil[slot] = tick + WORM_SURFACE_ARM_GRACE_TICKS;
+        this.insertBeforeTail(slot);
+        activated++;
+      } else {
+        this.condition[slot] = WormSegmentCondition.Destroyed;
+        this.setSlotMode(slot, WormSegmentMode.Destroyed, tick);
+      }
+    }
+    this.budMask = 0;
+    this.armGraceEndTick = tick + WORM_SURFACE_ARM_GRACE_TICKS;
+    this.state.mode = WormBossMode.SurfaceArmGrace;
+    this.clearAction(tick);
+    this.seedPathFromOrder(this.mainPath, this.mainOrder, this.mainCountValue);
+    this.commitTopology(changed, tick);
+    return activated;
+  }
+
+  damageSegments(
+    slots: readonly number[],
+    rawDamage: number,
+    sourceKey: string,
+    tick: number,
+    piercing: boolean,
+    boss: EnemyState,
+  ): WormDamageResult {
+    const raw = Math.max(0, rawDamage);
+    if (raw <= 0 || slots.length === 0 || !this.state.active) {
+      return { accepted: false, coreDamage: 0, destroyedMask: 0, rewardValue: 0, terminal: boss.hp <= 0 };
+    }
+    this.pruneDamageLedger(tick);
+    const key = sourceKey || `tick:${tick}`;
+    let ledger = this.damageLedger.get(key);
+    if (!ledger) {
+      ledger = {
+        lastTick: tick,
+        rawMax: 0,
+        maxCoreMultiplier: 0,
+        coreBooked: 0,
+        contactMask: 0,
+        localContacts: 0,
+      };
+      this.damageLedger.set(key, ledger);
+    }
+    ledger.lastTick = tick;
+    const beforeReward = this.pendingRewardValue;
+    let destroyedMask = 0;
+    let accepted = false;
+    let maxMultiplier = ledger.maxCoreMultiplier;
+    const unique = new Int8Array(WORM_MAX_SEGMENTS);
+    let uniqueCount = 0;
+    for (const candidate of slots) {
+      const slot = Math.floor(candidate);
+      if (slot < 0 || slot >= WORM_MAX_SEGMENTS || !this.isTargetable(slot)) continue;
+      let duplicate = false;
+      for (let i = 0; i < uniqueCount; i++) if (unique[i] === slot) duplicate = true;
+      if (!duplicate) unique[uniqueCount++] = slot;
+    }
+    for (let i = 1; i < uniqueCount; i++) {
+      const value = unique[i]!;
+      let j = i - 1;
+      while (j >= 0 && unique[j]! > value) {
+        unique[j + 1] = unique[j]!;
+        j--;
+      }
+      unique[j + 1] = value;
+    }
+    for (let i = 0; i < uniqueCount; i++) {
+      const slot = unique[i]!;
+      maxMultiplier = Math.max(maxMultiplier, this.coreMultiplier(slot));
+      const bit = 1 << slot;
+      if ((ledger.contactMask & bit) !== 0) continue;
+      if (piercing && ledger.localContacts >= 2) continue;
+      const scale = piercing && ledger.localContacts > 0 ? 0.5 : 1;
+      ledger.contactMask |= bit;
+      ledger.localContacts++;
+      accepted = true;
+      if (this.applyLocalDamage(slot, raw * scale, tick, boss)) destroyedMask |= bit;
+    }
+    ledger.rawMax = Math.max(ledger.rawMax, raw);
+    ledger.maxCoreMultiplier = maxMultiplier;
+    const desiredCore = Math.min(ledger.rawMax, ledger.rawMax * ledger.maxCoreMultiplier);
+    const coreDamage = Math.max(0, desiredCore - ledger.coreBooked);
+    if (coreDamage > 0) {
+      boss.hp -= coreDamage;
+      ledger.coreBooked += coreDamage;
+      accepted = true;
+    }
+    if (destroyedMask !== 0) {
+      if (this.state.splitActive && this.stubCountValue === 0) this.completeStubDefeat(tick);
+      this.commitTopology(destroyedMask, tick);
+    } else if (accepted) {
+      this.publish(true, tick);
+    }
+    return {
+      accepted,
+      coreDamage,
+      destroyedMask,
+      rewardValue: this.pendingRewardValue - beforeReward,
+      terminal: boss.hp <= 0,
+    };
+  }
+
+  drainReward(): { value: number; x: number; y: number } | null {
+    if (this.pendingRewardValue <= 0) return null;
+    const result = {
+      value: this.pendingRewardValue,
+      x: this.pendingRewardX,
+      y: this.pendingRewardY,
+    };
+    this.pendingRewardValue = 0;
+    return result;
+  }
+
+  dispose(tick: number): void {
+    this.active.fill(0);
+    this.targetable.fill(0);
+    this.collidable.fill(0);
+    this.underground.fill(0);
+    this.budMask = 0;
+    this.state.active = false;
+    this.state.ownerId = "";
+    this.state.mode = WormBossMode.Inactive;
+    this.state.activeMask = 0;
+    this.state.targetableMask = 0;
+    this.state.collidableMask = 0;
+    this.state.undergroundMask = 0;
+    this.state.changedMask = 0;
+    this.state.splitActive = false;
+    this.state.splitExpireTick = 0;
+    this.clearAction(tick);
+  }
+
+  private stepSurface(dt: number, boss: EnemyState, targets: Vec2[], tick: number): void {
+    if (this.mainCountValue === 0) return;
+    const head = this.mainOrder[0]!;
+    const target = nearestPoint({ x: this.x[head]!, y: this.y[head]! }, targets);
+    if (target) {
+      const wanted = Math.atan2(target.y - this.y[head]!, target.x - this.x[head]!);
+      let delta = wanted - this.heading;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      const maxTurn = WORM_MAX_TURN_RADIANS_PER_SECOND * dt;
+      this.heading += clamp(delta, -maxTurn, maxTurn);
+    }
+    const lost = Math.max(0, WORM_START_SEGMENTS - this.activeCount);
+    const speedBonus = Math.min(
+      WORM_MISSING_SEGMENT_SPEED_CAP,
+      lost * WORM_MISSING_SEGMENT_SPEED_BONUS,
+    );
+    const speed = WORM_BASE_SPEED * (1 + speedBonus);
+    const r = this.radius[head]!;
+    let nx = this.x[head]! + Math.cos(this.heading) * speed * dt;
+    let ny = this.y[head]! + Math.sin(this.heading) * speed * dt;
+    if (nx < r || nx > ARENA_WIDTH - r) {
+      this.heading = Math.PI - this.heading;
+      nx = clamp(nx, r, ARENA_WIDTH - r);
+    }
+    if (ny < r || ny > ARENA_HEIGHT - r) {
+      this.heading = -this.heading;
+      ny = clamp(ny, r, ARENA_HEIGHT - r);
+    }
+    this.x[head] = nx;
+    this.y[head] = ny;
+    this.mainPath.append(nx, ny);
+    this.solveChain(this.mainOrder, this.mainCountValue, this.mainPath, tick, true);
+    boss.x = nx;
+    boss.y = ny;
+  }
+
+  private stepStub(dt: number, tick: number): void {
+    if (this.stubCountValue === 0) return;
+    const leader = this.stubOrder[0]!;
+    this.stubHeading += 0.34 * dt;
+    const speed = WORM_BASE_SPEED * 0.78;
+    const r = this.radius[leader]!;
+    let nx = this.x[leader]! + Math.cos(this.stubHeading) * speed * dt;
+    let ny = this.y[leader]! + Math.sin(this.stubHeading) * speed * dt;
+    if (nx < r || nx > ARENA_WIDTH - r) this.stubHeading = Math.PI - this.stubHeading;
+    if (ny < r || ny > ARENA_HEIGHT - r) this.stubHeading = -this.stubHeading;
+    nx = clamp(nx, r, ARENA_WIDTH - r);
+    ny = clamp(ny, r, ARENA_HEIGHT - r);
+    this.x[leader] = nx;
+    this.y[leader] = ny;
+    this.stubPath.append(nx, ny);
+    this.solveChain(this.stubOrder, this.stubCountValue, this.stubPath, tick, true);
+  }
+
+  private stepSubmerging(tick: number): void {
+    const elapsed = Math.max(1, tick - this.diveStartTick + 1);
+    const hideCount = Math.min(
+      this.mainCountValue,
+      Math.floor((elapsed * this.mainCountValue) / WORM_DIVE_TICKS),
+    );
+    this.state.mode = hideCount > 0 ? WormBossMode.Submerging : WormBossMode.DiveWindup;
+    for (let i = 0; i < hideCount; i++) {
+      const slot = this.mainOrder[i]!;
+      this.targetable[slot] = 0;
+      this.collidable[slot] = 0;
+      this.underground[slot] = 1;
+      this.setSlotMode(slot, WormSegmentMode.Submerging, tick);
+    }
+    if (elapsed < WORM_DIVE_TICKS) return;
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.targetable[slot] = 0;
+      this.underground[slot] = 1;
+      this.setSlotMode(slot, WormSegmentMode.Underground, tick);
+    }
+    this.state.mode = WormBossMode.Underground;
+    this.forceTopologyCut(this.currentActiveMask(), tick);
+  }
+
+  private stepUnderground(boss: EnemyState, tick: number): void {
+    const span = Math.max(1, this.undergroundEndTick - this.undergroundStartTick);
+    const f = clamp((tick - this.undergroundStartTick + 1) / span, 0, 1);
+    const head = this.mainOrder[0]!;
+    this.x[head] = this.entryX + (this.exitX - this.entryX) * f;
+    this.y[head] = this.entryY + (this.exitY - this.entryY) * f;
+    boss.x = this.x[head]!;
+    boss.y = this.y[head]!;
+    if (tick < this.undergroundEndTick) return;
+    this.x[head] = this.exitX;
+    this.y[head] = this.exitY;
+    boss.x = this.exitX;
+    boss.y = this.exitY;
+    this.state.mode = WormBossMode.EruptionClaim;
+    this.setAction(
+      WormActionKind.Eruption,
+      tick,
+      tick + WORM_ERUPTION_CLAIM_TICKS,
+      tick + WORM_ERUPTION_CLAIM_TICKS,
+      head,
+      this.exitX,
+      this.exitY,
+    );
+    this.publish(true, tick);
+  }
+
+  private stepEmerging(boss: EnemyState, tick: number): void {
+    const revealed = Math.min(
+      this.mainCountValue,
+      1 + Math.floor(Math.max(0, tick - this.emergeStartTick) / 2),
+    );
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      const visible = i < revealed;
+      this.targetable[slot] = visible ? 1 : 0;
+      this.underground[slot] = visible ? 0 : 1;
+      this.setSlotMode(slot, visible ? WormSegmentMode.Emerging : WormSegmentMode.Underground, tick);
+    }
+    this.stepSurface(0, boss, [], tick);
+    if (tick < this.emergeEndTick) return;
+    this.armGraceEndTick = tick + WORM_SURFACE_ARM_GRACE_TICKS;
+    this.state.mode = WormBossMode.SurfaceArmGrace;
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.targetable[slot] = 1;
+      this.underground[slot] = 0;
+      this.setSlotMode(slot, WormSegmentMode.ArmGrace, tick);
+    }
+    this.forceTopologyCut(this.currentActiveMask(), tick);
+  }
+
+  private setSurface(tick: number): void {
+    this.state.mode = WormBossMode.Surface;
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.targetable[slot] = 1;
+      this.underground[slot] = 0;
+      if (this.reconnectUntil[slot]! <= tick) this.setSlotMode(slot, WormSegmentMode.Surface, tick);
+    }
+    this.clearAction(tick);
+    this.publish(true, tick);
+  }
+
+  private solveChain(
+    order: Int8Array,
+    count: number,
+    path: WormPathHistory,
+    tick: number,
+    boundedReconnect: boolean,
+  ): void {
+    if (count <= 1) return;
+    let arc = 0;
+    for (let i = 1; i < count; i++) {
+      const previous = order[i - 1]!;
+      const slot = order[i]!;
+      arc += WORM_PATH_OVERLAP_FACTOR * (this.radius[previous]! + this.radius[slot]!);
+      path.sampleBehind(arc, this.sample);
+      const tx = this.sample[0]!;
+      const ty = this.sample[1]!;
+      const dx = tx - this.x[slot]!;
+      const dy = ty - this.y[slot]!;
+      const d = Math.hypot(dx, dy);
+      if (
+        boundedReconnect &&
+        (this.reconnectUntil[slot]! > tick || d > WORM_RECONNECT_CATCHUP_PX)
+      ) {
+        const f = d > WORM_RECONNECT_CATCHUP_PX ? WORM_RECONNECT_CATCHUP_PX / d : 1;
+        this.x[slot] = this.x[slot]! + dx * f;
+        this.y[slot] = this.y[slot]! + dy * f;
+        if (d > WORM_RECONNECT_CATCHUP_PX) {
+          // The authored grace is a minimum, not a snap deadline. A remote stub/reconnected follower stays
+          // harmless and advances by the bounded catch-up until it is genuinely back on the sampled path.
+          this.reconnectUntil[slot] = Math.max(this.reconnectUntil[slot]!, tick + 1);
+          if (this.mode === WormBossMode.Surface) {
+            this.setSlotMode(slot, WormSegmentMode.Reconnecting, tick);
+          }
+        }
+      } else {
+        this.x[slot] = tx;
+        this.y[slot] = ty;
+      }
+    }
+  }
+
+  private seedPathFromOrder(path: WormPathHistory, order: Int8Array, count: number): void {
+    path.clear();
+    if (count === 0) return;
+    for (let i = count - 1; i >= 0; i--) {
+      const slot = order[i]!;
+      path.append(this.x[slot]!, this.y[slot]!);
+    }
+  }
+
+  private rejoinStub(tick: number): void {
+    if (!this.state.splitActive) return;
+    let changed = 0;
+    for (let i = 0; i < this.stubCountValue; i++) {
+      const slot = this.stubOrder[i]!;
+      this.mainOrder[this.mainCountValue++] = slot;
+      this.reconnectUntil[slot] = tick + WORM_SURFACE_ARM_GRACE_TICKS;
+      this.setSlotMode(slot, WormSegmentMode.ArmGrace, tick);
+      changed |= 1 << slot;
+    }
+    this.stubCountValue = 0;
+    this.state.splitActive = false;
+    this.state.splitExpireTick = 0;
+    this.state.mode = WormBossMode.SurfaceArmGrace;
+    this.armGraceEndTick = tick + WORM_SURFACE_ARM_GRACE_TICKS;
+    this.seedPathFromOrder(this.mainPath, this.mainOrder, this.mainCountValue);
+    this.clearAction(tick);
+    this.commitTopology(changed, tick);
+  }
+
+  private completeStubDefeat(tick: number): void {
+    this.state.splitActive = false;
+    this.state.splitExpireTick = 0;
+    this.state.mode = WormBossMode.SurfaceArmGrace;
+    this.armGraceEndTick = tick + WORM_SPLIT_PUNISH_TICKS;
+    this.armorBand[0] = WormArmorBand.Exposed;
+    this.headExposedUntilTick = this.armGraceEndTick;
+    const remaining = Math.max(0, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid);
+    if (remaining > 0) this.addReward(remaining, this.x[0]!, this.y[0]!);
+    this.clearAction(tick);
+  }
+
+  private insertBeforeTail(slot: number): void {
+    let index = this.mainCountValue;
+    for (let i = 0; i < this.mainCountValue; i++) {
+      if (this.role[this.mainOrder[i]!] === WormSegmentRole.Tail) {
+        index = i;
+        break;
+      }
+    }
+    for (let i = this.mainCountValue; i > index; i--) this.mainOrder[i] = this.mainOrder[i - 1]!;
+    this.mainOrder[index] = slot;
+    this.mainCountValue++;
+  }
+
+  private applyLocalDamage(slot: number, raw: number, tick: number, boss: EnemyState): boolean {
+    if (raw <= 0) return false;
+    if (this.isBud(slot)) {
+      this.localHp[slot] = Math.max(0, this.localHp[slot]! - raw);
+      if (this.localHp[slot]! <= 0) {
+        this.budMask &= ~(1 << slot);
+        this.targetable[slot] = 0;
+        this.condition[slot] = WormSegmentCondition.Destroyed;
+        this.setSlotMode(slot, WormSegmentMode.Destroyed, tick);
+        return true;
+      }
+      this.updateCondition(slot);
+      return false;
+    }
+    let damage = raw;
+    if (this.armorHp[slot]! > 0) {
+      const used = Math.min(this.armorHp[slot]!, damage);
+      this.armorHp[slot] = this.armorHp[slot]! - used;
+      damage -= used;
+      if (this.armorHp[slot]! <= 0) this.armorBand[slot] = WormArmorBand.Exposed;
+    }
+    if (damage > 0) this.localHp[slot] = Math.max(0, this.localHp[slot]! - damage);
+    this.updateCondition(slot);
+    if (this.localHp[slot]! > 0) return false;
+    const role = this.role[slot]!;
+    if (role === WormSegmentRole.Head) {
+      this.localHp[slot] = 1;
+      this.armorBand[slot] = WormArmorBand.Exposed;
+      this.condition[slot] = WormSegmentCondition.ArmorOpen;
+      return false;
+    }
+    if (role === WormSegmentRole.Neck) {
+      let downstreamGone = 0;
+      for (let i = 2; i < WORM_START_SEGMENTS; i++) if (!this.active[i]) downstreamGone++;
+      if (boss.hp / this.maxHp > 0.35 && downstreamGone < 4) {
+        this.localHp[slot] = 1;
+        this.armorBand[slot] = WormArmorBand.Exposed;
+        this.condition[slot] = WormSegmentCondition.ArmorOpen;
+        return false;
+      }
+    }
+    this.removeActiveSlot(slot, tick);
+    this.payFirstBreak(slot, tick);
+    return true;
+  }
+
+  private removeActiveSlot(slot: number, tick: number): void {
+    let chainOrder = this.mainOrder;
+    let count = this.mainCountValue;
+    let found = -1;
+    for (let i = 0; i < count; i++) if (chainOrder[i] === slot) found = i;
+    if (found < 0) {
+      chainOrder = this.stubOrder;
+      count = this.stubCountValue;
+      for (let i = 0; i < count; i++) if (chainOrder[i] === slot) found = i;
+    }
+    if (found < 0) return;
+    const main = chainOrder === this.mainOrder;
+    for (let i = found; i < count - 1; i++) chainOrder[i] = chainOrder[i + 1]!;
+    if (main) {
+      this.mainCountValue--;
+      for (let i = found; i < this.mainCountValue; i++) {
+        const follower = this.mainOrder[i]!;
+        this.reconnectUntil[follower] = tick + WORM_RECONNECT_TICKS;
+        this.setSlotMode(follower, WormSegmentMode.Reconnecting, tick);
+      }
+    } else {
+      this.stubCountValue--;
+    }
+    this.active[slot] = 0;
+    this.targetable[slot] = 0;
+    this.collidable[slot] = 0;
+    this.underground[slot] = 0;
+    this.condition[slot] = WormSegmentCondition.Destroyed;
+    this.setSlotMode(slot, WormSegmentMode.Destroyed, tick);
+  }
+
+  private payFirstBreak(slot: number, tick: number): void {
+    if (this.rewardPaid[slot]) return;
+    this.rewardPaid[slot] = 1;
+    const role = this.role[slot]!;
+    const value = role === WormSegmentRole.Body ? 3 : role === WormSegmentRole.Spinner || role === WormSegmentRole.Tail ? 5 : 0;
+    if (value > 0) this.addReward(Math.min(value, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid), this.x[slot]!, this.y[slot]!);
+    const row = this.state.segments[slot];
+    if (row) row.changeTick = tick;
+  }
+
+  private addReward(value: number, x: number, y: number): void {
+    const amount = Math.max(0, Math.min(value, WORM_ANATOMY_XP_CAP - this.anatomyXpPaid));
+    if (amount <= 0) return;
+    this.anatomyXpPaid += amount;
+    this.pendingRewardValue += amount;
+    this.pendingRewardX = x;
+    this.pendingRewardY = y;
+  }
+
+  private coreMultiplier(slot: number): number {
+    const anatomy = this.def.anatomy[this.role[slot]! as WormSegmentRole];
+    return this.armorBand[slot] === WormArmorBand.Exposed
+      ? anatomy.exposedCoreMultiplier
+      : anatomy.platedCoreMultiplier;
+  }
+
+  private updateCondition(slot: number): void {
+    if (!this.active[slot] && !this.isBud(slot)) return;
+    if (this.armorMaxHp[slot]! > 0 && this.armorHp[slot]! <= 0) {
+      this.condition[slot] = WormSegmentCondition.ArmorOpen;
+      return;
+    }
+    const frac = this.localMaxHp[slot]! > 0 ? this.localHp[slot]! / this.localMaxHp[slot]! : 0;
+    this.condition[slot] =
+      frac <= 0.2
+        ? WormSegmentCondition.BreakReady
+        : frac <= 0.55
+          ? WormSegmentCondition.Wounded
+          : this.generation[slot]! > 1
+            ? WormSegmentCondition.Regrown
+            : WormSegmentCondition.Intact;
+  }
+
+  private expireReconnects(tick: number): void {
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      if (!this.active[slot] || this.reconnectUntil[slot]! === 0 || tick < this.reconnectUntil[slot]!) continue;
+      this.reconnectUntil[slot] = 0;
+      if (this.mode === WormBossMode.Surface) this.setSlotMode(slot, WormSegmentMode.Surface, tick);
+    }
+  }
+
+  private expireHeadExposure(tick: number): void {
+    if (this.headExposedUntilTick === 0 || tick < this.headExposedUntilTick) return;
+    this.headExposedUntilTick = 0;
+    if (this.armorMaxHp[0]! > 0) this.armorBand[0] = WormArmorBand.Plated;
+    this.updateCondition(0);
+  }
+
+  private pruneDamageLedger(tick: number): void {
+    if (this.damageLedger.size < 256) return;
+    for (const [key, entry] of this.damageLedger) {
+      if (((tick - entry.lastTick) >>> 0) > 200) this.damageLedger.delete(key);
+    }
+    if (this.damageLedger.size > 512) this.damageLedger.clear();
+  }
+
+  private currentActiveMask(): number {
+    let mask = 0;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) if (this.active[slot]) mask |= 1 << slot;
+    return mask;
+  }
+
+  private forceTopologyCut(mask: number, tick: number): void {
+    const changed = mask & 0x0fff;
+    if (this.topologyCommitTick === tick) {
+      // Colyseus broadcasts after the fixed-tick transaction. Multiple same-tick sources therefore fold
+      // into one durable topology sequence and one complete changed mask instead of exposing half states.
+      this.state.changedMask |= changed;
+    } else {
+      this.topologyCommitTick = tick;
+      this.state.topologySeq = (this.state.topologySeq + 1) >>> 0;
+      this.state.changedMask = changed;
+    }
+    this.publish(true, tick);
+  }
+
+  private commitTopology(changedMask: number, tick: number): void {
+    this.recomputeOrdinals();
+    this.forceTopologyCut(changedMask, tick);
+  }
+
+  private recomputeOrdinals(): void {
+    this.chain.fill(WormChain.None);
+    this.ordinal.fill(0);
+    for (let i = 0; i < this.mainCountValue; i++) {
+      const slot = this.mainOrder[i]!;
+      this.chain[slot] = WormChain.Main;
+      this.ordinal[slot] = i;
+    }
+    for (let i = 0; i < this.stubCountValue; i++) {
+      const slot = this.stubOrder[i]!;
+      this.chain[slot] = WormChain.Stub;
+      this.ordinal[slot] = i;
+    }
+  }
+
+  private setSlotMode(slot: number, mode: WormSegmentMode, tick: number): void {
+    const row = this.state.segments[slot];
+    if (row && row.mode !== mode) row.changeTick = tick;
+    if (row) row.mode = mode;
+  }
+
+  private setAction(
+    kind: WormActionKind,
+    startTick: number,
+    resolveTick: number,
+    endTick: number,
+    emitterSlot: number,
+    targetX: number,
+    targetY: number,
+  ): void {
+    this.state.actionKind = kind;
+    this.state.actionSeq = (this.state.actionSeq + 1) & 0xffff;
+    this.state.actionStartTick = startTick >>> 0;
+    this.state.actionResolveTick = resolveTick >>> 0;
+    this.state.actionEndTick = endTick >>> 0;
+    this.state.actionEmitterSlot = emitterSlot & 0xff;
+    this.state.actionEmitterGeneration = this.generation[emitterSlot] ?? 0;
+    this.state.actionTopologySeq = this.state.topologySeq;
+    this.state.actionTargetX = targetX;
+    this.state.actionTargetY = targetY;
+  }
+
+  private clearAction(tick: number): void {
+    this.state.actionKind = WormActionKind.None;
+    this.state.actionStartTick = tick >>> 0;
+    this.state.actionResolveTick = tick >>> 0;
+    this.state.actionEndTick = tick >>> 0;
+    this.state.actionEmitterSlot = 0;
+    this.state.actionEmitterGeneration = 0;
+    this.state.actionTopologySeq = this.state.topologySeq;
+  }
+
+  private publish(force: boolean, tick: number): void {
+    let activeMask = 0;
+    let targetableMask = 0;
+    let collidableMask = 0;
+    let undergroundMask = 0;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      if (this.active[slot]) activeMask |= 1 << slot;
+      if (this.targetable[slot]) targetableMask |= 1 << slot;
+      if (this.collidable[slot]) collidableMask |= 1 << slot;
+      if (this.underground[slot]) undergroundMask |= 1 << slot;
+    }
+    this.state.activeMask = activeMask;
+    this.state.targetableMask = targetableMask;
+    this.state.collidableMask = collidableMask;
+    this.state.undergroundMask = undergroundMask;
+    if (!force && tick % WORM_POSE_PUBLISH_TICKS !== 0) return;
+    this.state.poseTick = tick >>> 0;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      const row = this.state.segments[slot];
+      if (!row) continue;
+      row.slot = slot;
+      row.generation = this.generation[slot]!;
+      row.role = this.role[slot]!;
+      row.condition = this.condition[slot]!;
+      row.armorBand = this.armorBand[slot]!;
+      row.chain = this.chain[slot]!;
+      row.ordinal = this.ordinal[slot]!;
+      row.x = Number.isFinite(this.x[slot]) ? this.x[slot]! : 0;
+      row.y = Number.isFinite(this.y[slot]) ? this.y[slot]! : 0;
+      row.integrityQ = Math.round(
+        clamp(this.localMaxHp[slot]! > 0 ? this.localHp[slot]! / this.localMaxHp[slot]! : 0, 0, 1) * 255,
+      );
+      row.armorQ = Math.round(
+        clamp(this.armorMaxHp[slot]! > 0 ? this.armorHp[slot]! / this.armorMaxHp[slot]! : 0, 0, 1) * 255,
+      );
+      if (!this.active[slot] && !this.isBud(slot) && row.mode !== WormSegmentMode.Destroyed) {
+        row.mode = WormSegmentMode.Dormant;
+      }
+    }
+  }
+}
+
+/** Authored phase/action owner. The runtime owns geometry; this director owns warnings and thresholds. */
+export class WormEncounterDirector {
+  private nextDiveTick: number;
+  private eruptionTelegraphId: string | null = null;
+  private eruptionSettledGeneration: number | null = null;
+  private readonly contactLedger = new Map<string, number>();
+
+  constructor(readonly runtime: WormBossRuntime, spawnTick: number) {
+    this.nextDiveTick = spawnTick + 72;
+  }
+
+  step(
+    dt: number,
+    boss: EnemyState,
+    targets: Vec2[],
+    depth: number,
+    tick: number,
+    sink: BossEmitSink,
+    broadcastGeneration: number,
+  ): number {
+    const frac = this.runtime.maxHp > 0 ? boss.hp / this.runtime.maxHp : 1;
+    if (frac <= 0.7 && !this.runtime.splitEver && this.runtime.mode === WormBossMode.Surface) {
+      this.runtime.triggerSplit(5, tick);
+    }
+    if (
+      frac <= 0.45 &&
+      !this.runtime.regrowEver &&
+      !this.runtime.state.splitActive &&
+      this.runtime.mode === WormBossMode.Surface
+    ) {
+      this.runtime.beginRegrow(tick, targets.length);
+    }
+    if (
+      tick >= this.nextDiveTick &&
+      this.runtime.mode === WormBossMode.Surface &&
+      !this.runtime.state.splitActive
+    ) {
+      const raw = nearestPoint(
+        { x: this.runtime.x[0]!, y: this.runtime.y[0]! },
+        targets,
+      ) ?? { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT / 2 };
+      const target = sink.validateWormPoint?.(raw.x, raw.y, WORM_ERUPTION_RADIUS) ?? raw;
+      this.startBurrow(target, tick);
+    }
+    const claimStarted = this.runtime.advance(dt, boss, targets, tick);
+    if (claimStarted) {
+      this.eruptionTelegraphId = sink.addTelegraph({
+        shape: 0,
+        x: this.runtime.state.actionTargetX,
+        y: this.runtime.state.actionTargetY,
+        a: WORM_ERUPTION_RADIUS,
+        danger: 1,
+        kindTag: 8,
+      });
+      this.eruptionSettledGeneration = null;
+    }
+    if (this.runtime.mode === WormBossMode.EruptionClaim && this.eruptionTelegraphId) {
+      const start = this.runtime.state.actionStartTick;
+      const resolve = this.runtime.state.actionResolveTick;
+      const progress = clamp((tick - start) / Math.max(1, resolve - start), 0, 1);
+      sink.setTelegraphProgress(this.eruptionTelegraphId, progress);
+      if (tick >= resolve && this.eruptionSettledGeneration === null) {
+        sink.setTelegraphProgress(this.eruptionTelegraphId, 1);
+        sink.applyAoE(
+          this.runtime.state.actionTargetX,
+          this.runtime.state.actionTargetY,
+          WORM_ERUPTION_RADIUS,
+          24 * depthDamageScale(depth),
+          760,
+        );
+        this.eruptionSettledGeneration = broadcastGeneration;
+        this.runtime.resolveEruption(tick);
+        this.nextDiveTick = tick + 150;
+      }
+    }
+    if (
+      this.eruptionTelegraphId &&
+      this.eruptionSettledGeneration !== null &&
+      broadcastGeneration > this.eruptionSettledGeneration
+    ) {
+      sink.removeTelegraph(this.eruptionTelegraphId);
+      this.eruptionTelegraphId = null;
+      this.eruptionSettledGeneration = null;
+    }
+    return frac > 0.7 ? 1 : frac > 0.35 ? 2 : frac > 0.08 ? 3 : 4;
+  }
+
+  startBurrow(target: Vec2, tick: number, undergroundTicks?: number): boolean {
+    const span = WORM_UNDERGROUND_MAX_TICKS - WORM_UNDERGROUND_MIN_TICKS + 1;
+    const deterministic =
+      undergroundTicks ?? WORM_UNDERGROUND_MIN_TICKS + (mixSeeds(this.runtime.state.actionSeq, tick) % span);
+    return this.runtime.startDive(target, tick, deterministic);
+  }
+
+  acceptContact(playerId: string, chain: WormChain, tick: number): boolean {
+    const key = `${playerId}:${chain}`;
+    const lastHitTick = this.contactLedger.get(key);
+    if (lastHitTick !== undefined && tick - lastHitTick < WORM_CONTACT_EPOCH_TICKS) return false;
+    this.contactLedger.set(key, tick);
+    return true;
+  }
+
+  dispose(sink: BossEmitSink, tick: number): void {
+    if (this.eruptionTelegraphId) sink.removeTelegraph(this.eruptionTelegraphId);
+    this.eruptionTelegraphId = null;
+    this.eruptionSettledGeneration = null;
+    this.contactLedger.clear();
+    this.runtime.dispose(tick);
+  }
+}
+
 export class BossController {
   private phaseIndex = -1;
   private modules: ModuleRuntime[] = [];
   /** §16 v0.109 Slice 2 — the boss's live beam/ring/dash hazards, advanced each tick. */
   private active: ActiveHazard[] = [];
+  private wormDirector: WormEncounterDirector | null = null;
 
   constructor(
     private readonly def: BossDef,
@@ -146,6 +1452,70 @@ export class BossController {
   /** The boss def's display name (for the boss bar). */
   get name(): string {
     return this.def.name;
+  }
+
+  get isWormEncounter(): boolean {
+    return this.def.encounter === "worm";
+  }
+
+  get wormRuntime(): WormBossRuntime | null {
+    return this.wormDirector?.runtime ?? null;
+  }
+
+  attachWorm(state: WormBossState, boss: EnemyState, tick: number, heading = 0): void {
+    if (this.def.encounter !== "worm" || !this.def.worm) return;
+    this.wormDirector = new WormEncounterDirector(
+      new WormBossRuntime(
+        state,
+        this.def.worm,
+        this.maxHp,
+        this.seed,
+        boss.id,
+        boss.x,
+        boss.y,
+        heading,
+        tick,
+      ),
+      tick,
+    );
+  }
+
+  damageWormSegments(
+    slots: readonly number[],
+    rawDamage: number,
+    sourceKey: string,
+    tick: number,
+    piercing: boolean,
+    boss: EnemyState,
+  ): WormDamageResult {
+    return (
+      this.wormDirector?.runtime.damageSegments(
+        slots,
+        rawDamage,
+        sourceKey,
+        tick,
+        piercing,
+        boss,
+      ) ?? {
+        accepted: false,
+        coreDamage: 0,
+        destroyedMask: 0,
+        rewardValue: 0,
+        terminal: boss.hp <= 0,
+      }
+    );
+  }
+
+  drainWormReward(): { value: number; x: number; y: number } | null {
+    return this.wormDirector?.runtime.drainReward() ?? null;
+  }
+
+  startWormBurrow(target: Vec2, tick: number, undergroundTicks?: number): boolean {
+    return this.wormDirector?.startBurrow(target, tick, undergroundTicks) ?? false;
+  }
+
+  acceptWormContact(playerId: string, chain: WormChain, tick: number): boolean {
+    return this.wormDirector?.acceptContact(playerId, chain, tick) ?? false;
   }
 
   /**
@@ -161,6 +1531,21 @@ export class BossController {
     sink: BossEmitSink,
     broadcastGeneration = tick,
   ): number {
+    if (this.def.encounter === "worm") {
+      if (!this.wormDirector) {
+        const frac = this.maxHp > 0 ? boss.hp / this.maxHp : 1;
+        return this.selectPhase(frac) + 1;
+      }
+      return this.wormDirector.step(
+        dt,
+        boss,
+        targets,
+        depth,
+        tick,
+        sink,
+        broadcastGeneration,
+      );
+    }
     const frac = this.maxHp > 0 ? boss.hp / this.maxHp : 1;
     const idx = this.selectPhase(frac);
     if (idx !== this.phaseIndex) this.enterPhase(idx, sink);
@@ -282,7 +1667,9 @@ export class BossController {
   }
 
   /** Cancel any in-flight telegraphs + live hazards (e.g. on boss death) so no rows are orphaned. */
-  dispose(sink: BossEmitSink): void {
+  dispose(sink: BossEmitSink, tick = 0): void {
+    this.wormDirector?.dispose(sink, tick);
+    this.wormDirector = null;
     for (const rt of this.modules) {
       if (rt.pending) for (const id of rt.pending.ids) sink.removeTelegraph(id);
       rt.pending = null;

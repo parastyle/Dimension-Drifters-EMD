@@ -2853,3 +2853,74 @@ describe("GameRoom — beam channel authority", () => {
     expect(input.actionBudget).toBe(ACTION_MSGS_PER_TICK);
   });
 });
+
+// Wave 1 append-only coverage: the room owns one compatibility root and routes combat through the
+// dedicated, fixed-cap worm collection instead of manufacturing ordinary EnemyState segment rows.
+const wormRoomShared = await import("@dd/shared");
+
+function makeSerrakethRoom() {
+  const h = makeRoom();
+  h.join("worm-host");
+  h.send("worm-host", "spawnBossDef", { kind: "seam-eater" });
+  const runtime = h.room.bossController?.wormRuntime;
+  const root = h.state().enemies.get(h.room.bossId);
+  expect(runtime).toBeDefined();
+  expect(root).toBeDefined();
+  return { h, runtime, root };
+}
+
+describe("GameRoom - Serraketh authoritative integration", () => {
+  it("spawns through spawnBossDef and routes a radius hit to the addressed segment only", () => {
+    const { h, runtime, root } = makeSerrakethRoom();
+    expect(h.state().bossKind).toBe("seam-eater");
+    expect(h.state().wormBoss.active).toBe(true);
+    expect(h.state().wormBoss.ownerId).toBe(root.id);
+    expect(h.state().enemies.size).toBe(1);
+
+    const rootHp = root.hp;
+    const neighborHp = runtime.localHp[3];
+    h.room.detonate(runtime.x[2], runtime.y[2], 0, 80, 0);
+
+    expect(runtime.active[2]).toBe(0);
+    expect(runtime.condition[2]).toBe(wormRoomShared.WormSegmentCondition.Destroyed);
+    expect(runtime.localHp[3]).toBe(neighborHp);
+    expect(root.hp).toBe(rootHp - 80);
+    expect(h.state().enemies.has(root.id)).toBe(true);
+    expect([...h.state().xpEchoes.values()].map((echo: { value: number }) => echo.value)).toEqual([3]);
+  });
+
+  it("holds twelve live parts in twelve fixed wire rows without spending twelve enemy rows", () => {
+    const { h, runtime } = makeSerrakethRoom();
+    expect(runtime.beginRegrow(1, 1)).toBe(2);
+    expect(runtime.effectiveBodyCount).toBe(wormRoomShared.WORM_MAX_SEGMENTS);
+    expect(runtime.resolveRegrow(111)).toBe(2);
+
+    const state = h.state();
+    expect(state.wormBoss.segments.length).toBe(wormRoomShared.WORM_MAX_SEGMENTS);
+    expect(state.wormBoss.activeMask).toBe((1 << wormRoomShared.WORM_MAX_SEGMENTS) - 1);
+    expect(state.enemies.size).toBe(1);
+    expect(h.room.effectiveEnemyBodies()).toBe(wormRoomShared.WORM_MAX_SEGMENTS);
+    expect(state.enemies.size + state.wormBoss.segments.length).toBeLessThanOrEqual(
+      wormRoomShared.WORM_MAX_SEGMENTS + 1,
+    );
+  });
+
+  it("locks anatomy Echoes until the one terminal core release and conserves exactly 110 XP", () => {
+    const { h, runtime, root } = makeSerrakethRoom();
+    h.room.detonate(runtime.x[2], runtime.y[2], 0, 80, 0);
+    expect(h.room.lockedWormEchoIds.size).toBe(1);
+    expect(h.state().xpEchoes.get([...h.room.lockedWormEchoIds][0]).collectorId).toBe("");
+
+    const kills: string[] = [];
+    h.room.damageWormSlots([0], root.hp * 4, "test:finale", kills, 0, false);
+    for (const id of kills) h.state().enemies.delete(id);
+
+    expect(h.room.lockedWormEchoIds.size).toBe(0);
+    expect([...h.state().xpEchoes.values()].reduce(
+      (sum: number, echo: { value: number }) => sum + echo.value,
+      0,
+    )).toBe(wormRoomShared.WORM_TOTAL_XP);
+    expect(h.state().wormBoss.active).toBe(false);
+    expect(h.state().portalOpen).toBe(true);
+  });
+});

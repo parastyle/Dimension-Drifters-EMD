@@ -257,6 +257,8 @@ import {
   XP_MOTE_REACH_MIN,
   XP_MOTE_REACH_PER_STACK,
   XpEchoState,
+  WORM_MAX_SEGMENTS,
+  WORM_TOTAL_XP,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
@@ -415,6 +417,11 @@ export class GameRoom extends Room<ArenaState> {
   private readonly enemyGrid = new SpatialGrid<string>(ENEMY_GRID_CELL_SIZE);
   private readonly enemyCandidates: string[] = [];
   private readonly oversizedEnemyIds: string[] = [];
+  /** Worm segments are stable numeric handles, never ordinary EnemyState rows. */
+  private readonly wormSegmentGrid = new SpatialGrid<number>(ENEMY_GRID_CELL_SIZE);
+  private readonly wormSegmentCandidates: number[] = [];
+  private readonly wormHitSlots: number[] = [];
+  private wormDamageSourceSeq = 0;
   /** Reused swept-capsule samples (16 intervals + both endpoints); no per-beam/tick arrays. */
   private readonly beamSampleX = new Float64Array(17);
   private readonly beamSampleY = new Float64Array(17);
@@ -443,6 +450,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly bossAddIds = new Set<string>();
   /** §16 v0.109 the injected boss emit-surface, built lazily (see `bossSink`). */
   private _bossSink: BossEmitSink | null = null;
+  /** Segment trophies are real Echo rows, but cannot merge/latch/collect before terminal core death. */
+  private readonly lockedWormEchoIds = new Set<string>();
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
    *  spawn with this source's scaling) detonates an AoE on the projectile's death (§14 scatter shot). */
   private readonly projectileMeta = new Map<
@@ -1079,7 +1088,10 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.devToolsEnabled() || !this.takeAction(client)) return;
       if (!this.isHost(client)) return;
       const kindId = message?.kind;
-      if (typeof kindId !== "string" || ENEMY_KINDS[kindId]?.archetype !== "boss") return;
+      if (
+        typeof kindId !== "string" ||
+        (ENEMY_KINDS[kindId]?.archetype !== "boss" && !BOSS_DEF_IDS.includes(kindId))
+      ) return;
       this.spawnBoss(kindId);
     });
 
@@ -1172,10 +1184,12 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
+    this.wormSegmentGrid.clear();
   }
 
   private clearXpEchoes(): void {
     this.state.xpEchoes.clear();
+    this.lockedWormEchoIds.clear();
     this.xpFlights.clear();
     this.xpBoundary = null;
   }
@@ -1583,9 +1597,11 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.forEach((enemy, id) => {
       this.insertEnemyGrid(id, enemy);
     });
+    this.rebuildWormSegmentGrid();
   }
 
   private insertEnemyGrid(id: string, enemy: EnemyState): void {
+    if (id === this.bossId && this.bossController?.wormRuntime) return;
     this.enemyGrid.insert(id, enemy.x, enemy.y);
     const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
     if (radius > ENEMY_GRID_CELL_SIZE / 2 && !this.oversizedEnemyIds.includes(id)) {
@@ -1594,7 +1610,27 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private updateEnemyGrid(id: string, enemy: EnemyState): void {
+    if (id === this.bossId && this.bossController?.wormRuntime) {
+      this.enemyGrid.remove(id);
+      return;
+    }
     this.enemyGrid.update(id, enemy.x, enemy.y);
+  }
+
+  private rebuildWormSegmentGrid(): void {
+    this.wormSegmentGrid.clear();
+    const runtime = this.bossController?.wormRuntime;
+    if (!runtime || !this.state.wormBoss.active) return;
+    for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+      if (!runtime.isTargetable(slot)) continue;
+      this.wormSegmentGrid.insert(slot, runtime.x[slot]!, runtime.y[slot]!);
+    }
+  }
+
+  private effectiveEnemyBodies(): number {
+    const runtime = this.bossController?.wormRuntime;
+    if (!runtime || !this.state.wormBoss.active) return this.state.enemies.size;
+    return this.state.enemies.size + runtime.effectiveBodyCount - 1;
   }
 
   /** §5/§45 body collision for the horde: two identical relaxation passes, grid-filtered broad phase, then
@@ -1603,6 +1639,7 @@ export class GameRoom extends Room<ArenaState> {
     const rad = (e: EnemyState): number => ENEMY_KINDS[e.kind]?.radius ?? ENEMY_RADIUS;
     for (let iter = 0; iter < 2; iter++) {
       this.state.enemies.forEach((a, aid) => {
+        if (aid === this.bossId && this.bossController?.wormRuntime) return;
         const ra = rad(a);
         const aOrder = this.enemyGrid.orderOf(aid);
         if (ra > ENEMY_GRID_CELL_SIZE / 2) {
@@ -2366,6 +2403,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
+      if (enemy.id === this.bossId && this.bossController?.wormRuntime) return;
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
       this.state.players.forEach((player) => {
@@ -2513,6 +2551,7 @@ export class GameRoom extends Room<ArenaState> {
       let seedFound = false;
       let seedBestD = Number.POSITIVE_INFINITY;
       this.state.enemies.forEach((enemy, eid) => {
+        if (eid === this.bossId && this.bossController?.wormRuntime) return;
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
         const d2 = dx * dx + dy * dy;
@@ -2528,13 +2567,45 @@ export class GameRoom extends Room<ArenaState> {
           seedFound = true;
         }
       });
+      const wormRuntime = this.bossController?.wormRuntime;
+      if (wormRuntime) {
+        this.wormSegmentGrid.queryRadius(player.x, player.y, reach + 52, this.wormSegmentCandidates);
+        for (const slot of this.wormSegmentCandidates) {
+          const dx = wormRuntime.x[slot]! - player.x;
+          const dy = wormRuntime.y[slot]! - player.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > (reach + wormRuntime.segmentRadius(slot)) ** 2) continue;
+          let da = Math.abs(Math.atan2(dy, dx) - aim0);
+          if (da > Math.PI) da = 2 * Math.PI - da;
+          if (da > halfSweep) continue;
+          const id = `worm:${slot}:${wormRuntime.segmentGeneration(slot)}`;
+          wedge.add(id);
+          if (d2 < seedBestD) {
+            seedBestD = d2;
+            seedX = wormRuntime.x[slot]!;
+            seedY = wormRuntime.y[slot]!;
+            seedFound = true;
+          }
+        }
+      }
       if (seedFound) {
         const cl = weapon.chainLightning;
         const clPower = this.heldDamageMult(weapon, cl.scalingGrades, player);
         const candidates: ChainCandidate[] = [];
         this.state.enemies.forEach((enemy, eid) => {
+          if (eid === this.bossId && this.bossController?.wormRuntime) return;
           candidates.push({ id: eid, x: enemy.x, y: enemy.y });
         });
+        if (wormRuntime) {
+          for (let slot = 0; slot < WORM_MAX_SEGMENTS; slot++) {
+            if (!wormRuntime.isTargetable(slot)) continue;
+            candidates.push({
+              id: `worm:${slot}:${wormRuntime.segmentGeneration(slot)}`,
+              x: wormRuntime.x[slot]!,
+              y: wormRuntime.y[slot]!,
+            });
+          }
+        }
         const links = selectChainTargets(
           { x: seedX, y: seedY },
           candidates,
@@ -2544,6 +2615,20 @@ export class GameRoom extends Room<ArenaState> {
         );
         const kills: string[] = [];
         links.forEach((t, n) => {
+          if (t.id.startsWith("worm:")) {
+            const slot = Number(t.id.split(":")[1]);
+            if (Number.isInteger(slot)) {
+              this.damageWormSlots(
+                [slot],
+                cl.damage * cl.falloff ** n * clPower,
+                `chain:${player.id}:${player.attackSeq}`,
+                kills,
+                critChanceFor(player.luk, player.dex),
+                true,
+              );
+            }
+            return;
+          }
           const enemy = this.state.enemies.get(t.id);
           if (enemy)
             this.damageEnemy(
@@ -2830,7 +2915,7 @@ export class GameRoom extends Room<ArenaState> {
     resource: BeamResourceLedger,
     overheated: boolean,
   ): void {
-    this.flushBeamDamage(c, false);
+    this.flushBeamDamage(c, false, id);
     c.beamPhase = 0;
     c.beamPhaseT = 0;
     c.beamChannelT = 0;
@@ -2856,7 +2941,7 @@ export class GameRoom extends Room<ArenaState> {
     addCancelCost: boolean,
     removeRow: boolean,
   ): void {
-    this.flushBeamDamage(c, false);
+    this.flushBeamDamage(c, false, id);
     const descriptor = c.beamDescriptor;
     if (descriptor && addCancelCost) {
       const resource = this.beamResource(c, descriptor.weaponId);
@@ -3099,7 +3184,38 @@ export class GameRoom extends Room<ArenaState> {
         }
       }
     }
-    const stepDamage = beamStepDamage(descriptor.damagePerSecond, dt, c.beamHitIds.size);
+    let wormHitCount = 0;
+    const runtime = this.bossController?.wormRuntime;
+    if (runtime) {
+      this.wormSegmentGrid.queryAabb(
+        minX - descriptor.width / 2 - 52,
+        minY - descriptor.width / 2 - 52,
+        maxX + descriptor.width / 2 + 52,
+        maxY + descriptor.width / 2 + 52,
+        this.wormSegmentCandidates,
+      );
+      for (const slot of this.wormSegmentCandidates) {
+        if (wormHitCount >= 2) break;
+        for (let sample = 0; sample <= samples; sample++) {
+          if (
+            bladeHitsCircle(
+              { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
+              this.beamSampleAngle[sample]!,
+              this.beamSampleLength[sample]!,
+              { x: runtime.x[slot]!, y: runtime.y[slot]! },
+              runtime.segmentRadius(slot),
+              descriptor.width / 2,
+            )
+          ) {
+            c.beamHitIds.add(`worm:${slot}:${runtime.segmentGeneration(slot)}`);
+            wormHitCount++;
+            break;
+          }
+        }
+      }
+    }
+    const targetCount = c.beamHitIds.size - wormHitCount + (wormHitCount > 0 ? 1 : 0);
+    const stepDamage = beamStepDamage(descriptor.damagePerSecond, dt, targetCount);
     for (const enemyId of c.beamHitIds) {
       c.beamPendingDamage.set(
         enemyId,
@@ -3112,7 +3228,7 @@ export class GameRoom extends Room<ArenaState> {
       c.beamPulseT -= descriptor.tickRate;
       const allowCrit = c.beamQuantumT + 1e-9 >= BEAM_CRIT_QUANTUM_SECONDS;
       if (allowCrit) c.beamQuantumT -= BEAM_CRIT_QUANTUM_SECONDS;
-      this.flushBeamDamage(c, allowCrit);
+      this.flushBeamDamage(c, allowCrit, player.id);
     }
     this.beamCurrentX = currentX;
     this.beamCurrentY = currentY;
@@ -3120,15 +3236,31 @@ export class GameRoom extends Room<ArenaState> {
     return this.beamCurrentLength;
   }
 
-  private flushBeamDamage(c: CombatState, allowCrit: boolean): void {
+  private flushBeamDamage(c: CombatState, allowCrit: boolean, sourceId = "beam"): void {
     if (c.beamPendingDamage.size === 0) return;
     const kills: string[] = [];
+    this.wormHitSlots.length = 0;
+    let wormDamage = 0;
     for (const [enemyId, damage] of c.beamPendingDamage) {
+      if (enemyId.startsWith("worm:")) {
+        const slot = Number(enemyId.split(":")[1]);
+        if (Number.isInteger(slot)) this.wormHitSlots.push(slot);
+        wormDamage = Math.max(wormDamage, damage);
+        continue;
+      }
       const enemy = this.state.enemies.get(enemyId);
       if (enemy && enemy.hp > 0 && damage > 0) {
         this.damageEnemy(enemy, enemyId, damage, kills, allowCrit ? c.beamCrit : 0);
       }
     }
+    this.damageWormSlots(
+      this.wormHitSlots,
+      wormDamage,
+      `beam:${sourceId}:${this.state.tick}`,
+      kills,
+      allowCrit ? c.beamCrit : 0,
+      true,
+    );
     c.beamPendingDamage.clear();
     for (const enemyId of kills) {
       this.state.enemies.delete(enemyId);
@@ -3181,6 +3313,33 @@ export class GameRoom extends Room<ArenaState> {
           sw.hit.add(eid);
           this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
         }
+        const runtime = this.bossController?.wormRuntime;
+        if (runtime) {
+          this.wormHitSlots.length = 0;
+          this.wormSegmentGrid.queryAabb(
+            player.x - (facing > 0 ? 26 : sw.range),
+            player.y - DEPTH_TOL_PLAYER - 52,
+            player.x + (facing > 0 ? sw.range : 26),
+            player.y + DEPTH_TOL_PLAYER + 52,
+            this.wormSegmentCandidates,
+          );
+          for (const slot of this.wormSegmentCandidates) {
+            const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
+            if (sw.hit.has(hitKey)) continue;
+            const r = runtime.segmentRadius(slot);
+            const fx = (runtime.x[slot]! - player.x) * facing;
+            if (fx < -r * 0.5 || fx > sw.range || Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r) continue;
+            sw.hit.add(hitKey);
+            this.wormHitSlots.push(slot);
+          }
+          this.damageWormSlots(
+            this.wormHitSlots,
+            sw.edgeDamage,
+            `melee:${pid}:${player.attackSeq}`,
+            kills,
+            critC,
+          );
+        }
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
       }
@@ -3201,6 +3360,16 @@ export class GameRoom extends Room<ArenaState> {
         sw.range + sw.halfWidth + MAX_ENEMY_RADIUS,
         this.enemyCandidates,
       );
+      const runtime = this.bossController?.wormRuntime;
+      this.wormHitSlots.length = 0;
+      if (runtime) {
+        this.wormSegmentGrid.queryRadius(
+          player.x,
+          player.y,
+          sw.range + sw.halfWidth + 52,
+          this.wormSegmentCandidates,
+        );
+      }
       for (let s = 1; s <= steps; s++) {
         const angle = bladeAngleAt(sw.aim0, sw.swingArc, p0 + ((p1 - p0) * s) / steps);
         for (const eid of this.enemyCandidates) {
@@ -3212,7 +3381,33 @@ export class GameRoom extends Room<ArenaState> {
             this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
           }
         }
+        if (runtime) {
+          for (const slot of this.wormSegmentCandidates) {
+            const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
+            if (sw.hit.has(hitKey)) continue;
+            if (
+              bladeHitsCircle(
+                wielder,
+                angle,
+                sw.range,
+                { x: runtime.x[slot]!, y: runtime.y[slot]! },
+                runtime.segmentRadius(slot),
+                sw.halfWidth,
+              )
+            ) {
+              sw.hit.add(hitKey);
+              this.wormHitSlots.push(slot);
+            }
+          }
+        }
       }
+      this.damageWormSlots(
+        this.wormHitSlots,
+        sw.edgeDamage,
+        `melee:${pid}:${player.attackSeq}:${Math.floor((sw.swingArc * p1) / (Math.PI * 2))}`,
+        kills,
+        critC,
+      );
       if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
     }
     for (const eid of kills) this.state.enemies.delete(eid);
@@ -3281,6 +3476,7 @@ export class GameRoom extends Room<ArenaState> {
     let mergeD2 = Number.POSITIVE_INFINITY;
     let earliestFlight: XpEchoState | null = null;
     this.state.xpEchoes.forEach((echo) => {
+      if (this.lockedWormEchoIds.has(echo.id)) return;
       if (echo.delivered) return;
       if (echo.collectorId) {
         if (!earliestFlight || echo.collectTick < earliestFlight.collectTick) earliestFlight = echo;
@@ -3300,6 +3496,7 @@ export class GameRoom extends Room<ArenaState> {
     if (!merge && count >= MAX_XP_ECHOES) {
       // At cap, distance no longer creates rows: use the nearest resting Echo anywhere on the field.
       this.state.xpEchoes.forEach((echo) => {
+        if (this.lockedWormEchoIds.has(echo.id)) return;
         if (echo.delivered || echo.collectorId) return;
         const dx = echo.x - x;
         const dy = echo.y - y;
@@ -3336,6 +3533,67 @@ export class GameRoom extends Room<ArenaState> {
       echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
     }
     this.state.xpEchoes.set(echo.id, echo);
+  }
+
+  private dropLockedWormXp(x: number, y: number, value: number): void {
+    const amount = Math.max(0, Math.floor(value));
+    if (amount <= 0 || !this.hasXpRecipient()) return;
+    // A topology transaction may be reached through more than one damage source in the same fixed tick.
+    // Keep its visible receipt atomic: one locked Echo row, with all of that tick's escrow folded into it.
+    for (const id of this.lockedWormEchoIds) {
+      const sameTick = this.state.xpEchoes.get(id);
+      if (sameTick?.bornTick !== this.state.tick) continue;
+      sameTick.value = Math.min(0xffffffff, sameTick.value + amount);
+      return;
+    }
+    if (this.state.xpEchoes.size >= MAX_XP_ECHOES) {
+      const existingId = this.lockedWormEchoIds.values().next().value as string | undefined;
+      const existing = existingId ? this.state.xpEchoes.get(existingId) : undefined;
+      if (existing) existing.value = Math.min(0xffffffff, existing.value + amount);
+      // With no locked row available the value remains terminal escrow and is folded into the core below.
+      return;
+    }
+    const echo = new XpEchoState();
+    echo.id = `worm-xp:${this.state.wormBoss.ownerId}:${this.xpEchoSeq++}`;
+    echo.x = x;
+    echo.y = y;
+    echo.value = amount;
+    echo.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    echo.bornTick = this.state.tick;
+    this.state.xpEchoes.set(echo.id, echo);
+    this.lockedWormEchoIds.add(echo.id);
+  }
+
+  /** Unlock anatomy trophies first, then mint the one terminal core so the encounter always totals 110 XP. */
+  private releaseWormXp(x: number, y: number): void {
+    let represented = 0;
+    for (const id of this.lockedWormEchoIds) {
+      const echo = this.state.xpEchoes.get(id);
+      if (!echo) continue;
+      represented += echo.value;
+      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
+    }
+    this.lockedWormEchoIds.clear();
+    const coreValue = Math.max(0, WORM_TOTAL_XP - represented);
+    if (coreValue <= 0 || !this.hasXpRecipient()) return;
+    const core = new XpEchoState();
+    core.id = `worm-core:${this.xpEchoSeq++}`;
+    core.x = x;
+    core.y = y;
+    core.value = coreValue;
+    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    core.bornTick = this.state.tick;
+    if (this.state.xpEchoes.size < MAX_XP_ECHOES) {
+      this.state.xpEchoes.set(core.id, core);
+      return;
+    }
+    // Cap pressure cannot discard the finale: fold into the strongest now-unlocked packet.
+    let target: XpEchoState | null = null;
+    this.state.xpEchoes.forEach((echo) => {
+      if (!target || echo.value > target.value) target = echo;
+    });
+    const cappedTarget = target as XpEchoState | null;
+    if (cappedTarget) cappedTarget.value = Math.min(0xffffffff, cappedTarget.value + coreValue);
   }
 
   /** Nearest absolute-distance winner; exact ties resolve by stable session id. */
@@ -3588,6 +3846,7 @@ export class GameRoom extends Room<ArenaState> {
   private stepXpEchoes(): void {
     // Retire the previous patch's receipts first.
     for (const [id, echo] of this.state.xpEchoes) {
+      if (this.lockedWormEchoIds.has(id)) continue;
       if (!echo.delivered) continue;
       this.state.xpEchoes.delete(id);
       this.xpFlights.delete(id);
@@ -3600,6 +3859,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // Advance guaranteed flights against their collector's latest authoritative chest/body position.
     this.state.xpEchoes.forEach((echo) => {
+      if (this.lockedWormEchoIds.has(echo.id)) return;
       if (!echo.collectorId || echo.delivered) return;
       const collector = this.state.players.get(echo.collectorId);
       if (!collector) {
@@ -3641,6 +3901,7 @@ export class GameRoom extends Room<ArenaState> {
     let roomLaunches = 0;
     const perCollector = new Map<string, number>();
     this.state.xpEchoes.forEach((echo) => {
+      if (this.lockedWormEchoIds.has(echo.id)) return;
       if (roomLaunches >= XP_ECHO_LAUNCHES_PER_ROOM_TICK || echo.collectorId || echo.delivered) return;
       if (((this.state.tick - echo.bornTick) >>> 0) < this.xpEchoArmTicks(echo.value)) return;
       const collector = this.nearestXpCollector(echo.x, echo.y, true);
@@ -3715,13 +3976,22 @@ export class GameRoom extends Room<ArenaState> {
       this.broadcastGeneration,
     );
     this.updateEnemyGrid(this.bossId, boss);
+    this.rebuildWormSegmentGrid();
+    for (;;) {
+      const reward = this.bossController.drainWormReward();
+      if (!reward) break;
+      this.dropLockedWormXp(reward.x, reward.y, reward.value);
+    }
   }
 
   /** Tear down the active boss: dispose the controller (removes its in-flight telegraphs), reset the synced
    *  boss fields. Called when the boss dies/vanishes or the run restarts. */
   private clearBoss(): void {
-    this.bossController?.dispose(this.bossSink);
+    this.bossController?.dispose(this.bossSink, this.state.tick);
     this.bossController = null;
+    this.wormSegmentGrid.clear();
+    for (const id of this.lockedWormEchoIds) this.state.xpEchoes.delete(id);
+    this.lockedWormEchoIds.clear();
     this.bossId = null;
     this.bossAddIds.clear();
     this.state.bossPhase = 0;
@@ -3808,6 +4078,18 @@ export class GameRoom extends Room<ArenaState> {
             if (!this.state.enemies.has(id)) this.bossAddIds.delete(id);
           }
           return this.bossAddIds.size;
+        },
+        validateWormPoint: (x, y, radius) => {
+          if (this.belt && this.beltLevel) {
+            const bx = clamp(x, radius, this.beltLevel.length - radius);
+            return { x: beltSafeX(this.beltLevel, bx, bx), y: clampBeltFloorY(this.beltLevel, bx, y, radius) };
+          }
+          return safeSpawnPos(
+            this.map,
+            clamp(x, radius, ARENA_WIDTH - radius),
+            clamp(y, radius, ARENA_HEIGHT - radius),
+            radius,
+          );
         },
       };
     }
@@ -3987,6 +4269,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 conjure one boss ADD at a telegraphed spot (HP scaled to living count × depth), tracked so the
    *  add-cap counts only boss-summoned adds. Lands on solid ground clear of POIs. */
   private spawnBossAddAt(kindId: string, x: number, y: number): void {
+    if (this.bossController?.wormRuntime || this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.livingCount(); // §6 scale adds to who can fight, not who's connected
@@ -4301,11 +4584,64 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
+  private damageWormSlots(
+    slots: readonly number[],
+    raw: number,
+    sourceKey: string,
+    kills: string[],
+    crit = 0,
+    piercing = false,
+  ): void {
+    const controller = this.bossController;
+    const runtime = controller?.wormRuntime;
+    const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
+    if (!controller || !runtime || !boss || slots.length === 0 || boss.hp <= 0) return;
+    let damage = raw;
+    if (crit > 0 && Math.random() < crit) {
+      damage *= CRIT_MULT;
+      boss.critFlash = (boss.critFlash + 1) & 0xff;
+    }
+    if (this.brandedTimers.has(boss.id)) damage *= BRAND_DAMAGE_MULT;
+    const result = controller.damageWormSegments(
+      slots,
+      damage,
+      sourceKey,
+      this.state.tick,
+      piercing,
+      boss,
+    );
+    if (!result.accepted) return;
+    for (;;) {
+      const reward = controller.drainWormReward();
+      if (!reward) break;
+      this.dropLockedWormXp(reward.x, reward.y, reward.value);
+    }
+    this.rebuildWormSegmentGrid();
+    if (result.terminal) this.damageEnemy(boss, boss.id, 0, kills, 0);
+  }
+
+  private collectWormRadiusHits(x: number, y: number, radius: number): readonly number[] {
+    this.wormHitSlots.length = 0;
+    const runtime = this.bossController?.wormRuntime;
+    if (!runtime) return this.wormHitSlots;
+    this.wormSegmentGrid.queryRadius(x, y, radius + 52, this.wormSegmentCandidates);
+    for (const slot of this.wormSegmentCandidates) {
+      const reach = radius + runtime.segmentRadius(slot);
+      const dx = runtime.x[slot]! - x;
+      const dy = runtime.y[slot]! - y;
+      if (dx * dx + dy * dy <= reach * reach) this.wormHitSlots.push(slot);
+    }
+    return this.wormHitSlots;
+  }
+
   /** Apply `raw` damage to one enemy, folding in the §8 Brand multiplier, then do the shared kill/XP/portal
    *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
    *  deletes after iterating) and drops one authoritative XP Echo at the exact corpse position. The single
    *  primitive keeps Brand + drops + XP consistent across every source (swing / blast / projectile / wave). */
   private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit = 0): void {
+    const wormRoot = eid === this.bossId && !!this.bossController?.wormRuntime;
+    // The compatibility root is never a hurt shape; zero damage is the segment route's terminal hand-off.
+    if (wormRoot && (raw > 0 || enemy.hp > 0)) return;
     // §30 CRIT: player-sourced damage passes its crit CHANCE; roll here so every damage source (edge,
     // chain, quake, gun, thrown, riposte) can independently crit. A crit doubles the hit + bumps the
     // synced critFlash so the client styles a gold number with extra juice. Non-player sources pass 0.
@@ -4324,11 +4660,14 @@ export class GameRoom extends Room<ArenaState> {
     if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
-    this.dropXp(
-      enemy.x,
-      enemy.y,
-      (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1),
-    );
+    if (wormRoot) this.releaseWormXp(enemy.x, enemy.y);
+    else {
+      this.dropXp(
+        enemy.x,
+        enemy.y,
+        (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1),
+      );
+    }
     if (kind?.archetype === "boss") {
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
       // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
@@ -4454,6 +4793,13 @@ export class GameRoom extends Room<ArenaState> {
       if (dx * dx + dy * dy > r2) continue;
       this.damageEnemy(enemy, eid, damage, kills, crit);
     }
+    this.damageWormSlots(
+      this.collectWormRadiusHits(x, y, radius),
+      damage,
+      `aoe:${this.wormDamageSourceSeq++}`,
+      kills,
+      crit,
+    );
     for (const eid of kills) this.state.enemies.delete(eid);
   }
 
@@ -4474,6 +4820,30 @@ export class GameRoom extends Room<ArenaState> {
         this.damageEnemy(enemy, eid, dmg, kills, crit);
       }
     });
+    const runtime = this.bossController?.wormRuntime;
+    if (runtime) {
+      this.wormHitSlots.length = 0;
+      this.wormSegmentGrid.queryRadius(x, y, EMBERGUARD_RANGE + 52, this.wormSegmentCandidates);
+      for (const slot of this.wormSegmentCandidates) {
+        if (
+          inMeleeArc(
+            { x, y },
+            aimX,
+            aimY,
+            { x: runtime.x[slot]!, y: runtime.y[slot]! },
+            EMBERGUARD_RANGE + runtime.segmentRadius(slot),
+            EMBERGUARD_HALF_ARC,
+          )
+        ) this.wormHitSlots.push(slot);
+      }
+      this.damageWormSlots(
+        this.wormHitSlots,
+        dmg,
+        `ember:${this.wormDamageSourceSeq++}`,
+        kills,
+        crit,
+      );
+    }
     for (const eid of kills) this.state.enemies.delete(eid);
   }
 
@@ -4489,6 +4859,7 @@ export class GameRoom extends Room<ArenaState> {
     const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
+      if (id === this.bossId && this.bossController?.wormRuntime) return;
       const dx = enemy.x - player.x;
       const dy = enemy.y - player.y;
       const d2 = dx * dx + dy * dy;
@@ -4554,6 +4925,11 @@ export class GameRoom extends Room<ArenaState> {
           if (enemy.branded === 0) enemy.branded = 1;
         }
       });
+      const root = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
+      if (root && this.collectWormRadiusHits(player.x, player.y, PARRY_RADIUS).length > 0) {
+        this.brandedTimers.set(root.id, BRAND_DURATION);
+        root.branded = 1;
+      }
     }
     if (hasAugment(owned, "emberguard")) {
       const dmg = EMBERGUARD_BASE_DMG + EMBERGUARD_PER_INT * Math.max(0, player.int - 1);
@@ -4927,6 +5303,8 @@ export class GameRoom extends Room<ArenaState> {
   private stepProjectiles(dt: number): void {
     const doomed: string[] = [];
     this.state.projectiles.forEach((pr, id) => {
+      let projectileFromX = pr.x;
+      let projectileFromY = pr.y;
       pr.x += pr.vx * dt;
       pr.y += pr.vy * dt;
       const meta = this.projectileMeta.get(id);
@@ -4949,6 +5327,8 @@ export class GameRoom extends Room<ArenaState> {
           meta.hit.clear();
           meta.pierce = meta.pierceMax ?? meta.pierce;
           meta.ttl += meta.legTtl ?? 0;
+          projectileFromX = pr.x;
+          projectileFromY = pr.y;
         } else {
           doomed.push(id);
           return;
@@ -4976,6 +5356,8 @@ export class GameRoom extends Room<ArenaState> {
           meta.hit.clear();
           meta.pierce = meta.pierceMax ?? meta.pierce;
           meta.ttl += meta.legTtl ?? 0;
+          projectileFromX = pr.x;
+          projectileFromY = pr.y;
         } else {
           doomed.push(id);
           return;
@@ -5037,6 +5419,43 @@ export class GameRoom extends Room<ArenaState> {
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
             this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
           }
+        }
+        const runtime = this.bossController?.wormRuntime;
+        if (runtime && meta.pierce > 0) {
+          this.wormHitSlots.length = 0;
+          this.wormSegmentGrid.queryAabb(
+            Math.min(projectileFromX, pr.x) - PROJECTILE_RADIUS - 52,
+            Math.min(projectileFromY, pr.y) - PROJECTILE_RADIUS - 52,
+            Math.max(projectileFromX, pr.x) + PROJECTILE_RADIUS + 52,
+            Math.max(projectileFromY, pr.y) + PROJECTILE_RADIUS + 52,
+            this.wormSegmentCandidates,
+          );
+          let wormContacts = 0;
+          for (const slot of this.wormSegmentCandidates) {
+            if (meta.pierce <= 0 || wormContacts >= 2) break;
+            const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
+            if (meta.hit.has(hitKey)) continue;
+            if (!runtime.segmentIntersectsSweptCapsule(
+              slot,
+              projectileFromX,
+              projectileFromY,
+              pr.x,
+              pr.y,
+              PROJECTILE_RADIUS,
+            )) continue;
+            meta.hit.add(hitKey);
+            meta.pierce--;
+            wormContacts++;
+            this.wormHitSlots.push(slot);
+          }
+          this.damageWormSlots(
+            this.wormHitSlots,
+            meta.damage,
+            `projectile:${id}`,
+            kills,
+            meta.crit ?? 0,
+            true,
+          );
         }
         for (const eid of kills) this.state.enemies.delete(eid);
         // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
@@ -5262,16 +5681,18 @@ export class GameRoom extends Room<ArenaState> {
   /** Spawn enemies on a ring around a random player, accelerating with run time (§5/§6) and pressing
    *  harder per §6 chain depth (v0.103). */
   private runSpawnDirector(dt: number, anchors: Vec2[]): void {
+    if (this.bossController?.wormRuntime) return;
     if (anchors.length === 0) return; // nobody to hunt — pause spawning
     this.spawnAccum += dt;
     const interval = spawnInterval(this.state.elapsed, this.state.depth);
-    while (this.spawnAccum >= interval && this.state.enemies.size < MAX_ENEMIES) {
+    while (this.spawnAccum >= interval && this.effectiveEnemyBodies() < MAX_ENEMIES) {
       this.spawnAccum -= interval;
       this.spawnEnemy(anchors);
     }
   }
 
   private spawnEnemy(anchors: Vec2[]): void {
+    if (this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
     // §17 weighted pick scoped to the ACTIVE dimension's roster (frost enemies never spawn in the desert).
     const kindId = pickEnemyKind(Math.random(), getDimension(this.state.dimensionId).roster);
     const kind = ENEMY_KINDS[kindId];
@@ -5325,7 +5746,7 @@ export class GameRoom extends Room<ArenaState> {
   private debugSpawnOne(kindId: string, tough: boolean, anchor: PlayerState): void {
     // §44 HARD entity cap (Sol audit P0 #1): the spawn director respects MAX_ENEMIES but this path
     // didn't — a summon flood could push the room into the quadratic collision loop unbounded.
-    if (this.state.enemies.size >= MAX_ENEMIES) return;
+    if (this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.state.players.size;
@@ -5381,10 +5802,13 @@ export class GameRoom extends Room<ArenaState> {
    *  sprite/hp/radius; its `BossDef` (or CLASSIC_BOSS fallback) drives the attacks via the BossController. */
   private spawnBoss(overrideKind?: string): void {
     const bossKind =
-      overrideKind && ENEMY_KINDS[overrideKind]?.archetype === "boss"
+      overrideKind &&
+      (ENEMY_KINDS[overrideKind]?.archetype === "boss" || BOSS_DEF_IDS.includes(overrideKind))
         ? overrideKind
         : getDimension(this.state.dimensionId).boss;
-    const kind = ENEMY_KINDS[bossKind];
+    const def = bossDefFor(bossKind);
+    const bodyKind = ENEMY_KINDS[bossKind] ? bossKind : def.worm?.rootKind;
+    const kind = bodyKind ? ENEMY_KINDS[bodyKind] : undefined;
     if (!kind) return;
     // A picker re-spawn while a boss is up: retire the old one, its adds, and its telegraphs first. Evicting
     // the tracked adds (not just clearing the Set) stops them lingering off-cap under the new boss.
@@ -5393,6 +5817,8 @@ export class GameRoom extends Room<ArenaState> {
       for (const addId of this.bossAddIds) this.state.enemies.delete(addId);
       this.clearBoss();
     }
+    // The custom collection is not free capacity: reserve every authored starting hurt body before admission.
+    if (def.encounter === "worm" && this.state.enemies.size + WORM_MAX_SEGMENTS + 3 > MAX_ENEMIES) return;
     const anchors: Vec2[] = [];
     this.state.players.forEach((pl) => {
       if (pl.alive) anchors.push({ x: pl.x, y: pl.y });
@@ -5404,9 +5830,12 @@ export class GameRoom extends Room<ArenaState> {
     const angle = Math.random() * Math.PI * 2;
     const boss = new EnemyState();
     boss.id = `boss${this.enemySeq++}`;
-    boss.kind = bossKind;
+    boss.kind = bodyKind!;
     // §6 boss HP-sponge × players × chain depth (v0.103 — deeper capstones are meaner).
-    boss.hp = kind.hp * enemyHpScale(this.state.players.size) * depthHpScale(this.state.depth);
+    boss.hp =
+      (def.worm?.baseCoreHp ?? kind.hp) *
+      enemyHpScale(this.state.players.size) *
+      depthHpScale(this.state.depth);
     const bx = clamp(
       anchor.x + Math.cos(angle) * SPAWN_RING,
       kind.radius,
@@ -5428,13 +5857,16 @@ export class GameRoom extends Room<ArenaState> {
       boss.y = sp.y;
     }
     this.state.enemies.set(boss.id, boss);
-    this.insertEnemyGrid(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
     // §16 v0.109 the data-driven controller runs this boss's def (CLASSIC_BOSS = OLD RUST for any kind
     // without a bespoke def, so every dimension boss keeps its behaviour). maxHp frozen for phase thresholds.
-    const def = bossDefFor(bossKind);
     this.bossController = new BossController(def, boss.hp, randomSeed());
+    if (def.encounter === "worm") {
+      this.bossController.attachWorm(this.state.wormBoss, boss, this.state.tick, angle + Math.PI);
+    }
+    this.insertEnemyGrid(boss.id, boss);
+    this.rebuildWormSegmentGrid();
     this.state.bossKind = bossKind; // client labels the boss bar from this
     console.log(`[room ${this.roomId}] ⚠ boss approaches — ${bossKind} (${def.name})`);
   }

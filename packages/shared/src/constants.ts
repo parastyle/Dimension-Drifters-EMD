@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 16; // Player beam rows: append-only authoritative channel geometry
+export const SCHEMA_VERSION = 17; // Serraketh fixed-cap worm state appended after friendly beams
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -531,6 +531,32 @@ export const BOSS_ADD_COUNT = 2;
  *  comes from cheap TELEGRAPHED zones/beams/dashes, not bullet density. */
 export const BOSS_PROJECTILE_BUDGET = 120;
 export const BOSS_ADD_CAP = 12;
+/** Serraketh's synchronized/body budgets are protocol contracts, not designer-expandable tuning. */
+export const WORM_MAX_SEGMENTS = 12;
+export const WORM_START_SEGMENTS = 10;
+export const WORM_POSE_PUBLISH_TICKS = 2; // 20 Hz authority, 10 Hz moving-center publication
+export const WORM_PATH_HISTORY_CAPACITY = 512;
+export const WORM_PATH_OVERLAP_FACTOR = 0.86;
+export const WORM_BASE_SPEED = 150;
+export const WORM_MAX_TURN_RADIANS_PER_SECOND = 0.9;
+export const WORM_MISSING_SEGMENT_SPEED_BONUS = 0.04;
+export const WORM_MISSING_SEGMENT_SPEED_CAP = 0.28;
+export const WORM_RECONNECT_TICKS = 8;
+export const WORM_RECONNECT_CATCHUP_PX = 14;
+export const WORM_DIVE_TICKS = 13;
+export const WORM_UNDERGROUND_MIN_TICKS = 25;
+export const WORM_UNDERGROUND_MAX_TICKS = 38;
+export const WORM_ERUPTION_CLAIM_TICKS = 18;
+export const WORM_ERUPTION_RADIUS = 145;
+export const WORM_SURFACE_ARM_GRACE_TICKS = 6;
+export const WORM_CONTACT_EPOCH_TICKS = 7; // ceil(350 ms / the fixed 50 ms tick)
+export const WORM_SPLIT_TICKS = 160;
+export const WORM_SPLIT_PUNISH_TICKS = 24;
+export const WORM_REGROW_TICKS = 110;
+export const WORM_LOCAL_PROJECTILE_CAP = 16;
+export const WORM_TOTAL_XP = 110;
+export const WORM_ANATOMY_XP_CAP = 35;
+export const WORM_CORE_XP_MIN = 75;
 /** §16 v0.109 telegraph danger channels: 0 = parryable (WHITE, §8), 1 = unparryable (RED, dodge). */
 export const TELEGRAPH_PARRYABLE = 0;
 export const TELEGRAPH_DODGE = 1;

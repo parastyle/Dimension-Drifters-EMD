@@ -8,6 +8,91 @@
 
 export type BossPhaseTier = 1 | 2 | 3;
 
+/** Stable synchronized anatomy identities. Slots never change role during one Serraketh encounter. */
+export enum WormSegmentRole {
+  Head = 0,
+  Neck = 1,
+  Body = 2,
+  Spinner = 3,
+  Tail = 4,
+}
+
+export enum WormSegmentCondition {
+  Intact = 0,
+  Wounded = 1,
+  BreakReady = 2,
+  ArmorOpen = 3,
+  Regrown = 4,
+  Destroyed = 5,
+}
+
+export enum WormArmorBand {
+  None = 0,
+  Plated = 1,
+  Cracked = 2,
+  Exposed = 3,
+}
+
+export enum WormSegmentMode {
+  Dormant = 0,
+  Surface = 1,
+  Reconnecting = 2,
+  Submerging = 3,
+  Underground = 4,
+  Emerging = 5,
+  ArmGrace = 6,
+  Bud = 7,
+  Destroyed = 8,
+}
+
+export enum WormChain {
+  None = 0,
+  Main = 1,
+  Stub = 2,
+}
+
+export enum WormBossMode {
+  Inactive = 0,
+  Surface = 1,
+  DiveWindup = 2,
+  Submerging = 3,
+  Underground = 4,
+  EruptionClaim = 5,
+  Emerging = 6,
+  SurfaceArmGrace = 7,
+  Split = 8,
+  Regrow = 9,
+  Dead = 10,
+}
+
+export enum WormActionKind {
+  None = 0,
+  SeamDive = 1,
+  Eruption = 2,
+  RibQuake = 3,
+  StitchReap = 4,
+  ShearBloom = 5,
+  ClosingLoop = 6,
+  Split = 7,
+  GraftHunger = 8,
+  Finale = 9,
+}
+
+export interface WormAnatomyDef {
+  role: WormSegmentRole;
+  radius: number;
+  localHpFraction: number;
+  armorHpFraction: number;
+  platedCoreMultiplier: number;
+  exposedCoreMultiplier: number;
+}
+
+export interface WormEncounterDef {
+  baseCoreHp: number;
+  rootKind: string;
+  anatomy: Readonly<Record<WormSegmentRole, WormAnatomyDef>>;
+}
+
 /** The §16 phase for a boss at `frac` of max HP. Thresholds: ≤0.2 enrage, ≤0.5 slam, else paces. (Legacy —
  *  the data-driven `BossDef` in bosses.ts generalises this; kept for the OLD RUST phase unit tests.) */
 export function bossPhaseForHp(frac: number): BossPhaseTier {

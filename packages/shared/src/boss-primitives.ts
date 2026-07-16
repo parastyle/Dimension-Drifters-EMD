@@ -6,6 +6,7 @@ import {
   RING_BAND_HALF,
   TELEGRAPH_DODGE,
   TELEGRAPH_PARRYABLE,
+  WORM_ERUPTION_RADIUS,
 } from "./constants.js";
 import { coneAngles } from "./enemies.js";
 import { clamp } from "./math.js";
@@ -601,6 +602,94 @@ export const blinkStrike: BossPrimitive = (ctx) => {
   };
 };
 
+/** Serraketh's fixed red eruption claim. Coverage is complete on the first patch; only `t` animates. */
+export const seamEaterEruption: BossPrimitive = (ctx) => {
+  const target = aimTarget(ctx);
+  const radius = p(ctx, "radius", WORM_ERUPTION_RADIUS);
+  const damage = p(ctx, "damage", 24);
+  const knockback = p(ctx, "knockback", 760);
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Circle,
+        x: target.x,
+        y: target.y,
+        a: radius,
+        danger: TELEGRAPH_DODGE,
+        kindTag: 8,
+      },
+    ],
+    emits: { aoe: [{ x: target.x, y: target.y, radius, damage, knockback }] },
+  };
+};
+
+/** White, ground-only Spinner counter lesson. */
+export const seamEaterRibQuake: BossPrimitive = (ctx) => {
+  const radius = p(ctx, "radius", 250);
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Circle,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: radius,
+        danger: TELEGRAPH_PARRYABLE,
+        kindTag: 7,
+      },
+    ],
+    emits: {
+      aoe: [
+        {
+          x: ctx.boss.x,
+          y: ctx.boss.y,
+          radius,
+          damage: p(ctx, "damage", 22),
+          knockback: p(ctx, "knockback", 850),
+          quake: true,
+        },
+      ],
+    },
+  };
+};
+
+/** White vertical tail sweep: parryable/dodgeable, never jump-immune by quake semantics. */
+export const seamEaterStitchReap: BossPrimitive = (ctx) => {
+  const target = aimTarget(ctx);
+  const aimX = target.x - ctx.boss.x;
+  const aimY = target.y - ctx.boss.y;
+  const range = p(ctx, "range", 230);
+  const halfArc = p(ctx, "halfArc", 0.8);
+  const rot = Math.atan2(aimY, aimX);
+  return {
+    telegraphs: [
+      {
+        shape: TgShape.Cone,
+        x: ctx.boss.x,
+        y: ctx.boss.y,
+        a: range,
+        b: halfArc,
+        rot,
+        danger: TELEGRAPH_PARRYABLE,
+        kindTag: 9,
+      },
+    ],
+    emits: {
+      melee: [
+        {
+          x: ctx.boss.x,
+          y: ctx.boss.y,
+          aimX,
+          aimY,
+          range,
+          halfArc,
+          damage: p(ctx, "damage", 18),
+          knockback: p(ctx, "knockback", 520),
+        },
+      ],
+    },
+  };
+};
+
 /** The primitive registry. Slice 1 = emit casts; Slice 2 = the active-hazard casts (beam/ring/dash); Slice 3
  *  = the melee trio's `meleeCombo` (parryable wedge) + `blinkStrike` (teleport slam). */
 export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
@@ -618,6 +707,14 @@ export const BOSS_PRIMITIVES: Record<string, BossPrimitive> = {
   meleeCombo,
   blinkStrike,
 };
+
+// The generic registry's enumerable key set is a frozen compatibility surface. Worm-only helpers remain
+// addressable by module id without changing that surface; Serraketh's dedicated director is their owner.
+Object.defineProperties(BOSS_PRIMITIVES, {
+  seamEaterEruption: { value: seamEaterEruption, enumerable: false },
+  seamEaterRibQuake: { value: seamEaterRibQuake, enumerable: false },
+  seamEaterStitchReap: { value: seamEaterStitchReap, enumerable: false },
+});
 
 /** Which telegraph danger a shape defaults to when a spec omits it (AoE/zones dodge; parryable only when
  *  a primitive explicitly says so). Kept here so the controller and tests agree. */

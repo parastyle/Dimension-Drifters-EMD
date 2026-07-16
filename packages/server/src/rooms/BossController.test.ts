@@ -444,3 +444,120 @@ describe("BossController — settled telegraph broadcast retention", () => {
     expect(broadcasts.at(-1)).toEqual({ size: 0, t: undefined });
   });
 });
+
+// Wave 1 append-only coverage: fixed-cap authoritative Serraketh runtime/director.
+const wormShared = await import("@dd/shared");
+const wormServer = await import("./BossController.js");
+
+function makeWormRuntime() {
+  const state = new wormShared.WormBossState();
+  const def = bossDefFor("seam-eater").worm!;
+  const root = new EnemyState();
+  root.id = "serraketh-root";
+  root.kind = def.rootKind;
+  root.hp = def.baseCoreHp;
+  root.x = 900;
+  root.y = 800;
+  const runtime = new wormServer.WormBossRuntime(
+    state,
+    def,
+    root.hp,
+    0x51ea,
+    root.id,
+    root.x,
+    root.y,
+    0,
+    0,
+  );
+  return { state, def, root, runtime };
+}
+
+describe("Serraketh wave 1 — authoritative chain", () => {
+  it("holds role-specific follow spacing from one current-tick arc-length history", () => {
+    const { runtime, root } = makeWormRuntime();
+    const target = [{ x: 2800, y: 800 }];
+    for (let tick = 1; tick <= 120; tick++) {
+      runtime.advance(0.05, root, target, tick);
+      for (let i = 1; i < runtime.mainCount; i++) {
+        const a = runtime.orderSlot(wormShared.WormChain.Main, i - 1);
+        const b = runtime.orderSlot(wormShared.WormChain.Main, i);
+        const wanted =
+          wormShared.WORM_PATH_OVERLAP_FACTOR *
+          (runtime.segmentRadius(a) + runtime.segmentRadius(b));
+        const actual = Math.hypot(runtime.x[a]! - runtime.x[b]!, runtime.y[a]! - runtime.y[b]!);
+        expect(Math.abs(actual - wanted)).toBeLessThanOrEqual(Math.max(3, wanted * 0.05));
+      }
+    }
+  });
+
+  it("splits only the documented central seam into one headless tailward stub", () => {
+    const { runtime, state } = makeWormRuntime();
+    const before = state.topologySeq;
+    expect(runtime.triggerSplit(5, 20)).toBe(true);
+    expect(state.topologySeq).toBe(before + 1);
+    expect(runtime.mainCount).toBe(5);
+    expect(runtime.stubCount).toBe(4);
+    expect(Array.from({ length: runtime.mainCount }, (_, i) => runtime.orderSlot(wormShared.WormChain.Main, i)))
+      .toEqual([0, 1, 2, 3, 4]);
+    expect(Array.from({ length: runtime.stubCount }, (_, i) => runtime.orderSlot(wormShared.WormChain.Stub, i)))
+      .toEqual([6, 7, 8, 9]);
+    expect(runtime.role[runtime.orderSlot(wormShared.WormChain.Stub, 0)]).not.toBe(
+      wormShared.WormSegmentRole.Head,
+    );
+    expect(state.splitActive).toBe(true);
+    expect(runtime.activeCount).toBe(9);
+  });
+
+  it("regrows Body slots only and never exceeds the twelve-part cap", () => {
+    const { runtime, state } = makeWormRuntime();
+    expect(runtime.beginRegrow(1, 4)).toBe(2); // only two dormant Body slots exist before the scripted split
+    expect(runtime.effectiveBodyCount).toBe(12);
+    expect(runtime.resolveRegrow(111)).toBe(2);
+    expect(runtime.activeCount).toBe(wormShared.WORM_MAX_SEGMENTS);
+    expect(state.activeMask.toString(2).split("1").length - 1).toBe(wormShared.WORM_MAX_SEGMENTS);
+    for (let slot = 10; slot < 12; slot++) {
+      expect(runtime.role[slot]).toBe(wormShared.WormSegmentRole.Body);
+      expect(runtime.generation[slot]).toBe(1);
+      expect(runtime.rewardPaid[slot]).toBe(1);
+    }
+    expect(runtime.beginRegrow(200, 4)).toBe(0);
+  });
+
+  it("keeps the 13/25/18-tick dive, bulge travel, and fixed eruption claim laws", () => {
+    const state = new wormShared.WormBossState();
+    const def = bossDefFor("seam-eater");
+    const root = new EnemyState();
+    root.id = "serraketh-root";
+    root.kind = def.worm!.rootKind;
+    root.hp = def.worm!.baseCoreHp;
+    root.x = 900;
+    root.y = 800;
+    const controller = new BossController(def, root.hp, 7);
+    controller.attachWorm(state, root, 0, 0);
+    const { sink, calls } = mockSink();
+    expect(controller.startWormBurrow({ x: 1400, y: 900 }, 0, 25)).toBe(true);
+    for (let tick = 0; tick < 12; tick++) controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    expect(state.mode).toBe(wormShared.WormBossMode.Submerging);
+    controller.step(0.05, root, TARGETS, 1, 12, sink, 12);
+    expect(state.mode).toBe(wormShared.WormBossMode.Underground);
+    expect(state.targetableMask).toBe(0);
+    for (let tick = 13; tick <= 38; tick++) controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    expect(state.mode).toBe(wormShared.WormBossMode.EruptionClaim);
+    expect(state.actionResolveTick - state.actionStartTick).toBe(wormShared.WORM_ERUPTION_CLAIM_TICKS);
+    expect(calls.addTelegraph.at(-1)?.a).toBe(wormShared.WORM_ERUPTION_RADIUS);
+    for (let tick = 39; tick <= 56; tick++) controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    expect(calls.applyAoE).toHaveLength(1);
+    expect(state.mode).toBe(wormShared.WormBossMode.Emerging);
+  });
+
+  it("deduplicates a named chain contact to one hit per 350ms epoch", () => {
+    const { state, root } = makeWormRuntime();
+    const def = bossDefFor("seam-eater");
+    const controller = new BossController(def, root.hp, 3);
+    controller.attachWorm(state, root, 0, 0);
+    expect(controller.acceptWormContact("p1", wormShared.WormChain.Main, 20)).toBe(true);
+    expect(controller.acceptWormContact("p1", wormShared.WormChain.Main, 20)).toBe(false);
+    expect(controller.acceptWormContact("p1", wormShared.WormChain.Main, 26)).toBe(false);
+    expect(controller.acceptWormContact("p1", wormShared.WormChain.Main, 28)).toBe(true);
+  });
+});

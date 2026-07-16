@@ -305,6 +305,51 @@ export class BeamState extends Schema {
   @type("number") previousLength = 0;
 }
 
+/** One row in Serraketh's fixed twelve-slot table. Stable slots survive sever/regrow generations. */
+export class WormSegmentState extends Schema {
+  @type("uint8") slot = 0;
+  @type("uint16") generation = 0;
+  @type("uint8") role = 0;
+  @type("uint8") condition = 0;
+  @type("uint8") armorBand = 0;
+  @type("uint8") mode = 0;
+  @type("uint8") chain = 0;
+  @type("uint8") ordinal = 0;
+  @type("float32") x = 0;
+  @type("float32") y = 0;
+  @type("uint32") changeTick = 0;
+  /** Event-driven, quantized local integrity/armor. 255 means full; 0 means exhausted. */
+  @type("uint8") integrityQ = 0;
+  @type("uint8") armorQ = 0;
+}
+
+/** Always allocated on ArenaState; `active=false` outside the single-owner worm encounter. */
+export class WormBossState extends Schema {
+  @type("boolean") active = false;
+  @type("string") ownerId = "";
+  @type("uint32") topologySeq = 0;
+  @type("uint32") poseTick = 0;
+  @type("uint8") mode = 0;
+  @type("uint16") activeMask = 0;
+  @type("uint16") targetableMask = 0;
+  @type("uint16") collidableMask = 0;
+  @type("uint16") undergroundMask = 0;
+  @type("uint16") changedMask = 0;
+  @type("boolean") splitActive = false;
+  @type("uint32") splitExpireTick = 0;
+  @type("uint8") actionKind = 0;
+  @type("uint16") actionSeq = 0;
+  @type("uint32") actionStartTick = 0;
+  @type("uint32") actionResolveTick = 0;
+  @type("uint32") actionEndTick = 0;
+  @type("uint8") actionEmitterSlot = 0;
+  @type("uint16") actionEmitterGeneration = 0;
+  @type("uint32") actionTopologySeq = 0;
+  @type("float32") actionTargetX = 0;
+  @type("float32") actionTargetY = 0;
+  @type([WormSegmentState]) segments = new ArraySchema<WormSegmentState>();
+}
+
 export class ArenaState extends Schema {
   /** §4 schema handshake (audit) — FIRST field (index 0) so it stays decodable even if later fields get
    *  reordered; the client compares it to its own SCHEMA_VERSION on join and prompts a reload on mismatch
@@ -389,4 +434,6 @@ export class ArenaState extends Schema {
   @type({ map: XpEchoState }) xpEchoes = new MapSchema<XpEchoState>();
   /** Friendly player beams. APPENDED for Colyseus field-order safety; keyed by owner/player id. */
   @type({ map: BeamState }) beams = new MapSchema<BeamState>();
+  /** Serraketh owner + fixed-cap segment table. APPENDED at schema v17; never inserted into older rows. */
+  @type(WormBossState) wormBoss = new WormBossState();
 }
