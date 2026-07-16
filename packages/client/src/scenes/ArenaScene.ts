@@ -56,7 +56,6 @@ import {
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
-  quakeImpactDelaySec,
   EMPTY_META,
   META_UPGRADES,
   type MetaLevels,
@@ -73,6 +72,8 @@ import {
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   selectChainTargets,
+  swingDescriptorFor,
+  type SwingDescriptor,
   TgShape,
   TICK_MS,
   TOUGH_SCALE,
@@ -1816,7 +1817,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyAtk.set(id, enemy.atkSeq);
         // §7 v0.105 de-clunk: aim the sweep at the nearest LIVING player (the server's cone tracks that
         // target too) — without an aimWorld the mirror math pinned the slash to world +x, so a left-facing
-        // ronin cut behind its own back. `animClock` so a hit-stop doesn't skip frames of the swing.
+        // ronin cut behind its own back. Scene time is the swing epoch; hit-stop holds then catches phase up.
         let aimWorld: number | undefined;
         let bestD = Number.POSITIVE_INFINITY;
         this.room?.state.players.forEach((p) => {
@@ -1827,7 +1828,7 @@ export class ArenaScene extends Phaser.Scene {
             aimWorld = Math.atan2(p.y - enemy.y, p.x - enemy.x);
           }
         });
-        this.enemies.get(id)?.triggerSwing(this.animClock, aimWorld);
+        this.enemies.get(id)?.triggerSwing(this.time.now, aimWorld);
       }
     });
     for (const id of this.enemies.keys()) {
@@ -3545,10 +3546,14 @@ export class ArenaScene extends Phaser.Scene {
     // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
     const cdMul = lootCooldownMult(self.weaponAffix);
     this.localAtkCd = (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
+    // §44 one PREDICTED descriptor/epoch for every local swing consumer. The server constructs the identical
+    // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
+    const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
     const rig = this.blobs.get(selfId);
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
-    if (!weapon?.gun) rig?.triggerSwing(this.animClock, Math.atan2(this.selfAim.y, this.selfAim.x));
+    if (!weapon?.gun && swing)
+      rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
@@ -3571,7 +3576,7 @@ export class ArenaScene extends Phaser.Scene {
       cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
-    if (weapon?.quake) {
+    if (weapon?.quake && swing) {
       // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp (in WORLD
       // space) the server's damage uses. §37: the VFX renders on the PROJECTED plane, so belt-project the
       // epicenter's y for the draw — unprojected it erupted visibly BELOW the cursor.
@@ -3580,10 +3585,10 @@ export class ArenaScene extends Phaser.Scene {
         { x: cwx, y: cwy },
         QUAKE_REACH,
       );
-      // §40.2 the eruption fires when the CHOP's blade LANDS, not at click — the same shared clock as the
-      // rig animation and the server's (now equally delayed) detonation, so blade / boom / damage all sync.
+      // §44 the eruption samples the SAME descriptor/scene epoch as rig + authored VFX; the server samples
+      // this fraction from its accepted epoch, leaving only the explicitly documented protocol residual.
       const quake = weapon.quake;
-      this.time.delayedCall(quakeImpactDelaySec(weapon.cooldown) * 1000, () => {
+      this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
         spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, quake);
         // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
@@ -3632,7 +3637,7 @@ export class ArenaScene extends Phaser.Scene {
         spawnMuzzleFlash(this, rig.x + Math.cos(ang) * reach, rig.y + Math.sin(ang) * reach, ang, fx.size, fx.color, fx.style);
         this.lastSelfMuzzleAt = this.time.now;
       }
-    } else if (weapon && !weapon.thrown) {
+    } else if (weapon && !weapon.thrown && swing) {
       // Plain melee swing → the weapon's authored swing VFX (§14). If the weapon is authored "spawn at
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
       const rx = rig?.x ?? self.x;
@@ -3641,9 +3646,9 @@ export class ArenaScene extends Phaser.Scene {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
         const ep = clampQuakeEpicenter({ x: rx, y: selfWy }, { x: cwx, y: cwy }, QUAKE_REACH);
-        this.spawnSlash(ep.x, this.belt ? this.beltY(ep.y) : ep.y, this.selfAim, weapon, true);
+        this.spawnSlash(ep.x, this.belt ? this.beltY(ep.y) : ep.y, this.selfAim, weapon, swing, true);
       } else {
-        this.spawnSlash(rx, ry, this.selfAim, weapon);
+        this.spawnSlash(rx, ry, this.selfAim, weapon, swing);
       }
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
       if (weapon.chainLightning) this.spawnChain(rx, ry, this.selfAim, weapon);
@@ -5089,6 +5094,7 @@ export class ArenaScene extends Phaser.Scene {
     y: number,
     aim: { x: number; y: number },
     weapon: WeaponDef,
+    swing: SwingDescriptor,
     exact = false,
   ): void {
     const ang = Math.atan2(aim.y, aim.x);
@@ -5098,7 +5104,7 @@ export class ArenaScene extends Phaser.Scene {
     const sy = y + Math.sin(ang) * reach;
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
     // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
-    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT, weapon.tags?.element);
+    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT, swing, weapon.tags?.element);
   }
 
   /** §39 DEV PORTAL: apply a `?dev=` deep-link once the room is live — enter Testing Grounds, then spawn the

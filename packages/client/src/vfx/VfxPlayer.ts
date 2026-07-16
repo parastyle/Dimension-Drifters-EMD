@@ -3,9 +3,9 @@
 // authored in the smith renders identically in-world. Suites are baked by build-weapon-vfx.mjs.
 //
 // Each play spins up a pooled "surface" (a container + additive graphics + pooled emitters) at the
-// strike point, oriented to the aim, and drives the suite over one 0→1 sweep (swing trail → impact
-// burst → painted hero), then releases the surface. Weapons with no authored suite get a default slash.
-import { WEAPONS, type WeaponDef } from "@dd/shared";
+// strike point, oriented to the aim, and drives the suite over the accepted/predicted swing descriptor's
+// 0→1 pose window (swing trail → impact burst → painted hero), then releases the surface.
+import { WEAPONS, type SwingDescriptor, type WeaponDef } from "@dd/shared";
 import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
@@ -13,9 +13,8 @@ import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
 
 const DEG = Math.PI / 180;
-const DURATION = 470; // ms — one swing's VFX window (matches the smith's IMPACT+VFX_DUR feel)
 // Longest canonical emitter life is 900ms (embers top out at 880, scatter at 780). The authored draw
-// finishes at DURATION, but the surface must stay put + visible until this tail has died naturally.
+// finishes at the swing pose end, but the surface must stay put + visible until this tail dies naturally.
 const PARTICLE_TAIL_MS = 900;
 
 // §35/§36 ELEMENT + ARCHETYPE-DRIVEN fallback VFX: the +300 expansion weapons carry no authored suite, so an
@@ -264,6 +263,7 @@ export class VfxPlayer {
     y: number,
     aimRad: number,
     radius: number,
+    swing: SwingDescriptor,
     element = "physical",
   ): void {
     const VR = globalThis.VFXRENDER;
@@ -315,7 +315,9 @@ export class VfxPlayer {
     surf.activeTween = this.scene.tweens.addCounter({
       from: 0,
       to: 1,
-      duration: DURATION,
+      // §44 authored + fallback suites share the SAME effective-cooldown window as the rig. Layer phase
+      // authoring is unchanged; only the tween time base replaces the former fixed 470ms playback.
+      duration: swing.poseSeconds * 1000,
       onUpdate: (tw) => {
         if (surf.generation !== generation) return;
         const p = tw.getValue() ?? 0;

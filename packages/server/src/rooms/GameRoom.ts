@@ -119,7 +119,6 @@ import {
   MOVE_SPEED,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
-  meleeSwingActive,
   nearestGroundPx,
   nearestPoint,
   nextCharacter,
@@ -160,7 +159,6 @@ import {
   poiRadius,
   prevWeapon,
   QUAKE_REACH,
-  quakeImpactDelaySec,
   RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
   REVIVE_HP_FRAC,
@@ -178,6 +176,9 @@ import {
   SHIFTER_HP_PER_WAVE,
   SHIFTER_INTERVAL,
   SHIFTER_KIND_IDS,
+  swingDescriptorFor,
+  swingEdgeProgress,
+  type SwingDescriptor,
   SHIFTER_SALVAGE_PER_DEPTH,
   SHIFTER_TIER_SECONDS,
   SHOP_RADIUS,
@@ -388,19 +389,19 @@ export class GameRoom extends Room<ArenaState> {
     string,
     { cd: number; t: number; dx: number; dy: number }
   >();
-  /** §20 WYSIWYG melee: in-flight swept-blade swings per player id. A swing lives for its `active` window;
-   *  `stepMeleeSwings` sweeps the blade across `swingArc` from `aim0` and edge-hits each enemy ONCE (`hit`).
-   *  The blade origin is read live from the player each tick, so the cut tracks you as you move. */
+  /** §20/§44 in-flight swept blades. `swing` is the immutable descriptor captured at the accepted `canAct`
+   *  epoch; `elapsed` advances that one server clock through wind-up + active frames. The blade origin stays
+   *  live, while `hit` preserves once-per-enemy-per-accepted-swing semantics regardless of active length. */
   private readonly meleeSwings = new Map<
     string,
     {
+      swing: SwingDescriptor;
       aim0: number;
       range: number;
       swingArc: number;
       halfWidth: number;
       edgeDamage: number;
       elapsed: number;
-      active: number;
       hit: Set<string>;
     }
   >();
@@ -1913,8 +1914,11 @@ export class GameRoom extends Room<ArenaState> {
         }
       } else if (weapon && canAct) {
         c.attackBuffer = 0;
-        this.resolveSwing(player, c, weapon);
-        c.cd = weapon.cooldown * cdMul; // flat cooldown — DEX scales DAMAGE (via §10 grades), not speed
+        // §44 AUTHORITATIVE EPOCH: construct exactly once when `canAct` accepts — never on message arrival.
+        // Client prediction starts from local send until a later swing-seq protocol can reconcile buffering.
+        const swing = swingDescriptorFor(weapon, weapon.cooldown * cdMul);
+        this.resolveSwing(player, c, weapon, swing);
+        c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; the loot affix owns speed
       }
     });
     // §6 a synchronous player hit can clear the last boss-rush round from inside resolveSwing.
@@ -2151,7 +2155,12 @@ export class GameRoom extends Room<ArenaState> {
    *  it across `swingArc` and damages each enemy the blade actually crosses — #2/#5/#6); the secondary
    *  LAYERS (chain / quake / scatter) fire here at the swing moment, each an independent position-based
    *  source ("layered like the Wyrmtooth"). Damage scales per-source (§14); kills grant XP. */
-  private resolveSwing(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+  private resolveSwing(
+    player: PlayerState,
+    c: CombatState,
+    weapon: WeaponDef,
+    swing: SwingDescriptor,
+  ): void {
     // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
     // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
     const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
@@ -2159,22 +2168,17 @@ export class GameRoom extends Room<ArenaState> {
     // §20 WYSIWYG: the hit reach follows the RENDERED blade — floored at the sprite tip + scaled by the
     // holder's rig — so the point stops whiffing (guns already do this via gunMuzzleReach; melee was flat).
     const reach = meleeReach(weapon); // §29 weapons are a FIXED size now (not char-scaled) → fixed reach
-    // Register the swept edge — the blade sweeps from `aim0 − swingArc/2` to `+swingArc/2` over `active`,
-    // origin tracked live from the player. Replaces any in-flight swing (cooldown ≥ active, so no overlap).
+    // Register the swept edge on the accepted descriptor. Slow active seconds can exceed the old 180ms cap,
+    // but BALANCE/DPS does not multiply: cooldown + edgeDamage + arc coverage are unchanged and `hit` still
+    // admits each enemy exactly once per accepted swing. Replaces any in-flight swing; pose ≤ cooldown.
     this.meleeSwings.set(player.id, {
+      swing,
       aim0,
       range: reach,
       swingArc: weapon.swingArc,
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
       elapsed: 0,
-      // §41 a SPIN weapon's swept edge tracks its whirling blade across (nearly) the whole cooldown — the
-      // capped default would complete the full-circle damage in ~0.2s while the visual whirls for a second,
-      // and enemies walking INTO the circle mid-spin would wrongly be safe.
-      active:
-        weapon.swingStyle === "spin"
-          ? weapon.cooldown * lootCooldownMult(player.weaponAffix) * 0.95
-          : meleeSwingActive(weapon.cooldown * lootCooldownMult(player.weaponAffix)),
       hit: new Set<string>(),
     });
 
@@ -2239,14 +2243,14 @@ export class GameRoom extends Room<ArenaState> {
 
     // Earthquake: erupts at the CURSOR, clamped to QUAKE_REACH from the player (§9 aim-at-cursor); AoE via
     // the shared `detonate` (same kill/XP/portal bookkeeping). The client matches the epicentre via the
-    // SAME shared clampQuakeEpicenter. §40.2 the detonation is DELAYED to the moment the chop's blade LANDS
-    // (shared quakeImpactDelaySec — the same clock as the rig animation + the client's eruption VFX), so the
-    // slam is a real telegraphed windup: damage/epicenter are captured NOW, the ground erupts when it hits.
+    // SAME shared clampQuakeEpicenter. §44 the descriptor's 52% impact is relative to this accepted epoch;
+    // the client predicts the identical effective-cooldown descriptor at send. A later accepted-swing seq is
+    // still required to remove the residual network/buffer epoch offset — no protocol expansion in this P0.
     if (weapon.quake) {
       const qPower = this.heldDamageMult(weapon, weapon.quake.scalingGrades, player);
       const ep = clampQuakeEpicenter(player, { x: c.targetX, y: c.targetY }, QUAKE_REACH);
       this.pendingQuakes.push({
-        t: quakeImpactDelaySec(weapon.cooldown),
+        t: swing.impactSeconds,
         x: ep.x,
         y: ep.y,
         radius: weapon.quake.radius,
@@ -2293,9 +2297,9 @@ export class GameRoom extends Room<ArenaState> {
     this.clearEnemiesNear(ally.x, ally.y, RESPAWN_CLEAR_RADIUS);
   }
 
-  /** §20 advance every in-flight melee swing: sweep the blade across its arc this tick (super-sampled so the
-   *  band is continuous between 20Hz ticks) and edge-hit each enemy the blade crosses ONCE per swing. The
-   *  blade origin is read live from the player so the cut tracks you. Expired swings are dropped. */
+  /** §20/§44 advance accepted descriptor time, sweeping only while the unchanged pose envelope is dangerous.
+   *  A tick may cross wind-up, the whole fast active interval, or recovery; clamped progress preserves full
+   *  arc supersampling and hit-once coverage in every case. The live player position still anchors the edge. */
   private stepMeleeSwings(dt: number): void {
     if (this.meleeSwings.size === 0) return;
     const kills: string[] = [];
@@ -2306,16 +2310,20 @@ export class GameRoom extends Room<ArenaState> {
         this.meleeSwings.delete(pid);
         continue;
       }
-      const p0 = Math.min(1, sw.elapsed / sw.active);
+      const p0 = swingEdgeProgress(sw.swing, sw.elapsed);
       sw.elapsed += dt;
-      const p1 = Math.min(1, sw.elapsed / sw.active);
+      const p1 = swingEdgeProgress(sw.swing, sw.elapsed);
+      if (p1 <= p0) {
+        if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
+        continue;
+      }
       const critC = critChanceFor(player.luk, player.dex); // §30 the swinger's crit, rolled per edge hit
       if (this.belt) {
         // §29 BELT melee is LANE-based (SoR4 model), not the top-down angular sweep: a hit needs horizontal
         // reach in the facing direction AND depth alignment |Δy| ≤ DEPTH_TOL_PLAYER (+ the target radius).
         // A blade that whiffs because the mob is a hair nearer/farther in the shallow band feels awful; this
-        // is the fairness lever the belt constants were authored for. Tested once/tick (persist over `active`,
-        // hit-once via `sw.hit`) so a mob walking into your swing still gets clipped.
+        // is the fairness lever the belt constants were authored for. Tested once/tick during the descriptor's
+        // active interval (hit-once via `sw.hit`) so a mob walking into your swing still gets clipped.
         const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
         this.enemyGrid.queryAabb(
           player.x - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range),
@@ -2338,7 +2346,7 @@ export class GameRoom extends Room<ArenaState> {
           sw.hit.add(eid);
           xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
         }
-        if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
+        if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
       }
       const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
@@ -2361,7 +2369,7 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       }
-      if (sw.elapsed >= sw.active) this.meleeSwings.delete(pid);
+      if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
     }
     for (const eid of kills) this.state.enemies.delete(eid);
     if (xpGained > 0) this.grantXp(xpGained);

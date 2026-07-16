@@ -451,16 +451,15 @@ export const SHIFTER_HP_PER_WAVE = 0.12;
 /** Greatsword slam (§9 "everything aims at the cursor"): the quake erupts at the CURSOR, but no
  *  farther than this from the character — you slam where you aim, within reach. (tuning) */
 export const QUAKE_REACH = 260;
-/** §40.2 SWING-TIMING sync — ONE source of truth so the rig animation, the client quake VFX, and the
- *  server's quake damage can never drift apart. The swing ANIMATION window is `cooldown × SWING_WINDOW_FRAC`
- *  seconds (the client rig has always used cooldown×640ms); the CHOP's blade LANDS at `CHOP_IMPACT_FRAC` of
- *  that window — the quake VFX erupts AND the server detonates the damage at that same moment, so the heavy
- *  slam is a real telegraphed windup instead of damage-at-click under a blade still rising. */
+/** §40.2/§44 swing-clock fractions. `swingDescriptorFor` applies these to EFFECTIVE cooldown (base × loot
+ *  affix), then every consumer samples that immutable descriptor. Non-spin pose SHAPES remain normalized to
+ *  this window; only their time base changes. The CHOP landing stays at the authored 52% pose beat. */
 export const SWING_WINDOW_FRAC = 0.64;
 export const CHOP_IMPACT_FRAC = 0.52;
-/** Seconds from the swing INPUT to the chop's blade landing (= when a quake detonates + its VFX erupts). */
-export function quakeImpactDelaySec(cooldown: number): number {
-  return cooldown * SWING_WINDOW_FRAC * CHOP_IMPACT_FRAC;
+/** Legacy non-spin convenience; new swing paths consume `SwingDescriptor.impactSeconds` so spin/style and
+ *  effective-cooldown decisions cannot fork. The argument is EFFECTIVE cooldown, never the base stat. */
+export function quakeImpactDelaySec(effectiveCooldown: number): number {
+  return effectiveCooldown * SWING_WINDOW_FRAC * CHOP_IMPACT_FRAC;
 }
 /** Chain lightning (§10 on-hit proc): a single hop cannot exceed this even if a weapon over-tunes its
  *  own `chainLightning.range`. Server + client both clamp to it so the predicted bolt path matches the

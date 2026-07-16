@@ -2230,3 +2230,48 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
     expect(h.state().projectiles.size).toBe(HOSTILE_PROJECTILE_CEILING + 2); // friendlies are never capped
   });
 });
+
+// §44 P0 — appended clock regressions. These deliberately inspect the room's private accepted-swing rail;
+// the harness is already `AnyRoom`, and asserting the descriptor avoids coupling timing to enemy AI/mapgen.
+describe("GameRoom — §44 one effective-cooldown swing clock", () => {
+  function acceptedSwing(weaponId: string, affix = "") {
+    const h = makeRoom();
+    h.join("clock-player");
+    const player = h.state().players.get("clock-player");
+    player.weapon = weaponId;
+    player.weaponAffix = affix;
+    h.tick(1); // settle swap; the next attack establishes the authoritative accepted epoch
+    h.send("clock-player", "attack", { aimX: 1, aimY: 0 });
+    h.tick(1);
+    const active = h.room.meleeSwings.get("clock-player");
+    if (!active) throw new Error(`expected accepted swing for ${weaponId}`);
+    return { h, active };
+  }
+
+  it("keeps a slow 0.9s weapon's edge active at the pose midpoint", () => {
+    const { h, active } = acceptedSwing("x-sword-coffin");
+    expect(WEAPONS["x-sword-coffin"]?.cooldown).toBe(0.9);
+    const toMidPose = active.swing.poseSeconds / 2 - active.elapsed;
+    h.room.stepMeleeSwings(toMidPose);
+    const atMidPose = h.room.meleeSwings.get("clock-player");
+    expect(atMidPose).toBeDefined();
+    expect(atMidPose.elapsed).toBeCloseTo(atMidPose.swing.poseSeconds / 2);
+    expect(atMidPose.elapsed).toBeGreaterThanOrEqual(atMidPose.swing.activeStartSeconds);
+    expect(atMidPose.elapsed).toBeLessThan(atMidPose.swing.activeEndSeconds);
+  });
+
+  it("has no active edge after a fast 0.22s weapon's pose ends", () => {
+    const { h, active } = acceptedSwing("x-sword-buzzsaw");
+    expect(WEAPONS["x-sword-buzzsaw"]?.cooldown).toBe(0.22);
+    h.room.stepMeleeSwings(active.swing.poseSeconds - active.elapsed + 0.001);
+    expect(h.room.meleeSwings.has("clock-player")).toBe(false);
+  });
+
+  it("shortens a Swift-affixed weapon's pose window with its effective cooldown", () => {
+    const plain = acceptedSwing("x-sword-coffin").active.swing;
+    const swift = acceptedSwing("x-sword-coffin", "swift").active.swing;
+    expect(swift.effectiveCooldown).toBeCloseTo(plain.effectiveCooldown * 0.82);
+    expect(swift.poseSeconds).toBeCloseTo(plain.poseSeconds * 0.82);
+    expect(swift.poseSeconds).toBeLessThan(plain.poseSeconds);
+  });
+});

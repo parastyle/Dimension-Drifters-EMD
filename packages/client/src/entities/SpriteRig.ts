@@ -1,4 +1,11 @@
-import { CHOP_IMPACT_FRAC, MOVE_SPEED, SWING_WINDOW_FRAC, type WeaponDef } from "@dd/shared";
+import {
+  CHOP_IMPACT_FRAC,
+  isWornWeapon,
+  MOVE_SPEED,
+  swingDescriptorFor,
+  type SwingDescriptor,
+  type WeaponDef,
+} from "@dd/shared";
 import Phaser from "phaser";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 
@@ -37,29 +44,7 @@ const WEAPON_LOOK_TILT = 0.6;
  *  mounts its pivot where the hand sits INSIDE the glove and renders the art OVER the hand. Matched by
  *  the gauntlet/fist FAMILIES plus worn WORDS in the name (the melee claws hide under "exotic-melee");
  *  word-boundaries keep held gear out ("Knucklebone Censer-Orb" is a censer on a chain, not knuckles). */
-export function isWornWeapon(def: WeaponDef): boolean {
-  if (/^(gauntlet|fist)$/i.test(def.tags?.family ?? "")) return true;
-  return /\b(claws?|talons?|mitts?|gloves?|vambraces?|gauntlets?|knuckles?|cestus|fists?)\b/i.test(
-    def.name,
-  );
-}
-
-/** §40 which swing ANIMATION a weapon plays — one weapon, one animation, drawn from the per-type vocabulary.
- *  An authored `def.swingStyle` wins; otherwise derive from the weapon's shape: quake weapons CHOP (overhead
- *  slam, matching their ground-eruption VFX), worn CLAWS/talons PIVOT (the arm rake — dragging blades), other
- *  worn gauntlets/knuckles PUNCH (§42 the fist drives; blunt gloves don't rake), rapiers/spears THRUST,
- *  two-handed weapons ORBIT the waist in fake 3D, everything else does the classic flat ARC. */
-function swingStyleFor(def: WeaponDef): NonNullable<WeaponDef["swingStyle"]> {
-  if (def.swingStyle) return def.swingStyle;
-  // §42 WORN beats quake: a quake GAUNTLET (Pyreclap Mauler) still PUNCHES — the fist drives the ground
-  // eruption; raising it overhead like a blade read as waving a dueling glove. The punch's full extension
-  // lands on CHOP_IMPACT_FRAC, so the shared detonation clock stays in sync.
-  if (isWornWeapon(def)) return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
-  if (def.quake) return "chop";
-  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? "")) return "thrust";
-  if (def.twoHanded) return "orbit";
-  return "arc";
-}
+export { isWornWeapon };
 
 export interface RigAnim {
   /** Movement direction this frame (≈0 length when idle). */
@@ -163,6 +148,9 @@ export class SpriteRig {
   }[] = [];
   private weaponDef?: WeaponDef;
   private swingStart = -1e9;
+  /** §44 immutable predicted/accepted swing clock. The normalized pose branches below are untouched; only
+   *  their `tt` time base comes from this effective-cooldown descriptor. */
+  private swing?: SwingDescriptor;
   /** §40 fake-3D ORBIT slash (two-handed melee): 0..1 progress while active, −1 otherwise. Set by the
    *  weapon-angle pass, consumed by the weapon render pass (which overrides position/rotation/scale/depth). */
   private orbitT = -1;
@@ -349,6 +337,7 @@ export class SpriteRig {
     // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
     // swing carries into the NEW weapon's (different-length) timeline, so a fresh grab could pop mid-swing.
     this.swingStart = -1e9;
+    this.swing = undefined;
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
@@ -413,22 +402,24 @@ export class SpriteRig {
     for (const obj of stack) this.root.bringToTop(obj);
   }
 
-  /** Start a swing animation (the actual damage is server-authoritative). `aimWorld` (radians) freezes the
-   *  aim AT swing-start so the blade sweeps the same arc the server's swept hitbox uses (§20 WYSIWYG); omit
-   *  for a swing with no captured aim (the animate loop then falls back to the live/synced aim). */
-  triggerSwing(timeMs: number, aimWorld?: number): void {
+  /** Start a swing animation (damage is server-authoritative). `timeMs` is the scene clock accepted/predicted
+   *  epoch, shared locally by rig/VFX/quake; `aimWorld` freezes aim. The optional descriptor is computed once
+  *  by ArenaScene from effective cooldown; server acceptance sync is the later protocol reconciliation. */
+  triggerSwing(timeMs: number, aimWorld?: number, swing?: SwingDescriptor): void {
+    const nextSwing =
+      swing ??
+      (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
     // §41 CHAIN detection: this press landed while (or within a beat of) the previous swing's window — a
     // spammed sequence. Spins use it to drop their wind-in and hold the whirl, so held/spammed RMB reads as
     // one continuous whirlwind instead of restarting the spin-up every press.
-    if (this.weaponDef) {
-      const prevDur =
-        this.weaponDef.cooldown *
-        (swingStyleFor(this.weaponDef) === "spin" ? 1000 : SWING_WINDOW_FRAC * 1000);
+    if (this.swing) {
+      const prevDur = this.swing.poseSeconds * 1000;
       this.swingChained = timeMs - this.swingStart <= prevDur + 150;
     } else {
       this.swingChained = false;
     }
     this.swingStart = timeMs;
+    this.swing = nextSwing;
     this.swingAimWorld = aimWorld ?? Number.NaN;
   }
 
@@ -663,16 +654,13 @@ export class SpriteRig {
       // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
       const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
       weaponAngle = restA + Math.sin(t * 2.6) * 0.04; // gentle idle sway
-      const el = timeMs - this.swingStart;
-      // §7 v0.105 de-clunk: a touch longer than the old cooldown×470 so the last stretch can EASE BACK to
-      // rest instead of hard-snapping ~2.5–3rad in one frame at swing-end. Still < the weapon cooldown
-      // (×1000), so the swing always finishes before the next one can start. §40.2 the window is the SHARED
-      // constant — the server's delayed quake detonation + the client's eruption VFX run on the same clock.
-      // §41 EXCEPT spins: their window IS the full cooldown, so a held/spammed trigger starts the next
-      // revolution the instant this one ends — a seamless continuous whirlwind.
-      const style = swingStyleFor(def);
-      const dur = def.cooldown * (style === "spin" ? 1000 : SWING_WINDOW_FRAC * 1000);
-      if (el >= 0 && el < dur) {
+      // §44 use Phaser's scene epoch — the same clock as the VFX tween + quake timer. During local hit-stop
+      // the rendered frame holds because animate is skipped, then resumes at the CURRENT swing phase instead
+      // of extending authoritative danger. Pose shapes/envelopes below remain byte-for-byte normalized.
+      const el = this.scene.time.now - this.swingStart;
+      const style = this.swing?.style;
+      const dur = (this.swing?.poseSeconds ?? 0) * 1000;
+      if (style && el >= 0 && el < dur) {
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
         // (arc / orbit / chop / pivot / thrust / spin). World aim → local (mirrored) shared by every style.
         const tt = el / dur;
