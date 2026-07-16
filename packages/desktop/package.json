@@ -5,10 +5,50 @@
   "description": "Electron shell that hosts the Phaser client in a dedicated window (§3).",
   "main": "main.cjs",
   "scripts": {
+    "build": "pnpm run stage:client && electron-builder --win --x64 --dir",
     "dev": "electron .",
+    "package": "pnpm --filter @dd/client build && pnpm run build",
+    "package:assert": "node scripts/assert-package.cjs",
+    "stage:client": "node scripts/stage-client.cjs",
     "start": "electron ."
   },
   "devDependencies": {
-    "electron": "42.4.0"
+    "@dd/client": "workspace:^",
+    "electron": "42.4.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.dimensiondrifters.desktop",
+    "productName": "Dimension Drifters",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "client-paths.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "client-dist",
+        "to": "client",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "executableName": "DimensionDrifters"
+    }
   }
 }

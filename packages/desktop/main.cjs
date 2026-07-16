@@ -5,9 +5,35 @@
 // with `backgroundThrottling: false` keeps the loop running regardless of focus — this is
 // also the production runtime, so dev now matches what ships (environment parity, §26).
 
-const { app, BrowserWindow } = require("electron");
+// SERVER REQUIRED: packaging does not bundle Colyseus. In packaged mode, DD_SERVER_HOST
+// (default: localhost) becomes location.hostname, and the client connects to
+// ws://<that host>:DEFAULT_PORT. DEFAULT_PORT lives in packages/shared/src/constants.ts.
+const fs = require("node:fs");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const { app, BrowserWindow, net, protocol } = require("electron");
+const { CLIENT_SCHEME, makeClientURL, resolveClientRequest } = require("./client-paths.cjs");
 
 const CLIENT_URL = process.env.DD_CLIENT_URL || "http://localhost:5180";
+const SERVER_HOST = process.env.DD_SERVER_HOST || "localhost";
+const PACKAGED_CLIENT_URL = app.isPackaged ? makeClientURL(SERVER_HOST) : null;
+
+// Register before app.ready so Chromium treats the packaged client like a normal origin.
+// This is important for Vite's root-relative /assets URLs and Phaser's relative asset URLs.
+if (app.isPackaged) {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: CLIENT_SCHEME,
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: true,
+        codeCache: true,
+      },
+    },
+  ]);
+}
 
 // Chromium parks a renderer's rAF/timers when its window is occluded, backgrounded, or opened
 // without focus (e.g. launched from a background process) — which freezes the Phaser game loop
@@ -48,15 +74,36 @@ function createWindow() {
     win.focus();
   });
 
-  const load = () => win.loadURL(CLIENT_URL);
-  // The Vite dev server may not be up yet when Electron launches — retry until it is.
-  win.webContents.on("did-fail-load", () => {
-    setTimeout(load, 1000);
-  });
-  load();
+  if (app.isPackaged) {
+    win.loadURL(PACKAGED_CLIENT_URL);
+  } else {
+    const load = () => win.loadURL(CLIENT_URL);
+    // The Vite dev server may not be up yet when Electron launches — retry until it is.
+    win.webContents.on("did-fail-load", () => {
+      setTimeout(load, 1000);
+    });
+    load();
+  }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  if (app.isPackaged) {
+    const clientRoot = path.join(process.resourcesPath, "client");
+    protocol.handle(CLIENT_SCHEME, async (request) => {
+      const filePath = resolveClientRequest(clientRoot, request.url, SERVER_HOST);
+      if (!filePath) return new Response("Not found", { status: 404 });
+
+      try {
+        const stat = await fs.promises.stat(filePath);
+        if (!stat.isFile()) return new Response("Not found", { status: 404 });
+      } catch {
+        return new Response("Not found", { status: 404 });
+      }
+
+      return net.fetch(pathToFileURL(filePath).toString());
+    });
+  }
+
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
