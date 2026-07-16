@@ -640,7 +640,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
   "x-sword-whirlwind": {
     id: "x-sword-whirlwind",
     name: "Dervish Greatblade",
-    sprite: "tombstone-greatsword", // placeholder 2H blade until a bespoke dervish sword is generated
     scalingGrades: { str: "B", dex: "D" },
     requirements: { str: 7 },
     durability: 85,
@@ -976,7 +975,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
   "x-staff-arcane-lance": {
     id: "x-staff-arcane-lance",
     name: "Arcanist's Lance",
-    sprite: "tombstone-greatsword", // placeholder 2H haft until a bespoke staff is generated
     scalingGrades: { int: "B" },
     requirements: { int: 6 },
     durability: 80,
@@ -1013,7 +1011,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
   "x-staff-storm-rod": {
     id: "x-staff-storm-rod",
     name: "Stormcaller Rod",
-    sprite: "tombstone-greatsword", // placeholder 2H haft
     scalingGrades: { int: "C" },
     requirements: { int: 5 },
     durability: 70,
@@ -1095,7 +1092,6 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
   "x-gun-hand-mortar": {
     id: "x-gun-hand-mortar",
     name: "Hand Mortar",
-    sprite: "x-gun-coffin-shotgun", // placeholder stubby 2H art until a bespoke mortar is generated
     scalingGrades: { str: "C" },
     requirements: { str: 6 },
     durability: 65,
