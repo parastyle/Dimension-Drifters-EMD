@@ -6,13 +6,13 @@ import {
   type Attr,
   AUGMENTS,
   affixById,
+  BAG_CAP,
   BELT_Y0,
   type BeltLevel,
-  BAG_CAP,
-  beltBounds,
-  beltLevelFor,
   BOSS_DEF_IDS,
   BOSSES,
+  beltBounds,
+  beltLevelFor,
   bossSpawnAt,
   CAM_FOLLOW_TAU,
   CAM_SNAP_DIST,
@@ -20,18 +20,19 @@ import {
   type ChainCandidate,
   characterName,
   characterScale,
-  classForCharacter,
   clampQuakeEpicenter,
+  classForCharacter,
   critChanceFor,
   DEBUG_SPAWN_MAX,
-  DEPTH_MAX,
-  DEFLECT_TTL,
   DEFAULT_DIMENSION,
   DEFAULT_PORT,
   DEFAULT_WEAPON,
+  DEFLECT_TTL,
+  DEPTH_MAX,
   damageMultFromGrades,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
+  EMPTY_META,
   ENEMY_KINDS,
   ENEMY_RADIUS,
   type EnemyKind,
@@ -50,6 +51,9 @@ import {
   LEVELUP_WINDOW_SECONDS,
   lootCooldownMult,
   lootDamageMult,
+  META_UPGRADES,
+  type MetaLevels,
+  nextUpgradeCost,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -58,24 +62,19 @@ import {
   PICKUP_RADIUS,
   type PlayerState,
   QUAKE_REACH,
-  EMPTY_META,
-  META_UPGRADES,
-  type MetaLevels,
-  nextUpgradeCost,
   RARITIES,
   RARITY_CURSED,
-  sanitizeMetaLevels,
-  scripValue,
-  SHOP_RADIUS,
-  weaponSetBonus,
   RING_BAND_HALF,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
+  SHOP_RADIUS,
+  type SwingDescriptor,
+  sanitizeMetaLevels,
+  scripValue,
   selectChainTargets,
   swingDescriptorFor,
-  type SwingDescriptor,
   TgShape,
   TICK_MS,
   TOUGH_SCALE,
@@ -83,6 +82,7 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  weaponSetBonus,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
@@ -99,23 +99,18 @@ import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
+import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
+import { type LevelUpMode, levelUpLayout, levelUpLayoutKey } from "../ui/level-up-layout.js";
 import {
-  elementPack,
-  particleBurst,
-  preloadParticlePacks,
-} from "../vfx/particles.js";
+  attributeChoiceViews,
+  augmentChoiceViews,
+  type LevelChoiceView,
+  levelBuildContext,
+} from "../ui/level-up-model.js";
+import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
-import {
-  type XpMotePoint,
-  type XpMoteReceipt,
-  XpMoteRenderer,
-} from "../vfx/xp-motes.js";
-import {
-  buildCard,
-  type Card,
-  drawIcon,
-  WEAPON_ACCENT,
-} from "./arena/card-art.js";
+import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
+import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import {
   buildArenaFloor,
@@ -147,8 +142,8 @@ import {
   spawnPoof,
   spawnQuake,
   spawnSplat,
-  TelegraphForeshadowPool,
   spawnWeaponKillFx,
+  TelegraphForeshadowPool,
 } from "./arena/vfx.js";
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
@@ -253,6 +248,17 @@ interface EnemyWindupSample {
   glintAtMs: number;
 }
 
+interface LevelChoiceControl {
+  root: Phaser.GameObjects.Container;
+  face: Phaser.GameObjects.Rectangle;
+  focusRing: Phaser.GameObjects.Graphics;
+  zone: Phaser.GameObjects.Rectangle;
+  restY: number;
+  side: number;
+  view: LevelChoiceView;
+  send: () => void;
+}
+
 interface MeleeTellCandidate {
   id: string;
   containsSelf: boolean;
@@ -305,11 +311,7 @@ function projectTelegraphY(y: number, projectionYScale: number): number {
   return BELT_Y0 + (y - BELT_Y0) * projectionYScale;
 }
 
-function adaptiveArcSamples(
-  radius: number,
-  span: number,
-  zoom: number,
-): number {
+function adaptiveArcSamples(radius: number, span: number, zoom: number): number {
   const screenRadius = Math.max(1, Math.abs(radius) * zoom);
   const step = 2 * Math.acos(Math.max(-1, Math.min(1, 1 - 1 / screenRadius)));
   return Math.max(24, Math.min(96, Math.ceil(span / Math.max(0.02, step))));
@@ -414,9 +416,7 @@ function buildTelegraphGeometry(
       cx += p.x;
       cy += p.y;
     }
-    edges.push(
-      polygonEdge(points, cx / points.length, cy / points.length, zoom),
-    );
+    edges.push(polygonEdge(points, cx / points.length, cy / points.length, zoom));
   } else if (shape === TgShape.Cone) {
     const points: { x: number; y: number }[] = [{ x, y: centerY }];
     const count = adaptiveArcSamples(a, Math.max(0.01, b * 2), zoom);
@@ -433,44 +433,15 @@ function buildTelegraphGeometry(
       cx += p.x;
       cy += p.y;
     }
-    edges.push(
-      polygonEdge(points, cx / points.length, cy / points.length, zoom),
-    );
-  } else if (
-    shape === TgShape.Ring &&
-    kindTag === TelegraphKindTag.ExpandingRing
-  ) {
+    edges.push(polygonEdge(points, cx / points.length, cy / points.length, zoom));
+  } else if (shape === TgShape.Ring && kindTag === TelegraphKindTag.ExpandingRing) {
     const outerR = Math.max(0, a + RING_BAND_HALF);
     const innerR = Math.max(0, a - RING_BAND_HALF);
     const start = rot + Math.max(0, b);
     const end = rot - Math.max(0, b) + Math.PI * 2;
-    edges.push(
-      ellipseEdge(
-        x,
-        y,
-        outerR,
-        start,
-        end,
-        projectionYScale,
-        zoom,
-        true,
-        false,
-      ),
-    );
+    edges.push(ellipseEdge(x, y, outerR, start, end, projectionYScale, zoom, true, false));
     if (innerR > 0.5) {
-      edges.push(
-        ellipseEdge(
-          x,
-          y,
-          innerR,
-          start,
-          end,
-          projectionYScale,
-          zoom,
-          false,
-          false,
-        ),
-      );
+      edges.push(ellipseEdge(x, y, innerR, start, end, projectionYScale, zoom, false, false));
     }
     const capInset = 2 / Math.max(0.01, zoom);
     const addCap = (angle: number, intoAngle: number): void => {
@@ -482,27 +453,18 @@ function buildTelegraphGeometry(
         innerR > 0.5
           ? {
               x: x + Math.cos(angle) * innerR,
-              y: projectTelegraphY(
-                y + Math.sin(angle) * innerR,
-                projectionYScale,
-              ),
+              y: projectTelegraphY(y + Math.sin(angle) * innerR, projectionYScale),
             }
           : { x, y: centerY };
       const outerToward = {
         x: x + Math.cos(intoAngle) * outerR,
-        y: projectTelegraphY(
-          y + Math.sin(intoAngle) * outerR,
-          projectionYScale,
-        ),
+        y: projectTelegraphY(y + Math.sin(intoAngle) * outerR, projectionYScale),
       };
       const innerToward =
         innerR > 0.5
           ? {
               x: x + Math.cos(intoAngle) * innerR,
-              y: projectTelegraphY(
-                y + Math.sin(intoAngle) * innerR,
-                projectionYScale,
-              ),
+              y: projectTelegraphY(y + Math.sin(intoAngle) * innerR, projectionYScale),
             }
           : {
               x: x + Math.cos(intoAngle) * 2,
@@ -521,38 +483,12 @@ function buildTelegraphGeometry(
     addCap(start, start + angularInset);
     addCap(end, end - angularInset);
   } else if (shape === TgShape.Ring && kindTag === TelegraphKindTag.Radial) {
-    edges.push(
-      ellipseEdge(x, y, a, 0, Math.PI * 2, projectionYScale, zoom, true, true),
-    );
+    edges.push(ellipseEdge(x, y, a, 0, Math.PI * 2, projectionYScale, zoom, true, true));
     if (b > 0.5)
-      edges.push(
-        ellipseEdge(
-          x,
-          y,
-          b,
-          0,
-          Math.PI * 2,
-          projectionYScale,
-          zoom,
-          false,
-          true,
-        ),
-      );
+      edges.push(ellipseEdge(x, y, b, 0, Math.PI * 2, projectionYScale, zoom, false, true));
   } else {
     const radius = Math.max(2, a);
-    edges.push(
-      ellipseEdge(
-        x,
-        y,
-        radius,
-        0,
-        Math.PI * 2,
-        projectionYScale,
-        zoom,
-        true,
-        true,
-      ),
-    );
+    edges.push(ellipseEdge(x, y, radius, 0, Math.PI * 2, projectionYScale, zoom, true, true));
   }
   return { edges, centerX: x, centerY };
 }
@@ -575,10 +511,7 @@ const ENEMY_FALLBACK_SPRITE: Record<string, string> = {
 
 /** Resolve the sprite manifest id to render for an enemy kind: the bespoke sprite if its art is installed,
  *  else the archetype stand-in (so an un-rendered themed enemy doesn't crash SpriteRig). */
-function resolveEnemySprite(
-  kind: EnemyKind | undefined,
-  rawKind: string,
-): string {
+function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): string {
   const want = kind?.sprite ?? rawKind;
   if (SPRITES[want as keyof typeof SPRITES]) return want;
   return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "rusher"] ?? "critter";
@@ -742,7 +675,14 @@ export class ArenaScene extends Phaser.Scene {
     | "SPACE"
     | "ONE"
     | "TWO"
-    | "THREE",
+    | "THREE"
+    | "FOUR"
+    | "FIVE"
+    | "LEFT"
+    | "RIGHT"
+    | "UP"
+    | "DOWN"
+    | "ENTER",
     Phaser.Input.Keyboard.Key
   >;
   /** §29 v0.118 BELT-SCROLLER mode (`?belt=1` or the menu's belt launch): renders the SAME game (all systems
@@ -854,10 +794,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly charOf = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
-  private readonly projectiles = new Map<
-    string,
-    Phaser.GameObjects.Container
-  >();
+  private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered zoner puddles (§15 area denial). */
   private readonly zones = new Map<string, Phaser.GameObjects.Container>();
   /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
@@ -918,10 +855,24 @@ export class ArenaScene extends Phaser.Scene {
   // §12 level-up window (attribute allocation).
   private levelWinObjects: Phaser.GameObjects.GameObject[] = [];
   private levelWinKey = "";
+  private levelWinMode: LevelUpMode | "" = "";
   private levelWinTimerBar?: Phaser.GameObjects.Rectangle;
+  private levelWinTimerText?: Phaser.GameObjects.Text;
+  private levelWinStatusText?: Phaser.GameObjects.Text;
+  private levelWinTimerWidth = 0;
+  private levelWinTimerSampleDs = -1;
+  private levelWinTimerSampleAt = 0;
+  private levelWinAutoLabel = "";
+  private levelWinDim?: Phaser.GameObjects.Rectangle;
+  private levelWinLower?: Phaser.GameObjects.Container;
+  private levelWinUpper?: Phaser.GameObjects.Container;
+  private levelWinChoices: LevelChoiceControl[] = [];
+  private levelWinFocus = 0;
+  private levelWinAwaitingRelease = true;
   /** Counter tweens target plain values, so the modal must explicitly remove them at every offer edge. */
   private levelWinPaperCounters: Phaser.Tweens.Tween[] = [];
   private levelWinSelectionSent = false;
+  private levelWinInputReleaseLatch = false;
   private deathText!: Phaser.GameObjects.Text;
   private restartBtn!: Phaser.GameObjects.Text;
   // §21 Testing-Grounds Tab summon menu (dev): pick a monster kind + a multiplier to conjure it.
@@ -999,8 +950,7 @@ export class ArenaScene extends Phaser.Scene {
     // §36 the SELECTED belt level (menu level-select). URL `?belt=<id>` also picks it.
     const urlLevel = params.get("belt");
     this.selectedBeltLevel =
-      data?.beltLevel ??
-      (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
+      data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
@@ -1040,13 +990,9 @@ export class ArenaScene extends Phaser.Scene {
       // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
       // bloat VRAM). Only a CURATED one (expansion flag cleared) boot-loads its loose parts — SpriteRig then
       // falls back to the per-part texture since it isn't in the atlas. Everything non-expansion is in the atlas.
-      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion)
-        continue;
+      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion) continue;
       for (const part of manifest.parts) {
-        this.load.image(
-          `${manifest.id}:${part.role}`,
-          `sprites/${manifest.id}/${part.file}`,
-        );
+        this.load.image(`${manifest.id}:${part.role}`, `sprites/${manifest.id}/${part.file}`);
       }
     }
     // Weapon VFX hero skins (§14 Codex art, authored in the Weaponsmith). Game-res, pre-sized.
@@ -1072,10 +1018,7 @@ export class ArenaScene extends Phaser.Scene {
     for (let i = 0; i < 4; i++) {
       const key = terrainTileKey(terrainDimensionId, i);
       if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
-        this.queueOptionalFloorArt(
-          key,
-          `tiles/${terrainDimensionId}/tile-${i}.png`,
-        );
+        this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
       }
     }
     const rimKey = terrainRimKey(terrainDimensionId);
@@ -1096,10 +1039,7 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (
-        /^(tile|decal|poi)-/.test(file.key) ||
-        file.key.startsWith("terrain:")
-      ) {
+      if (/^(tile|decal|poi)-/.test(file.key) || file.key.startsWith("terrain:")) {
         this.floorArtMissing.add(file.key);
       }
     });
@@ -1118,8 +1058,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §17 a Codex tile texture is usable only if it loaded AND isn't a missing-file stub. */
   private hasTile(key: string): boolean {
-    if (this.floorArtMissing.has(key) || !this.textures.exists(key))
-      return false;
+    if (this.floorArtMissing.has(key) || !this.textures.exists(key)) return false;
     const w = this.textures.get(key).getSourceImage()?.width ?? 0;
     return w > 8;
   }
@@ -1137,10 +1076,7 @@ export class ArenaScene extends Phaser.Scene {
       this.pointerMoveHandler = null;
     }
     if (this.contextMenuHandler) {
-      this.game.canvas.removeEventListener(
-        "contextmenu",
-        this.contextMenuHandler,
-      );
+      this.game.canvas.removeEventListener("contextmenu", this.contextMenuHandler);
       this.contextMenuHandler = null;
     }
     if (this.resizeHandler) {
@@ -1219,6 +1155,7 @@ export class ArenaScene extends Phaser.Scene {
     this.dust.length = 0;
     this.floorObjs = [];
     this.levelWinObjects = [];
+    this.levelWinChoices = [];
     this.summonObjects = [];
     this.carousel = [];
     this.carouselDepthSelection = -1;
@@ -1258,6 +1195,11 @@ export class ArenaScene extends Phaser.Scene {
     this.portal = undefined;
     this.rift = undefined;
     this.levelWinTimerBar = undefined;
+    this.levelWinTimerText = undefined;
+    this.levelWinStatusText = undefined;
+    this.levelWinDim = undefined;
+    this.levelWinLower = undefined;
+    this.levelWinUpper = undefined;
     this.deathText = undefined!;
     this.restartBtn = undefined!;
     this.grabGfx = undefined!;
@@ -1334,7 +1276,12 @@ export class ArenaScene extends Phaser.Scene {
     this.prevWon = false;
     this.hudScale = -1;
     this.levelWinKey = "";
+    this.levelWinMode = "";
     this.levelWinSelectionSent = false;
+    this.levelWinInputReleaseLatch = false;
+    this.levelWinFocus = 0;
+    this.levelWinAwaitingRelease = true;
+    this.levelWinTimerSampleDs = -1;
     this.summonOpen = false;
     this.summonCount = 1;
     this.summonTough = false;
@@ -1378,11 +1325,7 @@ export class ArenaScene extends Phaser.Scene {
     // §13 v0.106 (A11): the grab-highlight ring on the pickup R will take (just under the parry ring).
     this.grabGfx = this.add.graphics().setDepth(99988);
     // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
-    this.dangerVignette = this.add
-      .graphics()
-      .setScrollFactor(0)
-      .setDepth(99998)
-      .setAlpha(0);
+    this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -1391,9 +1334,7 @@ export class ArenaScene extends Phaser.Scene {
     // §19 v0.108 audio — ONE AudioBus shared across scene re-entries via the game registry (so the
     // volume/mute setting + the live AudioContext survive a menu round-trip). Resumed on the first user
     // gesture below (autoplay policy).
-    this.audio =
-      (this.game.registry.get("audio") as AudioBus | undefined) ??
-      new AudioBus();
+    this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.xpMotes = new XpMoteRenderer(this, {
       target: (collectorId, out) => this.xpCatchPoint(collectorId, out),
@@ -1404,7 +1345,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE",
+      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -1422,7 +1363,14 @@ export class ArenaScene extends Phaser.Scene {
       | "SPACE"
       | "ONE"
       | "TWO"
-      | "THREE",
+      | "THREE"
+      | "FOUR"
+      | "FIVE"
+      | "LEFT"
+      | "RIGHT"
+      | "UP"
+      | "DOWN"
+      | "ENTER",
       Phaser.Input.Keyboard.Key
     >;
     // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
@@ -1612,11 +1560,7 @@ export class ArenaScene extends Phaser.Scene {
     this.restartBtn.on("pointerdown", () => this.room?.send("restart"));
 
     // §9/§13 drop/salvage hold bar — fills while R is held; release before full = drop, full = salvage.
-    this.dropBar = this.add
-      .graphics()
-      .setScrollFactor(0)
-      .setDepth(100003)
-      .setVisible(false);
+    this.dropBar = this.add.graphics().setScrollFactor(0).setDepth(100003).setVisible(false);
     this.dropBarLabel = this.add
       .text(0, 0, "", {
         fontSize: "12px",
@@ -1718,8 +1662,7 @@ export class ArenaScene extends Phaser.Scene {
         // tier-bundle fallback FOREVER (a fresh showroom page of 42 expansion weapons showed all blobs —
         // "assets missing"). Once the texture lands, rebuild the pickup with its real art.
         const wantArt = existing0.getData("pendingArt") as string | undefined;
-        const wantRole =
-          SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
+        const wantRole = SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
         if (
           !wantArt ||
           !wantRole ||
@@ -1747,38 +1690,23 @@ export class ArenaScene extends Phaser.Scene {
       };
       // A KNOWN pickup renders its real art — but an expansion weapon's parts lazy-load at runtime, so
       // fall back to the tier-tinted bundle (with the true name label) until/unless the art exists.
-      const part =
-        isMystery || !this.ensureWeaponArt(weapon)
-          ? undefined
-          : manifest?.parts[0];
+      const part = isMystery || !this.ensureWeaponArt(weapon) ? undefined : manifest?.parts[0];
       const accent =
-        isMystery || pk.rarity > 0
-          ? rarity.color
-          : (WEAPON_ACCENT[weapon] ?? 0xffd479);
+        isMystery || pk.rarity > 0 ? rarity.color : (WEAPON_ACCENT[weapon] ?? 0xffd479);
       const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
       const baseScale = part ? 72 / part.w : 1;
 
-      const beam = this.add
-        .rectangle(0, -10, 34, 104, accent, 0.08)
-        .setBlendMode(ADD); // pedestal light
-      const halo = this.add
-        .ellipse(0, 30, 100, 34, accent, 0.22)
-        .setBlendMode(ADD); // ground glow
-      const glow = this.add
-        .ellipse(0, 0, 78, 78, accent, 0.32)
-        .setBlendMode(ADD);
-      const edge = this.add
-        .rectangle(0, 0, 2, 44, 0xffffff, 0)
-        .setBlendMode(ADD);
+      const beam = this.add.rectangle(0, -10, 34, 104, accent, 0.08).setBlendMode(ADD); // pedestal light
+      const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
+      const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
+      const edge = this.add.rectangle(0, 0, 2, 44, 0xffffff, 0).setBlendMode(ADD);
       const tx = part ? partTexture(this, weapon, part.role) : null;
       // Mystery = a rarity-tinted sealed ORB (+ "?"), NOT the weapon art. A circle spins cleanly under
       // the faux-3D scaleX tween (a rotated rect collapsed into a diagonal sliver — verify finding).
       const img =
         part && tx
           ? this.add.image(0, 0, tx.key, tx.frame).setScale(baseScale)
-          : this.add
-              .circle(0, 0, 20, accent, 0.9)
-              .setStrokeStyle(2, 0x1a1410, 0.6);
+          : this.add.circle(0, 0, 20, accent, 0.9).setStrokeStyle(2, 0x1a1410, 0.6);
       const mysteryMark = isMystery
         ? this.add
             .text(0, 0, "?", {
@@ -1801,8 +1729,7 @@ export class ArenaScene extends Phaser.Scene {
       // Label: mystery → tier + weapon CLASS glyph (type is telegraphed, identity isn't); known → name
       // (+ its rolled affix). §13 "type + rarity via visual cues but not exactly which weapon."
       const weaponClass = isMystery ? pk.weaponClass : def?.tags.classPool;
-      const classGlyph =
-        weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
+      const classGlyph = weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
       const affixName = pk.affixPublic ? affixById(pk.affixPublic).name : "";
       const labelText = isMystery
         ? `${rarity.name} ${classGlyph}`
@@ -1818,9 +1745,7 @@ export class ArenaScene extends Phaser.Scene {
       if (shine) spinnerKids.push(shine);
       if (mysteryMark) spinnerKids.push(mysteryMark);
       const spinner = this.add.container(0, 0, spinnerKids);
-      const container = this.add
-        .container(pk.x, pk.y, [beam, halo, spinner, label])
-        .setDepth(2);
+      const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
       container.setData({
         spinner,
         spinImg: img,
@@ -1898,9 +1823,7 @@ export class ArenaScene extends Phaser.Scene {
             container.setData("spinTheta", theta);
             img.scaleX = baseScale * c; // faux-3D Y-axis spin (squashes through edge-on)
             glow.setScale(0.85 + 0.2 * Math.abs(c), 1);
-            edge
-              .setAlpha(edgeAlpha)
-              .setScale(1, 0.75 + 0.25 * Math.abs(Math.sin(theta)));
+            edge.setAlpha(edgeAlpha).setScale(1, 0.75 + 0.25 * Math.abs(Math.sin(theta)));
             if (mysteryMark) {
               mysteryMark.scaleX = Math.max(0.04, Math.abs(c));
               mysteryMark.setAlpha(Math.max(0, c));
@@ -1942,11 +1865,7 @@ export class ArenaScene extends Phaser.Scene {
   /** Authoritative removal folds only the inner art/label; the pickup target ring was already removed. */
   private beginPickupExit(pickup: Phaser.GameObjects.Container): void {
     if (this.closingPickups.has(pickup)) return;
-    const visible = Phaser.Geom.Rectangle.Contains(
-      this.cameras.main.worldView,
-      pickup.x,
-      pickup.y,
-    );
+    const visible = Phaser.Geom.Rectangle.Contains(this.cameras.main.worldView, pickup.x, pickup.y);
     if (
       prefersReducedPaperMotion() ||
       !visible ||
@@ -1965,31 +1884,22 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     const spinner = pickup.getData("spinner") as Phaser.GameObjects.Container;
-    const img = pickup.getData("spinImg") as
-      Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
+    const img = pickup.getData("spinImg") as Phaser.GameObjects.Image | Phaser.GameObjects.Arc;
     const glow = pickup.getData("spinGlow") as Phaser.GameObjects.Arc;
-    const shine = pickup.getData(
-      "spinShine",
-    ) as Phaser.GameObjects.Image | null;
+    const shine = pickup.getData("spinShine") as Phaser.GameObjects.Image | null;
     const edge = pickup.getData("spinEdge") as Phaser.GameObjects.Rectangle;
-    const mysteryMark = pickup.getData(
-      "mysteryMark",
-    ) as Phaser.GameObjects.Text | null;
+    const mysteryMark = pickup.getData("mysteryMark") as Phaser.GameObjects.Text | null;
     const label = pickup.getData("pickupLabel") as Phaser.GameObjects.Text;
     const baseScale = pickup.getData("baseScale") as number;
     const theta0 = (pickup.getData("spinTheta") as number | undefined) ?? 0;
-    const theta1 =
-      Math.PI / 2 +
-      (Math.floor((theta0 - Math.PI / 2) / Math.PI) + 1) * Math.PI;
+    const theta1 = Math.PI / 2 + (Math.floor((theta0 - Math.PI / 2) / Math.PI) + 1) * Math.PI;
     spinner.setScale(1).setRotation(0);
     const labelCenterY = label.y;
     label.setOrigin(0.5, 0).setY(labelCenterY - label.height * 0.5);
     this.closingPickups.add(pickup);
     this.paperPeakObjects = Math.max(
       this.paperPeakObjects,
-      this.paperDeaths.length +
-        this.closingPickups.size +
-        (this.paperWorldFold ? 4 : 0),
+      this.paperDeaths.length + this.closingPickups.size + (this.paperWorldFold ? 4 : 0),
     );
     const exitTween = this.tweens.addCounter({
       from: 0,
@@ -2038,10 +1948,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.pendingArt.has(spriteId)) {
       this.pendingArt.add(spriteId);
       for (const part of manifest.parts) {
-        this.load.image(
-          `${spriteId}:${part.role}`,
-          `sprites/${spriteId}/${part.file}`,
-        );
+        this.load.image(`${spriteId}:${part.role}`, `sprites/${spriteId}/${part.file}`);
       }
       // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
       // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
@@ -2100,10 +2007,8 @@ export class ArenaScene extends Phaser.Scene {
       .cull(out.filter((obj) => obj.active && obj.willRender(camera)))
       .sort(
         (a, b) =>
-          ((a as Phaser.GameObjects.GameObject & { depth?: number }).depth ??
-            0) -
-          ((b as Phaser.GameObjects.GameObject & { depth?: number }).depth ??
-            0),
+          ((a as Phaser.GameObjects.GameObject & { depth?: number }).depth ?? 0) -
+          ((b as Phaser.GameObjects.GameObject & { depth?: number }).depth ?? 0),
       );
   }
 
@@ -2138,10 +2043,7 @@ export class ArenaScene extends Phaser.Scene {
     let bottom: Phaser.GameObjects.Image | undefined;
     let crease: Phaser.GameObjects.Rectangle | undefined;
     try {
-      snapshot = this.add
-        .renderTexture(0, 0, captureW, captureH)
-        .setOrigin(0)
-        .setVisible(false);
+      snapshot = this.add.renderTexture(0, 0, captureW, captureH).setOrigin(0).setVisible(false);
       const saved = snapshot.saveTexture(textureKey);
       saved.add("top", 0, 0, 0, captureW, halfH);
       saved.add("bottom", 0, 0, halfH, captureW, captureH - halfH);
@@ -2149,9 +2051,7 @@ export class ArenaScene extends Phaser.Scene {
         this.paperPagePool = {
           top: this.add.image(0, 0, "__WHITE").setVisible(false),
           bottom: this.add.image(0, 0, "__WHITE").setVisible(false),
-          crease: this.add
-            .rectangle(0, 0, 2, 10, 0x8e4bd6, 0)
-            .setVisible(false),
+          crease: this.add.rectangle(0, 0, 2, 10, 0x8e4bd6, 0).setVisible(false),
         };
       }
       top = this.paperPagePool.top
@@ -2207,10 +2107,7 @@ export class ArenaScene extends Phaser.Scene {
       );
       return fold;
     } catch (err) {
-      console.warn(
-        "[paper] world snapshot failed; using the transition flash",
-        err,
-      );
+      console.warn("[paper] world snapshot failed; using the transition flash", err);
       if (this.paperWorldFold) this.releasePaperWorldFold();
       else {
         top?.setVisible(false).setTexture("__WHITE");
@@ -2225,18 +2122,11 @@ export class ArenaScene extends Phaser.Scene {
 
   private announcePaperDescent(depth: number, dimensionName: string): void {
     this.audio.play("descent");
-    this.flashBanner(
-      `⇓  DEPTH ${depth} — ${dimensionName.toUpperCase()}  ⇓`,
-      "#b478ff",
-    );
+    this.flashBanner(`⇓  DEPTH ${depth} — ${dimensionName.toUpperCase()}  ⇓`, "#b478ff");
   }
 
   /** Close the old snapshot, swap its pixels only while edge-on, then unfold the accepted new world. */
-  private playPaperWorldFold(
-    fold: PaperWorldFold,
-    depth: number,
-    dimensionName: string,
-  ): void {
+  private playPaperWorldFold(fold: PaperWorldFold, depth: number, dimensionName: string): void {
     if (prefersReducedPaperMotion()) {
       fold.tween = this.tweens.add({
         targets: [fold.top, fold.bottom, fold.crease],
@@ -2318,13 +2208,10 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (this.telegraphGroundGfx?.active)
       this.telegraphGroundGfx.setDepth(fold.telegraphGroundDepth);
-    if (fold.top.active)
-      fold.top.setVisible(false).setAlpha(1).setTexture("__WHITE");
-    if (fold.bottom.active)
-      fold.bottom.setVisible(false).setAlpha(1).setTexture("__WHITE");
+    if (fold.top.active) fold.top.setVisible(false).setAlpha(1).setTexture("__WHITE");
+    if (fold.bottom.active) fold.bottom.setVisible(false).setAlpha(1).setTexture("__WHITE");
     if (fold.crease.active) fold.crease.setVisible(false).setAlpha(0);
-    if (this.textures.exists(fold.textureKey))
-      this.textures.remove(fold.textureKey);
+    if (this.textures.exists(fold.textureKey)) this.textures.remove(fold.textureKey);
     if (fold.snapshot.active) fold.snapshot.destroy();
   }
 
@@ -2403,32 +2290,17 @@ export class ArenaScene extends Phaser.Scene {
       try {
         this.buildBeltFloor();
       } catch (e) {
-        console.error(
-          "[belt] buildBeltFloor failed — level renders without its floor art",
-          e,
-        );
+        console.error("[belt] buildBeltFloor failed — level renders without its floor art", e);
         this.cameras.main.setBackgroundColor(this.beltTheme().sky);
       }
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
     } else {
       this.floorObjs.push(
-        ...drawArena(
-          this,
-          this.arenaMap,
-          dimension.id,
-          (k) => this.hasTile(k),
-          palette,
-        ),
+        ...drawArena(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
       );
       this.floorObjs.push(
-        ...buildArenaFloor(
-          this,
-          this.arenaMap,
-          dimension.id,
-          (k) => this.hasTile(k),
-          palette,
-        ),
+        ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
       );
       const pois = buildPois(this, this.arenaMap, dimension.id);
       this.poiSprites = pois.sprites;
@@ -2457,8 +2329,7 @@ export class ArenaScene extends Phaser.Scene {
           "#b478ff",
         );
       }
-      if (worldFold)
-        this.playPaperWorldFold(worldFold, s.depth, dimension.name);
+      if (worldFold) this.playPaperWorldFold(worldFold, s.depth, dimension.name);
     }
   }
 
@@ -2497,9 +2368,7 @@ export class ArenaScene extends Phaser.Scene {
     const status = document.getElementById("status");
     // §4 secure deployments must use WSS; localhost/http development remains the same WS endpoint.
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const client = new Client(
-      `${scheme}://${location.hostname}:${DEFAULT_PORT}`,
-    );
+    const client = new Client(`${scheme}://${location.hostname}:${DEFAULT_PORT}`);
 
     // Retry with backoff: on a cold `pnpm dev`, the Vite client is ready seconds before
     // the Colyseus server finishes starting. Without retry, the first load throws and
@@ -2543,8 +2412,7 @@ export class ArenaScene extends Phaser.Scene {
             initialStateSubscribed = false;
             room.onStateChange.remove(onInitialState);
           }
-          if (generation !== this.connectionGeneration || this.room !== room)
-            return;
+          if (generation !== this.connectionGeneration || this.room !== room) return;
           const sv = state.schemaVersion;
           if (sv && sv !== SCHEMA_VERSION) {
             const msg = `⚠ version mismatch (server schema ${sv} ≠ client ${SCHEMA_VERSION}) — hard-reload this page (Ctrl+Shift+R)`;
@@ -2563,8 +2431,7 @@ export class ArenaScene extends Phaser.Scene {
         // snapshot timeline + rings and reconcile the self predictor. DATA ONLY in here (never move a
         // rig from inside a patch callback — the render step owns positions; review #10).
         const onStateChange = (state: ArenaState): void => {
-          if (generation === this.connectionGeneration && this.room === room)
-            this.onPatch(state);
+          if (generation === this.connectionGeneration && this.room === room) this.onPatch(state);
         };
         room.onStateChange(onStateChange);
         let stateSubscribed = true;
@@ -2573,25 +2440,19 @@ export class ArenaScene extends Phaser.Scene {
           stateSubscribed = false;
           room.onStateChange.remove(onStateChange);
         });
-        if (status)
-          status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
+        if (status) status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
         return;
       } catch (err) {
         if (generation !== this.connectionGeneration) return;
-        console.warn(
-          `[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`,
-          err,
-        );
-        if (status)
-          status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
+        console.warn(`[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`, err);
+        if (status) status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (generation !== this.connectionGeneration) return;
       }
     }
 
     if (generation === this.connectionGeneration && status) {
-      status.textContent =
-        "connection failed — is the server running? (pnpm dev:server)";
+      status.textContent = "connection failed — is the server running? (pnpm dev:server)";
     }
   }
 
@@ -2632,142 +2493,137 @@ export class ArenaScene extends Phaser.Scene {
     // calls (so a sound's stereo position tracks where it happens on screen; end-of-update ordering panned
     // against the prior frame + origin-0 on frame one — adversarial-verify finding).
     const cam = this.cameras.main;
-    this.audio.setListener(
-      cam.scrollX + cam.width / cam.zoom / 2,
-      cam.width / cam.zoom / 2,
-    );
+    this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
     // §9/§13 R — context-sensitive: if a dropped weapon is within reach, TAP = GRAB it (equip). Otherwise,
     // with a weapon held, TAP = drop it on the floor and HOLD = salvage it into the bag. Spacebar = jump.
     // (Restart the run is now the on-screen button, top-right.)
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
-    const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
-    // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
-    // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
-    let nearPickup = false;
+    const levelWindowOpen = this.inLevelWindow(selfP);
+    if (!levelWindowOpen && this.levelWinInputReleaseLatch && this.levelWindowInputsReleased()) {
+      this.levelWinInputReleaseLatch = false;
+    }
+    if (levelWindowOpen) this.handleLevelWindowInput();
+    const levelWindowInputBlocked = levelWindowOpen || this.levelWinInputReleaseLatch;
+    let canSalvage = false;
     this.grabTarget = null;
-    if (selfP && alive) {
-      let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
-      this.room.state.pickups.forEach((pk) => {
-        const dx = pk.x - selfP.x;
-        const dy = pk.y - selfP.y;
-        const d = dx * dx + dy * dy;
-        if (d <= bestD) {
-          bestD = d;
-          nearPickup = true;
-          this.grabTarget = { x: pk.x, y: pk.y };
+    if (!levelWindowInputBlocked) {
+      const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
+      // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
+      // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
+      let nearPickup = false;
+      if (selfP && alive) {
+        let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
+        this.room.state.pickups.forEach((pk) => {
+          const dx = pk.x - selfP.x;
+          const dy = pk.y - selfP.y;
+          const d = dx * dx + dy * dy;
+          if (d <= bestD) {
+            bestD = d;
+            nearPickup = true;
+            this.grabTarget = { x: pk.x, y: pk.y };
+          }
+        });
+      }
+      canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
+      // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
+      // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
+      if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
+        this.room.send("grabWeapon");
+        this.rGrabbed = true;
+        this.audio.play("grab"); // §19 a soft two-note pickup blip
+      }
+      // `!rGrabbed`: if this R-press already fired a grab (JustDown), it does nothing else for the rest of the
+      // hold — one press = one grab, so walking off a pickup mid-hold can't then accidentally salvage the
+      // weapon you just picked up.
+      if (this.keys.R.isDown && canSalvage && !this.rGrabbed) {
+        this.rHold += this.deltaSec;
+        if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
+          this.room.send("salvageWeapon");
+          this.rSalvaged = true;
         }
-      });
-    }
-    const canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
-    // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
-    // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
-    if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
-      this.room.send("grabWeapon");
-      this.rGrabbed = true;
-      this.audio.play("grab"); // §19 a soft two-note pickup blip
-    }
-    // `!rGrabbed`: if this R-press already fired a grab (JustDown), it does nothing else for the rest of the
-    // hold — one press = one grab, so walking off a pickup mid-hold can't then accidentally salvage the
-    // weapon you just picked up.
-    if (this.keys.R.isDown && canSalvage && !this.rGrabbed) {
-      this.rHold += this.deltaSec;
-      if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
-        this.room.send("salvageWeapon");
-        this.rSalvaged = true;
       }
-    }
-    if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
-      if (
-        !this.rGrabbed &&
-        !this.rSalvaged &&
-        this.rHold > 0.02 &&
-        this.rHold < SALVAGE_HOLD_SECONDS &&
-        holdingWeapon
-      ) {
-        this.room.send("dropWeapon"); // a quick tap (not a grab, not a salvage-hold) = drop
+      if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
+        if (
+          !this.rGrabbed &&
+          !this.rSalvaged &&
+          this.rHold > 0.02 &&
+          this.rHold < SALVAGE_HOLD_SECONDS &&
+          holdingWeapon
+        ) {
+          this.room.send("dropWeapon"); // a quick tap (not a grab, not a salvage-hold) = drop
+        }
+        this.rHold = 0;
+        this.rSalvaged = false;
+        this.rGrabbed = false;
       }
-      this.rHold = 0;
-      this.rSalvaged = false;
-      this.rGrabbed = false;
+      // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
+      // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
+      if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
+      // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
+      // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
+      // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
+      // up with E" handed you a seemingly random weapon. Cycle/browse stays on E only when clear of pickups.
+      const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
+      if (eDown && alive && nearPickup) {
+        this.room.send("grabWeapon");
+        this.audio.play("grab");
+      }
+      const eFree = eDown && !(alive && nearPickup);
+      // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
+      // keeps the roster carousel.
+      if (this.belt) {
+        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleSlot", { dir: 1 });
+        if (eFree) this.room?.send("cycleSlot", { dir: -1 });
+        if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
+        if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
+        if (Phaser.Input.Keyboard.JustDown(this.keys.THREE))
+          this.room?.send("swapSlot", { slot: 2 });
+      } else if (this.room?.state.mode === "training") {
+        // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
+        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("galleryPage", { dir: 1 });
+        if (eFree) this.room?.send("galleryPage", { dir: -1 });
+      } else {
+        if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
+        if (eFree) this.room?.send("cycleWeapon", { dir: -1 });
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
+      if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
+      // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
+      if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
+        const muted = this.audio.toggleMute();
+        this.flashBanner(muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON", "#8fdcff");
+      }
+      // Tab: §29 belt opens the ARSENAL BAG overlay; elsewhere it's the §21 dev summon menu (Testing Grounds).
+      if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
+        if (this.belt) {
+          this.bagOpen = !this.bagOpen;
+          if (this.bagOpen) this.shopOpen = false; // one overlay at a time
+        } else {
+          const training = this.room?.state.mode === "training";
+          if (training && !this.summonOpen) this.openSummonMenu();
+          else this.closeSummonMenu();
+        }
+      }
+      // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
+      if (this.belt) {
+        const shopX = this.room?.state.beltShopX ?? 0;
+        const selfX = this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
+        const nearShop = shopX > 0 && Math.abs(selfX - shopX) <= SHOP_RADIUS;
+        if (Phaser.Input.Keyboard.JustDown(this.keys.F) && nearShop) {
+          this.shopOpen = !this.shopOpen;
+          if (this.shopOpen) this.bagOpen = false;
+        }
+        if (!nearShop) this.shopOpen = false;
+      }
+      if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
+      if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
     }
     this.updateDropBar(canSalvage);
     this.renderGrabHighlight();
-    // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
-    // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
-    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive)
-      this.jumpQueued = true;
-    // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
-    // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
-    // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
-    // up with E" handed you a seemingly random weapon. Cycle/browse stays on E only when clear of pickups.
-    const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
-    if (eDown && alive && nearPickup) {
-      this.room.send("grabWeapon");
-      this.audio.play("grab");
-    }
-    const eFree = eDown && !(alive && nearPickup);
-    // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
-    // keeps the roster carousel.
-    if (this.belt) {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
-        this.room?.send("cycleSlot", { dir: 1 });
-      if (eFree) this.room?.send("cycleSlot", { dir: -1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.ONE))
-        this.room?.send("swapSlot", { slot: 0 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.TWO))
-        this.room?.send("swapSlot", { slot: 1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.THREE))
-        this.room?.send("swapSlot", { slot: 2 });
-    } else if (this.room?.state.mode === "training") {
-      // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
-        this.room?.send("galleryPage", { dir: 1 });
-      if (eFree) this.room?.send("galleryPage", { dir: -1 });
-    } else {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
-        this.room?.send("cycleWeapon", { dir: 1 });
-      if (eFree) this.room?.send("cycleWeapon", { dir: -1 });
-    }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.T))
-      this.room?.send("toggleTraining");
-    if (Phaser.Input.Keyboard.JustDown(this.keys.B))
-      this.room?.send("spawnBoss");
-    // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
-    if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
-      const muted = this.audio.toggleMute();
-      this.flashBanner(muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON", "#8fdcff");
-    }
-    // Tab: §29 belt opens the ARSENAL BAG overlay; elsewhere it's the §21 dev summon menu (Testing Grounds).
-    if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
-      if (this.belt) {
-        this.bagOpen = !this.bagOpen;
-        if (this.bagOpen) this.shopOpen = false; // one overlay at a time
-      } else {
-        const training = this.room?.state.mode === "training";
-        if (training && !this.summonOpen) this.openSummonMenu();
-        else this.closeSummonMenu();
-      }
-    }
-    // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
-    if (this.belt) {
-      const shopX = this.room?.state.beltShopX ?? 0;
-      const selfX =
-        this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
-      const nearShop = shopX > 0 && Math.abs(selfX - shopX) <= SHOP_RADIUS;
-      if (Phaser.Input.Keyboard.JustDown(this.keys.F) && nearShop) {
-        this.shopOpen = !this.shopOpen;
-        if (this.shopOpen) this.bagOpen = false;
-      }
-      if (!nearShop) this.shopOpen = false;
-    }
-    if (this.summonOpen && this.room?.state.mode !== "training")
-      this.closeSummonMenu();
-    if (Phaser.Input.Keyboard.JustDown(this.keys.C))
-      this.room?.send("cycleCharacter"); // §7 swap skin
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
-    this.stepNetInput(deltaMs); // §4 v0.107 mint/send/predict this frame's input commands
+    this.stepNetInput(deltaMs, levelWindowInputBlocked); // §4 v0.107 mint/send/predict this frame's input commands
     this.syncBlobs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
@@ -2783,15 +2639,9 @@ export class ArenaScene extends Phaser.Scene {
       // fold the accrued displacement into the error offset so the catch-up GLIDES instead of popping
       // ~42px on the exact frame that was supposed to feel weighty (review #11).
       if (this.wasFrozen && this.predictor) {
-        const selfRig = this.room
-          ? this.blobs.get(this.room.sessionId)
-          : undefined;
+        const selfRig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
         if (selfRig) {
-          const r = this.predictor.renderPos(
-            this.curDx,
-            this.curDy,
-            this.inputAccMs / 1000,
-          );
+          const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
           this.predictor.foldError(selfRig.x - r.x, selfRig.y - r.y);
         }
       }
@@ -2942,11 +2792,9 @@ export class ArenaScene extends Phaser.Scene {
           const wman = SPRITES[kind.wieldsWeapon as keyof typeof SPRITES];
           if (wdef && wman) rig.equipWeapon(kind.wieldsWeapon, wdef, wman);
         }
-        const paperPriority: 0 | 1 | 2 =
-          kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
+        const paperPriority: 0 | 1 | 2 = kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
         this.enemyPaperPriority.set(id, paperPriority);
-        if (!reducedMotion)
-          rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
+        if (!reducedMotion) rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
         this.enemies.set(id, rig);
         this.enemyAtk.set(id, enemy.atkSeq);
       }
@@ -2967,8 +2815,7 @@ export class ArenaScene extends Phaser.Scene {
             }
           });
         }
-        if (sample?.active)
-          this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
+        if (sample?.active) this.enemies.get(id)?.resolveMeleeTell(this.time.now, aimWorld);
         if (sample) {
           const melee = effectiveMelee(ENEMY_KINDS[enemy.kind]);
           sample.step = melee ? (sample.step + 1) % melee.hits : 0;
@@ -3043,29 +2890,20 @@ export class ArenaScene extends Phaser.Scene {
               0,
             );
             const fullLimit =
-              paperPriority > 0
-                ? PAPER_DEATH_FULL_BUDGET
-                : PAPER_DEATH_ORDINARY_BUDGET;
+              paperPriority > 0 ? PAPER_DEATH_FULL_BUDGET : PAPER_DEATH_ORDINARY_BUDGET;
             const full = visible && !reducedMotion && fullActive < fullLimit;
-            const variants: readonly PaperDeathTreatment[] = [
-              "crumple",
-              "flutter",
-              "tear",
-            ];
+            const variants: readonly PaperDeathTreatment[] = ["crumple", "flutter", "tear"];
             const treatment: PaperDeathTreatment = full
               ? paperPriority > 0
                 ? "tear"
-                : (variants[Math.floor(deathSeed * variants.length)] ??
-                  "crumple")
+                : (variants[Math.floor(deathSeed * variants.length)] ?? "crumple")
               : "lite";
             if (visible) {
               rig.deathPop((ax / al) * dist, (ay / al) * dist, treatment);
               this.paperDeaths.push({ rig, full });
               this.paperPeakObjects = Math.max(
                 this.paperPeakObjects,
-                this.paperDeaths.length +
-                  this.closingPickups.size +
-                  (this.paperWorldFold ? 4 : 0),
+                this.paperDeaths.length + this.closingPickups.size + (this.paperWorldFold ? 4 : 0),
               );
             } else {
               rig.destroy();
@@ -3073,9 +2911,7 @@ export class ArenaScene extends Phaser.Scene {
             // H3 §20 hit-stop: a brief crunch when a kill lands near YOU (≈ your kill). Throttled so a
             // horde-clearing AoE can't chain freezes into lag; parry/quake stops override via Math.max.
             const selfId = this.room?.sessionId;
-            const me = selfId
-              ? this.room?.state.players.get(selfId)
-              : undefined;
+            const me = selfId ? this.room?.state.players.get(selfId) : undefined;
             if (
               me?.alive &&
               Math.hypot(rig.x - me.x, rig.y - me.y) < 420 &&
@@ -3105,17 +2941,13 @@ export class ArenaScene extends Phaser.Scene {
     // faithful motion between real 20Hz positions (no τ-trail, no jitter rubber-band). A bracket gap
     // wider than INTERP_SNAP_ENEMY (a reposition; parry-knock ~154px/tick stays under it) CUTS instead
     // of tweening. Fallback = raw state while the timeline warms up.
-    const rt = this.timeline.ready
-      ? this.timeline.renderTime(this.time.now)
-      : -1;
+    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
     this.room.state.enemies.forEach((enemy, id) => {
       const rig = this.enemies.get(id);
       if (!rig) return;
       const s =
         rt >= 0
-          ? this.enemyBufs
-              .get(id)
-              ?.sampleInto(rt, INTERP_SNAP_ENEMY, this.enemySample)
+          ? this.enemyBufs.get(id)?.sampleInto(rt, INTERP_SNAP_ENEMY, this.enemySample)
           : null;
       if (s) rig.setPosition(s.x, s.y);
       else rig.setPosition(enemy.x, enemy.y);
@@ -3133,8 +2965,7 @@ export class ArenaScene extends Phaser.Scene {
     state.telegraphs.forEach((row, id) => {
       if (row.t >= 0.999) return; // active hazards/recovery must not hold the source in anticipation
       const priority =
-        row.kindTag === TelegraphKindTag.Melee ||
-        row.kindTag === TelegraphKindTag.Quake
+        row.kindTag === TelegraphKindTag.Melee || row.kindTag === TelegraphKindTag.Quake
           ? 7
           : row.kindTag === TelegraphKindTag.Charge
             ? 6
@@ -3163,11 +2994,7 @@ export class ArenaScene extends Phaser.Scene {
    * §TELEGRAPH drive a cheap planted boss silhouette through SpriteRig's existing public animation hooks.
    * Nul/Quickdraw's bare rect captures the row axis directly: no nearest-player reacquisition is allowed.
    */
-  private applyBossTelegraphPose(
-    rig: SpriteRig,
-    bossKind: string,
-    anim: RigAnim,
-  ): void {
+  private applyBossTelegraphPose(rig: SpriteRig, bossKind: string, anim: RigAnim): void {
     const pose = this.bossTelegraphPose;
     if (!pose.active) return;
     if (pose.id !== this.bossPoseRowId) {
@@ -3177,9 +3004,7 @@ export class ArenaScene extends Phaser.Scene {
 
     let aimWorld = pose.rot;
     const directional =
-      pose.shape === TgShape.Rect ||
-      pose.shape === TgShape.ArcSweep ||
-      pose.shape === TgShape.Cone;
+      pose.shape === TgShape.Rect || pose.shape === TgShape.ArcSweep || pose.shape === TgShape.Cone;
     if (!directional && pose.kindTag !== TelegraphKindTag.Radial) {
       const dx = pose.x - rig.x;
       const dy = pose.y - rig.y;
@@ -3222,8 +3047,7 @@ export class ArenaScene extends Phaser.Scene {
     // Nul's Sightline Compression is the panel's bare-rectangle hero case: the authoritative rect axis is
     // already driving the eye/body turn above, while repeated Claim/Load/Lock braces compress its sliced
     // hands/body and suppress all ordinary gait for the full charge. Quickdraw shares the same lane hook.
-    if (bossKind === "nul-sightline" || bossKind === "quickdraw-vane")
-      anim.speed = 0;
+    if (bossKind === "nul-sightline" || bossKind === "quickdraw-vane") anim.speed = 0;
   }
 
   /** Drive each enemy's procedural animation from its render-velocity (faces its travel dir). */
@@ -3264,7 +3088,10 @@ export class ArenaScene extends Phaser.Scene {
               melee.halfArc,
             );
             const angular = Math.abs(
-              Math.atan2(Math.sin(Math.atan2(dy, dx) - row.rot), Math.cos(Math.atan2(dy, dx) - row.rot)),
+              Math.atan2(
+                Math.sin(Math.atan2(dy, dx) - row.rot),
+                Math.cos(Math.atan2(dy, dx) - row.rot),
+              ),
             );
             distance = Math.hypot(
               Math.max(0, radial - melee.range),
@@ -3327,14 +3154,14 @@ export class ArenaScene extends Phaser.Scene {
         this.applyBossTelegraphPose(rig, es.kind, anim);
       rig.animate(this.animClock, anim);
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
-      const enraged =
-        es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
+      const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
       if (es && windup?.active) {
         const melee = effectiveMelee(ENEMY_KINDS[es.kind]);
         if (melee) {
           const row = state?.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
-          const pulse = now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS;
+          const pulse =
+            now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS;
           this.drawMeleeRangeRing(
             row?.x ?? es.x,
             row?.y ?? es.y,
@@ -3417,8 +3244,7 @@ export class ArenaScene extends Phaser.Scene {
     } else if (tick !== sample.serverTick) {
       const tickDelta = (tick - sample.serverTick) >>> 0;
       if (synced > sample.serverT && tickDelta > 0) {
-        sample.ratePerSecond =
-          (synced - sample.serverT) / ((tickDelta * TICK_MS) / 1000);
+        sample.ratePerSecond = (synced - sample.serverT) / ((tickDelta * TICK_MS) / 1000);
       }
       sample.previousT = sample.serverT;
       sample.previousTick = sample.serverTick;
@@ -3482,13 +3308,16 @@ export class ArenaScene extends Phaser.Scene {
       if (next.has(challenger.id) || next.size < MELEE_FULL_TELL_COUNT) continue;
       let worst: MeleeTellCandidate | undefined;
       for (const incumbentId of next) {
-        const incumbent = this.meleeTellCandidates.find((candidate) => candidate.id === incumbentId);
+        const incumbent = this.meleeTellCandidates.find(
+          (candidate) => candidate.id === incumbentId,
+        );
         if (incumbent && (!worst || compare(incumbent, worst) > 0)) worst = incumbent;
       }
       if (!worst) continue;
       const priorityJump = challenger.containsSelf && !worst.containsSelf;
       const materiallyCloser =
-        challenger.containsSelf === worst.containsSelf && challenger.distance < worst.distance * 0.8;
+        challenger.containsSelf === worst.containsSelf &&
+        challenger.distance < worst.distance * 0.8;
       if (priorityJump || materiallyCloser) {
         next.delete(worst.id);
         next.add(challenger.id);
@@ -3519,13 +3348,20 @@ export class ArenaScene extends Phaser.Scene {
       g.lineStyle(
         (pass === 0 ? 3.6 : pulse ? 2.7 : 1.35) / zoom,
         pass === 0 ? 0x17120f : 0xffffff,
-        pass === 0
-          ? 0.3
-          : 0.13 + t * 0.16 + (armed ? 0.09 : 0) + (pulse ? 0.42 : 0),
+        pass === 0 ? 0.3 : 0.13 + t * 0.16 + (armed ? 0.09 : 0) + (pulse ? 0.42 : 0),
       );
       for (let i = 0; i < 8; i++) {
         const start = rot + i * segment + gap;
-        this.traceProjectedArc(g, x, y, range, start, rot + (i + 1) * segment - gap, projectionYScale, zoom);
+        this.traceProjectedArc(
+          g,
+          x,
+          y,
+          range,
+          start,
+          rot + (i + 1) * segment - gap,
+          projectionYScale,
+          zoom,
+        );
       }
     }
     // The weapon-facing interval is solid, while the rear/side envelope stays broken and secondary.
@@ -3535,28 +3371,44 @@ export class ArenaScene extends Phaser.Scene {
     this.traceProjectedArc(g, x, y, range, rot - halfArc, rot + halfArc, projectionYScale, zoom);
     // Bright completion travels symmetrically from the sector ends toward the forward notch.
     g.lineStyle((pulse ? 3.4 : 2.2) / zoom, 0xffffff, 0.32 + t * 0.42);
-    this.traceProjectedArc(g, x, y, range, rot - halfArc, rot - halfArc + halfArc * t, projectionYScale, zoom);
-    this.traceProjectedArc(g, x, y, range, rot + halfArc - halfArc * t, rot + halfArc, projectionYScale, zoom);
+    this.traceProjectedArc(
+      g,
+      x,
+      y,
+      range,
+      rot - halfArc,
+      rot - halfArc + halfArc * t,
+      projectionYScale,
+      zoom,
+    );
+    this.traceProjectedArc(
+      g,
+      x,
+      y,
+      range,
+      rot + halfArc - halfArc * t,
+      rot + halfArc,
+      projectionYScale,
+      zoom,
+    );
 
     // The final three server ticks pull a second ring inward; the fixed notched reach ruler remains behind.
     if (remainingMs <= 150) {
       const beat = Math.max(0, Math.min(1, remainingMs / 150));
       const beatRange = range * (0.18 + beat * 0.82);
       g.lineStyle((pulse ? 3 : 1.8) / zoom, 0xffffff, 0.24 + (1 - beat) * 0.34);
-      this.traceProjectedArc(g, x, y, beatRange, rot - halfArc, rot + halfArc, projectionYScale, zoom);
+      this.traceProjectedArc(
+        g,
+        x,
+        y,
+        beatRange,
+        rot - halfArc,
+        rot + halfArc,
+        projectionYScale,
+        zoom,
+      );
     }
-    this.drawMeleeRangeNotches(
-      g,
-      x,
-      y,
-      range,
-      rot,
-      projectionYScale,
-      zoom,
-      t,
-      armed,
-      locked,
-    );
+    this.drawMeleeRangeNotches(g, x, y, range, rot, projectionYScale, zoom, t, armed, locked);
   }
 
   private traceProjectedArc(
@@ -3570,10 +3422,7 @@ export class ArenaScene extends Phaser.Scene {
     zoom: number,
   ): void {
     const span = Math.abs(end - start);
-    const samples = Math.max(
-      2,
-      Math.min(24, Math.ceil((span * Math.max(1, range * zoom)) / 12)),
-    );
+    const samples = Math.max(2, Math.min(24, Math.ceil((span * Math.max(1, range * zoom)) / 12)));
     g.beginPath();
     g.moveTo(
       x + Math.cos(start) * range,
@@ -3811,10 +3660,7 @@ export class ArenaScene extends Phaser.Scene {
       } else if (c.kindTag === TelegraphKindTag.Pool) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
         spawnExplosion(this, c.x, impactY, Math.min(40, c.a * 0.4));
-      } else if (
-        c.kindTag === TelegraphKindTag.Summon ||
-        c.kindTag === TelegraphKindTag.Radial
-      ) {
+      } else if (c.kindTag === TelegraphKindTag.Summon || c.kindTag === TelegraphKindTag.Radial) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
         spawnExplosion(this, c.x, impactY, 22);
       } else if (c.kindTag === TelegraphKindTag.Quake) {
@@ -3856,8 +3702,7 @@ export class ArenaScene extends Phaser.Scene {
           ? 0.62
           : 0.65;
     const lock = Phaser.Math.Clamp((t - lockAt) / (0.88 - lockAt), 0, 1);
-    const cadence =
-      0.5 + Math.sin(t * (danger === 0 ? 34 : 23) + hash * Math.PI * 2) * 0.5;
+    const cadence = 0.5 + Math.sin(t * (danger === 0 ? 34 : 23) + hash * Math.PI * 2) * 0.5;
     const line = danger === 0 ? 0xffffff : 0xd96a4f;
     const alpha =
       danger === 0
@@ -3988,9 +3833,7 @@ export class ArenaScene extends Phaser.Scene {
     g.lineStyle((danger === 0 ? 1.4 : 2.1) / zoom, color, alpha * 0.62);
     g.beginPath();
     for (const edge of geometry.edges) {
-      const segmentCount = edge.closed
-        ? edge.points.length
-        : edge.points.length - 1;
+      const segmentCount = edge.closed ? edge.points.length : edge.points.length - 1;
       for (let i = 0; i < segmentCount; i++) {
         const j = (i + 1) % edge.points.length;
         const p0 = edge.points[i];
@@ -4004,11 +3847,7 @@ export class ArenaScene extends Phaser.Scene {
         if (len < 0.01) continue;
         const tx = dx / len;
         const ty = dy / len;
-        for (
-          let dist = (phase + i * spacing * 0.37) % spacing;
-          dist < len;
-          dist += spacing
-        ) {
+        for (let dist = (phase + i * spacing * 0.37) % spacing; dist < len; dist += spacing) {
           const frac = dist / len;
           const ex = e0.x + dx * frac;
           const ey = e0.y + dy * frac;
@@ -4032,15 +3871,9 @@ export class ArenaScene extends Phaser.Scene {
             const wing = 3 / zoom;
             const depth = 7 / zoom;
             g.moveTo(apexX, apexY);
-            g.lineTo(
-              apexX + nx * depth + tx * wing,
-              apexY + ny * depth + ty * wing,
-            );
+            g.lineTo(apexX + nx * depth + tx * wing, apexY + ny * depth + ty * wing);
             g.moveTo(apexX, apexY);
-            g.lineTo(
-              apexX + nx * depth - tx * wing,
-              apexY + ny * depth - ty * wing,
-            );
+            g.lineTo(apexX + nx * depth - tx * wing, apexY + ny * depth - ty * wing);
           }
         }
       }
@@ -4102,9 +3935,7 @@ export class ArenaScene extends Phaser.Scene {
           }
         });
       }
-      const sourcePlayer = shooter
-        ? room.state.players.get(shooter)
-        : undefined;
+      const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
       if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
@@ -4113,17 +3944,14 @@ export class ArenaScene extends Phaser.Scene {
           // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
           // when the authoritative projectile lands a round-trip later.
           const isSelf = shooter === room.sessionId;
-          const suppressed =
-            isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
+          const suppressed = isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
           const p = room.state.players.get(shooter);
           if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
             // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
             // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
             const srig = this.blobs.get(shooter);
-            const reach = gunMuzzleReach(
-              WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON],
-            ); // §29 fixed-size weapon
+            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]); // §29 fixed-size weapon
             spawnMuzzleFlash(
               this,
               (srig?.x ?? p.x) + Math.cos(ang) * reach,
@@ -4153,17 +3981,10 @@ export class ArenaScene extends Phaser.Scene {
             // fallback for a projectile first observed too far from its owner.
             const ci = k.indexOf(":");
             const sourceWeapon = WEAPONS[c.getData("sourceWeapon") as string];
-            const element =
-              sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
+            const element = sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
             spawnExplosion(this, c.x, c.y, er, element);
           } else if (GUN_FX[bk])
-            spawnBulletImpact(
-              this,
-              c.x,
-              c.y,
-              k,
-              (c.getData("ang") as number) ?? 0,
-            ); // pass k → element tint
+            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
         }
         c?.destroy();
@@ -4191,10 +4012,7 @@ export class ArenaScene extends Phaser.Scene {
       } else {
         const px = c.x + pr.vx * dtSec;
         const py = c.y + pr.vy * dtSec;
-        c.setPosition(
-          Phaser.Math.Linear(px, pr.x, 0.18),
-          Phaser.Math.Linear(py, pr.y, 0.18),
-        );
+        c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
     });
@@ -4211,20 +4029,9 @@ export class ArenaScene extends Phaser.Scene {
       // §8/§15: UNPARRYABLE zones speak RED/ORANGE danger (never white/neon-friendly). Reads as a
       // poison pool against the dust (§28.7).
       const fill = this.add.ellipse(0, 0, rx * 2, ry * 2, 0x8f2d18, 0.44);
-      const inner = this.add.ellipse(
-        0,
-        0,
-        rx * 1.25,
-        ry * 1.25,
-        0xff5d2e,
-        0.32,
-      );
-      const rim = this.add
-        .ellipse(0, 0, rx * 2, ry * 2)
-        .setStrokeStyle(4, 0xff7a3a, 0.95);
-      const c = this.add
-        .container(zone.x, zone.y, [fill, inner, rim])
-        .setDepth(1);
+      const inner = this.add.ellipse(0, 0, rx * 1.25, ry * 1.25, 0xff5d2e, 0.32);
+      const rim = this.add.ellipse(0, 0, rx * 2, ry * 2).setStrokeStyle(4, 0xff7a3a, 0.95);
+      const c = this.add.container(zone.x, zone.y, [fill, inner, rim]).setDepth(1);
       // Fade in, then bubble; the server owns the actual lifetime/expiry.
       c.setAlpha(0);
       this.tweens.add({ targets: c, alpha: 1, duration: 220 });
@@ -4255,9 +4062,7 @@ export class ArenaScene extends Phaser.Scene {
     text: string,
     textColor: string,
   ): Phaser.GameObjects.Container {
-    const outer = this.add
-      .circle(0, 0, EXTRACT_RADIUS, ring, 0.16)
-      .setStrokeStyle(3, ring, 0.7);
+    const outer = this.add.circle(0, 0, EXTRACT_RADIUS, ring, 0.16).setStrokeStyle(3, ring, 0.7);
     const inner = this.add
       .circle(0, 0, EXTRACT_RADIUS * 0.5, core, 0.22)
       .setStrokeStyle(2, core, 0.9);
@@ -4378,12 +4183,7 @@ export class ArenaScene extends Phaser.Scene {
         const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
         const titanic = rs >= 5;
         this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
-        this.cameras.main.flash(
-          titanic ? 420 : 240,
-          titanic ? 130 : 80,
-          titanic ? 32 : 20,
-          18,
-        );
+        this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
         this.audio.play("bossslam", { x: boss.x, amt: 1 });
         // §33 teach the colossus's footstep mechanic the moment he looms in — you can't out-DPS a quake.
         if (boss.kind === "world-titan") {
@@ -4399,11 +4199,7 @@ export class ArenaScene extends Phaser.Scene {
       this.bossBarFill.width = 516 * s * this.bossShown;
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
-        .setText(
-          bossDefName
-            ? bossDefName.toUpperCase()
-            : `${dimName.toUpperCase()} BOSS`,
-        )
+        .setText(bossDefName ? bossDefName.toUpperCase() : `${dimName.toUpperCase()} BOSS`)
         .setVisible(true);
       // §16 v0.116 Polish B — draw a tick at each PHASE threshold so the escalation gates are visible on the
       // bar. The def's phases[i].hpAbove is the HP fraction where phase i+1 begins; skip the final 0-floor.
@@ -4414,11 +4210,7 @@ export class ArenaScene extends Phaser.Scene {
         const x = barLeft + 516 * s * ph.hpAbove;
         // A crossed threshold (fill drained past it) dims; an upcoming one glows — reads the fight's progress.
         const passed = this.bossShown <= ph.hpAbove;
-        this.bossBarSegments.lineStyle(
-          2 * s,
-          passed ? 0x6a2a1a : 0x1a0d08,
-          passed ? 0.7 : 0.95,
-        );
+        this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
         this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
       }
     } else {
@@ -4431,10 +4223,7 @@ export class ArenaScene extends Phaser.Scene {
     // Boss-approach toast on first appearance.
     if (present && !this.prevBossPresent && this.bannerShownFor !== "boss") {
       this.bannerShownFor = "boss";
-      this.flashBanner(
-        `⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`,
-        "#ff5d3b",
-      );
+      this.flashBanner(`⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`, "#ff5d3b");
     }
     if (!present) this.bannerShownFor = "";
     this.prevBossPresent = present;
@@ -4464,8 +4253,7 @@ export class ArenaScene extends Phaser.Scene {
     // same point (a loot reveal + a depth banner used to render on top of each other, unreadable). Reset the
     // slot once enough time has passed that the previous banner has faded.
     const now = this.time.now;
-    this.bannerSlot =
-      now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
+    this.bannerSlot = now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
     this.lastBannerAt = now;
     const baseY = this.screenH() / 2 - 80 + this.bannerSlot * 40;
     const t = this.add
@@ -4546,339 +4334,638 @@ export class ArenaScene extends Phaser.Scene {
     this.levelWinPaperCounters.push(counter);
   }
 
-  /** Show the owed FLEX pick, then the signature draft; the offer fingerprint owns every rebuild. */
+  private inLevelWindow(self: PlayerState | undefined): boolean {
+    return !!self && (self.flexPending > 0 || self.sigPending > 0);
+  }
+
+  private retireLevelWindow(animateClose: boolean): void {
+    this.clearLevelPaperCounters();
+    const objects = this.levelWinObjects.splice(0);
+    const choices = this.levelWinChoices.splice(0);
+    const zones = new Set<Phaser.GameObjects.GameObject>(choices.map((choice) => choice.zone));
+    const dim = this.levelWinDim;
+    const lower = this.levelWinLower;
+    const upper = this.levelWinUpper;
+    for (const choice of choices) {
+      choice.zone.disableInteractive();
+      choice.zone.destroy();
+    }
+    this.levelWinTimerBar = undefined;
+    this.levelWinTimerText = undefined;
+    this.levelWinStatusText = undefined;
+    this.levelWinDim = undefined;
+    this.levelWinLower = undefined;
+    this.levelWinUpper = undefined;
+
+    const remaining = objects.filter((object) => !zones.has(object));
+    if (!animateClose || prefersReducedPaperMotion() || remaining.length === 0) {
+      for (const object of remaining) object.destroy();
+      return;
+    }
+
+    const paper = new Set<Phaser.GameObjects.GameObject>(
+      [dim, lower, upper].filter(Boolean) as Phaser.GameObjects.GameObject[],
+    );
+    const fadeTargets = remaining.filter((object) => !paper.has(object));
+    this.tweens.add({ targets: fadeTargets, alpha: 0, duration: 110, ease: "Sine.easeIn" });
+    if (dim) this.tweens.add({ targets: dim, alpha: 0, duration: 140 });
+    if (lower)
+      this.tweens.add({
+        targets: lower,
+        scaleY: -0.04,
+        duration: 180,
+        ease: "Cubic.easeIn",
+      });
+    if (upper)
+      this.tweens.add({
+        targets: upper,
+        scaleY: -0.04,
+        duration: 180,
+        ease: "Cubic.easeIn",
+      });
+    this.time.delayedCall(185, () => {
+      for (const object of remaining) object.destroy();
+    });
+  }
+
+  /** Show FLEX before Signature; resize/offer edges rebuild without replaying the full folio. */
   private updateLevelWindow(): void {
     if (!this.room) return;
     const self = this.room.state.players.get(this.room.sessionId);
     const flex = !!self && self.flexPending > 0;
-    const sig = !!self && self.sigPending > 0 && !flex; // the augment pick follows the stat pick
+    const sig = !!self && self.sigPending > 0 && !flex;
     const open = flex || sig;
+    const mode: LevelUpMode | "" = flex ? "flex" : sig ? "signature" : "";
     const key =
       open && self
-        ? `${self.level}:${flex ? "F" : "S"}:${self.flexPending}:${self.sigPending}:${self.sigOffer}`
+        ? `${self.level}:${mode}:${self.flexPending}:${self.sigPending}:${self.sigOffer}:${levelUpLayoutKey(this.screenW(), this.screenH())}`
         : "";
     if (key !== this.levelWinKey) {
+      const wasOpen = this.levelWinMode !== "";
+      this.retireLevelWindow(!open && wasOpen);
       this.levelWinKey = key;
-      this.clearLevelPaperCounters();
+      this.levelWinMode = mode;
       this.levelWinSelectionSent = false;
-      for (const o of this.levelWinObjects) o.destroy();
-      this.levelWinObjects = [];
-      this.levelWinTimerBar = undefined;
-      if (self && flex) this.buildLevelWindow(self);
-      else if (self && sig) this.buildAugmentWindow(self);
+      this.levelWinAwaitingRelease = true;
+      if (self && mode === "flex") this.buildLevelWindow(self, !wasOpen);
+      else if (self && mode === "signature") this.buildAugmentWindow(self, !wasOpen);
     }
-    if (open && self && this.levelWinTimerBar) {
-      this.levelWinTimerBar.width =
-        380 *
-        Math.max(
-          0,
-          Math.min(1, self.flexTimerDs / 10 / LEVELUP_WINDOW_SECONDS),
-        );
+    if (!open || !self || !this.levelWinTimerBar || !this.levelWinTimerText) return;
+
+    if (self.flexTimerDs !== this.levelWinTimerSampleDs) {
+      this.levelWinTimerSampleDs = self.flexTimerDs;
+      this.levelWinTimerSampleAt = this.time.now;
     }
+    const authoritativeSeconds = self.flexTimerDs / 10;
+    const seconds = Math.max(
+      0,
+      Math.min(
+        authoritativeSeconds,
+        authoritativeSeconds - (this.time.now - this.levelWinTimerSampleAt) / 1000,
+      ),
+    );
+    const ratio = Math.max(0, Math.min(1, seconds / LEVELUP_WINDOW_SECONDS));
+    const color = seconds <= 1.5 ? 0xf05b3b : seconds <= 3 ? 0xffa62b : 0xffd479;
+    this.levelWinTimerBar.width = this.levelWinTimerWidth * ratio;
+    this.levelWinTimerBar.setFillStyle(color);
+    this.levelWinTimerText.setText(
+      seconds > 0 ? `AUTO: ${this.levelWinAutoLabel} IN ${seconds.toFixed(1)}s` : "AUTO-SELECTING…",
+    );
   }
 
-  /** The five attributes (§11) — name, effect, accent colour (§28.2). */
-  private static readonly ATTR_INFO: Record<
-    string,
-    { name: string; desc: string; color: number }
-  > = {
-    str: { name: "STR", desc: "+ melee damage", color: 0xff8a2b },
-    dex: { name: "DEX", desc: "+ ranged dmg & crit", color: 0x6fd6ff },
-    int: { name: "INT", desc: "+ spell / signature power", color: 0xb07bd6 },
-    con: { name: "CON", desc: "+ max HP & regen", color: 0x9cff3b },
-    luk: { name: "LUK", desc: "+ rarity, crit & harvest", color: 0xffd479 },
-  };
+  private levelWindowText(
+    x: number,
+    y: number,
+    text: string,
+    style: Phaser.Types.GameObjects.Text.TextStyle,
+  ): Phaser.GameObjects.Text {
+    return this.add
+      .text(x, y, text, style)
+      .setScrollFactor(0)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)));
+  }
 
-  /** §8 augment flavor-tag → accent colour (riposte STR-orange · aegis CON-green · hex INT-purple). */
-  private static readonly AUG_TAG_COL: Record<string, number> = {
-    riposte: 0xff8a2b,
-    aegis: 0x9cff3b,
-    hex: 0xb07bd6,
-  };
-
-  /** The shared dim overlay + title + subtitle + countdown bar for either level-window mode. */
+  /** The shared paper shell. Only cardstock folds; copy and hit geometry stay face-on. */
   private buildLevelShell(
     self: PlayerState,
-    sub: string,
-  ): { cx: number; cy: number } {
+    mode: LevelUpMode,
+    choiceCount: number,
+    fullEntrance: boolean,
+  ): ReturnType<typeof levelUpLayout> {
+    const layout = levelUpLayout(this.screenW(), this.screenH(), mode, choiceCount);
     const cx = this.screenW() / 2;
     const cy = this.screenH() / 2;
+    const context = levelBuildContext(self);
     const dim = this.add
-      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.66)
+      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.48)
       .setScrollFactor(0)
       .setDepth(100010)
       .setInteractive();
-    // §37 a framed backdrop panel (Clean Minimal) behind the title + cards, so the level-up window carries the
-    // same border identity as the bag/shop. Sits above the dim, below the interactive cards.
-    const pw = Math.min(this.screenW() - 60, 780);
-    const ph = 400;
-    const pgx = cx - pw / 2;
-    const pgy = cy - 208;
-    const pg = this.add.graphics().setScrollFactor(0).setDepth(100010.5);
-    pg.fillStyle(0x0a0812, 0.92).fillRoundedRect(pgx, pgy, pw, ph, 14);
-    this.drawPanelFrame(pg, pgx, pgy, pw, ph, 1);
-    const title = this.add
-      .text(cx, cy - 170, `LEVEL ${self.level}`, {
-        fontSize: "30px",
-        color: "#ffd479",
+
+    const pg = this.add.graphics();
+    pg.fillStyle(0x0a0812, 0.95).fillRoundedRect(
+      layout.panelX,
+      layout.panelY,
+      layout.panelWidth,
+      layout.panelHeight,
+      14,
+    );
+    this.drawPanelFrame(pg, layout.panelX, layout.panelY, layout.panelWidth, layout.panelHeight, 1);
+    const lowerHingeY = layout.panelY + layout.panelHeight;
+    pg.setPosition(-cx, -lowerHingeY);
+    const lower = this.add.container(cx, lowerHingeY, [pg]).setScrollFactor(0).setDepth(100010.5);
+    const seamY = layout.timerY + 19;
+    const upperG = this.add.graphics();
+    upperG
+      .fillStyle(0x0a0812, 0.98)
+      .fillRoundedRect(layout.panelX, layout.panelY, layout.panelWidth, seamY - layout.panelY, 14);
+    this.drawPanelFrame(
+      upperG,
+      layout.panelX,
+      layout.panelY,
+      layout.panelWidth,
+      seamY - layout.panelY,
+      1,
+    );
+    upperG.setPosition(-cx, -seamY);
+    const upper = this.add.container(cx, seamY, [upperG]).setScrollFactor(0).setDepth(100010.4);
+
+    const hasFollowup = mode === "flex" && self.sigPending > 0;
+    const step = hasFollowup
+      ? "1/2 · GROWTH"
+      : mode === "signature" && self.level % 5 === 0
+        ? "2/2 · SIGNATURE"
+        : mode === "flex"
+          ? "GROWTH"
+          : "SIGNATURE";
+    const burden =
+      mode === "flex" && self.flexPending > 1 ? ` · ${self.flexPending} MARKS LEFT` : "";
+    const title = this.levelWindowText(
+      cx,
+      layout.titleY,
+      `LEVEL ${self.level} · ${step} · CHOOSE 1${burden}`,
+      {
+        fontSize: layout.tier === "wide" ? "27px" : "20px",
+        color: "#f7e4aa",
         fontStyle: "bold",
-      })
-      .setScrollFactor(0)
+        align: "center",
+      },
+    )
       .setOrigin(0.5)
       .setDepth(100011);
-    const subT = this.add
-      .text(cx, cy - 138, sub, { fontSize: "15px", color: "#cfc8b6" })
-      .setScrollFactor(0)
+    const contextCopy =
+      mode === "flex"
+        ? `${context.automaticGrowth}${hasFollowup ? " • SIGNATURE FOLLOWS" : ""}`
+        : `SIGNATURE • ${layout.tier === "wide" ? context.rail : context.compactRail}`;
+    const contextText = this.levelWindowText(cx, layout.contextY, contextCopy, {
+      fontSize: "14px",
+      color: "#cfc8b6",
+      fontStyle: "bold",
+      align: "center",
+      wordWrap: { width: layout.panelWidth - 32 },
+      maxLines: 1,
+    })
       .setOrigin(0.5)
       .setDepth(100011);
-    const barBg = this.add
-      .rectangle(cx, cy - 112, 380, 6, 0x2a2620)
+    const timerBg = this.add
+      .rectangle(layout.timerLeft, layout.timerY, layout.timerWidth, 12, 0x2a2620, 0.96)
       .setScrollFactor(0)
-      .setOrigin(0.5)
+      .setOrigin(0, 0.5)
       .setDepth(100011);
     this.levelWinTimerBar = this.add
-      .rectangle(cx - 190, cy - 112, 380, 6, 0xffd479)
+      .rectangle(layout.timerLeft, layout.timerY, layout.timerWidth, 12, 0xffd479)
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100012);
-    const lowerHingeY = cy + 192;
-    pg.setPosition(-cx, -lowerHingeY);
-    const lower = this.add
-      .container(cx, lowerHingeY, [pg])
-      .setScrollFactor(0)
-      .setDepth(100010.5);
-    const seamY = cy - 16;
-    const upperG = this.add.graphics();
-    upperG
-      .fillStyle(0x0a0812, 0.96)
-      .fillRoundedRect(pgx, pgy, pw, seamY - pgy, 14);
-    this.drawPanelFrame(upperG, pgx, pgy, pw, seamY - pgy, 1);
-    upperG.setPosition(-cx, -seamY);
-    const upper = this.add
-      .container(cx, seamY, [upperG])
-      .setScrollFactor(0)
-      .setDepth(100010.4);
-    this.animateLevelFolio(dim, lower, upper);
+    this.levelWinTimerText = this.levelWindowText(cx, layout.timerY, "", {
+      fontFamily: "monospace",
+      fontSize: "14px",
+      color: "#171108",
+      backgroundColor: "#f7e4aa",
+      padding: { x: 7, y: 2 },
+      fontStyle: "bold",
+    })
+      .setOrigin(0.5)
+      .setDepth(100012.5);
+    const numberShortcut = choiceCount > 1 ? `1–${choiceCount}` : "1";
+    const shortcutCopy =
+      layout.tier === "compact"
+        ? `WORLD LIVE • ${numberShortcut} PICK • ←/→ FOCUS • ENTER`
+        : layout.tier === "medium"
+          ? `${context.compactRail} • ${numberShortcut} • ←/→ • ENTER`
+          : `${context.rail} • ${numberShortcut} PICK • ←/→ • ENTER/SPACE`;
+    const footer = this.levelWindowText(cx, layout.footerY, shortcutCopy, {
+      fontSize: "14px",
+      color: "#9fb0c2",
+      align: "center",
+      wordWrap: { width: layout.panelWidth - 28 },
+      maxLines: 1,
+    })
+      .setOrigin(0.5)
+      .setDepth(100011);
+    this.levelWinStatusText = this.levelWindowText(cx, layout.timerY + 17, "", {
+      fontSize: "14px",
+      color: "#ffb24a",
+      fontStyle: "bold",
+      align: "center",
+    })
+      .setOrigin(0.5)
+      .setDepth(100012);
+
+    this.levelWinDim = dim;
+    this.levelWinLower = lower;
+    this.levelWinUpper = upper;
+    this.levelWinTimerWidth = layout.timerWidth;
+    this.levelWinTimerSampleDs = self.flexTimerDs;
+    this.levelWinTimerSampleAt = this.time.now;
+    if (fullEntrance) this.animateLevelFolio(dim, lower, upper);
     this.levelWinObjects.push(
       dim,
       lower,
       upper,
       title,
-      subT,
-      barBg,
+      contextText,
+      timerBg,
       this.levelWinTimerBar,
+      this.levelWinTimerText,
+      footer,
+      this.levelWinStatusText,
     );
-    return { cx, cy };
+    return layout;
   }
 
-  /** Choice copy and the fixed Zone stay face-on; only the cardstock backing turns through the plane. */
-  private prepareLevelCard(
-    root: Phaser.GameObjects.Container,
-    face: Phaser.GameObjects.Rectangle,
-    zone: Phaser.GameObjects.Rectangle, // §50 scene-level hit rect (was a Zone-in-container — see P0 fix)
-    index: number,
-    side: number,
-    send: () => void,
-  ): void {
-    const restY = root.y;
-    root.setData("levelChoiceZone", zone);
-    if (!prefersReducedPaperMotion()) {
+  /** Choice copy stays face-on; the backing turns and the scene-level rectangle owns input. */
+  private prepareLevelCard(control: LevelChoiceControl, index: number): void {
+    const { root, face, zone, restY, side } = control;
+    const focused = index === this.levelWinFocus;
+    const horizontal = !!root.getData("horizontal");
+    const focusY = focused && !horizontal ? restY - 6 : restY;
+    if (prefersReducedPaperMotion()) {
+      root.setY(focusY);
+    } else {
+      root.setY(restY + 12).setAlpha(0);
       face.setScale(-0.06, 0.94).setRotation(side * 0.035);
+      this.tweens.add({
+        targets: root,
+        y: focusY,
+        alpha: 1,
+        duration: 180,
+        delay: 90 + index * 42,
+        ease: "Back.easeOut",
+      });
       this.tweens.add({
         targets: face,
         scaleX: 1,
         scaleY: 1,
         rotation: 0,
         duration: 180,
-        delay: index * 42,
+        delay: 90 + index * 42,
         ease: "Back.easeOut",
       });
     }
-    zone.on("pointerover", () => {
-      this.tweens.killTweensOf([root, face]);
-      this.tweens.add({ targets: root, y: restY - 4, duration: 80 });
+    zone.on("pointerover", () => this.setLevelWindowFocus(index));
+    zone.on("pointerdown", () => this.activateLevelChoice(index));
+  }
+
+  private setLevelWindowFocus(index: number): void {
+    if (index < 0 || index >= this.levelWinChoices.length || index === this.levelWinFocus) return;
+    this.levelWinFocus = index;
+    const reduced = prefersReducedPaperMotion();
+    for (let i = 0; i < this.levelWinChoices.length; i++) {
+      const control = this.levelWinChoices[i];
+      if (!control) continue;
+      const selected = i === index;
+      const horizontal = !!control.root.getData("horizontal");
+      control.focusRing.setAlpha(selected ? 1 : 0);
+      this.tweens.killTweensOf(control.root);
+      const y = selected && !horizontal ? control.restY - 6 : control.restY;
+      const scale = selected && !horizontal ? 1.035 : 1;
+      const rotation = selected && !horizontal ? control.side * 0.012 : 0;
+      if (reduced) control.root.setY(y).setScale(scale).setRotation(0);
+      else
+        this.tweens.add({
+          targets: control.root,
+          y,
+          scale,
+          rotation,
+          duration: 90,
+          ease: "Sine.easeOut",
+        });
+    }
+  }
+
+  private activateLevelChoice(index: number): void {
+    if (this.levelWinSelectionSent) return;
+    const selected = this.levelWinChoices[index];
+    if (!selected) return;
+    this.levelWinSelectionSent = true;
+    this.levelWinInputReleaseLatch = true;
+    for (const choice of this.levelWinChoices) choice.zone.disableInteractive();
+    this.levelWinStatusText?.setText("APPLYING CHOICE…");
+    selected.send();
+    this.audio.play("grab");
+    const reduced = prefersReducedPaperMotion();
+    spawnLevelConfirmEffect(
+      this,
+      selected.root.x,
+      selected.root.y,
+      selected.zone.width,
+      selected.zone.height,
+      selected.view.accent,
+      selected.view.particlePack,
+      reduced,
+    );
+    if (!reduced) {
       this.tweens.add({
-        targets: face,
-        scaleX: 0.965,
-        rotation: side * 0.04,
-        duration: 80,
-      });
-    });
-    zone.on("pointerout", () => {
-      this.tweens.killTweensOf([root, face]);
-      this.tweens.add({
-        targets: root,
-        y: restY,
-        duration: 110,
-        ease: "Sine.easeOut",
+        targets: selected.root,
+        scaleY: 0.94,
+        duration: 45,
+        yoyo: true,
+        ease: "Quad.easeOut",
       });
       this.tweens.add({
-        targets: face,
-        scaleX: 1,
-        rotation: 0,
-        duration: 110,
-        ease: "Sine.easeOut",
+        targets: selected.face,
+        scaleX: 0.02,
+        duration: 130,
+        delay: 45,
+        ease: "Cubic.easeIn",
       });
-    });
-    zone.on("pointerdown", () => {
-      if (this.levelWinSelectionSent) return;
-      this.levelWinSelectionSent = true;
-      for (const obj of this.levelWinObjects) {
-        if (!(obj instanceof Phaser.GameObjects.Container)) continue;
-        const choiceZone = obj.getData("levelChoiceZone") as
-          Phaser.GameObjects.Zone | undefined;
-        choiceZone?.disableInteractive();
+      for (const choice of this.levelWinChoices) {
+        if (choice === selected) continue;
+        this.tweens.add({
+          targets: choice.root,
+          alpha: 0.28,
+          duration: 90,
+          ease: "Cubic.easeIn",
+        });
       }
-      send(); // immediate; the authoritative offer edge owns the actual close
+    }
+  }
+
+  private levelWindowModalKeys(): Phaser.Input.Keyboard.Key[] {
+    return [
+      this.keys.W,
+      this.keys.A,
+      this.keys.S,
+      this.keys.D,
+      this.keys.SPACE,
+      this.keys.ONE,
+      this.keys.TWO,
+      this.keys.THREE,
+      this.keys.FOUR,
+      this.keys.FIVE,
+      this.keys.LEFT,
+      this.keys.RIGHT,
+      this.keys.UP,
+      this.keys.DOWN,
+      this.keys.ENTER,
+    ];
+  }
+
+  private levelWindowInputsReleased(): boolean {
+    return (
+      this.levelWindowModalKeys().every((key) => !key.isDown) &&
+      !this.input.activePointer.leftButtonDown() &&
+      !this.input.activePointer.rightButtonDown()
+    );
+  }
+
+  private handleLevelWindowInput(): void {
+    if (this.levelWinChoices.length === 0) return;
+    if (this.levelWinAwaitingRelease) {
+      if (this.levelWindowInputsReleased()) this.levelWinAwaitingRelease = false;
+      return;
+    }
+    if (this.levelWinSelectionSent) return;
+    const numberKeys = [
+      this.keys.ONE,
+      this.keys.TWO,
+      this.keys.THREE,
+      this.keys.FOUR,
+      this.keys.FIVE,
+    ];
+    for (let i = 0; i < numberKeys.length; i++) {
+      const key = numberKeys[i];
+      if (key && Phaser.Input.Keyboard.JustDown(key) && i < this.levelWinChoices.length) {
+        this.setLevelWindowFocus(i);
+        this.activateLevelChoice(i);
+        return;
+      }
+    }
+    const previous =
+      Phaser.Input.Keyboard.JustDown(this.keys.LEFT) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.UP) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.A) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.W);
+    const next =
+      Phaser.Input.Keyboard.JustDown(this.keys.RIGHT) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.DOWN) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.D) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.S);
+    if (previous) {
+      this.setLevelWindowFocus(
+        (this.levelWinFocus - 1 + this.levelWinChoices.length) % this.levelWinChoices.length,
+      );
+    } else if (next) {
+      this.setLevelWindowFocus((this.levelWinFocus + 1) % this.levelWinChoices.length);
+    } else if (
+      Phaser.Input.Keyboard.JustDown(this.keys.ENTER) ||
+      Phaser.Input.Keyboard.JustDown(this.keys.SPACE)
+    ) {
+      this.activateLevelChoice(this.levelWinFocus);
+    }
+  }
+
+  private createLevelChoiceCard(
+    view: LevelChoiceView,
+    slot: ReturnType<typeof levelUpLayout>["cards"][number],
+    index: number,
+    send: () => void,
+  ): void {
+    const width = slot.width;
+    const height = slot.height;
+    const accentHex = `#${view.accent.toString(16).padStart(6, "0")}`;
+    const shadow = this.add.graphics();
+    shadow
+      .fillStyle(0x000000, 0.5)
+      .fillRoundedRect(-width / 2 + 5, -height / 2 + 7, width, height, 12);
+    const face = this.add
+      .rectangle(0, 0, width, height, 0x17130f, 0.99)
+      .setStrokeStyle(3, view.accent, 0.95);
+    const dressing = this.add.graphics();
+    dressing
+      .lineStyle(1, 0xfff2c0, 0.28)
+      .strokeRoundedRect(-width / 2 + 6, -height / 2 + 6, width - 12, height - 12, 8);
+    dressing.fillStyle(view.accent, 0.8).fillRect(-width / 2 + 12, -height / 2 + 10, 30, 3);
+    dressing
+      .fillStyle(view.accent, 0.2)
+      .fillRoundedRect(-width / 2 + 10, height / 2 - 37, width - 20, 25, 6);
+    const focusRing = this.add.graphics().setAlpha(index === this.levelWinFocus ? 1 : 0);
+    focusRing
+      .lineStyle(2, 0xfff2c0, 1)
+      .strokeRoundedRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 10);
+    const icon = this.add.graphics();
+    const input = this.levelWindowText(-width / 2 + 12, -height / 2 + 10, String(index + 1), {
+      fontFamily: "monospace",
+      fontSize: "14px",
+      color: "#fff3c4",
+      fontStyle: "bold",
+    }).setOrigin(0, 0);
+
+    let category: Phaser.GameObjects.Text;
+    let name: Phaser.GameObjects.Text;
+    let outcome: Phaser.GameObjects.Text;
+    let context: Phaser.GameObjects.Text;
+    if (slot.horizontal) {
+      const iconX = -width / 2 + 43;
+      const copyX = -width / 2 + 76;
+      const copyWidth = width - 90;
+      drawIcon(icon, view.icon, iconX, 2, Math.min(15, height * 0.16), view.accent);
+      category = this.levelWindowText(copyX, -height / 2 + 10, view.category, {
+        fontSize: "12px",
+        color: accentHex,
+        fontStyle: "bold",
+      }).setOrigin(0, 0);
+      name = this.levelWindowText(copyX, -height / 2 + 27, view.name, {
+        fontSize: "16px",
+        color: "#f0ead8",
+        fontStyle: "bold",
+        wordWrap: { width: copyWidth },
+        maxLines: 1,
+      }).setOrigin(0, 0);
+      const outcomeCopy = view.outcome.replace(/\s+\(\+[^)]*\)$/, "");
+      outcome = this.levelWindowText(copyX, 7, outcomeCopy, {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: "#b8ff6a",
+        fontStyle: "bold",
+        wordWrap: { width: copyWidth },
+        maxLines: 1,
+      }).setOrigin(0, 0.5);
+      context = this.levelWindowText(0, height / 2 - 24, view.context, {
+        fontSize: "14px",
+        color: "#d2c9b5",
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: width - 28 },
+        maxLines: 1,
+      }).setOrigin(0.5);
+    } else {
+      drawIcon(icon, view.icon, 0, -height * 0.25, Math.min(22, width * 0.12), view.accent);
+      category = this.levelWindowText(0, -height / 2 + 17, view.category, {
+        fontSize: "13px",
+        color: accentHex,
+        fontStyle: "bold",
+      }).setOrigin(0.5);
+      name = this.levelWindowText(0, -height * 0.07, view.name, {
+        fontSize: width < 190 ? "18px" : "20px",
+        color: "#f0ead8",
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: width - 28 },
+        maxLines: 2,
+      }).setOrigin(0.5);
+      outcome = this.levelWindowText(0, height * 0.2, view.outcome, {
+        fontFamily: "monospace",
+        fontSize: width < 190 ? "14px" : "16px",
+        color: "#b8ff6a",
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: width - 24 },
+        maxLines: 2,
+      }).setOrigin(0.5);
+      context = this.levelWindowText(0, height / 2 - 24, view.context, {
+        fontSize: "14px",
+        color: "#d2c9b5",
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: width - 28 },
+        maxLines: 1,
+      }).setOrigin(0.5);
+    }
+    const root = this.add
+      .container(slot.x, slot.y, [
+        shadow,
+        face,
+        dressing,
+        focusRing,
+        icon,
+        input,
+        category,
+        name,
+        outcome,
+        context,
+      ])
+      .setScrollFactor(0)
+      .setDepth(100011)
+      .setData("horizontal", slot.horizontal);
+    // P0: deliberately SCENE-LEVEL + fixed-screen. A Zone inside this container hit-tests in world space
+    // once the camera scrolls, even though the visible card remains in screen space. Wide-card bounds also
+    // include the complete focused lift/scale so no animated edge becomes a dead click strip.
+    const focusScale = slot.horizontal ? 1 : 1.035;
+    const hitY = slot.horizontal ? slot.y : slot.y - 6;
+    const zone = this.add
+      .rectangle(
+        slot.x,
+        hitY,
+        width * focusScale,
+        Math.max(44, height * focusScale),
+        0xffffff,
+        0.001,
+      )
+      .setScrollFactor(0)
+      .setDepth(100013)
+      .setInteractive({ useHandCursor: true });
+    const control: LevelChoiceControl = {
+      root,
+      face,
+      focusRing,
+      zone,
+      restY: slot.y,
+      side: slot.x < this.screenW() / 2 ? -1 : 1,
+      view,
+      send,
+    };
+    this.levelWinChoices.push(control);
+    this.prepareLevelCard(control, index);
+    this.levelWinObjects.push(root, zone);
+  }
+
+  /** Build the authoritative Signature spread; tag color is category, never fictional rarity. */
+  private buildAugmentWindow(self: PlayerState, fullEntrance: boolean): void {
+    const choices = augmentChoiceViews(self);
+    this.levelWinFocus = 0;
+    const layout = this.buildLevelShell(self, "signature", choices.length, fullEntrance);
+    this.levelWinAutoLabel = choices[0]?.name.toUpperCase() ?? "SERVER PICK";
+    choices.forEach((view, index) => {
+      const slot = layout.cards[index];
+      if (!slot) return;
+      this.createLevelChoiceCard(view, slot, index, () =>
+        this.room?.send("chooseAugment", { id: view.id }),
+      );
     });
   }
 
-  /** §8 build the dim overlay + 3 augment cards for the signature draft (every 5th level). */
-  private buildAugmentWindow(self: PlayerState): void {
-    const { cx, cy } = this.buildLevelShell(
-      self,
-      "SIGNATURE — pick a parry augment (§8)",
-    );
-    const offer = self.sigOffer.split(",").filter(Boolean);
-    const W = 196;
-    const H = 214;
-    const gap = 22;
-    const startX = cx - (offer.length * (W + gap) - gap) / 2 + W / 2;
-    offer.forEach((id, i) => {
-      const def = AUGMENTS[id];
-      if (!def) return;
-      const col = ArenaScene.AUG_TAG_COL[def.tag] ?? 0xb9975b;
-      const x = startX + i * (W + gap);
-      const card = this.add
-        .rectangle(x, cy + 30, W, H, 0x1b1812, 0.98)
-        .setScrollFactor(0)
-        .setStrokeStyle(3, col)
-        .setDepth(100011)
-        .setInteractive({ useHandCursor: true });
-      const icon = this.add.graphics().setScrollFactor(0).setDepth(100012);
-      drawIcon(icon, def.icon, x, cy - 46, 13, col);
-      const name = this.add
-        .text(x, cy - 8, def.name, {
-          fontSize: "20px",
-          color: "#f0ead8",
-          fontStyle: "bold",
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      const tag = this.add
-        .text(x, cy + 16, def.tag.toUpperCase(), {
-          fontSize: "12px",
-          color: `#${col.toString(16).padStart(6, "0")}`,
-          fontStyle: "bold",
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      const desc = this.add
-        .text(x, cy + 58, def.desc, {
-          fontSize: "13px",
-          color: "#cfc8b6",
-          align: "center",
-          wordWrap: { width: W - 26 },
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      card.disableInteractive().setPosition(0, 0);
-      icon.setPosition(-x, -(cy + 30));
-      name.setPosition(0, -38);
-      tag.setPosition(0, -14);
-      desc.setPosition(0, 28);
-      // §50 P0 FIX: a Zone INSIDE a scrollFactor(0) container hit-tests in WORLD space while the card
-      // renders in SCREEN space — clicks only landed when the camera sat at the origin (the menu), never
-      // mid-run. Screen-space UI input must live at SCENE level: an invisible scrollFactor(0) rect at the
-      // card's fixed screen position carries the input and drives the container's fold/hover animation.
-      const zone = this.add
-        .rectangle(x, cy + 30, W, H, 0xffffff, 0.001)
-        .setScrollFactor(0)
-        .setDepth(100013)
-        .setInteractive({ useHandCursor: true });
-      const root = this.add
-        .container(x, cy + 30, [card, icon, name, tag, desc])
-        .setScrollFactor(0)
-        .setDepth(100011);
-      this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
-        this.room?.send("chooseAugment", { id }),
-      );
-      this.levelWinObjects.push(root, zone);
+  /** Build the five exact-outcome FLEX choices from synced state and shared tuning functions. */
+  private buildLevelWindow(self: PlayerState, fullEntrance: boolean): void {
+    let squadBestLuk = self.luk;
+    this.room?.state.players.forEach((player) => {
+      squadBestLuk = Math.max(squadBestLuk, player.luk);
     });
-  }
-
-  /** Build the dim overlay + 5 attribute buttons for the §12 flex-point pick. */
-  private buildLevelWindow(self: PlayerState): void {
-    const { cx, cy } = this.buildLevelShell(
-      self,
-      "+1 STR  +1 CON (auto) · spend your FLEX point",
+    const choices = attributeChoiceViews(self, squadBestLuk);
+    const context = levelBuildContext(self);
+    this.levelWinFocus = Math.max(
+      0,
+      choices.findIndex((choice) => choice.id === context.autoAttribute),
     );
-    const attrs: Attr[] = ["str", "dex", "int", "con", "luk"];
-    const W = 150;
-    const H = 200;
-    const gap = 16;
-    const startX = cx - (attrs.length * (W + gap) - gap) / 2 + W / 2;
-    attrs.forEach((attr, i) => {
-      const info = ArenaScene.ATTR_INFO[attr];
-      if (!info) return;
-      const cur = self[attr]; // PlayerState[Attr] → number (no cast needed)
-      const x = startX + i * (W + gap);
-      const card = this.add
-        .rectangle(x, cy + 30, W, H, 0x1b1812, 0.98)
-        .setScrollFactor(0)
-        .setStrokeStyle(3, info.color)
-        .setDepth(100011)
-        .setInteractive({ useHandCursor: true });
-      const name = this.add
-        .text(x, cy - 34, info.name, {
-          fontSize: "26px",
-          color: "#f0ead8",
-          fontStyle: "bold",
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      const val = this.add
-        .text(x, cy + 4, `${cur} → ${cur + 1}`, {
-          fontSize: "16px",
-          color: `#${info.color.toString(16).padStart(6, "0")}`,
-          fontStyle: "bold",
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      const desc = this.add
-        .text(x, cy + 48, info.desc, {
-          fontSize: "13px",
-          color: "#cfc8b6",
-          align: "center",
-          wordWrap: { width: W - 22 },
-        })
-        .setScrollFactor(0)
-        .setOrigin(0.5)
-        .setDepth(100012);
-      card.disableInteractive().setPosition(0, 0);
-      name.setPosition(0, -64);
-      val.setPosition(0, -26);
-      desc.setPosition(0, 18);
-      // §50 P0 FIX: scene-level hit rect (see buildAugmentWindow) — zone-in-scrollFactor(0)-container
-      // hit-tests in world space and never matched the screen-space card once the camera scrolled.
-      const zone = this.add
-        .rectangle(x, cy + 30, W, H, 0xffffff, 0.001)
-        .setScrollFactor(0)
-        .setDepth(100013)
-        .setInteractive({ useHandCursor: true });
-      const root = this.add
-        .container(x, cy + 30, [card, name, val, desc])
-        .setScrollFactor(0)
-        .setDepth(100011);
-      this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
-        this.room?.send("chooseAttribute", { attr }),
+    const layout = this.buildLevelShell(self, "flex", choices.length, fullEntrance);
+    this.levelWinAutoLabel = `+1 ${context.autoAttribute.toUpperCase()}`;
+    choices.forEach((view, index) => {
+      const slot = layout.cards[index];
+      if (!slot) return;
+      this.createLevelChoiceCard(view, slot, index, () =>
+        this.room?.send("chooseAttribute", { attr: view.id }),
       );
-      this.levelWinObjects.push(root, zone);
     });
   }
 
@@ -4934,9 +5021,7 @@ export class ArenaScene extends Phaser.Scene {
     this.summonObjects.push(dim, title, hint);
 
     // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle on the right.
-    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter(
-      (n, i, a) => a.indexOf(n) === i,
-    );
+    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
     const chipW = 58;
     const chipGap = 10;
     const rowW = mults.length * (chipW + chipGap) - chipGap;
@@ -5042,16 +5127,11 @@ export class ArenaScene extends Phaser.Scene {
     const gridRows = Math.ceil(kinds.length / perRow);
     const bossRowY = cy - 56 + gridRows * (H + gap) + 18;
     const bossLabel = this.add
-      .text(
-        cx,
-        bossRowY - 4,
-        "BOSS PICKER — click to summon (swaps any live boss)",
-        {
-          fontSize: "13px",
-          color: "#ffb24a",
-          fontStyle: "bold",
-        },
-      )
+      .text(cx, bossRowY - 4, "BOSS PICKER — click to summon (swaps any live boss)", {
+        fontSize: "13px",
+        color: "#ffb24a",
+        fontStyle: "bold",
+      })
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100022);
@@ -5083,9 +5163,7 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(100022);
       btn.on("pointerover", () => btn.setFillStyle(0x352513, 1));
       btn.on("pointerout", () => btn.setFillStyle(0x241a10, 0.98));
-      btn.on("pointerdown", () =>
-        this.room?.send("spawnBossDef", { kind: id }),
-      );
+      btn.on("pointerdown", () => this.room?.send("spawnBossDef", { kind: id }));
       this.summonObjects.push(btn, t);
     });
   }
@@ -5118,28 +5196,20 @@ export class ArenaScene extends Phaser.Scene {
     // τ-trailing, no rubber-banding). Teleport cuts live inside both paths (predictor hard-resync on
     // teleportSeq / ring gap-snap + fellSeq reset). Fallback = raw state (pre-timeline first frames).
     const selfId = this.room.sessionId;
-    const rt = this.timeline.ready
-      ? this.timeline.renderTime(this.time.now)
-      : -1;
+    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
     this.room.state.players.forEach((player, id) => {
       const blob = this.blobs.get(id);
       if (!blob) return;
       if (id === selfId && this.predictor) {
         this.predictor.decayError(deltaMs / 1000);
-        const r = this.predictor.renderPos(
-          this.curDx,
-          this.curDy,
-          this.inputAccMs / 1000,
-        );
+        const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         blob.setPosition(r.x, r.y);
         this.selfPredHeight = r.height;
         return;
       }
       const s =
         rt >= 0
-          ? this.playerBufs
-              .get(id)
-              ?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
+          ? this.playerBufs.get(id)?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
           : null;
       if (s) blob.setPosition(s.x, s.y);
       else blob.setPosition(player.x, player.y);
@@ -5155,8 +5225,7 @@ export class ArenaScene extends Phaser.Scene {
   /** §36 per-level belt palette (sky bg + vector-deck fill), keyed by the level's dimension so the four
    *  levels read distinct without per-level art. Sky Carrier keeps its Codex backdrop on top of this. */
   private beltTheme(): { sky: number; deck: number } {
-    const dim = (this.beltLevel ?? beltLevelFor(this.selectedBeltLevel))
-      .dimensionId;
+    const dim = (this.beltLevel ?? beltLevelFor(this.selectedBeltLevel)).dimensionId;
     const map: Record<string, { sky: number; deck: number }> = {
       "wild-west": { sky: 0x79bce9, deck: 0x454c56 },
       frostfell: { sky: 0x9fc4e0, deck: 0x4a5560 },
@@ -5223,10 +5292,7 @@ export class ArenaScene extends Phaser.Scene {
     // sky as the fallback if the art didn't load.
     const skyCarrier = this.selectedBeltLevel === "sky-carrier";
     if (skyCarrier && this.textures.exists("belt-sky")) {
-      this.beltBackdrop = this.add
-        .image(0, 0, "belt-sky")
-        .setOrigin(0, 0)
-        .setDepth(-200);
+      this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
       this.floorObjs.push(this.beltBackdrop);
       // §29 parallax cloud band drifting across the upper sky (procedural, transparent → no art dependency).
       this.ensureCloudTexture();
@@ -5236,10 +5302,7 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(-190)
         .setAlpha(0.32);
       this.floorObjs.push(this.beltClouds);
-    } else if (
-      !skyCarrier &&
-      this.textures.exists(`belt-bg:${this.selectedBeltLevel}`)
-    ) {
+    } else if (!skyCarrier && this.textures.exists(`belt-bg:${this.selectedBeltLevel}`)) {
       this.beltBackdrop = this.add
         .image(0, 0, `belt-bg:${this.selectedBeltLevel}`)
         .setOrigin(0, 0)
@@ -5262,8 +5325,7 @@ export class ArenaScene extends Phaser.Scene {
       gg.beginPath();
       gg.moveTo(far[0]!.x, far[0]!.y);
       for (const p of far) gg.lineTo(p.x, p.y);
-      for (let i = near.length - 1; i >= 0; i--)
-        gg.lineTo(near[i]!.x, near[i]!.y);
+      for (let i = near.length - 1; i >= 0; i--) gg.lineTo(near[i]!.x, near[i]!.y);
       gg.closePath();
     };
     // §36 the deck is "the ground" — it must sit BELOW ground-level VFX (quake eruptions depth 4-8, splats,
@@ -5272,12 +5334,7 @@ export class ArenaScene extends Phaser.Scene {
     // sky backdrop (-200) / clouds (-190), below everything on the deck.
     const g = this.add.graphics().setDepth(-20);
     // dark hull/void below the whole thing
-    g.fillStyle(0x22262c, 1).fillRect(
-      0,
-      this.beltY(BELT_Y0 + DEPTH_MAX) - 40,
-      w,
-      3000,
-    );
+    g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
     // Walkable deck BASE fill — a crisp, collision-accurate trapezoid following the exact floor profile.
     // Stays under the plating bake as the fallback (and covers any hairline the clip might miss).
     g.fillStyle(theme.deck, 1); // §36 dimension-themed deck fill
@@ -5287,29 +5344,21 @@ export class ArenaScene extends Phaser.Scene {
     // §37 CODEX PLATING: paint the level's authored deck texture INSIDE the trapezoid via a one-time canvas
     // bake (canvas 2D clip + repeating pattern), sidestepping the old Phaser-4 GeometryMask2-on-TileSprite
     // blocker entirely. Sky-carrier uses its original deck.png; themed levels their deck-<id>.png strips.
-    const deckKey = skyCarrier
-      ? "belt-deck"
-      : `belt-deck:${this.selectedBeltLevel}`;
+    const deckKey = skyCarrier ? "belt-deck" : `belt-deck:${this.selectedBeltLevel}`;
     // §37 the canvas bake uploads big textures — on a low-VRAM GPU that can throw. NEVER let it abort the
     // floor build (that blacked out themed levels); on any failure fall back to the procedural vector deck.
     let plated = false;
     try {
-      plated =
-        this.textures.exists(deckKey) &&
-        this.bakeDeckPlating(deckKey, far, near, w);
+      plated = this.textures.exists(deckKey) && this.bakeDeckPlating(deckKey, far, near, w);
     } catch (e) {
-      console.warn(
-        "[belt] deck plating bake failed — using the vector deck",
-        e,
-      );
+      console.warn("[belt] deck plating bake failed — using the vector deck", e);
       plated = false;
     }
     // Gameplay markings + telegraphs live ABOVE the plating (its own layer at -18).
     const gl = this.add.graphics().setDepth(-18);
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
     gl.lineStyle(6, 0xffd24a, 0.55).beginPath();
-    for (let i = 0; i < far.length; i++)
-      gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    for (let i = 0; i < far.length; i++) gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
     gl.strokePath();
     gl.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
     gl.moveTo(far[0]!.x, far[0]!.y);
@@ -5322,14 +5371,12 @@ export class ArenaScene extends Phaser.Scene {
     if (!plated) {
       // §31 PROCEDURAL plating detail — only when no authored texture landed (the pre-§37 look): panel seams
       // following the perspective + transverse plate joints at a regular pitch.
-      const deckYAt = (i: number, f: number) =>
-        far[i]!.y + (near[i]!.y - far[i]!.y) * f;
+      const deckYAt = (i: number, f: number) => far[i]!.y + (near[i]!.y - far[i]!.y) * f;
       gl.lineStyle(2, 0x363c45, 0.55); // subtle darker seam
       for (const f of [0.22, 0.44, 0.66, 0.86]) {
         gl.beginPath();
         gl.moveTo(far[0]!.x, deckYAt(0, f));
-        for (let i = 1; i < far.length; i++)
-          gl.lineTo(far[i]!.x, deckYAt(i, f));
+        for (let i = 1; i < far.length; i++) gl.lineTo(far[i]!.x, deckYAt(i, f));
         gl.strokePath();
       }
       for (let i = 0; i < far.length; i += 3) {
@@ -5347,12 +5394,7 @@ export class ArenaScene extends Phaser.Scene {
       const b = beltBounds(level, (pit.x0 + pit.x1) / 2);
       const top = this.beltY(BELT_Y0 + b.yMin);
       const bot = this.beltY(BELT_Y0 + b.yMax);
-      gl.fillStyle(0x0c1017, 1).fillRect(
-        pit.x0,
-        top - 4,
-        pit.x1 - pit.x0,
-        bot - top + 12,
-      ); // void
+      gl.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
       gl.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
       gl.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
       gl.beginPath();
@@ -5376,8 +5418,7 @@ export class ArenaScene extends Phaser.Scene {
     near: { x: number; y: number }[],
     w: number,
   ): boolean {
-    const src = this.textures.get(key).getSourceImage() as
-      HTMLImageElement | HTMLCanvasElement;
+    const src = this.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     const sw = src.width;
     const sh = src.height;
     if (!sw || !sh) return false;
@@ -5404,10 +5445,8 @@ export class ArenaScene extends Phaser.Scene {
       if (!ctx) return false;
       ctx.beginPath();
       ctx.moveTo(far[i0]!.x - cx, far[i0]!.y - top);
-      for (let i = i0; i <= i1; i++)
-        ctx.lineTo(far[i]!.x - cx, far[i]!.y - top);
-      for (let i = i1; i >= i0; i--)
-        ctx.lineTo(near[i]!.x - cx, near[i]!.y - top);
+      for (let i = i0; i <= i1; i++) ctx.lineTo(far[i]!.x - cx, far[i]!.y - top);
+      for (let i = i1; i >= i0; i--) ctx.lineTo(near[i]!.x - cx, near[i]!.y - top);
       ctx.closePath();
       ctx.clip();
       const pat = ctx.createPattern(src, "repeat");
@@ -5421,9 +5460,7 @@ export class ArenaScene extends Phaser.Scene {
       const texKey = `deckbake:${this.selectedBeltLevel}:${cx}`;
       if (this.textures.exists(texKey)) this.textures.remove(texKey); // scene restarts re-bake cleanly
       this.textures.addCanvas(texKey, canvas);
-      this.floorObjs.push(
-        this.add.image(cx, top, texKey).setOrigin(0, 0).setDepth(-19),
-      );
+      this.floorObjs.push(this.add.image(cx, top, texKey).setOrigin(0, 0).setDepth(-19));
     }
     return true;
   }
@@ -5435,11 +5472,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.belt) return;
     // LIVE actors (rigs/enemies) re-establish their WORLD y every frame in interpolate()/animateBlobs() just
     // before us, so their current .y IS the world y — project it directly.
-    const projectLive = (o: {
-      x: number;
-      y: number;
-      setPosition(x: number, y: number): void;
-    }) => {
+    const projectLive = (o: { x: number; y: number; setPosition(x: number, y: number): void }) => {
       const wy = o.y;
       o.setPosition(o.x, this.beltY(wy));
     };
@@ -5450,9 +5483,7 @@ export class ArenaScene extends Phaser.Scene {
     const projectTracked = (c: Phaser.GameObjects.Container) => {
       const lastScreen = c.getData("beltScreenY") as number | undefined;
       const wy =
-        lastScreen !== undefined && c.y === lastScreen
-          ? (c.getData("beltWorldY") as number)
-          : c.y;
+        lastScreen !== undefined && c.y === lastScreen ? (c.getData("beltWorldY") as number) : c.y;
       const sy = this.beltY(wy);
       c.setData("beltWorldY", wy);
       c.setData("beltScreenY", sy);
@@ -5463,11 +5494,21 @@ export class ArenaScene extends Phaser.Scene {
         c.setDepth(depth);
       }
     };
-    this.blobs.forEach((rig) => projectLive(rig));
-    this.enemies.forEach((rig) => projectLive(rig)); // includes the boss rig
-    this.projectiles.forEach((c) => projectTracked(c));
-    this.pickups.forEach((c) => projectTracked(c));
-    this.zones.forEach((c) => projectTracked(c));
+    this.blobs.forEach((rig) => {
+      projectLive(rig);
+    });
+    this.enemies.forEach((rig) => {
+      projectLive(rig);
+    }); // includes the boss rig
+    this.projectiles.forEach((c) => {
+      projectTracked(c);
+    });
+    this.pickups.forEach((c) => {
+      projectTracked(c);
+    });
+    this.zones.forEach((c) => {
+      projectTracked(c);
+    });
   }
 
   /** §29 belt camera: scroll horizontally to follow the player (world x), lock the vertical to the deck, and
@@ -5483,8 +5524,7 @@ export class ArenaScene extends Phaser.Scene {
     const viewW = cam.width / zoom;
     // §29 a closed room gate (beltLockX>0) caps the camera's right reach so the barrier sits at the edge.
     const lock = this.room?.state.beltLockX ?? 0;
-    const rightLimit =
-      lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
+    const rightLimit = lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
     const maxX = Math.max(0, rightLimit - viewW);
     const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
     if (!this.camFocus) this.camFocus = { x: wantX, y: 0 };
@@ -5500,11 +5540,8 @@ export class ArenaScene extends Phaser.Scene {
     if (this.beltClouds) {
       const bandH = BELT_VIEW_H * 0.48;
       this.beltCloudDrift += this.deltaSec * 9;
-      this.beltClouds
-        .setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
-        .setSize(viewW, bandH);
-      this.beltClouds.tilePositionX =
-        this.camFocus.x * 0.35 + this.beltCloudDrift;
+      this.beltClouds.setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY).setSize(viewW, bandH);
+      this.beltClouds.tilePositionX = this.camFocus.x * 0.35 + this.beltCloudDrift;
     }
     this.drawBeltGate(lock);
     // §29 room banner on entering a new room + swap to the storm BRIDGE backdrop for the boss room.
@@ -5532,8 +5569,7 @@ export class ArenaScene extends Phaser.Scene {
   /** §29 draw the room GATE barrier at the locked x (a shimmering bulkhead across the deck) — hidden when
    *  the gate is open (lock 0). A synced-state read, so all clients see the same lock. */
   private drawBeltGate(lockX: number): void {
-    if (!this.beltGate)
-      this.beltGate = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 50);
+    if (!this.beltGate) this.beltGate = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 50);
     const g = this.beltGate;
     g.clear();
     if (lockX <= 0 || !this.beltLevel) return;
@@ -5629,9 +5665,7 @@ export class ArenaScene extends Phaser.Scene {
     // the arena to a corner — instead CENTRE it (a negative scroll), so the playfield sits middle-screen
     // and the painted ground margin fills the surround.
     const axis = (target: number, view: number, world: number): number =>
-      view >= world
-        ? (world - view) / 2
-        : Math.max(0, Math.min(world - view, target));
+      view >= world ? (world - view) / 2 : Math.max(0, Math.min(world - view, target));
     cam.setScroll(
       axis(x - viewW / 2, viewW, ARENA_WIDTH),
       axis(y - viewH / 2, viewH, ARENA_HEIGHT),
@@ -5742,9 +5776,8 @@ export class ArenaScene extends Phaser.Scene {
     this.localAtkCd = Math.max(0, this.localAtkCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self?.alive || self.flexPending > 0) return;
-    if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0)
-      return;
+    if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
     if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
@@ -5753,30 +5786,19 @@ export class ArenaScene extends Phaser.Scene {
     // faster than the server accepts (half the swings become ghosts) and a Swift/fast one can never send at
     // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
     const cdMul = lootCooldownMult(self.weaponAffix);
-    this.localAtkCd =
-      (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
+    this.localAtkCd = (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
     // §44 one PREDICTED descriptor/epoch for every local swing consumer. The server constructs the identical
     // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
-    const swing = weapon
-      ? swingDescriptorFor(weapon, weapon.cooldown * cdMul)
-      : undefined;
+    const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
     const rig = this.blobs.get(selfId);
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && swing)
-      rig?.triggerSwing(
-        this.time.now,
-        Math.atan2(this.selfAim.y, this.selfAim.x),
-        swing,
-      );
+      rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
-    const px = this.pointerScreen.set
-      ? this.pointerScreen.x
-      : this.input.activePointer.x;
-    const py = this.pointerScreen.set
-      ? this.pointerScreen.y
-      : this.input.activePointer.y;
+    const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
+    const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
     // §29/§39 the cursor's WORLD position via the camera transform in BOTH modes (belt additionally
     // un-projects depth). The old top-down `px + scrollX` shortcut was only correct while the pointer was
     // CSS px and the RENDER_DPR zoom cancelled it — post-§37 (pointer in internal px) it skewed attack
@@ -5822,18 +5844,14 @@ export class ArenaScene extends Phaser.Scene {
         const qr = quake.radius;
         let connected = false;
         this.room.state.enemies.forEach((en) => {
-          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr)
-            connected = true;
+          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
         });
         if (connected) this.hitStop(130, true);
       });
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
-      this.shakeCam(
-        Math.min(70, weapon.gun.fireRate * 700),
-        weapon.gun.recoil ?? 0.0017,
-      );
+      this.shakeCam(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
       // §4 v0.107 PREDICTED muzzle flash: fire feedback on the CLICK at the rendered barrel (the old
       // path waited a full round-trip for the synced projectile — ~60-125ms of "did it fire?" online).
       // The authoritative bullet still renders from state; syncProjectiles suppresses its duplicate
@@ -5844,9 +5862,7 @@ export class ArenaScene extends Phaser.Scene {
         // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
         const el = weapon.tags?.element;
         const fx = gunFx(
-          el && el !== "physical"
-            ? `${weapon.gun.bulletKind}:${el}`
-            : weapon.gun.bulletKind,
+          el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind,
         );
         spawnMuzzleFlash(
           this,
@@ -5887,11 +5903,7 @@ export class ArenaScene extends Phaser.Scene {
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
-        const ep = clampQuakeEpicenter(
-          { x: rx, y: selfWy },
-          { x: cwx, y: cwy },
-          QUAKE_REACH,
-        );
+        const ep = clampQuakeEpicenter({ x: rx, y: selfWy }, { x: cwx, y: cwy }, QUAKE_REACH);
         this.spawnSlash(
           ep.x,
           this.belt ? this.beltY(ep.y) : ep.y,
@@ -5928,9 +5940,8 @@ export class ArenaScene extends Phaser.Scene {
     this.localParryCd = Math.max(0, this.localParryCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self?.alive || self.flexPending > 0 || self.sigPending > 0) return;
-    if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0)
-      return;
+    if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
@@ -5962,8 +5973,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const rig = selfId ? this.blobs.get(selfId) : undefined;
-    if (!self?.alive || !rig || self.flexPending > 0 || self.sigPending > 0)
-      return; // hide mid-pick
+    if (!self?.alive || !rig || this.inLevelWindow(self)) return; // hide mid-pick
     const x = rig.x;
     const y = rig.y;
     const R = 30;
@@ -6091,10 +6101,7 @@ export class ArenaScene extends Phaser.Scene {
           fontStyle: "bold",
         })
         .setOrigin(0.5);
-      this[slot] = this.add
-        .container(0, 0, [tri, label])
-        .setDepth(99997)
-        .setScrollFactor(0);
+      this[slot] = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
     }
     const arrow = this[slot] as Phaser.GameObjects.Container;
     // §4 v0.107: bearing/distance from the RENDERED self (predicted rig), not the ~RTT/2-stale state.
@@ -6112,12 +6119,8 @@ export class ArenaScene extends Phaser.Scene {
       Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6)),
       Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6)),
     );
-    arrow
-      .setVisible(true)
-      .setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
-    (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(
-      ang + Math.PI / 2,
-    );
+    arrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
+    (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
     (arrow.list[1] as Phaser.GameObjects.Text).setText(
       `${word} ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
     );
@@ -6137,25 +6140,14 @@ export class ArenaScene extends Phaser.Scene {
       "#ffd479",
       "bank",
     );
-    this.updateEdgeArrow(
-      "riftArrow",
-      st.riftOpen,
-      st.riftX,
-      st.riftY,
-      0xb478ff,
-      "#b478ff",
-      "rift",
-    );
+    this.updateEdgeArrow("riftArrow", st.riftOpen, st.riftX, st.riftY, 0xb478ff, "#b478ff", "rift");
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
    *  fire-wave cone (toward the live cursor aim). Counterblade's blades + the damage are server-spawned. */
   private spawnParryFx(x: number, y: number, owned: string): void {
     if (hasAugment(owned, "bulwark")) {
-      const ring = this.add
-        .circle(x, y, 30)
-        .setStrokeStyle(4, 0x6fe6ff, 0.9)
-        .setDepth(99996);
+      const ring = this.add.circle(x, y, 30).setStrokeStyle(4, 0x6fe6ff, 0.9).setDepth(99996);
       this.tweens.add({
         targets: ring,
         scale: 1.7,
@@ -6169,14 +6161,7 @@ export class ArenaScene extends Phaser.Scene {
       const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
       const ADD = Phaser.BlendModes.ADD;
       const base = this.add
-        .ellipse(
-          x,
-          y,
-          EMBERGUARD_RANGE,
-          EMBERGUARD_RANGE * 0.55,
-          0xff5a1e,
-          0.18,
-        )
+        .ellipse(x, y, EMBERGUARD_RANGE, EMBERGUARD_RANGE * 0.55, 0xff5a1e, 0.18)
         .setRotation(ang)
         .setBlendMode(ADD)
         .setDepth(99994);
@@ -6189,10 +6174,7 @@ export class ArenaScene extends Phaser.Scene {
       });
       for (let i = 0; i < 7; i++) {
         const a = ang + (i / 6 - 0.5) * EMBERGUARD_HALF_ARC * 2;
-        const ember = this.add
-          .circle(x, y, 7, 0xff7a2a, 0.9)
-          .setBlendMode(ADD)
-          .setDepth(99995);
+        const ember = this.add.circle(x, y, 7, 0xff7a2a, 0.9).setBlendMode(ADD).setDepth(99995);
         this.tweens.add({
           targets: ember,
           x: x + Math.cos(a) * EMBERGUARD_RANGE,
@@ -6230,8 +6212,7 @@ export class ArenaScene extends Phaser.Scene {
       // Refill the bucket at BUDGET/WINDOW per ms since the last spend, then reject if this freeze would
       // overflow it. (Priority freezes bypass the bucket AND don't deplete it — the skill beats are sacred.)
       const refill =
-        ((now - this.freezeSpentAt) * ArenaScene.FREEZE_BUDGET_MS) /
-        ArenaScene.FREEZE_WINDOW_MS;
+        ((now - this.freezeSpentAt) * ArenaScene.FREEZE_BUDGET_MS) / ArenaScene.FREEZE_WINDOW_MS;
       this.freezeSpent = Math.max(0, this.freezeSpent - refill);
       this.freezeSpentAt = now;
       if (this.freezeSpent + ms > ArenaScene.FREEZE_BUDGET_MS) return; // over budget — skip this crunch
@@ -6277,8 +6258,7 @@ export class ArenaScene extends Phaser.Scene {
           const dmg = prev - enemy.hp;
           // §30 CRIT: the synced critFlash counter ticked this frame → this hit was a critical. Gold number,
           // a gold flash, extra hit-stop + a shock ring — a crit lands with weight even on a small number.
-          const crit =
-            (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
+          const crit = (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
           hits.push({
             id,
             rig,
@@ -6286,8 +6266,7 @@ export class ArenaScene extends Phaser.Scene {
             crit,
             visible: this.cameras.main.worldView.contains(rig.x, rig.y),
             radius:
-              (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) *
-              (enemy.tough ? TOUGH_SCALE : 1),
+              (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) * (enemy.tough ? TOUGH_SCALE : 1),
           });
         }
       }
@@ -6296,17 +6275,13 @@ export class ArenaScene extends Phaser.Scene {
     });
     // Only horde-scale frames reorder: on-camera hits spend the finite full-stack + label budgets before
     // invisible enemies. Stable sort preserves authoritative iteration order within each visibility band.
-    if (hits.length > HIT_VFX_BUDGET)
-      hits.sort((a, b) => Number(b.visible) - Number(a.visible));
+    if (hits.length > HIT_VFX_BUDGET) hits.sort((a, b) => Number(b.visible) - Number(a.visible));
     for (const { id, rig, dmg, crit, radius } of hits) {
       const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
       rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff); // zero-allocation degraded path
       // `prev - hp` already aggregates every source delivered in this patch; the key is a defensive one-label
       // guard if another hit call site joins this frame. Off-screen labels lose the stable-sort budget first.
-      if (
-        this.damageNumbersSpent < DAMAGE_NUMBER_BUDGET &&
-        !this.damageNumberEnemies.has(id)
-      ) {
+      if (this.damageNumbersSpent < DAMAGE_NUMBER_BUDGET && !this.damageNumberEnemies.has(id)) {
         this.damageNumberEnemies.add(id);
         this.damageNumbersSpent++;
         spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit, id);
@@ -6340,20 +6315,10 @@ export class ArenaScene extends Phaser.Scene {
       const hitWeapon = attacker ? WEAPONS[attacker.weapon] : undefined;
       const hitEl = hitWeapon?.tags?.element;
       const tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
-      this.spawnHitSpark(
-        rig.x,
-        rig.y,
-        Math.atan2(rig.y - by, rig.x - bx),
-        crit,
-        tint,
-        hitEl,
-      );
+      this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
       // The flipbook belongs to this budget-approved FULL stack only: gun-bullet + melee-equipped hits get
       // the weapon element; thrown/cast deliveries retain every existing layer without a false bloom.
-      if (
-        hitWeapon?.gun ||
-        (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)
-      ) {
+      if (hitWeapon?.gun || (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)) {
         spawnImpactFlipbook(this, rig.x, rig.y, radius, hitEl);
       }
       if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
@@ -6379,12 +6344,9 @@ export class ArenaScene extends Phaser.Scene {
           // and at RIPOSTE_AT the flourish reads as the riposte moment the server just dealt.
           const now = this.time.now;
           this.parryChain =
-            now - this.parryChainAt <= PARRY_CHAIN_WINDOW * 1000
-              ? this.parryChain + 1
-              : 1;
+            now - this.parryChainAt <= PARRY_CHAIN_WINDOW * 1000 ? this.parryChain + 1 : 1;
           this.parryChainAt = now;
-          if (this.parryChain >= 2)
-            this.spawnComboPop(p.x, p.y, this.parryChain);
+          if (this.parryChain >= 2) this.spawnComboPop(p.x, p.y, this.parryChain);
         }
       }
     });
@@ -6427,9 +6389,7 @@ export class ArenaScene extends Phaser.Scene {
       ) {
         const rar = RARITIES[self.weaponRarity];
         const tierName = self.weaponRarity > 0 ? `${rar?.name ?? ""} ` : "";
-        const affix = self.weaponAffix
-          ? `${affixById(self.weaponAffix).name} `
-          : "";
+        const affix = self.weaponAffix ? `${affixById(self.weaponAffix).name} ` : "";
         const name = WEAPONS[self.weapon]?.name ?? self.weapon;
         this.flashBanner(
           `${tierName}${affix}${name}`.toUpperCase(),
@@ -6566,10 +6526,7 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Quad.easeOut",
       onComplete: () => ring.destroy(),
     });
-    const flash = this.add
-      .circle(x, y, 22, 0xffffff, 0.5)
-      .setBlendMode(ADD)
-      .setDepth(99995);
+    const flash = this.add.circle(x, y, 22, 0xffffff, 0.5).setBlendMode(ADD).setDepth(99995);
     this.tweens.add({
       targets: flash,
       scale: 1.4,
@@ -6633,10 +6590,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Level-up VFX: an expanding gold ring on the player + a brief "LEVEL N" toast. */
   private spawnLevelUp(x: number, y: number): void {
-    const ring = this.add
-      .circle(x, y, 24)
-      .setStrokeStyle(5, 0xffd479, 0.95)
-      .setDepth(99997);
+    const ring = this.add.circle(x, y, 24).setStrokeStyle(5, 0xffd479, 0.95).setDepth(99997);
     this.tweens.add({
       targets: ring,
       scale: 4,
@@ -6709,35 +6663,25 @@ export class ArenaScene extends Phaser.Scene {
     this.hpShown = Phaser.Math.Linear(this.hpShown, ratio, 0.25);
     this.hpBarFill.width = 236 * s * this.hpShown;
     // Green → amber → red as it drains.
-    this.hpBarFill.fillColor =
-      ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
+    this.hpBarFill.fillColor = ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
     this.hpText.setText(`${Math.ceil(hp)} / ${maxHp}`);
 
     // §19 v0.108 A7: low-HP DANGER vignette + hurt punch. Below 30% HP the screen edges glow red (with a
     // heartbeat pulse under 25%); a fresh hit spikes `hurtFlash` (set in updateCombatFx) for a punch that
     // reads even at full HP. Reads HP only — changes nothing.
-    this.hurtFlash = Math.max(
-      0,
-      this.hurtFlash - (this.deltaSec || 0.016) * 3.5,
-    );
+    this.hurtFlash = Math.max(0, this.hurtFlash - (this.deltaSec || 0.016) * 3.5);
     const aliveSelf = !!self && self.alive;
-    let vig =
-      aliveSelf && ratio < 0.3 ? Math.min(1, (0.3 - ratio) / 0.3) * 0.5 : 0;
-    if (aliveSelf && ratio < 0.25)
-      vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
+    let vig = aliveSelf && ratio < 0.3 ? Math.min(1, (0.3 - ratio) / 0.3) * 0.5 : 0;
+    if (aliveSelf && ratio < 0.25) vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
     vig = Math.max(vig, aliveSelf ? this.hurtFlash * 0.32 : 0);
-    this.dangerVignette.setAlpha(
-      Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18),
-    );
+    this.dangerVignette.setAlpha(Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18));
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
     this.xpBarFill.setPosition(barX + 2 * s, xpY);
-    const xpRatio =
-      self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
+    const xpRatio = self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
     // §19 v0.108 A8: XP fill eases up on a kill (satisfying), but SNAPS on a level reset (ratio drops).
-    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05)
-      this.xpShown = xpRatio;
+    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05) this.xpShown = xpRatio;
     else this.xpShown = Phaser.Math.Linear(this.xpShown, xpRatio, 0.25);
     this.xpPulse = Math.max(0, this.xpPulse - (this.deltaSec || 0.016) / 0.12);
     this.xpBarFill.width = 236 * s * this.xpShown;
@@ -6759,19 +6703,15 @@ export class ArenaScene extends Phaser.Scene {
     let charges = "";
     if (self && self.maxCharges > 0) {
       if (self.charges <= 0) charges = "   ⟳ reloading…";
-      else if (self.maxCharges > 10)
-        charges = `   ▮ ${self.charges}/${self.maxCharges}`;
+      else if (self.maxCharges > 10) charges = `   ▮ ${self.charges}/${self.maxCharges}`;
       else
         charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
     }
     // §10 v0.104 the held weapon's LOOT identity rides the readout: "Rare Keen Neon Katana", tinted by
     // its rarity tier (loot-less holds stay plain).
-    const heldRar =
-      self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
+    const heldRar = self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
     const heldAffix = self?.weaponAffix ? affixById(self.weaponAffix).name : "";
-    const lootPrefix = [heldRar?.name ?? "", heldAffix]
-      .filter(Boolean)
-      .join(" ");
+    const lootPrefix = [heldRar?.name ?? "", heldAffix].filter(Boolean).join(" ");
     this.weaponText
       .setPosition(barX, xpY - 24 * s)
       .setText(
@@ -6788,9 +6728,7 @@ export class ArenaScene extends Phaser.Scene {
     ) {
       this.weaponText.setColor(self.charges <= 0 ? "#ff5d5d" : "#ff8a2b");
     } else if (heldRar) {
-      this.weaponText.setColor(
-        `#${heldRar.color.toString(16).padStart(6, "0")}`,
-      );
+      this.weaponText.setColor(`#${heldRar.color.toString(16).padStart(6, "0")}`);
     } else {
       this.weaponText.setColor("#9cff3b");
     }
@@ -6845,8 +6783,7 @@ export class ArenaScene extends Phaser.Scene {
     // §4 v0.107 connection-degraded hint (amendment #13): >~1.2s of un-acked input commands = the link
     // is stalling — tell the player WHY their character stopped responding instead of failing silently.
     const lagging =
-      this.predictor !== null &&
-      (this.predictor.isStalled || this.predictor.stats.pending > 24);
+      this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
     const lagPrefix = lagging ? "⚠ CONNECTION LAG · " : "";
     // §16 v0.116 BOSS RUSH — a dedicated objective line: which boss of 10 is up, or the breather between.
     const BOSS_RUSH_TOTAL = 10;
@@ -6918,13 +6855,9 @@ export class ArenaScene extends Phaser.Scene {
     const y = this.screenH() - 132;
     const done = frac >= 1;
     bar.clear();
-    bar
-      .fillStyle(0x000000, 0.55)
-      .fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
+    bar.fillStyle(0x000000, 0.55).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
     bar.fillStyle(0x2a2a2a, 1).fillRoundedRect(x, y, w, h, 4);
-    bar
-      .fillStyle(done ? 0xff5a4a : 0xffb24a, 1)
-      .fillRoundedRect(x, y, w * frac, h, 4);
+    bar.fillStyle(done ? 0xff5a4a : 0xffb24a, 1).fillRoundedRect(x, y, w * frac, h, 4);
     bar.setVisible(true);
     label
       .setText(done ? "SALVAGED" : "hold: SALVAGE · release: DROP")
@@ -6981,8 +6914,7 @@ export class ArenaScene extends Phaser.Scene {
       };
       // Show REAL (sub-integer) damage so every stat point visibly moves the number (§12). Each §14
       // source scales off ITS OWN grades — so pumping INT grows Wyrmtooth's magma but not its blade.
-      const fmt = (v: number) =>
-        Number.isInteger(v) ? String(v) : v.toFixed(1);
+      const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
       // §11 unmet requirements PENALISE every source's damage (the enforcement rule) — fold it into the
       // shown total so the card is WYSIWYG, and tint the equation amber when the weapon is under-statted.
       // §10 v0.104: the HELD card also folds in its rolled loot identity (rarity × affix) — the equation
@@ -6995,16 +6927,12 @@ export class ArenaScene extends Phaser.Scene {
       for (const s of card.sources) {
         const mult = damageMultFromGrades(s.src.grades, attrs) * pen * loot;
         const total = s.src.base * mult;
-        s.text.setText(
-          `${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`,
-        );
+        s.text.setText(`${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`);
         s.text.setColor(pen < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
       }
       // Requirements: green when met by the player's live attributes, red when unmet.
       for (const tk of card.reqTokens) {
-        tk.text.setColor(
-          (attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a",
-        );
+        tk.text.setColor((attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a");
       }
       // Resource value (the icon conveys charges-vs-durability): live charges, or the durability number.
       if (def?.thrown) {
@@ -7023,10 +6951,7 @@ export class ArenaScene extends Phaser.Scene {
    *  can replace it later without touching the earn/sell loop. Clamped to the uint16 sync ceiling. */
   private loadBankedScrip(): number {
     try {
-      const v = Number.parseInt(
-        localStorage.getItem("dd.beltScrip") ?? "0",
-        10,
-      );
+      const v = Number.parseInt(localStorage.getItem("dd.beltScrip") ?? "0", 10);
       return Number.isFinite(v) ? Math.max(0, Math.min(65535, v)) : 0;
     } catch {
       return 0; // storage blocked (private mode / sandbox) → start fresh, no crash
@@ -7034,10 +6959,7 @@ export class ArenaScene extends Phaser.Scene {
   }
   private saveBankedScrip(scrip: number): void {
     try {
-      localStorage.setItem(
-        "dd.beltScrip",
-        String(Math.max(0, Math.min(65535, Math.floor(scrip)))),
-      );
+      localStorage.setItem("dd.beltScrip", String(Math.max(0, Math.min(65535, Math.floor(scrip)))));
     } catch {
       /* storage blocked — non-fatal, scrip just won't persist this session */
     }
@@ -7047,19 +6969,14 @@ export class ArenaScene extends Phaser.Scene {
    *  purchase. Client-local MVP (matches the scrip bank); a server/account store can replace the transport. */
   private loadUpgrades(): MetaLevels {
     try {
-      return sanitizeMetaLevels(
-        JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"),
-      );
+      return sanitizeMetaLevels(JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"));
     } catch {
       return { ...EMPTY_META };
     }
   }
   private saveUpgrades(levels: MetaLevels): void {
     try {
-      localStorage.setItem(
-        "dd.beltUpgrades",
-        JSON.stringify(sanitizeMetaLevels(levels)),
-      );
+      localStorage.setItem("dd.beltUpgrades", JSON.stringify(sanitizeMetaLevels(levels)));
     } catch {
       /* storage blocked — non-fatal */
     }
@@ -7084,12 +7001,8 @@ export class ArenaScene extends Phaser.Scene {
 
   /** The (weapon id, rarity) shown for slot `i` — the ACTIVE slot reads the live held weapon (the server only
    *  re-syncs the slot on a swap/grab), the others read their stored slot. */
-  private slotView(
-    self: PlayerState,
-    i: number,
-  ): { wid: string; rarity: number } {
-    if (i === self.activeSlot)
-      return { wid: self.weapon, rarity: self.weaponRarity };
+  private slotView(self: PlayerState, i: number): { wid: string; rarity: number } {
+    if (i === self.activeSlot) return { wid: self.weapon, rarity: self.weaponRarity };
     const sl = self.slots[i];
     return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0 };
   }
@@ -7101,8 +7014,7 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room?.state.players.get(this.room?.sessionId ?? "");
     if (!self) return;
     const s = this.uiScale();
-    if (!this.arsenalG)
-      this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
+    if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
     const g = this.arsenalG;
     g.clear();
     const chipW = 156 * s;
@@ -7118,18 +7030,14 @@ export class ArenaScene extends Phaser.Scene {
       const col = empty ? 0x39424e : (RARITIES[rarity]?.color ?? 0x9aa5b1);
       const x = x0 + i * (chipW + gap);
       const y = baseY - (active ? 8 * s : 0);
-      g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(
+      g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(x, y, chipW, chipH, 7 * s);
+      g.lineStyle(active ? 3 * s : 1.5 * s, col, active ? 1 : 0.6).strokeRoundedRect(
         x,
         y,
         chipW,
         chipH,
         7 * s,
       );
-      g.lineStyle(
-        active ? 3 * s : 1.5 * s,
-        col,
-        active ? 1 : 0.6,
-      ).strokeRoundedRect(x, y, chipW, chipH, 7 * s);
       // slot key
       const key = this.hudText(this.arsenalTexts, i, 100049)
         .setText(String(i + 1))
@@ -7152,8 +7060,7 @@ export class ArenaScene extends Phaser.Scene {
           .setDepth(100047)
           .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen)
-            this.room?.send("sellWeapon", { from: "slot", index: i });
+          if (this.shopOpen) this.room?.send("sellWeapon", { from: "slot", index: i });
           else if (this.bagOpen) this.room?.send("bagStore", { slot: i });
           else this.room?.send("swapSlot", { slot: i });
         });
@@ -7167,9 +7074,7 @@ export class ArenaScene extends Phaser.Scene {
     const setTxt = setB > 1 ? `   ⚔ SET +${Math.round((setB - 1) * 100)}%` : "";
     // scrip + bag + set-bonus readout above the chips
     const info = this.hudText(this.arsenalTexts, 6, 100049)
-      .setText(
-        `◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`,
-      )
+      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`)
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
@@ -7217,12 +7122,7 @@ export class ArenaScene extends Phaser.Scene {
       // awning
       g.fillStyle(0x8a2f3a, 1).fillRect(gx - 54, gy - 150, 108, 20);
       for (let i = 0; i < 6; i++)
-        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(
-          gx - 54 + i * 18,
-          gy - 132,
-          18,
-          12,
-        );
+        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(gx - 54 + i * 18, gy - 132, 18, 12);
       // posts + counter
       g.fillStyle(0x5a4632, 1)
         .fillRect(gx - 52, gy - 130, 6, 130)
@@ -7306,8 +7206,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private renderBagPanel(self: PlayerState, s: number): void {
-    if (!this.bagG)
-      this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
+    if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
     const g = this.bagG.setVisible(true);
     g.clear();
     const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
@@ -7350,10 +7249,8 @@ export class ArenaScene extends Phaser.Scene {
             .setInteractive();
           z.on("pointerdown", () => {
             if (i >= self.bag.length) return;
-            if (this.shopOpen)
-              this.room?.send("sellWeapon", { from: "bag", index: i });
-            else if (this.bagOpen)
-              this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
+            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: i });
+            else if (this.bagOpen) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
           });
           this.bagZones[i] = z;
         }
@@ -7366,25 +7263,11 @@ export class ArenaScene extends Phaser.Scene {
       const cx = gx + (i % cols) * cellW;
       const cy = gy + Math.floor(i / cols) * (cellH + 6 * s);
       const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
-      g.fillStyle(0x121821, 0.95).fillRoundedRect(
-        cx,
-        cy,
-        cellW - 8 * s,
-        cellH,
-        6 * s,
-      );
-      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(
-        cx,
-        cy,
-        cellW - 8 * s,
-        cellH,
-        6 * s,
-      );
+      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
+      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
       const baseName = WEAPONS[item.weapon]?.name ?? item.weapon;
       const price = scripValue(item.rarity, item.earned);
-      const nm = this.shopOpen
-        ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}`
-        : baseName;
+      const nm = this.shopOpen ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}` : baseName;
       const t = this.hudText(this.bagTexts, 1 + i, 100046)
         .setText(nm)
         .setColor(`#${col.toString(16).padStart(6, "0")}`)
@@ -7414,11 +7297,7 @@ export class ArenaScene extends Phaser.Scene {
     const bx = px + 16 * s;
     const h = 62 * s;
     const curOf = (id: string) =>
-      id === "vitality"
-        ? self.upVitality
-        : id === "fortune"
-          ? self.upFortune
-          : self.upPower;
+      id === "vitality" ? self.upVitality : id === "fortune" ? self.upFortune : self.upPower;
     for (let i = 0; i < n; i++) {
       const u = META_UPGRADES[i]!;
       const cur = curOf(u.id);
@@ -7428,11 +7307,13 @@ export class ArenaScene extends Phaser.Scene {
       const cx = bx + i * colW;
       const w = colW - 8 * s;
       g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, y, w, h, 6 * s);
-      g.lineStyle(
-        1.5 * s,
-        maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47,
-        0.95,
-      ).strokeRoundedRect(cx, y, w, h, 6 * s);
+      g.lineStyle(1.5 * s, maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47, 0.95).strokeRoundedRect(
+        cx,
+        y,
+        w,
+        h,
+        6 * s,
+      );
       const label = this.hudText(this.bagTexts, 20 + i, 100046)
         .setText(`${u.name}  ${cur}/${u.maxLevel}\n${u.desc}`)
         .setColor("#cfe0f0")
@@ -7456,8 +7337,7 @@ export class ArenaScene extends Phaser.Scene {
           .setDepth(100045)
           .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen)
-            this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
+          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
         });
         this.buyZones[i] = z;
       }
@@ -7472,8 +7352,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
     for (const z of this.buyZones) z.setVisible(false);
-    for (let i = 1; i < this.bagTexts.length; i++)
-      this.bagTexts[i]?.setVisible(false);
+    for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);
   }
 
@@ -7489,9 +7368,7 @@ export class ArenaScene extends Phaser.Scene {
     const cl = weapon.chainLightning;
     if (!cl || !this.room) return;
     const vfx = cl.vfx ?? { color: 0.5, jag: 0.3, life: 180 };
-    const VR = (
-      globalThis as { VFXRENDER?: { lerpHue?: (h: number) => number } }
-    ).VFXRENDER;
+    const VR = (globalThis as { VFXRENDER?: { lerpHue?: (h: number) => number } }).VFXRENDER;
     const col = VR?.lerpHue ? VR.lerpHue(vfx.color) : 0x6fd6ff; // 0.5 → teal (sword accent)
     const enemies = this.room.state.enemies;
     const posOf = (id: string, ex: number, ey: number) => {
@@ -7509,16 +7386,7 @@ export class ArenaScene extends Phaser.Scene {
     enemies.forEach((e, id) => {
       const p = posOf(id, e.x, e.y);
       candidates.push({ id, x: p.x, y: p.y });
-      if (
-        inMeleeArc(
-          { x: sx, y: sy },
-          aim.x,
-          aim.y,
-          p,
-          weapon.range,
-          weapon.halfArc,
-        )
-      ) {
+      if (inMeleeArc({ x: sx, y: sy }, aim.x, aim.y, p, weapon.range, weapon.halfArc)) {
         used.add(id);
         const d = (p.x - sx) ** 2 + (p.y - sy) ** 2;
         if (d < seedBestD) {
@@ -7615,10 +7483,8 @@ export class ArenaScene extends Phaser.Scene {
       if (!room) return;
       if (kind === "boss" && arg) room.send("spawnBossDef", { kind: arg });
       else if (kind === "weapon" && arg) room.send("devEquip", { weapon: arg });
-      else if (kind === "char" && arg)
-        room.send("devEquip", { character: arg });
-      else if (kind === "enemy" && arg)
-        room.send("debugSpawn", { kind: arg, count: 3 });
+      else if (kind === "char" && arg) room.send("devEquip", { character: arg });
+      else if (kind === "enemy" && arg) room.send("debugSpawn", { kind: arg, count: 3 });
       this.flashBanner(`▶  DEV: ${kind} ${arg}`, "#33e6ff");
     };
     // toggleTraining is a TOGGLE — send it AT MOST ONCE (re-sending before the mode syncs back over the
@@ -7648,10 +7514,7 @@ export class ArenaScene extends Phaser.Scene {
     const net = this.predictor
       ? ` · net ${this.predictor.stats.pending}q/${this.predictor.stats.errPx.toFixed(0)}px`
       : "";
-    const fullDeaths = this.paperDeaths.reduce(
-      (count, death) => count + (death.full ? 1 : 0),
-      0,
-    );
+    const fullDeaths = this.paperDeaths.reduce((count, death) => count + (death.full ? 1 : 0), 0);
     const snapshot = this.paperWorldFold
       ? `${this.paperWorldFold.snapshot.width}x${this.paperWorldFold.snapshot.height}`
       : "off";
@@ -7676,8 +7539,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       // A pit snap-back must CUT the remote's ring, not leave a path back into the pit (review #10).
       const prevFell = this.snapFell.get(id);
-      if (prevFell !== undefined && prevFell !== p.fellSeq)
-        buf.reset(t, p.x, p.y);
+      if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p.x, p.y);
       else buf.push(t, p.x, p.y);
       this.snapFell.set(id, p.fellSeq);
     });
@@ -7700,9 +7562,7 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor = new SelfPredictor(view);
           if (this.belt) {
             this.predictor.setMap(undefined);
-            this.predictor.setBeltLevel(
-              this.beltLevel ?? beltLevelFor("sky-carrier"),
-            );
+            this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
           } else {
             this.predictor.setMap(this.arenaMap);
           }
@@ -7732,9 +7592,10 @@ export class ArenaScene extends Phaser.Scene {
   /** §4 v0.107 the fixed 50ms INPUT-COMMAND loop: sample WASD once per frame, mint + send + predict one
    *  sequence-numbered command per elapsed 50ms (clamped ≤3/frame — a throttled-tab wake must not burst
    *  its whole backlog; the server would drain-to-newest anyway, and the predictor hard-resyncs). */
-  private stepNetInput(deltaMs: number): void {
-    this.curDx = (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
-    this.curDy = (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+  private stepNetInput(deltaMs: number, levelWindowOpen = false): void {
+    this.curDx = levelWindowOpen ? 0 : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
+    this.curDy = levelWindowOpen ? 0 : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+    if (levelWindowOpen) this.jumpQueued = false;
     if (!this.room || !this.predictor) return;
     if (deltaMs > 250) {
       // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
@@ -7745,11 +7606,7 @@ export class ArenaScene extends Phaser.Scene {
     this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
     while (this.inputAccMs >= TICK_MS) {
       this.inputAccMs -= TICK_MS;
-      const cmd = this.predictor.mintCmd(
-        this.curDx,
-        this.curDy,
-        this.jumpQueued,
-      );
+      const cmd = this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued);
       this.jumpQueued = false;
       this.room.send("input", cmd);
       this.predictor.tick(cmd);
