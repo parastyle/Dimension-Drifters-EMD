@@ -2436,3 +2436,135 @@ describe("GameRoom — melee parry telegraph commitment", () => {
     expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
   });
 });
+
+// ── XP PANEL: authoritative Echo field → Reach latch → arrival grant. APPENDED regression coverage;
+// existing XP/leveling assertions above remain untouched as the historical compatibility net. ──────────────
+const XP_PANEL = await import("@dd/shared");
+
+describe("GameRoom — server-authoritative XP Echoes", () => {
+  it("a paid death outside Reach drops exact tough XP and grants nothing before collection", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const player = h.state().players.get("p1");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    const enemy = new EnemyState();
+    enemy.id = "xp-far";
+    enemy.kind = "critter";
+    enemy.tough = true;
+    enemy.hp = 1;
+    enemy.x = player.x + XP_PANEL.BASE_XP_MOTE_REACH + 90;
+    enemy.y = player.y;
+    const kills: string[] = [];
+
+    h.room.damageEnemy(enemy, enemy.id, 999, kills);
+
+    expect(kills).toEqual([enemy.id]);
+    expect(player.xp).toBe(0);
+    expect(h.state().xpEchoes.size).toBe(1);
+    const echo = [...h.state().xpEchoes.values()][0];
+    expect(echo?.value).toBe((ENEMY_KINDS.critter?.xpValue ?? 0) * XP_PANEL.TOUGH_XP_MULT);
+    h.tick(30);
+    expect(player.xp).toBe(0); // no combat TTL or whole-screen vacuum
+    expect(h.state().xpEchoes.size).toBe(1);
+  });
+
+  it("latches one collector, changes no progression before collectTick, then grants the full squad", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.join("p2");
+    const p1 = h.state().players.get("p1");
+    const p2 = h.state().players.get("p2");
+    p1.x = h.room.map.spawnX;
+    p1.y = h.room.map.spawnY;
+    p2.x = p1.x + 500;
+    p2.y = p1.y;
+    p2.alive = false; // downed squadmates receive XP but cannot attract a new Echo
+    h.room.dropXp(p1.x + 100, p1.y, 5);
+    const echo = [...h.state().xpEchoes.values()][0];
+    expect(echo).toBeDefined();
+
+    for (let i = 0; i < 12 && !echo.collectorId; i++) h.tick(1);
+    expect(echo.collectorId).toBe("p1");
+    expect(p1.xp).toBe(0);
+    expect(p2.xp).toBe(0);
+    while (h.state().tick + 1 < echo.collectTick) h.tick(1);
+    expect(p1.xp).toBe(0);
+    expect(p1.flexPending).toBe(0);
+    h.tick(1);
+    expect(echo.delivered).toBe(true); // one-patch receipt latch
+    expect(p1.xp).toBe(5);
+    expect(p2.xp).toBe(5); // full value, never split by party size or alive state
+    h.tick(1);
+    expect(h.state().xpEchoes.has(echo.id)).toBe(false);
+  });
+
+  it("chooses the nearest eligible player with a stable session-id tie break", () => {
+    const h = makeRoom();
+    h.join("p2");
+    h.join("p1");
+    const p1 = h.state().players.get("p1");
+    const p2 = h.state().players.get("p2");
+    const x = h.room.map.spawnX;
+    const y = h.room.map.spawnY;
+    p1.x = x - 60;
+    p1.y = y;
+    p2.x = x + 60;
+    p2.y = y;
+    h.room.dropXp(x, y, 1);
+    const echo = [...h.state().xpEchoes.values()][0];
+
+    for (let i = 0; i < 10 && !echo.collectorId; i++) h.tick(1);
+
+    expect(echo.collectorId).toBe("p1");
+  });
+
+  it("caps 200 paid sources at 48 synchronized rows while conserving their exact summed value", () => {
+    const h = makeRoom();
+    h.join("p1");
+    const player = h.state().players.get("p1");
+    player.x = 100;
+    player.y = 100;
+    for (let i = 0; i < 200; i++) {
+      h.room.dropXp(600 + (i % 10) * 100, 600 + Math.floor(i / 10) * 100, 1);
+    }
+
+    expect(h.state().xpEchoes.size).toBe(XP_PANEL.MAX_XP_ECHOES);
+    expect([...h.state().xpEchoes.values()].reduce((sum, echo) => sum + echo.value, 0)).toBe(200);
+  });
+
+  it("retargets a guaranteed flight when its collector disconnects without losing or duplicating value", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.join("p2");
+    const p1 = h.state().players.get("p1");
+    const p2 = h.state().players.get("p2");
+    p1.x = h.room.map.spawnX;
+    p1.y = h.room.map.spawnY;
+    p2.x = p1.x + 700;
+    p2.y = p1.y;
+    h.room.dropXp(p1.x + 90, p1.y, 2);
+    const echo = [...h.state().xpEchoes.values()][0];
+    for (let i = 0; i < 10 && !echo.collectorId; i++) h.tick(1);
+    expect(echo.collectorId).toBe("p1");
+
+    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== "p1");
+    h.room.onLeave({ sessionId: "p1" });
+    h.tick(1);
+
+    expect(echo.collectorId).toBe("p2");
+    expect(echo.value).toBe(2);
+    for (let i = 0; i < 12 && p2.xp === 0; i++) h.tick(1);
+    expect(p2.xp).toBe(2);
+  });
+
+  it("does not create a receipt when every current player is already at the level cap", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.state().players.get("p1").level = XP_PANEL.LEVEL_CAP;
+
+    h.room.dropXp(1000, 1000, 20);
+
+    expect(h.state().xpEchoes.size).toBe(0);
+  });
+});

@@ -110,12 +110,14 @@ import {
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
   LEVELUP_WINDOW_SECONDS,
+  LEVEL_CAP,
   LOOT_TIER_LUK_BOSS,
   LOOT_TIER_LUK_TOUGH,
   lootCooldownMult,
   lootDamageMult,
   MAX_ENEMIES,
   MAX_PLAYERS,
+  MAX_XP_ECHOES,
   MOVE_SPEED,
   MELEE_BLADE_HALFWIDTH,
   MELEE_SAMPLE_STEP,
@@ -213,6 +215,33 @@ import {
   ZONE_TTL,
   ZONER_DROP_INTERVAL,
   ZoneState,
+  BASE_XP_MOTE_REACH,
+  XP_ECHO_ARM_MAX_MS,
+  XP_ECHO_ARM_MS,
+  XP_ECHO_ARM_TIER_MS,
+  XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS,
+  XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS,
+  XP_ECHO_CLEANUP_LAUNCHES_PER_TICK,
+  XP_ECHO_CLEANUP_MAX_MS,
+  XP_ECHO_DENSE_AT,
+  XP_ECHO_DENSE_MERGE_RADIUS,
+  XP_ECHO_FLIGHT_BASE_SECONDS,
+  XP_ECHO_FLIGHT_DISTANCE_DIVISOR,
+  XP_ECHO_FLIGHT_MAX_SECONDS,
+  XP_ECHO_FLIGHT_MIN_SECONDS,
+  XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK,
+  XP_ECHO_LAUNCHES_PER_ROOM_TICK,
+  XP_ECHO_POINT_BLANK_FLIGHT_TICKS,
+  XP_ECHO_POINT_BLANK_REACH,
+  XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK,
+  XP_ECHO_RECENT_MERGE_MS,
+  XP_ECHO_RECENT_MERGE_RADIUS,
+  XP_ECHO_RETARGET_MAX_SECONDS,
+  XP_ECHO_RETARGET_MIN_SECONDS,
+  XP_MOTE_REACH_MAX,
+  XP_MOTE_REACH_MIN,
+  XP_MOTE_REACH_PER_STACK,
+  XpEchoState,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
@@ -311,6 +340,17 @@ interface CombatState {
    *  cycle→salvage loop can't mint bankable salvage from thin air. */
   heldEarned: boolean;
 }
+
+/** Server-private launch geometry. The wire keeps only immutable epochs; this cache lets disconnect
+ * retargeting resume from the packet's current curved-flight point instead of snapping back to its corpse. */
+interface XpFlightMeta {
+  targetX: number;
+  targetY: number;
+  c1x: number;
+  c1y: number;
+}
+
+type XpBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory";
 
 /**
  * Authoritative PvE room (§4 RoR2-style host-authoritative sync via Colyseus).
@@ -434,6 +474,8 @@ export class GameRoom extends Room<ArenaState> {
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
+  /** Cached launch control points/last authoritative target positions for guaranteed-flight retargeting. */
+  private readonly xpFlights = new Map<string, XpFlightMeta>();
   /** §13 v0.103 salvage provenance: pickup ids whose weapon came off an ENEMY (earned → salvageable).
    *  Gallery/conjured pickups are never in here. Pruned with the pickup; cleared with the transients. */
   private readonly earnedPickups = new Set<string>();
@@ -461,6 +503,10 @@ export class GameRoom extends Room<ArenaState> {
   private projectileSeq = 0;
   private zoneSeq = 0;
   private pickupSeq = 0;
+  private xpEchoSeq = 0;
+  /** Closed-beat cleanup holds teardown until every authoritative Echo has caught or folded into a core. */
+  private xpBoundary: XpBoundary | null = null;
+  private xpBoundaryStartedTick = 0;
   /** §17 the procedurally generated arena for this room — minted once at create from the seeds synced on
    *  ArenaState, so the server holds the authoritative tile grid (pit collision/fall handling, §17 Phase 1).
    *  Clients reproduce the identical map from the same seeds. */
@@ -1038,6 +1084,12 @@ export class GameRoom extends Room<ArenaState> {
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
   }
 
+  private clearXpEchoes(): void {
+    this.state.xpEchoes.clear();
+    this.xpFlights.clear();
+    this.xpBoundary = null;
+  }
+
   /** §6 terminal combat teardown shared by wipes and every victory route. Pickups/player state remain for the
    *  result screen; all damage-producing bodies and their non-synced machines are retired together. */
   private clearCombatEntities(): void {
@@ -1050,6 +1102,9 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
   private enterTerminalOutcome(outcome: "defeat" | "victory"): void {
+    // A wipe has no eligible collector and explicitly forfeits unclaimed field XP with the failed run.
+    // Victory routes reach here only after `beginXpBoundary` has visibly caught every paid packet.
+    if (outcome === "defeat") this.clearXpEchoes();
     this.state.outcome = outcome;
     this.clearCombatEntities();
   }
@@ -1206,6 +1261,8 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
   private toggleTraining(): void {
+    // Entering/leaving the workshop aborts the expedition; unclaimed run XP is explicitly forfeited.
+    this.clearXpEchoes();
     this.state.enemies.clear();
     this.state.pickups.clear();
     this.state.projectiles.clear();
@@ -1337,6 +1394,8 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private restartRun(): void {
+    // A restart is a fresh expedition (progression resets below), so no old field packet crosses it.
+    this.clearXpEchoes();
     this.state.enemies.clear();
     this.state.projectiles.clear();
     this.state.zones.clear();
@@ -1842,6 +1901,11 @@ export class GameRoom extends Room<ArenaState> {
       player.fellSeq++;
     });
 
+    // 2.7 XP Echoes: movement establishes Reach first; arrival grants before level-window ticking. Fresh
+    // kills later in this sub-step begin their mandatory pop/read window and are considered next tick.
+    this.stepXpEchoes();
+    if (this.xpBoundary) return; // committed cleanup freezes new pressure until the visible squad receipt
+
     // 3. Run clock + spawn director (§6) — survival mode only. `bodies` = living players.
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
@@ -2302,11 +2366,10 @@ export class GameRoom extends Room<ArenaState> {
           wedge, // swing-wedge enemies aren't chain targets (the blade already covers them)
         );
         const kills: string[] = [];
-        let xp = 0;
         links.forEach((t, n) => {
           const enemy = this.state.enemies.get(t.id);
           if (enemy)
-            xp += this.damageEnemy(
+            this.damageEnemy(
               enemy,
               t.id,
               cl.damage * cl.falloff ** n * clPower,
@@ -2315,7 +2378,6 @@ export class GameRoom extends Room<ArenaState> {
             );
         });
         for (const eid of kills) this.state.enemies.delete(eid);
-        if (xp > 0) this.grantXp(xp);
       }
     }
 
@@ -2381,7 +2443,6 @@ export class GameRoom extends Room<ArenaState> {
   private stepMeleeSwings(dt: number): void {
     if (this.meleeSwings.size === 0) return;
     const kills: string[] = [];
-    let xpGained = 0;
     for (const [pid, sw] of this.meleeSwings) {
       const player = this.state.players.get(pid);
       if (!player?.alive) {
@@ -2422,7 +2483,7 @@ export class GameRoom extends Room<ArenaState> {
           const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
           if (Math.abs(enemy.y - player.y) > depthWin) continue;
           sw.hit.add(eid);
-          xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
+          this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
         }
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
@@ -2452,20 +2513,447 @@ export class GameRoom extends Room<ArenaState> {
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
             sw.hit.add(eid);
-            xpGained += this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
+            this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
           }
         }
       }
       if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
     }
     for (const eid of kills) this.state.enemies.delete(eid);
-    if (xpGained > 0) this.grantXp(xpGained);
   }
 
   /** §12: XP is SQUAD-SHARED — every kill levels the whole squad in lockstep (not just the killer). */
   private grantXp(amount: number): void {
     this.state.players.forEach((player) => {
       levelUpPlayer(player, amount);
+    });
+  }
+
+  /** Coarse value tier shared by arm timing and the painted client silhouette. */
+  private xpEchoTier(value: number): number {
+    if (value <= 1) return 0;
+    if (value <= 4) return 1;
+    if (value <= 15) return 2;
+    if (value <= 35) return 3;
+    return 4;
+  }
+
+  private xpEchoArmTicks(value: number): number {
+    const ms = Math.min(
+      XP_ECHO_ARM_MAX_MS,
+      XP_ECHO_ARM_MS + this.xpEchoTier(value) * XP_ECHO_ARM_TIER_MS,
+    );
+    return Math.ceil(ms / TICK_MS);
+  }
+
+  /** First Mote-Reach build hook. The id is reserved until its authored card lands; baseline is 180px. */
+  private xpMoteReach(player: PlayerState): number {
+    let stacks = 0;
+    for (const id of player.augments.split(",")) {
+      if (id === "mote-reach") stacks++;
+    }
+    return clamp(
+      BASE_XP_MOTE_REACH * (1 + stacks * XP_MOTE_REACH_PER_STACK),
+      XP_MOTE_REACH_MIN,
+      XP_MOTE_REACH_MAX,
+    );
+  }
+
+  /** A capped squad has no progression receipt, so paid deaths do not leave misleading collectibles. */
+  private hasXpRecipient(): boolean {
+    let has = false;
+    this.state.players.forEach((player) => {
+      if (player.level < LEVEL_CAP) has = true;
+    });
+    return has;
+  }
+
+  /**
+   * Convert one paid death into a bounded authoritative Echo. Spatial/temporal merges preserve exact value;
+   * at the hard cap a new kill feeds a resting packet, or the earliest guaranteed flight when all are latched.
+   */
+  private dropXp(x: number, y: number, value: number): void {
+    const amount = Math.max(0, Math.floor(value));
+    if (amount <= 0 || !this.hasXpRecipient()) return;
+    const count = this.state.xpEchoes.size;
+    const recentTicks = Math.ceil(XP_ECHO_RECENT_MERGE_MS / TICK_MS);
+    const mergeRadius = count < XP_ECHO_DENSE_AT
+      ? XP_ECHO_RECENT_MERGE_RADIUS
+      : XP_ECHO_DENSE_MERGE_RADIUS;
+    const mergeR2 = mergeRadius * mergeRadius;
+    let merge: XpEchoState | null = null;
+    let mergeD2 = Number.POSITIVE_INFINITY;
+    let earliestFlight: XpEchoState | null = null;
+    this.state.xpEchoes.forEach((echo) => {
+      if (echo.delivered) return;
+      if (echo.collectorId) {
+        if (!earliestFlight || echo.collectTick < earliestFlight.collectTick) earliestFlight = echo;
+        return;
+      }
+      const dx = echo.x - x;
+      const dy = echo.y - y;
+      const d2 = dx * dx + dy * dy;
+      const recent = ((this.state.tick - echo.bornTick) >>> 0) <= recentTicks;
+      const localMerge = count < XP_ECHO_DENSE_AT ? recent && d2 <= mergeR2 : d2 <= mergeR2;
+      if (localMerge && d2 < mergeD2) {
+        merge = echo;
+        mergeD2 = d2;
+      }
+    });
+
+    if (!merge && count >= MAX_XP_ECHOES) {
+      // At cap, distance no longer creates rows: use the nearest resting Echo anywhere on the field.
+      this.state.xpEchoes.forEach((echo) => {
+        if (echo.delivered || echo.collectorId) return;
+        const dx = echo.x - x;
+        const dy = echo.y - y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < mergeD2) {
+          merge = echo;
+          mergeD2 = d2;
+        }
+      });
+      merge ??= earliestFlight;
+    }
+    const mergeTarget = merge as XpEchoState | null;
+    if (mergeTarget) {
+      mergeTarget.value = Math.min(0xffffffff, mergeTarget.value + amount);
+      return;
+    }
+
+    const echo = new XpEchoState();
+    echo.id = `xp${this.xpEchoSeq++}`;
+    echo.x = x;
+    echo.y = y;
+    echo.value = amount;
+    // Stable variety without consuming the combat RNG stream (golden-tick determinism stays intact).
+    echo.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    echo.bornTick = this.state.tick;
+    const pointBlankCollector = this.nearestXpCollector(echo.x, echo.y, true);
+    if (
+      pointBlankCollector &&
+      Math.hypot(pointBlankCollector.x - echo.x, pointBlankCollector.y - echo.y) <=
+        XP_ECHO_POINT_BLANK_REACH
+    ) {
+      // An overlapping corpse is already at the catch point. Pre-arm it so legacy same-sim-window
+      // kill assertions still observe the authoritative arrival, while ordinary drops keep the full settle.
+      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
+    }
+    this.state.xpEchoes.set(echo.id, echo);
+  }
+
+  /** Nearest absolute-distance winner; exact ties resolve by stable session id. */
+  private nearestXpCollector(x: number, y: number, requireReach: boolean): PlayerState | null {
+    let best: PlayerState | null = null;
+    let bestId = "";
+    let bestD2 = Number.POSITIVE_INFINITY;
+    this.state.players.forEach((player, id) => {
+      if (!player.alive || this.inLevelWindow(player)) return;
+      const dx = player.x - x;
+      const dy = player.y - y;
+      const d2 = dx * dx + dy * dy;
+      const reach = this.xpMoteReach(player);
+      if (requireReach && d2 > reach * reach) return;
+      if (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || id.localeCompare(bestId) < 0))) {
+        best = player;
+        bestId = id;
+        bestD2 = d2;
+      }
+    });
+    return best;
+  }
+
+  /** No collector may receive more than two authoritative catch packets on one tick. */
+  private reserveXpCollectTick(collectorId: string, firstTick: number): number {
+    let tick = firstTick >>> 0;
+    for (;;) {
+      let n = 0;
+      this.state.xpEchoes.forEach((echo) => {
+        if (!echo.delivered && echo.collectorId === collectorId && echo.collectTick === tick) n++;
+      });
+      if (n < XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK) return tick;
+      tick = (tick + 1) >>> 0;
+    }
+  }
+
+  private latchXpEcho(
+    echo: XpEchoState,
+    collector: PlayerState,
+    retarget = false,
+    cleanup = false,
+  ): void {
+    const dx = collector.x - echo.x;
+    const dy = collector.y - echo.y;
+    const distance = Math.hypot(dx, dy);
+    const rawSeconds = XP_ECHO_FLIGHT_BASE_SECONDS + distance / XP_ECHO_FLIGHT_DISTANCE_DIVISOR;
+    const seconds = cleanup
+      ? clamp(rawSeconds, XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS, XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS)
+      : retarget
+        ? clamp(rawSeconds, XP_ECHO_RETARGET_MIN_SECONDS, XP_ECHO_RETARGET_MAX_SECONDS)
+        : clamp(rawSeconds, XP_ECHO_FLIGHT_MIN_SECONDS, XP_ECHO_FLIGHT_MAX_SECONDS);
+    const flightTicks =
+      !retarget && !cleanup && distance <= XP_ECHO_POINT_BLANK_REACH
+        ? XP_ECHO_POINT_BLANK_FLIGHT_TICKS
+        : Math.max(1, Math.ceil(seconds * (1000 / TICK_MS)));
+    echo.collectorId = collector.id;
+    echo.launchTick = this.state.tick;
+    echo.collectTick = this.reserveXpCollectTick(
+      collector.id,
+      (this.state.tick + flightTicks) >>> 0,
+    );
+    echo.delivered = false;
+
+    const inv = distance > 1e-6 ? 1 / distance : 0;
+    const fx = dx * inv;
+    const fy = dy * inv;
+    const nx = -fy;
+    const ny = fx;
+    const sign = (echo.seed & 1) === 0 ? -1 : 1;
+    const back = Math.min(16, distance * 0.06);
+    const lateral = Math.min(72, distance * 0.24) * sign;
+    this.xpFlights.set(echo.id, {
+      targetX: collector.x,
+      targetY: collector.y,
+      c1x: echo.x - fx * back + nx * lateral,
+      c1y: echo.y - fy * back + ny * lateral,
+    });
+  }
+
+  /** Analytic current point used only when a collector disconnects mid-flight. */
+  private sampleXpFlight(echo: XpEchoState, meta: XpFlightMeta): { x: number; y: number } {
+    const span = Math.max(1, (echo.collectTick - echo.launchTick) >>> 0);
+    const t = clamp(((this.state.tick - echo.launchTick) >>> 0) / span, 0, 1);
+    const q = t ** 2.2;
+    const dx = meta.targetX - echo.x;
+    const dy = meta.targetY - echo.y;
+    const distance = Math.hypot(dx, dy);
+    const inv = distance > 1e-6 ? 1 / distance : 0;
+    const fx = dx * inv;
+    const fy = dy * inv;
+    const nx = -fy;
+    const ny = fx;
+    const sign = (echo.seed & 1) === 0 ? -1 : 1;
+    const c2x = meta.targetX - fx * Math.min(84, distance * 0.3) - nx * sign * Math.min(28, distance * 0.08);
+    const c2y = meta.targetY - fy * Math.min(84, distance * 0.3) - ny * sign * Math.min(28, distance * 0.08);
+    const a = 1 - q;
+    const bx = a ** 3 * echo.x + 3 * a * a * q * meta.c1x + 3 * a * q * q * c2x + q ** 3 * meta.targetX;
+    const by = a ** 3 * echo.y + 3 * a * a * q * meta.c1y + 3 * a * q * q * c2y + q ** 3 * meta.targetY;
+    const sw = clamp((t - 0.68) / 0.32, 0, 1);
+    const w = sw * sw * (3 - 2 * sw);
+    const angle = sign * Math.PI * 0.7 * w;
+    const rx = bx - meta.targetX;
+    const ry = by - meta.targetY;
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return { x: meta.targetX + rx * c - ry * s, y: meta.targetY + rx * s + ry * c };
+  }
+
+  /** A guaranteed packet never becomes unpaid because its collector left. Retarget globally or return armed. */
+  private retargetXpEcho(echo: XpEchoState): void {
+    const meta = this.xpFlights.get(echo.id);
+    if (meta) {
+      const point = this.sampleXpFlight(echo, meta);
+      echo.x = point.x;
+      echo.y = point.y;
+    }
+    this.xpFlights.delete(echo.id);
+    echo.collectorId = "";
+    echo.launchTick = 0;
+    echo.collectTick = 0;
+    const next = this.nearestXpCollector(echo.x, echo.y, false);
+    if (next) {
+      this.latchXpEcho(echo, next, true);
+    } else {
+      // Already-read value rests indefinitely and can latch as soon as a future eligible player exists.
+      echo.bornTick = (this.state.tick - this.xpEchoArmTicks(echo.value)) >>> 0;
+    }
+  }
+
+  private nearestLivingXpCollector(x: number, y: number): PlayerState | null {
+    let best: PlayerState | null = null;
+    let bestId = "";
+    let bestD2 = Number.POSITIVE_INFINITY;
+    this.state.players.forEach((player, id) => {
+      if (!player.alive) return;
+      const dx = player.x - x;
+      const dy = player.y - y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || id.localeCompare(bestId) < 0))) {
+        best = player;
+        bestId = id;
+        bestD2 = d2;
+      }
+    });
+    return best;
+  }
+
+  /** Hold a committed teardown while the bounded field performs its six-per-tick cleanup vacuum. */
+  private beginXpBoundary(kind: XpBoundary): void {
+    if (this.xpBoundary) return;
+    if (this.state.xpEchoes.size === 0) {
+      this.completeXpBoundary(kind);
+      return;
+    }
+    this.xpBoundary = kind;
+    this.xpBoundaryStartedTick = this.state.tick;
+  }
+
+  private completeXpBoundary(kind: XpBoundary): void {
+    this.xpBoundary = null;
+    switch (kind) {
+      case "extract":
+        this.completeExtraction();
+        break;
+      case "descent":
+        this.transitionDimension();
+        break;
+      case "belt-victory":
+        this.enterTerminalOutcome("victory");
+        break;
+      case "bossrush-victory":
+        this.completeBossRushVictory();
+        break;
+    }
+  }
+
+  private completeExtraction(): void {
+    let banked = 0;
+    this.state.players.forEach((player) => {
+      banked += player.salvaged;
+      player.salvaged = 0;
+    });
+    const harvest = Math.round(
+      banked * Math.min(HARVEST_CAP, HARVEST_PER_LUK * (this.bestLuk() - 1)),
+    );
+    this.state.bankedSalvage += banked + harvest;
+    this.state.riftOpen = false;
+    this.enterTerminalOutcome("victory");
+    console.log(
+      `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked}+${harvest} harvest banked, ${this.state.bankedSalvage} total)`,
+    );
+  }
+
+  private completeBossRushVictory(): void {
+    let banked = 0;
+    this.state.players.forEach((player) => {
+      banked += player.salvaged;
+      player.salvaged = 0;
+    });
+    this.state.bankedSalvage += banked;
+    this.enterTerminalOutcome("victory");
+    console.log(
+      `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
+    );
+  }
+
+  /** At 650ms, conserve the cleanup tail in one final delivered crown before teardown. */
+  private foldXpCleanupTail(): void {
+    let value = 0;
+    let x = 0;
+    let y = 0;
+    let strongest = -1;
+    const unpaid: string[] = [];
+    this.state.xpEchoes.forEach((echo, id) => {
+      if (echo.delivered) return;
+      unpaid.push(id);
+      value += echo.value;
+      if (echo.value > strongest) {
+        strongest = echo.value;
+        x = echo.x;
+        y = echo.y;
+      }
+    });
+    if (value <= 0) return;
+    const collector = this.nearestLivingXpCollector(x, y);
+    if (!collector) return;
+    for (const id of unpaid) {
+      this.state.xpEchoes.delete(id);
+      this.xpFlights.delete(id);
+    }
+    this.grantXp(value);
+    const core = new XpEchoState();
+    core.id = `xp${this.xpEchoSeq++}`;
+    core.x = collector.x;
+    core.y = collector.y;
+    core.value = Math.min(0xffffffff, value);
+    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    core.bornTick = this.state.tick;
+    core.collectorId = collector.id;
+    core.launchTick = this.state.tick;
+    core.collectTick = this.state.tick;
+    core.delivered = true;
+    this.state.xpEchoes.set(core.id, core);
+  }
+
+  /**
+   * Server-authoritative Reach/magnet rail. Grants happen only at `collectTick`; delivered rows survive one
+   * full patch and are deleted on the following simulation tick. Downing never cancels a guaranteed flight.
+   */
+  private stepXpEchoes(): void {
+    // Retire the previous patch's receipts first.
+    for (const [id, echo] of this.state.xpEchoes) {
+      if (!echo.delivered) continue;
+      this.state.xpEchoes.delete(id);
+      this.xpFlights.delete(id);
+    }
+
+    if (this.xpBoundary && this.state.xpEchoes.size === 0) {
+      this.completeXpBoundary(this.xpBoundary);
+      return;
+    }
+
+    // Advance guaranteed flights against their collector's latest authoritative chest/body position.
+    this.state.xpEchoes.forEach((echo) => {
+      if (!echo.collectorId || echo.delivered) return;
+      const collector = this.state.players.get(echo.collectorId);
+      if (!collector) {
+        this.retargetXpEcho(echo);
+        return;
+      }
+      const meta = this.xpFlights.get(echo.id);
+      if (meta) {
+        meta.targetX = collector.x;
+        meta.targetY = collector.y;
+      }
+      if (this.state.tick < echo.collectTick) return;
+      this.grantXp(echo.value);
+      echo.delivered = true;
+      this.xpFlights.delete(echo.id);
+    });
+
+    if (this.xpBoundary) {
+      const cleanupAgeMs = ((this.state.tick - this.xpBoundaryStartedTick) >>> 0) * TICK_MS;
+      if (cleanupAgeMs >= XP_ECHO_CLEANUP_MAX_MS) {
+        this.foldXpCleanupTail();
+        return;
+      }
+      const resting = [...this.state.xpEchoes.values()]
+        .filter((echo) => !echo.delivered && !echo.collectorId)
+        .sort((a, b) => b.value - a.value || a.id.localeCompare(b.id));
+      let launched = 0;
+      for (const echo of resting) {
+        if (launched >= XP_ECHO_CLEANUP_LAUNCHES_PER_TICK) break;
+        const collector = this.nearestXpCollector(echo.x, echo.y, false);
+        if (!collector) break;
+        this.latchXpEcho(echo, collector, false, true);
+        launched++;
+      }
+      return;
+    }
+
+    // New latches happen after movement. Admission limits form a stream under dense clears.
+    let roomLaunches = 0;
+    const perCollector = new Map<string, number>();
+    this.state.xpEchoes.forEach((echo) => {
+      if (roomLaunches >= XP_ECHO_LAUNCHES_PER_ROOM_TICK || echo.collectorId || echo.delivered) return;
+      if (((this.state.tick - echo.bornTick) >>> 0) < this.xpEchoArmTicks(echo.value)) return;
+      const collector = this.nearestXpCollector(echo.x, echo.y, true);
+      if (!collector) return;
+      const launched = perCollector.get(collector.id) ?? 0;
+      if (launched >= XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK) return;
+      this.latchXpEcho(echo, collector);
+      perCollector.set(collector.id, launched + 1);
+      roomLaunches++;
     });
   }
 
@@ -3119,9 +3607,9 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Apply `raw` damage to one enemy, folding in the §8 Brand multiplier, then do the shared kill/XP/portal
    *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
-   *  deletes after iterating). Returns XP earned (0 if it survived or was a dummy). The single damage
-   *  primitive so Brand + drops + XP stay consistent across every source (swing / blast / projectile / wave). */
-  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit = 0): number {
+   *  deletes after iterating) and drops one authoritative XP Echo at the exact corpse position. The single
+   *  primitive keeps Brand + drops + XP consistent across every source (swing / blast / projectile / wave). */
+  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit = 0): void {
     // §30 CRIT: player-sourced damage passes its crit CHANCE; roll here so every damage source (edge,
     // chain, quake, gun, thrown, riposte) can independently crit. A crit doubles the hit + bumps the
     // synced critFlash so the client styles a gold number with extra juice. Non-player sources pass 0.
@@ -3131,15 +3619,20 @@ export class GameRoom extends Room<ArenaState> {
       enemy.critFlash = (enemy.critFlash + 1) & 0xff;
     }
     enemy.hp -= dmg * (this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT : 1);
-    if (enemy.hp > 0) return 0;
+    if (enemy.hp > 0) return;
     if (enemy.kind === "dummy") {
       enemy.hp = DUMMY_HP;
-      return 0;
+      return;
     }
     const combo = this.comboState.get(eid);
     if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
+    this.dropXp(
+      enemy.x,
+      enemy.y,
+      (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1),
+    );
     if (kind?.archetype === "boss") {
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
       // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
@@ -3178,7 +3671,6 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.maybeDropWeapon(enemy); // §13 wielding enemies drop the SPECIFIC weapon they carry
     kills.push(eid);
-    return (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1);
   }
 
   /** §7 v0.105 zero a player's persistent steering velocity — call at every position TELEPORT (pit
@@ -3257,7 +3749,6 @@ export class GameRoom extends Room<ArenaState> {
   private detonate(x: number, y: number, radius: number, damage: number, crit = 0): void {
     const r2 = radius * radius;
     const kills: string[] = [];
-    let xpGained = 0;
     this.enemyGrid.queryRadius(x, y, radius, this.enemyCandidates);
     for (const eid of this.enemyCandidates) {
       const enemy = this.state.enemies.get(eid);
@@ -3265,10 +3756,9 @@ export class GameRoom extends Room<ArenaState> {
       const dx = enemy.x - x;
       const dy = enemy.y - y;
       if (dx * dx + dy * dy > r2) continue;
-      xpGained += this.damageEnemy(enemy, eid, damage, kills, crit);
+      this.damageEnemy(enemy, eid, damage, kills, crit);
     }
     for (const eid of kills) this.state.enemies.delete(eid);
-    if (xpGained > 0) this.grantXp(xpGained);
   }
 
   /** §8 Emberguard fire wave — a cone of fire in front of `aim` (origin at the player), `dmg` to each enemy
@@ -3283,14 +3773,12 @@ export class GameRoom extends Room<ArenaState> {
     crit = 0,
   ): void {
     const kills: string[] = [];
-    let xpGained = 0;
     this.state.enemies.forEach((enemy, eid) => {
       if (inMeleeArc({ x, y }, aimX, aimY, enemy, EMBERGUARD_RANGE, EMBERGUARD_HALF_ARC)) {
-        xpGained += this.damageEnemy(enemy, eid, dmg, kills, crit);
+        this.damageEnemy(enemy, eid, dmg, kills, crit);
       }
     });
     for (const eid of kills) this.state.enemies.delete(eid);
-    if (xpGained > 0) this.grantXp(xpGained);
   }
 
   /** §7/§8 execute a parry — grant i-frames, knock nearby enemies back, and fire the owned augments. Split
@@ -3832,7 +4320,6 @@ export class GameRoom extends Room<ArenaState> {
       } else {
         // Friendly throw: damage each fresh enemy it touches until pierce runs out.
         const kills: string[] = [];
-        let xpGained = 0;
         this.enemyGrid.queryRadius(
           pr.x,
           pr.y,
@@ -3851,11 +4338,10 @@ export class GameRoom extends Room<ArenaState> {
             meta.pierce -= 1;
             // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
-            xpGained += this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
+            this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
           }
         }
         for (const eid of kills) this.state.enemies.delete(eid);
-        if (xpGained > 0) this.grantXp(xpGained);
         // Bouncing rounds survive a spent pierce — they re-arm on the next carom (above).
         if (meta.pierce <= 0 && (meta.bounces ?? 0) <= 0) doomed.push(id);
       }
@@ -4025,7 +4511,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!bossAlive && trashAlive === 0) {
         this.beltPhase = "cleared";
         this.state.beltLockX = 0; // gate opens
-        if (room.boss) this.enterTerminalOutcome("victory"); // §29 cleared the bridge → run won
+        if (room.boss) this.beginXpBoundary("belt-victory"); // catch the finale XP before the win teardown
       }
     } else {
       // cleared → advance when a player crosses the (now-open) gate.
@@ -4184,17 +4670,8 @@ export class GameRoom extends Room<ArenaState> {
     this.dropLoot(x, y, 1, LOOT_TIER_LUK_BOSS); // the reward for the clear (boss-tier rarity)
     this.bossRushIndex++;
     if (this.bossRushIndex >= BOSS_DEF_IDS.length) {
-      // GAUNTLET CLEARED → victory: bank everything carried + clear the field for the win screen.
-      let banked = 0;
-      this.state.players.forEach((p) => {
-        banked += p.salvaged;
-        p.salvaged = 0;
-      });
-      this.state.bankedSalvage += banked;
-      this.enterTerminalOutcome("victory");
-      console.log(
-        `[room ${this.roomId}] BOSS RUSH cleared all ${BOSS_DEF_IDS.length} bosses — VICTORY (+${banked} banked)`,
-      );
+      // GAUNTLET CLEARED: the boss core catches before progression presentation is torn down and banked.
+      this.beginXpBoundary("bossrush-victory");
       return;
     }
     // Escalate the difficulty (HP + damage) with each round, and queue the next boss after a breather.
@@ -4403,6 +4880,9 @@ export class GameRoom extends Room<ArenaState> {
    *  levels/attributes/weapons/augments/carried salvage/HP all persist (that's the greed: you push in
    *  whatever shape the last fight left you). The field is cleared, the clock and boss director reset. */
   private transitionDimension(): void {
+    // Normal descent reaches this only after the cleanup vacuum; defensive cleanup prevents stale rows if a
+    // server operator invokes the transition directly during recovery/testing.
+    this.clearXpEchoes();
     this.state.depth = Math.min(250, this.state.depth + 1);
     // Next dimension: prefer one the chain hasn't visited; once all are seen, any OTHER dimension.
     this.visitedDims.add(this.state.dimensionId);
@@ -4459,24 +4939,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = b.x - this.state.portalX;
       const dy = b.y - this.state.portalY;
       if (dx * dx + dy * dy <= r2) {
-        // §6 BANK (v0.103, "bank or lose"): everything the squad carried is deposited — the win's payload.
-        let banked = 0;
-        this.state.players.forEach((p) => {
-          banked += p.salvaged;
-          p.salvaged = 0;
-        });
-        // §30 HARVEST bonus (parity #3): a LUK-scaled premium on the extraction payload — the reward for
-        // building luck + taking the benign-greed exit (a wipe still loses everything).
-        const harvest = Math.round(
-          banked * Math.min(HARVEST_CAP, HARVEST_PER_LUK * (this.bestLuk() - 1)),
-        );
-        this.state.bankedSalvage += banked + harvest;
-        // Clean the field for the win screen.
-        this.state.riftOpen = false; // the choice is made — the rift closes
-        this.enterTerminalOutcome("victory");
-        console.log(
-          `[room ${this.roomId}] run extracted at depth ${this.state.depth} — VICTORY (+${banked}+${harvest} harvest banked, ${this.state.bankedSalvage} total)`,
-        );
+        this.beginXpBoundary("extract");
         return;
       }
     }
@@ -4505,7 +4968,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.riftCharge = Math.min(1, this.state.riftCharge + dt / RIFT_CHANNEL_SECONDS);
       if (this.state.riftCharge >= 1) {
         this.state.riftCharge = 0;
-        this.transitionDimension();
+        this.beginXpBoundary("descent");
       }
     } else if (this.state.riftCharge > 0) {
       this.state.riftCharge = Math.max(0, this.state.riftCharge - (dt / RIFT_CHANNEL_SECONDS) * 2);

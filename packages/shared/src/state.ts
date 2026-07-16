@@ -231,6 +231,25 @@ export class PickupState extends Schema {
 }
 
 /**
+ * One bounded, server-authoritative kill-XP packet. Resting rows keep `collectorId` empty and never mutate
+ * their position per tick. A latch writes one collector plus immutable launch/arrival ticks; clients sample
+ * the curved flight locally from that descriptor. `delivered` remains true for one complete patch so the
+ * visible catch, squad XP mutation, and HUD pulse share an observable authoritative edge.
+ */
+export class XpEchoState extends Schema {
+  @type("string") id = "";
+  @type("number") x = 0;
+  @type("number") y = 0;
+  @type("uint32") value = 0;
+  @type("uint16") seed = 0;
+  @type("uint32") bornTick = 0;
+  @type("string") collectorId = "";
+  @type("uint32") launchTick = 0;
+  @type("uint32") collectTick = 0;
+  @type("boolean") delivered = false;
+}
+
+/**
  * An in-flight enemy projectile (§15 spitter "bullet-heaven"). Damage is applied
  * server-authoritatively on the tick; the client renders + dead-reckons it from (x,y,vx,vy)
  * for smooth motion between 20Hz snapshots (the §4 Tier-3 "bullets are client-sim'd" feel,
@@ -333,4 +352,6 @@ export class ArenaState extends Schema {
   @type("number") beltShopX = 0;
   /** Whole elapsed run seconds for the HUD. Appended wire replacement for the legacy per-tick float. */
   @type("uint32") elapsedSeconds = 0;
+  /** Authoritative kill-XP packets. APPENDED for wire safety; weapon pickups keep their separate contract. */
+  @type({ map: XpEchoState }) xpEchoes = new MapSchema<XpEchoState>();
 }

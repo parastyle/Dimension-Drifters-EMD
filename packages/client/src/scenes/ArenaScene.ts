@@ -42,6 +42,7 @@ import {
   getDimension,
   gunMuzzleReach,
   hasAugment,
+  INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
   INTERP_SNAP_PLAYER,
   inMeleeArc,
@@ -104,6 +105,11 @@ import {
   preloadParticlePacks,
 } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
+import {
+  type XpMotePoint,
+  type XpMoteReceipt,
+  XpMoteRenderer,
+} from "../vfx/xp-motes.js";
 import {
   buildCard,
   type Card,
@@ -614,6 +620,8 @@ export class ArenaScene extends Phaser.Scene {
   private paperPeakObjects = 0;
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
+  /** Bounded painted renderer for the server-authoritative kill-XP Echo map. */
+  private xpMotes!: XpMoteRenderer;
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
    *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
   private audio!: AudioBus;
@@ -786,6 +794,15 @@ export class ArenaScene extends Phaser.Scene {
    *  motion, not a per-patch jump. -1 = uninitialised (snap on the first frame). */
   private hpShown = -1;
   private xpShown = -1;
+  /** 0..1 receipt punch; changes XP-bar height/brightness, never its authoritative width. */
+  private xpPulse = 0;
+  private xpAudioStreak = 0;
+  private xpAudioLastAt = -9999;
+  private xpReceiptLastAt = -9999;
+  private readonly xpReceiptBatches = new Map<
+    string,
+    { value: number; x: number; y: number; lastAt: number }
+  >();
   private bossShown = -1;
   private selfAim = { x: 1, y: 0 };
   /** §7 v0.105 de-clunk — spectate camera easing: which teammate we're trailing while downed, plus a
@@ -1162,6 +1179,7 @@ export class ArenaScene extends Phaser.Scene {
    */
   private resetSceneState(): void {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
+    this.xpMotes?.destroy();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
@@ -1191,6 +1209,7 @@ export class ArenaScene extends Phaser.Scene {
     this.pickups.clear();
     this.projectiles.clear();
     this.zones.clear();
+    this.xpReceiptBatches.clear();
     this.lastFell.clear();
     this.pendingArt.clear();
     // `failedArt` and `floorArtMissing` deliberately follow Phaser's game-wide texture cache, not a run.
@@ -1209,6 +1228,7 @@ export class ArenaScene extends Phaser.Scene {
     this.slotZones = [];
     this.buyZones = [];
     this.vfxPlayer = undefined!;
+    this.xpMotes = undefined!;
     this.telegraphGroundGfx = undefined!;
     this.telegraphGfx = undefined!;
     this.telegraphForeshadows = undefined!;
@@ -1271,6 +1291,10 @@ export class ArenaScene extends Phaser.Scene {
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
+    this.xpPulse = 0;
+    this.xpAudioStreak = 0;
+    this.xpAudioLastAt = -9999;
+    this.xpReceiptLastAt = -9999;
     this.bossShown = -1;
     this.selfAim.x = 1;
     this.selfAim.y = 0;
@@ -1327,6 +1351,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §4 the single shutdown path for globals and network ownership. */
   private shutdownScene(): void {
     this.connectionGeneration++;
+    this.xpMotes?.destroy();
+    this.xpMotes = undefined!;
     this.destroyPaperPagePool();
     this.clearLevelPaperCounters();
     this.removeSceneListeners();
@@ -1369,6 +1395,11 @@ export class ArenaScene extends Phaser.Scene {
       (this.game.registry.get("audio") as AudioBus | undefined) ??
       new AudioBus();
     this.game.registry.set("audio", this.audio);
+    this.xpMotes = new XpMoteRenderer(this, {
+      target: (collectorId, out) => this.xpCatchPoint(collectorId, out),
+      project: (x, y, out) => this.projectXpPoint(x, y, out),
+      receipt: (event) => this.onXpReceipt(event),
+    });
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
@@ -2779,6 +2810,9 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       this.wasFrozen = true;
     }
+    // XP motion is server-timed and continues through local hit-stop; a frozen rig is a stable catch target.
+    this.updateXpMotes(deltaMs);
+    this.updateXpReceiptLabels();
     this.followSelf();
     this.sendAttack();
     this.sendParry();
@@ -2792,6 +2826,90 @@ export class ArenaScene extends Phaser.Scene {
     this.updateLevelWindow();
     this.updateCarousel();
     this.updateDebug();
+  }
+
+  private projectXpPoint(x: number, y: number, out: XpMotePoint): void {
+    out.x = x;
+    out.y = this.belt ? this.beltY(y) : y;
+  }
+
+  /** Stable reward socket derived from the rendered rig root; avoids targeting stale server coordinates. */
+  private xpCatchPoint(collectorId: string, out: XpMotePoint): boolean {
+    const rig = this.blobs.get(collectorId);
+    if (!rig) return false;
+    out.x = rig.root.x;
+    out.y = rig.root.y - 25 * Math.max(0.7, Math.abs(rig.root.scaleY));
+    return true;
+  }
+
+  private updateXpMotes(deltaMs: number): void {
+    if (!this.room || !this.xpMotes || !this.room.state.xpEchoes) return;
+    const timelineMs = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : this.room.state.tick * TICK_MS - INTERP_DELAY_MS;
+    this.xpMotes.update(
+      this.room.state.xpEchoes,
+      XpMoteRenderer.renderTick(timelineMs),
+      deltaMs,
+      prefersReducedPaperMotion(),
+    );
+  }
+
+  /** One delivered patch owns the catch ring, squad HUD pulse, pitch bucket, and optional +N label. */
+  private onXpReceipt(event: XpMoteReceipt): void {
+    const now = this.time.now;
+    this.xpPulse = Math.min(1, Math.max(this.xpPulse, 0.56 + Math.log2(1 + event.value) * 0.1));
+    let batch = this.xpReceiptBatches.get(event.collectorId);
+    if (!batch || now - batch.lastAt > 200) {
+      batch = { value: 0, x: event.x, y: event.y, lastAt: now };
+      this.xpReceiptBatches.set(event.collectorId, batch);
+    }
+    batch.value += event.value;
+    batch.x = event.x;
+    batch.y = event.y;
+    batch.lastAt = now;
+
+    if (now - this.xpReceiptLastAt > 320) this.xpAudioStreak = 0;
+    this.xpReceiptLastAt = now;
+    const self = this.room?.state.players.get(this.room.sessionId);
+    const levelEdge = !!self && this.prevLevel >= 0 && self.level > this.prevLevel;
+    if (!levelEdge && now - this.xpAudioLastAt >= 70) {
+      // AudioBus's reward voice already rises with `amt`; one 70ms bucket speaks for every same-frame catch.
+      this.audio.play("loot", {
+        x: event.x,
+        amt: Math.min(1, this.xpAudioStreak * 0.075),
+      });
+      this.xpAudioStreak = Math.min(16, this.xpAudioStreak + 1);
+      this.xpAudioLastAt = now;
+    }
+  }
+
+  private updateXpReceiptLabels(): void {
+    const now = this.time.now;
+    for (const [collectorId, batch] of this.xpReceiptBatches) {
+      if (now - batch.lastAt < 200) continue;
+      this.xpReceiptBatches.delete(collectorId);
+      if (batch.value < 5) continue;
+      const txt = this.add
+        .text(batch.x, batch.y - 34, `+${batch.value} XP`, {
+          fontFamily: "monospace",
+          fontSize: "14px",
+          color: "#c9f8ff",
+          fontStyle: "bold",
+          stroke: "#07131d",
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5)
+        .setDepth(99996);
+      this.tweens.add({
+        targets: txt,
+        y: batch.y - 60,
+        alpha: 0,
+        duration: 520,
+        ease: "Cubic.easeOut",
+        onComplete: () => txt.destroy(),
+      });
+    }
   }
 
   /** Reconcile rendered enemies against authoritative state (same race-proof pattern as blobs). */
@@ -6621,7 +6739,12 @@ export class ArenaScene extends Phaser.Scene {
     if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05)
       this.xpShown = xpRatio;
     else this.xpShown = Phaser.Math.Linear(this.xpShown, xpRatio, 0.25);
+    this.xpPulse = Math.max(0, this.xpPulse - (this.deltaSec || 0.016) / 0.12);
     this.xpBarFill.width = 236 * s * this.xpShown;
+    // Receipt pulse changes thickness/brightness only; the authoritative XP ratio remains the sole width.
+    this.xpBarFill.height = (4 + this.xpPulse * 3) * s;
+    this.xpBarFill.fillColor = this.xpPulse > 0.05 ? 0xd9fbff : 0x6fd6ff;
+    this.xpBarFill.setAlpha(0.92 + this.xpPulse * 0.08);
     this.levelText
       .setPosition(barX, xpY - 9 * s)
       .setText(

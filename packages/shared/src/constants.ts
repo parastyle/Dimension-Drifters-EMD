@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 13; // SERVER AUDIT #14/#15 — mystery class + integer elapsed/flex wire timers
+export const SCHEMA_VERSION = 14; // XP Echo map: authoritative kill-XP arrival + one-patch receipt latch
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -283,6 +283,47 @@ export const REZ_RADIUS = 96;
 export const DUMMY_HP = 250;
 export const DUMMY_RADIUS = 30;
 export const PICKUP_RADIUS = 46;
+
+/**
+ * XP ECHOES — authoritative kill rewards. One synced Echo carries an aggregate XP value; its position is
+ * static while resting and its launch/arrival epochs describe the client-rendered flight. No per-tick flight
+ * coordinates are serialized. All values in this block are game-feel tuning shared by server and client.
+ */
+export const BASE_XP_MOTE_REACH = 180;
+export const XP_MOTE_REACH_MIN = 120;
+export const XP_MOTE_REACH_MAX = 600;
+/** Reserved first stat hook: each future Mote-Reach stack grows the authoritative radius by 18%. */
+export const XP_MOTE_REACH_PER_STACK = 0.18;
+/** Hard synchronized-entity ceiling. Overflow always merges value; XP is never discarded. */
+export const MAX_XP_ECHOES = 48;
+/** Below this count only close, simultaneous deaths merge; above it the field coalesces aggressively. */
+export const XP_ECHO_DENSE_AT = 32;
+export const XP_ECHO_RECENT_MERGE_RADIUS = 64;
+export const XP_ECHO_DENSE_MERGE_RADIUS = 80;
+export const XP_ECHO_RECENT_MERGE_MS = 200;
+/** Every drop gets a readable pop/settle before Reach may latch it. Higher tiers linger 40ms longer. */
+export const XP_ECHO_ARM_MS = 260;
+export const XP_ECHO_ARM_TIER_MS = 40;
+export const XP_ECHO_ARM_MAX_MS = 380;
+/** Distance-sensitive, tick-quantized magnet flight: clamp(0.22 + distance/1500, 0.24, 0.52). */
+export const XP_ECHO_FLIGHT_BASE_SECONDS = 0.22;
+export const XP_ECHO_FLIGHT_DISTANCE_DIVISOR = 1500;
+export const XP_ECHO_FLIGHT_MIN_SECONDS = 0.24;
+export const XP_ECHO_FLIGHT_MAX_SECONDS = 0.52;
+/** Legacy tick-compatibility lane: a corpse already overlapping the two body radii catches in one tick. */
+export const XP_ECHO_POINT_BLANK_REACH = 48;
+export const XP_ECHO_POINT_BLANK_FLIGHT_TICKS = 1;
+export const XP_ECHO_RETARGET_MIN_SECONDS = 0.16;
+export const XP_ECHO_RETARGET_MAX_SECONDS = 0.26;
+/** Stream admission keeps a large pile braided and readable instead of arriving as one opaque flash. */
+export const XP_ECHO_LAUNCHES_PER_COLLECTOR_TICK = 2;
+export const XP_ECHO_LAUNCHES_PER_ROOM_TICK = 3;
+export const XP_ECHO_RECEIPTS_PER_COLLECTOR_TICK = 2;
+/** Closed-beat cleanup admits faster streams and folds any tail after the 650ms presentation budget. */
+export const XP_ECHO_CLEANUP_LAUNCHES_PER_TICK = 6;
+export const XP_ECHO_CLEANUP_FLIGHT_MIN_SECONDS = 0.22;
+export const XP_ECHO_CLEANUP_FLIGHT_MAX_SECONDS = 0.36;
+export const XP_ECHO_CLEANUP_MAX_MS = 650;
 /** §29 v0.118 ARSENAL: a fixed 3-slot loadout (the belt "carry 3 weapons, swap instantly") plus a bag for
  *  overflow you haul to a shopkeeper. */
 export const ARSENAL_SLOTS = 3;
