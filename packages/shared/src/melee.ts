@@ -42,7 +42,11 @@ export type MeleeComboVariant =
   | "stinger"
   | "hero-spin"
   | "pommel"
-  | "greatsword";
+  | "greatsword"
+  | "greatsword-momentum"
+  | "claymore-breach"
+  | "glaive-compass"
+  | "bardiche-hookbreak";
 
 /** Weapon-authored combo seam. Optional fields let current data use shared shape defaults while future
  * weapon entries opt into an exact family/variant without teaching the renderer weapon ids or names. */
@@ -71,9 +75,46 @@ export type MeleeComboMotion =
   | "stinger"
   | "spin-release"
   | "pommel-bash"
-  | "true-charged-slam";
+  | "true-charged-slam"
+  | "falling-gate"
+  | "backswing-wheel"
+  | "runaway-cleave"
+  | "highland-gate"
+  | "rising-ward"
+  | "bind-break-cast-off"
+  | "long-reap"
+  | "shaft-switch"
+  | "compass-rose"
+  | "headsmans-drop"
+  | "hook-and-haul"
+  | "gallows-turn";
 export type MeleeComboHand = "lead" | "off" | "both";
 export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
+export type MeleeComboRibbonProfile =
+  | "massed-wedge"
+  | "hooked-comma"
+  | "open-c"
+  | "guard-plane"
+  | "rising-plane"
+  | "broken-cross"
+  | "outer-crescent"
+  | "reverse-hairpin"
+  | "open-annulus"
+  | "head-wedge"
+  | "inward-hook"
+  | "heavy-sickle";
+export type MeleeComboRibbonEnd = "clean" | "squared" | "torn" | "hooked" | "open";
+
+/** Stage-1 presentation profile for the painted-edge renderer. It describes one dominant business-edge
+ * ribbon plus, where needed, a faint neutral setup echo. It never changes the accepted centered sweep. */
+export interface MeleeComboRibbon {
+  readonly profile: MeleeComboRibbonProfile;
+  readonly radialStart: number;
+  readonly radialEnd: number;
+  readonly widthMultiplier: number;
+  readonly end: MeleeComboRibbonEnd;
+  readonly setupEcho?: "neutral-dim";
+}
 
 export interface MeleeComboStep {
   readonly name: string;
@@ -100,6 +141,8 @@ export interface MeleeComboStep {
     readonly damageMultiplier: number;
     readonly knockback: number;
   };
+  /** Cosmetic business-edge variation. Geometry/damage consumers must continue to use `path`/descriptor. */
+  readonly ribbon?: Readonly<MeleeComboRibbon>;
 }
 
 /** §45 section-B authored 3-hit cycles. Arrays/step roots are frozen and fields are readonly; all fractions
@@ -467,37 +510,337 @@ export const TRUE_CHARGED_SLAM_COMBO_STEP = Object.freeze({
   },
 } as const satisfies MeleeComboStep);
 
+/** Big-sword panel Stage-1 choreography. Every path remains the same single, unit-strength sweep; the
+ * named timing/ribbon data is presentation-only until accepted signed paths ship. */
+export const FALLING_GATE_COMBO_STEP = Object.freeze({
+  name: "falling gate",
+  motion: "falling-gate" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.22, activeEnd: 0.54, impact: 0.5, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "massed-wedge" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.25,
+    end: "squared" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const BACKSWING_WHEEL_COMBO_STEP = Object.freeze({
+  name: "backswing wheel",
+  motion: "backswing-wheel" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.1, activeEnd: 0.49, impact: 0.44, followEnd: 0.77 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "hooked-comma" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.08,
+    end: "hooked" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const RUNAWAY_CLEAVE_COMBO_STEP = Object.freeze({
+  name: "runaway cleave",
+  motion: "runaway-cleave" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.26, activeEnd: 0.64, impact: 0.54, followEnd: 0.86 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "open-c" as const,
+    radialStart: 0.28,
+    radialEnd: 1,
+    widthMultiplier: 1.35,
+    end: "torn" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const HIGHLAND_GATE_COMBO_STEP = Object.freeze({
+  name: "highland gate",
+  motion: "highland-gate" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.18, activeEnd: 0.58, impact: 0.49, followEnd: 0.8 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "guard-plane" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.15,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const RISING_WARD_COMBO_STEP = Object.freeze({
+  name: "rising ward",
+  motion: "rising-ward" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.12, activeEnd: 0.52, impact: 0.46, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "rising-plane" as const,
+    radialStart: 0.34,
+    radialEnd: 1,
+    widthMultiplier: 1.12,
+    end: "clean" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const BIND_BREAK_CAST_OFF_COMBO_STEP = Object.freeze({
+  name: "bind, break, cast off",
+  motion: "bind-break-cast-off" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.3, activeEnd: 0.66, impact: 0.54, followEnd: 0.86 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "broken-cross" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.3,
+    end: "open" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const LONG_REAP_COMBO_STEP = Object.freeze({
+  name: "long reap",
+  motion: "long-reap" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.16, activeEnd: 0.58, impact: 0.5, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "outer-crescent" as const,
+    radialStart: 0.68,
+    radialEnd: 1,
+    widthMultiplier: 0.62,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const SHAFT_SWITCH_COMBO_STEP = Object.freeze({
+  name: "shaft switch",
+  motion: "shaft-switch" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.12, activeEnd: 0.48, impact: 0.42, followEnd: 0.74 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "reverse-hairpin" as const,
+    radialStart: 0.68,
+    radialEnd: 1,
+    widthMultiplier: 0.58,
+    end: "hooked" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const COMPASS_ROSE_COMBO_STEP = Object.freeze({
+  name: "compass rose",
+  motion: "compass-rose" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.24, activeEnd: 0.68, impact: 0.55, followEnd: 0.88 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "open-annulus" as const,
+    radialStart: 0.72,
+    radialEnd: 1,
+    widthMultiplier: 0.55,
+    end: "open" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const HEADSMANS_DROP_COMBO_STEP = Object.freeze({
+  name: "headsman's drop",
+  motion: "headsmans-drop" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.26, activeEnd: 0.56, impact: 0.52, followEnd: 0.74 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "head-wedge" as const,
+    radialStart: 0.68,
+    radialEnd: 1,
+    widthMultiplier: 1.05,
+    end: "squared" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const HOOK_AND_HAUL_COMBO_STEP = Object.freeze({
+  name: "hook and haul",
+  motion: "hook-and-haul" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.1, activeEnd: 0.5, impact: 0.42, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "inward-hook" as const,
+    radialStart: 0.68,
+    radialEnd: 1,
+    widthMultiplier: 0.92,
+    end: "hooked" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const GALLOWS_TURN_COMBO_STEP = Object.freeze({
+  name: "gallows turn",
+  motion: "gallows-turn" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.3, activeEnd: 0.64, impact: 0.56, followEnd: 0.86 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "heavy-sickle" as const,
+    radialStart: 0.66,
+    radialEnd: 1,
+    widthMultiplier: 1.08,
+    end: "torn" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
 type CloseBladeComboVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
 type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default" | CloseBladeComboVariant>;
+
+function requiredBaseComboStep(family: MeleeComboFamily, index: number): Readonly<MeleeComboStep> {
+  const step = MELEE_COMBO_SEQUENCES[family][index];
+  if (!step) throw new RangeError(`Missing ${family} combo step ${index}`);
+  return step;
+}
 
 /** Complete three-step weapon variants. Unchanged beats reuse their frozen family roots. */
 export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
   Record<SignatureMeleeComboVariant, readonly Readonly<MeleeComboStep>[]>
 > = Object.freeze({
   "quake-mauler": Object.freeze([
-    MELEE_COMBO_SEQUENCES.chop[0]!,
+    requiredBaseComboStep("chop", 0),
     POMMEL_BASH_COMBO_STEP,
     FULCRUM_FLIP_COMBO_STEP,
   ]),
   stinger: Object.freeze([
-    MELEE_COMBO_SEQUENCES.thrust[0]!,
-    MELEE_COMBO_SEQUENCES.thrust[1]!,
+    requiredBaseComboStep("thrust", 0),
+    requiredBaseComboStep("thrust", 1),
     STINGER_COMBO_STEP,
   ]),
   "hero-spin": Object.freeze([
-    MELEE_COMBO_SEQUENCES.arc[0]!,
-    MELEE_COMBO_SEQUENCES.arc[1]!,
+    requiredBaseComboStep("arc", 0),
+    requiredBaseComboStep("arc", 1),
     HERO_SPIN_COMBO_STEP,
   ]),
   pommel: Object.freeze([
-    MELEE_COMBO_SEQUENCES.chop[0]!,
+    requiredBaseComboStep("chop", 0),
     POMMEL_BASH_COMBO_STEP,
-    MELEE_COMBO_SEQUENCES.chop[2]!,
+    requiredBaseComboStep("chop", 2),
   ]),
   greatsword: Object.freeze([
-    MELEE_COMBO_SEQUENCES.chop[0]!,
+    requiredBaseComboStep("chop", 0),
     POMMEL_BASH_COMBO_STEP,
     TRUE_CHARGED_SLAM_COMBO_STEP,
+  ]),
+  "greatsword-momentum": Object.freeze([
+    FALLING_GATE_COMBO_STEP,
+    BACKSWING_WHEEL_COMBO_STEP,
+    RUNAWAY_CLEAVE_COMBO_STEP,
+  ]),
+  "claymore-breach": Object.freeze([
+    HIGHLAND_GATE_COMBO_STEP,
+    RISING_WARD_COMBO_STEP,
+    BIND_BREAK_CAST_OFF_COMBO_STEP,
+  ]),
+  "glaive-compass": Object.freeze([
+    LONG_REAP_COMBO_STEP,
+    SHAFT_SWITCH_COMBO_STEP,
+    COMPASS_ROSE_COMBO_STEP,
+  ]),
+  "bardiche-hookbreak": Object.freeze([
+    HEADSMANS_DROP_COMBO_STEP,
+    HOOK_AND_HAUL_COMBO_STEP,
+    GALLOWS_TURN_COMBO_STEP,
   ]),
 });
 
@@ -544,6 +887,35 @@ function closeBladeComboVariantFor(
   if (def.dual && family === "fist-blade") return "dagger";
   if (style === "pivot" || /\brakes?\b/i.test(def.name)) return "claw";
   return undefined;
+}
+
+/** Exact Stage-1 roster routing lives in shared combat presentation, never in SpriteRig. Weapon metadata
+ * remains the higher-priority seam; these ids are the non-generated rollout table permitted by the panel. */
+function bigSwordPanelVariantFor(def: WeaponDef): SignatureMeleeComboVariant | undefined {
+  switch (def.id) {
+    case "driftblade":
+    case "x2-gravechill-nodachi":
+    case "x2-stormpetal-odachi":
+      return "greatsword";
+    case "tombstone-greatsword":
+    case "x-sword-coffin":
+    case "x-sword-bone":
+    case "x2-riftcleaver-greatblade":
+      return "greatsword-momentum";
+    case "x2-tombwarden-claymore":
+    case "x2-dustreaper-zweihander":
+      return "claymore-breach";
+    case "x2-dustdevil-glaive":
+    case "x2-thunderhead-voulge":
+    case "x2-wickfire-fauchard":
+    case "x2-blightfork-glaive":
+      return "glaive-compass";
+    case "x2-permafrost-bardiche":
+    case "x2-quarry-splitter-bardiche":
+      return "bardiche-hookbreak";
+    default:
+      return undefined;
+  }
 }
 
 /** Resolve one weapon's combo vocabulary. Explicit metadata wins; structural defaults cover only the
@@ -593,27 +965,29 @@ export function meleeComboSelectionFor(
 
   const familyTag = def.tags.family.toLowerCase();
   const shapeWords = `${familyTag} ${def.name.toLowerCase()}`;
-  let variant: SignatureMeleeComboVariant | undefined;
-  if (def.twoHanded && def.quake && (def.tags.size === "L" || def.tags.size === "XL")) {
-    variant = "quake-mauler";
-  } else if (style === "thrust") {
-    variant = "stinger";
-  } else if (
-    style === "arc" &&
-    !def.twoHanded &&
-    !def.dual &&
-    /(?:^|\b)(?:sword|sabre|saber|katana)(?:\b|$)/i.test(familyTag)
-  ) {
-    variant = "hero-spin";
-  } else if (
-    def.twoHanded &&
-    style !== "spin" &&
-    (/(?:greatsword|greatblade|claymore|zweihander|nodachi)/i.test(shapeWords) ||
-      (familyTag === "sword" && def.tags.size === "XL"))
-  ) {
-    variant = "greatsword";
-  } else if (def.twoHanded && style !== "spin" && /(?:warhammer|hammer|maul)/i.test(shapeWords)) {
-    variant = "pommel";
+  let variant = bigSwordPanelVariantFor(def);
+  if (!variant) {
+    if (def.twoHanded && def.quake && (def.tags.size === "L" || def.tags.size === "XL")) {
+      variant = "quake-mauler";
+    } else if (style === "thrust") {
+      variant = "stinger";
+    } else if (
+      style === "arc" &&
+      !def.twoHanded &&
+      !def.dual &&
+      /(?:^|\b)(?:sword|sabre|saber|katana)(?:\b|$)/i.test(familyTag)
+    ) {
+      variant = "hero-spin";
+    } else if (
+      def.twoHanded &&
+      style !== "spin" &&
+      (/(?:greatsword|greatblade|claymore|zweihander|nodachi)/i.test(shapeWords) ||
+        (familyTag === "sword" && def.tags.size === "XL"))
+    ) {
+      variant = "greatsword";
+    } else if (def.twoHanded && style !== "spin" && /(?:warhammer|hammer|maul)/i.test(shapeWords)) {
+      variant = "pommel";
+    }
   }
 
   if (variant) {
@@ -647,6 +1021,7 @@ export interface SwingDescriptor {
   readonly comboHand?: MeleeComboHand;
   readonly comboTiming?: Readonly<MeleeComboStep["timing"]>;
   readonly comboPath?: Readonly<MeleeComboStep["path"]>;
+  readonly comboRibbon?: Readonly<MeleeComboRibbon>;
 }
 
 /** Worn gear is animated around the hand, not mounted by the authored hilt pivot. Shared because this same
@@ -719,8 +1094,15 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
   });
 }
 
-/** Normalized authoritative edge progress on the descriptor clock. Clamping lets a 20Hz tick that crosses
- *  an entire very-fast active interval still supersample the full arc instead of dropping the swing. */
+/** Resolve Stage-1 presentation directly from the synced uint32 accepted/predicted attack count. Sequence
+ * zero is the documented wrap value after 0xffffffff, so `(seq - 1)` uses normalized rather than JS `%`. */
+export function comboStepForAttackSeq(attackSeq: number, sequenceLength: number): number {
+  const length = Math.max(0, Math.trunc(sequenceLength));
+  if (length === 0) return 0;
+  const ordinal = (attackSeq >>> 0) - 1;
+  return ((ordinal % length) + length) % length;
+}
+
 /** Snapshot the selected predicted/accepted combo step onto an immutable swing without changing its legacy
  * active, impact, geometry, or damage clock. The server may call the same seam once accepted combo state is
  * authoritative; Stage 1 uses it only for client presentation. */
@@ -746,9 +1128,28 @@ export function swingDescriptorWithComboStep(
     comboHand: step.hand,
     comboTiming: step.timing,
     comboPath: step.path,
+    comboRibbon: step.ribbon,
   });
 }
 
+/** Enrich a visual descriptor from the globally synced count. This is deterministic presentation, not the
+ * Stage-2 accepted combo-epoch protocol: a long idle or weapon swap intentionally does not reset the count. */
+export function swingDescriptorForAttackSeq(
+  swing: SwingDescriptor,
+  def: WeaponDef,
+  attackSeq: number,
+): SwingDescriptor {
+  const selection = meleeComboSelectionFor(def, swing.style);
+  if (!selection || selection.sequence.length === 0) return swing;
+  return swingDescriptorWithComboStep(
+    swing,
+    def,
+    comboStepForAttackSeq(attackSeq, selection.sequence.length),
+  );
+}
+
+/** Normalized authoritative edge progress on the descriptor clock. Clamping lets a 20Hz tick that crosses
+ *  an entire very-fast active interval still supersample the full arc instead of dropping the swing. */
 export function swingEdgeProgress(swing: SwingDescriptor, elapsedSeconds: number): number {
   const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
   if (activeSeconds <= 0) return elapsedSeconds >= swing.activeEndSeconds ? 1 : 0;

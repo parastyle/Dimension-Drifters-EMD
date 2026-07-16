@@ -1,6 +1,7 @@
 import {
   ATTACK_HELD_WINDOW,
   CHOP_IMPACT_FRAC,
+  comboStepForAttackSeq,
   INTERP_SNAP_PLAYER,
   isWornWeapon,
   JIGGLE_FOOT_AIR_INERTIA,
@@ -172,6 +173,20 @@ function actionOwnershipAt(
   if (t < followEnd)
     return 1 - smootherstep01((t - activeEnd) / Math.max(1e-6, followEnd - activeEnd));
   return 0;
+}
+
+/** Preserve an authored normalized pose while moving its one visible contact onto the immutable descriptor
+ * impact. Used only by panel-routed quake carriers; it never changes descriptor or server time. */
+function remapPoseTimeAtImpact(
+  t: number,
+  authoredImpact: number,
+  descriptorImpact: number,
+): number {
+  const source = clamp01(authoredImpact);
+  const target = clamp01(descriptorImpact);
+  if (Math.abs(source - target) < 1e-6) return t;
+  if (t <= target) return source * (target > 1e-6 ? t / target : 1);
+  return source + (1 - source) * ((t - target) / Math.max(1e-6, 1 - target));
 }
 
 export type CloseBladePoseVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
@@ -931,6 +946,10 @@ export class SpriteRig {
   private comboStep = 0;
   private comboExpiresAtMs = -1e9;
   private comboWeaponId = "";
+  /** Latest forward uint32 beat seen through `setAttackBeat`. It selects presentation only; cadence/reset
+   * remains intentionally global until the Stage-2 accepted combo epoch exists. */
+  private hasAttackBeatSeq = false;
+  private attackBeatSeq = 0;
   private swingStep = 0;
   private swingDirection: -1 | 0 | 1 = 1;
   private swingFamily: RigComboFamily = "none";
@@ -1543,9 +1562,17 @@ export class SpriteRig {
   /** Feed either a predicted owner beat or an authoritative player beat into retained tome state. Uint32
    *  ordering ignores an older confirmation when local prediction has already advanced the visible book. */
   setAttackBeat(seq: number, held: boolean, epochMs: number): void {
+    const beat = seq >>> 0;
+    if (!this.hasAttackBeatSeq) {
+      this.hasAttackBeatSeq = true;
+      this.attackBeatSeq = beat;
+    } else {
+      const advance = (beat - this.attackBeatSeq) >>> 0;
+      if (advance > 0 && advance < 0x80000000) this.attackBeatSeq = beat;
+    }
+
     const tome = this.tome;
     if (!tome) return;
-    const beat = seq >>> 0;
     if (!tome.hasSeq) {
       tome.hasSeq = true;
       tome.lastSeq = beat;
@@ -1840,7 +1867,15 @@ export class SpriteRig {
         this.comboFamily === family &&
         this.comboWeaponId === this.weaponDef.id &&
         timeMs <= this.comboExpiresAtMs;
-      const step = continues ? (this.comboStep + 1) % sequence.length : 0;
+      const step =
+        nextSwing.comboStep !== undefined
+          ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
+            sequence.length
+          : this.hasAttackBeatSeq
+            ? comboStepForAttackSeq(this.attackBeatSeq, sequence.length)
+            : continues
+              ? (this.comboStep + 1) % sequence.length
+              : 0;
       const authored = sequence[step];
       if (authored) {
         // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
@@ -2149,6 +2184,684 @@ export class SpriteRig {
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
     this.root.destroy();
+  }
+
+  /** Absolute two-foot targets layer under the authored body translation. Ownership reaches zero by the
+   * held guard, so gait/jiggle can settle without moving the authoritative root. */
+  private setComboFootwork(
+    tt: number,
+    activeStart: number,
+    activeEnd: number,
+    followEnd: number,
+    aimLocal: number,
+    frontForward: number,
+    frontLateral: number,
+    backForward: number,
+    backLateral: number,
+  ): void {
+    const own = actionOwnershipAt(tt, activeStart, activeEnd, followEnd);
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    this.attackFrontFootX = TARGET_BODY_H * (fx * frontForward + nx * frontLateral);
+    this.attackFrontFootY = TARGET_BODY_H * (fy * frontForward + ny * frontLateral);
+    this.attackBackFootX = TARGET_BODY_H * (fx * backForward + nx * backLateral);
+    this.attackBackFootY = TARGET_BODY_H * (fy * backForward + ny * backLateral);
+    this.attackFrontFootBlend = own;
+    this.attackBackFootBlend = own;
+  }
+
+  /** Place the rear hand at a stable pole pivot and reconstruct the lead hand down the same haft. */
+  private setRearPivotGrip(
+    angle: number,
+    rearX: number,
+    rearY: number,
+    spacing: number,
+    blend: number,
+  ): void {
+    const ux = Math.cos(angle);
+    const uy = Math.sin(angle);
+    this.attackGripX = rearX - ux * spacing;
+    this.attackGripY = rearY - uy * spacing;
+    this.attackBackGripX = rearX;
+    this.attackBackGripY = rearY;
+    this.attackHandSpacing = spacing;
+    this.attackGripBoth = true;
+    this.attackGripBlend = clamp01(blend);
+  }
+
+  /** Greatsword Momentum: every exit carries the blade into the next entry; the body travels much less than
+   * the steel, with one depth pass and a low skid rather than Driftblade's hilt beat/forward collapse. */
+  private applyMomentumCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+    this.attackHandSpacing = H * 0.44;
+
+    if (motion === "falling-gate") {
+      const coil = aimLocal - 1.15;
+      const contact = aimLocal + 0.8;
+      const guard = aimLocal + 0.96;
+      if (tt < 0.22) {
+        const p = clamp01(tt / 0.22);
+        const e = p * (2 - p);
+        angle = aimLocal - 0.62 + (coil - (aimLocal - 0.62)) * e;
+        this.attackArtOffX = -fx * H * 0.04 * e;
+        this.attackArtOffY = -fy * H * 0.04 * e;
+        this.swingOffX = -fx * H * 0.06 * e;
+        this.swingOffY = -fy * H * 0.06 * e - H * 0.05 * e;
+        this.body.rotation -= 0.08 * e * Math.cos(aimLocal);
+        this.body.scaleY *= 1 + 0.04 * e;
+      } else if (tt < 0.5) {
+        const p = clamp01((tt - 0.22) / 0.28);
+        const fall = p * p;
+        angle = coil + (contact - coil) * fall;
+        const forward = -0.04 + 0.14 * fall;
+        const lateral = 0.04 * fall;
+        this.attackArtOffX = H * (fx * forward + nx * lateral);
+        this.attackArtOffY = H * (fy * forward + ny * lateral);
+        this.swingOffX = fx * H * 0.14 * fall - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.14 * fall - this.attackArtOffY;
+        this.body.rotation += (-0.08 + 0.28 * fall) * Math.cos(aimLocal);
+        this.body.scaleY *= 1.04 - 0.14 * fall;
+      } else if (tt < 0.78) {
+        const p = smoothstep01((tt - 0.5) / 0.28);
+        angle = contact + (guard - contact) * p;
+        this.attackArtOffX = H * (fx * (0.1 - 0.02 * p) + nx * 0.04);
+        this.attackArtOffY = H * (fy * (0.1 - 0.02 * p) + ny * 0.04);
+        this.swingOffX = fx * H * (0.14 - 0.03 * p) - this.attackArtOffX;
+        this.swingOffY = fy * H * (0.14 - 0.03 * p) - this.attackArtOffY;
+        this.body.rotation += 0.2 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.9 + 0.03 * p;
+      } else {
+        angle = guard;
+        this.attackArtOffX = H * (fx * 0.08 + nx * 0.04);
+        this.attackArtOffY = H * (fy * 0.08 + ny * 0.04);
+        this.swingOffX = fx * H * 0.11 - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.11 - this.attackArtOffY;
+        this.body.rotation += 0.2 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.93;
+      }
+      this.attackShadowRotation = aimLocal + 0.45;
+      this.attackShadowScaleX = 1.08;
+      this.attackShadowScaleY = 0.88;
+      this.setComboFootwork(tt, 0.22, 0.54, 0.78, aimLocal, 0.07, 0.04, -0.03, -0.03);
+      return angle;
+    }
+
+    if (motion === "backswing-wheel") {
+      const start = aimLocal + 0.96;
+      const finish = aimLocal + 4.45;
+      let wheel = 0;
+      if (tt < 0.1) {
+        wheel = 0;
+        angle = start + 0.08 * smoothstep01(tt / 0.1);
+      } else if (tt < 0.44) {
+        wheel = smoothstep01((tt - 0.1) / 0.34);
+        angle = start + (finish - start) * wheel;
+      } else if (tt < 0.77) {
+        const p = smoothstep01((tt - 0.44) / 0.33);
+        wheel = 1;
+        angle = finish + 0.18 * Math.sin(Math.PI * p);
+      } else {
+        wheel = 1;
+        angle = finish;
+      }
+      const pass = Math.sin(Math.PI * wheel);
+      this.weaponLengthScale = Math.max(0.24, Math.abs(Math.cos(Math.PI * wheel)));
+      this.attackWeaponDepth = wheel > 0.28 && wheel < 0.78 ? -1 : 1;
+      this.attackHandSpacing = H * (0.44 - 0.14 * pass);
+      const lateral = 0.07 * pass;
+      this.attackArtOffX = nx * H * lateral;
+      this.attackArtOffY = ny * H * lateral;
+      this.swingOffX = -nx * H * 0.08 * pass;
+      this.swingOffY = -ny * H * 0.08 * pass;
+      this.body.rotation += (-0.1 * (1 - wheel) + 0.14 * wheel) * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.05 * pass;
+      this.attackShadowRotation = angle;
+      this.attackShadowScaleX = 1 + 0.1 * pass;
+      this.attackShadowScaleY = 1 - 0.14 * pass;
+      this.setComboFootwork(tt, 0.1, 0.49, 0.77, aimLocal, 0, 0.05, 0, -0.05);
+      return angle;
+    }
+
+    // Runaway Cleave: ~246 degrees of blade travel, but only a ~100-degree paper-body turn.
+    const start = aimLocal - 1.83;
+    let turn = 0;
+    if (tt < 0.26) {
+      const p = smoothstep01(tt / 0.26);
+      angle = start - 0.17 * p;
+      this.attackArtOffX = -fx * H * 0.03 * p;
+      this.attackArtOffY = -fy * H * 0.03 * p;
+      this.body.rotation -= 0.12 * p * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.04 * p;
+    } else if (tt < 0.54) {
+      const p = clamp01((tt - 0.26) / 0.28);
+      turn = p * p * 0.83;
+      angle = start - 0.17 + 3.65 * p * p;
+      const forward = -0.03 + 0.11 * p;
+      this.attackArtOffX = fx * H * forward;
+      this.attackArtOffY = fy * H * forward;
+      this.body.rotation += (-0.12 + 0.24 * p) * Math.cos(aimLocal);
+      this.body.scaleY *= 0.96 - 0.08 * p;
+    } else if (tt < 0.64) {
+      const p = smoothstep01((tt - 0.54) / 0.1);
+      turn = 0.83 + 0.1 * p;
+      angle = start + 3.48 + 0.45 * p;
+      this.attackArtOffX = H * (fx * (0.08 + 0.03 * p) + nx * 0.03 * p);
+      this.attackArtOffY = H * (fy * (0.08 + 0.03 * p) + ny * 0.03 * p);
+      this.body.rotation += 0.12 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.88;
+    } else if (tt < 0.86) {
+      const p = smoothstep01((tt - 0.64) / 0.22);
+      turn = 0.93 + 0.07 * p;
+      angle = start + 3.93 + 0.3 * p;
+      this.attackArtOffX = H * (fx * (0.11 + 0.04 * p) + nx * (0.03 + 0.02 * p));
+      this.attackArtOffY = H * (fy * (0.11 + 0.04 * p) + ny * (0.03 + 0.02 * p));
+      this.body.rotation += (0.12 + 0.05 * p) * Math.cos(aimLocal);
+      this.body.scaleY *= 0.88 + 0.02 * p;
+    } else {
+      turn = 1;
+      angle = start + 4.23;
+      this.attackArtOffX = H * (fx * 0.12 + nx * 0.04);
+      this.attackArtOffY = H * (fy * 0.12 + ny * 0.04);
+      this.body.rotation += 0.17 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.9;
+    }
+    const projected = Math.hypot(Math.cos(angle), Math.sin(angle) * 0.34);
+    const recoil = tt >= 0.54 && tt < 0.66 ? Math.sin(((tt - 0.54) / 0.12) * Math.PI) : 0;
+    this.weaponLengthScale = projected * (1 + 0.05 * recoil);
+    this.attackWeaponDepth = Math.sin(angle) < 0 ? -1 : 1;
+    this.attackHandSpacing = H * (0.4 + 0.06 * turn);
+    this.body.scaleX *= signedClamp(Math.cos(turn * 1.75), 0.3);
+    this.attackShadowRotation = aimLocal;
+    this.attackShadowScaleX = 1 + 0.16 * turn;
+    this.attackShadowScaleY = 1 - 0.18 * turn;
+    this.setComboFootwork(tt, 0.26, 0.64, 0.86, aimLocal, 0.08, 0.02, -0.02, 0.1);
+    return angle;
+  }
+
+  /** Claymore Breach: broadside guards stay readable throughout; lateral plants and hilt spacing provide the
+   * formality, while the finisher releases one edge after a rigid bind rather than promising two hits. */
+  private applyBreachCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+    this.weaponLengthScale = 1;
+    this.attackWeaponDepth = 1;
+
+    if (motion === "highland-gate") {
+      const open = aimLocal - 1.42;
+      const contact = aimLocal + 1.05;
+      const guard = aimLocal + 1.2;
+      if (tt < 0.18) {
+        const p = smoothstep01(tt / 0.18);
+        angle = aimLocal - 1.58 + 0.16 * p;
+        this.attackHandSpacing = H * (0.38 + 0.08 * p);
+        this.body.rotation -= 0.06 * p * Math.cos(aimLocal);
+      } else if (tt < 0.49) {
+        const p = clamp01((tt - 0.18) / 0.31);
+        const e = cubicOut01(p);
+        angle = open + (contact - open) * e;
+        this.attackHandSpacing = H * 0.46;
+        this.attackArtOffX = fx * H * 0.06 * e;
+        this.attackArtOffY = fy * H * 0.06 * e;
+        this.body.rotation += (-0.06 + 0.2 * e) * Math.cos(aimLocal);
+        this.body.scaleY *= 1 - 0.05 * e;
+      } else if (tt < 0.8) {
+        const p = smoothstep01((tt - 0.49) / 0.31);
+        angle = contact + (guard - contact) * p;
+        this.attackHandSpacing = H * (0.46 - 0.04 * p);
+        this.attackArtOffX = fx * H * 0.06;
+        this.attackArtOffY = fy * H * 0.06;
+        this.body.rotation += 0.14 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.95 + 0.02 * p;
+      } else {
+        angle = guard;
+        this.attackHandSpacing = H * 0.42;
+        this.attackArtOffX = fx * H * 0.06;
+        this.attackArtOffY = fy * H * 0.06;
+        this.body.rotation += 0.14 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.97;
+      }
+      this.attackShadowRotation = aimLocal + Math.PI / 2;
+      this.attackShadowScaleX = 1.12;
+      this.attackShadowScaleY = 0.9;
+      this.setComboFootwork(tt, 0.18, 0.58, 0.8, aimLocal, 0, 0.1, 0, -0.05);
+      return angle;
+    }
+
+    if (motion === "rising-ward") {
+      const hip = aimLocal + 1.2;
+      const roof = aimLocal - 1.28;
+      if (tt < 0.12) {
+        const p = smoothstep01(tt / 0.12);
+        angle = hip + 0.12 * p;
+        this.attackArtOffX = nx * H * 0.03 * p;
+        this.attackArtOffY = ny * H * 0.03 * p;
+        this.attackHandSpacing = H * 0.42;
+        this.body.rotation += 0.1 * p * Math.cos(aimLocal);
+      } else if (tt < 0.46) {
+        const p = clamp01((tt - 0.12) / 0.34);
+        const e = cubicOut01(p);
+        angle = hip + 0.12 + (roof - hip - 0.12) * e;
+        this.attackArtOffX = nx * H * (0.03 + 0.05 * e);
+        this.attackArtOffY = ny * H * (0.03 + 0.05 * e);
+        this.attackHandSpacing = H * (0.38 + 0.08 * e);
+        this.body.rotation += (0.1 - 0.34 * e) * Math.cos(aimLocal);
+        this.body.scaleY *= 1 + 0.05 * e;
+      } else if (tt < 0.78) {
+        const p = smoothstep01((tt - 0.46) / 0.32);
+        angle = roof - 0.08 * Math.sin(Math.PI * p);
+        this.attackArtOffX = nx * H * (0.08 - 0.02 * p);
+        this.attackArtOffY = ny * H * (0.08 - 0.02 * p);
+        this.attackHandSpacing = H * 0.46;
+        this.body.rotation -= 0.24 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.05;
+      } else {
+        angle = roof;
+        this.attackArtOffX = nx * H * 0.06;
+        this.attackArtOffY = ny * H * 0.06;
+        this.attackHandSpacing = H * 0.46;
+        this.body.rotation -= 0.24 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.05;
+      }
+      this.attackShadowRotation = roof;
+      this.attackShadowScaleX = 1.04;
+      this.attackShadowScaleY = 0.92;
+      this.setComboFootwork(tt, 0.12, 0.52, 0.78, aimLocal, 0, -0.06, 0, 0.06);
+      return angle;
+    }
+
+    // Bind, Break, Cast Off: a held crossguard barricade precedes one dominant reverse edge.
+    const roof = aimLocal - 1.28;
+    const barricade = aimLocal + Math.PI / 2;
+    const cast = aimLocal - 1.18;
+    if (tt < 0.18) {
+      const p = smoothstep01(tt / 0.18);
+      angle = roof + (barricade - roof) * p;
+      this.attackHandSpacing = H * (0.42 - 0.1 * p);
+      this.body.scaleX *= 1 - 0.08 * p;
+    } else if (tt < 0.3) {
+      const p = smoothstep01((tt - 0.18) / 0.12);
+      angle = barricade - 0.05 * p;
+      this.attackHandSpacing = H * (0.32 - 0.04 * p);
+      this.body.scaleX *= 0.92 - 0.06 * Math.sin(Math.PI * p);
+      this.body.scaleY *= 1 - 0.03 * p;
+    } else if (tt < 0.54) {
+      const p = clamp01((tt - 0.3) / 0.24);
+      const e = p * p;
+      angle = barricade - 0.05 + (cast - barricade + 0.05) * e;
+      this.attackHandSpacing = H * (0.28 + 0.2 * e);
+      this.attackArtOffX = H * (fx * 0.07 * e + nx * 0.08 * e);
+      this.attackArtOffY = H * (fy * 0.07 * e + ny * 0.08 * e);
+      this.body.rotation -= 0.22 * e * Math.cos(aimLocal);
+      this.body.scaleX *= 0.94 + 0.12 * e;
+    } else if (tt < 0.86) {
+      const p = smoothstep01((tt - 0.54) / 0.32);
+      angle = cast - 0.16 * Math.sin(Math.PI * p);
+      this.attackHandSpacing = H * 0.48;
+      this.attackArtOffX = H * (fx * 0.07 + nx * 0.08);
+      this.attackArtOffY = H * (fy * 0.07 + ny * 0.08);
+      this.body.rotation -= 0.22 * Math.cos(aimLocal);
+      this.body.scaleX *= 1.06;
+      this.body.scaleY *= 0.96;
+    } else {
+      angle = cast;
+      this.attackHandSpacing = H * 0.48;
+      this.attackArtOffX = H * (fx * 0.07 + nx * 0.08);
+      this.attackArtOffY = H * (fy * 0.07 + ny * 0.08);
+      this.body.rotation -= 0.22 * Math.cos(aimLocal);
+      this.body.scaleX *= 1.06;
+      this.body.scaleY *= 0.96;
+    }
+    this.attackShadowRotation = cast;
+    this.attackShadowScaleX = 1.14;
+    this.attackShadowScaleY = 0.86;
+    this.setComboFootwork(tt, 0.3, 0.66, 0.86, aimLocal, 0, -0.02, 0, 0.1);
+    return angle;
+  }
+
+  /** Glaive Compass: hand slides and projected pole length move the distant head around a quiet body. The
+   * center remains visually empty and the final orbit locks to a rear-hand pivot instead of becoming spin. */
+  private applyCompassCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+
+    if (motion === "long-reap") {
+      const start = aimLocal - 1.38;
+      const end = aimLocal + 1.25;
+      if (tt < 0.16) {
+        const p = smoothstep01(tt / 0.16);
+        angle = aimLocal - 0.95 + (start - (aimLocal - 0.95)) * p;
+        this.attackHandSpacing = H * (0.34 + 0.16 * p);
+        this.attackArtOffX = -nx * H * 0.05 * p;
+        this.attackArtOffY = -ny * H * 0.05 * p;
+        this.body.rotation -= 0.06 * p * Math.cos(aimLocal);
+      } else if (tt < 0.5) {
+        const p = clamp01((tt - 0.16) / 0.34);
+        const e = cubicOut01(p);
+        angle = start + (end - start) * e;
+        this.attackHandSpacing = H * 0.5;
+        this.attackArtOffX = -nx * H * 0.05;
+        this.attackArtOffY = -ny * H * 0.05;
+        this.body.rotation += (-0.06 + 0.18 * e) * Math.cos(aimLocal);
+        this.body.scaleY *= 1 - 0.04 * e;
+      } else if (tt < 0.78) {
+        const p = smoothstep01((tt - 0.5) / 0.28);
+        angle = end + 0.12 * Math.sin(Math.PI * p);
+        this.attackHandSpacing = H * (0.5 - 0.04 * p);
+        this.attackArtOffX = -nx * H * (0.05 - 0.01 * p);
+        this.attackArtOffY = -ny * H * (0.05 - 0.01 * p);
+        this.body.rotation += 0.12 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.96 + 0.02 * p;
+      } else {
+        angle = end;
+        this.attackHandSpacing = H * 0.46;
+        this.attackArtOffX = -nx * H * 0.04;
+        this.attackArtOffY = -ny * H * 0.04;
+        this.body.rotation += 0.12 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.98;
+      }
+      this.weaponLengthScale = 1;
+      this.attackWeaponDepth = 1;
+      this.attackShadowRotation = angle;
+      this.attackShadowScaleX = 1.08;
+      this.attackShadowScaleY = 0.9;
+      this.setComboFootwork(tt, 0.16, 0.58, 0.78, aimLocal, 0, 0.06, 0, -0.02);
+      return angle;
+    }
+
+    if (motion === "shaft-switch") {
+      const start = aimLocal + 1.25;
+      const end = aimLocal - 1.42;
+      let pass = 0;
+      if (tt < 0.12) {
+        const p = smoothstep01(tt / 0.12);
+        angle = start + 0.1 * p;
+        this.attackHandSpacing = H * (0.46 - 0.2 * p);
+      } else if (tt < 0.42) {
+        pass = smoothstep01((tt - 0.12) / 0.3);
+        angle = start + 0.1 + (end - start - 0.1) * pass;
+        this.attackHandSpacing = H * (0.26 + 0.24 * Math.abs(pass * 2 - 1));
+      } else if (tt < 0.74) {
+        const p = smoothstep01((tt - 0.42) / 0.32);
+        pass = 1;
+        angle = end - 0.1 * Math.sin(Math.PI * p);
+        this.attackHandSpacing = H * (0.5 - 0.04 * p);
+      } else {
+        pass = 1;
+        angle = end;
+        this.attackHandSpacing = H * 0.46;
+      }
+      const compression = Math.sin(Math.PI * pass);
+      this.weaponLengthScale = Math.max(0.3, 1 - 0.78 * compression);
+      this.attackWeaponDepth = pass > 0.24 && pass < 0.76 ? -1 : 1;
+      const forward = 0.05 * Math.sin(Math.PI * pass);
+      const lateral = 0.04 * pass;
+      this.attackArtOffX = H * (fx * forward + nx * lateral);
+      this.attackArtOffY = H * (fy * forward + ny * lateral);
+      this.body.rotation += (0.1 - 0.22 * pass) * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.04 * compression;
+      this.attackShadowRotation = angle;
+      this.attackShadowScaleX = 1 + 0.08 * compression;
+      this.attackShadowScaleY = 1 - 0.12 * compression;
+      this.setComboFootwork(tt, 0.12, 0.48, 0.74, aimLocal, 0, 0.02, 0, -0.02);
+      return angle;
+    }
+
+    // Compass Rose: almost five-sixths of a turn at the blade head, under a sub-quarter-turn torso.
+    const start = aimLocal - 5.15;
+    let orbit = 0;
+    if (tt < 0.24) {
+      const p = smoothstep01(tt / 0.24);
+      angle = aimLocal + 1.25 + (start - (aimLocal - Math.PI * 2) - 1.25) * p;
+      this.attackArtOffX = -fx * H * 0.03 * p;
+      this.attackArtOffY = -fy * H * 0.03 * p;
+      this.body.rotation -= 0.08 * p * Math.cos(aimLocal);
+      this.attackHandSpacing = H * (0.46 - 0.18 * p);
+    } else if (tt < 0.68) {
+      const p = clamp01((tt - 0.24) / 0.44);
+      orbit = smoothstep01(p);
+      angle = start + 5.15 * orbit;
+      this.attackArtOffX = H * (fx * (-0.03 + 0.06 * orbit) - nx * 0.025 * orbit);
+      this.attackArtOffY = H * (fy * (-0.03 + 0.06 * orbit) - ny * 0.025 * orbit);
+      this.body.rotation += (-0.08 + 0.18 * orbit) * Math.cos(aimLocal);
+      this.body.scaleX *= Math.max(0.28, Math.cos(orbit * 1.25));
+      this.body.scaleY *= 1 - 0.04 * orbit;
+      this.attackHandSpacing = H * (0.28 + 0.24 * orbit);
+    } else if (tt < 0.88) {
+      const p = smoothstep01((tt - 0.68) / 0.2);
+      orbit = 1;
+      angle = aimLocal;
+      this.attackArtOffX = H * (fx * (0.03 - 0.01 * p) - nx * 0.025 * (1 - p));
+      this.attackArtOffY = H * (fy * (0.03 - 0.01 * p) - ny * 0.025 * (1 - p));
+      this.body.rotation += 0.1 * Math.cos(aimLocal) * (1 - 0.3 * p);
+      this.body.scaleX *= 0.32 + 0.18 * p;
+      this.body.scaleY *= 0.96 + 0.02 * p;
+      this.attackHandSpacing = H * 0.52;
+    } else {
+      orbit = 1;
+      angle = aimLocal;
+      this.attackArtOffX = fx * H * 0.02;
+      this.attackArtOffY = fy * H * 0.02;
+      this.body.rotation += 0.07 * Math.cos(aimLocal);
+      this.body.scaleX *= 0.5;
+      this.body.scaleY *= 0.98;
+      this.attackHandSpacing = H * 0.52;
+    }
+    const projection = Math.hypot(Math.cos(angle), Math.sin(angle) * 0.34);
+    this.weaponLengthScale = Math.max(0.3, projection);
+    this.attackWeaponDepth = Math.sin(angle) < 0 ? -1 : 1;
+    const gripOwn = actionOwnershipAt(tt, 0.24, 0.68, 0.88);
+    const rearX = -fx * H * 0.04 - nx * H * 0.1;
+    const rearY = -fy * H * 0.04 - ny * H * 0.1;
+    this.setRearPivotGrip(angle, rearX, rearY, this.attackHandSpacing, gripOwn);
+    const feetOwn = actionOwnershipAt(tt, 0.24, 0.68, 0.88);
+    const footArc = Math.PI * Math.min(1, orbit);
+    this.attackFrontFootX = H * (fx * 0.02 + nx * 0.08 * Math.cos(footArc));
+    this.attackFrontFootY = H * (fy * 0.02 + ny * 0.08 * Math.cos(footArc));
+    this.attackBackFootX = -fx * H * 0.03;
+    this.attackBackFootY = -fy * H * 0.03;
+    this.attackFrontFootBlend = feetOwn;
+    this.attackBackFootBlend = feetOwn;
+    this.attackShadowRotation = angle;
+    this.attackShadowScaleX = 1.1;
+    this.attackShadowScaleY = 0.88;
+    return angle;
+  }
+
+  /** Bardiche Hookbreak: the head stays broad and heavy, the second beat shortens inward, and the finisher
+   * briefly fixes the far head while the haft/hands wrench past it. No extra contact surface is created. */
+  private applyHookbreakCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+
+    if (motion === "headsmans-drop") {
+      const raised = aimLocal - 1.42;
+      const buried = aimLocal + 0.28;
+      if (tt < 0.26) {
+        const p = smoothstep01(tt / 0.26);
+        angle = aimLocal - 0.75 + (raised - (aimLocal - 0.75)) * p;
+        this.attackHandSpacing = H * (0.4 + 0.08 * p);
+        this.swingOffX = -fx * H * 0.04 * p + nx * H * 0.06 * p;
+        this.swingOffY = -fy * H * 0.04 * p + ny * H * 0.06 * p;
+        this.body.rotation -= 0.1 * p * Math.cos(aimLocal);
+        this.body.scaleY *= 1 + 0.04 * p;
+      } else if (tt < 0.52) {
+        const p = clamp01((tt - 0.26) / 0.26);
+        const drop = p * p;
+        angle = raised + (buried - raised) * drop;
+        this.attackHandSpacing = H * 0.48;
+        this.attackArtOffX = fx * H * 0.09 * drop;
+        this.attackArtOffY = fy * H * 0.09 * drop;
+        this.swingOffX = fx * H * 0.12 * drop - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.12 * drop - this.attackArtOffY;
+        this.body.rotation += (-0.1 + 0.28 * drop) * Math.cos(aimLocal);
+        this.body.scaleY *= 1.04 - 0.15 * drop;
+      } else if (tt < 0.74) {
+        const p = smoothstep01((tt - 0.52) / 0.22);
+        angle = buried + 0.08 * Math.sin(Math.PI * p);
+        this.attackHandSpacing = H * 0.48;
+        this.attackArtOffX = fx * H * 0.09;
+        this.attackArtOffY = fy * H * 0.09;
+        this.swingOffX = fx * H * 0.03;
+        this.swingOffY = fy * H * 0.03;
+        this.body.rotation += 0.18 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.89 + 0.02 * p;
+      } else {
+        angle = buried;
+        this.attackHandSpacing = H * 0.48;
+        this.attackArtOffX = fx * H * 0.08;
+        this.attackArtOffY = fy * H * 0.08;
+        this.body.rotation += 0.18 * Math.cos(aimLocal);
+        this.body.scaleY *= 0.91;
+      }
+      this.weaponLengthScale = 1;
+      this.attackWeaponDepth = 1;
+      this.attackShadowRotation = aimLocal;
+      this.attackShadowScaleX = 1.12;
+      this.attackShadowScaleY = 0.84;
+      this.setComboFootwork(tt, 0.26, 0.56, 0.74, aimLocal, 0.07, 0, -0.03, 0);
+      return angle;
+    }
+
+    if (motion === "hook-and-haul") {
+      const set = aimLocal + 0.28;
+      const hauled = aimLocal - 1.12;
+      let haul = 0;
+      if (tt < 0.1) {
+        const p = smoothstep01(tt / 0.1);
+        angle = set + 0.12 * p;
+        this.attackHandSpacing = H * (0.48 - 0.06 * p);
+      } else if (tt < 0.42) {
+        haul = cubicOut01((tt - 0.1) / 0.32);
+        angle = set + 0.12 + (hauled - set - 0.12) * haul;
+        this.attackHandSpacing = H * (0.42 - 0.1 * Math.sin(Math.PI * haul));
+      } else if (tt < 0.78) {
+        const p = smoothstep01((tt - 0.42) / 0.36);
+        haul = 1;
+        angle = hauled - 0.1 * Math.sin(Math.PI * p);
+        this.attackHandSpacing = H * (0.32 + 0.12 * p);
+      } else {
+        haul = 1;
+        angle = hauled;
+        this.attackHandSpacing = H * 0.44;
+      }
+      const inward = Math.sin(Math.PI * haul);
+      this.weaponLengthScale = 1 - 0.32 * inward;
+      this.attackWeaponDepth = haul > 0.2 && haul < 0.66 ? -1 : 1;
+      const forward = -0.12 * haul;
+      const lateral = 0.06 * haul;
+      this.attackArtOffX = H * (fx * forward + nx * lateral);
+      this.attackArtOffY = H * (fy * forward + ny * lateral);
+      this.swingOffX = fx * H * 0.08 * (1 - haul) - nx * H * 0.08 * haul;
+      this.swingOffY = fy * H * 0.08 * (1 - haul) - ny * H * 0.08 * haul;
+      this.body.rotation += (0.08 - 0.22 * haul) * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.06 * haul;
+      this.attackShadowRotation = angle;
+      this.attackShadowScaleX = 1.08;
+      this.attackShadowScaleY = 0.88;
+      this.setComboFootwork(tt, 0.1, 0.5, 0.78, aimLocal, -0.02, 0, -0.1, -0.04);
+      return angle;
+    }
+
+    // Gallows Turn: rack, broad cast, 80ms-normalized catch, then a small sideways pullout.
+    const rack = aimLocal - Math.PI / 2;
+    const plantAngle = aimLocal + 1.76;
+    if (tt < 0.3) {
+      const p = smoothstep01(tt / 0.3);
+      angle = aimLocal - 1.12 + (rack - (aimLocal - 1.12)) * p;
+      this.attackHandSpacing = H * (0.4 + 0.08 * p);
+      this.swingOffX = -fx * H * 0.03 * p - nx * H * 0.06 * p;
+      this.swingOffY = -fy * H * 0.03 * p - ny * H * 0.06 * p;
+      this.body.rotation -= 0.1 * p * Math.cos(aimLocal);
+      this.body.scaleY *= 1 + 0.03 * p;
+    } else if (tt < 0.64) {
+      const p = clamp01((tt - 0.3) / 0.34);
+      const cast = cubicOut01(p);
+      angle = rack + (plantAngle - rack) * cast;
+      this.attackHandSpacing = H * 0.48;
+      this.attackArtOffX = H * (fx * 0.04 * cast + nx * 0.12 * cast);
+      this.attackArtOffY = H * (fy * 0.04 * cast + ny * 0.12 * cast);
+      this.swingOffX = nx * H * 0.1 * cast;
+      this.swingOffY = ny * H * 0.1 * cast;
+      this.body.rotation += (-0.1 + 0.34 * cast) * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.05 * cast;
+    } else {
+      const front = this.hands.find((hand) => hand.front);
+      const baseGripX = (front?.ox ?? 0) + nx * H * 0.1;
+      const baseGripY = (front?.oy ?? 0) + ny * H * 0.1;
+      const businessLength = Math.max(
+        H * 0.65,
+        ((1 - (this.weaponDef?.gripFrac ?? 0.08)) * (this.weaponDef?.displayLength ?? H)) /
+          (this.baseScale || 1),
+      );
+      const plantedHeadX = baseGripX + Math.cos(plantAngle) * businessLength;
+      const plantedHeadY = baseGripY + Math.sin(plantAngle) * businessLength;
+      if (tt < 0.72) {
+        const p = smoothstep01((tt - 0.64) / 0.08);
+        angle = plantAngle + 0.025 * p;
+        const gripX = plantedHeadX - Math.cos(angle) * businessLength;
+        const gripY = plantedHeadY - Math.sin(angle) * businessLength;
+        this.setRearPivotGrip(
+          angle,
+          gripX + Math.cos(angle) * H * 0.48,
+          gripY + Math.sin(angle) * H * 0.48,
+          H * 0.48,
+          1,
+        );
+        this.body.rotation += (0.24 + 0.025 * p) * Math.cos(aimLocal);
+      } else if (tt < 0.86) {
+        const p = smoothstep01((tt - 0.72) / 0.14);
+        angle = plantAngle + 0.025 - 0.16 * p;
+        const pulledGripX = baseGripX - nx * H * 0.08 * p;
+        const pulledGripY = baseGripY - ny * H * 0.08 * p;
+        this.setRearPivotGrip(
+          angle,
+          pulledGripX + Math.cos(angle) * H * 0.48,
+          pulledGripY + Math.sin(angle) * H * 0.48,
+          H * 0.48,
+          1 - p,
+        );
+        this.body.rotation += (0.265 - 0.08 * p) * Math.cos(aimLocal);
+      } else {
+        angle = plantAngle - 0.135;
+        this.attackHandSpacing = H * 0.48;
+        this.swingOffX = nx * H * 0.02;
+        this.swingOffY = ny * H * 0.02;
+        this.body.rotation += 0.185 * Math.cos(aimLocal);
+      }
+      this.attackArtOffX = H * (fx * 0.04 + nx * 0.12);
+      this.attackArtOffY = H * (fy * 0.04 + ny * 0.12);
+      this.body.scaleY *= 0.95;
+    }
+    this.weaponLengthScale = 1;
+    this.attackWeaponDepth = 1;
+    this.attackShadowRotation = angle;
+    this.attackShadowScaleX = 1.12;
+    this.attackShadowScaleY = 0.86;
+    this.setComboFootwork(tt, 0.3, 0.64, 0.86, aimLocal, 0, 0.1, -0.02, -0.04);
+    return angle;
   }
 
   /** Hammer-head fulcrum vault. Canonical .66 contact is remapped onto the immutable Stage-1 impact clock. */
@@ -3132,6 +3845,18 @@ export class SpriteRig {
       } else if (style && el >= 0 && el < dur) {
         tt = el / dur;
       }
+      const panelQuakePose =
+        poseVariant === "greatsword" ||
+        poseVariant === "greatsword-momentum" ||
+        poseVariant === "claymore-breach" ||
+        poseVariant === "glaive-compass" ||
+        poseVariant === "bardiche-hookbreak";
+      if (comboPose?.timing.impact !== undefined && def.quake && panelQuakePose && tt >= 0) {
+        const descriptorImpact = clamp01(
+          (this.swing?.impactSeconds ?? 0) / Math.max(1e-6, this.swing?.poseSeconds ?? 1),
+        );
+        tt = remapPoseTimeAtImpact(tt, comboPose.timing.impact, descriptorImpact);
+      }
       if (style && tt >= 0) {
         // Combo parts follow the procedural-jiggle ownership contract: anticipation ramps in, danger is
         // exact, follow-through releases energy, and the cadence hold owns nothing.
@@ -3172,7 +3897,31 @@ export class SpriteRig {
         const poseStyle = comboPose ? (family === "rake" ? "pivot" : family) : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
-        if (comboPose?.motion === "fulcrum-flip") {
+        if (
+          comboPose?.motion === "falling-gate" ||
+          comboPose?.motion === "backswing-wheel" ||
+          comboPose?.motion === "runaway-cleave"
+        ) {
+          weaponAngle = this.applyMomentumCombo(comboPose.motion, tt, aimLocal);
+        } else if (
+          comboPose?.motion === "highland-gate" ||
+          comboPose?.motion === "rising-ward" ||
+          comboPose?.motion === "bind-break-cast-off"
+        ) {
+          weaponAngle = this.applyBreachCombo(comboPose.motion, tt, aimLocal);
+        } else if (
+          comboPose?.motion === "long-reap" ||
+          comboPose?.motion === "shaft-switch" ||
+          comboPose?.motion === "compass-rose"
+        ) {
+          weaponAngle = this.applyCompassCombo(comboPose.motion, tt, aimLocal);
+        } else if (
+          comboPose?.motion === "headsmans-drop" ||
+          comboPose?.motion === "hook-and-haul" ||
+          comboPose?.motion === "gallows-turn"
+        ) {
+          weaponAngle = this.applyHookbreakCombo(comboPose.motion, tt, aimLocal);
+        } else if (comboPose?.motion === "fulcrum-flip") {
           weaponAngle = this.applyFulcrumFlip(tt, aimLocal);
         } else if (comboPose?.motion === "stinger") {
           weaponAngle = this.applyStinger(tt, aimLocal);
