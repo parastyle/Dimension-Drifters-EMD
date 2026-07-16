@@ -33,6 +33,7 @@ import {
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
   ENEMY_KINDS,
+  ENEMY_RADIUS,
   type EnemyKind,
   EXTRACT_RADIUS,
   effectiveMelee,
@@ -115,10 +116,12 @@ import {
   makeThrownCleaver,
 } from "./arena/projectile-factory.js";
 import {
+  preloadImpactFlipbooks,
   spawnBulletImpact,
   spawnDamageNumber,
   spawnExplosion,
   spawnFallStreak,
+  spawnImpactFlipbook,
   spawnMuzzleFlash,
   spawnPoof,
   spawnQuake,
@@ -534,6 +537,7 @@ export class ArenaScene extends Phaser.Scene {
   preload(): void {
     this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
+    preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {
       // §29 sky-carrier alone owns its four room backdrops + deck; themed levels must not download them.
       if (this.selectedBeltLevel === "sky-carrier") {
@@ -3979,6 +3983,7 @@ export class ArenaScene extends Phaser.Scene {
       dmg: number;
       crit: boolean;
       visible: boolean;
+      radius: number;
     }> = [];
     this.room.state.enemies.forEach((enemy, id) => {
       const prev = this.enemyHp.get(id);
@@ -3989,7 +3994,14 @@ export class ArenaScene extends Phaser.Scene {
           // §30 CRIT: the synced critFlash counter ticked this frame → this hit was a critical. Gold number,
           // a gold flash, extra hit-stop + a shock ring — a crit lands with weight even on a small number.
           const crit = (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
-          hits.push({ id, rig, dmg, crit, visible: this.cameras.main.worldView.contains(rig.x, rig.y) });
+          hits.push({
+            id,
+            rig,
+            dmg,
+            crit,
+            visible: this.cameras.main.worldView.contains(rig.x, rig.y),
+            radius: (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) * (enemy.tough ? TOUGH_SCALE : 1),
+          });
         }
       }
       this.enemyHp.set(id, enemy.hp);
@@ -3998,7 +4010,7 @@ export class ArenaScene extends Phaser.Scene {
     // Only horde-scale frames reorder: on-camera hits spend the finite full-stack + label budgets before
     // invisible enemies. Stable sort preserves authoritative iteration order within each visibility band.
     if (hits.length > HIT_VFX_BUDGET) hits.sort((a, b) => Number(b.visible) - Number(a.visible));
-    for (const { id, rig, dmg, crit } of hits) {
+    for (const { id, rig, dmg, crit, radius } of hits) {
       const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
       rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff); // zero-allocation degraded path
       // `prev - hp` already aggregates every source delivered in this patch; the key is a defensive one-label
@@ -4031,16 +4043,18 @@ export class ArenaScene extends Phaser.Scene {
           nearestId = bid;
         }
       });
-      // Tint by the LOCAL weapon's element when the nearest rig is us (the client only knows its own
-      // equipped element) — a fire build sparks orange, a frost build cyan. Others/unknown → steel.
-      let tint = 0xfff2c0;
-      let hitEl: string | undefined;
-      if (nearestId === this.room?.sessionId) {
-        const selfRow = this.room?.state.players.get(nearestId);
-        hitEl = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
-        tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
-      }
+      // The synced nearest player is the same best-available attacker attribution used for blow direction;
+      // resolve THAT equipped weapon's element for both the old sparks and the new direct-hit flipbook.
+      const attacker = this.room?.state.players.get(nearestId);
+      const hitWeapon = attacker ? WEAPONS[attacker.weapon] : undefined;
+      const hitEl = hitWeapon?.tags?.element;
+      const tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
       this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
+      // The flipbook belongs to this budget-approved FULL stack only: gun-bullet + melee-equipped hits get
+      // the weapon element; thrown/cast deliveries retain every existing layer without a false bloom.
+      if (hitWeapon?.gun || (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)) {
+        spawnImpactFlipbook(this, rig.x, rig.y, radius, hitEl);
+      }
       if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
       if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
       if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike

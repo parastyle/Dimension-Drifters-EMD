@@ -11,6 +11,74 @@ import { gunFx } from "./projectile-factory.js";
  * level-up celebration stays in the scene (it reads screen-space HUD dimensions).
  */
 
+const IMPACT_ELEMENTS = ["fire", "frost", "shock", "void", "holy", "toxic", "arcane", "steel"] as const;
+type ImpactElement = (typeof IMPACT_ELEMENTS)[number];
+const IMPACT_FRAME_PX = 256;
+const IMPACT_FRAMES = 6;
+const IMPACT_DEPTH = 99500;
+const missingImpactFlipbooks = new Set<string>();
+
+function impactTextureKey(element: ImpactElement): string {
+  return `vfx:impact:${element}`;
+}
+
+/** Queue the eight optional 6-frame IMPACT strips. Like optional terrain, HTTP-200 HTML stubs take a
+ *  silent decode-error path; a missing strip is remembered game-wide and the procedural hit stack survives. */
+export function preloadImpactFlipbooks(scene: Phaser.Scene): void {
+  scene.load.on("loaderror", (file: Phaser.Loader.File) => {
+    if (file.key.startsWith("vfx:impact:")) missingImpactFlipbooks.add(file.key);
+  });
+  for (const element of IMPACT_ELEMENTS) {
+    const key = impactTextureKey(element);
+    if (scene.textures.exists(key) || missingImpactFlipbooks.has(key)) continue;
+    const file = new Phaser.Loader.FileTypes.SpriteSheetFile(
+      scene.load,
+      key,
+      `vfx/impacts/${element}.png`,
+      { frameWidth: IMPACT_FRAME_PX, frameHeight: IMPACT_FRAME_PX, endFrame: IMPACT_FRAMES - 1 },
+    );
+    file.onProcessError = () => {
+      missingImpactFlipbooks.add(key);
+      file.state = Phaser.Loader.FILE_ERRORED;
+      file.loader.fileProcessComplete(file);
+    };
+    scene.load.addFile(file);
+  }
+}
+
+/** Play one additive element IMPACT at the damaged body's diameter. Physical/unknown resolves to STEEL,
+ *  mirroring `elementPack`; missing optional art is a no-op so every existing hit layer remains underneath. */
+export function spawnImpactFlipbook(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  radius: number,
+  element?: string,
+): boolean {
+  const resolved: ImpactElement = (IMPACT_ELEMENTS as readonly string[]).includes(element ?? "")
+    ? (element as ImpactElement)
+    : "steel";
+  const textureKey = impactTextureKey(resolved);
+  if (!scene.textures.exists(textureKey)) return false;
+  const animKey = `${textureKey}:burst`;
+  if (!scene.anims.exists(animKey)) {
+    scene.anims.create({
+      key: animKey,
+      frames: scene.anims.generateFrameNumbers(textureKey, { start: 0, end: IMPACT_FRAMES - 1 }),
+      duration: 270,
+      repeat: 0,
+    });
+  }
+  const sprite = scene.add
+    .sprite(x, y, textureKey, 0)
+    .setDisplaySize(radius * 2, radius * 2)
+    .setBlendMode(Phaser.BlendModes.ADD)
+    .setDepth(IMPACT_DEPTH);
+  sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => sprite.destroy());
+  sprite.play(animKey);
+  return true;
+}
+
 /** §7 v0.105 de-clunk (adversarial-verify fix): route a camera shake through ArenaScene's PRIORITIZED
  *  `shakeCam` so it participates in the same force/priority arbitration as every other shake site — a raw
  *  `cameras.main.shake()` here (no `force`) is silently dropped whenever another shake is running, AND it
