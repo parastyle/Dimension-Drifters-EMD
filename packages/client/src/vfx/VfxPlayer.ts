@@ -5,10 +5,18 @@
 // Each play spins up a pooled "surface" (a container + additive graphics + pooled emitters) at the
 // strike point, oriented to the aim, and drives the suite over the accepted/predicted swing descriptor's
 // 0→1 pose window (swing trail → impact burst → painted hero), then releases the surface.
-import { WEAPONS, type SwingDescriptor, type WeaponDef } from "@dd/shared";
+import {
+  bladeAngleAt,
+  meleeReach,
+  type SwingDescriptor,
+  swingEdgeProgress,
+  WEAPONS,
+  type WeaponDef,
+} from "@dd/shared";
 import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
 import { preloadFxPacks } from "./fx-composer.js";
+import { PARTICLE_PACKS } from "./particle-manifest.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
 import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
@@ -36,6 +44,45 @@ const ELEMENT_HUE: Record<string, number> = {
   void: 0.8,
   arcane: 0.72,
 };
+const ELEMENT_PAINT: Record<string, number> = {
+  physical: 0,
+  fire: 1,
+  frost: 2,
+  shock: 3,
+  holy: 4,
+  toxic: 5,
+  void: 6,
+  arcane: 7,
+};
+const ELEMENT_COLOR: Record<string, number> = {
+  physical: 0xd6dde6,
+  fire: 0xff6a2a,
+  frost: 0x6fd6ff,
+  shock: 0xffe24a,
+  holy: 0xffe6a0,
+  toxic: 0x9cff3b,
+  void: 0xb14bff,
+  arcane: 0x8f6aff,
+};
+const PER_PACK_IDS = [
+  "steel-wisp",
+  "steel-bolt",
+  "fire-wisp",
+  "fire-bolt",
+  "frost-wisp",
+  "frost-bolt",
+  "shock-wisp",
+  "shock-bolt",
+  "holy-wisp",
+  "holy-bolt",
+  "toxic-wisp",
+  "toxic-bolt",
+  "void-wisp",
+  "void-bolt",
+  "arcane-wisp",
+  "arcane-bolt",
+] as const;
+const PER_LAYER_IDS = new Set(["blade-trail", "twin-slash", "thrust-streak"]);
 
 /** The element FLOURISH (motion-agnostic sparks/rings/embers) overlaid on top of whatever swing SHAPE the
  *  archetype picked — this is the layer that says "fire" / "holy" / "void" regardless of the weapon's shape. */
@@ -81,45 +128,62 @@ function elementFlourish(element: string, h: number): Suite {
   }
 }
 
-/** Build a weapon's fallback suite from its element + physical archetype (grip/size/rangeBand/family). */
-function buildWeaponSuite(element: string, tags?: WeaponDef["tags"]): Suite {
+/** Build a weapon's fallback PER suite from descriptor style, grip, size, and material hints. */
+function buildWeaponSuite(
+  element: string,
+  style: SwingDescriptor["style"],
+  tags?: WeaponDef["tags"],
+): Suite {
   const h = ELEMENT_HUE[element] ?? 0.55;
-  const heavy = tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL");
+  const heavy =
+    style === "chop" ||
+    (tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL"));
   // Only a "long" reach band is a true polearm/spear/whip THRUST; "mid" is an ordinary sword (→ default arc).
-  const reachy = tags?.rangeBand === "long";
+  const reachy = style === "thrust";
   const dual = tags?.grip === "dual";
   const fast = tags?.size === "S"; // daggers / knives / light blades → snappy speed-lines
   const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test((tags?.family ?? "").toLowerCase());
+  const blunt = /mace|maul|warhammer|hammer|gauntlet|fist|knuckle/.test(
+    (tags?.family ?? "").toLowerCase(),
+  );
+  const perParams = {
+    reach: 1,
+    paint: ELEMENT_PAINT[element] ?? 0,
+    history: 1,
+    bodyAlpha: energy ? 0.52 : heavy || blunt ? 0.78 : 0.72,
+    lipAlpha: energy ? 0.72 : heavy || blunt ? 0.36 : reachy ? 0.58 : 0.54,
+    lipColor: ELEMENT_COLOR[element] ?? 0xd6dde6,
+    color: h,
+  };
   let base: Suite;
   // §41 NOTE: the old fallbacks also layered "edge-trail" (a thin trailing arc line) on most swings — it
   // read as "a weird narrow white line" (user), so it's dropped from every fallback. Authored suites keep it.
   if (dual) {
     // twin blades → an X twin-slash
     base = {
-      "twin-slash": { on: true, params: { reach: 1, color: h } },
+      "twin-slash": { on: true, params: perParams },
     };
   } else if (reachy) {
     // spear / polearm → a long forward THRUST streak
     base = {
-      "thrust-streak": { on: true, params: { reach: 1.35, color: h } },
+      "thrust-streak": { on: true, params: perParams },
     };
   } else if (heavy) {
     // greatsword / maul → a WIDE cleave with a ground shockwave
     base = {
-      "slash-arc": { on: true, params: { reach: 1.2, width: 10, color: h } },
+      "blade-trail": { on: true, params: perParams },
       "cleave-flash": { on: true, params: { intensity: 0.85 } },
       "shockwave-ring": { on: true, params: { color: h } },
     };
   } else if (fast) {
     // dagger / light blade → a crisp crescent + speed-line blade-trail
     base = {
-      "slash-arc": { on: true, params: { reach: 0.95, width: 5, color: h } },
-      "blade-trail": { on: true, params: { reach: 1, color: h, lines: 4 } },
+      "blade-trail": { on: true, params: perParams },
     };
   } else {
     // ordinary sword — the clean crescent alone (the safe default for everything unclassified)
     base = {
-      "slash-arc": { on: true, params: { reach: 1, width: 6, color: h } },
+      "blade-trail": { on: true, params: perParams },
     };
   }
   if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } }; // plasma/laser glow pop
@@ -128,11 +192,15 @@ function buildWeaponSuite(element: string, tags?: WeaponDef["tags"]): Suite {
 
 /** Memoized per-weapon fallback suites (built once per weapon id; element-only if the id is unknown). */
 const FALLBACK_CACHE = new Map<string, Suite>();
-function fallbackSuiteFor(weaponId: string, element: string): Suite {
-  const key = weaponId || `el:${element}`;
+function fallbackSuiteFor(
+  weaponId: string,
+  element: string,
+  style: SwingDescriptor["style"],
+): Suite {
+  const key = weaponId || `el:${element}:${style}`;
   let s = FALLBACK_CACHE.get(key);
   if (!s) {
-    s = buildWeaponSuite(element, WEAPONS[weaponId]?.tags);
+    s = buildWeaponSuite(element, style, WEAPONS[weaponId]?.tags);
     FALLBACK_CACHE.set(key, s);
   }
   return s;
@@ -147,6 +215,29 @@ interface Surface {
   releaseEvent?: Phaser.Time.TimerEvent;
   scatterKey?: string;
 }
+
+interface PerRuntimeSurface {
+  perQuality?: 4 | 8 | 12;
+  perLongTailFired?: boolean;
+  perBody?: Phaser.GameObjects.Rope;
+  perLip?: Phaser.GameObjects.Rope;
+  per?: {
+    swing: SwingDescriptor;
+    reach: number;
+    swingArc: number;
+    style: SwingDescriptor["style"];
+    size?: WeaponDef["tags"]["size"];
+    grip?: WeaponDef["tags"]["grip"];
+    family?: string;
+    paint: number;
+    originX: number;
+    originY: number;
+    edgeProgress(elapsedSeconds: number): number;
+    angleAt(progress: number): number;
+  };
+}
+
+const perRuntime = (S: VfxSurface): PerRuntimeSurface => S as unknown as PerRuntimeSurface;
 
 export class VfxPlayer {
   private readonly scene: Phaser.Scene;
@@ -199,6 +290,16 @@ export class VfxPlayer {
     // §49 the twelve component packs are deliberately all boot-queued: they are small, observed remote
     // weapons can change without warning, and the optional loader/no-op composer absorbs absent files.
     preloadFxPacks(scene);
+    // Live play keeps PER's audited wisp/bolt sheets hot. The canonical JS renderer also has a relative
+    // lazy-load path for standalone preview hosts and retains its filled Graphics fallback while loading.
+    for (const id of PER_PACK_IDS) {
+      const pack = PARTICLE_PACKS[id];
+      if (pack)
+        scene.load.spritesheet(`ptcl:${id}`, pack.url, {
+          frameWidth: pack.frameWidth,
+          frameHeight: pack.frameWidth,
+        });
+    }
     for (const [id, vfx] of Object.entries(WEAPON_VFX)) {
       if (vfx.hero) scene.load.image(`vfxhero:${id}`, vfx.hero);
       if (vfx.scatter) {
@@ -219,6 +320,11 @@ export class VfxPlayer {
     surf.releaseEvent?.remove(false);
     surf.releaseEvent = undefined;
     surf.S.gfxAdd?.clear();
+    const per = perRuntime(surf.S);
+    per.perBody?.setVisible(false);
+    per.perLip?.setVisible(false);
+    per.perLongTailFired = false;
+    per.per = undefined;
     (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
     const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
     for (const key of ["eSpark", "eEmber", "eSoftAdd", "eSoftNorm", "eStreak", "eScatter"])
@@ -229,6 +335,8 @@ export class VfxPlayer {
   }
 
   private acquire(): Surface {
+    let busy = 0;
+    for (const candidate of this.pool) if (candidate.busy) busy++;
     let surf = this.pool.find((p) => !p.busy);
     if (!surf) {
       if (this.pool.length >= this.cap) {
@@ -255,7 +363,11 @@ export class VfxPlayer {
         this.pool.push(surf);
       }
     }
-    return this.prepare(surf);
+    const activeAfterAcquire = busy + (surf.busy ? 0 : 1);
+    const acquired = this.prepare(surf);
+    perRuntime(acquired.S).perQuality =
+      activeAfterAcquire <= 6 ? 12 : activeAfterAcquire <= 9 ? 8 : 4;
+    return acquired;
   }
 
   /** Fire a weapon's swing VFX at world (x,y), pointing toward `aimRad`. The VFX SIZE is the weapon's
@@ -276,14 +388,32 @@ export class VfxPlayer {
     const surf = this.acquire();
     const generation = surf.generation;
     const S = surf.S;
+    const weapon = WEAPONS[weaponId];
+    const authored = !!(vfx?.suite && Object.keys(vfx.suite).length > 0);
     // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
     // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
-    S.suite =
-      vfx?.suite && Object.keys(vfx.suite).length > 0
-        ? vfx.suite
-        : fallbackSuiteFor(weaponId, element);
+    S.suite = authored ? (vfx?.suite as Suite) : fallbackSuiteFor(weaponId, element, swing.style);
     S.fired = {};
     S.R = vfx?.vfxRadius ?? radius; // authored fixed size wins
+    const swingArc = weapon?.swingArc ?? Math.PI * 0.7;
+    const perRot = authored ? (vfx?.rot ?? 0) * DEG : 0;
+    const perOrigin = authored && !vfx?.spawnAtCursor && weapon;
+    const perAnchorX = perOrigin ? -weapon.range * 0.6 - (vfx?.vfxOrigin?.x ?? 0) : 0;
+    const perAnchorY = perOrigin ? -(vfx?.vfxOrigin?.y ?? 0) : 0;
+    perRuntime(S).per = {
+      swing,
+      reach: weapon ? meleeReach(weapon) : radius,
+      swingArc,
+      style: swing.style,
+      size: weapon?.tags.size,
+      grip: weapon?.tags.grip,
+      family: weapon?.tags.family,
+      paint: ELEMENT_PAINT[element] ?? 0,
+      originX: perAnchorX * Math.cos(perRot) + perAnchorY * Math.sin(perRot),
+      originY: -perAnchorX * Math.sin(perRot) + perAnchorY * Math.cos(perRot),
+      edgeProgress: (elapsedSeconds) => swingEdgeProgress(swing, elapsedSeconds),
+      angleAt: (progress) => bladeAngleAt(-perRot, swingArc, progress),
+    };
     S.heroEnabled = true;
     S.wantHeroKey = vfx?.hero ? `vfxhero:${weaponId}` : null;
     if (vfx?.scatter) {
@@ -305,7 +435,14 @@ export class VfxPlayer {
     // anchor stays consistent whichever way the weapon points (no offset = spawn at the strike point).
     let ox = x;
     let oy = y;
-    const o = vfx?.vfxOrigin;
+    if (!authored && !vfx?.spawnAtCursor && weapon) {
+      // Arena's existing fallback call supplies its historical 60%-reach strike point. Recover the rendered
+      // wielder center here so PER and the descriptor's radial blade segment share one origin.
+      const strikeOffset = weapon.range * 0.6;
+      ox -= Math.cos(aimRad) * strikeOffset;
+      oy -= Math.sin(aimRad) * strikeOffset;
+    }
+    const o = authored ? vfx?.vfxOrigin : undefined;
     if (o && (o.x || o.y)) {
       const c = Math.cos(aimRad);
       const s = Math.sin(aimRad);
@@ -314,14 +451,26 @@ export class VfxPlayer {
     }
     surf.container
       .setPosition(ox, oy)
-      .setRotation(aimRad + (vfx?.rot ?? 0) * DEG)
+      .setRotation(aimRad + (authored ? (vfx?.rot ?? 0) * DEG : 0))
       .setVisible(true);
+    const activeSeconds = Math.max(0, swing.activeEndSeconds - swing.activeStartSeconds);
+    const followSeconds = Math.min(
+      Math.max(0, swing.poseSeconds - swing.activeEndSeconds),
+      Math.max(0.035, Math.min(0.09, activeSeconds * 0.22)),
+    );
+    const ribbonOnly = Object.entries(S.suite).every(
+      ([id, layer]) => !layer.on || PER_LAYER_IDS.has(id),
+    );
+    const renderSeconds = ribbonOnly
+      ? Math.min(swing.poseSeconds, swing.activeEndSeconds + followSeconds)
+      : swing.poseSeconds;
+    const endPhase = swing.poseSeconds > 0 ? Math.min(1, renderSeconds / swing.poseSeconds) : 1;
     surf.activeTween = this.scene.tweens.addCounter({
       from: 0,
-      to: 1,
+      to: endPhase,
       // §44 authored + fallback suites share the SAME effective-cooldown window as the rig. Layer phase
       // authoring is unchanged; only the tween time base replaces the former fixed 470ms playback.
-      duration: swing.poseSeconds * 1000,
+      duration: Math.max(1, renderSeconds * 1000),
       onUpdate: (tw) => {
         if (surf.generation !== generation) return;
         const p = tw.getValue() ?? 0;
@@ -333,10 +482,11 @@ export class VfxPlayer {
         if (surf.generation !== generation) return;
         surf.activeTween = undefined;
         S.gfxAdd?.clear();
+        const per = perRuntime(S);
+        per.perBody?.setVisible(false);
+        per.perLip?.setVisible(false);
         (S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
-        // Graphics/hero are done, but hiding or releasing the container here chops the authored particle
-        // tail. Keep it stable until the longest emitter expires; a pressure steal cancels this timer + kills.
-        surf.releaseEvent = this.scene.time.delayedCall(PARTICLE_TAIL_MS, () => {
+        const release = (): void => {
           if (surf.generation !== generation) return;
           surf.releaseEvent = undefined;
           const emitters = S as unknown as Record<string, { killAll(): unknown } | undefined>;
@@ -344,7 +494,12 @@ export class VfxPlayer {
             emitters[key]?.killAll();
           surf.container.setVisible(false);
           surf.busy = false;
-        });
+        };
+        // A particle-free PER swing returns to the pool at descriptor follow-through. Only an emitter that
+        // actually exploded earns the legacy tail delay; pressure steals still cancel either owner safely.
+        if (per.perLongTailFired)
+          surf.releaseEvent = this.scene.time.delayedCall(PARTICLE_TAIL_MS, release);
+        else release();
       },
     });
   }

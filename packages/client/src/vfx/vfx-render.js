@@ -129,32 +129,432 @@
   // ── per-layer renderers. (S=surface, g={R} centred at container origin, p=phase, o={params}) ──
   // Graphics layers draw into S.gfxAdd each frame (additive). Particle layers explode bursts from pooled
   // emitters at their trigger phase (tracked via S.fired so each fires once per cycle).
-  function fillCrescent(gfx, R, head, span, thick, color, sw, segs = 26) {
+  // Painted Edge Ribbon (PER). Numeric paint ids are deliberately stable because this canonical renderer
+  // is also loaded as a standalone classic script by Weaponsmith. The pinned cells were audited for a
+  // predominantly horizontal long axis and never change during a swing, so the paint cannot shimmer.
+  const PER_PAINTS = [
+    { id: "steel", color: 0xd6dde6, wisp: 7, bolt: 0 },
+    { id: "fire", color: 0xff6a2a, wisp: 4, bolt: 0 },
+    { id: "frost", color: 0x6fd6ff, wisp: 6, bolt: 5 },
+    { id: "shock", color: 0xffe24a, wisp: 9, bolt: 0 },
+    { id: "holy", color: 0xffe6a0, wisp: 4, bolt: 6 },
+    { id: "toxic", color: 0x9cff3b, wisp: 6, bolt: 7 },
+    { id: "void", color: 0xb14bff, wisp: 1, bolt: 6 },
+    { id: "arcane", color: 0x8f6aff, wisp: 0, bolt: 2 },
+  ];
+  const PER_SIZE = {
+    S: { body: 14, lip: 4, history: 0.16, cap: 0.35 },
+    M: { body: 22, lip: 6, history: 0.22, cap: 0.5 },
+    L: { body: 30, lip: 8, history: 0.28, cap: 0.7 },
+    XL: { body: 38, lip: 9, history: 0.34, cap: 0.85 },
+  };
+  const PER_EMPTY = Object.freeze({});
+  // Devil's-advocate guardrail: inspect `VFXRENDER.debug.perDraws` in either host.
+  const PER_DEBUG = { perDraws: 0, ropeStrips: 0, fallbackDraws: 0 };
+
+  const finite = (v, fallback) => (Number.isFinite(v) ? v : fallback);
+  const bounded = (v, fallback, lo, hi) => Math.max(lo, Math.min(hi, finite(v, fallback)));
+  const smooth01 = (v) => {
+    const t = clamp01(v);
+    return t * t * (3 - 2 * t);
+  };
+  function perPaint(params, meta) {
+    return PER_PAINTS[Math.round(bounded(params.paint, meta.paint || 0, 0, 7))] || PER_PAINTS[0];
+  }
+  function requestPerTexture(S, paint, shape) {
+    const key = `ptcl:${paint.id}-${shape}`;
+    if (S.scene?.textures?.exists(key)) return true;
+    if (!S.scene?.load?.spritesheet) return false;
+    if (!S.perLoading[key]) {
+      S.perLoading[key] = true;
+      // Live play boot-preloads these keys. Optional hosts can serve the same public particle path lazily.
+      S.scene.load.spritesheet(key, `particles/${paint.id}-${shape}.png`, {
+        frameWidth: 96,
+        frameHeight: 96,
+      });
+      S.scene.load.start();
+    }
+    return false;
+  }
+  function hidePer(S) {
+    S.perBody?.setVisible(false);
+    S.perLip?.setVisible(false);
+  }
+  function perPointBank() {
+    const bank = {};
+    for (const n of [4, 8, 12]) {
+      const points = new Array(n);
+      for (let i = 0; i < n; i++) points[i] = { x: 0, y: 0 };
+      bank[n] = points;
+    }
+    return bank;
+  }
+  function makePerRope(scene) {
+    const bank = perPointBank();
+    const rope = scene.add.rope(0, 0, "vfx-blank", 0, bank[12], true);
+    rope.setBlendMode(1 /* Phaser.BlendModes.ADD */).setVisible(false);
+    rope.perPointBank = bank;
+    rope.perQuality = 12;
+    rope.perTextureKey = "vfx-blank";
+    rope.perTextureFrame = 0;
+    rope.perPatches = 1;
+    return rope;
+  }
+  function patchPerUvs(rope, patches) {
+    const total = rope.points.length;
+    const frame = rope.frame;
+    const du = frame.u1 - frame.u0;
+    for (let i = 0; i < total; i++) {
+      const progress = (i / (total - 1)) * patches;
+      const patch = Math.min(patches - 1, Math.floor(progress));
+      const local = progress - patch;
+      const along = patch % 2 === 0 ? local : 1 - local;
+      const u = frame.u0 + du * along;
+      const j = i * 4;
+      rope.uv[j] = u;
+      rope.uv[j + 1] = frame.v0;
+      rope.uv[j + 2] = u;
+      rope.uv[j + 3] = frame.v1;
+    }
+  }
+  function preparePerRope(rope, key, frame, quality, width, pathLength, tintMode) {
+    let uvDirty = false;
+    if (rope.perTextureKey !== key || rope.perTextureFrame !== frame) {
+      rope.setTexture(key, frame);
+      rope.perTextureKey = key;
+      rope.perTextureFrame = frame;
+      uvDirty = true;
+    }
+    if (rope.perQuality !== quality) {
+      rope.setPoints(rope.perPointBank[quality]);
+      rope.perQuality = quality;
+      uvDirty = true;
+    }
+    const patches = Math.max(1, Math.min(3, Math.ceil(pathLength / Math.max(1, width * 2.2))));
+    if (rope.perPatches !== patches) {
+      rope.perPatches = patches;
+      uvDirty = true;
+    }
+    if (uvDirty) patchPerUvs(rope, patches);
+    rope.setTintMode(tintMode);
+    rope.setScale(width / 96);
+    return width / 96;
+  }
+  function writePerVertex(rope, i, alpha, color) {
+    const j = i * 2;
+    rope.alphas[j] = alpha;
+    rope.alphas[j + 1] = alpha;
+    rope.colors[j] = color;
+    rope.colors[j + 1] = color;
+  }
+  function updateArcRope(
+    rope,
+    key,
+    textureFrame,
+    quality,
+    reach,
+    width,
+    arc,
+    startAngle,
+    headQ,
+    historyAngle,
+    radiusOffset,
+    alpha,
+    color,
+    tintMode,
+  ) {
+    if (alpha <= 0 || width <= 0 || reach <= 0) return false;
+    const absArc = Math.max(0.0001, Math.abs(arc));
+    const historyQ = Math.min(1, historyAngle / absArc);
+    const tailQ = Math.max(0, headQ - historyQ);
+    const headAngle = startAngle + arc * headQ;
+    let tailAngle = startAngle + arc * tailQ;
+    if (Math.abs(headAngle - tailAngle) < 0.003)
+      tailAngle = headAngle - (arc < 0 ? -0.003 : 0.003);
+    const radius = Math.max(width / 2, reach - width / 2 + radiusOffset);
+    const pathLength = Math.max(width, radius * Math.abs(headAngle - tailAngle));
+    const scale = preparePerRope(
+      rope,
+      key,
+      textureFrame,
+      quality,
+      width,
+      pathLength,
+      tintMode,
+    );
+    const points = rope.points;
+    for (let i = 0; i < points.length; i++) {
+      const f = i / (points.length - 1);
+      const angle = tailAngle + (headAngle - tailAngle) * f;
+      points[i].x = (Math.cos(angle) * radius) / scale;
+      points[i].y = (Math.sin(angle) * radius) / scale;
+      writePerVertex(rope, i, alpha * f * f, color);
+    }
+    rope.setDirty().setVisible(true);
+    return true;
+  }
+  function updateRadialRope(
+    rope,
+    key,
+    textureFrame,
+    quality,
+    reach,
+    clearance,
+    width,
+    angle,
+    alpha,
+    color,
+  ) {
+    if (alpha <= 0 || width <= 0 || reach <= clearance) return false;
+    // Three mirrored patches cap source stretch. Shortening the decorative inner extent is truthful;
+    // the bright endpoint remains exactly on authoritative reach.
+    const end = Math.sqrt(Math.max(0, reach * reach - (width * width) / 4));
+    const start = Math.max(clearance, reach * 0.45, end - width * 6.6);
+    const pathLength = Math.max(width, end - start);
+    const scale = preparePerRope(rope, key, textureFrame, quality, width, pathLength, 1 /* FILL */);
+    const points = rope.points;
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    for (let i = 0; i < points.length; i++) {
+      const f = i / (points.length - 1);
+      const radius = start + (end - start) * f;
+      const radial = f < 0.55 ? (0.65 * f) / 0.55 : 0.65 + (0.35 * (f - 0.55)) / 0.45;
+      points[i].x = (c * radius) / scale;
+      points[i].y = (s * radius) / scale;
+      writePerVertex(rope, i, alpha * radial, color);
+    }
+    rope.setDirty().setVisible(true);
+    return true;
+  }
+  function samplePerClock(S, p, params, profile, out) {
+    const meta = S.per || PER_EMPTY;
+    const swing = meta.swing;
+    const D = Math.max(0.0001, finite(swing?.poseSeconds, 1));
+    const A = Math.max(0, finite(swing?.activeStartSeconds, profile === "thrust" ? 0.14 : 0.16));
+    const B = Math.max(A, finite(swing?.activeEndSeconds, profile === "thrust" ? 0.58 : 0.74));
+    const I = finite(swing?.impactSeconds, 0.52);
+    const e = clamp01(p) * D;
+    const activeSeconds = Math.max(0, B - A);
+    const follow = Math.min(
+      Math.max(0, D - B),
+      Math.max(0.035, Math.min(0.09, activeSeconds * 0.22)),
+    );
+    const family = String(meta.family || "").toLowerCase();
+    const style = swing?.style || meta.style || (profile === "thrust" ? "thrust" : "arc");
+    const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test(family);
+    const blunt = /mace|maul|warhammer|hammer|gauntlet|fist|knuckle/.test(family);
+    const bodyMax = bounded(params.bodyAlpha, energy ? 0.52 : style === "chop" || blunt ? 0.78 : 0.72, 0, 0.78);
+    const lipMax = bounded(
+      params.lipAlpha,
+      energy ? 0.72 : style === "chop" || blunt ? 0.36 : profile === "thrust" ? 0.58 : 0.54,
+      0,
+      0.72,
+    );
+    out.active = false;
+    out.q = 0;
+    out.bodyAlpha = 0;
+    out.lipAlpha = 0;
+    out.historyScale = 0;
+    if (e < A) return false;
+    if (e < B && activeSeconds > 0) {
+      const q =
+        typeof meta.edgeProgress === "function"
+          ? clamp01(meta.edgeProgress(e))
+          : clamp01((e - A) / activeSeconds);
+      let mass = bodyMax * smooth01(q / 0.15);
+      if (style === "chop" || style === "punch") {
+        const crestSeconds = style === "chop" ? 0.03 : 0.02;
+        const crest = Math.max(0, 1 - Math.abs(e - I) / crestSeconds);
+        mass = Math.min(0.78, mass * (1 + crest * 0.1));
+      }
+      out.active = true;
+      out.q = q;
+      out.bodyAlpha = mass;
+      out.lipAlpha = lipMax;
+      out.historyScale = 1;
+      return mass > 0 || lipMax > 0;
+    }
+    if (follow > 0 && e < B + follow) {
+      const fade = clamp01(1 - (e - B) / follow);
+      out.q = 1;
+      out.bodyAlpha = Math.min(0.3, bodyMax) * fade;
+      out.historyScale = fade;
+      return out.bodyAlpha > 0;
+    }
+    return false;
+  }
+  function drawPerFallbackArc(gfx, reach, width, tail, head, color, alpha, segs, offset) {
+    const radius = Math.max(width / 2, reach - width / 2 + offset);
     for (let i = 0; i < segs; i++) {
-      const f0 = i / segs,
-        f1 = (i + 1) / segs;
-      const a0 = head - span + span * f0,
-        a1 = head - span + span * f1;
-      const w0 = thick * (0.1 + 0.95 * f0),
-        w1 = thick * (0.1 + 0.95 * f1);
-      gfx.fillStyle(color, (1 - sw) * (0.06 + 0.6 * f1));
-      const ox0 = Math.cos(a0) * (R + w0 / 2),
-        oy0 = Math.sin(a0) * (R + w0 / 2);
-      const ix0 = Math.cos(a0) * (R - w0 / 2),
-        iy0 = Math.sin(a0) * (R - w0 / 2);
-      const ox1 = Math.cos(a1) * (R + w1 / 2),
-        oy1 = Math.sin(a1) * (R + w1 / 2);
-      const ix1 = Math.cos(a1) * (R - w1 / 2),
-        iy1 = Math.sin(a1) * (R - w1 / 2);
+      const f0 = i / segs;
+      const f1 = (i + 1) / segs;
+      const a0 = tail + (head - tail) * f0;
+      const a1 = tail + (head - tail) * f1;
+      const w0 = width * (0.18 + 0.82 * f0);
+      const w1 = width * (0.18 + 0.82 * f1);
+      gfx.fillStyle(color, Math.min(0.55, alpha) * f1 * f1);
       gfx.beginPath();
-      gfx.moveTo(ox0, oy0);
-      gfx.lineTo(ox1, oy1);
-      gfx.lineTo(ix1, iy1);
-      gfx.lineTo(ix0, iy0);
+      gfx.moveTo(Math.cos(a0) * (radius + w0 / 2), Math.sin(a0) * (radius + w0 / 2));
+      gfx.lineTo(Math.cos(a1) * (radius + w1 / 2), Math.sin(a1) * (radius + w1 / 2));
+      gfx.lineTo(Math.cos(a1) * (radius - w1 / 2), Math.sin(a1) * (radius - w1 / 2));
+      gfx.lineTo(Math.cos(a0) * (radius - w0 / 2), Math.sin(a0) * (radius - w0 / 2));
       gfx.closePath();
       gfx.fillPath();
     }
   }
+  function drawPerFallback(S, frame, profile, color, quality) {
+    const gfx = S.gfxAdd;
+    gfx.save();
+    gfx.translateCanvas(frame.originX, frame.originY);
+    const head = frame.startAngle + frame.arc * frame.q;
+    const tail = head - (frame.arc < 0 ? -frame.historyAngle : frame.historyAngle);
+    if (profile === "thrust") {
+      const start = Math.max(frame.clearance, frame.reach * 0.45);
+      const c = Math.cos(head);
+      const s = Math.sin(head);
+      const nX = -s * frame.bodyWidth * 0.5;
+      const nY = c * frame.bodyWidth * 0.5;
+      const tip = Math.sqrt(
+        Math.max(0, frame.reach * frame.reach - (frame.bodyWidth * frame.bodyWidth) / 4),
+      );
+      gfx.fillStyle(color, Math.min(0.55, frame.bodyAlpha));
+      gfx.fillTriangle(
+        c * start,
+        s * start,
+        c * tip + nX,
+        s * tip + nY,
+        c * tip - nX,
+        s * tip - nY,
+      );
+    } else if (profile === "twin") {
+      const lobeWidth = frame.bodyWidth * 0.58;
+      drawPerFallbackArc(gfx, frame.reach, lobeWidth, tail, head, color, frame.bodyAlpha, quality, -frame.bodyWidth * 0.03);
+      if (quality > 4 && frame.q > 0.12) {
+        const rearQ = frame.q - 0.12;
+        const rearHead = frame.startAngle + frame.arc * rearQ;
+        const rearTail = rearHead - (frame.arc < 0 ? -frame.historyAngle : frame.historyAngle);
+        drawPerFallbackArc(gfx, frame.reach, lobeWidth, rearTail, rearHead, color, frame.bodyAlpha * 0.42, quality, -frame.bodyWidth * 0.39);
+      }
+    } else {
+      drawPerFallbackArc(gfx, frame.reach, frame.bodyWidth, tail, head, color, frame.bodyAlpha, quality, 0);
+    }
+    gfx.restore();
+  }
+  function renderPer(S, g, p, o, profile) {
+    const params = o.params || PER_EMPTY;
+    const meta = S.per || PER_EMPTY;
+    const paint = perPaint(params, meta);
+    const quality = S.perQuality === 4 || S.perQuality === 8 ? S.perQuality : 12;
+    const bodyShape = profile === "thrust" ? "bolt" : "wisp";
+    const secondShape = profile === "twin" ? "wisp" : "bolt";
+    const bodyReady = requestPerTexture(S, paint, bodyShape);
+    const secondReady = quality <= 4 || requestPerTexture(S, paint, secondShape);
+    const frame = S.perFrame;
+    if (!samplePerClock(S, p, params, profile, frame)) return;
+
+    const size = PER_SIZE[meta.size] || PER_SIZE.M;
+    const reachScale = bounded(params.reach, 1, 0, 1);
+    frame.reach = Math.max(1, finite(meta.reach, g.R) * reachScale);
+    frame.clearance = Math.min(28, frame.reach * 0.2);
+    frame.arc = finite(meta.swingArc, profile === "thrust" ? 1.1 : 2.1);
+    frame.startAngle =
+      typeof meta.angleAt === "function" ? finite(meta.angleAt(0), -frame.arc / 2) : -frame.arc / 2;
+    frame.originX = finite(meta.originX, 0);
+    frame.originY = finite(meta.originY, 0);
+    frame.bodyWidth = Math.min(42, size.body, Math.max(2, frame.reach - frame.clearance));
+    frame.lipWidth = Math.min(9, size.lip, frame.bodyWidth);
+    const historyMul = bounded(params.history, 1, 0, 1);
+    const artCap = (frame.bodyWidth * 6.6) / Math.max(1, frame.reach - frame.bodyWidth / 2);
+    frame.historyAngle =
+      Math.min(
+        Math.abs(frame.arc) * size.history,
+        size.cap,
+        profile === "thrust" ? 0.18 : Infinity,
+        artCap,
+      ) *
+      historyMul *
+      frame.historyScale;
+
+    const textureOk = S.perWebGL && S.perBody && S.perLip && bodyReady && secondReady;
+    PER_DEBUG.perDraws++;
+    if (!textureOk) {
+      drawPerFallback(S, frame, profile, paint.color, quality);
+      PER_DEBUG.fallbackDraws++;
+      return;
+    }
+
+    const bodyKey = `ptcl:${paint.id}-${bodyShape}`;
+    const bodyTextureFrame = bodyShape === "wisp" ? paint.wisp : paint.bolt;
+    const bodyWidth =
+      profile === "thrust"
+        ? frame.bodyWidth * 0.72
+        : profile === "twin"
+          ? frame.bodyWidth * 0.58
+          : frame.bodyWidth;
+    const leadOffset = profile === "twin" ? -frame.bodyWidth * 0.03 : 0;
+    S.perBody.setPosition(frame.originX, frame.originY);
+    S.perLip.setPosition(frame.originX, frame.originY);
+    let strips = updateArcRope(
+      S.perBody,
+      bodyKey,
+      bodyTextureFrame,
+      quality,
+      frame.reach,
+      bodyWidth,
+      frame.arc,
+      frame.startAngle,
+      frame.q,
+      frame.historyAngle,
+      leadOffset,
+      frame.bodyAlpha,
+      0xffffff,
+      0,
+    )
+      ? 1
+      : 0;
+    if (quality > 4 && profile === "twin" && frame.q > 0.12) {
+      const rearQ = Math.max(0, frame.q - 0.12);
+      if (
+        updateArcRope(
+          S.perLip,
+          bodyKey,
+          paint.wisp,
+          quality,
+          frame.reach,
+          bodyWidth,
+          frame.arc,
+          frame.startAngle,
+          rearQ,
+          frame.historyAngle,
+          -frame.bodyWidth * 0.39,
+          frame.bodyAlpha * 0.42,
+          0xffffff,
+          0,
+        )
+      )
+        strips++;
+    } else if (quality > 4 && frame.active && frame.lipAlpha > 0) {
+      const lipKey = `ptcl:${paint.id}-bolt`;
+      const head = frame.startAngle + frame.arc * frame.q;
+      if (
+        updateRadialRope(
+          S.perLip,
+          lipKey,
+          paint.bolt,
+          quality,
+          frame.reach,
+          frame.clearance,
+          frame.lipWidth,
+          head,
+          frame.lipAlpha,
+          bounded(params.lipColor, paint.color, 0, 0xffffff),
+        )
+      )
+        strips++;
+    }
+    PER_DEBUG.ropeStrips += strips;
+  }
+
   function strokeArcG(gfx, R, a0, a1, width, color, alpha) {
     gfx.lineStyle(width, color, alpha);
     gfx.beginPath();
@@ -220,37 +620,7 @@
 
   const R = {
     "hero-skin": null, // handled specially (an Image, not additive graphics)
-    "blade-trail": (S, g, p, o) => {
-      const sw = clamp01((p - 0.03) / 0.34);
-      if (sw <= 0 || sw >= 1) return;
-      const col = lerpHue(o.params.color),
-        Rr = g.R * o.params.reach,
-        span = o.params.sweep;
-      const head = -1.05 + sw * 2.1,
-        thick = o.params.thick * g.R;
-      const gx = S.gfxAdd;
-      fillCrescent(gx, Rr, head, span, thick, col, sw);
-      strokeArcG(
-        gx,
-        Rr,
-        head - span * 0.38,
-        head,
-        Math.max(1.5, thick * 0.35),
-        0xffffff,
-        (1 - sw) * 0.95,
-      );
-      const n = o.params.lines | 0;
-      for (let i = 0; i < n; i++)
-        strokeArcG(
-          gx,
-          Rr + (i - (n - 1) / 2) * thick * 0.55,
-          head - span * 0.72,
-          head - 0.03,
-          1.1,
-          col,
-          (1 - sw) * 0.35,
-        );
-    },
+    "blade-trail": (S, g, p, o) => renderPer(S, g, p, o, "blade"),
     "edge-trail": (S, g, p, o) => {
       const sw = clamp01((p - 0.04) / 0.34);
       if (sw <= 0 || sw >= 1) return;
@@ -285,30 +655,8 @@
         0.9 * (1 - sw),
       );
     },
-    "twin-slash": (S, g, p, o) => {
-      const sw = clamp01((p - 0.05) / 0.32);
-      if (sw <= 0 || sw >= 1) return;
-      const col = lerpHue(o.params.color),
-        Rr = g.R * o.params.reach;
-      const cross = (a0, a1) => {
-        strokeArcG(S.gfxAdd, Rr, a0, a1, 5, col, 0.7 * (1 - sw));
-        strokeArcG(S.gfxAdd, Rr, a1 - 0.4, a1, 1.5, 0xffffff, 0.9 * (1 - sw));
-      };
-      cross(-1.3 + sw * 2.2, -0.2 + sw * 2.2);
-      cross(1.3 - sw * 2.2, 0.2 - sw * 2.2);
-    },
-    "thrust-streak": (S, g, p, o) => {
-      const tp = clamp01((p - 0.1) / 0.25);
-      if (tp <= 0 || tp >= 1) return;
-      const x0 = -g.R * 0.3,
-        x1 = g.R * o.params.reach * 1.4,
-        x = x0 + (x1 - x0) * tp;
-      S.gfxAdd.lineStyle(6 * (1 - tp * 0.5), lerpHue(o.params.color), 0.9 * (1 - tp));
-      S.gfxAdd.beginPath();
-      S.gfxAdd.moveTo(x - g.R * 0.5, 0);
-      S.gfxAdd.lineTo(x, 0);
-      S.gfxAdd.strokePath();
-    },
+    "twin-slash": (S, g, p, o) => renderPer(S, g, p, o, "twin"),
+    "thrust-streak": (S, g, p, o) => renderPer(S, g, p, o, "thrust"),
     "cleave-flash": (S, g, p, o) => {
       const a = burst(p, 0.3, 0.12) * o.params.intensity;
       if (a <= 0) return;
@@ -656,6 +1004,7 @@
           rotate: { min: -200, max: 200 },
           tint: 0xffffff,
         });
+        if (n > 0) S.perLongTailFired = true;
         S.eScatter.explode(n, g.R * 0.3, -g.R * 0.1);
       },
     },
@@ -663,9 +1012,23 @@
 
   // Build the additive Graphics + pooled particle emitters into S.container (host sets S.scene + S.container first).
   function attachSurface(scene, S) {
+    S.perLoading = Object.create(null);
+    S.perFrame = {};
+    S.renderGeom = { R: S.R };
+    S.renderOpts = { params: null };
+    S.perWebGL = !!scene.sys?.game?.renderer?.gl && typeof scene.add.rope === "function";
     S.gfxAdd = scene.add.graphics();
     S.gfxAdd.setBlendMode(1 /* Phaser.BlendModes.ADD */);
     S.container.add(S.gfxAdd);
+    if (S.perWebGL) {
+      // Exactly two adjacent Rope objects are pooled with the surface and shared by all three PER ids.
+      S.perBody = makePerRope(scene);
+      S.perLip = makePerRope(scene);
+      S.container.add([S.perBody, S.perLip]);
+    }
+    // Weaponsmith pauses dispatch between attack windows; reset at scene-frame start to prevent leakage.
+    S.perReset = () => hidePer(S);
+    scene.events.on("preupdate", S.perReset);
     const mk = (tex, add) => {
       const e = scene.add.particles(0, 0, tex, {
         lifespan: 400,
@@ -698,6 +1061,7 @@
           color: null, // ensure a prior ramp doesn't leak onto a tinted softs burst
           tint: color,
         });
+        if (count > 0) S.perLongTailFired = true;
         emitter.explode(count, x, y);
       } catch (e) {
         console.log(`[vfx-render] emit fail: ${e.message}`);
@@ -726,6 +1090,7 @@
           gravityY: cfg.gravity != null ? cfg.gravity : R * 3.4, // sparks arc + fall
           rotate: { onUpdate: (p) => Math.atan2(p.velocityY || 0, p.velocityX || 0) * 57.29578 }, // align to motion
         });
+        if (count > 0) S.perLongTailFired = true;
         S.eSpark.explode(Math.round((count | 0) * 2.5), x, y); // much denser than the old burst
         S.eEmber.setConfig({
           lifespan: { min: 420, max: 880 },
@@ -792,7 +1157,10 @@
   //   mode "impact" → everything EXCEPT swing-trigger (hit/cast/channel/area, post-impact)
   //   mode "all"    → everything (the standalone non-attack preview)
   function renderLayers(S, p, mode, cyc) {
-    const g = { R: S.R };
+    hidePer(S);
+    const g = S.renderGeom;
+    g.R = S.R;
+    const opts = S.renderOpts;
     const reg = globalThis.VFXLAYERS || {};
     const order = reg.ORDER || Object.keys(S.suite);
     const LAYERS = reg.LAYERS || {};
@@ -804,7 +1172,8 @@
       const fn = R[lid];
       if (fn) {
         try {
-          fn(S, g, p, { params: s.params });
+          opts.params = s.params;
+          fn(S, g, p, opts);
         } catch (e) {
           console.log(`[vfx-render] ${lid} draw error: ${e.message}`);
         }
@@ -813,10 +1182,12 @@
       if (mode === "swing") continue; // particle layers fire only in the impact / all window
       const part = PARTS[lid];
       if (part) {
+        if (S.perQuality === 4) continue;
         if (cyc !== S.fired[lid] && p >= part.at) {
           S.fired[lid] = cyc;
           try {
-            part.fire(S, g, { params: s.params });
+            opts.params = s.params;
+            part.fire(S, g, opts);
           } catch (e) {
             console.log(`[vfx-render] ${lid} emit error: ${e.message}`);
           }
@@ -865,5 +1236,6 @@
     clamp01,
     burst,
     lerpHue,
+    debug: PER_DEBUG,
   };
 })();
