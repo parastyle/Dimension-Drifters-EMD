@@ -742,7 +742,9 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     name: "Twin Bowie Fangs",
     scalingGrades: { dex: "B", str: "D" },
     damage: 2.5,
-    range: 92,
+    // §53 dagger-anim-panel: one-body-length lunge law — the authoritative arc must reach the full
+    // visual strike point (92 left the last 8px of the lunge a lie).
+    range: 100,
     halfArc: 0.7,
     cooldown: 0.18,
     displayLength: 62,

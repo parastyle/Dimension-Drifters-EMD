@@ -38,12 +38,15 @@ import {
   JIGGLE_WEAPON_HAND_INERTIA,
   MELEE_COMBO_SEQUENCES,
   type MeleeComboFamily,
+  type MeleeComboHand,
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
   MOVE_SPEED,
   meleeComboSelectionFor,
   meleeComboSequenceFor,
+  meleeReach,
+  PLAYER_RADIUS,
   PROCEDURAL_JIGGLE,
   type SwingDescriptor,
   swingDescriptorFor,
@@ -97,6 +100,10 @@ const TOME_PAGE_INTERVAL_MS = 300;
 const TOME_PAGE_DURATION_MS = 320;
 const TOME_SETTLE_DURATION_MS = 260;
 const TOME_SCRAP_DURATION_MS = 540;
+/** The rear held blade's ordinary idle lean is added by the weapon pass. Close-blade poses compensate it. */
+const DUAL_BACK_WEAPON_LEAN = 0.32;
+/** Close-blade lunges are fully released before a cadence hold can sample `tt = 1`. */
+const CLOSE_BLADE_RELEASE_T = 0.92;
 
 type RigComboFamily = MeleeComboFamily | "none";
 
@@ -167,6 +174,356 @@ function actionOwnershipAt(
   return 0;
 }
 
+export type CloseBladePoseVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
+
+/** Pure, allocation-free input for the close-blade pose. Distances are world pixels except `aimLocal`. */
+export interface CloseBladePoseInput {
+  t: number;
+  serverActiveStart: number;
+  serverActiveEnd: number;
+  aimLocal: number;
+  effectiveCooldown: number;
+  targetTipRadius: number;
+  businessLength: number;
+  rigScale: number;
+  direction: -1 | 0 | 1;
+  hand: MeleeComboHand;
+  hasRearWeapon: boolean;
+  variant: CloseBladePoseVariant;
+}
+
+/** Scalar/vector channels sampled by {@link sampleCloseBladePose}; SpriteRig remains the only writer. */
+export interface CloseBladePoseSample {
+  frontAngle: number;
+  backAngle: number;
+  frontGripX: number;
+  frontGripY: number;
+  frontGripBlend: number;
+  backGripX: number;
+  backGripY: number;
+  backGripBlend: number;
+  frontOwn: number;
+  backOwn: number;
+  feetOwn: number;
+  frontFootX: number;
+  frontFootY: number;
+  frontFootBlend: number;
+  backFootX: number;
+  backFootY: number;
+  backFootBlend: number;
+  bodyX: number;
+  bodyY: number;
+  bodyRotation: number;
+  bodyScaleX: number;
+  bodyScaleY: number;
+  artX: number;
+  artY: number;
+  shadowX: number;
+  shadowY: number;
+  shadowRotation: number;
+  shadowScaleX: number;
+  shadowScaleY: number;
+}
+
+/** Constructed once per rig (or explicitly by a pure test), never once per animation frame. */
+export function createCloseBladePoseInput(): CloseBladePoseInput {
+  return {
+    t: 0,
+    serverActiveStart: 0,
+    serverActiveEnd: 1,
+    aimLocal: 0,
+    effectiveCooldown: 0,
+    targetTipRadius: 0,
+    businessLength: 0,
+    rigScale: 1,
+    direction: 1,
+    hand: "lead",
+    hasRearWeapon: false,
+    variant: "claw",
+  };
+}
+
+/** Constructed once per rig (or explicitly by a pure test), never once per animation frame. */
+export function createCloseBladePoseSample(): CloseBladePoseSample {
+  return {
+    frontAngle: 0,
+    backAngle: 0,
+    frontGripX: 0,
+    frontGripY: 0,
+    frontGripBlend: 0,
+    backGripX: 0,
+    backGripY: 0,
+    backGripBlend: 0,
+    frontOwn: 0,
+    backOwn: 0,
+    feetOwn: 0,
+    frontFootX: 0,
+    frontFootY: 0,
+    frontFootBlend: 0,
+    backFootX: 0,
+    backFootY: 0,
+    backFootBlend: 0,
+    bodyX: 0,
+    bodyY: 0,
+    bodyRotation: 0,
+    bodyScaleX: 1,
+    bodyScaleY: 1,
+    artX: 0,
+    artY: 0,
+    shadowX: 0,
+    shadowY: 0,
+    shadowRotation: 0,
+    shadowScaleX: 1,
+    shadowScaleY: 1,
+  };
+}
+
+/**
+ * Full-body close-blade sampler. The selected hand reaches an absolute grip derived from the truthful tip
+ * radius; the support hand guards, feet plant/kick, and only the slower third beat receives a tiny paper-art
+ * advance. Every lunge channel is identity by `CLOSE_BLADE_RELEASE_T`, so a late remote sample or cadence
+ * hold cannot replay/retain reach. Stage 1 keeps one dominant positive-path contact.
+ */
+export function sampleCloseBladePose(input: CloseBladePoseInput, out: CloseBladePoseSample): void {
+  const t = clamp01(input.t);
+  const activeStart = clamp01(input.serverActiveStart);
+  const activeEnd = Math.max(activeStart + 1e-4, clamp01(input.serverActiveEnd));
+  const finisher = input.hand === "both";
+  const dagger = input.variant === "dagger";
+  const semanticDirection = input.direction < 0 ? -1 : 1;
+  const contact = activeStart + (activeEnd - activeStart) * (finisher ? 0.5 : 0.54);
+  const retractEnd = Math.min(CLOSE_BLADE_RELEASE_T - 0.04, activeEnd + 0.12);
+  let targetBlend = 0;
+  let reachMix = 0;
+  let commit = 0;
+  let activeProgress = 0;
+  let recovery = 0;
+  if (t < activeStart) {
+    const p = smootherstep01(activeStart > 0 ? t / activeStart : 1);
+    targetBlend = p;
+    commit = 0.24 * p;
+  } else if (t < contact) {
+    const p = cubicOut01((t - activeStart) / Math.max(1e-4, contact - activeStart));
+    targetBlend = 1;
+    reachMix = p;
+    commit = 0.24 + 0.76 * p;
+    activeProgress = (t - activeStart) / (activeEnd - activeStart);
+  } else if (t <= activeEnd) {
+    activeProgress = (t - activeStart) / (activeEnd - activeStart);
+    targetBlend = 1;
+    reachMix = 1;
+    commit = 1 - 0.08 * smoothstep01((t - contact) / Math.max(1e-4, activeEnd - contact));
+  } else if (t < retractEnd) {
+    recovery = smoothstep01((t - activeEnd) / Math.max(1e-4, retractEnd - activeEnd));
+    targetBlend = 1;
+    reachMix = 1 - recovery;
+    commit = 0.92 - 0.68 * recovery;
+    activeProgress = 1;
+  } else if (t < CLOSE_BLADE_RELEASE_T) {
+    recovery = 1;
+    targetBlend =
+      1 - smootherstep01((t - retractEnd) / Math.max(1e-4, CLOSE_BLADE_RELEASE_T - retractEnd));
+    commit = 0.24 * targetBlend;
+    activeProgress = 1;
+  } else {
+    recovery = 1;
+    activeProgress = 1;
+  }
+
+  const fx = Math.cos(input.aimLocal);
+  const fy = Math.sin(input.aimLocal);
+  const nx = -fy;
+  const ny = fx;
+  const rigScale = Math.max(1e-4, Math.abs(input.rigScale));
+  const worldToLocal = 1 / rigScale;
+  const maxArtWorld = finisher
+    ? input.effectiveCooldown <= 0.22
+      ? 0
+      : input.effectiveCooldown <= 0.34
+        ? 3
+        : 6
+    : 0;
+  const artWorld = maxArtWorld * commit;
+  out.artX = fx * artWorld * worldToLocal;
+  out.artY = fy * artWorld * worldToLocal;
+  const shadowWorld = Math.min(3, artWorld * 0.62);
+  out.shadowX = fx * shadowWorld * worldToLocal;
+  out.shadowY = fy * shadowWorld * worldToLocal;
+  out.shadowRotation = input.aimLocal * (artWorld > 0 ? 0.025 : 0);
+  out.shadowScaleX = 1 + (artWorld / 6) * 0.08;
+  out.shadowScaleY = 1 - (artWorld / 6) * 0.06;
+
+  const halfTravel = dagger ? 0.16 : 0.32;
+  const chamberTravel = dagger ? 0.36 : 0.62;
+  const guardTravel = dagger ? 0.74 : 0.88;
+  const primaryEndAngle = input.aimLocal + halfTravel;
+  const primaryChamberAngle = input.aimLocal - semanticDirection * chamberTravel;
+  const primaryGuardAngle = input.aimLocal + semanticDirection * guardTravel;
+  let primaryAngle: number;
+  if (t < activeStart) {
+    const p = smoothstep01(activeStart > 0 ? t / activeStart : 1);
+    primaryAngle = mixAngle(primaryGuardAngle, primaryChamberAngle, p);
+  } else if (t < contact) {
+    primaryAngle = mixAngle(primaryChamberAngle, input.aimLocal, reachMix);
+  } else if (t <= activeEnd) {
+    primaryAngle = mixAngle(
+      input.aimLocal,
+      primaryEndAngle,
+      (t - contact) / Math.max(1e-4, activeEnd - contact),
+    );
+  } else {
+    primaryAngle = mixAngle(primaryEndAngle, primaryGuardAngle, recovery);
+  }
+  const secondaryChamberAngle =
+    input.aimLocal + (finisher ? chamberTravel : semanticDirection * 0.72);
+  const secondaryGuardAngle = input.aimLocal - semanticDirection * guardTravel;
+  const secondaryEndAngle = input.aimLocal + halfTravel * 0.7 + (finisher ? 0.06 : 0);
+  let secondaryAngle: number;
+  if (t < activeStart) {
+    const p = smoothstep01(activeStart > 0 ? t / activeStart : 1);
+    secondaryAngle = mixAngle(secondaryGuardAngle, secondaryChamberAngle, p);
+  } else if (finisher && t < contact) {
+    secondaryAngle = mixAngle(
+      secondaryChamberAngle,
+      input.aimLocal + 0.06,
+      clamp01((reachMix - 0.08) / 0.92),
+    );
+  } else if (finisher && t <= activeEnd) {
+    secondaryAngle = mixAngle(
+      input.aimLocal + 0.06,
+      secondaryEndAngle,
+      (t - contact) / Math.max(1e-4, activeEnd - contact),
+    );
+  } else if (finisher) {
+    secondaryAngle = mixAngle(secondaryEndAngle, secondaryGuardAngle, recovery);
+  } else {
+    secondaryAngle = secondaryGuardAngle;
+  }
+
+  const targetTip = Math.max(0, input.targetTipRadius);
+  const guardTip = Math.min(targetTip, TARGET_BODY_H * (dagger ? 0.72 : 0.68));
+  const chamberTip = Math.min(targetTip, TARGET_BODY_H * (dagger ? 0.62 : 0.58));
+  const baseTip = t <= activeEnd ? chamberTip : guardTip;
+  const primaryTip = baseTip + (targetTip - baseTip) * reachMix;
+  const secondaryReach = finisher ? clamp01((reachMix - 0.08) / 0.92) : 0;
+  const secondaryTip = guardTip + (targetTip * 0.96 - guardTip) * secondaryReach;
+  const primaryGripRadius = (primaryTip - input.businessLength) * worldToLocal;
+  const secondaryGripRadius = (secondaryTip - input.businessLength) * worldToLocal;
+  const primaryGripX = Math.cos(primaryAngle) * primaryGripRadius - out.artX;
+  const primaryGripY = Math.sin(primaryAngle) * primaryGripRadius - out.artY;
+  const secondaryGripX = Math.cos(secondaryAngle) * secondaryGripRadius - out.artX;
+  const secondaryGripY = Math.sin(secondaryAngle) * secondaryGripRadius - out.artY;
+  const freeGuardX =
+    (fx * TARGET_BODY_H * 0.12 - nx * semanticDirection * TARGET_BODY_H * 0.11) * worldToLocal -
+    out.artX;
+  const freeGuardY =
+    (fy * TARGET_BODY_H * 0.12 - ny * semanticDirection * TARGET_BODY_H * 0.11) * worldToLocal -
+    out.artY;
+
+  const offStrikes = input.hand === "off" && input.hasRearWeapon;
+  const bothStrike = finisher && input.hasRearWeapon;
+  if (offStrikes) {
+    out.frontAngle = secondaryGuardAngle;
+    out.backAngle = primaryAngle;
+    out.frontGripX = secondaryGripX;
+    out.frontGripY = secondaryGripY;
+    out.frontGripBlend = targetBlend * 0.68;
+    out.backGripX = primaryGripX;
+    out.backGripY = primaryGripY;
+    out.backGripBlend = targetBlend;
+  } else {
+    out.frontAngle = primaryAngle;
+    out.backAngle = secondaryAngle;
+    out.frontGripX = primaryGripX;
+    out.frontGripY = primaryGripY;
+    out.frontGripBlend = targetBlend;
+    out.backGripX = input.hasRearWeapon ? secondaryGripX : freeGuardX;
+    out.backGripY = input.hasRearWeapon ? secondaryGripY : freeGuardY;
+    out.backGripBlend = targetBlend * (bothStrike ? 1 : input.hasRearWeapon ? 0.68 : 0.58);
+  }
+
+  const own = actionOwnershipAt(t, activeStart, activeEnd, CLOSE_BLADE_RELEASE_T);
+  out.frontOwn = offStrikes ? 0 : own;
+  out.backOwn = offStrikes || bothStrike ? own : finisher ? own * 0.55 : 0;
+  out.feetOwn = own;
+
+  const cadence =
+    input.effectiveCooldown <= 0.22 ? 0.62 : input.effectiveCooldown <= 0.34 ? 0.82 : 1;
+  const bodyForwardWorld = (dagger ? (finisher ? 5 : 3) : finisher ? 6 : 4.5) * cadence * commit;
+  const bodyLateralWorld = (finisher ? 0 : semanticDirection * 1.8) * cadence * commit;
+  out.bodyX = (fx * bodyForwardWorld + nx * bodyLateralWorld) * worldToLocal;
+  out.bodyY =
+    (fy * bodyForwardWorld +
+      ny * bodyLateralWorld +
+      (finisher ? 3.2 : dagger ? 1.2 : 2.2) * commit) *
+    worldToLocal;
+  const crushX = dagger ? (finisher ? 0.08 : 0.045) : finisher ? 0.1 : 0.07;
+  const crushY = dagger ? (finisher ? 0.06 : 0.025) : finisher ? 0.06 : 0.04;
+  out.bodyScaleX = 1 - crushX * cadence * commit;
+  out.bodyScaleY = 1 - crushY * cadence * commit;
+  out.bodyRotation =
+    (finisher
+      ? Math.sin(activeProgress * Math.PI * 2) * 0.035
+      : semanticDirection * (dagger ? 0.12 : 0.18) * Math.cos(input.aimLocal)) *
+    cadence *
+    commit;
+
+  const footBlend = targetBlend;
+  const footDrive = Math.min(1, commit * 1.08);
+  const plantFront = finisher || input.hand !== "off";
+  const plantWorld =
+    TARGET_BODY_H * (input.effectiveCooldown <= 0.22 ? 0.12 : finisher ? 0.18 : 0.15);
+  const trailWorld = TARGET_BODY_H * (finisher ? 0.12 : 0.1);
+  const splitWorld = TARGET_BODY_H * (Math.abs(fy) > 0.78 ? 0.1 : 0.075);
+  const coilWorld = TARGET_BODY_H * (finisher ? 0.1 : 0.055) * (1 - reachMix);
+  const plantX =
+    (fx * plantWorld * footDrive + nx * (plantFront ? 1 : -1) * coilWorld) * worldToLocal;
+  const plantY =
+    (fy * plantWorld * footDrive + ny * (plantFront ? 1 : -1) * coilWorld) * worldToLocal;
+  const trailX =
+    (-fx * trailWorld * footDrive - nx * semanticDirection * splitWorld * footDrive) * worldToLocal;
+  const trailY =
+    (-fy * trailWorld * footDrive - ny * semanticDirection * splitWorld * footDrive) * worldToLocal;
+  if (plantFront) {
+    out.frontFootX = plantX;
+    out.frontFootY = plantY;
+    out.backFootX = trailX;
+    out.backFootY = trailY;
+  } else {
+    out.frontFootX = trailX;
+    out.frontFootY = trailY;
+    out.backFootX = plantX;
+    out.backFootY = plantY;
+  }
+  out.frontFootBlend = footBlend;
+  out.backFootBlend = footBlend;
+  if (t >= CLOSE_BLADE_RELEASE_T) {
+    out.frontGripBlend = 0;
+    out.backGripBlend = 0;
+    out.frontOwn = 0;
+    out.backOwn = 0;
+    out.feetOwn = 0;
+    out.frontFootX = 0;
+    out.frontFootY = 0;
+    out.frontFootBlend = 0;
+    out.backFootX = 0;
+    out.backFootY = 0;
+    out.backFootBlend = 0;
+    out.bodyX = 0;
+    out.bodyY = 0;
+    out.bodyRotation = 0;
+    out.bodyScaleX = 1;
+    out.bodyScaleY = 1;
+    out.artX = 0;
+    out.artY = 0;
+    out.shadowX = 0;
+    out.shadowY = 0;
+    out.shadowRotation = 0;
+    out.shadowScaleX = 1;
+    out.shadowScaleY = 1;
+  }
+}
+
 /** `readyAt + grace`: 120–300ms, scaled by 35% of the accepted/predicted effective cooldown. */
 function comboGraceMs(effectiveCooldown: number): number {
   return Math.min(0.3, Math.max(0.12, effectiveCooldown * 0.35)) * 1000;
@@ -234,6 +591,7 @@ interface RigFoot extends JigglePartState {
   img: Phaser.GameObjects.Image;
   ox: number;
   oy: number;
+  front: boolean;
 }
 
 /** Rebase on construction/cuts/swaps/LOD sleep. A cut is not acceleration and must add zero energy. */
@@ -612,6 +970,36 @@ export class SpriteRig {
   private attackBackGripY = 0;
   private attackGripBoth = false;
   private attackHandSpacing = TARGET_BODY_H * 0.42;
+  /** Hand-owned close-blade targets. Unlike signature grips, the hand supplies the weapon transform. */
+  private attackFrontGripX = 0;
+  private attackFrontGripY = 0;
+  private attackFrontGripBlend = 0;
+  private attackBackGripBlend = 0;
+  /** Absolute plant/kick targets suppress gait only while the close-blade pose owns the feet. */
+  private attackFrontFootX = 0;
+  private attackFrontFootY = 0;
+  private attackFrontFootBlend = 0;
+  private attackBackFootX = 0;
+  private attackBackFootY = 0;
+  private attackBackFootBlend = 0;
+  /** One retained output record keeps the pure pose sampler allocation-free in the hot path. */
+  private readonly closeBladeInput = createCloseBladePoseInput();
+  private readonly closeBladePose = createCloseBladePoseSample();
+  private closeBladePoseActive = false;
+  private closeBladeBodyX = 0;
+  private closeBladeBodyY = 0;
+  private closeBladeBodyRotation = 0;
+  private closeBladeBodyScaleX = 1;
+  private closeBladeBodyScaleY = 1;
+  /** Applied target deltas let lifecycle cuts undo the last sampled pose before another frame runs. */
+  private closeBladeFrontHandDx = 0;
+  private closeBladeFrontHandDy = 0;
+  private closeBladeBackHandDx = 0;
+  private closeBladeBackHandDy = 0;
+  private closeBladeFrontFootDx = 0;
+  private closeBladeFrontFootDy = 0;
+  private closeBladeBackFootDx = 0;
+  private closeBladeBackFootDy = 0;
   private signatureMotion?: MeleeComboMotion;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
@@ -696,6 +1084,7 @@ export class SpriteRig {
             img,
             ox: p.ox * this.scale,
             oy: p.oy * this.scale,
+            front: p.ox >= 0,
             jx: 0,
             jy: 0,
             jvx: 0,
@@ -979,10 +1368,8 @@ export class SpriteRig {
     this.resetComboChain(true);
   }
 
-  /** Undo only the late signature multipliers/offsets when animation will not get another frame (death,
-   * down, or weapon lifetime change). Ordinary authored hand positions may remain as the launch pose. */
+  /** Undo late paper transforms and close-blade target deltas when no subsequent frame can restore identity. */
   private releaseAttackVisuals(): void {
-    if (!this.signatureMotion) return;
     const attackDy = this.attackArtOffY - this.attackLiftPx;
     for (const part of this.parts) {
       part.x -= this.attackArtOffX;
@@ -995,7 +1382,38 @@ export class SpriteRig {
       weapon.img.scaleX /= Math.abs(this.weaponLengthScale) > 1e-5 ? this.weaponLengthScale : 1;
       weapon.img.scaleY /= Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
     }
-    this.body.scaleX = Math.abs(this.body.scaleX);
+    if (this.closeBladePoseActive) {
+      const frontHand = this.hands.find((hand) => hand.front);
+      const backHand = this.hands.find((hand) => !hand.front);
+      const frontFoot = this.feet.find((foot) => foot.front);
+      const backFoot = this.feet.find((foot) => !foot.front);
+      if (frontHand) {
+        frontHand.img.x -= this.closeBladeFrontHandDx;
+        frontHand.img.y -= this.closeBladeFrontHandDy;
+      }
+      if (backHand) {
+        backHand.img.x -= this.closeBladeBackHandDx;
+        backHand.img.y -= this.closeBladeBackHandDy;
+      }
+      if (frontFoot) {
+        frontFoot.img.x -= this.closeBladeFrontFootDx;
+        frontFoot.img.y -= this.closeBladeFrontFootDy;
+      }
+      if (backFoot) {
+        backFoot.img.x -= this.closeBladeBackFootDx;
+        backFoot.img.y -= this.closeBladeBackFootDy;
+      }
+      this.body.x -= this.closeBladeBodyX;
+      this.body.y -= this.closeBladeBodyY;
+      this.body.rotation -= this.closeBladeBodyRotation;
+      this.body.scaleX /=
+        Math.abs(this.closeBladeBodyScaleX) > 1e-5 ? this.closeBladeBodyScaleX : 1;
+      this.body.scaleY /=
+        Math.abs(this.closeBladeBodyScaleY) > 1e-5 ? this.closeBladeBodyScaleY : 1;
+      for (const weapon of this.weapons)
+        weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
+    }
+    if (this.signatureMotion) this.body.scaleX = Math.abs(this.body.scaleX);
     const shrink = Math.max(0.42, 1 - this.hopPx / 420);
     this.shadow
       .setPosition(0, TARGET_BODY_H * 0.42)
@@ -1009,6 +1427,40 @@ export class SpriteRig {
     this.attackScaleY = 1;
     this.weaponLengthScale = 1;
     this.attackGripBlend = 0;
+    this.attackGripX = 0;
+    this.attackGripY = 0;
+    this.attackBackGripX = 0;
+    this.attackBackGripY = 0;
+    this.attackFrontGripX = 0;
+    this.attackFrontGripY = 0;
+    this.attackFrontGripBlend = 0;
+    this.attackBackGripBlend = 0;
+    this.attackFrontFootX = 0;
+    this.attackFrontFootY = 0;
+    this.attackBackFootX = 0;
+    this.attackBackFootY = 0;
+    this.attackFrontFootBlend = 0;
+    this.attackBackFootBlend = 0;
+    this.attackShadowX = 0;
+    this.attackShadowY = 0;
+    this.attackShadowRotation = 0;
+    this.attackShadowScaleX = 1;
+    this.attackShadowScaleY = 1;
+    this.attackShadowAlpha = 1;
+    this.closeBladePoseActive = false;
+    this.closeBladeBodyX = 0;
+    this.closeBladeBodyY = 0;
+    this.closeBladeBodyRotation = 0;
+    this.closeBladeBodyScaleX = 1;
+    this.closeBladeBodyScaleY = 1;
+    this.closeBladeFrontHandDx = 0;
+    this.closeBladeFrontHandDy = 0;
+    this.closeBladeBackHandDx = 0;
+    this.closeBladeBackHandDy = 0;
+    this.closeBladeFrontFootDx = 0;
+    this.closeBladeFrontFootDy = 0;
+    this.closeBladeBackFootDx = 0;
+    this.closeBladeBackFootDy = 0;
   }
 
   /** Timeout may preserve the old hold long enough to ease it out; swaps clear it immediately. */
@@ -2514,6 +2966,30 @@ export class SpriteRig {
     this.attackBackGripY = 0;
     this.attackGripBoth = false;
     this.attackHandSpacing = TARGET_BODY_H * 0.42;
+    this.attackFrontGripX = 0;
+    this.attackFrontGripY = 0;
+    this.attackFrontGripBlend = 0;
+    this.attackBackGripBlend = 0;
+    this.attackFrontFootX = 0;
+    this.attackFrontFootY = 0;
+    this.attackFrontFootBlend = 0;
+    this.attackBackFootX = 0;
+    this.attackBackFootY = 0;
+    this.attackBackFootBlend = 0;
+    this.closeBladePoseActive = false;
+    this.closeBladeBodyX = 0;
+    this.closeBladeBodyY = 0;
+    this.closeBladeBodyRotation = 0;
+    this.closeBladeBodyScaleX = 1;
+    this.closeBladeBodyScaleY = 1;
+    this.closeBladeFrontHandDx = 0;
+    this.closeBladeFrontHandDy = 0;
+    this.closeBladeBackHandDx = 0;
+    this.closeBladeBackHandDy = 0;
+    this.closeBladeFrontFootDx = 0;
+    this.closeBladeFrontFootDy = 0;
+    this.closeBladeBackFootDx = 0;
+    this.closeBladeBackFootDy = 0;
     this.signatureMotion = undefined;
     if (this.meleeTellMode === "resolve" && sceneNow - this.meleeTellReleaseAtMs > 180) {
       this.clearMeleeTellState();
@@ -2636,6 +3112,7 @@ export class SpriteRig {
       let poseBlend = 1;
       let comboPose: Readonly<MeleeComboStep> | undefined;
       let poseDirection: -1 | 0 | 1 = 1;
+      let poseVariant: MeleeComboVariant = "default";
       const hold = this.comboHoldPose;
       const family: RigComboFamily =
         this.swingFamily !== "none" ? this.swingFamily : (hold?.family ?? "none");
@@ -2643,6 +3120,7 @@ export class SpriteRig {
         const live = this.comboFamily === family;
         const snapshotStep = live ? this.swingStep : hold.step;
         const snapshotVariant = live ? this.swingVariant : hold.variant;
+        poseVariant = snapshotVariant;
         poseDirection = live ? this.swingDirection : hold.direction;
         comboPose = meleeComboSequenceFor(family, snapshotVariant)[snapshotStep];
         if (dur > 0 && el < dur) tt = el / dur;
@@ -2792,98 +3270,167 @@ export class SpriteRig {
           // authored stagger for a scissor. Dual claws move the actual rear glove; a single claw mirrors its
           // visible arm. Both paths remain cosmetic and share the server's ONE legacy hit application.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.rake[0];
-          const spin = Math.max(def.swingArc * 1.1, 2.6);
-          const px = -Math.sin(aimLocal);
-          const py = Math.cos(aimLocal);
-          const rakePath = (
-            direction: -1 | 1,
-            activeStart: number,
-            activeEnd: number,
-            followEnd: number,
-          ): { angle: number; x: number; y: number; drive: number } => {
-            const start = aimLocal - direction * spin * 0.6;
-            const end = aimLocal + direction * spin * 0.4;
-            const prior = direction > 0 ? aimLocal + spin * 0.55 : aimLocal + spin * 0.4;
-            let prog = 0;
-            let angle: number;
-            if (tt < activeStart) {
-              const p = tt / activeStart;
-              angle = prior + (start - prior) * (p * (2 - p));
-            } else if (tt < activeEnd) {
-              prog = 1 - (1 - (tt - activeStart) / (activeEnd - activeStart)) ** 3;
-              angle = start + (end - start) * prog;
-            } else if (tt < followEnd) {
-              prog = 1;
-              const p = (tt - activeEnd) / (followEnd - activeEnd);
-              angle = end + direction * 0.1 * Math.sin(Math.PI * p);
-            } else {
-              prog = 1;
-              angle = end; // crossed guard held through accepted readyAt+grace
-            }
-            const wind = tt < activeStart ? tt / activeStart : 1;
-            const lat = TARGET_BODY_H * 0.26 * direction * (1 - 2 * prog) * wind;
-            const out = TARGET_BODY_H * (0.12 + 0.2 * Math.sin(Math.PI * prog)) * wind;
-            const drive = Math.sin(
-              Math.PI * Math.min(1, Math.max(0, (tt - activeStart) / (activeEnd - activeStart))),
+          if (pose && (poseVariant === "dagger" || poseVariant === "claw")) {
+            const poseSeconds = Math.max(1e-6, this.swing?.poseSeconds ?? 1);
+            const serverActiveStart = clamp01(
+              (this.swing?.activeStartSeconds ?? poseSeconds * pose.timing.activeStart) /
+                poseSeconds,
             );
-            return {
-              angle,
-              x: px * lat + Math.cos(aimLocal) * out,
-              y: py * lat + Math.sin(aimLocal) * out,
-              drive,
+            const serverActiveEnd = clamp01(
+              (this.swing?.activeEndSeconds ?? poseSeconds * pose.timing.activeEnd) / poseSeconds,
+            );
+            const mountOrigin = isWornWeapon(def) ? 0.4 : def.gripFrac;
+            const tipRadius = Math.min(meleeReach(def), PLAYER_RADIUS + TARGET_BODY_H);
+            const poseInput = this.closeBladeInput;
+            poseInput.t = tt;
+            poseInput.serverActiveStart = serverActiveStart;
+            poseInput.serverActiveEnd = serverActiveEnd;
+            poseInput.aimLocal = aimLocal;
+            poseInput.effectiveCooldown = this.swing?.effectiveCooldown ?? def.cooldown;
+            poseInput.targetTipRadius = tipRadius;
+            poseInput.businessLength = (1 - mountOrigin) * def.displayLength;
+            poseInput.rigScale = this.baseScale;
+            poseInput.direction = poseDirection;
+            poseInput.hand = pose.hand;
+            poseInput.hasRearWeapon = this.weapons.length > 1;
+            poseInput.variant = poseVariant;
+            sampleCloseBladePose(poseInput, this.closeBladePose);
+            const sampled = this.closeBladePose;
+            const interruptBlend = 1 - brace;
+            weaponAngle = sampled.frontAngle;
+            if (this.weapons.length > 1)
+              backWeaponAngle = sampled.backAngle - DUAL_BACK_WEAPON_LEAN;
+            this.attackFrontGripX = sampled.frontGripX;
+            this.attackFrontGripY = sampled.frontGripY;
+            this.attackFrontGripBlend = sampled.frontGripBlend * interruptBlend;
+            this.attackBackGripX = sampled.backGripX;
+            this.attackBackGripY = sampled.backGripY;
+            this.attackBackGripBlend = sampled.backGripBlend * interruptBlend;
+            this.attackFrontFootX = sampled.frontFootX;
+            this.attackFrontFootY = sampled.frontFootY;
+            this.attackFrontFootBlend = sampled.frontFootBlend * interruptBlend;
+            this.attackBackFootX = sampled.backFootX;
+            this.attackBackFootY = sampled.backFootY;
+            this.attackBackFootBlend = sampled.backFootBlend * interruptBlend;
+            ownFront = sampled.frontOwn * interruptBlend;
+            ownBack = sampled.backOwn * interruptBlend;
+            ownFeet = sampled.feetOwn * interruptBlend;
+            this.attackArtOffX = sampled.artX * interruptBlend;
+            this.attackArtOffY = sampled.artY * interruptBlend;
+            this.attackShadowX = sampled.shadowX * interruptBlend;
+            this.attackShadowY = sampled.shadowY * interruptBlend;
+            this.attackShadowRotation = sampled.shadowRotation * interruptBlend;
+            this.attackShadowScaleX = 1 + (sampled.shadowScaleX - 1) * interruptBlend;
+            this.attackShadowScaleY = 1 + (sampled.shadowScaleY - 1) * interruptBlend;
+            this.closeBladeBodyX = sampled.bodyX * interruptBlend;
+            this.closeBladeBodyY = sampled.bodyY * interruptBlend;
+            this.closeBladeBodyRotation = sampled.bodyRotation * interruptBlend;
+            this.closeBladeBodyScaleX = 1 + (sampled.bodyScaleX - 1) * interruptBlend;
+            this.closeBladeBodyScaleY = 1 + (sampled.bodyScaleY - 1) * interruptBlend;
+            this.body.x += this.closeBladeBodyX;
+            this.body.y += this.closeBladeBodyY;
+            this.body.rotation += this.closeBladeBodyRotation;
+            this.body.scaleX *= this.closeBladeBodyScaleX;
+            this.body.scaleY *= this.closeBladeBodyScaleY;
+            this.closeBladePoseActive =
+              interruptBlend > 0 &&
+              (tt < CLOSE_BLADE_RELEASE_T ||
+                this.attackFrontGripBlend > 0 ||
+                this.attackBackGripBlend > 0);
+          } else {
+            const spin = Math.max(def.swingArc * 1.1, 2.6);
+            const px = -Math.sin(aimLocal);
+            const py = Math.cos(aimLocal);
+            const rakePath = (
+              direction: -1 | 1,
+              activeStart: number,
+              activeEnd: number,
+              followEnd: number,
+            ): { angle: number; x: number; y: number; drive: number } => {
+              const start = aimLocal - direction * spin * 0.6;
+              const end = aimLocal + direction * spin * 0.4;
+              const prior = direction > 0 ? aimLocal + spin * 0.55 : aimLocal + spin * 0.4;
+              let prog = 0;
+              let angle: number;
+              if (tt < activeStart) {
+                const p = tt / activeStart;
+                angle = prior + (start - prior) * (p * (2 - p));
+              } else if (tt < activeEnd) {
+                prog = 1 - (1 - (tt - activeStart) / (activeEnd - activeStart)) ** 3;
+                angle = start + (end - start) * prog;
+              } else if (tt < followEnd) {
+                prog = 1;
+                const p = (tt - activeEnd) / (followEnd - activeEnd);
+                angle = end + direction * 0.1 * Math.sin(Math.PI * p);
+              } else {
+                prog = 1;
+                angle = end; // crossed guard held through accepted readyAt+grace
+              }
+              const wind = tt < activeStart ? tt / activeStart : 1;
+              const lat = TARGET_BODY_H * 0.26 * direction * (1 - 2 * prog) * wind;
+              const out = TARGET_BODY_H * (0.12 + 0.2 * Math.sin(Math.PI * prog)) * wind;
+              const drive = Math.sin(
+                Math.PI * Math.min(1, Math.max(0, (tt - activeStart) / (activeEnd - activeStart))),
+              );
+              return {
+                angle,
+                x: px * lat + Math.cos(aimLocal) * out,
+                y: py * lat + Math.sin(aimLocal) * out,
+                drive,
+              };
             };
-          };
 
-          if (pose?.motion === "scissor") {
-            const first = rakePath(
-              1,
-              pose.timing.activeStart,
-              pose.timing.activeEnd,
-              pose.timing.followEnd,
-            );
-            const second = rakePath(
-              -1,
-              pose.timing.secondaryActiveStart ?? 0.24,
-              pose.timing.secondaryActiveEnd ?? 0.58,
-              pose.timing.followEnd,
-            );
-            weaponAngle = first.angle;
-            backWeaponAngle = second.angle;
-            this.swingOffX = first.x;
-            this.swingOffY = first.y;
-            this.swingBackOffX = second.x;
-            this.swingBackOffY = second.y;
-            const cross = Math.max(0, 1 - Math.abs(tt - (pose.timing.impact ?? 0.43)) / 0.25);
-            this.body.scaleX *= 1 - 0.2 * cross;
-            this.body.scaleY *= 1 - 0.07 * cross;
-            this.body.rotation += 0.045 * Math.sin((tt - 0.43) * Math.PI * 4) * cross;
-            this.body.y += 4.5 * s * cross;
-          } else if (pose) {
-            const direction = poseDirection < 0 ? -1 : 1;
-            const rake = rakePath(
-              direction,
-              pose.timing.activeStart,
-              pose.timing.activeEnd,
-              pose.timing.followEnd,
-            );
-            const offUsesBack = pose.hand === "off" && this.weapons.length > 1;
-            if (offUsesBack) {
-              // Lead glove settles from its prior crossed hold while the rear glove owns the reverse path.
-              const settle = Math.min(1, tt / pose.timing.activeStart);
-              weaponAngle = aimLocal + spin * 0.4 + (restA - aimLocal - spin * 0.4) * settle;
-              backWeaponAngle = rake.angle;
-              this.swingBackOffX = rake.x;
-              this.swingBackOffY = rake.y;
-            } else {
-              weaponAngle = rake.angle;
-              if (this.weapons.length > 1) backWeaponAngle = restA;
-              this.swingOffX = rake.x;
-              this.swingOffY = rake.y;
+            if (pose?.motion === "scissor") {
+              const first = rakePath(
+                1,
+                pose.timing.activeStart,
+                pose.timing.activeEnd,
+                pose.timing.followEnd,
+              );
+              const second = rakePath(
+                -1,
+                pose.timing.secondaryActiveStart ?? 0.24,
+                pose.timing.secondaryActiveEnd ?? 0.58,
+                pose.timing.followEnd,
+              );
+              weaponAngle = first.angle;
+              backWeaponAngle = second.angle;
+              this.swingOffX = first.x;
+              this.swingOffY = first.y;
+              this.swingBackOffX = second.x;
+              this.swingBackOffY = second.y;
+              const cross = Math.max(0, 1 - Math.abs(tt - (pose.timing.impact ?? 0.43)) / 0.25);
+              this.body.scaleX *= 1 - 0.2 * cross;
+              this.body.scaleY *= 1 - 0.07 * cross;
+              this.body.rotation += 0.045 * Math.sin((tt - 0.43) * Math.PI * 4) * cross;
+              this.body.y += 4.5 * s * cross;
+            } else if (pose) {
+              const direction = poseDirection < 0 ? -1 : 1;
+              const rake = rakePath(
+                direction,
+                pose.timing.activeStart,
+                pose.timing.activeEnd,
+                pose.timing.followEnd,
+              );
+              const offUsesBack = pose.hand === "off" && this.weapons.length > 1;
+              if (offUsesBack) {
+                // Lead glove settles from its prior crossed hold while the rear glove owns the reverse path.
+                const settle = Math.min(1, tt / pose.timing.activeStart);
+                weaponAngle = aimLocal + spin * 0.4 + (restA - aimLocal - spin * 0.4) * settle;
+                backWeaponAngle = rake.angle;
+                this.swingBackOffX = rake.x;
+                this.swingBackOffY = rake.y;
+              } else {
+                weaponAngle = rake.angle;
+                if (this.weapons.length > 1) backWeaponAngle = restA;
+                this.swingOffX = rake.x;
+                this.swingOffY = rake.y;
+              }
+              // Reverse rakes mirror the paper-twist/lean instead of replaying the lead-hand body envelope.
+              this.body.scaleX *= 1 - 0.14 * rake.drive;
+              this.body.rotation += direction * 0.11 * rake.drive * Math.cos(aimLocal);
+              this.body.y += 2 * s * rake.drive;
             }
-            // Reverse rakes mirror the paper-twist/lean instead of replaying the lead-hand body envelope.
-            this.body.scaleX *= 1 - 0.14 * rake.drive;
-            this.body.rotation += direction * 0.11 * rake.drive * Math.cos(aimLocal);
-            this.body.y += 2 * s * rake.drive;
           }
         } else if (poseStyle === "punch") {
           // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
@@ -3122,6 +3669,10 @@ export class SpriteRig {
           this.attackShadowScaleY = 1 + (this.attackShadowScaleY - 1) * poseBlend;
           this.attackShadowAlpha = 1 + (this.attackShadowAlpha - 1) * poseBlend;
           this.attackGripBlend *= poseBlend;
+          this.attackFrontGripBlend *= poseBlend;
+          this.attackBackGripBlend *= poseBlend;
+          this.attackFrontFootBlend *= poseBlend;
+          this.attackBackFootBlend *= poseBlend;
           this.attackHandSpacing =
             TARGET_BODY_H * 0.42 + (this.attackHandSpacing - TARGET_BODY_H * 0.42) * poseBlend;
           if (poseBlend < 0.5) this.attackWeaponDepth = 0;
@@ -3192,6 +3743,24 @@ export class SpriteRig {
         const by = hnd.oy - TARGET_BODY_H * 0.08;
         hx += (bx - hx) * brace;
         hy += (by - hy) * brace;
+      }
+      const gripBlend = hnd.front
+        ? clamp01(this.attackFrontGripBlend)
+        : clamp01(this.attackBackGripBlend);
+      if (gripBlend > 0) {
+        const beforeX = hx;
+        const beforeY = hy;
+        const targetX = hnd.front ? this.attackFrontGripX : this.attackBackGripX;
+        const targetY = hnd.front ? this.attackFrontGripY : this.attackBackGripY;
+        hx += (targetX - hx) * gripBlend;
+        hy += (targetY - hy) * gripBlend;
+        if (hnd.front) {
+          this.closeBladeFrontHandDx = hx - beforeX;
+          this.closeBladeFrontHandDy = hy - beforeY;
+        } else {
+          this.closeBladeBackHandDx = hx - beforeX;
+          this.closeBladeBackHandDy = hy - beforeY;
+        }
       }
       if (PROCEDURAL_JIGGLE) {
         const own = hnd.front ? ownFront : ownBack;
@@ -3281,6 +3850,24 @@ export class SpriteRig {
         fy += idle;
         fy += trailY;
         fx += trailX;
+      }
+      const footBlend = ft.front
+        ? clamp01(this.attackFrontFootBlend)
+        : clamp01(this.attackBackFootBlend);
+      if (footBlend > 0) {
+        const beforeX = fx;
+        const beforeY = fy;
+        const targetX = ft.ox + (ft.front ? this.attackFrontFootX : this.attackBackFootX);
+        const targetY = ft.oy + (ft.front ? this.attackFrontFootY : this.attackBackFootY);
+        fx += (targetX - fx) * footBlend;
+        fy += (targetY - fy) * footBlend;
+        if (ft.front) {
+          this.closeBladeFrontFootDx = fx - beforeX;
+          this.closeBladeFrontFootDy = fy - beforeY;
+        } else {
+          this.closeBladeBackFootDx = fx - beforeX;
+          this.closeBladeBackFootDy = fy - beforeY;
+        }
       }
       if (PROCEDURAL_JIGGLE) {
         const inertia = planted ? JIGGLE_FOOT_PLANT_INERTIA : JIGGLE_FOOT_AIR_INERTIA;

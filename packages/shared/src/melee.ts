@@ -36,6 +36,8 @@ export type SwingStyle = NonNullable<WeaponDef["swingStyle"]>;
 export type MeleeComboFamily = "arc" | "chop" | "rake" | "punch" | "thrust";
 export type MeleeComboVariant =
   | "default"
+  | "dagger"
+  | "claw"
   | "quake-mauler"
   | "stinger"
   | "hero-spin"
@@ -465,7 +467,8 @@ export const TRUE_CHARGED_SLAM_COMBO_STEP = Object.freeze({
   },
 } as const satisfies MeleeComboStep);
 
-type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default">;
+type CloseBladeComboVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
+type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default" | CloseBladeComboVariant>;
 
 /** Complete three-step weapon variants. Unchanged beats reuse their frozen family roots. */
 export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
@@ -508,19 +511,11 @@ export function meleeComboFamilyForStyle(
   style: SwingStyle | undefined,
 ): MeleeComboFamily | undefined {
   if (style === "pivot") return "rake";
-  if (
-    style === "arc" ||
-    style === "chop" ||
-    style === "punch" ||
-    style === "thrust"
-  )
-    return style;
+  if (style === "arc" || style === "chop" || style === "punch" || style === "thrust") return style;
   return undefined;
 }
 
-function familyForSignatureVariant(
-  variant: SignatureMeleeComboVariant,
-): MeleeComboFamily {
+function familyForSignatureVariant(variant: SignatureMeleeComboVariant): MeleeComboFamily {
   if (variant === "stinger") return "thrust";
   if (variant === "hero-spin") return "arc";
   return "chop";
@@ -530,9 +525,25 @@ export function meleeComboSequenceFor(
   family: MeleeComboFamily,
   variant: MeleeComboVariant = "default",
 ): readonly Readonly<MeleeComboStep>[] {
+  if (variant === "dagger" || variant === "claw")
+    return family === "rake" ? MELEE_COMBO_SEQUENCES.rake : MELEE_COMBO_SEQUENCES[family];
   if (variant !== "default" && familyForSignatureVariant(variant) === family)
     return MELEE_COMBO_VARIANT_SEQUENCES[variant];
   return MELEE_COMBO_SEQUENCES[family];
+}
+
+/** Mount type and close-blade motion are deliberately independent. This structural fallback covers the
+ * held `fist-blade` dagger lane and held rake implements without teaching SpriteRig weapon ids or changing
+ * worn origin/z-order. Pivot remains the existing claw/talon lane. Explicit combo metadata still wins. */
+function closeBladeComboVariantFor(
+  def: WeaponDef,
+  style: SwingStyle,
+): CloseBladeComboVariant | undefined {
+  if (def.comboVariant === "dagger" || def.comboVariant === "claw") return def.comboVariant;
+  const family = def.tags.family.toLowerCase();
+  if (def.dual && family === "fist-blade") return "dagger";
+  if (style === "pivot" || /\brakes?\b/i.test(def.name)) return "claw";
+  return undefined;
 }
 
 /** Resolve one weapon's combo vocabulary. Explicit metadata wins; structural defaults cover only the
@@ -541,6 +552,14 @@ export function meleeComboSelectionFor(
   def: WeaponDef,
   style: SwingStyle = swingStyleFor(def),
 ): MeleeComboSelection | undefined {
+  const closeBladeVariant = closeBladeComboVariantFor(def, style);
+  if (def.comboVariant === "dagger" || def.comboVariant === "claw") {
+    return {
+      family: "rake",
+      variant: def.comboVariant,
+      sequence: MELEE_COMBO_SEQUENCES.rake,
+    };
+  }
   if (def.comboVariant && def.comboVariant !== "default") {
     const family = familyForSignatureVariant(def.comboVariant);
     return {
@@ -550,21 +569,32 @@ export function meleeComboSelectionFor(
     };
   }
   if (def.comboFamily) {
+    const variant = def.comboFamily === "rake" ? (closeBladeVariant ?? "default") : "default";
     return {
       family: def.comboFamily,
+      variant,
+      sequence: meleeComboSequenceFor(def.comboFamily, variant),
+    };
+  }
+  if (closeBladeVariant) {
+    return {
+      family: "rake",
+      variant: closeBladeVariant,
+      sequence: MELEE_COMBO_SEQUENCES.rake,
+    };
+  }
+  if (style === "punch") {
+    return {
+      family: "punch",
       variant: "default",
-      sequence: MELEE_COMBO_SEQUENCES[def.comboFamily],
+      sequence: MELEE_COMBO_SEQUENCES.punch,
     };
   }
 
   const familyTag = def.tags.family.toLowerCase();
   const shapeWords = `${familyTag} ${def.name.toLowerCase()}`;
   let variant: SignatureMeleeComboVariant | undefined;
-  if (
-    def.twoHanded &&
-    def.quake &&
-    (def.tags.size === "L" || def.tags.size === "XL")
-  ) {
+  if (def.twoHanded && def.quake && (def.tags.size === "L" || def.tags.size === "XL")) {
     variant = "quake-mauler";
   } else if (style === "thrust") {
     variant = "stinger";
@@ -578,17 +608,11 @@ export function meleeComboSelectionFor(
   } else if (
     def.twoHanded &&
     style !== "spin" &&
-    (/(?:greatsword|greatblade|claymore|zweihander|nodachi)/i.test(
-      shapeWords,
-    ) ||
+    (/(?:greatsword|greatblade|claymore|zweihander|nodachi)/i.test(shapeWords) ||
       (familyTag === "sword" && def.tags.size === "XL"))
   ) {
     variant = "greatsword";
-  } else if (
-    def.twoHanded &&
-    style !== "spin" &&
-    /(?:warhammer|hammer|maul)/i.test(shapeWords)
-  ) {
+  } else if (def.twoHanded && style !== "spin" && /(?:warhammer|hammer|maul)/i.test(shapeWords)) {
     variant = "pommel";
   }
 
@@ -638,11 +662,9 @@ export function isWornWeapon(def: WeaponDef): boolean {
  *  the pre-§44 client vocabulary, so this clock change cannot silently change a pose shape. */
 export function swingStyleFor(def: WeaponDef): SwingStyle {
   if (def.swingStyle) return def.swingStyle;
-  if (isWornWeapon(def))
-    return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
+  if (isWornWeapon(def)) return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
   if (def.quake) return "chop";
-  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? ""))
-    return "thrust";
+  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? "")) return "thrust";
   if (def.twoHanded) return "orbit";
   return "arc";
 }
@@ -656,13 +678,9 @@ function inverseSmoothstep(value: number): number {
 /** Build the one swing clock from EFFECTIVE cooldown (base × loot affix). Active fractions mirror today's
  *  normalized pose branches; the server still sweeps the legacy arc linearly inside that interval — exact
  *  per-style path/easing sync is the later accepted-epoch/path protocol, not a hidden geometry rewrite here. */
-export function swingDescriptorFor(
-  def: WeaponDef,
-  effectiveCooldown: number,
-): SwingDescriptor {
+export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): SwingDescriptor {
   const style = swingStyleFor(def);
-  const poseSeconds =
-    Math.max(0, effectiveCooldown) * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
+  const poseSeconds = Math.max(0, effectiveCooldown) * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
   let activeStartFrac: number;
   let activeEndFrac: number;
   switch (style) {
@@ -673,10 +691,7 @@ export function swingDescriptorFor(
       [activeStartFrac, activeEndFrac] = [0.1, 0.62];
       break;
     case "punch":
-      [activeStartFrac, activeEndFrac] = [
-        def.twoHanded ? 0.24 : 0.16,
-        CHOP_IMPACT_FRAC,
-      ];
+      [activeStartFrac, activeEndFrac] = [def.twoHanded ? 0.24 : 0.16, CHOP_IMPACT_FRAC];
       break;
     case "thrust":
       [activeStartFrac, activeEndFrac] = [0.14, 0.38];
@@ -684,9 +699,7 @@ export function swingDescriptorFor(
     case "orbit": {
       const travel = Math.max(0, def.swingArc) + 2.4;
       activeStartFrac = inverseSmoothstep(1.5 / travel);
-      activeEndFrac = inverseSmoothstep(
-        (1.5 + Math.max(0, def.swingArc)) / travel,
-      );
+      activeEndFrac = inverseSmoothstep((1.5 + Math.max(0, def.swingArc)) / travel);
       break;
     }
     case "spin":
@@ -719,8 +732,7 @@ export function swingDescriptorWithComboStep(
   const selection = meleeComboSelectionFor(def, swing.style);
   if (!selection || selection.sequence.length === 0) return swing;
   const index =
-    ((Math.trunc(stepIndex) % selection.sequence.length) +
-      selection.sequence.length) %
+    ((Math.trunc(stepIndex) % selection.sequence.length) + selection.sequence.length) %
     selection.sequence.length;
   const step = selection.sequence[index];
   if (!step) return swing;
@@ -737,36 +749,18 @@ export function swingDescriptorWithComboStep(
   });
 }
 
-export function swingEdgeProgress(
-  swing: SwingDescriptor,
-  elapsedSeconds: number,
-): number {
+export function swingEdgeProgress(swing: SwingDescriptor, elapsedSeconds: number): number {
   const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
-  if (activeSeconds <= 0)
-    return elapsedSeconds >= swing.activeEndSeconds ? 1 : 0;
-  return clamp(
-    (elapsedSeconds - swing.activeStartSeconds) / activeSeconds,
-    0,
-    1,
-  );
+  if (activeSeconds <= 0) return elapsedSeconds >= swing.activeEndSeconds ? 1 : 0;
+  return clamp((elapsedSeconds - swing.activeStartSeconds) / activeSeconds, 0, 1);
 }
 
-export function swingEdgeActive(
-  swing: SwingDescriptor,
-  elapsedSeconds: number,
-): boolean {
-  return (
-    elapsedSeconds >= swing.activeStartSeconds &&
-    elapsedSeconds < swing.activeEndSeconds
-  );
+export function swingEdgeActive(swing: SwingDescriptor, elapsedSeconds: number): boolean {
+  return elapsedSeconds >= swing.activeStartSeconds && elapsedSeconds < swing.activeEndSeconds;
 }
 
 /** The blade's aim angle at sweep progress `p` ∈ [0,1]: from `aim − swingArc/2` to `aim + swingArc/2`. */
-export function bladeAngleAt(
-  aimAngle: number,
-  swingArc: number,
-  p: number,
-): number {
+export function bladeAngleAt(aimAngle: number, swingArc: number, p: number): number {
   return aimAngle - swingArc / 2 + swingArc * clamp(p, 0, 1);
 }
 
@@ -782,8 +776,7 @@ export function pointSegmentDist2(
   const dx = bx - ax;
   const dy = by - ay;
   const len2 = dx * dx + dy * dy;
-  const t =
-    len2 > 0 ? clamp(((px - ax) * dx + (py - ay) * dy) / len2, 0, 1) : 0;
+  const t = len2 > 0 ? clamp(((px - ax) * dx + (py - ay) * dy) / len2, 0, 1) : 0;
   const cx = ax + t * dx;
   const cy = ay + t * dy;
   const ex = px - cx;
@@ -803,14 +796,7 @@ export function bladeHitsCircle(
 ): boolean {
   const bx = wielder.x + Math.cos(angle) * range;
   const by = wielder.y + Math.sin(angle) * range;
-  const d2 = pointSegmentDist2(
-    target.x,
-    target.y,
-    wielder.x,
-    wielder.y,
-    bx,
-    by,
-  );
+  const d2 = pointSegmentDist2(target.x, target.y, wielder.x, wielder.y, bx, by);
   const rr = targetR + halfWidth;
   return d2 <= rr * rr;
 }
