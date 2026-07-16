@@ -1159,12 +1159,13 @@ export class ArenaScene extends Phaser.Scene {
         this.destroyPickup(existing0);
         this.pickups.delete(id); // fall through — recreated below with the loaded art
       }
-      const manifest = SPRITES[pk.weapon as keyof typeof SPRITES];
-      const def = WEAPONS[pk.weapon];
+      const isMystery = !pk.known;
+      const weapon = pk.weaponPublic;
+      const manifest = SPRITES[weapon as keyof typeof SPRITES];
+      const def = WEAPONS[weapon];
       // §10/§13 v0.104 LOOT identity: a MYSTERY drop (known=false) telegraphs TYPE + RARITY but hides
       // which weapon until grabbed; a known pickup with rolled rarity shows its tier color + affix.
       // Cursed = the ghostly-purple gamble cue (§10), pulsing so it reads as "knowingly haunted".
-      const isMystery = !pk.known;
       const rarity = RARITIES[pk.rarity] ?? {
         name: "Common",
         color: 0x9aa5b1,
@@ -1175,16 +1176,16 @@ export class ArenaScene extends Phaser.Scene {
       };
       // A KNOWN pickup renders its real art — but an expansion weapon's parts lazy-load at runtime, so
       // fall back to the tier-tinted bundle (with the true name label) until/unless the art exists.
-      const part = isMystery || !this.ensureWeaponArt(pk.weapon) ? undefined : manifest?.parts[0];
+      const part = isMystery || !this.ensureWeaponArt(weapon) ? undefined : manifest?.parts[0];
       const accent =
-        isMystery || pk.rarity > 0 ? rarity.color : (WEAPON_ACCENT[pk.weapon] ?? 0xffd479);
+        isMystery || pk.rarity > 0 ? rarity.color : (WEAPON_ACCENT[weapon] ?? 0xffd479);
       const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
       const baseScale = part ? 72 / part.w : 1;
 
       const beam = this.add.rectangle(0, -10, 34, 104, accent, 0.08).setBlendMode(ADD); // pedestal light
       const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
       const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
-      const tx = part ? partTexture(this, pk.weapon, part.role) : null;
+      const tx = part ? partTexture(this, weapon, part.role) : null;
       // Mystery = a rarity-tinted sealed ORB (+ "?"), NOT the weapon art. A circle spins cleanly under
       // the faux-3D scaleX tween (a rotated rect collapsed into a diagonal sliver — verify finding).
       const img =
@@ -1208,12 +1209,12 @@ export class ArenaScene extends Phaser.Scene {
           : null;
       // Label: mystery → tier + weapon CLASS glyph (type is telegraphed, identity isn't); known → name
       // (+ its rolled affix). §13 "type + rarity via visual cues but not exactly which weapon."
-      const classGlyph =
-        def?.tags.classPool === "ranged" ? "➶" : def?.tags.classPool === "caster" ? "✦" : "⚔";
-      const affixName = pk.affix ? affixById(pk.affix).name : "";
+      const weaponClass = isMystery ? pk.weaponClass : def?.tags.classPool;
+      const classGlyph = weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
+      const affixName = pk.affixPublic ? affixById(pk.affixPublic).name : "";
       const labelText = isMystery
         ? `${rarity.name} ${classGlyph}`
-        : `${def?.name ?? pk.weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
+        : `${def?.name ?? weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
       const label = this.add
         .text(0, 42, labelText, {
           fontSize: "11px",
@@ -1228,8 +1229,8 @@ export class ArenaScene extends Phaser.Scene {
       const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
       // §41 built with the fallback while the art is still lazy-loading → tag it so the sync pass rebuilds
       // this pickup with its real art the moment the texture lands (see the retro-upgrade above).
-      if (!isMystery && manifest && !part && !this.failedArt.has(pk.weapon)) {
-        container.setData("pendingArt", pk.weapon);
+      if (!isMystery && manifest && !part && !this.failedArt.has(weapon)) {
+        container.setData("pendingArt", weapon);
       }
       // §10 cursed gamble cue: the whole pickup breathes a ghostly fade — haunted, and it knows you know.
       if (pk.rarity === RARITY_CURSED) {
@@ -2576,7 +2577,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (open && self && this.levelWinTimerBar) {
       this.levelWinTimerBar.width =
-        380 * Math.max(0, Math.min(1, self.flexTimer / LEVELUP_WINDOW_SECONDS));
+        380 * Math.max(0, Math.min(1, self.flexTimerDs / 10 / LEVELUP_WINDOW_SECONDS));
     }
   }
 
@@ -4490,7 +4491,7 @@ export class ArenaScene extends Phaser.Scene {
     // fight, then what stepping into the portal actually DOES (bank + end). H9: the two core verbs (RMB fire,
     // LMB parry) ride on the always-on line so there's a path to learning the controls.
     const st = this.room?.state;
-    const elapsed = st?.elapsed ?? 0;
+    const elapsed = st?.elapsedSeconds ?? 0;
     const depth = st?.depth ?? 1;
     const bossActive = (st?.bossPhase ?? 0) >= 1;
     let objective: string;
@@ -5161,7 +5162,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.debugEl) return;
     const players = this.room ? this.room.state.players.size : 0;
     const enemies = this.room ? this.room.state.enemies.size : 0;
-    const elapsed = this.room ? Math.floor(this.room.state.elapsed) : 0;
+    const elapsed = this.room?.state.elapsedSeconds ?? 0;
     const fps = Math.round(this.game.loop.actualFps);
     // §4 v0.107 netcode health: un-acked command depth (≈ RTT in ticks) + current reconcile error (px).
     const net = this.predictor

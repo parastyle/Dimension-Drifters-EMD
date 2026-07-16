@@ -2275,3 +2275,63 @@ describe("GameRoom — §44 one effective-cooldown swing clock", () => {
     expect(swift.poseSeconds).toBeLessThan(plain.poseSeconds);
   });
 });
+
+// Audit findings #15/#14 — appended only: hidden loot identity and transition-only Brand sync.
+describe("GameRoom — audit sync privacy and churn regressions", () => {
+  it("keeps a mystery pickup's weapon and affix off synced state until it is grabbed", () => {
+    const h = makeRoom();
+    h.join("loot-player");
+    const player = h.state().players.get("loot-player");
+
+    h.room.dropLoot(player.x, player.y, 1);
+    const pickup = [...h.state().pickups.values()][0] as PickupState | undefined;
+    expect(pickup).toBeDefined();
+    expect(pickup?.known).toBe(false);
+    expect(pickup?.weaponPublic).toBe("");
+    expect(pickup?.affixPublic).toBe("");
+
+    const hidden = h.room.hiddenPickupIdentities.get(pickup?.id ?? "") as
+      | { weapon: string; rarity: number; affix: string }
+      | undefined;
+    expect(hidden?.weapon).toBeTruthy();
+    expect(pickup?.weapon).toBe(hidden?.weapon); // available only on the non-serialized server object
+    expect(pickup?.rarity).toBe(hidden?.rarity); // rarity remains the intentional public glow
+
+    if (!pickup || !hidden) throw new Error("expected a server-only mystery identity");
+    player.x = pickup.x;
+    player.y = pickup.y;
+    h.send("loot-player", "grabWeapon");
+
+    expect(h.state().pickups.has(pickup.id)).toBe(false);
+    expect(player.weapon).toBe(hidden.weapon);
+    expect(player.weaponRarity).toBe(hidden.rarity);
+    expect(player.weaponAffix).toBe(hidden.affix);
+  });
+
+  it("keeps the synced branded flag stable between apply and precise expiry", () => {
+    const h = makeRoom();
+    h.join("brand-player");
+    const player = h.state().players.get("brand-player");
+    player.augments = "brand";
+
+    const enemy = new EnemyState();
+    enemy.id = "brand-target";
+    enemy.kind = "dummy";
+    enemy.hp = DUMMY_HP;
+    enemy.x = player.x + 10;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+
+    h.room.applyParryAugments(player, h.room.combat.get(player.id));
+    expect(enemy.branded).toBe(1);
+    const initialPrecise = h.room.brandedTimers.get(enemy.id) as number;
+    h.tick(1);
+    expect(enemy.branded).toBe(1);
+    expect(h.room.brandedTimers.get(enemy.id)).toBeLessThan(initialPrecise);
+
+    const remaining = h.room.brandedTimers.get(enemy.id) as number;
+    h.tick(Math.ceil(remaining / 0.05) + 1);
+    expect(h.room.brandedTimers.has(enemy.id)).toBe(false);
+    expect(enemy.branded).toBe(0);
+  });
+});

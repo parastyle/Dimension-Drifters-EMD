@@ -421,6 +421,14 @@ export class GameRoom extends Room<ArenaState> {
   /** §13 v0.103 salvage provenance: pickup ids whose weapon came off an ENEMY (earned → salvageable).
    *  Gallery/conjured pickups are never in here. Pruned with the pickup; cleared with the transients. */
   private readonly earnedPickups = new Set<string>();
+  /** Audit #15: exact mystery-loot identities never enter Schema state before reveal. Rarity remains public
+   *  on the pickup for its intended glow; this map is the authoritative weapon/rarity/affix identity. */
+  private readonly hiddenPickupIdentities = new Map<
+    string,
+    { weapon: string; rarity: number; affix: string }
+  >();
+  /** Audit #14: precise Brand durations are gameplay-only. EnemyState.branded is a transition-only 0/1 flag. */
+  private readonly brandedTimers = new Map<string, number>();
   /** §8 Conflagration: pending deferred Emberguard re-pulses (the "burning zone" POC). Each fires one more
    *  fire-wave cone once `state.elapsed >= at`. Processed + pruned each tick. */
   private readonly burnPulses: {
@@ -842,6 +850,18 @@ export class GameRoom extends Room<ArenaState> {
       });
       if (!best) return;
       const grabbed = best as PickupState;
+      // Audit #15: reveal from the server-only identity rail only after the authoritative grab succeeds.
+      // A consumed `drop*` is deleted before the next patch; a persistent pickup keeps the revealed fields.
+      const hidden = this.hiddenPickupIdentities.get(grabbed.id);
+      if (hidden) {
+        grabbed.weapon = hidden.weapon;
+        grabbed.weaponPublic = hidden.weapon;
+        grabbed.rarity = hidden.rarity;
+        grabbed.affix = hidden.affix;
+        grabbed.affixPublic = hidden.affix;
+        grabbed.known = true;
+        this.hiddenPickupIdentities.delete(grabbed.id);
+      }
       const c = this.combat.get(client.sessionId);
       if (this.belt) {
         // §29 belt: grabs ACCUMULATE into the 3-slot arsenal (the carousel is gone) — fill an empty slot,
@@ -866,6 +886,7 @@ export class GameRoom extends Room<ArenaState> {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
         this.earnedPickups.delete(grabbed.id);
+        this.hiddenPickupIdentities.delete(grabbed.id);
       }
     });
 
@@ -950,6 +971,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
       allocate(player, attr, 1);
       consumeFlex(player);
+      this.syncFlexTimer(player);
     });
 
     // §8 signature pick: the player chooses one augment from the offered 3-of-9 draft.
@@ -966,6 +988,7 @@ export class GameRoom extends Room<ArenaState> {
       // Keep the window open + timer alive if anything's still owed (flex or another sig pick).
       player.flexTimer =
         player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
+      this.syncFlexTimer(player);
     });
 
     this.setSimulationInterval((deltaMs) => this.update(deltaMs), TICK_MS);
@@ -992,6 +1015,8 @@ export class GameRoom extends Room<ArenaState> {
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pickupGrace.clear();
     this.earnedPickups.clear();
+    this.hiddenPickupIdentities.clear();
+    this.brandedTimers.clear();
     this.burnPulses.length = 0;
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
@@ -1024,9 +1049,11 @@ export class GameRoom extends Room<ArenaState> {
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
     pk.weapon = player.weapon;
+    pk.weaponPublic = player.weapon;
     // The player KNOWS what they dropped — identity + its rolled loot identity ride the pickup.
     pk.rarity = player.weaponRarity;
     pk.affix = player.weaponAffix;
+    pk.affixPublic = player.weaponAffix;
     const dropX = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
     const dropY = clamp(player.y + ay * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_HEIGHT - PICKUP_RADIUS);
     const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck (band + off pits)
@@ -1197,7 +1224,7 @@ export class GameRoom extends Room<ArenaState> {
 
     if (this.state.mode === "arena") {
       this.state.mode = "training";
-      this.state.elapsed = 0;
+      this.resetElapsed();
       this.spawnAccum = 0;
       // §31 SHOWROOM: browse EVERY arted weapon (active roster + the whole +300 expansion arsenal), one
       // PAGE at a time (Q/E cycles pages). A full 314-pickup dump tanked the client to ~2fps (314 rigs +
@@ -1226,7 +1253,7 @@ export class GameRoom extends Room<ArenaState> {
       });
     } else {
       this.state.mode = "arena";
-      this.state.elapsed = 0;
+      this.resetElapsed();
       this.spawnAccum = 0;
     }
     console.log(`[room ${this.roomId}] mode → ${this.state.mode}`);
@@ -1286,6 +1313,7 @@ export class GameRoom extends Room<ArenaState> {
       const pk = new PickupState();
       pk.id = `pk${i}`;
       pk.weapon = weaponId;
+      pk.weaponPublic = weaponId;
       pk.x = cell.x;
       pk.y = cell.y;
       this.state.pickups.set(pk.id, pk);
@@ -1299,7 +1327,7 @@ export class GameRoom extends Room<ArenaState> {
     // A fresh map means old drops would float over unrelated terrain — clear them with the field.
     this.state.pickups.clear();
     this.clearTransients();
-    this.state.elapsed = 0;
+    this.resetElapsed();
     this.state.outcome = "active";
     this.state.portalOpen = false;
     // §6 chain (v0.103): a fresh RUN resets the chain — depth 1, rift closed, visited wiped, back to the
@@ -1333,6 +1361,7 @@ export class GameRoom extends Room<ArenaState> {
       player.luk = 1;
       player.flexPending = 0;
       player.flexTimer = 0;
+      player.flexTimerDs = 0;
       // §8 augments are PER-RUN — clear the parry build on a fresh run.
       player.augments = "";
       player.sigPending = 0;
@@ -1578,6 +1607,25 @@ export class GameRoom extends Room<ArenaState> {
     return player.flexPending > 0 || player.sigPending > 0;
   }
 
+  /** Mirror the precise, non-serialized timer as integer deciseconds. Ceil keeps the bar visible until the
+   *  authoritative timeout and limits patches to 10Hz instead of every 20Hz simulation step. */
+  private syncFlexTimer(player: PlayerState): void {
+    const deciseconds = Math.max(0, Math.min(0xffff, Math.ceil(player.flexTimer * 10 - 1e-9)));
+    if (player.flexTimerDs !== deciseconds) player.flexTimerDs = deciseconds;
+  }
+
+  /** Advance the precise, non-serialized run clock and patch only when its whole-second projection changes. */
+  private advanceElapsed(dt: number): void {
+    this.state.elapsed += dt;
+    const seconds = Math.max(0, Math.floor(this.state.elapsed));
+    if (this.state.elapsedSeconds !== seconds) this.state.elapsedSeconds = seconds;
+  }
+
+  private resetElapsed(): void {
+    this.state.elapsed = 0;
+    this.state.elapsedSeconds = 0;
+  }
+
   /** §4 v0.107 defense-in-depth (review #4): WITHOUT this, Colyseus does not wrap the simulation-interval
    *  or message handlers in try/catch — a single uncaught throw (e.g. a hostile payload reaching a schema
    *  setter) escapes the timer and kills the whole Node process (every room, every player). With it, the
@@ -1778,7 +1826,7 @@ export class GameRoom extends Room<ArenaState> {
     // 3. Run clock + spawn director (§6) — survival mode only. `bodies` = living players.
     if (this.state.mode === "arena") {
       if (this.state.outcome === "active") {
-        this.state.elapsed += dt;
+        this.advanceElapsed(dt);
         if (this.belt) {
           // §29 belt: room-gated progression REPLACES the continuous director + boss clock + shifters —
           // walk into a room, the gate locks, clear the wave, the gate opens, advance; the last room = boss.
@@ -1803,7 +1851,7 @@ export class GameRoom extends Room<ArenaState> {
       // §16 v0.116 BOSS RUSH — no horde, no boss clock: just count down the breather and drop the next boss.
       // The gauntlet advances in `advanceBossRush` (called from the boss death path).
       if (this.state.outcome === "active") {
-        this.state.elapsed += dt;
+        this.advanceElapsed(dt);
         if (this.bossRushNextTimer > 0) {
           this.bossRushNextTimer -= dt;
           if (this.bossRushNextTimer <= 0) this.spawnBossRushBoss();
@@ -2142,10 +2190,21 @@ export class GameRoom extends Room<ArenaState> {
         this.burnPulses.splice(i, 1);
       }
     }
-    // §8 Brand: decay the Marked timer on every enemy.
-    this.state.enemies.forEach((enemy) => {
-      if (enemy.branded > 0) enemy.branded = Math.max(0, enemy.branded - dt);
-    });
+    // §8 Brand: precise durations stay server-private; the synced field changes only on apply/expiry.
+    for (const [id, remaining] of this.brandedTimers) {
+      const enemy = this.state.enemies.get(id);
+      if (!enemy) {
+        this.brandedTimers.delete(id);
+        continue;
+      }
+      const left = remaining - dt;
+      if (left > 0) {
+        this.brandedTimers.set(id, left);
+      } else {
+        this.brandedTimers.delete(id);
+        enemy.branded = 0;
+      }
+    }
 
     // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
     this.tickLevelWindows(dt);
@@ -2394,9 +2453,16 @@ export class GameRoom extends Room<ArenaState> {
         const wk = w?.gun ? "gun" : w?.cast ? "cast" : undefined;
         player.sigOffer = draftAugments(Math.random, wk).join(",");
       }
-      if (!this.inLevelWindow(player)) return;
+      if (!this.inLevelWindow(player)) {
+        if (player.flexTimer !== 0) player.flexTimer = 0;
+        this.syncFlexTimer(player);
+        return;
+      }
       player.flexTimer -= dt;
-      if (player.flexTimer > 0) return;
+      if (player.flexTimer > 0) {
+        this.syncFlexTimer(player);
+        return;
+      }
       // Timed out → auto-resolve one pending pick of each kind, then refresh/close the window.
       if (player.flexPending > 0) {
         allocate(player, classForCharacter(player.character).classAttr, 1); // §38 default flex → class attr
@@ -2409,6 +2475,7 @@ export class GameRoom extends Room<ArenaState> {
         player.sigOffer = "";
       }
       player.flexTimer = this.inLevelWindow(player) ? LEVELUP_WINDOW_SECONDS : 0;
+      this.syncFlexTimer(player);
     });
   }
 
@@ -3004,7 +3071,7 @@ export class GameRoom extends Room<ArenaState> {
       dmg *= CRIT_MULT;
       enemy.critFlash = (enemy.critFlash + 1) & 0xff;
     }
-    enemy.hp -= dmg * (enemy.branded > 0 ? BRAND_DAMAGE_MULT : 1);
+    enemy.hp -= dmg * (this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT : 1);
     if (enemy.hp > 0) return 0;
     if (enemy.kind === "dummy") {
       enemy.hp = DUMMY_HP;
@@ -3092,9 +3159,18 @@ export class GameRoom extends Room<ArenaState> {
     if (chance < 1 && Math.random() > chance) return;
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
-    pk.weapon = rollDropWeapon(Math.random());
-    pk.rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
-    pk.affix = rollAffix(Math.random(), pk.rarity).id;
+    const weapon = rollDropWeapon(Math.random());
+    const rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
+    const affix = rollAffix(Math.random(), rarity).id;
+    this.hiddenPickupIdentities.set(pk.id, { weapon, rarity, affix });
+    // Only the intended public tells enter Schema: rarity glow/name + coarse class glyph. Exact weapon and
+    // affix remain empty placeholders until the authoritative grab reveals the server-only identity.
+    pk.weapon = weapon;
+    pk.weaponPublic = "";
+    pk.rarity = rarity;
+    pk.affix = affix;
+    pk.affixPublic = "";
+    pk.weaponClass = WEAPONS[weapon]?.tags.classPool ?? "";
     pk.known = false;
     const sp = this.placePickupPos(x, y);
     pk.x = sp.x;
@@ -3226,7 +3302,10 @@ export class GameRoom extends Room<ArenaState> {
       this.state.enemies.forEach((enemy) => {
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
-        if (dx * dx + dy * dy <= r2) enemy.branded = BRAND_DURATION;
+        if (dx * dx + dy * dy <= r2) {
+          this.brandedTimers.set(enemy.id, BRAND_DURATION);
+          if (enemy.branded === 0) enemy.branded = 1;
+        }
       });
     }
     if (hasAugment(owned, "emberguard")) {
@@ -3517,10 +3596,12 @@ export class GameRoom extends Room<ArenaState> {
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
     pk.weapon = kind.wieldsWeapon;
+    pk.weaponPublic = kind.wieldsWeapon;
     // §13 the wielder's drop is identity-KNOWN (you saw the sword it swung) but its rarity/affix still
     // roll on drop (v0.104) — same squad-LUK table as the mystery channel (one rarity economy).
     pk.rarity = rollRarity(Math.random(), this.bestLuk());
     pk.affix = rollAffix(Math.random(), pk.rarity).id;
+    pk.affixPublic = pk.affix;
     const sp = this.placePickupPos(enemy.x, enemy.y);
     pk.x = sp.x;
     pk.y = sp.y;
@@ -4207,7 +4288,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.zones.clear();
     this.state.pickups.clear();
     this.clearTransients();
-    this.state.elapsed = 0;
+    this.resetElapsed();
     this.spawnAccum = 0;
     this.state.outcome = "active";
     this.state.portalOpen = false;

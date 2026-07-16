@@ -55,8 +55,11 @@ export class PlayerState extends Schema {
   /** Unspent FLEX points awaiting allocation (§12). While > 0 the player is in the invincible,
    *  untargeted level-up window (frozen + immune) choosing where to spend each flex point. */
   @type("number") flexPending = 0;
-  /** Seconds left in the current level-up window (counts down from LEVELUP_WINDOW_SECONDS). */
-  @type("number") flexTimer = 0;
+  /** Reserved wire slot for the old per-tick float. Kept fixed so later PlayerState field offsets do not
+   *  move; the client reads the appended integer-decisecond `flexTimerDs` instead. */
+  @type("number") flexTimerLegacy = 0;
+  /** Precise seconds left in the level-up window. Server-only (not decorated / not serialized). */
+  flexTimer = 0;
   /** §8 owned parry augments — CSV of augment ids (repeats = stacks). Drives the parry handler's offense
    *  (server) + the owned-augment HUD (client). */
   @type("string") augments = "";
@@ -128,6 +131,8 @@ export class PlayerState extends Schema {
   @type("uint8") upVitality = 0;
   @type("uint8") upFortune = 0;
   @type("uint8") upPower = 0;
+  /** Level-window time remaining in integer deciseconds. Appended wire replacement for the legacy float. */
+  @type("uint16") flexTimerDs = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -142,8 +147,8 @@ export class EnemyState extends Schema {
   @type("boolean") tough = false;
   /** §15 duelist combo: increments on each melee swing so the client triggers a swing animation. */
   @type("number") atkSeq = 0;
-  /** §8 Brand augment: seconds remaining as Marked — takes ×BRAND_DAMAGE_MULT from all sources. Synced so
-   *  the client can tint the marked enemy. 0 = not branded. */
+  /** §8 Brand augment: transition-only Marked flag — takes ×BRAND_DAMAGE_MULT from all sources while the
+   *  server-private timer is active. Synced for the client tint; 0 = not branded, 1 = branded. */
   @type("number") branded = 0;
   /** §8 white-tell TELEGRAPH (Stage C): windup progress 0→1 of a parryable attack (0 = not telegraphing).
    *  Synced so the client ramps the enemy WHITE + shrinks the rhythm ring; the swing lands (and is
@@ -209,10 +214,20 @@ export class PickupState extends Schema {
   @type("string") id = "";
   @type("number") x = 0;
   @type("number") y = 0;
-  @type("string") weapon = "";
+  /** Serialized weapon identity. Empty for a mystery pickup until reveal. This occupies the legacy weapon
+   *  wire slot so later offsets stay fixed. */
+  @type("string") weaponPublic = "";
+  /** Exact weapon identity on the server. Not decorated, therefore never serialized. */
+  weapon = "";
   @type("uint8") rarity = 0;
-  @type("string") affix = "";
+  /** Serialized affix identity. Empty for a mystery pickup until reveal; legacy affix wire slot. */
+  @type("string") affixPublic = "";
+  /** Exact affix identity on the server. Not decorated, therefore never serialized. */
+  affix = "";
   @type("boolean") known = true;
+  /** Public coarse weapon class for mystery-drop glyphs ("melee" | "ranged" | "caster"). This preserves
+   *  the intended type tell without serializing the exact hidden weapon identity. Appended for wire safety. */
+  @type("string") weaponClass = "";
 }
 
 /**
@@ -259,8 +274,10 @@ export class ArenaState extends Schema {
   @type("number") seedHazard = 0;
   @type("number") seedTheme = 0;
   @type("number") seedDecor = 0;
-  /** Run time in seconds — drives spawn escalation (§6) and the HUD timer. */
-  @type("number") elapsed = 0;
+  /** Reserved wire slot for the former per-tick elapsed float. */
+  @type("number") elapsedLegacy = 0;
+  /** Precise run time in seconds. Server-only (not decorated / not serialized). */
+  elapsed = 0;
   /** "arena" (survival) | "training" (Testing Grounds — dummies + pickups, no spawns). */
   @type("string") mode = "arena";
   /** §17 the active DIMENSION id (keys the shared `DIMENSIONS` registry) — scopes the server's spawn roster
@@ -314,4 +331,6 @@ export class ArenaState extends Schema {
   /** §29 v0.118 world-x of the belt SHOPKEEPER (0 = none). Synced so every client draws the vendor + gates
    *  the sell interaction on proximity. */
   @type("number") beltShopX = 0;
+  /** Whole elapsed run seconds for the HUD. Appended wire replacement for the legacy per-tick float. */
+  @type("uint32") elapsedSeconds = 0;
 }
