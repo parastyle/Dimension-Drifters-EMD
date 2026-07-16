@@ -34,6 +34,23 @@ export type SwingStyle = NonNullable<WeaponDef["swingStyle"]>;
  *  while the server keeps resolving its one legacy centered sweep. `path` is deliberately carried now so a
  *  later accepted descriptor can reuse the exact step table without trusting a client-authored finisher. */
 export type MeleeComboFamily = "arc" | "chop" | "rake" | "punch" | "thrust";
+export type MeleeComboVariant =
+  | "default"
+  | "quake-mauler"
+  | "stinger"
+  | "hero-spin"
+  | "pommel"
+  | "greatsword";
+
+/** Weapon-authored combo seam. Optional fields let current data use shared shape defaults while future
+ * weapon entries opt into an exact family/variant without teaching the renderer weapon ids or names. */
+declare module "./weapons.js" {
+  interface WeaponDef {
+    comboFamily?: MeleeComboFamily;
+    comboVariant?: MeleeComboVariant;
+  }
+}
+
 export type MeleeComboMotion =
   | "slash"
   | "overhead"
@@ -47,7 +64,12 @@ export type MeleeComboMotion =
   | "haymaker"
   | "lunge"
   | "disengage"
-  | "impale";
+  | "impale"
+  | "fulcrum-flip"
+  | "stinger"
+  | "spin-release"
+  | "pommel-bash"
+  | "true-charged-slam";
 export type MeleeComboHand = "lead" | "off" | "both";
 export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
 
@@ -70,6 +92,8 @@ export interface MeleeComboStep {
   readonly path: {
     readonly kind: MeleeComboPath;
     readonly arcMultiplier: number;
+    /** Explicit signed angular travel for paths such as the one-revolution hero spin. */
+    readonly deltaAngle?: number;
     readonly rangeMultiplier: number;
     readonly damageMultiplier: number;
     readonly knockback: number;
@@ -115,7 +139,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "overhead" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.28, activeEnd: 0.6, impact: 0.52, followEnd: 0.74 },
+      timing: {
+        activeStart: 0.28,
+        activeEnd: 0.6,
+        impact: 0.52,
+        followEnd: 0.74,
+      },
       path: {
         kind: "sweep" as const,
         arcMultiplier: 1.25,
@@ -131,7 +160,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "shoulder-chop" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.24, activeEnd: 0.52, impact: 0.52, followEnd: 0.66 },
+      timing: {
+        activeStart: 0.24,
+        activeEnd: 0.52,
+        impact: 0.52,
+        followEnd: 0.66,
+      },
       path: {
         kind: "sweep" as const,
         arcMultiplier: 0.75,
@@ -145,7 +179,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "rising-chop" as const,
       direction: -1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.14, activeEnd: 0.5, impact: 0.5, followEnd: 0.7 },
+      timing: {
+        activeStart: 0.14,
+        activeEnd: 0.5,
+        impact: 0.5,
+        followEnd: 0.7,
+      },
       path: {
         kind: "sweep" as const,
         arcMultiplier: -0.8,
@@ -159,7 +198,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "execution-slam" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.32, activeEnd: 0.56, impact: 0.56, followEnd: 0.74 },
+      timing: {
+        activeStart: 0.32,
+        activeEnd: 0.56,
+        impact: 0.56,
+        followEnd: 0.74,
+      },
       path: {
         kind: "fan" as const,
         arcMultiplier: 1.15,
@@ -226,7 +270,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "jab" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.1, activeEnd: 0.36, impact: 0.36, followEnd: 0.44 },
+      timing: {
+        activeStart: 0.1,
+        activeEnd: 0.36,
+        impact: 0.36,
+        followEnd: 0.44,
+      },
       path: {
         kind: "capsule" as const,
         arcMultiplier: 0,
@@ -240,7 +289,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "hook" as const,
       direction: -1 as const,
       hand: "off" as const,
-      timing: { activeStart: 0.18, activeEnd: 0.48, impact: 0.48, followEnd: 0.68 },
+      timing: {
+        activeStart: 0.18,
+        activeEnd: 0.48,
+        impact: 0.48,
+        followEnd: 0.68,
+      },
       path: {
         kind: "sweep" as const,
         arcMultiplier: 1,
@@ -254,7 +308,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "haymaker" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.28, activeEnd: 0.56, impact: 0.56, followEnd: 0.72 },
+      timing: {
+        activeStart: 0.28,
+        activeEnd: 0.56,
+        impact: 0.56,
+        followEnd: 0.72,
+      },
       path: {
         kind: "sweep" as const,
         arcMultiplier: 1,
@@ -270,7 +329,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "lunge" as const,
       direction: 1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.14, activeEnd: 0.42, impact: 0.42, followEnd: 0.5 },
+      timing: {
+        activeStart: 0.14,
+        activeEnd: 0.42,
+        impact: 0.42,
+        followEnd: 0.5,
+      },
       path: {
         kind: "capsule" as const,
         arcMultiplier: 0,
@@ -284,7 +348,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "disengage" as const,
       direction: -1 as const,
       hand: "lead" as const,
-      timing: { activeStart: 0.18, activeEnd: 0.44, impact: 0.44, followEnd: 0.52 },
+      timing: {
+        activeStart: 0.18,
+        activeEnd: 0.44,
+        impact: 0.44,
+        followEnd: 0.52,
+      },
       path: {
         kind: "capsule" as const,
         arcMultiplier: 0,
@@ -298,7 +367,12 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
       motion: "impale" as const,
       direction: 1 as const,
       hand: "both" as const,
-      timing: { activeStart: 0.24, activeEnd: 0.58, impact: 0.58, followEnd: 0.7 },
+      timing: {
+        activeStart: 0.24,
+        activeEnd: 0.58,
+        impact: 0.58,
+        followEnd: 0.7,
+      },
       path: {
         kind: "capsule" as const,
         arcMultiplier: 0,
@@ -313,6 +387,225 @@ export const MELEE_COMBO_SEQUENCES: Readonly<
 /** §44 the immutable clock accepted/predicted for ONE swing. Seconds are relative to that peer's accepted
  *  epoch: the server starts at `canAct`; the client predicts at send until an acceptance sequence exists.
  *  Geometry/damage remain separate so extending a slow edge's wall-clock opportunity cannot multiply hits. */
+/** Ranked iconic-move steps. Keep every union-valued literal narrow: the shared declaration build checks
+ * these tables directly rather than relying on the client's bundler inference. */
+export const FULCRUM_FLIP_COMBO_STEP = Object.freeze({
+  name: "fulcrum flip quake",
+  motion: "fulcrum-flip" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.5, activeEnd: 0.66, impact: 0.66, followEnd: 0.82 },
+  path: {
+    kind: "fan" as const,
+    arcMultiplier: 1.15,
+    rangeMultiplier: 1.08,
+    damageMultiplier: 1.25,
+    knockback: 110,
+  },
+} as const satisfies MeleeComboStep);
+
+export const STINGER_COMBO_STEP = Object.freeze({
+  name: "stinger",
+  motion: "stinger" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.24, activeEnd: 0.58, impact: 0.58, followEnd: 0.7 },
+  path: {
+    kind: "capsule" as const,
+    arcMultiplier: 0,
+    rangeMultiplier: 1.2,
+    damageMultiplier: 1.22,
+    knockback: 80,
+  },
+} as const satisfies MeleeComboStep);
+
+export const HERO_SPIN_COMBO_STEP = Object.freeze({
+  name: "charged hero spin",
+  motion: "spin-release" as const,
+  direction: 1 as const,
+  hand: "lead" as const,
+  timing: { activeStart: 0.3, activeEnd: 0.66, impact: 0.48, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    deltaAngle: Math.PI * 2,
+    rangeMultiplier: 1.03,
+    damageMultiplier: 1.18,
+    knockback: 64,
+  },
+} as const satisfies MeleeComboStep);
+
+export const POMMEL_BASH_COMBO_STEP = Object.freeze({
+  name: "pommel bash",
+  motion: "pommel-bash" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.12, activeEnd: 0.3, impact: 0.28, followEnd: 0.44 },
+  path: {
+    kind: "capsule" as const,
+    arcMultiplier: 0,
+    rangeMultiplier: 0.55,
+    damageMultiplier: 0.75,
+    knockback: 28,
+  },
+} as const satisfies MeleeComboStep);
+
+export const TRUE_CHARGED_SLAM_COMBO_STEP = Object.freeze({
+  name: "true charged step-slash",
+  motion: "true-charged-slam" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.46, activeEnd: 0.64, impact: 0.61, followEnd: 0.8 },
+  path: {
+    kind: "fan" as const,
+    arcMultiplier: 0.72,
+    rangeMultiplier: 1.12,
+    damageMultiplier: 1.25,
+    knockback: 96,
+  },
+} as const satisfies MeleeComboStep);
+
+type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default">;
+
+/** Complete three-step weapon variants. Unchanged beats reuse their frozen family roots. */
+export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
+  Record<SignatureMeleeComboVariant, readonly Readonly<MeleeComboStep>[]>
+> = Object.freeze({
+  "quake-mauler": Object.freeze([
+    MELEE_COMBO_SEQUENCES.chop[0]!,
+    POMMEL_BASH_COMBO_STEP,
+    FULCRUM_FLIP_COMBO_STEP,
+  ]),
+  stinger: Object.freeze([
+    MELEE_COMBO_SEQUENCES.thrust[0]!,
+    MELEE_COMBO_SEQUENCES.thrust[1]!,
+    STINGER_COMBO_STEP,
+  ]),
+  "hero-spin": Object.freeze([
+    MELEE_COMBO_SEQUENCES.arc[0]!,
+    MELEE_COMBO_SEQUENCES.arc[1]!,
+    HERO_SPIN_COMBO_STEP,
+  ]),
+  pommel: Object.freeze([
+    MELEE_COMBO_SEQUENCES.chop[0]!,
+    POMMEL_BASH_COMBO_STEP,
+    MELEE_COMBO_SEQUENCES.chop[2]!,
+  ]),
+  greatsword: Object.freeze([
+    MELEE_COMBO_SEQUENCES.chop[0]!,
+    POMMEL_BASH_COMBO_STEP,
+    TRUE_CHARGED_SLAM_COMBO_STEP,
+  ]),
+});
+
+export interface MeleeComboSelection {
+  readonly family: MeleeComboFamily;
+  readonly variant: MeleeComboVariant;
+  readonly sequence: readonly Readonly<MeleeComboStep>[];
+}
+
+export function meleeComboFamilyForStyle(
+  style: SwingStyle | undefined,
+): MeleeComboFamily | undefined {
+  if (style === "pivot") return "rake";
+  if (
+    style === "arc" ||
+    style === "chop" ||
+    style === "punch" ||
+    style === "thrust"
+  )
+    return style;
+  return undefined;
+}
+
+function familyForSignatureVariant(
+  variant: SignatureMeleeComboVariant,
+): MeleeComboFamily {
+  if (variant === "stinger") return "thrust";
+  if (variant === "hero-spin") return "arc";
+  return "chop";
+}
+
+export function meleeComboSequenceFor(
+  family: MeleeComboFamily,
+  variant: MeleeComboVariant = "default",
+): readonly Readonly<MeleeComboStep>[] {
+  if (variant !== "default" && familyForSignatureVariant(variant) === family)
+    return MELEE_COMBO_VARIANT_SEQUENCES[variant];
+  return MELEE_COMBO_SEQUENCES[family];
+}
+
+/** Resolve one weapon's combo vocabulary. Explicit metadata wins; structural defaults cover only the
+ * ship-list homes and keep all classification out of SpriteRig. */
+export function meleeComboSelectionFor(
+  def: WeaponDef,
+  style: SwingStyle = swingStyleFor(def),
+): MeleeComboSelection | undefined {
+  if (def.comboVariant && def.comboVariant !== "default") {
+    const family = familyForSignatureVariant(def.comboVariant);
+    return {
+      family,
+      variant: def.comboVariant,
+      sequence: meleeComboSequenceFor(family, def.comboVariant),
+    };
+  }
+  if (def.comboFamily) {
+    return {
+      family: def.comboFamily,
+      variant: "default",
+      sequence: MELEE_COMBO_SEQUENCES[def.comboFamily],
+    };
+  }
+
+  const familyTag = def.tags.family.toLowerCase();
+  const shapeWords = `${familyTag} ${def.name.toLowerCase()}`;
+  let variant: SignatureMeleeComboVariant | undefined;
+  if (
+    def.twoHanded &&
+    def.quake &&
+    (def.tags.size === "L" || def.tags.size === "XL")
+  ) {
+    variant = "quake-mauler";
+  } else if (style === "thrust") {
+    variant = "stinger";
+  } else if (
+    style === "arc" &&
+    !def.twoHanded &&
+    !def.dual &&
+    /(?:^|\b)(?:sword|sabre|saber|katana)(?:\b|$)/i.test(familyTag)
+  ) {
+    variant = "hero-spin";
+  } else if (
+    def.twoHanded &&
+    style !== "spin" &&
+    (/(?:greatsword|greatblade|claymore|zweihander|nodachi)/i.test(
+      shapeWords,
+    ) ||
+      (familyTag === "sword" && def.tags.size === "XL"))
+  ) {
+    variant = "greatsword";
+  } else if (
+    def.twoHanded &&
+    style !== "spin" &&
+    /(?:warhammer|hammer|maul)/i.test(shapeWords)
+  ) {
+    variant = "pommel";
+  }
+
+  if (variant) {
+    const family = familyForSignatureVariant(variant);
+    return {
+      family,
+      variant,
+      sequence: MELEE_COMBO_VARIANT_SEQUENCES[variant],
+    };
+  }
+  const family = meleeComboFamilyForStyle(style);
+  return family
+    ? { family, variant: "default", sequence: MELEE_COMBO_SEQUENCES[family] }
+    : undefined;
+}
+
 export interface SwingDescriptor {
   readonly effectiveCooldown: number;
   readonly style: SwingStyle;
@@ -320,6 +613,16 @@ export interface SwingDescriptor {
   readonly activeStartSeconds: number;
   readonly activeEndSeconds: number;
   readonly impactSeconds: number;
+  /** Optional accepted/predicted combo snapshot. Stage 1 enriches this client-side while the server keeps
+   * its centered single sweep; a later accepted-action protocol can populate the same fields. */
+  readonly comboFamily?: MeleeComboFamily;
+  readonly comboVariant?: MeleeComboVariant;
+  readonly comboStep?: number;
+  readonly motion?: MeleeComboMotion;
+  readonly comboDirection?: -1 | 0 | 1;
+  readonly comboHand?: MeleeComboHand;
+  readonly comboTiming?: Readonly<MeleeComboStep["timing"]>;
+  readonly comboPath?: Readonly<MeleeComboStep["path"]>;
 }
 
 /** Worn gear is animated around the hand, not mounted by the authored hilt pivot. Shared because this same
@@ -335,9 +638,11 @@ export function isWornWeapon(def: WeaponDef): boolean {
  *  the pre-§44 client vocabulary, so this clock change cannot silently change a pose shape. */
 export function swingStyleFor(def: WeaponDef): SwingStyle {
   if (def.swingStyle) return def.swingStyle;
-  if (isWornWeapon(def)) return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
+  if (isWornWeapon(def))
+    return /claws?|talons?/i.test(def.name) ? "pivot" : "punch";
   if (def.quake) return "chop";
-  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? "")) return "thrust";
+  if (/rapier|lance|spear|pike|estoc|needle/i.test(def.tags?.family ?? ""))
+    return "thrust";
   if (def.twoHanded) return "orbit";
   return "arc";
 }
@@ -351,9 +656,13 @@ function inverseSmoothstep(value: number): number {
 /** Build the one swing clock from EFFECTIVE cooldown (base × loot affix). Active fractions mirror today's
  *  normalized pose branches; the server still sweeps the legacy arc linearly inside that interval — exact
  *  per-style path/easing sync is the later accepted-epoch/path protocol, not a hidden geometry rewrite here. */
-export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): SwingDescriptor {
+export function swingDescriptorFor(
+  def: WeaponDef,
+  effectiveCooldown: number,
+): SwingDescriptor {
   const style = swingStyleFor(def);
-  const poseSeconds = Math.max(0, effectiveCooldown) * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
+  const poseSeconds =
+    Math.max(0, effectiveCooldown) * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
   let activeStartFrac: number;
   let activeEndFrac: number;
   switch (style) {
@@ -364,7 +673,10 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
       [activeStartFrac, activeEndFrac] = [0.1, 0.62];
       break;
     case "punch":
-      [activeStartFrac, activeEndFrac] = [def.twoHanded ? 0.24 : 0.16, CHOP_IMPACT_FRAC];
+      [activeStartFrac, activeEndFrac] = [
+        def.twoHanded ? 0.24 : 0.16,
+        CHOP_IMPACT_FRAC,
+      ];
       break;
     case "thrust":
       [activeStartFrac, activeEndFrac] = [0.14, 0.38];
@@ -372,7 +684,9 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
     case "orbit": {
       const travel = Math.max(0, def.swingArc) + 2.4;
       activeStartFrac = inverseSmoothstep(1.5 / travel);
-      activeEndFrac = inverseSmoothstep((1.5 + Math.max(0, def.swingArc)) / travel);
+      activeEndFrac = inverseSmoothstep(
+        (1.5 + Math.max(0, def.swingArc)) / travel,
+      );
       break;
     }
     case "spin":
@@ -394,18 +708,65 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
 
 /** Normalized authoritative edge progress on the descriptor clock. Clamping lets a 20Hz tick that crosses
  *  an entire very-fast active interval still supersample the full arc instead of dropping the swing. */
-export function swingEdgeProgress(swing: SwingDescriptor, elapsedSeconds: number): number {
-  const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
-  if (activeSeconds <= 0) return elapsedSeconds >= swing.activeEndSeconds ? 1 : 0;
-  return clamp((elapsedSeconds - swing.activeStartSeconds) / activeSeconds, 0, 1);
+/** Snapshot the selected predicted/accepted combo step onto an immutable swing without changing its legacy
+ * active, impact, geometry, or damage clock. The server may call the same seam once accepted combo state is
+ * authoritative; Stage 1 uses it only for client presentation. */
+export function swingDescriptorWithComboStep(
+  swing: SwingDescriptor,
+  def: WeaponDef,
+  stepIndex: number,
+): SwingDescriptor {
+  const selection = meleeComboSelectionFor(def, swing.style);
+  if (!selection || selection.sequence.length === 0) return swing;
+  const index =
+    ((Math.trunc(stepIndex) % selection.sequence.length) +
+      selection.sequence.length) %
+    selection.sequence.length;
+  const step = selection.sequence[index];
+  if (!step) return swing;
+  return Object.freeze({
+    ...swing,
+    comboFamily: selection.family,
+    comboVariant: selection.variant,
+    comboStep: index,
+    motion: step.motion,
+    comboDirection: step.direction,
+    comboHand: step.hand,
+    comboTiming: step.timing,
+    comboPath: step.path,
+  });
 }
 
-export function swingEdgeActive(swing: SwingDescriptor, elapsedSeconds: number): boolean {
-  return elapsedSeconds >= swing.activeStartSeconds && elapsedSeconds < swing.activeEndSeconds;
+export function swingEdgeProgress(
+  swing: SwingDescriptor,
+  elapsedSeconds: number,
+): number {
+  const activeSeconds = swing.activeEndSeconds - swing.activeStartSeconds;
+  if (activeSeconds <= 0)
+    return elapsedSeconds >= swing.activeEndSeconds ? 1 : 0;
+  return clamp(
+    (elapsedSeconds - swing.activeStartSeconds) / activeSeconds,
+    0,
+    1,
+  );
+}
+
+export function swingEdgeActive(
+  swing: SwingDescriptor,
+  elapsedSeconds: number,
+): boolean {
+  return (
+    elapsedSeconds >= swing.activeStartSeconds &&
+    elapsedSeconds < swing.activeEndSeconds
+  );
 }
 
 /** The blade's aim angle at sweep progress `p` ∈ [0,1]: from `aim − swingArc/2` to `aim + swingArc/2`. */
-export function bladeAngleAt(aimAngle: number, swingArc: number, p: number): number {
+export function bladeAngleAt(
+  aimAngle: number,
+  swingArc: number,
+  p: number,
+): number {
   return aimAngle - swingArc / 2 + swingArc * clamp(p, 0, 1);
 }
 
@@ -421,7 +782,8 @@ export function pointSegmentDist2(
   const dx = bx - ax;
   const dy = by - ay;
   const len2 = dx * dx + dy * dy;
-  const t = len2 > 0 ? clamp(((px - ax) * dx + (py - ay) * dy) / len2, 0, 1) : 0;
+  const t =
+    len2 > 0 ? clamp(((px - ax) * dx + (py - ay) * dy) / len2, 0, 1) : 0;
   const cx = ax + t * dx;
   const cy = ay + t * dy;
   const ex = px - cx;
@@ -441,7 +803,14 @@ export function bladeHitsCircle(
 ): boolean {
   const bx = wielder.x + Math.cos(angle) * range;
   const by = wielder.y + Math.sin(angle) * range;
-  const d2 = pointSegmentDist2(target.x, target.y, wielder.x, wielder.y, bx, by);
+  const d2 = pointSegmentDist2(
+    target.x,
+    target.y,
+    wielder.x,
+    wielder.y,
+    bx,
+    by,
+  );
   const rr = targetR + halfWidth;
   return d2 <= rr * rr;
 }

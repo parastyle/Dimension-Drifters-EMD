@@ -36,12 +36,17 @@ import {
   JIGGLE_TURN_HAND_KICK,
   JIGGLE_WEAPON_HAND_INERTIA,
   MELEE_COMBO_SEQUENCES,
+  meleeComboSelectionFor,
+  meleeComboSequenceFor,
   type MeleeComboFamily,
+  type MeleeComboMotion,
   type MeleeComboStep,
+  type MeleeComboVariant,
   MOVE_SPEED,
   PROCEDURAL_JIGGLE,
   type SwingDescriptor,
   swingDescriptorFor,
+  swingDescriptorWithComboStep,
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
@@ -62,7 +67,10 @@ export function partTexture(
   role: string,
 ): { key: string; frame?: string } {
   const frame = `${spriteId}/${role}`;
-  if (scene.textures.exists(SPRITE_ATLAS) && scene.textures.get(SPRITE_ATLAS).has(frame)) {
+  if (
+    scene.textures.exists(SPRITE_ATLAS) &&
+    scene.textures.get(SPRITE_ATLAS).has(frame)
+  ) {
     return { key: SPRITE_ATLAS, frame };
   }
   return { key: `${spriteId}:${role}` };
@@ -84,12 +92,46 @@ const COMBO_HOLD_RELEASE_MS = 120;
 
 type RigComboFamily = MeleeComboFamily | "none";
 
-/** Stage 1 derives family from the already-shared resolved style; explicit weapon overrides wait for the
- *  authoritative descriptor stage. Orbit/spin stay outside the matrix, preserving their existing paths. */
-function comboFamilyFor(style: SwingDescriptor["style"] | undefined): RigComboFamily {
-  if (style === "pivot") return "rake";
-  if (style === "arc" || style === "chop" || style === "punch" || style === "thrust") return style;
-  return "none";
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function smoothstep01(value: number): number {
+  const p = clamp01(value);
+  return p * p * (3 - 2 * p);
+}
+
+function smootherstep01(value: number): number {
+  const p = clamp01(value);
+  return p * p * p * (p * (p * 6 - 15) + 10);
+}
+
+function cubicOut01(value: number): number {
+  const p = clamp01(value);
+  return 1 - (1 - p) ** 3;
+}
+
+/** Preserve the sign while preventing one invisible edge-on frame. Zero chooses the positive face. */
+function signedClamp(value: number, floor: number): number {
+  return (value < 0 ? -1 : 1) * Math.max(Math.abs(value), floor);
+}
+
+/** PROCEDURAL_JIGGLE ownership envelope: anticipation ramps in, active is exact, follow-through hands off. */
+function actionOwnershipAt(
+  t: number,
+  activeStart: number,
+  activeEnd: number,
+  followEnd: number,
+): number {
+  if (t < activeStart)
+    return smootherstep01(activeStart > 0 ? t / activeStart : 1);
+  if (t <= activeEnd) return 1;
+  if (t < followEnd)
+    return (
+      1 -
+      smootherstep01((t - activeEnd) / Math.max(1e-6, followEnd - activeEnd))
+    );
+  return 0;
 }
 
 /** `readyAt + grace`: 120–300ms, scaled by 35% of the accepted/predicted effective cooldown. */
@@ -125,7 +167,12 @@ interface RigFoot extends JigglePartState {
 }
 
 /** Rebase on construction/cuts/swaps/LOD sleep. A cut is not acceleration and must add zero energy. */
-function resetJigglePart(p: JigglePartState, ax: number, ay: number, own: number): void {
+function resetJigglePart(
+  p: JigglePartState,
+  ax: number,
+  ay: number,
+  own: number,
+): void {
   p.jx = 0;
   p.jy = 0;
   p.jvx = 0;
@@ -283,7 +330,8 @@ function stepJigglePart(
     p.jy = 0;
     if (p.jvy > 0) p.jvy = 0;
   }
-  if (!Number.isFinite(p.jx + p.jy + p.jvx + p.jvy)) resetJigglePart(p, ax, ay, own);
+  if (!Number.isFinite(p.jx + p.jy + p.jvx + p.jvy))
+    resetJigglePart(p, ax, ay, own);
   p.prevAx = ax;
   p.prevAy = ay;
   p.prevAvx = avx;
@@ -423,9 +471,12 @@ export class SpriteRig {
   private comboWeaponId = "";
   private swingStep = 0;
   private swingDirection: -1 | 0 | 1 = 1;
+  private swingFamily: RigComboFamily = "none";
+  private swingVariant: MeleeComboVariant = "default";
   /** End-pose snapshot survives the 0.64× pose window through readyAt+grace, then releases over 120ms. */
   private comboHoldPose?: {
     readonly family: MeleeComboFamily;
+    readonly variant: MeleeComboVariant;
     readonly step: number;
     readonly direction: -1 | 0 | 1;
     readonly expiresAtMs: number;
@@ -436,6 +487,28 @@ export class SpriteRig {
   /** Dual/off-hand counterpart used by alternating rakes, crosses, and the scissor finisher. */
   private swingBackOffX = 0;
   private swingBackOffY = 0;
+  /** Resettable signature channels. They move visible paper parts only; `root` and its hurtbox stay grounded. */
+  private attackArtOffX = 0;
+  private attackArtOffY = 0;
+  private attackLiftPx = 0;
+  private attackScaleY = 1;
+  private weaponLengthScale = 1;
+  private attackWeaponDepth: -1 | 0 | 1 = 0;
+  private attackShadowX = 0;
+  private attackShadowY = 0;
+  private attackShadowRotation = 0;
+  private attackShadowScaleX = 1;
+  private attackShadowScaleY = 1;
+  private attackShadowAlpha = 1;
+  /** Planted-head/orbit exception: the weapon supplies a grip and the named hand(s) follow it. */
+  private attackGripBlend = 0;
+  private attackGripX = 0;
+  private attackGripY = 0;
+  private attackBackGripX = 0;
+  private attackBackGripY = 0;
+  private attackGripBoth = false;
+  private attackHandSpacing = TARGET_BODY_H * 0.42;
+  private signatureMotion?: MeleeComboMotion;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -458,8 +531,10 @@ export class SpriteRig {
     id: string,
     spriteId: string,
   ) {
-    const manifest = SPRITES[spriteId as keyof typeof SPRITES] as SpriteManifest | undefined;
-    if (!manifest) throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
+    const manifest = SPRITES[spriteId as keyof typeof SPRITES] as
+      SpriteManifest | undefined;
+    if (!manifest)
+      throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
     this.scene = scene;
     this.scale = TARGET_BODY_H / manifest.body.h;
 
@@ -469,7 +544,12 @@ export class SpriteRig {
       const part = manifest.parts.find((p) => p.role === role);
       if (!part) return undefined;
       const tx = partTexture(scene, spriteId, role);
-      const img = scene.add.image(part.ox * this.scale, part.oy * this.scale, tx.key, tx.frame);
+      const img = scene.add.image(
+        part.ox * this.scale,
+        part.oy * this.scale,
+        tx.key,
+        tx.frame,
+      );
       img.setOrigin(0.5).setScale(this.scale);
       this.parts.push(img);
       return img;
@@ -529,7 +609,10 @@ export class SpriteRig {
 
     this.label = isSelf
       ? scene.add
-          .text(0, -TARGET_BODY_H * 0.62 - 12, "you", { fontSize: "12px", color: "#E8E4D8" })
+          .text(0, -TARGET_BODY_H * 0.62 - 12, "you", {
+            fontSize: "12px",
+            color: "#E8E4D8",
+          })
           .setOrigin(0.5)
       : undefined;
     if (this.label) order.push(this.label);
@@ -537,7 +620,14 @@ export class SpriteRig {
     // §5/§20 ground shadow at the feet — drawn FIRST (behind everything) so it sits under the rig; it
     // stays put while the art lifts on the hop, so the gap reads as altitude.
     this.shadow = scene.add
-      .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0.3)
+      .ellipse(
+        0,
+        TARGET_BODY_H * 0.42,
+        TARGET_BODY_H * 0.6,
+        TARGET_BODY_H * 0.22,
+        0x000000,
+        0.3,
+      )
       .setOrigin(0.5);
     order.unshift(this.shadow);
 
@@ -605,6 +695,8 @@ export class SpriteRig {
    *  this is the momentum layer applied on death — the start of the "Madness" feel). The caller must have
    *  already detached the rig from the animated set so `animate()` won't fight the tweens. */
   deathPop(vx: number, vy: number): void {
+    this.resetSwingCombo();
+    this.resetSecondaryMotion();
     const dur = 520;
     const spin = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 3);
     const peak = 36 + Math.random() * 34;
@@ -623,7 +715,8 @@ export class SpriteRig {
       from: 0,
       to: 1,
       duration: dur,
-      onUpdate: (tw) => this.setHop(Math.sin((tw.getValue() ?? 0) * Math.PI) * peak),
+      onUpdate: (tw) =>
+        this.setHop(Math.sin((tw.getValue() ?? 0) * Math.PI) * peak),
     });
   }
 
@@ -639,7 +732,14 @@ export class SpriteRig {
    *  so it scales + moves with the rig. */
   addGlow(color: number): void {
     const glow = this.scene.add
-      .ellipse(0, -TARGET_BODY_H * 0.35, TARGET_BODY_H * 1.9, TARGET_BODY_H * 1.9, color, 0.3)
+      .ellipse(
+        0,
+        -TARGET_BODY_H * 0.35,
+        TARGET_BODY_H * 1.9,
+        TARGET_BODY_H * 1.9,
+        color,
+        0.3,
+      )
       .setBlendMode(Phaser.BlendModes.ADD);
     this.root.addAt(glow, 0); // behind every part
     this.scene.tweens.add({
@@ -655,11 +755,46 @@ export class SpriteRig {
 
   /** Weapon/scene lifetime boundary: no accepted cadence or held guard may cross it. */
   private resetSwingCombo(): void {
+    this.releaseAttackVisuals();
     this.swingStart = -1e9;
     this.swing = undefined;
     this.swingAimWorld = Number.NaN;
     this.swingChained = false;
     this.resetComboChain(true);
+  }
+
+  /** Undo only the late signature multipliers/offsets when animation will not get another frame (death,
+   * down, or weapon lifetime change). Ordinary authored hand positions may remain as the launch pose. */
+  private releaseAttackVisuals(): void {
+    if (!this.signatureMotion) return;
+    const attackDy = this.attackArtOffY - this.attackLiftPx;
+    for (const part of this.parts) {
+      part.x -= this.attackArtOffX;
+      part.y -= attackDy;
+      part.scaleY /= Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
+    }
+    for (const weapon of this.weapons) {
+      weapon.img.x -= this.attackArtOffX;
+      weapon.img.y -= attackDy;
+      weapon.img.scaleX /=
+        Math.abs(this.weaponLengthScale) > 1e-5 ? this.weaponLengthScale : 1;
+      weapon.img.scaleY /=
+        Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
+    }
+    this.body.scaleX = Math.abs(this.body.scaleX);
+    const shrink = Math.max(0.42, 1 - this.hopPx / 420);
+    this.shadow
+      .setPosition(0, TARGET_BODY_H * 0.42)
+      .setRotation(0)
+      .setScale(shrink, shrink)
+      .setAlpha(0.3 * shrink);
+    this.signatureMotion = undefined;
+    this.attackArtOffX = 0;
+    this.attackArtOffY = 0;
+    this.attackLiftPx = 0;
+    this.attackScaleY = 1;
+    this.weaponLengthScale = 1;
+    this.attackGripBlend = 0;
   }
 
   /** Timeout may preserve the old hold long enough to ease it out; swaps clear it immediately. */
@@ -670,13 +805,19 @@ export class SpriteRig {
     this.comboWeaponId = "";
     this.swingStep = 0;
     this.swingDirection = 1;
+    this.swingFamily = "none";
+    this.swingVariant = "default";
     if (clearHold) this.comboHoldPose = undefined;
   }
 
   /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
    *  parts). Each piece is held UPRIGHT in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
-  equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
+  equipWeapon(
+    spriteId: string,
+    def: WeaponDef,
+    manifest: SpriteManifest,
+  ): void {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
@@ -697,7 +838,12 @@ export class SpriteRig {
     ): Phaser.GameObjects.Image | undefined => {
       if (!part || !hand) return undefined;
       const tx = partTexture(this.scene, spriteId, part.role);
-      const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
+      const img = this.scene.add.image(
+        hand.img.x,
+        hand.img.y,
+        tx.key,
+        tx.frame,
+      );
       const wScale = def.displayLength / part.w;
       img.setOrigin(worn ? 0.4 : def.gripFrac, 0.5).setScale(wScale);
       this.root.add(img);
@@ -706,7 +852,9 @@ export class SpriteRig {
     };
     const frontWpn = attach(manifest.parts[0], frontHand);
     const backWpn =
-      def.dual && manifest.parts.length >= 2 ? attach(manifest.parts[1], backHand) : undefined;
+      def.dual && manifest.parts.length >= 2
+        ? attach(manifest.parts[1], backHand)
+        : undefined;
 
     // Explicit z-stack (bottom→top): each weapon overlays the BODY but tucks UNDER its hand.
     // Single-wield keeps the back hand behind the body; dual brings it forward so both read.
@@ -751,10 +899,16 @@ export class SpriteRig {
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the scene clock accepted/predicted
    *  epoch, shared locally by rig/VFX/quake; `aimWorld` freezes aim. The optional descriptor is computed once
    *  by ArenaScene from effective cooldown; server acceptance sync is the later protocol reconciliation. */
-  triggerSwing(timeMs: number, aimWorld?: number, swing?: SwingDescriptor): void {
-    const nextSwing =
+  triggerSwing(
+    timeMs: number,
+    aimWorld?: number,
+    swing?: SwingDescriptor,
+  ): void {
+    let nextSwing =
       swing ??
-      (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
+      (this.weaponDef
+        ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown)
+        : undefined);
     // §41 SPIN CHAIN remains byte-for-byte the old pose-window+150ms test. Ordinary styles no longer infer
     // continuity from their short 0.64× visual: they advance below from effective accepted cadence+grace.
     if (nextSwing?.style === "spin" && this.swing) {
@@ -764,9 +918,12 @@ export class SpriteRig {
       this.swingChained = false;
     }
 
-    const family = CLIENT_VISUAL_COMBOS ? comboFamilyFor(nextSwing?.style) : "none";
-    if (nextSwing && family !== "none" && this.weaponDef) {
-      const sequence = MELEE_COMBO_SEQUENCES[family];
+    const selection =
+      CLIENT_VISUAL_COMBOS && nextSwing && this.weaponDef
+        ? meleeComboSelectionFor(this.weaponDef, nextSwing.style)
+        : undefined;
+    if (nextSwing && selection && this.weaponDef) {
+      const { family, variant, sequence } = selection;
       const continues =
         this.comboFamily === family &&
         this.comboWeaponId === this.weaponDef.id &&
@@ -778,14 +935,31 @@ export class SpriteRig {
         // grace. Early buffered requests only reach this method when locally fired; Stage 2 will reconcile
         // this same `(weapon,family,step)` snapshot from authoritative swingSeq/comboStep.
         const expiresAtMs =
-          timeMs + nextSwing.effectiveCooldown * 1000 + comboGraceMs(nextSwing.effectiveCooldown);
+          timeMs +
+          nextSwing.effectiveCooldown * 1000 +
+          comboGraceMs(nextSwing.effectiveCooldown);
         this.comboFamily = family;
         this.comboStep = step;
         this.comboExpiresAtMs = expiresAtMs;
         this.comboWeaponId = this.weaponDef.id;
         this.swingStep = step;
         this.swingDirection = authored.direction;
-        this.comboHoldPose = { family, step, direction: authored.direction, expiresAtMs };
+        this.swingFamily = family;
+        this.swingVariant = variant;
+        this.comboHoldPose = {
+          family,
+          variant,
+          step,
+          direction: authored.direction,
+          expiresAtMs,
+        };
+        // Stage 1 enriches the local immutable clock only. Arena/VFX/server retain the original descriptor,
+        // so gameplay remains the legacy centered single sweep and quake still fires on its accepted clock.
+        nextSwing = swingDescriptorWithComboStep(
+          nextSwing,
+          this.weaponDef,
+          step,
+        );
       }
     } else {
       this.resetComboChain(true);
@@ -803,7 +977,9 @@ export class SpriteRig {
     // envelope from 0 — that re-ramps the raise over ~81ms and flickers the guard OFF for a frame right in
     // the Sekiro rhythm. Restart at the PLATEAU time instead so the guard holds continuously.
     this.braceStart =
-      timeMs - this.braceStart < SpriteRig.BRACE_DUR ? timeMs - 0.18 * SpriteRig.BRACE_DUR : timeMs;
+      timeMs - this.braceStart < SpriteRig.BRACE_DUR
+        ? timeMs - 0.18 * SpriteRig.BRACE_DUR
+        : timeMs;
   }
 
   /** §8 Brand augment: a persistent ember-orange tint marking a Marked enemy (takes more damage). */
@@ -833,15 +1009,18 @@ export class SpriteRig {
   /** Re-apply the resting tint (downed grey > Brand ember-orange > none). */
   private restTint(): void {
     for (const p of this.parts) {
-      if (this.downed) p.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
-      else if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
+      if (this.downed)
+        p.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (this.branded)
+        p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
       else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     }
   }
 
   /** Brief impact flash on every part (§20 hit feedback / §6 revive pop), then back to the resting tint. */
   flash(ms = 80, color = 0xffffff): void {
-    for (const p of this.parts) p.setTint(color).setTintMode(Phaser.TintModes.FILL);
+    for (const p of this.parts)
+      p.setTint(color).setTintMode(Phaser.TintModes.FILL);
     // §20 a newer hit owns the flash window: cancel the prior expiry so it cannot clear this tint early.
     this.flashTimer?.remove(false);
     this.flashTimer = this.scene.time.delayedCall(ms, () => {
@@ -876,6 +1055,609 @@ export class SpriteRig {
     this.root.destroy();
   }
 
+  /** Hammer-head fulcrum vault. Canonical .66 contact is remapped onto the immutable Stage-1 impact clock. */
+  private applyFulcrumFlip(tt: number, aimLocal: number): number {
+    this.signatureMotion = "fulcrum-flip";
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const s = this.scale;
+    const acceptedImpact = Math.max(
+      0.36,
+      Math.min(
+        0.66,
+        (this.swing?.impactSeconds ?? CHOP_IMPACT_FRAC) /
+          Math.max(1e-6, this.swing?.poseSeconds ?? 1),
+      ),
+    );
+    const activeStart =
+      0.18 + ((0.5 - 0.18) * (acceptedImpact - 0.18)) / (0.66 - 0.18);
+    const followEnd =
+      acceptedImpact + ((1 - acceptedImpact) * (0.82 - 0.66)) / (1 - 0.66);
+    const businessLength = Math.max(
+      H * 0.52,
+      ((1 - (this.weaponDef?.gripFrac ?? 0.1)) *
+        (this.weaponDef?.displayLength ?? H)) /
+        (this.baseScale || 1),
+    );
+    const setGripFromHead = (
+      headX: number,
+      headY: number,
+      angle: number,
+      length: number,
+      spacing: number,
+    ): void => {
+      const ux = Math.cos(angle);
+      const uy = Math.sin(angle);
+      this.attackGripX = headX - ux * businessLength * length;
+      this.attackGripY = headY - uy * businessLength * length;
+      const lengthSign = length < 0 ? -1 : 1;
+      this.attackBackGripX = this.attackGripX - ux * spacing * lengthSign;
+      this.attackBackGripY = this.attackGripY - uy * spacing * lengthSign;
+      this.attackHandSpacing = spacing;
+      this.attackGripBoth = true;
+    };
+
+    let angle = aimLocal;
+    if (tt < 0.08) {
+      const p = smoothstep01(tt / 0.08);
+      this.attackArtOffX = -fx * H * 0.03 * p;
+      this.attackArtOffY = -fy * H * 0.03 * p;
+      this.body.rotation -= 0.12 * Math.cos(aimLocal) * p;
+      this.body.scaleY *= 1 - 0.06 * p;
+      this.weaponLengthScale = 1;
+      angle = aimLocal - 0.72 * (1 - p);
+      const headDist = H * (0.22 + 0.3 * p);
+      setGripFromHead(fx * headDist, fy * headDist, angle, 1, H * 0.3);
+      this.attackGripBlend = p;
+      this.attackWeaponDepth = 1;
+      this.attackShadowX = this.attackArtOffX;
+      this.attackShadowY = this.attackArtOffY;
+      this.attackShadowScaleX = 1 + 0.05 * p;
+      this.attackShadowScaleY = 1 - 0.08 * p;
+    } else if (tt < 0.18) {
+      const p = smoothstep01((tt - 0.08) / 0.1);
+      const ground = H * (-0.03 + 0.09 * p);
+      this.attackArtOffX = fx * ground;
+      this.attackArtOffY = fy * ground;
+      this.body.scaleY *= 0.94 - 0.04 * p;
+      this.body.rotation -= 0.12 * Math.cos(aimLocal) * (1 - p);
+      this.weaponLengthScale = 1 - 0.06 * p;
+      setGripFromHead(
+        fx * H * 0.52,
+        fy * H * 0.52,
+        angle,
+        this.weaponLengthScale,
+        H * 0.3,
+      );
+      this.attackGripBlend = 1;
+      this.attackWeaponDepth = p > 0.78 ? -1 : 1;
+      this.attackShadowX = fx * H * (-0.03 + 0.08 * p);
+      this.attackShadowY = fy * H * (-0.03 + 0.08 * p);
+      this.attackShadowScaleX = 1.05 + 0.07 * p;
+      this.attackShadowScaleY = 0.92 - 0.1 * p;
+    } else if (tt < activeStart) {
+      const p = clamp01((tt - 0.18) / Math.max(1e-6, activeStart - 0.18));
+      const e = smoothstep01(p);
+      const ground = H * (0.06 + 0.34 * e);
+      const apex = Math.sin(Math.PI * p);
+      this.attackArtOffX = fx * ground;
+      this.attackArtOffY = fy * ground;
+      this.attackLiftPx = H * 0.4 * apex;
+      this.attackScaleY = signedClamp(Math.cos(Math.PI * 2 * e), 0.12);
+      this.body.rotation +=
+        0.08 * Math.sin(Math.PI * 2 * e) * Math.cos(aimLocal);
+      this.weaponLengthScale = signedClamp(Math.cos(Math.PI * e), 0.16);
+      const release = smoothstep01((p - 0.72) / 0.28);
+      const headX = fx * H * (0.52 - 0.12 * release);
+      const headY = fy * H * (0.52 - 0.12 * release) - H * 0.18 * release;
+      const spacing = H * (0.3 - 0.12 * apex);
+      setGripFromHead(
+        headX,
+        headY,
+        angle,
+        this.weaponLengthScale,
+        Math.max(H * 0.18, spacing),
+      );
+      this.attackGripBlend = 1;
+      this.attackWeaponDepth = p <= 0.72 ? -1 : 1;
+      const shadowGround = H * (0.05 + 0.17 * e);
+      this.attackShadowX = fx * shadowGround;
+      this.attackShadowY = fy * shadowGround;
+      this.attackShadowScaleX = 1 - 0.42 * apex;
+      this.attackShadowScaleY = 1 - 0.42 * apex;
+      this.attackShadowAlpha = 1 - 0.45 * apex;
+    } else if (tt < acceptedImpact) {
+      const p = clamp01(
+        (tt - activeStart) / Math.max(1e-6, acceptedImpact - activeStart),
+      );
+      const fall = p * p;
+      const ground = H * (0.4 - 0.12 * fall);
+      this.attackArtOffX = fx * ground;
+      this.attackArtOffY = fy * ground;
+      this.body.y += H * 0.08 * fall * s;
+      this.body.rotation += 0.22 * Math.cos(aimLocal) * fall;
+      this.body.scaleY *= 1 - 0.18 * fall;
+      this.weaponLengthScale = signedClamp(-1 + 2 * smoothstep01(p), 0.16);
+      const headDist = H * (0.4 + 0.14 * fall);
+      setGripFromHead(
+        fx * headDist,
+        fy * headDist - H * 0.18 * (1 - fall),
+        angle,
+        this.weaponLengthScale,
+        H * (0.18 + 0.12 * fall),
+      );
+      this.attackGripBlend = 1;
+      this.attackWeaponDepth = p > 0.88 ? -1 : 1;
+      this.attackShadowX = fx * H * (0.22 + 0.06 * fall);
+      this.attackShadowY = fy * H * (0.22 + 0.06 * fall);
+      this.attackShadowScaleX = 1 + 0.22 * fall;
+      this.attackShadowScaleY = 1 - 0.26 * fall;
+      this.attackShadowAlpha = 1 + 0.15 * fall;
+    } else if (tt < followEnd) {
+      const p = clamp01(
+        (tt - acceptedImpact) / Math.max(1e-6, followEnd - acceptedImpact),
+      );
+      this.attackArtOffX = fx * H * 0.28;
+      this.attackArtOffY = fy * H * 0.28;
+      this.body.y += H * 0.08 * s;
+      this.body.rotation += 0.22 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.86 + 0.02 * p;
+      const recoil = p < 0.2 ? Math.sin((p / 0.2) * Math.PI) : 0;
+      this.weaponLengthScale = 1 - 0.06 * recoil;
+      angle += 0.1 + 0.03 * Math.sin(p * Math.PI * 6) * (1 - p);
+      setGripFromHead(
+        fx * H * 0.54,
+        fy * H * 0.54,
+        angle,
+        this.weaponLengthScale,
+        H * 0.3,
+      );
+      this.attackGripBlend = 1;
+      this.attackWeaponDepth = -1;
+      this.attackShadowX = fx * H * 0.28;
+      this.attackShadowY = fy * H * 0.28;
+      this.attackShadowScaleX = 1.22 - 0.14 * smoothstep01(p);
+      this.attackShadowScaleY = 0.74 + 0.16 * smoothstep01(p);
+      this.attackShadowAlpha = 1.15 - 0.15 * smoothstep01(p);
+    } else {
+      const p = smoothstep01((tt - followEnd) / Math.max(1e-6, 1 - followEnd));
+      const ground = H * (0.28 - 0.2 * p);
+      this.attackArtOffX = fx * ground;
+      this.attackArtOffY = fy * ground;
+      this.body.y += H * 0.08 * (1 - p) * s;
+      this.body.rotation += 0.22 * Math.cos(aimLocal) * (1 - p);
+      this.body.scaleY *= 0.88 + 0.12 * p;
+      angle = aimLocal + 0.1 - 0.18 * p;
+      const ux = Math.cos(angle);
+      const uy = Math.sin(angle);
+      const headX = fx * H * (0.54 - 0.29 * p);
+      const headY =
+        fy * H * (0.54 - 0.29 * p) - H * 0.06 * Math.sin(Math.PI * p);
+      this.weaponLengthScale = 1;
+      this.attackGripX = headX - ux * businessLength;
+      this.attackGripY = headY - uy * businessLength;
+      this.attackHandSpacing = H * (0.3 + 0.12 * p);
+      this.attackBackGripX = this.attackGripX - ux * this.attackHandSpacing;
+      this.attackBackGripY = this.attackGripY - uy * this.attackHandSpacing;
+      this.attackGripBoth = true;
+      this.attackGripBlend = 1 - p;
+      this.attackWeaponDepth = p < 0.45 ? -1 : 1;
+      this.attackShadowX = fx * ground;
+      this.attackShadowY = fy * ground;
+      this.attackShadowScaleX = 1.08 - 0.08 * p;
+      this.attackShadowScaleY = 0.9 + 0.1 * p;
+    }
+    return angle;
+  }
+
+  private applyStinger(tt: number, aimLocal: number): number {
+    this.signatureMotion = "stinger";
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const setArt = (distance: number): void => {
+      this.attackArtOffX = fx * H * distance;
+      this.attackArtOffY = fy * H * distance;
+    };
+    const setHands = (leadDistance: number, rearDistance: number): void => {
+      this.swingOffX = fx * H * leadDistance - this.attackArtOffX;
+      this.swingOffY = fy * H * leadDistance - this.attackArtOffY;
+      this.swingBackOffX = fx * H * rearDistance - this.attackArtOffX;
+      this.swingBackOffY = fy * H * rearDistance - this.attackArtOffY;
+    };
+    this.attackShadowRotation = aimLocal;
+    this.attackHandSpacing = H * 0.3;
+    if (tt < 0.12) {
+      const p = smoothstep01(tt / 0.12);
+      setArt(-0.04 * p);
+      setHands(-0.12 * p, -0.04 * p);
+      this.body.scaleX *= 1 - 0.1 * p;
+      this.body.scaleY *= 1 + 0.03 * p;
+      this.body.rotation -= 0.08 * Math.cos(aimLocal) * p;
+      this.weaponLengthScale = 1 - 0.08 * p;
+      this.attackShadowX = fx * H * -0.03 * p;
+      this.attackShadowY = fy * H * -0.03 * p;
+      this.attackShadowScaleX = 1 - 0.08 * p;
+      this.attackShadowScaleY = 1 + 0.04 * p;
+    } else if (tt < 0.24) {
+      const p = smoothstep01((tt - 0.12) / 0.12);
+      setArt(-0.04 - 0.02 * p);
+      setHands(-0.12 - 0.06 * p, -0.04 - 0.025 * p);
+      this.body.scaleX *= 0.9 - 0.02 * p;
+      this.body.scaleY *= 1.03 - 0.13 * p;
+      this.body.rotation -= 0.08 * Math.cos(aimLocal) * (1 - 0.25 * p);
+      this.weaponLengthScale = 0.92 - 0.04 * p;
+      this.attackShadowX = fx * H * (-0.03 - 0.02 * p);
+      this.attackShadowY = fy * H * (-0.03 - 0.02 * p);
+      this.attackShadowScaleX = 0.92 + 0.16 * p;
+      this.attackShadowScaleY = 1.04 - 0.08 * p;
+    } else if (tt < 0.58) {
+      const p = clamp01((tt - 0.24) / 0.34);
+      const handTravel = cubicOut01(p);
+      const bodyTravel = cubicOut01((p - 0.08) / 0.92);
+      setArt(0.25 * bodyTravel);
+      setHands(0.62 * handTravel, 0.62 * 0.35 * handTravel);
+      this.body.scaleX *= 0.88 - 0.04 * bodyTravel;
+      this.body.scaleY *= 0.9 + 0.02 * bodyTravel;
+      this.body.rotation += 0.11 * Math.cos(aimLocal) * bodyTravel;
+      this.weaponLengthScale =
+        p < 0.78
+          ? 0.88 + 0.2 * smoothstep01(p / 0.78)
+          : 1.08 - 0.08 * smoothstep01((p - 0.78) / 0.22);
+      this.attackShadowX = fx * H * 0.18 * bodyTravel;
+      this.attackShadowY = fy * H * 0.18 * bodyTravel;
+      this.attackShadowScaleX = 1.08 + 0.34 * bodyTravel;
+      this.attackShadowScaleY = 0.96 - 0.3 * bodyTravel;
+    } else if (tt < 0.7) {
+      const p = clamp01((tt - 0.58) / 0.12);
+      setArt(0.25 - 0.02 * smoothstep01(p));
+      setHands(0.62 - 0.04 * smoothstep01(p), 0.217 - 0.025 * smoothstep01(p));
+      this.body.scaleX *= 0.84 + 0.06 * smoothstep01(p);
+      this.body.scaleY *= 0.92;
+      this.weaponLengthScale = 1 - 0.04 * Math.sin(Math.PI * p);
+      this.attackShadowX = fx * H * (0.18 - 0.02 * p);
+      this.attackShadowY = fy * H * (0.18 - 0.02 * p);
+      this.attackShadowScaleX = 1.42 - 0.3 * smoothstep01(p);
+      this.attackShadowScaleY = 0.66 + 0.18 * smoothstep01(p);
+    } else {
+      const p = smoothstep01((tt - 0.7) / 0.3);
+      setArt(0.23 - 0.18 * p);
+      setHands(0.58 - 0.7 * p, 0.192 - 0.28 * p);
+      this.body.scaleX *= 0.9 + 0.1 * p;
+      this.body.scaleY *= 0.92 + 0.08 * p;
+      this.body.rotation += 0.11 * Math.cos(aimLocal) * (1 - p);
+      this.weaponLengthScale = 1;
+      this.attackShadowX = fx * H * 0.16 * (1 - p);
+      this.attackShadowY = fy * H * 0.16 * (1 - p);
+      this.attackShadowScaleX = 1.12 - 0.12 * p;
+      this.attackShadowScaleY = 0.84 + 0.16 * p;
+    }
+    return aimLocal;
+  }
+
+  private applyHeroSpin(tt: number, aimLocal: number): number {
+    this.signatureMotion = "spin-release";
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    const front = this.hands.find((hand) => hand.front);
+    const SQ = 0.34;
+    const tuckAngle = aimLocal - 2.15;
+    const tuckX = (front?.ox ?? 0) - fx * H * 0.1 + nx * H * 0.12;
+    const tuckY = (front?.oy ?? 0) - fy * H * 0.1 + ny * H * 0.12;
+    const setOrbitGrip = (theta: number, radius: number): number => {
+      const rx = Math.cos(theta);
+      const ry = Math.sin(theta) * SQ;
+      const projected = Math.hypot(rx, ry);
+      this.attackGripX = rx * radius;
+      this.attackGripY = H * 0.06 + ry * radius;
+      this.attackGripBlend = 1;
+      this.weaponLengthScale = projected;
+      this.attackWeaponDepth = Math.sin(theta) < 0 ? -1 : 1;
+      const ux = projected > 1e-5 ? rx / projected : 1;
+      const uy = projected > 1e-5 ? ry / projected : 0;
+      this.swingBackOffX = -ux * H * 0.14;
+      this.swingBackOffY = -uy * H * 0.14;
+      return Math.atan2(ry, rx);
+    };
+
+    let angle = tuckAngle;
+    this.attackGripBoth = false;
+    if (tt < 0.18) {
+      const p = smoothstep01(tt / 0.18);
+      this.attackArtOffX = (-fx * 0.03 - nx * 0.05) * H * p;
+      this.attackArtOffY = (-fy * 0.03 - ny * 0.05) * H * p;
+      this.body.rotation -= 0.16 * p;
+      this.body.scaleY *= 1 - 0.09 * p;
+      this.attackGripX = tuckX;
+      this.attackGripY = tuckY;
+      this.attackGripBlend = p;
+      this.weaponLengthScale = 1 - 0.06 * p;
+      this.attackWeaponDepth = 1;
+      this.swingBackOffX = -nx * H * 0.1 * p;
+      this.swingBackOffY = -ny * H * 0.1 * p;
+      this.attackShadowX = (-fx * 0.04 - nx * 0.03) * H * p;
+      this.attackShadowY = (-fy * 0.04 - ny * 0.03) * H * p;
+      this.attackShadowScaleX = 1 + 0.08 * p;
+      this.attackShadowScaleY = 1 - 0.14 * p;
+    } else if (tt < 0.3) {
+      const p = (tt - 0.18) / 0.12;
+      const tremor =
+        Math.sin(this.scene.time.now * 0.018 * Math.PI * 2) * this.scale;
+      this.attackArtOffX = (-fx * 0.03 - nx * 0.05) * H;
+      this.attackArtOffY = (-fy * 0.03 - ny * 0.05) * H;
+      this.body.rotation -= 0.16;
+      this.body.scaleY *= 0.91;
+      this.attackGripX = tuckX + nx * tremor;
+      this.attackGripY = tuckY + ny * tremor;
+      this.attackGripBlend = 1;
+      this.weaponLengthScale = 0.94;
+      this.attackWeaponDepth = 1;
+      this.swingBackOffX = -nx * H * 0.1;
+      this.swingBackOffY = -ny * H * 0.1;
+      const pulse = Math.sin(p * Math.PI * 2) * 0.03;
+      this.attackShadowX = (-fx * 0.04 - nx * 0.03) * H;
+      this.attackShadowY = (-fy * 0.04 - ny * 0.03) * H;
+      this.attackShadowScaleX = 1.08 + pulse;
+      this.attackShadowScaleY = 0.86 + pulse;
+    } else if (tt < 0.66) {
+      const p = clamp01((tt - 0.3) / 0.36);
+      const e = cubicOut01(p);
+      const theta = tuckAngle + Math.PI * 2 * e;
+      const radius = H * (0.18 + 0.12 * smoothstep01(p / 0.18));
+      angle = setOrbitGrip(theta, radius);
+      this.attackArtOffX = (-fx * 0.03 - nx * 0.05) * H * (1 - p);
+      this.attackArtOffY = (-fy * 0.03 - ny * 0.05) * H * (1 - p);
+      const profile = signedClamp(Math.cos(Math.PI * 2 * e), 0.18);
+      this.body.scaleX *= profile;
+      this.body.scaleY *= 0.91;
+      this.body.rotation += 0.05 * Math.sin(Math.PI * 4 * e);
+      this.attackShadowScaleX = 1.14;
+      this.attackShadowScaleY = 0.78;
+      this.attackShadowRotation = theta * 0.5;
+    } else if (tt < 0.78) {
+      const p = smoothstep01((tt - 0.66) / 0.12);
+      const theta = tuckAngle + Math.PI * 2 + 0.28 * p;
+      angle = setOrbitGrip(theta, H * 0.3);
+      this.body.scaleX *= 0.92 + 0.08 * p;
+      this.body.scaleY *= 0.91 + 0.03 * p;
+      this.body.rotation += 0.12;
+      this.attackShadowScaleX = 1.14 - 0.1 * p;
+      this.attackShadowScaleY = 0.78 + 0.14 * p;
+      this.attackShadowRotation = theta * 0.5;
+    } else {
+      const p = smoothstep01((tt - 0.78) / 0.22);
+      const theta = tuckAngle + Math.PI * 2 + 0.28;
+      const rx = Math.cos(theta);
+      const ry = Math.sin(theta) * SQ;
+      const startX = rx * H * 0.3;
+      const startY = H * 0.06 + ry * H * 0.3;
+      const lowX = (front?.ox ?? 0) + fx * H * 0.12 - nx * H * 0.1;
+      const lowY = (front?.oy ?? 0) + fy * H * 0.12 - ny * H * 0.1;
+      this.attackGripX = startX + (lowX - startX) * p;
+      this.attackGripY = startY + (lowY - startY) * p;
+      this.attackGripBlend = 1 - p;
+      this.swingOffX = fx * H * 0.12 - nx * H * 0.1;
+      this.swingOffY = fy * H * 0.12 - ny * H * 0.1;
+      const projectedAngle = Math.atan2(ry, rx);
+      angle = projectedAngle + (aimLocal + Math.PI - 0.35 - projectedAngle) * p;
+      this.weaponLengthScale =
+        Math.hypot(rx, ry) + (1 - Math.hypot(rx, ry)) * p;
+      this.attackWeaponDepth = p < 0.45 && Math.sin(theta) < 0 ? -1 : 1;
+      this.swingBackOffX = -rx * H * 0.14 * (1 - p);
+      this.swingBackOffY = -ry * H * 0.14 * (1 - p);
+      this.body.rotation += 0.12 - 0.08 * p;
+      this.body.scaleX *= 1;
+      this.body.scaleY *= 0.94 + 0.06 * p;
+      this.attackShadowScaleX = 1.04 - 0.04 * p;
+      this.attackShadowScaleY = 0.92 + 0.08 * p;
+      this.attackShadowRotation = theta * 0.5 * (1 - p);
+    }
+    return angle;
+  }
+
+  private applyPommelBash(tt: number, aimLocal: number): number {
+    this.signatureMotion = "pommel-bash";
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    let angle = aimLocal + Math.PI;
+    if (tt < 0.12) {
+      const p = smoothstep01(tt / 0.12);
+      const drive = H * 0.02 * p;
+      this.attackArtOffX = fx * drive;
+      this.attackArtOffY = fy * drive;
+      this.swingOffX = fx * H * 0.08 * p;
+      this.swingOffY = fy * H * 0.08 * p;
+      this.body.rotation -= 0.1 * Math.cos(aimLocal) * p;
+      this.attackHandSpacing = H * (0.42 - 0.18 * p);
+      angle += 0.18 * (1 - p);
+      this.attackShadowX = fx * H * 0.03 * p;
+      this.attackShadowY = fy * H * 0.03 * p;
+      this.attackShadowScaleX = 1 - 0.04 * p;
+      this.attackShadowScaleY = 1 + 0.06 * p;
+    } else if (tt < 0.3) {
+      const p = cubicOut01((tt - 0.12) / 0.18);
+      const bodyDrive = H * (0.02 + 0.06 * p);
+      this.attackArtOffX = fx * bodyDrive;
+      this.attackArtOffY = fy * bodyDrive;
+      this.swingOffX = fx * H * (0.08 + 0.16 * p) - this.attackArtOffX;
+      this.swingOffY = fy * H * (0.08 + 0.16 * p) - this.attackArtOffY;
+      this.body.rotation += (-0.1 + 0.2 * p) * Math.cos(aimLocal);
+      this.body.scaleX *= 1 - 0.08 * p;
+      this.attackHandSpacing = H * 0.24;
+      angle = aimLocal + Math.PI + 0.18 * p;
+      this.attackShadowX = fx * H * (0.03 + 0.05 * p);
+      this.attackShadowY = fy * H * (0.03 + 0.05 * p);
+      this.attackShadowScaleX = 0.96 + 0.12 * p;
+      this.attackShadowScaleY = 1.06 - 0.2 * p;
+    } else if (tt < 0.44) {
+      const p = smoothstep01((tt - 0.3) / 0.14);
+      const bodyDrive = H * (0.08 - 0.05 * p);
+      this.attackArtOffX = fx * bodyDrive;
+      this.attackArtOffY = fy * bodyDrive;
+      this.swingOffX = fx * H * (0.24 - 0.05 * p) - this.attackArtOffX;
+      this.swingOffY = fy * H * (0.24 - 0.05 * p) - this.attackArtOffY;
+      this.body.rotation += 0.1 * Math.cos(aimLocal) * (1 - p);
+      this.body.scaleX *= 0.92 + 0.08 * p;
+      this.attackHandSpacing = H * (0.24 + 0.08 * p);
+      angle = aimLocal + Math.PI + 0.18 + 0.1 * Math.sin(Math.PI * p);
+      this.attackShadowX = fx * H * (0.08 - 0.05 * p);
+      this.attackShadowY = fy * H * (0.08 - 0.05 * p);
+      this.attackShadowScaleX = 1.08 - 0.14 * Math.sin(Math.PI * p);
+      this.attackShadowScaleY = 0.86 + 0.18 * Math.sin(Math.PI * p);
+    } else {
+      const p = smoothstep01((tt - 0.44) / 0.56);
+      const loadAngle = aimLocal - Math.PI / 2 - 0.62;
+      angle =
+        aimLocal +
+        Math.PI +
+        0.18 +
+        (loadAngle - (aimLocal + Math.PI + 0.18)) * p;
+      this.attackArtOffX = fx * H * 0.03 * (1 - p);
+      this.attackArtOffY = fy * H * 0.03 * (1 - p);
+      this.swingOffX = fx * H * 0.19 * (1 - p);
+      this.swingOffY = fy * H * 0.19 * (1 - p) - H * 0.08 * p;
+      this.body.scaleY *= 1 + 0.04 * p;
+      this.body.rotation -= 0.1 * p;
+      this.attackHandSpacing = H * (0.32 + 0.1 * p);
+      this.attackShadowX = fx * H * 0.03 * (1 - p);
+      this.attackShadowY = fy * H * 0.03 * (1 - p);
+      this.attackShadowScaleX = 1;
+      this.attackShadowScaleY = 1;
+    }
+    return angle;
+  }
+
+  private applyTrueChargedSlam(tt: number, aimLocal: number): number {
+    this.signatureMotion = "true-charged-slam";
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const behindAngle = aimLocal + Math.PI - 0.35;
+    const fallAngle = aimLocal + 0.08;
+    let angle = behindAngle;
+    if (tt < 0.22) {
+      const p = smoothstep01(tt / 0.22);
+      this.attackArtOffX = -fx * H * 0.04 * p;
+      this.attackArtOffY = -fy * H * 0.04 * p;
+      this.swingOffX = -fx * H * 0.1 * p;
+      this.swingOffY = -fy * H * 0.1 * p;
+      this.body.rotation -= 0.14 * Math.cos(aimLocal) * p;
+      this.body.scaleY *= 1 - 0.06 * p;
+      this.attackHandSpacing = H * 0.42;
+      this.attackWeaponDepth = -1;
+      this.attackShadowX = -fx * H * 0.04 * p;
+      this.attackShadowY = -fy * H * 0.04 * p;
+      this.attackShadowScaleX = 1 + 0.05 * p;
+      this.attackShadowScaleY = 1 - 0.1 * p;
+    } else if (tt < 0.34) {
+      const p = smoothstep01((tt - 0.22) / 0.12);
+      const tremor =
+        Math.sin(this.scene.time.now * 0.013 * Math.PI * 2) * this.scale;
+      this.attackArtOffX = -fx * H * 0.04;
+      this.attackArtOffY = -fy * H * 0.04;
+      this.swingOffX = -fx * H * 0.1 + -fy * tremor;
+      this.swingOffY = -fy * H * 0.1 + fx * tremor;
+      this.body.rotation -= 0.14 * Math.cos(aimLocal) * (1 + 0.25 * p);
+      this.body.scaleY *= 0.94 + 0.12 * p;
+      this.weaponLengthScale = 1 - 0.78 * p;
+      this.attackLiftPx = H * 0.05 * p;
+      this.attackHandSpacing = H * 0.42;
+      this.attackWeaponDepth = p < 0.72 ? -1 : 1;
+      this.attackShadowX = -fx * H * 0.04;
+      this.attackShadowY = -fy * H * 0.04;
+      this.attackShadowScaleX = 1.05 - 0.15 * p;
+      this.attackShadowScaleY = 0.9 - 0.1 * p;
+      this.attackShadowAlpha = 1 - 0.12 * p;
+    } else if (tt < 0.46) {
+      const p = smoothstep01((tt - 0.34) / 0.12);
+      this.attackArtOffX = fx * H * (-0.04 + 0.2 * p);
+      this.attackArtOffY = fy * H * (-0.04 + 0.2 * p);
+      this.swingOffX = fx * H * (-0.1 + 0.18 * p);
+      this.swingOffY = fy * H * (-0.1 + 0.18 * p);
+      this.body.rotation -= 0.175 * Math.cos(aimLocal) * (1 - p);
+      this.body.scaleY *= 1.06 - 0.02 * p;
+      angle = behindAngle + (fallAngle - behindAngle) * p;
+      this.weaponLengthScale = 0.22 + 0.5 * p;
+      this.attackLiftPx = H * 0.05 * (1 - p);
+      this.attackHandSpacing = H * (0.42 - 0.08 * p);
+      this.attackWeaponDepth = 1;
+      this.attackShadowX = fx * H * (-0.04 + 0.16 * p);
+      this.attackShadowY = fy * H * (-0.04 + 0.16 * p);
+      this.attackShadowRotation = aimLocal;
+      this.attackShadowScaleX = 0.9 + 0.28 * p;
+      this.attackShadowScaleY = 0.8 - 0.04 * p;
+      this.attackShadowAlpha = 0.88 + 0.12 * p;
+    } else if (tt < 0.61) {
+      const p = clamp01((tt - 0.46) / 0.15);
+      const fall = p * p;
+      this.attackArtOffX = fx * H * (0.16 + 0.08 * fall);
+      this.attackArtOffY = fy * H * (0.16 + 0.08 * fall);
+      this.swingOffX = fx * H * (0.08 + 0.26 * fall) - this.attackArtOffX;
+      this.swingOffY = fy * H * (0.08 + 0.26 * fall) - this.attackArtOffY;
+      this.body.rotation += (-0.02 + 0.22 * fall) * Math.cos(aimLocal);
+      this.body.scaleY *= 1.04 - 0.18 * fall;
+      angle = fallAngle;
+      this.weaponLengthScale = 0.72 + 0.32 * fall;
+      this.attackHandSpacing = H * 0.34;
+      this.attackWeaponDepth = fall > 0.82 ? -1 : 1;
+      this.attackShadowX = fx * H * (0.12 + 0.12 * fall);
+      this.attackShadowY = fy * H * (0.12 + 0.12 * fall);
+      this.attackShadowRotation = aimLocal;
+      this.attackShadowScaleX = 1.18;
+      this.attackShadowScaleY = 0.76;
+    } else if (tt < 0.64) {
+      const p = clamp01((tt - 0.61) / 0.03);
+      this.attackArtOffX = fx * H * 0.24;
+      this.attackArtOffY = fy * H * 0.24;
+      this.body.rotation += 0.2 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.86;
+      angle = fallAngle;
+      this.weaponLengthScale = 1.04 - 0.1 * Math.sin(Math.PI * p) - 0.04 * p;
+      this.attackHandSpacing = H * 0.34;
+      this.attackWeaponDepth = -1;
+      this.attackShadowX = fx * H * 0.24;
+      this.attackShadowY = fy * H * 0.24;
+      this.attackShadowScaleX = 1.18;
+      this.attackShadowScaleY = 0.76;
+    } else if (tt < 0.8) {
+      const p = smoothstep01((tt - 0.64) / 0.16);
+      this.attackArtOffX = fx * H * 0.24;
+      this.attackArtOffY = fy * H * 0.24;
+      this.body.rotation += 0.2 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.88;
+      angle = fallAngle;
+      this.weaponLengthScale = 1;
+      this.attackHandSpacing =
+        H * (0.34 + 0.08 * Math.max(0, (p - 0.62) / 0.38));
+      this.attackWeaponDepth = -1;
+      this.attackShadowX = fx * H * 0.24;
+      this.attackShadowY = fy * H * 0.24;
+      this.attackShadowScaleX = 1.18 - 0.1 * p;
+      this.attackShadowScaleY = 0.76 + 0.12 * p;
+    } else {
+      const p = smoothstep01((tt - 0.8) / 0.2);
+      this.attackArtOffX = fx * H * (0.24 - 0.19 * p);
+      this.attackArtOffY = fy * H * (0.24 - 0.19 * p);
+      this.body.rotation += 0.2 * Math.cos(aimLocal) * (1 - p);
+      this.body.scaleY *= 0.88 + 0.06 * p;
+      angle = fallAngle - 0.12 * p;
+      this.swingOffY -= H * 0.05 * Math.sin(Math.PI * p);
+      this.weaponLengthScale = 1;
+      this.attackHandSpacing = H * 0.42;
+      this.attackWeaponDepth = p < 0.45 ? -1 : 1;
+      this.attackShadowX = fx * H * (0.24 - 0.19 * p);
+      this.attackShadowY = fy * H * (0.24 - 0.19 * p);
+      this.attackShadowScaleX = 1.08 - 0.08 * p;
+      this.attackShadowScaleY = 0.88 + 0.12 * p;
+    }
+    return angle;
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -892,7 +1674,8 @@ export class SpriteRig {
     const rootDx = this.root.x - this.jigglePrevRootX;
     const rootDy = this.root.y - this.jigglePrevRootY;
     const rootCut = Math.hypot(rootDx, rootDy) > INTERP_SNAP_PLAYER;
-    const jiggleRebase = firstAnim || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000 || rootCut;
+    const jiggleRebase =
+      firstAnim || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000 || rootCut;
     this.jigglePrevRootX = this.root.x;
     this.jigglePrevRootY = this.root.y;
     const view = this.scene.cameras.main.worldView;
@@ -908,7 +1691,8 @@ export class SpriteRig {
     // the final art lift/shadow pass remains last. With the rollback flag off the arithmetic/order of writes
     // is unchanged because no earlier target reads hopPx or landSquash.
     const prevHop = this.hopPx;
-    this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
+    this.hopPx +=
+      (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
     if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
     const landed = prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1;
     if (landed) this.landSquash = 1;
@@ -917,7 +1701,10 @@ export class SpriteRig {
     // 120ms cosmetic release; it cannot make a late trigger continue because family/weapon are already clear.
     if (this.comboFamily !== "none" && sceneNow > this.comboExpiresAtMs)
       this.resetComboChain(false);
-    if (this.comboHoldPose && sceneNow >= this.comboHoldPose.expiresAtMs + COMBO_HOLD_RELEASE_MS)
+    if (
+      this.comboHoldPose &&
+      sceneNow >= this.comboHoldPose.expiresAtMs + COMBO_HOLD_RELEASE_MS
+    )
       this.comboHoldPose = undefined;
 
     // §7 v0.105 GAIT: ease a 0..1 gait toward the real render speed (speed/MOVE_SPEED). Stride/lift/lean all
@@ -964,8 +1751,14 @@ export class SpriteRig {
     this.velY += (rvy - this.velY) * (1 - Math.exp(-26 * dtS));
     this.slowVelX += (rvx - this.slowVelX) * (1 - Math.exp(-7 * dtS)); // slow (τ≈140ms)
     this.slowVelY += (rvy - this.slowVelY) * (1 - Math.exp(-7 * dtS));
-    const lagX = Math.max(-1.4, Math.min(1.4, (this.velX - this.slowVelX) / MOVE_SPEED));
-    const lagY = Math.max(-1.4, Math.min(1.4, (this.velY - this.slowVelY) / MOVE_SPEED));
+    const lagX = Math.max(
+      -1.4,
+      Math.min(1.4, (this.velX - this.slowVelX) / MOVE_SPEED),
+    );
+    const lagY = Math.max(
+      -1.4,
+      Math.min(1.4, (this.velY - this.slowVelY) / MOVE_SPEED),
+    );
     let springSignalX = 0;
     let springSignalY = 0;
     if (PROCEDURAL_JIGGLE) {
@@ -975,14 +1768,20 @@ export class SpriteRig {
         this.jiggleRootReady = true;
       } else {
         // Snapshot rigs get the panel's slower 14/s conditioner; self prediction keeps the current 26/s feel.
-        const filterHz = anim.isSelf ? JIGGLE_SELF_FILTER_HZ : JIGGLE_REMOTE_FILTER_HZ;
+        const filterHz = anim.isSelf
+          ? JIGGLE_SELF_FILTER_HZ
+          : JIGGLE_REMOTE_FILTER_HZ;
         const k = 1 - Math.exp(-filterHz * springDtS);
         this.jiggleSignalX += (lagX - this.jiggleSignalX) * k;
         this.jiggleSignalY += (lagY - this.jiggleSignalY) * k;
         springSignalX =
-          Math.abs(this.jiggleSignalX) < JIGGLE_SIGNAL_DEAD_ZONE ? 0 : this.jiggleSignalX;
+          Math.abs(this.jiggleSignalX) < JIGGLE_SIGNAL_DEAD_ZONE
+            ? 0
+            : this.jiggleSignalX;
         springSignalY =
-          Math.abs(this.jiggleSignalY) < JIGGLE_SIGNAL_DEAD_ZONE ? 0 : this.jiggleSignalY;
+          Math.abs(this.jiggleSignalY) < JIGGLE_SIGNAL_DEAD_ZONE
+            ? 0
+            : this.jiggleSignalY;
       }
     }
     this.strideT += ((spd * dtS) / STRIDE_LEN) * Math.PI * 2;
@@ -992,7 +1791,11 @@ export class SpriteRig {
     // Facing: toward the cursor for the local player, else toward movement (but a GUN-holder faces their
     // AIM even remotely, so the barrel + body read as pointing where they shoot). Mirror the whole
     // container; per-part offsets/aim are computed in local space so the flip stays coherent.
-    const dirX = anim.isSelf ? anim.aimX : this.weaponDef?.gun ? Math.cos(anim.aimDir) : anim.moveX;
+    const dirX = anim.isSelf
+      ? anim.aimX
+      : this.weaponDef?.gun
+        ? Math.cos(anim.aimDir)
+        : anim.moveX;
     // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
     // (±6px hysteresis kills strobe at the exact centre) — a normalized-|aimX| threshold went sticky when the
     // cursor sat far above/below (|aimX|≈0 however clearly the midpoint was crossed). Remotes/enemies keep the
@@ -1005,7 +1808,8 @@ export class SpriteRig {
     // §7 v0.105 de-clunk: EASE the visual mirror toward the committed facing, passing through scaleX≈0 —
     // that reads as a TURN, not a one-frame full-body flip. UNIFORM baseScale on both axes = a pure mirror,
     // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).
-    this.facingBlend += (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
+    this.facingBlend +=
+      (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
     this.root.scaleX = this.facingBlend * this.baseScale;
     this.root.scaleY = this.baseScale;
     // Keep the "you" label a FIXED on-screen size + readable regardless of the character's rig scale: the
@@ -1023,13 +1827,19 @@ export class SpriteRig {
 
     // §7 v0.112 Bob + squash/stretch: the bob is STRIDE-synced when moving (two dips per stride = one per
     // footfall) and a slow breathing sway when idle — so it never runs a fixed loop out of step with the feet.
-    const bob = gait * Math.sin(legPh * 2) + (1 - gait) * Math.sin(t * 2.2) * 0.55;
+    const bob =
+      gait * Math.sin(legPh * 2) + (1 - gait) * Math.sin(t * 2.2) * 0.55;
+    // Signed attack pitch is applied late; reset detached-part scale so it never compounds frame-to-frame.
+    for (const hand of this.hands) hand.img.setScale(s);
+    for (const foot of this.feet) foot.img.setScale(s);
+    this.body.x = 0;
     this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
     this.body.scaleX = s * (1 + bob * 0.04);
     this.body.scaleY = s * (1 - bob * 0.06);
     // §MADNESS the torso leans HARD into the run + accel — a loose, weighty forward pitch (Madness-Combat
     // flash feel), not a stiff upright. Movement lean 0.16→0.34, accel lean 0.32→0.55.
-    this.body.rotation = anim.moveX * 0.34 * gait + lagX * 0.55 + lookY * BODY_LOOK_LEAN;
+    this.body.rotation =
+      anim.moveX * 0.34 * gait + lagX * 0.55 + lookY * BODY_LOOK_LEAN;
 
     // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
     // knockback). The whole body already slides via the server position; this is the additive flinch on
@@ -1080,17 +1890,43 @@ export class SpriteRig {
     this.swingOffY = 0;
     this.swingBackOffX = 0;
     this.swingBackOffY = 0;
+    this.attackArtOffX = 0;
+    this.attackArtOffY = 0;
+    this.attackLiftPx = 0;
+    this.attackScaleY = 1;
+    this.weaponLengthScale = 1;
+    this.attackWeaponDepth = 0;
+    this.attackShadowX = 0;
+    this.attackShadowY = 0;
+    this.attackShadowRotation = 0;
+    this.attackShadowScaleX = 1;
+    this.attackShadowScaleY = 1;
+    this.attackShadowAlpha = 1;
+    this.attackGripBlend = 0;
+    this.attackGripX = 0;
+    this.attackGripY = 0;
+    this.attackBackGripX = 0;
+    this.attackBackGripY = 0;
+    this.attackGripBoth = false;
+    this.attackHandSpacing = TARGET_BODY_H * 0.42;
+    this.signatureMotion = undefined;
     if (this.weaponDef?.gun && this.weapons.length > 0) {
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
       if (this.weaponDef.twoHanded) ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
-      const aimAng = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
-      weaponAngle = Math.atan2(Math.sin(aimAng), Math.cos(aimAng) * this.facing);
+      const aimAng = anim.isSelf
+        ? Math.atan2(anim.aimY, anim.aimX)
+        : anim.aimDir;
+      weaponAngle = Math.atan2(
+        Math.sin(aimAng),
+        Math.cos(aimAng) * this.facing,
+      );
     } else if (
       this.weaponDef &&
-      (this.weapons.length > 0 || (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
+      (this.weapons.length > 0 ||
+        (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
     ) {
       const def = this.weaponDef;
       // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
@@ -1106,12 +1942,24 @@ export class SpriteRig {
       let poseBlend = 1;
       let comboPose: Readonly<MeleeComboStep> | undefined;
       let poseDirection: -1 | 0 | 1 = 1;
-      const family = comboFamilyFor(style);
       const hold = this.comboHoldPose;
-      if (CLIENT_VISUAL_COMBOS && family !== "none" && hold?.family === family && el >= 0) {
-        const snapshotStep = this.comboFamily === family ? this.swingStep : hold.step;
-        poseDirection = this.comboFamily === family ? this.swingDirection : hold.direction;
-        comboPose = MELEE_COMBO_SEQUENCES[family][snapshotStep];
+      const family: RigComboFamily =
+        this.swingFamily !== "none"
+          ? this.swingFamily
+          : (hold?.family ?? "none");
+      if (
+        CLIENT_VISUAL_COMBOS &&
+        family !== "none" &&
+        hold?.family === family &&
+        el >= 0
+      ) {
+        const live = this.comboFamily === family;
+        const snapshotStep = live ? this.swingStep : hold.step;
+        const snapshotVariant = live ? this.swingVariant : hold.variant;
+        poseDirection = live ? this.swingDirection : hold.direction;
+        comboPose = meleeComboSequenceFor(family, snapshotVariant)[
+          snapshotStep
+        ];
         if (dur > 0 && el < dur) tt = el / dur;
         else if (sceneNow <= hold.expiresAtMs) tt = 1;
         else if (sceneNow < hold.expiresAtMs + COMBO_HOLD_RELEASE_MS) {
@@ -1122,11 +1970,40 @@ export class SpriteRig {
         tt = el / dur;
       }
       if (style && tt >= 0) {
-        // Conservative Stage-1 guardrail: every visible melee pose, accepted-cadence hold, and its authored
-        // 120ms release owns both hands/feet at exactly 1. Style-specific looseness waits for capture tests.
-        ownFront = 1;
-        ownBack = 1;
-        ownFeet = 1;
+        // Combo parts follow the procedural-jiggle ownership contract: anticipation ramps in, danger is
+        // exact, follow-through releases energy, and the cadence hold owns nothing.
+        if (comboPose) {
+          let ownActiveStart = comboPose.timing.activeStart;
+          let ownActiveEnd = comboPose.timing.activeEnd;
+          let ownFollowEnd = comboPose.timing.followEnd;
+          if (comboPose.motion === "fulcrum-flip") {
+            const acceptedImpact = clamp01(
+              (this.swing?.impactSeconds ?? 0) /
+                Math.max(1e-6, this.swing?.poseSeconds ?? 1),
+            );
+            ownActiveEnd = acceptedImpact;
+            ownActiveStart =
+              0.18 + ((0.5 - 0.18) * (acceptedImpact - 0.18)) / (0.66 - 0.18);
+            ownFollowEnd =
+              acceptedImpact +
+              ((1 - acceptedImpact) * (0.82 - 0.66)) / (1 - 0.66);
+          }
+          const own = actionOwnershipAt(
+            tt,
+            ownActiveStart,
+            ownActiveEnd,
+            ownFollowEnd,
+          );
+          ownFeet = own;
+          if (comboPose.hand === "lead" || comboPose.hand === "both")
+            ownFront = own;
+          if (comboPose.hand === "off" || comboPose.hand === "both")
+            ownBack = own;
+        } else {
+          ownFront = 1;
+          ownBack = 1;
+          ownFeet = 1;
+        }
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
         // (arc / orbit / chop / pivot / thrust / spin). World aim → local (mirrored) shared by every style.
         const aimW = Number.isNaN(this.swingAimWorld)
@@ -1134,23 +2011,41 @@ export class SpriteRig {
             ? Math.atan2(anim.aimY, anim.aimX)
             : anim.aimDir
           : this.swingAimWorld;
-        const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
+        const aimLocal = Math.atan2(
+          Math.sin(aimW),
+          Math.cos(aimW) * this.facing,
+        );
         const idleWeaponAngle = weaponAngle;
         const bodyBaseRotation = this.body.rotation;
         const bodyBaseY = this.body.y;
         const bodyBaseScaleX = this.body.scaleX;
         const bodyBaseScaleY = this.body.scaleY;
+        const poseStyle = comboPose
+          ? family === "rake"
+            ? "pivot"
+            : family
+          : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
-        if (style === "orbit") {
+        if (comboPose?.motion === "fulcrum-flip") {
+          weaponAngle = this.applyFulcrumFlip(tt, aimLocal);
+        } else if (comboPose?.motion === "stinger") {
+          weaponAngle = this.applyStinger(tt, aimLocal);
+        } else if (comboPose?.motion === "spin-release") {
+          weaponAngle = this.applyHeroSpin(tt, aimLocal);
+        } else if (comboPose?.motion === "pommel-bash") {
+          weaponAngle = this.applyPommelBash(tt, aimLocal);
+        } else if (comboPose?.motion === "true-charged-slam") {
+          weaponAngle = this.applyTrueChargedSlam(tt, aimLocal);
+        } else if (poseStyle === "orbit") {
           // Fake-3D WAIST ORBIT (the facing flip's scale-through-a-plane trick generalized) — flagged here,
           // fully rendered by the weapon pass below (position + rotation + foreshortening + depth swap).
           this.orbitT = tt;
-        } else if (style === "spin") {
+        } else if (poseStyle === "spin") {
           // §40.3 GAREN SPIN — the orbit machinery in whirlwind mode: full revolutions, body mirror-turns.
           this.orbitT = tt;
           this.orbitSpin = true;
-        } else if (style === "chop") {
+        } else if (poseStyle === "chop") {
           // §45 CHOP: shoulder diagonal → reverse rising load → execution slam. Each variation retains the
           // existing lift/drive/squash vocabulary, but its section-B fractions and end guard are authored.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.chop[0];
@@ -1172,7 +2067,8 @@ export class SpriteRig {
               const p = (tt - a) / (b - a);
               const e = 1 - (1 - p) ** 2;
               weaponAngle = lowGuardA + (raiseA - lowGuardA) * e;
-              this.swingOffY = TARGET_BODY_H * 0.04 - (lift + TARGET_BODY_H * 0.04) * e;
+              this.swingOffY =
+                TARGET_BODY_H * 0.04 - (lift + TARGET_BODY_H * 0.04) * e;
               this.body.rotation += 0.06 - 0.25 * e; // mirrored unwind: low/right → high/left
               this.body.y += (7 - 10 * e) * s;
               this.body.scaleY *= 0.95 + 0.1 * e;
@@ -1199,7 +2095,9 @@ export class SpriteRig {
                 ? -lift * (1 + 0.08 * Math.sin(Math.PI * p))
                 : -lift * 0.55 * p;
               this.body.rotation += execution ? -0.18 : 0.12 - 0.25 * e;
-              this.body.y += (execution ? -4 - 1.5 * Math.sin(Math.PI * p) : 5 - 7.5 * e) * s;
+              this.body.y +=
+                (execution ? -4 - 1.5 * Math.sin(Math.PI * p) : 5 - 7.5 * e) *
+                s;
               this.body.scaleY *= 1 + (execution ? 0.08 : 0.04) * e;
             } else if (tt < b) {
               const p = (tt - a) / (b - a);
@@ -1220,12 +2118,14 @@ export class SpriteRig {
               const e = p * (2 - p);
               weaponAngle = slamA + (lowGuardA - slamA) * e; // settle to a chained low guard, not neutral
               this.swingOffY = TARGET_BODY_H * 0.06 * (1 - 0.35 * e);
-              this.body.rotation += (execution ? 0.28 : 0.2) - (execution ? 0.16 : 0.08) * e;
-              this.body.y += ((execution ? 8 : 6) - (execution ? 3 : 1) * e) * s;
+              this.body.rotation +=
+                (execution ? 0.28 : 0.2) - (execution ? 0.16 : 0.08) * e;
+              this.body.y +=
+                ((execution ? 8 : 6) - (execution ? 3 : 1) * e) * s;
               this.body.scaleY *= (execution ? 0.88 : 0.91) + 0.04 * e;
             }
           }
-        } else if (style === "pivot") {
+        } else if (poseStyle === "pivot") {
           // §45 RAKE: the existing diagonal arm-whip alternates lead/off hand, then runs both copies on the
           // authored stagger for a scissor. Dual claws move the actual rear glove; a single claw mirrors its
           // visible arm. Both paths remain cosmetic and share the server's ONE legacy hit application.
@@ -1241,14 +2141,16 @@ export class SpriteRig {
           ): { angle: number; x: number; y: number; drive: number } => {
             const start = aimLocal - direction * spin * 0.6;
             const end = aimLocal + direction * spin * 0.4;
-            const prior = direction > 0 ? aimLocal + spin * 0.55 : aimLocal + spin * 0.4;
+            const prior =
+              direction > 0 ? aimLocal + spin * 0.55 : aimLocal + spin * 0.4;
             let prog = 0;
             let angle: number;
             if (tt < activeStart) {
               const p = tt / activeStart;
               angle = prior + (start - prior) * (p * (2 - p));
             } else if (tt < activeEnd) {
-              prog = 1 - (1 - (tt - activeStart) / (activeEnd - activeStart)) ** 3;
+              prog =
+                1 - (1 - (tt - activeStart) / (activeEnd - activeStart)) ** 3;
               angle = start + (end - start) * prog;
             } else if (tt < followEnd) {
               prog = 1;
@@ -1259,10 +2161,16 @@ export class SpriteRig {
               angle = end; // crossed guard held through accepted readyAt+grace
             }
             const wind = tt < activeStart ? tt / activeStart : 1;
-            const lat = TARGET_BODY_H * 0.26 * direction * (1 - 2 * prog) * wind;
-            const out = TARGET_BODY_H * (0.12 + 0.2 * Math.sin(Math.PI * prog)) * wind;
+            const lat =
+              TARGET_BODY_H * 0.26 * direction * (1 - 2 * prog) * wind;
+            const out =
+              TARGET_BODY_H * (0.12 + 0.2 * Math.sin(Math.PI * prog)) * wind;
             const drive = Math.sin(
-              Math.PI * Math.min(1, Math.max(0, (tt - activeStart) / (activeEnd - activeStart))),
+              Math.PI *
+                Math.min(
+                  1,
+                  Math.max(0, (tt - activeStart) / (activeEnd - activeStart)),
+                ),
             );
             return {
               angle,
@@ -1291,10 +2199,14 @@ export class SpriteRig {
             this.swingOffY = first.y;
             this.swingBackOffX = second.x;
             this.swingBackOffY = second.y;
-            const cross = Math.max(0, 1 - Math.abs(tt - (pose.timing.impact ?? 0.43)) / 0.25);
+            const cross = Math.max(
+              0,
+              1 - Math.abs(tt - (pose.timing.impact ?? 0.43)) / 0.25,
+            );
             this.body.scaleX *= 1 - 0.2 * cross;
             this.body.scaleY *= 1 - 0.07 * cross;
-            this.body.rotation += 0.045 * Math.sin((tt - 0.43) * Math.PI * 4) * cross;
+            this.body.rotation +=
+              0.045 * Math.sin((tt - 0.43) * Math.PI * 4) * cross;
             this.body.y += 4.5 * s * cross;
           } else if (pose) {
             const direction = poseDirection < 0 ? -1 : 1;
@@ -1308,7 +2220,10 @@ export class SpriteRig {
             if (offUsesBack) {
               // Lead glove settles from its prior crossed hold while the rear glove owns the reverse path.
               const settle = Math.min(1, tt / pose.timing.activeStart);
-              weaponAngle = aimLocal + spin * 0.4 + (restA - aimLocal - spin * 0.4) * settle;
+              weaponAngle =
+                aimLocal +
+                spin * 0.4 +
+                (restA - aimLocal - spin * 0.4) * settle;
               backWeaponAngle = rake.angle;
               this.swingBackOffX = rake.x;
               this.swingBackOffY = rake.y;
@@ -1320,15 +2235,18 @@ export class SpriteRig {
             }
             // Reverse rakes mirror the paper-twist/lean instead of replaying the lead-hand body envelope.
             this.body.scaleX *= 1 - 0.14 * rake.drive;
-            this.body.rotation += direction * 0.11 * rake.drive * Math.cos(aimLocal);
+            this.body.rotation +=
+              direction * 0.11 * rake.drive * Math.cos(aimLocal);
             this.body.y += 2 * s * rake.drive;
           }
-        } else if (style === "punch") {
+        } else if (poseStyle === "punch") {
           // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
           // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
           const heavy = def.twoHanded ? 1 : 0;
-          const reach = TARGET_BODY_H * (pose?.motion === "jab" ? 0.48 : 0.55 + 0.25 * heavy);
+          const reach =
+            TARGET_BODY_H *
+            (pose?.motion === "jab" ? 0.48 : 0.55 + 0.25 * heavy);
           const wind = pose?.timing.activeStart ?? 0.1;
           const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
           const follow = pose?.timing.followEnd ?? 0.44;
@@ -1370,19 +2288,29 @@ export class SpriteRig {
             } else if (tt < imp) {
               const p = (tt - wind) / (imp - wind);
               const e = 1 - (1 - p) ** 3;
-              th = aimLocal + direction * hook * (-1 + (haymaker ? 1.5 : 1.35) * e);
+              th =
+                aimLocal +
+                direction * hook * (-1 + (haymaker ? 1.5 : 1.35) * e);
               r = reach * (0.32 + 0.68 * e);
               drive = 0.3 + 0.7 * e;
             } else if (tt < follow) {
               const p = (tt - imp) / (follow - imp);
-              th = aimLocal + direction * hook * (haymaker ? 0.5 + 0.16 * p : 0.35 + 0.12 * p);
+              th =
+                aimLocal +
+                direction *
+                  hook *
+                  (haymaker ? 0.5 + 0.16 * p : 0.35 + 0.12 * p);
               r = reach * (1 - 0.12 * p);
               drive = 1 - 0.12 * p;
             } else {
               const p = (tt - follow) / (1 - follow);
               const e = p * (2 - p);
               const hold = haymaker && heavy ? 0.72 : 0.22;
-              th = aimLocal + direction * hook * ((haymaker ? 0.66 : 0.47) * (1 - e) + hold * e);
+              th =
+                aimLocal +
+                direction *
+                  hook *
+                  ((haymaker ? 0.66 : 0.47) * (1 - e) + hold * e);
               r = reach * (0.88 * (1 - e) + 0.16 * e);
               drive = 0.88 * (1 - e) + (haymaker ? 0.3 : 0.18) * e;
             }
@@ -1391,7 +2319,8 @@ export class SpriteRig {
           const ox = Math.cos(th) * r - Math.sin(aimLocal) * lateral;
           const oy = Math.sin(th) * r + Math.cos(aimLocal) * lateral;
           const offUsesBack =
-            pose?.hand === "off" && (this.weapons.length > 1 || def.id === "fists");
+            pose?.hand === "off" &&
+            (this.weapons.length > 1 || def.id === "fists");
           if (offUsesBack) {
             backWeaponAngle = th;
             weaponAngle = restA;
@@ -1405,14 +2334,22 @@ export class SpriteRig {
           // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
           // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
           const commitScale =
-            pose?.motion === "jab" ? 0.55 : pose?.motion === "haymaker" ? 1.2 : 0.85;
+            pose?.motion === "jab"
+              ? 0.55
+              : pose?.motion === "haymaker"
+                ? 1.2
+                : 0.85;
           this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive * commitScale;
           this.body.rotation +=
-            direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
+            direction *
+            (0.1 + 0.09 * heavy) *
+            drive *
+            commitScale *
+            Math.cos(aimLocal);
           this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
           if (heavy || pose?.motion === "haymaker")
             this.body.scaleY *= 1 - 0.06 * drive * commitScale;
-        } else if (style === "thrust") {
+        } else if (poseStyle === "thrust") {
           // §45 THRUST keeps the existing locked-blade lunge envelope, with an outside draw, mirrored
           // disengage circle, and longer step-through/stick. Signed body tilt makes step 2 read distinctly.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.thrust[0];
@@ -1430,12 +2367,15 @@ export class SpriteRig {
             const p = tt / a;
             env = -(impale ? 0.28 : 0.18) * p;
             // A compact ellipse around the imagined guard; bounded well inside the blade half-width.
-            if (disengage) lateral = direction * TARGET_BODY_H * 0.09 * Math.sin(Math.PI * 2 * p);
+            if (disengage)
+              lateral =
+                direction * TARGET_BODY_H * 0.09 * Math.sin(Math.PI * 2 * p);
           } else if (tt < b) {
             const p = (tt - a) / (b - a);
             const e = p * p * (3 - 2 * p);
             env = -(impale ? 0.28 : 0.18) + (impale ? 1.28 : 1.18) * e;
-            if (disengage) lateral = direction * TARGET_BODY_H * 0.035 * (1 - e);
+            if (disengage)
+              lateral = direction * TARGET_BODY_H * 0.035 * (1 - e);
           } else if (tt < follow) {
             env = 1; // puncture/stick beat at authored full reach
           } else {
@@ -1445,8 +2385,10 @@ export class SpriteRig {
             env = 1 + (guard - 1) * e;
             lateral = disengage ? -direction * TARGET_BODY_H * 0.045 * e : 0;
           }
-          this.swingOffX = Math.cos(aimLocal) * lunge * env - Math.sin(aimLocal) * lateral;
-          this.swingOffY = Math.sin(aimLocal) * lunge * env + Math.cos(aimLocal) * lateral;
+          this.swingOffX =
+            Math.cos(aimLocal) * lunge * env - Math.sin(aimLocal) * lateral;
+          this.swingOffY =
+            Math.sin(aimLocal) * lunge * env + Math.cos(aimLocal) * lateral;
           if (pose?.hand === "both") {
             this.swingBackOffX = this.swingOffX * 0.35;
             this.swingBackOffY = this.swingOffY * 0.35;
@@ -1455,7 +2397,8 @@ export class SpriteRig {
           // torso along the thrust (scaleX up, scaleY in), sinking slightly as the front leg plants.
           const e = Math.max(0, env);
           const commitScale = impale ? 1.35 : 1;
-          this.body.rotation += direction * 0.15 * e * commitScale * Math.cos(aimLocal);
+          this.body.rotation +=
+            direction * 0.15 * e * commitScale * Math.cos(aimLocal);
           this.body.scaleX *= 1 + 0.07 * e * commitScale;
           this.body.scaleY *= 1 - 0.05 * e * commitScale;
           this.body.y += 2.5 * s * e * commitScale;
@@ -1505,18 +2448,25 @@ export class SpriteRig {
           } else {
             const direction = poseDirection < 0 ? -1 : 1;
             const start =
-              direction > 0 ? aimLocal - def.swingArc * 0.55 : aimLocal + def.swingArc * 0.5;
+              direction > 0
+                ? aimLocal - def.swingArc * 0.55
+                : aimLocal + def.swingArc * 0.5;
             const end =
-              direction > 0 ? aimLocal + def.swingArc * 0.45 : aimLocal - def.swingArc * 0.5;
+              direction > 0
+                ? aimLocal + def.swingArc * 0.45
+                : aimLocal - def.swingArc * 0.5;
             const back = start - direction * 0.3;
             const prior =
-              direction < 0 ? aimLocal + def.swingArc * 0.45 : aimLocal + def.swingArc * 0.545; // finisher's planted low guard
+              direction < 0
+                ? aimLocal + def.swingArc * 0.45
+                : aimLocal + def.swingArc * 0.545; // finisher's planted low guard
             if (tt < a) {
               const p = tt / a;
               const e = p * (2 - p);
               weaponAngle = prior + (back - prior) * e;
               const startLean = direction > 0 ? 0.18 : 0.08;
-              this.body.rotation += startLean + (-direction * 0.1 - startLean) * e;
+              this.body.rotation +=
+                startLean + (-direction * 0.1 - startLean) * e;
             } else if (tt < b) {
               const p = (tt - a) / (b - a);
               const e = 1 - (1 - p) ** 2;
@@ -1525,7 +2475,8 @@ export class SpriteRig {
             } else if (tt < follow) {
               const p = (tt - b) / (follow - b);
               weaponAngle = end + direction * 0.08 * Math.sin(Math.PI * p);
-              this.body.rotation += direction * (0.08 + 0.025 * Math.sin(Math.PI * p));
+              this.body.rotation +=
+                direction * (0.08 + 0.025 * Math.sin(Math.PI * p));
             } else {
               weaponAngle = end; // crossed/high guard held for the next accepted cadence step
               this.body.rotation += direction * 0.08;
@@ -1536,18 +2487,41 @@ export class SpriteRig {
         // Once grace lapses, blend every additive fake-3D contribution back to the exact resting frame.
         // Active/held poses run at 1; orbit/spin never enter comboPose and remain completely unchanged.
         if (comboPose && poseBlend < 1) {
-          weaponAngle = idleWeaponAngle + (weaponAngle - idleWeaponAngle) * poseBlend;
+          weaponAngle =
+            idleWeaponAngle + (weaponAngle - idleWeaponAngle) * poseBlend;
           if (!Number.isNaN(backWeaponAngle))
-            backWeaponAngle = idleWeaponAngle + (backWeaponAngle - idleWeaponAngle) * poseBlend;
+            backWeaponAngle =
+              idleWeaponAngle + (backWeaponAngle - idleWeaponAngle) * poseBlend;
           this.swingOffX *= poseBlend;
           this.swingOffY *= poseBlend;
           this.swingBackOffX *= poseBlend;
           this.swingBackOffY *= poseBlend;
           this.body.rotation =
-            bodyBaseRotation + (this.body.rotation - bodyBaseRotation) * poseBlend;
+            bodyBaseRotation +
+            (this.body.rotation - bodyBaseRotation) * poseBlend;
           this.body.y = bodyBaseY + (this.body.y - bodyBaseY) * poseBlend;
-          this.body.scaleX = bodyBaseScaleX + (this.body.scaleX - bodyBaseScaleX) * poseBlend;
-          this.body.scaleY = bodyBaseScaleY + (this.body.scaleY - bodyBaseScaleY) * poseBlend;
+          this.body.scaleX =
+            bodyBaseScaleX + (this.body.scaleX - bodyBaseScaleX) * poseBlend;
+          this.body.scaleY =
+            bodyBaseScaleY + (this.body.scaleY - bodyBaseScaleY) * poseBlend;
+          this.attackArtOffX *= poseBlend;
+          this.attackArtOffY *= poseBlend;
+          this.attackLiftPx *= poseBlend;
+          this.attackScaleY = 1 + (this.attackScaleY - 1) * poseBlend;
+          this.weaponLengthScale = 1 + (this.weaponLengthScale - 1) * poseBlend;
+          this.attackShadowX *= poseBlend;
+          this.attackShadowY *= poseBlend;
+          this.attackShadowRotation *= poseBlend;
+          this.attackShadowScaleX =
+            1 + (this.attackShadowScaleX - 1) * poseBlend;
+          this.attackShadowScaleY =
+            1 + (this.attackShadowScaleY - 1) * poseBlend;
+          this.attackShadowAlpha = 1 + (this.attackShadowAlpha - 1) * poseBlend;
+          this.attackGripBlend *= poseBlend;
+          this.attackHandSpacing =
+            TARGET_BODY_H * 0.42 +
+            (this.attackHandSpacing - TARGET_BODY_H * 0.42) * poseBlend;
+          if (poseBlend < 0.5) this.attackWeaponDepth = 0;
         }
       }
     }
@@ -1561,8 +2535,7 @@ export class SpriteRig {
     }
     if (this.weaponDef?.twoHanded) {
       // The rear grip is a hard geometric child of the lead/haft, never an independently wobbling oscillator.
-      ownFront = 1;
-      ownBack = 1;
+      ownBack = Math.max(ownBack, ownFront);
     }
 
     // §7 v0.112 Hands: the front hand still reaches toward the cursor (the aim anchor, direct — no lag on
@@ -1572,15 +2545,20 @@ export class SpriteRig {
     const reach = TARGET_BODY_H * (this.weapons.length > 0 ? 0.1 : 0.28);
     const sizeFreq = Math.max(
       JIGGLE_SIZE_FREQ_MIN,
-      Math.min(JIGGLE_SIZE_FREQ_MAX, (this.baseScale || 1) ** JIGGLE_SIZE_FREQ_POWER),
+      Math.min(
+        JIGGLE_SIZE_FREQ_MAX,
+        (this.baseScale || 1) ** JIGGLE_SIZE_FREQ_POWER,
+      ),
     );
     const excitationScale =
-      (MOVE_SPEED * JIGGLE_SIGNAL_IMPULSE_HZ * springDtS) / (this.baseScale || 1);
+      (MOVE_SPEED * JIGGLE_SIGNAL_IMPULSE_HZ * springDtS) /
+      (this.baseScale || 1);
     for (const hnd of this.hands) {
       const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
       const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
       const bobY = Math.abs(Math.sin(legPh)) * s * 2 * gait; // a little vertical with each footfall
-      const idleY = Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
+      const idleY =
+        Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
       // §MADNESS loose, dangly arms — a big inertia trail so the hands swing behind + overshoot the body on
       // every speed/direction change (the flash-animation follow-through), then settle.
       const trailX = -lagX * this.facing * s * 36;
@@ -1592,7 +2570,11 @@ export class SpriteRig {
         hy += idleY;
         hy += trailY;
       }
-      if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
+      if (
+        hnd.front &&
+        anim.isSelf &&
+        Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01
+      ) {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
       }
@@ -1620,17 +2602,27 @@ export class SpriteRig {
       if (PROCEDURAL_JIGGLE) {
         const own = hnd.front ? ownFront : ownBack;
         // Orbit and the rear 2H grip have authoritative late writers; synchronize at those final seams below.
-        const deferToConstraint = this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded);
+        const deferToConstraint =
+          this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded);
         if (!deferToConstraint) {
-          const holdsWeapon = hnd.front ? this.weapons.length > 0 : this.weapons.length > 1;
-          const inertia = holdsWeapon ? JIGGLE_WEAPON_HAND_INERTIA : JIGGLE_FREE_HAND_INERTIA;
+          const holdsWeapon = hnd.front
+            ? this.weapons.length > 0
+            : this.weapons.length > 1;
+          const inertia = holdsWeapon
+            ? JIGGLE_WEAPON_HAND_INERTIA
+            : JIGGLE_FREE_HAND_INERTIA;
           const rolePhase = this.phase * Math.PI * 2 + (hnd.front ? 0.7 : 2.9);
           const idleMix = 1 - gait;
           const equilibriumX =
-            Math.sin(t * Math.PI * 2 * 0.57 + rolePhase) * JIGGLE_HAND_IDLE_X * idleMix;
+            Math.sin(t * Math.PI * 2 * 0.57 + rolePhase) *
+            JIGGLE_HAND_IDLE_X *
+            idleMix;
           const equilibriumY =
-            Math.sin(t * Math.PI * 2 * 1.13 + rolePhase * 1.7) * JIGGLE_HAND_IDLE_Y * idleMix;
-          let impulseX = -springSignalX * this.facing * excitationScale * inertia;
+            Math.sin(t * Math.PI * 2 * 1.13 + rolePhase * 1.7) *
+            JIGGLE_HAND_IDLE_Y *
+            idleMix;
+          let impulseX =
+            -springSignalX * this.facing * excitationScale * inertia;
           let impulseY = -springSignalY * excitationScale * inertia;
           if (turnTriggered) {
             impulseX += this.turnDirX * this.facing * JIGGLE_TURN_HAND_KICK;
@@ -1669,7 +2661,7 @@ export class SpriteRig {
       const front = this.hands.find((h) => h.front);
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
-        const haft = TARGET_BODY_H * 0.42;
+        const haft = this.attackHandSpacing;
         back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
         back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
         back.img.rotation = 0;
@@ -1707,13 +2699,19 @@ export class SpriteRig {
         fx += trailX;
       }
       if (PROCEDURAL_JIGGLE) {
-        const inertia = planted ? JIGGLE_FOOT_PLANT_INERTIA : JIGGLE_FOOT_AIR_INERTIA;
+        const inertia = planted
+          ? JIGGLE_FOOT_PLANT_INERTIA
+          : JIGGLE_FOOT_AIR_INERTIA;
         const rolePhase = this.phase * Math.PI * 2 + i * 2.1 + 4.3;
         const idleMix = 1 - gait;
         const equilibriumX =
-          Math.sin(t * Math.PI * 2 * 0.73 + rolePhase) * JIGGLE_FOOT_IDLE_X * idleMix;
+          Math.sin(t * Math.PI * 2 * 0.73 + rolePhase) *
+          JIGGLE_FOOT_IDLE_X *
+          idleMix;
         const equilibriumY =
-          Math.sin(t * Math.PI * 2 * 1.37 + rolePhase * 1.3) * JIGGLE_FOOT_IDLE_Y * idleMix;
+          Math.sin(t * Math.PI * 2 * 1.37 + rolePhase * 1.3) *
+          JIGGLE_FOOT_IDLE_Y *
+          idleMix;
         let impulseX = -springSignalX * this.facing * excitationScale * inertia;
         let impulseY = -springSignalY * excitationScale * inertia;
         if (turnTriggered) {
@@ -1753,6 +2751,52 @@ export class SpriteRig {
       const w = this.weapons[i];
       if (!w) continue;
       const base = w.baseScale / (this.baseScale || 1); // fixed on-screen weapon size (§29)
+      if (i === 0 && this.signatureMotion && this.attackGripBlend > 0) {
+        // Fulcrum/hero-spin exception: the authored weapon path supplies the grip, then the hand follows.
+        const front = this.hands.find((hand) => hand.front);
+        const back = this.hands.find((hand) => !hand.front);
+        const fromX = front?.img.x ?? w.hand.img.x;
+        const fromY = front?.img.y ?? w.hand.img.y;
+        const grip = clamp01(this.attackGripBlend);
+        const gx = fromX + (this.attackGripX - fromX) * grip;
+        const gy = fromY + (this.attackGripY - fromY) * grip;
+        w.img.setPosition(gx, gy);
+        w.img.rotation = weaponAngle;
+        w.img.setScale(base * this.weaponLengthScale, base * this.attackScaleY);
+        if (front) front.img.setPosition(gx, gy);
+        if (back && this.attackGripBoth) {
+          back.img.setPosition(
+            back.img.x + (this.attackBackGripX - back.img.x) * grip,
+            back.img.y + (this.attackBackGripY - back.img.y) * grip,
+          );
+          back.img.rotation = 0;
+        }
+        if (PROCEDURAL_JIGGLE) {
+          if (front)
+            syncOwnedJigglePart(
+              front,
+              front.img.x,
+              front.img.y,
+              springDtS,
+              jiggleRebase || jiggleLodSkip,
+            );
+          if (back && this.attackGripBoth)
+            syncOwnedJigglePart(
+              back,
+              back.img.x,
+              back.img.y,
+              springDtS,
+              jiggleRebase || jiggleLodSkip,
+            );
+        }
+        const behind = this.attackWeaponDepth < 0;
+        if (behind !== this.orbitBehind) {
+          this.orbitBehind = behind;
+          if (behind) this.root.moveBelow(w.img, this.body);
+          else this.root.moveAbove(w.img, this.body);
+        }
+        continue;
+      }
       if (this.orbitT >= 0 && i === 0 && this.weaponDef) {
         // §40 FAKE-3D WAIST-ORBIT SLASH — the facing flip's "scale through a plane" trick generalized.
         // The grip travels an ELLIPSE around the waist (the ground circle seen by the game's tilted camera:
@@ -1768,7 +2812,10 @@ export class SpriteRig {
             ? Math.atan2(anim.aimY, anim.aimX)
             : anim.aimDir
           : this.swingAimWorld;
-        const aimLocal = Math.atan2(Math.sin(aimW), Math.cos(aimW) * this.facing);
+        const aimLocal = Math.atan2(
+          Math.sin(aimW),
+          Math.cos(aimW) * this.facing,
+        );
         // The aim's azimuth on the GROUND circle (un-squash the screen direction).
         const azAim = Math.atan2(Math.sin(aimLocal) / SQ, Math.cos(aimLocal));
         const tt = this.orbitT;
@@ -1791,7 +2838,11 @@ export class SpriteRig {
           const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out
           const windup = 1.5; // start this far behind the damage arc…
           const follow = 0.9; // …and carry through past it
-          th = azAim - def.swingArc / 2 - windup + (def.swingArc + windup + follow) * e;
+          th =
+            azAim -
+            def.swingArc / 2 -
+            windup +
+            (def.swingArc + windup + follow) * e;
         }
         const rx = Math.cos(th);
         const ry = Math.sin(th) * SQ;
@@ -1814,7 +2865,10 @@ export class SpriteRig {
           const haft = TARGET_BODY_H * 0.42 * Math.max(rlen, 0.5);
           const ux = rlen > 1e-4 ? rx / rlen : 1;
           const uy = rlen > 1e-4 ? ry / rlen : 0;
-          back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
+          back.img.setPosition(
+            gx + ux * haft,
+            gy + uy * haft - TARGET_BODY_H * 0.05,
+          );
           back.img.rotation = 0;
         }
         if (PROCEDURAL_JIGGLE) {
@@ -1850,7 +2904,10 @@ export class SpriteRig {
           // athletic crouch + a dizzy wobble sell the commitment; the label/root are untouched (no UI flip).
           const c = Math.cos(th);
           this.body.scaleX *=
-            (Math.abs(c) < 0.18 ? 0.18 : Math.abs(c)) * (c < 0 ? -1 : 1) * spinT + (1 - spinT); // blend the whirl in/out so entry/exit don't pop
+            (Math.abs(c) < 0.18 ? 0.18 : Math.abs(c)) *
+              (c < 0 ? -1 : 1) *
+              spinT +
+            (1 - spinT); // blend the whirl in/out so entry/exit don't pop
           this.body.rotation += 0.06 * Math.sin(th * 2) * spinT; // slight wobble
           this.body.y += 5.5 * s * spinT; // dug-in crouch
           this.body.scaleY *= 1 - 0.09 * spinT;
@@ -1881,27 +2938,61 @@ export class SpriteRig {
       // just rides its hand, so blade + both hands travel together.
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation =
-        (i === 1 && !Number.isNaN(backWeaponAngle) ? backWeaponAngle : weaponAngle) + off;
+        (i === 1 && !Number.isNaN(backWeaponAngle)
+          ? backWeaponAngle
+          : weaponAngle) + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
-      w.img.setScale(base);
+      w.img.setScale(base * this.weaponLengthScale, base * this.attackScaleY);
+      if (i === 0 && this.attackWeaponDepth !== 0) {
+        const behind = this.attackWeaponDepth < 0;
+        if (behind !== this.orbitBehind) {
+          this.orbitBehind = behind;
+          if (behind) this.root.moveBelow(w.img, this.body);
+          else this.root.moveAbove(w.img, this.body);
+        }
+      }
     }
 
     // §5 jump hop was integrated at frame start so touchdown could excite springs; final art lift stays last.
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
     // ground), so the silhouette reads as "off the ground" rather than just sliding up.
     // §33 the JUMP hop plus the permanent COLOSSUS lower-body lift both raise the art (never the shadow).
-    const lift = this.hopPx + this.baseLift;
-    if (lift > 0.01) {
-      for (const p of this.parts) p.y -= lift;
-      for (const w of this.weapons) w.img.y -= lift;
+    const lift = this.hopPx + this.baseLift + this.attackLiftPx;
+    if (
+      lift > 0.01 ||
+      Math.abs(this.attackArtOffX) > 0.01 ||
+      Math.abs(this.attackArtOffY) > 0.01
+    ) {
+      for (const p of this.parts) {
+        p.x += this.attackArtOffX;
+        p.y += this.attackArtOffY - lift;
+      }
+      for (const w of this.weapons) {
+        w.img.x += this.attackArtOffX;
+        w.img.y += this.attackArtOffY - lift;
+      }
       // A touch of squash relief at the apex sells the leap (body stretches up) — from the JUMP only.
-      if (this.hopPx > 0.01) this.body.scaleY *= 1 + Math.min(0.12, this.hopPx / 300);
+      if (this.hopPx > 0.01)
+        this.body.scaleY *= 1 + Math.min(0.12, this.hopPx / 300);
+    }
+    if (this.attackScaleY !== 1) {
+      for (const p of this.parts) p.scaleY *= this.attackScaleY;
     }
     if (this.landSquash > 0.01) this.body.scaleY *= 1 - 0.14 * this.landSquash; // squash on touchdown
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
     const shrink = Math.max(0.42, 1 - this.hopPx / 420);
-    this.shadow.setScale(shrink, shrink).setAlpha(0.3 * shrink);
+    this.shadow
+      .setPosition(
+        this.attackShadowX,
+        TARGET_BODY_H * 0.42 + this.attackShadowY,
+      )
+      .setRotation(this.attackShadowRotation)
+      .setScale(
+        shrink * this.attackShadowScaleX,
+        shrink * this.attackShadowScaleY,
+      )
+      .setAlpha(0.3 * shrink * this.attackShadowAlpha);
   }
 }
