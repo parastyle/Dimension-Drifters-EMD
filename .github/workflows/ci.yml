@@ -57,3 +57,24 @@ jobs:
       - run: pnpm --filter @dd/client build
       - run: pnpm --filter @dd/desktop build
       - run: pnpm --filter @dd/desktop package:assert
+
+  browser-e2e-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run real-stack browser smoke
+        run: pnpm e2e

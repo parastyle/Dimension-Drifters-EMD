@@ -20,6 +20,7 @@
     "gen": "node tools/artkit/gen-weapon-expansion.mjs && node tools/artkit/gen-dimensions.mjs && node tools/artkit/gen-dimension-subjects.mjs && node tools/artkit/gen-vfx-subjects.mjs && node tools/artkit/gen-character-roster.mjs && node tools/artkit/gen-card-manifest.mjs && pnpm weaponsmith:aggregate && node tools/artkit/build-weapon-vfx.mjs && node tools/portal/gen-portal.mjs",
     "gen:check": "node tools/artkit/gen-weapon-expansion.mjs --check && node tools/artkit/gen-dimensions.mjs --check && node tools/artkit/gen-dimension-subjects.mjs --check && node tools/artkit/gen-vfx-subjects.mjs --check && node tools/artkit/gen-character-roster.mjs --check && node tools/artkit/gen-card-manifest.mjs --check && pnpm weaponsmith:aggregate:check && node tools/artkit/build-weapon-vfx.mjs --check && node tools/portal/gen-portal.mjs --check",
     "assets:check": "node tools/artkit/check-assets.mjs",
+    "e2e": "pnpm --filter @dd/shared exec tsc --noCheck && pnpm --filter @dd/server exec tsc --noCheck && playwright test --config=e2e/playwright.config.ts",
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "pnpm --filter @dd/shared build && vitest run",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
     "@dd/shared": "workspace:*",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.10.0",
     "concurrently": "^9.1.0",
     "typescript": "^5.7.0",
