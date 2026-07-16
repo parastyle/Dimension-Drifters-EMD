@@ -1,10 +1,45 @@
 import {
   CHOP_IMPACT_FRAC,
+  INTERP_SNAP_PLAYER,
   isWornWeapon,
+  JIGGLE_FOOT_AIR_INERTIA,
+  JIGGLE_FOOT_AIR_W,
+  JIGGLE_FOOT_AIR_Z,
+  JIGGLE_FOOT_IDLE_X,
+  JIGGLE_FOOT_IDLE_Y,
+  JIGGLE_FOOT_MAX_V,
+  JIGGLE_FOOT_MAX_X,
+  JIGGLE_FOOT_MAX_Y,
+  JIGGLE_FOOT_PLANT_INERTIA,
+  JIGGLE_FOOT_PLANT_W,
+  JIGGLE_FOOT_PLANT_Z,
+  JIGGLE_FREE_HAND_INERTIA,
+  JIGGLE_HAND_IDLE_X,
+  JIGGLE_HAND_IDLE_Y,
+  JIGGLE_HAND_MAX_V,
+  JIGGLE_HAND_MAX_X,
+  JIGGLE_HAND_MAX_Y,
+  JIGGLE_HAND_W,
+  JIGGLE_HAND_Z,
+  JIGGLE_HANDOFF_MAX_V,
+  JIGGLE_LAND_HAND_KICK,
+  JIGGLE_LOD_MARGIN_PX,
+  JIGGLE_MAX_DT_S,
+  JIGGLE_REMOTE_FILTER_HZ,
+  JIGGLE_SELF_FILTER_HZ,
+  JIGGLE_SIGNAL_DEAD_ZONE,
+  JIGGLE_SIGNAL_IMPULSE_HZ,
+  JIGGLE_SIZE_FREQ_MAX,
+  JIGGLE_SIZE_FREQ_MIN,
+  JIGGLE_SIZE_FREQ_POWER,
+  JIGGLE_TURN_FOOT_KICK,
+  JIGGLE_TURN_HAND_KICK,
+  JIGGLE_WEAPON_HAND_INERTIA,
   MELEE_COMBO_SEQUENCES,
   type MeleeComboFamily,
   type MeleeComboStep,
   MOVE_SPEED,
+  PROCEDURAL_JIGGLE,
   type SwingDescriptor,
   swingDescriptorFor,
   type WeaponDef,
@@ -62,6 +97,200 @@ function comboGraceMs(effectiveCooldown: number): number {
   return Math.min(0.3, Math.max(0.12, effectiveCooldown * 0.35)) * 1000;
 }
 
+/** Fixed inline Stage-1 state. Records are allocated only with the rig; animate mutates scalar fields. */
+interface JigglePartState {
+  jx: number;
+  jy: number;
+  jvx: number;
+  jvy: number;
+  prevAx: number;
+  prevAy: number;
+  prevAvx: number;
+  prevAvy: number;
+  prevOwn: number;
+  springReady: boolean;
+}
+
+interface RigHand extends JigglePartState {
+  img: Phaser.GameObjects.Image;
+  ox: number;
+  oy: number;
+  front: boolean;
+}
+
+interface RigFoot extends JigglePartState {
+  img: Phaser.GameObjects.Image;
+  ox: number;
+  oy: number;
+}
+
+/** Rebase on construction/cuts/swaps/LOD sleep. A cut is not acceleration and must add zero energy. */
+function resetJigglePart(p: JigglePartState, ax: number, ay: number, own: number): void {
+  p.jx = 0;
+  p.jy = 0;
+  p.jvx = 0;
+  p.jvy = 0;
+  p.prevAx = ax;
+  p.prevAy = ay;
+  p.prevAvx = 0;
+  p.prevAvy = 0;
+  p.prevOwn = own;
+  p.springReady = true;
+}
+
+/** Late hard constraints (2H haft/orbit) synchronize the hidden state to their final authored point. */
+function syncOwnedJigglePart(
+  p: JigglePartState,
+  ax: number,
+  ay: number,
+  dtS: number,
+  rebase: boolean,
+): void {
+  if (!p.springReady || rebase || dtS <= 0) {
+    resetJigglePart(p, ax, ay, 1);
+    return;
+  }
+  const avx = Math.max(
+    -JIGGLE_HANDOFF_MAX_V,
+    Math.min(JIGGLE_HANDOFF_MAX_V, (ax - p.prevAx) / dtS),
+  );
+  const avy = Math.max(
+    -JIGGLE_HANDOFF_MAX_V,
+    Math.min(JIGGLE_HANDOFF_MAX_V, (ay - p.prevAy) / dtS),
+  );
+  p.jx = 0;
+  p.jy = 0;
+  p.jvx = 0;
+  p.jvy = 0;
+  p.prevAx = ax;
+  p.prevAy = ay;
+  p.prevAvx = avx;
+  p.prevAvy = avy;
+  p.prevOwn = 1;
+}
+
+/** Exact damped-oscillator transition around a held micro-noise equilibrium; no Euler instability at 100ms. */
+function stepJigglePart(
+  p: JigglePartState,
+  ax: number,
+  ay: number,
+  own: number,
+  dtS: number,
+  w: number,
+  z: number,
+  equilibriumX: number,
+  equilibriumY: number,
+  impulseX: number,
+  impulseY: number,
+  maxX: number,
+  maxY: number,
+  maxV: number,
+  planted: boolean,
+  rebase: boolean,
+): void {
+  if (!p.springReady || rebase || dtS <= 0) {
+    resetJigglePart(p, ax, ay, own);
+    return;
+  }
+  if (own >= 0.999) {
+    syncOwnedJigglePart(p, ax, ay, dtS, false);
+    return;
+  }
+
+  const avx = Math.max(
+    -JIGGLE_HANDOFF_MAX_V,
+    Math.min(JIGGLE_HANDOFF_MAX_V, (ax - p.prevAx) / dtS),
+  );
+  const avy = Math.max(
+    -JIGGLE_HANDOFF_MAX_V,
+    Math.min(JIGGLE_HANDOFF_MAX_V, (ay - p.prevAy) / dtS),
+  );
+  if (p.prevOwn >= 0.999) {
+    // Energy handoff: preserve the prior exact authored point and its bounded terminal local velocity.
+    p.jx = p.prevAx - ax;
+    p.jy = p.prevAy - ay;
+    p.jvx = p.prevAvx;
+    p.jvy = p.prevAvy;
+  }
+  p.jvx += impulseX;
+  p.jvy += impulseY;
+
+  const rx = p.jx - equilibriumX;
+  const ry = p.jy - equilibriumY;
+  let a00: number;
+  let a01: number;
+  let a10: number;
+  let a11: number;
+  if (Math.abs(z - 1) < 1e-4) {
+    const d = Math.exp(-w * dtS);
+    a00 = d * (1 + w * dtS);
+    a01 = d * dtS;
+    a10 = d * (-w * w * dtS);
+    a11 = d * (1 - w * dtS);
+  } else if (z < 1) {
+    const wd = w * Math.sqrt(1 - z * z);
+    const d = Math.exp(-z * w * dtS);
+    const c = Math.cos(wd * dtS);
+    const sn = Math.sin(wd * dtS);
+    const zwOverWd = (z * w) / wd;
+    a00 = d * (c + zwOverWd * sn);
+    a01 = d * (sn / wd);
+    a10 = d * ((-(w * w) * sn) / wd);
+    a11 = d * (c - zwOverWd * sn);
+  } else {
+    const wd = w * Math.sqrt(z * z - 1);
+    const d = Math.exp(-z * w * dtS);
+    const c = Math.cosh(wd * dtS);
+    const sn = Math.sinh(wd * dtS);
+    const zwOverWd = (z * w) / wd;
+    a00 = d * (c + zwOverWd * sn);
+    a01 = d * (sn / wd);
+    a10 = d * ((-(w * w) * sn) / wd);
+    a11 = d * (c - zwOverWd * sn);
+  }
+  const nextX = a00 * rx + a01 * p.jvx;
+  const nextY = a00 * ry + a01 * p.jvy;
+  const nextVx = a10 * rx + a11 * p.jvx;
+  const nextVy = a10 * ry + a11 * p.jvy;
+  p.jx = equilibriumX + nextX;
+  p.jy = equilibriumY + nextY;
+  p.jvx = nextVx;
+  p.jvy = nextVy;
+
+  // Elliptical positional ceiling removes corner-sticking; discard only outward boundary velocity.
+  const ell = (p.jx * p.jx) / (maxX * maxX) + (p.jy * p.jy) / (maxY * maxY);
+  if (ell > 1) {
+    const k = 1 / Math.sqrt(ell);
+    p.jx *= k;
+    p.jy *= k;
+    const nx = p.jx / (maxX * maxX);
+    const ny = p.jy / (maxY * maxY);
+    const outward = p.jvx * nx + p.jvy * ny;
+    const nn = nx * nx + ny * ny;
+    if (outward > 0 && nn > 1e-8) {
+      p.jvx -= (outward / nn) * nx;
+      p.jvy -= (outward / nn) * ny;
+    }
+  }
+  const vm = Math.hypot(p.jvx, p.jvy);
+  if (vm > maxV) {
+    const k = maxV / vm;
+    p.jvx *= k;
+    p.jvy *= k;
+  }
+  // A stance foot may lift/catch up, but spring energy may never push it down through the ground plane.
+  if (planted && p.jy > 0) {
+    p.jy = 0;
+    if (p.jvy > 0) p.jvy = 0;
+  }
+  if (!Number.isFinite(p.jx + p.jy + p.jvx + p.jvy)) resetJigglePart(p, ax, ay, own);
+  p.prevAx = ax;
+  p.prevAy = ay;
+  p.prevAvx = avx;
+  p.prevAvy = avy;
+  p.prevOwn = own;
+}
+
 /** §42 a WORN weapon (gauntlet/claw/glove/knuckles) is worn ON the hand, not held by the cuff: the rig
  *  mounts its pivot where the hand sits INSIDE the glove and renders the art OVER the hand. Matched by
  *  the gauntlet/fist FAMILIES plus worn WORDS in the name (the melee claws hide under "exotic-melee");
@@ -113,13 +342,8 @@ export class SpriteRig {
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
   private baseScale = 1;
   private readonly body: Phaser.GameObjects.Image;
-  private readonly hands: {
-    img: Phaser.GameObjects.Image;
-    ox: number;
-    oy: number;
-    front: boolean;
-  }[] = [];
-  private readonly feet: { img: Phaser.GameObjects.Image; ox: number; oy: number }[] = [];
+  private readonly hands: RigHand[] = [];
+  private readonly feet: RigFoot[] = [];
   private readonly parts: Phaser.GameObjects.Image[] = [];
   private readonly label?: Phaser.GameObjects.Text;
   private readonly phase: number;
@@ -155,6 +379,13 @@ export class SpriteRig {
   private slowVelX = 0;
   private slowVelY = 0;
   private strideT = 0;
+  /** Stage-1 excitation conditioner: legacy fast-minus-slow lag is low-passed harder for snapshot rigs, then
+   *  distributed as bounded velocity impulses. Root history rejects teleports/clock cuts before they ring. */
+  private jiggleSignalX = 0;
+  private jiggleSignalY = 0;
+  private jigglePrevRootX = 0;
+  private jigglePrevRootY = 0;
+  private jiggleRootReady = false;
   /** §7 v0.105 de-clunk — last `animate` clock (ms) to derive a frame dt for the eased blends; -1 = first. */
   private prevAnimMs = -1;
   /** §8 parry brace envelope duration (ms) ≈ PARRY_IFRAMES. Hoisted so `triggerBrace` can plateau a chain. */
@@ -250,10 +481,40 @@ export class SpriteRig {
       if (p.role.startsWith("hand")) {
         const img = make(p.role);
         if (img)
-          this.hands.push({ img, ox: p.ox * this.scale, oy: p.oy * this.scale, front: p.ox >= 0 });
+          this.hands.push({
+            img,
+            ox: p.ox * this.scale,
+            oy: p.oy * this.scale,
+            front: p.ox >= 0,
+            jx: 0,
+            jy: 0,
+            jvx: 0,
+            jvy: 0,
+            prevAx: 0,
+            prevAy: 0,
+            prevAvx: 0,
+            prevAvy: 0,
+            prevOwn: 0,
+            springReady: false,
+          });
       } else if (p.role.startsWith("foot")) {
         const img = make(p.role);
-        if (img) this.feet.push({ img, ox: p.ox * this.scale, oy: p.oy * this.scale });
+        if (img)
+          this.feet.push({
+            img,
+            ox: p.ox * this.scale,
+            oy: p.oy * this.scale,
+            jx: 0,
+            jy: 0,
+            jvx: 0,
+            jvy: 0,
+            prevAx: 0,
+            prevAy: 0,
+            prevAvx: 0,
+            prevAvy: 0,
+            prevOwn: 0,
+            springReady: false,
+          });
       }
     }
     const bodyImg = make("body");
@@ -283,6 +544,8 @@ export class SpriteRig {
     this.root = scene.add.container(x, y, order);
     this.renderPrevX = x;
     this.renderPrevY = y;
+    this.jigglePrevRootX = x;
+    this.jigglePrevRootY = y;
 
     // Per-rig phase offset so a crowd doesn't bob in lockstep. Derived from id (stable).
     let h = 0;
@@ -292,6 +555,27 @@ export class SpriteRig {
 
   setPosition(x: number, y: number): void {
     this.root.setPosition(x, y);
+  }
+
+  /** Allocation-free lifetime reset; the next authored anchors rebase before any excitation is accepted. */
+  private resetSecondaryMotion(): void {
+    this.jiggleSignalX = 0;
+    this.jiggleSignalY = 0;
+    this.jiggleRootReady = false;
+    for (const h of this.hands) {
+      h.jx = 0;
+      h.jy = 0;
+      h.jvx = 0;
+      h.jvy = 0;
+      h.springReady = false;
+    }
+    for (const f of this.feet) {
+      f.jx = 0;
+      f.jy = 0;
+      f.jvx = 0;
+      f.jvy = 0;
+      f.springReady = false;
+    }
   }
 
   /** Top-down draw order: lower on screen renders in front. */
@@ -346,6 +630,7 @@ export class SpriteRig {
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
   setRigScale(mult: number): void {
+    if (mult !== this.baseScale) this.resetSecondaryMotion();
     this.baseScale = mult;
     this.root.setScale(mult);
   }
@@ -398,6 +683,7 @@ export class SpriteRig {
     // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
     // swing carries into the NEW weapon's timeline. §45 the combo/hold shares that exact lifetime boundary.
     this.resetSwingCombo();
+    this.resetSecondaryMotion();
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
@@ -538,6 +824,7 @@ export class SpriteRig {
   setDowned(on: boolean): void {
     if (on === this.downed) return;
     this.downed = on;
+    this.resetSecondaryMotion();
     if (on) this.resetSwingCombo(); // §45 a down/death boundary cannot bank a held finisher for revival
     this.root.setAlpha(on ? 0.5 : 1);
     this.restTint();
@@ -578,6 +865,7 @@ export class SpriteRig {
     this.weapons = [];
     this.weaponDef = def;
     this.resetSwingCombo();
+    this.resetSecondaryMotion();
   }
 
   destroy(): void {
@@ -594,10 +882,37 @@ export class SpriteRig {
     // clamped so a hit-stop gap or first frame can't produce a jump.
     // §7 v0.112 clamp to [0,100]: a scene restart / clock reset can make timeMs < prevAnimMs → a NEGATIVE dt
     // that would flip the exponential-blend signs and blow every eased value to infinity. Never allow that.
-    const dtMs = this.prevAnimMs < 0 ? 16 : Math.max(0, Math.min(100, timeMs - this.prevAnimMs));
+    const firstAnim = this.prevAnimMs < 0;
+    const rawDtMs = firstAnim ? 16 : timeMs - this.prevAnimMs;
+    const dtMs = Math.max(0, Math.min(100, rawDtMs));
     this.prevAnimMs = timeMs;
     const s = this.scale;
     const sceneNow = this.scene.time.now;
+    const springDtS = Math.min(JIGGLE_MAX_DT_S, dtMs / 1000);
+    const rootDx = this.root.x - this.jigglePrevRootX;
+    const rootDy = this.root.y - this.jigglePrevRootY;
+    const rootCut = Math.hypot(rootDx, rootDy) > INTERP_SNAP_PLAYER;
+    const jiggleRebase = firstAnim || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000 || rootCut;
+    this.jigglePrevRootX = this.root.x;
+    this.jigglePrevRootY = this.root.y;
+    const view = this.scene.cameras.main.worldView;
+    const jiggleLodSkip =
+      PROCEDURAL_JIGGLE &&
+      !anim.isSelf &&
+      (this.root.x < view.left - JIGGLE_LOD_MARGIN_PX ||
+        this.root.x > view.right + JIGGLE_LOD_MARGIN_PX ||
+        this.root.y < view.top - JIGGLE_LOD_MARGIN_PX ||
+        this.root.y > view.bottom + JIGGLE_LOD_MARGIN_PX);
+
+    // Landing is measured before part integration so the one-shot compression enters this frame's springs;
+    // the final art lift/shadow pass remains last. With the rollback flag off the arithmetic/order of writes
+    // is unchanged because no earlier target reads hopPx or landSquash.
+    const prevHop = this.hopPx;
+    this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
+    if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
+    const landed = prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1;
+    if (landed) this.landSquash = 1;
+    this.landSquash = Math.max(0, this.landSquash - dtMs / 110);
     // The active counter resets as soon as readyAt+grace lapses. Its last authored guard remains only as a
     // 120ms cosmetic release; it cannot make a late trigger continue because family/weapon are already clear.
     if (this.comboFamily !== "none" && sceneNow > this.comboExpiresAtMs)
@@ -616,6 +931,7 @@ export class SpriteRig {
     // punch toward the new direction — the WEIGHT of committing to a turn, shown in animation (the trajectory
     // is untouched). Refractory via `turnCommit` so it fires ONCE per turn, not every frame while the tracked
     // heading catches up. Sharper turn (smaller dot) → bigger pull; a full reversal → a full-strength haul.
+    let turnTriggered = false;
     this.turnCommit = Math.max(0, this.turnCommit - dtMs / 1000 / 0.24); // decays over ~0.24s
     const mvLen = Math.hypot(anim.moveX, anim.moveY);
     if (mvLen > 0.15) {
@@ -623,6 +939,7 @@ export class SpriteRig {
       const ny = anim.moveY / mvLen;
       const dot = nx * this.headingX + ny * this.headingY; // 1 = same way … −1 = reversal
       if (gait > 0.4 && dot < 0.72 && this.turnCommit < 0.06) {
+        turnTriggered = true;
         this.turnCommit = Math.min(1, (1 - dot) * 0.9);
         this.turnDirX = nx;
         this.turnDirY = ny;
@@ -649,6 +966,25 @@ export class SpriteRig {
     this.slowVelY += (rvy - this.slowVelY) * (1 - Math.exp(-7 * dtS));
     const lagX = Math.max(-1.4, Math.min(1.4, (this.velX - this.slowVelX) / MOVE_SPEED));
     const lagY = Math.max(-1.4, Math.min(1.4, (this.velY - this.slowVelY) / MOVE_SPEED));
+    let springSignalX = 0;
+    let springSignalY = 0;
+    if (PROCEDURAL_JIGGLE) {
+      if (!this.jiggleRootReady || jiggleRebase || jiggleLodSkip) {
+        this.jiggleSignalX = 0;
+        this.jiggleSignalY = 0;
+        this.jiggleRootReady = true;
+      } else {
+        // Snapshot rigs get the panel's slower 14/s conditioner; self prediction keeps the current 26/s feel.
+        const filterHz = anim.isSelf ? JIGGLE_SELF_FILTER_HZ : JIGGLE_REMOTE_FILTER_HZ;
+        const k = 1 - Math.exp(-filterHz * springDtS);
+        this.jiggleSignalX += (lagX - this.jiggleSignalX) * k;
+        this.jiggleSignalY += (lagY - this.jiggleSignalY) * k;
+        springSignalX =
+          Math.abs(this.jiggleSignalX) < JIGGLE_SIGNAL_DEAD_ZONE ? 0 : this.jiggleSignalX;
+        springSignalY =
+          Math.abs(this.jiggleSignalY) < JIGGLE_SIGNAL_DEAD_ZONE ? 0 : this.jiggleSignalY;
+      }
+    }
     this.strideT += ((spd * dtS) / STRIDE_LEN) * Math.PI * 2;
     if (this.strideT > Math.PI * 2e6) this.strideT -= Math.PI * 2e6; // keep it bounded over a long session
     const legPh = this.strideT;
@@ -735,6 +1071,9 @@ export class SpriteRig {
     // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
     let weaponAngle = 0;
     let backWeaponAngle = Number.NaN;
+    let ownFront = 0;
+    let ownBack = 0;
+    let ownFeet = 0;
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
@@ -742,6 +1081,8 @@ export class SpriteRig {
     this.swingBackOffX = 0;
     this.swingBackOffY = 0;
     if (this.weaponDef?.gun && this.weapons.length > 0) {
+      ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
+      if (this.weaponDef.twoHanded) ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
@@ -781,6 +1122,11 @@ export class SpriteRig {
         tt = el / dur;
       }
       if (style && tt >= 0) {
+        // Conservative Stage-1 guardrail: every visible melee pose, accepted-cadence hold, and its authored
+        // 120ms release owns both hands/feet at exactly 1. Style-specific looseness waits for capture tests.
+        ownFront = 1;
+        ownBack = 1;
+        ownFeet = 1;
         // §40 SWING-STYLE dispatch — one weapon, ONE animation, drawn from the per-type vocabulary
         // (arc / orbit / chop / pivot / thrust / spin). World aim → local (mirrored) shared by every style.
         const aimW = Number.isNaN(this.swingAimWorld)
@@ -1207,8 +1553,16 @@ export class SpriteRig {
     }
     // Brace overrides the swing: raise the weapon toward a near-horizontal block (business end up).
     if (brace > 0) {
+      ownFront = 1;
+      ownBack = 1;
+      ownFeet = 1;
       const guard = -0.2; // near-horizontal, tipped slightly up = a raised guard
       weaponAngle += (guard - weaponAngle) * brace;
+    }
+    if (this.weaponDef?.twoHanded) {
+      // The rear grip is a hard geometric child of the lead/haft, never an independently wobbling oscillator.
+      ownFront = 1;
+      ownBack = 1;
     }
 
     // §7 v0.112 Hands: the front hand still reaches toward the cursor (the aim anchor, direct — no lag on
@@ -1216,6 +1570,12 @@ export class SpriteRig {
     // stride (opposite its leg), a slow breathing sway when idle, and an INERTIA TRAIL that drags the hands
     // behind the body on any speed/direction change — so the arms read as free-moving weight, not a fixed loop.
     const reach = TARGET_BODY_H * (this.weapons.length > 0 ? 0.1 : 0.28);
+    const sizeFreq = Math.max(
+      JIGGLE_SIZE_FREQ_MIN,
+      Math.min(JIGGLE_SIZE_FREQ_MAX, (this.baseScale || 1) ** JIGGLE_SIZE_FREQ_POWER),
+    );
+    const excitationScale =
+      (MOVE_SPEED * JIGGLE_SIGNAL_IMPULSE_HZ * springDtS) / (this.baseScale || 1);
     for (const hnd of this.hands) {
       const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
       const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
@@ -1225,8 +1585,13 @@ export class SpriteRig {
       // every speed/direction change (the flash-animation follow-through), then settle.
       const trailX = -lagX * this.facing * s * 36;
       const trailY = -lagY * s * 30;
-      let hx = hnd.ox + swingX + trailX;
-      let hy = hnd.oy + bobY + idleY + trailY;
+      let hx = hnd.ox + swingX;
+      let hy = hnd.oy + bobY;
+      if (!PROCEDURAL_JIGGLE) {
+        hx += trailX;
+        hy += idleY;
+        hy += trailY;
+      }
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
@@ -1252,6 +1617,48 @@ export class SpriteRig {
         hx += (bx - hx) * brace;
         hy += (by - hy) * brace;
       }
+      if (PROCEDURAL_JIGGLE) {
+        const own = hnd.front ? ownFront : ownBack;
+        // Orbit and the rear 2H grip have authoritative late writers; synchronize at those final seams below.
+        const deferToConstraint = this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded);
+        if (!deferToConstraint) {
+          const holdsWeapon = hnd.front ? this.weapons.length > 0 : this.weapons.length > 1;
+          const inertia = holdsWeapon ? JIGGLE_WEAPON_HAND_INERTIA : JIGGLE_FREE_HAND_INERTIA;
+          const rolePhase = this.phase * Math.PI * 2 + (hnd.front ? 0.7 : 2.9);
+          const idleMix = 1 - gait;
+          const equilibriumX =
+            Math.sin(t * Math.PI * 2 * 0.57 + rolePhase) * JIGGLE_HAND_IDLE_X * idleMix;
+          const equilibriumY =
+            Math.sin(t * Math.PI * 2 * 1.13 + rolePhase * 1.7) * JIGGLE_HAND_IDLE_Y * idleMix;
+          let impulseX = -springSignalX * this.facing * excitationScale * inertia;
+          let impulseY = -springSignalY * excitationScale * inertia;
+          if (turnTriggered) {
+            impulseX += this.turnDirX * this.facing * JIGGLE_TURN_HAND_KICK;
+            impulseY += this.turnDirY * JIGGLE_TURN_HAND_KICK;
+          }
+          if (landed) impulseY += JIGGLE_LAND_HAND_KICK;
+          stepJigglePart(
+            hnd,
+            hx,
+            hy,
+            own,
+            springDtS,
+            JIGGLE_HAND_W * sizeFreq,
+            JIGGLE_HAND_Z,
+            equilibriumX,
+            equilibriumY,
+            impulseX,
+            impulseY,
+            JIGGLE_HAND_MAX_X,
+            JIGGLE_HAND_MAX_Y,
+            JIGGLE_HAND_MAX_V,
+            false,
+            jiggleRebase || jiggleLodSkip,
+          );
+          hx += (1 - own) * hnd.jx;
+          hy += (1 - own) * hnd.jy;
+        }
+      }
       hnd.img.x = hx;
       hnd.img.y = hy;
     }
@@ -1266,6 +1673,14 @@ export class SpriteRig {
         back.img.x = front.img.x + Math.cos(weaponAngle) * haft;
         back.img.y = front.img.y + Math.sin(weaponAngle) * haft;
         back.img.rotation = 0;
+        if (PROCEDURAL_JIGGLE)
+          syncOwnedJigglePart(
+            back,
+            back.img.x,
+            back.img.y,
+            springDtS,
+            jiggleRebase || jiggleLodSkip,
+          );
       }
     }
 
@@ -1280,12 +1695,57 @@ export class SpriteRig {
       const ft = this.feet[i];
       if (!ft) continue;
       const ph = legPh + i * Math.PI; // legs out of phase
+      const planted = Math.sin(ph) <= 0;
       const idle = Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
       const trailX = -lagX * this.facing * s * 20; // §MADNESS looser foot drag on a speed/direction change
       const trailY = -lagY * s * 12;
-      ft.img.y = ft.oy - Math.max(0, Math.sin(ph)) * s * 19 * gait + idle + trailY; // §MADNESS higher foot lift
-      ft.img.x = ft.ox + Math.cos(ph) * s * 10 * gait + trailX; // stride + drag
-      ft.img.rotation = Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.18; // pivot + lean into accel
+      let fy = ft.oy - Math.max(0, Math.sin(ph)) * s * 19 * gait;
+      let fx = ft.ox + Math.cos(ph) * s * 10 * gait;
+      if (!PROCEDURAL_JIGGLE) {
+        fy += idle;
+        fy += trailY;
+        fx += trailX;
+      }
+      if (PROCEDURAL_JIGGLE) {
+        const inertia = planted ? JIGGLE_FOOT_PLANT_INERTIA : JIGGLE_FOOT_AIR_INERTIA;
+        const rolePhase = this.phase * Math.PI * 2 + i * 2.1 + 4.3;
+        const idleMix = 1 - gait;
+        const equilibriumX =
+          Math.sin(t * Math.PI * 2 * 0.73 + rolePhase) * JIGGLE_FOOT_IDLE_X * idleMix;
+        const equilibriumY =
+          Math.sin(t * Math.PI * 2 * 1.37 + rolePhase * 1.3) * JIGGLE_FOOT_IDLE_Y * idleMix;
+        let impulseX = -springSignalX * this.facing * excitationScale * inertia;
+        let impulseY = -springSignalY * excitationScale * inertia;
+        if (turnTriggered) {
+          impulseX += this.turnDirX * this.facing * JIGGLE_TURN_FOOT_KICK;
+          impulseY += this.turnDirY * JIGGLE_TURN_FOOT_KICK;
+        }
+        stepJigglePart(
+          ft,
+          fx,
+          fy,
+          ownFeet,
+          springDtS,
+          (planted ? JIGGLE_FOOT_PLANT_W : JIGGLE_FOOT_AIR_W) * sizeFreq,
+          planted ? JIGGLE_FOOT_PLANT_Z : JIGGLE_FOOT_AIR_Z,
+          equilibriumX,
+          equilibriumY,
+          impulseX,
+          impulseY,
+          JIGGLE_FOOT_MAX_X,
+          JIGGLE_FOOT_MAX_Y,
+          JIGGLE_FOOT_MAX_V,
+          planted,
+          jiggleRebase || jiggleLodSkip || (landed && planted),
+        );
+        fx += (1 - ownFeet) * ft.jx;
+        fy += (1 - ownFeet) * ft.jy;
+      }
+      ft.img.y = fy; // §MADNESS higher foot lift
+      ft.img.x = fx; // stride + drag
+      ft.img.rotation = PROCEDURAL_JIGGLE
+        ? Math.cos(ph) * 0.14 * gait - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
+        : Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.18; // pivot + lean into accel
     }
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
@@ -1357,6 +1817,24 @@ export class SpriteRig {
           back.img.setPosition(gx + ux * haft, gy + uy * haft - TARGET_BODY_H * 0.05);
           back.img.rotation = 0;
         }
+        if (PROCEDURAL_JIGGLE) {
+          if (front)
+            syncOwnedJigglePart(
+              front,
+              front.img.x,
+              front.img.y,
+              springDtS,
+              jiggleRebase || jiggleLodSkip,
+            );
+          if (back)
+            syncOwnedJigglePart(
+              back,
+              back.img.x,
+              back.img.y,
+              springDtS,
+              jiggleRebase || jiggleLodSkip,
+            );
+        }
         // §40.1/§40.3 the BODY spins the swing (paper-character posing, additive on the frame's base).
         // §41 spins HOLD the whirl to the very end (each revolution set lands facing-normal, so there's no
         // pop) — and a CHAINED spin skips the entry ramp entirely, keeping the body whirling through spam.
@@ -1409,14 +1887,7 @@ export class SpriteRig {
       w.img.setScale(base);
     }
 
-    // §5 jump hop: §7 v0.105 de-clunk — the synced height arrives in raw 20Hz Euler steps (~15px jumps),
-    // visibly chunkier than the smoothed x/y. EASE the rendered lift toward the target (τ≈45ms) so the arc
-    // reads continuous, and fire a brief LANDING SQUASH when it returns to the ground.
-    const prevHop = this.hopPx;
-    this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
-    if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
-    if (prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1) this.landSquash = 1; // touched down
-    this.landSquash = Math.max(0, this.landSquash - dtMs / 110); // decays over ~110ms
+    // §5 jump hop was integrated at frame start so touchdown could excite springs; final art lift stays last.
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
     // ground), so the silhouette reads as "off the ground" rather than just sliding up.
     // §33 the JUMP hop plus the permanent COLOSSUS lower-body lift both raise the art (never the shadow).

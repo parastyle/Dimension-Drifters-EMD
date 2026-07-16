@@ -45,6 +45,47 @@ export const MOVE_RECOVER_ACCEL = 2600;
 export const MOVE_STOP_DECEL = 2600;
 
 /**
+ * PROCEDURAL JIGGLE (client-cosmetic Stage 1). These exports live here only to keep the rollback flag and
+ * role tuning in one auditable block; server simulation never reads spring state. Migration deliberately
+ * starts near critical and inside the devil's-advocate combat/readability ceilings. Frequencies are angular
+ * rad/s, damping values are ratios, displacement is normalized rig-local px, and velocity is local px/s.
+ */
+export const PROCEDURAL_JIGGLE = true;
+export const JIGGLE_HAND_W = 18;
+export const JIGGLE_HAND_Z = 0.95;
+export const JIGGLE_FOOT_AIR_W = 22;
+export const JIGGLE_FOOT_AIR_Z = 0.82;
+export const JIGGLE_FOOT_PLANT_W = 34;
+export const JIGGLE_FOOT_PLANT_Z = 1;
+export const JIGGLE_HAND_MAX_X = 6.08; // 0.08 normalized 76px body heights
+export const JIGGLE_HAND_MAX_Y = 6.08;
+export const JIGGLE_FOOT_MAX_X = 2.66; // 0.035 normalized 76px body heights
+export const JIGGLE_FOOT_MAX_Y = 2.66;
+export const JIGGLE_HAND_MAX_V = 150;
+export const JIGGLE_FOOT_MAX_V = 90;
+export const JIGGLE_FREE_HAND_INERTIA = 0.65;
+export const JIGGLE_WEAPON_HAND_INERTIA = 0.45;
+export const JIGGLE_FOOT_AIR_INERTIA = 0.25;
+export const JIGGLE_FOOT_PLANT_INERTIA = 0.05;
+export const JIGGLE_SIGNAL_IMPULSE_HZ = 7;
+export const JIGGLE_SELF_FILTER_HZ = 26;
+export const JIGGLE_REMOTE_FILTER_HZ = 14;
+export const JIGGLE_SIGNAL_DEAD_ZONE = 0.015;
+export const JIGGLE_HANDOFF_MAX_V = 120;
+export const JIGGLE_HAND_IDLE_X = 0.55;
+export const JIGGLE_HAND_IDLE_Y = 0.75;
+export const JIGGLE_FOOT_IDLE_X = 0.16;
+export const JIGGLE_FOOT_IDLE_Y = 0.22;
+export const JIGGLE_TURN_HAND_KICK = 16;
+export const JIGGLE_TURN_FOOT_KICK = 4;
+export const JIGGLE_LAND_HAND_KICK = 28;
+export const JIGGLE_SIZE_FREQ_POWER = -0.35;
+export const JIGGLE_SIZE_FREQ_MIN = 0.42;
+export const JIGGLE_SIZE_FREQ_MAX = 1.05;
+export const JIGGLE_MAX_DT_S = 0.1;
+export const JIGGLE_LOD_MARGIN_PX = 240;
+
+/**
  * §7 v0.105 de-clunk — CLIENT render-lerp teleport SNAP thresholds (px). The client smooths each rig
  * toward its authoritative position with a τ≈154ms exponential lerp (great for the ~sub-49px
  * frame-to-frame gap), but when the SERVER teleports an entity — a rift descent (~3000px), a run
