@@ -86,15 +86,29 @@ import {
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
-import { partTexture, type RigAnim, SPRITE_ATLAS, SpriteRig } from "../entities/SpriteRig.js";
+import {
+  partTexture,
+  type RigAnim,
+  SPRITE_ATLAS,
+  SpriteRig,
+} from "../entities/SpriteRig.js";
 import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
-import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
+import {
+  elementPack,
+  particleBurst,
+  preloadParticlePacks,
+} from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
-import { buildCard, type Card, drawIcon, WEAPON_ACCENT } from "./arena/card-art.js";
+import {
+  buildCard,
+  type Card,
+  drawIcon,
+  WEAPON_ACCENT,
+} from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
 import {
   buildArenaFloor,
@@ -126,6 +140,7 @@ import {
   spawnPoof,
   spawnQuake,
   spawnSplat,
+  TelegraphForeshadowPool,
   spawnWeaponKillFx,
 } from "./arena/vfx.js";
 
@@ -147,6 +162,287 @@ const BELT_FORESHORTEN = 0.5;
 const BELT_VIEW_H = 880;
 const BELT_SKY = 176;
 
+/** Existing kindTag wire values, named locally so the first layered pass stays protocol-neutral. */
+const TelegraphKindTag = {
+  Slam: 0,
+  Pool: 1,
+  Summon: 2,
+  Radial: 3,
+  Charge: 4,
+  ExpandingRing: 5,
+  Melee: 6,
+  Quake: 7,
+} as const;
+
+interface TelegraphEdgePath {
+  points: { x: number; y: number }[];
+  /** A second path no more than two screen pixels into the dangerous side of the exact boundary. */
+  echo: { x: number; y: number }[];
+  closed: boolean;
+}
+
+interface TelegraphGeometry {
+  edges: TelegraphEdgePath[];
+  centerX: number;
+  centerY: number;
+}
+
+function projectTelegraphY(y: number, projectionYScale: number): number {
+  return BELT_Y0 + (y - BELT_Y0) * projectionYScale;
+}
+
+function adaptiveArcSamples(
+  radius: number,
+  span: number,
+  zoom: number,
+): number {
+  const screenRadius = Math.max(1, Math.abs(radius) * zoom);
+  const step = 2 * Math.acos(Math.max(-1, Math.min(1, 1 - 1 / screenRadius)));
+  return Math.max(24, Math.min(96, Math.ceil(span / Math.max(0.02, step))));
+}
+
+function telegraphHash01(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 0x100000000;
+}
+
+function insetPoint(
+  x: number,
+  y: number,
+  towardX: number,
+  towardY: number,
+  inset: number,
+): { x: number; y: number } {
+  const dx = towardX - x;
+  const dy = towardY - y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: x + (dx / len) * inset, y: y + (dy / len) * inset };
+}
+
+function ellipseEdge(
+  worldX: number,
+  worldY: number,
+  radius: number,
+  start: number,
+  end: number,
+  projectionYScale: number,
+  zoom: number,
+  echoTowardCenter: boolean,
+  closed: boolean,
+): TelegraphEdgePath {
+  const centerY = projectTelegraphY(worldY, projectionYScale);
+  const count = adaptiveArcSamples(radius, Math.abs(end - start), zoom);
+  const points: { x: number; y: number }[] = [];
+  const echo: { x: number; y: number }[] = [];
+  const inset = 2 / Math.max(0.01, zoom);
+  for (let i = 0; i <= count; i++) {
+    const angle = start + ((end - start) * i) / count;
+    const x = worldX + Math.cos(angle) * radius;
+    const y = centerY + Math.sin(angle) * radius * projectionYScale;
+    points.push({ x, y });
+    const towardX = echoTowardCenter ? worldX : x + (x - worldX);
+    const towardY = echoTowardCenter ? centerY : y + (y - centerY);
+    echo.push(insetPoint(x, y, towardX, towardY, inset));
+  }
+  return { points, echo, closed };
+}
+
+function polygonEdge(
+  points: { x: number; y: number }[],
+  centerX: number,
+  centerY: number,
+  zoom: number,
+): TelegraphEdgePath {
+  const inset = 2 / Math.max(0.01, zoom);
+  return {
+    points,
+    echo: points.map((p) => insetPoint(p.x, p.y, centerX, centerY, inset)),
+    closed: true,
+  };
+}
+
+/** TG-1: construct in world space, then project every vertex/axis through the same affine y transform. */
+function buildTelegraphGeometry(
+  shape: number,
+  x: number,
+  y: number,
+  a: number,
+  b: number,
+  rot: number,
+  kindTag: number,
+  projectionYScale: number,
+  zoom: number,
+): TelegraphGeometry {
+  const centerY = projectTelegraphY(y, projectionYScale);
+  const edges: TelegraphEdgePath[] = [];
+  if (shape === TgShape.Rect || shape === TgShape.ArcSweep) {
+    const ux = Math.cos(rot);
+    const uy = Math.sin(rot);
+    const nx = -uy;
+    const ny = ux;
+    const world = [
+      { x: x + nx * b, y: y + ny * b },
+      { x: x + ux * a + nx * b, y: y + uy * a + ny * b },
+      { x: x + ux * a - nx * b, y: y + uy * a - ny * b },
+      { x: x - nx * b, y: y - ny * b },
+    ];
+    const points = world.map((p) => ({
+      x: p.x,
+      y: projectTelegraphY(p.y, projectionYScale),
+    }));
+    let cx = 0;
+    let cy = 0;
+    for (const p of points) {
+      cx += p.x;
+      cy += p.y;
+    }
+    edges.push(
+      polygonEdge(points, cx / points.length, cy / points.length, zoom),
+    );
+  } else if (shape === TgShape.Cone) {
+    const points: { x: number; y: number }[] = [{ x, y: centerY }];
+    const count = adaptiveArcSamples(a, Math.max(0.01, b * 2), zoom);
+    for (let i = 0; i <= count; i++) {
+      const angle = rot - b + (b * 2 * i) / count;
+      points.push({
+        x: x + Math.cos(angle) * a,
+        y: projectTelegraphY(y + Math.sin(angle) * a, projectionYScale),
+      });
+    }
+    let cx = 0;
+    let cy = 0;
+    for (const p of points) {
+      cx += p.x;
+      cy += p.y;
+    }
+    edges.push(
+      polygonEdge(points, cx / points.length, cy / points.length, zoom),
+    );
+  } else if (
+    shape === TgShape.Ring &&
+    kindTag === TelegraphKindTag.ExpandingRing
+  ) {
+    const outerR = Math.max(0, a + RING_BAND_HALF);
+    const innerR = Math.max(0, a - RING_BAND_HALF);
+    const start = rot + Math.max(0, b);
+    const end = rot - Math.max(0, b) + Math.PI * 2;
+    edges.push(
+      ellipseEdge(
+        x,
+        y,
+        outerR,
+        start,
+        end,
+        projectionYScale,
+        zoom,
+        true,
+        false,
+      ),
+    );
+    if (innerR > 0.5) {
+      edges.push(
+        ellipseEdge(
+          x,
+          y,
+          innerR,
+          start,
+          end,
+          projectionYScale,
+          zoom,
+          false,
+          false,
+        ),
+      );
+    }
+    const capInset = 2 / Math.max(0.01, zoom);
+    const addCap = (angle: number, intoAngle: number): void => {
+      const outer = {
+        x: x + Math.cos(angle) * outerR,
+        y: projectTelegraphY(y + Math.sin(angle) * outerR, projectionYScale),
+      };
+      const inner =
+        innerR > 0.5
+          ? {
+              x: x + Math.cos(angle) * innerR,
+              y: projectTelegraphY(
+                y + Math.sin(angle) * innerR,
+                projectionYScale,
+              ),
+            }
+          : { x, y: centerY };
+      const outerToward = {
+        x: x + Math.cos(intoAngle) * outerR,
+        y: projectTelegraphY(
+          y + Math.sin(intoAngle) * outerR,
+          projectionYScale,
+        ),
+      };
+      const innerToward =
+        innerR > 0.5
+          ? {
+              x: x + Math.cos(intoAngle) * innerR,
+              y: projectTelegraphY(
+                y + Math.sin(intoAngle) * innerR,
+                projectionYScale,
+              ),
+            }
+          : {
+              x: x + Math.cos(intoAngle) * 2,
+              y: centerY + Math.sin(intoAngle) * 2,
+            };
+      edges.push({
+        points: [outer, inner],
+        echo: [
+          insetPoint(outer.x, outer.y, outerToward.x, outerToward.y, capInset),
+          insetPoint(inner.x, inner.y, innerToward.x, innerToward.y, capInset),
+        ],
+        closed: false,
+      });
+    };
+    const angularInset = 4 / Math.max(outerR, 4);
+    addCap(start, start + angularInset);
+    addCap(end, end - angularInset);
+  } else if (shape === TgShape.Ring && kindTag === TelegraphKindTag.Radial) {
+    edges.push(
+      ellipseEdge(x, y, a, 0, Math.PI * 2, projectionYScale, zoom, true, true),
+    );
+    if (b > 0.5)
+      edges.push(
+        ellipseEdge(
+          x,
+          y,
+          b,
+          0,
+          Math.PI * 2,
+          projectionYScale,
+          zoom,
+          false,
+          true,
+        ),
+      );
+  } else {
+    const radius = Math.max(2, a);
+    edges.push(
+      ellipseEdge(
+        x,
+        y,
+        radius,
+        0,
+        Math.PI * 2,
+        projectionYScale,
+        zoom,
+        true,
+        true,
+      ),
+    );
+  }
+  return { edges, centerX: x, centerY };
+}
+
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
  *  harvest-installed yet (its manifest id isn't in SPRITES). Keeps every new dimension playable on day one
  *  with an archetype-matched Wild-West rig (the same POC pattern as old-rust/ronin/gatlin → boothill); once
@@ -165,7 +461,10 @@ const ENEMY_FALLBACK_SPRITE: Record<string, string> = {
 
 /** Resolve the sprite manifest id to render for an enemy kind: the bespoke sprite if its art is installed,
  *  else the archetype stand-in (so an un-rendered themed enemy doesn't crash SpriteRig). */
-function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): string {
+function resolveEnemySprite(
+  kind: EnemyKind | undefined,
+  rawKind: string,
+): string {
   const want = kind?.sprite ?? rawKind;
   if (SPRITES[want as keyof typeof SPRITES]) return want;
   return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "rusher"] ?? "critter";
@@ -198,8 +497,12 @@ export class ArenaScene extends Phaser.Scene {
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
    *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
   private audio!: AudioBus;
-  /** §8 white-tell telegraph layer (Stage C) — redrawn each frame from enemies' synced `windup`. */
+  /** §TELEGRAPH exact danger edges above terrain/zones and below actor rigs. Never quality-gated. */
+  private telegraphGroundGfx!: Phaser.GameObjects.Graphics;
+  /** §8 white source/rhythm layer — retained high so parry semantics survive body/projectile clutter. */
   private telegraphGfx!: Phaser.GameObjects.Graphics;
+  /** §TELEGRAPH optional painted world preludes; exact geometry does not depend on this pool. */
+  private telegraphForeshadows!: TelegraphForeshadowPool;
   /** H10 §20 parry-state ring under the LOCAL drifter — active i-frame flash + cooldown-recovery arc. */
   private parryGfx!: Phaser.GameObjects.Graphics;
   /** H10 `time.now` of the last parry press, so the ring can flash bright through the i-frame window. */
@@ -237,11 +540,34 @@ export class ArenaScene extends Phaser.Scene {
       x: number;
       y: number;
       a: number;
+      b: number;
+      rot: number;
       danger: number;
       kindTag: number;
       sawFull: boolean;
+      seenFrame: number;
+      projectionYScale: number;
+      zoom: number;
+      hash: number;
+      geometry: TelegraphGeometry;
     }
   >();
+  private telegraphFrame = 0;
+  /** §TELEGRAPH single-boss, protocol-neutral pose resolver scratch. */
+  private readonly bossTelegraphPose = {
+    active: false,
+    id: "",
+    shape: 0,
+    x: 0,
+    y: 0,
+    rot: 0,
+    t: 0,
+    danger: 1,
+    kindTag: 0,
+    score: -1,
+  };
+  private bossPoseRowId = "";
+  private bossPoseBeatMask = 0;
   /** §4 hot-loop scratch: one sample + animation input per call site; each loop consumes it synchronously. */
   private readonly playerSample = { x: 0, y: 0 };
   private readonly enemySample = { x: 0, y: 0 };
@@ -388,7 +714,10 @@ export class ArenaScene extends Phaser.Scene {
   private readonly charOf = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
   /** Rendered enemy projectiles (§15 spit), dead-reckoned from server (x,y,vx,vy). */
-  private readonly projectiles = new Map<string, Phaser.GameObjects.Container>();
+  private readonly projectiles = new Map<
+    string,
+    Phaser.GameObjects.Container
+  >();
   /** Rendered zoner puddles (§15 area denial). */
   private readonly zones = new Map<string, Phaser.GameObjects.Container>();
   /** §17 the procgen arena, regenerated client-side from the synced seeds (identical to the server's), +
@@ -527,7 +856,8 @@ export class ArenaScene extends Phaser.Scene {
     // §36 the SELECTED belt level (menu level-select). URL `?belt=<id>` also picks it.
     const urlLevel = params.get("belt");
     this.selectedBeltLevel =
-      data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
+      data?.beltLevel ??
+      (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
@@ -553,17 +883,27 @@ export class ArenaScene extends Phaser.Scene {
       // own art loads. Keys are PER-LEVEL (texture keys outlive scene restarts — a shared key would show the
       // previous level's art on the next run).
       if (this.selectedBeltLevel !== "sky-carrier") {
-        this.load.image(`belt-bg:${this.selectedBeltLevel}`, `belt/bg-${this.selectedBeltLevel}.png`);
-        this.load.image(`belt-deck:${this.selectedBeltLevel}`, `belt/deck-${this.selectedBeltLevel}.png`);
+        this.load.image(
+          `belt-bg:${this.selectedBeltLevel}`,
+          `belt/bg-${this.selectedBeltLevel}.png`,
+        );
+        this.load.image(
+          `belt-deck:${this.selectedBeltLevel}`,
+          `belt/deck-${this.selectedBeltLevel}.png`,
+        );
       }
     }
     for (const manifest of Object.values(SPRITES)) {
       // §13 the +300 EXPANSION weapons (id `x2-…`) are held OUT of the atlas + gated: not boot-loaded (they'd
       // bloat VRAM). Only a CURATED one (expansion flag cleared) boot-loads its loose parts — SpriteRig then
       // falls back to the per-part texture since it isn't in the atlas. Everything non-expansion is in the atlas.
-      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion) continue;
+      if (!manifest.id.startsWith("x2-") || WEAPONS[manifest.id]?.expansion)
+        continue;
       for (const part of manifest.parts) {
-        this.load.image(`${manifest.id}:${part.role}`, `sprites/${manifest.id}/${part.file}`);
+        this.load.image(
+          `${manifest.id}:${part.role}`,
+          `sprites/${manifest.id}/${part.file}`,
+        );
       }
     }
     // Weapon VFX hero skins (§14 Codex art, authored in the Weaponsmith). Game-res, pre-sized.
@@ -589,7 +929,10 @@ export class ArenaScene extends Phaser.Scene {
     for (let i = 0; i < 4; i++) {
       const key = terrainTileKey(terrainDimensionId, i);
       if (!this.textures.exists(key) && !this.floorArtMissing.has(key)) {
-        this.queueOptionalFloorArt(key, `tiles/${terrainDimensionId}/tile-${i}.png`);
+        this.queueOptionalFloorArt(
+          key,
+          `tiles/${terrainDimensionId}/tile-${i}.png`,
+        );
       }
     }
     const rimKey = terrainRimKey(terrainDimensionId);
@@ -610,7 +953,10 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
-      if (/^(tile|decal|poi)-/.test(file.key) || file.key.startsWith("terrain:")) {
+      if (
+        /^(tile|decal|poi)-/.test(file.key) ||
+        file.key.startsWith("terrain:")
+      ) {
         this.floorArtMissing.add(file.key);
       }
     });
@@ -629,7 +975,8 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §17 a Codex tile texture is usable only if it loaded AND isn't a missing-file stub. */
   private hasTile(key: string): boolean {
-    if (this.floorArtMissing.has(key) || !this.textures.exists(key)) return false;
+    if (this.floorArtMissing.has(key) || !this.textures.exists(key))
+      return false;
     const w = this.textures.get(key).getSourceImage()?.width ?? 0;
     return w > 8;
   }
@@ -647,7 +994,10 @@ export class ArenaScene extends Phaser.Scene {
       this.pointerMoveHandler = null;
     }
     if (this.contextMenuHandler) {
-      this.game.canvas.removeEventListener("contextmenu", this.contextMenuHandler);
+      this.game.canvas.removeEventListener(
+        "contextmenu",
+        this.contextMenuHandler,
+      );
       this.contextMenuHandler = null;
     }
     if (this.resizeHandler) {
@@ -671,9 +1021,11 @@ export class ArenaScene extends Phaser.Scene {
     const room = this.room;
     this.room = undefined;
     if (room) {
-      void room.leave().catch((err: unknown) =>
-        console.warn("[client] room leave during scene cleanup failed", err),
-      );
+      void room
+        .leave()
+        .catch((err: unknown) =>
+          console.warn("[client] room leave during scene cleanup failed", err),
+        );
     }
   }
 
@@ -693,6 +1045,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastParried.clear();
     this.lastRevived.clear();
     this.telegraphCache.clear();
+    this.telegraphForeshadows?.clear();
     this.enemyWindup.clear();
     this.playerBufs.clear();
     this.enemyBufs.clear();
@@ -723,7 +1076,9 @@ export class ArenaScene extends Phaser.Scene {
     this.slotZones = [];
     this.buyZones = [];
     this.vfxPlayer = undefined!;
+    this.telegraphGroundGfx = undefined!;
     this.telegraphGfx = undefined!;
+    this.telegraphForeshadows = undefined!;
     this.parryGfx = undefined!;
     this.dustG = undefined;
     this.portalArrow = null;
@@ -762,6 +1117,12 @@ export class ArenaScene extends Phaser.Scene {
 
     // Net/prediction, arena identity, clocks, one-shot latches, and camera state.
     this.lastParryPress = -9999;
+    this.telegraphFrame = 0;
+    this.bossTelegraphPose.active = false;
+    this.bossTelegraphPose.id = "";
+    this.bossTelegraphPose.score = -1;
+    this.bossPoseRowId = "";
+    this.bossPoseBeatMask = 0;
     this.beltLevel = null;
     this.lastBeltRoom = "";
     this.beltCloudDrift = 0;
@@ -842,8 +1203,10 @@ export class ArenaScene extends Phaser.Scene {
     // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
-    // §8 white-tell layer (Stage C): one Graphics redrawn each frame with every telegraphing enemy's
-    // shrinking white parry ring + glow. High depth so the cue reads over the bodies.
+    // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
+    this.telegraphGroundGfx = this.add.graphics().setDepth(3);
+    this.telegraphForeshadows = new TelegraphForeshadowPool(this);
+    // §8 white source/rhythm layer: compact parry timing stays high enough to read over bodies.
     this.telegraphGfx = this.add.graphics().setDepth(99990);
     // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
     // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
@@ -851,7 +1214,11 @@ export class ArenaScene extends Phaser.Scene {
     // §13 v0.106 (A11): the grab-highlight ring on the pickup R will take (just under the parry ring).
     this.grabGfx = this.add.graphics().setDepth(99988);
     // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
-    this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
+    this.dangerVignette = this.add
+      .graphics()
+      .setScrollFactor(0)
+      .setDepth(99998)
+      .setAlpha(0);
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -860,12 +1227,16 @@ export class ArenaScene extends Phaser.Scene {
     // §19 v0.108 audio — ONE AudioBus shared across scene re-entries via the game registry (so the
     // volume/mute setting + the live AudioContext survive a menu round-trip). Resumed on the first user
     // gesture below (autoplay policy).
-    this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
+    this.audio =
+      (this.game.registry.get("audio") as AudioBus | undefined) ??
+      new AudioBus();
     this.game.registry.set("audio", this.audio);
 
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
-    this.keys = keyboard.addKeys("W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE") as Record<
+    this.keys = keyboard.addKeys(
+      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE",
+    ) as Record<
       | "W"
       | "A"
       | "S"
@@ -912,8 +1283,14 @@ export class ArenaScene extends Phaser.Scene {
       this.pointerMoves++;
     };
     // Capture phase so we see the event before Phaser's own canvas handler can consume it.
-    window.addEventListener("pointermove", this.pointerMoveHandler, { passive: true, capture: true });
-    window.addEventListener("mousemove", this.pointerMoveHandler, { passive: true, capture: true });
+    window.addEventListener("pointermove", this.pointerMoveHandler, {
+      passive: true,
+      capture: true,
+    });
+    window.addEventListener("mousemove", this.pointerMoveHandler, {
+      passive: true,
+      capture: true,
+    });
     // RMB fires the weapon (§9) — suppress the browser context menu on the canvas.
     this.contextMenuHandler = (e: MouseEvent) => e.preventDefault();
     this.game.canvas.addEventListener("contextmenu", this.contextMenuHandler);
@@ -1066,9 +1443,18 @@ export class ArenaScene extends Phaser.Scene {
     this.restartBtn.on("pointerdown", () => this.room?.send("restart"));
 
     // §9/§13 drop/salvage hold bar — fills while R is held; release before full = drop, full = salvage.
-    this.dropBar = this.add.graphics().setScrollFactor(0).setDepth(100003).setVisible(false);
+    this.dropBar = this.add
+      .graphics()
+      .setScrollFactor(0)
+      .setDepth(100003)
+      .setVisible(false);
     this.dropBarLabel = this.add
-      .text(0, 0, "", { fontSize: "12px", color: "#ffe7a8", fontStyle: "bold", align: "center" })
+      .text(0, 0, "", {
+        fontSize: "12px",
+        color: "#ffe7a8",
+        fontStyle: "bold",
+        align: "center",
+      })
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100003)
@@ -1090,7 +1476,12 @@ export class ArenaScene extends Phaser.Scene {
 
     // Mode banner (top-center) — shows the Testing Grounds hint, and "T" toggle either way.
     this.modeText = this.add
-      .text(0, 0, "", { fontSize: "15px", color: "#33e6ff", fontStyle: "bold", align: "center" })
+      .text(0, 0, "", {
+        fontSize: "15px",
+        color: "#33e6ff",
+        fontStyle: "bold",
+        align: "center",
+      })
       .setScrollFactor(0)
       .setOrigin(0.5, 0)
       .setDepth(100002);
@@ -1116,7 +1507,11 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100002)
       .setVisible(false);
     this.bossText = this.add
-      .text(0, 0, "OLD RUST", { fontSize: "14px", color: "#ffb23b", fontStyle: "bold" })
+      .text(0, 0, "OLD RUST", {
+        fontSize: "14px",
+        color: "#ffb23b",
+        fontStyle: "bold",
+      })
       .setScrollFactor(0)
       .setOrigin(0.5, 1)
       .setDepth(100002)
@@ -1153,8 +1548,13 @@ export class ArenaScene extends Phaser.Scene {
         // tier-bundle fallback FOREVER (a fresh showroom page of 42 expansion weapons showed all blobs —
         // "assets missing"). Once the texture lands, rebuild the pickup with its real art.
         const wantArt = existing0.getData("pendingArt") as string | undefined;
-        const wantRole = SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
-        if (!wantArt || !wantRole || !this.textures.exists(partTexture(this, wantArt, wantRole).key)) {
+        const wantRole =
+          SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
+        if (
+          !wantArt ||
+          !wantRole ||
+          !this.textures.exists(partTexture(this, wantArt, wantRole).key)
+        ) {
           return;
         }
         this.destroyPickup(existing0);
@@ -1177,25 +1577,42 @@ export class ArenaScene extends Phaser.Scene {
       };
       // A KNOWN pickup renders its real art — but an expansion weapon's parts lazy-load at runtime, so
       // fall back to the tier-tinted bundle (with the true name label) until/unless the art exists.
-      const part = isMystery || !this.ensureWeaponArt(weapon) ? undefined : manifest?.parts[0];
+      const part =
+        isMystery || !this.ensureWeaponArt(weapon)
+          ? undefined
+          : manifest?.parts[0];
       const accent =
-        isMystery || pk.rarity > 0 ? rarity.color : (WEAPON_ACCENT[weapon] ?? 0xffd479);
+        isMystery || pk.rarity > 0
+          ? rarity.color
+          : (WEAPON_ACCENT[weapon] ?? 0xffd479);
       const accentHex = `#${accent.toString(16).padStart(6, "0")}`;
       const baseScale = part ? 72 / part.w : 1;
 
-      const beam = this.add.rectangle(0, -10, 34, 104, accent, 0.08).setBlendMode(ADD); // pedestal light
-      const halo = this.add.ellipse(0, 30, 100, 34, accent, 0.22).setBlendMode(ADD); // ground glow
-      const glow = this.add.ellipse(0, 0, 78, 78, accent, 0.32).setBlendMode(ADD);
+      const beam = this.add
+        .rectangle(0, -10, 34, 104, accent, 0.08)
+        .setBlendMode(ADD); // pedestal light
+      const halo = this.add
+        .ellipse(0, 30, 100, 34, accent, 0.22)
+        .setBlendMode(ADD); // ground glow
+      const glow = this.add
+        .ellipse(0, 0, 78, 78, accent, 0.32)
+        .setBlendMode(ADD);
       const tx = part ? partTexture(this, weapon, part.role) : null;
       // Mystery = a rarity-tinted sealed ORB (+ "?"), NOT the weapon art. A circle spins cleanly under
       // the faux-3D scaleX tween (a rotated rect collapsed into a diagonal sliver — verify finding).
       const img =
         part && tx
           ? this.add.image(0, 0, tx.key, tx.frame).setScale(baseScale)
-          : this.add.circle(0, 0, 20, accent, 0.9).setStrokeStyle(2, 0x1a1410, 0.6);
+          : this.add
+              .circle(0, 0, 20, accent, 0.9)
+              .setStrokeStyle(2, 0x1a1410, 0.6);
       const mysteryMark = isMystery
         ? this.add
-            .text(0, 0, "?", { fontSize: "22px", color: "#1a1410", fontStyle: "bold" })
+            .text(0, 0, "?", {
+              fontSize: "22px",
+              color: "#1a1410",
+              fontStyle: "bold",
+            })
             .setOrigin(0.5)
         : null;
       const shine =
@@ -1211,7 +1628,8 @@ export class ArenaScene extends Phaser.Scene {
       // Label: mystery → tier + weapon CLASS glyph (type is telegraphed, identity isn't); known → name
       // (+ its rolled affix). §13 "type + rarity via visual cues but not exactly which weapon."
       const weaponClass = isMystery ? pk.weaponClass : def?.tags.classPool;
-      const classGlyph = weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
+      const classGlyph =
+        weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
       const affixName = pk.affixPublic ? affixById(pk.affixPublic).name : "";
       const labelText = isMystery
         ? `${rarity.name} ${classGlyph}`
@@ -1227,7 +1645,9 @@ export class ArenaScene extends Phaser.Scene {
       if (shine) spinnerKids.push(shine);
       if (mysteryMark) spinnerKids.push(mysteryMark);
       const spinner = this.add.container(0, 0, spinnerKids);
-      const container = this.add.container(pk.x, pk.y, [beam, halo, spinner, label]).setDepth(2);
+      const container = this.add
+        .container(pk.x, pk.y, [beam, halo, spinner, label])
+        .setDepth(2);
       // §41 built with the fallback while the art is still lazy-loading → tag it so the sync pass rebuilds
       // this pickup with its real art the moment the texture lands (see the retro-upgrade above).
       if (!isMystery && manifest && !part && !this.failedArt.has(weapon)) {
@@ -1294,7 +1714,8 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §41 destroy a pickup AND its plain-object spin counter; Phaser cannot infer that ownership itself. */
   private destroyPickup(pickup: Phaser.GameObjects.Container): void {
-    const spinTween = pickup.getData("spinTween") as Phaser.Tweens.Tween | undefined;
+    const spinTween = pickup.getData("spinTween") as
+      Phaser.Tweens.Tween | undefined;
     if (spinTween) {
       spinTween.stop();
       spinTween.remove();
@@ -1318,7 +1739,10 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.pendingArt.has(spriteId)) {
       this.pendingArt.add(spriteId);
       for (const part of manifest.parts) {
-        this.load.image(`${spriteId}:${part.role}`, `sprites/${spriteId}/${part.file}`);
+        this.load.image(
+          `${spriteId}:${part.role}`,
+          `sprites/${spriteId}/${part.file}`,
+        );
       }
       // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
       // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
@@ -1379,9 +1803,18 @@ export class ArenaScene extends Phaser.Scene {
         key: terrainTileKey(dimension.id, i),
         url: `tiles/${dimension.id}/tile-${i}.png`,
       })),
-      { key: terrainRimKey(dimension.id), url: `tiles/${dimension.id}/rim.png` },
-      ...propPack.decalIds.map((id) => ({ key: id, url: `${propPack.decalDir}/${id}.png` })),
-      ...propPack.poiIds.map((id) => ({ key: id, url: `${propPack.poiDir}/${id}.png` })),
+      {
+        key: terrainRimKey(dimension.id),
+        url: `tiles/${dimension.id}/rim.png`,
+      },
+      ...propPack.decalIds.map((id) => ({
+        key: id,
+        url: `${propPack.decalDir}/${id}.png`,
+      })),
+      ...propPack.poiIds.map((id) => ({
+        key: id,
+        url: `${propPack.poiDir}/${id}.png`,
+      })),
     ];
     const floorArtPending = floorArtFiles.filter(
       ({ key }) => !this.textures.exists(key) && !this.floorArtMissing.has(key),
@@ -1418,17 +1851,32 @@ export class ArenaScene extends Phaser.Scene {
       try {
         this.buildBeltFloor();
       } catch (e) {
-        console.error("[belt] buildBeltFloor failed — level renders without its floor art", e);
+        console.error(
+          "[belt] buildBeltFloor failed — level renders without its floor art",
+          e,
+        );
         this.cameras.main.setBackgroundColor(this.beltTheme().sky);
       }
       this.predictor?.setMap(undefined);
       this.predictor?.setBeltLevel(this.beltLevel);
     } else {
       this.floorObjs.push(
-        ...drawArena(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+        ...drawArena(
+          this,
+          this.arenaMap,
+          dimension.id,
+          (k) => this.hasTile(k),
+          palette,
+        ),
       );
       this.floorObjs.push(
-        ...buildArenaFloor(this, this.arenaMap, dimension.id, (k) => this.hasTile(k), palette),
+        ...buildArenaFloor(
+          this,
+          this.arenaMap,
+          dimension.id,
+          (k) => this.hasTile(k),
+          palette,
+        ),
       );
       const pois = buildPois(this, this.arenaMap, dimension.id);
       this.poiSprites = pois.sprites;
@@ -1492,7 +1940,9 @@ export class ArenaScene extends Phaser.Scene {
     const status = document.getElementById("status");
     // §4 secure deployments must use WSS; localhost/http development remains the same WS endpoint.
     const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const client = new Client(`${scheme}://${location.hostname}:${DEFAULT_PORT}`);
+    const client = new Client(
+      `${scheme}://${location.hostname}:${DEFAULT_PORT}`,
+    );
 
     // Retry with backoff: on a cold `pnpm dev`, the Vite client is ready seconds before
     // the Colyseus server finishes starting. Without retry, the first load throws and
@@ -1518,9 +1968,11 @@ export class ArenaScene extends Phaser.Scene {
           : await client.joinOrCreate<ArenaState>(ROOM_NAME, joinOpts);
         // The Scene may have shut down while the join handshake was in flight. Never install that room.
         if (generation !== this.connectionGeneration) {
-          void room.leave().catch((leaveErr: unknown) =>
-            console.warn("[client] stale joined room leave failed", leaveErr),
-          );
+          void room
+            .leave()
+            .catch((leaveErr: unknown) =>
+              console.warn("[client] stale joined room leave failed", leaveErr),
+            );
           return;
         }
         this.room = room;
@@ -1534,7 +1986,8 @@ export class ArenaScene extends Phaser.Scene {
             initialStateSubscribed = false;
             room.onStateChange.remove(onInitialState);
           }
-          if (generation !== this.connectionGeneration || this.room !== room) return;
+          if (generation !== this.connectionGeneration || this.room !== room)
+            return;
           const sv = state.schemaVersion;
           if (sv && sv !== SCHEMA_VERSION) {
             const msg = `⚠ version mismatch (server schema ${sv} ≠ client ${SCHEMA_VERSION}) — hard-reload this page (Ctrl+Shift+R)`;
@@ -1553,7 +2006,8 @@ export class ArenaScene extends Phaser.Scene {
         // snapshot timeline + rings and reconcile the self predictor. DATA ONLY in here (never move a
         // rig from inside a patch callback — the render step owns positions; review #10).
         const onStateChange = (state: ArenaState): void => {
-          if (generation === this.connectionGeneration && this.room === room) this.onPatch(state);
+          if (generation === this.connectionGeneration && this.room === room)
+            this.onPatch(state);
         };
         room.onStateChange(onStateChange);
         let stateSubscribed = true;
@@ -1562,19 +2016,25 @@ export class ArenaScene extends Phaser.Scene {
           stateSubscribed = false;
           room.onStateChange.remove(onStateChange);
         });
-        if (status) status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
+        if (status)
+          status.textContent = `connected · you are ${room.sessionId.slice(0, 4)}`;
         return;
       } catch (err) {
         if (generation !== this.connectionGeneration) return;
-        console.warn(`[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`, err);
-        if (status) status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
+        console.warn(
+          `[client] join attempt ${attempt}/${maxAttempts} failed, retrying…`,
+          err,
+        );
+        if (status)
+          status.textContent = `connecting… (waiting for server, attempt ${attempt})`;
         await new Promise((resolve) => setTimeout(resolve, 1000));
         if (generation !== this.connectionGeneration) return;
       }
     }
 
     if (generation === this.connectionGeneration && status) {
-      status.textContent = "connection failed — is the server running? (pnpm dev:server)";
+      status.textContent =
+        "connection failed — is the server running? (pnpm dev:server)";
     }
   }
 
@@ -1615,7 +2075,10 @@ export class ArenaScene extends Phaser.Scene {
     // calls (so a sound's stereo position tracks where it happens on screen; end-of-update ordering panned
     // against the prior frame + origin-0 on frame one — adversarial-verify finding).
     const cam = this.cameras.main;
-    this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
+    this.audio.setListener(
+      cam.scrollX + cam.width / cam.zoom / 2,
+      cam.width / cam.zoom / 2,
+    );
     // §9/§13 R — context-sensitive: if a dropped weapon is within reach, TAP = GRAB it (equip). Otherwise,
     // with a weapon held, TAP = drop it on the floor and HOLD = salvage it into the bag. Spacebar = jump.
     // (Restart the run is now the on-screen button, top-right.)
@@ -1675,7 +2138,8 @@ export class ArenaScene extends Phaser.Scene {
     this.renderGrabHighlight();
     // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
     // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
-    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
+    if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive)
+      this.jumpQueued = true;
     // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
     // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
     // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
@@ -1689,21 +2153,29 @@ export class ArenaScene extends Phaser.Scene {
     // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
     // keeps the roster carousel.
     if (this.belt) {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleSlot", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
+        this.room?.send("cycleSlot", { dir: 1 });
       if (eFree) this.room?.send("cycleSlot", { dir: -1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
-      if (Phaser.Input.Keyboard.JustDown(this.keys.THREE)) this.room?.send("swapSlot", { slot: 2 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.ONE))
+        this.room?.send("swapSlot", { slot: 0 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.TWO))
+        this.room?.send("swapSlot", { slot: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.THREE))
+        this.room?.send("swapSlot", { slot: 2 });
     } else if (this.room?.state.mode === "training") {
       // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("galleryPage", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
+        this.room?.send("galleryPage", { dir: 1 });
       if (eFree) this.room?.send("galleryPage", { dir: -1 });
     } else {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.Q)) this.room?.send("cycleWeapon", { dir: 1 });
+      if (Phaser.Input.Keyboard.JustDown(this.keys.Q))
+        this.room?.send("cycleWeapon", { dir: 1 });
       if (eFree) this.room?.send("cycleWeapon", { dir: -1 });
     }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
-    if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
+    if (Phaser.Input.Keyboard.JustDown(this.keys.T))
+      this.room?.send("toggleTraining");
+    if (Phaser.Input.Keyboard.JustDown(this.keys.B))
+      this.room?.send("spawnBoss");
     // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
     if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
       const muted = this.audio.toggleMute();
@@ -1723,7 +2195,8 @@ export class ArenaScene extends Phaser.Scene {
     // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
     if (this.belt) {
       const shopX = this.room?.state.beltShopX ?? 0;
-      const selfX = this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
+      const selfX =
+        this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
       const nearShop = shopX > 0 && Math.abs(selfX - shopX) <= SHOP_RADIUS;
       if (Phaser.Input.Keyboard.JustDown(this.keys.F) && nearShop) {
         this.shopOpen = !this.shopOpen;
@@ -1731,8 +2204,10 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (!nearShop) this.shopOpen = false;
     }
-    if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
-    if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
+    if (this.summonOpen && this.room?.state.mode !== "training")
+      this.closeSummonMenu();
+    if (Phaser.Input.Keyboard.JustDown(this.keys.C))
+      this.room?.send("cycleCharacter"); // §7 swap skin
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
     this.stepNetInput(deltaMs); // §4 v0.107 mint/send/predict this frame's input commands
@@ -1751,9 +2226,15 @@ export class ArenaScene extends Phaser.Scene {
       // fold the accrued displacement into the error offset so the catch-up GLIDES instead of popping
       // ~42px on the exact frame that was supposed to feel weighty (review #11).
       if (this.wasFrozen && this.predictor) {
-        const selfRig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
+        const selfRig = this.room
+          ? this.blobs.get(this.room.sessionId)
+          : undefined;
         if (selfRig) {
-          const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
+          const r = this.predictor.renderPos(
+            this.curDx,
+            this.curDy,
+            this.inputAccMs / 1000,
+          );
           this.predictor.foldError(selfRig.x - r.x, selfRig.y - r.y);
         }
       }
@@ -1887,7 +2368,9 @@ export class ArenaScene extends Phaser.Scene {
             // H3 §20 hit-stop: a brief crunch when a kill lands near YOU (≈ your kill). Throttled so a
             // horde-clearing AoE can't chain freezes into lag; parry/quake stops override via Math.max.
             const selfId = this.room?.sessionId;
-            const me = selfId ? this.room?.state.players.get(selfId) : undefined;
+            const me = selfId
+              ? this.room?.state.players.get(selfId)
+              : undefined;
             if (
               me?.alive &&
               Math.hypot(rig.x - me.x, rig.y - me.y) < 420 &&
@@ -1908,22 +2391,132 @@ export class ArenaScene extends Phaser.Scene {
     // faithful motion between real 20Hz positions (no τ-trail, no jitter rubber-band). A bracket gap
     // wider than INTERP_SNAP_ENEMY (a reposition; parry-knock ~154px/tick stays under it) CUTS instead
     // of tweening. Fallback = raw state while the timeline warms up.
-    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
+    const rt = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : -1;
     this.room.state.enemies.forEach((enemy, id) => {
       const rig = this.enemies.get(id);
       if (!rig) return;
       const s =
         rt >= 0
-          ? this.enemyBufs.get(id)?.sampleInto(rt, INTERP_SNAP_ENEMY, this.enemySample)
+          ? this.enemyBufs
+              .get(id)
+              ?.sampleInto(rt, INTERP_SNAP_ENEMY, this.enemySample)
           : null;
       if (s) rig.setPosition(s.x, s.y);
       else rig.setPosition(enemy.x, enemy.y);
     });
   }
 
+  /** Select one authoritative boss anticipation clock; concurrent casts never blend contradictory poses. */
+  private resolveBossTelegraphPose(): void {
+    const pose = this.bossTelegraphPose;
+    pose.active = false;
+    pose.id = "";
+    pose.score = -1;
+    const state = this.room?.state;
+    if (!state?.bossKind) return;
+    state.telegraphs.forEach((row, id) => {
+      if (row.t >= 0.999) return; // active hazards/recovery must not hold the source in anticipation
+      const priority =
+        row.kindTag === TelegraphKindTag.Melee ||
+        row.kindTag === TelegraphKindTag.Quake
+          ? 7
+          : row.kindTag === TelegraphKindTag.Charge
+            ? 6
+            : row.kindTag === TelegraphKindTag.Slam
+              ? 5
+              : row.kindTag === TelegraphKindTag.Radial ||
+                  row.kindTag === TelegraphKindTag.ExpandingRing
+                ? 4
+                : 3;
+      const score = row.t * 1000 + priority;
+      if (score <= pose.score) return;
+      pose.active = true;
+      pose.id = id;
+      pose.shape = row.shape;
+      pose.x = row.x;
+      pose.y = row.y;
+      pose.rot = row.rot;
+      pose.t = row.t;
+      pose.danger = row.danger;
+      pose.kindTag = row.kindTag;
+      pose.score = score;
+    });
+  }
+
+  /**
+   * §TELEGRAPH drive a cheap planted boss silhouette through SpriteRig's existing public animation hooks.
+   * Nul/Quickdraw's bare rect captures the row axis directly: no nearest-player reacquisition is allowed.
+   */
+  private applyBossTelegraphPose(
+    rig: SpriteRig,
+    bossKind: string,
+    anim: RigAnim,
+  ): void {
+    const pose = this.bossTelegraphPose;
+    if (!pose.active) return;
+    if (pose.id !== this.bossPoseRowId) {
+      this.bossPoseRowId = pose.id;
+      this.bossPoseBeatMask = 0;
+    }
+
+    let aimWorld = pose.rot;
+    const directional =
+      pose.shape === TgShape.Rect ||
+      pose.shape === TgShape.ArcSweep ||
+      pose.shape === TgShape.Cone;
+    if (!directional && pose.kindTag !== TelegraphKindTag.Radial) {
+      const dx = pose.x - rig.x;
+      const dy = pose.y - rig.y;
+      if (Math.abs(dx) + Math.abs(dy) > 0.01) aimWorld = Math.atan2(dy, dx);
+    }
+    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
+    let aimX = Math.cos(aimWorld);
+    let aimY = Math.sin(aimWorld) * projectionYScale;
+    const aimLen = Math.hypot(aimX, aimY) || 1;
+    aimX /= aimLen;
+    aimY /= aimLen;
+
+    // Plant locomotion and feed the captured screen-plane axis through the existing aim contract. Directional
+    // rows visibly own their lane; symmetric gathers retain facing but still enter the two-hand brace pose.
+    anim.moveX = directional ? aimX : 0;
+    anim.moveY = directional ? aimY : 0;
+    anim.speed = 0;
+    anim.aimX = directional ? aimX * (0.45 + pose.t * 0.55) : 0;
+    anim.aimY = directional ? aimY * (0.45 + pose.t * 0.55) : 0;
+    anim.aimDxPx = directional ? aimX * 100 : undefined;
+    anim.aimDir = Math.atan2(aimY, aimX);
+    anim.isSelf = true;
+
+    // The public brace envelope owns body squash, both hands, and planted feet. Sampling it at Claim and
+    // Lock gives late patches an immediate catch-up pose and leaves its authored ~135ms release as recovery.
+    const lockAt = pose.kindTag === TelegraphKindTag.Charge ? 0.58 : 0.62;
+    if ((this.bossPoseBeatMask & 1) === 0) {
+      rig.triggerBrace(this.animClock);
+      this.bossPoseBeatMask |= 1;
+    }
+    if (pose.t >= 0.32 && (this.bossPoseBeatMask & 2) === 0) {
+      rig.triggerBrace(this.animClock);
+      this.bossPoseBeatMask |= 2;
+    }
+    if (pose.t >= lockAt && (this.bossPoseBeatMask & 4) === 0) {
+      rig.triggerBrace(this.animClock);
+      this.bossPoseBeatMask |= 4;
+    }
+
+    // Nul's Sightline Compression is the panel's bare-rectangle hero case: the authoritative rect axis is
+    // already driving the eye/body turn above, while repeated Claim/Load/Lock braces compress its sliced
+    // hands/body and suppress all ordinary gait for the full charge. Quickdraw shares the same lane hook.
+    if (bossKind === "nul-sightline" || bossKind === "quickdraw-vane")
+      anim.speed = 0;
+  }
+
   /** Drive each enemy's procedural animation from its render-velocity (faces its travel dir). */
   private animateEnemies(deltaMs: number): void {
-    this.telegraphGfx.clear(); // §8 redraw the white-tell layer fresh each frame
+    this.telegraphGroundGfx.clear();
+    this.telegraphGfx.clear(); // §8 redraw compact source/projectile timing cues fresh each frame
+    this.resolveBossTelegraphPose();
     const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait
     for (const [id, rig] of this.enemies) {
       let mx = rig.x - rig.renderPrevX;
@@ -1943,10 +2536,18 @@ export class ArenaScene extends Phaser.Scene {
       anim.moveX = mx;
       anim.moveY = my;
       anim.speed = speed;
-      rig.animate(this.animClock, anim);
+      anim.aimX = 0;
+      anim.aimY = 0;
+      anim.aimDxPx = undefined;
+      anim.aimDir = 0;
+      anim.isSelf = false;
       const es = this.room?.state.enemies.get(id);
+      if (es && es.kind === this.room?.state.bossKind)
+        this.applyBossTelegraphPose(rig, es.kind, anim);
+      rig.animate(this.animClock, anim);
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
-      const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
+      const enraged =
+        es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
       rig.setBranded((es?.branded ?? 0) > 0 || enraged);
       // §8 white-tell (Stage C): a glowing-white disc + a rhythm ring that SHRINKS to the body as the
       // windup peaks — the §8 "white = parryable" cue. Parry as the ring tightens to negate the swing.
@@ -1986,14 +2587,15 @@ export class ArenaScene extends Phaser.Scene {
               ny = p.y - rig.y;
             }
           });
-          if (this.belt) ny *= BELT_FORESHORTEN; // §37 SCREEN-space cone direction (depth is compressed)
           const ang = Math.atan2(ny, nx);
-          g.fillStyle(0xffffff, 0.06 + 0.22 * w);
-          g.beginPath();
-          g.moveTo(tx, ty);
-          g.arc(tx, ty, mel.range, ang - mel.halfArc, ang + mel.halfArc);
-          g.closePath();
-          g.fillPath();
+          this.strokeEnemyMeleeCone(
+            rig.x,
+            rig.y,
+            mel.range,
+            mel.halfArc,
+            ang,
+            w,
+          );
         }
         g.fillStyle(0xffffff, w * 0.4);
         g.fillCircle(tx, ty, 24);
@@ -2005,76 +2607,212 @@ export class ArenaScene extends Phaser.Scene {
     this.renderTelegraphs();
   }
 
-  /** §16 v0.109 GENERIC TELEGRAPH renderer — draws EVERY boss's danger footprints from the synced
-   *  `telegraphs` map, so any boss's landing zones / rings / bullet-warnings show up with no per-boss code.
-   *  Colour is the §8 parry-language: danger 0 = WHITE (parryable), danger 1 = RED (dodge-only). Each shape
-   *  eases its fill toward the authoritative `t`; when a row is REMOVED (the attack resolved) we edge-fire
-   *  the impact VFX from the cached geometry — the same "was high, now gone → it fired" trick the old
-   *  bossSlam used. All clients read the identical authoritative rows, so the danger is frame-consistent
-   *  even though the boss body renders ~120ms behind on interp. */
+  /** Enemy white wedge: full exact reach from Claim, with every sampled arc vertex projected in belt mode. */
+  private strokeEnemyMeleeCone(
+    x: number,
+    y: number,
+    range: number,
+    halfArc: number,
+    rot: number,
+    t: number,
+  ): void {
+    const g = this.telegraphGroundGfx;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
+    g.lineStyle(4 / zoom, 0x17120f, 0.32);
+    this.traceProjectedCone(
+      g,
+      x,
+      y,
+      range,
+      halfArc,
+      rot,
+      projectionYScale,
+      zoom,
+    );
+    g.lineStyle(1.8 / zoom, 0xffffff, 0.18 + t * 0.28);
+    this.traceProjectedCone(
+      g,
+      x,
+      y,
+      range,
+      halfArc,
+      rot,
+      projectionYScale,
+      zoom,
+    );
+    g.lineStyle(1.1 / zoom, 0xffffff, 0.1 + t * 0.16);
+    this.traceProjectedCone(
+      g,
+      x,
+      y,
+      Math.max(2, range - 2 / zoom),
+      halfArc,
+      rot,
+      projectionYScale,
+      zoom,
+    );
+  }
+
+  private traceProjectedCone(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    range: number,
+    halfArc: number,
+    rot: number,
+    projectionYScale: number,
+    zoom: number,
+  ): void {
+    const originY = projectTelegraphY(y, projectionYScale);
+    const samples = adaptiveArcSamples(range, halfArc * 2, zoom);
+    g.beginPath();
+    g.moveTo(x, originY);
+    for (let i = 0; i <= samples; i++) {
+      const angle = rot - halfArc + (halfArc * 2 * i) / samples;
+      g.lineTo(
+        x + Math.cos(angle) * range,
+        projectTelegraphY(y + Math.sin(angle) * range, projectionYScale),
+      );
+    }
+    g.closePath();
+    g.strokePath();
+  }
+
+  /** §TELEGRAPH exact hybrid renderer: invariant thin geometry plus optional retained painted preludes. */
   private renderTelegraphs(): void {
     const st = this.room?.state;
-    if (!st) return;
-    const g = this.telegraphGfx;
-    const live = new Set<string>();
-    // §29 belt: telegraphs are world-space graphics, but the belt deck is a PROJECTED band — draw each
-    // telegraph at its projected screen-plane y (like every other belt actor) so boss warnings land ON the
-    // deck under the fight instead of far below the visible band. Radii stay world-scale (readable circle).
-    const py = (y: number) => (this.belt ? this.beltY(y) : y);
+    this.telegraphForeshadows.beginFrame();
+    if (!st) {
+      this.telegraphForeshadows.endFrame();
+      return;
+    }
+    const g = this.telegraphGroundGfx;
+    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const frame = ++this.telegraphFrame;
     st.telegraphs.forEach((row, id) => {
-      live.add(id);
+      let cached = this.telegraphCache.get(id);
+      const geometryChanged =
+        !cached ||
+        cached.shape !== row.shape ||
+        cached.x !== row.x ||
+        cached.y !== row.y ||
+        cached.a !== row.a ||
+        cached.b !== row.b ||
+        cached.rot !== row.rot ||
+        cached.kindTag !== row.kindTag ||
+        cached.projectionYScale !== projectionYScale ||
+        cached.zoom !== zoom;
+      if (!cached) {
+        cached = {
+          t: row.t,
+          shape: row.shape,
+          x: row.x,
+          y: row.y,
+          a: row.a,
+          b: row.b,
+          rot: row.rot,
+          danger: row.danger,
+          kindTag: row.kindTag,
+          sawFull: false,
+          seenFrame: frame,
+          projectionYScale,
+          zoom,
+          hash: telegraphHash01(id),
+          geometry: buildTelegraphGeometry(
+            row.shape,
+            row.x,
+            row.y,
+            row.a,
+            row.b,
+            row.rot,
+            row.kindTag,
+            projectionYScale,
+            zoom,
+          ),
+        };
+        this.telegraphCache.set(id, cached);
+      } else if (geometryChanged) {
+        cached.geometry = buildTelegraphGeometry(
+          row.shape,
+          row.x,
+          row.y,
+          row.a,
+          row.b,
+          row.rot,
+          row.kindTag,
+          projectionYScale,
+          zoom,
+        );
+      }
       this.drawTelegraph(
         g,
+        cached.geometry,
+        row.t,
+        row.danger,
+        row.kindTag,
+        cached.hash,
+      );
+      this.telegraphForeshadows.update(
+        id,
         row.shape,
+        row.kindTag,
         row.x,
-        py(row.y),
+        projectTelegraphY(row.y, projectionYScale),
         row.a,
         row.b,
         row.rot,
         row.t,
-        row.danger,
-        row.kindTag,
+        projectionYScale,
       );
       // `sawFull` sticks once the server pins the row to full fill (t=1) on the resolve tick — the server
       // LINGERS a resolved row one tick at t=1 so we observe it, while a CANCEL (phase-change/boss death)
       // removes the row without ever reaching t=1. So `sawFull` cleanly separates "it fired" from "cancelled".
-      const prev = this.telegraphCache.get(id);
-      this.telegraphCache.set(id, {
-        t: row.t,
-        shape: row.shape,
-        x: row.x,
-        y: row.y,
-        a: row.a,
-        danger: row.danger,
-        kindTag: row.kindTag,
-        sawFull: (prev?.sawFull ?? false) || row.t >= 0.999,
-      });
+      cached.t = row.t;
+      cached.shape = row.shape;
+      cached.x = row.x;
+      cached.y = row.y;
+      cached.a = row.a;
+      cached.b = row.b;
+      cached.rot = row.rot;
+      cached.danger = row.danger;
+      cached.kindTag = row.kindTag;
+      cached.sawFull ||= row.t >= 0.999;
+      cached.seenFrame = frame;
+      cached.projectionYScale = projectionYScale;
+      cached.zoom = zoom;
     });
+    this.telegraphForeshadows.endFrame();
     // A cached row no longer live = removed. Edge-fire the impact ONLY if it completed (sawFull) — never for
     // a cancel — and branch the VFX by kindTag so a corrosive/summon/burst telegraph doesn't fake a slam.
     for (const [id, c] of this.telegraphCache) {
-      if (live.has(id)) continue;
+      if (c.seenFrame === frame) continue;
       this.telegraphCache.delete(id);
       if (!c.sawFull) continue; // cancelled mid-windup → no phantom impact
-      if (c.kindTag === 0) {
+      const impactY = projectTelegraphY(c.y, projectionYScale);
+      if (c.kindTag === TelegraphKindTag.Slam) {
         // slam / landing-zone — the full impact: burst + camera shake + the deep boom. v0.117: scale the
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
         // screen harder than a normal slam — a big body hits like a big body (WYSIWYG weight).
         const scale = Math.max(0.8, Math.min(1.7, c.a / 150));
-        spawnExplosion(this, c.x, py(c.y), Math.max(24, c.a));
+        spawnExplosion(this, c.x, impactY, Math.max(24, c.a));
         this.shakeCam(200 * scale, 0.014 * scale);
         this.audio.play("bossslam", { x: c.x, amt: Math.min(1, scale) }); // §19 the deep boom under the shake
-      } else if (c.kindTag === 1) {
+      } else if (c.kindTag === TelegraphKindTag.Pool) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
-        spawnExplosion(this, c.x, py(c.y), Math.min(40, c.a * 0.4));
-      } else if (c.kindTag === 2 || c.kindTag === 3) {
+        spawnExplosion(this, c.x, impactY, Math.min(40, c.a * 0.4));
+      } else if (
+        c.kindTag === TelegraphKindTag.Summon ||
+        c.kindTag === TelegraphKindTag.Radial
+      ) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
-        spawnExplosion(this, c.x, py(c.y), 22);
-      } else if (c.kindTag === 7) {
+        spawnExplosion(this, c.x, impactY, 22);
+      } else if (c.kindTag === TelegraphKindTag.Quake) {
         // §33 FOOTFALL QUAKE landing — the giant's step hits: a big shock ring + dust burst + a HEAVY, low
         // screen-quake and the deep boom. The whole screen jolts so the footstep reads as a footstep.
         const ix = c.x;
-        const iy = py(c.y);
+        const iy = impactY;
         spawnExplosion(this, ix, iy, Math.max(40, c.a * 0.5));
         this.spawnImpactRing(ix, iy);
         this.shakeCam(280, 0.03); // heavier + longer than a slam — the ground itself buckles
@@ -2084,83 +2822,140 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Draw one telegraph shape, coloured by §8 danger, filled to `t`. Shared "ease alpha+size to t" path.
-   *  `kindTag` disambiguates two producers that share `shape: Ring` — the expandingRing hazard (5, an
-   *  annulus with a safe gap) vs the radialBurst pre-flash (3, a plain warning disc). */
+  /** Draw one cached exact boundary. t changes energy/cadence only; threatened coverage never grows. */
   private drawTelegraph(
     g: Phaser.GameObjects.Graphics,
-    shape: number,
-    x: number,
-    y: number,
-    a: number,
-    b: number,
-    rot: number,
+    geometry: TelegraphGeometry,
     t: number,
     danger: number,
     kindTag: number,
+    hash: number,
   ): void {
-    const fill = danger === 0 ? 0xffffff : 0xff3b2f;
-    const line = danger === 0 ? 0xffffff : 0xff5d3b;
-    if (shape === TgShape.PointWarn) {
-      // A small marker where an add/bullet will erupt — a filled dot + a tightening ring.
-      g.fillStyle(fill, 0.3 + 0.4 * t);
-      g.fillCircle(x, y, 4 + a * 0.12 * t);
-      g.lineStyle(2, line, 0.5 + 0.4 * t);
-      g.strokeCircle(x, y, Math.max(6, a * (1 - 0.5 * t)));
-      return;
+    const zoom = Math.max(0.01, this.cameras.main.zoom);
+    const lockAt =
+      kindTag === TelegraphKindTag.Charge
+        ? 0.58
+        : kindTag === TelegraphKindTag.Slam ||
+            kindTag === TelegraphKindTag.Radial ||
+            kindTag === TelegraphKindTag.ExpandingRing ||
+            kindTag === TelegraphKindTag.Quake
+          ? 0.62
+          : 0.65;
+    const lock = Phaser.Math.Clamp((t - lockAt) / (0.88 - lockAt), 0, 1);
+    const cadence =
+      0.5 + Math.sin(t * (danger === 0 ? 34 : 23) + hash * Math.PI * 2) * 0.5;
+    const line = danger === 0 ? 0xffffff : 0xd96a4f;
+    const alpha =
+      danger === 0
+        ? 0.18 + lock * 0.2 + cadence * (0.04 + lock * 0.08)
+        : 0.11 + lock * 0.1 + cadence * 0.025;
+
+    // One dark terrain keyline and one exact response line remain continuous at every quality tier.
+    for (const edge of geometry.edges) {
+      g.lineStyle(4 / zoom, 0x17120f, 0.34);
+      this.strokeTelegraphPath(g, edge.points, edge.closed);
+      g.lineStyle(1.8 / zoom, line, alpha);
+      this.strokeTelegraphPath(g, edge.points, edge.closed);
+      if (danger === 0) {
+        // White/parry = continuous inner echo; dodge uses broken brush/chevrons below instead.
+        g.lineStyle(1.1 / zoom, line, alpha * 0.58);
+        this.strokeTelegraphPath(g, edge.echo, edge.closed);
+      }
     }
-    if (shape === TgShape.Rect) {
-      // Beam / dash lane (Slice 2) — a filling rotated bar. Drawn with a transform so it orients to `rot`.
-      const len = a;
-      const halfW = b;
-      g.save();
-      g.translateCanvas(x, y);
-      g.rotateCanvas(rot);
-      g.fillStyle(fill, 0.1 + 0.24 * t);
-      g.fillRect(0, -halfW, len * t, halfW * 2);
-      g.lineStyle(3, line, 0.5 + 0.5 * t);
-      g.strokeRect(0, -halfW, len, halfW * 2);
-      g.restore();
-      return;
+    this.drawTelegraphCadence(g, geometry, t, danger, hash, line, alpha, zoom);
+  }
+
+  private strokeTelegraphPath(
+    g: Phaser.GameObjects.Graphics,
+    points: readonly { x: number; y: number }[],
+    closed: boolean,
+  ): void {
+    const first = points[0];
+    if (!first) return;
+    g.beginPath();
+    g.moveTo(first.x, first.y);
+    for (let i = 1; i < points.length; i++) {
+      const p = points[i];
+      if (p) g.lineTo(p.x, p.y);
     }
-    if (shape === TgShape.Cone) {
-      // §16 Slice 3 — a PARRYABLE melee wedge (the boss meleeCombo). From (x,y), aimed at `rot`, half-arc `b`,
-      // reach `a`. Fills WHITE (danger 0) as `t`→1 = the parry-tell; a bold edge reads the swing arc so the
-      // player knows to PARRY (not dodge) this one.
-      const start = rot - b;
-      const end = rot + b;
-      g.fillStyle(fill, 0.12 + 0.34 * t);
-      g.beginPath();
-      g.moveTo(x, y);
-      g.arc(x, y, a * (0.55 + 0.45 * t), start, end);
-      g.closePath();
-      g.fillPath();
-      g.lineStyle(3, line, 0.5 + 0.5 * t);
-      g.beginPath();
-      g.moveTo(x, y);
-      g.arc(x, y, a, start, end);
-      g.closePath();
-      g.strokePath();
-      return;
+    if (closed) g.closePath();
+    g.strokePath();
+  }
+
+  /** White ticks converge inward; warm dodge brush and chevrons advance outward without replacing the edge. */
+  private drawTelegraphCadence(
+    g: Phaser.GameObjects.Graphics,
+    geometry: TelegraphGeometry,
+    t: number,
+    danger: number,
+    hash: number,
+    color: number,
+    alpha: number,
+    zoom: number,
+  ): void {
+    const spacing = (danger === 0 ? 42 : 34) / zoom;
+    const phase = ((hash + t * (danger === 0 ? 1.7 : 2.2)) % 1) * spacing;
+    g.lineStyle((danger === 0 ? 1.4 : 2.1) / zoom, color, alpha * 0.62);
+    g.beginPath();
+    for (const edge of geometry.edges) {
+      const segmentCount = edge.closed
+        ? edge.points.length
+        : edge.points.length - 1;
+      for (let i = 0; i < segmentCount; i++) {
+        const j = (i + 1) % edge.points.length;
+        const p0 = edge.points[i];
+        const p1 = edge.points[j];
+        const e0 = edge.echo[i];
+        const e1 = edge.echo[j];
+        if (!p0 || !p1 || !e0 || !e1) continue;
+        const dx = e1.x - e0.x;
+        const dy = e1.y - e0.y;
+        const len = Math.hypot(dx, dy);
+        if (len < 0.01) continue;
+        const tx = dx / len;
+        const ty = dy / len;
+        for (
+          let dist = (phase + i * spacing * 0.37) % spacing;
+          dist < len;
+          dist += spacing
+        ) {
+          const frac = dist / len;
+          const ex = e0.x + dx * frac;
+          const ey = e0.y + dy * frac;
+          const bx = p0.x + (p1.x - p0.x) * frac;
+          const by = p0.y + (p1.y - p0.y) * frac;
+          let nx = ex - bx;
+          let ny = ey - by;
+          const nl = Math.hypot(nx, ny) || 1;
+          nx /= nl;
+          ny /= nl;
+          if (danger === 0) {
+            const inward = (5 + t * 3) / zoom;
+            g.moveTo(bx + nx / zoom, by + ny / zoom);
+            g.lineTo(bx + nx * inward, by + ny * inward);
+          } else {
+            const dash = Math.min(9 / zoom, len - dist);
+            g.moveTo(ex, ey);
+            g.lineTo(ex + tx * dash, ey + ty * dash);
+            const apexX = bx + nx * (2 / zoom);
+            const apexY = by + ny * (2 / zoom);
+            const wing = 3 / zoom;
+            const depth = 7 / zoom;
+            g.moveTo(apexX, apexY);
+            g.lineTo(
+              apexX + nx * depth + tx * wing,
+              apexY + ny * depth + ty * wing,
+            );
+            g.moveTo(apexX, apexY);
+            g.lineTo(
+              apexX + nx * depth - tx * wing,
+              apexY + ny * depth - ty * wing,
+            );
+          }
+        }
+      }
     }
-    if (shape === TgShape.Ring && kindTag === 5) {
-      // Expanding-ring HAZARD (Slice 2) — a thick danger band at radius `a`, leaving a SAFE GAP wedge
-      // (half-width `b` radians, centred `rot`) you dash through. A stroked arc that skips the gap. The
-      // stroke thickness is EXACTLY the server's ±RING_BAND_HALF hit band (WYSIWYG — you're hit iff you
-      // touch the drawn band).
-      const gapHalf = b;
-      g.lineStyle(RING_BAND_HALF * 2, line, 0.34 + 0.4 * t);
-      g.beginPath();
-      g.arc(x, y, Math.max(2, a), rot + gapHalf, rot - gapHalf + Math.PI * 2);
-      g.strokePath();
-      return;
-    }
-    // Circle (landing zone / slam) + the radialBurst pre-flash Ring (kindTag 3, `b` = a pixel radius, no gap)
-    // share the disc path: danger grows to the edge at impact, with a fixed outline at the full radius.
-    g.fillStyle(fill, 0.1 + 0.24 * t);
-    g.fillCircle(x, y, a * t);
-    g.lineStyle(3, line, 0.5 + 0.5 * t);
-    g.strokeCircle(x, y, a);
+    g.strokePath();
   }
 
   /** Reconcile rendered projectiles vs authoritative state; splat on removal (hit/expire). */
@@ -2217,7 +3012,9 @@ export class ArenaScene extends Phaser.Scene {
           }
         });
       }
-      const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
+      const sourcePlayer = shooter
+        ? room.state.players.get(shooter)
+        : undefined;
       if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
@@ -2226,14 +3023,17 @@ export class ArenaScene extends Phaser.Scene {
           // §4 v0.107: SELF already flashed at click time (predicted, sendAttack) — don't double-flash
           // when the authoritative projectile lands a round-trip later.
           const isSelf = shooter === room.sessionId;
-          const suppressed = isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
+          const suppressed =
+            isSelf && this.time.now - this.lastSelfMuzzleAt < 150;
           const p = room.state.players.get(shooter);
           if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
             // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
             // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
             const srig = this.blobs.get(shooter);
-            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]); // §29 fixed-size weapon
+            const reach = gunMuzzleReach(
+              WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON],
+            ); // §29 fixed-size weapon
             spawnMuzzleFlash(
               this,
               (srig?.x ?? p.x) + Math.cos(ang) * reach,
@@ -2263,10 +3063,17 @@ export class ArenaScene extends Phaser.Scene {
             // fallback for a projectile first observed too far from its owner.
             const ci = k.indexOf(":");
             const sourceWeapon = WEAPONS[c.getData("sourceWeapon") as string];
-            const element = sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
+            const element =
+              sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
             spawnExplosion(this, c.x, c.y, er, element);
           } else if (GUN_FX[bk])
-            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
+            spawnBulletImpact(
+              this,
+              c.x,
+              c.y,
+              k,
+              (c.getData("ang") as number) ?? 0,
+            ); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
         }
         c?.destroy();
@@ -2294,7 +3101,10 @@ export class ArenaScene extends Phaser.Scene {
       } else {
         const px = c.x + pr.vx * dtSec;
         const py = c.y + pr.vy * dtSec;
-        c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
+        c.setPosition(
+          Phaser.Math.Linear(px, pr.x, 0.18),
+          Phaser.Math.Linear(py, pr.y, 0.18),
+        );
       }
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
     });
@@ -2311,9 +3121,20 @@ export class ArenaScene extends Phaser.Scene {
       // §8/§15: UNPARRYABLE zones speak RED/ORANGE danger (never white/neon-friendly). Reads as a
       // poison pool against the dust (§28.7).
       const fill = this.add.ellipse(0, 0, rx * 2, ry * 2, 0x8f2d18, 0.44);
-      const inner = this.add.ellipse(0, 0, rx * 1.25, ry * 1.25, 0xff5d2e, 0.32);
-      const rim = this.add.ellipse(0, 0, rx * 2, ry * 2).setStrokeStyle(4, 0xff7a3a, 0.95);
-      const c = this.add.container(zone.x, zone.y, [fill, inner, rim]).setDepth(1);
+      const inner = this.add.ellipse(
+        0,
+        0,
+        rx * 1.25,
+        ry * 1.25,
+        0xff5d2e,
+        0.32,
+      );
+      const rim = this.add
+        .ellipse(0, 0, rx * 2, ry * 2)
+        .setStrokeStyle(4, 0xff7a3a, 0.95);
+      const c = this.add
+        .container(zone.x, zone.y, [fill, inner, rim])
+        .setDepth(1);
       // Fade in, then bubble; the server owns the actual lifetime/expiry.
       c.setAlpha(0);
       this.tweens.add({ targets: c, alpha: 1, duration: 220 });
@@ -2344,7 +3165,9 @@ export class ArenaScene extends Phaser.Scene {
     text: string,
     textColor: string,
   ): Phaser.GameObjects.Container {
-    const outer = this.add.circle(0, 0, EXTRACT_RADIUS, ring, 0.16).setStrokeStyle(3, ring, 0.7);
+    const outer = this.add
+      .circle(0, 0, EXTRACT_RADIUS, ring, 0.16)
+      .setStrokeStyle(3, ring, 0.7);
     const inner = this.add
       .circle(0, 0, EXTRACT_RADIUS * 0.5, core, 0.22)
       .setStrokeStyle(2, core, 0.9);
@@ -2465,7 +3288,12 @@ export class ArenaScene extends Phaser.Scene {
         const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
         const titanic = rs >= 5;
         this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
-        this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
+        this.cameras.main.flash(
+          titanic ? 420 : 240,
+          titanic ? 130 : 80,
+          titanic ? 32 : 20,
+          18,
+        );
         this.audio.play("bossslam", { x: boss.x, amt: 1 });
         // §33 teach the colossus's footstep mechanic the moment he looms in — you can't out-DPS a quake.
         if (boss.kind === "world-titan") {
@@ -2481,7 +3309,11 @@ export class ArenaScene extends Phaser.Scene {
       this.bossBarFill.width = 516 * s * this.bossShown;
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
-        .setText(bossDefName ? bossDefName.toUpperCase() : `${dimName.toUpperCase()} BOSS`)
+        .setText(
+          bossDefName
+            ? bossDefName.toUpperCase()
+            : `${dimName.toUpperCase()} BOSS`,
+        )
         .setVisible(true);
       // §16 v0.116 Polish B — draw a tick at each PHASE threshold so the escalation gates are visible on the
       // bar. The def's phases[i].hpAbove is the HP fraction where phase i+1 begins; skip the final 0-floor.
@@ -2492,7 +3324,11 @@ export class ArenaScene extends Phaser.Scene {
         const x = barLeft + 516 * s * ph.hpAbove;
         // A crossed threshold (fill drained past it) dims; an upcoming one glows — reads the fight's progress.
         const passed = this.bossShown <= ph.hpAbove;
-        this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
+        this.bossBarSegments.lineStyle(
+          2 * s,
+          passed ? 0x6a2a1a : 0x1a0d08,
+          passed ? 0.7 : 0.95,
+        );
         this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
       }
     } else {
@@ -2505,7 +3341,10 @@ export class ArenaScene extends Phaser.Scene {
     // Boss-approach toast on first appearance.
     if (present && !this.prevBossPresent && this.bannerShownFor !== "boss") {
       this.bannerShownFor = "boss";
-      this.flashBanner(`⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`, "#ff5d3b");
+      this.flashBanner(
+        `⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`,
+        "#ff5d3b",
+      );
     }
     if (!present) this.bannerShownFor = "";
     this.prevBossPresent = present;
@@ -2535,7 +3374,8 @@ export class ArenaScene extends Phaser.Scene {
     // same point (a loot reveal + a depth banner used to render on top of each other, unreadable). Reset the
     // slot once enough time has passed that the previous banner has faded.
     const now = this.time.now;
-    this.bannerSlot = now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
+    this.bannerSlot =
+      now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
     this.lastBannerAt = now;
     const baseY = this.screenH() / 2 - 80 + this.bannerSlot * 40;
     const t = this.add
@@ -2594,19 +3434,25 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (open && self && this.levelWinTimerBar) {
       this.levelWinTimerBar.width =
-        380 * Math.max(0, Math.min(1, self.flexTimerDs / 10 / LEVELUP_WINDOW_SECONDS));
+        380 *
+        Math.max(
+          0,
+          Math.min(1, self.flexTimerDs / 10 / LEVELUP_WINDOW_SECONDS),
+        );
     }
   }
 
   /** The five attributes (§11) — name, effect, accent colour (§28.2). */
-  private static readonly ATTR_INFO: Record<string, { name: string; desc: string; color: number }> =
-    {
-      str: { name: "STR", desc: "+ melee damage", color: 0xff8a2b },
-      dex: { name: "DEX", desc: "+ ranged dmg & crit", color: 0x6fd6ff },
-      int: { name: "INT", desc: "+ spell / signature power", color: 0xb07bd6 },
-      con: { name: "CON", desc: "+ max HP & regen", color: 0x9cff3b },
-      luk: { name: "LUK", desc: "+ rarity, crit & harvest", color: 0xffd479 },
-    };
+  private static readonly ATTR_INFO: Record<
+    string,
+    { name: string; desc: string; color: number }
+  > = {
+    str: { name: "STR", desc: "+ melee damage", color: 0xff8a2b },
+    dex: { name: "DEX", desc: "+ ranged dmg & crit", color: 0x6fd6ff },
+    int: { name: "INT", desc: "+ spell / signature power", color: 0xb07bd6 },
+    con: { name: "CON", desc: "+ max HP & regen", color: 0x9cff3b },
+    luk: { name: "LUK", desc: "+ rarity, crit & harvest", color: 0xffd479 },
+  };
 
   /** §8 augment flavor-tag → accent colour (riposte STR-orange · aegis CON-green · hex INT-purple). */
   private static readonly AUG_TAG_COL: Record<string, number> = {
@@ -2616,7 +3462,10 @@ export class ArenaScene extends Phaser.Scene {
   };
 
   /** The shared dim overlay + title + subtitle + countdown bar for either level-window mode. */
-  private buildLevelShell(self: PlayerState, sub: string): { cx: number; cy: number } {
+  private buildLevelShell(
+    self: PlayerState,
+    sub: string,
+  ): { cx: number; cy: number } {
     const cx = this.screenW() / 2;
     const cy = this.screenH() / 2;
     const dim = this.add
@@ -2664,7 +3513,10 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §8 build the dim overlay + 3 augment cards for the signature draft (every 5th level). */
   private buildAugmentWindow(self: PlayerState): void {
-    const { cx, cy } = this.buildLevelShell(self, "SIGNATURE — pick a parry augment (§8)");
+    const { cx, cy } = this.buildLevelShell(
+      self,
+      "SIGNATURE — pick a parry augment (§8)",
+    );
     const offer = self.sigOffer.split(",").filter(Boolean);
     const W = 196;
     const H = 214;
@@ -2684,7 +3536,11 @@ export class ArenaScene extends Phaser.Scene {
       const icon = this.add.graphics().setScrollFactor(0).setDepth(100012);
       drawIcon(icon, def.icon, x, cy - 46, 13, col);
       const name = this.add
-        .text(x, cy - 8, def.name, { fontSize: "20px", color: "#f0ead8", fontStyle: "bold" })
+        .text(x, cy - 8, def.name, {
+          fontSize: "20px",
+          color: "#f0ead8",
+          fontStyle: "bold",
+        })
         .setScrollFactor(0)
         .setOrigin(0.5)
         .setDepth(100012);
@@ -2716,7 +3572,10 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Build the dim overlay + 5 attribute buttons for the §12 flex-point pick. */
   private buildLevelWindow(self: PlayerState): void {
-    const { cx, cy } = this.buildLevelShell(self, "+1 STR  +1 CON (auto) · spend your FLEX point");
+    const { cx, cy } = this.buildLevelShell(
+      self,
+      "+1 STR  +1 CON (auto) · spend your FLEX point",
+    );
     const attrs: Attr[] = ["str", "dex", "int", "con", "luk"];
     const W = 150;
     const H = 200;
@@ -2734,7 +3593,11 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(100011)
         .setInteractive({ useHandCursor: true });
       const name = this.add
-        .text(x, cy - 34, info.name, { fontSize: "26px", color: "#f0ead8", fontStyle: "bold" })
+        .text(x, cy - 34, info.name, {
+          fontSize: "26px",
+          color: "#f0ead8",
+          fontStyle: "bold",
+        })
         .setScrollFactor(0)
         .setOrigin(0.5)
         .setDepth(100012);
@@ -2759,7 +3622,9 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(100012);
       card.on("pointerover", () => card.setScale(1.05));
       card.on("pointerout", () => card.setScale(1));
-      card.on("pointerdown", () => this.room?.send("chooseAttribute", { attr }));
+      card.on("pointerdown", () =>
+        this.room?.send("chooseAttribute", { attr }),
+      );
       this.levelWinObjects.push(card, name, val, desc);
     });
   }
@@ -2816,14 +3681,19 @@ export class ArenaScene extends Phaser.Scene {
     this.summonObjects.push(dim, title, hint);
 
     // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle on the right.
-    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
+    const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter(
+      (n, i, a) => a.indexOf(n) === i,
+    );
     const chipW = 58;
     const chipGap = 10;
     const rowW = mults.length * (chipW + chipGap) - chipGap;
     const mStartX = cx - rowW / 2 + chipW / 2 - 70;
     const my = cy - 122;
     const mLabel = this.add
-      .text(mStartX - chipW / 2 - 14, my, "×", { fontSize: "18px", color: "#9a9486" })
+      .text(mStartX - chipW / 2 - 14, my, "×", {
+        fontSize: "18px",
+        color: "#9a9486",
+      })
       .setScrollFactor(0)
       .setOrigin(1, 0.5)
       .setDepth(100021);
@@ -2895,7 +3765,11 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(100021)
         .setInteractive({ useHandCursor: true });
       const t = this.add
-        .text(x, y, k.label, { fontSize: "14px", color: "#e6f8ff", align: "center" })
+        .text(x, y, k.label, {
+          fontSize: "14px",
+          color: "#e6f8ff",
+          align: "center",
+        })
         .setScrollFactor(0)
         .setOrigin(0.5)
         .setDepth(100022);
@@ -2915,11 +3789,16 @@ export class ArenaScene extends Phaser.Scene {
     const gridRows = Math.ceil(kinds.length / perRow);
     const bossRowY = cy - 56 + gridRows * (H + gap) + 18;
     const bossLabel = this.add
-      .text(cx, bossRowY - 4, "BOSS PICKER — click to summon (swaps any live boss)", {
-        fontSize: "13px",
-        color: "#ffb24a",
-        fontStyle: "bold",
-      })
+      .text(
+        cx,
+        bossRowY - 4,
+        "BOSS PICKER — click to summon (swaps any live boss)",
+        {
+          fontSize: "13px",
+          color: "#ffb24a",
+          fontStyle: "bold",
+        },
+      )
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100022);
@@ -2951,7 +3830,9 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(100022);
       btn.on("pointerover", () => btn.setFillStyle(0x352513, 1));
       btn.on("pointerout", () => btn.setFillStyle(0x241a10, 0.98));
-      btn.on("pointerdown", () => this.room?.send("spawnBossDef", { kind: id }));
+      btn.on("pointerdown", () =>
+        this.room?.send("spawnBossDef", { kind: id }),
+      );
       this.summonObjects.push(btn, t);
     });
   }
@@ -2984,20 +3865,28 @@ export class ArenaScene extends Phaser.Scene {
     // τ-trailing, no rubber-banding). Teleport cuts live inside both paths (predictor hard-resync on
     // teleportSeq / ring gap-snap + fellSeq reset). Fallback = raw state (pre-timeline first frames).
     const selfId = this.room.sessionId;
-    const rt = this.timeline.ready ? this.timeline.renderTime(this.time.now) : -1;
+    const rt = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : -1;
     this.room.state.players.forEach((player, id) => {
       const blob = this.blobs.get(id);
       if (!blob) return;
       if (id === selfId && this.predictor) {
         this.predictor.decayError(deltaMs / 1000);
-        const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
+        const r = this.predictor.renderPos(
+          this.curDx,
+          this.curDy,
+          this.inputAccMs / 1000,
+        );
         blob.setPosition(r.x, r.y);
         this.selfPredHeight = r.height;
         return;
       }
       const s =
         rt >= 0
-          ? this.playerBufs.get(id)?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
+          ? this.playerBufs
+              .get(id)
+              ?.sampleInto(rt, INTERP_SNAP_PLAYER, this.playerSample)
           : null;
       if (s) blob.setPosition(s.x, s.y);
       else blob.setPosition(player.x, player.y);
@@ -3013,7 +3902,8 @@ export class ArenaScene extends Phaser.Scene {
   /** §36 per-level belt palette (sky bg + vector-deck fill), keyed by the level's dimension so the four
    *  levels read distinct without per-level art. Sky Carrier keeps its Codex backdrop on top of this. */
   private beltTheme(): { sky: number; deck: number } {
-    const dim = (this.beltLevel ?? beltLevelFor(this.selectedBeltLevel)).dimensionId;
+    const dim = (this.beltLevel ?? beltLevelFor(this.selectedBeltLevel))
+      .dimensionId;
     const map: Record<string, { sky: number; deck: number }> = {
       "wild-west": { sky: 0x79bce9, deck: 0x454c56 },
       frostfell: { sky: 0x9fc4e0, deck: 0x4a5560 },
@@ -3080,7 +3970,10 @@ export class ArenaScene extends Phaser.Scene {
     // sky as the fallback if the art didn't load.
     const skyCarrier = this.selectedBeltLevel === "sky-carrier";
     if (skyCarrier && this.textures.exists("belt-sky")) {
-      this.beltBackdrop = this.add.image(0, 0, "belt-sky").setOrigin(0, 0).setDepth(-200);
+      this.beltBackdrop = this.add
+        .image(0, 0, "belt-sky")
+        .setOrigin(0, 0)
+        .setDepth(-200);
       this.floorObjs.push(this.beltBackdrop);
       // §29 parallax cloud band drifting across the upper sky (procedural, transparent → no art dependency).
       this.ensureCloudTexture();
@@ -3090,7 +3983,10 @@ export class ArenaScene extends Phaser.Scene {
         .setDepth(-190)
         .setAlpha(0.32);
       this.floorObjs.push(this.beltClouds);
-    } else if (!skyCarrier && this.textures.exists(`belt-bg:${this.selectedBeltLevel}`)) {
+    } else if (
+      !skyCarrier &&
+      this.textures.exists(`belt-bg:${this.selectedBeltLevel}`)
+    ) {
       this.beltBackdrop = this.add
         .image(0, 0, `belt-bg:${this.selectedBeltLevel}`)
         .setOrigin(0, 0)
@@ -3113,7 +4009,8 @@ export class ArenaScene extends Phaser.Scene {
       gg.beginPath();
       gg.moveTo(far[0]!.x, far[0]!.y);
       for (const p of far) gg.lineTo(p.x, p.y);
-      for (let i = near.length - 1; i >= 0; i--) gg.lineTo(near[i]!.x, near[i]!.y);
+      for (let i = near.length - 1; i >= 0; i--)
+        gg.lineTo(near[i]!.x, near[i]!.y);
       gg.closePath();
     };
     // §36 the deck is "the ground" — it must sit BELOW ground-level VFX (quake eruptions depth 4-8, splats,
@@ -3122,7 +4019,12 @@ export class ArenaScene extends Phaser.Scene {
     // sky backdrop (-200) / clouds (-190), below everything on the deck.
     const g = this.add.graphics().setDepth(-20);
     // dark hull/void below the whole thing
-    g.fillStyle(0x22262c, 1).fillRect(0, this.beltY(BELT_Y0 + DEPTH_MAX) - 40, w, 3000);
+    g.fillStyle(0x22262c, 1).fillRect(
+      0,
+      this.beltY(BELT_Y0 + DEPTH_MAX) - 40,
+      w,
+      3000,
+    );
     // Walkable deck BASE fill — a crisp, collision-accurate trapezoid following the exact floor profile.
     // Stays under the plating bake as the fallback (and covers any hairline the clip might miss).
     g.fillStyle(theme.deck, 1); // §36 dimension-themed deck fill
@@ -3132,21 +4034,29 @@ export class ArenaScene extends Phaser.Scene {
     // §37 CODEX PLATING: paint the level's authored deck texture INSIDE the trapezoid via a one-time canvas
     // bake (canvas 2D clip + repeating pattern), sidestepping the old Phaser-4 GeometryMask2-on-TileSprite
     // blocker entirely. Sky-carrier uses its original deck.png; themed levels their deck-<id>.png strips.
-    const deckKey = skyCarrier ? "belt-deck" : `belt-deck:${this.selectedBeltLevel}`;
+    const deckKey = skyCarrier
+      ? "belt-deck"
+      : `belt-deck:${this.selectedBeltLevel}`;
     // §37 the canvas bake uploads big textures — on a low-VRAM GPU that can throw. NEVER let it abort the
     // floor build (that blacked out themed levels); on any failure fall back to the procedural vector deck.
     let plated = false;
     try {
-      plated = this.textures.exists(deckKey) && this.bakeDeckPlating(deckKey, far, near, w);
+      plated =
+        this.textures.exists(deckKey) &&
+        this.bakeDeckPlating(deckKey, far, near, w);
     } catch (e) {
-      console.warn("[belt] deck plating bake failed — using the vector deck", e);
+      console.warn(
+        "[belt] deck plating bake failed — using the vector deck",
+        e,
+      );
       plated = false;
     }
     // Gameplay markings + telegraphs live ABOVE the plating (its own layer at -18).
     const gl = this.add.graphics().setDepth(-18);
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
     gl.lineStyle(6, 0xffd24a, 0.55).beginPath();
-    for (let i = 0; i < far.length; i++) gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    for (let i = 0; i < far.length; i++)
+      gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
     gl.strokePath();
     gl.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
     gl.moveTo(far[0]!.x, far[0]!.y);
@@ -3159,12 +4069,14 @@ export class ArenaScene extends Phaser.Scene {
     if (!plated) {
       // §31 PROCEDURAL plating detail — only when no authored texture landed (the pre-§37 look): panel seams
       // following the perspective + transverse plate joints at a regular pitch.
-      const deckYAt = (i: number, f: number) => far[i]!.y + (near[i]!.y - far[i]!.y) * f;
+      const deckYAt = (i: number, f: number) =>
+        far[i]!.y + (near[i]!.y - far[i]!.y) * f;
       gl.lineStyle(2, 0x363c45, 0.55); // subtle darker seam
       for (const f of [0.22, 0.44, 0.66, 0.86]) {
         gl.beginPath();
         gl.moveTo(far[0]!.x, deckYAt(0, f));
-        for (let i = 1; i < far.length; i++) gl.lineTo(far[i]!.x, deckYAt(i, f));
+        for (let i = 1; i < far.length; i++)
+          gl.lineTo(far[i]!.x, deckYAt(i, f));
         gl.strokePath();
       }
       for (let i = 0; i < far.length; i += 3) {
@@ -3182,7 +4094,12 @@ export class ArenaScene extends Phaser.Scene {
       const b = beltBounds(level, (pit.x0 + pit.x1) / 2);
       const top = this.beltY(BELT_Y0 + b.yMin);
       const bot = this.beltY(BELT_Y0 + b.yMax);
-      gl.fillStyle(0x0c1017, 1).fillRect(pit.x0, top - 4, pit.x1 - pit.x0, bot - top + 12); // void
+      gl.fillStyle(0x0c1017, 1).fillRect(
+        pit.x0,
+        top - 4,
+        pit.x1 - pit.x0,
+        bot - top + 12,
+      ); // void
       gl.fillStyle(0x161b22, 1).fillRect(pit.x0, bot - 6, pit.x1 - pit.x0, 10); // far inner shading
       gl.lineStyle(5, 0xffb02e, 0.9); // hazard-stripe edges
       gl.beginPath();
@@ -3206,7 +4123,8 @@ export class ArenaScene extends Phaser.Scene {
     near: { x: number; y: number }[],
     w: number,
   ): boolean {
-    const src = this.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const src = this.textures.get(key).getSourceImage() as
+      HTMLImageElement | HTMLCanvasElement;
     const sw = src.width;
     const sh = src.height;
     if (!sw || !sh) return false;
@@ -3233,8 +4151,10 @@ export class ArenaScene extends Phaser.Scene {
       if (!ctx) return false;
       ctx.beginPath();
       ctx.moveTo(far[i0]!.x - cx, far[i0]!.y - top);
-      for (let i = i0; i <= i1; i++) ctx.lineTo(far[i]!.x - cx, far[i]!.y - top);
-      for (let i = i1; i >= i0; i--) ctx.lineTo(near[i]!.x - cx, near[i]!.y - top);
+      for (let i = i0; i <= i1; i++)
+        ctx.lineTo(far[i]!.x - cx, far[i]!.y - top);
+      for (let i = i1; i >= i0; i--)
+        ctx.lineTo(near[i]!.x - cx, near[i]!.y - top);
       ctx.closePath();
       ctx.clip();
       const pat = ctx.createPattern(src, "repeat");
@@ -3248,7 +4168,9 @@ export class ArenaScene extends Phaser.Scene {
       const texKey = `deckbake:${this.selectedBeltLevel}:${cx}`;
       if (this.textures.exists(texKey)) this.textures.remove(texKey); // scene restarts re-bake cleanly
       this.textures.addCanvas(texKey, canvas);
-      this.floorObjs.push(this.add.image(cx, top, texKey).setOrigin(0, 0).setDepth(-19));
+      this.floorObjs.push(
+        this.add.image(cx, top, texKey).setOrigin(0, 0).setDepth(-19),
+      );
     }
     return true;
   }
@@ -3274,7 +4196,10 @@ export class ArenaScene extends Phaser.Scene {
     // owner actually moved the object (o.y changed since our last projection).
     const projectTracked = (c: Phaser.GameObjects.Container) => {
       const lastScreen = c.getData("beltScreenY") as number | undefined;
-      const wy = lastScreen !== undefined && c.y === lastScreen ? (c.getData("beltWorldY") as number) : c.y;
+      const wy =
+        lastScreen !== undefined && c.y === lastScreen
+          ? (c.getData("beltWorldY") as number)
+          : c.y;
       const sy = this.beltY(wy);
       c.setData("beltWorldY", wy);
       c.setData("beltScreenY", sy);
@@ -3305,7 +4230,8 @@ export class ArenaScene extends Phaser.Scene {
     const viewW = cam.width / zoom;
     // §29 a closed room gate (beltLockX>0) caps the camera's right reach so the barrier sits at the edge.
     const lock = this.room?.state.beltLockX ?? 0;
-    const rightLimit = lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
+    const rightLimit =
+      lock > 0 ? lock : (this.beltLevel?.length ?? ARENA_WIDTH);
     const maxX = Math.max(0, rightLimit - viewW);
     const wantX = Math.min(maxX, Math.max(0, self.x - viewW * 0.42));
     if (!this.camFocus) this.camFocus = { x: wantX, y: 0 };
@@ -3324,12 +4250,14 @@ export class ArenaScene extends Phaser.Scene {
       this.beltClouds
         .setPosition(this.camFocus.x, BELT_Y0 - BELT_SKY)
         .setSize(viewW, bandH);
-      this.beltClouds.tilePositionX = this.camFocus.x * 0.35 + this.beltCloudDrift;
+      this.beltClouds.tilePositionX =
+        this.camFocus.x * 0.35 + this.beltCloudDrift;
     }
     this.drawBeltGate(lock);
     // §29 room banner on entering a new room + swap to the storm BRIDGE backdrop for the boss room.
     const roomName = this.room?.state.beltRoomName ?? "";
-    if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
+    if (roomName && roomName !== this.lastBeltRoom)
+      this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
     this.lastBeltRoom = roomName;
     if (this.beltBackdrop && this.selectedBeltLevel === "sky-carrier") {
       // §31 each SKY-CARRIER room gets its own Codex backdrop (Flight Deck → Catwalk → Arena Mouth → the
@@ -3343,14 +4271,16 @@ export class ArenaScene extends Phaser.Scene {
             : roomName === "Arena Mouth"
               ? "belt-sky-arena-mouth"
               : "belt-sky";
-      if (this.beltBackdrop.texture.key !== key && this.textures.exists(key)) this.beltBackdrop.setTexture(key);
+      if (this.beltBackdrop.texture.key !== key && this.textures.exists(key))
+        this.beltBackdrop.setTexture(key);
     }
   }
 
   /** §29 draw the room GATE barrier at the locked x (a shimmering bulkhead across the deck) — hidden when
    *  the gate is open (lock 0). A synced-state read, so all clients see the same lock. */
   private drawBeltGate(lockX: number): void {
-    if (!this.beltGate) this.beltGate = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 50);
+    if (!this.beltGate)
+      this.beltGate = this.add.graphics().setDepth(BELT_Y0 + DEPTH_MAX + 50);
     const g = this.beltGate;
     g.clear();
     if (lockX <= 0 || !this.beltLevel) return;
@@ -3446,7 +4376,9 @@ export class ArenaScene extends Phaser.Scene {
     // the arena to a corner — instead CENTRE it (a negative scroll), so the playfield sits middle-screen
     // and the painted ground margin fills the surround.
     const axis = (target: number, view: number, world: number): number =>
-      view >= world ? (world - view) / 2 : Math.max(0, Math.min(world - view, target));
+      view >= world
+        ? (world - view) / 2
+        : Math.max(0, Math.min(world - view, target));
     cam.setScroll(
       axis(x - viewW / 2, viewW, ARENA_WIDTH),
       axis(y - viewH / 2, viewH, ARENA_HEIGHT),
@@ -3558,7 +4490,8 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || self.flexPending > 0) return;
-    if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
+    if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0)
+      return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
     if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
@@ -3567,19 +4500,30 @@ export class ArenaScene extends Phaser.Scene {
     // faster than the server accepts (half the swings become ghosts) and a Swift/fast one can never send at
     // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
     const cdMul = lootCooldownMult(self.weaponAffix);
-    this.localAtkCd = (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
+    this.localAtkCd =
+      (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
     // §44 one PREDICTED descriptor/epoch for every local swing consumer. The server constructs the identical
     // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
-    const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
+    const swing = weapon
+      ? swingDescriptorFor(weapon, weapon.cooldown * cdMul)
+      : undefined;
     const rig = this.blobs.get(selfId);
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && swing)
-      rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
+      rig?.triggerSwing(
+        this.time.now,
+        Math.atan2(this.selfAim.y, this.selfAim.x),
+        swing,
+      );
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
-    const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
-    const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
+    const px = this.pointerScreen.set
+      ? this.pointerScreen.x
+      : this.input.activePointer.x;
+    const py = this.pointerScreen.set
+      ? this.pointerScreen.y
+      : this.input.activePointer.y;
     // §29/§39 the cursor's WORLD position via the camera transform in BOTH modes (belt additionally
     // un-projects depth). The old top-down `px + scrollX` shortcut was only correct while the pointer was
     // CSS px and the RENDER_DPR zoom cancelled it — post-§37 (pointer in internal px) it skewed attack
@@ -3612,20 +4556,31 @@ export class ArenaScene extends Phaser.Scene {
       const quake = weapon.quake;
       this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
-        spawnQuake(this, ep.x, this.belt ? this.beltY(ep.y) : ep.y, quake, weapon);
+        spawnQuake(
+          this,
+          ep.x,
+          this.belt ? this.beltY(ep.y) : ep.y,
+          quake,
+          weapon,
+          this.belt ? BELT_FORESHORTEN : 1,
+        );
         // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
         // real impact is a skill beat → priority (bypasses the freeze budget).
         const qr = quake.radius;
         let connected = false;
         this.room.state.enemies.forEach((en) => {
-          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
+          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr)
+            connected = true;
         });
         if (connected) this.hitStop(130, true);
       });
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
-      this.shakeCam(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
+      this.shakeCam(
+        Math.min(70, weapon.gun.fireRate * 700),
+        weapon.gun.recoil ?? 0.0017,
+      );
       // §4 v0.107 PREDICTED muzzle flash: fire feedback on the CLICK at the rendered barrel (the old
       // path waited a full round-trip for the synced projectile — ~60-125ms of "did it fire?" online).
       // The authoritative bullet still renders from state; syncProjectiles suppresses its duplicate
@@ -3635,7 +4590,11 @@ export class ArenaScene extends Phaser.Scene {
         const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
         // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
         const el = weapon.tags?.element;
-        const fx = gunFx(el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind);
+        const fx = gunFx(
+          el && el !== "physical"
+            ? `${weapon.gun.bulletKind}:${el}`
+            : weapon.gun.bulletKind,
+        );
         spawnMuzzleFlash(
           this,
           rig.x + Math.cos(ang) * reach,
@@ -3656,7 +4615,15 @@ export class ArenaScene extends Phaser.Scene {
         const reach = gunMuzzleReach(weapon);
         const el = weapon.tags?.element;
         const fx = gunFx(el && el !== "physical" ? `orb:${el}` : "orb");
-        spawnMuzzleFlash(this, rig.x + Math.cos(ang) * reach, rig.y + Math.sin(ang) * reach, ang, fx.size, fx.color, fx.style);
+        spawnMuzzleFlash(
+          this,
+          rig.x + Math.cos(ang) * reach,
+          rig.y + Math.sin(ang) * reach,
+          ang,
+          fx.size,
+          fx.color,
+          fx.style,
+        );
         this.lastSelfMuzzleAt = this.time.now;
       }
     } else if (weapon && !weapon.thrown && swing) {
@@ -3667,8 +4634,19 @@ export class ArenaScene extends Phaser.Scene {
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
-        const ep = clampQuakeEpicenter({ x: rx, y: selfWy }, { x: cwx, y: cwy }, QUAKE_REACH);
-        this.spawnSlash(ep.x, this.belt ? this.beltY(ep.y) : ep.y, this.selfAim, weapon, swing, true);
+        const ep = clampQuakeEpicenter(
+          { x: rx, y: selfWy },
+          { x: cwx, y: cwy },
+          QUAKE_REACH,
+        );
+        this.spawnSlash(
+          ep.x,
+          this.belt ? this.beltY(ep.y) : ep.y,
+          this.selfAim,
+          weapon,
+          swing,
+          true,
+        );
       } else {
         this.spawnSlash(rx, ry, this.selfAim, weapon, swing);
       }
@@ -3698,7 +4676,8 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || self.flexPending > 0 || self.sigPending > 0) return;
-    if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
+    if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0)
+      return;
     this.localParryCd = PARRY_COOLDOWN;
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
@@ -3730,7 +4709,8 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const rig = selfId ? this.blobs.get(selfId) : undefined;
-    if (!self?.alive || !rig || self.flexPending > 0 || self.sigPending > 0) return; // hide mid-pick
+    if (!self?.alive || !rig || self.flexPending > 0 || self.sigPending > 0)
+      return; // hide mid-pick
     const x = rig.x;
     const y = rig.y;
     const R = 30;
@@ -3852,9 +4832,16 @@ export class ArenaScene extends Phaser.Scene {
     if (!this[slot]) {
       const tri = this.add.triangle(0, 0, 0, -13, 11, 9, -11, 9, color, 0.95);
       const label = this.add
-        .text(0, 26, "", { fontSize: "13px", color: colorCss, fontStyle: "bold" })
+        .text(0, 26, "", {
+          fontSize: "13px",
+          color: colorCss,
+          fontStyle: "bold",
+        })
         .setOrigin(0.5);
-      this[slot] = this.add.container(0, 0, [tri, label]).setDepth(99997).setScrollFactor(0);
+      this[slot] = this.add
+        .container(0, 0, [tri, label])
+        .setDepth(99997)
+        .setScrollFactor(0);
     }
     const arrow = this[slot] as Phaser.GameObjects.Container;
     // §4 v0.107: bearing/distance from the RENDERED self (predicted rig), not the ~RTT/2-stale state.
@@ -3872,8 +4859,12 @@ export class ArenaScene extends Phaser.Scene {
       Math.abs((dx >= 0 ? w - pad - cx : pad - cx) / (Math.cos(ang) || 1e-6)),
       Math.abs((dy >= 0 ? h - pad - cy : pad - cy) / (Math.sin(ang) || 1e-6)),
     );
-    arrow.setVisible(true).setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
-    (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
+    arrow
+      .setVisible(true)
+      .setPosition(cx + Math.cos(ang) * t, cy + Math.sin(ang) * t);
+    (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(
+      ang + Math.PI / 2,
+    );
     (arrow.list[1] as Phaser.GameObjects.Text).setText(
       `${word} ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
     );
@@ -3893,14 +4884,25 @@ export class ArenaScene extends Phaser.Scene {
       "#ffd479",
       "bank",
     );
-    this.updateEdgeArrow("riftArrow", st.riftOpen, st.riftX, st.riftY, 0xb478ff, "#b478ff", "rift");
+    this.updateEdgeArrow(
+      "riftArrow",
+      st.riftOpen,
+      st.riftX,
+      st.riftY,
+      0xb478ff,
+      "#b478ff",
+      "rift",
+    );
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
    *  fire-wave cone (toward the live cursor aim). Counterblade's blades + the damage are server-spawned. */
   private spawnParryFx(x: number, y: number, owned: string): void {
     if (hasAugment(owned, "bulwark")) {
-      const ring = this.add.circle(x, y, 30).setStrokeStyle(4, 0x6fe6ff, 0.9).setDepth(99996);
+      const ring = this.add
+        .circle(x, y, 30)
+        .setStrokeStyle(4, 0x6fe6ff, 0.9)
+        .setDepth(99996);
       this.tweens.add({
         targets: ring,
         scale: 1.7,
@@ -3914,7 +4916,14 @@ export class ArenaScene extends Phaser.Scene {
       const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
       const ADD = Phaser.BlendModes.ADD;
       const base = this.add
-        .ellipse(x, y, EMBERGUARD_RANGE, EMBERGUARD_RANGE * 0.55, 0xff5a1e, 0.18)
+        .ellipse(
+          x,
+          y,
+          EMBERGUARD_RANGE,
+          EMBERGUARD_RANGE * 0.55,
+          0xff5a1e,
+          0.18,
+        )
         .setRotation(ang)
         .setBlendMode(ADD)
         .setDepth(99994);
@@ -3927,7 +4936,10 @@ export class ArenaScene extends Phaser.Scene {
       });
       for (let i = 0; i < 7; i++) {
         const a = ang + (i / 6 - 0.5) * EMBERGUARD_HALF_ARC * 2;
-        const ember = this.add.circle(x, y, 7, 0xff7a2a, 0.9).setBlendMode(ADD).setDepth(99995);
+        const ember = this.add
+          .circle(x, y, 7, 0xff7a2a, 0.9)
+          .setBlendMode(ADD)
+          .setDepth(99995);
         this.tweens.add({
           targets: ember,
           x: x + Math.cos(a) * EMBERGUARD_RANGE,
@@ -3965,7 +4977,8 @@ export class ArenaScene extends Phaser.Scene {
       // Refill the bucket at BUDGET/WINDOW per ms since the last spend, then reject if this freeze would
       // overflow it. (Priority freezes bypass the bucket AND don't deplete it — the skill beats are sacred.)
       const refill =
-        ((now - this.freezeSpentAt) * ArenaScene.FREEZE_BUDGET_MS) / ArenaScene.FREEZE_WINDOW_MS;
+        ((now - this.freezeSpentAt) * ArenaScene.FREEZE_BUDGET_MS) /
+        ArenaScene.FREEZE_WINDOW_MS;
       this.freezeSpent = Math.max(0, this.freezeSpent - refill);
       this.freezeSpentAt = now;
       if (this.freezeSpent + ms > ArenaScene.FREEZE_BUDGET_MS) return; // over budget — skip this crunch
@@ -4011,14 +5024,17 @@ export class ArenaScene extends Phaser.Scene {
           const dmg = prev - enemy.hp;
           // §30 CRIT: the synced critFlash counter ticked this frame → this hit was a critical. Gold number,
           // a gold flash, extra hit-stop + a shock ring — a crit lands with weight even on a small number.
-          const crit = (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
+          const crit =
+            (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
           hits.push({
             id,
             rig,
             dmg,
             crit,
             visible: this.cameras.main.worldView.contains(rig.x, rig.y),
-            radius: (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) * (enemy.tough ? TOUGH_SCALE : 1),
+            radius:
+              (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) *
+              (enemy.tough ? TOUGH_SCALE : 1),
           });
         }
       }
@@ -4027,7 +5043,8 @@ export class ArenaScene extends Phaser.Scene {
     });
     // Only horde-scale frames reorder: on-camera hits spend the finite full-stack + label budgets before
     // invisible enemies. Stable sort preserves authoritative iteration order within each visibility band.
-    if (hits.length > HIT_VFX_BUDGET) hits.sort((a, b) => Number(b.visible) - Number(a.visible));
+    if (hits.length > HIT_VFX_BUDGET)
+      hits.sort((a, b) => Number(b.visible) - Number(a.visible));
     for (const { id, rig, dmg, crit, radius } of hits) {
       const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
       rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff); // zero-allocation degraded path
@@ -4044,7 +5061,10 @@ export class ArenaScene extends Phaser.Scene {
       const fullFx = this.hitVfxSpent < HIT_VFX_BUDGET;
       if (!fullFx) continue; // flash + optional pooled number only: no painted Images/rects/rings/tweens
       this.hitVfxSpent++;
-      this.audio.play(crit || big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
+      this.audio.play(crit || big ? "bighit" : "hit", {
+        x: rig.x,
+        amt: Math.min(1, dmg / 45),
+      });
       // §36 directional contact spark — thrown along the blow vector (nearest live player-rig → enemy,
       // both in the SAME render space so it's correct in belt mode too). Every hit gets steel-bite; the
       // heavier RING/stinger stay gated to the crunch below.
@@ -4067,10 +5087,20 @@ export class ArenaScene extends Phaser.Scene {
       const hitWeapon = attacker ? WEAPONS[attacker.weapon] : undefined;
       const hitEl = hitWeapon?.tags?.element;
       const tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
-      this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
+      this.spawnHitSpark(
+        rig.x,
+        rig.y,
+        Math.atan2(rig.y - by, rig.x - bx),
+        crit,
+        tint,
+        hitEl,
+      );
       // The flipbook belongs to this budget-approved FULL stack only: gun-bullet + melee-equipped hits get
       // the weapon element; thrown/cast deliveries retain every existing layer without a false bloom.
-      if (hitWeapon?.gun || (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)) {
+      if (
+        hitWeapon?.gun ||
+        (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)
+      ) {
         spawnImpactFlipbook(this, rig.x, rig.y, radius, hitEl);
       }
       if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
@@ -4096,9 +5126,12 @@ export class ArenaScene extends Phaser.Scene {
           // and at RIPOSTE_AT the flourish reads as the riposte moment the server just dealt.
           const now = this.time.now;
           this.parryChain =
-            now - this.parryChainAt <= PARRY_CHAIN_WINDOW * 1000 ? this.parryChain + 1 : 1;
+            now - this.parryChainAt <= PARRY_CHAIN_WINDOW * 1000
+              ? this.parryChain + 1
+              : 1;
           this.parryChainAt = now;
-          if (this.parryChain >= 2) this.spawnComboPop(p.x, p.y, this.parryChain);
+          if (this.parryChain >= 2)
+            this.spawnComboPop(p.x, p.y, this.parryChain);
         }
       }
     });
@@ -4141,7 +5174,9 @@ export class ArenaScene extends Phaser.Scene {
       ) {
         const rar = RARITIES[self.weaponRarity];
         const tierName = self.weaponRarity > 0 ? `${rar?.name ?? ""} ` : "";
-        const affix = self.weaponAffix ? `${affixById(self.weaponAffix).name} ` : "";
+        const affix = self.weaponAffix
+          ? `${affixById(self.weaponAffix).name} `
+          : "";
         const name = WEAPONS[self.weapon]?.name ?? self.weapon;
         this.flashBanner(
           `${tierName}${affix}${name}`.toUpperCase(),
@@ -4278,7 +5313,10 @@ export class ArenaScene extends Phaser.Scene {
       ease: "Quad.easeOut",
       onComplete: () => ring.destroy(),
     });
-    const flash = this.add.circle(x, y, 22, 0xffffff, 0.5).setBlendMode(ADD).setDepth(99995);
+    const flash = this.add
+      .circle(x, y, 22, 0xffffff, 0.5)
+      .setBlendMode(ADD)
+      .setDepth(99995);
     this.tweens.add({
       targets: flash,
       scale: 1.4,
@@ -4342,7 +5380,10 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Level-up VFX: an expanding gold ring on the player + a brief "LEVEL N" toast. */
   private spawnLevelUp(x: number, y: number): void {
-    const ring = this.add.circle(x, y, 24).setStrokeStyle(5, 0xffd479, 0.95).setDepth(99997);
+    const ring = this.add
+      .circle(x, y, 24)
+      .setStrokeStyle(5, 0xffd479, 0.95)
+      .setDepth(99997);
     this.tweens.add({
       targets: ring,
       scale: 4,
@@ -4415,25 +5456,35 @@ export class ArenaScene extends Phaser.Scene {
     this.hpShown = Phaser.Math.Linear(this.hpShown, ratio, 0.25);
     this.hpBarFill.width = 236 * s * this.hpShown;
     // Green → amber → red as it drains.
-    this.hpBarFill.fillColor = ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
+    this.hpBarFill.fillColor =
+      ratio > 0.5 ? 0x9cff3b : ratio > 0.25 ? 0xff8a2b : 0xff5d5d;
     this.hpText.setText(`${Math.ceil(hp)} / ${maxHp}`);
 
     // §19 v0.108 A7: low-HP DANGER vignette + hurt punch. Below 30% HP the screen edges glow red (with a
     // heartbeat pulse under 25%); a fresh hit spikes `hurtFlash` (set in updateCombatFx) for a punch that
     // reads even at full HP. Reads HP only — changes nothing.
-    this.hurtFlash = Math.max(0, this.hurtFlash - (this.deltaSec || 0.016) * 3.5);
+    this.hurtFlash = Math.max(
+      0,
+      this.hurtFlash - (this.deltaSec || 0.016) * 3.5,
+    );
     const aliveSelf = !!self && self.alive;
-    let vig = aliveSelf && ratio < 0.3 ? Math.min(1, (0.3 - ratio) / 0.3) * 0.5 : 0;
-    if (aliveSelf && ratio < 0.25) vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
+    let vig =
+      aliveSelf && ratio < 0.3 ? Math.min(1, (0.3 - ratio) / 0.3) * 0.5 : 0;
+    if (aliveSelf && ratio < 0.25)
+      vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
     vig = Math.max(vig, aliveSelf ? this.hurtFlash * 0.32 : 0);
-    this.dangerVignette.setAlpha(Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18));
+    this.dangerVignette.setAlpha(
+      Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18),
+    );
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
     this.xpBarFill.setPosition(barX + 2 * s, xpY);
-    const xpRatio = self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
+    const xpRatio =
+      self && self.xpToNext > 0 ? Math.min(1, self.xp / self.xpToNext) : 0;
     // §19 v0.108 A8: XP fill eases up on a kill (satisfying), but SNAPS on a level reset (ratio drops).
-    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05) this.xpShown = xpRatio;
+    if (this.xpShown < 0 || xpRatio < this.xpShown - 0.05)
+      this.xpShown = xpRatio;
     else this.xpShown = Phaser.Math.Linear(this.xpShown, xpRatio, 0.25);
     this.xpBarFill.width = 236 * s * this.xpShown;
     this.levelText
@@ -4450,15 +5501,19 @@ export class ArenaScene extends Phaser.Scene {
     let charges = "";
     if (self && self.maxCharges > 0) {
       if (self.charges <= 0) charges = "   ⟳ reloading…";
-      else if (self.maxCharges > 10) charges = `   ▮ ${self.charges}/${self.maxCharges}`;
+      else if (self.maxCharges > 10)
+        charges = `   ▮ ${self.charges}/${self.maxCharges}`;
       else
         charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
     }
     // §10 v0.104 the held weapon's LOOT identity rides the readout: "Rare Keen Neon Katana", tinted by
     // its rarity tier (loot-less holds stay plain).
-    const heldRar = self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
+    const heldRar =
+      self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
     const heldAffix = self?.weaponAffix ? affixById(self.weaponAffix).name : "";
-    const lootPrefix = [heldRar?.name ?? "", heldAffix].filter(Boolean).join(" ");
+    const lootPrefix = [heldRar?.name ?? "", heldAffix]
+      .filter(Boolean)
+      .join(" ");
     this.weaponText
       .setPosition(barX, xpY - 24 * s)
       .setText(
@@ -4475,7 +5530,9 @@ export class ArenaScene extends Phaser.Scene {
     ) {
       this.weaponText.setColor(self.charges <= 0 ? "#ff5d5d" : "#ff8a2b");
     } else if (heldRar) {
-      this.weaponText.setColor(`#${heldRar.color.toString(16).padStart(6, "0")}`);
+      this.weaponText.setColor(
+        `#${heldRar.color.toString(16).padStart(6, "0")}`,
+      );
     } else {
       this.weaponText.setColor("#9cff3b");
     }
@@ -4530,7 +5587,8 @@ export class ArenaScene extends Phaser.Scene {
     // §4 v0.107 connection-degraded hint (amendment #13): >~1.2s of un-acked input commands = the link
     // is stalling — tell the player WHY their character stopped responding instead of failing silently.
     const lagging =
-      this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
+      this.predictor !== null &&
+      (this.predictor.isStalled || this.predictor.stats.pending > 24);
     const lagPrefix = lagging ? "⚠ CONNECTION LAG · " : "";
     // §16 v0.116 BOSS RUSH — a dedicated objective line: which boss of 10 is up, or the breather between.
     const BOSS_RUSH_TOTAL = 10;
@@ -4549,7 +5607,17 @@ export class ArenaScene extends Phaser.Scene {
               ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
               : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
       )
-      .setColor(lagging ? "#ff8a2b" : this.belt ? "#7fb0d8" : training ? "#33e6ff" : bossrush ? "#ff5d3b" : "#5a6472");
+      .setColor(
+        lagging
+          ? "#ff8a2b"
+          : this.belt
+            ? "#7fb0d8"
+            : training
+              ? "#33e6ff"
+              : bossrush
+                ? "#ff5d3b"
+                : "#5a6472",
+      );
 
     // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;
@@ -4592,9 +5660,13 @@ export class ArenaScene extends Phaser.Scene {
     const y = this.screenH() - 132;
     const done = frac >= 1;
     bar.clear();
-    bar.fillStyle(0x000000, 0.55).fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
+    bar
+      .fillStyle(0x000000, 0.55)
+      .fillRoundedRect(x - 2, y - 2, w + 4, h + 4, 5);
     bar.fillStyle(0x2a2a2a, 1).fillRoundedRect(x, y, w, h, 4);
-    bar.fillStyle(done ? 0xff5a4a : 0xffb24a, 1).fillRoundedRect(x, y, w * frac, h, 4);
+    bar
+      .fillStyle(done ? 0xff5a4a : 0xffb24a, 1)
+      .fillRoundedRect(x, y, w * frac, h, 4);
     bar.setVisible(true);
     label
       .setText(done ? "SALVAGED" : "hold: SALVAGE · release: DROP")
@@ -4609,7 +5681,8 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room || this.carousel.length === 0) return;
     // §29 belt swaps the roster carousel for the compact 3-slot arsenal HUD — hide the fanned cards.
     if (this.belt) {
-      if (this.carousel[0]?.container.visible) for (const c of this.carousel) c.container.setVisible(false);
+      if (this.carousel[0]?.container.visible)
+        for (const c of this.carousel) c.container.setVisible(false);
       this.updateArsenalHud();
       return;
     }
@@ -4650,7 +5723,8 @@ export class ArenaScene extends Phaser.Scene {
       };
       // Show REAL (sub-integer) damage so every stat point visibly moves the number (§12). Each §14
       // source scales off ITS OWN grades — so pumping INT grows Wyrmtooth's magma but not its blade.
-      const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1));
+      const fmt = (v: number) =>
+        Number.isInteger(v) ? String(v) : v.toFixed(1);
       // §11 unmet requirements PENALISE every source's damage (the enforcement rule) — fold it into the
       // shown total so the card is WYSIWYG, and tint the equation amber when the weapon is under-statted.
       // §10 v0.104: the HELD card also folds in its rolled loot identity (rarity × affix) — the equation
@@ -4663,12 +5737,16 @@ export class ArenaScene extends Phaser.Scene {
       for (const s of card.sources) {
         const mult = damageMultFromGrades(s.src.grades, attrs) * pen * loot;
         const total = s.src.base * mult;
-        s.text.setText(`${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`);
+        s.text.setText(
+          `${fmt(s.src.base)} + ${fmt(total - s.src.base)} = ${fmt(total)}`,
+        );
         s.text.setColor(pen < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
       }
       // Requirements: green when met by the player's live attributes, red when unmet.
       for (const tk of card.reqTokens) {
-        tk.text.setColor((attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a");
+        tk.text.setColor(
+          (attrs[tk.attr] ?? 1) >= tk.need ? "#9cff3b" : "#ff5a4a",
+        );
       }
       // Resource value (the icon conveys charges-vs-durability): live charges, or the durability number.
       if (def?.thrown) {
@@ -4687,7 +5765,10 @@ export class ArenaScene extends Phaser.Scene {
    *  can replace it later without touching the earn/sell loop. Clamped to the uint16 sync ceiling. */
   private loadBankedScrip(): number {
     try {
-      const v = Number.parseInt(localStorage.getItem("dd.beltScrip") ?? "0", 10);
+      const v = Number.parseInt(
+        localStorage.getItem("dd.beltScrip") ?? "0",
+        10,
+      );
       return Number.isFinite(v) ? Math.max(0, Math.min(65535, v)) : 0;
     } catch {
       return 0; // storage blocked (private mode / sandbox) → start fresh, no crash
@@ -4695,7 +5776,10 @@ export class ArenaScene extends Phaser.Scene {
   }
   private saveBankedScrip(scrip: number): void {
     try {
-      localStorage.setItem("dd.beltScrip", String(Math.max(0, Math.min(65535, Math.floor(scrip)))));
+      localStorage.setItem(
+        "dd.beltScrip",
+        String(Math.max(0, Math.min(65535, Math.floor(scrip)))),
+      );
     } catch {
       /* storage blocked — non-fatal, scrip just won't persist this session */
     }
@@ -4705,21 +5789,30 @@ export class ArenaScene extends Phaser.Scene {
    *  purchase. Client-local MVP (matches the scrip bank); a server/account store can replace the transport. */
   private loadUpgrades(): MetaLevels {
     try {
-      return sanitizeMetaLevels(JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"));
+      return sanitizeMetaLevels(
+        JSON.parse(localStorage.getItem("dd.beltUpgrades") ?? "{}"),
+      );
     } catch {
       return { ...EMPTY_META };
     }
   }
   private saveUpgrades(levels: MetaLevels): void {
     try {
-      localStorage.setItem("dd.beltUpgrades", JSON.stringify(sanitizeMetaLevels(levels)));
+      localStorage.setItem(
+        "dd.beltUpgrades",
+        JSON.stringify(sanitizeMetaLevels(levels)),
+      );
     } catch {
       /* storage blocked — non-fatal */
     }
   }
 
   /** §29 a pooled, screen-pinned HUD text (lazily created), used by the arsenal + bag readouts. */
-  private hudText(pool: Phaser.GameObjects.Text[], i: number, depth: number): Phaser.GameObjects.Text {
+  private hudText(
+    pool: Phaser.GameObjects.Text[],
+    i: number,
+    depth: number,
+  ): Phaser.GameObjects.Text {
     let t = pool[i];
     if (!t) {
       t = this.add
@@ -4733,8 +5826,12 @@ export class ArenaScene extends Phaser.Scene {
 
   /** The (weapon id, rarity) shown for slot `i` — the ACTIVE slot reads the live held weapon (the server only
    *  re-syncs the slot on a swap/grab), the others read their stored slot. */
-  private slotView(self: PlayerState, i: number): { wid: string; rarity: number } {
-    if (i === self.activeSlot) return { wid: self.weapon, rarity: self.weaponRarity };
+  private slotView(
+    self: PlayerState,
+    i: number,
+  ): { wid: string; rarity: number } {
+    if (i === self.activeSlot)
+      return { wid: self.weapon, rarity: self.weaponRarity };
     const sl = self.slots[i];
     return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0 };
   }
@@ -4746,7 +5843,8 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room?.state.players.get(this.room?.sessionId ?? "");
     if (!self) return;
     const s = this.uiScale();
-    if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
+    if (!this.arsenalG)
+      this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
     const g = this.arsenalG;
     g.clear();
     const chipW = 156 * s;
@@ -4762,8 +5860,18 @@ export class ArenaScene extends Phaser.Scene {
       const col = empty ? 0x39424e : (RARITIES[rarity]?.color ?? 0x9aa5b1);
       const x = x0 + i * (chipW + gap);
       const y = baseY - (active ? 8 * s : 0);
-      g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(x, y, chipW, chipH, 7 * s);
-      g.lineStyle(active ? 3 * s : 1.5 * s, col, active ? 1 : 0.6).strokeRoundedRect(x, y, chipW, chipH, 7 * s);
+      g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(
+        x,
+        y,
+        chipW,
+        chipH,
+        7 * s,
+      );
+      g.lineStyle(
+        active ? 3 * s : 1.5 * s,
+        col,
+        active ? 1 : 0.6,
+      ).strokeRoundedRect(x, y, chipW, chipH, 7 * s);
       // slot key
       const key = this.hudText(this.arsenalTexts, i, 100049)
         .setText(String(i + 1))
@@ -4780,9 +5888,14 @@ export class ArenaScene extends Phaser.Scene {
       // click zone (swap to this slot, or stash it when the bag is open)
       let z = this.slotZones[i];
       if (!z) {
-        z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100047).setInteractive();
+        z = this.add
+          .rectangle(0, 0, 1, 1, 0, 0)
+          .setScrollFactor(0)
+          .setDepth(100047)
+          .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen) this.room?.send("sellWeapon", { from: "slot", index: i });
+          if (this.shopOpen)
+            this.room?.send("sellWeapon", { from: "slot", index: i });
           else if (this.bagOpen) this.room?.send("bagStore", { slot: i });
           else this.room?.send("swapSlot", { slot: i });
         });
@@ -4796,7 +5909,9 @@ export class ArenaScene extends Phaser.Scene {
     const setTxt = setB > 1 ? `   ⚔ SET +${Math.round((setB - 1) * 100)}%` : "";
     // scrip + bag + set-bonus readout above the chips
     const info = this.hudText(this.arsenalTexts, 6, 100049)
-      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`)
+      .setText(
+        `◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`,
+      )
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
@@ -4813,7 +5928,11 @@ export class ArenaScene extends Phaser.Scene {
     // §31 persist permanent-upgrade levels whenever a purchase lands (the synced levels tick up).
     const upSig = `${self.upVitality},${self.upFortune},${self.upPower}`;
     if (upSig !== this.lastUpgradeSig) {
-      this.saveUpgrades({ vitality: self.upVitality, fortune: self.upFortune, power: self.upPower });
+      this.saveUpgrades({
+        vitality: self.upVitality,
+        fortune: self.upFortune,
+        power: self.upPower,
+      });
       this.lastUpgradeSig = upSig;
     }
     this.updateShopkeeper(self, s);
@@ -4840,9 +5959,16 @@ export class ArenaScene extends Phaser.Scene {
       // awning
       g.fillStyle(0x8a2f3a, 1).fillRect(gx - 54, gy - 150, 108, 20);
       for (let i = 0; i < 6; i++)
-        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(gx - 54 + i * 18, gy - 132, 18, 12);
+        g.fillStyle(i % 2 ? 0xf2e6c8 : 0xd8b448, 1).fillRect(
+          gx - 54 + i * 18,
+          gy - 132,
+          18,
+          12,
+        );
       // posts + counter
-      g.fillStyle(0x5a4632, 1).fillRect(gx - 52, gy - 130, 6, 130).fillRect(gx + 46, gy - 130, 6, 130);
+      g.fillStyle(0x5a4632, 1)
+        .fillRect(gx - 52, gy - 130, 6, 130)
+        .fillRect(gx + 46, gy - 130, 6, 130);
       g.fillStyle(0x6b503a, 1).fillRect(gx - 56, gy - 44, 112, 16);
       // keeper (head + cloak)
       g.fillStyle(0x2a3550, 1).fillRect(gx - 16, gy - 96, 32, 52);
@@ -4851,7 +5977,10 @@ export class ArenaScene extends Phaser.Scene {
       // sign
       g.fillStyle(0x101722, 0.9).fillRect(gx - 30, gy - 176, 60, 20);
       this.shopPromptText = this.add
-        .text(gx, gy - 166, "SHOP", { fontFamily: "monospace", color: "#ffd479" })
+        .text(gx, gy - 166, "SHOP", {
+          fontFamily: "monospace",
+          color: "#ffd479",
+        })
         .setOrigin(0.5, 0.5)
         .setDepth(BELT_Y0 + DEPTH_MAX + 6);
       this.shopPromptText.setFontSize(13);
@@ -4886,7 +6015,13 @@ export class ArenaScene extends Phaser.Scene {
     const r = 10 * s;
     // thin double line
     g.lineStyle(1.5 * s, ink, 0.85).strokeRoundedRect(x, y, w, h, r);
-    g.lineStyle(1 * s, ink, 0.35).strokeRoundedRect(x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, r - 2 * s);
+    g.lineStyle(1 * s, ink, 0.35).strokeRoundedRect(
+      x + 4 * s,
+      y + 4 * s,
+      w - 8 * s,
+      h - 8 * s,
+      r - 2 * s,
+    );
     // accent corner ticks — a short L just inside each corner
     const t = 14 * s;
     const o = 9 * s;
@@ -4913,7 +6048,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private renderBagPanel(self: PlayerState, s: number): void {
-    if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
+    if (!this.bagG)
+      this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
     const g = this.bagG.setVisible(true);
     g.clear();
     const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
@@ -4949,11 +6085,17 @@ export class ArenaScene extends Phaser.Scene {
       const zone = (() => {
         let z = this.bagZones[i];
         if (!z) {
-          z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100045).setInteractive();
+          z = this.add
+            .rectangle(0, 0, 1, 1, 0, 0)
+            .setScrollFactor(0)
+            .setDepth(100045)
+            .setInteractive();
           z.on("pointerdown", () => {
             if (i >= self.bag.length) return;
-            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: i });
-            else if (this.bagOpen) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
+            if (this.shopOpen)
+              this.room?.send("sellWeapon", { from: "bag", index: i });
+            else if (this.bagOpen)
+              this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
           });
           this.bagZones[i] = z;
         }
@@ -4966,24 +6108,47 @@ export class ArenaScene extends Phaser.Scene {
       const cx = gx + (i % cols) * cellW;
       const cy = gy + Math.floor(i / cols) * (cellH + 6 * s);
       const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
-      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
-      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
+      g.fillStyle(0x121821, 0.95).fillRoundedRect(
+        cx,
+        cy,
+        cellW - 8 * s,
+        cellH,
+        6 * s,
+      );
+      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(
+        cx,
+        cy,
+        cellW - 8 * s,
+        cellH,
+        6 * s,
+      );
       const baseName = WEAPONS[item.weapon]?.name ?? item.weapon;
       const price = scripValue(item.rarity, item.earned);
-      const nm = this.shopOpen ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}` : baseName;
+      const nm = this.shopOpen
+        ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}`
+        : baseName;
       const t = this.hudText(this.bagTexts, 1 + i, 100046)
         .setText(nm)
         .setColor(`#${col.toString(16).padStart(6, "0")}`)
         .setVisible(true)
         .setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2);
       t.setFontSize((nm.length > 14 ? 10 : 12) * s).setOrigin(0.5, 0.5);
-      zone.setVisible(true).setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2).setSize(cellW - 8 * s, cellH);
+      zone
+        .setVisible(true)
+        .setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2)
+        .setSize(cellW - 8 * s, cellH);
     }
   }
 
   /** §31 the shop's permanent-upgrade BUY band: one card per META_UPGRADE with its owned level, effect, and
    *  next-level scrip cost. Click to buy (server-authoritative). Amber = affordable, grey = broke, dim = maxed. */
-  private renderUpgradeBand(self: PlayerState, s: number, px: number, y: number, panelW: number): void {
+  private renderUpgradeBand(
+    self: PlayerState,
+    s: number,
+    px: number,
+    y: number,
+    panelW: number,
+  ): void {
     const g = this.bagG;
     if (!g) return;
     const n = META_UPGRADES.length;
@@ -4991,7 +6156,11 @@ export class ArenaScene extends Phaser.Scene {
     const bx = px + 16 * s;
     const h = 62 * s;
     const curOf = (id: string) =>
-      id === "vitality" ? self.upVitality : id === "fortune" ? self.upFortune : self.upPower;
+      id === "vitality"
+        ? self.upVitality
+        : id === "fortune"
+          ? self.upFortune
+          : self.upPower;
     for (let i = 0; i < n; i++) {
       const u = META_UPGRADES[i]!;
       const cur = curOf(u.id);
@@ -5001,13 +6170,20 @@ export class ArenaScene extends Phaser.Scene {
       const cx = bx + i * colW;
       const w = colW - 8 * s;
       g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, y, w, h, 6 * s);
-      g.lineStyle(1.5 * s, maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47, 0.95).strokeRoundedRect(cx, y, w, h, 6 * s);
+      g.lineStyle(
+        1.5 * s,
+        maxed ? 0x5a6472 : afford ? 0xffd24a : 0x3a3f47,
+        0.95,
+      ).strokeRoundedRect(cx, y, w, h, 6 * s);
       const label = this.hudText(this.bagTexts, 20 + i, 100046)
         .setText(`${u.name}  ${cur}/${u.maxLevel}\n${u.desc}`)
         .setColor("#cfe0f0")
         .setVisible(true)
         .setPosition(cx + w / 2, y + 8 * s);
-      label.setFontSize(10.5 * s).setOrigin(0.5, 0).setAlign("center");
+      label
+        .setFontSize(10.5 * s)
+        .setOrigin(0.5, 0)
+        .setAlign("center");
       const costT = this.hudText(this.bagTexts, 23 + i, 100046)
         .setText(maxed ? "MAX" : `${cost} ◈`)
         .setColor(maxed ? "#5a6472" : afford ? "#9cff6a" : "#7a8290")
@@ -5016,13 +6192,20 @@ export class ArenaScene extends Phaser.Scene {
       costT.setFontSize(11 * s).setOrigin(0.5, 1);
       let z = this.buyZones[i];
       if (!z) {
-        z = this.add.rectangle(0, 0, 1, 1, 0, 0).setScrollFactor(0).setDepth(100045).setInteractive();
+        z = this.add
+          .rectangle(0, 0, 1, 1, 0, 0)
+          .setScrollFactor(0)
+          .setDepth(100045)
+          .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
+          if (this.shopOpen)
+            this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
         });
         this.buyZones[i] = z;
       }
-      z.setVisible(true).setPosition(cx + w / 2, y + h / 2).setSize(w, h);
+      z.setVisible(true)
+        .setPosition(cx + w / 2, y + h / 2)
+        .setSize(w, h);
     }
   }
 
@@ -5031,7 +6214,8 @@ export class ArenaScene extends Phaser.Scene {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
     for (const z of this.buyZones) z.setVisible(false);
-    for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
+    for (let i = 1; i < this.bagTexts.length; i++)
+      this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);
   }
 
@@ -5047,7 +6231,9 @@ export class ArenaScene extends Phaser.Scene {
     const cl = weapon.chainLightning;
     if (!cl || !this.room) return;
     const vfx = cl.vfx ?? { color: 0.5, jag: 0.3, life: 180 };
-    const VR = (globalThis as { VFXRENDER?: { lerpHue?: (h: number) => number } }).VFXRENDER;
+    const VR = (
+      globalThis as { VFXRENDER?: { lerpHue?: (h: number) => number } }
+    ).VFXRENDER;
     const col = VR?.lerpHue ? VR.lerpHue(vfx.color) : 0x6fd6ff; // 0.5 → teal (sword accent)
     const enemies = this.room.state.enemies;
     const posOf = (id: string, ex: number, ey: number) => {
@@ -5065,7 +6251,16 @@ export class ArenaScene extends Phaser.Scene {
     enemies.forEach((e, id) => {
       const p = posOf(id, e.x, e.y);
       candidates.push({ id, x: p.x, y: p.y });
-      if (inMeleeArc({ x: sx, y: sy }, aim.x, aim.y, p, weapon.range, weapon.halfArc)) {
+      if (
+        inMeleeArc(
+          { x: sx, y: sy },
+          aim.x,
+          aim.y,
+          p,
+          weapon.range,
+          weapon.halfArc,
+        )
+      ) {
         used.add(id);
         const d = (p.x - sx) ** 2 + (p.y - sy) ** 2;
         if (d < seedBestD) {
@@ -5136,7 +6331,15 @@ export class ArenaScene extends Phaser.Scene {
     const sy = y + Math.sin(ang) * reach;
     // SIZE: the weapon's authored fixed vfxRadius (resolved in VfxPlayer); this is only the fallback for
     // weapons with no baked VFX entry. Fixed per §14 — never derived from range/level/stat.
-    this.vfxPlayer.playSwing(weapon.id, sx, sy, ang, VFX_RADIUS_DEFAULT, swing, weapon.tags?.element);
+    this.vfxPlayer.playSwing(
+      weapon.id,
+      sx,
+      sy,
+      ang,
+      VFX_RADIUS_DEFAULT,
+      swing,
+      weapon.tags?.element,
+    );
   }
 
   /** §39 DEV PORTAL: apply a `?dev=` deep-link once the room is live — enter Testing Grounds, then spawn the
@@ -5154,8 +6357,10 @@ export class ArenaScene extends Phaser.Scene {
       if (!room) return;
       if (kind === "boss" && arg) room.send("spawnBossDef", { kind: arg });
       else if (kind === "weapon" && arg) room.send("devEquip", { weapon: arg });
-      else if (kind === "char" && arg) room.send("devEquip", { character: arg });
-      else if (kind === "enemy" && arg) room.send("debugSpawn", { kind: arg, count: 3 });
+      else if (kind === "char" && arg)
+        room.send("devEquip", { character: arg });
+      else if (kind === "enemy" && arg)
+        room.send("debugSpawn", { kind: arg, count: 3 });
       this.flashBanner(`▶  DEV: ${kind} ${arg}`, "#33e6ff");
     };
     // toggleTraining is a TOGGLE — send it AT MOST ONCE (re-sending before the mode syncs back over the
@@ -5205,7 +6410,8 @@ export class ArenaScene extends Phaser.Scene {
       }
       // A pit snap-back must CUT the remote's ring, not leave a path back into the pit (review #10).
       const prevFell = this.snapFell.get(id);
-      if (prevFell !== undefined && prevFell !== p.fellSeq) buf.reset(t, p.x, p.y);
+      if (prevFell !== undefined && prevFell !== p.fellSeq)
+        buf.reset(t, p.x, p.y);
       else buf.push(t, p.x, p.y);
       this.snapFell.set(id, p.fellSeq);
     });
@@ -5228,7 +6434,9 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor = new SelfPredictor(view);
           if (this.belt) {
             this.predictor.setMap(undefined);
-            this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
+            this.predictor.setBeltLevel(
+              this.beltLevel ?? beltLevelFor("sky-carrier"),
+            );
           } else {
             this.predictor.setMap(this.arenaMap);
           }
@@ -5271,7 +6479,11 @@ export class ArenaScene extends Phaser.Scene {
     this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
     while (this.inputAccMs >= TICK_MS) {
       this.inputAccMs -= TICK_MS;
-      const cmd = this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued);
+      const cmd = this.predictor.mintCmd(
+        this.curDx,
+        this.curDy,
+        this.jumpQueued,
+      );
       this.jumpQueued = false;
       this.room.send("input", cmd);
       this.predictor.tick(cmd);
