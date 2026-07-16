@@ -146,6 +146,91 @@ water-tank on struts wrapped in cabling; a satellite-dish array mast; a neon SHR
 crane arm`,
 );
 
+// §48 BESPOKE WEAPON-FX COMPONENT PACKS — one render per effect, every component a SEPARATE island so
+// each piece (core, ring, SHRAPNEL shards, debris) cuts out individually and can be animated on its own
+// timeline later. Painted on chroma green like everything else; additive-friendly (hot cores, glows).
+const FX_STYLE = `Style: HD painted game VFX, crisp silhouettes, hot luminous cores with controlled glow,
+thick value structure. EVERY component is a SEPARATE island with GENEROUS empty space — nothing touches
+anything else or the frame edge. The ENTIRE background is FLAT PURE CHROMA GREEN #00ff00 with NOTHING else.
+No text, no border, no characters. Each component fully painted and fully inside the frame.`;
+const fxPack = (name, keep, list) => ({
+  out: resolve(here, `out/fx-${name}`),
+  public: resolve(REPO, `packages/client/public/vfx/packs/${name}`),
+  manifest: resolve(REPO, `packages/client/src/vfx/fx-pack-${name}.ts`),
+  manifestConst: `FX_${name.replace(/-/g, "_").toUpperCase()}`,
+  idPrefix: `fx-${name}`,
+  max: 220,
+  keep,
+  prompt: `Paint ONE wide image: the SEPARATED COMPONENTS of a video-game "${name}" effect, laid out like a
+sprite-sheet exploded view. Components (each its OWN island): ${list}. ${FX_STYLE}`,
+});
+PACKS["fx-nuke"] = fxPack("nuke", 11, `a blinding white-hot detonation CORE flash; a small rising MUSHROOM
+CLOUD (early, tight column); a large fully-bloomed MUSHROOM CLOUD with fire underlighting; an expanding
+white SHOCKWAVE RING seen top-down; a scorched black ground DISC with ember cracks; a curved DUST WALL arc;
+FOUR separate tumbling burnt DEBRIS chunks of different sizes; one drifting ash-smoke puff`);
+PACKS["fx-lightning-ball"] = fxPack("lightning-ball", 11, `a crackling plasma BALL core (white-cyan);
+a hollow electric SHOCK RING; THREE separate jagged ARC FILAMENTS of different lengths; SIX separate small
+electric SHRAPNEL sparks/shards flying (distinct shapes, clearly separated for individual animation);
+one fading afterglow wisp`);
+PACKS["fx-frost-nova"] = fxPack("frost-nova", 12, `a bursting ICE CORE (pale blue starburst); an expanding
+frost RING; SIX separate flying ICE SHARD shrapnel pieces of varied sizes; a ground FROST PATCH disc with
+crystalline edge; two drifting snow-mist puffs`);
+PACKS["fx-void-implosion"] = fxPack("void-implosion", 10, `a collapsing VOID CORE (black sphere rimmed in
+violet); an INVERTED ring pulling inward (visible directionality); FIVE separate obsidian-purple SHARD
+fragments; two thin void TENDRIL wisps; a faint distortion halo`);
+PACKS["fx-holy-smite"] = fxPack("holy-smite", 10, `a vertical PILLAR OF LIGHT segment (top-fading);
+a golden HALO ring; FOUR separate radiant gold SHARD slivers; three floating light MOTES; one soft feather`);
+PACKS["fx-toxic-burst"] = fxPack("toxic-burst", 11, `a bursting GAS CLOUD core (sickly green); two smaller
+separate gas puffs; FIVE separate flying GOO GLOB shrapnel drops with trails; a bubbling ground POOL disc;
+a small bubble cluster`);
+PACKS["fx-ember-eruption"] = fxPack("ember-eruption", 11, `an erupting MAGMA CORE burst; THREE separate
+arcing LAVA GOUT tongues; FIVE separate glowing EMBER CHUNK shrapnel rocks; a rising dark smoke column puff;
+a cracked ground GLOW disc`);
+PACKS["fx-storm-call"] = fxPack("storm-call", 10, `a dark STORM CLOUD puff (anvil-shaped, underlit);
+THREE separate jagged LIGHTNING BOLTS of different shapes (thick trunk to fine tip); a rain STREAK sheet
+patch; two wind SWIRL wisps; one distant flash glow`);
+PACKS["fx-buzzsaw-wake"] = fxPack("buzzsaw-wake", 10, `a circular spinning BLADE BLUR disc (motion-streaked
+rim); FOUR separate hot friction SPARK bursts; THREE separate torn ragged METAL SHARD pieces; a thin cut
+LINE streak; one small smoke wisp`);
+PACKS["fx-tide-crash"] = fxPack("tide-crash", 10, `a crashing WAVE CROWN splash (crown-shaped water burst);
+an expanding foam RING; FIVE separate flying water DROPLET globs with trails; a wet ground SLICK disc;
+one mist puff`);
+PACKS["fx-quake-burst"] = fxPack("quake-burst", 10, `an upheaved ROCK SLAB cluster core; FOUR separate
+tumbling STONE CHUNK shrapnel pieces; a radial ground CRACK STAR (top-down); an expanding dust RING;
+one dust plume puff`);
+PACKS["fx-grave-call"] = fxPack("grave-call", 10, `an eerie teal SOUL FLAME core; a ghostly expanding
+RING; FOUR separate flying BONE SHARD pieces; two drifting spirit WISP trails; a small tombstone-crack
+ground patch`);
+
+// §48 UI ICON + EMOTE packs (P2.3/P3.5) — small glyphs, same island extraction.
+const ICON_STYLE = `Style: crisp HD game UI ICONS, bold readable silhouettes at small sizes, thick dark
+outlines, subtle inner glow, consistent visual weight across all icons. Each icon a SEPARATE island with
+generous spacing, none touching each other or the frame. ENTIRE background FLAT PURE CHROMA GREEN #00ff00.
+No text, no numbers, no border.`;
+const iconPack = (name, keep, list) => ({
+  out: resolve(here, `out/icons-${name}`),
+  public: resolve(REPO, `packages/client/public/ui/icons/${name}`),
+  manifest: resolve(REPO, `packages/client/src/sprites/icon-manifest-${name}.ts`),
+  manifestConst: `ICONS_${name.replace(/-/g, "_").toUpperCase()}`,
+  idPrefix: `icon-${name}`,
+  max: 90,
+  keep,
+  prompt: `Paint ONE wide image: a SET of distinct video-game UI ICONS, exploded-view layout. Icons (one
+each): ${list}. ${ICON_STYLE}`,
+});
+PACKS["icons-stats"] = iconPack("stats", 10, `a flexing ARM (strength); a winged BOOT (dexterity); an
+arcane EYE (intelligence); a stout SHIELD-HEART (constitution); a four-leaf CLOVER die (luck); a plain
+LEVEL-UP chevron burst; a small XP crystal; a heart (health); a lightning charge (stamina); a skull (danger)`);
+PACKS["icons-classes"] = iconPack("classes", 9, `crossed SWORDS (melee class); a long RIFLE (ranged class);
+a glowing STAFF-ORB (caster class); a coin stack (scrip currency); a gear-wrench (salvage); an open HAND
+(grab); a downward arrow into a slot (drop); two curved arrows in a circle (swap); a padlock (locked)`);
+PACKS["icons-rarity"] = iconPack("rarity", 8, `SIX faceted GEMSTONES of identical cut but escalating
+splendor: plain grey stone, green peridot, blue sapphire, purple amethyst, orange fire-opal, radiant gold
+diamond with rays; plus a mystery QUESTION-MARK rune tile; a boss SKULL-CROWN sigil`);
+PACKS["emotes"] = iconPack("emotes", 8, `chunky comic-style co-op PING emotes: a sword pointing down
+(attack here); an exclamation mark (danger); a question mark (what); a raised open hand (wait); a boot
+with motion lines (retreat); a plus-cross (need healing); a treasure chest glint (loot here); a thumbs-up`);
+
 const packName = (process.argv.find((a) => a.startsWith("--pack=")) ?? "--pack=decals").split("=")[1];
 const PACK = PACKS[packName];
 if (!PACK) {
