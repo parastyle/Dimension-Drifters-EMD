@@ -18,7 +18,10 @@ import {
 import { createServer } from "node:http";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readAssignment, readAssignments, writeAssignment } from "./assignment-store.mjs";
 
+// assignments/<weapon-id>.json is the authoring source. The tracked assignments.json compatibility
+// aggregate is produced only by `pnpm weaponsmith:aggregate`, never by this save server.
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const REPO = resolve(ROOT, "..", "..");
 const ARTKIT = resolve(REPO, "tools", "artkit");
@@ -46,7 +49,6 @@ const VFX_RADIUS_DEFAULT = (() => {
     return 74;
   }
 })();
-const ASSIGN = join(ROOT, "assignments.json");
 const PUBLIC = join(ROOT, "public");
 const PORT = Number(process.env.PORT) || 5050;
 
@@ -206,9 +208,8 @@ function startReroll({ weaponId, prompt, candidates = 4 }) {
   if (prompt) sub.prompt = prompt;
   writeJSON(SUBJECTS_VFX, subs);
   // persist the mapping
-  const a = readJSON(ASSIGN, {});
-  a[weaponId] = { ...(a[weaponId] || {}), vfxSubject };
-  writeJSON(ASSIGN, a);
+  const assignment = { ...(readAssignment(weaponId) || {}), vfxSubject };
+  writeAssignment(weaponId, assignment);
 
   const id = `job${++jobSeq}`;
   const job = { id, weaponId, vfxSubject, status: "running", log: "", startedAt: Date.now() };
@@ -283,7 +284,7 @@ const server = createServer(async (req, res) => {
   try {
     // ---- API ----
     if (p === "/api/weapons") {
-      const a = readJSON(ASSIGN, {});
+      const assignments = readAssignments();
       return json(
         res,
         readWeapons().map((w) => {
@@ -292,7 +293,7 @@ const server = createServer(async (req, res) => {
             ...w,
             vfxSubject: vfx,
             candidateCount: listCandidates(vfx).length,
-            assigned: a[w.id] || null,
+            assigned: assignments[w.id] || null,
           };
         }),
       );
@@ -302,7 +303,7 @@ const server = createServer(async (req, res) => {
       const w = readWeapons().find((x) => x.id === id);
       if (!w) return json(res, { error: "unknown weapon" }, 404);
       const vfx = vfxSubjectFor(id);
-      const a = readJSON(ASSIGN, {});
+      const assignment = readAssignment(id);
       const ownArt = listCandidates(id); // the weapon's OWN sprite candidates (for the showcase)
       const cands = listCandidates(vfx); // painted-VFX candidates (empty until authored)
       // §14 V2: guns + casters are ENGINE-ONLY for now (no painted Codex VFX). Melee/launchers paint.
@@ -317,19 +318,19 @@ const server = createServer(async (req, res) => {
         engineOnly,
         paintedVfx,
         // Effective on-screen size (§10): a tool override wins, else the coded value, else a M default.
-        displayLength: a[id]?.displayLength ?? w.displayLength ?? 90,
+        displayLength: assignment?.displayLength ?? w.displayLength ?? 90,
         // Effective fixed VFX size (§14): tool override → coded value → calibrated default (74).
-        vfxRadius: a[id]?.vfxRadius ?? w.vfxRadius ?? VFX_RADIUS_DEFAULT,
+        vfxRadius: assignment?.vfxRadius ?? w.vfxRadius ?? VFX_RADIUS_DEFAULT,
         // §10 delivery: thrown (RMB hurls a spinning projectile) vs melee swing. Tool override wins,
         // else the coded value. Lets us mark explore weapons (e.g. Spike Driver) thrown before they're coded.
-        thrown: a[id]?.thrown ?? w.thrown ?? false,
+        thrown: assignment?.thrown ?? w.thrown ?? false,
         // Scatter-shot source (CODE-14): a dissected painted cluster → spritesheet (slice-scatter.mjs).
         // Present only when out/<vfx>/scatter/meta.json exists; the `magma-scatter` layer flings it.
         scatter: (() => {
           const m = readJSON(join(ARTKIT_OUT, vfx, "scatter", "meta.json"), null);
           return m ? { url: `/scatter/${vfx}/sheet.png`, ...m } : null;
         })(),
-        assigned: a[id] || null,
+        assigned: assignment,
       });
     }
     if (p === "/api/reroll" && req.method === "POST") {
@@ -350,63 +351,63 @@ const server = createServer(async (req, res) => {
     if (p === "/api/save" && req.method === "POST") {
       const b = await body(req);
       if (!b.weaponId) return json(res, { error: "weaponId required" }, 400);
-      const a = readJSON(ASSIGN, {});
-      a[b.weaponId] = {
-        ...(a[b.weaponId] || {}),
+      const previous = readAssignment(b.weaponId) || {};
+      const assignment = {
+        ...previous,
         vfxSubject: vfxSubjectFor(b.weaponId),
-        image: b.image ?? a[b.weaponId]?.image ?? null,
+        image: b.image ?? previous.image ?? null,
         // The toggleable layer SUITE: { <layerId>: { on, params } }.
-        suite: b.suite ?? a[b.weaponId]?.suite ?? null,
+        suite: b.suite ?? previous.suite ?? null,
         // VFX rotation in degrees (15° increments), applied to the whole composed effect.
-        rot: b.rot ?? a[b.weaponId]?.rot ?? 0,
+        rot: b.rot ?? previous.rot ?? 0,
         // §10 on-screen size (displayLength px). The canonical value for coded weapons lives in
         // weapons.ts; this is the tool's authored/override value (sync to weapons.ts when settled).
-        displayLength: b.displayLength ?? a[b.weaponId]?.displayLength ?? undefined,
+        displayLength: b.displayLength ?? previous.displayLength ?? undefined,
         // §14 fixed VFX size (px). undefined = inherit the coded value / default.
-        vfxRadius: b.vfxRadius ?? a[b.weaponId]?.vfxRadius ?? undefined,
+        vfxRadius: b.vfxRadius ?? previous.vfxRadius ?? undefined,
         // §10 delivery override (thrown vs melee). undefined = inherit the coded value.
-        thrown: b.thrown ?? a[b.weaponId]?.thrown ?? undefined,
+        thrown: b.thrown ?? previous.thrown ?? undefined,
         // §14 authored VFX ORIGIN — a {x,y} px offset (from the weapon/player anchor) where this weapon's
         // VFX spawns, mouse-placed in the smith. undefined = the default anchor (no offset).
-        vfxOrigin: b.vfxOrigin ?? a[b.weaponId]?.vfxOrigin ?? undefined,
+        vfxOrigin: b.vfxOrigin ?? previous.vfxOrigin ?? undefined,
         // §14 when true the VFX spawns at the IN-GAME CURSOR (clamped), like the greatsword quake, instead
         // of at the weapon anchor. undefined/false = anchor-spawn.
-        spawnAtCursor: b.spawnAtCursor ?? a[b.weaponId]?.spawnAtCursor ?? undefined,
-        notes: b.notes ?? a[b.weaponId]?.notes ?? "",
+        spawnAtCursor: b.spawnAtCursor ?? previous.spawnAtCursor ?? undefined,
+        notes: b.notes ?? previous.notes ?? "",
         updatedAt: new Date().toISOString().slice(0, 19),
       };
-      writeJSON(ASSIGN, a);
-      return json(res, { ok: true, assigned: a[b.weaponId] });
+      writeAssignment(b.weaponId, assignment);
+      return json(res, { ok: true, assigned: assignment });
     }
     // ---- V2 authoring: the user's two prompts (painted / engine) + per-panel edit notes. Saved so
     // Claude can read them, audit the painted prompt, generate, and build the engine VFX. ----
     if (p === "/api/author" && req.method === "POST") {
       const b = await body(req);
       if (!b.weaponId) return json(res, { error: "weaponId required" }, 400);
-      const a = readJSON(ASSIGN, {});
-      const prev = a[b.weaponId]?.author || {};
-      a[b.weaponId] = {
-        ...(a[b.weaponId] || {}),
+      const previous = readAssignment(b.weaponId) || {};
+      const previousAuthor = previous.author || {};
+      const assignment = {
+        ...previous,
         // Living "what the weapon does" description (§24 abilities). Claude keeps it current as it builds
         // behavior; the user can edit it to refine/request. Top-level (an output doc, not a redo note).
-        description: b.description ?? a[b.weaponId]?.description ?? "",
+        description: b.description ?? previous.description ?? "",
         author: {
-          painted: b.painted ?? prev.painted ?? "",
-          engine: b.engine ?? prev.engine ?? "",
+          painted: b.painted ?? previousAuthor.painted ?? "",
+          engine: b.engine ?? previousAuthor.engine ?? "",
           // Abilities/mechanics REQUEST in the user's words ("make the meteors explode") — Claude reads
           // this, implements the mechanic (weapons.ts behavior block + server resolve + VFX), updates the
           // description, then clears it. Disjoint from cosmetic `engine` VFX (v0.51 mechanics boundary).
-          mechanics: b.mechanics ?? prev.mechanics ?? "",
+          mechanics: b.mechanics ?? previousAuthor.mechanics ?? "",
           // per-panel redo notes: { painted, engine, combined }
-          edits: { ...(prev.edits || {}), ...(b.edits || {}) },
+          edits: { ...(previousAuthor.edits || {}), ...(b.edits || {}) },
           // 'pending' = the user hit Save & request and is waiting on Claude to act. Omitting it PRESERVES
           // the prior state (so a plain description-save doesn't clear a pending mechanics request).
-          pending: b.pending ?? prev.pending ?? false,
+          pending: b.pending ?? previousAuthor.pending ?? false,
           updatedAt: new Date().toISOString().slice(0, 19),
         },
       };
-      writeJSON(ASSIGN, a);
-      return json(res, { ok: true, author: a[b.weaponId].author });
+      writeAssignment(b.weaponId, assignment);
+      return json(res, { ok: true, author: assignment.author });
     }
     // ---- serve a chosen Codex candidate image ----
     if (p.startsWith("/art/")) {

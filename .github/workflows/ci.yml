@@ -22,12 +22,38 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
+      # Build shared exactly once. Its build is also its full TypeScript check; every downstream command
+      # reuses this dist instead of invoking the root wrappers that rebuild shared.
+      - run: pnpm --filter @dd/shared build
+      - run: pnpm --filter '!@dd/shared' --recursive typecheck
       - run: pnpm lint
       # H15: fail the build if a committed *.generated.ts drifted from its source data (edited the concepts,
       # forgot to re-run codegen). Plain `node` — the gated generators use only built-ins, no artkit install.
       - run: pnpm gen:check
       # Fail on manifest paths missing from public/ or non-expansion sprite parts missing from the packed atlas.
       - run: pnpm assets:check
-      - run: pnpm test
-      - run: pnpm build
+      - run: pnpm exec vitest run
+      # Desktop is deliberately excluded here because its Windows package has a native-runner
+      # smoke job below. Root `pnpm build` still includes desktop for local/release builds.
+      - name: Build non-desktop workspaces
+        run: pnpm --filter '!@dd/shared' --filter '!@dd/desktop' --recursive build
+
+  desktop-package-smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @dd/shared build
+      - run: pnpm --filter @dd/client build
+      - run: pnpm --filter @dd/desktop build
+      - run: pnpm --filter @dd/desktop package:assert

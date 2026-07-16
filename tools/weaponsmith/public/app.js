@@ -92,7 +92,7 @@ function pushRotAll() {
 }
 
 // Auto-presets are STRIPPED (V1 rethink): a weapon starts with NOTHING. Engine VFX exists only once
-// authored (Claude builds the suite from your engine prompt; saved into assignments.json).
+// authored (Claude builds the suite from your engine prompt; saved into assignments/<weapon-id>.json).
 function defaultSuite() {
   const suite = {};
   for (const [lid, layer] of Object.entries(window.VFXLAYERS.LAYERS)) {
