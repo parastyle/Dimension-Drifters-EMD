@@ -14,6 +14,9 @@ import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
 
 const DEG = Math.PI / 180;
 const DURATION = 470; // ms — one swing's VFX window (matches the smith's IMPACT+VFX_DUR feel)
+// Longest canonical emitter life is 900ms (embers top out at 880, scatter at 780). The authored draw
+// finishes at DURATION, but the surface must stay put + visible until this tail has died naturally.
+const PARTICLE_TAIL_MS = 900;
 
 // §35/§36 ELEMENT + ARCHETYPE-DRIVEN fallback VFX: the +300 expansion weapons carry no authored suite, so an
 // un-authored swing would otherwise look identical across all of them. Instead we synthesize a suite that
@@ -139,6 +142,9 @@ interface Surface {
   container: Phaser.GameObjects.Container;
   S: VfxSurface;
   busy: boolean;
+  generation: number;
+  activeTween?: Phaser.Tweens.Tween;
+  releaseEvent?: Phaser.Time.TimerEvent;
   scatterKey?: string;
 }
 
@@ -146,6 +152,7 @@ export class VfxPlayer {
   private readonly scene: Phaser.Scene;
   private readonly pool: Surface[] = [];
   private readonly cap = 12;
+  private stealCursor = 0;
   /** All VFX surfaces live under this container so ONE bloom filter glows every effect at once. */
   private readonly root: Phaser.GameObjects.Container;
 
@@ -200,11 +207,32 @@ export class VfxPlayer {
     }
   }
 
+  /** Stop every owner of a surface before reassigning it. Generation checks are still required: Phaser can
+   *  already have queued a completion callback in the same tick that a pressure-steal happens. */
+  private prepare(surf: Surface): Surface {
+    surf.generation++;
+    surf.activeTween?.stop();
+    surf.activeTween = undefined;
+    surf.releaseEvent?.remove(false);
+    surf.releaseEvent = undefined;
+    surf.S.gfxAdd?.clear();
+    (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
+    const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
+    for (const key of ["eSpark", "eEmber", "eSoftAdd", "eSoftNorm", "eStreak", "eScatter"])
+      emitters[key]?.killAll();
+    surf.container.setVisible(false);
+    surf.busy = true;
+    return surf;
+  }
+
   private acquire(): Surface {
     let surf = this.pool.find((p) => !p.busy);
     if (!surf) {
       if (this.pool.length >= this.cap) {
-        surf = this.pool[0] as Surface; // under pressure, steal the oldest (it just overdraws a frame)
+        // Pressure steals rotate through the pool; `prepare` fully cancels the old owner so no old counter
+        // can clear the new strike and no live ember/scatter can teleport to its reassigned container.
+        surf = this.pool[this.stealCursor % this.pool.length] as Surface;
+        this.stealCursor = (this.stealCursor + 1) % this.pool.length;
       } else {
         const container = this.scene.add.container(0, 0);
         this.root.add(container); // under the bloom root
@@ -220,11 +248,11 @@ export class VfxPlayer {
         container.add(heroImg);
         S.heroImg = heroImg;
         globalThis.VFXRENDER.attachSurface(this.scene, S);
-        surf = { container, S, busy: false };
+        surf = { container, S, busy: false, generation: 0 };
         this.pool.push(surf);
       }
     }
-    return surf;
+    return this.prepare(surf);
   }
 
   /** Fire a weapon's swing VFX at world (x,y), pointing toward `aimRad`. The VFX SIZE is the weapon's
@@ -242,7 +270,7 @@ export class VfxPlayer {
     if (!VR) return;
     const vfx: WeaponVfx | undefined = WEAPON_VFX[weaponId];
     const surf = this.acquire();
-    surf.busy = true;
+    const generation = surf.generation;
     const S = surf.S;
     // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
     // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
@@ -284,21 +312,33 @@ export class VfxPlayer {
       .setPosition(ox, oy)
       .setRotation(aimRad + (vfx?.rot ?? 0) * DEG)
       .setVisible(true);
-    this.scene.tweens.addCounter({
+    surf.activeTween = this.scene.tweens.addCounter({
       from: 0,
       to: 1,
       duration: DURATION,
       onUpdate: (tw) => {
+        if (surf.generation !== generation) return;
         const p = tw.getValue() ?? 0;
         S.gfxAdd?.clear();
         VR.renderHero(this.scene, S, p);
         VR.renderLayers(S, p, "all", 1);
       },
       onComplete: () => {
+        if (surf.generation !== generation) return;
+        surf.activeTween = undefined;
         S.gfxAdd?.clear();
         (S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
-        surf.container.setVisible(false);
-        surf.busy = false;
+        // Graphics/hero are done, but hiding or releasing the container here chops the authored particle
+        // tail. Keep it stable until the longest emitter expires; a pressure steal cancels this timer + kills.
+        surf.releaseEvent = this.scene.time.delayedCall(PARTICLE_TAIL_MS, () => {
+          if (surf.generation !== generation) return;
+          surf.releaseEvent = undefined;
+          const emitters = S as unknown as Record<string, { killAll(): unknown } | undefined>;
+          for (const key of ["eSpark", "eEmber", "eSoftAdd", "eSoftNorm", "eStreak", "eScatter"])
+            emitters[key]?.killAll();
+          surf.container.setVisible(false);
+          surf.busy = false;
+        });
       },
     });
   }

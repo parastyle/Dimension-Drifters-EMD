@@ -551,19 +551,34 @@ export function spawnQuakeProcedural(
   shakeVia(scene, 220, 0.012);
 }
 
-/** §19 v0.108 floating combat text — MAGNITUDE-DRIVEN so hits read as weak vs crushing. Size + color +
- *  travel scale with the number, and the top band gets a BIG-HIT pop (overshoot-in from 1.6× + a longer
- *  rise + a red-stroked white-hot tint). Purely cosmetic off a number the client already has — no balance
- *  change. A small x-jitter fans rapid hits so they don't stack into an unreadable pillar. */
-export function spawnDamageNumber(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  amount: number,
-  crit = false,
-): void {
+interface DamageNumberEntry {
+  text: Phaser.GameObjects.Text;
+  generation: number;
+  amount: number;
+  crit: boolean;
+}
+
+interface DamageNumberPool {
+  free: DamageNumberEntry[];
+  frame: number;
+  sameFrame: Map<string, DamageNumberEntry>;
+}
+
+const DAMAGE_NUMBER_POOLS = new WeakMap<Phaser.Scene, DamageNumberPool>();
+
+function damageNumberPool(scene: Phaser.Scene): DamageNumberPool {
+  let pool = DAMAGE_NUMBER_POOLS.get(scene);
+  if (pool) return pool;
+  pool = { free: [], frame: -1, sameFrame: new Map() };
+  DAMAGE_NUMBER_POOLS.set(scene, pool);
+  // Phaser reuses Scene instances: never retain destroyed Text from the old display list across a restart.
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => DAMAGE_NUMBER_POOLS.delete(scene));
+  return pool;
+}
+
+/** Apply the original magnitude/crit bands to a pooled label; returns whether it gets the big-hit pop. */
+function styleDamageNumber(text: Phaser.GameObjects.Text, amount: number, crit: boolean): boolean {
   const dmg = Math.max(1, Math.round(amount));
-  // Bands: chip / normal / heavy / crushing.
   let size = 13;
   let color = "#d9b45a";
   let stroke: string | undefined;
@@ -578,29 +593,72 @@ export function spawnDamageNumber(
     size = 17;
     color = "#ffe08a";
   }
-  // §30 CRIT overrides the band: a bold GOLD number with an amber stroke + a bang, always large — a crit
-  // reads instantly as a spike regardless of the raw amount.
   if (crit) {
     size = Math.max(size, 30);
     color = "#ffe27a";
     stroke = "#ff9e2c";
   }
-  const big = dmg >= 40 || crit;
-  const jx = (Math.random() - 0.5) * 12;
-  const style: Phaser.Types.GameObjects.Text.TextStyle = {
-    fontSize: `${size}px`,
-    color,
-    fontStyle: "bold",
-  };
-  if (stroke) {
-    style.stroke = stroke;
-    style.strokeThickness = crit ? 4 : 3;
+  text
+    .setText(crit ? `${dmg}!` : String(dmg))
+    .setFontSize(size)
+    .setColor(color)
+    .setFontStyle("bold")
+    .setStroke(stroke ?? color, stroke ? (crit ? 4 : 3) : 0);
+  return dmg >= 40 || crit;
+}
+
+/** §19 v0.108 floating combat text — same magnitude-driven look, now pooled and same-frame aggregated by
+ *  enemy key. `aggregateKey` is optional for non-enemy callers; Arena passes the stable enemy id. */
+export function spawnDamageNumber(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  amount: number,
+  crit = false,
+  aggregateKey?: string,
+): void {
+  const pool = damageNumberPool(scene);
+  const frame = scene.game.loop.frame;
+  if (pool.frame !== frame) {
+    pool.frame = frame;
+    pool.sameFrame.clear();
   }
-  const text = scene.add
-    .text(x + jx, y, crit ? `${dmg}!` : String(dmg), style)
-    .setOrigin(0.5)
-    .setDepth(100000);
-  if (big) text.setScale(crit ? 1.9 : 1.6);
+  const existing = aggregateKey ? pool.sameFrame.get(aggregateKey) : undefined;
+  if (existing) {
+    // Multiple damage sources collapsed into one server patch read as their combined result, never a stack
+    // of Text canvases for the same enemy in the same render frame. Crit styling wins if any source crit.
+    existing.amount += amount;
+    existing.crit ||= crit;
+    const big = styleDamageNumber(existing.text, existing.amount, existing.crit);
+    if (big) existing.text.setScale(existing.crit ? 1.9 : 1.6);
+    return;
+  }
+
+  const entry =
+    pool.free.pop() ??
+    ({
+      text: scene.add
+        .text(0, 0, "", { fontSize: "13px", fontStyle: "bold" })
+        .setOrigin(0.5)
+        .setDepth(100000),
+      generation: 0,
+      amount: 0,
+      crit: false,
+    } satisfies DamageNumberEntry);
+  entry.generation++;
+  entry.amount = amount;
+  entry.crit = crit;
+  if (aggregateKey) pool.sameFrame.set(aggregateKey, entry);
+  const generation = entry.generation;
+  const text = entry.text;
+  const big = styleDamageNumber(text, amount, crit);
+  const jx = (Math.random() - 0.5) * 12;
+  text
+    .setActive(true)
+    .setVisible(true)
+    .setPosition(x + jx, y)
+    .setAlpha(1)
+    .setScale(big ? (crit ? 1.9 : 1.6) : 1);
   scene.tweens.add({
     targets: text,
     scale: 1,
@@ -608,13 +666,18 @@ export function spawnDamageNumber(
     duration: big ? 140 : 120,
     ease: "Back.easeOut",
     onComplete: () => {
+      if (entry.generation !== generation) return;
       scene.tweens.add({
         targets: text,
         y: text.y - 14,
         alpha: 0,
         duration: big ? 620 : 480,
         ease: "Cubic.easeOut",
-        onComplete: () => text.destroy(),
+        onComplete: () => {
+          if (entry.generation !== generation) return;
+          text.setActive(false).setVisible(false);
+          pool.free.push(entry);
+        },
       });
     },
   });

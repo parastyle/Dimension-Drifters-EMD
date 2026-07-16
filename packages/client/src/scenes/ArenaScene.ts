@@ -127,6 +127,11 @@ import {
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
 
+// §6 horde-hit object budget: ordinary combat stays bit-for-bit on the full path; a single-frame AoE storm
+// gets ten authored contact stacks and at most 24 pooled labels, while every remaining target still flashes.
+const HIT_VFX_BUDGET = 10;
+const DAMAGE_NUMBER_BUDGET = 24;
+
 /** §29 belt-scroller render tuning. FORESHORTEN compresses the world DEPTH band onto the screen plane (a
  *  shallow ¾ view). BELT_VIEW_H = the visible world-height the camera fits (band + sky + lip). BELT_SKY =
  *  world px of sky above the band top. All client-only presentation. */
@@ -368,6 +373,9 @@ export class ArenaScene extends Phaser.Scene {
   private readonly enemyHp = new Map<string, number>();
   /** §30 last-seen crit-flash counter per enemy — a change (with an hp drop) means this hit CRIT. */
   private readonly enemyCrit = new Map<string, number>();
+  private hitVfxSpent = 0;
+  private damageNumbersSpent = 0;
+  private readonly damageNumberEnemies = new Set<string>();
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
@@ -3957,6 +3965,16 @@ export class ArenaScene extends Phaser.Scene {
    *  local player hp drops → flash + screen shake (§20 game-feel from day one). */
   private updateCombatFx(): void {
     if (!this.room) return;
+    this.hitVfxSpent = 0;
+    this.damageNumbersSpent = 0;
+    this.damageNumberEnemies.clear();
+    const hits: Array<{
+      id: string;
+      rig: SpriteRig;
+      dmg: number;
+      crit: boolean;
+      visible: boolean;
+    }> = [];
     this.room.state.enemies.forEach((enemy, id) => {
       const prev = this.enemyHp.get(id);
       if (prev !== undefined && enemy.hp < prev) {
@@ -3966,44 +3984,62 @@ export class ArenaScene extends Phaser.Scene {
           // §30 CRIT: the synced critFlash counter ticked this frame → this hit was a critical. Gold number,
           // a gold flash, extra hit-stop + a shock ring — a crit lands with weight even on a small number.
           const crit = (this.enemyCrit.get(id) ?? enemy.critFlash) !== enemy.critFlash;
-          const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
-          rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff);
-          spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit);
-          this.audio.play(crit || big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
-          // §36 directional contact spark — thrown along the blow vector (nearest live player-rig → enemy,
-          // both in the SAME render space so it's correct in belt mode too). Every hit gets steel-bite; the
-          // heavier RING/stinger stay gated to the crunch below.
-          let bx = rig.x - 100;
-          let by = rig.y;
-          let best = Number.POSITIVE_INFINITY;
-          let nearestId = "";
-          this.blobs.forEach((b, bid) => {
-            const d = (rig.x - b.x) ** 2 + (rig.y - b.y) ** 2;
-            if (d < best) {
-              best = d;
-              bx = b.x;
-              by = b.y;
-              nearestId = bid;
-            }
-          });
-          // Tint by the LOCAL weapon's element when the nearest rig is us (the client only knows its own
-          // equipped element) — a fire build sparks orange, a frost build cyan. Others/unknown → steel.
-          let tint = 0xfff2c0;
-          let hitEl: string | undefined;
-          if (nearestId === this.room?.sessionId) {
-            const selfRow = this.room?.state.players.get(nearestId);
-            hitEl = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
-            tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
-          }
-          this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
-          if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
-          if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
-          if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
+          hits.push({ id, rig, dmg, crit, visible: this.cameras.main.worldView.contains(rig.x, rig.y) });
         }
       }
       this.enemyHp.set(id, enemy.hp);
       this.enemyCrit.set(id, enemy.critFlash);
     });
+    // Only horde-scale frames reorder: on-camera hits spend the finite full-stack + label budgets before
+    // invisible enemies. Stable sort preserves authoritative iteration order within each visibility band.
+    if (hits.length > HIT_VFX_BUDGET) hits.sort((a, b) => Number(b.visible) - Number(a.visible));
+    for (const { id, rig, dmg, crit } of hits) {
+      const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
+      rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff); // zero-allocation degraded path
+      // `prev - hp` already aggregates every source delivered in this patch; the key is a defensive one-label
+      // guard if another hit call site joins this frame. Off-screen labels lose the stable-sort budget first.
+      if (
+        this.damageNumbersSpent < DAMAGE_NUMBER_BUDGET &&
+        !this.damageNumberEnemies.has(id)
+      ) {
+        this.damageNumberEnemies.add(id);
+        this.damageNumbersSpent++;
+        spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit, id);
+      }
+      const fullFx = this.hitVfxSpent < HIT_VFX_BUDGET;
+      if (!fullFx) continue; // flash + optional pooled number only: no painted Images/rects/rings/tweens
+      this.hitVfxSpent++;
+      this.audio.play(crit || big ? "bighit" : "hit", { x: rig.x, amt: Math.min(1, dmg / 45) });
+      // §36 directional contact spark — thrown along the blow vector (nearest live player-rig → enemy,
+      // both in the SAME render space so it's correct in belt mode too). Every hit gets steel-bite; the
+      // heavier RING/stinger stay gated to the crunch below.
+      let bx = rig.x - 100;
+      let by = rig.y;
+      let best = Number.POSITIVE_INFINITY;
+      let nearestId = "";
+      this.blobs.forEach((b, bid) => {
+        const d = (rig.x - b.x) ** 2 + (rig.y - b.y) ** 2;
+        if (d < best) {
+          best = d;
+          bx = b.x;
+          by = b.y;
+          nearestId = bid;
+        }
+      });
+      // Tint by the LOCAL weapon's element when the nearest rig is us (the client only knows its own
+      // equipped element) — a fire build sparks orange, a frost build cyan. Others/unknown → steel.
+      let tint = 0xfff2c0;
+      let hitEl: string | undefined;
+      if (nearestId === this.room?.sessionId) {
+        const selfRow = this.room?.state.players.get(nearestId);
+        hitEl = selfRow ? WEAPONS[selfRow.weapon]?.tags?.element : undefined;
+        tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
+      }
+      this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
+      if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
+      if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
+      if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
+    }
 
     // §8 successful-parry flash (Stage C): a white burst when ANY player parries a telegraphed attack;
     // the LOCAL player's parry cooldown refreshes (§8 flow) so they can immediately parry the next swing.
