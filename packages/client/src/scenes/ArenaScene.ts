@@ -4126,7 +4126,7 @@ export class ArenaScene extends Phaser.Scene {
   private prepareLevelCard(
     root: Phaser.GameObjects.Container,
     face: Phaser.GameObjects.Rectangle,
-    zone: Phaser.GameObjects.Zone,
+    zone: Phaser.GameObjects.Rectangle, // §50 scene-level hit rect (was a Zone-in-container — see P0 fix)
     index: number,
     side: number,
     send: () => void,
@@ -4241,17 +4241,23 @@ export class ArenaScene extends Phaser.Scene {
       name.setPosition(0, -38);
       tag.setPosition(0, -14);
       desc.setPosition(0, 28);
+      // §50 P0 FIX: a Zone INSIDE a scrollFactor(0) container hit-tests in WORLD space while the card
+      // renders in SCREEN space — clicks only landed when the camera sat at the origin (the menu), never
+      // mid-run. Screen-space UI input must live at SCENE level: an invisible scrollFactor(0) rect at the
+      // card's fixed screen position carries the input and drives the container's fold/hover animation.
       const zone = this.add
-        .zone(0, 0, W, H)
+        .rectangle(x, cy + 30, W, H, 0xffffff, 0.001)
+        .setScrollFactor(0)
+        .setDepth(100013)
         .setInteractive({ useHandCursor: true });
       const root = this.add
-        .container(x, cy + 30, [card, icon, name, tag, desc, zone])
+        .container(x, cy + 30, [card, icon, name, tag, desc])
         .setScrollFactor(0)
         .setDepth(100011);
       this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
         this.room?.send("chooseAugment", { id }),
       );
-      this.levelWinObjects.push(root);
+      this.levelWinObjects.push(root, zone);
     });
   }
 
@@ -4309,17 +4315,21 @@ export class ArenaScene extends Phaser.Scene {
       name.setPosition(0, -64);
       val.setPosition(0, -26);
       desc.setPosition(0, 18);
+      // §50 P0 FIX: scene-level hit rect (see buildAugmentWindow) — zone-in-scrollFactor(0)-container
+      // hit-tests in world space and never matched the screen-space card once the camera scrolled.
       const zone = this.add
-        .zone(0, 0, W, H)
+        .rectangle(x, cy + 30, W, H, 0xffffff, 0.001)
+        .setScrollFactor(0)
+        .setDepth(100013)
         .setInteractive({ useHandCursor: true });
       const root = this.add
-        .container(x, cy + 30, [card, name, val, desc, zone])
+        .container(x, cy + 30, [card, name, val, desc])
         .setScrollFactor(0)
         .setDepth(100011);
       this.prepareLevelCard(root, card, zone, i, x < cx ? -1 : 1, () =>
         this.room?.send("chooseAttribute", { attr }),
       );
-      this.levelWinObjects.push(root);
+      this.levelWinObjects.push(root, zone);
     });
   }
 

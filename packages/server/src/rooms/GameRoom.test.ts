@@ -2348,3 +2348,40 @@ describe("GameRoom — audit sync privacy and churn regressions", () => {
     expect(enemy.branded).toBe(0);
   });
 });
+
+// §50 WHIRLWIND per-revolution damage (playtest: a held spin "blink hit" enemies once per press despite
+// the blade sweeping 4π). Each completed 2π re-arms the swing's hit-once set server-side.
+describe("GameRoom — §50 spin re-hits per revolution", () => {
+  it("ONE whirlwind press (4π sweep) dips a pinned enemy at least twice", () => {
+    const h = makeRoom();
+    h.join("p1");
+    h.send("p1", "toggleTraining");
+    h.tick(1);
+    const p = h.state().players.get("p1");
+    p.weapon = "x-sword-whirlwind";
+    h.tick(1);
+    h.room.map.pois.length = 0;
+    h.send("p1", "debugSpawn", { kind: "ronin", count: 1 });
+    h.tick(1);
+    const found = [...h.state().enemies.entries()].find(
+      ([, e]: [string, { kind: string }]) => e.kind === "ronin",
+    ) as [string, { x: number; y: number; hp: number }];
+    const [rid, r] = found;
+    r.hp = 100000;
+    let dips = 0;
+    let lastHp = r.hp;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 100, ty: p.y });
+    for (let t = 0; t < 24; t++) {
+      h.tick(1);
+      const e = h.state().enemies.get(rid);
+      if (!e) break;
+      e.x = p.x + 80;
+      e.y = p.y;
+      if (e.hp < lastHp) {
+        dips++;
+        lastHp = e.hp;
+      }
+    }
+    expect(dips).toBeGreaterThanOrEqual(2);
+  });
+});

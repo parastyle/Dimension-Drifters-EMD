@@ -2414,6 +2414,15 @@ export class GameRoom extends Room<ArenaState> {
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
       }
+      // §50 SPIN weapons sweep MULTIPLE revolutions per swing (whirlwind swingArc = 4π), but hit-once
+      // spanned the whole swing — a held whirlwind "blink hit" each enemy once per press despite the blade
+      // visibly crossing them every turn (playtest). WYSIWYG: each completed 2π re-arms the hit set, so
+      // every revolution the blade actually sweeps through an enemy damages it again.
+      if (sw.swingArc > Math.PI * 2 + 1e-6) {
+        const rev0 = Math.floor((sw.swingArc * p0) / (Math.PI * 2));
+        const rev1 = Math.floor((sw.swingArc * p1) / (Math.PI * 2));
+        if (rev1 > rev0) sw.hit.clear();
+      }
       const steps = Math.max(1, Math.ceil((sw.swingArc * (p1 - p0)) / MELEE_SAMPLE_STEP));
       const wielder = { x: player.x, y: player.y };
       this.enemyGrid.queryRadius(

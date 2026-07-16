@@ -641,7 +641,10 @@
         );
       }
     },
-    "slash-arc": (S, g, p, o) => {
+    // §50 the LAST raw stroke: slash-arc survived the PER pass and read as the "white streak through the
+    // player" on reachy weapons (Drowned Anchor playtest). It now rides the same painted ribbon.
+    "slash-arc": (S, g, p, o) => renderPer(S, g, p, o, "blade"),
+    "slash-arc-legacy": (S, g, p, o) => {
       const sw = clamp01((p - 0.05) / 0.3);
       if (sw <= 0 || sw >= 1) return;
       const a0 = -1.2 + sw * 2.4;
