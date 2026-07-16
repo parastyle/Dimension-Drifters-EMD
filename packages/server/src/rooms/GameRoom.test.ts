@@ -812,6 +812,14 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     // Fire from far enough that the shell EXPIRES level with the dummy (muzzle reach ~90 + range 560),
     // offset 90px to the side — a plain bullet on that line never touches it, but the 130px blast where
     // the shell dies must catch it.
+    // §50 PIN both bodies to fixed mid-arena coordinates AND clear the RNG-placed landmarks: projectiles
+    // COLLIDE with POIs (stepProjectiles poiAt reflection), so a random map roll could park a landmark on
+    // the 650px firing line and kill the shell early — the source of this test's ~40% parallel-run flake
+    // (the per-run Math.random stream differs between full/isolated runs, so it looked scheduler-dependent).
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND); // pits are RNG too — the pinned spots must be solid
+    dummy.x = 2400;
+    dummy.y = 2400;
     p.x = dummy.x - 650;
     p.y = dummy.y + 90;
     h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 600, ty: p.y });
@@ -837,6 +845,11 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     if (!dummy) throw new Error("no training dummy");
     const hp0 = dummy.hp;
     // Shell expires ~muzzle reach + range 540 past spawn; 45px off the line, only the 60px blast reaches.
+    // §50 pinned geometry + cleared landmarks — same RNG flake class as the mortar test above.
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    dummy.x = 2400;
+    dummy.y = 2400;
     p.x = dummy.x - 630;
     p.y = dummy.y + 45;
     h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 600, ty: p.y });
