@@ -102,16 +102,17 @@ export interface BossEmitSink {
 }
 
 /** One in-flight cast: the telegraph rows shown during the windup + the payload to apply at resolve.
- *  `settled` = the windup finished and the payload fired; the rows LINGER one extra tick at full fill (t=1)
- *  so the client observes the completion before the rows vanish — that's how the client tells a real RESOLVE
- *  (fires the impact VFX) from a CANCEL (dispose on phase-change/death; the rows never reach t=1, no VFX). */
+ *  `settledBroadcastGeneration` = the windup finished and the payload fired; the rows LINGER at full fill
+ *  (t=1) until that generation has been broadcast so the client observes the completion before they vanish.
+ *  That's how the client tells a real RESOLVE (fires the impact VFX) from a CANCEL (dispose on phase-change/
+ *  death; the rows never reach t=1, no VFX). */
 interface PendingCast {
   ids: string[];
   plan: CastPlan;
   remaining: number;
   windup: number;
   addKind: string;
-  settled: boolean;
+  settledBroadcastGeneration: number | null;
 }
 
 /** Per-module runtime for the active phase. `fires` is a per-module trigger counter feeding rotation
@@ -158,6 +159,7 @@ export class BossController {
     depth: number,
     tick: number,
     sink: BossEmitSink,
+    broadcastGeneration = tick,
   ): number {
     const frac = this.maxHp > 0 ? boss.hp / this.maxHp : 1;
     const idx = this.selectPhase(frac);
@@ -176,8 +178,10 @@ export class BossController {
       const mod = phase.modules[i];
       if (!rt || !mod) continue;
       if (rt.pending) {
-        if (rt.pending.settled) {
-          // Lingered one tick at full fill so the client saw the completion — now clear the rows.
+        if (rt.pending.settledBroadcastGeneration !== null) {
+          // A newer generation means the settled t=1 row was included in the previous broadcast. Clear it
+          // now. Catch-up substeps share a generation, so they cannot coalesce settle + deletion pre-patch.
+          if (broadcastGeneration <= rt.pending.settledBroadcastGeneration) continue;
           for (const id of rt.pending.ids) sink.removeTelegraph(id);
           rt.pending = null;
           continue;
@@ -198,7 +202,7 @@ export class BossController {
             rt.pending = null;
           } else {
             this.applyPayload(rt.pending, dmgScale, sink);
-            rt.pending.settled = true; // KEEP the rows one more tick (removed above next tick)
+            rt.pending.settledBroadcastGeneration = broadcastGeneration;
           }
         }
         continue;
@@ -377,7 +381,7 @@ export class BossController {
         remaining: windup,
         windup,
         addKind: mod.addKind ?? "mote-swarm",
-        settled: false,
+        settledBroadcastGeneration: null,
       };
     } else {
       // No windup → no telegraph to linger; apply the payload immediately.
@@ -388,7 +392,7 @@ export class BossController {
           remaining: 0,
           windup: 0,
           addKind: mod.addKind ?? "mote-swarm",
-          settled: false,
+          settledBroadcastGeneration: null,
         },
         dmgScale,
         sink,

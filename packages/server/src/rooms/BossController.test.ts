@@ -370,3 +370,77 @@ describe("§36 dimension finale bosses — each level plays a distinct fight", (
     expect(new Set(kinds).size).toBe(kinds.length);
   });
 });
+
+// Integration harness for the GameRoom catch-up/broadcast boundary. Kept here with the controller lifecycle
+// tests so the regression directly pins the contract between BossController.step() and GameRoom.update().
+vi.mock("colyseus", () => {
+  class Room {
+    state: unknown;
+    clients: { sessionId: string }[] = [];
+    roomId = "test";
+    setState(s: unknown) {
+      this.state = s;
+    }
+    onMessage() {}
+    setSimulationInterval() {}
+    setPatchRate() {}
+    broadcast() {}
+    broadcastPatch() {}
+  }
+  return { Room, Client: class {} };
+});
+
+const { GameRoom: TelegraphTestRoom } = await import("./GameRoom.js");
+
+describe("BossController — settled telegraph broadcast retention", () => {
+  it("keeps t=1 through a multi-substep update broadcast, then deletes it on the next update", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: integration test intentionally injects private boss runtime.
+    const room = new TelegraphTestRoom() as any;
+    room.onMessage = () => {};
+    room.clients = [{ sessionId: "p1" }];
+    room.roomId = "telegraph-settle";
+    room.onCreate();
+    room.onJoin({ sessionId: "p1" });
+
+    const settleDef: BossDef = {
+      kind: "verkaln",
+      name: "Settle Test",
+      move: "stationary",
+      phases: [
+        {
+          hpAbove: 0,
+          modules: [
+            {
+              primitive: "landingZone",
+              cooldown: 99,
+              windup: 0.1,
+              params: { count: 1, radius: 100, damage: 0, knockback: 0, spread: 0 },
+            },
+          ],
+        },
+      ],
+    };
+    const liveBoss = boss(100);
+    room.state.enemies.set(liveBoss.id, liveBoss);
+    room.bossId = liveBoss.id;
+    room.bossSpawned = true;
+    room.bossController = new BossController(settleDef, liveBoss.hp, 1);
+
+    const broadcasts: { size: number; t?: number }[] = [];
+    room.broadcastPatch = () => {
+      const row = room.state.telegraphs.values().next().value;
+      broadcasts.push({ size: room.state.telegraphs.size, t: row?.t });
+    };
+
+    room.update(50); // trigger the 100ms windup
+    room.update(150); // three substeps: fill → settle → formerly delete, then one broadcast
+
+    expect(broadcasts.at(-1)).toEqual({ size: 1, t: 1 });
+    expect(room.state.telegraphs.size).toBe(1);
+    expect(room.state.telegraphs.values().next().value?.t).toBe(1);
+
+    room.update(50); // the preceding t=1 generation has now been broadcast
+    expect(room.state.telegraphs.size).toBe(0);
+    expect(broadcasts.at(-1)).toEqual({ size: 0, t: undefined });
+  });
+});

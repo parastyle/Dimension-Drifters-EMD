@@ -332,6 +332,9 @@ export class GameRoom extends Room<ArenaState> {
    *  Constructed in `spawnBoss` from the boss kind's `BossDef`; nulled on boss death. Runs the phase machine
    *  + telegraph windups deterministically. `null` while no boss is up. */
   private bossController: BossController | null = null;
+  /** Number of tick-locked patches that have completed. Catch-up substeps share this value so a boss
+   *  telegraph settled during the batch cannot be removed before its t=1 state is broadcast. */
+  private broadcastGeneration = 0;
   /** §16 v0.109 monotonic id source for synced telegraph rows (`tg{n}`). */
   private telegraphSeq = 0;
   /** §16 v0.109 ids of adds the boss summoned — so the add-cap counts only boss adds, not the horde. Pruned
@@ -1652,7 +1655,10 @@ export class GameRoom extends Room<ArenaState> {
     // §7 v0.105 de-clunk: broadcast tick-locked (patchRate is 0 — see onCreate), once per batch, so fresh
     // results never wait on a drifting second timer. Every sub-step bumps `state.tick`, so there is always
     // a change to send — the owning client's reconcile cadence is guaranteed.
-    if (stepped) this.broadcastPatch();
+    if (stepped) {
+      this.broadcastPatch();
+      this.broadcastGeneration++;
+    }
   }
 
   /** One EXACT 50ms authoritative sub-step. The hand-numbered phase order is a CONTRACT (golden test). */
@@ -2500,6 +2506,7 @@ export class GameRoom extends Room<ArenaState> {
       this.state.depth,
       this.state.tick,
       this.bossSink,
+      this.broadcastGeneration,
     );
     this.updateEnemyGrid(this.bossId, boss);
   }
