@@ -99,6 +99,7 @@ import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
+import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
 import { type LevelUpMode, levelUpLayout, levelUpLayoutKey } from "../ui/level-up-layout.js";
 import {
@@ -641,6 +642,10 @@ export class ArenaScene extends Phaser.Scene {
   private readonly lastParried = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
   private readonly lastRevived = new Map<string, number>();
+  /** Last routed authoritative attack edge/latch per session. Local edges confirm prediction; remote edges
+   *  start the owning rig against the delayed server-tick render timeline. */
+  private readonly lastAttackSeq = new Map<string, number>();
+  private readonly lastAttackHeld = new Map<string, boolean>();
   /** §16 v0.109 last-seen geometry of each synced telegraph row, so when a row is REMOVED (the attack
    *  resolved) we can edge-fire its impact VFX from the cached shape even though the row is already gone
    *  from state. Keyed by telegraph id; pruned as rows vanish. */
@@ -811,6 +816,9 @@ export class ArenaScene extends Phaser.Scene {
   private prevSelfHp = -1;
   private lastHurt = 0;
   private localAtkCd = 0;
+  /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
+   *  below this contiguous high-water mark must not restart the local rig/tome page. */
+  private localPredictedAttackSeq = 0;
   private localParryCd = 0;
   /** §8 v0.114 PARRY COMBO — client-inferred chain counter for the local drifter (no synced field): each
    *  own-parry within `PARRY_CHAIN_WINDOW` of the last bumps `parryChain`; a lapse resets it. Drives the
@@ -866,6 +874,10 @@ export class ArenaScene extends Phaser.Scene {
   /** §13 v0.104 sprites whose lazy-load FAILED (missing on disk / 404) — equip falls through to empty
    *  hands instead of retrying forever with an invisible weapon (adversarial-verify hardening). */
   private readonly failedArt = new Set<string>();
+  /** Open-tome companions are optional loose textures and have an independent lazy-load lifetime: closed
+   *  weapon parts remain usable if an `open.png` is missing or still decoding. */
+  private readonly pendingTomeArt = new Set<string>();
+  private readonly failedTomeArt = new Set<string>();
   /** §17 optional terrain/prop files that failed to load — skip/fall back and never retry every frame. */
   private readonly floorArtMissing = new Set<string>();
   /** §17 last-seen `fellSeq` per player — fire the fall VFX (dust poof + a local red flash) when it ticks. */
@@ -1177,6 +1189,8 @@ export class ArenaScene extends Phaser.Scene {
     this.closingPickups.clear();
     this.lastParried.clear();
     this.lastRevived.clear();
+    this.lastAttackSeq.clear();
+    this.lastAttackHeld.clear();
     this.telegraphCache.clear();
     this.telegraphForeshadows?.clear();
     this.enemyWindup.clear();
@@ -1196,7 +1210,8 @@ export class ArenaScene extends Phaser.Scene {
     this.xpReceiptBatches.clear();
     this.lastFell.clear();
     this.pendingArt.clear();
-    // `failedArt` and `floorArtMissing` deliberately follow Phaser's game-wide texture cache, not a run.
+    this.pendingTomeArt.clear();
+    // Failed/missing-art sets deliberately follow Phaser's game-wide texture cache, not a run.
 
     // Display-object/UI pools and handles. The previous objects are already destroyed by Phaser.
     this.poiSprites = [];
@@ -1298,6 +1313,7 @@ export class ArenaScene extends Phaser.Scene {
     this.prevSelfHp = -1;
     this.lastHurt = 0;
     this.localAtkCd = 0;
+    this.localPredictedAttackSeq = 0;
     this.localParryCd = 0;
     this.parryChain = 0;
     this.parryChainAt = 0;
@@ -1980,6 +1996,27 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Make each player rig hold the weapon its authoritative state says it has (re-equip on change). */
+  /** Queue an optional painted open-book companion without making closed weapon readiness depend on it. */
+  private ensureTomeOpenArt(spriteId: string): void {
+    const art = tomeOpenArtFor(spriteId);
+    if (
+      !art ||
+      this.textures.exists(art.textureKey) ||
+      this.failedTomeArt.has(spriteId) ||
+      this.pendingTomeArt.has(spriteId)
+    )
+      return;
+    this.pendingTomeArt.add(spriteId);
+    this.load.image(art.textureKey, art.url);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.pendingTomeArt.delete(spriteId);
+      if (!this.textures.exists(art.textureKey)) {
+        this.failedTomeArt.add(spriteId);
+        console.warn(`[dd] optional open tome art failed to lazy-load: ${spriteId}`);
+      }
+    });
+  }
+
   /** §13 v0.104 lazy-load a weapon's sliced parts at RUNTIME (the +300 expansion arsenal is not
    *  boot-loaded — a mystery drop is the first time the client learns it needs this art). Returns true
    *  when the art is ready; false while the load is in flight (caller retries next frame — equipWeapons
@@ -1990,13 +2027,19 @@ export class ArenaScene extends Phaser.Scene {
     const first = manifest.parts[0];
     if (!first) return false;
     const tx = partTexture(this, spriteId, first.role);
-    if (this.textures.exists(tx.key)) return true;
+    if (this.textures.exists(tx.key)) {
+      const wasPending = this.pendingTomeArt.has(spriteId);
+      this.ensureTomeOpenArt(spriteId);
+      if (!wasPending && this.pendingTomeArt.has(spriteId)) this.load.start();
+      return true;
+    }
     if (this.failedArt.has(spriteId)) return false; // 404'd — don't retry forever
     if (!this.pendingArt.has(spriteId)) {
       this.pendingArt.add(spriteId);
       for (const part of manifest.parts) {
         this.load.image(`${spriteId}:${part.role}`, `sprites/${spriteId}/${part.file}`);
       }
+      this.ensureTomeOpenArt(spriteId);
       // A missing file (packaging drift) must not stall the equip loop forever: mark the sprite FAILED so
       // equipWeapons falls through to empty hands (the weapon still works — it's just not drawn in hand).
       this.load.once(Phaser.Loader.Events.COMPLETE, () => {
@@ -2031,12 +2074,88 @@ export class ArenaScene extends Phaser.Scene {
           return;
         }
         rig.equipWeapon(spriteId, def, manifest);
+        rig.setAttackBeat(
+          player.attackSeq,
+          player.attackHeld,
+          this.attackClientEpoch(player.attackTick, id !== this.room?.sessionId),
+        );
         this.equipped.set(id, player.weapon);
       } else if (def) {
         rig.unequip(def); // §9 fists / missing-art fallback / no held sprite → empty hands
         this.equipped.set(id, player.weapon);
       }
     });
+  }
+
+  /** Invert the existing delayed server-timeline mapper so an authoritative tick becomes a scene-clock
+   *  epoch. Remote poses deliberately include INTERP_DELAY_MS: their attack meets the interpolated body at
+   *  the same rendered tick. The rare unpredicted local fallback removes that delay. */
+  private attackClientEpoch(attackTick: number, remote: boolean): number {
+    const now = this.time.now;
+    if (!this.timeline.ready) return now;
+    const epoch = now + attackTick * TICK_MS - this.timeline.renderTime(now);
+    return remote ? epoch : epoch - INTERP_DELAY_MS;
+  }
+
+  /** Route each accepted player attack exactly once. The owner predicts first and consumes its synced edge
+   *  as confirmation; observers reconstruct the immutable descriptor from synced weapon/affix and start the
+   *  remote rig on the mapped acceptance epoch. */
+  private routePlayerAttacks(): void {
+    const room = this.room;
+    if (!room) return;
+    const selfId = room.sessionId;
+    room.state.players.forEach((player, id) => {
+      const rig = this.blobs.get(id);
+      if (!rig) return;
+      const seq = player.attackSeq >>> 0;
+      const previous = this.lastAttackSeq.get(id);
+      const previousHeld = this.lastAttackHeld.get(id);
+      const remote = id !== selfId;
+
+      if (previous === undefined) {
+        this.lastAttackSeq.set(id, seq);
+        this.lastAttackHeld.set(id, player.attackHeld);
+        if (!remote) this.localPredictedAttackSeq = seq;
+        const epoch = this.attackClientEpoch(player.attackTick, remote);
+        rig.setAttackBeat(seq, player.attackHeld, epoch);
+        // A join can land inside the short authoritative latch. Let a newly-observed remote catch up to the
+        // live pose, but never manufacture a second owner swing on scene attach.
+        if (!remote || !player.attackHeld || seq === 0) return;
+        this.triggerAcceptedRigAttack(rig, player, epoch);
+        return;
+      }
+
+      const seqChanged = previous !== seq;
+      const heldChanged = previousHeld !== player.attackHeld;
+      if (!seqChanged && !heldChanged) return;
+      this.lastAttackHeld.set(id, player.attackHeld);
+      const epoch = this.attackClientEpoch(player.attackTick, remote);
+      rig.setAttackBeat(seq, player.attackHeld, epoch);
+      if (!seqChanged) return;
+      this.lastAttackSeq.set(id, seq);
+
+      if (!remote) {
+        const confirmed = (seq - previous) >>> 0;
+        const predicted = (this.localPredictedAttackSeq - previous) >>> 0;
+        const predictionCovers = confirmed > 0 && predicted < 0x80000000 && confirmed <= predicted;
+        if (predictionCovers) return;
+        // This can happen after reconnect/state bootstrap or if another local action path lacked prediction.
+        this.localPredictedAttackSeq = seq;
+      }
+      this.triggerAcceptedRigAttack(rig, player, epoch);
+    });
+  }
+
+  private triggerAcceptedRigAttack(rig: SpriteRig, player: PlayerState, epoch: number): void {
+    const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+    // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
+    // this descriptor path, including the authoritative affix-adjusted cadence.
+    if (!weapon || weapon.gun) return;
+    const swing = swingDescriptorFor(
+      weapon,
+      weapon.cooldown * lootCooldownMult(player.weaponAffix),
+    );
+    rig.triggerSwing(epoch, player.aimDir, swing);
   }
 
   /** Curated world-only capture list: HUD and exact telegraphs remain live above the folding sheet. */
@@ -2526,6 +2645,8 @@ export class ArenaScene extends Phaser.Scene {
     // §8/§6/§17 edge-trigger cursors are session-scoped too — a departed id must not live in these maps.
     this.lastParried.delete(id);
     this.lastRevived.delete(id);
+    this.lastAttackSeq.delete(id);
+    this.lastAttackHeld.delete(id);
     this.lastFell.delete(id);
   }
 
@@ -2683,6 +2804,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncBlobs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
+    this.routePlayerAttacks();
     this.syncEnemies();
     this.syncPickups();
     this.syncProjectiles();
@@ -5847,6 +5969,12 @@ export class ArenaScene extends Phaser.Scene {
     // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
     const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
     const rig = this.blobs.get(selfId);
+    // Predict the next contiguous accepted beat alongside the existing pose. The authoritative edge later
+    // consumes this high-water slot as confirmation, so neither the swing nor an open-tome page restarts.
+    const predictionLead = (this.localPredictedAttackSeq - self.attackSeq) >>> 0;
+    if (predictionLead >= 0x80000000) this.localPredictedAttackSeq = self.attackSeq >>> 0;
+    this.localPredictedAttackSeq = (this.localPredictedAttackSeq + 1) >>> 0;
+    rig?.setAttackBeat(this.localPredictedAttackSeq, true, this.time.now);
     // §20 WYSIWYG: freeze the aim at swing-start so the blade sweeps the SAME arc the server's swept hitbox
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && swing)
