@@ -96,12 +96,13 @@ function parseSprites(source) {
   return starts.map((start, index) => {
     const key = start[1] ?? start[2];
     const block = source.slice(start.index, starts[index + 1]?.index ?? source.length);
-    const idLiteral = block.match(/^ {4}id:\s*("(?:\\.|[^"\\])*")/m)?.[1];
+    // §47 harvest-install emits JSON-quoted keys ("id":); earlier manifests used bare keys (id:) — accept both.
+    const idLiteral = block.match(/^ {4}"?id"?:\s*("(?:\\.|[^"\\])*")/m)?.[1];
     const id = idLiteral ? parseString(idLiteral, `sprites/manifest.ts entry ${key}`) : null;
     if (!id) parseFailures.push(`sprites/manifest.ts entry ${key}: missing id`);
     else if (id !== key) parseFailures.push(`sprites/manifest.ts entry ${key}: id is ${id}`);
 
-    const parts = [...block.matchAll(/\{\s*role:\s*("(?:\\.|[^"\\])*"),\s*file:\s*("(?:\\.|[^"\\])*")/g)]
+    const parts = [...block.matchAll(/\{\s*"?role"?:\s*("(?:\\.|[^"\\])*")\s*,\s*"?file"?:\s*("(?:\\.|[^"\\])*")/g)]
       .map((match) => ({
         role: parseString(match[1], `sprites/manifest.ts ${key} role`),
         file: parseString(match[2], `sprites/manifest.ts ${key} file`),

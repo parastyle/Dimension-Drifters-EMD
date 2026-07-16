@@ -23,13359 +23,13915 @@ export interface SpriteManifest {
 
 export const SPRITES = {
   "blade-twins": {
-    id: "blade-twins",
-    kind: "character",
-    canvas: {
-      w: 425,
-      h: 239,
+    "id": "blade-twins",
+    "kind": "character",
+    "canvas": {
+      "w": 425,
+      "h": 239
     },
-    body: {
-      cx: 205.62,
-      cy: 104.21,
-      w: 126,
-      h: 168,
+    "body": {
+      "cx": 205.62,
+      "cy": 104.21,
+      "w": 126,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 126,
-        h: 168,
-        cx: 205.62,
-        cy: 104.21,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 126,
+        "h": 168,
+        "cx": 205.62,
+        "cy": 104.21,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 36,
-        h: 42,
-        cx: 126.83,
-        cy: 144.87,
-        ox: -79.04,
-        oy: 40.41,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 36,
+        "h": 42,
+        "cx": 126.83,
+        "cy": 144.87,
+        "ox": -79.04,
+        "oy": 40.41
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 35,
-        h: 41,
-        cx: 278.56,
-        cy: 144.62,
-        ox: 72.94,
-        oy: 40.16,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 35,
+        "h": 41,
+        "cx": 278.56,
+        "cy": 144.62,
+        "ox": 72.94,
+        "oy": 40.16
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 45,
-        cx: 170.03,
-        cy: 206.12,
-        ox: -35.84,
-        oy: 101.92,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 45,
+        "cx": 170.03,
+        "cy": 206.12,
+        "ox": -35.84,
+        "oy": 101.92
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 57,
-        h: 45,
-        cx: 242.47,
-        cy: 206.89,
-        ox: 36.85,
-        oy: 102.68,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 57,
+        "h": 45,
+        "cx": 242.47,
+        "cy": 206.89,
+        "ox": 36.85,
+        "oy": 102.68
+      }
+    ]
   },
   "blowdart-sentinel": {
-    id: "blowdart-sentinel",
-    kind: "character",
-    canvas: {
-      w: 426,
-      h: 240,
+    "id": "blowdart-sentinel",
+    "kind": "character",
+    "canvas": {
+      "w": 426,
+      "h": 240
     },
-    body: {
-      cx: 206.18,
-      cy: 114.8,
-      w: 147,
-      h: 168,
+    "body": {
+      "cx": 206.18,
+      "cy": 114.8,
+      "w": 147,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 147,
-        h: 168,
-        cx: 206.18,
-        cy: 114.8,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 147,
+        "h": 168,
+        "cx": 206.18,
+        "cy": 114.8,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 36,
-        h: 50,
-        cx: 132.36,
-        cy: 145.85,
-        ox: -73.82,
-        oy: 31.05,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 36,
+        "h": 50,
+        "cx": 132.36,
+        "cy": 145.85,
+        "ox": -73.82,
+        "oy": 31.05
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 37,
-        h: 49,
-        cx: 275.93,
-        cy: 145.85,
-        ox: 70,
-        oy: 31.05,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 37,
+        "h": 49,
+        "cx": 275.93,
+        "cy": 145.85,
+        "ox": 70,
+        "oy": 31.05
+      }
+    ]
   },
-  boothill: {
-    id: "boothill",
-    kind: "character",
-    canvas: {
-      w: 329,
-      h: 185,
+  "boothill": {
+    "id": "boothill",
+    "kind": "character",
+    "canvas": {
+      "w": 329,
+      "h": 185
     },
-    body: {
-      cx: 161.11,
-      cy: 89.42,
-      w: 94,
-      h: 168,
+    "body": {
+      "cx": 161.11,
+      "cy": 89.42,
+      "w": 94,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 94,
-        h: 168,
-        cx: 161.11,
-        cy: 89.42,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 94,
+        "h": 168,
+        "cx": 161.11,
+        "cy": 89.42,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 26,
-        h: 32,
-        cx: 105.96,
-        cy: 125.26,
-        ox: -55.34,
-        oy: 36.04,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 26,
+        "h": 32,
+        "cx": 105.96,
+        "cy": 125.26,
+        "ox": -55.34,
+        "oy": 36.04
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 24,
-        h: 31,
-        cx: 210.15,
-        cy: 126.25,
-        ox: 49.04,
-        oy: 36.83,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 24,
+        "h": 31,
+        "cx": 210.15,
+        "cy": 126.25,
+        "ox": 49.04,
+        "oy": 36.83
+      }
+    ]
   },
   "cc-asha-the-ash-walker": {
-    id: "cc-asha-the-ash-walker",
-    kind: "character",
-    canvas: {
-      w: 392,
-      h: 221,
+    "id": "cc-asha-the-ash-walker",
+    "kind": "character",
+    "canvas": {
+      "w": 392,
+      "h": 221
     },
-    body: {
-      cx: 190.06,
-      cy: 99.49,
-      w: 89,
-      h: 168,
+    "body": {
+      "cx": 190.06,
+      "cy": 99.49,
+      "w": 89,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 89,
-        h: 168,
-        cx: 190.06,
-        cy: 99.49,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 89,
+        "h": 168,
+        "cx": 190.06,
+        "cy": 99.49,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 27,
-        h: 44,
-        cx: 124.36,
-        cy: 140.78,
-        ox: -65.7,
-        oy: 41.06,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 27,
+        "h": 44,
+        "cx": 124.36,
+        "cy": 140.78,
+        "ox": -65.7,
+        "oy": 41.06
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 25,
-        h: 40,
-        cx: 248.25,
-        cy: 141.96,
-        ox: 58.19,
-        oy: 42.23,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 25,
+        "h": 40,
+        "cx": 248.25,
+        "cy": 141.96,
+        "ox": 58.19,
+        "oy": 42.23
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 43,
-        h: 32,
-        cx: 161.9,
-        cy: 197.09,
-        ox: -28.16,
-        oy: 97.61,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 43,
+        "h": 32,
+        "cx": 161.9,
+        "cy": 197.09,
+        "ox": -28.16,
+        "oy": 97.61
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 44,
-        h: 27,
-        cx: 224.31,
-        cy: 193.34,
-        ox: 34.26,
-        oy: 93.85,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 44,
+        "h": 27,
+        "cx": 224.31,
+        "cy": 193.34,
+        "ox": 34.26,
+        "oy": 93.85
+      }
+    ]
   },
   "cc-bastion-vance": {
-    id: "cc-bastion-vance",
-    kind: "character",
-    canvas: {
-      w: 437,
-      h: 246,
+    "id": "cc-bastion-vance",
+    "kind": "character",
+    "canvas": {
+      "w": 437,
+      "h": 246
     },
-    body: {
-      cx: 213.46,
-      cy: 98.76,
-      w: 126,
-      h: 168,
+    "body": {
+      "cx": 213.46,
+      "cy": 98.76,
+      "w": 126,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 126,
-        h: 168,
-        cx: 213.46,
-        cy: 98.76,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 126,
+        "h": 168,
+        "cx": 213.46,
+        "cy": 98.76,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 40,
-        h: 48,
-        cx: 126.46,
-        cy: 150.49,
-        ox: -86.74,
-        oy: 51.73,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 40,
+        "h": 48,
+        "cx": 126.46,
+        "cy": 150.49,
+        "ox": -86.74,
+        "oy": 51.73
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 40,
-        h: 47,
-        cx: 303.6,
-        cy: 150.49,
-        ox: 90.14,
-        oy: 51.73,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 40,
+        "h": 47,
+        "cx": 303.6,
+        "cy": 150.49,
+        "ox": 90.14,
+        "oy": 51.73
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 65,
-        h: 55,
-        cx: 164.34,
-        cy: 215.55,
-        ox: -49.12,
-        oy: 116.79,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 65,
+        "h": 55,
+        "cx": 164.34,
+        "cy": 215.55,
+        "ox": -49.12,
+        "oy": 116.79
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 68,
-        h: 55,
-        cx: 268.07,
-        cy: 215.81,
-        ox: 54.61,
-        oy: 117.05,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 68,
+        "h": 55,
+        "cx": 268.07,
+        "cy": 215.81,
+        "ox": 54.61,
+        "oy": 117.05
+      }
+    ]
   },
   "cc-brother-cassian-the-ashen-crusader": {
-    id: "cc-brother-cassian-the-ashen-crusader",
-    kind: "character",
-    canvas: {
-      w: 391,
-      h: 220,
+    "id": "cc-brother-cassian-the-ashen-crusader",
+    "kind": "character",
+    "canvas": {
+      "w": 391,
+      "h": 220
     },
-    body: {
-      cx: 182.72,
-      cy: 94.16,
-      w: 109,
-      h: 168,
+    "body": {
+      "cx": 182.72,
+      "cy": 94.16,
+      "w": 109,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 109,
-        h: 168,
-        cx: 182.72,
-        cy: 94.16,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 109,
+        "h": 168,
+        "cx": 182.72,
+        "cy": 94.16,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 32,
-        cx: 247.21,
-        cy: 141.13,
-        ox: 64.49,
-        oy: 46.97,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 32,
+        "cx": 247.21,
+        "cy": 141.13,
+        "ox": 64.49,
+        "oy": 46.97
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 38,
-        h: 29,
-        cx: 250.01,
-        cy: 96.73,
-        ox: 67.29,
-        oy: 2.57,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 38,
+        "h": 29,
+        "cx": 250.01,
+        "cy": 96.73,
+        "ox": 67.29,
+        "oy": 2.57
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 48,
-        h: 41,
-        cx: 155.38,
-        cy: 195.1,
-        ox: -27.34,
-        oy: 100.94,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 48,
+        "h": 41,
+        "cx": 155.38,
+        "cy": 195.1,
+        "ox": -27.34,
+        "oy": 100.94
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 50,
-        h: 39,
-        cx: 222.68,
-        cy: 194.17,
-        ox: 39.96,
-        oy: 100.01,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 50,
+        "h": 39,
+        "cx": 222.68,
+        "cy": 194.17,
+        "ox": 39.96,
+        "oy": 100.01
+      }
+    ]
   },
   "cc-brother-tendo-of-the-still-bell": {
-    id: "cc-brother-tendo-of-the-still-bell",
-    kind: "character",
-    canvas: {
-      w: 381,
-      h: 214,
+    "id": "cc-brother-tendo-of-the-still-bell",
+    "kind": "character",
+    "canvas": {
+      "w": 381,
+      "h": 214
     },
-    body: {
-      cx: 188.49,
-      cy: 104.94,
-      w: 104,
-      h: 168,
+    "body": {
+      "cx": 188.49,
+      "cy": 104.94,
+      "w": 104,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 104,
-        h: 168,
-        cx: 188.49,
-        cy: 104.94,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 104,
+        "h": 168,
+        "cx": 188.49,
+        "cy": 104.94,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 31,
-        h: 36,
-        cx: 119.28,
-        cy: 117.24,
-        ox: -69.2,
-        oy: 12.29,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 31,
+        "h": 36,
+        "cx": 119.28,
+        "cy": 117.24,
+        "ox": -69.2,
+        "oy": 12.29
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 29,
-        h: 36,
-        cx: 252,
-        cy: 117.01,
-        ox: 63.51,
-        oy: 12.07,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 29,
+        "h": 36,
+        "cx": 252,
+        "cy": 117.01,
+        "ox": 63.51,
+        "oy": 12.07
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 42,
-        h: 23,
-        cx: 157.3,
-        cy: 191.45,
-        ox: -31.19,
-        oy: 86.28,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 42,
+        "h": 23,
+        "cx": 157.3,
+        "cy": 191.45,
+        "ox": -31.19,
+        "oy": 86.28
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 42,
-        h: 21,
-        cx: 218.76,
-        cy: 190.08,
-        ox: 30.28,
-        oy: 85.14,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 42,
+        "h": 21,
+        "cx": 218.76,
+        "cy": 190.08,
+        "ox": 30.28,
+        "oy": 85.14
+      }
+    ]
   },
   "cc-bryda-houndcall": {
-    id: "cc-bryda-houndcall",
-    kind: "character",
-    canvas: {
-      w: 342,
-      h: 192,
+    "id": "cc-bryda-houndcall",
+    "kind": "character",
+    "canvas": {
+      "w": 342,
+      "h": 192
     },
-    body: {
-      cx: 166.57,
-      cy: 93.61,
-      w: 80,
-      h: 168,
+    "body": {
+      "cx": 166.57,
+      "cy": 93.61,
+      "w": 80,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 80,
-        h: 168,
-        cx: 166.57,
-        cy: 93.61,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 80,
+        "h": 168,
+        "cx": 166.57,
+        "cy": 93.61,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 22,
-        h: 23,
-        cx: 123.45,
-        cy: 136.73,
-        ox: -43.12,
-        oy: 43.12,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 22,
+        "h": 23,
+        "cx": 123.45,
+        "cy": 136.73,
+        "ox": -43.12,
+        "oy": 43.12
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 19,
-        h: 23,
-        cx: 213.37,
-        cy: 136.73,
-        ox: 46.8,
-        oy: 43.12,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 19,
+        "h": 23,
+        "cx": 213.37,
+        "cy": 136.73,
+        "ox": 46.8,
+        "oy": 43.12
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 25,
-        h: 18,
-        cx: 147.56,
-        cy: 179.85,
-        ox: -19.01,
-        oy: 86.25,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 25,
+        "h": 18,
+        "cx": 147.56,
+        "cy": 179.85,
+        "ox": -19.01,
+        "oy": 86.25
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 24,
-        h: 17,
-        cx: 195.39,
-        cy: 178.63,
-        ox: 29.02,
-        oy: 85.02,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 24,
+        "h": 17,
+        "cx": 195.39,
+        "cy": 178.63,
+        "ox": 29.02,
+        "oy": 85.02
+      }
+    ]
   },
   "cc-buzzard-jeptha-hale": {
-    id: "cc-buzzard-jeptha-hale",
-    kind: "character",
-    canvas: {
-      w: 381,
-      h: 215,
+    "id": "cc-buzzard-jeptha-hale",
+    "kind": "character",
+    "canvas": {
+      "w": 381,
+      "h": 215
     },
-    body: {
-      cx: 188.29,
-      cy: 95.74,
-      w: 165,
-      h: 168,
+    "body": {
+      "cx": 188.29,
+      "cy": 95.74,
+      "w": 165,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 165,
-        h: 168,
-        cx: 188.29,
-        cy: 95.74,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 165,
+        "h": 168,
+        "cx": 188.29,
+        "cy": 95.74,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 31,
-        h: 34,
-        cx: 97.79,
-        cy: 154.78,
-        ox: -90.5,
-        oy: 59.04,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 31,
+        "h": 34,
+        "cx": 97.79,
+        "cy": 154.78,
+        "ox": -90.5,
+        "oy": 59.04
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 35,
-        h: 38,
-        cx: 260.32,
-        cy: 113.98,
-        ox: 72.03,
-        oy: 18.24,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 35,
+        "h": 38,
+        "cx": 260.32,
+        "cy": 113.98,
+        "ox": 72.03,
+        "oy": 18.24
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 51,
-        h: 26,
-        cx: 143.61,
-        cy: 191.48,
-        ox: -44.68,
-        oy: 95.74,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 51,
+        "h": 26,
+        "cx": 143.61,
+        "cy": 191.48,
+        "ox": -44.68,
+        "oy": 95.74
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 49,
-        h: 23,
-        cx: 219.06,
-        cy: 189.88,
-        ox: 30.77,
-        oy: 93.92,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 49,
+        "h": 23,
+        "cx": 219.06,
+        "cy": 189.88,
+        "ox": 30.77,
+        "oy": 93.92
+      }
+    ]
   },
   "cc-cinderpyre": {
-    id: "cc-cinderpyre",
-    kind: "character",
-    canvas: {
-      w: 470,
-      h: 264,
+    "id": "cc-cinderpyre",
+    "kind": "character",
+    "canvas": {
+      "w": 470,
+      "h": 264
     },
-    body: {
-      cx: 231.21,
-      cy: 123.33,
-      w: 137,
-      h: 168,
+    "body": {
+      "cx": 231.21,
+      "cy": 123.33,
+      "w": 137,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 137,
-        h: 168,
-        cx: 231.21,
-        cy: 123.33,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 137,
+        "h": 168,
+        "cx": 231.21,
+        "cy": 123.33,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 45,
-        h: 56,
-        cx: 132.32,
-        cy: 162.94,
-        ox: -99.17,
-        oy: 39.61,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 45,
+        "h": 56,
+        "cx": 132.32,
+        "cy": 162.94,
+        "ox": -99.17,
+        "oy": 39.61
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 45,
-        h: 55,
-        cx: 325.32,
-        cy: 164.91,
-        ox: 93.83,
-        oy: 41.58,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 45,
+        "h": 55,
+        "cx": 325.32,
+        "cy": 164.91,
+        "ox": 93.83,
+        "oy": 41.58
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 60,
-        h: 37,
-        cx: 192.72,
-        cy: 223.06,
-        ox: -38.49,
-        oy: 99.73,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 60,
+        "h": 37,
+        "cx": 192.72,
+        "cy": 223.06,
+        "ox": -38.49,
+        "oy": 99.73
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 36,
-        cx: 262.39,
-        cy: 223.06,
-        ox: 31.18,
-        oy: 99.73,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 36,
+        "cx": 262.39,
+        "cy": 223.06,
+        "ox": 31.18,
+        "oy": 99.73
+      }
+    ]
   },
   "cc-cogwarden": {
-    id: "cc-cogwarden",
-    kind: "character",
-    canvas: {
-      w: 404,
-      h: 227,
+    "id": "cc-cogwarden",
+    "kind": "character",
+    "canvas": {
+      "w": 404,
+      "h": 227
     },
-    body: {
-      cx: 193.38,
-      cy: 95.48,
-      w: 141,
-      h: 168,
+    "body": {
+      "cx": 193.38,
+      "cy": 95.48,
+      "w": 141,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 141,
-        h: 168,
-        cx: 193.38,
-        cy: 95.48,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 141,
+        "h": 168,
+        "cx": 193.38,
+        "cy": 95.48,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 48,
-        h: 50,
-        cx: 105.15,
-        cy: 140.44,
-        ox: -88.23,
-        oy: 44.96,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 48,
+        "h": 50,
+        "cx": 105.15,
+        "cy": 140.44,
+        "ox": -88.23,
+        "oy": 44.96
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 44,
-        h: 46,
-        cx: 283.79,
-        cy: 141.89,
-        ox: 90.41,
-        oy: 46.41,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 44,
+        "h": 46,
+        "cx": 283.79,
+        "cy": 141.89,
+        "ox": 90.41,
+        "oy": 46.41
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 58,
-        h: 33,
-        cx: 159.54,
-        cy: 199.67,
-        ox: -33.84,
-        oy: 104.18,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 58,
+        "h": 33,
+        "cx": 159.54,
+        "cy": 199.67,
+        "ox": -33.84,
+        "oy": 104.18
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 57,
-        h: 32,
-        cx: 227.46,
-        cy: 199.67,
-        ox: 34.08,
-        oy: 104.18,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 57,
+        "h": 32,
+        "cx": 227.46,
+        "cy": 199.67,
+        "ox": 34.08,
+        "oy": 104.18
+      }
+    ]
   },
   "cc-cordell-coldsnap-vane": {
-    id: "cc-cordell-coldsnap-vane",
-    kind: "character",
-    canvas: {
-      w: 424,
-      h: 239,
+    "id": "cc-cordell-coldsnap-vane",
+    "kind": "character",
+    "canvas": {
+      "w": 424,
+      "h": 239
     },
-    body: {
-      cx: 210.63,
-      cy: 105.06,
-      w: 166,
-      h: 168,
+    "body": {
+      "cx": 210.63,
+      "cy": 105.06,
+      "w": 166,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 166,
-        h: 168,
-        cx: 210.63,
-        cy: 105.06,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 166,
+        "h": 168,
+        "cx": 210.63,
+        "cy": 105.06,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 30,
-        h: 38,
-        cx: 137.55,
-        cy: 146.43,
-        ox: -73.34,
-        oy: 41.11,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 30,
+        "h": 38,
+        "cx": 137.55,
+        "cy": 146.43,
+        "ox": -73.34,
+        "oy": 41.11
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 28,
-        h: 36,
-        cx: 278.14,
-        cy: 145.67,
-        ox: 67.5,
-        oy: 40.35,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 28,
+        "h": 36,
+        "cx": 278.14,
+        "cy": 145.67,
+        "ox": 67.5,
+        "oy": 40.35
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 50,
-        h: 40,
-        cx: 166.73,
-        cy: 207.34,
-        ox: -43.9,
-        oy: 102.02,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 50,
+        "h": 40,
+        "cx": 166.73,
+        "cy": 207.34,
+        "ox": -43.9,
+        "oy": 102.02
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 52,
-        h: 39,
-        cx: 251.75,
-        cy: 207.08,
-        ox: 40.86,
-        oy: 102.02,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 52,
+        "h": 39,
+        "cx": 251.75,
+        "cy": 207.08,
+        "ox": 40.86,
+        "oy": 102.02
+      }
+    ]
   },
   "cc-corvane-the-crimson-draught": {
-    id: "cc-corvane-the-crimson-draught",
-    kind: "character",
-    canvas: {
-      w: 408,
-      h: 229,
+    "id": "cc-corvane-the-crimson-draught",
+    "kind": "character",
+    "canvas": {
+      "w": 408,
+      "h": 229
     },
-    body: {
-      cx: 201.89,
-      cy: 103.87,
-      w: 98,
-      h: 168,
+    "body": {
+      "cx": 201.89,
+      "cy": 103.87,
+      "w": 98,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 98,
-        h: 168,
-        cx: 201.89,
-        cy: 103.87,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 98,
+        "h": 168,
+        "cx": 201.89,
+        "cy": 103.87,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 29,
-        h: 60,
-        cx: 130.45,
-        cy: 145.57,
-        ox: -71.44,
-        oy: 41.7,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 60,
+        "cx": 130.45,
+        "cy": 145.57,
+        "ox": -71.44,
+        "oy": 41.7
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 26,
-        h: 58,
-        cx: 267.24,
-        cy: 143.86,
-        ox: 65.35,
-        oy: 39.99,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 26,
+        "h": 58,
+        "cx": 267.24,
+        "cy": 143.86,
+        "ox": 65.35,
+        "oy": 39.99
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 46,
-        h: 36,
-        cx: 174.34,
-        cy: 200.92,
-        ox: -27.55,
-        oy: 97.04,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 46,
+        "h": 36,
+        "cx": 174.34,
+        "cy": 200.92,
+        "ox": -27.55,
+        "oy": 97.04
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 48,
-        h: 33,
-        cx: 231.4,
-        cy: 200.92,
-        ox: 29.5,
-        oy: 97.04,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 48,
+        "h": 33,
+        "cx": 231.4,
+        "cy": 200.92,
+        "ox": 29.5,
+        "oy": 97.04
+      }
+    ]
   },
   "cc-crowmantle-sel": {
-    id: "cc-crowmantle-sel",
-    kind: "character",
-    canvas: {
-      w: 384,
-      h: 216,
+    "id": "cc-crowmantle-sel",
+    "kind": "character",
+    "canvas": {
+      "w": 384,
+      "h": 216
     },
-    body: {
-      cx: 188.2,
-      cy: 98,
-      w: 112,
-      h: 168,
+    "body": {
+      "cx": 188.2,
+      "cy": 98,
+      "w": 112,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 112,
-        h: 168,
-        cx: 188.2,
-        cy: 98,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 112,
+        "h": 168,
+        "cx": 188.2,
+        "cy": 98,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 25,
-        h: 30,
-        cx: 129.9,
-        cy: 140,
-        ox: -58.3,
-        oy: 42,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 25,
+        "h": 30,
+        "cx": 129.9,
+        "cy": 140,
+        "ox": -58.3,
+        "oy": 42
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 22,
-        h: 29,
-        cx: 241.44,
-        cy: 137.93,
-        ox: 53.25,
-        oy: 39.93,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 22,
+        "h": 29,
+        "cx": 241.44,
+        "cy": 137.93,
+        "ox": 53.25,
+        "oy": 39.93
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 33,
-        h: 31,
-        cx: 161.11,
-        cy: 192.33,
-        ox: -27.08,
-        oy: 94.33,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 33,
+        "h": 31,
+        "cx": 161.11,
+        "cy": 192.33,
+        "ox": -27.08,
+        "oy": 94.33
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 37,
-        h: 30,
-        cx: 220.79,
-        cy: 193.02,
-        ox: 32.59,
-        oy: 95.02,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 37,
+        "h": 30,
+        "cx": 220.79,
+        "cy": 193.02,
+        "ox": 32.59,
+        "oy": 95.02
+      }
+    ]
   },
   "cc-dame-veyra-of-the-thornwatch": {
-    id: "cc-dame-veyra-of-the-thornwatch",
-    kind: "character",
-    canvas: {
-      w: 428,
-      h: 241,
+    "id": "cc-dame-veyra-of-the-thornwatch",
+    "kind": "character",
+    "canvas": {
+      "w": 428,
+      "h": 241
     },
-    body: {
-      cx: 204.57,
-      cy: 102.79,
-      w: 112,
-      h: 168,
+    "body": {
+      "cx": 204.57,
+      "cy": 102.79,
+      "w": 112,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 112,
-        h: 168,
-        cx: 204.57,
-        cy: 102.79,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 112,
+        "h": 168,
+        "cx": 204.57,
+        "cy": 102.79,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 29,
-        h: 35,
-        cx: 156.49,
-        cy: 160.84,
-        ox: -48.07,
-        oy: 58.05,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 35,
+        "cx": 156.49,
+        "cy": 160.84,
+        "ox": -48.07,
+        "oy": 58.05
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 27,
-        h: 35,
-        cx: 262.87,
-        cy: 162.89,
-        ox: 58.3,
-        oy: 60.09,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 27,
+        "h": 35,
+        "cx": 262.87,
+        "cy": 162.89,
+        "ox": 58.3,
+        "oy": 60.09
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 38,
-        h: 40,
-        cx: 182.58,
-        cy: 208.91,
-        ox: -21.99,
-        oy: 106.37,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 38,
+        "h": 40,
+        "cx": 182.58,
+        "cy": 208.91,
+        "ox": -21.99,
+        "oy": 106.37
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 42,
-        h: 37,
-        cx: 240.88,
-        cy: 208.4,
-        ox: 36.31,
-        oy: 105.61,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 42,
+        "h": 37,
+        "cx": 240.88,
+        "cy": 208.4,
+        "ox": 36.31,
+        "oy": 105.61
+      }
+    ]
   },
   "cc-deepfall-korr": {
-    id: "cc-deepfall-korr",
-    kind: "character",
-    canvas: {
-      w: 408,
-      h: 230,
+    "id": "cc-deepfall-korr",
+    "kind": "character",
+    "canvas": {
+      "w": 408,
+      "h": 230
     },
-    body: {
-      cx: 195.1,
-      cy: 93.77,
-      w: 126,
-      h: 168,
+    "body": {
+      "cx": 195.1,
+      "cy": 93.77,
+      "w": 126,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 126,
-        h: 168,
-        cx: 195.1,
-        cy: 93.77,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 126,
+        "h": 168,
+        "cx": 195.1,
+        "cy": 93.77,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 39,
-        h: 55,
-        cx: 100.12,
-        cy: 150.66,
-        ox: -94.74,
-        oy: 56.9,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 39,
+        "h": 55,
+        "cx": 100.12,
+        "cy": 150.66,
+        "ox": -94.74,
+        "oy": 56.9
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 39,
-        h: 55,
-        cx: 284.23,
-        cy: 150.66,
-        ox: 89.37,
-        oy: 56.9,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 39,
+        "h": 55,
+        "cx": 284.23,
+        "cy": 150.66,
+        "ox": 89.37,
+        "oy": 56.9
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 57,
-        h: 41,
-        cx: 166.53,
-        cy: 201.45,
-        ox: -28.33,
-        oy: 107.69,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 57,
+        "h": 41,
+        "cx": 166.53,
+        "cy": 201.45,
+        "ox": -28.33,
+        "oy": 107.69
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 56,
-        h: 41,
-        cx: 237.84,
-        cy: 201.21,
-        ox: 42.73,
-        oy: 107.44,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 56,
+        "h": 41,
+        "cx": 237.84,
+        "cy": 201.21,
+        "ox": 42.73,
+        "oy": 107.44
+      }
+    ]
   },
   "cc-doctor-phineas-quill-esq": {
-    id: "cc-doctor-phineas-quill-esq",
-    kind: "character",
-    canvas: {
-      w: 383,
-      h: 216,
+    "id": "cc-doctor-phineas-quill-esq",
+    "kind": "character",
+    "canvas": {
+      "w": 383,
+      "h": 216
     },
-    body: {
-      cx: 179.23,
-      cy: 97.41,
-      w: 110,
-      h: 168,
+    "body": {
+      "cx": 179.23,
+      "cy": 97.41,
+      "w": 110,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 110,
-        h: 168,
-        cx: 179.23,
-        cy: 97.41,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 110,
+        "h": 168,
+        "cx": 179.23,
+        "cy": 97.41,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 28,
-        h: 33,
-        cx: 127.89,
-        cy: 74.95,
-        ox: -51.34,
-        oy: -22.46,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 28,
+        "h": 33,
+        "cx": 127.89,
+        "cy": 74.95,
+        "ox": -51.34,
+        "oy": -22.46
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 34,
-        h: 28,
-        cx: 245.24,
-        cy: 132.93,
-        ox: 66.01,
-        oy: 35.53,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 34,
+        "h": 28,
+        "cx": 245.24,
+        "cy": 132.93,
+        "ox": 66.01,
+        "oy": 35.53
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 43,
-        h: 34,
-        cx: 158.6,
-        cy: 195.05,
-        ox: -20.63,
-        oy: 97.64,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 43,
+        "h": 34,
+        "cx": 158.6,
+        "cy": 195.05,
+        "ox": -20.63,
+        "oy": 97.64
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 44,
-        h: 34,
-        cx: 212.92,
-        cy: 195.5,
-        ox: 33.69,
-        oy: 98.1,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 44,
+        "h": 34,
+        "cx": 212.92,
+        "cy": 195.5,
+        "ox": 33.69,
+        "oy": 98.1
+      }
+    ]
   },
   "cc-dunkel-the-coinblade": {
-    id: "cc-dunkel-the-coinblade",
-    kind: "character",
-    canvas: {
-      w: 411,
-      h: 231,
+    "id": "cc-dunkel-the-coinblade",
+    "kind": "character",
+    "canvas": {
+      "w": 411,
+      "h": 231
     },
-    body: {
-      cx: 200.42,
-      cy: 97.51,
-      w: 106,
-      h: 168,
+    "body": {
+      "cx": 200.42,
+      "cy": 97.51,
+      "w": 106,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 106,
-        h: 168,
-        cx: 200.42,
-        cy: 97.51,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 106,
+        "h": 168,
+        "cx": 200.42,
+        "cy": 97.51,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 33,
-        h: 39,
-        cx: 122.32,
-        cy: 132.39,
-        ox: -78.11,
-        oy: 34.88,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 33,
+        "h": 39,
+        "cx": 122.32,
+        "cy": 132.39,
+        "ox": -78.11,
+        "oy": 34.88
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 39,
-        cx: 276.32,
-        cy: 132.39,
-        ox: 76.14,
-        oy: 34.88,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 39,
+        "cx": 276.32,
+        "cy": 132.39,
+        "ox": 76.14,
+        "oy": 34.88
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 52,
-        h: 44,
-        cx: 164.56,
-        cy: 201.4,
-        ox: -35.86,
-        oy: 103.65,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 52,
+        "h": 44,
+        "cx": 164.56,
+        "cy": 201.4,
+        "ox": -35.86,
+        "oy": 103.65
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 63,
-        h: 44,
-        cx: 243.65,
-        cy: 200.42,
-        ox: 43.47,
-        oy: 102.91,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 63,
+        "h": 44,
+        "cx": 243.65,
+        "cy": 200.42,
+        "ox": 43.47,
+        "oy": 102.91
+      }
+    ]
   },
   "cc-elias-parson-thorne": {
-    id: "cc-elias-parson-thorne",
-    kind: "character",
-    canvas: {
-      w: 381,
-      h: 215,
+    "id": "cc-elias-parson-thorne",
+    "kind": "character",
+    "canvas": {
+      "w": 381,
+      "h": 215
     },
-    body: {
-      cx: 188.97,
-      cy: 101.44,
-      w: 67,
-      h: 168,
+    "body": {
+      "cx": 188.97,
+      "cy": 101.44,
+      "w": 67,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 67,
-        h: 168,
-        cx: 188.97,
-        cy: 101.44,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 67,
+        "h": 168,
+        "cx": 188.97,
+        "cy": 101.44,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 21,
-        h: 28,
-        cx: 144.07,
-        cy: 130.16,
-        ox: -45.13,
-        oy: 28.72,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 21,
+        "h": 28,
+        "cx": 144.07,
+        "cy": 130.16,
+        "ox": -45.13,
+        "oy": 28.72
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 20,
-        h: 28,
-        cx: 235.7,
-        cy: 130.16,
-        ox: 46.73,
-        oy: 28.95,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 20,
+        "h": 28,
+        "cx": 235.7,
+        "cy": 130.16,
+        "ox": 46.73,
+        "oy": 28.95
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 34,
-        h: 32,
-        cx: 160.71,
-        cy: 191.25,
-        ox: -28.27,
-        oy: 89.81,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 34,
+        "h": 32,
+        "cx": 160.71,
+        "cy": 191.25,
+        "ox": -28.27,
+        "oy": 89.81
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 36,
-        h: 31,
-        cx: 223.85,
-        cy: 191.25,
-        ox: 34.88,
-        oy: 89.81,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 36,
+        "h": 31,
+        "cx": 223.85,
+        "cy": 191.25,
+        "ox": 34.88,
+        "oy": 89.81
+      }
+    ]
   },
   "cc-gravewake": {
-    id: "cc-gravewake",
-    kind: "character",
-    canvas: {
-      w: 400,
-      h: 225,
+    "id": "cc-gravewake",
+    "kind": "character",
+    "canvas": {
+      "w": 400,
+      "h": 225
     },
-    body: {
-      cx: 199.54,
-      cy: 107.3,
-      w: 125,
-      h: 168,
+    "body": {
+      "cx": 199.54,
+      "cy": 107.3,
+      "w": 125,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 125,
-        h: 168,
-        cx: 199.54,
-        cy: 107.3,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 125,
+        "h": 168,
+        "cx": 199.54,
+        "cy": 107.3,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 52,
-        cx: 107.78,
-        cy: 136.93,
-        ox: -91.77,
-        oy: 29.63,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 52,
+        "cx": 107.78,
+        "cy": 136.93,
+        "ox": -91.77,
+        "oy": 29.63
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 36,
-        h: 51,
-        cx: 283.43,
-        cy: 136.69,
-        ox: 84.12,
-        oy: 29.39,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 36,
+        "h": 51,
+        "cx": 283.43,
+        "cy": 136.69,
+        "ox": 84.12,
+        "oy": 29.39
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 32,
-        cx: 157.96,
-        cy: 197.39,
-        ox: -41.34,
-        oy: 90.09,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 32,
+        "cx": 157.96,
+        "cy": 197.39,
+        "ox": -41.34,
+        "oy": 90.09
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 57,
-        h: 30,
-        cx: 235.87,
-        cy: 196.68,
-        ox: 36.32,
-        oy: 89.38,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 57,
+        "h": 30,
+        "cx": 235.87,
+        "cy": 196.68,
+        "ox": 36.32,
+        "oy": 89.38
+      }
+    ]
   },
   "cc-grix-boltcaster": {
-    id: "cc-grix-boltcaster",
-    kind: "character",
-    canvas: {
-      w: 430,
-      h: 242,
+    "id": "cc-grix-boltcaster",
+    "kind": "character",
+    "canvas": {
+      "w": 430,
+      "h": 242
     },
-    body: {
-      cx: 210.39,
-      cy: 108.4,
-      w: 123,
-      h: 168,
+    "body": {
+      "cx": 210.39,
+      "cy": 108.4,
+      "w": 123,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 123,
-        h: 168,
-        cx: 210.39,
-        cy: 108.4,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 123,
+        "h": 168,
+        "cx": 210.39,
+        "cy": 108.4,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 35,
-        h: 41,
-        cx: 129.72,
-        cy: 151.05,
-        ox: -80.92,
-        oy: 42.64,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 35,
+        "h": 41,
+        "cx": 129.72,
+        "cy": 151.05,
+        "ox": -80.92,
+        "oy": 42.64
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 40,
-        cx: 295.93,
-        cy: 149.76,
-        ox: 85.54,
-        oy: 41.36,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 40,
+        "cx": 295.93,
+        "cy": 149.76,
+        "ox": 85.54,
+        "oy": 41.36
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 51,
-        h: 37,
-        cx: 171.08,
-        cy: 207.3,
-        ox: -39.3,
-        oy: 98.9,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 51,
+        "h": 37,
+        "cx": 171.08,
+        "cy": 207.3,
+        "ox": -39.3,
+        "oy": 98.9
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 53,
-        h: 37,
-        cx: 257.65,
-        cy: 206.53,
-        ox: 47.27,
-        oy: 97.87,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 53,
+        "h": 37,
+        "cx": 257.65,
+        "cy": 206.53,
+        "ox": 47.27,
+        "oy": 97.87
+      }
+    ]
   },
   "cc-halcyon-7": {
-    id: "cc-halcyon-7",
-    kind: "character",
-    canvas: {
-      w: 416,
-      h: 234,
+    "id": "cc-halcyon-7",
+    "kind": "character",
+    "canvas": {
+      "w": 416,
+      "h": 234
     },
-    body: {
-      cx: 206.02,
-      cy: 96.18,
-      w: 71,
-      h: 168,
+    "body": {
+      "cx": 206.02,
+      "cy": 96.18,
+      "w": 71,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 71,
-        h: 168,
-        cx: 206.02,
-        cy: 96.18,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 71,
+        "h": 168,
+        "cx": 206.02,
+        "cy": 96.18,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 29,
-        h: 32,
-        cx: 161.79,
-        cy: 65.86,
-        ox: -44.24,
-        oy: -30.57,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 32,
+        "cx": 161.79,
+        "cy": 65.86,
+        "ox": -44.24,
+        "oy": -30.57
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 30,
-        h: 27,
-        cx: 244.79,
-        cy: 140.66,
-        ox: 38.77,
-        oy: 44.49,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 30,
+        "h": 27,
+        "cx": 244.79,
+        "cy": 140.66,
+        "ox": 38.77,
+        "oy": 44.49
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 31,
-        h: 39,
-        cx: 168.75,
-        cy: 205.03,
-        ox: -37.28,
-        oy: 108.85,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 31,
+        "h": 39,
+        "cx": 168.75,
+        "cy": 205.03,
+        "ox": -37.28,
+        "oy": 108.85
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 38,
-        h: 33,
-        cx: 239.57,
-        cy: 203.29,
-        ox: 33.55,
-        oy: 107.11,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 38,
+        "h": 33,
+        "cx": 239.57,
+        "cy": 203.29,
+        "ox": 33.55,
+        "oy": 107.11
+      }
+    ]
   },
   "cc-hollowmaw": {
-    id: "cc-hollowmaw",
-    kind: "character",
-    canvas: {
-      w: 378,
-      h: 213,
+    "id": "cc-hollowmaw",
+    "kind": "character",
+    "canvas": {
+      "w": 378,
+      "h": 213
     },
-    body: {
-      cx: 184.73,
-      cy: 100.17,
-      w: 128,
-      h: 168,
+    "body": {
+      "cx": 184.73,
+      "cy": 100.17,
+      "w": 128,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 128,
-        h: 168,
-        cx: 184.73,
-        cy: 100.17,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 128,
+        "h": 168,
+        "cx": 184.73,
+        "cy": 100.17,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 24,
-        h: 31,
-        cx: 114.64,
-        cy: 123.46,
-        ox: -70.09,
-        oy: 23.29,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 24,
+        "h": 31,
+        "cx": 114.64,
+        "cy": 123.46,
+        "ox": -70.09,
+        "oy": 23.29
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 21,
-        h: 31,
-        cx: 250.53,
-        cy: 127.75,
-        ox: 65.8,
-        oy: 27.59,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 21,
+        "h": 31,
+        "cx": 250.53,
+        "cy": 127.75,
+        "ox": 65.8,
+        "oy": 27.59
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 36,
-        h: 24,
-        cx: 149.01,
-        cy: 191.06,
-        ox: -35.73,
-        oy: 90.9,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 36,
+        "h": 24,
+        "cx": 149.01,
+        "cy": 191.06,
+        "ox": -35.73,
+        "oy": 90.9
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 35,
-        h: 21,
-        cx: 222.72,
-        cy: 189.25,
-        ox: 37.99,
-        oy: 89.09,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 35,
+        "h": 21,
+        "cx": 222.72,
+        "cy": 189.25,
+        "ox": 37.99,
+        "oy": 89.09
+      }
+    ]
   },
   "cc-iridia-of-the-nine-veils": {
-    id: "cc-iridia-of-the-nine-veils",
-    kind: "character",
-    canvas: {
-      w: 417,
-      h: 235,
+    "id": "cc-iridia-of-the-nine-veils",
+    "kind": "character",
+    "canvas": {
+      "w": 417,
+      "h": 235
     },
-    body: {
-      cx: 202.15,
-      cy: 104.19,
-      w: 120,
-      h: 168,
+    "body": {
+      "cx": 202.15,
+      "cy": 104.19,
+      "w": 120,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 120,
-        h: 168,
-        cx: 202.15,
-        cy: 104.19,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 120,
+        "h": 168,
+        "cx": 202.15,
+        "cy": 104.19,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 35,
-        h: 46,
-        cx: 121.14,
-        cy: 132.11,
-        ox: -81.26,
-        oy: 27.92,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 35,
+        "h": 46,
+        "cx": 121.14,
+        "cy": 132.11,
+        "ox": -81.26,
+        "oy": 27.92
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 34,
-        h: 45,
-        cx: 284.65,
-        cy: 133.85,
-        ox: 82.26,
-        oy: 29.91,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 34,
+        "h": 45,
+        "cx": 284.65,
+        "cy": 133.85,
+        "ox": 82.26,
+        "oy": 29.91
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 49,
-        h: 43,
-        cx: 166.01,
-        cy: 203.39,
-        ox: -36.14,
-        oy: 99.2,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 49,
+        "h": 43,
+        "cx": 166.01,
+        "cy": 203.39,
+        "ox": -36.14,
+        "oy": 99.2
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 54,
-        h: 42,
-        cx: 241.78,
-        cy: 203.64,
-        ox: 39.63,
-        oy: 99.45,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 54,
+        "h": 42,
+        "cx": 241.78,
+        "cy": 203.64,
+        "ox": 39.63,
+        "oy": 99.45
+      }
+    ]
   },
   "cc-kuro-oni-the-demon-mask": {
-    id: "cc-kuro-oni-the-demon-mask",
-    kind: "character",
-    canvas: {
-      w: 479,
-      h: 270,
+    "id": "cc-kuro-oni-the-demon-mask",
+    "kind": "character",
+    "canvas": {
+      "w": 479,
+      "h": 270
     },
-    body: {
-      cx: 237.38,
-      cy: 110.66,
-      w: 217,
-      h: 168,
+    "body": {
+      "cx": 237.38,
+      "cy": 110.66,
+      "w": 217,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 217,
-        h: 168,
-        cx: 237.38,
-        cy: 110.66,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 217,
+        "h": 168,
+        "cx": 237.38,
+        "cy": 110.66,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 48,
-        h: 50,
-        cx: 103.78,
-        cy: 168.29,
-        ox: -133.31,
-        oy: 57.62,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 48,
+        "h": 50,
+        "cx": 103.78,
+        "cy": 168.29,
+        "ox": -133.31,
+        "oy": 57.62
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 44,
-        h: 47,
-        cx: 369.83,
-        cy: 167.71,
-        ox: 132.45,
-        oy: 57.05,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 44,
+        "h": 47,
+        "cx": 369.83,
+        "cy": 167.71,
+        "ox": 132.45,
+        "oy": 57.05
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 70,
-        h: 54,
-        cx: 178.03,
-        cy: 221.9,
-        ox: -59.34,
-        oy: 111.24,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 70,
+        "h": 54,
+        "cx": 178.03,
+        "cy": 221.9,
+        "ox": -59.34,
+        "oy": 111.24
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 75,
-        h: 54,
-        cx: 288.98,
-        cy: 221.61,
-        ox: 51.6,
-        oy: 110.95,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 75,
+        "h": 54,
+        "cx": 288.98,
+        "cy": 221.61,
+        "ox": 51.6,
+        "oy": 110.95
+      }
+    ]
   },
   "cc-magdalene-the-ledger-crowe": {
-    id: "cc-magdalene-the-ledger-crowe",
-    kind: "character",
-    canvas: {
-      w: 422,
-      h: 237,
+    "id": "cc-magdalene-the-ledger-crowe",
+    "kind": "character",
+    "canvas": {
+      "w": 422,
+      "h": 237
     },
-    body: {
-      cx: 206.85,
-      cy: 101.91,
-      w: 120,
-      h: 168,
+    "body": {
+      "cx": 206.85,
+      "cy": 101.91,
+      "w": 120,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 120,
-        h: 168,
-        cx: 206.85,
-        cy: 101.91,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 120,
+        "h": 168,
+        "cx": 206.85,
+        "cy": 101.91,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 33,
-        h: 40,
-        cx: 129.91,
-        cy: 139.75,
-        ox: -76.68,
-        oy: 37.84,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 33,
+        "h": 40,
+        "cx": 129.91,
+        "cy": 139.75,
+        "ox": -76.68,
+        "oy": 37.84
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 38,
-        cx: 281.01,
-        cy: 139.24,
-        ox: 74.16,
-        oy: 37.33,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 38,
+        "cx": 281.01,
+        "cy": 139.24,
+        "ox": 74.16,
+        "oy": 37.33
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 46,
-        cx: 174.81,
-        cy: 204.32,
-        ox: -32.04,
-        oy: 102.41,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 46,
+        "cx": 174.81,
+        "cy": 204.32,
+        "ox": -32.04,
+        "oy": 102.41
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 55,
-        h: 43,
-        cx: 243.93,
-        cy: 205.08,
-        ox: 37.33,
-        oy: 103.17,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 55,
+        "h": 43,
+        "cx": 243.93,
+        "cy": 205.08,
+        "ox": 37.33,
+        "oy": 103.17
+      }
+    ]
   },
   "cc-mawkin-sourgrin-the-hex-witch": {
-    id: "cc-mawkin-sourgrin-the-hex-witch",
-    kind: "character",
-    canvas: {
-      w: 370,
-      h: 208,
+    "id": "cc-mawkin-sourgrin-the-hex-witch",
+    "kind": "character",
+    "canvas": {
+      "w": 370,
+      "h": 208
     },
-    body: {
-      cx: 181.72,
-      cy: 99.38,
-      w: 117,
-      h: 168,
+    "body": {
+      "cx": 181.72,
+      "cy": 99.38,
+      "w": 117,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 117,
-        h: 168,
-        cx: 181.72,
-        cy: 99.38,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 117,
+        "h": 168,
+        "cx": 181.72,
+        "cy": 99.38,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 30,
-        h: 38,
-        cx: 113.33,
-        cy: 141.44,
-        ox: -68.4,
-        oy: 42.06,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 30,
+        "h": 38,
+        "cx": 113.33,
+        "cy": 141.44,
+        "ox": -68.4,
+        "oy": 42.06
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 29,
-        h: 38,
-        cx: 247.24,
-        cy: 140.11,
-        ox: 65.52,
-        oy: 40.73,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 29,
+        "h": 38,
+        "cx": 247.24,
+        "cy": 140.11,
+        "ox": 65.52,
+        "oy": 40.73
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 42,
-        h: 28,
-        cx: 154.94,
-        cy: 188.58,
-        ox: -26.78,
-        oy: 89.2,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 42,
+        "h": 28,
+        "cx": 154.94,
+        "cy": 188.58,
+        "ox": -26.78,
+        "oy": 89.2
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 47,
-        h: 27,
-        cx: 212.71,
-        cy: 187.7,
-        ox: 30.99,
-        oy: 88.32,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 47,
+        "h": 27,
+        "cx": 212.71,
+        "cy": 187.7,
+        "ox": 30.99,
+        "oy": 88.32
+      }
+    ]
   },
   "cc-mei-ling-of-the-jade-ribbon": {
-    id: "cc-mei-ling-of-the-jade-ribbon",
-    kind: "character",
-    canvas: {
-      w: 439,
-      h: 247,
+    "id": "cc-mei-ling-of-the-jade-ribbon",
+    "kind": "character",
+    "canvas": {
+      "w": 439,
+      "h": 247
     },
-    body: {
-      cx: 212.1,
-      cy: 108.68,
-      w: 123,
-      h: 168,
+    "body": {
+      "cx": 212.1,
+      "cy": 108.68,
+      "w": 123,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 123,
-        h: 168,
-        cx: 212.1,
-        cy: 108.68,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 123,
+        "h": 168,
+        "cx": 212.1,
+        "cy": 108.68,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 35,
-        h: 42,
-        cx: 125.21,
-        cy: 145.16,
-        ox: -86.62,
-        oy: 36.23,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 35,
+        "h": 42,
+        "cx": 125.21,
+        "cy": 145.16,
+        "ox": -86.62,
+        "oy": 36.23
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 35,
-        h: 41,
-        cx: 292.43,
-        cy: 144.38,
-        ox: 80.59,
-        oy: 35.7,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 35,
+        "h": 41,
+        "cx": 292.43,
+        "cy": 144.38,
+        "ox": 80.59,
+        "oy": 35.7
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 57,
-        h: 44,
-        cx: 174.83,
-        cy: 213.15,
-        ox: -37.27,
-        oy: 104.48,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 57,
+        "h": 44,
+        "cx": 174.83,
+        "cy": 213.15,
+        "ox": -37.27,
+        "oy": 104.48
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 61,
-        h: 41,
-        cx: 251.48,
-        cy: 213.15,
-        ox: 39.38,
-        oy: 104.21,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 61,
+        "h": 41,
+        "cx": 251.48,
+        "cy": 213.15,
+        "ox": 39.38,
+        "oy": 104.21
+      }
+    ]
   },
   "cc-mirelurk-caine": {
-    id: "cc-mirelurk-caine",
-    kind: "character",
-    canvas: {
-      w: 406,
-      h: 228,
+    "id": "cc-mirelurk-caine",
+    "kind": "character",
+    "canvas": {
+      "w": 406,
+      "h": 228
     },
-    body: {
-      cx: 196.89,
-      cy: 97.84,
-      w: 168,
-      h: 168,
+    "body": {
+      "cx": 196.89,
+      "cy": 97.84,
+      "w": 168,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 168,
-        h: 168,
-        cx: 196.89,
-        cy: 97.84,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 168,
+        "h": 168,
+        "cx": 196.89,
+        "cy": 97.84,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 34,
-        h: 36,
-        cx: 112.16,
-        cy: 152.22,
-        ox: -84.73,
-        oy: 54.38,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 34,
+        "h": 36,
+        "cx": 112.16,
+        "cy": 152.22,
+        "ox": -84.73,
+        "oy": 54.38
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 35,
-        cx: 276.52,
-        cy: 151.01,
-        ox: 79.87,
-        oy: 53.17,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 35,
+        "cx": 276.52,
+        "cy": 151.01,
+        "ox": 79.87,
+        "oy": 53.17
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 50,
-        h: 42,
-        cx: 164.84,
-        cy: 193.73,
-        ox: -32.05,
-        oy: 95.9,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 50,
+        "h": 42,
+        "cx": 164.84,
+        "cy": 193.73,
+        "ox": -32.05,
+        "oy": 95.9
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 53,
-        h: 41,
-        cx: 238.65,
-        cy: 193.98,
-        ox: 41.76,
-        oy: 96.14,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 53,
+        "h": 41,
+        "cx": 238.65,
+        "cy": 193.98,
+        "ox": 41.76,
+        "oy": 96.14
+      }
+    ]
   },
   "cc-neon-mirage": {
-    id: "cc-neon-mirage",
-    kind: "character",
-    canvas: {
-      w: 463,
-      h: 260,
+    "id": "cc-neon-mirage",
+    "kind": "character",
+    "canvas": {
+      "w": 463,
+      "h": 260
     },
-    body: {
-      cx: 223.35,
-      cy: 121.23,
-      w: 91,
-      h: 168,
+    "body": {
+      "cx": 223.35,
+      "cy": 121.23,
+      "w": 91,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 91,
-        h: 168,
-        cx: 223.35,
-        cy: 121.23,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 91,
+        "h": 168,
+        "cx": 223.35,
+        "cy": 121.23,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 46,
-        cx: 154.99,
-        cy: 166.06,
-        ox: -68.36,
-        oy: 44.84,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 46,
+        "cx": 154.99,
+        "cy": 166.06,
+        "ox": -68.36,
+        "oy": 44.84
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 42,
-        cx: 288.12,
-        cy: 163.57,
-        ox: 64.76,
-        oy: 42.35,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 42,
+        "cx": 288.12,
+        "cy": 163.57,
+        "ox": 64.76,
+        "oy": 42.35
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 46,
-        h: 29,
-        cx: 193.19,
-        cy: 222.8,
-        ox: -30.44,
-        oy: 101.57,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 46,
+        "h": 29,
+        "cx": 193.19,
+        "cy": 222.8,
+        "ox": -30.44,
+        "oy": 101.57
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 46,
-        h: 27,
-        cx: 258.5,
-        cy: 220.03,
-        ox: 34.87,
-        oy: 98.81,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 46,
+        "h": 27,
+        "cx": 258.5,
+        "cy": 220.03,
+        "ox": 34.87,
+        "oy": 98.81
+      }
+    ]
   },
   "cc-pyra-cinderhowl-the-flame-caster": {
-    id: "cc-pyra-cinderhowl-the-flame-caster",
-    kind: "character",
-    canvas: {
-      w: 320,
-      h: 180,
+    "id": "cc-pyra-cinderhowl-the-flame-caster",
+    "kind": "character",
+    "canvas": {
+      "w": 320,
+      "h": 180
     },
-    body: {
-      cx: 157.49,
-      cy: 86.77,
-      w: 103,
-      h: 168,
+    "body": {
+      "cx": 157.49,
+      "cy": 86.77,
+      "w": 103,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 103,
-        h: 168,
-        cx: 157.49,
-        cy: 86.77,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 103,
+        "h": 168,
+        "cx": 157.49,
+        "cy": 86.77,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 24,
-        h: 30,
-        cx: 107.22,
-        cy: 117.73,
-        ox: -50.27,
-        oy: 30.96,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 24,
+        "h": 30,
+        "cx": 107.22,
+        "cy": 117.73,
+        "ox": -50.27,
+        "oy": 30.96
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 20,
-        h: 26,
-        cx: 196.67,
-        cy: 117.92,
-        ox: 39.18,
-        oy: 31.15,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 20,
+        "h": 26,
+        "cx": 196.67,
+        "cy": 117.92,
+        "ox": 39.18,
+        "oy": 31.15
+      }
+    ]
   },
   "cc-quickfinger-odette-lacroix": {
-    id: "cc-quickfinger-odette-lacroix",
-    kind: "character",
-    canvas: {
-      w: 393,
-      h: 221,
+    "id": "cc-quickfinger-odette-lacroix",
+    "kind": "character",
+    "canvas": {
+      "w": 393,
+      "h": 221
     },
-    body: {
-      cx: 189.65,
-      cy: 99.53,
-      w: 89,
-      h: 168,
+    "body": {
+      "cx": 189.65,
+      "cy": 99.53,
+      "w": 89,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 89,
-        h: 168,
-        cx: 189.65,
-        cy: 99.53,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 89,
+        "h": 168,
+        "cx": 189.65,
+        "cy": 99.53,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 39,
-        h: 47,
-        cx: 114.35,
-        cy: 136.24,
-        ox: -75.53,
-        oy: 36.71,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 39,
+        "h": 47,
+        "cx": 114.35,
+        "cy": 136.24,
+        "ox": -75.53,
+        "oy": 36.71
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 43,
-        cx: 261.88,
-        cy: 137.65,
-        ox: 72.24,
-        oy: 38.12,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 43,
+        "cx": 261.88,
+        "cy": 137.65,
+        "ox": 72.24,
+        "oy": 38.12
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 45,
-        h: 38,
-        cx: 161.88,
-        cy: 196.94,
-        ox: -28,
-        oy: 97.18,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 45,
+        "h": 38,
+        "cx": 161.88,
+        "cy": 196.94,
+        "ox": -28,
+        "oy": 97.18
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 49,
-        h: 36,
-        cx: 227.06,
-        cy: 196.47,
-        ox: 37.41,
-        oy: 96.94,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 49,
+        "h": 36,
+        "cx": 227.06,
+        "cy": 196.47,
+        "ox": 37.41,
+        "oy": 96.94
+      }
+    ]
   },
   "cc-raijin-k-the-storm-fist": {
-    id: "cc-raijin-k-the-storm-fist",
-    kind: "character",
-    canvas: {
-      w: 421,
-      h: 237,
+    "id": "cc-raijin-k-the-storm-fist",
+    "kind": "character",
+    "canvas": {
+      "w": 421,
+      "h": 237
     },
-    body: {
-      cx: 207.74,
-      cy: 100.1,
-      w: 105,
-      h: 168,
+    "body": {
+      "cx": 207.74,
+      "cy": 100.1,
+      "w": 105,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 105,
-        h: 168,
-        cx: 207.74,
-        cy: 100.1,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 105,
+        "h": 168,
+        "cx": 207.74,
+        "cy": 100.1,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 33,
-        h: 43,
-        cx: 137.57,
-        cy: 140.84,
-        ox: -70.17,
-        oy: 40.49,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 33,
+        "h": 43,
+        "cx": 137.57,
+        "cy": 140.84,
+        "ox": -70.17,
+        "oy": 40.49
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 31,
-        h: 42,
-        cx: 279.41,
-        cy: 139.58,
-        ox: 71.68,
-        oy: 39.49,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 31,
+        "h": 42,
+        "cx": 279.41,
+        "cy": 139.58,
+        "ox": 71.68,
+        "oy": 39.49
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 48,
-        cx: 178.06,
-        cy: 203.71,
-        ox: -29.68,
-        oy: 103.62,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 48,
+        "cx": 178.06,
+        "cy": 203.71,
+        "ox": -29.68,
+        "oy": 103.62
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 45,
-        cx: 245.46,
-        cy: 204.22,
-        ox: 37.72,
-        oy: 103.87,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 45,
+        "cx": 245.46,
+        "cy": 204.22,
+        "ox": 37.72,
+        "oy": 103.87
+      }
+    ]
   },
   "cc-s-jiro-the-wayward-blade": {
-    id: "cc-s-jiro-the-wayward-blade",
-    kind: "character",
-    canvas: {
-      w: 514,
-      h: 289,
+    "id": "cc-s-jiro-the-wayward-blade",
+    "kind": "character",
+    "canvas": {
+      "w": 514,
+      "h": 289
     },
-    body: {
-      cx: 249.7,
-      cy: 124.39,
-      w: 204,
-      h: 168,
+    "body": {
+      "cx": 249.7,
+      "cy": 124.39,
+      "w": 204,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 204,
-        h: 168,
-        cx: 249.7,
-        cy: 124.39,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 204,
+        "h": 168,
+        "cx": 249.7,
+        "cy": 124.39,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 38,
-        h: 48,
-        cx: 158.17,
-        cy: 179.06,
-        ox: -91.52,
-        oy: 54.67,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 38,
+        "h": 48,
+        "cx": 158.17,
+        "cy": 179.06,
+        "ox": -91.52,
+        "oy": 54.67
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 37,
-        h: 48,
-        cx: 338.15,
-        cy: 179.06,
-        ox: 88.15,
-        oy: 54.67,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 37,
+        "h": 48,
+        "cx": 338.15,
+        "cy": 179.06,
+        "ox": 88.15,
+        "oy": 54.67
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 59,
-        h: 44,
-        cx: 208.85,
-        cy: 231.88,
-        ox: -40.85,
-        oy: 107.5,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 59,
+        "h": 44,
+        "cx": 208.85,
+        "cy": 231.88,
+        "ox": -40.85,
+        "oy": 107.5
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 63,
-        h: 43,
-        cx: 289.01,
-        cy: 232.19,
-        ox: 39.31,
-        oy: 107.8,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 63,
+        "h": 43,
+        "cx": 289.01,
+        "cy": 232.19,
+        "ox": 39.31,
+        "oy": 107.8
+      }
+    ]
   },
   "cc-sable-cipher": {
-    id: "cc-sable-cipher",
-    kind: "character",
-    canvas: {
-      w: 367,
-      h: 207,
+    "id": "cc-sable-cipher",
+    "kind": "character",
+    "canvas": {
+      "w": 367,
+      "h": 207
     },
-    body: {
-      cx: 180.52,
-      cy: 90.7,
-      w: 89,
-      h: 168,
+    "body": {
+      "cx": 180.52,
+      "cy": 90.7,
+      "w": 89,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 89,
-        h: 168,
-        cx: 180.52,
-        cy: 90.7,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 89,
+        "h": 168,
+        "cx": 180.52,
+        "cy": 90.7,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 22,
-        h: 34,
-        cx: 130.89,
-        cy: 127.37,
-        ox: -49.63,
-        oy: 36.67,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 22,
+        "h": 34,
+        "cx": 130.89,
+        "cy": 127.37,
+        "ox": -49.63,
+        "oy": 36.67
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 21,
-        h: 34,
-        cx: 224.88,
-        cy: 127.15,
-        ox: 44.36,
-        oy: 36.45,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 21,
+        "h": 34,
+        "cx": 224.88,
+        "cy": 127.15,
+        "ox": 44.36,
+        "oy": 36.45
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 31,
-        h: 23,
-        cx: 153.07,
-        cy: 189.08,
-        ox: -27.45,
-        oy: 98.38,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 31,
+        "h": 23,
+        "cx": 153.07,
+        "cy": 189.08,
+        "ox": -27.45,
+        "oy": 98.38
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 33,
-        h: 22,
-        cx: 202.92,
-        cy: 188.42,
-        ox: 22.4,
-        oy: 97.73,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 33,
+        "h": 22,
+        "cx": 202.92,
+        "cy": 188.42,
+        "ox": 22.4,
+        "oy": 97.73
+      }
+    ]
   },
   "cc-sir-galloway-the-unbending": {
-    id: "cc-sir-galloway-the-unbending",
-    kind: "character",
-    canvas: {
-      w: 435,
-      h: 245,
+    "id": "cc-sir-galloway-the-unbending",
+    "kind": "character",
+    "canvas": {
+      "w": 435,
+      "h": 245
     },
-    body: {
-      cx: 209.41,
-      cy: 104.19,
-      w: 140,
-      h: 168,
+    "body": {
+      "cx": 209.41,
+      "cy": 104.19,
+      "w": 140,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 140,
-        h: 168,
-        cx: 209.41,
-        cy: 104.19,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 140,
+        "h": 168,
+        "cx": 209.41,
+        "cy": 104.19,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 39,
-        h: 43,
-        cx: 122.68,
-        cy: 148.47,
-        ox: -87,
-        oy: 44.28,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 39,
+        "h": 43,
+        "cx": 122.68,
+        "cy": 148.47,
+        "ox": -87,
+        "oy": 44.28
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 39,
-        h: 44,
-        cx: 306.31,
-        cy: 147.94,
-        ox: 96.89,
-        oy: 43.76,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 39,
+        "h": 44,
+        "cx": 306.31,
+        "cy": 147.94,
+        "ox": 96.89,
+        "oy": 43.76
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 73,
-        h: 54,
-        cx: 164.61,
-        cy: 210.98,
-        ox: -44.8,
-        oy: 106.53,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 73,
+        "h": 54,
+        "cx": 164.61,
+        "cy": 210.98,
+        "ox": -44.8,
+        "oy": 106.53
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 73,
-        h: 54,
-        cx: 257.08,
-        cy: 210.98,
-        ox: 47.4,
-        oy: 106.79,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 73,
+        "h": 54,
+        "cx": 257.08,
+        "cy": 210.98,
+        "ox": 47.4,
+        "oy": 106.79
+      }
+    ]
   },
   "cc-sir-mordrane-the-hollow-oath": {
-    id: "cc-sir-mordrane-the-hollow-oath",
-    kind: "character",
-    canvas: {
-      w: 423,
-      h: 238,
+    "id": "cc-sir-mordrane-the-hollow-oath",
+    "kind": "character",
+    "canvas": {
+      "w": 423,
+      "h": 238
     },
-    body: {
-      cx: 205.95,
-      cy: 100.19,
-      w: 117,
-      h: 168,
+    "body": {
+      "cx": 205.95,
+      "cy": 100.19,
+      "w": 117,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 117,
-        h: 168,
-        cx: 205.95,
-        cy: 100.19,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 117,
+        "h": 168,
+        "cx": 205.95,
+        "cy": 100.19,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 44,
-        h: 45,
-        cx: 111.58,
-        cy: 143.96,
-        ox: -94.37,
-        oy: 43.52,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 44,
+        "h": 45,
+        "cx": 111.58,
+        "cy": 143.96,
+        "ox": -94.37,
+        "oy": 43.52
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 44,
-        h: 45,
-        cx: 300.07,
-        cy: 143.96,
-        ox: 94.12,
-        oy: 43.77,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 44,
+        "h": 45,
+        "cx": 300.07,
+        "cy": 143.96,
+        "ox": 94.12,
+        "oy": 43.77
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 62,
-        h: 44,
-        cx: 165.98,
-        cy: 207.22,
-        ox: -40.23,
-        oy: 106.77,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 62,
+        "h": 44,
+        "cx": 165.98,
+        "cy": 207.22,
+        "ox": -40.23,
+        "oy": 106.77
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 62,
-        h: 41,
-        cx: 245.93,
-        cy: 207.72,
-        ox: 39.72,
-        oy: 107.28,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 62,
+        "h": 41,
+        "cx": 245.93,
+        "cy": 207.72,
+        "ox": 39.72,
+        "oy": 107.28
+      }
+    ]
   },
   "cc-the-bandida-la-sombra": {
-    id: "cc-the-bandida-la-sombra",
-    kind: "character",
-    canvas: {
-      w: 447,
-      h: 252,
+    "id": "cc-the-bandida-la-sombra",
+    "kind": "character",
+    "canvas": {
+      "w": 447,
+      "h": 252
     },
-    body: {
-      cx: 220.7,
-      cy: 104.33,
-      w: 148,
-      h: 168,
+    "body": {
+      "cx": 220.7,
+      "cy": 104.33,
+      "w": 148,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 148,
-        h: 168,
-        cx: 220.7,
-        cy: 104.33,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 148,
+        "h": 168,
+        "cx": 220.7,
+        "cy": 104.33,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 44,
-        cx: 140.45,
-        cy: 148.47,
-        ox: -80.25,
-        oy: 44.14,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 44,
+        "cx": 140.45,
+        "cy": 148.47,
+        "ox": -80.25,
+        "oy": 44.14
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 37,
-        h: 43,
-        cx: 297.75,
-        cy: 147.67,
-        ox: 76.78,
-        oy: 43.61,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 37,
+        "h": 43,
+        "cx": 297.75,
+        "cy": 147.67,
+        "ox": 76.78,
+        "oy": 43.61
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 57,
-        h: 46,
-        cx: 180.31,
-        cy: 217.49,
-        ox: -40.39,
-        oy: 113.16,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 57,
+        "h": 46,
+        "cx": 180.31,
+        "cy": 217.49,
+        "ox": -40.39,
+        "oy": 113.16
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 61,
-        h: 45,
-        cx: 260.29,
-        cy: 217.76,
-        ox: 39.59,
-        oy: 113.69,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 61,
+        "h": 45,
+        "cx": 260.29,
+        "cy": 217.76,
+        "ox": 39.59,
+        "oy": 113.69
+      }
+    ]
   },
   "cc-the-hollow-mask": {
-    id: "cc-the-hollow-mask",
-    kind: "character",
-    canvas: {
-      w: 393,
-      h: 221,
+    "id": "cc-the-hollow-mask",
+    "kind": "character",
+    "canvas": {
+      "w": 393,
+      "h": 221
     },
-    body: {
-      cx: 191.73,
-      cy: 100.1,
-      w: 102,
-      h: 168,
+    "body": {
+      "cx": 191.73,
+      "cy": 100.1,
+      "w": 102,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 102,
-        h: 168,
-        cx: 191.73,
-        cy: 100.1,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 102,
+        "h": 168,
+        "cx": 191.73,
+        "cy": 100.1,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 31,
-        h: 38,
-        cx: 128.06,
-        cy: 161.19,
-        ox: -63.68,
-        oy: 61.33,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 31,
+        "h": 38,
+        "cx": 128.06,
+        "cy": 161.19,
+        "ox": -63.68,
+        "oy": 61.33
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 31,
-        h: 36,
-        cx: 248.83,
-        cy: 153.2,
-        ox: 57.33,
-        oy: 53.1,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 31,
+        "h": 36,
+        "cx": 248.83,
+        "cy": 153.2,
+        "ox": 57.33,
+        "oy": 53.1
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 44,
-        h: 26,
-        cx: 162.6,
-        cy: 196.9,
-        ox: -28.9,
-        oy: 97.04,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 44,
+        "h": 26,
+        "cx": 162.6,
+        "cy": 196.9,
+        "ox": -28.9,
+        "oy": 97.04
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 43,
-        h: 23,
-        cx: 223.92,
-        cy: 194.79,
-        ox: 32.19,
-        oy: 94.93,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 43,
+        "h": 23,
+        "cx": 223.92,
+        "cy": 194.79,
+        "ox": 32.19,
+        "oy": 94.93
+      }
+    ]
   },
   "cc-thornroot": {
-    id: "cc-thornroot",
-    kind: "character",
-    canvas: {
-      w: 379,
-      h: 213,
+    "id": "cc-thornroot",
+    "kind": "character",
+    "canvas": {
+      "w": 379,
+      "h": 213
     },
-    body: {
-      cx: 188.38,
-      cy: 98.26,
-      w: 147,
-      h: 168,
+    "body": {
+      "cx": 188.38,
+      "cy": 98.26,
+      "w": 147,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 147,
-        h: 168,
-        cx: 188.38,
-        cy: 98.26,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 147,
+        "h": 168,
+        "cx": 188.38,
+        "cy": 98.26,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 39,
-        h: 43,
-        cx: 102.57,
-        cy: 145.58,
-        ox: -85.81,
-        oy: 47.32,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 39,
+        "h": 43,
+        "cx": 102.57,
+        "cy": 145.58,
+        "ox": -85.81,
+        "oy": 47.32
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 36,
-        h: 39,
-        cx: 256.3,
-        cy: 139.25,
-        ox: 67.92,
-        oy: 40.98,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 36,
+        "h": 39,
+        "cx": 256.3,
+        "cy": 139.25,
+        "ox": 67.92,
+        "oy": 40.98
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 57,
-        h: 30,
-        cx: 144.23,
-        cy: 190.64,
-        ox: -44.15,
-        oy: 92.38,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 57,
+        "h": 30,
+        "cx": 144.23,
+        "cy": 190.64,
+        "ox": -44.15,
+        "oy": 92.38
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 27,
-        cx: 218.72,
-        cy: 186.11,
-        ox: 30.34,
-        oy: 87.85,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 27,
+        "cx": 218.72,
+        "cy": 186.11,
+        "ox": 30.34,
+        "oy": 87.85
+      }
+    ]
   },
   "cc-tinker-magnus-brasswick": {
-    id: "cc-tinker-magnus-brasswick",
-    kind: "character",
-    canvas: {
-      w: 428,
-      h: 241,
+    "id": "cc-tinker-magnus-brasswick",
+    "kind": "character",
+    "canvas": {
+      "w": 428,
+      "h": 241
     },
-    body: {
-      cx: 204.31,
-      cy: 110.98,
-      w: 98,
-      h: 168,
+    "body": {
+      "cx": 204.31,
+      "cy": 110.98,
+      "w": 98,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 98,
-        h: 168,
-        cx: 204.31,
-        cy: 110.98,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 98,
+        "h": 168,
+        "cx": 204.31,
+        "cy": 110.98,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 26,
-        h: 35,
-        cx: 160.84,
-        cy: 152.4,
-        ox: -43.47,
-        oy: 41.68,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 26,
+        "h": 35,
+        "cx": 160.84,
+        "cy": 152.4,
+        "ox": -43.47,
+        "oy": 41.68
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 22,
-        h: 32,
-        cx: 258.78,
-        cy: 150.36,
-        ox: 54.47,
-        oy: 39.63,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 22,
+        "h": 32,
+        "cx": 258.78,
+        "cy": 150.36,
+        "ox": 54.47,
+        "oy": 39.63
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 36,
-        h: 35,
-        cx: 182.58,
-        cy: 212.24,
-        ox: -21.74,
-        oy: 101.52,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 36,
+        "h": 35,
+        "cx": 182.58,
+        "cy": 212.24,
+        "ox": -21.74,
+        "oy": 101.52
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 41,
-        h: 32,
-        cx: 243.69,
-        cy: 210.45,
-        ox: 39.38,
-        oy: 99.73,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 41,
+        "h": 32,
+        "cx": 243.69,
+        "cy": 210.45,
+        "ox": 39.38,
+        "oy": 99.73
+      }
+    ]
   },
   "cc-yuki-the-hollow-smile": {
-    id: "cc-yuki-the-hollow-smile",
-    kind: "character",
-    canvas: {
-      w: 349,
-      h: 196,
+    "id": "cc-yuki-the-hollow-smile",
+    "kind": "character",
+    "canvas": {
+      "w": 349,
+      "h": 196
     },
-    body: {
-      cx: 172.59,
-      cy: 84.1,
-      w: 60,
-      h: 168,
+    "body": {
+      "cx": 172.59,
+      "cy": 84.1,
+      "w": 60,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 60,
-        h: 168,
-        cx: 172.59,
-        cy: 84.1,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 60,
+        "h": 168,
+        "cx": 172.59,
+        "cy": 84.1,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 20,
-        h: 22,
-        cx: 143.17,
-        cy: 111.86,
-        ox: -29.43,
-        oy: 27.55,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 20,
+        "h": 22,
+        "cx": 143.17,
+        "cy": 111.86,
+        "ox": -29.43,
+        "oy": 27.55
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 18,
-        h: 21,
-        cx: 207.03,
-        cy: 112.49,
-        ox: 34.43,
-        oy: 28.17,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 18,
+        "h": 21,
+        "cx": 207.03,
+        "cy": 112.49,
+        "ox": 34.43,
+        "oy": 28.17
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 21,
-        h: 17,
-        cx: 150.26,
-        cy: 183.44,
-        ox: -22.33,
-        oy: 99.34,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 21,
+        "h": 17,
+        "cx": 150.26,
+        "cy": 183.44,
+        "ox": -22.33,
+        "oy": 99.34
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 21,
-        h: 15,
-        cx: 184.9,
-        cy: 182.4,
-        ox: 12.31,
-        oy: 98.3,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 21,
+        "h": 15,
+        "cx": 184.9,
+        "cy": 182.4,
+        "ox": 12.31,
+        "oy": 98.3
+      }
+    ]
   },
-  choirmath: {
-    id: "choirmath",
-    kind: "character",
-    canvas: {
-      w: 372,
-      h: 209,
+  "choirmath": {
+    "id": "choirmath",
+    "kind": "character",
+    "canvas": {
+      "w": 372,
+      "h": 209
     },
-    body: {
-      cx: 178.68,
-      cy: 98.8,
-      w: 88,
-      h: 168,
+    "body": {
+      "cx": 178.68,
+      "cy": 98.8,
+      "w": 88,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 88,
-        h: 168,
-        cx: 178.68,
-        cy: 98.8,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 88,
+        "h": 168,
+        "cx": 178.68,
+        "cy": 98.8,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-1",
-        file: "hand-1.png",
-        w: 30,
-        h: 35,
-        cx: 113.71,
-        cy: 138.85,
-        ox: -65.2,
-        oy: 40.05,
+        "role": "hand-1",
+        "file": "hand-1.png",
+        "w": 30,
+        "h": 35,
+        "cx": 113.71,
+        "cy": 138.85,
+        "ox": -65.2,
+        "oy": 40.05
       },
       {
-        role: "hand-2",
-        file: "hand-2.png",
-        w: 15,
-        h: 15,
-        cx: 248.11,
-        cy: 74.54,
-        ox: 69.2,
-        oy: -24.25,
+        "role": "hand-2",
+        "file": "hand-2.png",
+        "w": 15,
+        "h": 15,
+        "cx": 248.11,
+        "cy": 74.54,
+        "ox": 69.2,
+        "oy": -24.25
       },
       {
-        role: "hand-3",
-        file: "hand-3.png",
-        w: 37,
-        h: 28,
-        cx: 248.33,
-        cy: 91.68,
-        ox: 69.43,
-        oy: -7.12,
+        "role": "hand-3",
+        "file": "hand-3.png",
+        "w": 37,
+        "h": 28,
+        "cx": 248.33,
+        "cy": 91.68,
+        "ox": 69.43,
+        "oy": -7.12
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 34,
-        h: 22,
-        cx: 148.64,
-        cy: 189.58,
-        ox: -30.04,
-        oy: 90.56,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 34,
+        "h": 22,
+        "cx": 148.64,
+        "cy": 189.58,
+        "ox": -30.04,
+        "oy": 90.56
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 37,
-        h: 21,
-        cx: 209.17,
-        cy: 188.92,
-        ox: 30.26,
-        oy: 90.12,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 37,
+        "h": 21,
+        "cx": 209.17,
+        "cy": 188.92,
+        "ox": 30.26,
+        "oy": 90.12
+      }
+    ]
   },
   "cinder-imp": {
-    id: "cinder-imp",
-    kind: "character",
-    canvas: {
-      w: 500,
-      h: 281,
+    "id": "cinder-imp",
+    "kind": "character",
+    "canvas": {
+      "w": 500,
+      "h": 281
     },
-    body: {
-      cx: 244.83,
-      cy: 129.14,
-      w: 167,
-      h: 168,
+    "body": {
+      "cx": 244.83,
+      "cy": 129.14,
+      "w": 167,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 167,
-        h: 168,
-        cx: 244.83,
-        cy: 129.14,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 167,
+        "h": 168,
+        "cx": 244.83,
+        "cy": 129.14,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 49,
-        h: 58,
-        cx: 128.84,
-        cy: 164.11,
-        ox: -115.99,
-        oy: 34.98,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 49,
+        "h": 58,
+        "cx": 128.84,
+        "cy": 164.11,
+        "ox": -115.99,
+        "oy": 34.98
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 47,
-        h: 57,
-        cx: 360.21,
-        cy: 163.81,
-        ox: 115.39,
-        oy: 34.68,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 47,
+        "h": 57,
+        "cx": 360.21,
+        "cy": 163.81,
+        "ox": 115.39,
+        "oy": 34.68
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 61,
-        h: 40,
-        cx: 193.71,
-        cy: 227.49,
-        ox: -51.12,
-        oy: 98.35,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 61,
+        "h": 40,
+        "cx": 193.71,
+        "cy": 227.49,
+        "ox": -51.12,
+        "oy": 98.35
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 39,
-        cx: 297.74,
-        cy: 226.89,
-        ox: 52.91,
-        oy: 97.75,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 39,
+        "cx": 297.74,
+        "cy": 226.89,
+        "ox": 52.91,
+        "oy": 97.75
+      }
+    ]
   },
-  corvane: {
-    id: "corvane",
-    kind: "character",
-    canvas: {
-      w: 411,
-      h: 231,
+  "corvane": {
+    "id": "corvane",
+    "kind": "character",
+    "canvas": {
+      "w": 411,
+      "h": 231
     },
-    body: {
-      cx: 200.71,
-      cy: 103.8,
-      w: 81,
-      h: 168,
+    "body": {
+      "cx": 200.71,
+      "cy": 103.8,
+      "w": 81,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 81,
-        h: 168,
-        cx: 200.71,
-        cy: 103.8,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 81,
+        "h": 168,
+        "cx": 200.71,
+        "cy": 103.8,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 29,
-        h: 40,
-        cx: 140.2,
-        cy: 142.42,
-        ox: -60.51,
-        oy: 38.86,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 40,
+        "cx": 140.2,
+        "cy": 142.42,
+        "ox": -60.51,
+        "oy": 38.86
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 43,
-        cx: 261.72,
-        cy: 94.45,
-        ox: 61,
-        oy: -9.35,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 43,
+        "cx": 261.72,
+        "cy": 94.45,
+        "ox": 61,
+        "oy": -9.35
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 33,
-        h: 32,
-        cx: 176.12,
-        cy: 201.7,
-        ox: -24.84,
-        oy: 97.9,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 33,
+        "h": 32,
+        "cx": 176.12,
+        "cy": 201.7,
+        "ox": -24.84,
+        "oy": 97.9
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 38,
-        h: 31,
-        cx: 231.22,
-        cy: 201.21,
-        ox: 30.5,
-        oy: 97.65,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 38,
+        "h": 31,
+        "cx": 231.22,
+        "cy": 201.21,
+        "ox": 30.5,
+        "oy": 97.65
+      }
+    ]
   },
-  critter: {
-    id: "critter",
-    kind: "character",
-    canvas: {
-      w: 585,
-      h: 329,
+  "critter": {
+    "id": "critter",
+    "kind": "character",
+    "canvas": {
+      "w": 585,
+      "h": 329
     },
-    body: {
-      cx: 279.3,
-      cy: 149.8,
-      w: 255,
-      h: 168,
+    "body": {
+      "cx": 279.3,
+      "cy": 149.8,
+      "w": 255,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 255,
-        h: 168,
-        cx: 279.3,
-        cy: 149.8,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 255,
+        "h": 168,
+        "cx": 279.3,
+        "cy": 149.8,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 51,
-        h: 44,
-        cx: 134.05,
-        cy: 163.8,
-        ox: -145.6,
-        oy: 14,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 51,
+        "h": 44,
+        "cx": 134.05,
+        "cy": 163.8,
+        "ox": -145.6,
+        "oy": 14
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 50,
-        h: 43,
-        cx: 445.55,
-        cy: 182,
-        ox: 166.25,
-        oy: 32.2,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 50,
+        "h": 43,
+        "cx": 445.55,
+        "cy": 182,
+        "ox": 166.25,
+        "oy": 32.2
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 56,
-        h: 38,
-        cx: 213.15,
-        cy: 255.15,
-        ox: -66.15,
-        oy: 105.7,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 56,
+        "h": 38,
+        "cx": 213.15,
+        "cy": 255.15,
+        "ox": -66.15,
+        "oy": 105.7
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 57,
-        h: 34,
-        cx: 334.25,
-        cy: 252.35,
-        ox: 54.95,
-        oy: 102.55,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 57,
+        "h": 34,
+        "cx": 334.25,
+        "cy": 252.35,
+        "ox": 54.95,
+        "oy": 102.55
+      }
+    ]
   },
-  driftblade: {
-    id: "driftblade",
-    kind: "weapon",
-    canvas: {
-      w: 663,
-      h: 663,
+  "driftblade": {
+    "id": "driftblade",
+    "kind": "weapon",
+    "canvas": {
+      "w": 663,
+      "h": 663
     },
-    body: {
-      cx: 294.9,
-      cy: 323.96,
-      w: 640,
-      h: 44,
+    "body": {
+      "cx": 294.9,
+      "cy": 323.96,
+      "w": 640,
+      "h": 44
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 640,
-        h: 44,
-        cx: 294.9,
-        cy: 323.96,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 640,
+        "h": 44,
+        "cx": 294.9,
+        "cy": 323.96,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  drifter: {
-    id: "drifter",
-    kind: "character",
-    canvas: {
-      w: 435,
-      h: 245,
+  "drifter": {
+    "id": "drifter",
+    "kind": "character",
+    "canvas": {
+      "w": 435,
+      "h": 245
     },
-    body: {
-      cx: 215.59,
-      cy: 95.96,
-      w: 139,
-      h: 168,
+    "body": {
+      "cx": 215.59,
+      "cy": 95.96,
+      "w": 139,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 139,
-        h: 168,
-        cx: 215.59,
-        cy: 95.96,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 139,
+        "h": 168,
+        "cx": 215.59,
+        "cy": 95.96,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 35,
-        h: 40,
-        cx: 138.09,
-        cy: 141.73,
-        ox: -77.5,
-        oy: 45.77,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 35,
+        "h": 40,
+        "cx": 138.09,
+        "cy": 141.73,
+        "ox": -77.5,
+        "oy": 45.77
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 35,
-        h: 40,
-        cx: 285.29,
-        cy: 141.73,
-        ox: 69.7,
-        oy: 45.77,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 35,
+        "h": 40,
+        "cx": 285.29,
+        "cy": 141.73,
+        "ox": 69.7,
+        "oy": 45.77
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 47,
-        cx: 178.92,
-        cy: 210.39,
-        ox: -36.41,
-        oy: 114.43,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 47,
+        "cx": 178.92,
+        "cy": 210.39,
+        "ox": -36.41,
+        "oy": 114.43
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 56,
-        h: 45,
-        cx: 251.48,
-        cy: 211.43,
-        ox: 35.89,
-        oy: 115.47,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 56,
+        "h": 45,
+        "cx": 251.48,
+        "cy": 211.43,
+        "ox": 35.89,
+        "oy": 115.47
+      }
+    ]
   },
-  dronemite: {
-    id: "dronemite",
-    kind: "character",
-    canvas: {
-      w: 753,
-      h: 424,
+  "dronemite": {
+    "id": "dronemite",
+    "kind": "character",
+    "canvas": {
+      "w": 753,
+      "h": 424
     },
-    body: {
-      cx: 369.78,
-      cy: 209.89,
-      w: 282,
-      h: 168,
+    "body": {
+      "cx": 369.78,
+      "cy": 209.89,
+      "w": 282,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 282,
-        h: 168,
-        cx: 369.78,
-        cy: 209.89,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 282,
+        "h": 168,
+        "cx": 369.78,
+        "cy": 209.89,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "dummy": {
+    "id": "dummy",
+    "kind": "character",
+    "canvas": {
+      "w": 344,
+      "h": 194
+    },
+    "body": {
+      "cx": 168.62,
+      "cy": 92.85,
+      "w": 91,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 91,
+        "h": 168,
+        "cx": 168.62,
+        "cy": 92.85,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 31,
+        "h": 44,
+        "cx": 106.44,
+        "cy": 109.12,
+        "ox": -62.18,
+        "oy": 16.26
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 28,
+        "h": 41,
+        "cx": 231.21,
+        "cy": 110.15,
+        "ox": 62.59,
+        "oy": 17.29
+      },
+      {
+        "role": "foot",
+        "file": "foot.png",
+        "w": 39,
+        "h": 21,
+        "cx": 202.79,
+        "cy": 166.76,
+        "ox": 33.97,
+        "oy": 73.91
+      }
+    ]
+  },
+  "dust-ranger": {
+    "id": "dust-ranger",
+    "kind": "character",
+    "canvas": {
+      "w": 402,
+      "h": 226
+    },
+    "body": {
+      "cx": 197.32,
+      "cy": 102.39,
+      "w": 120,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 120,
+        "h": 168,
+        "cx": 197.32,
+        "cy": 102.39,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 30,
+        "h": 36,
+        "cx": 119.69,
+        "cy": 153.82,
+        "ox": -77.63,
+        "oy": 51.43
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 25,
+        "h": 33,
+        "cx": 267.02,
+        "cy": 152.86,
+        "ox": 69.7,
+        "oy": 50.47
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 44,
+        "h": 29,
+        "cx": 167.52,
+        "cy": 199,
+        "ox": -29.8,
+        "oy": 96.86
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 45,
+        "h": 28,
+        "cx": 230.01,
+        "cy": 198.04,
+        "ox": 32.69,
+        "oy": 95.9
+      }
+    ]
   },
   "ember-mote": {
-    id: "ember-mote",
-    kind: "character",
-    canvas: {
-      w: 805,
-      h: 453,
+    "id": "ember-mote",
+    "kind": "character",
+    "canvas": {
+      "w": 805,
+      "h": 453
     },
-    body: {
-      cx: 397.62,
-      cy: 223.36,
-      w: 204,
-      h: 168,
+    "body": {
+      "cx": 397.62,
+      "cy": 223.36,
+      "w": 204,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 204,
-        h: 168,
-        cx: 397.62,
-        cy: 223.36,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 204,
+        "h": 168,
+        "cx": 397.62,
+        "cy": 223.36,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "ember-spitter": {
-    id: "ember-spitter",
-    kind: "character",
-    canvas: {
-      w: 346,
-      h: 194,
+    "id": "ember-spitter",
+    "kind": "character",
+    "canvas": {
+      "w": 346,
+      "h": 194
     },
-    body: {
-      cx: 170.69,
-      cy: 100.84,
-      w: 89,
-      h: 168,
+    "body": {
+      "cx": 170.69,
+      "cy": 100.84,
+      "w": 89,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 89,
-        h: 168,
-        cx: 170.69,
-        cy: 100.84,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 89,
+        "h": 168,
+        "cx": 170.69,
+        "cy": 100.84,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 32,
-        h: 41,
-        cx: 108.28,
-        cy: 122.33,
-        ox: -62.41,
-        oy: 21.49,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 32,
+        "h": 41,
+        "cx": 108.28,
+        "cy": 122.33,
+        "ox": -62.41,
+        "oy": 21.49
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 32,
-        h: 39,
-        cx: 232.06,
-        cy: 120.89,
-        ox: 61.58,
-        oy: 20.25,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 32,
+        "h": 39,
+        "cx": 232.06,
+        "cy": 120.89,
+        "ox": 61.58,
+        "oy": 20.25
+      }
+    ]
   },
   "frostbitten-revenant": {
-    id: "frostbitten-revenant",
-    kind: "character",
-    canvas: {
-      w: 407,
-      h: 229,
+    "id": "frostbitten-revenant",
+    "kind": "character",
+    "canvas": {
+      "w": 407,
+      "h": 229
     },
-    body: {
-      cx: 202.28,
-      cy: 98.95,
-      w: 98,
-      h: 168,
+    "body": {
+      "cx": 202.28,
+      "cy": 98.95,
+      "w": 98,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 98,
-        h: 168,
-        cx: 202.28,
-        cy: 98.95,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 98,
+        "h": 168,
+        "cx": 202.28,
+        "cy": 98.95,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 33,
-        h: 41,
-        cx: 130.07,
-        cy: 137.37,
-        ox: -72.21,
-        oy: 38.41,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 33,
+        "h": 41,
+        "cx": 130.07,
+        "cy": 137.37,
+        "ox": -72.21,
+        "oy": 38.41
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 42,
-        cx: 270.36,
-        cy: 137.37,
-        ox: 68.08,
-        oy: 38.41,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 42,
+        "cx": 270.36,
+        "cy": 137.37,
+        "ox": 68.08,
+        "oy": 38.41
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 42,
-        h: 38,
-        cx: 164.84,
-        cy: 200.09,
-        ox: -37.44,
-        oy: 101.14,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 42,
+        "h": 38,
+        "cx": 164.84,
+        "cy": 200.09,
+        "ox": -37.44,
+        "oy": 101.14
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 49,
-        h: 38,
-        cx: 235.35,
-        cy: 200.34,
-        ox: 33.31,
-        oy: 101.38,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 49,
+        "h": 38,
+        "cx": 235.35,
+        "cy": 200.34,
+        "ox": 33.31,
+        "oy": 101.38
+      }
+    ]
   },
   "frozen-knight": {
-    id: "frozen-knight",
-    kind: "character",
-    canvas: {
-      w: 392,
-      h: 220,
+    "id": "frozen-knight",
+    "kind": "character",
+    "canvas": {
+      "w": 392,
+      "h": 220
     },
-    body: {
-      cx: 191.9,
-      cy: 100.52,
-      w: 125,
-      h: 168,
+    "body": {
+      "cx": 191.9,
+      "cy": 100.52,
+      "w": 125,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 125,
-        h: 168,
-        cx: 191.9,
-        cy: 100.52,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 125,
+        "h": 168,
+        "cx": 191.9,
+        "cy": 100.52,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 45,
-        cx: 113.87,
-        cy: 138.01,
-        ox: -78.03,
-        oy: 37.72,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 45,
+        "cx": 113.87,
+        "cy": 138.01,
+        "ox": -78.03,
+        "oy": 37.72
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 31,
-        h: 40,
-        cx: 263.36,
-        cy: 140.35,
-        ox: 71.7,
-        oy: 39.83,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 31,
+        "h": 40,
+        "cx": 263.36,
+        "cy": 140.35,
+        "ox": 71.7,
+        "oy": 39.83
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 48,
-        h: 36,
-        cx: 153.47,
-        cy: 194.95,
-        ox: -38.19,
-        oy: 94.43,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 48,
+        "h": 36,
+        "cx": 153.47,
+        "cy": 194.95,
+        "ox": -38.19,
+        "oy": 94.43
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 51,
-        h: 34,
-        cx: 227.98,
-        cy: 195.18,
-        ox: 36.08,
-        oy: 94.66,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 51,
+        "h": 34,
+        "cx": 227.98,
+        "cy": 195.18,
+        "ox": 36.08,
+        "oy": 94.66
+      }
+    ]
   },
   "fungal-bloomer": {
-    id: "fungal-bloomer",
-    kind: "character",
-    canvas: {
-      w: 415,
-      h: 234,
+    "id": "fungal-bloomer",
+    "kind": "character",
+    "canvas": {
+      "w": 415,
+      "h": 234
     },
-    body: {
-      cx: 207.21,
-      cy: 125.07,
-      w: 271,
-      h: 168,
+    "body": {
+      "cx": 207.21,
+      "cy": 125.07,
+      "w": 271,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 271,
-        h: 168,
-        cx: 207.21,
-        cy: 125.07,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 271,
+        "h": 168,
+        "cx": 207.21,
+        "cy": 125.07,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  grull: {
-    id: "grull",
-    kind: "character",
-    canvas: {
-      w: 329,
-      h: 185,
+  "gatlin": {
+    "id": "gatlin",
+    "kind": "character",
+    "canvas": {
+      "w": 435,
+      "h": 245
     },
-    body: {
-      cx: 146.78,
-      cy: 83.31,
-      w: 180,
-      h: 168,
+    "body": {
+      "cx": 217.75,
+      "cy": 107.31,
+      "w": 182,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 180,
-        h: 168,
-        cx: 146.78,
-        cy: 83.31,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 182,
+        "h": 168,
+        "cx": 217.75,
+        "cy": 107.31,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand",
-        file: "hand.png",
-        w: 45,
-        h: 47,
-        cx: 228.52,
-        cy: 120.06,
-        ox: 81.74,
-        oy: 36.94,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 43,
+        "h": 50,
+        "cx": 119.03,
+        "cy": 154.72,
+        "ox": -98.72,
+        "oy": 47.4
       },
       {
-        role: "foot-1",
-        file: "foot-1.png",
-        w: 6,
-        h: 8,
-        cx: 66.22,
-        cy: 168.59,
-        ox: -80.36,
-        oy: 85.28,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 41,
+        "h": 47,
+        "cx": 314.38,
+        "cy": 156.02,
+        "ox": 96.63,
+        "oy": 48.71
       },
       {
-        role: "foot-2",
-        file: "foot-2.png",
-        w: 53,
-        h: 34,
-        cx: 127.13,
-        cy: 161.71,
-        ox: -19.65,
-        oy: 78.4,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 67,
+        "h": 33,
+        "cx": 176.33,
+        "cy": 205.77,
+        "ox": -41.41,
+        "oy": 98.46
       },
       {
-        role: "foot-3",
-        file: "foot-3.png",
-        w: 54,
-        h: 34,
-        cx: 200.62,
-        cy: 161.32,
-        ox: 53.84,
-        oy: 78.2,
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 63,
+        "h": 30,
+        "cx": 269.06,
+        "cy": 204.47,
+        "ox": 51.31,
+        "oy": 97.15
+      }
+    ]
+  },
+  "grull": {
+    "id": "grull",
+    "kind": "character",
+    "canvas": {
+      "w": 329,
+      "h": 185
+    },
+    "body": {
+      "cx": 146.78,
+      "cy": 83.31,
+      "w": 180,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 180,
+        "h": 168,
+        "cx": 146.78,
+        "cy": 83.31,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "hand",
+        "file": "hand.png",
+        "w": 45,
+        "h": 47,
+        "cx": 228.52,
+        "cy": 120.06,
+        "ox": 81.74,
+        "oy": 36.94
+      },
+      {
+        "role": "foot-1",
+        "file": "foot-1.png",
+        "w": 6,
+        "h": 8,
+        "cx": 66.22,
+        "cy": 168.59,
+        "ox": -80.36,
+        "oy": 85.28
+      },
+      {
+        "role": "foot-2",
+        "file": "foot-2.png",
+        "w": 53,
+        "h": 34,
+        "cx": 127.13,
+        "cy": 161.71,
+        "ox": -19.65,
+        "oy": 78.4
+      },
+      {
+        "role": "foot-3",
+        "file": "foot-3.png",
+        "w": 54,
+        "h": 34,
+        "cx": 200.62,
+        "cy": 161.32,
+        "ox": 53.84,
+        "oy": 78.2
+      }
+    ]
   },
   "hoarfrost-bloom": {
-    id: "hoarfrost-bloom",
-    kind: "character",
-    canvas: {
-      w: 405,
-      h: 228,
+    "id": "hoarfrost-bloom",
+    "kind": "character",
+    "canvas": {
+      "w": 405,
+      "h": 228
     },
-    body: {
-      cx: 196.56,
-      cy: 127.09,
-      w: 211,
-      h: 168,
+    "body": {
+      "cx": 196.56,
+      "cy": 127.09,
+      "w": 211,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 211,
-        h: 168,
-        cx: 196.56,
-        cy: 127.09,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 211,
+        "h": 168,
+        "cx": 196.56,
+        "cy": 127.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  kaido: {
-    id: "kaido",
-    kind: "character",
-    canvas: {
-      w: 404,
-      h: 227,
+  "kaido": {
+    "id": "kaido",
+    "kind": "character",
+    "canvas": {
+      "w": 404,
+      "h": 227
     },
-    body: {
-      cx: 199.42,
-      cy: 105.63,
-      w: 104,
-      h: 168,
+    "body": {
+      "cx": 199.42,
+      "cy": 105.63,
+      "w": 104,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 104,
-        h: 168,
-        cx: 199.42,
-        cy: 105.63,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 104,
+        "h": 168,
+        "cx": 199.42,
+        "cy": 105.63,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 32,
-        h: 38,
-        cx: 129.81,
-        cy: 137.06,
-        ox: -69.62,
-        oy: 31.42,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 32,
+        "h": 38,
+        "cx": 129.81,
+        "cy": 137.06,
+        "ox": -69.62,
+        "oy": 31.42
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 34,
-        h: 37,
-        cx: 267.83,
-        cy: 135.61,
-        ox: 68.41,
-        oy: 29.97,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 34,
+        "h": 37,
+        "cx": 267.83,
+        "cy": 135.61,
+        "ox": 68.41,
+        "oy": 29.97
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 43,
-        h: 44,
-        cx: 159.78,
-        cy: 195.07,
-        ox: -39.64,
-        oy: 89.44,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 43,
+        "h": 44,
+        "cx": 159.78,
+        "cy": 195.07,
+        "ox": -39.64,
+        "oy": 89.44
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 56,
-        h: 42,
-        cx: 244.63,
-        cy: 195.8,
-        ox: 45.2,
-        oy: 90.16,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 56,
+        "h": 42,
+        "cx": 244.63,
+        "cy": 195.8,
+        "ox": 45.2,
+        "oy": 90.16
+      }
+    ]
   },
   "laser-spire": {
-    id: "laser-spire",
-    kind: "character",
-    canvas: {
-      w: 417,
-      h: 235,
+    "id": "laser-spire",
+    "kind": "character",
+    "canvas": {
+      "w": 417,
+      "h": 235
     },
-    body: {
-      cx: 205.89,
-      cy: 123.38,
-      w: 105,
-      h: 168,
+    "body": {
+      "cx": 205.89,
+      "cy": 123.38,
+      "w": 105,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 105,
-        h: 168,
-        cx: 205.89,
-        cy: 123.38,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 105,
+        "h": 168,
+        "cx": 205.89,
+        "cy": 123.38,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 39,
-        h: 53,
-        cx: 129.86,
-        cy: 128.37,
-        ox: -76.02,
-        oy: 4.99,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 39,
+        "h": 53,
+        "cx": 129.86,
+        "cy": 128.37,
+        "ox": -76.02,
+        "oy": 4.99
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 40,
-        h: 52,
-        cx: 278.17,
-        cy: 132.61,
-        ox: 72.28,
-        oy: 9.22,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 40,
+        "h": 52,
+        "cx": 278.17,
+        "cy": 132.61,
+        "ox": 72.28,
+        "oy": 9.22
+      }
+    ]
   },
   "magma-duelist": {
-    id: "magma-duelist",
-    kind: "character",
-    canvas: {
-      w: 409,
-      h: 230,
+    "id": "magma-duelist",
+    "kind": "character",
+    "canvas": {
+      "w": 409,
+      "h": 230
     },
-    body: {
-      cx: 202.53,
-      cy: 101.14,
-      w: 114,
-      h: 168,
+    "body": {
+      "cx": 202.53,
+      "cy": 101.14,
+      "w": 114,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 114,
-        h: 168,
-        cx: 202.53,
-        cy: 101.14,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 114,
+        "h": 168,
+        "cx": 202.53,
+        "cy": 101.14,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 43,
-        h: 52,
-        cx: 118.78,
-        cy: 139.35,
-        ox: -84,
-        oy: 38.45,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 43,
+        "h": 52,
+        "cx": 118.78,
+        "cy": 139.35,
+        "ox": -84,
+        "oy": 38.45
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 41,
-        h: 52,
-        cx: 284.33,
-        cy: 138.37,
-        ox: 81.8,
-        oy: 37.22,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 41,
+        "h": 52,
+        "cx": 284.33,
+        "cy": 138.37,
+        "ox": 81.8,
+        "oy": 37.22
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 53,
-        h: 43,
-        cx: 160.41,
-        cy: 200.33,
-        ox: -42.12,
-        oy: 99.18,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 53,
+        "h": 43,
+        "cx": 160.41,
+        "cy": 200.33,
+        "ox": -42.12,
+        "oy": 99.18
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 41,
-        cx: 243.92,
-        cy: 200.57,
-        ox: 41.14,
-        oy: 99.43,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 41,
+        "cx": 243.92,
+        "cy": 200.57,
+        "ox": 41.14,
+        "oy": 99.43
+      }
+    ]
   },
-  metronome: {
-    id: "metronome",
-    kind: "character",
-    canvas: {
-      w: 362,
-      h: 204,
+  "metronome": {
+    "id": "metronome",
+    "kind": "character",
+    "canvas": {
+      "w": 362,
+      "h": 204
     },
-    body: {
-      cx: 174.49,
-      cy: 96.56,
-      w: 128,
-      h: 168,
+    "body": {
+      "cx": 174.49,
+      "cy": 96.56,
+      "w": 128,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 128,
-        h: 168,
-        cx: 174.49,
-        cy: 96.56,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 128,
+        "h": 168,
+        "cx": 174.49,
+        "cy": 96.56,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 34,
-        h: 43,
-        cx: 91.58,
-        cy: 107.6,
-        ox: -83.13,
-        oy: 11.04,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 34,
+        "h": 43,
+        "cx": 91.58,
+        "cy": 107.6,
+        "ox": -83.13,
+        "oy": 11.04
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 42,
-        cx: 272.78,
-        cy: 107.38,
-        ox: 98.29,
-        oy: 10.82,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 42,
+        "cx": 272.78,
+        "cy": 107.38,
+        "ox": 98.29,
+        "oy": 10.82
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 26,
-        h: 18,
-        cx: 151.98,
-        cy: 182.72,
-        ox: -22.52,
-        oy: 86.38,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 26,
+        "h": 18,
+        "cx": 151.98,
+        "cy": 182.72,
+        "ox": -22.52,
+        "oy": 86.38
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 26,
-        h: 16,
-        cx: 204.37,
-        cy: 182.51,
-        ox: 29.66,
-        oy: 85.95,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 26,
+        "h": 16,
+        "cx": 204.37,
+        "cy": 182.51,
+        "ox": 29.66,
+        "oy": 85.95
+      }
+    ]
   },
   "molten-brute": {
-    id: "molten-brute",
-    kind: "character",
-    canvas: {
-      w: 405,
-      h: 228,
+    "id": "molten-brute",
+    "kind": "character",
+    "canvas": {
+      "w": 405,
+      "h": 228
     },
-    body: {
-      cx: 192.73,
-      cy: 98.42,
-      w: 174,
-      h: 168,
+    "body": {
+      "cx": 192.73,
+      "cy": 98.42,
+      "w": 174,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 174,
-        h: 168,
-        cx: 192.73,
-        cy: 98.42,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 174,
+        "h": 168,
+        "cx": 192.73,
+        "cy": 98.42,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 54,
-        h: 57,
-        cx: 86.55,
-        cy: 150.06,
-        ox: -105.94,
-        oy: 51.88,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 54,
+        "h": 57,
+        "cx": 86.55,
+        "cy": 150.06,
+        "ox": -105.94,
+        "oy": 51.88
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 52,
-        h: 56,
-        cx: 302.3,
-        cy: 150.06,
-        ox: 109.82,
-        oy: 51.88,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 52,
+        "h": 56,
+        "cx": 302.3,
+        "cy": 150.06,
+        "ox": 109.82,
+        "oy": 51.88
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 69,
-        h: 36,
-        cx: 149.82,
-        cy: 199.52,
-        ox: -42.67,
-        oy: 101.33,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 69,
+        "h": 36,
+        "cx": 149.82,
+        "cy": 199.52,
+        "ox": -42.67,
+        "oy": 101.33
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 68,
-        h: 36,
-        cx: 247.27,
-        cy: 198.79,
-        ox: 54.55,
-        oy: 100.61,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 68,
+        "h": 36,
+        "cx": 247.27,
+        "cy": 198.79,
+        "ox": 54.55,
+        "oy": 100.61
+      }
+    ]
   },
   "moss-stone-golem": {
-    id: "moss-stone-golem",
-    kind: "character",
-    canvas: {
-      w: 437,
-      h: 246,
+    "id": "moss-stone-golem",
+    "kind": "character",
+    "canvas": {
+      "w": 437,
+      "h": 246
     },
-    body: {
-      cx: 212.42,
-      cy: 115.22,
-      w: 194,
-      h: 168,
+    "body": {
+      "cx": 212.42,
+      "cy": 115.22,
+      "w": 194,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 194,
-        h: 168,
-        cx: 212.42,
-        cy: 115.22,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 194,
+        "h": 168,
+        "cx": 212.42,
+        "cy": 115.22,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 55,
-        h: 62,
-        cx: 85.44,
-        cy: 148.14,
-        ox: -126.98,
-        oy: 32.92,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 55,
+        "h": 62,
+        "cx": 85.44,
+        "cy": 148.14,
+        "ox": -126.98,
+        "oy": 32.92
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 55,
-        h: 63,
-        cx: 344.1,
-        cy: 147.1,
-        ox: 131.68,
-        oy: 32.14,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 55,
+        "h": 63,
+        "cx": 344.1,
+        "cy": 147.1,
+        "ox": 131.68,
+        "oy": 32.14
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 83,
-        h: 35,
-        cx: 162.25,
-        cy: 210.85,
-        ox: -50.16,
-        oy: 95.63,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 83,
+        "h": 35,
+        "cx": 162.25,
+        "cy": 210.85,
+        "ox": -50.16,
+        "oy": 95.63
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 85,
-        h: 34,
-        cx: 269.11,
-        cy: 209.8,
-        ox: 56.7,
-        oy: 94.58,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 85,
+        "h": 34,
+        "cx": 269.11,
+        "cy": 209.8,
+        "ox": 56.7,
+        "oy": 94.58
+      }
+    ]
   },
   "mote-swarm": {
-    id: "mote-swarm",
-    kind: "character",
-    canvas: {
-      w: 604,
-      h: 340,
+    "id": "mote-swarm",
+    "kind": "character",
+    "canvas": {
+      "w": 604,
+      "h": 340
     },
-    body: {
-      cx: 308.54,
-      cy: 165.47,
-      w: 288,
-      h: 168,
+    "body": {
+      "cx": 308.54,
+      "cy": 165.47,
+      "w": 288,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 288,
-        h: 168,
-        cx: 308.54,
-        cy: 165.47,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 288,
+        "h": 168,
+        "cx": 308.54,
+        "cy": 165.47,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  nihil: {
-    id: "nihil",
-    kind: "character",
-    canvas: {
-      w: 445,
-      h: 251,
+  "nihil": {
+    "id": "nihil",
+    "kind": "character",
+    "canvas": {
+      "w": 445,
+      "h": 251
     },
-    body: {
-      cx: 219.65,
-      cy: 107.56,
-      w: 108,
-      h: 168,
+    "body": {
+      "cx": 219.65,
+      "cy": 107.56,
+      "w": 108,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 108,
-        h: 168,
-        cx: 219.65,
-        cy: 107.56,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 108,
+        "h": 168,
+        "cx": 219.65,
+        "cy": 107.56,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 37,
-        h: 42,
-        cx: 141.11,
-        cy: 146.97,
-        ox: -78.54,
-        oy: 39.4,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 37,
+        "h": 42,
+        "cx": 141.11,
+        "cy": 146.97,
+        "ox": -78.54,
+        "oy": 39.4
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 37,
-        h: 42,
-        cx: 296.06,
-        cy: 147.5,
-        ox: 76.15,
-        oy: 39.94,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 37,
+        "h": 42,
+        "cx": 296.06,
+        "cy": 147.5,
+        "ox": 76.15,
+        "oy": 39.94
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 55,
-        h: 47,
-        cx: 183.71,
-        cy: 215.66,
-        ox: -35.94,
-        oy: 108.1,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 55,
+        "h": 47,
+        "cx": 183.71,
+        "cy": 215.66,
+        "ox": -35.94,
+        "oy": 108.1
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 58,
-        h: 47,
-        cx: 257.99,
-        cy: 215.92,
-        ox: 38.34,
-        oy: 108.36,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 58,
+        "h": 47,
+        "cx": 257.99,
+        "cy": 215.92,
+        "ox": 38.34,
+        "oy": 108.36
+      }
+    ]
   },
   "nul-sightline": {
-    id: "nul-sightline",
-    kind: "character",
-    canvas: {
-      w: 378,
-      h: 212,
+    "id": "nul-sightline",
+    "kind": "character",
+    "canvas": {
+      "w": 378,
+      "h": 212
     },
-    body: {
-      cx: 185.16,
-      cy: 91.23,
-      w: 105,
-      h: 168,
+    "body": {
+      "cx": 185.16,
+      "cy": 91.23,
+      "w": 105,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 105,
-        h: 168,
-        cx: 185.16,
-        cy: 91.23,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 105,
+        "h": 168,
+        "cx": 185.16,
+        "cy": 91.23,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 26,
-        h: 32,
-        cx: 126.68,
-        cy: 147.68,
-        ox: -58.48,
-        oy: 56.68,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 26,
+        "h": 32,
+        "cx": 126.68,
+        "cy": 147.68,
+        "ox": -58.48,
+        "oy": 56.68
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 23,
-        h: 31,
-        cx: 242.74,
-        cy: 147,
-        ox: 57.58,
-        oy: 55.77,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 23,
+        "h": 31,
+        "cx": 242.74,
+        "cy": 147,
+        "ox": 57.58,
+        "oy": 55.77
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 29,
-        h: 22,
-        cx: 158.52,
-        cy: 191.26,
-        ox: -26.65,
-        oy: 100.03,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 29,
+        "h": 22,
+        "cx": 158.52,
+        "cy": 191.26,
+        "ox": -26.65,
+        "oy": 100.03
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 31,
-        h: 21,
-        cx: 212.48,
-        cy: 190.81,
-        ox: 27.55,
-        oy: 99.58,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 31,
+        "h": 21,
+        "cx": 212.48,
+        "cy": 190.81,
+        "ox": 27.55,
+        "oy": 99.58
+      }
+    ]
   },
-  pricklepulp: {
-    id: "pricklepulp",
-    kind: "character",
-    canvas: {
-      w: 474,
-      h: 267,
+  "old-rust": {
+    "id": "old-rust",
+    "kind": "character",
+    "canvas": {
+      "w": 412,
+      "h": 232
     },
-    body: {
-      cx: 235.26,
-      cy: 140.76,
-      w: 230,
-      h: 168,
+    "body": {
+      "cx": 203.52,
+      "cy": 99.42,
+      "w": 175,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 230,
-        h: 168,
-        cx: 235.26,
-        cy: 140.76,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 175,
+        "h": 168,
+        "cx": 203.52,
+        "cy": 99.42,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 48,
+        "h": 49,
+        "cx": 97.69,
+        "cy": 142.34,
+        "ox": -105.83,
+        "oy": 42.93
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 63,
+        "h": 51,
+        "cx": 301.46,
+        "cy": 143.33,
+        "ox": 97.94,
+        "oy": 43.91
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 56,
+        "h": 44,
+        "cx": 154.93,
+        "cy": 200.81,
+        "ox": -48.6,
+        "oy": 101.39
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 63,
+        "h": 44,
+        "cx": 249.9,
+        "cy": 201.06,
+        "ox": 46.38,
+        "oy": 101.64
+      }
+    ]
+  },
+  "pricklepulp": {
+    "id": "pricklepulp",
+    "kind": "character",
+    "canvas": {
+      "w": 474,
+      "h": 267
+    },
+    "body": {
+      "cx": 235.26,
+      "cy": 140.76,
+      "w": 230,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 230,
+        "h": 168,
+        "cx": 235.26,
+        "cy": 140.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "quickdraw-vane": {
-    id: "quickdraw-vane",
-    kind: "character",
-    canvas: {
-      w: 425,
-      h: 239,
+    "id": "quickdraw-vane",
+    "kind": "character",
+    "canvas": {
+      "w": 425,
+      "h": 239
     },
-    body: {
-      cx: 209.17,
-      cy: 98.87,
-      w: 153,
-      h: 168,
+    "body": {
+      "cx": 209.17,
+      "cy": 98.87,
+      "w": 153,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 153,
-        h: 168,
-        cx: 209.17,
-        cy: 98.87,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 153,
+        "h": 168,
+        "cx": 209.17,
+        "cy": 98.87,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 34,
-        h: 41,
-        cx: 132.42,
-        cy: 141.06,
-        ox: -76.5,
-        oy: 42.19,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 34,
+        "h": 41,
+        "cx": 132.42,
+        "cy": 141.06,
+        "ox": -76.5,
+        "oy": 42.19
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 40,
-        cx: 280.08,
-        cy: 139.79,
-        ox: 70.91,
-        oy: 40.92,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 40,
+        "cx": 280.08,
+        "cy": 139.79,
+        "ox": 70.91,
+        "oy": 40.92
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 46,
-        cx: 173.34,
-        cy: 205.87,
-        ox: -35.84,
-        oy: 106.75,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 46,
+        "cx": 173.34,
+        "cy": 205.87,
+        "ox": -35.84,
+        "oy": 106.75
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 59,
-        h: 45,
-        cx: 247.3,
-        cy: 206.89,
-        ox: 38.38,
-        oy: 108.02,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 59,
+        "h": 45,
+        "cx": 247.3,
+        "cy": 206.89,
+        "ox": 38.38,
+        "oy": 108.02
+      }
+    ]
   },
   "rattler-sabre": {
-    id: "rattler-sabre",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "rattler-sabre",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 133.21,
-      cy: 131.72,
-      w: 256,
-      h: 68,
+    "body": {
+      "cx": 133.21,
+      "cy": 131.72,
+      "w": 256,
+      "h": 68
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 68,
-        cx: 133.21,
-        cy: 131.72,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 68,
+        "cx": 133.21,
+        "cy": 131.72,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "rimebound-archer": {
-    id: "rimebound-archer",
-    kind: "character",
-    canvas: {
-      w: 373,
-      h: 210,
+    "id": "rimebound-archer",
+    "kind": "character",
+    "canvas": {
+      "w": 373,
+      "h": 210
     },
-    body: {
-      cx: 180.72,
-      cy: 107.54,
-      w: 122,
-      h: 168,
+    "body": {
+      "cx": 180.72,
+      "cy": 107.54,
+      "w": 122,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 122,
-        h: 168,
-        cx: 180.72,
-        cy: 107.54,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 122,
+        "h": 168,
+        "cx": 180.72,
+        "cy": 107.54,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 34,
-        h: 43,
-        cx: 108.88,
-        cy: 142.12,
-        ox: -71.84,
-        oy: 34.58,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 34,
+        "h": 43,
+        "cx": 108.88,
+        "cy": 142.12,
+        "ox": -71.84,
+        "oy": 34.58
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 31,
-        h: 39,
-        cx: 256.57,
-        cy: 140.56,
-        ox: 75.86,
-        oy: 33.02,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 31,
+        "h": 39,
+        "cx": 256.57,
+        "cy": 140.56,
+        "ox": 75.86,
+        "oy": 33.02
+      }
+    ]
   },
   "riot-enforcer": {
-    id: "riot-enforcer",
-    kind: "character",
-    canvas: {
-      w: 417,
-      h: 235,
+    "id": "riot-enforcer",
+    "kind": "character",
+    "canvas": {
+      "w": 417,
+      "h": 235
     },
-    body: {
-      cx: 204.45,
-      cy: 99.35,
-      w: 113,
-      h: 168,
+    "body": {
+      "cx": 204.45,
+      "cy": 99.35,
+      "w": 113,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 113,
-        h: 168,
-        cx: 204.45,
-        cy: 99.35,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 113,
+        "h": 168,
+        "cx": 204.45,
+        "cy": 99.35,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 40,
-        h: 49,
-        cx: 120.82,
-        cy: 138.79,
-        ox: -83.38,
-        oy: 39.44,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 40,
+        "h": 49,
+        "cx": 120.82,
+        "cy": 138.79,
+        "ox": -83.38,
+        "oy": 39.44
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 40,
-        h: 48,
-        cx: 287.32,
-        cy: 138.79,
-        ox: 82.88,
-        oy: 39.44,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 40,
+        "h": 48,
+        "cx": 287.32,
+        "cy": 138.79,
+        "ox": 82.88,
+        "oy": 39.44
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 60,
-        h: 46,
-        cx: 170.5,
-        cy: 203.95,
-        ox: -33.95,
-        oy: 104.59,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 60,
+        "h": 46,
+        "cx": 170.5,
+        "cy": 203.95,
+        "ox": -33.95,
+        "oy": 104.59
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 64,
-        h: 44,
-        cx: 250.63,
-        cy: 203.45,
-        ox: 46.18,
-        oy: 104.1,
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 64,
+        "h": 44,
+        "cx": 250.63,
+        "cy": 203.45,
+        "ox": 46.18,
+        "oy": 104.1
+      }
+    ]
+  },
+  "ronin": {
+    "id": "ronin",
+    "kind": "character",
+    "canvas": {
+      "w": 415,
+      "h": 234
+    },
+    "body": {
+      "cx": 208.7,
+      "cy": 106.95,
+      "w": 204,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 204,
+        "h": 168,
+        "cx": 208.7,
+        "cy": 106.95,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 33,
+        "h": 39,
+        "cx": 105.47,
+        "cy": 127.8,
+        "ox": -103.23,
+        "oy": 21.09
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 37,
+        "cx": 306.72,
+        "cy": 128.3,
+        "ox": 98.02,
+        "oy": 21.34
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 46,
+        "h": 38,
+        "cx": 165.77,
+        "cy": 202.74,
+        "ox": -42.68,
+        "oy": 95.79
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 54,
+        "h": 37,
+        "cx": 261.8,
+        "cy": 203.24,
+        "ox": 53.1,
+        "oy": 96.28
+      }
+    ]
   },
   "rusty-cleaver": {
-    id: "rusty-cleaver",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "rusty-cleaver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 165.54,
-      cy: 135.02,
-      w: 256,
-      h: 98,
+    "body": {
+      "cx": 165.54,
+      "cy": 135.02,
+      "w": 256,
+      "h": 98
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 98,
-        cx: 165.54,
-        cy: 135.02,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 98,
+        "cx": 165.54,
+        "cy": 135.02,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "shifter-cinder-marshal": {
-    id: "shifter-cinder-marshal",
-    kind: "character",
-    canvas: {
-      w: 442,
-      h: 249,
+    "id": "shifter-cinder-marshal",
+    "kind": "character",
+    "canvas": {
+      "w": 442,
+      "h": 249
     },
-    body: {
-      cx: 219.51,
-      cy: 109.62,
-      w: 157,
-      h: 168,
+    "body": {
+      "cx": 219.51,
+      "cy": 109.62,
+      "w": 157,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 157,
-        h: 168,
-        cx: 219.51,
-        cy: 109.62,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 157,
+        "h": 168,
+        "cx": 219.51,
+        "cy": 109.62,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 35,
-        h: 41,
-        cx: 121.51,
-        cy: 143.96,
-        ox: -98,
-        oy: 34.34,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 35,
+        "h": 41,
+        "cx": 121.51,
+        "cy": 143.96,
+        "ox": -98,
+        "oy": 34.34
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 35,
-        h: 41,
-        cx: 310.11,
-        cy: 143.96,
-        ox: 90.34,
-        oy: 34.34,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 35,
+        "h": 41,
+        "cx": 310.11,
+        "cy": 143.96,
+        "ox": 90.34,
+        "oy": 34.34
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 58,
-        h: 48,
-        cx: 179.62,
-        cy: 215.28,
-        ox: -40.15,
-        oy: 105.92,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 58,
+        "h": 48,
+        "cx": 179.62,
+        "cy": 215.28,
+        "ox": -40.15,
+        "oy": 105.92
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 60,
-        h: 46,
-        cx: 261.51,
-        cy: 216.08,
-        ox: 42,
-        oy: 106.45,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 60,
+        "h": 46,
+        "cx": 261.51,
+        "cy": 216.08,
+        "ox": 42,
+        "oy": 106.45
+      }
+    ]
   },
   "shifter-grave-warden": {
-    id: "shifter-grave-warden",
-    kind: "character",
-    canvas: {
-      w: 414,
-      h: 233,
+    "id": "shifter-grave-warden",
+    "kind": "character",
+    "canvas": {
+      "w": 414,
+      "h": 233
     },
-    body: {
-      cx: 201.45,
-      cy: 99.12,
-      w: 127,
-      h: 168,
+    "body": {
+      "cx": 201.45,
+      "cy": 99.12,
+      "w": 127,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 127,
-        h: 168,
-        cx: 201.45,
-        cy: 99.12,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 127,
+        "h": 168,
+        "cx": 201.45,
+        "cy": 99.12,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 29,
-        h: 34,
-        cx: 124.14,
-        cy: 127.12,
-        ox: -77.31,
-        oy: 27.75,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 34,
+        "cx": 124.14,
+        "cy": 127.12,
+        "ox": -77.31,
+        "oy": 27.75
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 29,
-        h: 34,
-        cx: 286.94,
-        cy: 127.36,
-        ox: 85.49,
-        oy: 28.25,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 29,
+        "h": 34,
+        "cx": 286.94,
+        "cy": 127.36,
+        "ox": 85.49,
+        "oy": 28.25
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 45,
-        h: 39,
-        cx: 164.53,
-        cy: 203.68,
-        ox: -36.92,
-        oy: 104.57,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 45,
+        "h": 39,
+        "cx": 164.53,
+        "cy": 203.68,
+        "ox": -36.92,
+        "oy": 104.57
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 47,
-        h: 38,
-        cx: 240.6,
-        cy: 203.93,
-        ox: 39.15,
-        oy: 104.81,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 47,
+        "h": 38,
+        "cx": 240.6,
+        "cy": 203.93,
+        "ox": 39.15,
+        "oy": 104.81
+      }
+    ]
   },
   "shifter-voltaic-ronin": {
-    id: "shifter-voltaic-ronin",
-    kind: "character",
-    canvas: {
-      w: 448,
-      h: 252,
+    "id": "shifter-voltaic-ronin",
+    "kind": "character",
+    "canvas": {
+      "w": 448,
+      "h": 252
     },
-    body: {
-      cx: 219.44,
-      cy: 109.05,
-      w: 106,
-      h: 168,
+    "body": {
+      "cx": 219.44,
+      "cy": 109.05,
+      "w": 106,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 106,
-        h: 168,
-        cx: 219.44,
-        cy: 109.05,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 106,
+        "h": 168,
+        "cx": 219.44,
+        "cy": 109.05,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 34,
-        h: 46,
-        cx: 139.06,
-        cy: 149.24,
-        ox: -80.38,
-        oy: 40.19,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 34,
+        "h": 46,
+        "cx": 139.06,
+        "cy": 149.24,
+        "ox": -80.38,
+        "oy": 40.19
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 33,
-        h: 45,
-        cx: 298.76,
-        cy: 150.05,
-        ox: 79.31,
-        oy: 41,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 33,
+        "h": 45,
+        "cx": 298.76,
+        "cy": 150.05,
+        "ox": 79.31,
+        "oy": 41
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 51,
-        h: 44,
-        cx: 184.61,
-        cy: 215.96,
-        ox: -35.1,
-        oy: 106.91,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 51,
+        "h": 44,
+        "cx": 184.61,
+        "cy": 215.96,
+        "ox": -35.1,
+        "oy": 106.91
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 55,
-        h: 42,
-        cx: 263.12,
-        cy: 216.77,
-        ox: 43.67,
-        oy: 107.44,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 55,
+        "h": 42,
+        "cx": 263.12,
+        "cy": 216.77,
+        "ox": 43.67,
+        "oy": 107.44
+      }
+    ]
   },
   "shriek-wraith": {
-    id: "shriek-wraith",
-    kind: "character",
-    canvas: {
-      w: 574,
-      h: 323,
+    "id": "shriek-wraith",
+    "kind": "character",
+    "canvas": {
+      "w": 574,
+      "h": 323
     },
-    body: {
-      cx: 288.59,
-      cy: 163.53,
-      w: 178,
-      h: 168,
+    "body": {
+      "cx": 288.59,
+      "cy": 163.53,
+      "w": 178,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 178,
-        h: 168,
-        cx: 288.59,
-        cy: 163.53,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 178,
+        "h": 168,
+        "cx": 288.59,
+        "cy": 163.53,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "slag-crawler": {
-    id: "slag-crawler",
-    kind: "character",
-    canvas: {
-      w: 389,
-      h: 219,
+    "id": "slag-crawler",
+    "kind": "character",
+    "canvas": {
+      "w": 389,
+      "h": 219
     },
-    body: {
-      cx: 194.72,
-      cy: 116.41,
-      w: 204,
-      h: 168,
+    "body": {
+      "cx": 194.72,
+      "cy": 116.41,
+      "w": 204,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 204,
-        h: 168,
-        cx: 194.72,
-        cy: 116.41,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 204,
+        "h": 168,
+        "cx": 194.72,
+        "cy": 116.41,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  synthrunner: {
-    id: "synthrunner",
-    kind: "character",
-    canvas: {
-      w: 473,
-      h: 266,
+  "synthrunner": {
+    "id": "synthrunner",
+    "kind": "character",
+    "canvas": {
+      "w": 473,
+      "h": 266
     },
-    body: {
-      cx: 230.79,
-      cy: 110.02,
-      w: 120,
-      h: 168,
+    "body": {
+      "cx": 230.79,
+      "cy": 110.02,
+      "w": 120,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 120,
-        h: 168,
-        cx: 230.79,
-        cy: 110.02,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 120,
+        "h": 168,
+        "cx": 230.79,
+        "cy": 110.02,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 40,
-        h: 51,
-        cx: 139.43,
-        cy: 152.16,
-        ox: -91.35,
-        oy: 42.14,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 40,
+        "h": 51,
+        "cx": 139.43,
+        "cy": 152.16,
+        "ox": -91.35,
+        "oy": 42.14
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 42,
-        h: 51,
-        cx: 317.05,
-        cy: 152.73,
-        ox: 86.26,
-        oy: 42.71,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 42,
+        "h": 51,
+        "cx": 317.05,
+        "cy": 152.73,
+        "ox": 86.26,
+        "oy": 42.71
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 64,
-        h: 45,
-        cx: 187.8,
-        cy: 223.43,
-        ox: -42.99,
-        oy: 113.41,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 64,
+        "h": 45,
+        "cx": 187.8,
+        "cy": 223.43,
+        "ox": -42.99,
+        "oy": 113.41
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 64,
-        h: 44,
-        cx: 276.61,
-        cy: 223.43,
-        ox: 45.82,
-        oy: 113.41,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 64,
+        "h": 44,
+        "cx": 276.61,
+        "cy": 223.43,
+        "ox": 45.82,
+        "oy": 113.41
+      }
+    ]
   },
   "the-hollow-king": {
-    id: "the-hollow-king",
-    kind: "character",
-    canvas: {
-      w: 391,
-      h: 220,
+    "id": "the-hollow-king",
+    "kind": "character",
+    "canvas": {
+      "w": 391,
+      "h": 220
     },
-    body: {
-      cx: 191.13,
-      cy: 100.94,
-      w: 126,
-      h: 168,
+    "body": {
+      "cx": 191.13,
+      "cy": 100.94,
+      "w": 126,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 126,
-        h: 168,
-        cx: 191.13,
-        cy: 100.94,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 126,
+        "h": 168,
+        "cx": 191.13,
+        "cy": 100.94,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 38,
-        h: 46,
-        cx: 107.25,
-        cy: 136.22,
-        ox: -83.88,
-        oy: 35.28,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 38,
+        "h": 46,
+        "cx": 107.25,
+        "cy": 136.22,
+        "ox": -83.88,
+        "oy": 35.28
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 36,
-        h: 46,
-        cx: 277.59,
-        cy: 136.46,
-        ox: 86.69,
-        oy: 35.52,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 36,
+        "h": 46,
+        "cx": 277.59,
+        "cy": 136.46,
+        "ox": 86.69,
+        "oy": 35.52
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 54,
-        h: 37,
-        cx: 155.38,
-        cy: 194.87,
-        ox: -35.52,
-        oy: 93.93,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 54,
+        "h": 37,
+        "cx": 155.38,
+        "cy": 194.87,
+        "ox": -35.52,
+        "oy": 93.93
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 55,
-        h: 36,
-        cx: 237.63,
-        cy: 194.87,
-        ox: 46.73,
-        oy: 93.93,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 55,
+        "h": 36,
+        "cx": 237.63,
+        "cy": 194.87,
+        "ox": 46.73,
+        "oy": 93.93
+      }
+    ]
   },
   "thornblade-warden": {
-    id: "thornblade-warden",
-    kind: "character",
-    canvas: {
-      w: 358,
-      h: 202,
+    "id": "thornblade-warden",
+    "kind": "character",
+    "canvas": {
+      "w": 358,
+      "h": 202
     },
-    body: {
-      cx: 177.43,
-      cy: 100.07,
-      w: 123,
-      h: 168,
+    "body": {
+      "cx": 177.43,
+      "cy": 100.07,
+      "w": 123,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 123,
-        h: 168,
-        cx: 177.43,
-        cy: 100.07,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 123,
+        "h": 168,
+        "cx": 177.43,
+        "cy": 100.07,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 38,
-        h: 40,
-        cx: 96.21,
-        cy: 129.43,
-        ox: -81,
-        oy: 29.57,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 38,
+        "h": 40,
+        "cx": 96.21,
+        "cy": 129.43,
+        "ox": -81,
+        "oy": 29.57
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 36,
-        h: 40,
-        cx: 258.64,
-        cy: 132,
-        ox: 81.43,
-        oy: 32.14,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 36,
+        "h": 40,
+        "cx": 258.64,
+        "cy": 132,
+        "ox": 81.43,
+        "oy": 32.14
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 46,
-        h: 32,
-        cx: 139.5,
-        cy: 179.57,
-        ox: -37.71,
-        oy: 79.71,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 46,
+        "h": 32,
+        "cx": 139.5,
+        "cy": 179.57,
+        "ox": -37.71,
+        "oy": 79.71
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 47,
-        h: 29,
-        cx: 225.21,
-        cy: 179.14,
-        ox: 47.79,
-        oy: 79.07,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 47,
+        "h": 29,
+        "cx": 225.21,
+        "cy": 179.14,
+        "ox": 47.79,
+        "oy": 79.07
+      }
+    ]
   },
   "tombstone-greatsword": {
-    id: "tombstone-greatsword",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "tombstone-greatsword",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 153.9,
-      cy: 136.92,
-      w: 256,
-      h: 124,
+    "body": {
+      "cx": 153.9,
+      "cy": 136.92,
+      "w": 256,
+      "h": 124
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 124,
-        cx: 153.9,
-        cy: 136.92,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 124,
+        "cx": 153.9,
+        "cy": 136.92,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "turret-node": {
-    id: "turret-node",
-    kind: "character",
-    canvas: {
-      w: 1060,
-      h: 597,
+    "id": "turret-node",
+    "kind": "character",
+    "canvas": {
+      "w": 1060,
+      "h": 597
     },
-    body: {
-      cx: 494.49,
-      cy: 493.22,
-      w: 354,
-      h: 168,
+    "body": {
+      "cx": 494.49,
+      "cy": 493.22,
+      "w": 354,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 354,
-        h: 168,
-        cx: 494.49,
-        cy: 493.22,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 354,
+        "h": 168,
+        "cx": 494.49,
+        "cy": 493.22,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 294,
-        h: 178,
-        cx: 496.39,
-        cy: 301.77,
-        ox: 1.9,
-        oy: -191.46,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 294,
+        "h": 178,
+        "cx": 496.39,
+        "cy": 301.77,
+        "ox": 1.9,
+        "oy": -191.46
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 382,
-        h: 156,
-        cx: 503.37,
-        cy: 116.65,
-        ox: 8.88,
-        oy: -376.57,
-      },
-    ],
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 382,
+        "h": 156,
+        "cx": 503.37,
+        "cy": 116.65,
+        "ox": 8.88,
+        "oy": -376.57
+      }
+    ]
   },
   "twin-bowie-fangs": {
-    id: "twin-bowie-fangs",
-    kind: "weapon",
-    canvas: {
-      w: 284,
-      h: 284,
+    "id": "twin-bowie-fangs",
+    "kind": "weapon",
+    "canvas": {
+      "w": 284,
+      "h": 284
     },
-    body: {
-      cx: 135.48,
-      cy: 172.86,
-      w: 256,
-      h: 48,
+    "body": {
+      "cx": 135.48,
+      "cy": 172.86,
+      "w": 256,
+      "h": 48
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 48,
-        cx: 135.48,
-        cy: 172.86,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 48,
+        "cx": 135.48,
+        "cy": 172.86,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 226,
-        h: 47,
-        cx: 120.75,
-        cy: 115.31,
-        ox: -14.73,
-        oy: -57.54,
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 226,
+        "h": 47,
+        "cx": 120.75,
+        "cy": 115.31,
+        "ox": -14.73,
+        "oy": -57.54
+      }
+    ]
+  },
+  "vault-ronin": {
+    "id": "vault-ronin",
+    "kind": "character",
+    "canvas": {
+      "w": 442,
+      "h": 249
+    },
+    "body": {
+      "cx": 212.45,
+      "cy": 99.74,
+      "w": 132,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 132,
+        "h": 168,
+        "cx": 212.45,
+        "cy": 99.74,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 29,
+        "h": 45,
+        "cx": 147.63,
+        "cy": 157.15,
+        "ox": -65.08,
+        "oy": 57.15
+      },
+      {
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 29,
+        "h": 45,
+        "cx": 267.74,
+        "cy": 157.15,
+        "ox": 55.29,
+        "oy": 57.15
+      },
+      {
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 41,
+        "h": 44,
+        "cx": 182.29,
+        "cy": 212.45,
+        "ox": -30.16,
+        "oy": 112.71
+      },
+      {
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 52,
+        "h": 44,
+        "cx": 246.58,
+        "cy": 212.98,
+        "ox": 34.13,
+        "oy": 112.97
+      }
+    ]
   },
   "venom-spore": {
-    id: "venom-spore",
-    kind: "character",
-    canvas: {
-      w: 528,
-      h: 297,
+    "id": "venom-spore",
+    "kind": "character",
+    "canvas": {
+      "w": 528,
+      "h": 297
     },
-    body: {
-      cx: 264,
-      cy: 148.11,
-      w: 188,
-      h: 168,
+    "body": {
+      "cx": 264,
+      "cy": 148.11,
+      "w": 188,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 188,
-        h: 168,
-        cx: 264,
-        cy: 148.11,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "body",
+        "file": "body.png",
+        "w": 188,
+        "h": 168,
+        "cx": 264,
+        "cy": 148.11,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
-  verkaln: {
-    id: "verkaln",
-    kind: "character",
-    canvas: {
-      w: 356,
-      h: 201,
+  "verkaln": {
+    "id": "verkaln",
+    "kind": "character",
+    "canvas": {
+      "w": 356,
+      "h": 201
     },
-    body: {
-      cx: 175.25,
-      cy: 94.23,
-      w: 114,
-      h: 168,
+    "body": {
+      "cx": 175.25,
+      "cy": 94.23,
+      "w": 114,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 114,
-        h: 168,
-        cx: 175.25,
-        cy: 94.23,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 114,
+        "h": 168,
+        "cx": 175.25,
+        "cy": 94.23,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 52,
-        h: 54,
-        cx: 76.32,
-        cy: 107.88,
-        ox: -98.71,
-        oy: 13.64,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 52,
+        "h": 54,
+        "cx": 76.32,
+        "cy": 107.88,
+        "ox": -98.71,
+        "oy": 13.64
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 51,
-        h: 54,
-        cx: 272.47,
-        cy: 107.88,
-        ox: 97.43,
-        oy: 13.64,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 51,
+        "h": 54,
+        "cx": 272.47,
+        "cy": 107.88,
+        "ox": 97.43,
+        "oy": 13.64
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 35,
-        h: 17,
-        cx: 138.37,
-        cy: 185.7,
-        ox: -36.88,
-        oy: 91.46,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 35,
+        "h": 17,
+        "cx": 138.37,
+        "cy": 185.7,
+        "ox": -36.88,
+        "oy": 91.46
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 34,
-        h: 17,
-        cx: 209.36,
-        cy: 185.7,
-        ox: 34.32,
-        oy: 91.25,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 34,
+        "h": 17,
+        "cx": 209.36,
+        "cy": 185.7,
+        "ox": 34.32,
+        "oy": 91.25
+      }
+    ]
   },
   "vine-lasher": {
-    id: "vine-lasher",
-    kind: "character",
-    canvas: {
-      w: 440,
-      h: 248,
+    "id": "vine-lasher",
+    "kind": "character",
+    "canvas": {
+      "w": 440,
+      "h": 248
     },
-    body: {
-      cx: 209.61,
-      cy: 107.96,
-      w: 122,
-      h: 168,
+    "body": {
+      "cx": 209.61,
+      "cy": 107.96,
+      "w": 122,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 122,
-        h: 168,
-        cx: 209.61,
-        cy: 107.96,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 122,
+        "h": 168,
+        "cx": 209.61,
+        "cy": 107.96,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 45,
-        h: 45,
-        cx: 121.13,
-        cy: 150.36,
-        ox: -88.48,
-        oy: 42.66,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 45,
+        "h": 45,
+        "cx": 121.13,
+        "cy": 150.36,
+        "ox": -88.48,
+        "oy": 42.66
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 45,
-        h: 45,
-        cx: 299.66,
-        cy: 151.15,
-        ox: 90.06,
-        oy: 43.18,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 45,
+        "h": 45,
+        "cx": 299.66,
+        "cy": 151.15,
+        "ox": 90.06,
+        "oy": 43.18
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 59,
-        h: 39,
-        cx: 170.63,
-        cy: 214.08,
-        ox: -38.97,
-        oy: 106.38,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 59,
+        "h": 39,
+        "cx": 170.63,
+        "cy": 214.08,
+        "ox": -38.97,
+        "oy": 106.38
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 55,
-        h: 37,
-        cx: 249.89,
-        cy: 213.29,
-        ox: 40.29,
-        oy: 105.33,
-      },
-    ],
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 55,
+        "h": 37,
+        "cx": 249.89,
+        "cy": 213.29,
+        "ox": 40.29,
+        "oy": 105.33
+      }
+    ]
   },
   "warden-mech": {
-    id: "warden-mech",
-    kind: "character",
-    canvas: {
-      w: 401,
-      h: 226,
+    "id": "warden-mech",
+    "kind": "character",
+    "canvas": {
+      "w": 401,
+      "h": 226
     },
-    body: {
-      cx: 196.04,
-      cy: 101.85,
-      w: 148,
-      h: 168,
+    "body": {
+      "cx": 196.04,
+      "cy": 101.85,
+      "w": 148,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "body",
-        file: "body.png",
-        w: 148,
-        h: 168,
-        cx: 196.04,
-        cy: 101.85,
-        ox: 0,
-        oy: 0,
+        "role": "body",
+        "file": "body.png",
+        "w": 148,
+        "h": 168,
+        "cx": 196.04,
+        "cy": 101.85,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "hand-l",
-        file: "hand-l.png",
-        w: 54,
-        h: 59,
-        cx: 86.04,
-        cy: 136.13,
-        ox: -109.76,
-        oy: 34.03,
+        "role": "hand-l",
+        "file": "hand-l.png",
+        "w": 54,
+        "h": 59,
+        "cx": 86.04,
+        "cy": 136.13,
+        "ox": -109.76,
+        "oy": 34.03
       },
       {
-        role: "hand-r",
-        file: "hand-r.png",
-        w: 52,
-        h: 59,
-        cx: 305.56,
-        cy: 135.65,
-        ox: 109.52,
-        oy: 33.55,
+        "role": "hand-r",
+        "file": "hand-r.png",
+        "w": 52,
+        "h": 59,
+        "cx": 305.56,
+        "cy": 135.65,
+        "ox": 109.52,
+        "oy": 33.55
       },
       {
-        role: "foot-l",
-        file: "foot-l.png",
-        w: 65,
-        h: 41,
-        cx: 154.82,
-        cy: 197.96,
-        ox: -41.22,
-        oy: 95.86,
+        "role": "foot-l",
+        "file": "foot-l.png",
+        "w": 65,
+        "h": 41,
+        "cx": 154.82,
+        "cy": 197.96,
+        "ox": -41.22,
+        "oy": 95.86
       },
       {
-        role: "foot-r",
-        file: "foot-r.png",
-        w: 65,
-        h: 38,
-        cx: 243.25,
-        cy: 198.2,
-        ox: 47.21,
-        oy: 96.34,
+        "role": "foot-r",
+        "file": "foot-r.png",
+        "w": 65,
+        "h": 38,
+        "cx": 243.25,
+        "cy": 198.2,
+        "ox": 47.21,
+        "oy": 96.34
+      }
+    ]
+  },
+  "world-titan": {
+    "id": "world-titan",
+    "kind": "character",
+    "canvas": {
+      "w": 476,
+      "h": 268
+    },
+    "body": {
+      "cx": 235.48,
+      "cy": 112.19,
+      "w": 282,
+      "h": 168
+    },
+    "parts": [
+      {
+        "role": "body",
+        "file": "body.png",
+        "w": 282,
+        "h": 168,
+        "cx": 235.48,
+        "cy": 112.19,
+        "ox": 0,
+        "oy": 0
       },
-    ],
+      {
+        "role": "foot-1",
+        "file": "foot-1.png",
+        "w": 61,
+        "h": 69,
+        "cx": 70.33,
+        "cy": 173.41,
+        "ox": -165.15,
+        "oy": 61.22
+      },
+      {
+        "role": "foot-2",
+        "file": "foot-2.png",
+        "w": 94,
+        "h": 62,
+        "cx": 164.01,
+        "cy": 219.54,
+        "ox": -71.47,
+        "oy": 107.35
+      },
+      {
+        "role": "foot-3",
+        "file": "foot-3.png",
+        "w": 94,
+        "h": 61,
+        "cx": 308.95,
+        "cy": 219.54,
+        "ox": 73.18,
+        "oy": 107.35
+      },
+      {
+        "role": "foot-4",
+        "file": "foot-4.png",
+        "w": 62,
+        "h": 68,
+        "cx": 403.48,
+        "cy": 175.12,
+        "ox": 168,
+        "oy": 62.93
+      }
+    ]
   },
   "x-gun-coffin-shotgun": {
-    id: "x-gun-coffin-shotgun",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x-gun-coffin-shotgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 149.06,
-      cy: 135.39,
-      w: 256,
-      h: 103,
+    "body": {
+      "cx": 149.06,
+      "cy": 135.39,
+      "w": 256,
+      "h": 103
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 103,
-        cx: 149.06,
-        cy: 135.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 103,
+        "cx": 149.06,
+        "cy": 135.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-gun-gatling": {
-    id: "x-gun-gatling",
-    kind: "weapon",
-    canvas: {
-      w: 319,
-      h: 319,
+    "id": "x-gun-gatling",
+    "kind": "weapon",
+    "canvas": {
+      "w": 319,
+      "h": 319
     },
-    body: {
-      cx: 164.08,
-      cy: 149.81,
-      w: 280,
-      h: 186,
+    "body": {
+      "cx": 164.08,
+      "cy": 149.81,
+      "w": 280,
+      "h": 186
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 280,
-        h: 186,
-        cx: 164.08,
-        cy: 149.81,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 280,
+        "h": 186,
+        "cx": 164.08,
+        "cy": 149.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x-gun-hand-mortar": {
+    "id": "x-gun-hand-mortar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
+    },
+    "body": {
+      "cx": 144.26,
+      "cy": 133.64,
+      "w": 256,
+      "h": 130
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 130,
+        "cx": 144.26,
+        "cy": 133.64,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-gun-nailgun": {
-    id: "x-gun-nailgun",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x-gun-nailgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 127.02,
-      cy: 127.67,
-      w: 256,
-      h: 137,
+    "body": {
+      "cx": 127.02,
+      "cy": 127.67,
+      "w": 256,
+      "h": 137
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 137,
-        cx: 127.02,
-        cy: 127.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 137,
+        "cx": 127.02,
+        "cy": 127.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-gun-revolver-cannon": {
-    id: "x-gun-revolver-cannon",
-    kind: "weapon",
-    canvas: {
-      w: 283,
-      h: 283,
+    "id": "x-gun-revolver-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 283,
+      "h": 283
     },
-    body: {
-      cx: 132.86,
-      cy: 124.95,
-      w: 256,
-      h: 136,
+    "body": {
+      "cx": 132.86,
+      "cy": 124.95,
+      "w": 256,
+      "h": 136
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 136,
-        cx: 132.86,
-        cy: 124.95,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 136,
+        "cx": 132.86,
+        "cy": 124.95,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-gun-ricochet-pistol": {
-    id: "x-gun-ricochet-pistol",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x-gun-ricochet-pistol",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 126.44,
-      cy: 119.76,
-      w: 256,
-      h: 154,
+    "body": {
+      "cx": 126.44,
+      "cy": 119.76,
+      "w": 256,
+      "h": 154
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 154,
-        cx: 126.44,
-        cy: 119.76,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 154,
+        "cx": 126.44,
+        "cy": 119.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x-staff-arcane-lance": {
+    "id": "x-staff-arcane-lance",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
+    },
+    "body": {
+      "cx": 144.75,
+      "cy": 132.53,
+      "w": 256,
+      "h": 38
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 38,
+        "cx": 144.75,
+        "cy": 132.53,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x-staff-storm-rod": {
+    "id": "x-staff-storm-rod",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
+    },
+    "body": {
+      "cx": 157.15,
+      "cy": 131.03,
+      "w": 256,
+      "h": 65
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 65,
+        "cx": 157.15,
+        "cy": 131.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-anchor": {
-    id: "x-sword-anchor",
-    kind: "weapon",
-    canvas: {
-      w: 350,
-      h: 350,
+    "id": "x-sword-anchor",
+    "kind": "weapon",
+    "canvas": {
+      "w": 350,
+      "h": 350
     },
-    body: {
-      cx: 222.42,
-      cy: 170.73,
-      w: 330,
-      h: 203,
+    "body": {
+      "cx": 222.42,
+      "cy": 170.73,
+      "w": 330,
+      "h": 203
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 330,
-        h: 203,
-        cx: 222.42,
-        cy: 170.73,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 330,
+        "h": 203,
+        "cx": 222.42,
+        "cy": 170.73,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-bone": {
-    id: "x-sword-bone",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x-sword-bone",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 157.36,
-      cy: 133.87,
-      w: 256,
-      h: 97,
+    "body": {
+      "cx": 157.36,
+      "cy": 133.87,
+      "w": 256,
+      "h": 97
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 97,
-        cx: 157.36,
-        cy: 133.87,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 97,
+        "cx": 157.36,
+        "cy": 133.87,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-buzzsaw": {
-    id: "x-sword-buzzsaw",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x-sword-buzzsaw",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 161.32,
-      cy: 135.06,
-      w: 256,
-      h: 140,
+    "body": {
+      "cx": 161.32,
+      "cy": 135.06,
+      "w": 256,
+      "h": 140
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 140,
-        cx: 161.32,
-        cy: 135.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 140,
+        "cx": 161.32,
+        "cy": 135.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-coffin": {
-    id: "x-sword-coffin",
-    kind: "weapon",
-    canvas: {
-      w: 379,
-      h: 379,
+    "id": "x-sword-coffin",
+    "kind": "weapon",
+    "canvas": {
+      "w": 379,
+      "h": 379
     },
-    body: {
-      cx: 216.41,
-      cy: 191.32,
-      w: 350,
-      h: 127,
+    "body": {
+      "cx": 216.41,
+      "cy": 191.32,
+      "w": 350,
+      "h": 127
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 350,
-        h: 127,
-        cx: 216.41,
-        cy: 191.32,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 350,
+        "h": 127,
+        "cx": 216.41,
+        "cy": 191.32,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-neon-katana": {
-    id: "x-sword-neon-katana",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x-sword-neon-katana",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 128.64,
-      cy: 133.77,
-      w: 256,
-      h: 35,
+    "body": {
+      "cx": 128.64,
+      "cy": 133.77,
+      "w": 256,
+      "h": 35
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 35,
-        cx: 128.64,
-        cy: 133.77,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 35,
+        "cx": 128.64,
+        "cy": 133.77,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x-sword-railspike": {
-    id: "x-sword-railspike",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x-sword-railspike",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 118.66,
-      cy: 136.91,
-      w: 256,
-      h: 63,
+    "body": {
+      "cx": 118.66,
+      "cy": 136.91,
+      "w": 256,
+      "h": 63
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 63,
-        cx: 118.66,
-        cy: 136.91,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 63,
+        "cx": 118.66,
+        "cy": 136.91,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x-sword-whirlwind": {
+    "id": "x-sword-whirlwind",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
+    },
+    "body": {
+      "cx": 157.67,
+      "cy": 136.28,
+      "w": 256,
+      "h": 90
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 90,
+        "cx": 157.67,
+        "cy": 136.28,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-abyssal-apocrypha": {
-    id: "x2-abyssal-apocrypha",
-    kind: "weapon",
-    canvas: {
-      w: 294,
-      h: 294,
+    "id": "x2-abyssal-apocrypha",
+    "kind": "weapon",
+    "canvas": {
+      "w": 294,
+      "h": 294
     },
-    body: {
-      cx: 147.22,
-      cy: 147.93,
-      w: 256,
-      h: 147,
+    "body": {
+      "cx": 147.22,
+      "cy": 147.93,
+      "w": 256,
+      "h": 147
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 147,
-        cx: 147.22,
-        cy: 147.93,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 147,
+        "cx": 147.22,
+        "cy": 147.93,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-anvil-drop": {
-    id: "x2-anvil-drop",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-anvil-drop",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 147.17,
-      cy: 131.75,
-      w: 256,
-      h: 140,
+    "body": {
+      "cx": 147.17,
+      "cy": 131.75,
+      "w": 256,
+      "h": 140
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 140,
-        cx: 147.17,
-        cy: 131.75,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 140,
+        "cx": 147.17,
+        "cy": 131.75,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-anvil-heart-quake-maul-staff": {
-    id: "x2-anvil-heart-quake-maul-staff",
-    kind: "weapon",
-    canvas: {
-      w: 260,
-      h: 260,
+    "id": "x2-anvil-heart-quake-maul-staff",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 260
     },
-    body: {
-      cx: 159.97,
-      cy: 126.65,
-      w: 256,
-      h: 80,
+    "body": {
+      "cx": 159.97,
+      "cy": 126.65,
+      "w": 256,
+      "h": 80
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 80,
-        cx: 159.97,
-        cy: 126.65,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 80,
+        "cx": 159.97,
+        "cy": 126.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ashfall-peacemaker": {
-    id: "x2-ashfall-peacemaker",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-ashfall-peacemaker",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 115.84,
-      cy: 122.94,
-      w: 256,
-      h: 129,
+    "body": {
+      "cx": 115.84,
+      "cy": 122.94,
+      "w": 256,
+      "h": 129
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 129,
-        cx: 115.84,
-        cy: 122.94,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 129,
+        "cx": 115.84,
+        "cy": 122.94,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-auroral-filament-wand": {
-    id: "x2-auroral-filament-wand",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-auroral-filament-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 118.1,
-      cy: 138.34,
-      w: 256,
-      h: 33,
+    "body": {
+      "cx": 118.1,
+      "cy": 138.34,
+      "w": 256,
+      "h": 33
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 33,
-        cx: 118.1,
-        cy: 138.34,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 33,
+        "cx": 118.1,
+        "cy": 138.34,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-blightfork-glaive": {
-    id: "x2-blightfork-glaive",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-blightfork-glaive",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 143.45,
-      cy: 131.09,
-      w: 256,
-      h: 64,
+    "body": {
+      "cx": 143.45,
+      "cy": 131.09,
+      "w": 256,
+      "h": 64
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 64,
-        cx: 143.45,
-        cy: 131.09,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 64,
+        "cx": 143.45,
+        "cy": 131.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-blightgrip-spore-mitt": {
-    id: "x2-blightgrip-spore-mitt",
-    kind: "weapon",
-    canvas: {
-      w: 278,
-      h: 278,
+    "id": "x2-blightgrip-spore-mitt",
+    "kind": "weapon",
+    "canvas": {
+      "w": 278,
+      "h": 278
     },
-    body: {
-      cx: 143.85,
-      cy: 140.97,
-      w: 256,
-      h: 168,
+    "body": {
+      "cx": 143.85,
+      "cy": 140.97,
+      "w": 256,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 168,
-        cx: 143.85,
-        cy: 140.97,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 168,
+        "cx": 143.85,
+        "cy": 140.97,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-bogwater-twinbits": {
-    id: "x2-bogwater-twinbits",
-    kind: "weapon",
-    canvas: {
-      w: 285,
-      h: 285,
+    "id": "x2-bogwater-twinbits",
+    "kind": "weapon",
+    "canvas": {
+      "w": 285,
+      "h": 285
     },
-    body: {
-      cx: 169.76,
-      cy: 192.91,
-      w: 256,
-      h: 96,
+    "body": {
+      "cx": 169.76,
+      "cy": 192.91,
+      "w": 256,
+      "h": 96
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 96,
-        cx: 169.76,
-        cy: 192.91,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 96,
+        "cx": 169.76,
+        "cy": 192.91,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 96,
-        cx: 169.76,
-        cy: 78.52,
-        ox: 0,
-        oy: -114.38,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 96,
+        "cx": 169.76,
+        "cy": 78.52,
+        "ox": 0,
+        "oy": -114.38
+      }
+    ]
   },
   "x2-boneash-scattergun-rifle": {
-    id: "x2-boneash-scattergun-rifle",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-boneash-scattergun-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 120.23,
-      cy: 129.6,
-      w: 256,
-      h: 73,
+    "body": {
+      "cx": 120.23,
+      "cy": 129.6,
+      "w": 256,
+      "h": 73
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 73,
-        cx: 120.23,
-        cy: 129.6,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 73,
+        "cx": 120.23,
+        "cy": 129.6,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-bonepicker-coachgun": {
-    id: "x2-bonepicker-coachgun",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-bonepicker-coachgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 136.1,
-      cy: 130.05,
-      w: 256,
-      h: 105,
+    "body": {
+      "cx": 136.1,
+      "cy": 130.05,
+      "w": 256,
+      "h": 105
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 105,
-        cx: 136.1,
-        cy: 130.05,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 105,
+        "cx": 136.1,
+        "cy": 130.05,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-bonewhisper-jian": {
-    id: "x2-bonewhisper-jian",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-bonewhisper-jian",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 124.88,
-      cy: 134.14,
-      w: 256,
-      h: 39,
+    "body": {
+      "cx": 124.88,
+      "cy": 134.14,
+      "w": 256,
+      "h": 39
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 39,
-        cx: 124.88,
-        cy: 134.14,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 39,
+        "cx": 124.88,
+        "cy": 134.14,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-boneyard-ricochet-mortar": {
-    id: "x2-boneyard-ricochet-mortar",
-    kind: "weapon",
-    canvas: {
-      w: 278,
-      h: 278,
+    "id": "x2-boneyard-ricochet-mortar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 278,
+      "h": 278
     },
-    body: {
-      cx: 131.66,
-      cy: 131.44,
-      w: 256,
-      h: 195,
+    "body": {
+      "cx": 131.66,
+      "cy": 131.44,
+      "w": 256,
+      "h": 195
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 195,
-        cx: 131.66,
-        cy: 131.44,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 195,
+        "cx": 131.66,
+        "cy": 131.44,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-boomstick-saddlegun": {
-    id: "x2-boomstick-saddlegun",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-boomstick-saddlegun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 125.16,
-      cy: 128,
-      w: 256,
-      h: 106,
+    "body": {
+      "cx": 125.16,
+      "cy": 128,
+      "w": 256,
+      "h": 106
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 106,
-        cx: 125.16,
-        cy: 128,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 106,
+        "cx": 125.16,
+        "cy": 128,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-boomtown-maul": {
-    id: "x2-boomtown-maul",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-boomtown-maul",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 169.1,
-      cy: 132.05,
-      w: 256,
-      h: 158,
+    "body": {
+      "cx": 169.1,
+      "cy": 132.05,
+      "w": 256,
+      "h": 158
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 158,
-        cx: 169.1,
-        cy: 132.05,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 158,
+        "cx": 169.1,
+        "cy": 132.05,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-boothill-hatchet": {
-    id: "x2-boothill-hatchet",
-    kind: "weapon",
-    canvas: {
-      w: 288,
-      h: 288,
+    "id": "x2-boothill-hatchet",
+    "kind": "weapon",
+    "canvas": {
+      "w": 288,
+      "h": 288
     },
-    body: {
-      cx: 170.28,
-      cy: 132.83,
-      w: 256,
-      h: 150,
+    "body": {
+      "cx": 170.28,
+      "cy": 132.83,
+      "w": 256,
+      "h": 150
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 150,
-        cx: 170.28,
-        cy: 132.83,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 150,
+        "cx": 170.28,
+        "cy": 132.83,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-boothook-harpoon": {
-    id: "x2-boothook-harpoon",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-boothook-harpoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 132.89,
-      cy: 132.89,
-      w: 256,
-      h: 66,
+    "body": {
+      "cx": 132.89,
+      "cy": 132.89,
+      "w": 256,
+      "h": 66
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 66,
-        cx: 132.89,
-        cy: 132.89,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 66,
+        "cx": 132.89,
+        "cy": 132.89,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-bramblecoil": {
-    id: "x2-bramblecoil",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-bramblecoil",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 109.96,
-      cy: 129.27,
-      w: 256,
-      h: 51,
+    "body": {
+      "cx": 109.96,
+      "cy": 129.27,
+      "w": 256,
+      "h": 51
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 51,
-        cx: 109.96,
-        cy: 129.27,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 51,
+        "cx": 109.96,
+        "cy": 129.27,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-brasswork-volley-rifle": {
-    id: "x2-brasswork-volley-rifle",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-brasswork-volley-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 126.18,
-      cy: 127.68,
-      w: 256,
-      h: 68,
+    "body": {
+      "cx": 126.18,
+      "cy": 127.68,
+      "w": 256,
+      "h": 68
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 68,
-        cx: 126.18,
-        cy: 127.68,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 68,
+        "cx": 126.18,
+        "cy": 127.68,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-brimstone-bull": {
-    id: "x2-brimstone-bull",
-    kind: "weapon",
-    canvas: {
-      w: 282,
-      h: 282,
+    "id": "x2-brimstone-bull",
+    "kind": "weapon",
+    "canvas": {
+      "w": 282,
+      "h": 282
     },
-    body: {
-      cx: 142.5,
-      cy: 133.28,
-      w: 256,
-      h: 135,
+    "body": {
+      "cx": 142.5,
+      "cy": 133.28,
+      "w": 256,
+      "h": 135
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 135,
-        cx: 142.5,
-        cy: 133.28,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 135,
+        "cx": 142.5,
+        "cy": 133.28,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-brimstone-doubleheader": {
-    id: "x2-brimstone-doubleheader",
-    kind: "weapon",
-    canvas: {
-      w: 330,
-      h: 330,
+    "id": "x2-brimstone-doubleheader",
+    "kind": "weapon",
+    "canvas": {
+      "w": 330,
+      "h": 330
     },
-    body: {
-      cx: 194.5,
-      cy: 233.66,
-      w: 256,
-      h: 128,
+    "body": {
+      "cx": 194.5,
+      "cy": 233.66,
+      "w": 256,
+      "h": 128
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 128,
-        cx: 194.5,
-        cy: 233.66,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 128,
+        "cx": 194.5,
+        "cy": 233.66,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 128,
-        cx: 194.5,
-        cy: 87.79,
-        ox: 0,
-        oy: -145.87,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 128,
+        "cx": 194.5,
+        "cy": 87.79,
+        "ox": 0,
+        "oy": -145.87
+      }
+    ]
   },
   "x2-brimstone-falcata": {
-    id: "x2-brimstone-falcata",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-brimstone-falcata",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 151.39,
-      cy: 134.06,
-      w: 256,
-      h: 109,
+    "body": {
+      "cx": 151.39,
+      "cy": 134.06,
+      "w": 256,
+      "h": 109
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 109,
-        cx: 151.39,
-        cy: 134.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 109,
+        "cx": 151.39,
+        "cy": 134.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-brimstone-rocket-tube": {
-    id: "x2-brimstone-rocket-tube",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-brimstone-rocket-tube",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 119.05,
-      cy: 132.26,
-      w: 256,
-      h: 92,
+    "body": {
+      "cx": 119.05,
+      "cy": 132.26,
+      "w": 256,
+      "h": 92
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 92,
-        cx: 119.05,
-        cy: 132.26,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 92,
+        "cx": 119.05,
+        "cy": 132.26,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-brinequill-tidescepter": {
-    id: "x2-brinequill-tidescepter",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-brinequill-tidescepter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 154.87,
-      cy: 130.87,
-      w: 256,
-      h: 67,
+    "body": {
+      "cx": 154.87,
+      "cy": 130.87,
+      "w": 256,
+      "h": 67
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 67,
-        cx: 154.87,
-        cy: 130.87,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 67,
+        "cx": 154.87,
+        "cy": 130.87,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buckhorn-boarspear": {
-    id: "x2-buckhorn-boarspear",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-buckhorn-boarspear",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 149.44,
-      cy: 132.25,
-      w: 256,
-      h: 88,
+    "body": {
+      "cx": 149.44,
+      "cy": 132.25,
+      "w": 256,
+      "h": 88
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 88,
-        cx: 149.44,
-        cy: 132.25,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 88,
+        "cx": 149.44,
+        "cy": 132.25,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buckshot-avalanche": {
-    id: "x2-buckshot-avalanche",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-buckshot-avalanche",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 137.52,
-      cy: 131.47,
-      w: 256,
-      h: 102,
+    "body": {
+      "cx": 137.52,
+      "cy": 131.47,
+      "w": 256,
+      "h": 102
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 102,
-        cx: 137.52,
-        cy: 131.47,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 102,
+        "cx": 137.52,
+        "cy": 131.47,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buckshot-bramble-bow": {
-    id: "x2-buckshot-bramble-bow",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-buckshot-bramble-bow",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 131.11,
-      cy: 131.33,
-      w: 256,
-      h: 202,
+    "body": {
+      "cx": 131.11,
+      "cy": 131.33,
+      "w": 256,
+      "h": 202
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 202,
-        cx: 131.11,
-        cy: 131.33,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 202,
+        "cx": 131.11,
+        "cy": 131.33,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buckshot-briar": {
-    id: "x2-buckshot-briar",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-buckshot-briar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 131.66,
-      cy: 128,
-      w: 256,
-      h: 72,
+    "body": {
+      "cx": 131.66,
+      "cy": 128,
+      "w": 256,
+      "h": 72
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 72,
-        cx: 131.66,
-        cy: 128,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 72,
+        "cx": 131.66,
+        "cy": 128,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buzzard-s-burnout": {
-    id: "x2-buzzard-s-burnout",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-buzzard-s-burnout",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 128.34,
-      cy: 127.66,
-      w: 256,
-      h: 190,
+    "body": {
+      "cx": 128.34,
+      "cy": 127.66,
+      "w": 256,
+      "h": 190
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 190,
-        cx: 128.34,
-        cy: 127.66,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 190,
+        "cx": 128.34,
+        "cy": 127.66,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-buzzard-s-eye-marksman": {
-    id: "x2-buzzard-s-eye-marksman",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-buzzard-s-eye-marksman",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 100.41,
-      cy: 127.47,
-      w: 256,
-      h: 69,
+    "body": {
+      "cx": 100.41,
+      "cy": 127.47,
+      "w": 256,
+      "h": 69
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 69,
-        cx: 100.41,
-        cy: 127.47,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 69,
+        "cx": 100.41,
+        "cy": 127.47,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cairn-of-hollow-names": {
-    id: "x2-cairn-of-hollow-names",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-cairn-of-hollow-names",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 148.42,
-      cy: 135.46,
-      w: 256,
-      h: 64,
+    "body": {
+      "cx": 148.42,
+      "cy": 135.46,
+      "w": 256,
+      "h": 64
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 64,
-        cx: 148.42,
-        cy: 135.46,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 64,
+        "cx": 148.42,
+        "cy": 135.46,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-calamity-howitzer": {
-    id: "x2-calamity-howitzer",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-calamity-howitzer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 116.71,
-      cy: 134.82,
-      w: 256,
-      h: 88,
+    "body": {
+      "cx": 116.71,
+      "cy": 134.82,
+      "w": 256,
+      "h": 88
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 88,
-        cx: 116.71,
-        cy: 134.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 88,
+        "cx": 116.71,
+        "cy": 134.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-carom-coachgun": {
-    id: "x2-carom-coachgun",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-carom-coachgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 133.68,
-      cy: 127.78,
-      w: 256,
-      h: 80,
+    "body": {
+      "cx": 133.68,
+      "cy": 127.78,
+      "w": 256,
+      "h": 80
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 80,
-        cx: 133.68,
-        cy: 127.78,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 80,
+        "cx": 133.68,
+        "cy": 127.78,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-carom-king": {
-    id: "x2-carom-king",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-carom-king",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 118.5,
-      cy: 122.09,
-      w: 256,
-      h: 93,
+    "body": {
+      "cx": 118.5,
+      "cy": 122.09,
+      "w": 256,
+      "h": 93
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 93,
-        cx: 118.5,
-        cy: 122.09,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 93,
+        "cx": 118.5,
+        "cy": 122.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-carrion-cudgel": {
-    id: "x2-carrion-cudgel",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x2-carrion-cudgel",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 160.86,
-      cy: 139.7,
-      w: 256,
-      h: 99,
+    "body": {
+      "cx": 160.86,
+      "cy": 139.7,
+      "w": 256,
+      "h": 99
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 99,
-        cx: 160.86,
-        cy: 139.7,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 99,
+        "cx": 160.86,
+        "cy": 139.7,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-carrion-effigy": {
-    id: "x2-carrion-effigy",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-carrion-effigy",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 138.18,
-      cy: 129.08,
-      w: 256,
-      h: 113,
+    "body": {
+      "cx": 138.18,
+      "cy": 129.08,
+      "w": 256,
+      "h": 113
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 113,
-        cx: 138.18,
-        cy: 129.08,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 113,
+        "cx": 138.18,
+        "cy": 129.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-carrion-roost-necro-scepter": {
-    id: "x2-carrion-roost-necro-scepter",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-carrion-roost-necro-scepter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 157.93,
-      cy: 130.33,
-      w: 256,
-      h: 52,
+    "body": {
+      "cx": 157.93,
+      "cy": 130.33,
+      "w": 256,
+      "h": 52
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 52,
-        cx: 157.93,
-        cy: 130.33,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 52,
+        "cx": 157.93,
+        "cy": 130.33,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-caustic-drum-sweeper": {
-    id: "x2-caustic-drum-sweeper",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-caustic-drum-sweeper",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 127.68,
-      cy: 123.59,
-      w: 256,
-      h: 150,
+    "body": {
+      "cx": 127.68,
+      "cy": 123.59,
+      "w": 256,
+      "h": 150
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 150,
-        cx: 127.68,
-        cy: 123.59,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 150,
+        "cx": 127.68,
+        "cy": 123.59,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-censer-of-the-weeping-saint": {
-    id: "x2-censer-of-the-weeping-saint",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-censer-of-the-weeping-saint",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 169.47,
-      cy: 149.52,
-      w: 256,
-      h: 165,
+    "body": {
+      "cx": 169.47,
+      "cy": 149.52,
+      "w": 256,
+      "h": 165
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 165,
-        cx: 169.47,
-        cy: 149.52,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 165,
+        "cx": 169.47,
+        "cy": 149.52,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-choir-iron-greataxe": {
-    id: "x2-choir-iron-greataxe",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-choir-iron-greataxe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 181.18,
-      cy: 128.84,
-      w: 256,
-      h: 125,
+    "body": {
+      "cx": 181.18,
+      "cy": 128.84,
+      "w": 256,
+      "h": 125
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 125,
-        cx: 181.18,
-        cy: 128.84,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 125,
+        "cx": 181.18,
+        "cy": 128.84,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinder-briar": {
-    id: "x2-cinder-briar",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-cinder-briar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 135.76,
-      cy: 129.05,
-      w: 256,
-      h: 53,
+    "body": {
+      "cx": 135.76,
+      "cy": 129.05,
+      "w": 256,
+      "h": 53
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 53,
-        cx: 135.76,
-        cy: 129.05,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 53,
+        "cx": 135.76,
+        "cy": 129.05,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderbore-longrifle": {
-    id: "x2-cinderbore-longrifle",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-cinderbore-longrifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 118.93,
-      cy: 129.39,
-      w: 256,
-      h: 57,
+    "body": {
+      "cx": 118.93,
+      "cy": 129.39,
+      "w": 256,
+      "h": 57
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 57,
-        cx: 118.93,
-        cy: 129.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 57,
+        "cx": 118.93,
+        "cy": 129.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderbrand-cleaver": {
-    id: "x2-cinderbrand-cleaver",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-cinderbrand-cleaver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 168.06,
-      cy: 133.39,
-      w: 256,
-      h: 97,
+    "body": {
+      "cx": 168.06,
+      "cy": 133.39,
+      "w": 256,
+      "h": 97
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 97,
-        cx: 168.06,
-        cy: 133.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 97,
+        "cx": 168.06,
+        "cy": 133.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderbrand-pike": {
-    id: "x2-cinderbrand-pike",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-cinderbrand-pike",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 125.56,
-      cy: 132.99,
-      w: 256,
-      h: 21,
+    "body": {
+      "cx": 125.56,
+      "cy": 132.99,
+      "w": 256,
+      "h": 21
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 21,
-        cx: 125.56,
-        cy: 132.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 21,
+        "cx": 125.56,
+        "cy": 132.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderchoke-blunderbuss": {
-    id: "x2-cinderchoke-blunderbuss",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-cinderchoke-blunderbuss",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 146.84,
-      cy: 132.12,
-      w: 256,
-      h: 121,
+    "body": {
+      "cx": 146.84,
+      "cy": 132.12,
+      "w": 256,
+      "h": 121
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 121,
-        cx: 146.84,
-        cy: 132.12,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 121,
+        "cx": 146.84,
+        "cy": 132.12,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderchoke-brazier-orb": {
-    id: "x2-cinderchoke-brazier-orb",
-    kind: "weapon",
-    canvas: {
-      w: 291,
-      h: 291,
+    "id": "x2-cinderchoke-brazier-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 291,
+      "h": 291
     },
-    body: {
-      cx: 168.73,
-      cy: 142.27,
-      w: 256,
-      h: 148,
+    "body": {
+      "cx": 168.73,
+      "cy": 142.27,
+      "w": 256,
+      "h": 148
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 148,
-        cx: 168.73,
-        cy: 142.27,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 148,
+        "cx": 168.73,
+        "cy": 142.27,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderfan-dragoon": {
-    id: "x2-cinderfan-dragoon",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-cinderfan-dragoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 150.15,
-      cy: 134.22,
-      w: 256,
-      h: 107,
+    "body": {
+      "cx": 150.15,
+      "cy": 134.22,
+      "w": 256,
+      "h": 107
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 107,
-        cx: 150.15,
-        cy: 134.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 107,
+        "cx": 150.15,
+        "cy": 134.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderfang-derringer": {
-    id: "x2-cinderfang-derringer",
-    kind: "weapon",
-    canvas: {
-      w: 284,
-      h: 284,
+    "id": "x2-cinderfang-derringer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 284,
+      "h": 284
     },
-    body: {
-      cx: 135.25,
-      cy: 129.81,
-      w: 256,
-      h: 144,
+    "body": {
+      "cx": 135.25,
+      "cy": 129.81,
+      "w": 256,
+      "h": 144
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 144,
-        cx: 135.25,
-        cy: 129.81,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 144,
+        "cx": 135.25,
+        "cy": 129.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderfang-wakizashi-pair": {
-    id: "x2-cinderfang-wakizashi-pair",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-cinderfang-wakizashi-pair",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 126.71,
-      cy: 160.43,
-      w: 256,
-      h: 49,
+    "body": {
+      "cx": 126.71,
+      "cy": 160.43,
+      "w": 256,
+      "h": 49
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 49,
-        cx: 126.71,
-        cy: 160.43,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 49,
+        "cx": 126.71,
+        "cy": 160.43,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 49,
-        cx: 126.71,
-        cy: 108.24,
-        ox: 0,
-        oy: -52.19,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 49,
+        "cx": 126.71,
+        "cy": 108.24,
+        "ox": 0,
+        "oy": -52.19
+      }
+    ]
   },
   "x2-cinderpalm-brand-glove": {
-    id: "x2-cinderpalm-brand-glove",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-cinderpalm-brand-glove",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 144.86,
-      cy: 135.35,
-      w: 256,
-      h: 168,
+    "body": {
+      "cx": 144.86,
+      "cy": 135.35,
+      "w": 256,
+      "h": 168
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 168,
-        cx: 144.86,
-        cy: 135.35,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 168,
+        "cx": 144.86,
+        "cy": 135.35,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderquill-almanac": {
-    id: "x2-cinderquill-almanac",
-    kind: "weapon",
-    canvas: {
-      w: 316,
-      h: 316,
+    "id": "x2-cinderquill-almanac",
+    "kind": "weapon",
+    "canvas": {
+      "w": 316,
+      "h": 316
     },
-    body: {
-      cx: 158.58,
-      cy: 154.56,
-      w: 256,
-      h: 214,
+    "body": {
+      "cx": 158.58,
+      "cy": 154.56,
+      "w": 256,
+      "h": 214
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 214,
-        cx: 158.58,
-        cy: 154.56,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 214,
+        "cx": 158.58,
+        "cy": 154.56,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-cinderquill-dart-caster": {
-    id: "x2-cinderquill-dart-caster",
-    kind: "weapon",
-    canvas: {
-      w: 286,
-      h: 286,
+    "id": "x2-cinderquill-dart-caster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 286,
+      "h": 286
     },
-    body: {
-      cx: 145.99,
-      cy: 145.31,
-      w: 256,
-      h: 60,
+    "body": {
+      "cx": 145.99,
+      "cy": 145.31,
+      "w": 256,
+      "h": 60
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 60,
-        cx: 145.99,
-        cy: 145.31,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 60,
+        "cx": 145.99,
+        "cy": 145.31,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 245,
-        h: 72,
-        cx: 148.04,
-        cy: 226.85,
-        ox: 2.05,
-        oy: 81.54,
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 245,
+        "h": 72,
+        "cx": 148.04,
+        "cy": 226.85,
+        "ox": 2.05,
+        "oy": 81.54
       },
       {
-        role: "part-3",
-        file: "part-3.png",
-        w: 232,
-        h: 84,
-        cx: 147.36,
-        cy: 59.67,
-        ox: 1.14,
-        oy: -85.86,
-      },
-    ],
+        "role": "part-3",
+        "file": "part-3.png",
+        "w": 232,
+        "h": 84,
+        "cx": 147.36,
+        "cy": 59.67,
+        "ox": 1.14,
+        "oy": -85.86
+      }
+    ]
   },
   "x2-codex-of-forked-tongues": {
-    id: "x2-codex-of-forked-tongues",
-    kind: "weapon",
-    canvas: {
-      w: 285,
-      h: 285,
+    "id": "x2-codex-of-forked-tongues",
+    "kind": "weapon",
+    "canvas": {
+      "w": 285,
+      "h": 285
     },
-    body: {
-      cx: 141.64,
-      cy: 142.1,
-      w: 256,
-      h: 193,
+    "body": {
+      "cx": 141.64,
+      "cy": 142.1,
+      "w": 256,
+      "h": 193
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 193,
-        cx: 141.64,
-        cy: 142.1,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 193,
+        "cx": 141.64,
+        "cy": 142.1,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-coffin-nail-carbine": {
-    id: "x2-coffin-nail-carbine",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-coffin-nail-carbine",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 123.77,
-      cy: 127.89,
-      w: 256,
-      h: 89,
+    "body": {
+      "cx": 123.77,
+      "cy": 127.89,
+      "w": 256,
+      "h": 89
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 89,
-        cx: 123.77,
-        cy: 127.89,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 89,
+        "cx": 123.77,
+        "cy": 127.89,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-coffin-nail-rosary-orb": {
-    id: "x2-coffin-nail-rosary-orb",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-coffin-nail-rosary-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 163.88,
-      cy: 134.56,
-      w: 256,
-      h: 107,
+    "body": {
+      "cx": 163.88,
+      "cy": 134.56,
+      "w": 256,
+      "h": 107
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 107,
-        cx: 163.88,
-        cy: 134.56,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 107,
+        "cx": 163.88,
+        "cy": 134.56,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-coffinnail-driver": {
-    id: "x2-coffinnail-driver",
-    kind: "weapon",
-    canvas: {
-      w: 256,
-      h: 85,
+    "id": "x2-coffinnail-driver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 85
     },
-    body: {
-      cx: 129.65,
-      cy: 44.32,
-      w: 256,
-      h: 85,
+    "body": {
+      "cx": 129.65,
+      "cy": 44.32,
+      "w": 256,
+      "h": 85
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 85,
-        cx: 129.65,
-        cy: 44.32,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 85,
+        "cx": 129.65,
+        "cy": 44.32,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 77,
-        h: 45,
-        cx: 38.42,
-        cy: 39.72,
-        ox: -91.23,
-        oy: -4.6,
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 77,
+        "h": 45,
+        "cx": 38.42,
+        "cy": 39.72,
+        "ox": -91.23,
+        "oy": -4.6
       },
       {
-        role: "part-3",
-        file: "part-3.png",
-        w: 77,
-        h: 43,
-        cx: 123.87,
-        cy: 42.55,
-        ox: -5.66,
-        oy: -1.65,
+        "role": "part-3",
+        "file": "part-3.png",
+        "w": 77,
+        "h": 43,
+        "cx": 123.87,
+        "cy": 42.55,
+        "ox": -5.66,
+        "oy": -1.65
       },
       {
-        role: "part-4",
-        file: "part-4.png",
-        w: 78,
-        h: 51,
-        cx: 210.74,
-        cy: 39.01,
-        ox: 81.09,
-        oy: -5.3,
-      },
-    ],
+        "role": "part-4",
+        "file": "part-4.png",
+        "w": 78,
+        "h": 51,
+        "cx": 210.74,
+        "cy": 39.01,
+        "ox": 81.09,
+        "oy": -5.3
+      }
+    ]
   },
   "x2-cogwright-s-tesla-rod": {
-    id: "x2-cogwright-s-tesla-rod",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-cogwright-s-tesla-rod",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 138.88,
-      cy: 131.84,
-      w: 256,
-      h: 39,
+    "body": {
+      "cx": 138.88,
+      "cy": 131.84,
+      "w": 256,
+      "h": 39
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 39,
-        cx: 138.88,
-        cy: 131.84,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 39,
+        "cx": 138.88,
+        "cy": 131.84,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-coilshot-meteor": {
-    id: "x2-coilshot-meteor",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-coilshot-meteor",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 160.44,
-      cy: 127.69,
-      w: 256,
-      h: 87,
+    "body": {
+      "cx": 160.44,
+      "cy": 127.69,
+      "w": 256,
+      "h": 87
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 87,
-        cx: 160.44,
-        cy: 127.69,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 87,
+        "cx": 160.44,
+        "cy": 127.69,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-coyote-s-grin": {
-    id: "x2-coyote-s-grin",
-    kind: "weapon",
-    canvas: {
-      w: 256,
-      h: 256,
+    "id": "x2-coyote-s-grin",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 256
     },
-    body: {
-      cx: 127.8,
-      cy: 128.2,
-      w: 256,
-      h: 256,
+    "body": {
+      "cx": 127.8,
+      "cy": 128.2,
+      "w": 256,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 256,
-        cx: 127.8,
-        cy: 128.2,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 256,
+        "cx": 127.8,
+        "cy": 128.2,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 167,
-        h: 39,
-        cx: 109.83,
-        cy: 106.77,
-        ox: -17.96,
-        oy: -21.23,
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 167,
+        "h": 39,
+        "cx": 109.83,
+        "cy": 106.77,
+        "ox": -17.96,
+        "oy": -21.23
       },
       {
-        role: "part-3",
-        file: "part-3.png",
-        w: 185,
-        h: 32,
-        cx: 121.06,
-        cy: 226.81,
-        ox: -6.74,
-        oy: 98.6,
+        "role": "part-3",
+        "file": "part-3.png",
+        "w": 185,
+        "h": 32,
+        "cx": 121.06,
+        "cy": 226.81,
+        "ox": -6.74,
+        "oy": 98.6
       },
       {
-        role: "part-4",
-        file: "part-4.png",
-        w: 177,
-        h: 31,
-        cx: 118.2,
-        cy: 195.37,
-        ox: -9.59,
-        oy: 67.16,
+        "role": "part-4",
+        "file": "part-4.png",
+        "w": 177,
+        "h": 31,
+        "cx": 118.2,
+        "cy": 195.37,
+        "ox": -9.59,
+        "oy": 67.16
       },
       {
-        role: "part-5",
-        file: "part-5.png",
-        w: 170,
-        h: 59,
-        cx: 123.92,
-        cy: 40.42,
-        ox: -3.88,
-        oy: -87.78,
+        "role": "part-5",
+        "file": "part-5.png",
+        "w": 170,
+        "h": 59,
+        "cx": 123.92,
+        "cy": 40.42,
+        "ox": -3.88,
+        "oy": -87.78
       },
       {
-        role: "part-6",
-        file: "part-6.png",
-        w: 165,
-        h: 40,
-        cx: 154.95,
-        cy: 143.31,
-        ox: 27.15,
-        oy: 15.11,
-      },
-    ],
+        "role": "part-6",
+        "file": "part-6.png",
+        "w": 165,
+        "h": 40,
+        "cx": 154.95,
+        "cy": 143.31,
+        "ox": 27.15,
+        "oy": 15.11
+      }
+    ]
   },
   "x2-coyote-stinger": {
-    id: "x2-coyote-stinger",
-    kind: "weapon",
-    canvas: {
-      w: 333,
-      h: 333,
+    "id": "x2-coyote-stinger",
+    "kind": "weapon",
+    "canvas": {
+      "w": 333,
+      "h": 333
     },
-    body: {
-      cx: 146.97,
-      cy: 232.65,
-      w: 256,
-      h: 156,
+    "body": {
+      "cx": 146.97,
+      "cy": 232.65,
+      "w": 256,
+      "h": 156
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 156,
-        cx: 146.97,
-        cy: 232.65,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 156,
+        "cx": 146.97,
+        "cy": 232.65,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 156,
-        cx: 146.97,
-        cy: 74.81,
-        ox: 0,
-        oy: -157.84,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 156,
+        "cx": 146.97,
+        "cy": 74.81,
+        "ox": 0,
+        "oy": -157.84
+      }
+    ]
   },
   "x2-coyote-trickster-s-sparkmitt": {
-    id: "x2-coyote-trickster-s-sparkmitt",
-    kind: "weapon",
-    canvas: {
-      w: 288,
-      h: 288,
+    "id": "x2-coyote-trickster-s-sparkmitt",
+    "kind": "weapon",
+    "canvas": {
+      "w": 288,
+      "h": 288
     },
-    body: {
-      cx: 146.12,
-      cy: 141.76,
-      w: 256,
-      h: 143,
+    "body": {
+      "cx": 146.12,
+      "cy": 141.76,
+      "w": 256,
+      "h": 143
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 143,
-        cx: 146.12,
-        cy: 141.76,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 143,
+        "cx": 146.12,
+        "cy": 141.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-doomsday-drum-cannon": {
-    id: "x2-doomsday-drum-cannon",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-doomsday-drum-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 137.49,
-      cy: 133.44,
-      w: 256,
-      h: 130,
+    "body": {
+      "cx": 137.49,
+      "cy": 133.44,
+      "w": 256,
+      "h": 130
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 130,
-        cx: 137.49,
-        cy: 133.44,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 130,
+        "cx": 137.49,
+        "cy": 133.44,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dust-devil-cyclone-orb": {
-    id: "x2-dust-devil-cyclone-orb",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-dust-devil-cyclone-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 163.61,
-      cy: 130.67,
-      w: 256,
-      h: 74,
+    "body": {
+      "cx": 163.61,
+      "cy": 130.67,
+      "w": 256,
+      "h": 74
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 74,
-        cx: 163.61,
-        cy: 130.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 74,
+        "cx": 163.61,
+        "cy": 130.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dust-devil-flail": {
-    id: "x2-dust-devil-flail",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-dust-devil-flail",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 133.62,
-      cy: 129.38,
-      w: 256,
-      h: 141,
+    "body": {
+      "cx": 133.62,
+      "cy": 129.38,
+      "w": 256,
+      "h": 141
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 141,
-        cx: 133.62,
-        cy: 129.38,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 141,
+        "cx": 133.62,
+        "cy": 129.38,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dustdevil-glaive": {
-    id: "x2-dustdevil-glaive",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-dustdevil-glaive",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 154.8,
-      cy: 135.08,
-      w: 256,
-      h: 54,
+    "body": {
+      "cx": 154.8,
+      "cy": 135.08,
+      "w": 256,
+      "h": 54
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 54,
-        cx: 154.8,
-        cy: 135.08,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 54,
+        "cx": 154.8,
+        "cy": 135.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dustdevil-riotgun": {
-    id: "x2-dustdevil-riotgun",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-dustdevil-riotgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 128.96,
-      cy: 120.42,
-      w: 256,
-      h: 119,
+    "body": {
+      "cx": 128.96,
+      "cy": 120.42,
+      "w": 256,
+      "h": 119
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 119,
-        cx: 128.96,
-        cy: 120.42,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 119,
+        "cx": 128.96,
+        "cy": 120.42,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dustdevil-warmaul": {
-    id: "x2-dustdevil-warmaul",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-dustdevil-warmaul",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 163.14,
-      cy: 130.22,
-      w: 256,
-      h: 98,
+    "body": {
+      "cx": 163.14,
+      "cy": 130.22,
+      "w": 256,
+      "h": 98
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 98,
-        cx: 163.14,
-        cy: 130.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 98,
+        "cx": 163.14,
+        "cy": 130.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dustdevil-whirlbits": {
-    id: "x2-dustdevil-whirlbits",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-dustdevil-whirlbits",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 165.74,
-      cy: 72.65,
-      w: 256,
-      h: 96,
+    "body": {
+      "cx": 165.74,
+      "cy": 72.65,
+      "w": 256,
+      "h": 96
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 96,
-        cx: 165.74,
-        cy: 72.65,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 96,
+        "cx": 165.74,
+        "cy": 72.65,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 96,
-        cx: 165.74,
-        cy: 184.22,
-        ox: 0,
-        oy: 111.58,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 96,
+        "cx": 165.74,
+        "cy": 184.22,
+        "ox": 0,
+        "oy": 111.58
+      }
+    ]
   },
   "x2-dustline-lever-action": {
-    id: "x2-dustline-lever-action",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-dustline-lever-action",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 107.11,
-      cy: 124.5,
-      w: 256,
-      h: 49,
+    "body": {
+      "cx": 107.11,
+      "cy": 124.5,
+      "w": 256,
+      "h": 49
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 49,
-        cx: 107.11,
-        cy: 124.5,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 49,
+        "cx": 107.11,
+        "cy": 124.5,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-dustreaper-zweihander": {
-    id: "x2-dustreaper-zweihander",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-dustreaper-zweihander",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 143.18,
-      cy: 132.01,
-      w: 256,
-      h: 79,
+    "body": {
+      "cx": 143.18,
+      "cy": 132.01,
+      "w": 256,
+      "h": 79
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 79,
-        cx: 143.18,
-        cy: 132.01,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 79,
+        "cx": 143.18,
+        "cy": 132.01,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-emberfan-pumpgun": {
-    id: "x2-emberfan-pumpgun",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-emberfan-pumpgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 136.38,
-      cy: 126.71,
-      w: 256,
-      h: 83,
+    "body": {
+      "cx": 136.38,
+      "cy": 126.71,
+      "w": 256,
+      "h": 83
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 83,
-        cx: 136.38,
-        cy: 126.71,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 83,
+        "cx": 136.38,
+        "cy": 126.71,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-emberleaf-chapbook": {
-    id: "x2-emberleaf-chapbook",
-    kind: "weapon",
-    canvas: {
-      w: 407,
-      h: 407,
+    "id": "x2-emberleaf-chapbook",
+    "kind": "weapon",
+    "canvas": {
+      "w": 407,
+      "h": 407
     },
-    body: {
-      cx: 204.99,
-      cy: 201.1,
-      w: 251,
-      h: 256,
+    "body": {
+      "cx": 204.99,
+      "cy": 201.1,
+      "w": 251,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 251,
-        h: 256,
-        cx: 204.99,
-        cy: 201.1,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 251,
+        "h": 256,
+        "cx": 204.99,
+        "cy": 201.1,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-embernail-repeater": {
-    id: "x2-embernail-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-embernail-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 117.46,
-      cy: 125.26,
-      w: 256,
-      h: 156,
+    "body": {
+      "cx": 117.46,
+      "cy": 125.26,
+      "w": 256,
+      "h": 156
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 156,
-        cx: 117.46,
-        cy: 125.26,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 156,
+        "cx": 117.46,
+        "cy": 125.26,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ferrous-serpent": {
-    id: "x2-ferrous-serpent",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-ferrous-serpent",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 163.07,
-      cy: 131.15,
-      w: 256,
-      h: 58,
+    "body": {
+      "cx": 163.07,
+      "cy": 131.15,
+      "w": 256,
+      "h": 58
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 58,
-        cx: 163.07,
-        cy: 131.15,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 58,
+        "cx": 163.07,
+        "cy": 131.15,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-fool-s-gold-revolver": {
-    id: "x2-fool-s-gold-revolver",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-fool-s-gold-revolver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 132.91,
-      cy: 125.99,
-      w: 256,
-      h: 184,
+    "body": {
+      "cx": 132.91,
+      "cy": 125.99,
+      "w": 256,
+      "h": 184
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 184,
-        cx: 132.91,
-        cy: 125.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 184,
+        "cx": 132.91,
+        "cy": 125.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostbite-headstone": {
-    id: "x2-frostbite-headstone",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x2-frostbite-headstone",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 181.27,
-      cy: 139.01,
-      w: 256,
-      h: 182,
+    "body": {
+      "cx": 181.27,
+      "cy": 139.01,
+      "w": 256,
+      "h": 182
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 182,
-        cx: 181.27,
-        cy: 139.01,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 182,
+        "cx": 181.27,
+        "cy": 139.01,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostbite-snowglobe": {
-    id: "x2-frostbite-snowglobe",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-frostbite-snowglobe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 153.04,
-      cy: 134.39,
-      w: 256,
-      h: 130,
+    "body": {
+      "cx": 153.04,
+      "cy": 134.39,
+      "w": 256,
+      "h": 130
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 130,
-        cx: 153.04,
-        cy: 134.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 130,
+        "cx": 153.04,
+        "cy": 134.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostbite-volley-gun": {
-    id: "x2-frostbite-volley-gun",
-    kind: "weapon",
-    canvas: {
-      w: 298,
-      h: 298,
+    "id": "x2-frostbite-volley-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 298,
+      "h": 298
     },
-    body: {
-      cx: 142.38,
-      cy: 134.06,
-      w: 256,
-      h: 165,
+    "body": {
+      "cx": 142.38,
+      "cy": 134.06,
+      "w": 256,
+      "h": 165
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 165,
-        cx: 142.38,
-        cy: 134.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 165,
+        "cx": 142.38,
+        "cy": 134.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostbore-scattergun": {
-    id: "x2-frostbore-scattergun",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-frostbore-scattergun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 133.59,
-      cy: 123.88,
-      w: 256,
-      h: 70,
+    "body": {
+      "cx": 133.59,
+      "cy": 123.88,
+      "w": 256,
+      "h": 70
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 70,
-        cx: 133.59,
-        cy: 123.88,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 133.59,
+        "cy": 123.88,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostfang-rakes": {
-    id: "x2-frostfang-rakes",
-    kind: "weapon",
-    canvas: {
-      w: 296,
-      h: 296,
+    "id": "x2-frostfang-rakes",
+    "kind": "weapon",
+    "canvas": {
+      "w": 296,
+      "h": 296
     },
-    body: {
-      cx: 137.81,
-      cy: 199.98,
-      w: 256,
-      h: 119,
+    "body": {
+      "cx": 137.81,
+      "cy": 199.98,
+      "w": 256,
+      "h": 119
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 119,
-        cx: 137.81,
-        cy: 199.98,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 119,
+        "cx": 137.81,
+        "cy": 199.98,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 209,
-        h: 102,
-        cx: 124.57,
-        cy: 84.62,
-        ox: -13.24,
-        oy: -115.35,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 209,
+        "h": 102,
+        "cx": 124.57,
+        "cy": 84.62,
+        "ox": -13.24,
+        "oy": -115.35
+      }
+    ]
   },
   "x2-frostfang-speargun": {
-    id: "x2-frostfang-speargun",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-frostfang-speargun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 111.19,
-      cy: 131.41,
-      w: 256,
-      h: 63,
+    "body": {
+      "cx": 111.19,
+      "cy": 131.41,
+      "w": 256,
+      "h": 63
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 63,
-        cx: 111.19,
-        cy: 131.41,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 63,
+        "cx": 111.19,
+        "cy": 131.41,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostgig-harpoon": {
-    id: "x2-frostgig-harpoon",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-frostgig-harpoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 130.27,
-      cy: 135.24,
-      w: 256,
-      h: 54,
+    "body": {
+      "cx": 130.27,
+      "cy": 135.24,
+      "w": 256,
+      "h": 54
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 54,
-        cx: 130.27,
-        cy: 135.24,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 54,
+        "cx": 130.27,
+        "cy": 135.24,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostknuckle-rimewrap": {
-    id: "x2-frostknuckle-rimewrap",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-frostknuckle-rimewrap",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 130.49,
-      cy: 129.62,
-      w: 256,
-      h: 108,
+    "body": {
+      "cx": 130.49,
+      "cy": 129.62,
+      "w": 256,
+      "h": 108
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 108,
-        cx: 130.49,
-        cy: 129.62,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 108,
+        "cx": 130.49,
+        "cy": 129.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostquill-compendium": {
-    id: "x2-frostquill-compendium",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-frostquill-compendium",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 135.45,
-      cy: 136.53,
-      w: 256,
-      h: 158,
+    "body": {
+      "cx": 135.45,
+      "cy": 136.53,
+      "w": 256,
+      "h": 158
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 158,
-        cx: 135.45,
-        cy: 136.53,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 158,
+        "cx": 135.45,
+        "cy": 136.53,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-frostsaint-ossuary": {
-    id: "x2-frostsaint-ossuary",
-    kind: "weapon",
-    canvas: {
-      w: 259,
-      h: 259,
+    "id": "x2-frostsaint-ossuary",
+    "kind": "weapon",
+    "canvas": {
+      "w": 259,
+      "h": 259
     },
-    body: {
-      cx: 164.26,
-      cy: 126.04,
-      w: 256,
-      h: 145,
+    "body": {
+      "cx": 164.26,
+      "cy": 126.04,
+      "w": 256,
+      "h": 145
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 145,
-        cx: 164.26,
-        cy: 126.04,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 145,
+        "cx": 164.26,
+        "cy": 126.04,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-fulgurite-storm-sphere": {
-    id: "x2-fulgurite-storm-sphere",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-fulgurite-storm-sphere",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 167.45,
-      cy: 137.86,
-      w: 256,
-      h: 175,
+    "body": {
+      "cx": 167.45,
+      "cy": 137.86,
+      "w": 256,
+      "h": 175
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 175,
-        cx: 167.45,
-        cy: 137.86,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 175,
+        "cx": 167.45,
+        "cy": 137.86,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gallows-splitter": {
-    id: "x2-gallows-splitter",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x2-gallows-splitter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 166.14,
-      cy: 137.45,
-      w: 256,
-      h: 147,
+    "body": {
+      "cx": 166.14,
+      "cy": 137.45,
+      "w": 256,
+      "h": 147
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 147,
-        cx: 166.14,
-        cy: 137.45,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 147,
+        "cx": 166.14,
+        "cy": 137.45,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-galvanic-coachgun": {
-    id: "x2-galvanic-coachgun",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-galvanic-coachgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 135.67,
-      cy: 126.72,
-      w: 256,
-      h: 99,
+    "body": {
+      "cx": 135.67,
+      "cy": 126.72,
+      "w": 256,
+      "h": 99
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 99,
-        cx: 135.67,
-        cy: 126.72,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 99,
+        "cx": 135.67,
+        "cy": 126.72,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-galvanic-crackwhip": {
-    id: "x2-galvanic-crackwhip",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-galvanic-crackwhip",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 118.06,
-      cy: 130.12,
-      w: 256,
-      h: 41,
+    "body": {
+      "cx": 118.06,
+      "cy": 130.12,
+      "w": 256,
+      "h": 41
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 41,
-        cx: 118.06,
-        cy: 130.12,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 41,
+        "cx": 118.06,
+        "cy": 130.12,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-galvanic-lancepole": {
-    id: "x2-galvanic-lancepole",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-galvanic-lancepole",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 125.02,
-      cy: 132.47,
-      w: 256,
-      h: 49,
+    "body": {
+      "cx": 125.02,
+      "cy": 132.47,
+      "w": 256,
+      "h": 49
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 49,
-        cx: 125.02,
-        cy: 132.47,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 49,
+        "cx": 125.02,
+        "cy": 132.47,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-galvanic-liber-of-storms": {
-    id: "x2-galvanic-liber-of-storms",
-    kind: "weapon",
-    canvas: {
-      w: 310,
-      h: 310,
+    "id": "x2-galvanic-liber-of-storms",
+    "kind": "weapon",
+    "canvas": {
+      "w": 310,
+      "h": 310
     },
-    body: {
-      cx: 155.28,
-      cy: 151.82,
-      w: 256,
-      h: 218,
+    "body": {
+      "cx": 155.28,
+      "cy": 151.82,
+      "w": 256,
+      "h": 218
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 218,
-        cx: 155.28,
-        cy: 151.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 218,
+        "cx": 155.28,
+        "cy": 151.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-galvanic-overcasters": {
-    id: "x2-galvanic-overcasters",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-galvanic-overcasters",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 119.79,
-      cy: 138.62,
-      w: 256,
-      h: 117,
+    "body": {
+      "cx": 119.79,
+      "cy": 138.62,
+      "w": 256,
+      "h": 117
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 117,
-        cx: 119.79,
-        cy: 138.62,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 117,
+        "cx": 119.79,
+        "cy": 138.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ghostbolt-crossbow": {
-    id: "x2-ghostbolt-crossbow",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-ghostbolt-crossbow",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 140.26,
-      cy: 138.03,
-      w: 256,
-      h: 136,
+    "body": {
+      "cx": 140.26,
+      "cy": 138.03,
+      "w": 256,
+      "h": 136
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 136,
-        cx: 140.26,
-        cy: 138.03,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 136,
+        "cx": 140.26,
+        "cy": 138.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ghostwind-spectre-rail": {
-    id: "x2-ghostwind-spectre-rail",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-ghostwind-spectre-rail",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 123.48,
-      cy: 129.29,
-      w: 256,
-      h: 62,
+    "body": {
+      "cx": 123.48,
+      "cy": 129.29,
+      "w": 256,
+      "h": 62
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 62,
-        cx: 123.48,
-        cy: 129.29,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 62,
+        "cx": 123.48,
+        "cy": 129.29,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gilded-hourglass-frost-scepter": {
-    id: "x2-gilded-hourglass-frost-scepter",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-gilded-hourglass-frost-scepter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 154.64,
-      cy: 133.07,
-      w: 256,
-      h: 125,
+    "body": {
+      "cx": 154.64,
+      "cy": 133.07,
+      "w": 256,
+      "h": 125
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 125,
-        cx: 154.64,
-        cy: 133.07,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 125,
+        "cx": 154.64,
+        "cy": 133.07,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-glacier-headtaker": {
-    id: "x2-glacier-headtaker",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-glacier-headtaker",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 155.06,
-      cy: 134.23,
-      w: 256,
-      h: 127,
+    "body": {
+      "cx": 155.06,
+      "cy": 134.23,
+      "w": 256,
+      "h": 127
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 127,
-        cx: 155.06,
-        cy: 134.23,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 127,
+        "cx": 155.06,
+        "cy": 134.23,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-glasswidow-hexweave": {
-    id: "x2-glasswidow-hexweave",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-glasswidow-hexweave",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 129.56,
-      cy: 134.7,
-      w: 256,
-      h: 121,
+    "body": {
+      "cx": 129.56,
+      "cy": 134.7,
+      "w": 256,
+      "h": 121
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 121,
-        cx: 129.56,
-        cy: 134.7,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 121,
+        "cx": 129.56,
+        "cy": 134.7,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-glasswidow-punchgun": {
-    id: "x2-glasswidow-punchgun",
-    kind: "weapon",
-    canvas: {
-      w: 295,
-      h: 295,
+    "id": "x2-glasswidow-punchgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 295,
+      "h": 295
     },
-    body: {
-      cx: 159.29,
-      cy: 143.76,
-      w: 256,
-      h: 155,
+    "body": {
+      "cx": 159.29,
+      "cy": 143.76,
+      "w": 256,
+      "h": 155
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 155,
-        cx: 159.29,
-        cy: 143.76,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 155,
+        "cx": 159.29,
+        "cy": 143.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-glimmerdust-prospector-wand": {
-    id: "x2-glimmerdust-prospector-wand",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-glimmerdust-prospector-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 140.87,
-      cy: 135.63,
-      w: 256,
-      h: 53,
+    "body": {
+      "cx": 140.87,
+      "cy": 135.63,
+      "w": 256,
+      "h": 53
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 53,
-        cx: 140.87,
-        cy: 135.63,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 53,
+        "cx": 140.87,
+        "cy": 135.63,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-glyphward-manuscript": {
-    id: "x2-glyphward-manuscript",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-glyphward-manuscript",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 139.1,
-      cy: 139.1,
-      w: 256,
-      h: 191,
+    "body": {
+      "cx": 139.1,
+      "cy": 139.1,
+      "w": 256,
+      "h": 191
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 191,
-        cx: 139.1,
-        cy: 139.1,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 191,
+        "cx": 139.1,
+        "cy": 139.1,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-godsbone-pillar": {
-    id: "x2-godsbone-pillar",
-    kind: "weapon",
-    canvas: {
-      w: 259,
-      h: 259,
+    "id": "x2-godsbone-pillar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 259,
+      "h": 259
     },
-    body: {
-      cx: 140.5,
-      cy: 124.8,
-      w: 256,
-      h: 75,
+    "body": {
+      "cx": 140.5,
+      "cy": 124.8,
+      "w": 256,
+      "h": 75
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 75,
-        cx: 140.5,
-        cy: 124.8,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 75,
+        "cx": 140.5,
+        "cy": 124.8,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-grave-anchor-harpoon": {
-    id: "x2-grave-anchor-harpoon",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-grave-anchor-harpoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 122.66,
-      cy: 135.22,
-      w: 256,
-      h: 125,
+    "body": {
+      "cx": 122.66,
+      "cy": 135.22,
+      "w": 256,
+      "h": 125
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 125,
-        cx: 122.66,
-        cy: 135.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 125,
+        "cx": 122.66,
+        "cy": 135.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravechain-scythe": {
-    id: "x2-gravechain-scythe",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-gravechain-scythe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 181.27,
-      cy: 120.99,
-      w: 256,
-      h: 152,
+    "body": {
+      "cx": 181.27,
+      "cy": 120.99,
+      "w": 256,
+      "h": 152
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 152,
-        cx: 181.27,
-        cy: 120.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 152,
+        "cx": 181.27,
+        "cy": 120.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravechill-nodachi": {
-    id: "x2-gravechill-nodachi",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-gravechill-nodachi",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 110.49,
-      cy: 130.62,
-      w: 256,
-      h: 14,
+    "body": {
+      "cx": 110.49,
+      "cy": 130.62,
+      "w": 256,
+      "h": 14
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 14,
-        cx: 110.49,
-        cy: 130.62,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 14,
+        "cx": 110.49,
+        "cy": 130.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravelthroat-repeater": {
-    id: "x2-gravelthroat-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-gravelthroat-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 139.08,
-      cy: 136.69,
-      w: 256,
-      h: 143,
+    "body": {
+      "cx": 139.08,
+      "cy": 136.69,
+      "w": 256,
+      "h": 143
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 143,
-        cx: 139.08,
-        cy: 136.69,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 143,
+        "cx": 139.08,
+        "cy": 136.69,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravelung-punt-rifle": {
-    id: "x2-gravelung-punt-rifle",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-gravelung-punt-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 134.23,
-      cy: 126.21,
-      w: 256,
-      h: 56,
+    "body": {
+      "cx": 134.23,
+      "cy": 126.21,
+      "w": 256,
+      "h": 56
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 56,
-        cx: 134.23,
-        cy: 126.21,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 56,
+        "cx": 134.23,
+        "cy": 126.21,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-graveshot-grenade-gun": {
-    id: "x2-graveshot-grenade-gun",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-graveshot-grenade-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 134.66,
-      cy: 127.26,
-      w: 256,
-      h: 103,
+    "body": {
+      "cx": 134.66,
+      "cy": 127.26,
+      "w": 256,
+      "h": 103
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 103,
-        cx: 134.66,
-        cy: 127.26,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 103,
+        "cx": 134.66,
+        "cy": 127.26,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravesinger-s-hex-wand": {
-    id: "x2-gravesinger-s-hex-wand",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-gravesinger-s-hex-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 127.68,
-      cy: 126.81,
-      w: 256,
-      h: 64,
+    "body": {
+      "cx": 127.68,
+      "cy": 126.81,
+      "w": 256,
+      "h": 64
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 64,
-        cx: 127.68,
-        cy: 126.81,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 64,
+        "cx": 127.68,
+        "cy": 126.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravewax-seance-globe": {
-    id: "x2-gravewax-seance-globe",
-    kind: "weapon",
-    canvas: {
-      w: 327,
-      h: 327,
+    "id": "x2-gravewax-seance-globe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 327,
+      "h": 327
     },
-    body: {
-      cx: 171.36,
-      cy: 155.48,
-      w: 256,
-      h: 171,
+    "body": {
+      "cx": 171.36,
+      "cy": 155.48,
+      "w": 256,
+      "h": 171
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 171,
-        cx: 171.36,
-        cy: 155.48,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 171,
+        "cx": 171.36,
+        "cy": 155.48,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-gravewax-twin-idols": {
-    id: "x2-gravewax-twin-idols",
-    kind: "weapon",
-    canvas: {
-      w: 416,
-      h: 416,
+    "id": "x2-gravewax-twin-idols",
+    "kind": "weapon",
+    "canvas": {
+      "w": 416,
+      "h": 416
     },
-    body: {
-      cx: 189.59,
-      cy: 112.23,
-      w: 256,
-      h: 151,
+    "body": {
+      "cx": 189.59,
+      "cy": 112.23,
+      "w": 256,
+      "h": 151
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 151,
-        cx: 189.59,
-        cy: 112.23,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 151,
+        "cx": 189.59,
+        "cy": 112.23,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 255,
-        h: 151,
-        cx: 188.26,
-        cy: 301.49,
-        ox: -1.66,
-        oy: 189.26,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 255,
+        "h": 151,
+        "cx": 188.26,
+        "cy": 301.49,
+        "ox": -1.66,
+        "oy": 189.26
+      }
+    ]
   },
   "x2-gravewind-rimfire": {
-    id: "x2-gravewind-rimfire",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-gravewind-rimfire",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 105.99,
-      cy: 120.31,
-      w: 256,
-      h: 99,
+    "body": {
+      "cx": 105.99,
+      "cy": 120.31,
+      "w": 256,
+      "h": 99
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 99,
-        cx: 105.99,
-        cy: 120.31,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 99,
+        "cx": 105.99,
+        "cy": 120.31,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-grit-snubnose": {
-    id: "x2-grit-snubnose",
-    kind: "weapon",
-    canvas: {
-      w: 295,
-      h: 295,
+    "id": "x2-grit-snubnose",
+    "kind": "weapon",
+    "canvas": {
+      "w": 295,
+      "h": 295
     },
-    body: {
-      cx: 140.36,
-      cy: 135.18,
-      w: 256,
-      h: 165,
+    "body": {
+      "cx": 140.36,
+      "cy": 135.18,
+      "w": 256,
+      "h": 165
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 165,
-        cx: 140.36,
-        cy: 135.18,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 165,
+        "cx": 140.36,
+        "cy": 135.18,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailshard-resonator": {
-    id: "x2-hailshard-resonator",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-hailshard-resonator",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 144.71,
-      cy: 131.99,
-      w: 256,
-      h: 81,
+    "body": {
+      "cx": 144.71,
+      "cy": 131.99,
+      "w": 256,
+      "h": 81
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 81,
-        cx: 144.71,
-        cy: 131.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 81,
+        "cx": 144.71,
+        "cy": 131.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailshot-hand-maul": {
-    id: "x2-hailshot-hand-maul",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-hailshot-hand-maul",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 159.67,
-      cy: 130.84,
-      w: 256,
-      h: 108,
+    "body": {
+      "cx": 159.67,
+      "cy": 130.84,
+      "w": 256,
+      "h": 108
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 108,
-        cx: 159.67,
-        cy: 130.84,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 108,
+        "cx": 159.67,
+        "cy": 130.84,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailspitter-pepperbox": {
-    id: "x2-hailspitter-pepperbox",
-    kind: "weapon",
-    canvas: {
-      w: 287,
-      h: 287,
+    "id": "x2-hailspitter-pepperbox",
+    "kind": "weapon",
+    "canvas": {
+      "w": 287,
+      "h": 287
     },
-    body: {
-      cx: 138.3,
-      cy: 124.79,
-      w: 256,
-      h: 164,
+    "body": {
+      "cx": 138.3,
+      "cy": 124.79,
+      "w": 256,
+      "h": 164
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 164,
-        cx: 138.3,
-        cy: 124.79,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 164,
+        "cx": 138.3,
+        "cy": 124.79,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailspur-sickle": {
-    id: "x2-hailspur-sickle",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-hailspur-sickle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 149.17,
-      cy: 125.65,
-      w: 256,
-      h: 133,
+    "body": {
+      "cx": 149.17,
+      "cy": 125.65,
+      "w": 256,
+      "h": 133
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 133,
-        cx: 149.17,
-        cy: 125.65,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 133,
+        "cx": 149.17,
+        "cy": 125.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailstorm-coilgun": {
-    id: "x2-hailstorm-coilgun",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-hailstorm-coilgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 144.56,
-      cy: 129.51,
-      w: 256,
-      h: 70,
+    "body": {
+      "cx": 144.56,
+      "cy": 129.51,
+      "w": 256,
+      "h": 70
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 70,
-        cx: 144.56,
-        cy: 129.51,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 144.56,
+        "cy": 129.51,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hailwidow-katana": {
-    id: "x2-hailwidow-katana",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-hailwidow-katana",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 120.87,
-      cy: 130.73,
-      w: 256,
-      h: 28,
+    "body": {
+      "cx": 120.87,
+      "cy": 130.73,
+      "w": 256,
+      "h": 28
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 28,
-        cx: 120.87,
-        cy: 130.73,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 28,
+        "cx": 120.87,
+        "cy": 130.73,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hallowbore-coachgun": {
-    id: "x2-hallowbore-coachgun",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-hallowbore-coachgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 132.46,
-      cy: 118.66,
-      w: 256,
-      h: 115,
+    "body": {
+      "cx": 132.46,
+      "cy": 118.66,
+      "w": 256,
+      "h": 115
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 115,
-        cx: 132.46,
-        cy: 118.66,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 115,
+        "cx": 132.46,
+        "cy": 118.66,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hangman-s-gavel": {
-    id: "x2-hangman-s-gavel",
-    kind: "weapon",
-    canvas: {
-      w: 292,
-      h: 292,
+    "id": "x2-hangman-s-gavel",
+    "kind": "weapon",
+    "canvas": {
+      "w": 292,
+      "h": 292
     },
-    body: {
-      cx: 191.77,
-      cy: 144.76,
-      w: 256,
-      h: 193,
+    "body": {
+      "cx": 191.77,
+      "cy": 144.76,
+      "w": 256,
+      "h": 193
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 193,
-        cx: 191.77,
-        cy: 144.76,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 193,
+        "cx": 191.77,
+        "cy": 144.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hangman-s-greatcleaver": {
-    id: "x2-hangman-s-greatcleaver",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-hangman-s-greatcleaver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 164.6,
-      cy: 133.65,
-      w: 256,
-      h: 84,
+    "body": {
+      "cx": 164.6,
+      "cy": 133.65,
+      "w": 256,
+      "h": 84
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 84,
-        cx: 164.6,
-        cy: 133.65,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 84,
+        "cx": 164.6,
+        "cy": 133.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hellbore-gatling": {
-    id: "x2-hellbore-gatling",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-hellbore-gatling",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 117.97,
-      cy: 133.5,
-      w: 256,
-      h: 127,
+    "body": {
+      "cx": 117.97,
+      "cy": 133.5,
+      "w": 256,
+      "h": 127
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 127,
-        cx: 117.97,
-        cy: 133.5,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 127,
+        "cx": 117.97,
+        "cy": 133.5,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hellmouth-palmcaster": {
-    id: "x2-hellmouth-palmcaster",
-    kind: "weapon",
-    canvas: {
-      w: 285,
-      h: 285,
+    "id": "x2-hellmouth-palmcaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 285,
+      "h": 285
     },
-    body: {
-      cx: 146.06,
-      cy: 140.83,
-      w: 256,
-      h: 142,
+    "body": {
+      "cx": 146.06,
+      "cy": 140.83,
+      "w": 256,
+      "h": 142
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 142,
-        cx: 146.06,
-        cy: 140.83,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 142,
+        "cx": 146.06,
+        "cy": 140.83,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexbinder-s-iron-orrery": {
-    id: "x2-hexbinder-s-iron-orrery",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-hexbinder-s-iron-orrery",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 173.67,
-      cy: 128.88,
-      w: 256,
-      h: 118,
+    "body": {
+      "cx": 173.67,
+      "cy": 128.88,
+      "w": 256,
+      "h": 118
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 118,
-        cx: 173.67,
-        cy: 128.88,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 118,
+        "cx": 173.67,
+        "cy": 128.88,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexbloom-rapier": {
-    id: "x2-hexbloom-rapier",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-hexbloom-rapier",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 91.79,
-      cy: 132.63,
-      w: 256,
-      h: 58,
+    "body": {
+      "cx": 91.79,
+      "cy": 132.63,
+      "w": 256,
+      "h": 58
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 58,
-        cx: 91.79,
-        cy: 132.63,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 58,
+        "cx": 91.79,
+        "cy": 132.63,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexbloom-scattergrimoire": {
-    id: "x2-hexbloom-scattergrimoire",
-    kind: "weapon",
-    canvas: {
-      w: 301,
-      h: 301,
+    "id": "x2-hexbloom-scattergrimoire",
+    "kind": "weapon",
+    "canvas": {
+      "w": 301,
+      "h": 301
     },
-    body: {
-      cx: 140.86,
-      cy: 147.83,
-      w: 229,
-      h: 256,
+    "body": {
+      "cx": 140.86,
+      "cy": 147.83,
+      "w": 229,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 229,
-        h: 256,
-        cx: 140.86,
-        cy: 147.83,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 229,
+        "h": 256,
+        "cx": 140.86,
+        "cy": 147.83,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 25,
-        h: 25,
-        cx: 267.78,
-        cy: 149.99,
-        ox: 126.92,
-        oy: 2.16,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 25,
+        "h": 25,
+        "cx": 267.78,
+        "cy": 149.99,
+        "ox": 126.92,
+        "oy": 2.16
+      }
+    ]
   },
   "x2-hexbolt-spitter-mitt": {
-    id: "x2-hexbolt-spitter-mitt",
-    kind: "weapon",
-    canvas: {
-      w: 289,
-      h: 289,
+    "id": "x2-hexbolt-spitter-mitt",
+    "kind": "weapon",
+    "canvas": {
+      "w": 289,
+      "h": 289
     },
-    body: {
-      cx: 138.59,
-      cy: 141.58,
-      w: 256,
-      h: 132,
+    "body": {
+      "cx": 138.59,
+      "cy": 141.58,
+      "w": 256,
+      "h": 132
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 132,
-        cx: 138.59,
-        cy: 141.58,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 132,
+        "cx": 138.59,
+        "cy": 141.58,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexbore-voidmaw": {
-    id: "x2-hexbore-voidmaw",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-hexbore-voidmaw",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 130.09,
-      cy: 129.43,
-      w: 256,
-      h: 134,
+    "body": {
+      "cx": 130.09,
+      "cy": 129.43,
+      "w": 256,
+      "h": 134
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 134,
-        cx: 130.09,
-        cy: 129.43,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 134,
+        "cx": 130.09,
+        "cy": 129.43,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexbore-witchrifle": {
-    id: "x2-hexbore-witchrifle",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-hexbore-witchrifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 121.75,
-      cy: 125.56,
-      w: 256,
-      h: 70,
+    "body": {
+      "cx": 121.75,
+      "cy": 125.56,
+      "w": 256,
+      "h": 70
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 70,
-        cx: 121.75,
-        cy: 125.56,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 121.75,
+        "cy": 125.56,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexglyph-partisan": {
-    id: "x2-hexglyph-partisan",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-hexglyph-partisan",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 152.59,
-      cy: 131.57,
-      w: 256,
-      h: 67,
+    "body": {
+      "cx": 152.59,
+      "cy": 131.57,
+      "w": 256,
+      "h": 67
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 67,
-        cx: 152.59,
-        cy: 131.57,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 67,
+        "cx": 152.59,
+        "cy": 131.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hexpost-charm-pole": {
-    id: "x2-hexpost-charm-pole",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-hexpost-charm-pole",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 144.1,
-      cy: 136.21,
-      w: 256,
-      h: 87,
+    "body": {
+      "cx": 144.1,
+      "cy": 136.21,
+      "w": 256,
+      "h": 87
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 87,
-        cx: 144.1,
-        cy: 136.21,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 87,
+        "cx": 144.1,
+        "cy": 136.21,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hoarfrost-piledriver": {
-    id: "x2-hoarfrost-piledriver",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-hoarfrost-piledriver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 180.82,
-      cy: 137.21,
-      w: 256,
-      h: 113,
+    "body": {
+      "cx": 180.82,
+      "cy": 137.21,
+      "w": 256,
+      "h": 113
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 113,
-        cx: 180.82,
-        cy: 137.21,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 113,
+        "cx": 180.82,
+        "cy": 137.21,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollow-harvest": {
-    id: "x2-hollow-harvest",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-hollow-harvest",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 175.42,
-      cy: 135.03,
-      w: 256,
-      h: 153,
+    "body": {
+      "cx": 175.42,
+      "cy": 135.03,
+      "w": 256,
+      "h": 153
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 153,
-        cx: 175.42,
-        cy: 135.03,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 153,
+        "cx": 175.42,
+        "cy": 135.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowbarrel-spell-scattergun-staff": {
-    id: "x2-hollowbarrel-spell-scattergun-staff",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x2-hollowbarrel-spell-scattergun-staff",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 168.17,
-      cy: 139.48,
-      w: 256,
-      h: 113,
+    "body": {
+      "cx": 168.17,
+      "cy": 139.48,
+      "w": 256,
+      "h": 113
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 113,
-        cx: 168.17,
-        cy: 139.48,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 113,
+        "cx": 168.17,
+        "cy": 139.48,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowmoon-reaver": {
-    id: "x2-hollowmoon-reaver",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-hollowmoon-reaver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 137.54,
-      cy: 129.99,
-      w: 256,
-      h: 157,
+    "body": {
+      "cx": 137.54,
+      "cy": 129.99,
+      "w": 256,
+      "h": 157
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 157,
-        cx: 137.54,
-        cy: 129.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 157,
+        "cx": 137.54,
+        "cy": 129.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowmother-spore-totem": {
-    id: "x2-hollowmother-spore-totem",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-hollowmother-spore-totem",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 145.95,
-      cy: 133.34,
-      w: 256,
-      h: 160,
+    "body": {
+      "cx": 145.95,
+      "cy": 133.34,
+      "w": 256,
+      "h": 160
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 160,
-        cx: 145.95,
-        cy: 133.34,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 160,
+        "cx": 145.95,
+        "cy": 133.34,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowpoint-hex": {
-    id: "x2-hollowpoint-hex",
-    kind: "weapon",
-    canvas: {
-      w: 291,
-      h: 291,
+    "id": "x2-hollowpoint-hex",
+    "kind": "weapon",
+    "canvas": {
+      "w": 291,
+      "h": 291
     },
-    body: {
-      cx: 138.92,
-      cy: 122.19,
-      w: 256,
-      h: 189,
+    "body": {
+      "cx": 138.92,
+      "cy": 122.19,
+      "w": 256,
+      "h": 189
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 189,
-        cx: 138.92,
-        cy: 122.19,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 189,
+        "cx": 138.92,
+        "cy": 122.19,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowpoint-repeater": {
-    id: "x2-hollowpoint-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-hollowpoint-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 115.19,
-      cy: 123.45,
-      w: 256,
-      h: 65,
+    "body": {
+      "cx": 115.19,
+      "cy": 123.45,
+      "w": 256,
+      "h": 65
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 65,
-        cx: 115.19,
-        cy: 123.45,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 65,
+        "cx": 115.19,
+        "cy": 123.45,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hollowpoint-voidgun": {
-    id: "x2-hollowpoint-voidgun",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-hollowpoint-voidgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 149.79,
-      cy: 137.09,
-      w: 256,
-      h: 128,
+    "body": {
+      "cx": 149.79,
+      "cy": 137.09,
+      "w": 256,
+      "h": 128
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 128,
-        cx: 149.79,
-        cy: 137.09,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 128,
+        "cx": 149.79,
+        "cy": 137.09,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-hornet-s-nest-bolter": {
-    id: "x2-hornet-s-nest-bolter",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-hornet-s-nest-bolter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 120.86,
-      cy: 122.99,
-      w: 256,
-      h: 154,
+    "body": {
+      "cx": 120.86,
+      "cy": 122.99,
+      "w": 256,
+      "h": 154
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 154,
-        cx: 120.86,
-        cy: 122.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 154,
+        "cx": 120.86,
+        "cy": 122.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-idol-of-the-pale-verdict": {
-    id: "x2-idol-of-the-pale-verdict",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-idol-of-the-pale-verdict",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 168.4,
-      cy: 157.67,
-      w: 256,
-      h: 176,
+    "body": {
+      "cx": 168.4,
+      "cy": 157.67,
+      "w": 256,
+      "h": 176
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 176,
-        cx: 168.4,
-        cy: 157.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 176,
+        "cx": 168.4,
+        "cy": 157.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-iron-marshal": {
-    id: "x2-iron-marshal",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-iron-marshal",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 112.09,
-      cy: 119.99,
-      w: 256,
-      h: 117,
+    "body": {
+      "cx": 112.09,
+      "cy": 119.99,
+      "w": 256,
+      "h": 117
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 117,
-        cx: 112.09,
-        cy: 119.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 117,
+        "cx": 112.09,
+        "cy": 119.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-iron-vow-bearded-axe": {
-    id: "x2-iron-vow-bearded-axe",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x2-iron-vow-bearded-axe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 186.1,
-      cy: 130.76,
-      w: 256,
-      h: 141,
+    "body": {
+      "cx": 186.1,
+      "cy": 130.76,
+      "w": 256,
+      "h": 141
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 141,
-        cx: 186.1,
-        cy: 130.76,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 141,
+        "cx": 186.1,
+        "cy": 130.76,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ironbrand-heatfist": {
-    id: "x2-ironbrand-heatfist",
-    kind: "weapon",
-    canvas: {
-      w: 292,
-      h: 292,
+    "id": "x2-ironbrand-heatfist",
+    "kind": "weapon",
+    "canvas": {
+      "w": 292,
+      "h": 292
     },
-    body: {
-      cx: 156.95,
-      cy: 145.32,
-      w: 256,
-      h: 157,
+    "body": {
+      "cx": 156.95,
+      "cy": 145.32,
+      "w": 256,
+      "h": 157
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 157,
-        cx: 156.95,
-        cy: 145.32,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 157,
+        "cx": 156.95,
+        "cy": 145.32,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ironhail-pepperbox": {
-    id: "x2-ironhail-pepperbox",
-    kind: "weapon",
-    canvas: {
-      w: 283,
-      h: 283,
+    "id": "x2-ironhail-pepperbox",
+    "kind": "weapon",
+    "canvas": {
+      "w": 283,
+      "h": 283
     },
-    body: {
-      cx: 137.93,
-      cy: 130.93,
-      w: 256,
-      h: 185,
+    "body": {
+      "cx": 137.93,
+      "cy": 130.93,
+      "w": 256,
+      "h": 185
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 185,
-        cx: 137.93,
-        cy: 130.93,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 185,
+        "cx": 137.93,
+        "cy": 130.93,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ironhide-buffalo-gun": {
-    id: "x2-ironhide-buffalo-gun",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-ironhide-buffalo-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 126.63,
-      cy: 131.06,
-      w: 256,
-      h: 84,
+    "body": {
+      "cx": 126.63,
+      "cy": 131.06,
+      "w": 256,
+      "h": 84
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 84,
-        cx: 126.63,
-        cy: 131.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 84,
+        "cx": 126.63,
+        "cy": 131.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-knucklebone-talons": {
-    id: "x2-knucklebone-talons",
-    kind: "weapon",
-    canvas: {
-      w: 300,
-      h: 300,
+    "id": "x2-knucklebone-talons",
+    "kind": "weapon",
+    "canvas": {
+      "w": 300,
+      "h": 300
     },
-    body: {
-      cx: 140.44,
-      cy: 211.26,
-      w: 256,
-      h: 110,
+    "body": {
+      "cx": 140.44,
+      "cy": 211.26,
+      "w": 256,
+      "h": 110
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 110,
-        cx: 140.44,
-        cy: 211.26,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 110,
+        "cx": 140.44,
+        "cy": 211.26,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 109,
-        cx: 140.68,
-        cy: 87.81,
-        ox: 0.24,
-        oy: -123.69,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 109,
+        "cx": 140.68,
+        "cy": 87.81,
+        "ox": 0.24,
+        "oy": -123.69
+      }
+    ]
   },
   "x2-ledger-of-spent-souls": {
-    id: "x2-ledger-of-spent-souls",
-    kind: "weapon",
-    canvas: {
-      w: 314,
-      h: 314,
+    "id": "x2-ledger-of-spent-souls",
+    "kind": "weapon",
+    "canvas": {
+      "w": 314,
+      "h": 314
     },
-    body: {
-      cx: 154.95,
-      cy: 155.46,
-      w: 256,
-      h: 249,
+    "body": {
+      "cx": 154.95,
+      "cy": 155.46,
+      "w": 256,
+      "h": 249
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 249,
-        cx: 154.95,
-        cy: 155.46,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 249,
+        "cx": 154.95,
+        "cy": 155.46,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-leviathan-harpoon-gun": {
-    id: "x2-leviathan-harpoon-gun",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-leviathan-harpoon-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 98.69,
-      cy: 129.39,
-      w: 256,
-      h: 87,
+    "body": {
+      "cx": 98.69,
+      "cy": 129.39,
+      "w": 256,
+      "h": 87
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 87,
-        cx: 98.69,
-        cy: 129.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 87,
+        "cx": 98.69,
+        "cy": 129.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-locust-flail": {
-    id: "x2-locust-flail",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-locust-flail",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 160.9,
-      cy: 129.63,
-      w: 256,
-      h: 158,
+    "body": {
+      "cx": 160.9,
+      "cy": 129.63,
+      "w": 256,
+      "h": 158
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 158,
-        cx: 160.9,
-        cy: 129.63,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 158,
+        "cx": 160.9,
+        "cy": 129.63,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-locust-glass-plague-orb": {
-    id: "x2-locust-glass-plague-orb",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-locust-glass-plague-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 158.58,
-      cy: 136.08,
-      w: 256,
-      h: 147,
+    "body": {
+      "cx": 158.58,
+      "cy": 136.08,
+      "w": 256,
+      "h": 147
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 147,
-        cx: 158.58,
-        cy: 136.08,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 147,
+        "cx": 158.58,
+        "cy": 136.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-magpie-scattergun": {
-    id: "x2-magpie-scattergun",
-    kind: "weapon",
-    canvas: {
-      w: 256,
-      h: 256,
+    "id": "x2-magpie-scattergun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 256
     },
-    body: {
-      cx: 128,
-      cy: 126.57,
-      w: 256,
-      h: 256,
+    "body": {
+      "cx": 128,
+      "cy": 126.57,
+      "w": 256,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 256,
-        cx: 128,
-        cy: 126.57,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 256,
+        "cx": 128,
+        "cy": 126.57,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 214,
-        h: 65,
-        cx: 145.96,
-        cy: 132.29,
-        ox: 17.96,
-        oy: 5.72,
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 214,
+        "h": 65,
+        "cx": 145.96,
+        "cy": 132.29,
+        "ox": 17.96,
+        "oy": 5.72
       },
       {
-        role: "part-3",
-        file: "part-3.png",
-        w: 197,
-        h: 78,
-        cx: 128.61,
-        cy: 205.58,
-        ox: 0.82,
-        oy: 79.21,
+        "role": "part-3",
+        "file": "part-3.png",
+        "w": 197,
+        "h": 78,
+        "cx": 128.61,
+        "cy": 205.58,
+        "ox": 0.82,
+        "oy": 79.21
       },
       {
-        role: "part-4",
-        file: "part-4.png",
-        w: 153,
-        h: 79,
-        cx: 134.12,
-        cy: 46.34,
-        ox: 6.33,
-        oy: -80.23,
-      },
-    ],
+        "role": "part-4",
+        "file": "part-4.png",
+        "w": 153,
+        "h": 79,
+        "cx": 134.12,
+        "cy": 46.34,
+        "ox": 6.33,
+        "oy": -80.23
+      }
+    ]
   },
   "x2-maledict-tome-of-salt-lines": {
-    id: "x2-maledict-tome-of-salt-lines",
-    kind: "weapon",
-    canvas: {
-      w: 288,
-      h: 288,
+    "id": "x2-maledict-tome-of-salt-lines",
+    "kind": "weapon",
+    "canvas": {
+      "w": 288,
+      "h": 288
     },
-    body: {
-      cx: 144.65,
-      cy: 139.82,
-      w: 256,
-      h: 177,
+    "body": {
+      "cx": 144.65,
+      "cy": 139.82,
+      "w": 256,
+      "h": 177
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 177,
-        cx: 144.65,
-        cy: 139.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 177,
+        "cx": 144.65,
+        "cy": 139.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-marrowpike-ranseur": {
-    id: "x2-marrowpike-ranseur",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-marrowpike-ranseur",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 143.08,
-      cy: 133.6,
-      w: 256,
-      h: 71,
+    "body": {
+      "cx": 143.08,
+      "cy": 133.6,
+      "w": 256,
+      "h": 71
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 71,
-        cx: 143.08,
-        cy: 133.6,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 71,
+        "cx": 143.08,
+        "cy": 133.6,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-marshlight-bog-censer-wand": {
-    id: "x2-marshlight-bog-censer-wand",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-marshlight-bog-censer-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 151.7,
-      cy: 131.79,
-      w: 256,
-      h: 83,
+    "body": {
+      "cx": 151.7,
+      "cy": 131.79,
+      "w": 256,
+      "h": 83
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 83,
-        cx: 151.7,
-        cy: 131.79,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 83,
+        "cx": 151.7,
+        "cy": 131.79,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mauler-slug-thrower": {
-    id: "x2-mauler-slug-thrower",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-mauler-slug-thrower",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 132.55,
-      cy: 128.32,
-      w: 256,
-      h: 66,
+    "body": {
+      "cx": 132.55,
+      "cy": 128.32,
+      "w": 256,
+      "h": 66
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 66,
-        cx: 132.55,
-        cy: 128.32,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 66,
+        "cx": 132.55,
+        "cy": 128.32,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mawstone-cairn-idol": {
-    id: "x2-mawstone-cairn-idol",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-mawstone-cairn-idol",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 148.38,
-      cy: 132.67,
-      w: 256,
-      h: 175,
+    "body": {
+      "cx": 148.38,
+      "cy": 132.67,
+      "w": 256,
+      "h": 175
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 175,
-        cx: 148.38,
-        cy: 132.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 175,
+        "cx": 148.38,
+        "cy": 132.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mesa-hand-cannon": {
-    id: "x2-mesa-hand-cannon",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-mesa-hand-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 129.05,
-      cy: 124.2,
-      w: 256,
-      h: 134,
+    "body": {
+      "cx": 129.05,
+      "cy": 124.2,
+      "w": 256,
+      "h": 134
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 134,
-        cx: 129.05,
-        cy: 124.2,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 134,
+        "cx": 129.05,
+        "cy": 124.2,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mesa-heart-geodes": {
-    id: "x2-mesa-heart-geodes",
-    kind: "weapon",
-    canvas: {
-      w: 292,
-      h: 292,
+    "id": "x2-mesa-heart-geodes",
+    "kind": "weapon",
+    "canvas": {
+      "w": 292,
+      "h": 292
     },
-    body: {
-      cx: 159.42,
-      cy: 198.05,
-      w: 256,
-      h: 112,
+    "body": {
+      "cx": 159.42,
+      "cy": 198.05,
+      "w": 256,
+      "h": 112
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 112,
-        cx: 159.42,
-        cy: 198.05,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 112,
+        "cx": 159.42,
+        "cy": 198.05,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 112,
-        cx: 159.42,
-        cy: 86.57,
-        ox: 0,
-        oy: -111.48,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 112,
+        "cx": 159.42,
+        "cy": 86.57,
+        "ox": 0,
+        "oy": -111.48
+      }
+    ]
   },
   "x2-mesa-spine-thunder-stave": {
-    id: "x2-mesa-spine-thunder-stave",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-mesa-spine-thunder-stave",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 120.34,
-      cy: 134.58,
-      w: 256,
-      h: 19,
+    "body": {
+      "cx": 120.34,
+      "cy": 134.58,
+      "w": 256,
+      "h": 19
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 19,
-        cx: 120.34,
-        cy: 134.58,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 19,
+        "cx": 120.34,
+        "cy": 134.58,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-miasma-bell-censer": {
-    id: "x2-miasma-bell-censer",
-    kind: "weapon",
-    canvas: {
-      w: 294,
-      h: 294,
+    "id": "x2-miasma-bell-censer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 294,
+      "h": 294
     },
-    body: {
-      cx: 165.51,
-      cy: 147.46,
-      w: 256,
-      h: 204,
+    "body": {
+      "cx": 165.51,
+      "cy": 147.46,
+      "w": 256,
+      "h": 204
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 204,
-        cx: 165.51,
-        cy: 147.46,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 204,
+        "cx": 165.51,
+        "cy": 147.46,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mirage-coilrifle": {
-    id: "x2-mirage-coilrifle",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-mirage-coilrifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 130.97,
-      cy: 129.06,
-      w: 256,
-      h: 49,
+    "body": {
+      "cx": 130.97,
+      "cy": 129.06,
+      "w": 256,
+      "h": 49
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 49,
-        cx: 130.97,
-        cy: 129.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 49,
+        "cx": 130.97,
+        "cy": 129.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mirage-hardlight-saber": {
-    id: "x2-mirage-hardlight-saber",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-mirage-hardlight-saber",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 129.19,
-      cy: 131.34,
-      w: 256,
-      h: 34,
+    "body": {
+      "cx": 129.19,
+      "cy": 131.34,
+      "w": 256,
+      "h": 34
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 34,
-        cx: 129.19,
-        cy: 131.34,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 34,
+        "cx": 129.19,
+        "cy": 131.34,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mistral-kusarigama": {
-    id: "x2-mistral-kusarigama",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-mistral-kusarigama",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 131.79,
-      cy: 124.21,
-      w: 256,
-      h: 93,
+    "body": {
+      "cx": 131.79,
+      "cy": 124.21,
+      "w": 256,
+      "h": 93
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 93,
-        cx: 131.79,
-        cy: 124.21,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 93,
+        "cx": 131.79,
+        "cy": 124.21,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-mournveil-scythe": {
-    id: "x2-mournveil-scythe",
-    kind: "weapon",
-    canvas: {
-      w: 261,
-      h: 261,
+    "id": "x2-mournveil-scythe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 261,
+      "h": 261
     },
-    body: {
-      cx: 171.22,
-      cy: 128,
-      w: 256,
-      h: 128,
+    "body": {
+      "cx": 171.22,
+      "cy": 128,
+      "w": 256,
+      "h": 128
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 128,
-        cx: 171.22,
-        cy: 128,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 128,
+        "cx": 171.22,
+        "cy": 128,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-nine-tail-razorlash": {
-    id: "x2-nine-tail-razorlash",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-nine-tail-razorlash",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 170.74,
-      cy: 135.49,
-      w: 256,
-      h: 170,
+    "body": {
+      "cx": 170.74,
+      "cy": 135.49,
+      "w": 256,
+      "h": 170
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 170,
-        cx: 170.74,
-        cy: 135.49,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 170,
+        "cx": 170.74,
+        "cy": 135.49,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-null-grimoire-of-the-hollow-page": {
-    id: "x2-null-grimoire-of-the-hollow-page",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x2-null-grimoire-of-the-hollow-page",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 130.78,
-      cy: 137.9,
-      w: 256,
-      h: 177,
+    "body": {
+      "cx": 130.78,
+      "cy": 137.9,
+      "w": 256,
+      "h": 177
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 177,
-        cx: 130.78,
-        cy: 137.9,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 177,
+        "cx": 130.78,
+        "cy": 137.9,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-nullsaint-reliquary": {
-    id: "x2-nullsaint-reliquary",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-nullsaint-reliquary",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 149.3,
-      cy: 135.82,
-      w: 256,
-      h: 116,
+    "body": {
+      "cx": 149.3,
+      "cy": 135.82,
+      "w": 256,
+      "h": 116
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 116,
-        cx: 149.3,
-        cy: 135.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 116,
+        "cx": 149.3,
+        "cy": 135.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-nullspike-pike": {
-    id: "x2-nullspike-pike",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-nullspike-pike",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 136.85,
-      cy: 133.65,
-      w: 256,
-      h: 20,
+    "body": {
+      "cx": 136.85,
+      "cy": 133.65,
+      "w": 256,
+      "h": 20
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 20,
-        cx: 136.85,
-        cy: 133.65,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 20,
+        "cx": 136.85,
+        "cy": 133.65,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-obsidian-maw-void-staff": {
-    id: "x2-obsidian-maw-void-staff",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-obsidian-maw-void-staff",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 164.45,
-      cy: 127.37,
-      w: 256,
-      h: 79,
+    "body": {
+      "cx": 164.45,
+      "cy": 127.37,
+      "w": 256,
+      "h": 79
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 79,
-        cx: 164.45,
-        cy: 127.37,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 79,
+        "cx": 164.45,
+        "cy": 127.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pale-horse-longgun": {
-    id: "x2-pale-horse-longgun",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-pale-horse-longgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 104.95,
-      cy: 126.41,
-      w: 256,
-      h: 43,
+    "body": {
+      "cx": 104.95,
+      "cy": 126.41,
+      "w": 256,
+      "h": 43
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 43,
-        cx: 104.95,
-        cy: 126.41,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 43,
+        "cx": 104.95,
+        "cy": 126.41,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pearl-of-penance-censer": {
-    id: "x2-pearl-of-penance-censer",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-pearl-of-penance-censer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 160.33,
-      cy: 134.94,
-      w: 256,
-      h: 74,
+    "body": {
+      "cx": 160.33,
+      "cy": 134.94,
+      "w": 256,
+      "h": 74
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 74,
-        cx: 160.33,
-        cy: 134.94,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 74,
+        "cx": 160.33,
+        "cy": 134.94,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pearlbreech-volleygun": {
-    id: "x2-pearlbreech-volleygun",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x2-pearlbreech-volleygun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 136.83,
-      cy: 129.99,
-      w: 256,
-      h: 123,
+    "body": {
+      "cx": 136.83,
+      "cy": 129.99,
+      "w": 256,
+      "h": 123
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 123,
-        cx: 136.83,
-        cy: 129.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 123,
+        "cx": 136.83,
+        "cy": 129.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pendulum-of-the-pyre": {
-    id: "x2-pendulum-of-the-pyre",
-    kind: "weapon",
-    canvas: {
-      w: 261,
-      h: 261,
+    "id": "x2-pendulum-of-the-pyre",
+    "kind": "weapon",
+    "canvas": {
+      "w": 261,
+      "h": 261
     },
-    body: {
-      cx: 165.18,
-      cy: 131.23,
-      w: 256,
-      h: 79,
+    "body": {
+      "cx": 165.18,
+      "cy": 131.23,
+      "w": 256,
+      "h": 79
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 79,
-        cx: 165.18,
-        cy: 131.23,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 79,
+        "cx": 165.18,
+        "cy": 131.23,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-permafrost-bardiche": {
-    id: "x2-permafrost-bardiche",
-    kind: "weapon",
-    canvas: {
-      w: 260,
-      h: 260,
+    "id": "x2-permafrost-bardiche",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 260
     },
-    body: {
-      cx: 182.29,
-      cy: 127.9,
-      w: 256,
-      h: 122,
+    "body": {
+      "cx": 182.29,
+      "cy": 127.9,
+      "w": 256,
+      "h": 122
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 122,
-        cx: 182.29,
-        cy: 127.9,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 122,
+        "cx": 182.29,
+        "cy": 127.9,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-permafrost-cryo-bracer": {
-    id: "x2-permafrost-cryo-bracer",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-permafrost-cryo-bracer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 104.41,
-      cy: 135.58,
-      w: 256,
-      h: 84,
+    "body": {
+      "cx": 104.41,
+      "cy": 135.58,
+      "w": 256,
+      "h": 84
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 84,
-        cx: 104.41,
-        cy: 135.58,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 84,
+        "cx": 104.41,
+        "cy": 135.58,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-permafrost-siege-lobber": {
-    id: "x2-permafrost-siege-lobber",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-permafrost-siege-lobber",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 138.11,
-      cy: 132.46,
-      w: 256,
-      h: 120,
+    "body": {
+      "cx": 138.11,
+      "cy": 132.46,
+      "w": 256,
+      "h": 120
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 120,
-        cx: 138.11,
-        cy: 132.46,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 120,
+        "cx": 138.11,
+        "cy": 132.46,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-phantom-estoc": {
-    id: "x2-phantom-estoc",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-phantom-estoc",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 107.73,
-      cy: 135.91,
-      w: 256,
-      h: 40,
+    "body": {
+      "cx": 107.73,
+      "cy": 135.91,
+      "w": 256,
+      "h": 40
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 40,
-        cx: 107.73,
-        cy: 135.91,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 40,
+        "cx": 107.73,
+        "cy": 135.91,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pinwheel-caromer": {
-    id: "x2-pinwheel-caromer",
-    kind: "weapon",
-    canvas: {
-      w: 408,
-      h: 408,
+    "id": "x2-pinwheel-caromer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 408,
+      "h": 408
     },
-    body: {
-      cx: 194.2,
-      cy: 271.94,
-      w: 256,
-      h: 143,
+    "body": {
+      "cx": 194.2,
+      "cy": 271.94,
+      "w": 256,
+      "h": 143
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 143,
-        cx: 194.2,
-        cy: 271.94,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 143,
+        "cx": 194.2,
+        "cy": 271.94,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 143,
-        cx: 194.2,
-        cy: 117.43,
-        ox: 0,
-        oy: -154.51,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 143,
+        "cx": 194.2,
+        "cy": 117.43,
+        "ox": 0,
+        "oy": -154.51
+      }
+    ]
   },
   "x2-plaguespitter-flak-gun": {
-    id: "x2-plaguespitter-flak-gun",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-plaguespitter-flak-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 129.68,
-      cy: 127.37,
-      w: 256,
-      h: 133,
+    "body": {
+      "cx": 129.68,
+      "cy": 127.37,
+      "w": 256,
+      "h": 133
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 133,
-        cx: 129.68,
-        cy: 127.37,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 133,
+        "cx": 129.68,
+        "cy": 127.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-plaguethresh": {
-    id: "x2-plaguethresh",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-plaguethresh",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 178.99,
-      cy: 122.92,
-      w: 256,
-      h: 161,
+    "body": {
+      "cx": 178.99,
+      "cy": 122.92,
+      "w": 256,
+      "h": 161
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 161,
-        cx: 178.99,
-        cy: 122.92,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 161,
+        "cx": 178.99,
+        "cy": 122.92,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pocket-hexicon": {
-    id: "x2-pocket-hexicon",
-    kind: "weapon",
-    canvas: {
-      w: 307,
-      h: 307,
+    "id": "x2-pocket-hexicon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 307,
+      "h": 307
     },
-    body: {
-      cx: 154.28,
-      cy: 152.57,
-      w: 256,
-      h: 140,
+    "body": {
+      "cx": 154.28,
+      "cy": 152.57,
+      "w": 256,
+      "h": 140
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 140,
-        cx: 154.28,
-        cy: 152.57,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 140,
+        "cx": 154.28,
+        "cy": 152.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-powderkeg-mortar": {
-    id: "x2-powderkeg-mortar",
-    kind: "weapon",
-    canvas: {
-      w: 298,
-      h: 298,
+    "id": "x2-powderkeg-mortar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 298,
+      "h": 298
     },
-    body: {
-      cx: 156.88,
-      cy: 141.19,
-      w: 256,
-      h: 126,
+    "body": {
+      "cx": 156.88,
+      "cy": 141.19,
+      "w": 256,
+      "h": 126
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 126,
-        cx: 156.88,
-        cy: 141.19,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 126,
+        "cx": 156.88,
+        "cy": 141.19,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-prismhex-diffraction-gauntlet": {
-    id: "x2-prismhex-diffraction-gauntlet",
-    kind: "weapon",
-    canvas: {
-      w: 298,
-      h: 298,
+    "id": "x2-prismhex-diffraction-gauntlet",
+    "kind": "weapon",
+    "canvas": {
+      "w": 298,
+      "h": 298
     },
-    body: {
-      cx: 149.04,
-      cy: 145.71,
-      w: 256,
-      h: 162,
+    "body": {
+      "cx": 149.04,
+      "cy": 145.71,
+      "w": 256,
+      "h": 162
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 162,
-        cx: 149.04,
-        cy: 145.71,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 162,
+        "cx": 149.04,
+        "cy": 145.71,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-psalmstone-beadwhip": {
-    id: "x2-psalmstone-beadwhip",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-psalmstone-beadwhip",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 136.46,
-      cy: 167.95,
-      w: 256,
-      h: 39,
+    "body": {
+      "cx": 136.46,
+      "cy": 167.95,
+      "w": 256,
+      "h": 39
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 39,
-        cx: 136.46,
-        cy: 167.95,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 39,
+        "cx": 136.46,
+        "cy": 167.95,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 39,
-        cx: 136.68,
-        cy: 97.9,
-        ox: 0.21,
-        oy: -69.84,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 39,
+        "cx": 136.68,
+        "cy": 97.9,
+        "ox": 0.21,
+        "oy": -69.84
+      }
+    ]
   },
   "x2-psalter-of-the-burning-halo": {
-    id: "x2-psalter-of-the-burning-halo",
-    kind: "weapon",
-    canvas: {
-      w: 282,
-      h: 282,
+    "id": "x2-psalter-of-the-burning-halo",
+    "kind": "weapon",
+    "canvas": {
+      "w": 282,
+      "h": 282
     },
-    body: {
-      cx: 140.72,
-      cy: 141.62,
-      w: 256,
-      h: 152,
+    "body": {
+      "cx": 140.72,
+      "cy": 141.62,
+      "w": 256,
+      "h": 152
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 152,
-        cx: 140.72,
-        cy: 141.62,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 152,
+        "cx": 140.72,
+        "cy": 141.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pyre-marble-bandolier": {
-    id: "x2-pyre-marble-bandolier",
-    kind: "weapon",
-    canvas: {
-      w: 372,
-      h: 372,
+    "id": "x2-pyre-marble-bandolier",
+    "kind": "weapon",
+    "canvas": {
+      "w": 372,
+      "h": 372
     },
-    body: {
-      cx: 181.04,
-      cy: 106.96,
-      w: 256,
-      h: 130,
+    "body": {
+      "cx": 181.04,
+      "cy": 106.96,
+      "w": 256,
+      "h": 130
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 130,
-        cx: 181.04,
-        cy: 106.96,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 130,
+        "cx": 181.04,
+        "cy": 106.96,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 130,
-        cx: 189.04,
-        cy: 241.48,
-        ox: 8,
-        oy: 134.52,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 130,
+        "cx": 189.04,
+        "cy": 241.48,
+        "ox": 8,
+        "oy": 134.52
+      }
+    ]
   },
   "x2-pyreclap-mauler": {
-    id: "x2-pyreclap-mauler",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-pyreclap-mauler",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 141.28,
-      cy: 134.75,
-      w: 256,
-      h: 124,
+    "body": {
+      "cx": 141.28,
+      "cy": 134.75,
+      "w": 256,
+      "h": 124
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 124,
-        cx: 141.28,
-        cy: 134.75,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 124,
+        "cx": 141.28,
+        "cy": 134.75,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-pyroglyph-spellbook": {
-    id: "x2-pyroglyph-spellbook",
-    kind: "weapon",
-    canvas: {
-      w: 301,
-      h: 301,
+    "id": "x2-pyroglyph-spellbook",
+    "kind": "weapon",
+    "canvas": {
+      "w": 301,
+      "h": 301
     },
-    body: {
-      cx: 149.85,
-      cy: 148.89,
-      w: 256,
-      h: 215,
+    "body": {
+      "cx": 149.85,
+      "cy": 148.89,
+      "w": 256,
+      "h": 215
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 215,
-        cx: 149.85,
-        cy: 148.89,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 215,
+        "cx": 149.85,
+        "cy": 148.89,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quarry-splitter-bardiche": {
-    id: "x2-quarry-splitter-bardiche",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-quarry-splitter-bardiche",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 186.51,
-      cy: 136.9,
-      w: 256,
-      h: 189,
+    "body": {
+      "cx": 186.51,
+      "cy": 136.9,
+      "w": 256,
+      "h": 189
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 189,
-        cx: 186.51,
-        cy: 136.9,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 189,
+        "cx": 186.51,
+        "cy": 136.9,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quartzlight-wayfinder": {
-    id: "x2-quartzlight-wayfinder",
-    kind: "weapon",
-    canvas: {
-      w: 288,
-      h: 288,
+    "id": "x2-quartzlight-wayfinder",
+    "kind": "weapon",
+    "canvas": {
+      "w": 288,
+      "h": 288
     },
-    body: {
-      cx: 157.73,
-      cy: 139.14,
-      w: 256,
-      h: 146,
+    "body": {
+      "cx": 157.73,
+      "cy": 139.14,
+      "w": 256,
+      "h": 146
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 146,
-        cx: 157.73,
-        cy: 139.14,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 146,
+        "cx": 157.73,
+        "cy": 139.14,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-censer": {
-    id: "x2-quicksilver-censer",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-quicksilver-censer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 167.44,
-      cy: 135.8,
-      w: 256,
-      h: 101,
+    "body": {
+      "cx": 167.44,
+      "cy": 135.8,
+      "w": 256,
+      "h": 101
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 101,
-        cx: 167.44,
-        cy: 135.8,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 101,
+        "cx": 167.44,
+        "cy": 135.8,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-chainblade": {
-    id: "x2-quicksilver-chainblade",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-quicksilver-chainblade",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 109.99,
-      cy: 132.03,
-      w: 256,
-      h: 40,
+    "body": {
+      "cx": 109.99,
+      "cy": 132.03,
+      "w": 256,
+      "h": 40
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 40,
-        cx: 109.99,
-        cy: 132.03,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 40,
+        "cx": 109.99,
+        "cy": 132.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-fanner": {
-    id: "x2-quicksilver-fanner",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-quicksilver-fanner",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 104.59,
-      cy: 126.07,
-      w: 256,
-      h: 108,
+    "body": {
+      "cx": 104.59,
+      "cy": 126.07,
+      "w": 256,
+      "h": 108
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 108,
-        cx: 104.59,
-        cy: 126.07,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 108,
+        "cx": 104.59,
+        "cy": 126.07,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-skinning-cleaver": {
-    id: "x2-quicksilver-skinning-cleaver",
-    kind: "weapon",
-    canvas: {
-      w: 256,
-      h: 256,
+    "id": "x2-quicksilver-skinning-cleaver",
+    "kind": "weapon",
+    "canvas": {
+      "w": 256,
+      "h": 256
     },
-    body: {
-      cx: 128,
-      cy: 128,
-      w: 256,
-      h: 256,
+    "body": {
+      "cx": 128,
+      "cy": 128,
+      "w": 256,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 256,
-        cx: 128,
-        cy: 128,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 256,
+        "cx": 128,
+        "cy": 128,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-slugthrower": {
-    id: "x2-quicksilver-slugthrower",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-quicksilver-slugthrower",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 112.03,
-      cy: 128.43,
-      w: 256,
-      h: 53,
+    "body": {
+      "cx": 112.03,
+      "cy": 128.43,
+      "w": 256,
+      "h": 53
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 53,
-        cx: 112.03,
-        cy: 128.43,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 53,
+        "cx": 112.03,
+        "cy": 128.43,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quicksilver-streetsweeper": {
-    id: "x2-quicksilver-streetsweeper",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-quicksilver-streetsweeper",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 142.32,
-      cy: 128.22,
-      w: 256,
-      h: 124,
+    "body": {
+      "cx": 142.32,
+      "cy": 128.22,
+      "w": 256,
+      "h": 124
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 124,
-        cx: 142.32,
-        cy: 128.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 124,
+        "cx": 142.32,
+        "cy": 128.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-quill-storm-repeater": {
-    id: "x2-quill-storm-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-quill-storm-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 135.62,
-      cy: 136.29,
-      w: 256,
-      h: 185,
+    "body": {
+      "cx": 135.62,
+      "cy": 136.29,
+      "w": 256,
+      "h": 185
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 185,
-        cx: 135.62,
-        cy: 136.29,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 185,
+        "cx": 135.62,
+        "cy": 136.29,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reaper-s-tithe": {
-    id: "x2-reaper-s-tithe",
-    kind: "weapon",
-    canvas: {
-      w: 281,
-      h: 281,
+    "id": "x2-reaper-s-tithe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 281,
+      "h": 281
     },
-    body: {
-      cx: 175.82,
-      cy: 120.72,
-      w: 256,
-      h: 121,
+    "body": {
+      "cx": 175.82,
+      "cy": 120.72,
+      "w": 256,
+      "h": 121
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 121,
-        cx: 175.82,
-        cy: 120.72,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 121,
+        "cx": 175.82,
+        "cy": 120.72,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reckoning-s-sun-orb": {
-    id: "x2-reckoning-s-sun-orb",
-    kind: "weapon",
-    canvas: {
-      w: 258,
-      h: 258,
+    "id": "x2-reckoning-s-sun-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 258,
+      "h": 258
     },
-    body: {
-      cx: 170.67,
-      cy: 130.16,
-      w: 256,
-      h: 130,
+    "body": {
+      "cx": 170.67,
+      "cy": 130.16,
+      "w": 256,
+      "h": 130
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 130,
-        cx: 170.67,
-        cy: 130.16,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 130,
+        "cx": 170.67,
+        "cy": 130.16,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reliquary-broadaxe": {
-    id: "x2-reliquary-broadaxe",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-reliquary-broadaxe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 170.81,
-      cy: 133.75,
-      w: 256,
-      h: 178,
+    "body": {
+      "cx": 170.81,
+      "cy": 133.75,
+      "w": 256,
+      "h": 178
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 178,
-        cx: 170.81,
-        cy: 133.75,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 178,
+        "cx": 170.81,
+        "cy": 133.75,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reliquary-halberd": {
-    id: "x2-reliquary-halberd",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-reliquary-halberd",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 153.69,
-      cy: 132.49,
-      w: 256,
-      h: 72,
+    "body": {
+      "cx": 153.69,
+      "cy": 132.49,
+      "w": 256,
+      "h": 72
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 72,
-        cx: 153.69,
-        cy: 132.49,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 72,
+        "cx": 153.69,
+        "cy": 132.49,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reliquary-lantern-wand": {
-    id: "x2-reliquary-lantern-wand",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-reliquary-lantern-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 173.12,
-      cy: 142.74,
-      w: 256,
-      h: 112,
+    "body": {
+      "cx": 173.12,
+      "cy": 142.74,
+      "w": 256,
+      "h": 112
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 112,
-        cx: 173.12,
-        cy: 142.74,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 112,
+        "cx": 173.12,
+        "cy": 142.74,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reliquary-nailcaster": {
-    id: "x2-reliquary-nailcaster",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-reliquary-nailcaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 122.47,
-      cy: 123.11,
-      w: 256,
-      h: 154,
+    "body": {
+      "cx": 122.47,
+      "cy": 123.11,
+      "w": 256,
+      "h": 154
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 154,
-        cx: 122.47,
-        cy: 123.11,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 154,
+        "cx": 122.47,
+        "cy": 123.11,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-reliquary-repeater": {
-    id: "x2-reliquary-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-reliquary-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 125.14,
-      cy: 118.54,
-      w: 256,
-      h: 192,
+    "body": {
+      "cx": 125.14,
+      "cy": 118.54,
+      "w": 256,
+      "h": 192
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 192,
-        cx: 125.14,
-        cy: 118.54,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 192,
+        "cx": 125.14,
+        "cy": 118.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-rendclaw-vambrace": {
-    id: "x2-rendclaw-vambrace",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-rendclaw-vambrace",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 115.24,
-      cy: 133.74,
-      w: 256,
-      h: 103,
+    "body": {
+      "cx": 115.24,
+      "cy": 133.74,
+      "w": 256,
+      "h": 103
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 103,
-        cx: 115.24,
-        cy: 133.74,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 103,
+        "cx": 115.24,
+        "cy": 133.74,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-revenant-knuckle": {
-    id: "x2-revenant-knuckle",
-    kind: "weapon",
-    canvas: {
-      w: 315,
-      h: 315,
+    "id": "x2-revenant-knuckle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 315,
+      "h": 315
     },
-    body: {
-      cx: 173.18,
-      cy: 92.86,
-      w: 256,
-      h: 111,
+    "body": {
+      "cx": 173.18,
+      "cy": 92.86,
+      "w": 256,
+      "h": 111
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 111,
-        cx: 173.18,
-        cy: 92.86,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 111,
+        "cx": 173.18,
+        "cy": 92.86,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 111,
-        cx: 172.67,
-        cy: 215.59,
-        ox: -0.25,
-        oy: 122.73,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 111,
+        "cx": 172.67,
+        "cy": 215.59,
+        "ox": -0.25,
+        "oy": 122.73
+      }
+    ]
   },
   "x2-reverent-broadsword": {
-    id: "x2-reverent-broadsword",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-reverent-broadsword",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 135.43,
-      cy: 136.74,
-      w: 256,
-      h: 69,
+    "body": {
+      "cx": 135.43,
+      "cy": 136.74,
+      "w": 256,
+      "h": 69
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 69,
-        cx: 135.43,
-        cy: 136.74,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 69,
+        "cx": 135.43,
+        "cy": 136.74,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-ricochet-roulette": {
-    id: "x2-ricochet-roulette",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-ricochet-roulette",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 119.41,
-      cy: 120.68,
-      w: 256,
-      h: 123,
+    "body": {
+      "cx": 119.41,
+      "cy": 120.68,
+      "w": 256,
+      "h": 123
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 123,
-        cx: 119.41,
-        cy: 120.68,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 123,
+        "cx": 119.41,
+        "cy": 120.68,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-riftcaller-naginata": {
-    id: "x2-riftcaller-naginata",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-riftcaller-naginata",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 131.6,
-      cy: 131.6,
-      w: 256,
-      h: 17,
+    "body": {
+      "cx": 131.6,
+      "cy": 131.6,
+      "w": 256,
+      "h": 17
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 17,
-        cx: 131.6,
-        cy: 131.6,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 17,
+        "cx": 131.6,
+        "cy": 131.6,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-riftcleaver-greatblade": {
-    id: "x2-riftcleaver-greatblade",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-riftcleaver-greatblade",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 155.93,
-      cy: 133.92,
-      w: 256,
-      h: 88,
+    "body": {
+      "cx": 155.93,
+      "cy": 133.92,
+      "w": 256,
+      "h": 88
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 88,
-        cx: 155.93,
-        cy: 133.92,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 88,
+        "cx": 155.93,
+        "cy": 133.92,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-riftglass-prism-lantern": {
-    id: "x2-riftglass-prism-lantern",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-riftglass-prism-lantern",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 128.64,
-      cy: 132.5,
-      w: 126,
-      h: 256,
+    "body": {
+      "cx": 128.64,
+      "cy": 132.5,
+      "w": 126,
+      "h": 256
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 126,
-        h: 256,
-        cx: 128.64,
-        cy: 132.5,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 126,
+        "h": 256,
+        "cx": 128.64,
+        "cy": 132.5,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-rimebound-folio": {
-    id: "x2-rimebound-folio",
-    kind: "weapon",
-    canvas: {
-      w: 316,
-      h: 316,
+    "id": "x2-rimebound-folio",
+    "kind": "weapon",
+    "canvas": {
+      "w": 316,
+      "h": 316
     },
-    body: {
-      cx: 158.64,
-      cy: 159.4,
-      w: 256,
-      h: 182,
+    "body": {
+      "cx": 158.64,
+      "cy": 159.4,
+      "w": 256,
+      "h": 182
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 182,
-        cx: 158.64,
-        cy: 159.4,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 182,
+        "cx": 158.64,
+        "cy": 159.4,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-rimethorn-naginata": {
-    id: "x2-rimethorn-naginata",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-rimethorn-naginata",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 141.23,
-      cy: 133.55,
-      w: 256,
-      h: 35,
+    "body": {
+      "cx": 141.23,
+      "cy": 133.55,
+      "w": 256,
+      "h": 35
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 35,
-        cx: 141.23,
-        cy: 133.55,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 35,
+        "cx": 141.23,
+        "cy": 133.55,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-rotgrove-totem": {
-    id: "x2-rotgrove-totem",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-rotgrove-totem",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 160.9,
-      cy: 131.37,
-      w: 256,
-      h: 59,
+    "body": {
+      "cx": 160.9,
+      "cy": 131.37,
+      "w": 256,
+      "h": 59
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 59,
-        cx: 160.9,
-        cy: 131.37,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 59,
+        "cx": 160.9,
+        "cy": 131.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-rustwidow-pump-rifle": {
-    id: "x2-rustwidow-pump-rifle",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-rustwidow-pump-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 128.44,
-      cy: 126.91,
-      w: 256,
-      h: 63,
+    "body": {
+      "cx": 128.44,
+      "cy": 126.91,
+      "w": 256,
+      "h": 63
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 63,
-        cx: 128.44,
-        cy: 126.91,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 63,
+        "cx": 128.44,
+        "cy": 126.91,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saint-bough-frost-crozier": {
-    id: "x2-saint-bough-frost-crozier",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-saint-bough-frost-crozier",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 167.3,
-      cy: 136.81,
-      w: 256,
-      h: 73,
+    "body": {
+      "cx": 167.3,
+      "cy": 136.81,
+      "w": 256,
+      "h": 73
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 73,
-        cx: 167.3,
-        cy: 136.81,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 73,
+        "cx": 167.3,
+        "cy": 136.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saint-calamity": {
-    id: "x2-saint-calamity",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-saint-calamity",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 194.15,
-      cy: 136.25,
-      w: 256,
-      h: 169,
+    "body": {
+      "cx": 194.15,
+      "cy": 136.25,
+      "w": 256,
+      "h": 169
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 169,
-        cx: 194.15,
-        cy: 136.25,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 169,
+        "cx": 194.15,
+        "cy": 136.25,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saint-s-knucklebone-censer-orb": {
-    id: "x2-saint-s-knucklebone-censer-orb",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-saint-s-knucklebone-censer-orb",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 144.15,
-      cy: 130.71,
-      w: 256,
-      h: 155,
+    "body": {
+      "cx": 144.15,
+      "cy": 130.71,
+      "w": 256,
+      "h": 155
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 155,
-        cx: 144.15,
-        cy: 130.71,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 155,
+        "cx": 144.15,
+        "cy": 130.71,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saintskull-monstrance": {
-    id: "x2-saintskull-monstrance",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-saintskull-monstrance",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 158.18,
-      cy: 133.99,
-      w: 256,
-      h: 197,
+    "body": {
+      "cx": 158.18,
+      "cy": 133.99,
+      "w": 256,
+      "h": 197
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 197,
-        cx: 158.18,
-        cy: 133.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 197,
+        "cx": 158.18,
+        "cy": 133.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saintspar-lochaber": {
-    id: "x2-saintspar-lochaber",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-saintspar-lochaber",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 161.88,
-      cy: 135.08,
-      w: 256,
-      h: 93,
+    "body": {
+      "cx": 161.88,
+      "cy": 135.08,
+      "w": 256,
+      "h": 93
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 93,
-        cx: 161.88,
-        cy: 135.08,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 93,
+        "cx": 161.88,
+        "cy": 135.08,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saloon-tomahawk": {
-    id: "x2-saloon-tomahawk",
-    kind: "weapon",
-    canvas: {
-      w: 287,
-      h: 287,
+    "id": "x2-saloon-tomahawk",
+    "kind": "weapon",
+    "canvas": {
+      "w": 287,
+      "h": 287
     },
-    body: {
-      cx: 168.61,
-      cy: 128.57,
-      w: 256,
-      h: 87,
+    "body": {
+      "cx": 168.61,
+      "cy": 128.57,
+      "w": 256,
+      "h": 87
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 87,
-        cx: 168.61,
-        cy: 128.57,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 87,
+        "cx": 168.61,
+        "cy": 128.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-saltbrand-cutlass": {
-    id: "x2-saltbrand-cutlass",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-saltbrand-cutlass",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 142.81,
-      cy: 131.39,
-      w: 256,
-      h: 91,
+    "body": {
+      "cx": 142.81,
+      "cy": 131.39,
+      "w": 256,
+      "h": 91
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 91,
-        cx: 142.81,
-        cy: 131.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 91,
+        "cx": 142.81,
+        "cy": 131.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sanctified-headsman": {
-    id: "x2-sanctified-headsman",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-sanctified-headsman",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 152.35,
-      cy: 136.19,
-      w: 256,
-      h: 89,
+    "body": {
+      "cx": 152.35,
+      "cy": 136.19,
+      "w": 256,
+      "h": 89
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 89,
-        cx: 152.35,
-        cy: 136.19,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 89,
+        "cx": 152.35,
+        "cy": 136.19,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sanctum-brazier-staff": {
-    id: "x2-sanctum-brazier-staff",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-sanctum-brazier-staff",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 164.65,
-      cy: 129.59,
-      w: 256,
-      h: 92,
+    "body": {
+      "cx": 164.65,
+      "cy": 129.59,
+      "w": 256,
+      "h": 92
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 92,
-        cx: 164.65,
-        cy: 129.59,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 92,
+        "cx": 164.65,
+        "cy": 129.59,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sanctus-siege-bombard": {
-    id: "x2-sanctus-siege-bombard",
-    kind: "weapon",
-    canvas: {
-      w: 286,
-      h: 286,
+    "id": "x2-sanctus-siege-bombard",
+    "kind": "weapon",
+    "canvas": {
+      "w": 286,
+      "h": 286
     },
-    body: {
-      cx: 144.88,
-      cy: 136.44,
-      w: 256,
-      h: 155,
+    "body": {
+      "cx": 144.88,
+      "cy": 136.44,
+      "w": 256,
+      "h": 155
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 155,
-        cx: 144.88,
-        cy: 136.44,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 155,
+        "cx": 144.88,
+        "cy": 136.44,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sandsong-saber": {
-    id: "x2-sandsong-saber",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-sandsong-saber",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 117.25,
-      cy: 128.74,
-      w: 256,
-      h: 68,
+    "body": {
+      "cx": 117.25,
+      "cy": 128.74,
+      "w": 256,
+      "h": 68
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 68,
-        cx: 117.25,
-        cy: 128.74,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 68,
+        "cx": 117.25,
+        "cy": 128.74,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-scattershell-duster": {
-    id: "x2-scattershell-duster",
-    kind: "weapon",
-    canvas: {
-      w: 339,
-      h: 339,
+    "id": "x2-scattershell-duster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 339,
+      "h": 339
     },
-    body: {
-      cx: 174,
-      cy: 166.7,
-      w: 256,
-      h: 225,
+    "body": {
+      "cx": 174,
+      "cy": 166.7,
+      "w": 256,
+      "h": 225
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 225,
-        cx: 174,
-        cy: 166.7,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 225,
+        "cx": 174,
+        "cy": 166.7,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-scattershot-saint": {
-    id: "x2-scattershot-saint",
-    kind: "weapon",
-    canvas: {
-      w: 280,
-      h: 280,
+    "id": "x2-scattershot-saint",
+    "kind": "weapon",
+    "canvas": {
+      "w": 280,
+      "h": 280
     },
-    body: {
-      cx: 142.49,
-      cy: 131.57,
-      w: 256,
-      h: 127,
+    "body": {
+      "cx": 142.49,
+      "cy": 131.57,
+      "w": 256,
+      "h": 127
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 127,
-        cx: 142.49,
-        cy: 131.57,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 127,
+        "cx": 142.49,
+        "cy": 131.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-seraph-s-knuckle-reliquary": {
-    id: "x2-seraph-s-knuckle-reliquary",
-    kind: "weapon",
-    canvas: {
-      w: 319,
-      h: 319,
+    "id": "x2-seraph-s-knuckle-reliquary",
+    "kind": "weapon",
+    "canvas": {
+      "w": 319,
+      "h": 319
     },
-    body: {
-      cx: 160.92,
-      cy: 154.06,
-      w: 256,
-      h: 147,
+    "body": {
+      "cx": 160.92,
+      "cy": 154.06,
+      "w": 256,
+      "h": 147
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 147,
-        cx: 160.92,
-        cy: 154.06,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 147,
+        "cx": 160.92,
+        "cy": 154.06,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sermon-bell": {
-    id: "x2-sermon-bell",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-sermon-bell",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 161.25,
-      cy: 137.34,
-      w: 256,
-      h: 112,
+    "body": {
+      "cx": 161.25,
+      "cy": 137.34,
+      "w": 256,
+      "h": 112
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 112,
-        cx: 161.25,
-        cy: 137.34,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 112,
+        "cx": 161.25,
+        "cy": 137.34,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sidewinder-spitfire": {
-    id: "x2-sidewinder-spitfire",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-sidewinder-spitfire",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 119.22,
-      cy: 124.71,
-      w: 256,
-      h: 150,
+    "body": {
+      "cx": 119.22,
+      "cy": 124.71,
+      "w": 256,
+      "h": 150
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 150,
-        cx: 119.22,
-        cy: 124.71,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 150,
+        "cx": 119.22,
+        "cy": 124.71,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sidewinder-spontoon": {
-    id: "x2-sidewinder-spontoon",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-sidewinder-spontoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 115.39,
-      cy: 140.39,
-      w: 256,
-      h: 107,
+    "body": {
+      "cx": 115.39,
+      "cy": 140.39,
+      "w": 256,
+      "h": 107
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 107,
-        cx: 115.39,
-        cy: 140.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 107,
+        "cx": 115.39,
+        "cy": 140.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sidewinder-twin-rifles": {
-    id: "x2-sidewinder-twin-rifles",
-    kind: "weapon",
-    canvas: {
-      w: 282,
-      h: 282,
+    "id": "x2-sidewinder-twin-rifles",
+    "kind": "weapon",
+    "canvas": {
+      "w": 282,
+      "h": 282
     },
-    body: {
-      cx: 130.25,
-      cy: 93.13,
-      w: 256,
-      h: 84,
+    "body": {
+      "cx": 130.25,
+      "cy": 93.13,
+      "w": 256,
+      "h": 84
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 84,
-        cx: 130.25,
-        cy: 93.13,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 84,
+        "cx": 130.25,
+        "cy": 93.13,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 84,
-        cx: 130.02,
-        cy: 174.34,
-        ox: 0,
-        oy: 81.21,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 84,
+        "cx": 130.02,
+        "cy": 174.34,
+        "ox": 0,
+        "oy": 81.21
+      }
+    ]
   },
   "x2-slughammer-breachgun": {
-    id: "x2-slughammer-breachgun",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-slughammer-breachgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 137.42,
-      cy: 121.79,
-      w: 256,
-      h: 112,
+    "body": {
+      "cx": 137.42,
+      "cy": 121.79,
+      "w": 256,
+      "h": 112
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 112,
-        cx: 137.42,
-        cy: 121.79,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 112,
+        "cx": 137.42,
+        "cy": 121.79,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sluicebox-maul-axe": {
-    id: "x2-sluicebox-maul-axe",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-sluicebox-maul-axe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 174.33,
-      cy: 129.27,
-      w: 256,
-      h: 142,
+    "body": {
+      "cx": 174.33,
+      "cy": 129.27,
+      "w": 256,
+      "h": 142
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 142,
-        cx: 174.33,
-        cy: 129.27,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 142,
+        "cx": 174.33,
+        "cy": 129.27,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-smoldering-eye-of-perdition": {
-    id: "x2-smoldering-eye-of-perdition",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-smoldering-eye-of-perdition",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 160.59,
-      cy: 134.04,
-      w: 256,
-      h: 147,
+    "body": {
+      "cx": 160.59,
+      "cy": 134.04,
+      "w": 256,
+      "h": 147
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 147,
-        cx: 160.59,
-        cy: 134.04,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 147,
+        "cx": 160.59,
+        "cy": 134.04,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-snakebite-dart-slinger": {
-    id: "x2-snakebite-dart-slinger",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-snakebite-dart-slinger",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 107.43,
-      cy: 130.19,
-      w: 256,
-      h: 96,
+    "body": {
+      "cx": 107.43,
+      "cy": 130.19,
+      "w": 256,
+      "h": 96
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 96,
-        cx: 107.43,
-        cy: 130.19,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 96,
+        "cx": 107.43,
+        "cy": 130.19,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-snakebite-lash": {
-    id: "x2-snakebite-lash",
-    kind: "weapon",
-    canvas: {
-      w: 260,
-      h: 260,
+    "id": "x2-snakebite-lash",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 260
     },
-    body: {
-      cx: 126.03,
-      cy: 125.4,
-      w: 256,
-      h: 85,
+    "body": {
+      "cx": 126.03,
+      "cy": 125.4,
+      "w": 256,
+      "h": 85
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 85,
-        cx: 126.03,
-        cy: 125.4,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 85,
+        "cx": 126.03,
+        "cy": 125.4,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-snakebite-morningstar": {
-    id: "x2-snakebite-morningstar",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-snakebite-morningstar",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 153.09,
-      cy: 131.22,
-      w: 256,
-      h: 126,
+    "body": {
+      "cx": 153.09,
+      "cy": 131.22,
+      "w": 256,
+      "h": 126
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 126,
-        cx: 153.09,
-        cy: 131.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 126,
+        "cx": 153.09,
+        "cy": 131.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-snakeoil-tincture-scepter": {
-    id: "x2-snakeoil-tincture-scepter",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-snakeoil-tincture-scepter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 160.16,
-      cy: 136.75,
-      w: 256,
-      h: 70,
+    "body": {
+      "cx": 160.16,
+      "cy": 136.75,
+      "w": 256,
+      "h": 70
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 70,
-        cx: 160.16,
-        cy: 136.75,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 160.16,
+        "cy": 136.75,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sparkknuckle-hex-mitt": {
-    id: "x2-sparkknuckle-hex-mitt",
-    kind: "weapon",
-    canvas: {
-      w: 303,
-      h: 303,
+    "id": "x2-sparkknuckle-hex-mitt",
+    "kind": "weapon",
+    "canvas": {
+      "w": 303,
+      "h": 303
     },
-    body: {
-      cx: 158.91,
-      cy: 147.8,
-      w: 256,
-      h: 170,
+    "body": {
+      "cx": 158.91,
+      "cy": 147.8,
+      "w": 256,
+      "h": 170
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 170,
-        cx: 158.91,
-        cy: 147.8,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 170,
+        "cx": 158.91,
+        "cy": 147.8,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-spitfire-censer-wand": {
-    id: "x2-spitfire-censer-wand",
-    kind: "weapon",
-    canvas: {
-      w: 298,
-      h: 298,
+    "id": "x2-spitfire-censer-wand",
+    "kind": "weapon",
+    "canvas": {
+      "w": 298,
+      "h": 298
     },
-    body: {
-      cx: 175.66,
-      cy: 143.81,
-      w: 256,
-      h: 83,
+    "body": {
+      "cx": 175.66,
+      "cy": 143.81,
+      "w": 256,
+      "h": 83
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 83,
-        cx: 175.66,
-        cy: 143.81,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 83,
+        "cx": 175.66,
+        "cy": 143.81,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-spore-spitter-blunderbuss": {
-    id: "x2-spore-spitter-blunderbuss",
-    kind: "weapon",
-    canvas: {
-      w: 282,
-      h: 282,
+    "id": "x2-spore-spitter-blunderbuss",
+    "kind": "weapon",
+    "canvas": {
+      "w": 282,
+      "h": 282
     },
-    body: {
-      cx: 161.29,
-      cy: 135.42,
-      w: 256,
-      h: 129,
+    "body": {
+      "cx": 161.29,
+      "cy": 135.42,
+      "w": 256,
+      "h": 129
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 129,
-        cx: 161.29,
-        cy: 135.42,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 129,
+        "cx": 161.29,
+        "cy": 135.42,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sporebound-witchglobe": {
-    id: "x2-sporebound-witchglobe",
-    kind: "weapon",
-    canvas: {
-      w: 299,
-      h: 299,
+    "id": "x2-sporebound-witchglobe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 299,
+      "h": 299
     },
-    body: {
-      cx: 159.14,
-      cy: 148.88,
-      w: 256,
-      h: 199,
+    "body": {
+      "cx": 159.14,
+      "cy": 148.88,
+      "w": 256,
+      "h": 199
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 199,
-        cx: 159.14,
-        cy: 148.88,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 199,
+        "cx": 159.14,
+        "cy": 148.88,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-static-tomahawk": {
-    id: "x2-static-tomahawk",
-    kind: "weapon",
-    canvas: {
-      w: 292,
-      h: 292,
+    "id": "x2-static-tomahawk",
+    "kind": "weapon",
+    "canvas": {
+      "w": 292,
+      "h": 292
     },
-    body: {
-      cx: 183.72,
-      cy: 144.79,
-      w: 256,
-      h: 129,
+    "body": {
+      "cx": 183.72,
+      "cy": 144.79,
+      "w": 256,
+      "h": 129
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 129,
-        cx: 183.72,
-        cy: 144.79,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 129,
+        "cx": 183.72,
+        "cy": 144.79,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-stormcaller-tesla-gatling": {
-    id: "x2-stormcaller-tesla-gatling",
-    kind: "weapon",
-    canvas: {
-      w: 261,
-      h: 261,
+    "id": "x2-stormcaller-tesla-gatling",
+    "kind": "weapon",
+    "canvas": {
+      "w": 261,
+      "h": 261
     },
-    body: {
-      cx: 129.15,
-      cy: 133.52,
-      w: 256,
-      h: 139,
+    "body": {
+      "cx": 129.15,
+      "cy": 133.52,
+      "w": 256,
+      "h": 139
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 139,
-        cx: 129.15,
-        cy: 133.52,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 139,
+        "cx": 129.15,
+        "cy": 133.52,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-stormcradle-faradaygloves": {
-    id: "x2-stormcradle-faradaygloves",
-    kind: "weapon",
-    canvas: {
-      w: 328,
-      h: 328,
+    "id": "x2-stormcradle-faradaygloves",
+    "kind": "weapon",
+    "canvas": {
+      "w": 328,
+      "h": 328
     },
-    body: {
-      cx: 155.85,
-      cy: 228.02,
-      w: 256,
-      h: 103,
+    "body": {
+      "cx": 155.85,
+      "cy": 228.02,
+      "w": 256,
+      "h": 103
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 103,
-        cx: 155.85,
-        cy: 228.02,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 103,
+        "cx": 155.85,
+        "cy": 228.02,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 103,
-        cx: 156.11,
-        cy: 96.23,
-        ox: 0,
-        oy: -131.53,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 103,
+        "cx": 156.11,
+        "cy": 96.23,
+        "ox": 0,
+        "oy": -131.53
+      }
+    ]
   },
   "x2-stormcrow-twin-hatchets": {
-    id: "x2-stormcrow-twin-hatchets",
-    kind: "weapon",
-    canvas: {
-      w: 310,
-      h: 310,
+    "id": "x2-stormcrow-twin-hatchets",
+    "kind": "weapon",
+    "canvas": {
+      "w": 310,
+      "h": 310
     },
-    body: {
-      cx: 177.17,
-      cy: 84.76,
-      w: 256,
-      h: 104,
+    "body": {
+      "cx": 177.17,
+      "cy": 84.76,
+      "w": 256,
+      "h": 104
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 104,
-        cx: 177.17,
-        cy: 84.76,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 104,
+        "cx": 177.17,
+        "cy": 84.76,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 104,
-        cx: 177.17,
-        cy: 211.27,
-        ox: 0,
-        oy: 126.52,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 104,
+        "cx": 177.17,
+        "cy": 211.27,
+        "ox": 0,
+        "oy": 126.52
+      }
+    ]
   },
   "x2-stormpetal-odachi": {
-    id: "x2-stormpetal-odachi",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-stormpetal-odachi",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 117.67,
-      cy: 130.82,
-      w: 256,
-      h: 23,
+    "body": {
+      "cx": 117.67,
+      "cy": 130.82,
+      "w": 256,
+      "h": 23
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 23,
-        cx: 117.67,
-        cy: 130.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 23,
+        "cx": 117.67,
+        "cy": 130.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sunbrand-hogleg": {
-    id: "x2-sunbrand-hogleg",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-sunbrand-hogleg",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 106.38,
-      cy: 123.29,
-      w: 256,
-      h: 92,
+    "body": {
+      "cx": 106.38,
+      "cy": 123.29,
+      "w": 256,
+      "h": 92
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 92,
-        cx: 106.38,
-        cy: 123.29,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 92,
+        "cx": 106.38,
+        "cy": 123.29,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sunbreaker-railgun": {
-    id: "x2-sunbreaker-railgun",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-sunbreaker-railgun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 124.35,
-      cy: 129.07,
-      w: 256,
-      h: 47,
+    "body": {
+      "cx": 124.35,
+      "cy": 129.07,
+      "w": 256,
+      "h": 47
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 47,
-        cx: 124.35,
-        cy: 129.07,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 47,
+        "cx": 124.35,
+        "cy": 129.07,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sunlance-javelin-pike": {
-    id: "x2-sunlance-javelin-pike",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-sunlance-javelin-pike",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 137.5,
-      cy: 134.26,
-      w: 256,
-      h: 30,
+    "body": {
+      "cx": 137.5,
+      "cy": 134.26,
+      "w": 256,
+      "h": 30
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 30,
-        cx: 137.5,
-        cy: 134.26,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 30,
+        "cx": 137.5,
+        "cy": 134.26,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-sunmote-reliquary-staff": {
-    id: "x2-sunmote-reliquary-staff",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-sunmote-reliquary-staff",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 174.52,
-      cy: 129.37,
-      w: 256,
-      h: 94,
+    "body": {
+      "cx": 174.52,
+      "cy": 129.37,
+      "w": 256,
+      "h": 94
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 94,
-        cx: 174.52,
-        cy: 129.37,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 94,
+        "cx": 174.52,
+        "cy": 129.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tallowtongue-pyre-stave": {
-    id: "x2-tallowtongue-pyre-stave",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-tallowtongue-pyre-stave",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 157.99,
-      cy: 131.17,
-      w: 256,
-      h: 78,
+    "body": {
+      "cx": 157.99,
+      "cy": 131.17,
+      "w": 256,
+      "h": 78
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 78,
-        cx: 157.99,
-        cy: 131.17,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 78,
+        "cx": 157.99,
+        "cy": 131.17,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tesla-drumbore": {
-    id: "x2-tesla-drumbore",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-tesla-drumbore",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 140.95,
-      cy: 130.55,
-      w: 256,
-      h: 166,
+    "body": {
+      "cx": 140.95,
+      "cy": 130.55,
+      "w": 256,
+      "h": 166
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 166,
-        cx: 140.95,
-        cy: 130.55,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 166,
+        "cx": 140.95,
+        "cy": 130.55,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tesla-faradayer": {
-    id: "x2-tesla-faradayer",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-tesla-faradayer",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 142.64,
-      cy: 143.52,
-      w: 256,
-      h: 151,
+    "body": {
+      "cx": 142.64,
+      "cy": 143.52,
+      "w": 256,
+      "h": 151
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 151,
-        cx: 142.64,
-        cy: 143.52,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 151,
+        "cx": 142.64,
+        "cy": 143.52,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-throne-of-ash-coal-scepter": {
-    id: "x2-throne-of-ash-coal-scepter",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-throne-of-ash-coal-scepter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 167.67,
-      cy: 129.15,
-      w: 256,
-      h: 142,
+    "body": {
+      "cx": 167.67,
+      "cy": 129.15,
+      "w": 256,
+      "h": 142
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 142,
-        cx: 167.67,
-        cy: 129.15,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 142,
+        "cx": 167.67,
+        "cy": 129.15,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-lever-gun": {
-    id: "x2-thunderhead-lever-gun",
-    kind: "weapon",
-    canvas: {
-      w: 283,
-      h: 283,
+    "id": "x2-thunderhead-lever-gun",
+    "kind": "weapon",
+    "canvas": {
+      "w": 283,
+      "h": 283
     },
-    body: {
-      cx: 128.45,
-      cy: 133.41,
-      w: 256,
-      h: 87,
+    "body": {
+      "cx": 128.45,
+      "cy": 133.41,
+      "w": 256,
+      "h": 87
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 87,
-        cx: 128.45,
-        cy: 133.41,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 87,
+        "cx": 128.45,
+        "cy": 133.41,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-repeater-cannon": {
-    id: "x2-thunderhead-repeater-cannon",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-thunderhead-repeater-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 138.6,
-      cy: 129.61,
-      w: 256,
-      h: 80,
+    "body": {
+      "cx": 138.6,
+      "cy": 129.61,
+      "w": 256,
+      "h": 80
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 80,
-        cx: 138.6,
-        cy: 129.61,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 80,
+        "cx": 138.6,
+        "cy": 129.61,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-sledge": {
-    id: "x2-thunderhead-sledge",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-thunderhead-sledge",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 182.48,
-      cy: 132.68,
-      w: 256,
-      h: 121,
+    "body": {
+      "cx": 182.48,
+      "cy": 132.68,
+      "w": 256,
+      "h": 121
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 121,
-        cx: 182.48,
-        cy: 132.68,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 121,
+        "cx": 182.48,
+        "cy": 132.68,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-spikecaster": {
-    id: "x2-thunderhead-spikecaster",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-thunderhead-spikecaster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 103.11,
-      cy: 128.32,
-      w: 256,
-      h: 59,
+    "body": {
+      "cx": 103.11,
+      "cy": 128.32,
+      "w": 256,
+      "h": 59
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 59,
-        cx: 103.11,
-        cy: 128.32,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 59,
+        "cx": 103.11,
+        "cy": 128.32,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-stormfists": {
-    id: "x2-thunderhead-stormfists",
-    kind: "weapon",
-    canvas: {
-      w: 286,
-      h: 286,
+    "id": "x2-thunderhead-stormfists",
+    "kind": "weapon",
+    "canvas": {
+      "w": 286,
+      "h": 286
     },
-    body: {
-      cx: 149.41,
-      cy: 142.35,
-      w: 256,
-      h: 142,
+    "body": {
+      "cx": 149.41,
+      "cy": 142.35,
+      "w": 256,
+      "h": 142
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 142,
-        cx: 149.41,
-        cy: 142.35,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 142,
+        "cx": 149.41,
+        "cy": 142.35,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhead-voulge": {
-    id: "x2-thunderhead-voulge",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-thunderhead-voulge",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 165.93,
-      cy: 126.94,
-      w: 256,
-      h: 113,
+    "body": {
+      "cx": 165.93,
+      "cy": 126.94,
+      "w": 256,
+      "h": 113
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 113,
-        cx: 165.93,
-        cy: 126.94,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 113,
+        "cx": 165.93,
+        "cy": 126.94,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderhoof-splittingaxe": {
-    id: "x2-thunderhoof-splittingaxe",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-thunderhoof-splittingaxe",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 183.1,
-      cy: 134.22,
-      w: 256,
-      h: 164,
+    "body": {
+      "cx": 183.1,
+      "cy": 134.22,
+      "w": 256,
+      "h": 164
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 164,
-        cx: 183.1,
-        cy: 134.22,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 164,
+        "cx": 183.1,
+        "cy": 134.22,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-thunderpost-fetish": {
-    id: "x2-thunderpost-fetish",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-thunderpost-fetish",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 146.04,
-      cy: 133.8,
-      w: 256,
-      h: 67,
+    "body": {
+      "cx": 146.04,
+      "cy": 133.8,
+      "w": 256,
+      "h": 67
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 67,
-        cx: 146.04,
-        cy: 133.8,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 67,
+        "cx": 146.04,
+        "cy": 133.8,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tidehook-bombarpoon": {
-    id: "x2-tidehook-bombarpoon",
-    kind: "weapon",
-    canvas: {
-      w: 260,
-      h: 260,
+    "id": "x2-tidehook-bombarpoon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 260
     },
-    body: {
-      cx: 118.38,
-      cy: 128.72,
-      w: 256,
-      h: 81,
+    "body": {
+      "cx": 118.38,
+      "cy": 128.72,
+      "w": 256,
+      "h": 81
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 81,
-        cx: 118.38,
-        cy: 128.72,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 81,
+        "cx": 118.38,
+        "cy": 128.72,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tombwarden-claymore": {
-    id: "x2-tombwarden-claymore",
-    kind: "weapon",
-    canvas: {
-      w: 262,
-      h: 262,
+    "id": "x2-tombwarden-claymore",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
     },
-    body: {
-      cx: 140.95,
-      cy: 129.67,
-      w: 256,
-      h: 74,
+    "body": {
+      "cx": 140.95,
+      "cy": 129.67,
+      "w": 256,
+      "h": 74
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 74,
-        cx: 140.95,
-        cy: 129.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 74,
+        "cx": 140.95,
+        "cy": 129.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-toxinwell-khopesh": {
-    id: "x2-toxinwell-khopesh",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-toxinwell-khopesh",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 146.5,
-      cy: 125.75,
-      w: 256,
-      h: 95,
+    "body": {
+      "cx": 146.5,
+      "cy": 125.75,
+      "w": 256,
+      "h": 95
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 95,
-        cx: 146.5,
-        cy: 125.75,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 95,
+        "cx": 146.5,
+        "cy": 125.75,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tracer-saint-carbine": {
-    id: "x2-tracer-saint-carbine",
-    kind: "weapon",
-    canvas: {
-      w: 271,
-      h: 271,
+    "id": "x2-tracer-saint-carbine",
+    "kind": "weapon",
+    "canvas": {
+      "w": 271,
+      "h": 271
     },
-    body: {
-      cx: 110.95,
-      cy: 128.43,
-      w: 256,
-      h: 57,
+    "body": {
+      "cx": 110.95,
+      "cy": 128.43,
+      "w": 256,
+      "h": 57
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 57,
-        cx: 110.95,
-        cy: 128.43,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 57,
+        "cx": 110.95,
+        "cy": 128.43,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tumbleweed-flail": {
-    id: "x2-tumbleweed-flail",
-    kind: "weapon",
-    canvas: {
-      w: 267,
-      h: 267,
+    "id": "x2-tumbleweed-flail",
+    "kind": "weapon",
+    "canvas": {
+      "w": 267,
+      "h": 267
     },
-    body: {
-      cx: 154.11,
-      cy: 130.88,
-      w: 256,
-      h: 94,
+    "body": {
+      "cx": 154.11,
+      "cy": 130.88,
+      "w": 256,
+      "h": 94
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 94,
-        cx: 154.11,
-        cy: 130.88,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 94,
+        "cx": 154.11,
+        "cy": 130.88,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tumbleweed-skipper": {
-    id: "x2-tumbleweed-skipper",
-    kind: "weapon",
-    canvas: {
-      w: 285,
-      h: 285,
+    "id": "x2-tumbleweed-skipper",
+    "kind": "weapon",
+    "canvas": {
+      "w": 285,
+      "h": 285
     },
-    body: {
-      cx: 135.72,
-      cy: 124.82,
-      w: 256,
-      h: 161,
+    "body": {
+      "cx": 135.72,
+      "cy": 124.82,
+      "w": 256,
+      "h": 161
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 161,
-        cx: 135.72,
-        cy: 124.82,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 161,
+        "cx": 135.72,
+        "cy": 124.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-tumbleweed-static-bauble": {
-    id: "x2-tumbleweed-static-bauble",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-tumbleweed-static-bauble",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 159.02,
-      cy: 136.03,
-      w: 256,
-      h: 163,
+    "body": {
+      "cx": 159.02,
+      "cy": 136.03,
+      "w": 256,
+      "h": 163
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 163,
-        cx: 159.02,
-        cy: 136.03,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 163,
+        "cx": 159.02,
+        "cy": 136.03,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-twin-maw-greenerbore": {
-    id: "x2-twin-maw-greenerbore",
-    kind: "weapon",
-    canvas: {
-      w: 317,
-      h: 317,
+    "id": "x2-twin-maw-greenerbore",
+    "kind": "weapon",
+    "canvas": {
+      "w": 317,
+      "h": 317
     },
-    body: {
-      cx: 154.51,
-      cy: 208.03,
-      w: 256,
-      h: 106,
+    "body": {
+      "cx": 154.51,
+      "cy": 208.03,
+      "w": 256,
+      "h": 106
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 106,
-        cx: 154.51,
-        cy: 208.03,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 106,
+        "cx": 154.51,
+        "cy": 208.03,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 106,
-        cx: 154.51,
-        cy: 93.16,
-        ox: 0,
-        oy: -114.62,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 106,
+        "cx": 154.51,
+        "cy": 93.16,
+        "ox": 0,
+        "oy": -114.62
+      }
+    ]
   },
   "x2-twin-whispervolumes": {
-    id: "x2-twin-whispervolumes",
-    kind: "weapon",
-    canvas: {
-      w: 390,
-      h: 390,
+    "id": "x2-twin-whispervolumes",
+    "kind": "weapon",
+    "canvas": {
+      "w": 390,
+      "h": 390
     },
-    body: {
-      cx: 194.72,
-      cy: 120.07,
-      w: 256,
-      h: 107,
+    "body": {
+      "cx": 194.72,
+      "cy": 120.07,
+      "w": 256,
+      "h": 107
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 107,
-        cx: 194.72,
-        cy: 120.07,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 107,
+        "cx": 194.72,
+        "cy": 120.07,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 107,
-        cx: 194.72,
-        cy: 264.09,
-        ox: 0,
-        oy: 144.02,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 107,
+        "cx": 194.72,
+        "cy": 264.09,
+        "ox": 0,
+        "oy": 144.02
+      }
+    ]
   },
   "x2-vagrant-s-wishing-marble": {
-    id: "x2-vagrant-s-wishing-marble",
-    kind: "weapon",
-    canvas: {
-      w: 274,
-      h: 274,
+    "id": "x2-vagrant-s-wishing-marble",
+    "kind": "weapon",
+    "canvas": {
+      "w": 274,
+      "h": 274
     },
-    body: {
-      cx: 160.9,
-      cy: 134.01,
-      w: 256,
-      h: 144,
+    "body": {
+      "cx": 160.9,
+      "cy": 134.01,
+      "w": 256,
+      "h": 144
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 144,
-        cx: 160.9,
-        cy: 134.01,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 144,
+        "cx": 160.9,
+        "cy": 134.01,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-venomspine-repeater": {
-    id: "x2-venomspine-repeater",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-venomspine-repeater",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 120.38,
-      cy: 124.19,
-      w: 256,
-      h: 62,
+    "body": {
+      "cx": 120.38,
+      "cy": 124.19,
+      "w": 256,
+      "h": 62
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 62,
-        cx: 120.38,
-        cy: 124.19,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 62,
+        "cx": 120.38,
+        "cy": 124.19,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-venomtongue-trident": {
-    id: "x2-venomtongue-trident",
-    kind: "weapon",
-    canvas: {
-      w: 273,
-      h: 273,
+    "id": "x2-venomtongue-trident",
+    "kind": "weapon",
+    "canvas": {
+      "w": 273,
+      "h": 273
     },
-    body: {
-      cx: 143.33,
-      cy: 133.98,
-      w: 256,
-      h: 90,
+    "body": {
+      "cx": 143.33,
+      "cy": 133.98,
+      "w": 256,
+      "h": 90
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 90,
-        cx: 143.33,
-        cy: 133.98,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 90,
+        "cx": 143.33,
+        "cy": 133.98,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-verdict-longsword": {
-    id: "x2-verdict-longsword",
-    kind: "weapon",
-    canvas: {
-      w: 264,
-      h: 264,
+    "id": "x2-verdict-longsword",
+    "kind": "weapon",
+    "canvas": {
+      "w": 264,
+      "h": 264
     },
-    body: {
-      cx: 121.27,
-      cy: 130.52,
-      w: 256,
-      h: 63,
+    "body": {
+      "cx": 121.27,
+      "cy": 130.52,
+      "w": 256,
+      "h": 63
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 63,
-        cx: 121.27,
-        cy: 130.52,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 63,
+        "cx": 121.27,
+        "cy": 130.52,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-verdigris-grand-grimoire": {
-    id: "x2-verdigris-grand-grimoire",
-    kind: "weapon",
-    canvas: {
-      w: 266,
-      h: 266,
+    "id": "x2-verdigris-grand-grimoire",
+    "kind": "weapon",
+    "canvas": {
+      "w": 266,
+      "h": 266
     },
-    body: {
-      cx: 130.02,
-      cy: 135.54,
-      w: 256,
-      h: 103,
+    "body": {
+      "cx": 130.02,
+      "cy": 135.54,
+      "w": 256,
+      "h": 103
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 103,
-        cx: 130.02,
-        cy: 135.54,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 103,
+        "cx": 130.02,
+        "cy": 135.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voidgrasp-null-gauntlet": {
-    id: "x2-voidgrasp-null-gauntlet",
-    kind: "weapon",
-    canvas: {
-      w: 269,
-      h: 269,
+    "id": "x2-voidgrasp-null-gauntlet",
+    "kind": "weapon",
+    "canvas": {
+      "w": 269,
+      "h": 269
     },
-    body: {
-      cx: 135.3,
-      cy: 132.51,
-      w: 256,
-      h: 111,
+    "body": {
+      "cx": 135.3,
+      "cy": 132.51,
+      "w": 256,
+      "h": 111
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 111,
-        cx: 135.3,
-        cy: 132.51,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 111,
+        "cx": 135.3,
+        "cy": 132.51,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voidwell-idol": {
-    id: "x2-voidwell-idol",
-    kind: "weapon",
-    canvas: {
-      w: 278,
-      h: 278,
+    "id": "x2-voidwell-idol",
+    "kind": "weapon",
+    "canvas": {
+      "w": 278,
+      "h": 278
     },
-    body: {
-      cx: 148.82,
-      cy: 138.85,
-      w: 256,
-      h: 158,
+    "body": {
+      "cx": 148.82,
+      "cy": 138.85,
+      "w": 256,
+      "h": 158
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 158,
-        cx: 148.82,
-        cy: 138.85,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 158,
+        "cx": 148.82,
+        "cy": 138.85,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voltcaster-machine-pistol": {
-    id: "x2-voltcaster-machine-pistol",
-    kind: "weapon",
-    canvas: {
-      w: 276,
-      h: 276,
+    "id": "x2-voltcaster-machine-pistol",
+    "kind": "weapon",
+    "canvas": {
+      "w": 276,
+      "h": 276
     },
-    body: {
-      cx: 120.86,
-      cy: 119.54,
-      w: 256,
-      h: 192,
+    "body": {
+      "cx": 120.86,
+      "cy": 119.54,
+      "w": 256,
+      "h": 192
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 192,
-        cx: 120.86,
-        cy: 119.54,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 192,
+        "cx": 120.86,
+        "cy": 119.54,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voltfang-tachi": {
-    id: "x2-voltfang-tachi",
-    kind: "weapon",
-    canvas: {
-      w: 263,
-      h: 263,
+    "id": "x2-voltfang-tachi",
+    "kind": "weapon",
+    "canvas": {
+      "w": 263,
+      "h": 263
     },
-    body: {
-      cx: 123.07,
-      cy: 131.67,
-      w: 256,
-      h: 48,
+    "body": {
+      "cx": 123.07,
+      "cy": 131.67,
+      "w": 256,
+      "h": 48
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 48,
-        cx: 123.07,
-        cy: 131.67,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 48,
+        "cx": 123.07,
+        "cy": 131.67,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voltscript-codicil": {
-    id: "x2-voltscript-codicil",
-    kind: "weapon",
-    canvas: {
-      w: 289,
-      h: 289,
+    "id": "x2-voltscript-codicil",
+    "kind": "weapon",
+    "canvas": {
+      "w": 289,
+      "h": 289
     },
-    body: {
-      cx: 141.73,
-      cy: 143.35,
-      w: 256,
-      h: 108,
+    "body": {
+      "cx": 141.73,
+      "cy": 143.35,
+      "w": 256,
+      "h": 108
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 108,
-        cx: 141.73,
-        cy: 143.35,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 108,
+        "cx": 141.73,
+        "cy": 143.35,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-voltvein-conductors": {
-    id: "x2-voltvein-conductors",
-    kind: "weapon",
-    canvas: {
-      w: 352,
-      h: 352,
+    "id": "x2-voltvein-conductors",
+    "kind": "weapon",
+    "canvas": {
+      "w": 352,
+      "h": 352
     },
-    body: {
-      cx: 164.67,
-      cy: 247.01,
-      w: 256,
-      h: 115,
+    "body": {
+      "cx": 164.67,
+      "cy": 247.01,
+      "w": 256,
+      "h": 115
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 115,
-        cx: 164.67,
-        cy: 247.01,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 115,
+        "cx": 164.67,
+        "cy": 247.01,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 255,
-        h: 114,
-        cx: 164.67,
-        cy: 107.63,
-        ox: 0,
-        oy: -139.38,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 255,
+        "h": 114,
+        "cx": 164.67,
+        "cy": 107.63,
+        "ox": 0,
+        "oy": -139.38
+      }
+    ]
   },
   "x2-wendigo-claws": {
-    id: "x2-wendigo-claws",
-    kind: "weapon",
-    canvas: {
-      w: 318,
-      h: 318,
+    "id": "x2-wendigo-claws",
+    "kind": "weapon",
+    "canvas": {
+      "w": 318,
+      "h": 318
     },
-    body: {
-      cx: 145.74,
-      cy: 224.32,
-      w: 256,
-      h: 127,
+    "body": {
+      "cx": 145.74,
+      "cy": 224.32,
+      "w": 256,
+      "h": 127
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 127,
-        cx: 145.74,
-        cy: 224.32,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 127,
+        "cx": 145.74,
+        "cy": 224.32,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 254,
-        h: 127,
-        cx: 145.49,
-        cy: 91.75,
-        ox: -0.51,
-        oy: -132.56,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 254,
+        "h": 127,
+        "cx": 145.49,
+        "cy": 91.75,
+        "ox": -0.51,
+        "oy": -132.56
+      }
+    ]
   },
   "x2-whisperbarb-hand-crossbow": {
-    id: "x2-whisperbarb-hand-crossbow",
-    kind: "weapon",
-    canvas: {
-      w: 279,
-      h: 279,
+    "id": "x2-whisperbarb-hand-crossbow",
+    "kind": "weapon",
+    "canvas": {
+      "w": 279,
+      "h": 279
     },
-    body: {
-      cx: 140.91,
-      cy: 183.65,
-      w: 256,
-      h: 91,
+    "body": {
+      "cx": 140.91,
+      "cy": 183.65,
+      "w": 256,
+      "h": 91
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 91,
-        cx: 140.91,
-        cy: 183.65,
-        ox: 0,
-        oy: 0,
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 91,
+        "cx": 140.91,
+        "cy": 183.65,
+        "ox": 0,
+        "oy": 0
       },
       {
-        role: "part-2",
-        file: "part-2.png",
-        w: 256,
-        h: 91,
-        cx: 140.91,
-        cy: 85.26,
-        ox: 0,
-        oy: -98.62,
-      },
-    ],
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 256,
+        "h": 91,
+        "cx": 140.91,
+        "cy": 85.26,
+        "ox": 0,
+        "oy": -98.62
+      }
+    ]
   },
   "x2-wickfire-fauchard": {
-    id: "x2-wickfire-fauchard",
-    kind: "weapon",
-    canvas: {
-      w: 277,
-      h: 277,
+    "id": "x2-wickfire-fauchard",
+    "kind": "weapon",
+    "canvas": {
+      "w": 277,
+      "h": 277
     },
-    body: {
-      cx: 162.41,
-      cy: 138.07,
-      w: 256,
-      h: 70,
+    "body": {
+      "cx": 162.41,
+      "cy": 138.07,
+      "w": 256,
+      "h": 70
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 70,
-        cx: 162.41,
-        cy: 138.07,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 70,
+        "cx": 162.41,
+        "cy": 138.07,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-widowmaker-arbalest": {
-    id: "x2-widowmaker-arbalest",
-    kind: "weapon",
-    canvas: {
-      w: 270,
-      h: 270,
+    "id": "x2-widowmaker-arbalest",
+    "kind": "weapon",
+    "canvas": {
+      "w": 270,
+      "h": 270
     },
-    body: {
-      cx: 135.22,
-      cy: 128.97,
-      w: 256,
-      h: 126,
+    "body": {
+      "cx": 135.22,
+      "cy": 128.97,
+      "w": 256,
+      "h": 126
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 126,
-        cx: 135.22,
-        cy: 128.97,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 126,
+        "cx": 135.22,
+        "cy": 128.97,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-widowmaker-cannon": {
-    id: "x2-widowmaker-cannon",
-    kind: "weapon",
-    canvas: {
-      w: 275,
-      h: 275,
+    "id": "x2-widowmaker-cannon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 275,
+      "h": 275
     },
-    body: {
-      cx: 145.75,
-      cy: 127.56,
-      w: 256,
-      h: 151,
+    "body": {
+      "cx": 145.75,
+      "cy": 127.56,
+      "w": 256,
+      "h": 151
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 151,
-        cx: 145.75,
-        cy: 127.56,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 151,
+        "cx": 145.75,
+        "cy": 127.56,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-widowmaker-wrecking-ball": {
-    id: "x2-widowmaker-wrecking-ball",
-    kind: "weapon",
-    canvas: {
-      w: 260,
-      h: 260,
+    "id": "x2-widowmaker-wrecking-ball",
+    "kind": "weapon",
+    "canvas": {
+      "w": 260,
+      "h": 260
     },
-    body: {
-      cx: 159.97,
-      cy: 127.48,
-      w: 256,
-      h: 106,
+    "body": {
+      "cx": 159.97,
+      "cy": 127.48,
+      "w": 256,
+      "h": 106
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 106,
-        cx: 159.97,
-        cy: 127.48,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 106,
+        "cx": 159.97,
+        "cy": 127.48,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-witchwood-splitter": {
-    id: "x2-witchwood-splitter",
-    kind: "weapon",
-    canvas: {
-      w: 265,
-      h: 265,
+    "id": "x2-witchwood-splitter",
+    "kind": "weapon",
+    "canvas": {
+      "w": 265,
+      "h": 265
     },
-    body: {
-      cx: 171.65,
-      cy: 129.37,
-      w: 256,
-      h: 171,
+    "body": {
+      "cx": 171.65,
+      "cy": 129.37,
+      "w": 256,
+      "h": 171
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 171,
-        cx: 171.65,
-        cy: 129.37,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 171,
+        "cx": 171.65,
+        "cy": 129.37,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-witherleaf-bestiary": {
-    id: "x2-witherleaf-bestiary",
-    kind: "weapon",
-    canvas: {
-      w: 293,
-      h: 293,
+    "id": "x2-witherleaf-bestiary",
+    "kind": "weapon",
+    "canvas": {
+      "w": 293,
+      "h": 293
     },
-    body: {
-      cx: 146.69,
-      cy: 144.58,
-      w: 256,
-      h: 210,
+    "body": {
+      "cx": 146.69,
+      "cy": 144.58,
+      "w": 256,
+      "h": 210
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 210,
-        cx: 146.69,
-        cy: 144.58,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 210,
+        "cx": 146.69,
+        "cy": 144.58,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-wormwood-hex-stave": {
-    id: "x2-wormwood-hex-stave",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-wormwood-hex-stave",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 161.55,
-      cy: 127.57,
-      w: 256,
-      h: 109,
+    "body": {
+      "cx": 161.55,
+      "cy": 127.57,
+      "w": 256,
+      "h": 109
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 109,
-        cx: 161.55,
-        cy: 127.57,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 109,
+        "cx": 161.55,
+        "cy": 127.57,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-wyrmgut-blunderbuss": {
-    id: "x2-wyrmgut-blunderbuss",
-    kind: "weapon",
-    canvas: {
-      w: 272,
-      h: 272,
+    "id": "x2-wyrmgut-blunderbuss",
+    "kind": "weapon",
+    "canvas": {
+      "w": 272,
+      "h": 272
     },
-    body: {
-      cx: 153.34,
-      cy: 137.31,
-      w: 256,
-      h: 119,
+    "body": {
+      "cx": 153.34,
+      "cy": 137.31,
+      "w": 256,
+      "h": 119
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 119,
-        cx: 153.34,
-        cy: 137.31,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 119,
+        "cx": 153.34,
+        "cy": 137.31,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-wyrmscale-hex-talon": {
-    id: "x2-wyrmscale-hex-talon",
-    kind: "weapon",
-    canvas: {
-      w: 287,
-      h: 287,
+    "id": "x2-wyrmscale-hex-talon",
+    "kind": "weapon",
+    "canvas": {
+      "w": 287,
+      "h": 287
     },
-    body: {
-      cx: 143.7,
-      cy: 144.39,
-      w: 256,
-      h: 155,
+    "body": {
+      "cx": 143.7,
+      "cy": 144.39,
+      "w": 256,
+      "h": 155
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 155,
-        cx: 143.7,
-        cy: 144.39,
-        ox: 0,
-        oy: 0,
-      },
-    ],
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 155,
+        "cx": 143.7,
+        "cy": 144.39,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
   },
   "x2-wyrmskull-reliquary": {
-    id: "x2-wyrmskull-reliquary",
-    kind: "weapon",
-    canvas: {
-      w: 268,
-      h: 268,
+    "id": "x2-wyrmskull-reliquary",
+    "kind": "weapon",
+    "canvas": {
+      "w": 268,
+      "h": 268
     },
-    body: {
-      cx: 152.96,
-      cy: 130.99,
-      w: 256,
-      h: 79,
+    "body": {
+      "cx": 152.96,
+      "cy": 130.99,
+      "w": 256,
+      "h": 79
     },
-    parts: [
+    "parts": [
       {
-        role: "part-1",
-        file: "part-1.png",
-        w: 256,
-        h: 79,
-        cx: 152.96,
-        cy: 130.99,
-        ox: 0,
-        oy: 0,
-      },
-    ],
-  },
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 79,
+        "cx": 152.96,
+        "cy": 130.99,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  }
 } as const satisfies Record<string, SpriteManifest>;
 
 export type SpriteId = keyof typeof SPRITES;
