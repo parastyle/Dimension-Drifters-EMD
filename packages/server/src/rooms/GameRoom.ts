@@ -13,6 +13,7 @@ import {
   ArsenalSlot,
   ARSENAL_SLOTS,
   ATTACK_BUFFER_SECONDS,
+  ATTACK_HELD_WINDOW,
   AUG_CAST_DMG_PER,
   AUG_CAST_SPLIT_MAX,
   AUG_CAST_SPLIT_PER,
@@ -1741,6 +1742,14 @@ export class GameRoom extends Room<ArenaState> {
     //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
     this.state.tick = (this.state.tick + 1) >>> 0;
     this.state.players.forEach((player, id) => {
+      // The wire latch derives only from accepted attack epochs. Wrap-safe uint32 subtraction keeps the
+      // short window correct across ArenaState.tick rollover; write only on the true→false lapse edge.
+      if (
+        player.attackHeld &&
+        ((this.state.tick - player.attackTick) >>> 0) >= ATTACK_HELD_WINDOW
+      ) {
+        player.attackHeld = false;
+      }
       const input = this.inputs.get(id);
       if (!input) return;
       input.msgBudget = INPUT_MSGS_PER_TICK;
@@ -2017,6 +2026,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         if (canAct && player.charges > 0) {
           c.attackBuffer = 0;
+          this.stampAttackBeat(player);
           this.fireGun(player, c, weapon);
           player.charges -= 1;
           c.cd += weapon.gun.fireRate * cdMul; // ACCUMULATE (not assign) so the sub-tick remainder carries
@@ -2030,6 +2040,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         if (canAct && player.charges > 0) {
           c.attackBuffer = 0;
+          this.stampAttackBeat(player);
           this.throwWeapon(player, c, weapon);
           player.charges -= 1;
           c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
@@ -2039,6 +2050,7 @@ export class GameRoom extends Room<ArenaState> {
         // §38 CASTER: conjure a piercing arcane bolt on a flat cooldown (no ammo/reload) — INT-scaled.
         if (canAct) {
           c.attackBuffer = 0;
+          this.stampAttackBeat(player);
           this.fireCast(player, c, weapon);
           c.cd = weapon.cast.cooldown * cdMul;
         }
@@ -2047,6 +2059,7 @@ export class GameRoom extends Room<ArenaState> {
         // §44 AUTHORITATIVE EPOCH: construct exactly once when `canAct` accepts — never on message arrival.
         // Client prediction starts from local send until a later swing-seq protocol can reconcile buffering.
         const swing = swingDescriptorFor(weapon, weapon.cooldown * cdMul);
+        this.stampAttackBeat(player);
         this.resolveSwing(player, c, weapon, swing);
         c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; the loot affix owns speed
       }
@@ -2290,6 +2303,13 @@ export class GameRoom extends Room<ArenaState> {
 
     // 8. Tick the §12 level-up windows (auto-resolve a flex point + signature pick if the 5s timer runs out).
     this.tickLevelWindows(dt);
+  }
+
+  /** Publish one authoritative player-attack acceptance edge. Damage/cooldown behavior remains elsewhere. */
+  private stampAttackBeat(player: PlayerState): void {
+    player.attackSeq = (player.attackSeq + 1) >>> 0;
+    player.attackTick = this.state.tick;
+    player.attackHeld = true;
   }
 
   /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps

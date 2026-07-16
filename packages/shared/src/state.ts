@@ -133,6 +133,14 @@ export class PlayerState extends Schema {
   @type("uint8") upPower = 0;
   /** Level-window time remaining in integer deciseconds. Appended wire replacement for the legacy float. */
   @type("uint16") flexTimerDs = 0;
+  // ── SYNCED ATTACK BEAT — APPENDED for wire safety. Weapon identity + `aimDir` already describe the pose;
+  // these fields expose only the authoritative acceptance edge so remote clients can start its animation.
+  /** Monotonic uint32 counter bumped exactly once when the server accepts and fires an attack. */
+  @type("uint32") attackSeq = 0;
+  /** Authoritative `ArenaState.tick` on which `attackSeq` most recently advanced. */
+  @type("uint32") attackTick = 0;
+  /** True while the last accepted attack remains inside `ATTACK_HELD_WINDOW`; cleared by the server. */
+  @type("boolean") attackHeld = false;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

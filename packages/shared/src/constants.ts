@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 14; // XP Echo map: authoritative kill-XP arrival + one-patch receipt latch
+export const SCHEMA_VERSION = 15; // Player attack beat: accepted seq/tick + short held-state window
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -571,6 +571,11 @@ export const PARRY_RIPOSTE_DMG = 16;
  *  the "held trigger" and off-grid melee cadences stop dropping hits, and a chain-parry press that beats
  *  the round-trip is honoured. Small so it never fires a stale attack a beat after you let go. */
 export const ATTACK_BUFFER_SECONDS = 0.15;
+/** Number of authoritative 20Hz ticks for which the most recently accepted player attack counts as HELD.
+ *  Acceptance refreshes the epoch; the server clears the synced latch once `tick - attackTick` reaches
+ *  this window. Three ticks = 150ms, bridging rapid fire/cast beats without treating request arrival as
+ *  proof that an attack actually fired. */
+export const ATTACK_HELD_WINDOW = 3;
 export const PARRY_BUFFER_SECONDS = 0.2; // §8 v0.114 EASE — a slightly wider buffer so early presses land
 /** §8 parry FLOW (Stage C): a SUCCESSFUL parry of a telegraphed attack refreshes the cooldown to this small
  *  value (vs the full PARRY_COOLDOWN miss-penalty), so you can immediately parry the next swing — that's how

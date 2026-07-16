@@ -2568,3 +2568,136 @@ describe("GameRoom — server-authoritative XP Echoes", () => {
     expect(h.state().xpEchoes.size).toBe(0);
   });
 });
+
+// SYNCED ATTACK BEAT — appended-only server/shared contract tests. The constant is loaded here instead of
+// editing the established import block so this file's historical tests remain byte-for-byte untouched.
+const { ATTACK_HELD_WINDOW: ATTACK_HELD_WINDOW_TICKS } = await import("@dd/shared");
+
+describe("GameRoom — synced authoritative attack beat", () => {
+  it("bumps once per accepted melee swing, never per hit or whirlwind revolution", () => {
+    const h = makeRoom();
+    h.join("melee-beat");
+    h.state().mode = "training";
+    h.room.map.tiles.fill(TILE_GROUND);
+    h.room.map.pois.length = 0;
+    const player = h.state().players.get("melee-beat");
+    player.weapon = "x-sword-whirlwind";
+    h.tick(1); // settle the weapon swap before arming an attack
+
+    const enemy = new EnemyState();
+    enemy.id = "beat-target";
+    enemy.kind = "ronin";
+    enemy.hp = 100000;
+    enemy.x = player.x + 80;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+
+    h.send("melee-beat", "attack", { aimX: 1, aimY: 0 });
+    expect(player.attackSeq).toBe(0); // request arrival is not the authoritative edge
+    const acceptedTick = h.state().tick + 1;
+    h.tick(1);
+    expect(player.attackSeq).toBe(1);
+    expect(player.attackTick).toBe(acceptedTick);
+
+    for (let i = 0; i < 24; i++) {
+      enemy.x = player.x + 80;
+      enemy.y = player.y;
+      h.tick(1);
+    }
+    expect(enemy.hp).toBeLessThan(100000); // the swept state machine actually processed hits/revolutions
+    expect(player.attackSeq).toBe(1);
+
+    h.send("melee-beat", "attack", { aimX: 1, aimY: 0 });
+    h.tick(1);
+    expect(player.attackSeq).toBe(2); // the next accepted descriptor is exactly one new edge
+  });
+
+  it("bumps once when a gun shot actually fires and stamps that acceptance tick", () => {
+    const h = makeRoom();
+    h.join("gun-beat");
+    const player = h.state().players.get("gun-beat");
+    player.weapon = "x-gun-revolver-cannon";
+    h.tick(1);
+
+    h.send("gun-beat", "attack", { aimX: 1, aimY: 0 });
+    expect(player.attackSeq).toBe(0);
+    const acceptedTick = h.state().tick + 1;
+    h.tick(1);
+
+    expect(player.attackSeq).toBe(1);
+    expect(player.attackTick).toBe(acceptedTick);
+    expect(player.attackHeld).toBe(true);
+  });
+
+  it("refreshes attackHeld across rapid accepted shots, then clears it at the tick window", () => {
+    const h = makeRoom();
+    h.join("held-beat");
+    const player = h.state().players.get("held-beat");
+    player.weapon = "x-gun-gatling";
+    h.tick(1);
+
+    let lapsedDuringRapidFire = false;
+    for (let i = 0; i < 10 && player.attackSeq < 3; i++) {
+      h.send("held-beat", "attack", { aimX: 1, aimY: 0 });
+      h.tick(1);
+      if (player.attackSeq > 0 && !player.attackHeld) lapsedDuringRapidFire = true;
+    }
+    expect(player.attackSeq).toBeGreaterThanOrEqual(3);
+    expect(lapsedDuringRapidFire).toBe(false);
+    expect(player.attackHeld).toBe(true);
+    expect(player.attackTick).toBe(h.state().tick); // loop stops on the latest accepted shot
+
+    h.tick(ATTACK_HELD_WINDOW_TICKS - 1);
+    expect(player.attackHeld).toBe(true);
+    h.tick(1);
+    expect(player.attackHeld).toBe(false);
+  });
+
+  it("does not treat an accepted parry as an attack beat", () => {
+    const h = makeRoom();
+    h.join("parry-beat");
+    const player = h.state().players.get("parry-beat");
+    const combat = h.room.combat.get("parry-beat");
+
+    h.send("parry-beat", "parry");
+
+    expect(combat.invuln).toBeGreaterThan(0); // parry was accepted and executed
+    expect(combat.parryCd).toBeGreaterThan(0);
+    expect(player.attackSeq).toBe(0);
+    expect(player.attackTick).toBe(0);
+    expect(player.attackHeld).toBe(false);
+  });
+
+  it("does not bump for a cooldown-gated attack whose buffer lapses", () => {
+    const h = makeRoom();
+    h.join("gated-beat");
+    const player = h.state().players.get("gated-beat");
+    player.weapon = FISTS_WEAPON;
+    h.tick(1);
+    const combat = h.room.combat.get("gated-beat");
+    combat.cd = 0.5;
+
+    h.send("gated-beat", "attack", { aimX: 1, aimY: 0 });
+    h.tick(4); // 0.20s: beyond the 0.15s attack buffer, still inside the forced cooldown
+
+    expect(combat.attackBuffer).toBe(0);
+    expect(player.attackSeq).toBe(0);
+    expect(player.attackTick).toBe(0);
+    expect(player.attackHeld).toBe(false);
+  });
+
+  it("stamps an accepted caster cast on the same shared attack beat", () => {
+    const h = makeRoom();
+    h.join("cast-beat");
+    const player = h.state().players.get("cast-beat");
+    player.weapon = "x-staff-arcane-lance";
+    h.tick(1);
+
+    h.send("cast-beat", "attack", { aimX: 1, aimY: 0 });
+    h.tick(1);
+
+    expect(player.attackSeq).toBe(1);
+    expect(player.attackTick).toBe(h.state().tick);
+    expect(h.state().projectiles.size).toBeGreaterThan(0);
+  });
+});
