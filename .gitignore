@@ -25,3 +25,8 @@ tmp-*.jpeg
 !.vscode/extensions.json
 Thumbs.db
 tools/artkit/review/flags.json
+
+# secrets + generated audio raws (soundkit)
+.env
+.env.*
+tools/soundkit/out/
