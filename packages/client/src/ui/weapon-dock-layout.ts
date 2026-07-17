@@ -44,32 +44,38 @@ type DockTier = {
   gap: number;
 };
 
+// AWAKE tier table (dockux-panel §1.2): the dock earns its pixels only while the player uses it —
+// awake sizes are ~33% up; the whole dock rides the shared fadeProgress down to IDLE_DOCK_SCALE at rest.
 const DOCK_TIERS: readonly DockTier[] = [
   {
-    junction: 84,
-    bottomWidth: 64,
-    bottomHeight: 44,
-    rightWidth: 44,
-    rightHeight: 64,
+    junction: 112,
+    bottomWidth: 84,
+    bottomHeight: 58,
+    rightWidth: 58,
+    rightHeight: 84,
+    gap: 8,
+  },
+  {
+    junction: 104,
+    bottomWidth: 72,
+    bottomHeight: 50,
+    rightWidth: 50,
+    rightHeight: 72,
     gap: 6,
   },
   {
-    junction: 76,
-    bottomWidth: 54,
-    bottomHeight: 38,
-    rightWidth: 38,
-    rightHeight: 54,
-    gap: 4,
-  },
-  {
-    junction: 68,
-    bottomWidth: 44,
-    bottomHeight: 32,
-    rightWidth: 32,
-    rightHeight: 44,
-    gap: 3,
+    junction: 96,
+    bottomWidth: 60,
+    bottomHeight: 44,
+    rightWidth: 44,
+    rightHeight: 60,
+    gap: 5,
   },
 ];
+
+/** Idle multiplier (dockux-panel §1.2): the whole dock (elbow + arms + tabs) scales by this at rest,
+ *  anchored at the bottom-right corner point, riding the existing fade grammar — no new tween. */
+export const IDLE_DOCK_SCALE = 0.72;
 
 function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value));
@@ -109,13 +115,15 @@ export function weaponDockLayout(input: WeaponDockLayoutInput): WeaponDockLayout
   const baseGap = tier.gap * scale;
   const bottomSpan = wantedBottom * (baseBottomWidth + baseGap);
   const rightSpan = wantedRight * (baseRightHeight + baseGap);
+  // 0.80 floor (dockux-panel §1.2): with the neighbour chips carrying no text they compress slightly
+  // less before overflowing to the `+N` tab, keeping the key-hint badges legible.
   const fit = clamp(
     Math.min(
       1,
       bottomSpan > 0 ? (cornerLeft - input.leftStop) / bottomSpan : 1,
       rightSpan > 0 ? (cornerTop - input.topStop) / rightSpan : 1,
     ),
-    0.74,
+    0.8,
     1,
   );
 
@@ -168,8 +176,10 @@ export function weaponDockLayout(input: WeaponDockLayoutInput): WeaponDockLayout
   let focusHeight = 296 * focusScale;
   const focusRight = cornerLeft - 12 * scale;
   const focusBottom = cornerTop - 12 * scale;
+  // Fallback squeeze raised 0.74 → 0.78 (dockux-panel §1.2): the inspector may overlap the
+  // (hidden-while-focused) rails before it shrinks.
   if (focusRight - focusWidth < 8 * scale || focusBottom - focusHeight < 8 * scale) {
-    focusScale = 0.74;
+    focusScale = 0.78;
     focusWidth = 212 * focusScale;
     focusHeight = 296 * focusScale;
   }

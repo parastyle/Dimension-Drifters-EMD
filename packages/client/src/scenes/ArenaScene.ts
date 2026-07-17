@@ -78,6 +78,7 @@ import {
   SCHEMA_VERSION,
   SHOP_RADIUS,
   type SwingDescriptor,
+  salvageValue,
   sanitizeMetaLevels,
   scripValue,
   selectChainTargets,
@@ -119,6 +120,7 @@ import {
   levelBuildContext,
 } from "../ui/level-up-model.js";
 import {
+  IDLE_DOCK_SCALE,
   type WeaponDockLayout,
   weaponDockLayout,
   wrappedDockOffset,
@@ -133,6 +135,7 @@ import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particl
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
+  bakeCardArt,
   buildCard,
   buildDockChip,
   buildDockJunction,
@@ -140,6 +143,7 @@ import {
   type DockChip,
   type DockJunction,
   drawIcon,
+  drawTierPips,
   layoutDockChip,
   layoutDockJunction,
   setDockJunctionWeapon,
@@ -297,6 +301,9 @@ type CarouselDockState = "dormant" | "peek" | "focused" | "fading";
 
 interface CarouselDock {
   root: Phaser.GameObjects.Container;
+  /** Elbow + arms + tabs: the part that rides the idle 0.72→1 scale (dockux-panel §1.2). The focus
+   *  inspector (`detailLayer`) sits outside it and never scales. */
+  body: Phaser.GameObjects.Container;
   rails: Phaser.GameObjects.Container;
   bottomArm: Phaser.GameObjects.Container;
   rightArm: Phaser.GameObjects.Container;
@@ -1205,6 +1212,15 @@ export class ArenaScene extends Phaser.Scene {
   private bagTexts: Phaser.GameObjects.Text[] = [];
   private bagZones: Phaser.GameObjects.Rectangle[] = [];
   private slotZones: Phaser.GameObjects.Rectangle[] = [];
+  // dockux-panel §3: Backpack item-card pooled art thumbnails, the display-order sort mapping (server bag
+  // order stays authoritative for messages), hover state, and the open/close choreography clocks.
+  private bagArts: Phaser.GameObjects.Image[] = [];
+  private bagDisplayOrder: number[] = [];
+  private bagHoverCell = -1; // visual cell index (−1 = none); resolved via bagDisplayOrder at render
+  private bagPanelShown = false;
+  private bagPanelOpenAt = 0;
+  private bagPanelCloseAt = 0; // >0 while the 150 ms close drop is playing (zones already disabled)
+  private bagPanelMode: "bag" | "shop" = "bag";
   // §29 shopkeeper: a world-space vendor drawn at state.beltShopX; `shopOpen` is the SELL overlay (F near
   // the vendor). When open, the same slot/bag zones sell for scrip instead of swapping/equipping.
   private shopNpcG: Phaser.GameObjects.Graphics | null = null;
@@ -1469,6 +1485,12 @@ export class ArenaScene extends Phaser.Scene {
     this.bagZones = [];
     this.slotZones = [];
     this.buyZones = [];
+    this.bagArts = [];
+    this.bagDisplayOrder = [];
+    this.bagHoverCell = -1;
+    this.bagPanelShown = false;
+    this.bagPanelOpenAt = 0;
+    this.bagPanelCloseAt = 0;
     this.vfxPlayer = undefined!;
     this.beamRenderer = undefined!;
     this.xpMotes = undefined!;
@@ -7521,21 +7543,25 @@ export class ArenaScene extends Phaser.Scene {
     weapon: WeaponDef,
     tick: number,
   ): string {
-    if (!weapon.beam || !row || row.weaponId !== weapon.id) return "READY 0%";
-    if (row.phase === BeamPhase.Charging) return `CHARGE ${Math.round(row.intensity * 100)}%`;
+    // dockux-panel §2.2 beam vocabulary: verdicts and plain language — Ready / Charging / Heat /
+    // OVERHEAT (the one earned caps alarm) / Cooling / Locked. A ready weapon shows no engineer-brain %.
+    if (!weapon.beam || !row || row.weaponId !== weapon.id) return "Ready";
+    if (row.phase === BeamPhase.Charging) return `Charging ${Math.round(row.intensity * 100)}%`;
     if (row.phase === BeamPhase.Active)
-      return `${row.heat >= 0.8 ? "REDLINE" : "BEAM"} ${Math.round(row.heat * 100)}%`;
+      return `${row.heat >= 0.8 ? "OVERHEAT" : "Heat"} ${Math.round(row.heat * 100)}%`;
     if (row.phase === BeamPhase.Cooling)
-      return `${row.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat) ? "READY" : "VENT"} ${Math.round(row.heat * 100)}%`;
+      return row.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat)
+        ? "Ready"
+        : `Cooling ${Math.round(row.heat * 100)}%`;
     if (row.phase === BeamPhase.Overheated) {
       const elapsed = ((tick - row.phaseStartTick) >>> 0) * (TICK_MS / 1000);
       const remaining = Math.max(
         0,
         Math.max(BEAM_OVERHEAT_LOCK_SECONDS, weapon.beam.overheat.lockSeconds) - elapsed,
       );
-      return remaining > 0 ? `LOCK ${remaining.toFixed(1)}s` : "RELEASE";
+      return remaining > 0 ? `Locked ${remaining.toFixed(1)}s` : "Ready";
     }
-    return `READY ${Math.round(row.heat * 100)}%`;
+    return "Ready";
   }
 
   private beamStatusColor(row: BeamRenderState | undefined): number {
@@ -7564,9 +7590,14 @@ export class ArenaScene extends Phaser.Scene {
     let radius = 10 * scale;
     const layout = !this.belt ? this.carouselDock?.layout : undefined;
     if (layout) {
-      x = layout.junction.x + layout.junctionSize * 0.36;
-      y = layout.junction.y - layout.junctionSize * 0.35;
-      radius = Math.max(8, layout.junctionSize * 0.105);
+      // Follow the dock body's idle scale (dockux-panel §1.2) so the heat arc stays glued to the
+      // junction corner while the dock rides between 0.72 and 1.
+      const k = this.carouselDock?.body.scaleX ?? 1;
+      const anchorX = layout.cornerLeft + layout.junctionSize;
+      const anchorY = layout.cornerTop + layout.junctionSize;
+      x = anchorX + (layout.junction.x + layout.junctionSize * 0.36 - anchorX) * k;
+      y = anchorY + (layout.junction.y - layout.junctionSize * 0.35 - anchorY) * k;
+      radius = Math.max(8, layout.junctionSize * 0.105) * k;
     }
     const start = Math.PI * 0.72;
     const span = Math.PI * 1.56;
@@ -7750,7 +7781,7 @@ export class ArenaScene extends Phaser.Scene {
     // "loaded/mag" for big-magazine guns (gatling/nailgun), or "reloading…" while empty.
     let charges = "";
     if (self && self.maxCharges > 0) {
-      if (self.charges <= 0) charges = "   ⟳ reloading…";
+      if (self.charges <= 0) charges = "   ⟳ Reloading…";
       else if (self.maxCharges > 10) charges = `   ▮ ${self.charges}/${self.maxCharges}`;
       else
         charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
@@ -7764,7 +7795,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(barX, xpY - 24 * s)
       .setText(
         self
-          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? self.weapon}${charges}${beamResource}   ·   Q to cycle`
+          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${charges}${beamResource}   ·   [Q]/[E] Switch`
           : "",
       );
     // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else
@@ -7848,7 +7879,7 @@ export class ArenaScene extends Phaser.Scene {
           ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse showroom pages (when clear) · Tab: summon · Space: jump · T: exit${who}`
           : this.belt
             ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
-              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · R grab · 1/2/3 swap · Tab bag · F trade${who}`
+              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade${who}`
             : bossrush
               ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
               : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
@@ -7907,25 +7938,30 @@ export class ArenaScene extends Phaser.Scene {
     const ticks = this.add.graphics();
     const tabStyle: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: "monospace",
-      fontSize: "10px",
+      fontSize: "11px",
       color: "#f1e8cf",
       fontStyle: "bold",
     };
     const textResolution = Math.max(2, Math.ceil(RENDER_DPR));
     const bottomTab = this.add
-      .text(0, 0, "← E", tabStyle)
+      .text(0, 0, "[E] ‹", tabStyle)
       .setOrigin(1, 0.5)
+      .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(textResolution);
     const rightTab = this.add
-      .text(0, 0, "Q ↑", tabStyle)
+      .text(0, 0, "[Q] ›", tabStyle)
       .setOrigin(0.5, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(textResolution);
     const elbow = this.add.container(0, 0);
     const junction = buildDockJunction(this);
     elbow.add(junction.container);
     const detailLayer = this.add.container(0, 0);
     rails.add([bottomArm, rightArm, ticks]);
-    root.add([rails, bottomTab, rightTab, elbow, detailLayer]);
+    // `body` = elbow + arms + tabs: everything that rides the idle 0.72→1 scale (dockux-panel §1.2).
+    // The focus inspector stays outside so the 212×296 card never shrinks with the resting dock.
+    const body = this.add.container(0, 0, [rails, bottomTab, rightTab, elbow]);
+    root.add([body, detailLayer]);
 
     const chips = new Map<string, DockChip>();
     for (const id of WEAPON_IDS) {
@@ -7936,6 +7972,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     this.carouselDock = {
       root,
+      body,
       rails,
       bottomArm,
       rightArm,
@@ -7987,8 +8024,15 @@ export class ArenaScene extends Phaser.Scene {
     bar.fillStyle(0x2a2a2a, 1).fillRoundedRect(x, y, w, h, 4);
     bar.fillStyle(done ? 0xff5a4a : 0xffb24a, 1).fillRoundedRect(x, y, w * frac, h, 4);
     bar.setVisible(true);
+    // dockux-panel §2.2: key-hint grammar, and the payout on completion — the bar's whole point is the
+    // greed decision, so show what salvaging just paid.
+    const self = this.room?.state.players.get(this.room?.sessionId ?? "");
     label
-      .setText(done ? "SALVAGED" : "hold: SALVAGE · release: DROP")
+      .setText(
+        done
+          ? `Salvaged +${salvageValue(self?.weaponRarity ?? 0)}`
+          : "[R] Hold to salvage · Release to drop",
+      )
       .setColor(done ? "#ff8a5a" : "#ffe7a8")
       .setPosition(this.screenW() / 2, y - 12)
       .setVisible(true);
@@ -8016,6 +8060,20 @@ export class ArenaScene extends Phaser.Scene {
     dock.junction.chrome.setAlpha(0.3 + 0.7 * p);
     // Active identity, rarity treatment, and current resource state are combat truth and never fade.
     dock.junction.truth.setAlpha(1);
+    // dockux-panel §1.2: the whole dock body rides the SAME fade — awake earns the big pixels, idle
+    // shrinks below today's footprint. Anchored at the bottom-right corner point so it stays edge-flush.
+    // No new tween/timing; with prefers-reduced-motion the scale snaps between the endpoints instead.
+    const scale = prefersReducedPaperMotion()
+      ? p >= 0.5
+        ? 1
+        : IDLE_DOCK_SCALE
+      : IDLE_DOCK_SCALE + (1 - IDLE_DOCK_SCALE) * p;
+    const layout = dock.layout;
+    if (layout) {
+      const anchorX = layout.cornerLeft + layout.junctionSize;
+      const anchorY = layout.cornerTop + layout.junctionSize;
+      dock.body.setScale(scale).setPosition(anchorX * (1 - scale), anchorY * (1 - scale));
+    }
   }
 
   /** Explicit non-aim activity wakes the compact rails; only ordinary-arena Q/E arms inspection. */
@@ -8098,7 +8156,6 @@ export class ArenaScene extends Phaser.Scene {
     for (const chip of dock.chips.values()) {
       if (chip.container.visible) chip.container.setVisible(false);
     }
-    const showNames = WEAPON_IDS.length <= 13;
     const place = (
       id: string,
       target: Phaser.GameObjects.Container,
@@ -8113,9 +8170,10 @@ export class ArenaScene extends Phaser.Scene {
         chip.container.parentContainer?.remove(chip.container);
         target.add(chip.container);
       }
-      layoutDockChip(chip, width, height, order, showNames);
+      layoutDockChip(chip, width, height, order, layout.scale);
       chip.container.setPosition(point.x, point.y).setRotation(0).setVisible(true);
     };
+    // Key badges (dockux-panel §2.2): the nearest chip is "what E/Q does next" — its 1 is noise.
     layout.bottom.forEach((point, index) => {
       const id = bottomIds[index];
       if (id)
@@ -8125,7 +8183,7 @@ export class ArenaScene extends Phaser.Scene {
           point,
           layout.bottomChipWidth,
           layout.bottomChipHeight,
-          `E${index + 1}`,
+          index === 0 ? "E" : `E${index + 1}`,
         );
     });
     layout.right.forEach((point, index) => {
@@ -8137,20 +8195,20 @@ export class ArenaScene extends Phaser.Scene {
           point,
           layout.rightChipWidth,
           layout.rightChipHeight,
-          `Q${index + 1}`,
+          index === 0 ? "Q" : `Q${index + 1}`,
         );
     });
 
     const bottomCulled = Math.max(0, bottomIds.length - layout.bottom.length);
     const rightCulled = Math.max(0, rightIds.length - layout.right.length);
     dock.bottomTab
-      .setText(bottomCulled > 0 ? `+${bottomCulled}  ← E` : "← E")
+      .setText(bottomCulled > 0 ? `[E] ‹ +${bottomCulled}` : "[E] ‹")
       .setPosition(layout.bottomTab.x, layout.bottomTab.y)
-      .setFontSize(Math.max(8, 10 * layout.scale));
+      .setFontSize(Math.max(9, 11 * layout.scale));
     dock.rightTab
-      .setText(rightCulled > 0 ? `+${rightCulled}  Q ↑` : "Q ↑")
+      .setText(rightCulled > 0 ? `[Q] › +${rightCulled}` : "[Q] ›")
       .setPosition(layout.rightTab.x, layout.rightTab.y)
-      .setFontSize(Math.max(8, 10 * layout.scale));
+      .setFontSize(Math.max(9, 11 * layout.scale));
 
     const n = WEAPON_IDS.length;
     const tickGap = Math.max(1.5, Math.min(3, (layout.junctionSize - 10) / Math.max(1, n)));
@@ -8171,8 +8229,17 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     dock.elbow.setPosition(layout.junction.x, layout.junction.y);
-    layoutDockJunction(dock.junction, layout.junctionSize, accent, self.weapon === FISTS_WEAPON);
+    layoutDockJunction(
+      dock.junction,
+      layout.junctionSize,
+      accent,
+      self.weapon === FISTS_WEAPON,
+      layout.scale,
+      self.weaponRarity,
+    );
     dock.layout = layout;
+    // The idle-scale anchor moved with the layout — re-apply the current fade so the body stays flush.
+    this.applyCarouselDockFade(dock.fadeProgress);
     const focused = dock.currentDetailId ? dock.detailCards.get(dock.currentDetailId) : undefined;
     if (focused?.container.visible) {
       focused.container
@@ -8195,10 +8262,13 @@ export class ArenaScene extends Phaser.Scene {
         ? `${dock.selectedIndex + 1}/${WEAPON_IDS.length}`
         : `—/${WEAPON_IDS.length}`,
     );
-    const rawName = unarmed ? "EMPTY HANDS" : (def?.name ?? self.weapon);
-    dock.junction.name.setText(rawName.length > 17 ? `${rawName.slice(0, 16)}…` : rawName);
+    // dockux-panel §2.2: sentence-case state, no id leaks, tier · affix with the interpunct, and
+    // RELOADING as a state in progress rather than a command. Truncation rises to 20 chars so the two
+    // longest roster names fit untruncated at the new junction sizes.
+    const rawName = unarmed ? "Unarmed" : (def?.name ?? "Unknown weapon");
+    dock.junction.name.setText(rawName.length > 20 ? `${rawName.slice(0, 19)}…` : rawName);
     dock.junction.loot
-      .setText([rarity?.name ?? "", affix].filter(Boolean).join(" ").toUpperCase())
+      .setText([rarity?.name ?? "", affix].filter(Boolean).join(" · "))
       .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
     if (def?.beam) {
       const row = this.room?.state.beams.get(self.id);
@@ -8207,7 +8277,7 @@ export class ArenaScene extends Phaser.Scene {
         .setColor(`#${this.beamStatusColor(row).toString(16).padStart(6, "0")}`);
     } else if (self.maxCharges > 0) {
       dock.junction.resource
-        .setText(self.charges <= 0 ? "RELOAD" : `${self.charges}/${self.maxCharges}`)
+        .setText(self.charges <= 0 ? "RELOADING" : `${self.charges}/${self.maxCharges}`)
         .setColor(
           self.charges <= 0
             ? "#ff5d5d"
@@ -8219,7 +8289,14 @@ export class ArenaScene extends Phaser.Scene {
       dock.junction.resource.setText("");
     }
     if (dock.layout) {
-      layoutDockJunction(dock.junction, dock.layout.junctionSize, accent, unarmed);
+      layoutDockJunction(
+        dock.junction,
+        dock.layout.junctionSize,
+        accent,
+        unarmed,
+        dock.layout.scale,
+        self.weaponRarity,
+      );
     }
   }
 
@@ -8361,7 +8438,10 @@ export class ArenaScene extends Phaser.Scene {
       source.text.setColor(penalty < 1 ? "#ffb24a" : loot > 1 ? "#b8ff6a" : "#ffd479");
     }
     for (const token of card.reqTokens) {
-      token.text.setColor((attrs[token.attr] ?? 1) >= token.need ? "#9cff3b" : "#ff5a4a");
+      // dockux-panel §4: met/unmet was green-vs-red only — prefix ✓/✗ so the verdict survives colourblindness.
+      const met = (attrs[token.attr] ?? 1) >= token.need;
+      token.text.setText(`${met ? "✓" : "✗"} ${token.need}`);
+      token.text.setColor(met ? "#9cff3b" : "#ff5a4a");
     }
     if (def?.thrown) {
       const current = card.id === self.weapon ? self.charges : def.thrown.charges;
@@ -8570,7 +8650,8 @@ export class ArenaScene extends Phaser.Scene {
       t = this.add
         .text(0, 0, "", { fontFamily: "monospace", color: "#e8eef6" })
         .setScrollFactor(0)
-        .setDepth(depth);
+        .setDepth(depth)
+        .setResolution(Math.max(2, Math.ceil(RENDER_DPR))); // dockux-panel §4 text crispness
       pool[i] = t;
     }
     return t;
@@ -8621,13 +8702,21 @@ export class ArenaScene extends Phaser.Scene {
         .setColor(active ? "#ffe27a" : "#5c6672")
         .setPosition(x + 8 * s, y + 5 * s);
       key.setFontSize(12 * s).setOrigin(0, 0);
-      // weapon name (rarity-tinted)
-      const nm = empty ? "—" : (WEAPONS[wid]?.name ?? wid);
+      // weapon name (rarity-tinted); an empty slot says so instead of a dash that reads as a bug
+      const nm = empty ? "Empty" : (WEAPONS[wid]?.name ?? "Unknown weapon");
       const name = this.hudText(this.arsenalTexts, 3 + i, 100049)
         .setText(nm)
         .setColor(empty ? "#5c6672" : `#${col.toString(16).padStart(6, "0")}`)
         .setPosition(x + chipW / 2, y + chipH / 2 + 3 * s);
-      name.setFontSize((nm.length > 16 ? 11 : 13) * s).setOrigin(0.5, 0.5);
+      name.setFontSize((empty ? 11 : nm.length > 16 ? 11 : 13) * s).setOrigin(0.5, 0.5);
+      // dockux-panel §3.4: while the panel is open, the slot chip itself says what a click does.
+      const panelUp = this.bagOpen || this.shopOpen;
+      const tag = this.hudText(this.arsenalTexts, 7 + i, 100049)
+        .setText(this.shopOpen ? "[Click] Sell" : "[Click] Stow")
+        .setColor(this.shopOpen ? "#ffd24a" : "#9fb0c2")
+        .setPosition(x + chipW - 6 * s, y + 4 * s)
+        .setVisible(panelUp);
+      tag.setFontSize(9 * s).setOrigin(1, 0);
       // click zone (swap to this slot, or stash it when the bag is open)
       let z = this.slotZones[i];
       if (!z) {
@@ -8637,9 +8726,17 @@ export class ArenaScene extends Phaser.Scene {
           .setDepth(100047)
           .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen) this.room?.send("sellWeapon", { from: "slot", index: i });
-          else if (this.bagOpen) this.room?.send("bagStore", { slot: i });
-          else this.room?.send("swapSlot", { slot: i });
+          if (this.shopOpen) {
+            this.room?.send("sellWeapon", { from: "slot", index: i });
+          } else if (this.bagOpen) {
+            // dockux-panel §2.2: say WHY a stow did nothing instead of failing silently.
+            const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+            if (me && me.bag.length >= BAG_CAP)
+              this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, "#ff8a2b");
+            else this.room?.send("bagStore", { slot: i });
+          } else {
+            this.room?.send("swapSlot", { slot: i });
+          }
         });
         this.slotZones[i] = z;
       }
@@ -8648,10 +8745,14 @@ export class ArenaScene extends Phaser.Scene {
     // §30 class set-bonus for the current loadout (active slot = live held weapon, others = stored).
     const loadout = [0, 1, 2].map((i) => this.slotView(self, i).wid);
     const setB = weaponSetBonus(loadout, self.weapon);
-    const setTxt = setB > 1 ? `   ⚔ SET +${Math.round((setB - 1) * 100)}%` : "";
-    // scrip + bag + set-bonus readout above the chips
+    // scrip + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
+    // is open the capacity lives in the panel title instead (§3.2) — no duplicate Pack readout.
+    const parts = [`◈ ${self.scrip} Scrip`];
+    if (!(this.bagOpen || this.shopOpen))
+      parts.push(`Pack ${self.bag.length}/${BAG_CAP}`, "[Tab] Backpack");
+    if (setB > 1) parts.push(`⚔ Set bonus +${Math.round((setB - 1) * 100)}%`);
     const info = this.hudText(this.arsenalTexts, 6, 100049)
-      .setText(`◈ ${self.scrip} scrip     BAG ${self.bag.length}/${BAG_CAP}  ·  Tab${setTxt}`)
+      .setText(parts.join(" · "))
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
@@ -8659,7 +8760,7 @@ export class ArenaScene extends Phaser.Scene {
     // running scrip bank so it carries to the next run (meta-progression — "send stuff back").
     if (self.scrip !== this.lastScrip) {
       if (this.lastScrip >= 0 && self.scrip > this.lastScrip) {
-        this.flashBanner(`+${self.scrip - this.lastScrip} ◈ SCRIP`, "#ffe27a");
+        this.flashBanner(`+◈ ${self.scrip - this.lastScrip} Scrip`, "#ffe27a");
         this.audio.play("grab");
       }
       this.saveBankedScrip(self.scrip);
@@ -8676,8 +8777,34 @@ export class ArenaScene extends Phaser.Scene {
       this.lastUpgradeSig = upSig;
     }
     this.updateShopkeeper(self, s);
-    if (this.bagOpen || this.shopOpen) this.renderBagPanel(self, s);
-    else if (this.bagG?.visible) this.hideBagPanel();
+    // dockux-panel §3.5 open/close choreography — the dock's deliberate pair (120 ms cubic-out rise /
+    // 150 ms cubic-in drop). Zones disable on frame 0 of the close; reduced motion snaps both.
+    const wantPanel = this.bagOpen || this.shopOpen;
+    if (wantPanel) {
+      if (!this.bagPanelShown) {
+        this.bagPanelShown = true;
+        this.bagPanelOpenAt = this.time.now;
+      }
+      this.bagPanelCloseAt = 0;
+      this.bagPanelMode = this.shopOpen ? "shop" : "bag";
+      this.renderBagPanel(self, s);
+    } else if (this.bagPanelShown) {
+      if (this.bagPanelCloseAt === 0) {
+        this.bagPanelCloseAt = this.time.now;
+        for (const z of this.bagZones) z.setVisible(false);
+        for (const z of this.buyZones) z.setVisible(false);
+        this.bagHoverCell = -1;
+      }
+      const done =
+        prefersReducedPaperMotion() || this.time.now - this.bagPanelCloseAt >= 150;
+      if (done) {
+        this.bagPanelShown = false;
+        this.bagPanelCloseAt = 0;
+        this.hideBagPanel();
+      } else {
+        this.renderBagPanel(self, s);
+      }
+    }
   }
 
   /** §29 draw the world-space SHOPKEEPER at state.beltShopX (a lit market stall + keeper), a "Press F"
@@ -8709,24 +8836,25 @@ export class ArenaScene extends Phaser.Scene {
       g.fillStyle(0x2a3550, 1).fillRect(gx - 16, gy - 96, 32, 52);
       g.fillStyle(0xe3b58f, 1).fillCircle(gx, gy - 104, 13);
       g.fillStyle(0x1d2740, 1).fillRect(gx - 15, gy - 118, 30, 10); // hood brim
-      // sign
-      g.fillStyle(0x101722, 0.9).fillRect(gx - 30, gy - 176, 60, 20);
+      // sign (wide enough for TRADING POST — dockux-panel §2.1 canonical vendor name)
+      g.fillStyle(0x101722, 0.9).fillRect(gx - 52, gy - 176, 104, 20);
       this.shopPromptText = this.add
-        .text(gx, gy - 166, "SHOP", {
+        .text(gx, gy - 166, "TRADING POST", {
           fontFamily: "monospace",
           color: "#ffd479",
         })
         .setOrigin(0.5, 0.5)
         .setDepth(BELT_Y0 + DEPTH_MAX + 6);
-      this.shopPromptText.setFontSize(13);
+      this.shopPromptText.setFontSize(12);
     }
     this.shopNpcG.setVisible(true);
     // Proximity prompt (screen-pinned would need a second object; reuse the world sign text swapping label).
+    // Open = the stall name stays up, green (the open panel already shows the state); near = the key hint.
     const near = Math.abs(self.x - shopX) <= SHOP_RADIUS;
     if (this.shopPromptText) {
       this.shopPromptText
-        .setText(this.shopOpen ? "TRADING" : near ? "◈ F: TRADE" : "SHOP")
-        .setColor(near ? "#9cff6a" : "#ffd479");
+        .setText(this.shopOpen ? "TRADING POST" : near ? "[F] Trade" : "TRADING POST")
+        .setColor(this.shopOpen || near ? "#9cff6a" : "#ffd479");
     }
   }
 
@@ -8782,42 +8910,117 @@ export class ArenaScene extends Phaser.Scene {
     g.strokePath();
   }
 
+  /** Dashed outline for an empty Backpack socket (dockux-panel §3.1) — Graphics has no native dash. */
+  private dashedRect(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    dash: number,
+    gap: number,
+  ): void {
+    const edges: [number, number, number, number][] = [
+      [x, y, x + w, y],
+      [x + w, y, x + w, y + h],
+      [x + w, y + h, x, y + h],
+      [x, y + h, x, y],
+    ];
+    for (const [x1, y1, x2, y2] of edges) {
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const ux = (x2 - x1) / len;
+      const uy = (y2 - y1) / len;
+      for (let d = 0; d < len; d += dash + gap) {
+        const e = Math.min(len, d + dash);
+        g.lineBetween(x1 + ux * d, y1 + uy * d, x1 + ux * e, y1 + uy * e);
+      }
+    }
+  }
+
   private renderBagPanel(self: PlayerState, s: number): void {
     if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
     const g = this.bagG.setVisible(true);
     g.clear();
+    const shop = this.bagPanelMode === "shop";
+    // §3.5 choreography: 120 ms cubic-out rise on open, 150 ms cubic-in drop on close (zones are
+    // already disabled by the caller on close frame 0). Reduced motion snaps.
+    const reduced = prefersReducedPaperMotion();
+    const closing = this.bagPanelCloseAt > 0;
+    let panelAlpha = 1;
+    let rise = 0;
+    if (closing) {
+      const q = paperClamp01((this.time.now - this.bagPanelCloseAt) / 150);
+      const e = q * q * q; // Cubic.easeIn
+      panelAlpha = 1 - e;
+      rise = 8 * s * e;
+    } else if (!reduced) {
+      const e = paperCubicOut((this.time.now - this.bagPanelOpenAt) / 120);
+      panelAlpha = e;
+      rise = 8 * s * (1 - e);
+    }
+    const zonesActive = !closing;
+    g.setAlpha(panelAlpha);
+    const show = (t: Phaser.GameObjects.Text) => t.setVisible(true).setAlpha(panelAlpha);
+
     const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
-    const bandH = this.shopOpen ? 74 * s : 0; // §31 the permanent-upgrade BUY band (shop only)
-    const panelH = 210 * s + bandH;
+    const bandH = shop ? 74 * s : 0; // §31 the permanent-upgrade BUY band (shop only)
+    const headerH = 34 * s;
+    const cellH = 56 * s;
+    const rowGap = 8 * s;
+    const panelH = headerH + bandH + 3 * (cellH + rowGap) + 14 * s;
     const px = this.screenW() / 2 - panelW / 2;
-    const py = this.screenH() - 84 * s - panelH - 18 * s;
+    const py = this.screenH() - 84 * s - panelH - 18 * s + rise;
     g.fillStyle(0x070a0f, 0.92).fillRoundedRect(px, py, panelW, panelH, 10 * s);
     this.drawPanelFrame(g, px, py, panelW, panelH, s); // §37 Clean Minimal border
+
+    // §3.2 capacity lives in the title and turns amber at full; §3.4 one key hint per mode.
+    const full = self.bag.length >= BAG_CAP;
     const title = this.hudText(this.bagTexts, 0, 100046)
-      .setText(
-        this.shopOpen
-          ? "SHOP — buy permanent upgrades (persist across runs) · click a weapon or slot to SELL · F to close"
-          : "BAG — click a weapon to equip · click a slot to stash · Tab to close",
-      )
-      .setColor(this.shopOpen ? "#ffd479" : "#9fb0c2")
-      .setPosition(px + 16 * s, py + 12 * s);
-    title.setFontSize(12 * s).setOrigin(0, 0);
-    if (this.shopOpen) {
-      this.renderUpgradeBand(self, s, px, py + 34 * s, panelW);
+      .setText(shop ? "TRADING POST" : `BACKPACK ${self.bag.length}/${BAG_CAP}`)
+      .setColor(shop ? "#ffd479" : full ? "#ff8a2b" : "#9fb0c2")
+      .setPosition(px + 16 * s, py + 10 * s);
+    title.setFontSize(13 * s).setOrigin(0, 0).setFontStyle("bold");
+    show(title);
+    const hint = this.hudText(this.bagTexts, 1, 100046)
+      .setText(shop ? "[Click] Sell · [F] Close" : "[Click] Equip · [Tab] Close")
+      .setColor("#7a8290")
+      .setPosition(px + panelW - 16 * s, py + 12 * s);
+    hint.setFontSize(10 * s).setOrigin(1, 0).setFontStyle("normal");
+    show(hint);
+
+    if (shop) {
+      this.renderUpgradeBand(self, s, px, py + headerH, panelW, panelAlpha, zonesActive);
     } else {
       // Bag mode: make sure the shop's upgrade band (zones + texts) is hidden so it can't intercept clicks.
       for (const z of this.buyZones) z.setVisible(false);
-      for (let i = 20; i <= 25; i++) this.bagTexts[i]?.setVisible(false);
+      for (let i = 70; i <= 80; i++) this.bagTexts[i]?.setVisible(false);
     }
+
+    // §3.2 display-order sort (tier desc → name asc → stable). The server's bag array order stays
+    // authoritative for messages: visual cell k targets index bagDisplayOrder[k], rebuilt in the same
+    // pass as the zones so a sort can never retarget a click mid-flight.
+    this.bagDisplayOrder = self.bag
+      .map((_, idx) => idx)
+      .sort((a, b) => {
+        const ia = self.bag[a];
+        const ib = self.bag[b];
+        const tierDelta = (ib?.rarity ?? 0) - (ia?.rarity ?? 0);
+        if (tierDelta !== 0) return tierDelta;
+        const nameA = WEAPONS[ia?.weapon ?? ""]?.name ?? "Unknown weapon";
+        const nameB = WEAPONS[ib?.weapon ?? ""]?.name ?? "Unknown weapon";
+        return nameA.localeCompare(nameB) || a - b;
+      });
+
     const cols = 4;
     const cellW = (panelW - 32 * s) / cols;
-    const cellH = 40 * s;
     const gx = px + 16 * s;
-    const gy = py + 40 * s + bandH;
-    for (let i = 0; i < BAG_CAP; i++) {
-      const item = self.bag[i];
+    const gy = py + headerH + bandH;
+    let hoverLine = "";
+    for (let k = 0; k < BAG_CAP; k++) {
+      const bagIndex = this.bagDisplayOrder[k];
+      const item = bagIndex === undefined ? undefined : self.bag[bagIndex];
       const zone = (() => {
-        let z = this.bagZones[i];
+        let z = this.bagZones[k];
         if (!z) {
           z = this.add
             .rectangle(0, 0, 1, 1, 0, 0)
@@ -8825,36 +9028,159 @@ export class ArenaScene extends Phaser.Scene {
             .setDepth(100045)
             .setInteractive();
           z.on("pointerdown", () => {
-            if (i >= self.bag.length) return;
-            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: i });
-            else if (this.bagOpen) this.room?.send("bagEquip", { index: i, slot: self.activeSlot });
+            const idx = this.bagDisplayOrder[k];
+            const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+            if (idx === undefined || !me || idx >= me.bag.length) return;
+            if (this.shopOpen) this.room?.send("sellWeapon", { from: "bag", index: idx });
+            else if (this.bagOpen) this.room?.send("bagEquip", { index: idx, slot: me.activeSlot });
           });
-          this.bagZones[i] = z;
+          z.on("pointerover", () => {
+            this.bagHoverCell = k;
+          });
+          z.on("pointerout", () => {
+            if (this.bagHoverCell === k) this.bagHoverCell = -1;
+          });
+          this.bagZones[k] = z;
         }
         return z;
       })();
+      const cx = gx + (k % cols) * cellW;
+      const cy = gy + Math.floor(k / cols) * (cellH + rowGap);
+      const w = cellW - 8 * s;
       if (!item?.weapon) {
+        // §3.1 empty cells RENDER: the player sees 12 sockets, 7 full — capacity stays readable.
         zone.setVisible(false);
+        g.lineStyle(Math.max(1, 1 * s), 0x3a3f47, 0.5);
+        this.dashedRect(g, cx, cy, w, cellH, 6 * s, 4 * s);
+        this.bagArts[k]?.setVisible(false);
+        this.bagTexts[10 + k]?.setVisible(false);
+        this.bagTexts[25 + k]?.setVisible(false);
+        this.bagTexts[40 + k]?.setVisible(false);
         continue;
       }
-      const cx = gx + (i % cols) * cellW;
-      const cy = gy + Math.floor(i / cols) * (cellH + 6 * s);
+      const hovered = zonesActive && this.bagHoverCell === k;
       const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
-      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
-      g.lineStyle(1.5 * s, col, 0.8).strokeRoundedRect(cx, cy, cellW - 8 * s, cellH, 6 * s);
-      const baseName = WEAPONS[item.weapon]?.name ?? item.weapon;
+      const colHex = `#${col.toString(16).padStart(6, "0")}`;
+      g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, w, cellH, 6 * s);
+      // §3.3 the border shifts to amber on hover in Trading mode — this click sells.
+      g.lineStyle(1.5 * s, shop && hovered ? 0xffd24a : col, hovered ? 1 : 0.8).strokeRoundedRect(
+        cx,
+        cy,
+        w,
+        cellH,
+        6 * s,
+      );
+      // §3.1 item card in the dock's visual language: 44×44 art thumbnail off the shared cardbg bake.
+      const artKey = bakeCardArt(this, item.weapon, 212, 296, 14);
+      let art = this.bagArts[k];
+      if (!art) {
+        art = this.add.image(0, 0, artKey).setScrollFactor(0).setDepth(100045);
+        this.bagArts[k] = art;
+      } else if (art.texture.key !== artKey) {
+        art.setTexture(artKey);
+      }
+      const artSize = 44 * s;
+      const dispH = (artSize * 296) / 212; // crop shows the top 212 square of the 212×296 bake
+      art
+        .setCrop(0, 0, 212, 212)
+        .setDisplaySize(artSize, dispH)
+        .setPosition(cx + 6 * s + artSize / 2, cy + 6 * s + dispH / 2)
+        .setVisible(true)
+        .setAlpha(panelAlpha);
+      const baseName = WEAPONS[item.weapon]?.name ?? "Unknown weapon";
+      const shownName = baseName.length > 16 ? `${baseName.slice(0, 15)}…` : baseName;
+      const nameT = this.hudText(this.bagTexts, 10 + k, 100046)
+        .setText(shownName)
+        .setColor(colHex)
+        .setPosition(cx + 6 * s + artSize + 6 * s, cy + 7 * s);
+      nameT.setFontSize(12 * s).setOrigin(0, 0).setFontStyle("bold");
+      show(nameT);
+      const affixName = item.affix ? affixById(item.affix).name : "";
+      const tierLine = [RARITIES[item.rarity]?.name ?? "", affixName].filter(Boolean).join(" · ");
+      const tierT = this.hudText(this.bagTexts, 25 + k, 100046)
+        .setText(tierLine)
+        .setColor(colHex)
+        .setPosition(cx + 6 * s + artSize + 6 * s, cy + 24 * s);
+      tierT.setFontSize(10 * s).setOrigin(0, 0).setFontStyle("normal");
+      show(tierT);
+      // §4 redundant tier pips beside the tier name.
+      if (item.rarity > 0 && tierLine) {
+        const pipR = Math.max(2, 2.2 * s);
+        drawTierPips(
+          g,
+          tierT.x + tierT.displayWidth + 4 * s + pipR,
+          cy + 24 * s + tierT.displayHeight / 2,
+          item.rarity,
+          pipR,
+        );
+      }
+      // §3.3 value chip — Trading mode only; price is trade-context information.
       const price = scripValue(item.rarity, item.earned);
-      const nm = this.shopOpen ? `${baseName}  ${price > 0 ? `+${price}◈` : "·"}` : baseName;
-      const t = this.hudText(this.bagTexts, 1 + i, 100046)
-        .setText(nm)
-        .setColor(`#${col.toString(16).padStart(6, "0")}`)
-        .setVisible(true)
-        .setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2);
-      t.setFontSize((nm.length > 14 ? 10 : 12) * s).setOrigin(0.5, 0.5);
+      if (shop) {
+        const valueT = this.hudText(this.bagTexts, 40 + k, 100046)
+          .setText(price > 0 ? `◈ ${price}` : "No value")
+          .setColor(price > 0 ? "#9cff6a" : "#5a6472")
+          .setPosition(cx + w - 6 * s, cy + cellH - 4 * s);
+        valueT
+          .setFontSize((price > 0 ? 11 : 10) * s)
+          .setOrigin(1, 1)
+          .setFontStyle(price > 0 ? "bold" : "normal");
+        show(valueT);
+      } else {
+        this.bagTexts[40 + k]?.setVisible(false);
+      }
+      if (hovered) {
+        hoverLine = shop
+          ? price > 0
+            ? `Sell ${baseName} for ◈ ${price}`
+            : `${baseName} has no sell value`
+          : `Equip ${baseName} — swaps with slot ${self.activeSlot + 1}`;
+      }
       zone
-        .setVisible(true)
-        .setPosition(cx + (cellW - 8 * s) / 2, cy + cellH / 2)
-        .setSize(cellW - 8 * s, cellH);
+        .setVisible(zonesActive)
+        .setPosition(cx + w / 2, cy + cellH / 2)
+        .setSize(w, cellH);
+    }
+
+    // §2.2 empty-state: an empty pack says so instead of rendering an unexplained hole.
+    const emptyMain = this.hudText(this.bagTexts, 2, 100046);
+    const emptySub = this.hudText(this.bagTexts, 3, 100046);
+    if (self.bag.length === 0) {
+      const gridMidY = gy + (3 * (cellH + rowGap) - rowGap) / 2;
+      emptyMain
+        .setText("Your pack is empty")
+        .setColor("#9fb0c2")
+        .setPosition(px + panelW / 2, gridMidY - 10 * s)
+        .setFontSize(13 * s)
+        .setOrigin(0.5, 1)
+        .setFontStyle("bold");
+      show(emptyMain);
+      emptySub
+        .setText(shop ? "Nothing to sell" : "Click a slot below to stow its weapon")
+        .setColor("#7a8290")
+        .setPosition(px + panelW / 2, gridMidY + 4 * s)
+        .setFontSize(10 * s)
+        .setOrigin(0.5, 0)
+        .setFontStyle("normal");
+      show(emptySub);
+    } else {
+      emptyMain.setVisible(false);
+      emptySub.setVisible(false);
+    }
+
+    // §3.4 hover footer — the affordance lives on the thing, spelled out once at the panel foot.
+    const footer = this.hudText(this.bagTexts, 4, 100046);
+    if (hoverLine) {
+      footer
+        .setText(hoverLine)
+        .setColor("#cfd6de")
+        .setPosition(px + panelW / 2, py + panelH - 5 * s)
+        .setFontSize(11 * s)
+        .setOrigin(0.5, 1)
+        .setFontStyle("normal");
+      show(footer);
+    } else {
+      footer.setVisible(false);
     }
   }
 
@@ -8866,6 +9192,8 @@ export class ArenaScene extends Phaser.Scene {
     px: number,
     y: number,
     panelW: number,
+    panelAlpha: number,
+    zonesActive: boolean,
   ): void {
     const g = this.bagG;
     if (!g) return;
@@ -8891,19 +9219,21 @@ export class ArenaScene extends Phaser.Scene {
         h,
         6 * s,
       );
-      const label = this.hudText(this.bagTexts, 20 + i, 100046)
+      const label = this.hudText(this.bagTexts, 70 + i, 100046)
         .setText(`${u.name}  ${cur}/${u.maxLevel}\n${u.desc}`)
         .setColor("#cfe0f0")
         .setVisible(true)
+        .setAlpha(panelAlpha)
         .setPosition(cx + w / 2, y + 8 * s);
       label
         .setFontSize(10.5 * s)
         .setOrigin(0.5, 0)
         .setAlign("center");
-      const costT = this.hudText(this.bagTexts, 23 + i, 100046)
-        .setText(maxed ? "MAX" : `${cost} ◈`)
+      const costT = this.hudText(this.bagTexts, 75 + i, 100046)
+        .setText(maxed ? "Maxed" : `◈ ${cost}`)
         .setColor(maxed ? "#5a6472" : afford ? "#9cff6a" : "#7a8290")
         .setVisible(true)
+        .setAlpha(panelAlpha)
         .setPosition(cx + w / 2, y + h - 7 * s);
       costT.setFontSize(11 * s).setOrigin(0.5, 1);
       let z = this.buyZones[i];
@@ -8914,23 +9244,50 @@ export class ArenaScene extends Phaser.Scene {
           .setDepth(100045)
           .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]?.id });
+          if (!this.shopOpen) return;
+          // dockux-panel §2.2: an unaffordable click gets told, not swallowed.
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          const up = META_UPGRADES[i];
+          if (me && up) {
+            const live =
+              up.id === "vitality"
+                ? me.upVitality
+                : up.id === "fortune"
+                  ? me.upFortune
+                  : me.upPower;
+            const liveCost = nextUpgradeCost(up.id, live);
+            if (liveCost !== null && me.scrip < liveCost) {
+              this.flashBanner("Not enough Scrip", "#ff8a2b");
+              return;
+            }
+          }
+          this.room?.send("buyUpgrade", { id: META_UPGRADES[i]?.id });
         });
         this.buyZones[i] = z;
       }
-      z.setVisible(true)
+      z.setVisible(zonesActive)
         .setPosition(cx + w / 2, y + h / 2)
         .setSize(w, h);
     }
+    // §2.2 the permanence promise moves out of the old run-on title into one quiet sub-line.
+    const sub = this.hudText(this.bagTexts, 80, 100046)
+      .setText("Upgrades are permanent — they carry across runs")
+      .setColor("#7a8290")
+      .setVisible(true)
+      .setAlpha(panelAlpha)
+      .setPosition(px + panelW / 2, y + h + 2 * s);
+    sub.setFontSize(9 * s).setOrigin(0.5, 0).setFontStyle("normal");
   }
 
-  /** Hide the bag overlay + its zones/texts (panel closed). */
+  /** Hide the bag overlay + its zones/texts/art thumbnails (panel closed). */
   private hideBagPanel(): void {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
     for (const z of this.buyZones) z.setVisible(false);
+    for (const a of this.bagArts) a?.setVisible(false);
     for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);
+    this.bagHoverCell = -1;
   }
 
   /** Chain-lightning VFX (§10 on-hit proc, §14 client-predicted): a jagged teal bolt from the weapon

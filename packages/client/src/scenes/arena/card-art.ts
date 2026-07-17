@@ -1,4 +1,11 @@
-import { type Attr, type DamageSource, WEAPONS, weaponDamageSources } from "@dd/shared";
+import {
+  type Attr,
+  type DamageSource,
+  RARITIES,
+  RARITY_CURSED,
+  WEAPONS,
+  weaponDamageSources,
+} from "@dd/shared";
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
@@ -21,17 +28,18 @@ export type Card = {
   resource: Phaser.GameObjects.Text;
 };
 
-/** Lightweight, stat-free roster entry used by the mirrored-L dock. */
+/** Lightweight, stat-free roster entry used by the mirrored-L dock. Neighbour chips carry art + a key
+ *  badge ONLY (dockux-panel §1.4) — identity at rest is silhouette + colour; the name lives on dwell. */
 export type DockChip = {
   id: string;
   container: Phaser.GameObjects.Container;
   art: Phaser.GameObjects.Image;
   paper: Phaser.GameObjects.Graphics;
-  name: Phaser.GameObjects.Text;
   order: Phaser.GameObjects.Text;
 };
 
-/** The authoritative active-weapon core at the dock's bottom-right elbow. */
+/** The authoritative active-weapon core at the dock's bottom-right elbow. `loot` (tier · affix) lives in
+ *  the fading `chrome` layer (dockux-panel §1.4): ammo is combat truth, "Rare · Keen" is not. */
 export type DockJunction = {
   container: Phaser.GameObjects.Container;
   art: Phaser.GameObjects.Image;
@@ -39,9 +47,10 @@ export type DockJunction = {
   chromePaper: Phaser.GameObjects.Graphics;
   emptyHands: Phaser.GameObjects.Graphics;
   index: Phaser.GameObjects.Text;
+  loot: Phaser.GameObjects.Text;
   truth: Phaser.GameObjects.Container;
   truthPaper: Phaser.GameObjects.Graphics;
-  loot: Phaser.GameObjects.Text;
+  resourcePlate: Phaser.GameObjects.Graphics;
   name: Phaser.GameObjects.Text;
   resource: Phaser.GameObjects.Text;
 };
@@ -159,70 +168,58 @@ function dockTextResolution(): number {
 export function buildDockChip(scene: Phaser.Scene, id: string): DockChip {
   const art = scene.add.image(0, 0, bakeCardArt(scene, id, 212, 296, 14));
   const paper = scene.add.graphics();
-  const name = scene.add
-    .text(0, 0, WEAPONS[id]?.name ?? id, {
-      fontFamily: "monospace",
-      fontSize: "9px",
-      color: "#f1e8cf",
-      fontStyle: "bold",
-      align: "left",
-    })
-    .setOrigin(0, 1)
-    .setResolution(dockTextResolution());
   const order = scene.add
     .text(0, 0, "", {
       fontFamily: "monospace",
-      fontSize: "8px",
-      color: "#cfc6ae",
+      fontSize: "11px",
+      color: "#f1e8cf",
       fontStyle: "bold",
     })
-    .setOrigin(1, 0)
+    .setOrigin(0.5, 0.5)
+    .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const container = scene.add.container(0, 0, [art, paper, name, order]);
-  return { id, container, art, paper, name, order };
+  const container = scene.add.container(0, 0, [art, paper, order]);
+  return { id, container, art, paper, order };
 }
 
-function shortDockName(name: string, maxLength: number): string {
-  if (name.length <= maxLength) return name;
-  return `${name.slice(0, Math.max(1, maxLength - 1))}…`;
-}
-
-/** Resize/repaint one passive chip. This is deliberately event-driven rather than a frame update. */
+/** Resize/repaint one passive chip. This is deliberately event-driven rather than a frame update.
+ *  Art + a 1 px accent outline (with a 1 px black outer rim) + the key badge only — no name at rest. */
 export function layoutDockChip(
   chip: DockChip,
   width: number,
   height: number,
   order: string,
-  showName: boolean,
+  scale: number,
 ): void {
   const accent = WEAPON_ACCENT[chip.id] ?? 0xb9975b;
-  const footerHeight = showName ? Math.max(11, Math.min(16, height * 0.34)) : 0;
   chip.art.setCrop(0, 0, 212, 212).setDisplaySize(width, height);
   chip.paper.clear();
   chip.paper.fillStyle(0x000000, 0.22).fillRect(-width / 2 - 3, -height / 2 - 3, width, height);
-  if (footerHeight > 0) {
-    chip.paper
-      .fillStyle(0x0a0805, 0.9)
-      .fillRect(-width / 2, height / 2 - footerHeight, width, footerHeight);
-  }
+  // 1 px black outer rim outside the accent line so light-accent chips still separate from bright floors.
+  chip.paper
+    .lineStyle(1, 0x000000, 0.9)
+    .strokeRect(-width / 2 - 1, -height / 2 - 1, width + 2, height + 2);
   chip.paper.lineStyle(1, accent, 0.82).strokeRect(-width / 2, -height / 2, width, height);
   chip.paper
     .lineStyle(1, 0xf1e8cf, 0.24)
     .lineBetween(-width / 2 + 1, -height / 2 + 1, width / 2 - 1, -height / 2 + 1);
 
-  const maxName = width < 40 ? 4 : width < 52 ? 7 : 10;
-  chip.name
-    .setText(shortDockName(WEAPONS[chip.id]?.name ?? chip.id, maxName))
-    .setFontSize(Math.max(7, Math.min(10, footerHeight * 0.62)))
-    .setPosition(-width / 2 + 3, height / 2 - 2)
-    .setVisible(showName);
+  // Key badge — an 18×14 css plate in the chip's outer corner reading `E` / `E2` / `Q` / `Q2`.
+  const plateW = 18 * scale;
+  const plateH = 14 * scale;
+  chip.paper
+    .fillStyle(0x0a0805, 0.9)
+    .fillRoundedRect(width / 2 - plateW, -height / 2, plateW, plateH, 3)
+    .lineStyle(1, 0xcfc6ae, 0.35)
+    .strokeRoundedRect(width / 2 - plateW, -height / 2, plateW, plateH, 3);
   chip.order
     .setText(order)
-    .setFontSize(Math.max(7, Math.min(9, height * 0.2)))
-    .setPosition(width / 2 - 3, -height / 2 + 2);
+    .setFontSize(Math.max(9, 11 * scale))
+    .setPosition(width / 2 - plateW / 2, -height / 2 + plateH / 2);
 }
 
-/** Build the fixed active core. Its truth layer remains opaque while art/chrome fade independently. */
+/** Build the fixed active core. Its truth layer (name + ammo badge) remains opaque while art/chrome —
+ *  including the tier · affix loot line — fade independently (dockux-panel §1.4). */
 export function buildDockJunction(scene: Phaser.Scene): DockJunction {
   const art = scene.add.image(0, 0, bakeCardArt(scene, "fists", 212, 296, 14));
   const chromePaper = scene.add.graphics();
@@ -230,42 +227,47 @@ export function buildDockJunction(scene: Phaser.Scene): DockJunction {
   const index = scene.add
     .text(0, 0, "", {
       fontFamily: "monospace",
-      fontSize: "9px",
+      fontSize: "10px",
       color: "#cfc6ae",
       fontStyle: "bold",
     })
     .setOrigin(0, 0)
+    .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const chrome = scene.add.container(0, 0, [chromePaper, emptyHands, index]);
-  const truthPaper = scene.add.graphics();
   const loot = scene.add
     .text(0, 0, "", {
       fontFamily: "monospace",
-      fontSize: "8px",
+      fontSize: "11px",
       color: "#d8cfb8",
       fontStyle: "bold",
     })
     .setOrigin(0, 1)
+    .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
+  const chrome = scene.add.container(0, 0, [chromePaper, emptyHands, loot, index]);
+  const truthPaper = scene.add.graphics();
+  const resourcePlate = scene.add.graphics();
   const name = scene.add
-    .text(0, 0, "EMPTY HANDS", {
+    .text(0, 0, "Unarmed", {
       fontFamily: "monospace",
-      fontSize: "10px",
+      fontSize: "14px",
       color: "#f1e8cf",
       fontStyle: "bold",
     })
-    .setOrigin(0, 1)
+    .setOrigin(0, 0)
+    .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
   const resource = scene.add
     .text(0, 0, "", {
       fontFamily: "monospace",
-      fontSize: "9px",
+      fontSize: "13px",
       color: "#f1e8cf",
       fontStyle: "bold",
     })
     .setOrigin(1, 0)
+    .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const truth = scene.add.container(0, 0, [truthPaper, loot, name, resource]);
+  const truth = scene.add.container(0, 0, [truthPaper, resourcePlate, name, resource]);
   const container = scene.add.container(0, 0, [art, chrome, truth]);
   return {
     container,
@@ -274,9 +276,10 @@ export function buildDockJunction(scene: Phaser.Scene): DockJunction {
     chromePaper,
     emptyHands,
     index,
+    loot,
     truth,
     truthPaper,
-    loot,
+    resourcePlate,
     name,
     resource,
   };
@@ -291,15 +294,58 @@ export function setDockJunctionWeapon(
   junction.art.setTexture(bakeCardArt(scene, id, 212, 296, 14)).setCrop(0, 0, 212, 212);
 }
 
-/** Repaint the junction's paper frame for its current responsive size and loot accent. */
+/** Colourblind-safe tier pips (dockux-panel §4): 0–6 small diamonds, Common 0 … Ultimate 5; Cursed's 6
+ *  draw hollow. Colour stays the fast channel; pips are the truthful one. Pure — draws into `g`. */
+export function drawTierPips(
+  g: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  rarity: number,
+  r: number,
+): void {
+  const tier = RARITIES[rarity];
+  if (!tier || rarity <= 0) return;
+  const count = rarity === RARITY_CURSED ? 6 : Math.min(5, rarity);
+  const hollow = rarity === RARITY_CURSED;
+  for (let i = 0; i < count; i++) {
+    const cx = x + i * (r * 2 + 2);
+    if (hollow) {
+      g.lineStyle(1, tier.color, 0.95);
+      g.beginPath();
+      g.moveTo(cx, y - r);
+      g.lineTo(cx + r, y);
+      g.lineTo(cx, y + r);
+      g.lineTo(cx - r, y);
+      g.closePath();
+      g.strokePath();
+    } else {
+      g.fillStyle(tier.color, 0.95);
+      g.fillTriangle(cx, y - r, cx + r, y, cx - r, y);
+      g.fillTriangle(cx, y + r, cx + r, y, cx - r, y);
+    }
+  }
+}
+
+function textColorInt(text: Phaser.GameObjects.Text, fallback: number): number {
+  const c = text.style.color;
+  if (typeof c !== "string" || !c.startsWith("#")) return fallback;
+  const parsed = Number.parseInt(c.slice(1), 16);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/** Repaint the junction's paper frame for its current responsive size and loot accent. Type rides the
+ *  dockux-panel §1.3 table: name 14 / loot 11 / ammo 13 / index 10 css at d=1, with hard floors, plus
+ *  guaranteed backing plates so no glyph ever sits on raw art or raw arena (§1.5). */
 export function layoutDockJunction(
   junction: DockJunction,
   size: number,
   accent: number,
   unarmed: boolean,
+  dockScale = 1,
+  rarity = 0,
 ): void {
   const half = size / 2;
-  const footerHeight = Math.max(23, size * 0.31);
+  const footerHeight = Math.max(30, size * 0.3);
   junction.art.setDisplaySize(size, size);
   junction.chromePaper.clear();
   junction.chromePaper
@@ -326,12 +372,48 @@ export function layoutDockJunction(
       .fillCircle(size * 0.05, -size * 0.22, size * 0.075)
       .fillCircle(size * 0.14, -size * 0.18, size * 0.07);
   }
-  junction.index.setFontSize(Math.max(8, size * 0.105)).setPosition(-half + 5, -half + 4);
-  junction.loot
-    .setFontSize(Math.max(7, size * 0.09))
-    .setPosition(-half + 5, half - footerHeight + size * 0.13);
-  junction.name.setFontSize(Math.max(9, size * 0.12)).setPosition(-half + 5, half - 4);
-  junction.resource.setFontSize(Math.max(8, size * 0.105)).setPosition(half - 5, -half + 4);
+  junction.index.setFontSize(Math.max(9, 10 * dockScale)).setPosition(-half + 5, -half + 4);
+  // Footer line 1 = the weapon name (the one legible name the whole dock buys); line 2 = tier · affix.
+  junction.name
+    .setFontSize(Math.max(12, size * 0.125))
+    .setPosition(-half + 5, half - footerHeight + 3);
+  junction.loot.setFontSize(Math.max(10, size * 0.1)).setPosition(-half + 5, half - 3);
+  junction.resource.setFontSize(Math.max(11, size * 0.115)).setPosition(half - 5, -half + 4);
+
+  // Backing plates (§1.5): index top-left at 0.78; the ammo/heat badge gets its own pill stroked in the
+  // badge's live state colour — the single most-glanced number never sits on raw painted art.
+  if (junction.index.text.length > 0) {
+    junction.chromePaper
+      .fillStyle(0x0a0805, 0.78)
+      .fillRoundedRect(
+        -half + 5 - 4,
+        -half + 4 - 2,
+        junction.index.displayWidth + 8,
+        junction.index.displayHeight + 4,
+        4,
+      );
+  }
+  junction.resourcePlate.clear();
+  if (junction.resource.text.length > 0) {
+    const rw = junction.resource.displayWidth;
+    const rh = junction.resource.displayHeight;
+    junction.resourcePlate
+      .fillStyle(0x0a0805, 0.88)
+      .fillRoundedRect(half - 5 - rw - 4, -half + 4 - 2, rw + 8, rh + 4, 4)
+      .lineStyle(1, textColorInt(junction.resource, 0xf1e8cf), 0.6)
+      .strokeRoundedRect(half - 5 - rw - 4, -half + 4 - 2, rw + 8, rh + 4, 4);
+  }
+  // Redundant tier pips ride the loot line (chrome — they fade with it).
+  if (rarity > 0 && junction.loot.text.length > 0) {
+    const pipR = Math.max(2, junction.loot.displayHeight * 0.18);
+    drawTierPips(
+      junction.chromePaper,
+      -half + 5 + junction.loot.displayWidth + 6 + pipR,
+      half - 3 - junction.loot.displayHeight / 2,
+      rarity,
+      pipR,
+    );
+  }
 }
 
 /** Tiny vector icons for the §9 card (icon-driven — no word labels, §9). Drawn into `g`, centred at
@@ -503,8 +585,10 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   // Name (rarity-tinted) + subtitle (grip · family · element).
   o.push(mk(padL, y, 17, accentHex, def?.name ?? id, 0, true));
   y += 23;
-  const grip = def?.dual ? "dual" : def?.twoHanded ? "2-hand" : "1-hand";
-  const sub = def ? `${grip} · ${def.tags.family} · ${def.tags.element}` : "";
+  // dockux-panel §2.2: grip token + title-case subtitle tokens — `Dual-wield · Blade · Fire`.
+  const titleCase = (token: string) => token.charAt(0).toUpperCase() + token.slice(1);
+  const grip = def?.dual ? "Dual-wield" : def?.twoHanded ? "Two-handed" : "One-handed";
+  const sub = def ? `${grip} · ${titleCase(def.tags.family)} · ${titleCase(def.tags.element)}` : "";
   o.push(mk(padL, y, 10, "#b9b3a3", sub));
   y += 15;
   const div = scene.add.graphics();
