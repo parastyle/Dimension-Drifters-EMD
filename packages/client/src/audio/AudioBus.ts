@@ -13,6 +13,7 @@
  * - Volume/mute persist to localStorage; conservative default (0.35, unmuted) — co-op, don't blast a join.
  */
 
+import { loadSettings, updateSettings } from "../settings.js";
 import { type PlaySampleOpts, type SampleLoopHandle, sampleBank } from "./sample-bank.js";
 
 const LS_VOL = "dd.audio.vol";
@@ -36,6 +37,7 @@ export class AudioBus {
   private failed = false;
   private volume: number;
   private muted: boolean;
+  private confirmVolume: number;
   /** Live voice count (bounded so a burst can't spawn hundreds of nodes). */
   private voices = 0;
   private static readonly MAX_VOICES = 24;
@@ -76,6 +78,7 @@ export class AudioBus {
   constructor() {
     let v = 0.35;
     let m = false;
+    const confirmVolume = loadSettings().feedback.confirmVolume ?? 1;
     try {
       const rawV = localStorage.getItem(LS_VOL);
       if (rawV !== null) v = Math.max(0, Math.min(1, Number.parseFloat(rawV) || 0));
@@ -85,6 +88,7 @@ export class AudioBus {
     }
     this.volume = v;
     this.muted = m;
+    this.confirmVolume = confirmVolume;
     // §50 soundkit seam (integration doc §1.2): AudioBus construction IS the composition root (the
     // scenes share one instance via the game registry), so attach the sample bank to this bus's
     // audio graph here and probe for the served manifest ONCE. With zero samples shipped (today)
@@ -147,7 +151,16 @@ export class AudioBus {
         this.applyGain(0);
         // §50 soundkit optional warm-up (doc §1.2): now that a context exists, pre-decode the
         // latency-critical cues. With the manifest absent (today) this is a no-op.
-        sampleBank.preload(["parry-clang", "player-hurt", "impact-flesh"]);
+        sampleBank.preload([
+          "parry-clang",
+          "player-hurt",
+          "impact-flesh",
+          "confirm-tick",
+          "confirm-armor-tink",
+          "confirm-crit-ping",
+          "confirm-kill-thock",
+          "confirm-ratchet-grain",
+        ]);
       } catch {
         this.failed = true;
         return;
@@ -168,6 +181,9 @@ export class AudioBus {
   get isMuted(): boolean {
     return this.muted;
   }
+  get confirmVol(): number {
+    return this.confirmVolume;
+  }
   /** §50 soundkit seam (doc §1.1) — read-only context for the sample bank; null pre-gesture. */
   get context(): AudioContext | null {
     return this.ctx;
@@ -185,6 +201,11 @@ export class AudioBus {
       /* ignore */
     }
     this.applyGain();
+  }
+
+  setConfirmVolume(v: number, persist = true): void {
+    this.confirmVolume = Math.max(0, Math.min(1.5, v));
+    if (persist) updateSettings({ feedback: { confirmVolume: this.confirmVolume } });
   }
 
   /** Toggle mute; returns the new muted state. */
@@ -410,6 +431,8 @@ export class AudioBus {
       return;
     const x = opts.x;
     const amt = Math.max(0, Math.min(1, opts.amt ?? 0.5));
+    const confirmGain = event.startsWith("confirm:") ? this.confirmVolume : 1;
+    if (confirmGain <= 0) return;
     // §50 generic sample-first gate (doc §2.2) for un-special cues: no layering, no amt nuance, no
     // loop lifecycle. Manifest absent (today) ⇒ `sampleFirst` is false ⇒ the switch runs unchanged.
     if (
@@ -418,6 +441,131 @@ export class AudioBus {
     )
       return;
     switch (event) {
+      // Owner-only UI-space hit markers. No world x is passed to either path, keeping them center-mono.
+      // The cue ids are manifest-ready; absent samples fall through to these synthesis defaults.
+      case "confirm:hit":
+        if (this.throttled("confirmTick", 40)) return;
+        if (
+          this.sampleFirst("confirm:hit", {
+            volume: Math.min(1, (0.42 + 0.25 * amt) * confirmGain),
+            rate: 0.97 + Math.random() * 0.06,
+            priority: "low",
+            minIntervalMs: 40,
+          })
+        )
+          return;
+        this.noise(0.024, {
+          gain: (0.07 + 0.05 * amt) * confirmGain,
+          type: "highpass",
+          freq: 4200,
+          q: 1.2,
+          priority: "low",
+        });
+        this.tone(2350, 0.035, {
+          type: "square",
+          gain: (0.045 + 0.03 * amt) * confirmGain,
+          sweepTo: 1900,
+          priority: "low",
+        });
+        break;
+      case "confirm:armor":
+        if (this.throttled("confirmArmor", 60)) return;
+        if (
+          this.sampleFirst("confirm:armor", {
+            volume: Math.min(1, (0.36 + 0.22 * amt) * confirmGain),
+            priority: "low",
+            minIntervalMs: 60,
+          })
+        )
+          return;
+        this.noise(0.03, {
+          gain: (0.06 + 0.04 * amt) * confirmGain,
+          type: "bandpass",
+          freq: 5200,
+          q: 6,
+          priority: "low",
+        });
+        this.tone(3400, 0.05, {
+          type: "triangle",
+          gain: (0.04 + 0.03 * amt) * confirmGain,
+          sweepTo: 3250,
+          priority: "low",
+        });
+        break;
+      case "confirm:ratchet":
+        if (this.throttled("confirmRatchet", 48)) return;
+        if (
+          this.sampleFirst("confirm:ratchet", {
+            volume: Math.min(1, (0.3 + 0.32 * amt) * confirmGain),
+            priority: "low",
+            minIntervalMs: 48,
+          })
+        )
+          return;
+        // Density changes gain only. Pitch remains fixed so intensity cannot impersonate semantics.
+        this.noise(0.02, {
+          gain: (0.05 + 0.05 * amt) * confirmGain,
+          type: "highpass",
+          freq: 4200,
+          q: 1.2,
+          priority: "low",
+        });
+        this.tone(2350, 0.026, {
+          type: "square",
+          gain: (0.035 + 0.03 * amt) * confirmGain,
+          sweepTo: 1900,
+          priority: "low",
+        });
+        break;
+      case "confirm:crit":
+        if (this.throttled("confirmCrit", 70)) return;
+        if (
+          this.sampleFirst("confirm:crit", {
+            volume: Math.min(1, (0.55 + 0.3 * amt) * confirmGain),
+            priority: "normal",
+            minIntervalMs: 70,
+          })
+        )
+          return;
+        this.tone(2900, 0.055, {
+          type: "sine",
+          gain: (0.11 + 0.07 * amt) * confirmGain,
+          sweepTo: 3800,
+          priority: "normal",
+        });
+        this.noise(0.02, {
+          gain: 0.05 * confirmGain,
+          type: "highpass",
+          freq: 6000,
+          q: 1,
+          priority: "normal",
+        });
+        break;
+      case "confirm:kill":
+        if (this.throttled("confirmKill", 70)) return;
+        if (
+          this.sampleFirst("confirm:kill", {
+            volume: Math.min(1, 0.72 * confirmGain),
+            rate: 1 + amt * 0.41,
+            priority: "normal",
+            minIntervalMs: 70,
+          })
+        )
+          return;
+        // amt is the semantic one-second kill-streak rung, not damage magnitude.
+        this.tone(950 + 260 * amt, 0.06, {
+          type: "triangle",
+          gain: 0.14 * confirmGain,
+          sweepTo: 520,
+          priority: "normal",
+        });
+        this.tone(140, 0.05, {
+          type: "sine",
+          gain: 0.09 * confirmGain,
+          sweepTo: 90,
+          priority: "normal",
+        });
+        break;
       // High-frequency combat — per gun bulletKind (mirrors the GUN_FX visual split).
       case "shot:slug":
         if (this.throttled("shot", 30)) return;

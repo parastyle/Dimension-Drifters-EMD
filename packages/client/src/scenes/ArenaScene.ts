@@ -60,6 +60,7 @@ import {
   lootDamageMult,
   META_UPGRADES,
   type MetaLevels,
+  meleeReach,
   nextUpgradeCost,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
@@ -98,6 +99,12 @@ import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 import {
+  CombatFeedback,
+  type CombatReceiptRows,
+  type DamageNumberEvent,
+  type HitContactEvent,
+} from "../combat-feedback.js";
+import {
   type PaperDeathTreatment,
   partTexture,
   type RigAnim,
@@ -108,9 +115,11 @@ import { WormRig } from "../entities/WormRig.js";
 import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
+import { type FeedbackSettings, loadSettings, onSettingsChange } from "../settings.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
+import { DamageNumberRenderer } from "../ui/damage-numbers.js";
 import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
 import { type LevelUpMode, levelUpLayout, levelUpLayoutKey } from "../ui/level-up-layout.js";
 import {
@@ -131,6 +140,7 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
+import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
@@ -172,7 +182,6 @@ import {
 import {
   preloadImpactFlipbooks,
   spawnBulletImpact,
-  spawnDamageNumber,
   spawnExplosion,
   spawnFallStreak,
   spawnImpactFlipbook,
@@ -190,7 +199,6 @@ const PLAYER_SPRITE = "drifter";
 // §6 horde-hit object budget: ordinary combat stays bit-for-bit on the full path; a single-frame AoE storm
 // gets ten authored contact stacks and at most 24 pooled labels, while every remaining target still flashes.
 const HIT_VFX_BUDGET = 10;
-const DAMAGE_NUMBER_BUDGET = 24;
 const PAPER_DEATH_FULL_BUDGET = 12;
 const PAPER_DEATH_ORDINARY_BUDGET = 10; // reserve two slots for tough/boss deaths
 const PAPER_PICKUP_EXIT_BUDGET = 8;
@@ -418,12 +426,16 @@ interface SyncedDamageReceipt {
   weaponId?: string;
   delivery?: string | number;
   element?: string;
+  dirX?: number;
+  dirY?: number;
   damageType?: string;
   damage?: number;
   amount?: number;
   value?: number;
   parryable?: boolean | number;
   telegraphKind?: string | number;
+  crit?: boolean;
+  finalBlow?: boolean;
 }
 
 interface SyncedDamageReceiptRows {
@@ -434,6 +446,31 @@ interface ArenaDamageAttribution {
   damageReceipts?: SyncedDamageReceiptRows;
   hitReceipts?: SyncedDamageReceiptRows;
   combatReceipts?: SyncedDamageReceiptRows;
+}
+
+interface EnemyFlinchState {
+  x: number;
+  y: number;
+  appliedX: number;
+  appliedY: number;
+}
+
+interface PredictedMeleeContact {
+  atAnimMs: number;
+  weaponId: string;
+  aimX: number;
+  aimY: number;
+  range: number;
+  halfArc: number;
+  element: string;
+}
+
+interface FinalBlowPresentation {
+  dirX: number;
+  dirY: number;
+  weaponId: string;
+  element: string;
+  selfHit: boolean;
 }
 
 function damageDeliveryKind(delivery: string | number | undefined): string {
@@ -821,6 +858,11 @@ export class ArenaScene extends Phaser.Scene {
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
    *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
   private audio!: AudioBus;
+  private combatFeedback!: CombatFeedback;
+  private damageNumberRenderer!: DamageNumberRenderer;
+  private hitEffectRenderer!: HitEffectRenderer;
+  private feedbackSettings!: FeedbackSettings;
+  private removeFeedbackSettingsListener?: () => void;
   /** §TELEGRAPH exact danger edges above terrain/zones and below actor rigs. Never quality-gated. */
   private telegraphGroundGfx!: Phaser.GameObjects.Graphics;
   /** Protected response-edge/source layer above combat VFX and below HUD. */
@@ -1087,8 +1129,22 @@ export class ArenaScene extends Phaser.Scene {
   /** §30 last-seen crit-flash counter per enemy — a change (with an hp drop) means this hit CRIT. */
   private readonly enemyCrit = new Map<string, number>();
   private hitVfxSpent = 0;
-  private damageNumbersSpent = 0;
-  private readonly damageNumberEnemies = new Set<string>();
+  private readonly enemyFlinches = new Map<string, EnemyFlinchState>();
+  private readonly predictedMeleeContacts: PredictedMeleeContact[] = [];
+  private readonly finalBlowPresentations = new Map<string, FinalBlowPresentation>();
+  private readonly finalDeltaTargets = new Set<string>();
+  private readonly feedbackStopAt = new Map<number, number>();
+  private feedbackStopMs = 0;
+  private feedbackStopTier = 0;
+  private feedbackStopCount = 0;
+  private feedbackFinalBlows = 0;
+  private feedbackShakeDuration = 0;
+  private feedbackShakeIntensity = 0;
+  private feedbackPunchX = 0;
+  private feedbackPunchY = 0;
+  private cameraPunchX = 0;
+  private cameraPunchY = 0;
+  private lastCameraPunchAt = -9999;
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
@@ -1430,6 +1486,11 @@ export class ArenaScene extends Phaser.Scene {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.xpMotes?.destroy();
     this.beamRenderer?.destroy();
+    this.damageNumberRenderer?.destroy();
+    this.hitEffectRenderer?.destroy();
+    this.combatFeedback?.reset();
+    this.removeFeedbackSettingsListener?.();
+    this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
     this.removeSceneListeners();
@@ -1460,6 +1521,11 @@ export class ArenaScene extends Phaser.Scene {
     this.snapFell.clear();
     this.enemyHp.clear();
     this.enemyCrit.clear();
+    this.enemyFlinches.clear();
+    this.predictedMeleeContacts.length = 0;
+    this.finalBlowPresentations.clear();
+    this.finalDeltaTargets.clear();
+    this.feedbackStopAt.clear();
     this.enemyAtk.clear();
     this.equipped.clear();
     this.charOf.clear();
@@ -1494,6 +1560,9 @@ export class ArenaScene extends Phaser.Scene {
     this.vfxPlayer = undefined!;
     this.beamRenderer = undefined!;
     this.xpMotes = undefined!;
+    this.damageNumberRenderer = undefined!;
+    this.hitEffectRenderer = undefined!;
+    this.combatFeedback = undefined!;
     this.telegraphGroundGfx = undefined!;
     this.telegraphGfx = undefined!;
     this.telegraphForeshadows = undefined!;
@@ -1605,6 +1674,17 @@ export class ArenaScene extends Phaser.Scene {
     this.freezeSpent = 0;
     this.freezeSpentAt = 0;
     this.lastKillStop = 0;
+    this.feedbackStopMs = 0;
+    this.feedbackStopTier = 0;
+    this.feedbackStopCount = 0;
+    this.feedbackFinalBlows = 0;
+    this.feedbackShakeDuration = 0;
+    this.feedbackShakeIntensity = 0;
+    this.feedbackPunchX = 0;
+    this.feedbackPunchY = 0;
+    this.cameraPunchX = 0;
+    this.cameraPunchY = 0;
+    this.lastCameraPunchAt = -9999;
     this.deltaSec = 0;
     this.arenaMap = undefined;
     this.lastSeedKey = "";
@@ -1646,6 +1726,14 @@ export class ArenaScene extends Phaser.Scene {
     this.xpMotes = undefined!;
     this.beamRenderer?.destroy();
     this.beamRenderer = undefined!;
+    this.damageNumberRenderer?.destroy();
+    this.damageNumberRenderer = undefined!;
+    this.hitEffectRenderer?.destroy();
+    this.hitEffectRenderer = undefined!;
+    this.combatFeedback?.reset();
+    this.combatFeedback = undefined!;
+    this.removeFeedbackSettingsListener?.();
+    this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
     this.destroyPaperPagePool();
@@ -1685,6 +1773,32 @@ export class ArenaScene extends Phaser.Scene {
     // gesture below (autoplay policy).
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
+    this.feedbackSettings = loadSettings().feedback;
+    this.audio.setConfirmVolume(this.feedbackSettings.confirmVolume ?? 1, false);
+    this.combatFeedback = new CombatFeedback();
+    this.hitEffectRenderer = new HitEffectRenderer(this, (targetId, out) =>
+      this.resolveFeedbackTarget(targetId, out),
+    );
+    this.damageNumberRenderer = new DamageNumberRenderer(
+      this,
+      this.feedbackSettings,
+      (targetId, out) => {
+        if (!this.resolveFeedbackTarget(targetId, out)) return false;
+        out.y -= 26;
+        return true;
+      },
+      RENDER_DPR,
+    );
+    this.combatFeedback.subscribeContact((event) => this.onCombatFeedbackContact(event));
+    this.combatFeedback.subscribeDamage((event) => this.onDamageNumberEvent(event));
+    this.combatFeedback.subscribeConfirm((event) => {
+      if (this.feedbackSettings.hitConfirmAudio) this.audio.play(event.cue, { amt: event.amount });
+    });
+    this.removeFeedbackSettingsListener = onSettingsChange((settings) => {
+      this.feedbackSettings = settings.feedback;
+      this.audio.setConfirmVolume(settings.feedback.confirmVolume ?? 1, false);
+      this.damageNumberRenderer.applySettings(settings.feedback);
+    });
     this.xpMotes = new XpMoteRenderer(this, {
       target: (collectorId, out) => this.xpCatchPoint(collectorId, out),
       project: (x, y, out) => this.projectXpPoint(x, y, out),
@@ -3134,6 +3248,10 @@ export class ArenaScene extends Phaser.Scene {
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
     this.routePlayerAttacks();
+    // Receipts must drain while last frame's target rigs still exist. This both preserves the death contact
+    // point and makes the one-frame receiptTouched interlock line up with the HP-delta pass below.
+    this.beginCombatFeedbackFrame();
+    this.drainCombatFeedback();
     this.syncEnemies();
     this.syncPickups();
     this.syncProjectiles();
@@ -3160,6 +3278,7 @@ export class ArenaScene extends Phaser.Scene {
       this.interpolate(deltaMs);
       this.interpolateEnemies(deltaMs);
       this.interpolateWorm(deltaMs);
+      this.processPredictedMeleeContacts();
       this.moveProjectiles(this.deltaSec);
       this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
@@ -3180,6 +3299,16 @@ export class ArenaScene extends Phaser.Scene {
     this.updatePortalArrow(); // §17 v0.102 edge-of-screen pointer to an off-screen open portal
     this.updateAmbientDust(); // §16 v0.116 Polish B — drifting atmosphere motes
     this.updateCombatFx();
+    this.combatFeedback.endFrame(this.time.now);
+    const presentationDelta = this.time.now >= this.frozenUntil ? deltaMs : 0;
+    this.hitEffectRenderer.update(
+      presentationDelta,
+      this.animClock,
+      this.feedbackSettings.flashes === "reduced",
+    );
+    this.stepEnemyFlinches(presentationDelta);
+    this.stepCameraPunch(presentationDelta);
+    this.damageNumberRenderer.update(deltaMs, this.time.now, prefersReducedPaperMotion());
     this.updateHud();
     this.updateRunState();
     this.updateLevelWindow();
@@ -3377,6 +3506,30 @@ export class ArenaScene extends Phaser.Scene {
         // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
         const paperPriority = this.enemyPaperPriority.get(id) ?? 0;
+        const finalPresentation = this.finalBlowPresentations.get(id);
+        const previousHp = this.enemyHp.get(id);
+        if (
+          rig &&
+          previousHp !== undefined &&
+          previousHp > 0 &&
+          this.time.now >= this.removalFxMuteUntil &&
+          !this.finalDeltaTargets.has(id)
+        ) {
+          this.finalDeltaTargets.add(id);
+          this.combatFeedback.ingestHpDelta(
+            {
+              targetId: id,
+              damage: previousHp,
+              x: rig.x,
+              y: rig.y - 26,
+              visible: this.cameras.main.worldView.contains(rig.x, rig.y),
+            },
+            this.time.now,
+          );
+        }
+        this.damageNumberRenderer.targetGone(id);
+        this.hitEffectRenderer.targetGone(id);
+        this.enemyFlinches.delete(id);
         this.enemies.delete(id);
         this.enemyPaperPriority.delete(id);
         this.enemyHp.delete(id);
@@ -3402,20 +3555,23 @@ export class ArenaScene extends Phaser.Scene {
             this.audio.play("death", { x: rig.x }); // §19 kill crunch (throttled for horde clears)
             // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
             const deathSeed = telegraphHash01(id);
-            let ax = Math.cos(deathSeed * Math.PI * 2);
-            let ay = Math.sin(deathSeed * Math.PI * 2);
+            let ax = finalPresentation?.dirX ?? Math.cos(deathSeed * Math.PI * 2);
+            let ay = finalPresentation?.dirY ?? Math.sin(deathSeed * Math.PI * 2);
             let best = Number.POSITIVE_INFINITY;
-            let killWeapon: WeaponDef | undefined;
-            this.room?.state.players.forEach((p) => {
-              if (!p.alive) return;
-              const d = Math.hypot(rig.x - p.x, rig.y - p.y);
-              if (d < best) {
-                best = d;
-                ax = rig.x - p.x;
-                ay = rig.y - p.y;
-                killWeapon = WEAPONS[p.weapon];
-              }
-            });
+            let killWeapon: WeaponDef | undefined = finalPresentation
+              ? WEAPONS[finalPresentation.weaponId]
+              : undefined;
+            if (!finalPresentation)
+              this.room?.state.players.forEach((p) => {
+                if (!p.alive) return;
+                const d = Math.hypot(rig.x - p.x, rig.y - p.y);
+                if (d < best) {
+                  best = d;
+                  ax = rig.x - p.x;
+                  ay = rig.y - p.y;
+                  killWeapon = WEAPONS[p.weapon];
+                }
+              });
             // §49 state does not serialize a final-blow owner; reuse the established nearest-live-player
             // killer approximation that already drives corpse launch, then let the pack's own frame gate
             // keep storm/tesla, buzzsaw and tide-family horde clears subtle + bounded.
@@ -3455,6 +3611,7 @@ export class ArenaScene extends Phaser.Scene {
             const selfId = this.room?.sessionId;
             const me = selfId ? this.room?.state.players.get(selfId) : undefined;
             if (
+              !finalPresentation &&
               me?.alive &&
               Math.hypot(rig.x - me.x, rig.y - me.y) < 420 &&
               this.time.now - this.lastKillStop >= 110
@@ -4549,6 +4706,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
       if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
+      if (shooter) container.setData("sourcePlayer", shooter);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
         if (shooter && !flashedShooters.has(shooter)) {
@@ -4609,7 +4767,8 @@ export class ArenaScene extends Phaser.Scene {
    *  (straight-line bullets look crisper extrapolated than lerped between 20Hz snapshots). */
   private moveProjectiles(dtSec: number): void {
     if (!this.room) return;
-    this.room.state.projectiles.forEach((pr, id) => {
+    const room = this.room;
+    room.state.projectiles.forEach((pr, id) => {
       const c = this.projectiles.get(id);
       if (!c) return;
       if (this.belt) {
@@ -4627,6 +4786,55 @@ export class ArenaScene extends Phaser.Scene {
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
+      if (
+        !pr.hostile &&
+        c.getData("sourcePlayer") === room.sessionId &&
+        c.getData("feedbackContact") !== true
+      ) {
+        const worldY = this.belt ? ((c.getData("beltWorldY") as number | undefined) ?? pr.y) : c.y;
+        let targetId = "";
+        let targetX = 0;
+        let targetY = 0;
+        let best = Number.POSITIVE_INFINITY;
+        room.state.enemies.forEach((enemy, enemyId) => {
+          const radius =
+            (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) * (enemy.tough ? TOUGH_SCALE : 1) +
+            10;
+          const distance = (enemy.x - c.x) ** 2 + (enemy.y - worldY) ** 2;
+          if (distance > radius * radius || distance >= best) return;
+          best = distance;
+          targetId = enemyId;
+          const targetRig = this.enemies.get(enemyId);
+          targetX = targetRig?.x ?? enemy.x;
+          targetY = targetRig?.y ?? (this.belt ? this.beltY(enemy.y) : enemy.y);
+        });
+        if (targetId) {
+          c.setData("feedbackContact", true);
+          const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
+          const weapon = WEAPONS[weaponId];
+          const length = Math.hypot(pr.vx, pr.vy) || 1;
+          const base = baseKind(pr.kind);
+          const delivery =
+            pr.kind === "cleaver"
+              ? CombatDelivery.Thrown
+              : base === "magma"
+                ? CombatDelivery.Scatter
+                : CombatDelivery.Gun;
+          this.combatFeedback.onPredictedContact(
+            {
+              targetId,
+              delivery,
+              weaponId,
+              element: weapon?.tags.element ?? "physical",
+              dirX: pr.vx / length,
+              dirY: pr.vy / length,
+              x: targetX,
+              y: targetY,
+            },
+            this.time.now,
+          );
+        }
+      }
     });
   }
 
@@ -6285,7 +6493,7 @@ export class ArenaScene extends Phaser.Scene {
       this.camFocus.x += dx * a;
       this.camFocus.y += dy * a;
     }
-    this.centerCam(this.camFocus.x, this.camFocus.y);
+    this.centerCam(this.camFocus.x + this.cameraPunchX, this.camFocus.y + this.cameraPunchY);
   }
 
   /** Center the camera on (x,y) — ZOOM-AWARE + arena-clamped. Phaser's `centerOn` divides by the
@@ -6440,6 +6648,18 @@ export class ArenaScene extends Phaser.Scene {
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && swing)
       rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
+    if (weapon && swing && !weapon.gun && !weapon.quake && !weapon.cast && !weapon.thrown) {
+      const aimLength = Math.hypot(this.selfAim.x, this.selfAim.y) || 1;
+      this.predictedMeleeContacts.push({
+        atAnimMs: this.animClock + swing.impactSeconds * 1000,
+        weaponId: weapon.id,
+        aimX: this.selfAim.x / aimLength,
+        aimY: this.selfAim.y / aimLength,
+        range: meleeReach(weapon),
+        halfArc: weapon.halfArc,
+        element: weapon.tags.element ?? "physical",
+      });
+    }
     if (weapon) this.playWeaponSourceAudio(weapon, rig?.x ?? self.x, true);
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
@@ -6488,11 +6708,40 @@ export class ArenaScene extends Phaser.Scene {
         // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
         // real impact is a skill beat → priority (bypasses the freeze budget).
         const qr = quake.radius;
-        let connected = false;
-        this.room.state.enemies.forEach((en) => {
-          if (!connected && (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2 <= qr * qr) connected = true;
+        let connectedId = "";
+        let connectedX = 0;
+        let connectedY = 0;
+        let connectedWorldX = 0;
+        let connectedWorldY = 0;
+        let best = Number.POSITIVE_INFINITY;
+        this.room.state.enemies.forEach((en, enemyId) => {
+          const distance = (en.x - ep.x) ** 2 + (en.y - ep.y) ** 2;
+          if (distance > qr * qr || distance >= best) return;
+          best = distance;
+          connectedId = enemyId;
+          connectedWorldX = en.x;
+          connectedWorldY = en.y;
+          const targetRig = this.enemies.get(enemyId);
+          connectedX = targetRig?.x ?? en.x;
+          connectedY = targetRig?.y ?? (this.belt ? this.beltY(en.y) : en.y);
         });
-        if (connected) this.hitStop(130, true);
+        if (connectedId) {
+          const directionLength = Math.hypot(connectedWorldX - ep.x, connectedWorldY - ep.y) || 1;
+          this.combatFeedback.onPredictedContact(
+            {
+              targetId: connectedId,
+              delivery: CombatDelivery.Quake,
+              weaponId: weapon.id,
+              element: weapon.tags.element ?? "physical",
+              dirX: (connectedWorldX - ep.x) / directionLength,
+              dirY: (connectedWorldY - ep.y) / directionLength,
+              x: connectedX,
+              y: connectedY,
+            },
+            this.time.now,
+          );
+          this.hitStop(130, true);
+        }
       });
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
@@ -6579,6 +6828,58 @@ export class ArenaScene extends Phaser.Scene {
       saY /= l;
     }
     this.room.send("attack", { aimX: saX, aimY: saY, tx: cwx, ty: cwy });
+  }
+
+  private processPredictedMeleeContacts(): void {
+    if (!this.room || this.predictedMeleeContacts.length === 0) return;
+    const self = this.blobs.get(this.room.sessionId);
+    if (!self) {
+      this.predictedMeleeContacts.length = 0;
+      return;
+    }
+    for (let index = this.predictedMeleeContacts.length - 1; index >= 0; index--) {
+      const contact = this.predictedMeleeContacts[index];
+      if (!contact || this.animClock < contact.atAnimMs) continue;
+      this.predictedMeleeContacts.splice(index, 1);
+      let targetId = "";
+      let targetX = 0;
+      let targetY = 0;
+      let best = Number.POSITIVE_INFINITY;
+      this.enemies.forEach((enemy, enemyId) => {
+        if (
+          !inMeleeArc(
+            { x: self.x, y: self.y },
+            contact.aimX,
+            contact.aimY,
+            enemy,
+            contact.range,
+            contact.halfArc,
+          )
+        )
+          return;
+        const distance = (enemy.x - self.x) ** 2 + (enemy.y - self.y) ** 2;
+        if (distance >= best) return;
+        best = distance;
+        targetId = enemyId;
+        targetX = enemy.x;
+        targetY = enemy.y;
+      });
+      if (!targetId) continue;
+      const directionLength = Math.hypot(targetX - self.x, targetY - self.y) || 1;
+      this.combatFeedback.onPredictedContact(
+        {
+          targetId,
+          delivery: CombatDelivery.Melee,
+          weaponId: contact.weaponId,
+          element: contact.element,
+          dirX: (targetX - self.x) / directionLength,
+          dirY: (targetY - self.y) / directionLength,
+          x: targetX,
+          y: targetY,
+        },
+        this.time.now,
+      );
+    }
   }
 
   /** LMB → the melee Parry signature (§7/§8). Server grants i-frames + knockback. NO VFX yet — the
@@ -6870,7 +7171,357 @@ export class ArenaScene extends Phaser.Scene {
     void: 0xb14bff,
     arcane: 0x8f6aff,
   };
+
+  private beginCombatFeedbackFrame(): void {
+    this.hitVfxSpent = 0;
+    this.feedbackStopMs = 0;
+    this.feedbackStopTier = 0;
+    this.feedbackStopCount = 0;
+    this.feedbackFinalBlows = 0;
+    this.feedbackShakeDuration = 0;
+    this.feedbackShakeIntensity = 0;
+    this.feedbackPunchX = 0;
+    this.feedbackPunchY = 0;
+    this.finalBlowPresentations.clear();
+    this.finalDeltaTargets.clear();
+    this.combatFeedback.beginFrame(this.time.now);
+    this.damageNumberRenderer.beginFrame();
+  }
+
+  private drainCombatFeedback(): void {
+    if (!this.room) return;
+    const state = this.room.state as ArenaState & ArenaDamageAttribution;
+    this.combatFeedback.drainReceipts(
+      state.combatReceipts as unknown as CombatReceiptRows | undefined,
+      this.room.sessionId,
+      this.time.now,
+    );
+    this.flushReceiptFeel();
+  }
+
+  private resolveFeedbackTarget(targetId: string, out: { x: number; y: number }): boolean {
+    const enemy = this.enemies.get(targetId);
+    if (enemy) {
+      out.x = enemy.x;
+      out.y = enemy.y;
+      return true;
+    }
+    const player = this.blobs.get(targetId);
+    if (player) {
+      out.x = player.x;
+      out.y = player.y;
+      return true;
+    }
+    if (!targetId.startsWith("worm:")) return false;
+    const parts = targetId.split(":");
+    const slot = Number.parseInt(parts[1] ?? "", 10);
+    const generation = Number.parseInt(parts[2] ?? "", 10);
+    const row = Number.isFinite(slot) ? this.room?.state.wormBoss.segments[slot] : undefined;
+    if (!row || row.generation !== generation) return false;
+    out.x = row.x;
+    out.y = this.belt ? this.beltY(row.y) : row.y;
+    return true;
+  }
+
+  private onDamageNumberEvent(event: DamageNumberEvent): void {
+    this.damageNumberRenderer.add(event, this.time.now);
+  }
+
+  private onCombatFeedbackContact(event: HitContactEvent): void {
+    const point = this.enemySample;
+    const resolved = this.resolveFeedbackTarget(event.targetId, point);
+    const x = resolved ? point.x : event.x;
+    const y = resolved ? point.y : event.y;
+    if (!resolved && event.x === 0 && event.y === 0) return;
+    const rig = this.enemies.get(event.targetId);
+    const reducedFlash = this.feedbackSettings.flashes === "reduced";
+    const color = ArenaScene.ELEMENT_SPARK[event.element] ?? 0xd6dde6;
+
+    if (event.layer === "instant") {
+      if (this.feedbackSettings.hitSparks)
+        this.hitEffectRenderer.spark(
+          x,
+          y,
+          event.dirX,
+          event.dirY,
+          color,
+          false,
+          reducedFlash,
+          0.72,
+        );
+      rig?.flash(reducedFlash ? 45 : 65, reducedFlash ? 0xdedede : 0xffffff);
+      return;
+    }
+
+    this.applyReceiptFlinch(event, rig);
+    const mode = this.hitEffectRenderer.registerContact(
+      event.targetId,
+      x,
+      y,
+      event.dirX,
+      event.dirY,
+      color,
+      this.animClock,
+    );
+    const fullReceipt = event.layer === "full" || event.layer === "ambient";
+    const breakthrough = event.crit || event.finalBlow;
+    const visible = this.cameras.main.worldView.contains(x, y);
+
+    if (fullReceipt) {
+      if (mode === "shimmer") rig?.flash(350, reducedFlash ? 0xdedede : color);
+      else rig?.flash(reducedFlash ? 55 : 80, reducedFlash ? 0xdedede : 0xffffff);
+      if (mode !== "shimmer" || breakthrough)
+        this.audio.play(event.damage >= 40 || event.crit ? "bighit" : "hit", {
+          x,
+          amt: Math.min(1, event.damage / 45),
+        });
+    }
+
+    if (this.feedbackSettings.hitSparks && (breakthrough || (fullReceipt && mode !== "shimmer"))) {
+      const scale = (mode === "thinned" ? 0.7 : 1) * (event.selfHit ? 1 : 0.85);
+      this.hitEffectRenderer.spark(
+        x,
+        y,
+        event.dirX,
+        event.dirY,
+        color,
+        event.crit,
+        reducedFlash,
+        scale,
+      );
+    }
+    if (
+      fullReceipt &&
+      mode === "discrete" &&
+      visible &&
+      this.feedbackSettings.hitSparks &&
+      this.hitVfxSpent < HIT_VFX_BUDGET
+    ) {
+      const enemyState = this.room?.state.enemies.get(event.targetId);
+      const radius = enemyState
+        ? (ENEMY_KINDS[enemyState.kind]?.radius ?? ENEMY_RADIUS) *
+          (enemyState.tough ? TOUGH_SCALE : 1)
+        : ENEMY_RADIUS;
+      spawnImpactFlipbook(this, x, y, radius, event.element);
+      this.hitVfxSpent++;
+    }
+
+    if (event.crit && this.feedbackSettings.hitSparks) {
+      this.hitEffectRenderer.critStar(
+        event.targetId,
+        x,
+        y,
+        event.dirX,
+        event.dirY,
+        this.animClock,
+        reducedFlash,
+      );
+      rig?.flash(reducedFlash ? 90 : 150, reducedFlash ? 0xdedede : 0xffdb63);
+      if (event.selfHit) {
+        this.spawnImpactRing(x, y);
+        if (!reducedFlash) this.spawnSpeedLines(x, y, true);
+      }
+    } else if (event.damage >= 40 && fullReceipt && event.selfHit) {
+      this.spawnImpactRing(x, y);
+      if (!reducedFlash) this.spawnSpeedLines(x, y, false);
+    }
+
+    if (event.finalBlow) {
+      this.finalBlowPresentations.set(event.targetId, {
+        dirX: event.dirX,
+        dirY: event.dirY,
+        weaponId: event.weaponId,
+        element: event.element,
+        selfHit: event.selfHit,
+      });
+      // A removed row has an authoritative terminal HP of zero. The shown amount is the last observed
+      // authoritative HP -> zero transition, never receipt.damage (which may overkill).
+      const previousHp = this.enemyHp.get(event.targetId);
+      if (
+        previousHp !== undefined &&
+        previousHp > 0 &&
+        !this.room?.state.enemies.has(event.targetId) &&
+        !this.finalDeltaTargets.has(event.targetId)
+      ) {
+        this.finalDeltaTargets.add(event.targetId);
+        this.combatFeedback.ingestHpDelta(
+          {
+            targetId: event.targetId,
+            damage: previousHp,
+            x,
+            y: y - 26,
+            visible,
+          },
+          this.time.now,
+        );
+      }
+    }
+    if (event.selfHit) this.queueReceiptFeel(event);
+  }
+
+  private applyReceiptFlinch(event: HitContactEvent, rig: SpriteRig | undefined): void {
+    if (!rig) return;
+    const length = Math.hypot(event.dirX, event.dirY) || 1;
+    const rapid = this.isRapidDelivery(event.delivery);
+    const magnitude = event.crit ? 11 : rapid ? 3 : event.damage >= 40 ? 8 : 5;
+    let state = this.enemyFlinches.get(event.targetId);
+    if (!state) {
+      state = { x: 0, y: 0, appliedX: 0, appliedY: 0 };
+      this.enemyFlinches.set(event.targetId, state);
+    }
+    const oldAppliedX = state.appliedX;
+    const oldAppliedY = state.appliedY;
+    state.x += (event.dirX / length) * magnitude;
+    state.y += (event.dirY / length) * magnitude;
+    const total = Math.hypot(state.x, state.y);
+    if (total > 14) {
+      state.x = (state.x / total) * 14;
+      state.y = (state.y / total) * 14;
+    }
+    rig.root.x += state.x - oldAppliedX;
+    rig.root.y += state.y - oldAppliedY;
+    state.appliedX = state.x;
+    state.appliedY = state.y;
+  }
+
+  private stepEnemyFlinches(deltaMs: number): void {
+    const decay = Math.exp(-Math.max(0, deltaMs) / 45);
+    for (const [targetId, state] of this.enemyFlinches) {
+      const rig = this.enemies.get(targetId);
+      if (!rig) {
+        this.enemyFlinches.delete(targetId);
+        continue;
+      }
+      state.appliedX = 0;
+      state.appliedY = 0;
+      state.x *= decay;
+      state.y *= decay;
+      if (Math.hypot(state.x, state.y) < 0.05) {
+        this.enemyFlinches.delete(targetId);
+        continue;
+      }
+      rig.root.x += state.x;
+      rig.root.y += state.y;
+      state.appliedX = state.x;
+      state.appliedY = state.y;
+    }
+  }
+
+  private isRapidDelivery(delivery: number): boolean {
+    return (
+      delivery === CombatDelivery.Beam ||
+      delivery === CombatDelivery.Scatter ||
+      delivery === CombatDelivery.Gun ||
+      delivery === CombatDelivery.Chain ||
+      delivery === CombatDelivery.Cast
+    );
+  }
+
+  private queueReceiptFeel(event: HitContactEvent): void {
+    const paperPriority = event.targetId.startsWith("worm:")
+      ? 2
+      : (this.enemyPaperPriority.get(event.targetId) ?? 0);
+    const directionLength = Math.hypot(event.dirX, event.dirY) || 1;
+    let shakeDuration = 0;
+    let shakeIntensity = 0;
+    let punch = 0;
+    if (event.finalBlow) {
+      shakeDuration = paperPriority >= 1 ? 110 : 70;
+      shakeIntensity = paperPriority >= 1 ? 0.0045 : 0.003;
+      punch = paperPriority >= 2 ? 8 : 5;
+      if (!this.isRapidDelivery(event.delivery)) this.feedbackFinalBlows++;
+    } else if (event.crit) {
+      shakeDuration = 90;
+      shakeIntensity = 0.0038;
+      punch = 4;
+    } else if (event.damage >= 40) {
+      shakeDuration = 60;
+      shakeIntensity = 0.0022;
+      punch = 3;
+    }
+    if (shakeIntensity > this.feedbackShakeIntensity) {
+      this.feedbackShakeDuration = shakeDuration;
+      this.feedbackShakeIntensity = shakeIntensity;
+    }
+    if (punch > Math.hypot(this.feedbackPunchX, this.feedbackPunchY)) {
+      this.feedbackPunchX = (event.dirX / directionLength) * punch;
+      this.feedbackPunchY = (event.dirY / directionLength) * punch;
+    }
+
+    // T0 is absolute: beam and rapid delivery receipts can shimmer, flinch, sound and shake, but freeze 0ms.
+    if (this.isRapidDelivery(event.delivery)) return;
+    if (paperPriority >= 2 && event.finalBlow) {
+      this.hitStop(160, true);
+      return;
+    }
+    let duration = 0;
+    let tier = 0;
+    if (event.finalBlow) {
+      duration = paperPriority === 1 ? 80 : 45;
+      tier = 4;
+    } else if (event.delivery === CombatDelivery.Quake || event.delivery === CombatDelivery.Parry) {
+      return;
+    } else if (event.crit) {
+      duration = 70;
+      tier = 3;
+    } else if (event.damage >= 40) {
+      duration = 50;
+      tier = 2;
+    } else if (event.delivery === CombatDelivery.Melee) {
+      duration = 30;
+      tier = 1;
+    }
+    if (duration <= 0) return;
+    this.feedbackStopCount++;
+    if (duration > this.feedbackStopMs) {
+      this.feedbackStopMs = duration;
+      this.feedbackStopTier = tier;
+    }
+  }
+
+  private flushReceiptFeel(): void {
+    const now = this.time.now;
+    if (this.feedbackFinalBlows >= 3) {
+      this.feedbackStopMs = 95;
+      this.feedbackStopTier = 5;
+      this.feedbackStopCount = Math.max(this.feedbackStopCount, this.feedbackFinalBlows);
+      this.feedbackShakeDuration = 140;
+      this.feedbackShakeIntensity = 0.006;
+    }
+    if (this.feedbackStopMs > 0) {
+      const refractory = this.feedbackStopTier === 5 ? 250 : this.feedbackStopTier === 4 ? 110 : 90;
+      const lastAt = this.feedbackStopAt.get(this.feedbackStopTier) ?? -1e9;
+      if (now - lastAt >= refractory) {
+        const extra = Math.min(24, Math.max(0, this.feedbackStopCount - 1) * 8);
+        this.feedbackStopAt.set(this.feedbackStopTier, now);
+        this.hitStop(Math.min(95, this.feedbackStopMs + extra));
+      }
+    }
+    if (this.feedbackShakeIntensity > 0)
+      this.shakeCam(this.feedbackShakeDuration, this.feedbackShakeIntensity);
+    if (
+      Math.hypot(this.feedbackPunchX, this.feedbackPunchY) > 0 &&
+      now - this.lastCameraPunchAt >= 90
+    ) {
+      this.cameraPunchX = this.feedbackPunchX;
+      this.cameraPunchY = this.feedbackPunchY;
+      this.lastCameraPunchAt = now;
+    }
+  }
+
+  private stepCameraPunch(deltaMs: number): void {
+    const decay = Math.exp(-Math.max(0, deltaMs) / 35);
+    this.cameraPunchX *= decay;
+    this.cameraPunchY *= decay;
+    if (Math.hypot(this.cameraPunchX, this.cameraPunchY) < 0.02) {
+      this.cameraPunchX = 0;
+      this.cameraPunchY = 0;
+    }
+  }
+
   private hitStop(ms: number, priority = false): void {
+    if (!this.feedbackSettings?.hitStop || prefersReducedPaperMotion()) return;
+    ms = Math.max(0, Math.min(160, ms));
     const now = this.time.now;
     if (!priority) {
       // Refill the bucket at BUDGET/WINDOW per ms since the last spend, then reject if this freeze would
@@ -6891,6 +7542,9 @@ export class ArenaScene extends Phaser.Scene {
    *  swallowed. Route every shake here: one at least as strong as the running shake FORCE-restarts (the
    *  important hit always lands); a weaker one is dropped (a tracer stream can't stomp a boss slam). */
   shakeCam(duration: number, intensity: number): void {
+    const motionScale = prefersReducedPaperMotion() ? 0 : (this.feedbackSettings?.screenShake ?? 1);
+    intensity *= motionScale;
+    if (intensity <= 0) return;
     const now = this.time.now;
     if (now >= this.shakeUntil || intensity >= this.shakeIntensity) {
       this.cameras.main.shake(duration, intensity, true);
@@ -7124,16 +7778,12 @@ export class ArenaScene extends Phaser.Scene {
    *  local player hp drops → flash + screen shake (§20 game-feel from day one). */
   private updateCombatFx(): void {
     if (!this.room) return;
-    this.hitVfxSpent = 0;
-    this.damageNumbersSpent = 0;
-    this.damageNumberEnemies.clear();
     const hits: Array<{
       id: string;
       rig: SpriteRig;
       dmg: number;
       crit: boolean;
       visible: boolean;
-      radius: number;
     }> = [];
     this.room.state.enemies.forEach((enemy, id) => {
       const prev = this.enemyHp.get(id);
@@ -7150,8 +7800,6 @@ export class ArenaScene extends Phaser.Scene {
             dmg,
             crit,
             visible: this.cameras.main.worldView.contains(rig.x, rig.y),
-            radius:
-              (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) * (enemy.tough ? TOUGH_SCALE : 1),
           });
         }
       }
@@ -7161,26 +7809,29 @@ export class ArenaScene extends Phaser.Scene {
     // Only horde-scale frames reorder: on-camera hits spend the finite full-stack + label budgets before
     // invisible enemies. Stable sort preserves authoritative iteration order within each visibility band.
     if (hits.length > HIT_VFX_BUDGET) hits.sort((a, b) => Number(b.visible) - Number(a.visible));
-    for (const { id, rig, dmg, crit, radius } of hits) {
+    for (const { id, rig, dmg, crit, visible } of hits) {
+      // DIGIT HONESTY: this exact authoritative state delta is the sole arithmetic input. Receipts have
+      // already been drained and may decorate it, but receipt.damage can never construct a label.
+      this.combatFeedback.ingestHpDelta(
+        {
+          targetId: id,
+          damage: dmg,
+          x: rig.x,
+          y: rig.y - 26,
+          visible,
+        },
+        this.time.now,
+      );
+
+      // A receipt and its HP mutation share one patch. The receipt-driven path already spent the contact
+      // stack, so the legacy diff path becomes a residual/old-server fallback instead of a double effect.
+      if (this.combatFeedback.wasReceiptTouched(id)) continue;
       const big = dmg >= 40; // top damage band — a crushing blow (visual/audio ONLY, no balance change)
-      rig.flash(crit ? 150 : big ? 120 : 80, crit ? 0xffdb63 : 0xffffff); // zero-allocation degraded path
-      // `prev - hp` already aggregates every source delivered in this patch; the key is a defensive one-label
-      // guard if another hit call site joins this frame. Off-screen labels lose the stable-sort budget first.
-      if (this.damageNumbersSpent < DAMAGE_NUMBER_BUDGET && !this.damageNumberEnemies.has(id)) {
-        this.damageNumberEnemies.add(id);
-        this.damageNumbersSpent++;
-        spawnDamageNumber(this, rig.x, rig.y - 26, dmg, crit, id);
-      }
-      const fullFx = this.hitVfxSpent < HIT_VFX_BUDGET;
-      if (!fullFx) continue; // flash + optional pooled number only: no painted Images/rects/rings/tweens
-      this.hitVfxSpent++;
-      this.audio.play(crit || big ? "bighit" : "hit", {
-        x: rig.x,
-        amt: Math.min(1, dmg / 45),
-      });
-      // §36 directional contact spark — thrown along the blow vector (nearest live player-rig → enemy,
-      // both in the SAME render space so it's correct in belt mode too). Every hit gets steel-bite; the
-      // heavier RING/stinger stay gated to the crunch below.
+      const reducedFlash = this.feedbackSettings.flashes === "reduced";
+      rig.flash(
+        reducedFlash ? 55 : crit ? 150 : big ? 120 : 80,
+        reducedFlash ? 0xdedede : crit ? 0xffdb63 : 0xffffff,
+      );
       let bx = rig.x - 100;
       let by = rig.y;
       let best = Number.POSITIVE_INFINITY;
@@ -7200,15 +7851,36 @@ export class ArenaScene extends Phaser.Scene {
       const hitWeapon = attacker ? WEAPONS[attacker.weapon] : undefined;
       const hitEl = hitWeapon?.tags?.element;
       const tint = ArenaScene.ELEMENT_SPARK[hitEl ?? ""] ?? 0xfff2c0;
-      this.spawnHitSpark(rig.x, rig.y, Math.atan2(rig.y - by, rig.x - bx), crit, tint, hitEl);
-      // The flipbook belongs to this budget-approved FULL stack only: gun-bullet + melee-equipped hits get
-      // the weapon element; thrown/cast deliveries retain every existing layer without a false bloom.
-      if (hitWeapon?.gun || (hitWeapon && !hitWeapon.thrown && !hitWeapon.cast)) {
-        spawnImpactFlipbook(this, rig.x, rig.y, radius, hitEl);
-      }
-      if (big || crit) this.spawnImpactRing(rig.x, rig.y); // a white shock ring sells the crunch
-      if (big || crit) this.spawnSpeedLines(rig.x, rig.y, crit); // §36 heavy-hit stinger: focus streaks
-      if (crit) this.hitStop(70); // a touch of extra hit-stop on the spike
+      const directionLength = Math.hypot(rig.x - bx, rig.y - by) || 1;
+      const dirX = (rig.x - bx) / directionLength;
+      const dirY = (rig.y - by) / directionLength;
+      const mode = this.hitEffectRenderer.registerContact(
+        id,
+        rig.x,
+        rig.y,
+        dirX,
+        dirY,
+        tint,
+        this.animClock,
+      );
+      if (mode !== "shimmer")
+        this.audio.play(crit || big ? "bighit" : "hit", {
+          x: rig.x,
+          amt: Math.min(1, dmg / 45),
+        });
+      if (this.feedbackSettings.hitSparks && mode !== "shimmer")
+        this.hitEffectRenderer.spark(
+          rig.x,
+          rig.y,
+          dirX,
+          dirY,
+          tint,
+          crit,
+          reducedFlash,
+          mode === "thinned" ? 0.7 : 1,
+        );
+      if (this.feedbackSettings.hitSparks && crit)
+        this.hitEffectRenderer.critStar(id, rig.x, rig.y, dirX, dirY, this.animClock, reducedFlash);
     }
 
     // §8 successful-parry flash (Stage C): a white burst when ANY player parries a telegraphed attack;
@@ -7242,6 +7914,19 @@ export class ArenaScene extends Phaser.Scene {
       this.captureSyncedDamageReceipts(selfId);
       const damageTaken = this.prevSelfHp >= 0 ? this.prevSelfHp - self.hp : 0;
       if (damageTaken > 0.01) {
+        const selfRig = this.blobs.get(selfId);
+        if (selfRig)
+          this.combatFeedback.ingestHpDelta(
+            {
+              targetId: selfId,
+              damage: damageTaken,
+              x: selfRig.x,
+              y: selfRig.y - 26,
+              visible: true,
+              selfDamage: true,
+            },
+            this.time.now,
+          );
         const attributed = this.capturePlayerDamageAttribution(self, damageTaken);
         const latest = this.deathRecap[0];
         if (
@@ -7313,7 +7998,7 @@ export class ArenaScene extends Phaser.Scene {
       .circle(x, y, 14)
       .setStrokeStyle(4, 0xfff2c0, 0.9)
       .setBlendMode(Phaser.BlendModes.ADD)
-      .setDepth(99994);
+      .setDepth(IMPACT_RING_DEPTH);
     this.tweens.add({
       targets: ring,
       scale: 2.8,
@@ -7400,7 +8085,7 @@ export class ArenaScene extends Phaser.Scene {
         .rectangle(x + c * r0, y + s * r0, 20, 2.4, col, 0.85)
         .setRotation(a) // aligned radially so it reads as a streak pointing at the impact
         .setBlendMode(ADD)
-        .setDepth(99997);
+        .setDepth(SPEED_LINE_DEPTH);
       this.tweens.add({
         targets: line,
         x: x + c * r1,
@@ -8795,8 +9480,7 @@ export class ArenaScene extends Phaser.Scene {
         for (const z of this.buyZones) z.setVisible(false);
         this.bagHoverCell = -1;
       }
-      const done =
-        prefersReducedPaperMotion() || this.time.now - this.bagPanelCloseAt >= 150;
+      const done = prefersReducedPaperMotion() || this.time.now - this.bagPanelCloseAt >= 150;
       if (done) {
         this.bagPanelShown = false;
         this.bagPanelCloseAt = 0;
@@ -8979,13 +9663,19 @@ export class ArenaScene extends Phaser.Scene {
       .setText(shop ? "TRADING POST" : `BACKPACK ${self.bag.length}/${BAG_CAP}`)
       .setColor(shop ? "#ffd479" : full ? "#ff8a2b" : "#9fb0c2")
       .setPosition(px + 16 * s, py + 10 * s);
-    title.setFontSize(13 * s).setOrigin(0, 0).setFontStyle("bold");
+    title
+      .setFontSize(13 * s)
+      .setOrigin(0, 0)
+      .setFontStyle("bold");
     show(title);
     const hint = this.hudText(this.bagTexts, 1, 100046)
       .setText(shop ? "[Click] Sell · [F] Close" : "[Click] Equip · [Tab] Close")
       .setColor("#7a8290")
       .setPosition(px + panelW - 16 * s, py + 12 * s);
-    hint.setFontSize(10 * s).setOrigin(1, 0).setFontStyle("normal");
+    hint
+      .setFontSize(10 * s)
+      .setOrigin(1, 0)
+      .setFontStyle("normal");
     show(hint);
 
     if (shop) {
@@ -9093,7 +9783,10 @@ export class ArenaScene extends Phaser.Scene {
         .setText(shownName)
         .setColor(colHex)
         .setPosition(cx + 6 * s + artSize + 6 * s, cy + 7 * s);
-      nameT.setFontSize(12 * s).setOrigin(0, 0).setFontStyle("bold");
+      nameT
+        .setFontSize(12 * s)
+        .setOrigin(0, 0)
+        .setFontStyle("bold");
       show(nameT);
       const affixName = item.affix ? affixById(item.affix).name : "";
       const tierLine = [RARITIES[item.rarity]?.name ?? "", affixName].filter(Boolean).join(" · ");
@@ -9101,7 +9794,10 @@ export class ArenaScene extends Phaser.Scene {
         .setText(tierLine)
         .setColor(colHex)
         .setPosition(cx + 6 * s + artSize + 6 * s, cy + 24 * s);
-      tierT.setFontSize(10 * s).setOrigin(0, 0).setFontStyle("normal");
+      tierT
+        .setFontSize(10 * s)
+        .setOrigin(0, 0)
+        .setFontStyle("normal");
       show(tierT);
       // §4 redundant tier pips beside the tier name.
       if (item.rarity > 0 && tierLine) {
@@ -9276,7 +9972,10 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(true)
       .setAlpha(panelAlpha)
       .setPosition(px + panelW / 2, y + h + 2 * s);
-    sub.setFontSize(9 * s).setOrigin(0.5, 0).setFontStyle("normal");
+    sub
+      .setFontSize(9 * s)
+      .setOrigin(0.5, 0)
+      .setFontStyle("normal");
   }
 
   /** Hide the bag overlay + its zones/texts/art thumbnails (panel closed). */
