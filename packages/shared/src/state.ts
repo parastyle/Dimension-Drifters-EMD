@@ -155,6 +155,12 @@ export class PlayerState extends Schema {
    *  player is LAUNCHED or air-kept by a tough-combo juggle hit — the client edge-fires the hit-reaction /
    *  tumble pose off changes. The arc itself rides the existing synced `height`/`vh` channels. */
   @type("uint8") juggledSeq = 0;
+  /** Committed movement pose: 0 normal · 1 crouch · 2 distance jump · 3 ground pound. */
+  @type("uint8") moveStance = 0;
+  /** Authoritative ground-pound landing edge; remotes fire the exact-radius impact presentation from it. */
+  @type("uint8") poundSeq = 0;
+  /** Soft reconcile edge bumped only when authority force-cancels a committed movement stance. */
+  @type("uint8") stanceSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

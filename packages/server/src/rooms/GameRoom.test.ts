@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(19);
+    expect(h.state().schemaVersion).toBe(20);
   });
 });
 
@@ -3306,7 +3306,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(19);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(20);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3335,3 +3335,348 @@ function herePlayerJuggledDefault() {
   const h = makeEnemyComboRoom();
   return h.player.juggledSeq;
 }
+
+// Jump-feel J1 — appended authoritative fixtures. Every pinned position starts from an all-ground map;
+// individual tests then author only the pit geometry they need.
+function makeJumpFeelRoom(id = "jump-feel") {
+  const h = makeRoom();
+  h.join(id);
+  h.room.map.pois.length = 0;
+  h.room.map.tiles.fill(TILE_GROUND);
+  h.room.spawnAccum = -1_000_000;
+  h.room.shifterCd = 1_000_000;
+  const player = h.state().players.get(id);
+  player.x = h.room.map.spawnX;
+  player.y = h.room.map.spawnY;
+  player.hp = player.maxHp;
+  const combat = h.room.combat.get(id);
+  combat.lastGroundX = player.x;
+  combat.lastGroundY = player.y;
+  return { h, player, combat };
+}
+
+function sendJumpFeelInput(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  seq: number,
+  fields: {
+    dx?: number;
+    dy?: number;
+    jump?: boolean;
+    crouchHeld?: boolean;
+    pound?: boolean;
+    fireHeld?: boolean;
+  } = {},
+) {
+  h.send(id, "input", {
+    seq,
+    dx: fields.dx ?? 0,
+    dy: fields.dy ?? 0,
+    jump: fields.jump ?? false,
+    crouchHeld: fields.crouchHeld ?? false,
+    pound: fields.pound ?? false,
+    fireHeld: fields.fireHeld ?? false,
+    aimX: 1,
+    aimY: 0,
+    targetX: 0,
+    targetY: 0,
+  });
+  h.tick(1);
+}
+
+function addJumpDummy(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  x: number,
+  y: number,
+  hp = 1_000,
+) {
+  const enemy = new EnemyState();
+  enemy.id = id;
+  enemy.kind = "dummy";
+  enemy.hp = hp;
+  enemy.x = x;
+  enemy.y = y;
+  h.state().enemies.set(id, enemy);
+  return enemy;
+}
+
+describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
+  it("runs the 1250/900/2200 profile at ≈47px/0.55s and clears the required 160px gap", () => {
+    let height = 0;
+    let vh = enemyComboShared.JUMP_VELOCITY;
+    let peak = 0;
+    let ticks = 0;
+    do {
+      const next = enemyComboShared.stepVertical(height, vh, 0.05);
+      height = next.height;
+      vh = next.vh;
+      peak = Math.max(peak, height);
+      ticks++;
+    } while (height > 0 && ticks < 30);
+    expect(peak).toBeGreaterThan(45);
+    expect(peak).toBeLessThan(48);
+    expect(ticks * 0.05).toBeCloseTo(0.55, 8);
+    expect(enemyComboShared.verticalPhase(0, 0)).toBe("grounded");
+    expect(enemyComboShared.verticalPhase(10, 100)).toBe("rising");
+    expect(enemyComboShared.verticalPhase(10, 0)).toBe("apex");
+    expect(enemyComboShared.verticalPhase(10, -100)).toBe("falling");
+    expect(enemyComboShared.verticalTimeToGround(0, enemyComboShared.JUMP_VELOCITY) * enemyComboShared.MOVE_SPEED)
+      .toBeGreaterThan(160);
+
+    const { h, player } = makeJumpFeelRoom("hop-gap");
+    const { cols, tileSize } = h.room.map;
+    const row = Math.floor(player.y / tileSize);
+    const col = Math.floor(player.x / tileSize);
+    h.room.map.tiles[row * cols + col + 1] = TILE_PIT;
+    h.room.map.tiles[row * cols + col + 2] = TILE_PIT;
+    const farEdge = (col + 3) * tileSize;
+    player.x = (col + 1) * tileSize - 1;
+    player.y = (row + 0.5) * tileSize;
+    const fell = player.fellSeq;
+    sendJumpFeelInput(h, player.id, 1, { jump: true });
+    let seq = 2;
+    while (player.height > 0 && seq < 30) {
+      sendJumpFeelInput(h, player.id, seq++, { dx: 1 });
+    }
+    sendJumpFeelInput(h, player.id, seq, { dx: 1 });
+    expect(player.x).toBeGreaterThan(farEdge);
+    expect(player.fellSeq).toBe(fell);
+  });
+
+  it("keeps wire fields transition-only and distinguishes organic aborts from forced cancels", () => {
+    const { h, player, combat } = makeJumpFeelRoom("stance-edges");
+    expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
+    sendJumpFeelInput(h, player.id, 1, { crouchHeld: true, dx: 1 });
+    expect(player.moveStance).toBe(enemyComboShared.STANCE_CROUCH);
+    h.tick(3);
+    expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([1, 0, 0]);
+    sendJumpFeelInput(h, player.id, 2, { crouchHeld: false });
+    expect([player.moveStance, player.stanceSeq]).toEqual([0, 0]);
+
+    sendJumpFeelInput(h, player.id, 3, { crouchHeld: true, dx: 1 });
+    h.room.damagePlayer(player, 1);
+    expect(combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect([player.moveStance, player.stanceSeq]).toEqual([0, 1]);
+    h.room.damagePlayer(player, 1);
+    expect(player.stanceSeq).toBe(1); // no transition, no wire churn
+  });
+
+  it("enforces early-release/cooldown cancels and samples the launch tick's live WASD", () => {
+    const early = makeJumpFeelRoom("crouch-early");
+    sendJumpFeelInput(early.h, early.player.id, 1, { crouchHeld: true, dx: 1 });
+    sendJumpFeelInput(early.h, early.player.id, 2, { crouchHeld: true, dx: 1 });
+    sendJumpFeelInput(early.h, early.player.id, 3, { crouchHeld: true, dx: 1 });
+    sendJumpFeelInput(early.h, early.player.id, 4, { crouchHeld: false });
+    expect(early.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(early.player.height).toBe(0);
+
+    const locked = makeJumpFeelRoom("crouch-lock");
+    for (let seq = 1; seq <= 9; seq++) {
+      sendJumpFeelInput(locked.h, locked.player.id, seq, { crouchHeld: true, dx: 1 });
+    }
+    sendJumpFeelInput(locked.h, locked.player.id, 10, { crouchHeld: true, dy: 1 });
+    expect(locked.combat.stance).toBe(enemyComboShared.STANCE_DASH);
+    expect(locked.combat.dashBaseDirX).toBeCloseTo(0, 6);
+    expect(locked.combat.dashBaseDirY).toBeCloseTo(1, 6);
+
+    const cooldown = makeJumpFeelRoom("crouch-cooldown");
+    cooldown.combat.distJumpCd = 1;
+    for (let seq = 1; seq <= 10; seq++) {
+      sendJumpFeelInput(cooldown.h, cooldown.player.id, seq, { crouchHeld: true, dx: 1 });
+    }
+    expect(cooldown.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(cooldown.player.height).toBe(0);
+  });
+
+  it("soft-steers at <=45°/s within ±27°, reaches 372px, and cycles slower than MOVE_SPEED", () => {
+    const reach = makeJumpFeelRoom("dash-reach");
+    const startX = reach.player.x;
+    for (let seq = 1; seq <= 10; seq++) {
+      sendJumpFeelInput(reach.h, reach.player.id, seq, { crouchHeld: true, dx: 1 });
+    }
+    expect(reach.combat.stance).toBe(enemyComboShared.STANCE_DASH);
+    for (let i = 0; i < 20 && reach.combat.stance === enemyComboShared.STANCE_DASH; i++) reach.h.tick(1);
+    expect(reach.player.x - startX).toBeCloseTo(enemyComboShared.DIST_JUMP_REACH, 5);
+    expect(reach.player.x - startX).toBeGreaterThan(320);
+    expect(reach.combat.lastLandingTier).toBe(enemyComboShared.LANDING_TIER_HEAVY);
+    expect(enemyComboShared.DIST_JUMP_CYCLE_SPEED).toBeLessThan(enemyComboShared.MOVE_SPEED);
+    expect(reach.combat.distJumpCd).toBeGreaterThan(0);
+
+    const steer = makeJumpFeelRoom("dash-steer");
+    for (let seq = 1; seq <= 10; seq++) {
+      sendJumpFeelInput(steer.h, steer.player.id, seq, { crouchHeld: true, dy: 1 });
+    }
+    let maxTurn = 0;
+    let seq = 11;
+    while (steer.combat.stance === enemyComboShared.STANCE_DASH && seq < 30) {
+      const before = steer.combat.dashSteer;
+      sendJumpFeelInput(steer.h, steer.player.id, seq++, { dx: 1, crouchHeld: true });
+      if (steer.combat.stance === enemyComboShared.STANCE_DASH) {
+        expect(Math.abs(steer.combat.dashSteer - before)).toBeLessThanOrEqual(
+          enemyComboShared.DIST_JUMP_STEER_RADIANS_PER_SECOND * 0.05 + 1e-9,
+        );
+        maxTurn = Math.max(maxTurn, Math.abs(steer.combat.dashSteer));
+      }
+    }
+    expect(maxTurn).toBeGreaterThan(0);
+    expect(maxTurn).toBeLessThanOrEqual(enemyComboShared.DIST_JUMP_MAX_STEER_RADIANS + 1e-9);
+  });
+
+  it("routes the raw distance-jump landing through safeSpawnPos before freezing its direction", () => {
+    const { h, player, combat } = makeJumpFeelRoom("dash-clamp");
+    const rawX = player.x + enemyComboShared.DIST_JUMP_REACH;
+    const rawY = player.y;
+    const tx = Math.floor(rawX / h.room.map.tileSize);
+    const ty = Math.floor(rawY / h.room.map.tileSize);
+    h.room.map.tiles[ty * h.room.map.cols + tx] = TILE_PIT;
+    const expected = enemyComboShared.safeSpawnPos(h.room.map, rawX, rawY, enemyComboShared.PLAYER_RADIUS);
+    const dx = expected.x - player.x;
+    const dy = expected.y - player.y;
+    const d = Math.hypot(dx, dy);
+    for (let seq = 1; seq <= 10; seq++) {
+      sendJumpFeelInput(h, player.id, seq, { crouchHeld: true, dx: 1 });
+    }
+    expect(combat.dashDirX).toBeCloseTo(dx / d, 6);
+    expect(combat.dashDirY).toBeCloseTo(dy / d, 6);
+    expect(combat.dashSpeed).toBeCloseTo(
+      Math.min(enemyComboShared.DIST_JUMP_SPEED, d / enemyComboShared.DIST_JUMP_AIRTIME),
+      6,
+    );
+  });
+
+  it("gates pound above 24px, honors the 90px truth radius/cap, and lands into no-parry recovery", () => {
+    const { h, player, combat } = makeJumpFeelRoom("pound-truth");
+    player.height = enemyComboShared.POUND_MIN_HEIGHT;
+    sendJumpFeelInput(h, player.id, 1, { pound: true });
+    expect(combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(combat.jumpBuffer).toBeGreaterThan(0); // late-air press keeps the landing-hop buffer
+
+    player.height = 200;
+    player.vh = 0;
+    combat.vh = 0;
+    combat.jumpBuffer = 0;
+    combat.invuln = 1; // landing must surrender even a pre-existing parry window
+    const inside = addJumpDummy(
+      h,
+      "pound-inside",
+      player.x + enemyComboShared.POUND_RADIUS,
+      player.y,
+    );
+    const outside = addJumpDummy(
+      h,
+      "pound-outside",
+      player.x - enemyComboShared.POUND_RADIUS - 0.01,
+      player.y,
+    );
+    const insideHp = inside.hp;
+    const outsideHp = outside.hp;
+    sendJumpFeelInput(h, player.id, 2, { pound: true });
+    expect(combat.stance).toBe(enemyComboShared.STANCE_POUND);
+    expect(combat.vh).toBe(0); // first gather tick
+    const poundSeq = player.poundSeq;
+    for (let i = 0; i < 10 && player.poundSeq === poundSeq; i++) h.tick(1);
+    expect(insideHp - inside.hp).toBe(enemyComboShared.POUND_DAMAGE_CAP);
+    expect(outside.hp).toBe(outsideHp);
+    expect(player.poundSeq).toBe((poundSeq + 1) & 0xff);
+    expect(combat.lastLandingTier).toBe(enemyComboShared.LANDING_TIER_HEAVY);
+    expect(combat.jumpCd).toBeCloseTo(enemyComboShared.POUND_JUMP_COOLDOWN, 8);
+    expect(combat.recoveryT).toBeCloseTo(enemyComboShared.POUND_RECOVERY_SECONDS, 8);
+    expect(combat.invuln).toBe(0);
+
+    const hp = player.hp;
+    const parried = player.parriedSeq;
+    h.room.applyBossQuake(player.x, player.y, 100, 7, 0);
+    expect(player.hp).toBe(hp - 7);
+    expect(player.parriedSeq).toBe(parried);
+    h.send(player.id, "parry");
+    expect(combat.invuln).toBe(0);
+  });
+
+  it("caps the decaying pound shove below one bodywidth and never pushes a pack across a pit lip", () => {
+    const { h, player, combat } = makeJumpFeelRoom("pound-pit");
+    const { cols, tileSize } = h.room.map;
+    const row = Math.floor(player.y / tileSize);
+    const col = Math.floor(player.x / tileSize);
+    const pitX = (col + 1) * tileSize;
+    for (let y = row - 1; y <= row + 1; y++) h.room.map.tiles[y * cols + col + 1] = TILE_PIT;
+    player.x = pitX - 61;
+    player.y = (row + 0.5) * tileSize;
+    player.height = 25;
+    combat.vh = 0;
+    const pack = [-60, 0, 60].map((dy, i) =>
+      addJumpDummy(h, `pound-pack-${i}`, pitX - 1, player.y + dy, 1_000),
+    );
+    const before = pack.map((enemy) => enemy.x);
+    sendJumpFeelInput(h, player.id, 1, { pound: true });
+    for (let i = 0; i < 12; i++) h.tick(1);
+    for (let i = 0; i < pack.length; i++) {
+      const enemy = pack[i]!;
+      expect(h.state().enemies.has(enemy.id)).toBe(true);
+      expect(isPitAtPx(h.room.map, enemy.x, enemy.y)).toBe(false);
+      expect(Math.hypot(enemy.x - before[i]!, 0)).toBeLessThanOrEqual(40);
+    }
+  });
+
+  it("keeps pit grace on a separate null-immunity channel so quakes cannot auto-parry", () => {
+    const { h, player, combat } = makeJumpFeelRoom("pit-mercy");
+    const { cols, tileSize } = h.room.map;
+    const row = Math.floor(player.y / tileSize);
+    const col = Math.floor(player.x / tileSize);
+    combat.lastGroundX = player.x - tileSize;
+    combat.lastGroundY = player.y;
+    h.room.map.tiles[row * cols + col] = TILE_PIT;
+    player.x = (col + 0.5) * tileSize;
+    player.y = (row + 0.5) * tileSize;
+    h.tick(1);
+    expect(combat.pitGrace).toBeGreaterThan(0);
+    expect(combat.invuln).toBe(0);
+    const hp = player.hp;
+    const parried = player.parriedSeq;
+    const parryCd = combat.parryCd;
+    h.room.applyBossQuake(player.x, player.y, 100, 20, 0);
+    expect(player.hp).toBe(hp);
+    expect(player.parriedSeq).toBe(parried);
+    expect(combat.parryCd).toBe(parryCd);
+  });
+
+  it("classifies landing tiers at the exact 300/520 boundaries", () => {
+    expect(enemyComboShared.landingThumpTier(299.999)).toBe(enemyComboShared.LANDING_TIER_SOFT);
+    expect(enemyComboShared.landingThumpTier(300)).toBe(enemyComboShared.LANDING_TIER_SOLID);
+    expect(enemyComboShared.landingThumpTier(520)).toBe(enemyComboShared.LANDING_TIER_SOLID);
+    expect(enemyComboShared.landingThumpTier(520.001)).toBe(enemyComboShared.LANDING_TIER_HEAVY);
+    expect(enemyComboShared.landingThumpTier(200, 620, true)).toBe(
+      enemyComboShared.LANDING_TIER_HEAVY,
+    );
+  });
+
+  it("gives a committed pound descent priority over enemy launcher/air-keep vh writes", () => {
+    const { h, player, combat } = makeJumpFeelRoom("pound-priority");
+    player.height = 100;
+    combat.vh = 0;
+    sendJumpFeelInput(h, player.id, 1, { pound: true });
+    h.tick(1); // gather completes; the committed descent now owns vh
+    expect(combat.vh).toBe(-enemyComboShared.POUND_SPEED);
+    const enemy = addJumpDummy(h, "pound-launcher", player.x - 40, player.y);
+    enemy.kind = "vault-ronin";
+    const juggled = player.juggledSeq;
+    h.room.comboSwing(
+      enemy,
+      enemy.id,
+      { targetId: player.id, juggleCombo: true, comboDamage: 0 },
+      { kind: "launcher", windupTicks: 6, step: 0, damageMult: 0, launch: { vh: 480, push: 0 } },
+      { range: 200, halfArc: 1.2, damageMult: 0, knockbackMult: 0 },
+      { x: enemy.x, y: enemy.y, aimX: 1, aimY: 0 },
+    );
+    expect(combat.stance).toBe(enemyComboShared.STANCE_POUND);
+    expect(combat.vh).toBe(-enemyComboShared.POUND_SPEED);
+    expect(player.vh).toBe(-enemyComboShared.POUND_SPEED);
+    expect(player.juggledSeq).toBe(juggled);
+  });
+
+  it("ships schema 20 with the three appended uint8 stance/VFX defaults", () => {
+    const player = new enemyComboShared.PlayerState();
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(20);
+    expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
+  });
+});

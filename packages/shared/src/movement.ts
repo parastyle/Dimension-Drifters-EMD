@@ -1,17 +1,36 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
-  GRAVITY,
+  GRAVITY_APEX,
+  GRAVITY_APEX_BAND,
+  GRAVITY_FALL,
+  GRAVITY_RISE,
+  GROUND_EPSILON,
   IMPULSE_EPSILON,
   IMPULSE_FRICTION,
   IMPULSE_MAX,
+  LANDING_HEAVY_MIN_SPEED,
+  LANDING_HORIZONTAL_WEIGHT,
+  LANDING_SOLID_MIN_SPEED,
+  LANDING_TIER_HEAVY,
+  LANDING_TIER_SOFT,
+  LANDING_TIER_SOLID,
+  type LandingThumpTier,
   MOVE_HITCH_DIP,
   MOVE_HITCH_MIN_ANGLE,
   MOVE_HITCH_MIN_SPEED,
   MOVE_RECOVER_ACCEL,
   MOVE_SPEED,
   MOVE_STOP_DECEL,
+  POUND_DAMAGE_BASE,
+  POUND_DAMAGE_CAP,
+  POUND_DAMAGE_PER_HEIGHT,
   PLAYER_RADIUS,
+  type VerticalPhase,
+  VERTICAL_PHASE_APEX,
+  VERTICAL_PHASE_FALLING,
+  VERTICAL_PHASE_GROUNDED,
+  VERTICAL_PHASE_RISING,
 } from "./constants.js";
 import { clamp } from "./math.js";
 
@@ -195,7 +214,95 @@ export function stepVertical(
   vh: number,
   dtSeconds: number,
 ): { height: number; vh: number } {
-  const h = height + vh * dtSeconds;
-  if (h <= 0) return { height: 0, vh: 0 }; // landed → rest on the ground
-  return { height: h, vh: vh - GRAVITY * dtSeconds };
+  let h = Math.max(0, height);
+  let v = vh;
+  let remaining = Math.max(0, dtSeconds);
+
+  // Exact constant-acceleration slices end at the tick, a gravity-zone boundary, or ground contact.
+  for (let slice = 0; slice < 4 && remaining > 1e-9; slice++) {
+    const gravity = verticalGravity(v);
+    let boundarySeconds = Number.POSITIVE_INFINITY;
+    let boundaryVelocity = v;
+    if (v > GRAVITY_APEX_BAND) {
+      boundarySeconds = (v - GRAVITY_APEX_BAND) / gravity;
+      boundaryVelocity = GRAVITY_APEX_BAND;
+    } else if (v > -GRAVITY_APEX_BAND) {
+      boundarySeconds = (v + GRAVITY_APEX_BAND) / gravity;
+      boundaryVelocity = -GRAVITY_APEX_BAND;
+    }
+
+    const stepSeconds = Math.min(remaining, boundarySeconds);
+    const landingSeconds = (v + Math.sqrt(Math.max(0, v * v + 2 * gravity * h))) / gravity;
+    if (landingSeconds <= stepSeconds + 1e-9) return { height: 0, vh: 0 };
+
+    h += v * stepSeconds - 0.5 * gravity * stepSeconds * stepSeconds;
+    v -= gravity * stepSeconds;
+    remaining -= stepSeconds;
+    if (boundarySeconds <= stepSeconds + 1e-9) v = boundaryVelocity;
+  }
+
+  if (h <= 0) return { height: 0, vh: 0 };
+  return { height: h, vh: v };
+}
+
+/** The authored three-zone gravity profile, shared by authority, prediction, and analytic tests. */
+export function verticalGravity(vh: number): number {
+  if (vh > GRAVITY_APEX_BAND) return GRAVITY_RISE;
+  if (vh <= -GRAVITY_APEX_BAND) return GRAVITY_FALL;
+  return GRAVITY_APEX;
+}
+
+/** Normal grounded/rise/apex/fall pose, derived from the already-synced height/vh channels. */
+export function verticalPhase(height: number, vh: number): VerticalPhase {
+  if (height <= GROUND_EPSILON) return VERTICAL_PHASE_GROUNDED;
+  if (vh > GRAVITY_APEX_BAND) return VERTICAL_PHASE_RISING;
+  if (vh <= -GRAVITY_APEX_BAND) return VERTICAL_PHASE_FALLING;
+  return VERTICAL_PHASE_APEX;
+}
+
+/** Exact continuous time until ground contact under the same piecewise profile as `stepVertical`. */
+export function verticalTimeToGround(height: number, vh: number): number {
+  let h = Math.max(0, height);
+  let v = vh;
+  let elapsed = 0;
+  if (h <= 0 && v <= 0) return 0;
+
+  for (let slice = 0; slice < 4; slice++) {
+    const gravity = verticalGravity(v);
+    let boundarySeconds = Number.POSITIVE_INFINITY;
+    let boundaryVelocity = v;
+    if (v > GRAVITY_APEX_BAND) {
+      boundarySeconds = (v - GRAVITY_APEX_BAND) / gravity;
+      boundaryVelocity = GRAVITY_APEX_BAND;
+    } else if (v > -GRAVITY_APEX_BAND) {
+      boundarySeconds = (v + GRAVITY_APEX_BAND) / gravity;
+      boundaryVelocity = -GRAVITY_APEX_BAND;
+    }
+    const landingSeconds = (v + Math.sqrt(Math.max(0, v * v + 2 * gravity * h))) / gravity;
+    if (landingSeconds <= boundarySeconds + 1e-9) return elapsed + landingSeconds;
+    h += v * boundarySeconds - 0.5 * gravity * boundarySeconds * boundarySeconds;
+    v = boundaryVelocity;
+    elapsed += boundarySeconds;
+  }
+  return elapsed;
+}
+
+/** Server/client landing payoff classification. Horizontal energy matters only for committed leaps. */
+export function landingThumpTier(
+  verticalSpeed: number,
+  horizontalSpeed = 0,
+  forceHeavy = false,
+): LandingThumpTier {
+  const effective = Math.abs(verticalSpeed) + Math.abs(horizontalSpeed) * LANDING_HORIZONTAL_WEIGHT;
+  if (forceHeavy || effective > LANDING_HEAVY_MIN_SPEED) return LANDING_TIER_HEAVY;
+  if (effective >= LANDING_SOLID_MIN_SPEED) return LANDING_TIER_SOLID;
+  return LANDING_TIER_SOFT;
+}
+
+/** Height-priced pound damage captured at the trigger edge, never recomputed from later displacement. */
+export function poundDamage(triggerHeight: number): number {
+  return Math.min(
+    POUND_DAMAGE_CAP,
+    POUND_DAMAGE_BASE + POUND_DAMAGE_PER_HEIGHT * Math.max(0, triggerHeight),
+  );
 }

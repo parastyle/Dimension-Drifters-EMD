@@ -77,6 +77,7 @@ import {
   countAugment,
   CRIT_MULT,
   critChanceFor,
+  CROUCH_COMMIT_SECONDS,
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
   DEFAULT_WEAPON,
@@ -109,7 +110,6 @@ import {
   effectiveMelee,
   enemyHpScale,
   FISTS_WEAPON,
-  GRAVITY,
   GROUND_EPSILON,
   GUN_RECOIL_BASELINE,
   GUN_RECOIL_IMPULSE,
@@ -131,6 +131,7 @@ import {
   ACTION_MSGS_PER_TICK,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
+  IMPULSE_FRICTION,
   IRON_STANCE_IFRAME_PER,
   IRON_STANCE_KNOCKBACK_PER,
   inMeleeArc,
@@ -144,6 +145,9 @@ import {
   JUMP_BUFFER_SECONDS,
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
+  landingThumpTier,
+  LANDING_TIER_SOFT,
+  type LandingThumpTier,
   LEVELUP_WINDOW_SECONDS,
   LEVEL_CAP,
   LOOT_TIER_LUK_BOSS,
@@ -182,6 +186,15 @@ import {
   PICKUP_RADIUS,
   PIT_FALL_DAMAGE_FRAC,
   PIT_FALL_GRACE,
+  POUND_GATHER_SECONDS,
+  POUND_JUMP_COOLDOWN,
+  POUND_KNOCKBACK_SPEED,
+  POUND_MIN_HEIGHT,
+  POUND_RADIUS,
+  POUND_RECOVERY_SECONDS,
+  POUND_SPEED,
+  POUND_STAGGER_SECONDS,
+  poundDamage,
   PickupState,
   PLAYER_MAX_HP,
   PLAYER_RADIUS,
@@ -235,6 +248,11 @@ import {
   stepImpulse,
   stepSteeredMovement,
   stepVertical,
+  STANCE_CROUCH,
+  STANCE_DASH,
+  STANCE_NONE,
+  STANCE_POUND,
+  type MoveStance,
   TelegraphState,
   TgShape,
   TICK_MS,
@@ -249,6 +267,7 @@ import {
   pickToughCombo,
   type Vec2,
   validateArena,
+  verticalTimeToGround,
   EXPANSION_WEAPON_IDS,
   WEAPON_IDS,
   WEAPONS,
@@ -291,6 +310,14 @@ import {
   WORM_MAX_SEGMENTS,
   WORM_TOTAL_XP,
   WEAPON_DRAW_LOCK_SECONDS,
+  DIST_JUMP_AIRTIME,
+  DIST_JUMP_COOLDOWN,
+  DIST_JUMP_LANDING_SPEED_MULT,
+  DIST_JUMP_MAX_STEER_RADIANS,
+  DIST_JUMP_REACH,
+  DIST_JUMP_SPEED,
+  DIST_JUMP_STEER_RADIANS_PER_SECOND,
+  DIST_JUMP_VERTICAL_VELOCITY,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
@@ -305,6 +332,9 @@ const MELEE_LOCK_PHASE = 0.65;
 const COMBO_RINGOUT_ORBIT = 260;
 /** §51 the riposte stagger normalised onto tick anchors (the legacy machine's 1s, in 50ms ticks). */
 const COMBO_RIPOSTE_STAGGER_TICKS = 20;
+/** Shared immutable no-input sample for rooted stance movement; avoids a fresh object in the 20Hz loop. */
+const ZERO_MOVE_INPUT = { dx: 0, dy: 0 } as const;
+const ZERO_IMPULSE = { vx: 0, vy: 0 } as const;
 
 /** §45 one tick-wide horde broad phase. 128px keeps ordinary enemy separation in the same/adjacent cells;
  *  the radius ceiling keeps boss/projectile/melee queries conservative for the oversized boss roster. */
@@ -321,6 +351,8 @@ interface InputCmd {
   dx: number;
   dy: number;
   jump: boolean;
+  crouchHeld: boolean;
+  pound: boolean;
   fireHeld: boolean;
   aimX: number;
   aimY: number;
@@ -396,6 +428,25 @@ interface CombatState {
   jumpCd: number;
   /** §5/§20 vertical velocity (px/s) for the real height axis — the jump seeds it, gravity decays it. */
   vh: number;
+  /** Jump-feel's one-deep committed movement machine; normal rise/apex/fall derive from height/vh. */
+  stance: MoveStance;
+  crouchT: number;
+  crouchPrevHeld: boolean;
+  crouchAimX: number;
+  crouchAimY: number;
+  dashDirX: number;
+  dashDirY: number;
+  dashBaseDirX: number;
+  dashBaseDirY: number;
+  dashSpeed: number;
+  dashSteer: number;
+  distJumpCd: number;
+  poundUsed: boolean;
+  poundGatherT: number;
+  poundTriggerHeight: number;
+  recoveryT: number;
+  lastLandingTier: LandingThumpTier;
+  lastLandingSpeed: number;
   /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
    *  tick the player stands on solid ground. */
   lastGroundX: number;
@@ -628,6 +679,11 @@ export class GameRoom extends Room<ArenaState> {
     string,
     { cd: number; t: number; dx: number; dy: number }
   >();
+  /** Ground-pound CC is a short, decaying enemy impulse + stagger. Rows exist only for affected enemies. */
+  private readonly poundEnemyEffects = new Map<
+    string,
+    { vx: number; vy: number; staggerT: number }
+  >();
   /** §20/§44 in-flight swept blades. `swing` is the immutable descriptor captured at the accepted `canAct`
    *  epoch; `elapsed` advances that one server clock through wind-up + active frames. The blade origin stays
    *  live, while `hit` preserves once-per-enemy-per-accepted-swing semantics regardless of active length. */
@@ -808,6 +864,8 @@ export class GameRoom extends Room<ArenaState> {
         dx?: number;
         dy?: number;
         jump?: boolean;
+        crouchHeld?: boolean;
+        pound?: boolean;
         fireHeld?: boolean;
         aimX?: number;
         aimY?: number;
@@ -833,6 +891,8 @@ export class GameRoom extends Room<ArenaState> {
           dx: Number.isFinite(message?.dx) ? (message?.dx as number) : 0,
           dy: Number.isFinite(message?.dy) ? (message?.dy as number) : 0,
           jump: message?.jump === true,
+          crouchHeld: message?.crouchHeld === true,
+          pound: message?.pound === true,
           fireHeld: message?.fireHeld === true,
           aimX: Number.isFinite(message?.aimX) ? (message.aimX as number) : rec.held.aimX,
           aimY: Number.isFinite(message?.aimY) ? (message.aimY as number) : rec.held.aimY,
@@ -859,6 +919,7 @@ export class GameRoom extends Room<ArenaState> {
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
         if (!c) return;
+        if (player && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
         // §7 v0.105 de-clunk: QUEUE the attack rather than latch a boolean — the tick fires it the instant
         // the cooldown drains, so a press that lands a tick early (off-grid melee cadences, held trigger)
         // is honoured instead of silently eaten.
@@ -898,6 +959,7 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || !c) return;
+      if (c.recoveryT > 0) return; // pound recovery is explicitly a no-parry window
       // §44 (Sol audit): NO parry inside the level-up window — the tick path already defines acting as
       // alive AND not in the window, but this immediate path skipped that gate, so a frozen-invincible
       // player could scan/knock the whole horde risk-free every cooldown. Queue it instead: the tick
@@ -1331,6 +1393,7 @@ export class GameRoom extends Room<ArenaState> {
     this.comboState.clear();
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
+    this.poundEnemyEffects.clear();
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pickupGrace.clear();
@@ -1339,7 +1402,7 @@ export class GameRoom extends Room<ArenaState> {
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
     this.state.beams.clear();
-    for (const c of this.combat.values()) {
+    for (const [id, c] of this.combat) {
       c.beamDescriptor = undefined;
       c.beamPhase = 0;
       c.beamPhaseT = 0;
@@ -1352,6 +1415,11 @@ export class GameRoom extends Room<ArenaState> {
       c.beamInputWasHeld = false;
       c.juggleArmed = false;
       c.juggleMercy = 0;
+      c.poundUsed = false;
+      c.poundGatherT = 0;
+      c.recoveryT = 0;
+      const player = this.state.players.get(id);
+      if (player) this.cancelMoveStance(player, c, true);
     }
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
@@ -1900,6 +1968,10 @@ export class GameRoom extends Room<ArenaState> {
         c.hairStreak = 0;
         c.lastParryAt = -999;
         c.vh = 0;
+        c.jumpCd = 0;
+        c.distJumpCd = 0;
+        c.poundUsed = false;
+        c.recoveryT = 0;
       }
       this.zeroMoveVel(id); // §7 fresh run, fresh momentum
     });
@@ -2101,6 +2173,8 @@ export class GameRoom extends Room<ArenaState> {
         dx: 0,
         dy: 0,
         jump: false,
+        crouchHeld: false,
+        pound: false,
         fireHeld: false,
         aimX: 1,
         aimY: 0,
@@ -2131,6 +2205,24 @@ export class GameRoom extends Room<ArenaState> {
       drawLock: 0,
       weaponLedger: new Map<string, WeaponResourceLedger>(),
       jumpCd: 0,
+      stance: STANCE_NONE,
+      crouchT: 0,
+      crouchPrevHeld: false,
+      crouchAimX: 0,
+      crouchAimY: 0,
+      dashDirX: 0,
+      dashDirY: 0,
+      dashBaseDirX: 0,
+      dashBaseDirY: 0,
+      dashSpeed: 0,
+      dashSteer: 0,
+      distJumpCd: 0,
+      poundUsed: false,
+      poundGatherT: 0,
+      poundTriggerHeight: 0,
+      recoveryT: 0,
+      lastLandingTier: LANDING_TIER_SOFT,
+      lastLandingSpeed: 0,
       lastGroundX: player.x,
       lastGroundY: player.y,
       pitGrace: 0,
@@ -2192,12 +2284,340 @@ export class GameRoom extends Room<ArenaState> {
   private damagePlayer(player: PlayerState, amount: number): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
+    // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
+    // snap-back cannot mint parry flashes, augments, chain economy, or worm accepts from a later quake.
+    if (c && c.pitGrace > 0 && left > 0) return;
+    if (c && left > 0 && (c.stance === STANCE_CROUCH || c.stance === STANCE_DASH)) {
+      this.cancelMoveStance(player, c, true);
+    }
     if (c && c.bulwarkShield > 0 && left > 0) {
       const absorbed = Math.min(c.bulwarkShield, left);
       c.bulwarkShield -= absorbed;
       left -= absorbed;
     }
     if (left > 0) player.hp = Math.max(0, player.hp - left);
+  }
+
+  /** Consume the two jump-feel command bits on their exact acknowledged input tick. */
+  private consumeMoveStanceInput(
+    player: PlayerState,
+    input: InputState,
+    c: CombatState,
+    cmd: InputCmd,
+  ): void {
+    if (cmd.fireHeld && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
+
+    if (cmd.pound) {
+      if (
+        player.alive &&
+        !this.inLevelWindow(player) &&
+        player.height > POUND_MIN_HEIGHT &&
+        !c.poundUsed &&
+        (c.stance === STANCE_NONE || c.stance === STANCE_DASH)
+      ) {
+        c.poundUsed = true;
+        c.poundGatherT = POUND_GATHER_SECONDS;
+        c.poundTriggerHeight = player.height;
+        c.vh = 0;
+        player.vh = 0;
+        input.mvx = 0;
+        input.mvy = 0;
+        player.mvx = 0;
+        player.mvy = 0;
+        c.dashSpeed = 0;
+        this.setMoveStance(player, c, STANCE_POUND);
+      } else if (player.height > GROUND_EPSILON && player.height <= POUND_MIN_HEIGHT) {
+        // The first/last sliver keeps the old "press before landing" buffer rather than stealing it.
+        c.jumpBuffer = JUMP_BUFFER_SECONDS;
+      }
+    }
+
+    const pressed = cmd.crouchHeld && !c.crouchPrevHeld;
+    const released = !cmd.crouchHeld && c.crouchPrevHeld;
+    c.crouchPrevHeld = cmd.crouchHeld;
+    if (released && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, false);
+    if (
+      pressed &&
+      player.alive &&
+      !this.inLevelWindow(player) &&
+      player.height <= GROUND_EPSILON &&
+      c.stance === STANCE_NONE &&
+      c.recoveryT <= 0 &&
+      c.attackBuffer <= 0 &&
+      c.parryBuffer <= 0 &&
+      !cmd.fireHeld
+    ) {
+      c.crouchT = 0;
+      c.crouchAimX = 0;
+      c.crouchAimY = 0;
+      const len = Math.hypot(cmd.dx, cmd.dy);
+      if (len > 1e-4) {
+        c.crouchAimX = cmd.dx / len;
+        c.crouchAimY = cmd.dy / len;
+      }
+      this.setMoveStance(player, c, STANCE_CROUCH);
+    }
+  }
+
+  private setMoveStance(player: PlayerState, c: CombatState, stance: MoveStance): void {
+    if (c.stance === stance) return;
+    c.stance = stance;
+    player.moveStance = stance;
+  }
+
+  /** Forced cancels alone bump stanceSeq; organic abort/launch/landing edges only change moveStance. */
+  private cancelMoveStance(player: PlayerState, c: CombatState, forced: boolean): void {
+    if (c.stance === STANCE_NONE) return;
+    c.stance = STANCE_NONE;
+    player.moveStance = STANCE_NONE;
+    c.crouchT = 0;
+    c.crouchAimX = 0;
+    c.crouchAimY = 0;
+    c.dashDirX = 0;
+    c.dashDirY = 0;
+    c.dashBaseDirX = 0;
+    c.dashBaseDirY = 0;
+    c.dashSpeed = 0;
+    c.dashSteer = 0;
+    c.poundGatherT = 0;
+    c.poundTriggerHeight = 0;
+    if (forced) player.stanceSeq = (player.stanceSeq + 1) & 0xff;
+  }
+
+  /** Advance the fixed ten-tick crouch; launch direction is sampled from this exact authoritative tick. */
+  private stepCrouchStance(
+    player: PlayerState,
+    c: CombatState,
+    input: InputState | undefined,
+    dt: number,
+  ): void {
+    if (c.stance !== STANCE_CROUCH) return;
+    if (!input?.held.crouchHeld) {
+      this.cancelMoveStance(player, c, false);
+      return;
+    }
+    const len = Math.hypot(input.held.dx, input.held.dy);
+    if (len > 1e-4) {
+      c.crouchAimX = input.held.dx / len;
+      c.crouchAimY = input.held.dy / len;
+    }
+    c.crouchT += dt;
+    if (c.crouchT + 1e-9 < CROUCH_COMMIT_SECONDS) return;
+    if (c.distJumpCd > 0) {
+      this.cancelMoveStance(player, c, false);
+      return;
+    }
+    this.launchDistanceJump(player, c, input);
+  }
+
+  private launchDistanceJump(player: PlayerState, c: CombatState, input: InputState): void {
+    let dx = input.held.dx;
+    let dy = input.held.dy;
+    let len = Math.hypot(dx, dy);
+    if (len <= 1e-4) {
+      dx = c.crouchAimX;
+      dy = c.crouchAimY;
+      len = Math.hypot(dx, dy);
+    }
+    if (len <= 1e-4) {
+      dx = c.aimX;
+      dy = c.aimY;
+      len = Math.hypot(dx, dy);
+    }
+    if (len <= 1e-4) {
+      this.cancelMoveStance(player, c, false);
+      return;
+    }
+    dx /= len;
+    dy /= len;
+
+    const rawX = clamp(
+      player.x + dx * DIST_JUMP_REACH,
+      PLAYER_RADIUS,
+      ARENA_WIDTH - PLAYER_RADIUS,
+    );
+    const rawY = clamp(
+      player.y + dy * DIST_JUMP_REACH,
+      PLAYER_RADIUS,
+      ARENA_HEIGHT - PLAYER_RADIUS,
+    );
+    let targetX: number;
+    let targetY: number;
+    if (this.belt && this.beltLevel) {
+      targetX = beltSafeX(this.beltLevel, rawX, player.x);
+      targetY = clampBeltFloorY(this.beltLevel, targetX, rawY, PLAYER_RADIUS);
+    } else {
+      const safe = safeSpawnPos(this.map, rawX, rawY, PLAYER_RADIUS);
+      targetX = safe.x;
+      targetY = safe.y;
+    }
+    dx = targetX - player.x;
+    dy = targetY - player.y;
+    len = Math.hypot(dx, dy);
+    if (len <= 1e-4) {
+      this.cancelMoveStance(player, c, false);
+      return;
+    }
+    c.dashDirX = dx / len;
+    c.dashDirY = dy / len;
+    c.dashBaseDirX = c.dashDirX;
+    c.dashBaseDirY = c.dashDirY;
+    c.dashSteer = 0;
+    c.dashSpeed = Math.min(DIST_JUMP_SPEED, len / DIST_JUMP_AIRTIME);
+    c.distJumpCd = DIST_JUMP_COOLDOWN;
+    c.vh = DIST_JUMP_VERTICAL_VELOCITY;
+    player.vh = c.vh;
+    input.mvx = c.dashDirX * c.dashSpeed;
+    input.mvy = c.dashDirY * c.dashSpeed;
+    player.mvx = input.mvx;
+    player.mvy = input.mvy;
+    this.setMoveStance(player, c, STANCE_DASH);
+  }
+
+  /** Bend toward held WASD at <=45°/s and never farther than ±27° from the launch heading. */
+  private steerDistanceJump(c: CombatState, input: InputCmd, dt: number): void {
+    const len = Math.hypot(input.dx, input.dy);
+    if (len <= 1e-4) return;
+    const base = Math.atan2(c.dashBaseDirY, c.dashBaseDirX);
+    const desired = Math.atan2(input.dy, input.dx);
+    const targetSteer = clamp(
+      shortestAngleDelta(base, desired),
+      -DIST_JUMP_MAX_STEER_RADIANS,
+      DIST_JUMP_MAX_STEER_RADIANS,
+    );
+    const maxStep = DIST_JUMP_STEER_RADIANS_PER_SECOND * dt;
+    c.dashSteer += clamp(targetSteer - c.dashSteer, -maxStep, maxStep);
+    const angle = base + c.dashSteer;
+    c.dashDirX = Math.cos(angle);
+    c.dashDirY = Math.sin(angle);
+  }
+
+  private finishPlayerLanding(
+    player: PlayerState,
+    c: CombatState,
+    landingStance: MoveStance,
+    impactVh: number,
+  ): void {
+    c.lastLandingSpeed = Math.abs(impactVh);
+    c.lastLandingTier = landingThumpTier(
+      impactVh,
+      landingStance === STANCE_DASH ? c.dashSpeed : 0,
+      landingStance === STANCE_DASH || landingStance === STANCE_POUND,
+    );
+    if (landingStance === STANCE_POUND) {
+      this.applyPoundImpact(player, c);
+      c.jumpCd = Math.max(c.jumpCd, POUND_JUMP_COOLDOWN);
+      c.recoveryT = POUND_RECOVERY_SECONDS;
+      c.invuln = 0; // landing begins the explicit no-parry bill and cannot auto-answer a quake
+    } else if (landingStance === STANCE_DASH) {
+      c.jumpCd = Math.max(c.jumpCd, 0.4);
+      const input = this.inputs.get(player.id);
+      if (input) {
+        input.mvx = c.dashDirX * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
+        input.mvy = c.dashDirY * MOVE_SPEED * DIST_JUMP_LANDING_SPEED_MULT;
+        player.mvx = input.mvx;
+        player.mvy = input.mvy;
+      }
+    }
+    if (landingStance !== STANCE_NONE) this.cancelMoveStance(player, c, false);
+    c.poundUsed = false;
+  }
+
+  private applyPoundImpact(player: PlayerState, c: CombatState): void {
+    const damage = poundDamage(c.poundTriggerHeight);
+    this.detonate(
+      player.x,
+      player.y,
+      POUND_RADIUS,
+      damage,
+      0,
+      player.id,
+      "pound",
+      CombatDelivery.Quake,
+    );
+    player.poundSeq = (player.poundSeq + 1) & 0xff;
+
+    const r2 = POUND_RADIUS * POUND_RADIUS;
+    this.enemyGrid.queryRadius(player.x, player.y, POUND_RADIUS, this.enemyCandidates);
+    for (const id of this.enemyCandidates) {
+      if (id === this.bossId || this.enemyCommittedAttack(id)) continue; // bosses take damage only
+      const enemy = this.state.enemies.get(id);
+      if (!enemy) continue;
+      let dx = enemy.x - player.x;
+      let dy = enemy.y - player.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > r2) continue;
+      const d = Math.sqrt(d2);
+      if (d > 1e-4) {
+        dx /= d;
+        dy /= d;
+      } else {
+        dx = c.aimX;
+        dy = c.aimY;
+      }
+      const existing = this.poundEnemyEffects.get(id);
+      const impulse = addImpulse(
+        existing ?? ZERO_IMPULSE,
+        dx * POUND_KNOCKBACK_SPEED,
+        dy * POUND_KNOCKBACK_SPEED,
+      );
+      const impulseSpeed = Math.hypot(impulse.vx, impulse.vy);
+      if (impulseSpeed > POUND_KNOCKBACK_SPEED) {
+        impulse.vx = (impulse.vx / impulseSpeed) * POUND_KNOCKBACK_SPEED;
+        impulse.vy = (impulse.vy / impulseSpeed) * POUND_KNOCKBACK_SPEED;
+      }
+      if (existing) {
+        existing.vx = impulse.vx;
+        existing.vy = impulse.vy;
+        existing.staggerT = Math.max(existing.staggerT, POUND_STAGGER_SECONDS);
+      } else {
+        this.poundEnemyEffects.set(id, {
+          vx: impulse.vx,
+          vy: impulse.vy,
+          staggerT: POUND_STAGGER_SECONDS,
+        });
+      }
+    }
+  }
+
+  private enemyCommittedAttack(id: string): boolean {
+    const combo = this.comboState.get(id);
+    return combo?.phase === "windup" && !!combo.strike;
+  }
+
+  /** Decaying 260px/s shove totals <40px and refuses the one step that would cross a ground→pit edge. */
+  private stepPoundEnemyEffects(dt: number): void {
+    const decay = Math.exp(-IMPULSE_FRICTION * dt);
+    for (const [id, fx] of this.poundEnemyEffects) {
+      const enemy = this.state.enemies.get(id);
+      if (!enemy || fx.staggerT <= 0) {
+        this.poundEnemyEffects.delete(id);
+        continue;
+      }
+      const kind = ENEMY_KINDS[enemy.kind];
+      const radius = kind?.radius ?? ENEMY_RADIUS;
+      const nextX = clamp(enemy.x + fx.vx * dt, radius, ARENA_WIDTH - radius);
+      const nextY = clamp(enemy.y + fx.vy * dt, radius, ARENA_HEIGHT - radius);
+      const currentlyOverPit =
+        this.belt && this.beltLevel
+          ? beltPitAtX(this.beltLevel, enemy.x)
+          : !this.belt && isPitAtPx(this.map, enemy.x, enemy.y);
+      const nextOverPit =
+        this.belt && this.beltLevel
+          ? beltPitAtX(this.beltLevel, nextX)
+          : !this.belt && isPitAtPx(this.map, nextX, nextY);
+      if (!currentlyOverPit && nextOverPit) {
+        fx.vx = 0;
+        fx.vy = 0;
+      } else {
+        enemy.x = nextX;
+        enemy.y = nextY;
+        fx.vx *= decay;
+        fx.vy *= decay;
+        this.updateEnemyGrid(id, enemy);
+      }
+      fx.staggerT = Math.max(0, fx.staggerT - dt);
+    }
   }
 
   /** Write into the fixed v18 ring. Every field comes from the accepted source epoch, never proximity. */
@@ -2336,6 +2756,8 @@ export class GameRoom extends Room<ArenaState> {
           const c = this.combat.get(id);
           if (c) c.jumpBuffer = JUMP_BUFFER_SECONDS;
         }
+        const stance = this.combat.get(id);
+        if (stance) this.consumeMoveStanceInput(player, input, stance, cmd);
       }
     });
     // §6 TERMINAL HOLD: keep input acknowledgements/action budgets alive so the host can restart, but retire
@@ -2352,6 +2774,8 @@ export class GameRoom extends Room<ArenaState> {
       const input = this.inputs.get(id);
       if (!input) return;
       if (!player.alive || this.inLevelWindow(player)) {
+        const frozenCombat = this.combat.get(id);
+        if (frozenCombat) this.cancelMoveStance(player, frozenCombat, true);
         // §7 a freeze/down is an INTENTIONAL stop — zero the steering velocity so the player doesn't
         // glide on a stale heading when they resume (same bug class as the v0.105 tryRez fix), and keep
         // the synced mirror coherent for the predicting client.
@@ -2373,27 +2797,55 @@ export class GameRoom extends Room<ArenaState> {
               ? beamRuntime.beamDescriptor.channelMoveMul
               : 1)
         : MOVE_SPEED;
-      const next = this.belt
-        ? stepSteeredMovement(
-            player,
-            { vx: input.mvx, vy: input.mvy },
-            input.held,
-            dt,
-            beamSpeed,
-            BELT_Y0,
-            BELT_Y0 + DEPTH_MAX,
-          )
-        : stepSteeredMovement(player, { vx: input.mvx, vy: input.mvy }, input.held, dt, beamSpeed);
-      input.mvx = next.vx;
-      input.mvy = next.vy;
+      let nextX: number;
+      let nextY: number;
+      if (beamRuntime?.stance === STANCE_DASH) {
+        this.steerDistanceJump(beamRuntime, input.held, dt);
+        input.mvx = beamRuntime.dashDirX * beamRuntime.dashSpeed;
+        input.mvy = beamRuntime.dashDirY * beamRuntime.dashSpeed;
+        nextX = clamp(player.x + input.mvx * dt, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+        nextY = clamp(
+          player.y + input.mvy * dt,
+          this.belt ? BELT_Y0 : PLAYER_RADIUS,
+          this.belt ? BELT_Y0 + DEPTH_MAX : ARENA_HEIGHT - PLAYER_RADIUS,
+        );
+      } else {
+        const rooted =
+          beamRuntime?.stance === STANCE_CROUCH ||
+          beamRuntime?.stance === STANCE_POUND ||
+          (beamRuntime?.recoveryT ?? 0) > 0;
+        const next = this.belt
+          ? stepSteeredMovement(
+              player,
+              { vx: input.mvx, vy: input.mvy },
+              rooted ? ZERO_MOVE_INPUT : input.held,
+              dt,
+              beamSpeed,
+              BELT_Y0,
+              BELT_Y0 + DEPTH_MAX,
+            )
+          : stepSteeredMovement(
+              player,
+              { vx: input.mvx, vy: input.mvy },
+              rooted ? ZERO_MOVE_INPUT : input.held,
+              dt,
+              beamSpeed,
+            );
+        input.mvx = next.vx;
+        input.mvy = next.vy;
+        nextX = next.x;
+        nextY = next.y;
+      }
       // §4 v0.107 mirror the steering velocity onto synced state — the owning client REBASES its
       // prediction from these at every patch (review #2: local-history reconstruction breaks under
       // queue starvation/drain, so the server publishes the truth instead).
-      player.mvx = next.vx;
-      player.mvy = next.vy;
+      player.mvx = input.mvx;
+      player.mvy = input.mvy;
       // §20 momentum layer (Stage A): integrate the impulse shove (recoil / knockback) on top of WASD,
       // then decay it. The authoritative position is the input base PLUS the shove.
-      const imp = stepImpulse(next, player, dt);
+      player.x = nextX;
+      player.y = nextY;
+      const imp = stepImpulse(player, player, dt);
       player.x = imp.x;
       player.y = imp.y;
       player.vx = imp.vx;
@@ -2467,7 +2919,6 @@ export class GameRoom extends Room<ArenaState> {
         player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
         c.lastGroundX = player.x;
         c.pitGrace = PIT_FALL_GRACE;
-        c.invuln = Math.max(c.invuln, PIT_FALL_GRACE);
         this.zeroMoveVel(id);
         player.fellSeq++;
         return;
@@ -2489,7 +2940,6 @@ export class GameRoom extends Room<ArenaState> {
       c.lastGroundX = safe.x;
       c.lastGroundY = safe.y;
       c.pitGrace = PIT_FALL_GRACE;
-      c.invuln = Math.max(c.invuln, PIT_FALL_GRACE); // brief mercy on landing
       this.zeroMoveVel(id); // §7 the snap-back is a teleport — carried steering would glide you back in
       player.fellSeq++;
     });
@@ -2561,6 +3011,8 @@ export class GameRoom extends Room<ArenaState> {
       c.parryChainT = Math.max(0, c.parryChainT - dt);
       if (c.parryChainT <= 0) c.parryChain = 0; // §8 v0.114 the parry chain lapses if you don't keep it up
       c.jumpCd = Math.max(0, c.jumpCd - dt);
+      c.distJumpCd = Math.max(0, c.distJumpCd - dt);
+      c.recoveryT = Math.max(0, c.recoveryT - dt);
       // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
@@ -2568,25 +3020,52 @@ export class GameRoom extends Room<ArenaState> {
       const acting =
         this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
-      if (acting && c.parryBuffer > 0 && c.parryCd <= 0) {
+      if (acting && c.recoveryT <= 0 && c.parryBuffer > 0 && c.parryCd <= 0) {
         c.parryBuffer = 0;
         this.executeParry(player, c);
       }
+      if (acting) this.stepCrouchStance(player, c, this.inputs.get(id), dt);
       // BUFFERED JUMP — seed the hop BEFORE stepVertical so it lifts off this same tick (grounded + ready).
-      if (acting && c.jumpBuffer > 0 && c.jumpCd <= 0 && player.height <= GROUND_EPSILON) {
+      if (
+        acting &&
+        c.stance === STANCE_NONE &&
+        c.recoveryT <= 0 &&
+        c.jumpBuffer > 0 &&
+        c.jumpCd <= 0 &&
+        player.height <= GROUND_EPSILON
+      ) {
         c.jumpBuffer = 0;
         c.vh = JUMP_VELOCITY;
         c.jumpCd = JUMP_COOLDOWN;
       }
-      // §5/§20 (Stage B): integrate the real height axis under gravity (the jump + later parry-launch).
+      // §5/§20 (Stage B): integrate the real height axis. Pound owns a gather + constant-speed descent;
+      // every other cause shares the exact three-zone gravity stepper.
       const wasAirborne = player.height > GROUND_EPSILON; // §51 G10: sampled before the integration edge
-      const vert = stepVertical(player.height, c.vh, dt);
-      player.height = vert.height;
-      c.vh = vert.vh;
-      player.vh = vert.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
+      const impactVh = c.vh;
+      const landingStance = c.stance;
+      if (c.stance === STANCE_POUND) {
+        if (c.poundGatherT > 0) {
+          c.poundGatherT = Math.max(0, c.poundGatherT - dt);
+          c.vh = c.poundGatherT <= 0 ? -POUND_SPEED : 0;
+        } else {
+          c.vh = -POUND_SPEED;
+          player.height = Math.max(0, player.height - POUND_SPEED * dt);
+          if (player.height <= GROUND_EPSILON) {
+            player.height = 0;
+            c.vh = 0;
+          }
+        }
+      } else {
+        const vert = stepVertical(player.height, c.vh, dt);
+        player.height = vert.height;
+        c.vh = vert.vh;
+      }
+      player.vh = c.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
+      const landed = wasAirborne && player.height <= GROUND_EPSILON;
+      if (landed) this.finishPlayerLanding(player, c, landingStance, impactVh);
       // §51 G10 landing mercy: an enemy-initiated launch (juggle) that returns to ground grants a brief
       // melee/contact immunity — armed ONLY by the launcher hit, never by the player's own jumps.
-      if (c.juggleArmed && wasAirborne && player.height <= GROUND_EPSILON) {
+      if (c.juggleArmed && landed) {
         c.juggleArmed = false;
         c.juggleMercy = Math.max(c.juggleMercy, JUGGLE_LANDING_MERCY);
       }
@@ -2698,8 +3177,10 @@ export class GameRoom extends Room<ArenaState> {
     for (const id of [...this.dodgeState.keys()]) {
       if (!this.state.enemies.has(id)) this.dodgeState.delete(id);
     }
+    this.stepPoundEnemyEffects(dt);
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
+      if (this.poundEnemyEffects.has(id)) return; // stagger owns this tick; no AI movement/attack underneath
       // §20 lunge-enemies (duelists + the derived rusher/swarm/zoner lunge) move via stepDuelists; this
       // generic pass only chases/kites the rest (ranged spitters kite). §16 v0.109 the boss is stepped by
       // its BossController (which owns movement), so skip it here to avoid a double-move.
@@ -2867,6 +3348,8 @@ export class GameRoom extends Room<ArenaState> {
       if (!player.alive) return; // downed — waiting for a rez (no auto-respawn)
       if (player.hp <= 0) {
         player.hp = 0;
+        const c = this.combat.get(player.id);
+        if (c) this.cancelMoveStance(player, c, true);
         player.alive = false; // DOWNED
         return;
       }
@@ -4716,6 +5199,7 @@ export class GameRoom extends Room<ArenaState> {
       if (dx * dx + dy * dy > r2) return;
       if (p.height > GROUND_EPSILON) return; // JUMPED — airborne clears the quake
       const c = this.combat.get(p.id);
+      if (c && c.pitGrace > 0) return; // mercy nullifies damage but is never a rewarded parry
       if (c && c.invuln > 0) {
         p.parriedSeq += 1; // PARRIED (i-frame window) — negate + trigger the white parry flash
         c.parryCd = Math.min(c.parryCd, PARRY_CHAIN_CD);
@@ -5327,10 +5811,20 @@ export class GameRoom extends Room<ArenaState> {
       inp.mvx = 0;
       inp.mvy = 0;
       inp.queue.length = 0;
-      inp.held = { ...inp.held, dx: 0, dy: 0, jump: false, fireHeld: false };
+      inp.held.dx = 0;
+      inp.held.dy = 0;
+      inp.held.jump = false;
+      inp.held.crouchHeld = false;
+      inp.held.pound = false;
+      inp.held.fireHeld = false;
     }
     const player = this.state.players.get(id);
     if (player) {
+      const c = this.combat.get(id);
+      if (c) {
+        c.crouchPrevHeld = false;
+        this.cancelMoveStance(player, c, true);
+      }
       player.mvx = 0;
       player.mvy = 0;
       player.teleportSeq = (player.teleportSeq + 1) >>> 0;
@@ -5503,6 +5997,8 @@ export class GameRoom extends Room<ArenaState> {
    *  out of the message handler (v0.105 de-clunk) so a BUFFERED parry (one that arrived during the cooldown)
    *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
   private executeParry(player: PlayerState, c: CombatState): void {
+    if (c.recoveryT > 0) return;
+    if (c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
     c.invuln = Math.max(c.invuln, PARRY_IFRAMES);
@@ -5635,6 +6131,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.state.enemies.forEach((enemy, id) => {
       const kind = ENEMY_KINDS[enemy.kind];
+      if (this.poundEnemyEffects.has(id)) return;
       // §20 every contact monster lunges: an explicit duelist combo, or a derived single-hit lunge for
       // rusher/swarm/zoner (so the attack telegraphs + is parryable). Spitters/boss/dummies → no lunge.
       const m = effectiveMelee(kind);
@@ -6367,7 +6864,7 @@ export class GameRoom extends Room<ArenaState> {
     // land after the 2.0s ceiling. A zero-vh finisher keeps the current fall and cannot extend control.
     if (step.airkeep.vh > 0) {
       const vh = Math.min(step.airkeep.vh, PARRY_LAUNCH_MAX);
-      const landingSeconds = (vh + Math.sqrt(vh * vh + 2 * GRAVITY * live.height)) / GRAVITY;
+      const landingSeconds = verticalTimeToGround(live.height, vh);
       if (controlSec + landingSeconds > JUGGLE_MAX_CONTROL_SECONDS) return false;
     }
     return true;
@@ -6530,7 +7027,16 @@ export class GameRoom extends Room<ArenaState> {
       const hx = player.x - enemy.x;
       const hy = player.y - enemy.y;
       const hd = Math.hypot(hx, hy) || 1;
-      if (step?.launch && pc && player.id === st.targetId) {
+      const displacementHit = !!(step?.launch || step?.airkeep);
+      if (
+        displacementHit &&
+        pc &&
+        (pc.stance === STANCE_CROUCH || pc.stance === STANCE_DASH)
+      ) {
+        this.cancelMoveStance(player, pc, true);
+      }
+      const poundOwnsVertical = pc?.stance === STANCE_POUND;
+      if (step?.launch && pc && player.id === st.targetId && !poundOwnsVertical) {
         // LAUNCHER: SET the victim's vh (deterministic apex; the parry-launch cap is the law, G9) + a
         // front-loaded pop along the strike. Arms the G10 touchdown mercy for this enemy-made flight.
         pc.vh = Math.min(step.launch.vh, PARRY_LAUNCH_MAX);
@@ -6542,7 +7048,7 @@ export class GameRoom extends Room<ArenaState> {
         player.juggledSeq = (player.juggledSeq + 1) & 0xff;
         st.launchTick = this.state.tick;
         enemy.comboFlags |= COMBO_FLAG_JUGGLE;
-      } else if (step?.airkeep && pc && player.id === st.targetId) {
+      } else if (step?.airkeep && pc && player.id === st.targetId && !poundOwnsVertical) {
         // AIR-KEEP: REFRESH vh by assignment (never additive — no co-op moon-launch; authored vh 0 =
         // the finisher lets you fall) + count toward the G9 air-hit cap.
         if (step.airkeep.vh > 0) {
@@ -6604,8 +7110,10 @@ export class GameRoom extends Room<ArenaState> {
     // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
     // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
-    pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
-    player.vh = pc.vh;
+    if (pc.stance !== STANCE_POUND) {
+      pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+      player.vh = pc.vh;
+    }
     const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
     player.vx = k.vx;
     player.vy = k.vy;

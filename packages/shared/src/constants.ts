@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 19; // §51 tough-combo edges appended (comboSeq/comboFlags/juggledSeq)
+export const SCHEMA_VERSION = 20; // jump-feel stance edges appended (moveStance/poundSeq/stanceSeq)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -203,8 +203,9 @@ export const MAP_PIT_SPACING_TILES = 7;
 /**
  * Widest pit GAP (tiles) a player may be REQUIRED to cross by jumping — the connectivity guarantee treats
  * any straight gap up to this as "hoppable" and bridges anything wider with ground, so no region is ever
- * stranded behind an uncrossable pit. Derived from the hop reach (JUMP_AIRTIME × MOVE_SPEED ≈ 144px ≈ ~2
- * tiles); kept conservative so a required hop is always comfortable.
+ * stranded behind an uncrossable pit. Derived from the asymmetric hop reach
+ * (JUMP_AIRTIME × MOVE_SPEED ≈ 176px ≈ 2.2 tiles); kept conservative so a required hop is always
+ * comfortable while the committed distance jump remains an optional route verb.
  */
 export const MAP_MAX_JUMP_TILES = 2;
 
@@ -373,24 +374,91 @@ export const SALVAGE_HOLD_SECONDS = 0.6;
  *  MOVEMENT, NOT a dodge — no i-frames (the parry stays the only defensive tool, so the two never overlap).
  *  Server-authoritative airborne timer + a short cooldown so it isn't a spammable bunny-hop; the §17 pit
  *  layer reads `airborne` to let a hopping player pass over a gap. */
-export const JUMP_AIRTIME = 0.45;
+export const JUMP_AIRTIME = 0.55;
 export const JUMP_COOLDOWN = 0.7;
 /** Peak visual hop height (px) the client lifts the rig at the top of the arc. */
-export const JUMP_HOP_HEIGHT = 34;
+export const JUMP_HOP_HEIGHT = 47;
 /** §7 v0.105 de-clunk — INPUT BUFFER (sec): a SPACE pressed while still airborne / on cooldown is
  *  QUEUED, not dropped, and fires the instant the player is grounded + ready. Sized just over the
- *  post-landing dead window (JUMP_COOLDOWN 0.7s − airtime ~0.45s ≈ 0.25s) so a press a beat early still
+ *  post-landing dead window (JUMP_COOLDOWN 0.7s − airtime ~0.55s ≈ 0.15s) so a press a beat early still
  *  hops instead of silently eating the input. */
 export const JUMP_BUFFER_SECONDS = 0.25;
 
 /** §5/§20 VERTICAL physics (Stage B) — the jump is now a real upward impulse under gravity, generalising
  *  the old fixed-duration hop into a HEIGHT axis (px above ground) that the §17 pit layer + the later
- *  §8 parry-launch ride on. Tuned so airtime ≈ JUMP_AIRTIME (0.45s) and peak ≈ JUMP_HOP_HEIGHT (34px).
+ *  §8 parry-launch ride on. Tuned so airtime ≈ JUMP_AIRTIME (0.55s) and peak ≈ JUMP_HOP_HEIGHT (47px).
  *  PURE: a shared `stepVertical(height, vh, dt)` integrates it server-side + (future) in client prediction. */
-export const GRAVITY = 1350; // px/s² pulling height back to ground
-export const JUMP_VELOCITY = 303; // px/s upward kick on a grounded jump
+export const GRAVITY_RISE = 1250; // px/s² while vh > +GRAVITY_APEX_BAND
+export const GRAVITY_APEX = 900; // px/s² while |vh| <= GRAVITY_APEX_BAND
+export const GRAVITY_FALL = 2200; // px/s² while vh < -GRAVITY_APEX_BAND
+export const GRAVITY_APEX_BAND = 80; // px/s — the readable float window around the apex
+/** Compatibility alias for old analytic callers. New vertical motion must use the three-zone profile. */
+export const GRAVITY = GRAVITY_RISE;
+export const JUMP_VELOCITY = 335; // px/s upward kick on a grounded jump
 /** Height (px) at/below which a player counts as GROUNDED (jump-ready + pit-fall-eligible). */
 export const GROUND_EPSILON = 0.5;
+
+/** Jump-feel committed movement stances. Normal airborne phases remain derivable from height/vh. */
+export const STANCE_NONE = 0 as const;
+export const STANCE_CROUCH = 1 as const;
+export const STANCE_DASH = 2 as const;
+export const STANCE_POUND = 3 as const;
+export type MoveStance =
+  | typeof STANCE_NONE
+  | typeof STANCE_CROUCH
+  | typeof STANCE_DASH
+  | typeof STANCE_POUND;
+/** Normal vertical phases are derived, never stored or serialized as part of the committed stance byte. */
+export const VERTICAL_PHASE_GROUNDED = "grounded" as const;
+export const VERTICAL_PHASE_RISING = "rising" as const;
+export const VERTICAL_PHASE_APEX = "apex" as const;
+export const VERTICAL_PHASE_FALLING = "falling" as const;
+export type VerticalPhase =
+  | typeof VERTICAL_PHASE_GROUNDED
+  | typeof VERTICAL_PHASE_RISING
+  | typeof VERTICAL_PHASE_APEX
+  | typeof VERTICAL_PHASE_FALLING;
+
+/** Space is classified as a hold locally at this threshold; the held bit then rides every input command. */
+export const CROUCH_HOLD_MS = 150;
+/** Once crouching starts, ten authoritative ticks are committed before the automatic distance launch. */
+export const CROUCH_COMMIT_SECONDS = 0.5;
+export const DIST_JUMP_SPEED = 620; // px/s horizontal, below the existing impulse/interp envelope
+export const DIST_JUMP_VERTICAL_VELOCITY = 380; // px/s; ≈59px apex under the three-zone profile
+export const DIST_JUMP_AIRTIME = 0.6;
+export const DIST_JUMP_REACH = DIST_JUMP_SPEED * DIST_JUMP_AIRTIME; // 372px, clears a 320px gap
+export const DIST_JUMP_STEER_RADIANS_PER_SECOND = Math.PI / 4; // 45°/s
+export const DIST_JUMP_MAX_STEER_RADIANS =
+  DIST_JUMP_STEER_RADIANS_PER_SECOND * DIST_JUMP_AIRTIME; // ±27° over the flight
+export const DIST_JUMP_COOLDOWN = 2.5;
+export const DIST_JUMP_LANDING_SPEED_MULT = 0.6;
+/** Even ignoring its cooldown, hold + commit + flight averages below ordinary walking speed. */
+export const DIST_JUMP_CYCLE_SECONDS =
+  CROUCH_HOLD_MS / 1000 + CROUCH_COMMIT_SECONDS + DIST_JUMP_AIRTIME;
+export const DIST_JUMP_CYCLE_SPEED = DIST_JUMP_REACH / DIST_JUMP_CYCLE_SECONDS;
+
+export const POUND_MIN_HEIGHT = 24;
+export const POUND_GATHER_SECONDS = 0.1;
+export const POUND_SPEED = 1400;
+export const POUND_RADIUS = 90;
+export const POUND_DAMAGE_BASE = 10;
+export const POUND_DAMAGE_PER_HEIGHT = 0.1;
+export const POUND_DAMAGE_CAP = 26;
+export const POUND_KNOCKBACK_SPEED = 260;
+export const POUND_STAGGER_SECONDS = 0.35;
+export const POUND_RECOVERY_SECONDS = 0.25;
+export const POUND_JUMP_COOLDOWN = 0.9;
+
+export const LANDING_TIER_SOFT = 1 as const;
+export const LANDING_TIER_SOLID = 2 as const;
+export const LANDING_TIER_HEAVY = 3 as const;
+export type LandingThumpTier =
+  | typeof LANDING_TIER_SOFT
+  | typeof LANDING_TIER_SOLID
+  | typeof LANDING_TIER_HEAVY;
+export const LANDING_SOLID_MIN_SPEED = 300;
+export const LANDING_HEAVY_MIN_SPEED = 520;
+export const LANDING_HORIZONTAL_WEIGHT = 0.3;
 
 /** §17 pitfall FALL consequence (Mike's ruling: chip + reposition, NOT run-ending). A grounded player
  *  whose body is over a pit falls: loses this fraction of max HP, snaps back to the last grounded tile,
@@ -725,8 +793,8 @@ export const RETURN_STEP_MAX = 300;
 export const JUGGLE_LAUNCH = 480;
 /** Explicit channel alias used by authored payload rows; both names are one law, not two tuning knobs. */
 export const JUGGLE_LAUNCH_VH = JUGGLE_LAUNCH;
-/** Each air-keep RESETS vh here (assignment, never stacking — no co-op moon-launch; re-loft ≈0.53s). */
-export const JUGGLE_KEEP = 360;
+/** Each air-keep RESETS vh here (assignment, never stacking); raised so enemy lofts stay above leaps. */
+export const JUGGLE_KEEP = 400;
 /** Explicit channel alias used by authored payload rows. */
 export const JUGGLE_KEEP_VH = JUGGLE_KEEP;
 /** G9: hard cap on air-keep hits per combo — after 2 the string force-recovers regardless of success. */
