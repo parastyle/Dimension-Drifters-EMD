@@ -87,10 +87,33 @@ export interface WormAnatomyDef {
   exposedCoreMultiplier: number;
 }
 
+/** Reusable authored action row for a segmented boss. Geometry comes from an existing pure primitive;
+ * the dedicated director supplies a stable anatomy emitter and owns exclusivity/cancellation. */
+export interface SegmentedBossActionModuleDef {
+  kind: WormActionKind;
+  primitive: string;
+  emitterRole: WormSegmentRole;
+  windupTicks: number;
+  recoveryTicks: number;
+  params: Readonly<Record<string, number>>;
+}
+
+/** One HP lane in the segmented action scheduler. Sequences rotate deterministically; `paired` requests a
+ * second action after recovery, never an overlapping warning or damage window. */
+export interface SegmentedBossActionPhaseDef {
+  hpAbove: number;
+  cadenceTicks: number;
+  sequence: readonly WormActionKind[];
+  paired?: boolean;
+  pairGapTicks?: number;
+}
+
 export interface WormEncounterDef {
   baseCoreHp: number;
   rootKind: string;
   anatomy: Readonly<Record<WormSegmentRole, WormAnatomyDef>>;
+  actions?: readonly SegmentedBossActionModuleDef[];
+  actionPhases?: readonly SegmentedBossActionPhaseDef[];
 }
 
 /** The §16 phase for a boss at `frac` of max HP. Thresholds: ≤0.2 enrage, ≤0.5 slam, else paces. (Legacy —

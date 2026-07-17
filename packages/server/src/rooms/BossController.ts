@@ -17,6 +17,8 @@ import {
   mixSeeds,
   nearestPoint,
   type Rng,
+  type SegmentedBossActionModuleDef,
+  type SegmentedBossActionPhaseDef,
   stepEnemyChase,
   stepEnemyKite,
   type TgSpec,
@@ -291,6 +293,8 @@ export class WormBossRuntime {
   private mainCountValue = 0;
   private stubCountValue = 0;
   private readonly reconnectUntil = new Uint32Array(WORM_MAX_SEGMENTS);
+  /** Temporary parry payoffs by stable slot; no per-tick allocation. */
+  private readonly actionExposureUntil = new Uint32Array(WORM_MAX_SEGMENTS);
   private readonly sample = new Float64Array(2);
   private readonly mainPath = new WormPathHistory();
   private readonly stubPath = new WormPathHistory();
@@ -434,6 +438,65 @@ export class WormBossRuntime {
     return this.radius[slot] ?? 0;
   }
 
+  /** Round-robin lookup of a live surface anatomy emitter. Destroyed/replaced generations never qualify. */
+  findActionEmitter(role: WormSegmentRole, afterSlot: number): number {
+    for (let offset = 1; offset <= WORM_MAX_SEGMENTS; offset++) {
+      const slot = (afterSlot + offset + WORM_MAX_SEGMENTS) % WORM_MAX_SEGMENTS;
+      if (
+        this.active[slot] === 1 &&
+        this.targetable[slot] === 1 &&
+        this.underground[slot] === 0 &&
+        this.role[slot] === role
+      ) return slot;
+    }
+    return -1;
+  }
+
+  beginAuthoredAction(
+    kind: WormActionKind,
+    startTick: number,
+    resolveTick: number,
+    endTick: number,
+    emitterSlot: number,
+    targetX: number,
+    targetY: number,
+  ): boolean {
+    if (
+      this.mode !== WormBossMode.Surface ||
+      this.state.actionKind !== WormActionKind.None ||
+      !this.isActionEmitterValid(emitterSlot, this.generation[emitterSlot] ?? 0)
+    ) return false;
+    this.setAction(kind, startTick, resolveTick, endTick, emitterSlot, targetX, targetY);
+    this.publish(true, startTick);
+    return true;
+  }
+
+  isActionEmitterValid(slot: number, generation: number): boolean {
+    return (
+      slot >= 0 &&
+      slot < WORM_MAX_SEGMENTS &&
+      this.active[slot] === 1 &&
+      this.targetable[slot] === 1 &&
+      this.underground[slot] === 0 &&
+      this.generation[slot] === generation
+    );
+  }
+
+  endAuthoredAction(kind: WormActionKind, tick: number): void {
+    if (this.state.actionKind === kind) this.clearAction(tick);
+  }
+
+  exposeActionEmitter(tick: number, durationTicks: number): boolean {
+    const slot = this.state.actionEmitterSlot;
+    if (!this.isActionEmitterValid(slot, this.state.actionEmitterGeneration)) return false;
+    this.exposeSegment(slot, tick + durationTicks, tick);
+    return true;
+  }
+
+  exposeHead(tick: number, durationTicks: number): void {
+    if (this.active[0]) this.exposeSegment(0, tick + durationTicks, tick);
+  }
+
   segmentIntersectsSweptCircle(slot: number, px: number, py: number, extraRadius: number): boolean {
     return this.segmentIntersectsSweptCapsule(slot, px, py, px, py, extraRadius);
   }
@@ -471,6 +534,7 @@ export class WormBossRuntime {
     this.previousY.set(this.y);
     this.expireReconnects(tick);
     this.expireHeadExposure(tick);
+    this.expireActionExposures(tick);
     const before = this.mode;
     switch (before) {
       case WormBossMode.Surface:
@@ -811,6 +875,7 @@ export class WormBossRuntime {
     this.targetable.fill(0);
     this.collidable.fill(0);
     this.underground.fill(0);
+    this.actionExposureUntil.fill(0);
     this.budMask = 0;
     this.state.active = false;
     this.state.ownerId = "";
@@ -1198,6 +1263,32 @@ export class WormBossRuntime {
     this.updateCondition(0);
   }
 
+  private exposeSegment(slot: number, untilTick: number, tick: number): void {
+    if (slot === 0) {
+      this.headExposedUntilTick = Math.max(this.headExposedUntilTick, untilTick);
+    } else {
+      this.actionExposureUntil[slot] = Math.max(this.actionExposureUntil[slot]!, untilTick);
+    }
+    this.armorBand[slot] = WormArmorBand.Exposed;
+    this.condition[slot] = WormSegmentCondition.ArmorOpen;
+    this.publish(true, tick);
+  }
+
+  private expireActionExposures(tick: number): void {
+    let changed = false;
+    for (let slot = 1; slot < WORM_MAX_SEGMENTS; slot++) {
+      const until = this.actionExposureUntil[slot]!;
+      if (until === 0 || tick < until) continue;
+      this.actionExposureUntil[slot] = 0;
+      if (this.active[slot] && this.armorHp[slot]! > 0) {
+        this.armorBand[slot] = WormArmorBand.Plated;
+      }
+      this.updateCondition(slot);
+      changed = true;
+    }
+    if (changed) this.publish(true, tick);
+  }
+
   private pruneDamageLedger(tick: number): void {
     if (this.damageLedger.size < 256) return;
     for (const [key, entry] of this.damageLedger) {
@@ -1325,15 +1416,237 @@ export class WormBossRuntime {
   }
 }
 
+interface PendingSegmentedAction {
+  module: SegmentedBossActionModuleDef;
+  plan: CastPlan;
+  ids: string[];
+  emitterSlot: number;
+  emitterGeneration: number;
+  resolveTick: number;
+  endTick: number;
+  settledBroadcastGeneration: number | null;
+  telegraphsRemoved: boolean;
+}
+
+/** Reusable one-major-action scheduler for segmented bosses. It consumes authored primitives once at the
+ * trigger edge, then only mutates retained state while the fixed telegraph resolves. */
+export class SegmentedBossActionScheduler {
+  private pending: PendingSegmentedAction | null = null;
+  private nextActionTick: number;
+  private sequenceCursor = 0;
+  private targetCursor = 0;
+  private pairRemaining = 0;
+  private pairInProgress = false;
+  private readonly lastEmitterByRole = new Int8Array(5);
+  private readonly targetView: Vec2[] = [{ x: ARENA_WIDTH / 2, y: ARENA_HEIGHT / 2 }];
+  private readonly bossProxy = { x: 0, y: 0, kind: "seam-eater", radius: 40 };
+
+  constructor(
+    private readonly def: WormEncounterDef,
+    spawnTick: number,
+  ) {
+    this.nextActionTick = spawnTick + 30;
+    this.lastEmitterByRole.fill(-1);
+  }
+
+  get busy(): boolean {
+    return this.pending !== null;
+  }
+
+  /** Advance or start one action. Returns true while the major-action lane is occupied. */
+  step(
+    runtime: WormBossRuntime,
+    boss: EnemyState,
+    targets: Vec2[],
+    depth: number,
+    tick: number,
+    sink: BossEmitSink,
+    broadcastGeneration: number,
+  ): boolean {
+    const current = this.pending;
+    if (current) {
+      if (!runtime.isActionEmitterValid(current.emitterSlot, current.emitterGeneration)) {
+        this.cancel(runtime, sink, tick);
+        return false;
+      }
+      if (current.settledBroadcastGeneration === null) {
+        const start = runtime.state.actionStartTick;
+        const t = clamp((tick - start) / Math.max(1, current.resolveTick - start), 0, 1);
+        for (const id of current.ids) sink.setTelegraphProgress(id, t);
+        if (tick >= current.resolveTick) {
+          for (const id of current.ids) sink.setTelegraphProgress(id, 1);
+          this.applyPlan(current.plan, depth, sink);
+          current.settledBroadcastGeneration = broadcastGeneration;
+        }
+      } else if (
+        !current.telegraphsRemoved &&
+        broadcastGeneration > current.settledBroadcastGeneration
+      ) {
+        for (const id of current.ids) sink.removeTelegraph(id);
+        current.telegraphsRemoved = true;
+      }
+      if (tick >= current.endTick && current.telegraphsRemoved) {
+        runtime.endAuthoredAction(current.module.kind, tick);
+        this.pending = null;
+        const phase = this.phaseFor(this.fraction(boss, runtime));
+        if (this.pairRemaining > 0) {
+          this.pairRemaining--;
+          this.pairInProgress = true;
+          this.nextActionTick = tick + (phase?.pairGapTicks ?? 5);
+        } else {
+          this.pairInProgress = false;
+          this.nextActionTick = tick + (phase?.cadenceTicks ?? 60);
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (
+      tick < this.nextActionTick ||
+      runtime.mode !== WormBossMode.Surface ||
+      runtime.state.actionKind !== WormActionKind.None
+    ) return false;
+    const phase = this.phaseFor(this.fraction(boss, runtime));
+    if (!phase || phase.sequence.length === 0) return false;
+    const kind = phase.sequence[this.sequenceCursor % phase.sequence.length]!;
+    this.sequenceCursor++;
+    const module = this.moduleFor(kind);
+    if (!module) {
+      this.nextActionTick = tick + phase.cadenceTicks;
+      return false;
+    }
+    const roleIndex = module.emitterRole as number;
+    const emitterSlot = runtime.findActionEmitter(
+      module.emitterRole,
+      this.lastEmitterByRole[roleIndex] ?? -1,
+    );
+    if (emitterSlot < 0) {
+      // Dead Tail / destroyed Spinner never fires a replacement body action.
+      this.nextActionTick = tick + phase.cadenceTicks;
+      this.pairRemaining = 0;
+      this.pairInProgress = false;
+      return false;
+    }
+    this.lastEmitterByRole[roleIndex] = emitterSlot;
+    const target = targets.length > 0
+      ? targets[this.targetCursor++ % targets.length]!
+      : this.targetView[0]!;
+    this.targetView[0]!.x = target.x;
+    this.targetView[0]!.y = target.y;
+    this.bossProxy.x = runtime.x[emitterSlot]!;
+    this.bossProxy.y = runtime.y[emitterSlot]!;
+    this.bossProxy.radius = runtime.segmentRadius(emitterSlot);
+    const primitive = BOSS_PRIMITIVES[module.primitive];
+    if (!primitive) {
+      this.nextActionTick = tick + phase.cadenceTicks;
+      return false;
+    }
+    const plan = primitive({
+      boss: this.bossProxy,
+      targets: this.targetView,
+      rng: makeRng(mixSeeds(runtime.state.topologySeq, tick, this.sequenceCursor)),
+      phaseTick: this.sequenceCursor,
+      params: module.params as Record<string, number>,
+    });
+    const resolveTick = tick + module.windupTicks;
+    const endTick = resolveTick + module.recoveryTicks;
+    if (!runtime.beginAuthoredAction(
+      module.kind,
+      tick,
+      resolveTick,
+      endTick,
+      emitterSlot,
+      target.x,
+      target.y,
+    )) return false;
+    const ids: string[] = [];
+    for (const telegraph of plan.telegraphs) ids.push(sink.addTelegraph(telegraph));
+    this.pending = {
+      module,
+      plan,
+      ids,
+      emitterSlot,
+      emitterGeneration: runtime.segmentGeneration(emitterSlot),
+      resolveTick,
+      endTick,
+      settledBroadcastGeneration: null,
+      telegraphsRemoved: false,
+    };
+    if (!this.pairInProgress) this.pairRemaining = phase.paired ? 1 : 0;
+    return true;
+  }
+
+  dispose(runtime: WormBossRuntime, sink: BossEmitSink, tick: number): void {
+    this.cancel(runtime, sink, tick);
+  }
+
+  private cancel(runtime: WormBossRuntime, sink: BossEmitSink, tick: number): void {
+    const current = this.pending;
+    if (!current) return;
+    for (const id of current.ids) sink.removeTelegraph(id);
+    runtime.endAuthoredAction(current.module.kind, tick);
+    this.pending = null;
+    this.pairRemaining = 0;
+    this.pairInProgress = false;
+    const phase = this.phaseFor(this.fractionFromRuntime(runtime));
+    this.nextActionTick = tick + (phase?.cadenceTicks ?? 60);
+  }
+
+  private applyPlan(plan: CastPlan, depth: number, sink: BossEmitSink): void {
+    const scale = depthDamageScale(depth);
+    for (const aoe of plan.emits.aoe ?? []) {
+      if (aoe.quake) sink.applyQuake(aoe.x, aoe.y, aoe.radius, aoe.damage * scale, aoe.knockback);
+      else sink.applyAoE(aoe.x, aoe.y, aoe.radius, aoe.damage * scale, aoe.knockback);
+    }
+    for (const melee of plan.emits.melee ?? []) {
+      sink.applyMelee(
+        melee.x,
+        melee.y,
+        melee.aimX,
+        melee.aimY,
+        melee.range,
+        melee.halfArc,
+        melee.damage * scale,
+        melee.knockback,
+      );
+    }
+  }
+
+  private moduleFor(kind: WormActionKind): SegmentedBossActionModuleDef | undefined {
+    for (const module of this.def.actions ?? []) if (module.kind === kind) return module;
+    return undefined;
+  }
+
+  private phaseFor(frac: number): SegmentedBossActionPhaseDef | undefined {
+    for (const phase of this.def.actionPhases ?? []) if (frac > phase.hpAbove) return phase;
+    return this.def.actionPhases?.[this.def.actionPhases.length - 1];
+  }
+
+  private fraction(boss: EnemyState, runtime: WormBossRuntime): number {
+    return runtime.maxHp > 0 ? boss.hp / runtime.maxHp : 1;
+  }
+
+  private fractionFromRuntime(runtime: WormBossRuntime): number {
+    const ownerHp = runtime.state.active ? runtime.maxHp : 0;
+    return runtime.maxHp > 0 ? ownerHp / runtime.maxHp : 1;
+  }
+}
+
 /** Authored phase/action owner. The runtime owns geometry; this director owns warnings and thresholds. */
 export class WormEncounterDirector {
   private nextDiveTick: number;
   private eruptionTelegraphId: string | null = null;
   private eruptionSettledGeneration: number | null = null;
   private readonly contactLedger = new Map<string, number>();
+  private readonly actions: SegmentedBossActionScheduler;
+  private lastRibParrySeq = -1;
+  private lastRibParryTick = -9999;
+  private ribParryWindows = 0;
 
-  constructor(readonly runtime: WormBossRuntime, spawnTick: number) {
+  constructor(readonly runtime: WormBossRuntime, def: WormEncounterDef, spawnTick: number) {
     this.nextDiveTick = spawnTick + 72;
+    this.actions = new SegmentedBossActionScheduler(def, spawnTick);
   }
 
   step(
@@ -1346,10 +1659,16 @@ export class WormEncounterDirector {
     broadcastGeneration: number,
   ): number {
     const frac = this.runtime.maxHp > 0 ? boss.hp / this.runtime.maxHp : 1;
-    if (frac <= 0.7 && !this.runtime.splitEver && this.runtime.mode === WormBossMode.Surface) {
+    if (
+      !this.actions.busy &&
+      frac <= 0.7 &&
+      !this.runtime.splitEver &&
+      this.runtime.mode === WormBossMode.Surface
+    ) {
       this.runtime.triggerSplit(5, tick);
     }
     if (
+      !this.actions.busy &&
       frac <= 0.45 &&
       !this.runtime.regrowEver &&
       !this.runtime.state.splitActive &&
@@ -1357,8 +1676,18 @@ export class WormEncounterDirector {
     ) {
       this.runtime.beginRegrow(tick, targets.length);
     }
+    const actionBusy = this.actions.step(
+      this.runtime,
+      boss,
+      targets,
+      depth,
+      tick,
+      sink,
+      broadcastGeneration,
+    );
     if (
       tick >= this.nextDiveTick &&
+      !actionBusy &&
       this.runtime.mode === WormBossMode.Surface &&
       !this.runtime.state.splitActive
     ) {
@@ -1369,7 +1698,8 @@ export class WormEncounterDirector {
       const target = sink.validateWormPoint?.(raw.x, raw.y, WORM_ERUPTION_RADIUS) ?? raw;
       this.startBurrow(target, tick);
     }
-    const claimStarted = this.runtime.advance(dt, boss, targets, tick);
+    // Authored anatomy actions plant the whole chain: warning geometry and emitter cannot drift apart.
+    const claimStarted = this.runtime.advance(actionBusy ? 0 : dt, boss, targets, tick);
     if (claimStarted) {
       this.eruptionTelegraphId = sink.addTelegraph({
         shape: 0,
@@ -1427,11 +1757,33 @@ export class WormEncounterDirector {
     return true;
   }
 
+  /** Successful white action parries expose the exact anatomy that emitted them. */
+  acceptParry(_playerId: string, tick: number): boolean {
+    const kind = this.runtime.state.actionKind as WormActionKind;
+    if (kind !== WormActionKind.RibQuake && kind !== WormActionKind.StitchReap) return false;
+    const duration = kind === WormActionKind.RibQuake ? 44 : 40;
+    if (!this.runtime.exposeActionEmitter(tick, duration)) return false;
+    if (kind === WormActionKind.RibQuake) {
+      const seq = this.runtime.state.actionSeq;
+      if (seq !== this.lastRibParrySeq) {
+        this.ribParryWindows = tick - this.lastRibParryTick <= 80 ? this.ribParryWindows + 1 : 1;
+        this.lastRibParrySeq = seq;
+        this.lastRibParryTick = tick;
+        if (this.ribParryWindows >= 2) {
+          this.runtime.exposeHead(tick, 20);
+          this.ribParryWindows = 0;
+        }
+      }
+    }
+    return true;
+  }
+
   dispose(sink: BossEmitSink, tick: number): void {
     if (this.eruptionTelegraphId) sink.removeTelegraph(this.eruptionTelegraphId);
     this.eruptionTelegraphId = null;
     this.eruptionSettledGeneration = null;
     this.contactLedger.clear();
+    this.actions.dispose(this.runtime, sink, tick);
     this.runtime.dispose(tick);
   }
 }
@@ -1476,6 +1828,7 @@ export class BossController {
         heading,
         tick,
       ),
+      this.def.worm,
       tick,
     );
   }
@@ -1516,6 +1869,10 @@ export class BossController {
 
   acceptWormContact(playerId: string, chain: WormChain, tick: number): boolean {
     return this.wormDirector?.acceptContact(playerId, chain, tick) ?? false;
+  }
+
+  acceptWormParry(playerId: string, tick: number): boolean {
+    return this.wormDirector?.acceptParry(playerId, tick) ?? false;
   }
 
   /**

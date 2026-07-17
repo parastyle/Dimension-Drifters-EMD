@@ -12,6 +12,7 @@ import {
   HIT_KNOCKBACK_IMPULSE,
 } from "./constants.js";
 import {
+  WormActionKind,
   WormSegmentRole,
   type WormEncounterDef,
 } from "./boss.js";
@@ -978,6 +979,44 @@ const SERRAKETH: BossDef = {
         exposedCoreMultiplier: 1,
       },
     },
+    actions: [
+      {
+        kind: WormActionKind.StitchReap,
+        primitive: "seamEaterStitchReap",
+        emitterRole: WormSegmentRole.Tail,
+        windupTicks: 11,
+        recoveryTicks: 8,
+        params: { range: 230, halfArc: 0.8, damage: 18, knockback: 520 },
+      },
+      {
+        kind: WormActionKind.RibQuake,
+        primitive: "seamEaterRibQuake",
+        emitterRole: WormSegmentRole.Spinner,
+        windupTicks: 16,
+        recoveryTicks: 8,
+        params: { radius: 250, damage: 22, knockback: 850 },
+      },
+    ] as const,
+    actionPhases: [
+      { hpAbove: 0.7, cadenceTicks: 64, sequence: [WormActionKind.StitchReap] },
+      {
+        hpAbove: 0.35,
+        cadenceTicks: 54,
+        sequence: [WormActionKind.StitchReap, WormActionKind.RibQuake],
+      },
+      {
+        hpAbove: 0.08,
+        cadenceTicks: 40,
+        sequence: [WormActionKind.RibQuake, WormActionKind.StitchReap],
+      },
+      {
+        hpAbove: 0,
+        cadenceTicks: 30,
+        sequence: [WormActionKind.StitchReap, WormActionKind.RibQuake],
+        paired: true,
+        pairGapTicks: 5,
+      },
+    ] as const,
   },
   // The dedicated director owns these thresholds/actions. Empty module rows keep shared phase data explicit.
   phases: [

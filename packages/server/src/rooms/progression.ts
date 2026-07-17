@@ -1,11 +1,13 @@
 import {
   type Attr,
+  augmentGateForWeapon,
   classForCharacter,
   deriveStats,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
   type PlayerState,
   SIGNATURE_INTERVAL,
+  WEAPONS,
   xpToNextLevel,
 } from "@dd/shared";
 
@@ -46,7 +48,12 @@ export function levelUpPlayer(player: PlayerState, amount: number): void {
     player.flexPending += 1;
     // §8 every 5th level ALSO grants a signature pick (an augment draft) — same window. The offer CSV is
     // rolled server-side once the window is open (GameRoom.openSigOffers).
-    if (player.level % SIGNATURE_INTERVAL === 0) player.sigPending += 1;
+    if (player.level % SIGNATURE_INTERVAL === 0) {
+      player.sigPending += 1;
+      // G-09: snapshot the earned signature lane now. A last-frame quick swap must not rewrite the draft.
+      const gate = augmentGateForWeapon(WEAPONS[player.weapon]);
+      player.sigGateQueue = player.sigGateQueue ? `${player.sigGateQueue};${gate}` : gate;
+    }
     player.flexTimer = LEVELUP_WINDOW_SECONDS; // open/refresh the invincible pick window
     player.xpToNext = xpToNextLevel(player.level);
   }

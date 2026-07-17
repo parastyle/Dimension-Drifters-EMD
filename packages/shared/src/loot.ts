@@ -11,7 +11,16 @@
  * finally scales something. §13: drops telegraph type+rarity but hide identity until grab (mystery);
  * bosses guarantee a drop; loot is squad-shared.
  */
-import { LUK_RARITY_PER, SCRIP_BY_RARITY } from "./constants.js";
+import {
+  BEAM_AGGREGATE_TARGET_CAP,
+  BEAM_MAX_RANGE,
+  BEAM_MAX_WIDTH,
+  BEAM_RECOVERY_SECONDS,
+  LUK_RARITY_PER,
+  SCRIP_BY_RARITY,
+} from "./constants.js";
+import { beamDescriptorFor } from "./combat.js";
+import { clamp } from "./math.js";
 import type { WeaponDef } from "./weapons.js";
 import { WEAPONS } from "./weapons.js";
 
@@ -146,7 +155,60 @@ function pierceTargets(pierce: number | undefined): number {
   return 1 + 0.6 * (Math.min(6, pierce ?? 1) - 1);
 }
 
+export const BeamPowerCycle = {
+  EarlyVent: "early-vent",
+  FullOverheat: "full-overheat",
+} as const;
+export type BeamPowerCycleValue = (typeof BeamPowerCycle)[keyof typeof BeamPowerCycle];
+
+/** G-04 cycle-normalized aggregate output for one beam commitment. The numerator uses real beam DPS and
+ * active time. The denominator prices charge, chosen/forced vent debt, overheat lock, and cooling back to
+ * restart heat. Width/range estimate honest crowd coverage but never exceed the shared three-target budget. */
+export function beamCyclePower(def: WeaponDef, cycle: BeamPowerCycleValue): number {
+  if (!def.beam) return 0;
+  const beam = beamDescriptorFor(def, 0, 0);
+  const early = cycle === BeamPowerCycle.EarlyVent;
+  const heatLimit = early ? 0.85 : 1;
+  const heatActive = Math.max(0, (heatLimit - beam.ignitionHeat) / beam.heatPerSecond);
+  const activeSeconds = Math.min(beam.maxChannelSeconds, heatActive);
+  if (activeSeconds <= 0) return 0;
+  const endingHeat = early
+    ? Math.min(heatLimit, beam.ignitionHeat + activeSeconds * beam.heatPerSecond)
+    : 1;
+  const coolDebt = Math.max(0, endingHeat - beam.restartHeat);
+  const coolingSeconds = beam.coolPerSecond > 0 ? coolDebt / beam.coolPerSecond : Number.POSITIVE_INFINITY;
+  const ventSeconds = (early ? BEAM_RECOVERY_SECONDS : beam.lockSeconds) + coolingSeconds;
+  const widthNorm = Math.min(1, beam.width / BEAM_MAX_WIDTH);
+  const rangeNorm = Math.min(1, beam.range / BEAM_MAX_RANGE);
+  // A narrow/ranged beam only realizes that theoretical coverage if the player can actually sweep it onto
+  // new bodies. Price lag and turn cap independently so one cannot hide the other at the aggregate cap.
+  // This is an efficiency discount only: control can never inflate authored DPS or the three-target budget.
+  const sweepControl =
+    0.55 * clamp(0.16 / Math.max(0.04, beam.sweepLagSeconds), 0.65, 1) +
+    0.45 * clamp(beam.maxTurnRate / 8, 0.65, 1);
+  const coverage = Math.min(
+    BEAM_AGGREGATE_TARGET_CAP,
+    1 +
+      (BEAM_AGGREGATE_TARGET_CAP - 1) *
+        (0.55 * widthNorm + 0.45 * rangeNorm) *
+        0.65,
+  );
+  const cycleSeconds = beam.chargeSeconds + activeSeconds + ventSeconds;
+  return Number.isFinite(cycleSeconds)
+    ? (beam.damagePerSecond * activeSeconds * coverage * sweepControl) /
+        Math.max(0.05, cycleSeconds)
+    : 0;
+}
+
 export function effectivePower(def: WeaponDef): number {
+  if (def.beam) {
+    // Players may deliberately early-vent or accept the forced lock. Curate against the stronger honest
+    // repeatable cycle so a beam cannot enter the pool on its misleading legacy shell values.
+    return Math.max(
+      beamCyclePower(def, BeamPowerCycle.EarlyVent),
+      beamCyclePower(def, BeamPowerCycle.FullOverheat),
+    );
+  }
   let perUse = def.damage; // the edge/primary hit
   if (def.thrown) perUse = def.thrown.damage * pierceTargets(def.thrown.pierce);
   if (def.quake) perUse += def.quake.damage;

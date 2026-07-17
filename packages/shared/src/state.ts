@@ -11,6 +11,13 @@ export class ArsenalSlot extends Schema {
   @type("string") affix = "";
   /** §13 salvage/shop provenance — true only if this weapon traces back to an enemy drop (bankable value). */
   @type("boolean") earned = false;
+  // G-01 server-private combat ledger. These deliberately have no `@type`: only the active slot's
+  // charges/maxCharges are presentation state, while stowed cooldown debt remains authoritative server data.
+  resourceWeapon = "";
+  resourceReady = false;
+  cooldown = 0;
+  reload = 0;
+  resourceCharges = 0;
 }
 
 /**
@@ -141,6 +148,9 @@ export class PlayerState extends Schema {
   @type("uint32") attackTick = 0;
   /** True while the last accepted attack remains inside `ATTACK_HELD_WINDOW`; cleared by the server. */
   @type("boolean") attackHeld = false;
+  /** G-09 signature delivery identities captured when each signature level is earned. Semicolon-separated
+   * queue entries (for example `cast+beam`); APPENDED at schema v18 so a swap cannot reroll an owed draft. */
+  @type("string") sigGateQueue = "";
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -305,6 +315,24 @@ export class BeamState extends Schema {
   @type("number") previousLength = 0;
 }
 
+/** One slot in the fixed authoritative hit/kill receipt ring. Rows are allocated once at room creation and
+ * overwritten by monotonically increasing `seq`; consumers ignore seq=0 and dedupe later generations. */
+export class CombatReceiptState extends Schema {
+  @type("uint32") seq = 0;
+  @type("uint32") tick = 0;
+  @type("string") targetId = "";
+  @type("string") sourcePlayerId = "";
+  @type("string") weaponId = "";
+  /** Compact delivery enum; see CombatDelivery in combat.ts. */
+  @type("uint8") delivery = 0;
+  @type("string") element = "physical";
+  @type("float32") dirX = 0;
+  @type("float32") dirY = 0;
+  @type("float32") damage = 0;
+  @type("boolean") crit = false;
+  @type("boolean") finalBlow = false;
+}
+
 /** One row in Serraketh's fixed twelve-slot table. Stable slots survive sever/regrow generations. */
 export class WormSegmentState extends Schema {
   @type("uint8") slot = 0;
@@ -436,4 +464,6 @@ export class ArenaState extends Schema {
   @type({ map: BeamState }) beams = new MapSchema<BeamState>();
   /** Serraketh owner + fixed-cap segment table. APPENDED at schema v17; never inserted into older rows. */
   @type(WormBossState) wormBoss = new WormBossState();
+  /** G-polish-07 fixed authoritative hit/kill event ring. APPENDED at schema v18 after every v17 field. */
+  @type([CombatReceiptState]) combatReceipts = new ArraySchema<CombatReceiptState>();
 }

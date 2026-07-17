@@ -20,6 +20,8 @@ import {
   ARSENAL_SLOTS,
   ATTACK_BUFFER_SECONDS,
   ATTACK_HELD_WINDOW,
+  AUG_BEAM_COOL_PER,
+  AUG_BEAM_FOCUS_PER,
   AUG_CAST_DMG_PER,
   AUG_CAST_SPLIT_MAX,
   AUG_CAST_SPLIT_PER,
@@ -45,6 +47,9 @@ import {
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
+  CombatDelivery,
+  CombatReceiptState,
+  COMBAT_RECEIPT_CAP,
   bladeAngleAt,
   bladeHitsCircle,
   bossDefFor,
@@ -78,6 +83,8 @@ import {
   depthHpScale,
   deriveStats,
   draftAugments,
+  augmentDeliveriesForGate,
+  augmentGateForWeapon,
   EMBERGUARD_BASE_DMG,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_PER_INT,
@@ -259,6 +266,7 @@ import {
   XpEchoState,
   WORM_MAX_SEGMENTS,
   WORM_TOTAL_XP,
+  WEAPON_DRAW_LOCK_SECONDS,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
@@ -315,6 +323,12 @@ interface BeamResourceLedger {
   requireRelease: boolean;
 }
 
+interface WeaponResourceLedger {
+  cooldown: number;
+  reload: number;
+  charges: number;
+}
+
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
 interface CombatState {
   aimX: number;
@@ -345,6 +359,10 @@ interface CombatState {
   reloadCd: number;
   /** Last equipped weapon id — detect a swap to (re)initialise charges. */
   lastWeapon: string;
+  /** G-01 shared responsive draw gate. Per-weapon debt is restored underneath this short lock. */
+  drawLock: number;
+  /** Arena carousel has no ArsenalSlot rows, so its resource debt is keyed by weapon identity. */
+  weaponLedger: Map<string, WeaponResourceLedger>;
   /** §5 jump cooldown, sec (so the hop isn't spammable). */
   jumpCd: number;
   /** §5/§20 vertical velocity (px/s) for the real height axis — the jump seeds it, gravity decays it. */
@@ -369,6 +387,12 @@ interface CombatState {
    *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
    *  cycle→salvage loop can't mint bankable salvage from thin air. */
   heldEarned: boolean;
+  /** G-02 Bulwark success reward: absorb points, never an extension of parry invulnerability. */
+  bulwarkShield: number;
+  /** Allocation-free beam tuning cache; refreshed only when the owned CSV changes. */
+  augmentSnapshot: string;
+  beamVentStacks: number;
+  beamFocusStacks: number;
   /** Beam channel runtime. The resource ledger survives swaps so heat debt cannot be bypassed. */
   beamDescriptor?: BeamDescriptor;
   beamPhase: 0 | 1 | 2;
@@ -470,6 +494,12 @@ export class GameRoom extends Room<ArenaState> {
       legTtl?: number;
       /** §30 crit CHANCE captured at fire time (friendly shots) — each enemy hit / explosion rolls it. */
       crit?: number;
+      /** polish #7 immutable authoritative ownership captured at launch (never inferred near impact). */
+      sourcePlayerId?: string;
+      sourceWeaponId?: string;
+      delivery?: number;
+      sourceX?: number;
+      sourceY?: number;
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -522,6 +552,7 @@ export class GameRoom extends Room<ArenaState> {
       swingArc: number;
       halfWidth: number;
       edgeDamage: number;
+      weaponId: string;
       elapsed: number;
       hit: Set<string>;
     }
@@ -535,6 +566,8 @@ export class GameRoom extends Room<ArenaState> {
     radius: number;
     damage: number;
     crit: number;
+    sourcePlayerId: string;
+    sourceWeaponId: string;
   }[] = [];
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
@@ -561,6 +594,8 @@ export class GameRoom extends Room<ArenaState> {
     aimY: number;
     dmg: number;
     at: number;
+    sourcePlayerId: string;
+    sourceWeaponId: string;
   }[] = [];
   /** Spawn-director accumulator + monotonic enemy/projectile/zone/pickup id counters. */
   private spawnAccum = 0;
@@ -569,6 +604,9 @@ export class GameRoom extends Room<ArenaState> {
   private zoneSeq = 0;
   private pickupSeq = 0;
   private xpEchoSeq = 0;
+  /** polish #7 fixed preallocated authoritative combat receipt ring (v18). */
+  private combatReceiptSeq = 0;
+  private combatReceiptCursor = 0;
   /** Closed-beat cleanup holds teardown until every authoritative Echo has caught or folded into a core. */
   private xpBoundary: XpBoundary | null = null;
   private xpBoundaryStartedTick = 0;
@@ -637,6 +675,9 @@ export class GameRoom extends Room<ArenaState> {
     beltLevel?: string;
   }): void {
     this.setState(new ArenaState());
+    for (let i = 0; i < COMBAT_RECEIPT_CAP; i++) {
+      this.state.combatReceipts.push(new CombatReceiptState());
+    }
     this.belt = !!options?.belt; // §29 belt-scroller mode (wide-shallow band, authored deck + collision)
     // §36 the SELECTED belt level (menu level-select). Each level scopes its own dimension (roster/palette),
     // so no two selections are the same run. Unknown id → Sky Carrier.
@@ -733,7 +774,10 @@ export class GameRoom extends Room<ArenaState> {
         // §7 v0.105 de-clunk: QUEUE the attack rather than latch a boolean — the tick fires it the instant
         // the cooldown drains, so a press that lands a tick early (off-grid melee cadences, held trigger)
         // is honoured instead of silently eaten.
-        c.attackBuffer = ATTACK_BUFFER_SECONDS;
+        c.attackBuffer = Math.max(
+          ATTACK_BUFFER_SECONDS,
+          c.drawLock > 0 ? c.drawLock + TICK_MS / 1000 + 1e-6 : 0,
+        );
         c.aimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
         c.aimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
         // Trust nothing off the wire: NORMALIZE aim to a unit vector. It feeds the melee-arc direction
@@ -790,12 +834,30 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
+      const c = this.combat.get(client.sessionId);
+      if (this.belt) this.syncActiveSlot(player, c);
+      else if (c) this.saveWeaponResource(player, c);
+      if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
+        this.cancelBeam(player, player.id, c, true, true);
+      }
       player.weapon =
         (message?.dir ?? 1) < 0 ? prevWeapon(player.weapon) : nextWeapon(player.weapon);
       player.weaponRarity = RARITY_COMMON; // conjured = plain Common (loot identity lives on DROPS)
       player.weaponAffix = "";
-      const c = this.combat.get(client.sessionId);
-      if (c) c.heldEarned = false;
+      if (this.belt) {
+        const slot = player.slots[player.activeSlot];
+        if (slot) {
+          slot.weapon = player.weapon;
+          slot.rarity = RARITY_COMMON;
+          slot.affix = "";
+          slot.earned = false;
+          slot.resourceReady = false;
+        }
+      }
+      if (c) {
+        c.heldEarned = false;
+        this.restoreWeaponResource(player, c);
+      }
     });
 
     // §39 DEV PORTAL: jump straight to a specific weapon / character by id (Testing-Grounds only, so it can't
@@ -807,12 +869,23 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
       if (typeof message?.weapon === "string" && WEAPONS[message.weapon]) {
+        const c = this.combat.get(client.sessionId);
+        if (this.belt) this.syncActiveSlot(player, c);
+        else if (c) this.saveWeaponResource(player, c);
+        if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
+          this.cancelBeam(player, player.id, c, true, true);
+        }
         player.weapon = message.weapon;
         player.weaponRarity = RARITY_COMMON;
         player.weaponAffix = "";
-        if (player.slots[player.activeSlot]) player.slots[player.activeSlot]!.weapon = message.weapon;
-        const c = this.combat.get(client.sessionId);
-        if (c) c.heldEarned = false;
+        if (player.slots[player.activeSlot]) {
+          player.slots[player.activeSlot]!.weapon = message.weapon;
+          player.slots[player.activeSlot]!.resourceReady = false;
+        }
+        if (c) {
+          c.heldEarned = false;
+          this.restoreWeaponResource(player, c);
+        }
       }
       if (typeof message?.character === "string" && isPlayableCharacter(message.character)) {
         player.character = message.character;
@@ -970,6 +1043,7 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       const c = this.combat.get(client.sessionId);
+      if (c) this.saveWeaponResource(player, c);
       if (c?.heldEarned) {
         player.salvaged += salvageValue(player.weaponRarity); // §13 v0.104: rarity drives the parts value
         c.heldEarned = false;
@@ -977,6 +1051,8 @@ export class GameRoom extends Room<ArenaState> {
       player.weapon = FISTS_WEAPON;
       player.weaponRarity = RARITY_COMMON;
       player.weaponAffix = "";
+      if (this.belt) this.copySlot(player.slots[player.activeSlot]!, null);
+      if (c) this.restoreWeaponResource(player, c);
     });
 
     // §13 R-TAP near a ground weapon = GRAB it (the client only sends this when a pickup is in reach).
@@ -1028,7 +1104,10 @@ export class GameRoom extends Room<ArenaState> {
         player.weaponAffix = grabbed.affix;
         // Provenance rides the grab: an enemy-dropped weapon is EARNED (salvageable), the Testing-Grounds
         // gallery + conjured drops are not.
-        if (c) c.heldEarned = this.earnedPickups.has(grabbed.id);
+        if (c) {
+          c.heldEarned = this.earnedPickups.has(grabbed.id);
+          this.restoreWeaponResource(player, c, true);
+        }
       }
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
@@ -1136,6 +1215,7 @@ export class GameRoom extends Room<ArenaState> {
       player.augments = player.augments ? `${player.augments},${id}` : id;
       player.sigPending = Math.max(0, player.sigPending - 1);
       player.sigOffer = ""; // re-rolled next tick by tickLevelWindows if more picks remain
+      this.consumeSignatureGate(player);
       // Keep the window open + timer alive if anything's still owed (flex or another sig pick).
       player.flexTimer =
         player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
@@ -1219,6 +1299,7 @@ export class GameRoom extends Room<ArenaState> {
    *  SWAP, so a grab can never silently DESTROY a held (possibly Legendary) weapon. */
   private dropHeldWeapon(player: PlayerState, c: CombatState | undefined): void {
     if (player.weapon === FISTS_WEAPON) return;
+    if (c) this.saveWeaponResource(player, c);
     const ax = c?.aimX ?? 1;
     const ay = c?.aimY ?? 0;
     const pk = new PickupState();
@@ -1237,10 +1318,15 @@ export class GameRoom extends Room<ArenaState> {
     this.state.pickups.set(pk.id, pk);
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
     if (c?.heldEarned) this.earnedPickups.add(pk.id);
+    if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
+      this.cancelBeam(player, player.id, c, true, true);
+    }
     if (c) c.heldEarned = false;
     player.weapon = FISTS_WEAPON;
     player.weaponRarity = RARITY_COMMON;
     player.weaponAffix = "";
+    if (this.belt) this.copySlot(player.slots[player.activeSlot]!, null);
+    if (c) this.restoreWeaponResource(player, c);
   }
 
   // ── §29 v0.118 ARSENAL helpers: the held weapon is the ACTIVE slot's live mirror; these keep the slots
@@ -1251,6 +1337,139 @@ export class GameRoom extends Room<ArenaState> {
     dst.rarity = src?.rarity ?? 0;
     dst.affix = src?.affix ?? "";
     dst.earned = src?.earned ?? false;
+    dst.resourceWeapon = src?.resourceWeapon ?? "";
+    dst.resourceReady = src?.resourceReady ?? false;
+    dst.cooldown = src?.cooldown ?? 0;
+    dst.reload = src?.reload ?? 0;
+    dst.resourceCharges = src?.resourceCharges ?? 0;
+  }
+
+  private maxWeaponCharges(weaponId: string): number {
+    const weapon = WEAPONS[weaponId];
+    return weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
+  }
+
+  /** Persist the active weapon's cooldown/ammo before identity changes. */
+  private saveWeaponResource(player: PlayerState, c: CombatState): void {
+    if (!c.lastWeapon) return;
+    if (this.belt) {
+      const slot = player.slots[player.activeSlot];
+      if (!slot || slot.weapon !== c.lastWeapon) return;
+      slot.resourceWeapon = c.lastWeapon;
+      slot.resourceReady = true;
+      slot.cooldown = Math.max(0, c.cd);
+      slot.reload = Math.max(0, c.reloadCd);
+      slot.resourceCharges = Math.max(0, player.charges);
+      return;
+    }
+    let ledger = c.weaponLedger.get(c.lastWeapon);
+    if (!ledger) {
+      ledger = { cooldown: 0, reload: 0, charges: 0 };
+      c.weaponLedger.set(c.lastWeapon, ledger);
+    }
+    ledger.cooldown = Math.max(0, c.cd);
+    ledger.reload = Math.max(0, c.reloadCd);
+    ledger.charges = Math.max(0, player.charges);
+  }
+
+  /** Restore a weapon's own debt. Only a genuinely new pickup may initialize a fresh resource row. */
+  private restoreWeaponResource(
+    player: PlayerState,
+    c: CombatState,
+    genuinelyNewPickup = false,
+    applyDrawLock = true,
+  ): void {
+    const weaponId = player.weapon;
+    const max = this.maxWeaponCharges(weaponId);
+    let cooldown = 0;
+    let reload = 0;
+    let charges = max;
+    if (this.belt) {
+      const slot = player.slots[player.activeSlot];
+      if (
+        !genuinelyNewPickup &&
+        slot?.resourceReady &&
+        slot.resourceWeapon === weaponId
+      ) {
+        cooldown = slot.cooldown;
+        reload = slot.reload;
+        charges = slot.resourceCharges;
+      } else if (slot) {
+        slot.resourceWeapon = weaponId;
+        slot.resourceReady = true;
+        slot.cooldown = 0;
+        slot.reload = 0;
+        slot.resourceCharges = max;
+      }
+    } else {
+      let ledger = c.weaponLedger.get(weaponId);
+      if (!ledger || genuinelyNewPickup) {
+        ledger = { cooldown: 0, reload: 0, charges: max };
+        c.weaponLedger.set(weaponId, ledger);
+      }
+      cooldown = ledger.cooldown;
+      reload = ledger.reload;
+      charges = ledger.charges;
+    }
+    c.lastWeapon = weaponId;
+    c.cd = Math.max(0, cooldown);
+    c.reloadCd = Math.max(0, reload);
+    c.attackBuffer = 0;
+    if (applyDrawLock) c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS);
+    player.maxCharges = max;
+    player.charges = clamp(charges, 0, max);
+  }
+
+  private transitionWeapon(
+    player: PlayerState,
+    c: CombatState,
+    genuinelyNewPickup = false,
+    applyDrawLock = true,
+  ): void {
+    this.saveWeaponResource(player, c);
+    if (c.beamPhase !== 0 || c.beamDescriptor) {
+      this.cancelBeam(player, player.id, c, true, true);
+    }
+    if (this.belt) {
+      const slot = player.slots[player.activeSlot];
+      if (slot && slot.weapon !== player.weapon) {
+        slot.weapon = player.weapon === FISTS_WEAPON ? "" : player.weapon;
+        slot.rarity = player.weaponRarity;
+        slot.affix = player.weaponAffix;
+        slot.earned = c.heldEarned;
+        slot.resourceReady = false;
+      }
+    }
+    this.restoreWeaponResource(player, c, genuinelyNewPickup, applyDrawLock);
+  }
+
+  /** Stowed debts progress normally; swapping changes identity, never the passage of time. */
+  private stepStowedWeaponResources(player: PlayerState, c: CombatState, dt: number): void {
+    if (this.belt) {
+      for (let i = 0; i < player.slots.length; i++) {
+        if (i === player.activeSlot) continue;
+        const slot = player.slots[i];
+        if (slot?.resourceReady) this.stepStoredSlot(slot, dt);
+      }
+      for (const slot of player.bag) if (slot.resourceReady) this.stepStoredSlot(slot, dt);
+      return;
+    }
+    for (const [weaponId, ledger] of c.weaponLedger) {
+      if (weaponId === player.weapon) continue;
+      ledger.cooldown = Math.max(0, ledger.cooldown - dt);
+      if (ledger.reload > 0) {
+        ledger.reload = Math.max(0, ledger.reload - dt);
+        if (ledger.reload <= 0) ledger.charges = this.maxWeaponCharges(weaponId);
+      }
+    }
+  }
+
+  private stepStoredSlot(slot: ArsenalSlot, dt: number): void {
+    slot.cooldown = Math.max(0, slot.cooldown - dt);
+    if (slot.reload > 0) {
+      slot.reload = Math.max(0, slot.reload - dt);
+      if (slot.reload <= 0) slot.resourceCharges = this.maxWeaponCharges(slot.resourceWeapon);
+    }
   }
 
   /** Write the live held weapon (+ loot identity + earned provenance) INTO the active slot, so the slots
@@ -1258,6 +1477,7 @@ export class GameRoom extends Room<ArenaState> {
   private syncActiveSlot(player: PlayerState, c: CombatState | undefined): void {
     const s = player.slots[player.activeSlot];
     if (!s) return;
+    if (c) this.saveWeaponResource(player, c);
     if (!player.weapon || player.weapon === FISTS_WEAPON) {
       this.copySlot(s, null);
     } else {
@@ -1277,13 +1497,19 @@ export class GameRoom extends Room<ArenaState> {
       player.weapon = FISTS_WEAPON;
       player.weaponRarity = RARITY_COMMON;
       player.weaponAffix = "";
-      if (c) c.heldEarned = false;
+      if (c) {
+        c.heldEarned = false;
+        this.restoreWeaponResource(player, c);
+      }
       return;
     }
     player.weapon = s.weapon;
     player.weaponRarity = s.rarity;
     player.weaponAffix = s.affix;
-    if (c) c.heldEarned = s.earned;
+    if (c) {
+      c.heldEarned = s.earned;
+      this.restoreWeaponResource(player, c);
+    }
   }
 
   /** §29 BELT grab: ADD the grabbed weapon to the arsenal instead of the arena swap-drop. Fills the first
@@ -1315,6 +1541,8 @@ export class GameRoom extends Room<ArenaState> {
     s.rarity = grabbed.rarity;
     s.affix = grabbed.affix;
     s.earned = earned;
+    s.resourceWeapon = grabbed.weapon;
+    s.resourceReady = false;
     this.loadSlot(player, c, target);
   }
 
@@ -1545,6 +1773,7 @@ export class GameRoom extends Room<ArenaState> {
       player.augments = "";
       player.sigPending = 0;
       player.sigOffer = "";
+      player.sigGateQueue = "";
       player.vx = 0; // §20 clear any residual momentum
       player.vy = 0;
       player.height = 0; // §5/§20 back to the ground
@@ -1553,6 +1782,8 @@ export class GameRoom extends Room<ArenaState> {
       player.hp = player.maxHp;
       player.x = this.map.spawnX + (Math.random() * 200 - 100);
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
+      for (const slot of player.slots) slot.resourceReady = false;
+      for (const slot of player.bag) slot.resourceReady = false;
       const c = this.combat.get(id);
       if (c) {
         c.respawn = 0;
@@ -1561,7 +1792,20 @@ export class GameRoom extends Room<ArenaState> {
         c.parryBuffer = 0;
         c.jumpBuffer = 0;
         c.reloadCd = 0;
-        c.lastWeapon = ""; // forces charge re-init next tick
+        c.lastWeapon = player.weapon;
+        c.drawLock = 0;
+        c.weaponLedger.clear();
+        player.maxCharges = this.maxWeaponCharges(player.weapon);
+        player.charges = player.maxCharges;
+        const active = player.slots[player.activeSlot];
+        if (active) {
+          active.resourceWeapon = player.weapon;
+          active.resourceReady = true;
+          active.cooldown = 0;
+          active.reload = 0;
+          active.resourceCharges = player.charges;
+        }
+        c.bulwarkShield = 0;
         c.hairStreak = 0;
         c.lastParryAt = -999;
         c.vh = 0;
@@ -1741,6 +1985,11 @@ export class GameRoom extends Room<ArenaState> {
     // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
     player.slots[0]!.weapon = DEFAULT_WEAPON;
+    player.slots[0]!.resourceWeapon = DEFAULT_WEAPON;
+    player.slots[0]!.resourceReady = true;
+    player.maxCharges = this.maxWeaponCharges(DEFAULT_WEAPON);
+    player.charges = player.maxCharges;
+    player.slots[0]!.resourceCharges = player.charges;
     player.activeSlot = 0;
     // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
     // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
@@ -1787,7 +2036,9 @@ export class GameRoom extends Room<ArenaState> {
       invuln: 0,
       parryCd: 0,
       reloadCd: 0,
-      lastWeapon: "",
+      lastWeapon: player.weapon,
+      drawLock: 0,
+      weaponLedger: new Map<string, WeaponResourceLedger>(),
       jumpCd: 0,
       lastGroundX: player.x,
       lastGroundY: player.y,
@@ -1798,6 +2049,10 @@ export class GameRoom extends Room<ArenaState> {
       parryChainT: 0,
       vh: 0,
       heldEarned: false,
+      bulwarkShield: 0,
+      augmentSnapshot: "",
+      beamVentStacks: 0,
+      beamFocusStacks: 0,
       beamPhase: 0,
       beamPhaseT: 0,
       beamChannelT: 0,
@@ -1838,6 +2093,55 @@ export class GameRoom extends Room<ArenaState> {
    *  signature augment pick is owed — both freeze + immune the player so they choose safely. */
   private inLevelWindow(player: PlayerState): boolean {
     return player.flexPending > 0 || player.sigPending > 0;
+  }
+
+  /** One authoritative player-damage seam. Bulwark spends its successful-parry shield before HP. */
+  private damagePlayer(player: PlayerState, amount: number): void {
+    const c = this.combat.get(player.id);
+    let left = Math.max(0, amount);
+    if (c && c.bulwarkShield > 0 && left > 0) {
+      const absorbed = Math.min(c.bulwarkShield, left);
+      c.bulwarkShield -= absorbed;
+      left -= absorbed;
+    }
+    if (left > 0) player.hp = Math.max(0, player.hp - left);
+  }
+
+  /** Write into the fixed v18 ring. Every field comes from the accepted source epoch, never proximity. */
+  private writeCombatReceipt(
+    targetId: string,
+    targetX: number,
+    targetY: number,
+    sourcePlayerId: string,
+    sourceWeaponId: string,
+    delivery: number,
+    sourceX: number,
+    sourceY: number,
+    damage: number,
+    crit: boolean,
+    finalBlow: boolean,
+  ): void {
+    if (!sourcePlayerId || this.state.combatReceipts.length === 0) return;
+    const row = this.state.combatReceipts[this.combatReceiptCursor];
+    if (!row) return;
+    this.combatReceiptCursor = (this.combatReceiptCursor + 1) % this.state.combatReceipts.length;
+    this.combatReceiptSeq = (this.combatReceiptSeq + 1) >>> 0;
+    if (this.combatReceiptSeq === 0) this.combatReceiptSeq = 1;
+    const dx = targetX - sourceX;
+    const dy = targetY - sourceY;
+    const len = Math.hypot(dx, dy);
+    row.seq = this.combatReceiptSeq;
+    row.tick = this.state.tick;
+    row.targetId = targetId;
+    row.sourcePlayerId = sourcePlayerId;
+    row.weaponId = sourceWeaponId;
+    row.delivery = delivery;
+    row.element = WEAPONS[sourceWeaponId]?.tags.element ?? "physical";
+    row.dirX = len > 1e-6 ? dx / len : 0;
+    row.dirY = len > 1e-6 ? dy / len : 0;
+    row.damage = Math.max(0, damage);
+    row.crit = crit;
+    row.finalBlow = finalBlow;
   }
 
   /** Mirror the precise, non-serialized timer as integer deciseconds. Ceil keeps the bar visible until the
@@ -2051,6 +2355,11 @@ export class GameRoom extends Room<ArenaState> {
       if (!player.alive || this.inLevelWindow(player)) return;
       const c = this.combat.get(id);
       if (!c) return;
+      if (c.augmentSnapshot !== player.augments) {
+        c.augmentSnapshot = player.augments;
+        c.beamVentStacks = countAugment(player.augments, "beam-vent");
+        c.beamFocusStacks = countAugment(player.augments, "beam-focus");
+      }
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
       if (player.height > GROUND_EPSILON) return; // airborne (mid-jump) — the hop carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
@@ -2061,7 +2370,7 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
         if (c.pitGrace > 0) return;
-        player.hp = Math.max(0, player.hp - player.maxHp * PIT_FALL_DAMAGE_FRAC);
+        this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC);
         player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
         c.lastGroundX = player.x;
         c.pitGrace = PIT_FALL_GRACE;
@@ -2078,7 +2387,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
       // FALL.
-      player.hp = Math.max(0, player.hp - player.maxHp * PIT_FALL_DAMAGE_FRAC);
+      this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC);
       const safe = isPitAtPx(this.map, c.lastGroundX, c.lastGroundY)
         ? nearestGroundPx(this.map, player.x, player.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
@@ -2151,6 +2460,8 @@ export class GameRoom extends Room<ArenaState> {
       // remainder across the 20Hz grid — otherwise a 0.08s fire-rate quantises to 0.10s (a silent ~20%
       // DPS loss on fast autos). Resetting weapons (melee/thrown) clamp to 0 effectively (they set `= cd`).
       c.cd = Math.max(-dt, c.cd - dt);
+      c.drawLock = Math.max(0, c.drawLock - dt);
+      this.stepStowedWeaponResources(player, c, dt);
       c.invuln = Math.max(0, c.invuln - dt);
       c.parryCd = Math.max(0, c.parryCd - dt);
       c.parryChainT = Math.max(0, c.parryChainT - dt);
@@ -2183,19 +2494,9 @@ export class GameRoom extends Room<ArenaState> {
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
       // magazine as ammo; thrown weapons use charges; both share charges/maxCharges + the reload timer.
       if (c.lastWeapon !== player.weapon) {
-        if (c.beamPhase !== 0 || c.beamDescriptor) {
-          this.cancelBeam(player, id, c, true, true);
-        }
-        c.lastWeapon = player.weapon;
-        c.cd = 0; // clear the previous weapon's leftover cooldown so the new one can act immediately
-        c.reloadCd = 0;
-        // §7 v0.105 de-clunk (adversarial-verify fix): also DROP any attack buffered on the OLD weapon.
-        // The swap zeroes cd, so a stale buffered press would otherwise auto-fire the NEW weapon with no
-        // input for it — a free cooldown-bypassing hit you could farm by attack→cycle→attack→cycle.
-        c.attackBuffer = 0;
-        const max = weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
-        player.charges = max;
-        player.maxCharges = max;
+        // Direct server-side identity edits (tests/dev setup) restore debt but are not a player quick-swap.
+        // Network-reachable swap handlers apply the shared draw gate at the transition edge above.
+        this.transitionWeapon(player, c, false, false);
       }
 
       if (weapon?.beam) {
@@ -2210,7 +2511,7 @@ export class GameRoom extends Room<ArenaState> {
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
       // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
       // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
-      const canAct = acting && c.attackBuffer > 0 && c.cd <= 0;
+      const canAct = acting && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
@@ -2277,7 +2578,16 @@ export class GameRoom extends Room<ArenaState> {
       if (!q) continue;
       q.t -= dt;
       if (q.t <= 0) {
-        this.detonate(q.x, q.y, q.radius, q.damage, q.crit);
+        this.detonate(
+          q.x,
+          q.y,
+          q.radius,
+          q.damage,
+          q.crit,
+          q.sourcePlayerId,
+          q.sourceWeaponId,
+          CombatDelivery.Quake,
+        );
         this.pendingQuakes.splice(i, 1);
       }
     }
@@ -2423,7 +2733,7 @@ export class GameRoom extends Room<ArenaState> {
               DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
           : dx * dx + dy * dy <= reach * reach;
         if (contact) {
-          player.hp -= kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt;
+          this.damagePlayer(player, kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt);
           // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
           if (kind.contactDamage > 0) {
             const d = Math.hypot(dx, dy) || 1;
@@ -2477,7 +2787,16 @@ export class GameRoom extends Room<ArenaState> {
     for (let i = this.burnPulses.length - 1; i >= 0; i--) {
       const p = this.burnPulses[i];
       if (p && this.state.elapsed >= p.at) {
-        this.emberguardWave(p.x, p.y, p.aimX, p.aimY, p.dmg);
+        this.emberguardWave(
+          p.x,
+          p.y,
+          p.aimX,
+          p.aimY,
+          p.dmg,
+          0,
+          p.sourcePlayerId,
+          p.sourceWeaponId,
+        );
         this.burnPulses.splice(i, 1);
       }
     }
@@ -2535,6 +2854,7 @@ export class GameRoom extends Room<ArenaState> {
       swingArc: weapon.swingArc,
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
+      weaponId: weapon.id,
       elapsed: 0,
       hit: new Set<string>(),
     });
@@ -2625,6 +2945,11 @@ export class GameRoom extends Room<ArenaState> {
                 kills,
                 critChanceFor(player.luk, player.dex),
                 true,
+                player.id,
+                weapon.id,
+                CombatDelivery.Chain,
+                player.x,
+                player.y,
               );
             }
             return;
@@ -2637,6 +2962,11 @@ export class GameRoom extends Room<ArenaState> {
               cl.damage * cl.falloff ** n * clPower,
               kills,
               critChanceFor(player.luk, player.dex),
+              player.id,
+              weapon.id,
+              CombatDelivery.Chain,
+              player.x,
+              player.y,
             );
         });
         for (const eid of kills) this.state.enemies.delete(eid);
@@ -2658,6 +2988,8 @@ export class GameRoom extends Room<ArenaState> {
         radius: weapon.quake.radius,
         damage: weapon.quake.damage * qPower,
         crit: critChanceFor(player.luk, player.dex),
+        sourcePlayerId: player.id,
+        sourceWeaponId: weapon.id,
       });
     }
 
@@ -2725,6 +3057,7 @@ export class GameRoom extends Room<ArenaState> {
     currentHeld: boolean,
     dt: number,
   ): void {
+    const coolMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
     for (const [weaponId, resource] of c.beamLedger) {
       const activelyChanneling =
         c.beamPhase !== 0 && c.beamDescriptor?.weaponId === weaponId;
@@ -2740,7 +3073,7 @@ export class GameRoom extends Room<ArenaState> {
       const isCurrent = weaponId === currentWeaponId;
       if (!isCurrent || !currentHeld) {
         const cool = Math.min(0.35, WEAPONS[weaponId]?.beam?.overheat.coolPerSecond ?? 0.35);
-        resource.heat = Math.max(0, resource.heat - cool * dt);
+        resource.heat = Math.max(0, resource.heat - cool * coolMultiplier * dt);
         resource.requireRelease = false;
       }
     }
@@ -2773,6 +3106,7 @@ export class GameRoom extends Room<ArenaState> {
     if (
       c.beamPhase === 0 &&
       rising &&
+      c.drawLock <= 0 &&
       resource.lockT <= 0 &&
       resource.recoveryT <= 0 &&
       !resource.requireRelease &&
@@ -2788,6 +3122,7 @@ export class GameRoom extends Room<ArenaState> {
         input.held.seq,
         this.heldDamageMult(weapon, weapon.beam.scalingGrades, player) * classDamage,
         lootCooldownMult(player.weaponAffix),
+        1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
       c.beamPhase = 1;
       c.beamPhaseT = 0;
@@ -2926,7 +3261,8 @@ export class GameRoom extends Room<ArenaState> {
       resource.lockT = Math.max(resource.lockT, c.beamDescriptor?.lockSeconds ?? 1.5);
       resource.requireRelease = true;
     } else {
-      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS);
+      const recoveryMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
+      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     const weapon = WEAPONS[player.weapon];
     if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon, resource);
@@ -2946,7 +3282,8 @@ export class GameRoom extends Room<ArenaState> {
     if (descriptor && addCancelCost) {
       const resource = this.beamResource(c, descriptor.weaponId);
       resource.heat = Math.min(1, resource.heat + BEAM_EARLY_CANCEL_HEAT);
-      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS);
+      const recoveryMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
+      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     c.beamPhase = 0;
     c.beamPhaseT = 0;
@@ -3239,6 +3576,8 @@ export class GameRoom extends Room<ArenaState> {
   private flushBeamDamage(c: CombatState, allowCrit: boolean, sourceId = "beam"): void {
     if (c.beamPendingDamage.size === 0) return;
     const kills: string[] = [];
+    const sourcePlayer = this.state.players.get(sourceId);
+    const sourceWeaponId = c.beamDescriptor?.weaponId ?? sourcePlayer?.weapon ?? "";
     this.wormHitSlots.length = 0;
     let wormDamage = 0;
     for (const [enemyId, damage] of c.beamPendingDamage) {
@@ -3250,7 +3589,18 @@ export class GameRoom extends Room<ArenaState> {
       }
       const enemy = this.state.enemies.get(enemyId);
       if (enemy && enemy.hp > 0 && damage > 0) {
-        this.damageEnemy(enemy, enemyId, damage, kills, allowCrit ? c.beamCrit : 0);
+        this.damageEnemy(
+          enemy,
+          enemyId,
+          damage,
+          kills,
+          allowCrit ? c.beamCrit : 0,
+          sourcePlayer?.id ?? "",
+          sourceWeaponId,
+          CombatDelivery.Beam,
+          sourcePlayer?.x ?? enemy.x,
+          sourcePlayer?.y ?? enemy.y,
+        );
       }
     }
     this.damageWormSlots(
@@ -3260,6 +3610,11 @@ export class GameRoom extends Room<ArenaState> {
       kills,
       allowCrit ? c.beamCrit : 0,
       true,
+      sourcePlayer?.id ?? "",
+      sourceWeaponId,
+      CombatDelivery.Beam,
+      sourcePlayer?.x ?? 0,
+      sourcePlayer?.y ?? 0,
     );
     c.beamPendingDamage.clear();
     for (const enemyId of kills) {
@@ -3311,7 +3666,18 @@ export class GameRoom extends Room<ArenaState> {
           const depthWin = DEPTH_TOL_PLAYER + r * (rolling ? DEPTH_DODGE_MULT : 1);
           if (Math.abs(enemy.y - player.y) > depthWin) continue;
           sw.hit.add(eid);
-          this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
+          this.damageEnemy(
+            enemy,
+            eid,
+            sw.edgeDamage,
+            kills,
+            critC,
+            pid,
+            sw.weaponId,
+            CombatDelivery.Melee,
+            player.x,
+            player.y,
+          );
         }
         const runtime = this.bossController?.wormRuntime;
         if (runtime) {
@@ -3338,6 +3704,12 @@ export class GameRoom extends Room<ArenaState> {
             `melee:${pid}:${player.attackSeq}`,
             kills,
             critC,
+            false,
+            pid,
+            sw.weaponId,
+            CombatDelivery.Melee,
+            player.x,
+            player.y,
           );
         }
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
@@ -3378,7 +3750,18 @@ export class GameRoom extends Room<ArenaState> {
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           if (bladeHitsCircle(wielder, angle, sw.range, enemy, r, sw.halfWidth)) {
             sw.hit.add(eid);
-            this.damageEnemy(enemy, eid, sw.edgeDamage, kills, critC);
+            this.damageEnemy(
+              enemy,
+              eid,
+              sw.edgeDamage,
+              kills,
+              critC,
+              pid,
+              sw.weaponId,
+              CombatDelivery.Melee,
+              player.x,
+              player.y,
+            );
           }
         }
         if (runtime) {
@@ -3407,6 +3790,12 @@ export class GameRoom extends Room<ArenaState> {
         `melee:${pid}:${player.attackSeq}:${Math.floor((sw.swingArc * p1) / (Math.PI * 2))}`,
         kills,
         critC,
+        false,
+        pid,
+        sw.weaponId,
+        CombatDelivery.Melee,
+        player.x,
+        player.y,
       );
       if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
     }
@@ -3921,10 +4310,14 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((player) => {
       // Open the augment draft for any signature pick that doesn't have one yet (server-authoritative roll).
       if (player.sigPending > 0 && !player.sigOffer) {
-        // §38 gate the draft by the wielded delivery so gunners/casters draft THEIR signature perks too.
-        const w = WEAPONS[player.weapon];
-        const wk = w?.gun ? "gun" : w?.cast ? "cast" : undefined;
-        player.sigOffer = draftAugments(Math.random, wk).join(",");
+        // G-09 reads the lane captured at the signature level edge; swapping during the window cannot
+        // rewrite it. Legacy/manual pending picks snapshot once here as a compatibility fallback.
+        if (!player.sigGateQueue) {
+          player.sigGateQueue = augmentGateForWeapon(WEAPONS[player.weapon]);
+        }
+        const sep = player.sigGateQueue.indexOf(";");
+        const gate = sep < 0 ? player.sigGateQueue : player.sigGateQueue.slice(0, sep);
+        player.sigOffer = draftAugments(Math.random, augmentDeliveriesForGate(gate)).join(",");
       }
       if (!this.inLevelWindow(player)) {
         if (player.flexTimer !== 0) player.flexTimer = 0;
@@ -3946,10 +4339,16 @@ export class GameRoom extends Room<ArenaState> {
         if (first) player.augments = player.augments ? `${player.augments},${first}` : first;
         player.sigPending = Math.max(0, player.sigPending - 1);
         player.sigOffer = "";
+        this.consumeSignatureGate(player);
       }
       player.flexTimer = this.inLevelWindow(player) ? LEVELUP_WINDOW_SECONDS : 0;
       this.syncFlexTimer(player);
     });
+  }
+
+  private consumeSignatureGate(player: PlayerState): void {
+    const sep = player.sigGateQueue.indexOf(";");
+    player.sigGateQueue = sep < 0 ? "" : player.sigGateQueue.slice(sep + 1);
   }
 
   /** §16 v0.109 run the active boss's data-driven controller (replaces the hardcoded OLD RUST machine). It
@@ -4173,7 +4572,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
-      p.hp -= damage; // §16 unparryable — dodge it, don't block it
+      this.damagePlayer(p, damage); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
@@ -4201,9 +4600,12 @@ export class GameRoom extends Room<ArenaState> {
       const c = this.combat.get(p.id);
       if (c && c.invuln > 0) {
         p.parriedSeq += 1; // PARRIED (i-frame window) — negate + trigger the white parry flash
+        c.parryCd = Math.min(c.parryCd, PARRY_CHAIN_CD);
+        this.applyParryAugments(p, c);
+        this.bossController?.acceptWormParry(p.id, this.state.tick);
         return;
       }
-      p.hp -= damage;
+      this.damagePlayer(p, damage);
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
@@ -4227,7 +4629,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (!p.alive || this.inLevelWindow(p)) return;
       if (!pointInOrientedRect(p.x, p.y, x, y, len, halfW, rot)) return;
-      p.hp -= damage;
+      this.damagePlayer(p, damage);
       if (knockback > 0) {
         const side = (p.x - x) * nx + (p.y - y) * ny >= 0 ? 1 : -1; // shove to the side they're already on
         const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
@@ -4251,7 +4653,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (!p.alive || this.inLevelWindow(p)) return;
       if (!pointInAnnulusGap(p.x, p.y, cx, cy, bandR, bandHalf, gapCenter, gapHalf)) return;
-      p.hp -= damage;
+      this.damagePlayer(p, damage);
     });
   }
 
@@ -4358,6 +4760,9 @@ export class GameRoom extends Room<ArenaState> {
     explode?: { radius: number; damage: number },
     bounces = 0,
     crit = 0,
+    sourcePlayerId = "",
+    sourceWeaponId = "",
+    delivery = 0,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
@@ -4390,6 +4795,11 @@ export class GameRoom extends Room<ArenaState> {
       pierceMax: pierce,
       legTtl: ttl,
       crit,
+      sourcePlayerId,
+      sourceWeaponId,
+      delivery,
+      sourceX: from.x,
+      sourceY: from.y,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -4465,6 +4875,9 @@ export class GameRoom extends Room<ArenaState> {
         explode,
         bounces, // §38 base + Ricochet Rounds
         crit,
+        player.id,
+        weapon.id,
+        CombatDelivery.Gun,
       );
     }
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
@@ -4510,6 +4923,9 @@ export class GameRoom extends Room<ArenaState> {
         undefined,
         0,
         crit,
+        player.id,
+        weapon.id,
+        CombatDelivery.Cast,
       );
     }
   }
@@ -4533,6 +4949,9 @@ export class GameRoom extends Room<ArenaState> {
       undefined,
       0,
       critChanceFor(player.luk, player.dex), // §30 thrown weapons crit too
+      player.id,
+      weapon.id,
+      CombatDelivery.Thrown,
     );
   }
 
@@ -4580,6 +4999,9 @@ export class GameRoom extends Room<ArenaState> {
         explode,
         0,
         crit,
+        player.id,
+        weapon.id,
+        CombatDelivery.Scatter,
       );
     }
   }
@@ -4591,14 +5013,21 @@ export class GameRoom extends Room<ArenaState> {
     kills: string[],
     crit = 0,
     piercing = false,
+    sourcePlayerId = "",
+    sourceWeaponId = "",
+    delivery = 0,
+    sourceX = 0,
+    sourceY = 0,
   ): void {
     const controller = this.bossController;
     const runtime = controller?.wormRuntime;
     const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
     if (!controller || !runtime || !boss || slots.length === 0 || boss.hp <= 0) return;
     let damage = raw;
+    let didCrit = false;
     if (crit > 0 && Math.random() < crit) {
       damage *= CRIT_MULT;
+      didCrit = true;
       boss.critFlash = (boss.critFlash + 1) & 0xff;
     }
     if (this.brandedTimers.has(boss.id)) damage *= BRAND_DAMAGE_MULT;
@@ -4611,6 +5040,20 @@ export class GameRoom extends Room<ArenaState> {
       boss,
     );
     if (!result.accepted) return;
+    const firstSlot = slots[0] ?? 0;
+    this.writeCombatReceipt(
+      `worm:${firstSlot}:${runtime.segmentGeneration(firstSlot)}`,
+      runtime.x[firstSlot] ?? boss.x,
+      runtime.y[firstSlot] ?? boss.y,
+      sourcePlayerId,
+      sourceWeaponId,
+      delivery,
+      sourceX,
+      sourceY,
+      Math.max(result.coreDamage, damage),
+      didCrit,
+      result.terminal,
+    );
     for (;;) {
       const reward = controller.drainWormReward();
       if (!reward) break;
@@ -4638,7 +5081,18 @@ export class GameRoom extends Room<ArenaState> {
    *  bookkeeping (dummy reset · boss portal · ronin drop). Pushes the id to `kills` on death (the caller
    *  deletes after iterating) and drops one authoritative XP Echo at the exact corpse position. The single
    *  primitive keeps Brand + drops + XP consistent across every source (swing / blast / projectile / wave). */
-  private damageEnemy(enemy: EnemyState, eid: string, raw: number, kills: string[], crit = 0): void {
+  private damageEnemy(
+    enemy: EnemyState,
+    eid: string,
+    raw: number,
+    kills: string[],
+    crit = 0,
+    sourcePlayerId = "",
+    sourceWeaponId = "",
+    delivery = 0,
+    sourceX = enemy.x,
+    sourceY = enemy.y,
+  ): void {
     const wormRoot = eid === this.bossId && !!this.bossController?.wormRuntime;
     // The compatibility root is never a hurt shape; zero damage is the segment route's terminal hand-off.
     if (wormRoot && (raw > 0 || enemy.hp > 0)) return;
@@ -4646,11 +5100,28 @@ export class GameRoom extends Room<ArenaState> {
     // chain, quake, gun, thrown, riposte) can independently crit. A crit doubles the hit + bumps the
     // synced critFlash so the client styles a gold number with extra juice. Non-player sources pass 0.
     let dmg = raw;
+    let didCrit = false;
     if (crit > 0 && Math.random() < crit) {
       dmg *= CRIT_MULT;
+      didCrit = true;
       enemy.critFlash = (enemy.critFlash + 1) & 0xff;
     }
-    enemy.hp -= dmg * (this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT : 1);
+    const applied = dmg * (this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT : 1);
+    const finalBlow = enemy.kind !== "dummy" && enemy.hp - applied <= 0;
+    enemy.hp -= applied;
+    this.writeCombatReceipt(
+      eid,
+      enemy.x,
+      enemy.y,
+      sourcePlayerId,
+      sourceWeaponId,
+      delivery,
+      sourceX,
+      sourceY,
+      applied,
+      didCrit,
+      finalBlow,
+    );
     if (enemy.hp > 0) return;
     if (enemy.kind === "dummy") {
       enemy.hp = DUMMY_HP;
@@ -4781,7 +5252,16 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Apply an AoE blast at (x,y): damage every enemy within `radius`, with the same kill/XP/portal
    *  bookkeeping as a swing hit. Used by the scatter-shot magma explosions (§14). */
-  private detonate(x: number, y: number, radius: number, damage: number, crit = 0): void {
+  private detonate(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    crit = 0,
+    sourcePlayerId = "",
+    sourceWeaponId = "",
+    delivery = 0,
+  ): void {
     const r2 = radius * radius;
     const kills: string[] = [];
     this.enemyGrid.queryRadius(x, y, radius, this.enemyCandidates);
@@ -4791,7 +5271,18 @@ export class GameRoom extends Room<ArenaState> {
       const dx = enemy.x - x;
       const dy = enemy.y - y;
       if (dx * dx + dy * dy > r2) continue;
-      this.damageEnemy(enemy, eid, damage, kills, crit);
+      this.damageEnemy(
+        enemy,
+        eid,
+        damage,
+        kills,
+        crit,
+        sourcePlayerId,
+        sourceWeaponId,
+        delivery,
+        x,
+        y,
+      );
     }
     this.damageWormSlots(
       this.collectWormRadiusHits(x, y, radius),
@@ -4799,6 +5290,12 @@ export class GameRoom extends Room<ArenaState> {
       `aoe:${this.wormDamageSourceSeq++}`,
       kills,
       crit,
+      false,
+      sourcePlayerId,
+      sourceWeaponId,
+      delivery,
+      x,
+      y,
     );
     for (const eid of kills) this.state.enemies.delete(eid);
   }
@@ -4813,11 +5310,24 @@ export class GameRoom extends Room<ArenaState> {
     aimY: number,
     dmg: number,
     crit = 0,
+    sourcePlayerId = "",
+    sourceWeaponId = "",
   ): void {
     const kills: string[] = [];
     this.state.enemies.forEach((enemy, eid) => {
       if (inMeleeArc({ x, y }, aimX, aimY, enemy, EMBERGUARD_RANGE, EMBERGUARD_HALF_ARC)) {
-        this.damageEnemy(enemy, eid, dmg, kills, crit);
+        this.damageEnemy(
+          enemy,
+          eid,
+          dmg,
+          kills,
+          crit,
+          sourcePlayerId,
+          sourceWeaponId,
+          CombatDelivery.Parry,
+          x,
+          y,
+        );
       }
     });
     const runtime = this.bossController?.wormRuntime;
@@ -4842,6 +5352,12 @@ export class GameRoom extends Room<ArenaState> {
         `ember:${this.wormDamageSourceSeq++}`,
         kills,
         crit,
+        false,
+        sourcePlayerId,
+        sourceWeaponId,
+        CombatDelivery.Parry,
+        x,
+        y,
       );
     }
     for (const eid of kills) this.state.enemies.delete(eid);
@@ -4852,11 +5368,10 @@ export class GameRoom extends Room<ArenaState> {
    *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
   private executeParry(player: PlayerState, c: CombatState): void {
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
-    // §8 Iron Stance (stacks): wider i-frame window + bigger knockback.
-    const iron = countAugment(player.augments, "iron-stance");
-    c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
+    // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
+    c.invuln = Math.max(c.invuln, PARRY_IFRAMES);
     c.parryCd = PARRY_COOLDOWN;
-    const knockback = PARRY_KNOCKBACK * (1 + IRON_STANCE_KNOCKBACK_PER * iron);
+    const knockback = PARRY_KNOCKBACK;
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
       if (id === this.bossId && this.bossController?.wormRuntime) return;
@@ -4870,7 +5385,6 @@ export class GameRoom extends Room<ArenaState> {
         this.updateEnemyGrid(id, enemy);
       }
     });
-    this.applyParryAugments(player, c);
   }
 
   /** §8 apply the player's owned parry AUGMENTS on a successful parry (Iron Stance is handled at the call
@@ -4881,15 +5395,20 @@ export class GameRoom extends Room<ArenaState> {
     if (!owned) return;
     const now = this.state.elapsed;
 
+    const iron = countAugment(owned, "iron-stance");
+    if (iron > 0) {
+      c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * iron));
+    }
+
     // Aegis — Second Wind (stacks): heal a CON-scaled sliver. Bulwark: a brief absorb shield.
     const sw = countAugment(owned, "second-wind");
     if (sw > 0) {
       const heal = sw * (SECOND_WIND_BASE + SECOND_WIND_PER_CON * Math.max(0, player.con - 1));
       player.hp = Math.min(player.maxHp, player.hp + heal);
     }
-    // Bulwark POC: a 1.5s absorb modelled as extended i-frames (full negate for the window). A true
-    // absorb-amount shield is a polish follow-up.
-    if (hasAugment(owned, "bulwark")) c.invuln = Math.max(c.invuln, BULWARK_SHIELD);
+    if (hasAugment(owned, "bulwark")) {
+      c.bulwarkShield = Math.max(c.bulwarkShield, BULWARK_SHIELD);
+    }
 
     // Riposte — Counterblade + Twin Fang (each = +1 projectile) + Hair-Trigger (consecutive parries add one).
     let projectiles = countAugment(owned, "counterblade") + countAugment(owned, "twin-fang");
@@ -4910,6 +5429,13 @@ export class GameRoom extends Room<ArenaState> {
           false,
           "counter",
           AUG_PROJECTILE_PIERCE,
+          PROJECTILE_TTL,
+          undefined,
+          0,
+          0,
+          player.id,
+          player.weapon,
+          CombatDelivery.Parry,
         );
       }
     }
@@ -4933,7 +5459,16 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (hasAugment(owned, "emberguard")) {
       const dmg = EMBERGUARD_BASE_DMG + EMBERGUARD_PER_INT * Math.max(0, player.int - 1);
-      this.emberguardWave(player.x, player.y, c.aimX, c.aimY, dmg, critChanceFor(player.luk, player.dex));
+      this.emberguardWave(
+        player.x,
+        player.y,
+        c.aimX,
+        c.aimY,
+        dmg,
+        critChanceFor(player.luk, player.dex),
+        player.id,
+        player.weapon,
+      );
       if (hasAugment(owned, "conflagration")) {
         this.burnPulses.push({
           x: player.x,
@@ -4942,6 +5477,8 @@ export class GameRoom extends Room<ArenaState> {
           aimY: c.aimY,
           dmg,
           at: now + CONFLAG_DELAY,
+          sourcePlayerId: player.id,
+          sourceWeaponId: player.weapon,
         });
       }
     }
@@ -5167,7 +5704,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
       // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
-      player.hp -= m.damage * dmgMul * depthDamageScale(this.state.depth);
+      this.damagePlayer(player, m.damage * dmgMul * depthDamageScale(this.state.depth));
       const hx = player.x - enemy.x;
       const hy = player.y - enemy.y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -5195,13 +5732,14 @@ export class GameRoom extends Room<ArenaState> {
     const dx = attacker.x - player.x;
     const dy = attacker.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
+    const ironKnockback = 1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance");
     attacker.x = clamp(
-      attacker.x + (dx / d) * PARRY_KNOCKBACK * 1.6,
+      attacker.x + (dx / d) * PARRY_KNOCKBACK * 1.6 * ironKnockback,
       ENEMY_RADIUS,
       ARENA_WIDTH - ENEMY_RADIUS,
     );
     attacker.y = clamp(
-      attacker.y + (dy / d) * PARRY_KNOCKBACK * 1.6,
+      attacker.y + (dy / d) * PARRY_KNOCKBACK * 1.6 * ironKnockback,
       ENEMY_RADIUS,
       ARENA_HEIGHT - ENEMY_RADIUS,
     );
@@ -5240,6 +5778,8 @@ export class GameRoom extends Room<ArenaState> {
         ARENA_HEIGHT - ENEMY_RADIUS,
       );
     }
+    // G-02: augments belong to this success receipt, never to the button press that opened the window.
+    this.applyParryAugments(player, pc);
   }
 
   /** §16 Slice 3 — resolve a PARRYABLE boss melee wedge (the `meleeCombo` primitive). Mirrors the horde
@@ -5263,10 +5803,14 @@ export class GameRoom extends Room<ArenaState> {
       const pc = this.combat.get(player.id);
       if (pc && pc.invuln > 0) {
         if (boss && this.bossId) this.resolveParry(player, pc, boss, this.bossId);
-        else player.parriedSeq = (player.parriedSeq + 1) % 100000; // no body to knock — still flash the parry
+        else {
+          player.parriedSeq = (player.parriedSeq + 1) % 100000;
+          this.applyParryAugments(player, pc);
+        }
+        this.bossController?.acceptWormParry(player.id, this.state.tick);
         return;
       }
-      player.hp -= damage; // already depth-scaled by the controller
+      this.damagePlayer(player, damage); // already depth-scaled by the controller
       const hx = player.x - x;
       const hy = player.y - y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -5281,7 +5825,11 @@ export class GameRoom extends Room<ArenaState> {
     if (this.state.mode !== "arena") return; // debug-summoned wielders in training mint NO loot (verify)
     const kind = ENEMY_KINDS[enemy.kind];
     if (!kind?.wieldsWeapon || !kind.dropWeapon) return;
-    if (Math.random() > kind.dropWeapon) return;
+    // G-03: this known-weapon reward channel obeys the same boss anti-farm lock as mystery loot. Named
+    // shifters guarantee their signature only outside that lock; ordinary rates stay deliberately scarce.
+    if (this.bossId || kind.archetype === "boss") return;
+    const chance = kind.shifter ? 1 : enemy.tough ? 0.06 : 0.02;
+    if (Math.random() > chance) return;
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
     pk.weapon = kind.wieldsWeapon;
@@ -5383,7 +5931,7 @@ export class GameRoom extends Room<ArenaState> {
             consumed = true;
             return;
           }
-          player.hp -= meta.damage;
+          this.damagePlayer(player, meta.damage);
           // §20 knockback (Stage A): a sharp bump along the bullet's travel direction.
           const sp = Math.hypot(pr.vx, pr.vy) || 1;
           const k = addImpulse(
@@ -5417,7 +5965,18 @@ export class GameRoom extends Room<ArenaState> {
             meta.pierce -= 1;
             // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the
             // projectile path can't drift from the swing/blast path (was a hand-duplicated copy).
-            this.damageEnemy(enemy, eid, meta.damage, kills, meta.crit ?? 0);
+            this.damageEnemy(
+              enemy,
+              eid,
+              meta.damage,
+              kills,
+              meta.crit ?? 0,
+              meta.sourcePlayerId ?? "",
+              meta.sourceWeaponId ?? "",
+              meta.delivery ?? 0,
+              meta.sourceX ?? pr.x,
+              meta.sourceY ?? pr.y,
+            );
           }
         }
         const runtime = this.bossController?.wormRuntime;
@@ -5455,6 +6014,11 @@ export class GameRoom extends Room<ArenaState> {
             kills,
             meta.crit ?? 0,
             true,
+            meta.sourcePlayerId ?? "",
+            meta.sourceWeaponId ?? "",
+            meta.delivery ?? 0,
+            meta.sourceX ?? pr.x,
+            meta.sourceY ?? pr.y,
           );
         }
         for (const eid of kills) this.state.enemies.delete(eid);
@@ -5467,7 +6031,16 @@ export class GameRoom extends Room<ArenaState> {
       const meta = this.projectileMeta.get(id);
       // Detonate exploding projectiles (magma scatter) at their death position — §14 WYSIWYG.
       if (pr && meta?.explode)
-        this.detonate(pr.x, pr.y, meta.explode.radius, meta.explode.damage, meta.crit ?? 0);
+        this.detonate(
+          pr.x,
+          pr.y,
+          meta.explode.radius,
+          meta.explode.damage,
+          meta.crit ?? 0,
+          meta.sourcePlayerId ?? "",
+          meta.sourceWeaponId ?? "",
+          meta.delivery ?? 0,
+        );
       this.removeProjectile(id);
     }
   }
@@ -5488,6 +6061,11 @@ export class GameRoom extends Room<ArenaState> {
       pierceMax?: number;
       ttl: number;
       hit: Set<string>;
+      sourcePlayerId?: string;
+      sourceWeaponId?: string;
+      delivery?: number;
+      sourceX?: number;
+      sourceY?: number;
     },
     player: PlayerState,
     pc: CombatState,
@@ -5496,6 +6074,11 @@ export class GameRoom extends Room<ArenaState> {
       this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
     pr.hostile = false;
     meta.hostile = false;
+    meta.sourcePlayerId = player.id;
+    meta.sourceWeaponId = player.weapon;
+    meta.delivery = CombatDelivery.Parry;
+    meta.sourceX = player.x;
+    meta.sourceY = player.y;
     meta.hit.clear();
     if (hasAugment(player.augments, "deflector")) {
       // BOUNCE BACK — aim the counter at the nearest enemy to the bullet (fall back to a straight reversal).
@@ -5543,6 +6126,7 @@ export class GameRoom extends Room<ArenaState> {
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
     player.hp = Math.min(player.maxHp, player.hp + PARRY_CHAIN_HEAL);
+    this.applyParryAugments(player, pc);
   }
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
@@ -5591,7 +6175,7 @@ export class GameRoom extends Room<ArenaState> {
         const dx = player.x - zone.x;
         const dy = player.y - zone.y;
         if (dx * dx + dy * dy <= r2)
-          player.hp -= ZONE_DPS * depthDamageScale(this.state.depth) * dt;
+          this.damagePlayer(player, ZONE_DPS * depthDamageScale(this.state.depth) * dt);
       });
     });
     for (const id of doomed) {

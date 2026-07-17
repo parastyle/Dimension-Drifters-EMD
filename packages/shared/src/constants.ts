@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 17; // Serraketh fixed-cap worm state appended after friendly beams
+export const SCHEMA_VERSION = 18; // fixed combat-receipt ring + signature-gate snapshot appended
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -349,6 +349,11 @@ export const XP_ECHO_CLEANUP_MAX_MS = 650;
 /** §29 v0.118 ARSENAL: a fixed 3-slot loadout (the belt "carry 3 weapons, swap instantly") plus a bag for
  *  overflow you haul to a shopkeeper. */
 export const ARSENAL_SLOTS = 3;
+/** G-01 one responsive, shared draw gate after any held-weapon transition. Kept separate from each
+ * weapon's restored cooldown so swapping never erases debt and the gate never overwrites a longer debt. */
+export const WEAPON_DRAW_LOCK_SECONDS = 0.15;
+/** v18 fixed-size authoritative hit/final-blow receipt ring. Allocated once when the room is created. */
+export const COMBAT_RECEIPT_CAP = 32;
 export const BAG_CAP = 12;
 /** §29 shopkeeper interaction reach (world px) + SCRIP paid per rarity tier when selling an EARNED weapon
  *  (unearned/conjured weapons sell for nothing — same anti-launder rule as salvage). Indexed by rarity. */

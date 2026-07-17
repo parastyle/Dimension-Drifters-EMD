@@ -2138,6 +2138,131 @@ describe("GameRoom — §44 safety gates", () => {
   });
 });
 
+describe("improve2 integrity regressions", () => {
+  it("G-01 restores per-weapon cooldown/ammo debt and keeps an immediate quick-swap press buffered", () => {
+    const h = makeRoom();
+    h.join("swap-ledger");
+    const player = h.state().players.get("swap-ledger");
+    const combat = h.room.combat.get("swap-ledger");
+    const gunId = WEAPON_IDS.find((id) => WEAPONS[id]?.gun);
+    if (!gunId) throw new Error("expected a gun fixture");
+    player.weapon = gunId;
+    h.tick(1);
+    combat.cd = 0.6;
+    combat.reloadCd = 0.5;
+    player.charges = 1;
+
+    h.send("swap-ledger", "cycleWeapon", { dir: 1 });
+    const swappedId = player.weapon;
+    expect(swappedId).not.toBe(gunId);
+    h.send("swap-ledger", "attack", { aimX: 1, aimY: 0 });
+    h.tick(2);
+    expect(player.attackSeq).toBe(0);
+    h.tick(1);
+    expect(player.attackSeq).toBe(1);
+
+    player.weapon = gunId; // server-side setup return; the carousel ledger still owns the old debt
+    h.tick(1);
+    expect(combat.cd).toBeGreaterThan(0.4);
+    expect(combat.reloadCd).toBeGreaterThan(0.3);
+    expect(player.charges).toBe(1);
+  });
+
+  it("G-02 grants parry augments only after a resolved success receipt", () => {
+    const h = makeRoom();
+    h.join("parry-success");
+    const player = h.state().players.get("parry-success");
+    const combat = h.room.combat.get("parry-success");
+    player.hp = 40;
+    player.augments = "second-wind,counterblade,bulwark";
+
+    h.send("parry-success", "parry");
+    expect(player.hp).toBe(40);
+    expect(h.state().projectiles.size).toBe(0);
+    expect(combat.bulwarkShield).toBe(0);
+
+    const attacker = new EnemyState();
+    attacker.id = "parry-attacker";
+    attacker.kind = "critter";
+    attacker.x = player.x + 40;
+    attacker.y = player.y;
+    h.room.resolveParry(player, combat, attacker, attacker.id);
+    expect(player.hp).toBeGreaterThan(40);
+    expect(h.state().projectiles.size).toBeGreaterThan(0);
+    expect(combat.bulwarkShield).toBeGreaterThan(0);
+  });
+
+  it("G-03 suppresses known weapon drops during a boss and uses 2%/6% ordinary rates", () => {
+    const h = makeRoom();
+    h.join("drop-law");
+    const row = Object.entries(ENEMY_KINDS).find(
+      ([, kind]) => !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
+    );
+    if (!row) throw new Error("expected a weapon-wielding enemy fixture");
+    const enemy = new EnemyState();
+    enemy.id = "drop-law-enemy";
+    enemy.kind = row[0];
+    enemy.x = h.room.map.spawnX;
+    enemy.y = h.room.map.spawnY;
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0.03);
+
+    h.room.bossId = "alive-boss";
+    h.room.maybeDropWeapon(enemy);
+    expect(h.state().pickups.size).toBe(0);
+    h.room.bossId = null;
+    h.room.maybeDropWeapon(enemy);
+    expect(h.state().pickups.size).toBe(0); // 3% misses trash's 2%
+    enemy.tough = true;
+    h.room.maybeDropWeapon(enemy);
+    expect(h.state().pickups.size).toBe(1); // but lands inside tough's 6%
+    rng.mockRestore();
+  });
+
+  it("polish #7 writes fixed-ring hit/final-blow ownership from the accepted source, not proximity", async () => {
+    const { CombatDelivery, COMBAT_RECEIPT_CAP } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("author");
+    h.join("nearby");
+    const author = h.state().players.get("author");
+    const nearby = h.state().players.get("nearby");
+    author.x = 100;
+    author.y = 100;
+    nearby.x = 600;
+    nearby.y = 600;
+    const victim = new EnemyState();
+    victim.id = "receipt-victim";
+    victim.kind = "critter";
+    victim.x = nearby.x + 1;
+    victim.y = nearby.y;
+    victim.hp = 1;
+    h.state().enemies.set(victim.id, victim);
+    const rows = [...h.state().combatReceipts];
+    const kills: string[] = [];
+
+    h.room.damageEnemy(
+      victim,
+      victim.id,
+      5,
+      kills,
+      0,
+      author.id,
+      "six-shooter",
+      CombatDelivery.Gun,
+      author.x,
+      author.y,
+    );
+    const receipt = [...h.state().combatReceipts].find((row) => row.seq === 1);
+    expect(receipt?.sourcePlayerId).toBe("author");
+    expect(receipt?.sourcePlayerId).not.toBe("nearby");
+    expect(receipt?.targetId).toBe(victim.id);
+    expect(receipt?.finalBlow).toBe(true);
+    expect(receipt?.delivery).toBe(CombatDelivery.Gun);
+    expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
+    expect([...h.state().combatReceipts]).toEqual(rows);
+    expect(h.state().schemaVersion).toBe(18);
+  });
+});
+
 const { BOSS_PROJECTILE_BUDGET: HOSTILE_PROJECTILE_CEILING } = await import("@dd/shared");
 
 // ── §46 terminal-room quiescence + arena-wide hostile-projectile admission (audit follow-up). ────────────

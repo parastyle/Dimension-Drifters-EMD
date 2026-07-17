@@ -32,6 +32,20 @@ export const BeamPhase = {
 } as const;
 export type BeamPhaseValue = (typeof BeamPhase)[keyof typeof BeamPhase];
 
+/** Compact wire taxonomy for authoritative hit/kill ownership receipts. Values are append-only. */
+export const CombatDelivery = {
+  Melee: 1,
+  Gun: 2,
+  Cast: 3,
+  Thrown: 4,
+  Beam: 5,
+  Quake: 6,
+  Chain: 7,
+  Parry: 8,
+  Scatter: 9,
+} as const;
+export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
+
 /** Immutable accepted beam epoch. Damage and timing are snapshotted at channel acceptance. */
 export interface BeamDescriptor {
   readonly weaponId: string;
@@ -61,6 +75,7 @@ export function beamDescriptorFor(
   startSeq: number,
   damageMultiplier = 1,
   chargeMultiplier = 1,
+  sweepControlMultiplier = 1,
 ): BeamDescriptor {
   const beam = weapon.beam;
   if (!beam) throw new Error(`Weapon ${weapon.id} has no beam delivery`);
@@ -73,7 +88,7 @@ export function beamDescriptorFor(
     tickRate: Math.min(0.25, Math.max(0.05, Math.round(beam.tickRate / 0.05) * 0.05)),
     width: Math.min(BEAM_MAX_WIDTH, Math.max(1, beam.width)),
     range: Math.min(BEAM_MAX_RANGE, Math.max(1, beam.range)),
-    sweepLagSeconds: Math.max(0.001, beam.sweepLagSeconds),
+    sweepLagSeconds: Math.max(0.001, beam.sweepLagSeconds / Math.max(1, sweepControlMultiplier)),
     maxTurnRate: BEAM_MAX_TURN_RATE,
     maxChannelSeconds: Math.min(BEAM_MAX_CHANNEL_SECONDS, beam.overheat.maxChannelSeconds),
     heatPerSecond: Math.max(BEAM_HEAT_PER_SECOND, beam.overheat.heatPerSecond),

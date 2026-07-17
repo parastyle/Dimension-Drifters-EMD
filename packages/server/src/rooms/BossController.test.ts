@@ -371,6 +371,57 @@ describe("§36 dimension finale bosses — each level plays a distinct fight", (
   });
 });
 
+describe("improve2 G-06 Serraketh authored action reachability", () => {
+  it("fires the tail reap and post-split spinner quake through one synced major-action lane", async () => {
+    const shared = await import("@dd/shared");
+    const def = bossDefFor("seam-eater");
+    const root = new EnemyState();
+    root.id = "serraketh-actions";
+    root.kind = "seam-eater";
+    root.hp = 1000;
+    root.x = 1000;
+    root.y = 1000;
+    const state = new shared.WormBossState();
+    const controller = new BossController(def, 1000, 77);
+    controller.attachWorm(state, root, 0, 0);
+    const { sink, calls } = mockSink();
+
+    for (let tick = 1; tick <= 30; tick++) {
+      controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    }
+    expect(state.actionKind).toBe(shared.WormActionKind.StitchReap);
+    expect(state.actionResolveTick - state.actionStartTick).toBe(11);
+    expect(calls.addTelegraph.at(-1)?.kindTag).toBe(9);
+    expect(calls.addTelegraph.at(-1)?.danger).toBe(shared.TELEGRAPH_PARRYABLE);
+    const tailSlot = state.actionEmitterSlot;
+    for (let tick = 31; tick <= 41; tick++) {
+      controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    }
+    expect(calls.applyMelee).toHaveLength(1);
+    expect(controller.acceptWormParry("p1", 41)).toBe(true);
+    expect(controller.wormRuntime?.armorBand[tailSlot]).toBe(shared.WormArmorBand.Exposed);
+
+    root.hp = 600; // phase 2 first commits the authored split, then alternates to Rib Quake
+    let ribStart = -1;
+    for (let tick = 42; tick < 360; tick++) {
+      controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+      if (state.actionKind === shared.WormActionKind.RibQuake) {
+        ribStart = tick;
+        break;
+      }
+    }
+    expect(ribStart).toBeGreaterThan(0);
+    expect(state.actionResolveTick - state.actionStartTick).toBe(16);
+    expect(calls.addTelegraph.at(-1)?.kindTag).toBe(7);
+    const quakesBefore = calls.applyQuake.length;
+    for (let tick = ribStart + 1; tick <= state.actionResolveTick; tick++) {
+      controller.step(0.05, root, TARGETS, 1, tick, sink, tick);
+    }
+    expect(calls.applyQuake.length).toBe(quakesBefore + 1);
+    expect(state.actionKind).toBe(shared.WormActionKind.RibQuake);
+  });
+});
+
 // Integration harness for the GameRoom catch-up/broadcast boundary. Kept here with the controller lifecycle
 // tests so the regression directly pins the contract between BossController.step() and GameRoom.update().
 vi.mock("colyseus", () => {
