@@ -2321,6 +2321,10 @@ describe("GameRoom — §46 terminal quiescence + hostile projectile ceiling", (
     const h = makeRoom();
     h.join("p1");
     const p = h.state().players.get("p1");
+    // Map-RNG law: this test pins a volley path near spawn — random POIs/pits under it (likelier since
+    // the QOL-03 gate-disc solver reshapes spawn-adjacent terrain) would annihilate the volley mid-step.
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
     const safe = { x: h.room.map.spawnX + 120, y: h.room.map.spawnY };
 
     // Saturate through the central primitive: excess hostile shots are rejected before ids/state are minted.
