@@ -12,6 +12,8 @@ import {
   DUMMY_RADIUS,
   ENEMY_HP_PER_PLAYER,
   ENEMY_RADIUS,
+  JUGGLE_KEEP_VH,
+  JUGGLE_LAUNCH_VH,
   LUNGE_DAMAGE_MULT,
   LUNGE_MIN_DAMAGE,
   LUNGE_REACH_PAD,
@@ -139,6 +141,428 @@ export interface EnemyKind {
    *  for `window` seconds, then phases out (despawns) if it survives. `tier` orders the three (1 = earliest
    *  + weakest Marshal, 2 = Ronin, 3 = heaviest Warden) — the active tier scales with run time. */
   shifter?: { tier: number; window: number };
+  /** §51 the authored TOUGH-COMBO deck this kind speaks (keys TOUGH_COMBOS) with per-entry depth gates —
+   *  the language binds only to TOUGH instances (and shifters, always): non-tough kin keep the legacy
+   *  machine untouched. Vocabulary scales by DEPTH, never by compressing wind-ups (G15). */
+  combos?: readonly ToughComboEntry[];
+  /** §51 this kind OPENS its combo with the Negotiated Leap (the white duel-offer to the player's front)
+   *  when tough — leapers + shifters. Grounded duelists walk in instead. */
+  comboLeap?: boolean;
+}
+
+/**
+ * §51 TOUGH-ENEMY COMBO LANGUAGE — the authored combo grammar (enemycombo panel). PURE data, shared so
+ * the server executes and (later waves) the client presents off the same tables. Every wind-up is in
+ * whole 50ms TICKS (the worm action-tick model) and every damaging beat respects the guardrails:
+ * windup ≥ 6 ticks (G6 — T1's authored 0.25s second jab is clamped up to the 0.30s floor), strike
+ * advance ≤ COMBO_STEP_MAX px (G2), and escalations spend MORE telegraph time than what they escalate
+ * from ("stronger = slower = fairer" — the bait return is the longest white beat in its combo).
+ */
+export interface ToughComboEntry {
+  /** Keys TOUGH_COMBOS. */
+  combo: string;
+  /** The run depth this entry unlocks at (§6 chain) — one new lesson at a time (G15). */
+  minDepth: number;
+}
+export interface ToughComboStep {
+  /** "strike" = an arc hit · "launcher" = strike that SETS the victim's vh (the juggle door) ·
+   *  "airkeep" = strike valid only against an AIRBORNE victim inside its height window. */
+  kind: "strike" | "launcher" | "airkeep";
+  /** Authored wind-up in 50ms ticks (≥6, G6). The white ramp + Lock commit run over exactly this. */
+  windupTicks: number;
+  range: number;
+  /** Cone half-arc, radians. */
+  halfArc: number;
+  /** × the kind's `melee.damage` (before TOUGH_DAMAGE_MULT and depthDamageScale). */
+  damageMult: number;
+  /** Forward lunge px at resolve — clamped to COMBO_STEP_MAX (G2: no >96px single-tick writes). */
+  step: number;
+  /** × HIT_KNOCKBACK_IMPULSE on a clean hit (finishers shove harder). Default 1. */
+  knockbackMult?: number;
+  /** RED step (H1's low sweep): dodge/jump-only — never parryable, never glints, and an AIRBORNE
+   *  player CLEARS it (the footfall-quake "feet" language). Telegraphs danger=1. */
+  unparryable?: boolean;
+  /** Parry-BAIT: a parry of this step converts the knockback into the authored empowered return. */
+  returnCapable?: boolean;
+  /** Launcher payload: SET (never add) the victim's vh + a horizontal pop along the strike. */
+  launch?: { vh: number; push: number };
+  /** Air-keep payload: vh RESET (0 = no re-loft, the finisher lets you fall) + push, valid only while
+   *  the victim's height is inside [hMin, hMax] px — grounded at resolve = the whole string whiffs. */
+  airkeep?: { vh: number; push: number; hMin: number; hMax: number };
+}
+export interface ToughComboReturn {
+  /** The empowered comeback's wind-up (ticks) — authored SLOWER than the bait (escalation buys the
+   *  player MORE read time), then a RETURN_DASH_TICKS bounded-velocity close (≤RETURN_STEP_MAX px). */
+  windupTicks: number;
+  range: number;
+  halfArc: number;
+  damageMult: number;
+  knockbackMult?: number;
+  /** The forced recover after the return resolves PARRIED — the biggest punish window in the tier. */
+  recoverTicks: number;
+}
+export interface ToughComboDef {
+  id: string;
+  /** Negotiated-leap canonical landing distance in FRONT of the player = 0.80 × opener range. */
+  frontOffset: number;
+  steps: readonly ToughComboStep[];
+  /** Post-combo vulnerable window, ticks. */
+  recoverTicks: number;
+  /** Present = this combo carries a parry-bait branch (the "comes back stronger" return). */
+  return?: ToughComboReturn;
+  /** Parry-baited returns per combo run — 1 everywhere below the depth-7 Warden dialect. */
+  maxReturns: number;
+  /** Bait/juggle dialects — throttled to ≤40% of picks so the plain rhythms stay the spine. */
+  advanced?: boolean;
+}
+
+/** §51 the combo library, keyed by id. Timings/damage are the designer's authored numbers on the 50ms
+ *  grid; each inter-impact gap is ≥ the 0.25s chain-parry fairness floor. */
+export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
+  // ── Katana — the teaching family (opener range 138 → frontOffset 110) ──
+  /** K1 · Sanren: fast-fast-slow, the rhythm every player should be able to hum. Designed to be beaten
+   *  completely — two quick parries build the chain, the slow gold finisher is the riposte setup. */
+  "k1-sanren": {
+    id: "k1-sanren",
+    frontOffset: 110,
+    steps: [
+      { kind: "strike" as const, windupTicks: 8, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
+      { kind: "strike" as const, windupTicks: 6, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
+      {
+        kind: "strike" as const,
+        windupTicks: 15,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 1.25,
+        step: 96,
+        knockbackMult: 1.3,
+      },
+    ],
+    recoverTicks: 22,
+    maxReturns: 0,
+  },
+  /** K2 · Drawn Moon: one delayed iai cut, all nerve — punishes the panic-parry, rewards the read. */
+  "k2-drawn-moon": {
+    id: "k2-drawn-moon",
+    frontOffset: 110,
+    steps: [
+      { kind: "strike" as const, windupTicks: 19, range: 138, halfArc: 1.4, damageMult: 1.5, step: 84 },
+    ],
+    recoverTicks: 26,
+    maxReturns: 0,
+  },
+  /** K3 · Gale Cross: the parry-bait. The scary branch is the one YOUR button created — and it hands
+   *  you the bigger prize (second parry → riposte-range chain + the 1.50s punish window). */
+  "k3-gale-cross": {
+    id: "k3-gale-cross",
+    frontOffset: 110,
+    steps: [
+      {
+        kind: "strike" as const,
+        windupTicks: 9,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 0.9,
+        step: 66,
+        returnCapable: true,
+      },
+      { kind: "strike" as const, windupTicks: 7, range: 138, halfArc: 0.9, damageMult: 1.0, step: 66 },
+    ],
+    recoverTicks: 22,
+    return: {
+      windupTicks: 17,
+      range: 138,
+      halfArc: 0.9,
+      damageMult: 1.5,
+      knockbackMult: 1.5,
+      recoverTicks: 30,
+    },
+    maxReturns: 1,
+    advanced: true,
+  },
+  /** K4 · Sky Hook: the flagship juggle — launcher + two air-keeps at the 0.65/0.60s cadence, then the
+   *  kneeling 1.60s recover (the longest vulnerability in the tough roster). */
+  "k4-sky-hook": {
+    id: "k4-sky-hook",
+    frontOffset: 110,
+    steps: [
+      {
+        kind: "launcher" as const,
+        windupTicks: 12,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 1.0,
+        step: 70,
+        launch: { vh: JUGGLE_LAUNCH_VH, push: 120 },
+      },
+      {
+        kind: "airkeep" as const,
+        windupTicks: 13,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 0.7,
+        step: 24,
+        airkeep: { vh: JUGGLE_KEEP_VH, push: 0, hMin: 2, hMax: 130 },
+      },
+      {
+        kind: "airkeep" as const,
+        windupTicks: 12,
+        range: 138,
+        halfArc: 0.9,
+        damageMult: 0.7,
+        step: 24,
+        airkeep: { vh: 0, push: 0, hMin: 2, hMax: 130 }, // no re-loft — the finisher lets you fall
+      },
+    ],
+    recoverTicks: 32,
+    maxReturns: 0,
+    advanced: true,
+  },
+  // ── Heavy — the weight family (opener range 150 → frontOffset 120) ──
+  /** H1 · Sweep-into-Overhead: the mixed-verb classic — RED low sweep (jump it), white overhead (parry
+   *  it). Teaches that red-on-a-tough means FEET. */
+  "h1-sweep-overhead": {
+    id: "h1-sweep-overhead",
+    frontOffset: 120,
+    steps: [
+      {
+        kind: "strike" as const,
+        windupTicks: 11,
+        range: 150,
+        halfArc: 2.27,
+        damageMult: 0.9,
+        step: 40,
+        unparryable: true,
+      },
+      {
+        kind: "strike" as const,
+        windupTicks: 13,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 1.35,
+        step: 78,
+      },
+    ],
+    recoverTicks: 25,
+    maxReturns: 0,
+  },
+  /** H2 · Anchor Drag: heavy's iai — one 0.90s scored-ground yank. */
+  "h2-anchor-drag": {
+    id: "h2-anchor-drag",
+    frontOffset: 120,
+    steps: [
+      { kind: "strike" as const, windupTicks: 18, range: 150, halfArc: 1.0, damageMult: 1.3, step: 90 },
+    ],
+    recoverTicks: 24,
+    maxReturns: 0,
+  },
+  /** H3 · Gravedigger: the heavy bait — smells like a finisher, is actually an opener. */
+  "h3-gravedigger": {
+    id: "h3-gravedigger",
+    frontOffset: 120,
+    steps: [
+      {
+        kind: "strike" as const,
+        windupTicks: 12,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 1.1,
+        step: 70,
+        returnCapable: true,
+      },
+      { kind: "strike" as const, windupTicks: 10, range: 150, halfArc: 1.0, damageMult: 1.0, step: 60 },
+    ],
+    recoverTicks: 25,
+    return: {
+      windupTicks: 19,
+      range: 150,
+      halfArc: 1.0,
+      damageMult: 1.6,
+      knockbackMult: 1.6,
+      recoverTicks: 32,
+    },
+    maxReturns: 1,
+    advanced: true,
+  },
+  /** H4 · Coffin Lid: the heavy juggle (depth 6+) — the golf-swing keep bats you somewhere on purpose. */
+  "h4-coffin-lid": {
+    id: "h4-coffin-lid",
+    frontOffset: 120,
+    steps: [
+      {
+        kind: "launcher" as const,
+        windupTicks: 14,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 1.1,
+        step: 60,
+        launch: { vh: JUGGLE_LAUNCH_VH, push: 120 },
+      },
+      {
+        kind: "airkeep" as const,
+        windupTicks: 13,
+        range: 150,
+        halfArc: 1.0,
+        damageMult: 0.9,
+        step: 24,
+        airkeep: { vh: JUGGLE_KEEP_VH, push: 200, hMin: 2, hMax: 130 },
+      },
+    ],
+    recoverTicks: 32,
+    maxReturns: 0,
+    advanced: true,
+  },
+  // ── Thrust — the line family (opener range 145 → frontOffset 116) ──
+  /** T1 · Rail Sequence: thin wedges — sidestep is as valid as parry. Step-2's authored 0.25s rides the
+   *  G6 floor at 6 ticks; the impale's authored 110px advance rides the G2 cap at 96. */
+  "t1-rail": {
+    id: "t1-rail",
+    frontOffset: 116,
+    steps: [
+      { kind: "strike" as const, windupTicks: 7, range: 145, halfArc: 0.35, damageMult: 0.85, step: 50 },
+      { kind: "strike" as const, windupTicks: 6, range: 145, halfArc: 0.35, damageMult: 0.85, step: 50 },
+      { kind: "strike" as const, windupTicks: 12, range: 145, halfArc: 0.35, damageMult: 1.3, step: 96 },
+    ],
+    recoverTicks: 20,
+    maxReturns: 0,
+  },
+  /** T2 · Switchback: hit-and-run bait — if the deep lunge LANDS the thrust disengages (combo ends);
+   *  if it's PARRIED the rail-dash impale comes back along a thin painted lane. */
+  "t2-switchback": {
+    id: "t2-switchback",
+    frontOffset: 116,
+    steps: [
+      {
+        kind: "strike" as const,
+        windupTicks: 10,
+        range: 145,
+        halfArc: 0.35,
+        damageMult: 1.0,
+        step: 90,
+        returnCapable: true,
+      },
+    ],
+    recoverTicks: 20,
+    return: {
+      windupTicks: 16,
+      range: 145,
+      halfArc: 0.35,
+      damageMult: 1.45,
+      recoverTicks: 28,
+    },
+    maxReturns: 1,
+    advanced: true,
+  },
+  // ── Dual — the flurry family (opener range ~140 → frontOffset 112) ──
+  /** D1 · Fang Flurry: the chain-parry exam — four crests, individually cheap, collectively lethal. */
+  "d1-fang-flurry": {
+    id: "d1-fang-flurry",
+    frontOffset: 112,
+    steps: [
+      { kind: "strike" as const, windupTicks: 7, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
+      { kind: "strike" as const, windupTicks: 6, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
+      { kind: "strike" as const, windupTicks: 6, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
+      { kind: "strike" as const, windupTicks: 11, range: 140, halfArc: 0.8, damageMult: 0.7, step: 40 },
+    ],
+    recoverTicks: 23,
+    maxReturns: 0,
+  },
+  /** D2 · Scissor Lift: the short-form juggle — teaches the vocabulary at lower stakes (one keep,
+   *  no re-loft), appears earliest in the depth curve. */
+  "d2-scissor-lift": {
+    id: "d2-scissor-lift",
+    frontOffset: 112,
+    steps: [
+      {
+        kind: "launcher" as const,
+        windupTicks: 11,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.9,
+        step: 60,
+        launch: { vh: JUGGLE_LAUNCH_VH, push: 120 },
+      },
+      {
+        kind: "airkeep" as const,
+        windupTicks: 13,
+        range: 140,
+        halfArc: 0.8,
+        damageMult: 0.75,
+        step: 24,
+        airkeep: { vh: 0, push: 0, hMin: 2, hMax: 130 },
+      },
+    ],
+    recoverTicks: 26,
+    maxReturns: 0,
+    advanced: true,
+  },
+};
+
+/** §51 does this combo carry a parry-bait branch / a juggle string? (pillar classification for G15). */
+export function comboIsBait(id: string): boolean {
+  return !!TOUGH_COMBOS[id]?.return;
+}
+export function comboIsJuggle(id: string): boolean {
+  return !!TOUGH_COMBOS[id]?.steps.some((s) => s.kind === "launcher");
+}
+
+/**
+ * §51 pick the next combo from a deck — PURE (caller supplies the [0,1) roll). Depth gates the
+ * vocabulary; a NO-REPEAT rule (never the same combo twice in a row) plus the ≤40% advanced throttle
+ * (never two bait/juggle picks back-to-back — fall back to the deck's first core rhythm) keep the plain
+ * rhythms the statistical spine. Returns "" when nothing is eligible at this depth.
+ */
+export function pickToughCombo(
+  deck: readonly ToughComboEntry[],
+  depth: number,
+  lastComboId: string,
+  roll: number,
+): string {
+  // Combo commits are per-engagement (seconds apart), but the selector is still allocation-free: the
+  // 60/40 core/advanced split is a hard probability partition, then a second pass selects within it.
+  const atDepth = Math.max(1, depth);
+  let coreCount = 0;
+  let advancedCount = 0;
+  for (const entry of deck) {
+    const def = entry.minDepth <= atDepth ? TOUGH_COMBOS[entry.combo] : undefined;
+    if (!def) continue;
+    if (def.advanced) advancedCount++;
+    else coreCount++;
+  }
+  if (coreCount + advancedCount === 0) return "";
+  const boundedRoll = Math.max(0, Math.min(0.999999999, roll));
+  // No consecutive advanced picks keeps their realised share below the authored 40% ceiling, while the
+  // partition makes the unconditioned deck weight exactly 60/40 when both dialects are available.
+  let advanced =
+    advancedCount > 0 &&
+    (coreCount === 0 || (boundedRoll >= 0.6 && !TOUGH_COMBOS[lastComboId]?.advanced));
+  let count = advanced ? advancedCount : coreCount;
+  if (count === 0) {
+    advanced = !advanced;
+    count = advanced ? advancedCount : coreCount;
+  }
+  const localRoll = advanced && coreCount > 0 ? (boundedRoll - 0.6) / 0.4 : boundedRoll / 0.6;
+  let slot = Math.min(count - 1, Math.max(0, Math.floor(Math.max(0, localRoll) * count)));
+  let picked = "";
+  for (const entry of deck) {
+    const def = entry.minDepth <= atDepth ? TOUGH_COMBOS[entry.combo] : undefined;
+    if (!def || !!def.advanced !== advanced) continue;
+    if (slot-- === 0) {
+      picked = entry.combo;
+      break;
+    }
+  }
+  if (picked !== lastComboId) return picked;
+  // Absolute no-repeat: rotate within the selected partition, then across partitions if it had one item.
+  for (const entry of deck) {
+    const def = entry.minDepth <= atDepth ? TOUGH_COMBOS[entry.combo] : undefined;
+    if (def && !!def.advanced === advanced && entry.combo !== lastComboId) return entry.combo;
+  }
+  for (const entry of deck) {
+    if (entry.minDepth <= atDepth && TOUGH_COMBOS[entry.combo] && entry.combo !== lastComboId)
+      return entry.combo;
+  }
+  return picked;
 }
 
 /** Wild West M0 roster wired for the first level (§15). */
@@ -396,6 +820,14 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       recover: 0.95,
       step: 72, // lunges forward on each strike (Sekiro step-in) — advances rather than standing still
     },
+    // §51 the TOUGH ronin speaks the katana grammar (grounded duelist — walks in, no leap): the Sanren
+    // spine, the Drawn Moon iai at depth 3, the Gale Cross bait at depth 3. Non-tough kin keep the
+    // legacy 3-hit machine untouched.
+    combos: [
+      { combo: "k1-sanren", minDepth: 1 },
+      { combo: "k2-drawn-moon", minDepth: 3 },
+      { combo: "k3-gale-cross", minDepth: 3 },
+    ],
   },
   // §15 SCATTER tough — GATLIN, a heavy drifter (§15 "Tough/scatter — parryable scatter spread"). Slow
   // and bulky, it KITES to its preferred range and lets loose a 5-pellet SHOTGUN cone (the `spread` block)
@@ -446,6 +878,13 @@ export const ENEMY_KINDS: Record<string, EnemyKind> = {
       step: 66,
     },
     leap: { range: 540, windup: 0.5, airTime: 0.28, cooldown: 3.4 },
+    // §51 the TOUGH vault-ronin replaces its red assault-leap with the WHITE Negotiated Leap and speaks
+    // Sanren + (depth 5) the Sky Hook juggle. Leap+juggle = two pillars, never three (G15) — no baits.
+    combos: [
+      { combo: "k1-sanren", minDepth: 1 },
+      { combo: "k4-sky-hook", minDepth: 5 },
+    ],
+    comboLeap: true,
   },
   // §15 v0.113 DUST-RANGER — a kiting gunslinger that DODGE-ROLLS away when you close, so it's slippery to
   // pin. Punishes lazy approach; reward = catch it mid-roll or corner it. A special threat, not horde filler.
@@ -522,6 +961,91 @@ for (const [id, kind] of Object.entries(ENEMY_KINDS)) {
   const pool = MELEE_ARCHETYPES.has(kind.archetype) ? ENEMY_MELEE_POOL : ENEMY_RANGED_POOL;
   kind.wieldsWeapon = hashPick(id, pool);
   kind.dropWeapon = kind.dropWeapon ?? 0.22; // irregular — most kills don't drop
+}
+
+// §51 COMBO-DECK ASSIGNMENT (post-merge, like the weapon pass above, so it covers hand-authored AND
+// generated dimension kinds): every duelist/leaper/shifter kind with a real `melee` block and a wielded
+// pool blade speaks its BLADE's weapon-family grammar when tough. The family is the vocabulary the
+// player already knows from their own hands (§51 designer roster). G15 pillar law enforced here as
+// data-lint: a LEAPING kind sheds one advanced dialect — shifters keep the family BAIT and shed the
+// juggle (the Warden dialect), other leapers keep the JUGGLE and shed the bait (the vault-ronin
+// template) — so no non-boss kind ever stacks leap + bait + juggle.
+const KATANA_DECK: readonly ToughComboEntry[] = [
+  { combo: "k1-sanren", minDepth: 1 },
+  { combo: "k2-drawn-moon", minDepth: 3 },
+  { combo: "k3-gale-cross", minDepth: 3 },
+  { combo: "k4-sky-hook", minDepth: 5 },
+];
+const HEAVY_DECK: readonly ToughComboEntry[] = [
+  { combo: "h1-sweep-overhead", minDepth: 1 },
+  { combo: "h2-anchor-drag", minDepth: 2 },
+  { combo: "h3-gravedigger", minDepth: 4 },
+  { combo: "h4-coffin-lid", minDepth: 6 },
+];
+const THRUST_DECK: readonly ToughComboEntry[] = [
+  { combo: "t1-rail", minDepth: 1 },
+  { combo: "t2-switchback", minDepth: 3 },
+];
+const DUAL_DECK: readonly ToughComboEntry[] = [
+  { combo: "d1-fang-flurry", minDepth: 1 },
+  { combo: "d2-scissor-lift", minDepth: 4 },
+];
+const COMBO_DECK_BY_WEAPON: Record<string, readonly ToughComboEntry[]> = {
+  "x-sword-neon-katana": KATANA_DECK,
+  "rattler-sabre": KATANA_DECK,
+  driftblade: KATANA_DECK,
+  "rusty-cleaver": HEAVY_DECK,
+  "x-sword-anchor": HEAVY_DECK,
+  "x-sword-coffin": HEAVY_DECK,
+  "x-sword-bone": HEAVY_DECK,
+  "tombstone-greatsword": HEAVY_DECK,
+  "x-sword-buzzsaw": HEAVY_DECK,
+  "x-sword-railspike": THRUST_DECK,
+  "twin-bowie-fangs": DUAL_DECK,
+};
+
+// The generated design data still carries two pre-combo placeholders that contradict the named roster:
+// Marshal is a sabre tutorialist (K1), not a gunner, and the neon Riot Enforcer is the thrust-family
+// dimension duelist. Normalise those identities here rather than editing generated output by hand.
+const comboMarshal = ENEMY_KINDS["shifter-cinder-marshal"];
+if (comboMarshal) {
+  comboMarshal.archetype = "duelist";
+  comboMarshal.ranged = undefined;
+  comboMarshal.wieldsWeapon = "rattler-sabre";
+  comboMarshal.melee = {
+    approach: 150,
+    range: 138,
+    halfArc: 0.9,
+    damage: 11,
+    hits: 3,
+    windup: 0.5,
+    swingGap: 0.3,
+    recover: 0.9,
+    step: 66,
+  };
+  comboMarshal.combos = [{ combo: "k1-sanren", minDepth: 1 }];
+  comboMarshal.comboLeap = true;
+}
+const comboRiotEnforcer = ENEMY_KINDS["riot-enforcer"];
+if (comboRiotEnforcer) comboRiotEnforcer.wieldsWeapon = "x-sword-railspike";
+
+for (const kind of Object.values(ENEMY_KINDS)) {
+  if (kind.combos || !kind.melee) continue;
+  if (kind.archetype !== "duelist" && kind.archetype !== "leaper" && !kind.shifter) continue;
+  const deck = COMBO_DECK_BY_WEAPON[kind.wieldsWeapon ?? ""];
+  if (!deck) continue;
+  const leaps = kind.archetype === "leaper" || !!kind.shifter;
+  if (leaps) kind.comboLeap = true;
+  if (!leaps) kind.combos = deck;
+  else if (kind.shifter?.tier === 3) {
+    // Warden's named deck includes H3 at depth 4 and H4 at depth 6. A performance selects ONE entry, so
+    // it is leap+bait OR leap+juggle — never all three pillars in one choreography (G15).
+    kind.combos = deck;
+  } else {
+    kind.combos = kind.shifter
+      ? deck.filter((e) => !comboIsJuggle(e.combo))
+      : deck.filter((e) => !comboIsBait(e.combo));
+  }
 }
 
 export const ENEMY_KIND_IDS = Object.keys(ENEMY_KINDS);

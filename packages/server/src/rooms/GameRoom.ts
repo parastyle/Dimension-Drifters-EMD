@@ -56,6 +56,17 @@ import {
   bossSpawnAt,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  COMBO_DAMAGE_CAP_FRAC,
+  COMBO_FLAG_AIRBORNE,
+  COMBO_FLAG_EMPOWERED,
+  COMBO_FLAG_JUGGLE,
+  COMBO_LEAP_AIR_TICKS,
+  COMBO_LEAP_COOLDOWN,
+  COMBO_LEAP_OFFER_TICKS,
+  COMBO_LEAP_RANGE,
+  COMBO_LEAP_SETTLE_TICKS,
+  COMBO_MAX_ACTIVE,
+  COMBO_STEP_MAX,
   CONFLAG_DELAY,
   characterScale,
   clamp,
@@ -91,12 +102,14 @@ import {
   EMBERGUARD_RANGE,
   ENEMY_KINDS,
   ENEMY_RADIUS,
+  type EnemyKind,
   EnemyState,
   EXTRACT_RADIUS,
   effectiveDamageMult,
   effectiveMelee,
   enemyHpScale,
   FISTS_WEAPON,
+  GRAVITY,
   GROUND_EPSILON,
   GUN_RECOIL_BASELINE,
   GUN_RECOIL_IMPULSE,
@@ -125,6 +138,9 @@ import {
   isAugment,
   isInsidePoi,
   isPitAtPx,
+  JUGGLE_LANDING_MERCY,
+  JUGGLE_MAX_AIR_HITS,
+  JUGGLE_MAX_CONTROL_SECONDS,
   JUMP_BUFFER_SECONDS,
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
@@ -182,6 +198,9 @@ import {
   QUAKE_REACH,
   RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
+  RETURN_DASH_TICKS,
+  RETURN_STAGGER_TICKS,
+  RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
   RIFT_CHANNEL_SECONDS,
   RIFT_OFFSET,
@@ -219,10 +238,15 @@ import {
   TelegraphState,
   TgShape,
   TICK_MS,
+  TOUGH_COMBOS,
   TOUGH_DAMAGE_MULT,
   TOUGH_HP_MULT,
   TOUGH_XP_MULT,
+  type ToughComboDef,
+  type ToughComboReturn,
+  type ToughComboStep,
   toughChance,
+  pickToughCombo,
   type Vec2,
   validateArena,
   EXPANSION_WEAPON_IDS,
@@ -276,6 +300,11 @@ import { SpatialGrid } from "./SpatialGrid.js";
 /** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
 const MELEE_TELEGRAPH_PREFIX = "melee:";
 const MELEE_LOCK_PHASE = 0.65;
+/** §51 duel-token courtesy distance: a combo tough whose victim is already CLAIMED holds a visible
+ *  ring-out orbit here instead of stacking a second unreadable choreography (G12 crossfire law). */
+const COMBO_RINGOUT_ORBIT = 260;
+/** §51 the riposte stagger normalised onto tick anchors (the legacy machine's 1s, in 50ms ticks). */
+const COMBO_RIPOSTE_STAGGER_TICKS = 20;
 
 /** §45 one tick-wide horde broad phase. 128px keeps ordinary enemy separation in the same/adjacent cells;
  *  the radius ceiling keeps boss/projectile/melee queries conservative for the oversized boss roster. */
@@ -389,6 +418,11 @@ interface CombatState {
   heldEarned: boolean;
   /** G-02 Bulwark success reward: absorb points, never an extension of parry invulnerability. */
   bulwarkShield: number;
+  /** §51 G10 touchdown mercy (sec): melee/contact immunity granted when an ENEMY-initiated launch lands
+   *  (never the player's own jump), so a juggle cannot chain into the horde the instant gravity wins. */
+  juggleMercy: number;
+  /** §51 armed by a juggle launcher hit; converts to `juggleMercy` on the next airborne→grounded edge. */
+  juggleArmed: boolean;
   /** Allocation-free beam tuning cache; refreshed only when the owned CSV changes. */
   augmentSnapshot: string;
   beamVentStacks: number;
@@ -411,6 +445,76 @@ interface CombatState {
   beamHitIds: Set<string>;
   beamPendingDamage: Map<string, number>;
   beamLedger: Map<string, BeamResourceLedger>;
+}
+
+/** §15/§51 per-enemy duelist machine entry (server-private, pruned with the enemy, cleared by
+ *  clearTransients). The legacy float fields (`t`/`hits`/`wind`) drive the derived rusher/swarm/zoner
+ *  lunge + non-tough duelists byte-for-byte as before; the §51 fields are the TOUGH-COMBO widening —
+ *  tick-anchored (worm action-tick model: wrap-safe `(tick − start) | 0` deltas) because the tick
+ *  anchors survive catch-up sub-steps exactly where accumulating floats drift. The full combo brain is
+ *  this entry; only the three appended presentation edges (comboSeq/comboFlags/juggledSeq) sync. */
+interface DuelistComboState {
+  phase: "idle" | "leapwind" | "leap" | "settle" | "windup" | "return" | "recover";
+  t: number;
+  hits: number;
+  wind: number;
+  // §15 v0.113 LEAP (leaper elites): landing spot, the synced marker id, and the leap cooldown.
+  lx?: number;
+  ly?: number;
+  tg?: string;
+  leapCd?: number;
+  /** Fixed post-lunge sector captured at Lock. The advertised row and damage consume these same values. */
+  strike?: {
+    x: number;
+    y: number;
+    aimX: number;
+    aimY: number;
+    tg: string;
+  };
+  // ── §51 TOUGH-COMBO machine (all optional so legacy entries stay shape-compatible) ──
+  /** Keys shared TOUGH_COMBOS; "" / undefined = the legacy derived path (unchanged). */
+  comboId?: string;
+  /** For the deck's no-repeat + ≤40%-advanced pick rules. */
+  lastComboId?: string;
+  /** 0-based index into the combo's authored steps. */
+  stepIndex?: number;
+  /** uint32 ArenaState.tick anchors for the CURRENT phase window (wrap-safe signed deltas). */
+  stepStartTick?: number;
+  stepEndTick?: number;
+  /** The committed leap landing point (world px) — FROZEN at the offer; never renegotiated (G3/G5). */
+  negotiatedX?: number;
+  negotiatedY?: number;
+  /** Victim origin at negotiation; moving beyond the offer footprint authors the landing whiff (G4). */
+  negotiatedTargetX?: number;
+  negotiatedTargetY?: number;
+  /** The committed victim (G12 front-claim: the choreography aims at ONE player, period). */
+  targetId?: string;
+  /** Nav-clamped awkward landings buy two extra settle ticks; ordinary landings use the authored five. */
+  settleTicks?: number;
+  /** Depth 1–2 learn nouns only: core choreography is committed but truncated to its first two beats. */
+  stepLimit?: number;
+  /** Position AFTER the parry knockback — the return path-plans FROM here, not from the swing spot. */
+  displacedX?: number;
+  displacedY?: number;
+  /** Tough-combo parry knockback is short bounded motion, never the legacy one-tick 154px position write. */
+  knockbackX?: number;
+  knockbackY?: number;
+  knockbackEndTick?: number;
+  /** The next swing is the authored empowered return (gold tell, slower clock, bigger hit). */
+  empowered?: boolean;
+  /** Parry-baited returns left this run (maxReturns cap — no infinite bait loop). */
+  returnsLeft?: number;
+  /** Air-keep hits landed this string (G9 ≤ JUGGLE_MAX_AIR_HITS). */
+  juggleHits?: number;
+  /** Tick of the launcher hit — anchors the G9 ≤2.0s loss-of-control ceiling. */
+  launchTick?: number;
+  /** Damage dealt to the committed victim this performance (G9 ≤40% max-HP budget). */
+  comboDamage?: number;
+  /** True only for launcher-authored definitions; G9's damage/control budget does not flatten core grammar. */
+  juggleCombo?: boolean;
+  /** Ally damage during a live juggle; 8% max-HP breaks the string for co-op rescue. */
+  juggleAllyDamage?: number;
+  juggleInterruptHp?: number;
 }
 
 /** Server-private launch geometry. The wire keeps only immutable epochs; this cache lets disconnect
@@ -511,29 +615,13 @@ export class GameRoom extends Room<ArenaState> {
   private readonly zoneMeta = new Map<string, number>();
   /** §15 duelist (ronin) combo state per enemy id: phase + timer + swings left + the CURRENT windup's
    *  duration (`wind`, for the 0→1 telegraph ramp — `windup` for the first hit, `swingGap` after). Each hit
-   *  now telegraphs (no standalone "swing" phase). Pruned with the enemy. */
-  private readonly comboState = new Map<
-    string,
-    {
-      phase: "idle" | "leapwind" | "leap" | "windup" | "recover";
-      t: number;
-      hits: number;
-      wind: number;
-      // §15 v0.113 LEAP (leaper elites): landing spot, the synced marker id, and the leap cooldown.
-      lx?: number;
-      ly?: number;
-      tg?: string;
-      leapCd?: number;
-      /** Fixed post-lunge sector captured at Lock. The advertised row and damage consume these same values. */
-      strike?: {
-        x: number;
-        y: number;
-        aimX: number;
-        aimY: number;
-        tg: string;
-      };
-    }
-  >();
+   *  now telegraphs (no standalone "swing" phase). §51 widened with the tick-anchored TOUGH-COMBO fields
+   *  (see DuelistComboState). Pruned with the enemy. */
+  private readonly comboState = new Map<string, DuelistComboState>();
+  /** §51 DUEL TOKENS (G12): victim player id → the ONE enemy id running the combo language against them.
+   *  A second combo-capable tough holds a ring-out orbit until the token frees; map size doubles as the
+   *  ≤COMBO_MAX_ACTIVE arena-wide performance count. Freed at recover entry / enemy death / transients. */
+  private readonly duelTokens = new Map<string, string>();
   /** §15 v0.113 DODGE-ROLL state per ranger id: `cd` = seconds until it can roll again, `t` = seconds left
    *  in the current roll (>0 = rolling), `dx/dy` = the roll direction. Pruned with the enemy. */
   private readonly dodgeState = new Map<
@@ -1241,6 +1329,7 @@ export class GameRoom extends Room<ArenaState> {
     this.zonerDropCd.clear();
     this.zoneMeta.clear();
     this.comboState.clear();
+    this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
@@ -1261,6 +1350,8 @@ export class GameRoom extends Room<ArenaState> {
       c.beamHitIds.clear();
       c.beamLedger.clear();
       c.beamInputWasHeld = false;
+      c.juggleArmed = false;
+      c.juggleMercy = 0;
     }
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
@@ -2050,6 +2141,8 @@ export class GameRoom extends Room<ArenaState> {
       vh: 0,
       heldEarned: false,
       bulwarkShield: 0,
+      juggleMercy: 0,
+      juggleArmed: false,
       augmentSnapshot: "",
       beamVentStacks: 0,
       beamFocusStacks: 0,
@@ -2463,6 +2556,7 @@ export class GameRoom extends Room<ArenaState> {
       c.drawLock = Math.max(0, c.drawLock - dt);
       this.stepStowedWeaponResources(player, c, dt);
       c.invuln = Math.max(0, c.invuln - dt);
+      c.juggleMercy = Math.max(0, c.juggleMercy - dt); // §51 G10 touchdown mercy ages out
       c.parryCd = Math.max(0, c.parryCd - dt);
       c.parryChainT = Math.max(0, c.parryChainT - dt);
       if (c.parryChainT <= 0) c.parryChain = 0; // §8 v0.114 the parry chain lapses if you don't keep it up
@@ -2485,10 +2579,17 @@ export class GameRoom extends Room<ArenaState> {
         c.jumpCd = JUMP_COOLDOWN;
       }
       // §5/§20 (Stage B): integrate the real height axis under gravity (the jump + later parry-launch).
+      const wasAirborne = player.height > GROUND_EPSILON; // §51 G10: sampled before the integration edge
       const vert = stepVertical(player.height, c.vh, dt);
       player.height = vert.height;
       c.vh = vert.vh;
       player.vh = vert.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
+      // §51 G10 landing mercy: an enemy-initiated launch (juggle) that returns to ground grants a brief
+      // melee/contact immunity — armed ONLY by the launcher hit, never by the player's own jumps.
+      if (c.juggleArmed && wasAirborne && player.height <= GROUND_EPSILON) {
+        c.juggleArmed = false;
+        c.juggleMercy = Math.max(c.juggleMercy, JUGGLE_LANDING_MERCY);
+      }
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
       // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
@@ -2709,7 +2810,17 @@ export class GameRoom extends Room<ArenaState> {
           : !this.belt && isPitAtPx(this.map, enemy.x, enemy.y);
       if (over) fellIn.push(eid);
     });
-    for (const eid of fellIn) this.state.enemies.delete(eid);
+    for (const eid of fellIn) {
+      this.state.enemies.delete(eid);
+      // §51 pit cheese stays legal, but the dead choreography cannot leave a marker/token on the wire for
+      // one extra patch. Terrain death cleans the same rows the next-tick reaper would have removed.
+      const combo = this.comboState.get(eid);
+      if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
+      if (combo?.tg) this.removeTelegraphRow(combo.tg);
+      if (combo?.targetId && this.duelTokens.get(combo.targetId) === eid)
+        this.duelTokens.delete(combo.targetId);
+      this.comboState.delete(eid);
+    }
 
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
@@ -2718,7 +2829,9 @@ export class GameRoom extends Room<ArenaState> {
       if (!kind) return;
       this.state.players.forEach((player) => {
         if (!player.alive || this.inLevelWindow(player)) return; // invincible in the §12 level window
-        if ((this.combat.get(player.id)?.invuln ?? 0) > 0) return; // parry i-frames
+        const pcc = this.combat.get(player.id);
+        if ((pcc?.invuln ?? 0) > 0) return; // parry i-frames
+        if ((pcc?.juggleMercy ?? 0) > 0) return; // §51 G10 touchdown mercy — a juggle can't chain into the horde
         const reach = kind.radius + PLAYER_RADIUS;
         const dx = enemy.x - player.x;
         const dy = enemy.y - player.y;
@@ -4519,7 +4632,10 @@ export class GameRoom extends Room<ArenaState> {
     return t.id;
   }
 
-  /** Publish one fixed horde-melee sector without adding a second timing field to the wire contract. */
+  /** Publish one fixed horde-melee sector without adding a second timing field to the wire contract.
+   *  §51 optional style overrides: `danger` 1 = a RED dodge/jump-only combo step (H1's low sweep);
+   *  `kindTag` 7 = the deterministic gold/double-glint bait vocabulary (bait step AND empowered return;
+   *  still white/parryable — art differs, shape does not). */
   private addMeleeTelegraphRow(
     enemyId: string,
     x: number,
@@ -4528,6 +4644,8 @@ export class GameRoom extends Room<ArenaState> {
     halfArc: number,
     rot: number,
     phase: number,
+    danger = 0,
+    kindTag = 6,
   ): string {
     const id = `${MELEE_TELEGRAPH_PREFIX}${enemyId}`;
     const t = new TelegraphState();
@@ -4540,8 +4658,8 @@ export class GameRoom extends Room<ArenaState> {
     t.rot = rot;
     // Creation-only snapshot; clients bind this row to its owner's existing windup scalar via the id.
     t.t = phase;
-    t.danger = 0;
-    t.kindTag = 6;
+    t.danger = danger;
+    t.kindTag = kindTag;
     this.state.telegraphs.set(id, t);
     return id;
   }
@@ -5122,13 +5240,31 @@ export class GameRoom extends Room<ArenaState> {
       didCrit,
       finalBlow,
     );
-    if (enemy.hp > 0) return;
+    const combo = this.comboState.get(eid);
+    if (enemy.hp > 0) {
+      // §51 co-op rescue: while the launcher/keep string owns the victim, damage from any OTHER player
+      // accumulates toward an 8%-max-HP interrupt. The juggler is never script-armoured; teamwork buys a
+      // real 0.8s stagger and immediately frees the aerial-pressure/duel token.
+      if (
+        combo?.comboId &&
+        (enemy.comboFlags & COMBO_FLAG_JUGGLE) !== 0 &&
+        sourcePlayerId &&
+        sourcePlayerId !== combo.targetId
+      ) {
+        combo.juggleAllyDamage = (combo.juggleAllyDamage ?? 0) + Math.max(0, applied);
+        if (combo.juggleAllyDamage >= (combo.juggleInterruptHp ?? Number.POSITIVE_INFINITY))
+          this.enterComboRecover(enemy, eid, combo, 16);
+      }
+      return;
+    }
     if (enemy.kind === "dummy") {
       enemy.hp = DUMMY_HP;
       return;
     }
-    const combo = this.comboState.get(eid);
     if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
+    if (combo?.tg) this.removeTelegraphRow(combo.tg);
+    if (combo?.targetId && this.duelTokens.get(combo.targetId) === eid)
+      this.duelTokens.delete(combo.targetId);
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
     if (wormRoot) this.releaseWormXp(enemy.x, enemy.y);
@@ -5487,11 +5623,13 @@ export class GameRoom extends Room<ArenaState> {
   /** §15 duelists (ronin): close to `melee.approach`, telegraph `windup`, then swing `hits` times (each
    *  an arc hit toward the nearest player), then `recover`. Movement + the combo state machine. */
   private stepDuelists(dt: number, bodies: Vec2[]): void {
-    for (const id of [...this.comboState.keys()]) {
+    for (const [id, dead] of this.comboState) {
       if (!this.state.enemies.has(id)) {
-        const dead = this.comboState.get(id);
         if (dead?.tg) this.removeTelegraphRow(dead.tg); // §15 v0.113 a leaper killed mid-leap: clear its marker
         if (dead?.strike) this.removeTelegraphRow(dead.strike.tg);
+        // §51 a combo tough killed mid-performance frees its victim's duel token (G12 co-op rescue).
+        if (dead?.targetId && this.duelTokens.get(dead.targetId) === id)
+          this.duelTokens.delete(dead.targetId);
         this.comboState.delete(id);
       }
     }
@@ -5501,12 +5639,20 @@ export class GameRoom extends Room<ArenaState> {
       // rusher/swarm/zoner (so the attack telegraphs + is parryable). Spitters/boss/dummies → no lunge.
       const m = effectiveMelee(kind);
       if (!m || !kind) return;
-      const target = nearestPoint(enemy, bodies);
       let st = this.comboState.get(id);
       if (!st) {
         st = { phase: "idle", t: 0, hits: 0, wind: 0 };
         this.comboState.set(id, st);
       }
+      // §51 ELITE COMBO LANGUAGE: TOUGH instances of combo-deck kinds (and shifters, always) run the
+      // tick-anchored authored machine. Every other instance falls through to the legacy float machine
+      // below, byte-for-byte untouched — the language stays special.
+      if (kind.combos && (enemy.tough || kind.shifter)) {
+        this.stepComboEnemy(enemy, id, kind, m, st, dt);
+        this.updateEnemyGrid(id, enemy);
+        return;
+      }
+      const target = nearestPoint(enemy, bodies);
       const dist = target
         ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
         : Number.POSITIVE_INFINITY;
@@ -5702,6 +5848,7 @@ export class GameRoom extends Room<ArenaState> {
         this.resolveParry(player, pc, enemy, enemyId);
         return;
       }
+      if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy covers ALL melee, legacy included
       // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
       // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
       this.damagePlayer(player, m.damage * dmgMul * depthDamageScale(this.state.depth));
@@ -5716,6 +5863,727 @@ export class GameRoom extends Room<ArenaState> {
       player.vx = k.vx;
       player.vy = k.vy;
     });
+  }
+
+  /** §51 one TOUGH combo-speaking elite, one tick — the authored, tick-anchored machine (worm action
+   *  model): idle → [leapwind → leap → settle] → windup … → (return) → recover. The laws enforced here:
+   *  the negotiated landing NEVER moves once its marker exists (G3/G5); per-step aim re-samples only
+   *  until that step's Lock (MELEE_LOCK_PHASE) then freezes (G5); every displacement is bounded-velocity
+   *  motion or a ≤COMBO_STEP_MAX commit-write (G2); juggle strings obey every G9 cap at the resolve
+   *  tick; the parried bait stands a visible ≥0.4s stagger at its DISPLACED spot before returning (G8). */
+  private stepComboEnemy(
+    enemy: EnemyState,
+    id: string,
+    kind: EnemyKind,
+    m: NonNullable<EnemyKind["melee"]>,
+    st: DuelistComboState,
+    dt: number,
+  ): void {
+    const tick = this.state.tick;
+    const def = st.comboId ? TOUGH_COMBOS[st.comboId] : undefined;
+    const committed = st.targetId ? this.state.players.get(st.targetId) : undefined;
+    const live = committed?.alive ? committed : undefined;
+    const left = ((st.stepEndTick ?? tick) - tick) | 0; // wrap-safe signed delta (uint32 anchors)
+    const knockbackMoving = this.stepComboKnockback(enemy, st, tick);
+    if (knockbackMoving && st.phase === "windup") {
+      // A parried ordinary beat may continue its committed choreography, but the NEXT full Claim→Lock
+      // clock begins only after visible recoil. Shift both anchors together: timing identity is unchanged,
+      // while even extreme Iron Stance cannot make a strike Lock mid-knockback.
+      st.stepStartTick = ((st.stepStartTick ?? tick) + 1) >>> 0;
+      st.stepEndTick = ((st.stepEndTick ?? tick) + 1) >>> 0;
+      enemy.windup = 0;
+      return;
+    }
+    if (st.phase === "idle") {
+      st.leapCd = Math.max(0, (st.leapCd ?? 0) - dt);
+      enemy.windup = 0;
+      const prey = this.nearestLivingPlayer(enemy);
+      if (!prey) return;
+      const dist = Math.hypot(prey.x - enemy.x, prey.y - enemy.y);
+      const holder = this.duelTokens.get(prey.id);
+      if (
+        (holder !== undefined && holder !== id) ||
+        (holder === undefined && this.duelTokens.size >= COMBO_MAX_ACTIVE)
+      ) {
+        // G12: the victim is already claimed (or 4 performances run arena-wide) — stalk the ring-out
+        // orbit, visibly waiting a turn instead of stacking an unreadable committed crossfire.
+        if (dist > COMBO_RINGOUT_ORBIT + 40)
+          this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+        return;
+      }
+      if (kind.comboLeap) {
+        // Named leapers/shifters ALWAYS offer the negotiated frame. Inside range they wait for the
+        // authored 4s cooldown; outside it they close until a legal fixed-duration arc is available.
+        if ((st.leapCd ?? 0) <= 0 && dist <= COMBO_LEAP_RANGE)
+          this.commitCombo(enemy, id, kind, st, prey, true);
+        else this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+      } else if (dist <= m.approach) {
+        this.commitCombo(enemy, id, kind, st, prey, false);
+      } else {
+        this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+      }
+    } else if (st.phase === "leapwind") {
+      // The OFFER: deep crouch in place while the white duel ring fades in at the FIXED landing point.
+      enemy.windup = 0;
+      if (st.tg) {
+        const total = COMBO_LEAP_OFFER_TICKS + COMBO_LEAP_AIR_TICKS;
+        const gone = COMBO_LEAP_OFFER_TICKS - Math.max(0, left);
+        this.setTelegraphRowProgress(st.tg, Math.max(0, Math.min(1, gone / total)));
+      }
+      if (left <= 0) {
+        // LIFTOFF — a documented comboSeq edge. The promise (marker) is already on the ground and will
+        // never move; from here the flight flies to the COMMITTED point, not to the live player.
+        st.phase = "leap";
+        st.stepStartTick = tick;
+        st.stepEndTick = (tick + COMBO_LEAP_AIR_TICKS) >>> 0;
+        st.leapCd = COMBO_LEAP_COOLDOWN;
+        enemy.comboFlags |= COMBO_FLAG_AIRBORNE;
+        this.bumpComboSeq(enemy);
+      }
+    } else if (st.phase === "leap") {
+      if (st.tg) {
+        const total = COMBO_LEAP_OFFER_TICKS + COMBO_LEAP_AIR_TICKS;
+        this.setTelegraphRowProgress(
+          st.tg,
+          Math.max(0, Math.min(1, (total - Math.max(0, left)) / total)),
+        );
+      }
+      // Fixed-arrival flight: remaining distance ÷ remaining ticks (≤80px/tick at max range — inside
+      // the G2 ≤90px/tick budget; arrival time is the metronome, speed is what varies).
+      const lx = st.negotiatedX ?? enemy.x;
+      const ly = st.negotiatedY ?? enemy.y;
+      const remain = Math.max(1, left + 1);
+      enemy.x += (lx - enemy.x) / remain;
+      enemy.y += (ly - enemy.y) / remain;
+      if (left <= 0) {
+        enemy.x = lx; // land EXACTLY on the committed promise
+        enemy.y = ly;
+        if (st.tg) {
+          this.removeTelegraphRow(st.tg); // the removal edge-fires the client's landing dust
+          st.tg = undefined;
+        }
+        enemy.comboFlags &= ~COMBO_FLAG_AIRBORNE;
+        const landingRadius = kind.radius + 10;
+        const whiffDx =
+          (live?.x ?? Number.POSITIVE_INFINITY) - (st.negotiatedTargetX ?? Number.NEGATIVE_INFINITY);
+        const whiffDy =
+          (live?.y ?? Number.POSITIVE_INFINITY) - (st.negotiatedTargetY ?? Number.NEGATIVE_INFINITY);
+        if (!live || whiffDx * whiffDx + whiffDy * whiffDy > landingRadius * landingRadius) {
+          // G4: walking out of the white offer ring is a COMPLETE answer. No settle/re-acquire slide;
+          // the tough owns an authored whiff punish of at least 0.85s and spends its cooldown.
+          this.enterComboRecover(enemy, id, st, Math.max(17, def?.recoverTicks ?? 17));
+          return;
+        }
+        st.phase = "settle";
+        st.stepStartTick = tick;
+        st.stepEndTick = (tick + (st.settleTicks ?? COMBO_LEAP_SETTLE_TICKS)) >>> 0;
+      }
+    } else if (st.phase === "settle") {
+      // The settle beat is SACRED: nothing damages; the player chooses (parry / pre-turn / dodge out).
+      enemy.windup = 0;
+      if (left <= 0) {
+        if (def) this.beginComboStep(st, def, 0);
+        else this.enterComboRecover(enemy, id, st, 8);
+      }
+    } else if (st.phase === "windup" && def) {
+      const step = def.steps[st.stepIndex ?? 0];
+      if (!step) {
+        this.enterComboRecover(enemy, id, st, def.recoverTicks);
+        return;
+      }
+      const dur = Math.max(1, ((st.stepEndTick ?? tick) - (st.stepStartTick ?? tick)) | 0);
+      const phase01 = Math.max(0, Math.min(1, (dur - Math.max(0, left)) / dur));
+      // Pre-Lock tracking (G5's honest half): strikes lean in (the Sekiro creep); air-keeps dash under
+      // the falling victim's ground shadow at 1.6× — VISIBLE compensation, not magic tracking. Both
+      // freeze the moment Lock samples.
+      if (!st.strike && live && !knockbackMoving) {
+        const dist = Math.hypot(live.x - enemy.x, live.y - enemy.y);
+        if (step.kind === "airkeep") {
+          this.moveComboEnemyToward(enemy, live, kind.speed * 1.6, dt);
+        } else if (dist > step.range * 0.45) {
+          this.moveComboEnemyToward(enemy, live, kind.speed * 0.28, dt);
+        }
+      }
+      if (!st.strike && live && left > 0 && phase01 >= MELEE_LOCK_PHASE) {
+        // LOCK — the advertised sector IS the damage sector from here (G5). Air-keeps lead the live
+        // authoritative velocity ONCE (fall compensation is authored rhythm, never re-timed — G11).
+        const lead = step.kind === "airkeep" ? (left * TICK_MS) / 1000 : 0;
+        const strike = this.planComboStrike(
+          enemy,
+          live,
+          step.range,
+          Math.min(step.step, COMBO_STEP_MAX),
+          lead,
+        );
+        const rot = Math.atan2(strike.aimY, strike.aimX);
+        const tg = this.addMeleeTelegraphRow(
+          id,
+          strike.x,
+          strike.y,
+          step.range,
+          step.halfArc,
+          rot,
+          phase01,
+          step.unparryable ? 1 : 0,
+          step.returnCapable ? 7 : 6,
+        );
+        st.strike = { ...strike, tg };
+        this.bumpComboSeq(enemy); // documented edge: each strike LOCK
+      }
+      enemy.windup = phase01;
+      if (left <= 0) {
+        const strike = st.strike;
+        st.strike = undefined;
+        enemy.windup = 0;
+        if (!strike) {
+          // The Lock never sampled (victim died/left pre-Lock) — drop the performance, no re-aim.
+          this.enterComboRecover(enemy, id, st, def.recoverTicks);
+          return;
+        }
+        this.removeTelegraphRow(strike.tg);
+        if (step.kind === "airkeep" && !this.airkeepValid(st, step, live)) {
+          // G9: the victim fell out / a cap tripped — the swing whiffs, the string ends. Escape won.
+          this.enterComboRecover(enemy, id, st, def.recoverTicks);
+          return;
+        }
+        enemy.x = strike.x; // ≤COMBO_STEP_MAX commit-write — the same Lock-honest advance as legacy (G2)
+        enemy.y = strike.y;
+        this.comboSwing(enemy, id, st, step, step, strike);
+        // A parry inside the swing may have CONVERTED (bait → return), BROKEN (juggle, G11) or
+        // STAGGERED (riposte, G14) the machine — only an untouched windup advances to the next beat.
+        if (st.phase === "windup") {
+          const next = (st.stepIndex ?? 0) + 1;
+          if (next < Math.min(def.steps.length, st.stepLimit ?? def.steps.length))
+            this.beginComboStep(st, def, next);
+          else this.enterComboRecover(enemy, id, st, def.recoverTicks);
+        }
+      }
+    } else if (st.phase === "return" && def?.return) {
+      const ret = def.return;
+      const start = st.stepStartTick ?? tick;
+      const staggerEnd = (start + RETURN_STAGGER_TICKS) >>> 0;
+      const windEnd = (staggerEnd + ret.windupTicks) >>> 0;
+      const dashEnd = (windEnd + RETURN_DASH_TICKS) >>> 0;
+      const staggerLeft = (staggerEnd - tick) | 0;
+      const windLeft = (windEnd - tick) | 0;
+      const dashLeft = (dashEnd - tick) | 0;
+      if (staggerLeft > 0) {
+        // G8: ≥0.4s of VISIBLE stagger at the DISPLACED position — proof the parry had mass. The
+        // return path-plans from here, not from where the swing was thrown.
+        enemy.windup = 0;
+        if (!knockbackMoving) {
+          // Phase-5.55 POI/belt resolution runs after AI; refreshing during the hold captures that final
+          // legal post-recoil spot rather than the pre-collision endpoint scheduled in resolveParry.
+          st.displacedX = enemy.x;
+          st.displacedY = enemy.y;
+        }
+      } else if (windLeft > 0) {
+        const phase01 = Math.max(0, Math.min(1, (ret.windupTicks - windLeft) / ret.windupTicks));
+        enemy.windup = phase01;
+        if (!st.strike && live && phase01 >= MELEE_LOCK_PHASE) {
+          // LOCK the comeback: travel computed from the ACTUAL displacement (Iron Stance moves it),
+          // capped at RETURN_STEP_MAX (outrunning it = an honest whiff), advertised as the gold
+          // kindTag-7 wedge at the dash-END origin. Still WHITE — parry it again and the chain math
+          // ends the loop.
+          const strike = this.planComboStrike(enemy, live, ret.range, RETURN_STEP_MAX, 0);
+          const rot = Math.atan2(strike.aimY, strike.aimX);
+          const tg = this.addMeleeTelegraphRow(
+            id,
+            strike.x,
+            strike.y,
+            ret.range,
+            ret.halfArc,
+            rot,
+            phase01,
+            0,
+            7,
+          );
+          st.strike = { ...strike, tg };
+        }
+      } else {
+        const strike = st.strike;
+        if (!strike) {
+          // The Lock never sampled (victim died mid-stagger) — the comeback dissolves, no re-aim.
+          this.enterComboRecover(enemy, id, st, ret.recoverTicks);
+          return;
+        }
+        if (dashLeft >= RETURN_DASH_TICKS) {
+          // Windup resolves on this anchor; travel starts on the NEXT interval so exactly six 50ms
+          // displacement slices span the authored 0.30s dash (not seven inclusive tick samples).
+          enemy.windup = 1;
+          return;
+        }
+        // Bounded-velocity CLOSE (≤50px/tick over RETURN_DASH_TICKS — G2: recovery from real force,
+        // never a position warp), then the empowered swing from the advertised geometry.
+        const remain = Math.max(1, dashLeft + 1);
+        enemy.x += (strike.x - enemy.x) / remain;
+        enemy.y += (strike.y - enemy.y) / remain;
+        enemy.windup = 1;
+        if (dashLeft <= 0) {
+          enemy.x = strike.x;
+          enemy.y = strike.y;
+          st.strike = undefined;
+          this.removeTelegraphRow(strike.tg);
+          this.comboSwing(enemy, id, st, undefined, ret, strike);
+          // A PARRIED return already ended the combo inside resolveParry (the authored long punish
+          // recover); a LANDED return exits through the standard recover.
+          if (st.phase === "return") this.enterComboRecover(enemy, id, st, ret.recoverTicks);
+        }
+      }
+    } else if (st.phase === "recover") {
+      enemy.windup = 0;
+      if (left <= 0) st.phase = "idle";
+    } else {
+      // A phase with no authored data behind it (comboId pruned mid-run) — fail safe into recover.
+      this.enterComboRecover(enemy, id, st, 8);
+    }
+  }
+
+  /** §51 commit one combo performance: pick from the depth-gated deck (no-repeat + ≤40% advanced),
+   *  CLAIM the duel token (G12 — the choreography aims at ONE player, period), and either negotiate
+   *  the leap (frozen at THIS decision) or open grounded at step 0. */
+  private commitCombo(
+    enemy: EnemyState,
+    id: string,
+    kind: EnemyKind,
+    st: DuelistComboState,
+    prey: PlayerState,
+    withLeap: boolean,
+  ): void {
+    const comboId = pickToughCombo(
+      kind.combos ?? [],
+      this.state.depth,
+      st.lastComboId ?? "",
+      Math.random(),
+    );
+    const def = TOUGH_COMBOS[comboId];
+    if (!def) return; // nothing eligible at this depth — keep stalking
+    this.duelTokens.set(prey.id, id);
+    st.comboId = comboId;
+    st.lastComboId = comboId;
+    st.targetId = prey.id;
+    st.stepIndex = 0;
+    st.stepLimit =
+      this.state.depth <= 2 ? Math.min(2, def.steps.length) : def.steps.length;
+    st.settleTicks = COMBO_LEAP_SETTLE_TICKS;
+    st.empowered = false;
+    st.returnsLeft = def.maxReturns;
+    st.juggleHits = 0;
+    st.launchTick = 0;
+    st.comboDamage = 0;
+    st.juggleCombo = false;
+    for (const step of def.steps) {
+      if (step.kind === "launcher") {
+        st.juggleCombo = true;
+        break;
+      }
+    }
+    st.juggleAllyDamage = 0;
+    st.juggleInterruptHp =
+      Math.max(
+        enemy.hp,
+        kind.hp *
+          (enemy.tough ? TOUGH_HP_MULT : 1) *
+          enemyHpScale(Math.max(1, this.livingCount())) *
+          depthHpScale(this.state.depth),
+      ) * 0.08;
+    st.knockbackX = undefined;
+    st.knockbackY = undefined;
+    st.knockbackEndTick = undefined;
+    st.displacedX = undefined;
+    st.displacedY = undefined;
+    st.strike = undefined;
+    if (!withLeap) {
+      this.beginComboStep(st, def, 0);
+      return;
+    }
+    // §51 NEGOTIATED LEAP: "front" is the advocate's SLOW anchor — authoritative steering heading,
+    // falling back to player→enemy approach bearing. Live mouse aim is deliberately forbidden: a 180°
+    // turn during the offer must not make the committed marker look like a behind-the-back cheat.
+    let fx = prey.mvx;
+    let fy = prey.mvy;
+    let fd = Math.hypot(fx, fy);
+    if (fd < 1) {
+      fx = enemy.x - prey.x;
+      fy = enemy.y - prey.y;
+      fd = Math.hypot(fx, fy);
+    }
+    if (fd < 0.001) {
+      fx = 1;
+      fy = 0;
+      fd = 1;
+    }
+    const landing = this.negotiateComboLanding(enemy, prey, kind, def, fx / fd, fy / fd);
+    st.negotiatedX = landing.x;
+    st.negotiatedY = landing.y;
+    st.negotiatedTargetX = prey.x;
+    st.negotiatedTargetY = prey.y;
+    st.settleTicks = COMBO_LEAP_SETTLE_TICKS + (landing.awkward ? 2 : 0);
+    // WHITE duel-offer ring (danger 0 — the landing itself damages NOTHING; the settle beat is sacred,
+    // so a red dodge marker would be a lie), full footprint from the first tick, visible 0.65s before
+    // touchdown (G3's 0.4s floor with room to spare). kindTag 2 keeps the leaper poof style.
+    st.tg = this.addTelegraphRow(0, landing.x, landing.y, kind.radius + 10, 0, 2);
+    st.phase = "leapwind";
+    st.stepStartTick = this.state.tick;
+    st.stepEndTick = (this.state.tick + COMBO_LEAP_OFFER_TICKS) >>> 0;
+  }
+
+  /** §51 one immutable landing promise. The base 0.8×-range point is distance-clamped, then routed through
+   *  the exact arena/belt spawn-safety functions. A >40px nav correction searches the nearest bearings on
+   *  the player's front 90° arc and marks the landing awkward (+0.10s settle), as authored. */
+  private negotiateComboLanding(
+    enemy: EnemyState,
+    prey: PlayerState,
+    kind: EnemyKind,
+    def: ToughComboDef,
+    facingX: number,
+    facingY: number,
+  ): { x: number; y: number; awkward: boolean } {
+    let best = this.comboLandingCandidate(enemy, prey, kind, def.frontOffset, facingX, facingY, 0);
+    const awkward = best.navShift > 40;
+    if (awkward) {
+      // ±15°, ±30°, ±45°: nearest-bearing-first, bounded and allocation-free apart from decision-edge
+      // return records. First candidate needing ≤40px nav correction is the nearest valid front slot.
+      for (let i = 1; i <= 6; i++) {
+        const magnitude = Math.ceil(i / 2) * (Math.PI / 12);
+        const angle = i % 2 === 1 ? magnitude : -magnitude;
+        const candidate = this.comboLandingCandidate(
+          enemy,
+          prey,
+          kind,
+          def.frontOffset,
+          facingX,
+          facingY,
+          angle,
+        );
+        if (candidate.navShift < best.navShift) best = candidate;
+        if (candidate.navShift <= 40) {
+          best = candidate;
+          break;
+        }
+      }
+    }
+    return { x: best.x, y: best.y, awkward };
+  }
+
+  /** Decision-edge helper for `negotiateComboLanding`; `navShift` measures only the safety correction,
+   *  not the authored 560px range pullback. */
+  private comboLandingCandidate(
+    enemy: EnemyState,
+    prey: PlayerState,
+    kind: EnemyKind,
+    offset: number,
+    facingX: number,
+    facingY: number,
+    angle: number,
+  ): { x: number; y: number; navShift: number } {
+    const ca = Math.cos(angle);
+    const sa = Math.sin(angle);
+    const fx = facingX * ca - facingY * sa;
+    const fy = facingX * sa + facingY * ca;
+    let rawX = prey.x + fx * offset;
+    let rawY = prey.y + fy * offset;
+    const dx = rawX - enemy.x;
+    const dy = rawY - enemy.y;
+    const d = Math.hypot(dx, dy);
+    if (d > COMBO_LEAP_RANGE) {
+      rawX = enemy.x + (dx / d) * COMBO_LEAP_RANGE;
+      rawY = enemy.y + (dy / d) * COMBO_LEAP_RANGE;
+    }
+    const r = kind.radius;
+    let x: number;
+    let y: number;
+    if (this.belt && this.beltLevel) {
+      const boundedX = clamp(rawX, r, this.beltLevel.length - r);
+      x = beltSafeX(this.beltLevel, boundedX, boundedX);
+      y = clampBeltFloorY(this.beltLevel, x, rawY, r);
+    } else {
+      const safe = safeSpawnPos(
+        this.map,
+        clamp(rawX, r, ARENA_WIDTH - r),
+        clamp(rawY, r, ARENA_HEIGHT - r),
+        r,
+      );
+      x = safe.x;
+      y = safe.y;
+    }
+    return { x, y, navShift: Math.hypot(x - rawX, y - rawY) };
+  }
+
+  /** §51 open authored step `index`: fresh tick anchors, no strike (Lock will sample it). */
+  private beginComboStep(st: DuelistComboState, def: ToughComboDef, index: number): void {
+    const step = def.steps[index];
+    st.stepIndex = index;
+    st.phase = "windup";
+    st.strike = undefined;
+    st.stepStartTick = this.state.tick;
+    st.stepEndTick = (this.state.tick + Math.max(1, step?.windupTicks ?? 1)) >>> 0;
+  }
+
+  /** §51 end a combo performance: clear rows + presentation flags, FREE the duel token (G12 — the
+   *  kneeling punish window pressures no one), and hold `recover` for `ticks`. */
+  private enterComboRecover(
+    enemy: EnemyState,
+    id: string,
+    st: DuelistComboState,
+    ticks: number,
+  ): void {
+    if (st.strike) {
+      this.removeTelegraphRow(st.strike.tg);
+      st.strike = undefined;
+    }
+    if (st.tg) {
+      this.removeTelegraphRow(st.tg);
+      st.tg = undefined;
+    }
+    if (st.targetId && this.duelTokens.get(st.targetId) === id) this.duelTokens.delete(st.targetId);
+    st.targetId = "";
+    st.comboId = "";
+    st.empowered = false;
+    enemy.comboFlags = 0;
+    enemy.windup = 0;
+    st.phase = "recover";
+    st.stepStartTick = this.state.tick;
+    st.stepEndTick = (this.state.tick + Math.max(1, ticks)) >>> 0;
+  }
+
+  /** §51 G9 air-keep gate at the RESOLVE tick: the victim must still be airborne inside the authored
+   *  height window, under the ≤2 air-hit cap, and inside the ≤2.0s loss-of-control ceiling. Any miss =
+   *  the whole string whiffs into recover — falling out (or being left to land) IS an escape. */
+  private airkeepValid(
+    st: DuelistComboState,
+    step: ToughComboStep,
+    live: PlayerState | undefined,
+  ): boolean {
+    if (!live || !step.airkeep) return false;
+    if (live.height <= GROUND_EPSILON) return false;
+    if (live.height < step.airkeep.hMin || live.height > step.airkeep.hMax) return false;
+    if ((st.juggleHits ?? 0) >= JUGGLE_MAX_AIR_HITS) return false;
+    const controlSec = st.launchTick
+      ? (((this.state.tick - st.launchTick) >>> 0) * TICK_MS) / 1000
+      : 0;
+    if (controlSec >= JUGGLE_MAX_CONTROL_SECONDS) return false;
+    // Hard guarantee, not merely authored hope: refuse a re-loft whose deterministic gravity arc would
+    // land after the 2.0s ceiling. A zero-vh finisher keeps the current fall and cannot extend control.
+    if (step.airkeep.vh > 0) {
+      const vh = Math.min(step.airkeep.vh, PARRY_LAUNCH_MAX);
+      const landingSeconds = (vh + Math.sqrt(vh * vh + 2 * GRAVITY * live.height)) / GRAVITY;
+      if (controlSec + landingSeconds > JUGGLE_MAX_CONTROL_SECONDS) return false;
+    }
+    return true;
+  }
+
+  /** §51 capture a combo step's committed origin + aim — planDuelistStrike generalised: authored range,
+   *  an explicit travel cap (COMBO_STEP_MAX for steps, RETURN_STEP_MAX for the bait return), and an
+   *  optional ONE-TIME velocity lead (air-keep fall compensation, sampled at Lock, never re-timed). */
+  private planComboStrike(
+    enemy: EnemyState,
+    target: PlayerState,
+    range: number,
+    travelCap: number,
+    leadSeconds: number,
+  ): { x: number; y: number; aimX: number; aimY: number } {
+    const tx = target.x + (target.mvx + target.vx) * leadSeconds;
+    const ty = target.y + (target.mvy + target.vy) * leadSeconds;
+    const dx = tx - enemy.x;
+    const dy = ty - enemy.y;
+    const dist = Math.hypot(dx, dy);
+    const nx = dist > 0.001 ? dx / dist : 1;
+    const ny = dist > 0.001 ? dy / dist : 0;
+    const floor = range * 0.45;
+    const move = Math.max(0, Math.min(travelCap, dist - floor));
+    const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    const x = clamp(enemy.x + nx * move, r, ARENA_WIDTH - r);
+    const y = clamp(enemy.y + ny * move, r, ARENA_HEIGHT - r);
+    const aimX = tx - x;
+    const aimY = ty - y;
+    return {
+      x,
+      y,
+      aimX: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimX : nx,
+      aimY: Math.abs(aimX) + Math.abs(aimY) > 0.001 ? aimY : ny,
+    };
+  }
+
+  /** §51 allocation-free steady-state chase used only by authored combos. The shared chase helper returns
+   *  fresh vectors (fine for legacy); active elites mutate in place so their richer per-tick machine adds
+   *  zero garbage-collector pressure. */
+  private moveComboEnemyToward(
+    enemy: EnemyState,
+    target: Vec2,
+    speed: number,
+    dt: number,
+  ): void {
+    const dx = target.x - enemy.x;
+    const dy = target.y - enemy.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= 0.001) return;
+    const move = Math.min(d, speed * dt);
+    const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+    enemy.x = clamp(enemy.x + (dx / d) * move, r, maxX);
+    enemy.y = clamp(enemy.y + (dy / d) * move, r, ARENA_HEIGHT - r);
+  }
+
+  /** §51 schedule parry recoil as a continuous ≤90px/tick motion. Pits remain lethal and POI collision
+   *  still runs in the normal phase afterward — no immunity is granted to protect authored content. */
+  private scheduleComboKnockback(
+    enemy: EnemyState,
+    st: DuelistComboState,
+    dirX: number,
+    dirY: number,
+    distance: number,
+  ): number {
+    const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    const maxX = this.belt && this.beltLevel ? this.beltLevel.length - r : ARENA_WIDTH - r;
+    const x = clamp(enemy.x + dirX * distance, r, maxX);
+    const y = clamp(enemy.y + dirY * distance, r, ARENA_HEIGHT - r);
+    const actual = Math.hypot(x - enemy.x, y - enemy.y);
+    if (actual <= 0.001) {
+      st.displacedX = enemy.x;
+      st.displacedY = enemy.y;
+      st.knockbackX = undefined;
+      st.knockbackY = undefined;
+      st.knockbackEndTick = undefined;
+      return 0;
+    }
+    const ticks = Math.max(1, Math.ceil(actual / 90));
+    st.knockbackX = x;
+    st.knockbackY = y;
+    st.knockbackEndTick = (this.state.tick + ticks) >>> 0;
+    return ticks;
+  }
+
+  /** §51 advance one scheduled recoil slice; completion captures the ACTUAL post-knockback position from
+   *  which a bait return later path-plans. Returns true on every tick that recoil owns movement. */
+  private stepComboKnockback(
+    enemy: EnemyState,
+    st: DuelistComboState,
+    tick: number,
+  ): boolean {
+    if (st.knockbackEndTick === undefined || st.knockbackX === undefined || st.knockbackY === undefined)
+      return false;
+    const left = (st.knockbackEndTick - tick) | 0;
+    if (left < 0) {
+      st.displacedX = enemy.x;
+      st.displacedY = enemy.y;
+      st.knockbackX = undefined;
+      st.knockbackY = undefined;
+      st.knockbackEndTick = undefined;
+      return false;
+    }
+    const remain = Math.max(1, left + 1);
+    enemy.x += (st.knockbackX - enemy.x) / remain;
+    enemy.y += (st.knockbackY - enemy.y) / remain;
+    if (left <= 0) {
+      enemy.x = st.knockbackX;
+      enemy.y = st.knockbackY;
+      st.displacedX = enemy.x;
+      st.displacedY = enemy.y;
+      st.knockbackX = undefined;
+      st.knockbackY = undefined;
+      st.knockbackEndTick = undefined;
+    }
+    return true;
+  }
+
+  /** §51 one authored combo swing from the committed Lock geometry. Parry language: white steps are
+   *  parryable (shared resolveParry — bait conversion / juggle break / riposte all branch in there);
+   *  RED steps (unparryable) speak the FEET language — an airborne player clears them, the parry does
+   *  not answer them. Juggle displacement rides ONLY the two channels prediction already reconciles
+   *  (`addImpulse` and vh) — never a position write, never zeroMoveVel (no new divergence classes). */
+  private comboSwing(
+    enemy: EnemyState,
+    enemyId: string,
+    st: DuelistComboState,
+    step: ToughComboStep | undefined,
+    geo: { range: number; halfArc: number; damageMult: number; knockbackMult?: number },
+    strike: { x: number; y: number; aimX: number; aimY: number },
+  ): void {
+    enemy.atkSeq = (enemy.atkSeq + 1) % 100000;
+    const m = effectiveMelee(ENEMY_KINDS[enemy.kind]);
+    const base =
+      (m?.damage ?? 0) *
+      geo.damageMult *
+      (enemy.tough ? TOUGH_DAMAGE_MULT : 1) *
+      depthDamageScale(this.state.depth);
+    this.state.players.forEach((player) => {
+      if (!player.alive || this.inLevelWindow(player)) return;
+      if (!inMeleeArc(strike, strike.aimX, strike.aimY, player, geo.range, geo.halfArc)) return;
+      const pc = this.combat.get(player.id);
+      if (step?.unparryable) {
+        if (player.height > GROUND_EPSILON) return; // RED = feet — the jump clears it (quake language)
+      } else if (pc && pc.invuln > 0) {
+        this.resolveParry(player, pc, enemy, enemyId); // §8 negate + reward; §51 branches live inside
+        return;
+      }
+      if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy — no landing-gank
+      let dmg = base;
+      if (player.id === st.targetId && st.juggleCombo) {
+        // G9: one performance may never take more than 40% of the committed victim's max HP — the
+        // budget clamps every hit (bystanders splashed by the honest hitbox are not the victim).
+        const budget = Math.max(0, player.maxHp * COMBO_DAMAGE_CAP_FRAC - (st.comboDamage ?? 0));
+        dmg = Math.min(dmg, budget);
+        st.comboDamage = (st.comboDamage ?? 0) + dmg;
+      }
+      if (dmg > 0) this.damagePlayer(player, dmg);
+      const hx = player.x - enemy.x;
+      const hy = player.y - enemy.y;
+      const hd = Math.hypot(hx, hy) || 1;
+      if (step?.launch && pc && player.id === st.targetId) {
+        // LAUNCHER: SET the victim's vh (deterministic apex; the parry-launch cap is the law, G9) + a
+        // front-loaded pop along the strike. Arms the G10 touchdown mercy for this enemy-made flight.
+        pc.vh = Math.min(step.launch.vh, PARRY_LAUNCH_MAX);
+        player.vh = pc.vh;
+        pc.juggleArmed = true;
+        const k = addImpulse(player, (hx / hd) * step.launch.push, (hy / hd) * step.launch.push);
+        player.vx = k.vx;
+        player.vy = k.vy;
+        player.juggledSeq = (player.juggledSeq + 1) & 0xff;
+        st.launchTick = this.state.tick;
+        enemy.comboFlags |= COMBO_FLAG_JUGGLE;
+      } else if (step?.airkeep && pc && player.id === st.targetId) {
+        // AIR-KEEP: REFRESH vh by assignment (never additive — no co-op moon-launch; authored vh 0 =
+        // the finisher lets you fall) + count toward the G9 air-hit cap.
+        if (step.airkeep.vh > 0) {
+          pc.vh = Math.min(step.airkeep.vh, PARRY_LAUNCH_MAX);
+          player.vh = pc.vh;
+        }
+        if (step.airkeep.push > 0) {
+          const k = addImpulse(player, (hx / hd) * step.airkeep.push, (hy / hd) * step.airkeep.push);
+          player.vx = k.vx;
+          player.vy = k.vy;
+        }
+        player.juggledSeq = (player.juggledSeq + 1) & 0xff;
+        st.juggleHits = (st.juggleHits ?? 0) + 1;
+      } else {
+        const push = HIT_KNOCKBACK_IMPULSE * (geo.knockbackMult ?? 1);
+        const k = addImpulse(player, (hx / hd) * push, (hy / hd) * push);
+        player.vx = k.vx;
+        player.vy = k.vy;
+      }
+    });
+  }
+
+  /** §51 nearest LIVING player WITH identity (the anonymous `bodies` scratch drops ids — a combo
+   *  commits to ONE victim at negotiation, G12). O(players), zero allocation. */
+  private nearestLivingPlayer(pos: Vec2): PlayerState | undefined {
+    let best: PlayerState | undefined;
+    let bestD = Number.POSITIVE_INFINITY;
+    this.state.players.forEach((p) => {
+      if (!p.alive) return;
+      const d = (p.x - pos.x) ** 2 + (p.y - pos.y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    });
+    return best;
+  }
+
+  /** §51 bump the synced step-commit edge, wrapping 1..255 (0 stays "no combo has ever run"). */
+  private bumpComboSeq(enemy: EnemyState): void {
+    enemy.comboSeq = (enemy.comboSeq % 255) + 1;
   }
 
   /** §8 apply a SUCCESSFUL parry of a telegraphed melee strike: negate + punish + FLOW + the v0.114 chain
@@ -5733,20 +6601,11 @@ export class GameRoom extends Room<ArenaState> {
     const dy = attacker.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
     const ironKnockback = 1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance");
-    attacker.x = clamp(
-      attacker.x + (dx / d) * PARRY_KNOCKBACK * 1.6 * ironKnockback,
-      ENEMY_RADIUS,
-      ARENA_WIDTH - ENEMY_RADIUS,
-    );
-    attacker.y = clamp(
-      attacker.y + (dy / d) * PARRY_KNOCKBACK * 1.6 * ironKnockback,
-      ENEMY_RADIUS,
-      ARENA_HEIGHT - ENEMY_RADIUS,
-    );
     // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
     // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
     pc.vh = Math.min(pc.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+    player.vh = pc.vh;
     const k = addImpulse(player, (-dx / d) * PARRY_PUSH, (-dy / d) * PARRY_PUSH);
     player.vx = k.vx;
     player.vy = k.vy;
@@ -5758,25 +6617,95 @@ export class GameRoom extends Room<ArenaState> {
       player.maxHp,
       player.hp + PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS),
     );
-    if (pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT) {
-      const est = this.comboState.get(attackerId);
-      if (est) {
-        if (est.strike) this.removeTelegraphRow(est.strike.tg);
-        est.strike = undefined;
-        est.phase = "recover";
-        est.t = 1; // interrupt: a full second of stagger before it can attack again
-        attacker.windup = 0;
-      }
+    const est = this.comboState.get(attackerId);
+    const def = est?.comboId ? TOUGH_COMBOS[est.comboId] : undefined;
+    const authored = !!est && !!def;
+    const riposte = pc.parryChain >= PARRY_CHAIN_RIPOSTE_AT;
+    const nx = dx / d;
+    const ny = dy / d;
+    const baseKnockback = PARRY_KNOCKBACK * 1.6 * ironKnockback;
+    let knockbackTicks = 0;
+    if (authored && est) {
+      // G2/G8: focused combo elites visibly travel through their recoil (≤90px/tick). Grunts and legacy
+      // duelists keep the cheap historical write so this feature cannot perturb their established rhythm.
+      knockbackTicks = this.scheduleComboKnockback(
+        attacker,
+        est,
+        nx,
+        ny,
+        baseKnockback + (riposte ? PARRY_KNOCKBACK : 0),
+      );
+    } else {
       attacker.x = clamp(
-        attacker.x + (dx / d) * PARRY_KNOCKBACK,
+        attacker.x + nx * baseKnockback,
         ENEMY_RADIUS,
         ARENA_WIDTH - ENEMY_RADIUS,
       );
       attacker.y = clamp(
-        attacker.y + (dy / d) * PARRY_KNOCKBACK,
+        attacker.y + ny * baseKnockback,
         ENEMY_RADIUS,
         ARENA_HEIGHT - ENEMY_RADIUS,
       );
+      if (riposte) {
+        attacker.x = clamp(
+          attacker.x + nx * PARRY_KNOCKBACK,
+          ENEMY_RADIUS,
+          ARENA_WIDTH - ENEMY_RADIUS,
+        );
+        attacker.y = clamp(
+          attacker.y + ny * PARRY_KNOCKBACK,
+          ENEMY_RADIUS,
+          ARENA_HEIGHT - ENEMY_RADIUS,
+        );
+      }
+    }
+    if (est && def) {
+      const step = def.steps[est.stepIndex ?? 0];
+      const juggleString =
+        (attacker.comboFlags & COMBO_FLAG_JUGGLE) !== 0 ||
+        step?.kind === "launcher" ||
+        step?.kind === "airkeep";
+      if (riposte) {
+        // G14 interrupt supremacy: chain mastery cancels ANY committed phase, including return dashes and
+        // air keeps. The full one-second stagger begins after the bounded recoil finishes.
+        this.enterComboRecover(
+          attacker,
+          attackerId,
+          est,
+          COMBO_RIPOSTE_STAGGER_TICKS + knockbackTicks,
+        );
+      } else if (est.phase === "return") {
+        // The empowered comeback always loses to the second parry. maxReturns is already spent; even when
+        // the global chain entered at 0, the authored 1.4–1.6s punish window ends the branch permanently.
+        this.enterComboRecover(
+          attacker,
+          attackerId,
+          est,
+          (def.return?.recoverTicks ?? def.recoverTicks) + knockbackTicks,
+        );
+      } else if (juggleString) {
+        // G11: airborne parry (or refusing the launcher at the door) breaks the clock, frees the one-victim
+        // token, and never re-times the remaining keeps to chase the altered vh arc.
+        this.enterComboRecover(attacker, attackerId, est, def.recoverTicks + knockbackTicks);
+      } else if (step?.returnCapable && def.return && (est.returnsLeft ?? 0) > 0) {
+        // G8 return conversion. `stepStartTick` begins only after recoil motion completes; from there the
+        // enemy holds eight full ticks at the captured displaced point before the complete white windup.
+        est.returnsLeft = Math.max(0, (est.returnsLeft ?? 0) - 1);
+        est.empowered = true;
+        est.phase = "return";
+        est.stepStartTick = (this.state.tick + knockbackTicks) >>> 0;
+        est.stepEndTick =
+          (est.stepStartTick + RETURN_STAGGER_TICKS + def.return.windupTicks + RETURN_DASH_TICKS) >>> 0;
+        attacker.comboFlags =
+          (attacker.comboFlags & ~COMBO_FLAG_JUGGLE) | COMBO_FLAG_EMPOWERED;
+        this.bumpComboSeq(attacker); // documented edge: empowered return STEP START
+      }
+    } else if (riposte && est) {
+      if (est.strike) this.removeTelegraphRow(est.strike.tg);
+      est.strike = undefined;
+      est.phase = "recover";
+      est.t = 1; // legacy interrupt: a full second of stagger before it can attack again
+      attacker.windup = 0;
     }
     // G-02: augments belong to this success receipt, never to the button press that opened the window.
     this.applyParryAugments(player, pc);
@@ -6479,6 +7408,9 @@ export class GameRoom extends Room<ArenaState> {
         this.state.enemies.delete(this.shifterId);
         const combo = this.comboState.get(this.shifterId);
         if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
+        if (combo?.tg) this.removeTelegraphRow(combo.tg);
+        if (combo?.targetId && this.duelTokens.get(combo.targetId) === this.shifterId)
+          this.duelTokens.delete(combo.targetId);
         this.comboState.delete(this.shifterId);
         this.enemyFireCd.delete(this.shifterId);
         console.log(`[room ${this.roomId}] ⌁ shifter phased out — ${this.shifterId}`);

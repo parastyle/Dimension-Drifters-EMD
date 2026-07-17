@@ -151,6 +151,10 @@ export class PlayerState extends Schema {
   /** G-09 signature delivery identities captured when each signature level is earned. Semicolon-separated
    * queue entries (for example `cast+beam`); APPENDED at schema v18 so a swap cannot reroll an owed draft. */
   @type("string") sigGateQueue = "";
+  /** §51 JUGGLED edge (APPENDED at schema v19, after every v18 field): bumped exactly once each time this
+   *  player is LAUNCHED or air-kept by a tough-combo juggle hit — the client edge-fires the hit-reaction /
+   *  tumble pose off changes. The arc itself rides the existing synced `height`/`vh` channels. */
+  @type("uint8") juggledSeq = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
@@ -176,6 +180,15 @@ export class EnemyState extends Schema {
    *  client VFX trigger — on a change (alongside an hp drop) the client styles that damage number gold +
    *  adds extra hit-stop/ring. Appended (field-order stable). */
   @type("uint8") critFlash = 0;
+  /** §51 combo STEP-COMMIT edge (APPENDED at schema v19): bumped exactly once per documented commit —
+   *  leap LIFTOFF (offer→arc), each strike LOCK (geometry freeze at MELEE_LOCK_PHASE), and a parry-bait
+   *  RETURN start. Wraps 1..255 (0 is reserved = "no combo has ever run"); the client edge-triggers step
+   *  presentation (arc hop, empowered flash) off changes. The full combo brain stays server-private. */
+  @type("uint8") comboSeq = 0;
+  /** §51 combo presentation bit flags (APPENDED at schema v19): COMBO_FLAG_AIRBORNE (leap in flight —
+   *  ballistic hop + shadow) · COMBO_FLAG_EMPOWERED (gold bait-return windup) · COMBO_FLAG_JUGGLE
+   *  (air-keep posture while a juggle string is live). 0 = no combo state to render. */
+  @type("uint8") comboFlags = 0;
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */

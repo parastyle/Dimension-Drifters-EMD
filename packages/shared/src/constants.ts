@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 18; // fixed combat-receipt ring + signature-gate snapshot appended
+export const SCHEMA_VERSION = 19; // §51 tough-combo edges appended (comboSeq/comboFlags/juggledSeq)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -695,3 +695,53 @@ export const GUN_RECOIL_IMPULSE = 190;
 export const GUN_RECOIL_BASELINE = 0.0017;
 /** Knockback (px/s) shoved onto a player when an enemy contact-hits or a hostile projectile lands. */
 export const HIT_KNOCKBACK_IMPULSE = 300;
+
+/**
+ * §51 TOUGH-ENEMY COMBO LANGUAGE (enemycombo panel) — the negotiated leap · authored combo grammar ·
+ * parry-bait returns · juggles. All timings are authored in whole 50ms TICKS (worm action-tick model)
+ * so beats land exactly on the 20Hz grid, and every number below is a LAW from the panel's
+ * devil's-advocate guardrail table (G1–G15), not a tuning suggestion.
+ */
+/** Negotiated-leap OFFER (leapwind) — 0.30s of deep-crouch announcement before liftoff. */
+export const COMBO_LEAP_OFFER_TICKS = 6;
+/** Negotiated-leap ARC — FIXED 0.35s air time regardless of distance (G1 arc floor: the metronome).
+ *  Max leap range 560px over 7 ticks = 80px/tick, inside the G2 ≤90px/tick displacement budget. */
+export const COMBO_LEAP_AIR_TICKS = 7;
+/** Negotiated-leap SETTLE — 0.25s sacred beat after landing: nothing damages, the player chooses. */
+export const COMBO_LEAP_SETTLE_TICKS = 5;
+/** Max distance a negotiated leap commits from (vs the legacy assault-leap's 540). */
+export const COMBO_LEAP_RANGE = 560;
+/** Seconds between negotiated leaps (one leap per combo — the cooldown spans the whole performance). */
+export const COMBO_LEAP_COOLDOWN = 4.0;
+/** G2: hard px cap on ANY single-tick combo strike-advance position write (no >100px snaps, ever). */
+export const COMBO_STEP_MAX = 96;
+/** G8: the parried bait holds a visible stagger at the DISPLACED position ≥0.4s before its return. */
+export const RETURN_STAGGER_TICKS = 8;
+/** The return closes as a bounded-velocity 0.30s dash — ≤300px over 6 ticks = ≤50px/tick (G2-safe). */
+export const RETURN_DASH_TICKS = 6;
+/** Max px a parry-bait return dash may cover — an Iron-Stance mega-knockback whiffs, never screen-dashes. */
+export const RETURN_STEP_MAX = 300;
+/** Juggle launcher SETS the victim's vh here (set, not add — deterministic apex ≈85px, airtime ≈0.71s). */
+export const JUGGLE_LAUNCH = 480;
+/** Explicit channel alias used by authored payload rows; both names are one law, not two tuning knobs. */
+export const JUGGLE_LAUNCH_VH = JUGGLE_LAUNCH;
+/** Each air-keep RESETS vh here (assignment, never stacking — no co-op moon-launch; re-loft ≈0.53s). */
+export const JUGGLE_KEEP = 360;
+/** Explicit channel alias used by authored payload rows. */
+export const JUGGLE_KEEP_VH = JUGGLE_KEEP;
+/** G9: hard cap on air-keep hits per combo — after 2 the string force-recovers regardless of success. */
+export const JUGGLE_MAX_HITS = 2;
+/** Name clarifies that the launcher is not counted against the two authored air keeps. */
+export const JUGGLE_MAX_AIR_HITS = JUGGLE_MAX_HITS;
+/** G9: hard cap on launch-to-landing loss of control (sec); past it every follow-up whiffs server-side. */
+export const JUGGLE_MAX_CONTROL_SECONDS = 2.0;
+/** G9: total combo damage to the committed victim ≤ this fraction of their max HP (launch included). */
+export const COMBO_DAMAGE_CAP_FRAC = 0.4;
+/** G10: melee/contact mercy (sec) granted on touchdown from an ENEMY-initiated launch (not own jumps). */
+export const JUGGLE_LANDING_MERCY = 0.3;
+/** G12: ≤4 concurrent combo performances arena-wide — a readability cap as much as a wire one. */
+export const COMBO_MAX_ACTIVE = 4;
+/** `EnemyState.comboFlags` bits (uint8): the three presentation edges the client cannot infer. */
+export const COMBO_FLAG_AIRBORNE = 1; // leap in flight — client renders the ballistic hop + shadow
+export const COMBO_FLAG_EMPOWERED = 2; // gold parry-bait return — client tints the windup + double glint
+export const COMBO_FLAG_JUGGLE = 4; // juggle string live (launcher hit → string end) — air-keep posture

@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(18);
+    expect(h.state().schemaVersion).toBe(19);
   });
 });
 
@@ -3049,3 +3049,289 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     expect(h.state().portalOpen).toBe(true);
   });
 });
+
+// §51 WAVE 1 — tough-enemy combo authority. APPENDED ONLY: these drive the same room/tick harness as the
+// historical suite and pin the panel's tick edges, geometry promises, physics caps, and duel-token law.
+const enemyComboShared = await import("@dd/shared");
+
+function makeEnemyComboRoom(depth = 1) {
+  const h = makeRoom();
+  h.join("combo-victim");
+  h.room.map.pois.length = 0;
+  h.room.map.tiles.fill(TILE_GROUND); // map-RNG law: every pinned combo position is known solid ground
+  h.room.spawnAccum = -1_000_000;
+  h.room.shifterCd = 1_000_000;
+  h.state().depth = depth;
+  const player = h.state().players.get("combo-victim");
+  player.x = h.room.map.spawnX;
+  player.y = h.room.map.spawnY;
+  player.hp = player.maxHp;
+  return { h, player, combat: h.room.combat.get(player.id) };
+}
+
+function addComboEnemy(
+  h: ReturnType<typeof makeRoom>,
+  player: { x: number; y: number },
+  id: string,
+  kind = "ronin",
+  dx = 120,
+) {
+  const enemy = new EnemyState();
+  enemy.id = id;
+  enemy.kind = kind;
+  enemy.tough = true;
+  enemy.hp = 100_000;
+  enemy.x = player.x + dx;
+  enemy.y = player.y;
+  h.state().enemies.set(id, enemy);
+  return enemy;
+}
+
+function forceComboStart(
+  h: ReturnType<typeof makeRoom>,
+  enemy: InstanceType<typeof EnemyState>,
+  player: AnyRoom,
+  roll: number,
+) {
+  const st = { phase: "idle", t: 0, hits: 0, wind: 0 };
+  h.room.comboState.set(enemy.id, st);
+  const random = vi.spyOn(Math, "random").mockReturnValue(roll);
+  try {
+    h.room.commitCombo(enemy, enemy.id, ENEMY_KINDS[enemy.kind], st, player, false);
+  } finally {
+    random.mockRestore();
+  }
+  return st as AnyRoom;
+}
+
+function pinVictimInFront(player: AnyRoom, enemy: AnyRoom) {
+  player.x = enemy.x - 60;
+  player.y = enemy.y;
+  player.vx = 0;
+  player.vy = 0;
+  player.mvx = 0;
+  player.mvy = 0;
+}
+
+describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => {
+  it("negotiates 110px ahead of the slow facing anchor, then never moves the marker or landing", () => {
+    const { h, player } = makeEnemyComboRoom(1);
+    const enemy = addComboEnemy(h, player, "combo-leaper", "vault-ronin", 300);
+    player.aimDir = Math.PI; // live mouse aim points LEFT; approach bearing/facing is RIGHT by law
+
+    h.tick(1); // idle → leapwind: marker exists from the decision tick
+    const st = h.room.comboState.get(enemy.id);
+    const row = h.state().telegraphs.get(st.tg);
+    expect(st.phase).toBe("leapwind");
+    expect(row.danger).toBe(0); // white duel offer, never the legacy red assault marker
+    expect(row.x - player.x).toBeCloseTo(110, 6);
+    expect(row.y).toBeCloseTo(player.y, 6);
+    expect(enemy.comboSeq).toBe(0); // marker decision is not a documented wire edge
+    const promisedX = row.x;
+    const promisedY = row.y;
+
+    player.aimDir = 0;
+    player.x += 5; // legal post-marker movement inside the footprint cannot renegotiate the promise
+    h.tick(6); // exact 0.30s offer → liftoff
+    expect(enemy.comboSeq).toBe(1);
+    expect(enemy.comboFlags & enemyComboShared.COMBO_FLAG_AIRBORNE).toBeTruthy();
+    expect(h.state().telegraphs.get(st.tg).x).toBe(promisedX);
+    expect(h.state().telegraphs.get(st.tg).y).toBe(promisedY);
+
+    h.tick(7); // exact fixed 0.35s arc
+    expect(enemy.x).toBeCloseTo(promisedX, 6);
+    expect(enemy.y).toBeCloseTo(promisedY, 6);
+    expect(enemy.comboFlags & enemyComboShared.COMBO_FLAG_AIRBORNE).toBe(0);
+    expect(h.state().telegraphs.has(st.tg ?? "")).toBe(false);
+    expect(enemy.comboSeq).toBe(1); // no strike Lock has happened yet
+  });
+
+  it("commits each cone at Lock=0.65 and resolves only the frozen advertised sector", () => {
+    const { h, player } = makeEnemyComboRoom(1);
+    const enemy = addComboEnemy(h, player, "combo-lock", "ronin", 140);
+    h.tick(1); // grounded K1 begins
+
+    let row: AnyRoom;
+    for (let i = 0; i < 10 && !row; i++) {
+      h.tick(1);
+      row = h.state().telegraphs.get(`melee:${enemy.id}`);
+    }
+    expect(row).toBeDefined();
+    expect(enemy.comboSeq).toBe(1); // first strike Lock, exactly once
+    const frozen = { x: row.x, y: row.y, rot: row.rot, a: row.a, b: row.b };
+    const hp = player.hp;
+    player.x = row.x - Math.cos(row.rot) * (row.a + 100);
+    player.y = row.y - Math.sin(row.rot) * (row.a + 100);
+
+    h.tick(1);
+    const still = h.state().telegraphs.get(`melee:${enemy.id}`);
+    expect({ x: still.x, y: still.y, rot: still.rot, a: still.a, b: still.b }).toEqual(frozen);
+    const attack = enemy.atkSeq;
+    for (let i = 0; i < 4 && enemy.atkSeq === attack; i++) h.tick(1);
+    expect(enemy.atkSeq).toBe(attack + 1);
+    expect(player.hp).toBe(hp); // leaving after Lock beats the committed wedge; it never homes
+    expect(enemy.comboSeq).toBe(1); // step two has begun, but has not reached its own Lock
+  });
+
+  it("holds a parried bait at its displaced point for 8 ticks, returns bounded, and loses to parry two", () => {
+    const { h, player, combat } = makeEnemyComboRoom(3);
+    const enemy = addComboEnemy(h, player, "combo-bait", "ronin", 120);
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.9); // K3 advanced 40% partition
+    try {
+      h.tick(1);
+    } finally {
+      random.mockRestore();
+    }
+    const st = h.room.comboState.get(enemy.id);
+    expect(st.comboId).toBe("k3-gale-cross");
+    combat.invuln = 1;
+    h.tick(9); // bait resolves into the first parry
+    expect(st.phase).toBe("return");
+    expect(st.returnsLeft).toBe(0);
+    expect(enemy.comboSeq).toBe(2); // bait Lock + return-start edge (return Lock does not double-bump)
+    expect(enemy.comboFlags & enemyComboShared.COMBO_FLAG_EMPOWERED).toBeTruthy();
+
+    const recoil0 = enemy.x;
+    h.tick(1);
+    const recoil1 = enemy.x;
+    h.tick(1);
+    const displaced = enemy.x;
+    expect(Math.abs(recoil1 - recoil0)).toBeLessThanOrEqual(90.000001);
+    expect(Math.abs(displaced - recoil1)).toBeLessThanOrEqual(90.000001);
+    expect(Math.abs(displaced - recoil0)).toBeGreaterThan(100);
+    expect(st.displacedX).toBeCloseTo(displaced, 6);
+    const returnStart = st.stepStartTick;
+
+    h.tick(7);
+    expect(enemy.x).toBeCloseTo(displaced, 6);
+    expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
+    h.tick(1);
+    expect(((h.state().tick - returnStart) >>> 0)).toBeGreaterThanOrEqual(8);
+    expect(enemy.x).toBeCloseTo(displaced, 6);
+
+    let row: AnyRoom;
+    for (let i = 0; i < 24 && !row; i++) {
+      h.tick(1);
+      row = h.state().telegraphs.get(`melee:${enemy.id}`);
+    }
+    expect(row).toBeDefined();
+    expect(enemy.x).toBeCloseTo(displaced, 6); // path-plan origin is the post-knockback position
+    player.x = row.x + Math.cos(row.rot) * row.a * 0.5;
+    player.y = row.y + Math.sin(row.rot) * row.a * 0.5;
+    player.vx = 0;
+    player.vy = 0;
+    combat.invuln = 1;
+    const attack = enemy.atkSeq;
+    for (let i = 0; i < 20 && enemy.atkSeq === attack; i++) {
+      player.x = row.x + Math.cos(row.rot) * row.a * 0.5;
+      player.y = row.y + Math.sin(row.rot) * row.a * 0.5;
+      h.tick(1);
+    }
+    expect(enemy.atkSeq).toBe(attack + 1);
+    expect(player.parriedSeq).toBe(2);
+    expect(st.phase).toBe("recover");
+    expect(enemy.comboFlags).toBe(0);
+    expect(enemy.comboSeq).toBe(2);
+  });
+
+  it("launches and air-keeps at most twice, caps damage/control, and grants touchdown mercy", () => {
+    const { h, player, combat } = makeEnemyComboRoom(5);
+    const enemy = addComboEnemy(h, player, "combo-juggle", "vault-ronin", 120);
+    const st = forceComboStart(h, enemy, player, 0.9); // K4 Sky Hook, without re-testing its leap opener
+    expect(st.comboId).toBe("k4-sky-hook");
+    const hp = player.hp;
+
+    for (let i = 0; i < 20 && player.juggledSeq === 0; i++) {
+      pinVictimInFront(player, enemy);
+      h.tick(1);
+    }
+    expect(player.juggledSeq).toBe(1);
+    expect(player.vh).toBe(enemyComboShared.JUGGLE_LAUNCH_VH);
+    expect(combat.vh).toBe(enemyComboShared.JUGGLE_LAUNCH_VH);
+    const launchTick = st.launchTick;
+
+    for (let i = 0; i < 40 && player.juggledSeq < 3; i++) {
+      pinVictimInFront(player, enemy);
+      h.tick(1);
+    }
+    expect(player.juggledSeq).toBe(3); // launcher + exactly two air hits
+    expect(st.juggleHits).toBe(enemyComboShared.JUGGLE_MAX_AIR_HITS);
+    expect(enemy.comboSeq).toBe(3); // each of the three strike Locks, no extra churn
+    expect(st.phase).toBe("recover");
+    expect(enemy.comboFlags).toBe(0);
+    expect(hp - player.hp).toBeLessThanOrEqual(player.maxHp * enemyComboShared.COMBO_DAMAGE_CAP_FRAC);
+
+    for (let i = 0; i < 40 && player.height > 0; i++) h.tick(1);
+    expect(player.height).toBe(0);
+    expect(((h.state().tick - launchTick) >>> 0) * 0.05).toBeLessThanOrEqual(
+      enemyComboShared.JUGGLE_MAX_CONTROL_SECONDS,
+    );
+    expect(combat.juggleMercy).toBeGreaterThan(0);
+  });
+
+  it("lets an airborne parry ride upward and immediately breaks the remaining juggle string", () => {
+    const { h, player, combat } = makeEnemyComboRoom(5);
+    const enemy = addComboEnemy(h, player, "combo-air-parry", "vault-ronin", 120);
+    const st = forceComboStart(h, enemy, player, 0.9);
+    for (let i = 0; i < 20 && player.juggledSeq === 0; i++) {
+      pinVictimInFront(player, enemy);
+      h.tick(1);
+    }
+    expect(player.height).toBeGreaterThanOrEqual(0);
+    combat.invuln = 1;
+    for (let i = 0; i < 20 && st.phase !== "recover"; i++) {
+      pinVictimInFront(player, enemy);
+      h.tick(1);
+    }
+    expect(player.parriedSeq).toBe(1);
+    expect(player.juggledSeq).toBe(1); // the air-keep was negated, so no second juggle edge
+    expect(player.vh).toBeGreaterThan(0); // existing PARRY_LAUNCH converts their string into the player's ride
+    expect(st.phase).toBe("recover");
+    expect(h.room.duelTokens.has(player.id)).toBe(false);
+    expect(enemy.comboFlags).toBe(0);
+  });
+
+  it("serializes two tough attackers through one victim duel/aerial token", () => {
+    const { h, player } = makeEnemyComboRoom(1);
+    const first = addComboEnemy(h, player, "combo-token-a", "ronin", 120);
+    const second = addComboEnemy(h, player, "combo-token-b", "ronin", -120);
+    h.tick(1);
+    const a = h.room.comboState.get(first.id);
+    const b = h.room.comboState.get(second.id);
+    expect(h.room.duelTokens.size).toBe(1);
+    expect(h.room.duelTokens.get(player.id)).toBe(first.id);
+    expect(a.comboId).toBe("k1-sanren");
+    expect(b.comboId ?? "").toBe("");
+    expect(b.phase).toBe("idle");
+  });
+
+  it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(19);
+    expect(new EnemyState().comboSeq).toBe(0);
+    expect(new EnemyState().comboFlags).toBe(0);
+    expect(herePlayerJuggledDefault()).toBe(0);
+    expect(ENEMY_KINDS.ronin?.combos).toContainEqual({ combo: "k3-gale-cross", minDepth: 3 });
+    expect(ENEMY_KINDS["vault-ronin"]?.combos).toContainEqual({ combo: "k4-sky-hook", minDepth: 5 });
+    expect(ENEMY_KINDS["shifter-cinder-marshal"]?.combos).toEqual([
+      { combo: "k1-sanren", minDepth: 1 },
+    ]);
+    expect(ENEMY_KINDS["shifter-grave-warden"]?.combos).toContainEqual({
+      combo: "h4-coffin-lid",
+      minDepth: 6,
+    });
+    for (const def of Object.values(enemyComboShared.TOUGH_COMBOS)) {
+      expect(def.frontOffset).toBeGreaterThanOrEqual(110);
+      expect(def.frontOffset).toBeLessThanOrEqual(120);
+      expect(def.steps.filter((step) => step.kind === "airkeep").length).toBeLessThanOrEqual(2);
+      for (const step of def.steps) {
+        expect(step.windupTicks).toBeGreaterThanOrEqual(6);
+        expect(step.step).toBeLessThanOrEqual(enemyComboShared.COMBO_STEP_MAX);
+      }
+    }
+  });
+});
+
+function herePlayerJuggledDefault() {
+  const h = makeEnemyComboRoom();
+  return h.player.juggledSeq;
+}
