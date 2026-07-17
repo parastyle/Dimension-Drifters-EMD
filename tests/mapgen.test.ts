@@ -486,4 +486,75 @@ describe("mapgen — compound landmark authority", () => {
 // The appended 200-seed connected-component proof performs per-cell assertions; retain the full sample
 // rather than weakening it to fit Vitest's 5s default.
 import { vi } from "vitest";
+
 vi.setConfig({ testTimeout: 30_000 });
+
+// MAP QOL wave — append-only gate authority and locator proofs.
+const mapQolShared = await import("@dd/shared");
+const gateVisibility = await import(
+  "../packages/client/src/scenes/arena/floor-renderer.js"
+);
+
+describe("mapgen — jointly validated post-boss gate pair", () => {
+  it("places reachable full-footprint extract/rift discs with protected separation across seeds", () => {
+    for (let sampleIndex = 0; sampleIndex < 120; sampleIndex++) {
+      const sample = SAMPLES[sampleIndex];
+      if (!sample) continue;
+      const map = generateArena(sample);
+      let corpseX = map.spawnX;
+      let corpseY = map.spawnY;
+      if (sampleIndex % 2 === 0 && map.pois[0]) {
+        corpseX = map.pois[0].x;
+        corpseY = map.pois[0].y;
+      } else {
+        const pit = map.tiles.indexOf(TILE_PIT);
+        expect(pit).toBeGreaterThanOrEqual(0);
+        corpseX = ((pit % map.cols) + 0.5) * map.tileSize;
+        corpseY = (Math.floor(pit / map.cols) + 0.5) * map.tileSize;
+      }
+      const pair = mapQolShared.placeArenaGatePair(
+        map,
+        corpseX,
+        corpseY,
+        mapQolShared.EXTRACT_RADIUS,
+      );
+      const validation = validateArena(map, pair);
+      expect(
+        validation.ok,
+        `seed ${JSON.stringify(sample)} gate pair failed: ${validation.reason}`,
+      ).toBe(true);
+      expect(
+        mapQolShared.isArenaDiscSafe(map, pair.extractX, pair.extractY, pair.radius),
+      ).toBe(true);
+      expect(mapQolShared.isArenaDiscSafe(map, pair.riftX, pair.riftY, pair.radius)).toBe(
+        true,
+      );
+      expect(Math.hypot(pair.riftX - pair.extractX, pair.riftY - pair.extractY)).toBeGreaterThanOrEqual(
+        mapQolShared.EXTRACT_RADIUS * 2 + mapQolShared.ARENA_GATE_PAIR_GAP - 1e-6,
+      );
+      expect([pair.extractX, pair.extractY]).not.toEqual([corpseX, corpseY]);
+    }
+  });
+});
+
+describe("gate locator — complete-circle HUD-safe visibility", () => {
+  it("persists for a clipped circle, clears only when the full gate is padded-visible, and pulses on open", () => {
+    const viewport = { left: 0, top: 0, right: 1000, bottom: 800 };
+    const radius = mapQolShared.EXTRACT_RADIUS;
+    expect(
+      gateVisibility.gateNeedsEdgeLocator(true, 70, 400, radius, viewport, false),
+    ).toBe(true); // centre is on-screen, but the complete disc is clipped by the safe edge
+    expect(
+      gateVisibility.gateNeedsEdgeLocator(true, 129, 400, radius, viewport, false),
+    ).toBe(true);
+    expect(
+      gateVisibility.gateNeedsEdgeLocator(true, 130, 400, radius, viewport, false),
+    ).toBe(false); // radius 90 + padding 40 is now fully clear
+    expect(
+      gateVisibility.gateNeedsEdgeLocator(true, 500, 400, radius, viewport, true),
+    ).toBe(true); // three-second first-open pulse overrides an already-visible centre
+    expect(
+      gateVisibility.gateNeedsEdgeLocator(false, 70, 400, radius, viewport, true),
+    ).toBe(false);
+  });
+});

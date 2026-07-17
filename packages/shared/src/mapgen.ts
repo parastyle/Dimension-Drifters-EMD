@@ -19,6 +19,7 @@
 import {
   ARENA_HEIGHT,
   ARENA_WIDTH,
+  EXTRACT_RADIUS,
   MAP_BORDER_TILES,
   MAP_MAX_JUMP_TILES,
   MAP_PIT_MAX,
@@ -33,6 +34,7 @@ import {
   MAP_SPAWN_CLEAR_TILES,
   MAP_TILE,
   PLAYER_RADIUS,
+  RIFT_OFFSET,
 } from "./constants.js";
 import { makeRng, mixSeeds, type Rng } from "./rng.js";
 
@@ -99,6 +101,20 @@ export type ArenaMap = {
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
   seeds: ArenaMapSeeds;
 };
+
+/** The two post-boss choices are one placement contract: both complete discs must be usable and the
+ * circles must remain visually/physically distinct after every terrain/POI correction. */
+export type ArenaGatePair = Readonly<{
+  extractX: number;
+  extractY: number;
+  riftX: number;
+  riftY: number;
+  radius: number;
+  minSeparation: number;
+}>;
+
+/** Extra breathing room beyond two touching gate footprints. */
+export const ARENA_GATE_PAIR_GAP = 80;
 
 const idx = (x: number, y: number, cols: number): number => y * cols + x;
 const inBounds = (x: number, y: number, cols: number, rows: number): boolean =>
@@ -1236,6 +1252,157 @@ export function safeSpawnPos(
   return { x: nx, y: ny };
 }
 
+/** True only when the COMPLETE objective disc lies on ground, inside the arena, and outside every exact
+ * compound POI child. Unlike `safeSpawnPos`, this intentionally rejects a ground centre whose rim hangs
+ * over a pit. Pure and shared by gate authority + validation/tests. */
+export function isArenaDiscSafe(
+  map: ArenaMap,
+  x: number,
+  y: number,
+  radius: number,
+): boolean {
+  return (
+    Number.isFinite(x) &&
+    Number.isFinite(y) &&
+    Number.isFinite(radius) &&
+    radius > 0 &&
+    groundDiscClear(map.tiles, map.cols, map.rows, x, y, radius) &&
+    !pointOverlapsPoi(map.pois, x, y, radius)
+  );
+}
+
+/** Nearest full-footprint safe ground disc, optionally constrained away from the other gate. Generated
+ * maps are navigation-audited, so every accepted tile centre belongs to the spawn-reachable component.
+ * The raw point wins when already safe; otherwise row-major tile-centre ties keep the answer deterministic. */
+function nearestArenaDisc(
+  map: ArenaMap,
+  x: number,
+  y: number,
+  radius: number,
+  avoidX = 0,
+  avoidY = 0,
+  minSeparation = 0,
+): { x: number; y: number } {
+  const separation2 = minSeparation * minSeparation;
+  const separated = (candidateX: number, candidateY: number): boolean => {
+    if (minSeparation <= 0) return true;
+    const dx = candidateX - avoidX;
+    const dy = candidateY - avoidY;
+    return dx * dx + dy * dy + 1e-6 >= separation2;
+  };
+  if (isArenaDiscSafe(map, x, y, radius) && separated(x, y)) return { x, y };
+
+  let bestX = Number.NaN;
+  let bestY = Number.NaN;
+  let bestDistance2 = Number.POSITIVE_INFINITY;
+  for (let row = 0; row < map.rows; row++)
+    for (let col = 0; col < map.cols; col++) {
+      const candidateX = (col + 0.5) * map.tileSize;
+      const candidateY = (row + 0.5) * map.tileSize;
+      if (
+        !separated(candidateX, candidateY) ||
+        !isArenaDiscSafe(map, candidateX, candidateY, radius)
+      )
+        continue;
+      const dx = candidateX - x;
+      const dy = candidateY - y;
+      const distance2 = dx * dx + dy * dy;
+      if (distance2 + 1e-6 >= bestDistance2) continue;
+      bestDistance2 = distance2;
+      bestX = candidateX;
+      bestY = candidateY;
+    }
+  if (!Number.isFinite(bestX) || !Number.isFinite(bestY))
+    throw new Error("arena has no reachable full-footprint gate disc");
+  return { x: bestX, y: bestY };
+}
+
+/** Joint post-boss gate solver. Extract stays nearest the corpse; the rift prefers the inward bearing at
+ * `RIFT_OFFSET`, but every pass applies the real full-disc correction and the pair constraint. Re-solving
+ * extract and then rift makes either correction incapable of invalidating the other gate. */
+export function placeArenaGatePair(
+  map: ArenaMap,
+  corpseX: number,
+  corpseY: number,
+  radius = EXTRACT_RADIUS,
+): ArenaGatePair {
+  const minSeparation = radius * 2 + ARENA_GATE_PAIR_GAP;
+  let extract = nearestArenaDisc(map, corpseX, corpseY, radius);
+  let centreX = ARENA_WIDTH / 2 - extract.x;
+  let centreY = ARENA_HEIGHT / 2 - extract.y;
+  let centreDistance = Math.hypot(centreX, centreY);
+  if (centreDistance <= 1e-6) {
+    centreX = 0;
+    centreY = -1;
+    centreDistance = 1;
+  }
+  let desiredRiftX = extract.x + (centreX / centreDistance) * RIFT_OFFSET;
+  let desiredRiftY = extract.y + (centreY / centreDistance) * RIFT_OFFSET;
+  let rift = nearestArenaDisc(
+    map,
+    desiredRiftX,
+    desiredRiftY,
+    radius,
+    extract.x,
+    extract.y,
+    minSeparation,
+  );
+
+  extract = nearestArenaDisc(
+    map,
+    corpseX,
+    corpseY,
+    radius,
+    rift.x,
+    rift.y,
+    minSeparation,
+  );
+  centreX = ARENA_WIDTH / 2 - extract.x;
+  centreY = ARENA_HEIGHT / 2 - extract.y;
+  centreDistance = Math.hypot(centreX, centreY);
+  if (centreDistance <= 1e-6) {
+    centreX = 0;
+    centreY = -1;
+    centreDistance = 1;
+  }
+  desiredRiftX = extract.x + (centreX / centreDistance) * RIFT_OFFSET;
+  desiredRiftY = extract.y + (centreY / centreDistance) * RIFT_OFFSET;
+  rift = nearestArenaDisc(
+    map,
+    desiredRiftX,
+    desiredRiftY,
+    radius,
+    extract.x,
+    extract.y,
+    minSeparation,
+  );
+  return {
+    extractX: extract.x,
+    extractY: extract.y,
+    riftX: rift.x,
+    riftY: rift.y,
+    radius,
+    minSeparation,
+  };
+}
+
+/** Gate-only half of `validateArena`, exposed for the boss-death seam so an already-running arena is not
+ * re-rejected for an unrelated generation diagnostic while opening an otherwise valid objective pair. */
+export function validateArenaGatePair(
+  map: ArenaMap,
+  gates: ArenaGatePair,
+): { ok: boolean; reason: string } {
+  if (!isArenaDiscSafe(map, gates.extractX, gates.extractY, gates.radius))
+    return { ok: false, reason: "extract gate is not a reachable full-footprint safe disc" };
+  if (!isArenaDiscSafe(map, gates.riftX, gates.riftY, gates.radius))
+    return { ok: false, reason: "rift gate is not a reachable full-footprint safe disc" };
+  const dx = gates.riftX - gates.extractX;
+  const dy = gates.riftY - gates.extractY;
+  if (dx * dx + dy * dy + 1e-6 < gates.minSeparation * gates.minSeparation)
+    return { ok: false, reason: "extract/rift gate footprints are too close" };
+  return { ok: true, reason: "" };
+}
+
 export type PitClassification = {
   /** Per-cell region id (−1 for ground). */
   regionOf: Int16Array;
@@ -1407,7 +1574,10 @@ export function auditArenaNavigation(
  * the spawn is ground, every ground tile is reachable from spawn (walk + hop), and the border ring is
  * solid ground. Returns `{ ok, reason }`.
  */
-export function validateArena(map: ArenaMap): { ok: boolean; reason: string } {
+export function validateArena(
+  map: ArenaMap,
+  gates?: ArenaGatePair,
+): { ok: boolean; reason: string } {
   const { tiles, cols, rows } = map;
   if (!zoneLayoutValid(map.zoneIds, map.zoneSeeds, cols, rows))
     return { ok: false, reason: "invalid/disconnected map-zone layout" };
@@ -1450,5 +1620,9 @@ export function validateArena(map: ArenaMap): { ok: boolean; reason: string } {
   }
   const navigation = auditArenaNavigation(map);
   if (!navigation.ok) return { ok: false, reason: navigation.reason };
+  if (gates) {
+    const gateValidation = validateArenaGatePair(map, gates);
+    if (!gateValidation.ok) return gateValidation;
+  }
   return { ok: true, reason: "" };
 }

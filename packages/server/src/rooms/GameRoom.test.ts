@@ -4543,3 +4543,172 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
     ]).toEqual([0, 0, 0, 0]);
   });
 });
+
+// MAP QOL wave — appended only. These lock the intentional post-schema-23 ordering and the new objective /
+// director postconditions without weakening any historical deterministic fixture above.
+describe("GameRoom — MAP QOL extraction intent and tick-order fairness", () => {
+  it("creates the guaranteed boss drop before arming gates, then denies corpse-position carryover until a fresh hold", () => {
+    const h = makeRoom();
+    h.join("qol-extract");
+    h.room.map.tiles.fill(TILE_GROUND);
+    h.room.spawnAccum = -1_000_000;
+    h.room.shifterCd = 1_000_000;
+    const player = h.state().players.get("qol-extract");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    const boss = new EnemyState();
+    boss.id = "qol-boss";
+    boss.kind = "old-rust";
+    boss.hp = 1;
+    boss.x = player.x;
+    boss.y = player.y;
+    h.state().enemies.set(boss.id, boss);
+    const order: string[] = [];
+    const realDrop = h.room.dropLoot.bind(h.room);
+    const realOpen = h.room.openPortal.bind(h.room);
+    const dropSpy = vi.spyOn(h.room, "dropLoot").mockImplementation((...args: unknown[]) => {
+      order.push("drop");
+      return realDrop(...args);
+    });
+    const openSpy = vi.spyOn(h.room, "openPortal").mockImplementation((...args: unknown[]) => {
+      order.push("gate");
+      return realOpen(...args);
+    });
+    try {
+      h.room.damageEnemy(boss, boss.id, 1, []);
+    } finally {
+      dropSpy.mockRestore();
+      openSpy.mockRestore();
+    }
+    expect(order.slice(0, 2)).toEqual(["drop", "gate"]);
+    expect(h.state().pickups.size).toBeGreaterThan(0);
+    expect([h.state().portalX, h.state().portalY]).toEqual([player.x, player.y]);
+
+    // More than arm+hold time while pre-held on the corpse must never bank the run.
+    h.tick(40);
+    expect(h.state().outcome).toBe("active");
+    // Leave after arming, freshly enter, and complete the explicit 0.75s hold.
+    player.x = h.state().portalX + enemyComboShared.EXTRACT_RADIUS + 30;
+    player.y = h.state().portalY;
+    h.tick(1);
+    player.x = h.state().portalX;
+    h.tick(14);
+    expect(h.state().outcome).toBe("active");
+    h.tick(1);
+    expect(h.state().outcome).toBe("victory");
+  });
+
+  it("launches an accepted standard jump before same-tick movement can sample the pit", () => {
+    const fixture = makeJumpFeelRoom("qol-jump-lip");
+    const map = fixture.h.room.map;
+    const row = Math.floor(fixture.player.y / map.tileSize);
+    const col = Math.floor(fixture.player.x / map.tileSize);
+    const lip = (col + 1) * map.tileSize;
+    map.tiles[row * map.cols + col + 1] = TILE_PIT;
+    fixture.player.x = lip - 8;
+    fixture.player.y = (row + 0.5) * map.tileSize;
+    fixture.combat.lastGroundX = fixture.player.x;
+    fixture.combat.lastGroundY = fixture.player.y;
+    const input = fixture.h.room.inputs.get(fixture.player.id);
+    input.mvx = enemyComboShared.MOVE_SPEED;
+    fixture.player.mvx = input.mvx;
+    const fell = fixture.player.fellSeq;
+    sendJumpFeelInput(fixture.h, fixture.player.id, 1, { dx: 1, jump: true });
+    expect(fixture.player.x).toBeGreaterThan(lip);
+    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(true);
+    expect(fixture.player.height).toBeGreaterThan(0);
+    expect(fixture.player.fellSeq).toBe(fell);
+  });
+
+  it("launches a ready buffered slide-hop before its same-tick lip movement and pit sample", () => {
+    const fixture = makeSlideRoom("qol-slide-hop-lip");
+    beginSlide(fixture);
+    const map = fixture.h.room.map;
+    const row = Math.floor(fixture.player.y / map.tileSize);
+    const col = Math.floor(fixture.player.x / map.tileSize);
+    const lip = (col + 1) * map.tileSize;
+    map.tiles[row * map.cols + col + 1] = TILE_PIT;
+    fixture.player.x = lip - 20;
+    fixture.player.y = (row + 0.5) * map.tileSize;
+    fixture.combat.lastGroundX = fixture.player.x;
+    fixture.combat.lastGroundY = fixture.player.y;
+    const fell = fixture.player.fellSeq;
+    sendSlideInput(fixture.h, fixture.player.id, 2, {
+      dx: 1,
+      jump: true,
+      slideHeld: true,
+    });
+    expect(fixture.player.x).toBeGreaterThan(lip);
+    expect(isPitAtPx(map, fixture.player.x, fixture.player.y)).toBe(true);
+    expect(fixture.combat.slidePhase).toBe(enemyComboShared.SLIDE_PHASE_AIR);
+    expect(fixture.player.height).toBeGreaterThan(0);
+    expect(fixture.player.fellSeq).toBe(fell);
+  });
+});
+
+describe("GameRoom — MAP QOL final enemy-spawn fairness", () => {
+  it("keeps every final clamp/snap-in result outside all living warning circles and camera rectangles across seeds", () => {
+    const h = makeRoom();
+    h.join("qol-spawn-a");
+    h.join("qol-spawn-b");
+    const a = h.state().players.get("qol-spawn-a");
+    const b = h.state().players.get("qol-spawn-b");
+    a.x = 120;
+    a.y = 120;
+    b.x = 520;
+    b.y = 120;
+    const rng = enemyComboShared.makeRng(0x51a0f00d);
+    const random = vi.spyOn(Math, "random").mockImplementation(() => rng.next());
+    let spawned = 0;
+    try {
+      for (let seed = 0; seed < 40; seed++) {
+        h.room.map = enemyComboShared.generateArena({
+          seedTerrain: seed * 2654435761,
+          seedHazard: seed * 40503 + 7,
+          seedTheme: seed + 1,
+          seedDecor: seed * 13 + 5,
+        });
+        h.state().enemies.clear();
+        h.room.enemyGrid.clear();
+        expect(h.room.spawnEnemy([{ x: a.x, y: a.y }]), `seed ${seed} deferred`).toBe(true);
+        const enemy = [...h.state().enemies.values()][0] as EnemyState | undefined;
+        expect(enemy).toBeDefined();
+        if (!enemy) continue;
+        spawned++;
+        for (const player of [a, b]) {
+          const dx = enemy.x - player.x;
+          const dy = enemy.y - player.y;
+          expect(Math.hypot(dx, dy)).toBeGreaterThanOrEqual(
+            enemyComboShared.SPAWN_RING * 0.85 - 1e-6,
+          );
+          expect(
+            Math.abs(dx) <= enemyComboShared.SPAWN_RING * 0.8 &&
+              Math.abs(dy) <= enemyComboShared.SPAWN_RING * 0.5,
+          ).toBe(false);
+        }
+      }
+    } finally {
+      random.mockRestore();
+    }
+    expect(spawned).toBe(40);
+  });
+
+  it("defers the spawn credit when every corrected candidate snaps inside the warning distance", () => {
+    const h = makeRoom();
+    h.join("qol-spawn-defer");
+    const player = h.state().players.get("qol-spawn-defer");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_PIT);
+    const col = Math.floor(player.x / h.room.map.tileSize);
+    const row = Math.floor(player.y / h.room.map.tileSize);
+    h.room.map.tiles[row * h.room.map.cols + col] = TILE_GROUND;
+    h.state().enemies.clear();
+    h.room.enemyGrid.clear();
+    h.room.spawnAccum = 2;
+    h.room.runSpawnDirector(0.05, [{ x: player.x, y: player.y }]);
+    expect(h.state().enemies.size).toBe(0);
+    expect(h.room.spawnAccum).toBeCloseTo(2.05, 8);
+  });
+});

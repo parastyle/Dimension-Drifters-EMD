@@ -37,10 +37,44 @@ import { POI_IDS_VERDANT_RUINS } from "../../sprites/poi-manifest-verdant-ruins.
  *
  * Depth stack (back→front): bed(-20) · painted base(-19.5) · path wear(-18.7) · patches(-17.4) ·
  * dust(-16) · flat litter(-15) · pit/rim/accent(-14…-13.8) · POI skirts(-13.6) · rail(-12) ·
- * contact AO(-11). Entities use depth = world Y (≥ 0), so all ground integration sits behind gameplay.
+ * contact AO(-11) · gate ground(-10). Entities use depth = world Y (≥ 0). Protected gate halo/copy uses
+ * the response layer (99990), above every y-sorted world occluder and below telegraphs/HUD.
  */
 
 const PAINTED_TILE_SIZE = 512;
+
+/** QOL-04 depth split: the physical disc remains ground art; only its thin response read is protected. */
+export const GATE_GROUND_DEPTH = -10;
+export const GATE_PROTECTED_DEPTH = 99990;
+export const GATE_LOCATOR_PADDING = 40;
+
+export type GateSafeViewport = Readonly<{
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}>;
+
+/** Keep an edge locator until the COMPLETE gate circle clears a padded HUD-safe viewport. A fresh-open
+ * pulse intentionally overrides visibility for three seconds so an already-on-screen gate is announced. */
+export function gateNeedsEdgeLocator(
+  open: boolean,
+  x: number,
+  y: number,
+  radius: number,
+  viewport: GateSafeViewport,
+  forcePulse: boolean,
+  padding = GATE_LOCATOR_PADDING,
+): boolean {
+  if (!open) return false;
+  if (forcePulse) return true;
+  return !(
+    x - radius >= viewport.left + padding &&
+    x + radius <= viewport.right - padding &&
+    y - radius >= viewport.top + padding &&
+    y + radius <= viewport.bottom - padding
+  );
+}
 
 type PoiSizeClass = "S" | "M" | "L" | "XL";
 type PoiBucket = "squat" | "structure" | "organic";

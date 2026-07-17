@@ -223,7 +223,6 @@ import {
   RETURN_STEP_MAX,
   REVIVE_HP_FRAC,
   RIFT_CHANNEL_SECONDS,
-  RIFT_OFFSET,
   randomSeed,
   resolveBodyCollisions,
   resolvePoiCollision,
@@ -267,6 +266,7 @@ import {
   shortestAngleDelta,
   SHOP_RADIUS,
   SPAWN_RING,
+  placeArenaGatePair,
   safeSpawnPos,
   salvageValue,
   scripValue,
@@ -300,6 +300,7 @@ import {
   pickToughCombo,
   type Vec2,
   validateArena,
+  validateArenaGatePair,
   verticalTimeToGround,
   EXPANSION_WEAPON_IDS,
   WEAPON_IDS,
@@ -368,6 +369,14 @@ const COMBO_RIPOSTE_STAGGER_TICKS = 20;
 /** Shared immutable no-input sample for rooted stance movement; avoids a fresh object in the 20Hz loop. */
 const ZERO_MOVE_INPUT = { dx: 0, dy: 0 } as const;
 const ZERO_IMPULSE = { vx: 0, vy: 0 } as const;
+/** QOL-01: visible stabilisation beat, then an intentional spatial hold after a fresh entry. */
+const EXTRACT_ARM_SECONDS = 0.8;
+const EXTRACT_HOLD_SECONDS = 0.75;
+/** QOL-05: the authored 720px ring is a postcondition after clamp/terrain correction, not an input hint. */
+const SPAWN_CANDIDATE_COUNT = 8;
+const SPAWN_MIN_DISTANCE = SPAWN_RING * 0.85;
+const SPAWN_CAMERA_HALF_WIDTH = SPAWN_RING * 0.8;
+const SPAWN_CAMERA_HALF_HEIGHT = SPAWN_RING * 0.5;
 
 /** §45 one tick-wide horde broad phase. 128px keeps ordinary enemy separation in the same/adjacent cells;
  *  the radius ceiling keeps boss/projectile/melee queries conservative for the oversized boss roster. */
@@ -803,6 +812,9 @@ export class GameRoom extends Room<ArenaState> {
   }[] = [];
   /** Spawn-director accumulator + monotonic enemy/projectile/zone/pickup id counters. */
   private spawnAccum = 0;
+  /** Allocation-free result slot for the bounded QOL-05 candidate search. */
+  private spawnCandidateX = 0;
+  private spawnCandidateY = 0;
   private enemySeq = 0;
   private projectileSeq = 0;
   private zoneSeq = 0;
@@ -824,6 +836,11 @@ export class GameRoom extends Room<ArenaState> {
    *  the countdown until it drops in (>0 = a breather between rounds; ≤0 = idle/nothing queued). */
   private bossRushIndex = 0;
   private bossRushNextTimer = 0;
+  /** QOL-01 extraction intent. A production gate starts with a stabilisation beat; every player still in
+   *  the disc when it arms is blocked until leaving, so a corpse-standing body cannot carry into the hold. */
+  private extractArmTimer = -1;
+  private extractHoldTimer = 0;
+  private readonly extractBlocked = new Set<string>();
   /** §6 chain (v0.103): dimensions this run has already visited — rift descents prefer fresh ones. */
   private readonly visitedDims = new Set<string>();
   /** §6 chain (v0.103): the menu-picked dimension the room was created with — a run RESTART returns here
@@ -1955,6 +1972,7 @@ export class GameRoom extends Room<ArenaState> {
     this.clearTransients();
     this.state.outcome = "active";
     this.state.portalOpen = false;
+    this.resetExtractionIntent();
     this.state.riftOpen = false; // §6 chain — the Testing Grounds sits outside the run structure
     this.state.depth = 1;
     this.visitedDims.clear();
@@ -2090,6 +2108,7 @@ export class GameRoom extends Room<ArenaState> {
     this.resetElapsed();
     this.state.outcome = "active";
     this.state.portalOpen = false;
+    this.resetExtractionIntent();
     // §6 chain (v0.103): a fresh RUN resets the chain — depth 1, rift closed, visited wiped, back to the
     // menu-picked HOME dimension, and a freshly-minted map (every run gets new terrain). Only
     // `bankedSalvage` survives (the M0 "account").
@@ -2801,13 +2820,12 @@ export class GameRoom extends Room<ArenaState> {
     return true;
   }
 
-  /** Tick-only slide transitions that occur after horizontal integration. */
+  /** Tick-only slide transitions that remain after horizontal/vertical integration. Slide-hop launch is
+   *  deliberately consumed by `stepTraversalLaunches` before movement and pit sampling (QOL-02). */
   private stepSlideStance(player: PlayerState, c: CombatState): void {
     if (c.stance !== STANCE_SLIDE) return;
     if (c.slidePhase === SLIDE_PHASE_GROUND) {
-      if (c.slideHopBuffered && c.slidePhaseTick >= SLIDE_HOP_MIN_TICK) {
-        this.launchSlideHop(player, c);
-      } else if (c.slidePhaseTick >= SLIDE_GROUND_TICKS) {
+      if (c.slidePhaseTick >= SLIDE_GROUND_TICKS) {
         this.cancelMoveStance(player, c, false);
       }
       return;
@@ -2816,6 +2834,51 @@ export class GameRoom extends Room<ArenaState> {
       c.slidePhaseTick++;
       if (c.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS) this.cancelMoveStance(player, c, false);
     }
+  }
+
+  /** QOL-02 traversal acceptance phase. Cooldown/buffer clocks advance here so a jump that becomes ready
+   *  on THIS tick launches before horizontal integration and pit sampling, rather than after taking a fall.
+   *  A buffered slide-hop that would become ready on the pending ground step consumes that step's exact
+   *  schema-23 decay before launch, preserving the landed momentum contract while moving the launch edge. */
+  private stepTraversalLaunches(dt: number): void {
+    this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      if (!c) return;
+      c.jumpCd = Math.max(0, c.jumpCd - dt);
+      c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
+      const acting =
+        this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
+      if (!acting) return;
+
+      if (
+        c.stance === STANCE_SLIDE &&
+        c.slidePhase === SLIDE_PHASE_GROUND &&
+        c.slideHopBuffered &&
+        c.slidePhaseTick + 1 >= SLIDE_HOP_MIN_TICK
+      ) {
+        const speed = Math.hypot(c.momentumX, c.momentumY);
+        if (speed > 1e-4) {
+          const decayed = slideGroundNextSpeed(speed);
+          const scale = decayed / speed;
+          c.momentumX *= scale;
+          c.momentumY *= scale;
+        }
+        this.launchSlideHop(player, c);
+      }
+
+      if (
+        c.stance === STANCE_NONE &&
+        c.recoveryT <= 0 &&
+        c.jumpBuffer > 0 &&
+        c.jumpCd <= 0 &&
+        player.height <= GROUND_EPSILON
+      ) {
+        c.jumpBuffer = 0;
+        c.vh = JUMP_VELOCITY;
+        c.jumpCd = JUMP_COOLDOWN;
+        player.vh = c.vh;
+      }
+    });
   }
 
   /** Advance the fixed ten-tick crouch; launch direction is sampled from this exact authoritative tick. */
@@ -3235,6 +3298,9 @@ export class GameRoom extends Room<ArenaState> {
       return;
     }
     this.rebuildEnemyGrid(); // §45 exactly once/ACTIVE sub-step; later enemy motion updates cell membership
+    // QOL-02: accepted standard/slide-hop launches own the tick before horizontal displacement or the pit
+    // sample. This phase also advances their cooldown/buffer clocks exactly once for the fixed step.
+    this.stepTraversalLaunches(dt);
 
     // 1. Integrate each LIVING player's authoritative movement from their held input command.
     //    A player in the §12 level-up window (flexPending) is frozen so they can pick safely.
@@ -3455,6 +3521,7 @@ export class GameRoom extends Room<ArenaState> {
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
       if (
         player.height > GROUND_EPSILON ||
+        c.vh > 0 ||
         (c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR && c.vh > 0)
       ) return; // airborne (including the exact slide-hop launch tick) — the hop carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
@@ -3519,7 +3586,7 @@ export class GameRoom extends Room<ArenaState> {
           // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
           // owns lifecycle.
           this.stepShifters(dt, bodies);
-          this.checkExtraction(bodies);
+          this.checkExtraction(bodies, dt);
           this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
         }
       }
@@ -3562,7 +3629,6 @@ export class GameRoom extends Room<ArenaState> {
         c.parryChainT = Math.max(0, c.parryChainT - dt);
         if (c.parryChainT <= 0) c.parryChain = 0;
       }
-      c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.distJumpCd = Math.max(0, c.distJumpCd - dt);
       c.recoveryT = Math.max(0, c.recoveryT - dt);
       c.slideParryLockT = Math.max(0, c.slideParryLockT - dt);
@@ -3570,7 +3636,6 @@ export class GameRoom extends Room<ArenaState> {
       // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
-      c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
       const acting =
         this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
@@ -3587,19 +3652,6 @@ export class GameRoom extends Room<ArenaState> {
       const slideColdCandidate = c.stance === STANCE_NONE;
       if (acting) this.stepCrouchStance(player, c, this.inputs.get(id), dt);
       if (acting) this.stepSlideStance(player, c);
-      // BUFFERED JUMP — seed the hop BEFORE stepVertical so it lifts off this same tick (grounded + ready).
-      if (
-        acting &&
-        c.stance === STANCE_NONE &&
-        c.recoveryT <= 0 &&
-        c.jumpBuffer > 0 &&
-        c.jumpCd <= 0 &&
-        player.height <= GROUND_EPSILON
-      ) {
-        c.jumpBuffer = 0;
-        c.vh = JUMP_VELOCITY;
-        c.jumpCd = JUMP_COOLDOWN;
-      }
       // §5/§20 (Stage B): integrate the real height axis. Pound owns a gather + constant-speed descent;
       // every other cause shares the exact three-zone gravity stepper.
       const wasAirborne = player.height > GROUND_EPSILON; // §51 G10: sampled before the integration edge
@@ -6365,12 +6417,13 @@ export class GameRoom extends Room<ArenaState> {
         // §16 v0.116 the gauntlet: heal + reward + queue the next boss (or win on the last).
         this.advanceBossRush(enemy.x, enemy.y);
       } else {
-        this.openPortal(enemy.x, enemy.y);
         // §13 "no guaranteed weapon drops EXCEPT bosses" — with a heavy tier bonus on the rarity table
         // (§13 "tier affects drop rate AND rarity"), so the capstone drop rarely lands Common. ARENA-only:
         // a debug-summoned Testing-Grounds boss must never mint carryable loot (adversarial-verify — the
-        // training reroll-laundering exploit).
+        // training reroll-laundering exploit). QOL-01: reserve/create the reward BEFORE the gate lifecycle
+        // begins, so extraction can never outrun the capstone drop.
         if (this.state.mode === "arena") this.dropLoot(enemy.x, enemy.y, 1, LOOT_TIER_LUK_BOSS);
+        this.openPortal(enemy.x, enemy.y);
       }
     }
     // §6/§17 v0.103: putting DOWN a shifter incursion (instead of just outlasting its window) pays the
@@ -8374,23 +8427,64 @@ export class GameRoom extends Room<ArenaState> {
     this.spawnAccum += dt;
     const interval = spawnInterval(this.state.elapsed, this.state.depth);
     while (this.spawnAccum >= interval && this.effectiveEnemyBodies() < MAX_ENEMIES) {
+      // QOL-05: an unfair final correction defers this spawn credit; do not turn it into a surprise on the
+      // next interval or spin the while-loop against an impossible candidate set.
+      if (!this.spawnEnemy(anchors)) break;
       this.spawnAccum -= interval;
-      this.spawnEnemy(anchors);
     }
   }
 
-  private spawnEnemy(anchors: Vec2[]): void {
-    if (this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
+  /** Validate the FINAL corrected point against every living player's warning circle and a conservative
+   *  gameplay-camera rectangle. The bounded angular fan reuses the real safe-position correction for each
+   *  attempt and writes the accepted result into the two scalar scratch fields. */
+  private findFairEnemySpawn(anchor: Vec2, radius: number, baseAngle: number): boolean {
+    const minDistance2 = SPAWN_MIN_DISTANCE * SPAWN_MIN_DISTANCE;
+    const margin = radius + 4;
+    for (let attempt = 0; attempt < SPAWN_CANDIDATE_COUNT; attempt++) {
+      const angle = baseAngle + (attempt / SPAWN_CANDIDATE_COUNT) * Math.PI * 2;
+      const rawX = clamp(
+        anchor.x + Math.cos(angle) * SPAWN_RING,
+        margin,
+        ARENA_WIDTH - margin,
+      );
+      const rawY = clamp(
+        anchor.y + Math.sin(angle) * SPAWN_RING,
+        margin,
+        ARENA_HEIGHT - margin,
+      );
+      const corrected = safeSpawnPos(this.map, rawX, rawY, radius);
+      let fair = true;
+      this.state.players.forEach((player) => {
+        if (!fair || !player.alive) return;
+        const dx = corrected.x - player.x;
+        const dy = corrected.y - player.y;
+        if (
+          dx * dx + dy * dy + 1e-6 < minDistance2 ||
+          (Math.abs(dx) <= SPAWN_CAMERA_HALF_WIDTH &&
+            Math.abs(dy) <= SPAWN_CAMERA_HALF_HEIGHT)
+        )
+          fair = false;
+      });
+      if (!fair) continue;
+      this.spawnCandidateX = corrected.x;
+      this.spawnCandidateY = corrected.y;
+      return true;
+    }
+    return false;
+  }
+
+  private spawnEnemy(anchors: Vec2[]): boolean {
+    if (this.effectiveEnemyBodies() >= MAX_ENEMIES) return false;
     // §17 weighted pick scoped to the ACTIVE dimension's roster (frost enemies never spawn in the desert).
     const kindId = pickEnemyKind(Math.random(), getDimension(this.state.dimensionId).roster);
     const kind = ENEMY_KINDS[kindId];
-    if (!kind) return;
+    if (!kind) return false;
     const anchor = anchors[Math.floor(Math.random() * anchors.length)] ?? anchors[0];
-    if (!anchor) return;
+    if (!anchor) return false;
 
     // Appear on a ring just beyond a typical screen edge, then converge inward.
     const angle = Math.random() * Math.PI * 2;
-    const m = ENEMY_RADIUS + 4;
+    if (!this.belt && !this.findFairEnemySpawn(anchor, kind.radius, angle)) return false;
     const players = this.livingCount(); // §6 trash horde scales on LIVING players (rez-or-dead spiral fix)
     const enemy = new EnemyState();
     enemy.id = `e${this.enemySeq++}`;
@@ -8405,6 +8499,7 @@ export class GameRoom extends Room<ArenaState> {
       (enemy.tough ? TOUGH_HP_MULT : 1) *
       enemyHpScale(players) *
       depthHpScale(this.state.depth);
+    const m = kind.radius + 4;
     const ex = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
     if (this.belt && this.beltLevel) {
       // §29 belt: come in along the belt (x), confined to the authored floor DEPTH profile at that x.
@@ -8417,15 +8512,13 @@ export class GameRoom extends Room<ArenaState> {
       );
       this.state.enemies.set(enemy.id, enemy);
       this.insertEnemyGrid(enemy.id, enemy);
-      return;
+      return true;
     }
-    const ey = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
-    // §17 don't spawn inside a pit (instant fall) or a POI (a one-tick shove-out teleport) — nudge clear.
-    const sp = safeSpawnPos(this.map, ex, ey, kind.radius);
-    enemy.x = sp.x;
-    enemy.y = sp.y;
+    enemy.x = this.spawnCandidateX;
+    enemy.y = this.spawnCandidateY;
     this.state.enemies.set(enemy.id, enemy);
     this.insertEnemyGrid(enemy.id, enemy);
+    return true;
   }
 
   /** §21 Dev summon: place ONE enemy of `kindId` on the spawn ring around `anchor`, optionally tough.
@@ -8599,27 +8692,28 @@ export class GameRoom extends Room<ArenaState> {
     this.shifterCd = SHIFTER_INTERVAL;
     // Hold new incursions while the dimension boss is up or the run is extracting — keep the climax clean.
     if (this.bossId || this.state.portalOpen) return;
-    this.spawnShifter(bodies);
+    if (!this.spawnShifter(bodies)) this.shifterCd = 0;
   }
 
   /** Phase a shifter in at the arena edge near a living drifter. Tier escalates with run time AND §6 chain
    *  depth (v0.103 — a depth-3 dimension opens with a mid-tier invader, matching the world around it); HP
    *  ramps per incursion across the WHOLE run (shifterWaves survives descents — "tougher deeper into the
    *  chain") and scales with depth like everything else. Hunts for `shifter.window` sec, then phases out. */
-  private spawnShifter(bodies: Vec2[]): void {
-    if (SHIFTER_KIND_IDS.length === 0 || bodies.length === 0) return;
+  private spawnShifter(bodies: Vec2[]): boolean {
+    if (SHIFTER_KIND_IDS.length === 0 || bodies.length === 0) return false;
     const tier = Math.min(
       SHIFTER_KIND_IDS.length - 1,
       this.state.depth - 1 + Math.floor(this.state.elapsed / SHIFTER_TIER_SECONDS),
     );
     const kindId = SHIFTER_KIND_IDS[tier];
     const kind = kindId ? ENEMY_KINDS[kindId] : undefined;
-    if (!kindId || !kind) return;
+    if (!kindId || !kind) return false;
     const anchor = bodies[Math.floor(Math.random() * bodies.length)] ?? {
       x: ARENA_WIDTH / 2,
       y: ARENA_HEIGHT / 2,
     };
     const angle = Math.random() * Math.PI * 2;
+    if (!this.findFairEnemySpawn(anchor, kind.radius, angle)) return false;
     const s = new EnemyState();
     s.id = `shifter${this.enemySeq++}`;
     s.kind = kindId;
@@ -8628,12 +8722,8 @@ export class GameRoom extends Room<ArenaState> {
       enemyHpScale(this.state.players.size) *
       depthHpScale(this.state.depth) *
       (1 + SHIFTER_HP_PER_WAVE * this.shifterWaves);
-    const m = kind.radius + 4;
-    const sx = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, m, ARENA_WIDTH - m);
-    const sy = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, m, ARENA_HEIGHT - m);
-    const sp = safeSpawnPos(this.map, sx, sy, kind.radius);
-    s.x = sp.x;
-    s.y = sp.y;
+    s.x = this.spawnCandidateX;
+    s.y = this.spawnCandidateY;
     this.state.enemies.set(s.id, s);
     this.insertEnemyGrid(s.id, s);
     this.shifterId = s.id;
@@ -8642,6 +8732,7 @@ export class GameRoom extends Room<ArenaState> {
     console.log(
       `[room ${this.roomId}] ⌁ shifter incursion — ${kindId} (wave ${this.shifterWaves})`,
     );
+    return true;
   }
 
   /** Open the extraction portal where the boss fell (§16). */
@@ -8666,7 +8757,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §6 the boss falls → open BOTH gates of the greed decision: the amber EXTRACTION portal (bank the
    *  carried salvage, end in victory) and the violet DEEPER rift (descend to depth+1 — harder, richer).
-   *  The rift opens RIFT_OFFSET away, nudged onto safe ground, so a step into one can't read as the other.
+   *  QOL-03 solves them jointly as reachable, full-footprint safe discs with a protected separation.
    *  The boss ALSO pays the chain's real wage (v0.103 — the "richer" in the rift's promise): every living
    *  player pockets BOSS_SALVAGE_PER_DEPTH × depth carried salvage — bank it now or gamble it deeper. */
   private openPortal(x: number, y: number): void {
@@ -8674,26 +8765,29 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (p.alive) p.salvaged += wage;
     });
+    const gates = placeArenaGatePair(this.map, x, y, EXTRACT_RADIUS);
+    const gateValidation = validateArenaGatePair(this.map, gates);
+    if (!gateValidation.ok)
+      throw new Error(`invalid post-boss gate pair: ${gateValidation.reason}`);
     this.state.portalOpen = true;
-    this.state.portalX = x;
-    this.state.portalY = y;
-    // Aim the rift's offset back toward the arena centre so it never lands clamped into the border rail.
-    const cx = ARENA_WIDTH / 2 - x;
-    const cy = ARENA_HEIGHT / 2 - y;
-    const d = Math.hypot(cx, cy) || 1;
-    const rp = safeSpawnPos(
-      this.map,
-      x + (cx / d) * RIFT_OFFSET,
-      y + (cy / d) * RIFT_OFFSET,
-      EXTRACT_RADIUS,
-    );
+    this.state.portalX = gates.extractX;
+    this.state.portalY = gates.extractY;
     this.state.riftOpen = true;
-    this.state.riftX = rp.x;
-    this.state.riftY = rp.y;
+    this.state.riftX = gates.riftX;
+    this.state.riftY = gates.riftY;
+    this.extractArmTimer = EXTRACT_ARM_SECONDS;
+    this.extractHoldTimer = 0;
+    this.extractBlocked.clear();
     this.bossId = null;
     console.log(
       `[room ${this.roomId}] boss defeated — extraction portal + deeper rift open (depth ${this.state.depth})`,
     );
+  }
+
+  private resetExtractionIntent(): void {
+    this.extractArmTimer = -1;
+    this.extractHoldTimer = 0;
+    this.extractBlocked.clear();
   }
 
   /** §6 rift descent (v0.103, the chain): depth+1, a NEW dimension + freshly-seeded map, the same squad —
@@ -8722,6 +8816,7 @@ export class GameRoom extends Room<ArenaState> {
     this.spawnAccum = 0;
     this.state.outcome = "active";
     this.state.portalOpen = false;
+    this.resetExtractionIntent();
     this.state.riftOpen = false;
     this.bossSpawned = false;
     this.clearBoss(); // §16 v0.109 also resets bossPhase/bossKind + clears telegraphs
@@ -8752,18 +8847,54 @@ export class GameRoom extends Room<ArenaState> {
     );
   }
 
-  /** Step a living player into the open portal → run complete (§16). */
-  private checkExtraction(bodies: Vec2[]): void {
+  /** QOL-01 extraction is a deliberate post-reward choice: stabilise, block every body carried through the
+   *  arming edge until it leaves, then require a short uninterrupted fresh spatial hold. Direct state-only
+   *  test/dev gates retain the legacy immediate seam (`extractArmTimer < 0`); production gates all enter via
+   *  `openPortal` and can never use it. */
+  private checkExtraction(bodies: Vec2[], dt = TICK_MS / 1000): void {
     if (!this.state.portalOpen || this.state.outcome !== "active" || bodies.length === 0) return;
     const r2 = EXTRACT_RADIUS * EXTRACT_RADIUS;
-    let reached = false;
+    if (this.extractArmTimer < 0) {
+      let reached = false;
+      this.state.players.forEach((player, id) => {
+        if (!player.alive || this.combat.get(id)?.stance === STANCE_SLIDE) return;
+        const dx = player.x - this.state.portalX;
+        const dy = player.y - this.state.portalY;
+        if (dx * dx + dy * dy <= r2) reached = true;
+      });
+      if (reached) this.beginXpBoundary("extract");
+      return;
+    }
+
+    if (this.extractArmTimer > 0) {
+      this.extractArmTimer = Math.max(0, this.extractArmTimer - dt);
+      if (this.extractArmTimer > 0) return;
+      this.extractBlocked.clear();
+      this.state.players.forEach((player, id) => {
+        if (!player.alive) return;
+        const dx = player.x - this.state.portalX;
+        const dy = player.y - this.state.portalY;
+        if (dx * dx + dy * dy <= r2) this.extractBlocked.add(id);
+      });
+      this.extractHoldTimer = 0;
+      return;
+    }
+
+    let holding = false;
     this.state.players.forEach((player, id) => {
       if (!player.alive || this.combat.get(id)?.stance === STANCE_SLIDE) return;
       const dx = player.x - this.state.portalX;
       const dy = player.y - this.state.portalY;
-      if (dx * dx + dy * dy <= r2) reached = true;
+      const inside = dx * dx + dy * dy <= r2;
+      if (!inside) {
+        this.extractBlocked.delete(id);
+        return;
+      }
+      if (!this.extractBlocked.has(id)) holding = true;
     });
-    if (reached) this.beginXpBoundary("extract");
+    this.extractHoldTimer = holding ? this.extractHoldTimer + dt : 0;
+    if (this.extractHoldTimer + 1e-9 >= EXTRACT_HOLD_SECONDS)
+      this.beginXpBoundary("extract");
   }
 
   /** §6 the other half of the greed decision (v0.103): the DEEPER rift is a CHANNEL — a living player

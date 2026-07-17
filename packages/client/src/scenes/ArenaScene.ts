@@ -188,6 +188,9 @@ import {
   buildPois,
   dimensionPropPack,
   drawArena,
+  GATE_GROUND_DEPTH,
+  gateNeedsEdgeLocator,
+  GATE_PROTECTED_DEPTH,
   type PoiSprite,
   terrainRimKey,
   terrainTileKey,
@@ -326,6 +329,11 @@ interface JumpPresentationState {
   poundSeq: number;
   coilSecondPlayed: boolean;
   stanceStartedMs: number;
+}
+
+interface GateVisual {
+  ground: Phaser.GameObjects.Container;
+  protectedRead: Phaser.GameObjects.Container;
 }
 
 function poundRingColor(id: string): number {
@@ -941,6 +949,11 @@ export class ArenaScene extends Phaser.Scene {
   private portalArrow: Phaser.GameObjects.Container | null = null;
   /** §6 v0.103 the matching violet locator for the DEEPER rift. */
   private riftArrow: Phaser.GameObjects.Container | null = null;
+  private portalLocatorPulseUntil = -1;
+  private riftLocatorPulseUntil = -1;
+  /** Last rendered boss ground point; the portal-open edge uses it for the short corpse→relocated-gate beam. */
+  private lastBossX = Number.NaN;
+  private lastBossY = Number.NaN;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
   /** Slide null-whiffs have a separate cosmetic edge and never enter the parry reward presentation. */
@@ -1277,9 +1290,9 @@ export class ArenaScene extends Phaser.Scene {
   private bossBarSegments!: Phaser.GameObjects.Graphics;
   private bossText!: Phaser.GameObjects.Text;
   private victoryText!: Phaser.GameObjects.Text;
-  private portal?: Phaser.GameObjects.Container;
+  private portal?: GateVisual;
   /** §6 chain (v0.103): the violet DEEPER rift — the other half of the extract-vs-push decision. */
-  private rift?: Phaser.GameObjects.Container;
+  private rift?: GateVisual;
   private bannerShownFor = "";
   /** §7 v0.105 de-clunk — banner stacking: rotating vertical slot + last-shown clock so banners that land
    *  within the fade window stack instead of overprinting the same point. */
@@ -1648,6 +1661,10 @@ export class ArenaScene extends Phaser.Scene {
     this.dustG = undefined;
     this.portalArrow = null;
     this.riftArrow = null;
+    this.portalLocatorPulseUntil = -1;
+    this.riftLocatorPulseUntil = -1;
+    this.lastBossX = Number.NaN;
+    this.lastBossY = Number.NaN;
     this.keys = undefined!;
     this.beltGate = null;
     this.beltBackdrop = null;
@@ -2702,8 +2719,8 @@ export class ArenaScene extends Phaser.Scene {
     for (const pickup of this.pickups.values()) out.push(pickup);
     for (const projectile of this.projectiles.values()) out.push(projectile);
     for (const zone of this.zones.values()) out.push(zone);
-    if (this.portal) out.push(this.portal);
-    if (this.rift) out.push(this.rift);
+    if (this.portal) out.push(this.portal.ground);
+    if (this.rift) out.push(this.rift.ground);
     const camera = this.cameras.main;
     return camera
       .cull(out.filter((obj) => obj.active && obj.willRender(camera)))
@@ -3586,6 +3603,10 @@ export class ArenaScene extends Phaser.Scene {
     const reducedMotion = prefersReducedPaperMotion();
     enemies.forEach((enemy, id) => {
       if (id === wormOwner) return;
+      if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") {
+        this.lastBossX = enemy.x;
+        this.lastBossY = enemy.y;
+      }
       if (!this.enemies.has(id)) {
         const kind = ENEMY_KINDS[enemy.kind];
         const rig = new SpriteRig(
@@ -3653,6 +3674,10 @@ export class ArenaScene extends Phaser.Scene {
         // FIRST, then either fall into the void (§17 pit) or get the §20 DEATH-POP (launch + tumble).
         const rig = this.enemies.get(id);
         const paperPriority = this.enemyPaperPriority.get(id) ?? 0;
+        if (rig && paperPriority === 2) {
+          this.lastBossX = rig.x;
+          this.lastBossY = rig.y;
+        }
         const finalPresentation = this.finalBlowPresentations.get(id);
         const previousHp = this.enemyHp.get(id);
         if (
@@ -5020,7 +5045,8 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Build one pulsing gate marker (shared by the extraction portal + the §6 deeper rift). */
+  /** Build one QOL-04 gate: broad disc/core are honest ground art below actors; the thin halo, icon, and
+   *  decision copy live in the protected world-response layer above POIs/bodies but below the HUD. */
   private buildGate(
     x: number,
     y: number,
@@ -5028,19 +5054,37 @@ export class ArenaScene extends Phaser.Scene {
     core: number,
     text: string,
     textColor: string,
-  ): Phaser.GameObjects.Container {
+    icon: string,
+  ): GateVisual {
     const outer = this.add.circle(0, 0, EXTRACT_RADIUS, ring, 0.16).setStrokeStyle(3, ring, 0.7);
     const inner = this.add
       .circle(0, 0, EXTRACT_RADIUS * 0.5, core, 0.22)
       .setStrokeStyle(2, core, 0.9);
+    const ground = this.add
+      .container(x, y, [outer, inner])
+      .setDepth(GATE_GROUND_DEPTH);
+    const halo = this.add.circle(0, 0, EXTRACT_RADIUS).setStrokeStyle(3, ring, 0.95);
+    const iconRead = this.add
+      .text(0, 0, icon, {
+        fontSize: "24px",
+        color: textColor,
+        fontStyle: "bold",
+        stroke: "#17140f",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5);
     const label = this.add
       .text(0, -EXTRACT_RADIUS - 16, text, {
         fontSize: "16px",
         color: textColor,
         fontStyle: "bold",
+        stroke: "#17140f",
+        strokeThickness: 4,
       })
       .setOrigin(0.5);
-    const c = this.add.container(x, y, [outer, inner, label]).setDepth(1);
+    const protectedRead = this.add
+      .container(x, y, [halo, iconRead, label])
+      .setDepth(GATE_PROTECTED_DEPTH);
     this.tweens.add({
       targets: inner,
       scale: 1.35,
@@ -5049,7 +5093,36 @@ export class ArenaScene extends Phaser.Scene {
       repeat: -1,
       ease: "Sine.inOut",
     });
-    return c;
+    this.tweens.add({
+      targets: halo,
+      scale: 1.04,
+      duration: 760,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+    return { ground, protectedRead };
+  }
+
+  private destroyGate(gate: GateVisual): void {
+    gate.ground.destroy();
+    gate.protectedRead.destroy();
+  }
+
+  /** Preserve the kill→reward bearing when full-footprint safety relocates extract away from the corpse. */
+  private showPortalRelocationBeam(x: number, y: number): void {
+    if (!Number.isFinite(this.lastBossX) || !Number.isFinite(this.lastBossY)) return;
+    if (Math.hypot(x - this.lastBossX, y - this.lastBossY) < 12) return;
+    const beam = this.add.graphics().setDepth(GATE_PROTECTED_DEPTH - 1);
+    beam.lineStyle(5, 0xffd479, 0.88);
+    beam.lineBetween(this.lastBossX, this.lastBossY, x, y);
+    this.tweens.add({
+      targets: beam,
+      alpha: 0,
+      duration: 1100,
+      ease: "Cubic.easeOut",
+      onComplete: () => beam.destroy(),
+    });
   }
 
   /** Show/hide BOTH gates of the §6 greed decision at their authoritative positions: the amber EXTRACT
@@ -5063,12 +5136,15 @@ export class ArenaScene extends Phaser.Scene {
         st.portalY,
         0x6fd6ff,
         0xffd479,
-        "▼ EXTRACT — bank salvage & end run",
+        "HOLD TO EXTRACT — BANK & END",
         "#ffd479",
+        "▼",
       );
+      this.portalLocatorPulseUntil = this.time.now + 3000;
+      this.showPortalRelocationBeam(st.portalX, st.portalY);
     }
     if (!st.portalOpen && this.portal) {
-      this.portal.destroy();
+      this.destroyGate(this.portal);
       this.portal = undefined;
     }
     if (st.riftOpen && !this.rift) {
@@ -5079,10 +5155,12 @@ export class ArenaScene extends Phaser.Scene {
         0x8a4dff,
         "⇓ RIFT — push deeper (harder, richer)",
         "#b478ff",
+        "⇓",
       );
+      this.riftLocatorPulseUntil = this.time.now + 3000;
     }
     if (!st.riftOpen && this.rift) {
-      this.rift.destroy();
+      this.destroyGate(this.rift);
       this.rift = undefined;
     }
   }
@@ -7393,8 +7471,8 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** One edge-of-screen locator chevron: pinned to the viewport edge along the bearing to (tx,ty), with
-   *  a distance readout. Created lazily into `slot`, hidden when the target is on-screen/absent. */
+  /** One gate locator chevron. It persists until the complete circle clears the padded safe viewport and
+   *  pulses for the first three seconds even when the target centre was already technically on-screen. */
   private updateEdgeArrow(
     slot: "portalArrow" | "riftArrow",
     open: boolean,
@@ -7403,17 +7481,21 @@ export class ArenaScene extends Phaser.Scene {
     color: number,
     colorCss: string,
     word: string,
+    pulseUntil: number,
   ): void {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const cam = this.cameras.main;
-    const onScreen =
-      open &&
-      tx > cam.worldView.x &&
-      tx < cam.worldView.right &&
-      ty > cam.worldView.y &&
-      ty < cam.worldView.bottom;
-    if (!open || onScreen || !self?.alive) {
+    const forcePulse = this.time.now < pulseUntil;
+    const needsLocator = gateNeedsEdgeLocator(
+      open,
+      tx,
+      ty,
+      EXTRACT_RADIUS,
+      cam.worldView,
+      forcePulse,
+    );
+    if (!needsLocator || !self?.alive) {
       this[slot]?.setVisible(false);
       return;
     }
@@ -7459,7 +7541,8 @@ export class ArenaScene extends Phaser.Scene {
         arrowY = layout.rightOccupiedTop - clearance;
       }
     }
-    arrow.setVisible(true).setPosition(arrowX, arrowY);
+    const pulseScale = forcePulse ? 1.08 + Math.sin(this.time.now * 0.012) * 0.1 : 1;
+    arrow.setVisible(true).setPosition(arrowX, arrowY).setScale(pulseScale);
     (arrow.list[0] as Phaser.GameObjects.Triangle).setRotation(ang + Math.PI / 2);
     (arrow.list[1] as Phaser.GameObjects.Text).setText(
       `${word} ${Math.round(Math.hypot(dx, dy) / 100) / 10}k`,
@@ -7479,8 +7562,18 @@ export class ArenaScene extends Phaser.Scene {
       0xffd479,
       "#ffd479",
       "bank",
+      this.portalLocatorPulseUntil,
     );
-    this.updateEdgeArrow("riftArrow", st.riftOpen, st.riftX, st.riftY, 0xb478ff, "#b478ff", "rift");
+    this.updateEdgeArrow(
+      "riftArrow",
+      st.riftOpen,
+      st.riftX,
+      st.riftY,
+      0xb478ff,
+      "#b478ff",
+      "rift",
+      this.riftLocatorPulseUntil,
+    );
   }
 
   /** §8 cosmetic on-parry VFX for the augments that read at the parrier: Bulwark's absorb ring + Emberguard's
