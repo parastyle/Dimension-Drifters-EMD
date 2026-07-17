@@ -7,9 +7,9 @@ import {
   AUGMENTS,
   affixById,
   BAG_CAP,
-  BeamPhase,
   BEAM_MIN_CHARGE_SECONDS,
   BELT_Y0,
+  BeamPhase,
   type BeltLevel,
   BOSS_DEF_IDS,
   BOSSES,
@@ -32,6 +32,7 @@ import {
   DEFLECT_TTL,
   DEPTH_MAX,
   damageMultFromGrades,
+  depthHpScale,
   EMBERGUARD_HALF_ARC,
   EMBERGUARD_RANGE,
   EMPTY_META,
@@ -40,6 +41,7 @@ import {
   type EnemyKind,
   EXTRACT_RADIUS,
   effectiveMelee,
+  enemyHpScale,
   FISTS_WEAPON,
   generateArena,
   getDimension,
@@ -85,8 +87,8 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
-  weaponSetBonus,
   weaponMuzzleReach,
+  weaponSetBonus,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
@@ -98,6 +100,7 @@ import {
   SPRITE_ATLAS,
   SpriteRig,
 } from "../entities/SpriteRig.js";
+import { WormRig } from "../entities/WormRig.js";
 import { SelfPredictor, type ServerView } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
@@ -117,11 +120,8 @@ import {
   weaponDockLayout,
   wrappedDockOffset,
 } from "../ui/weapon-dock-layout.js";
+import { BeamRenderer, type PredictedBeamCharge } from "../vfx/BeamRenderer.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
-import {
-  BeamRenderer,
-  type PredictedBeamCharge,
-} from "../vfx/BeamRenderer.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
@@ -599,6 +599,8 @@ export class ArenaScene extends Phaser.Scene {
   private resumeAudioKeyHandler: (() => void) | null = null;
   private readonly blobs = new Map<string, SpriteRig>();
   private readonly enemies = new Map<string, SpriteRig>();
+  /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
+  private wormRig: WormRig | null = null;
   /** Horde paper effects stay scalar/live or bounded/detached; priority 2=boss, 1=tough, 0=ordinary. */
   private readonly enemyPaperPriority = new Map<string, 0 | 1 | 2>();
   private readonly paperDeaths: PaperDeathEntry[] = [];
@@ -1206,6 +1208,8 @@ export class ArenaScene extends Phaser.Scene {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.xpMotes?.destroy();
     this.beamRenderer?.destroy();
+    this.wormRig?.destroy();
+    this.wormRig = null;
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
@@ -1404,6 +1408,8 @@ export class ArenaScene extends Phaser.Scene {
     this.xpMotes = undefined!;
     this.beamRenderer?.destroy();
     this.beamRenderer = undefined!;
+    this.wormRig?.destroy();
+    this.wormRig = null;
     this.destroyPaperPagePool();
     this.clearLevelPaperCounters();
     this.removeSceneListeners();
@@ -2696,7 +2702,7 @@ export class ArenaScene extends Phaser.Scene {
     // §39 the room resolves BEFORE its first state patch — in that window state.players is still undefined,
     // and an unguarded read threw every frame (killing the scene's step = permanent black screen; hit on real
     // machines where the first patch lands a frame late, never in the fast local preview). Wait for the sync.
-    if (!this.room || !this.room.state.players) return;
+    if (!this.room?.state.players) return;
 
     this.deltaSec = deltaMs / 1000;
     // §19 v0.108 refresh the audio pan reference to the camera's world centre BEFORE this frame's play()
@@ -2872,6 +2878,7 @@ export class ArenaScene extends Phaser.Scene {
       this.updatePaperDeaths(deltaMs);
       this.interpolate(deltaMs);
       this.interpolateEnemies(deltaMs);
+      this.interpolateWorm(deltaMs);
       this.moveProjectiles(this.deltaSec);
       this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
@@ -2983,12 +2990,40 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** Reconcile the always-allocated worm state to exactly one batch rig and suppress its compatibility root. */
+  private syncWormRig(): void {
+    const state = this.room?.state.wormBoss;
+    if (!this.room || !state?.active || !state.ownerId) {
+      this.wormRig?.destroy();
+      this.wormRig = null;
+      return;
+    }
+    if (!this.wormRig || this.wormRig.ownerId !== state.ownerId) {
+      this.wormRig?.destroy();
+      this.wormRig = new WormRig(this, state, this.room.state.tick);
+      this.wormRig.setProjection(this.belt ? BELT_Y0 : 0, this.belt ? BELT_FORESHORTEN : 1);
+    }
+    const duplicateRoot = this.enemies.get(state.ownerId);
+    if (duplicateRoot) {
+      duplicateRoot.destroy();
+      this.enemies.delete(state.ownerId);
+      this.enemyPaperPriority.delete(state.ownerId);
+      this.enemyAtk.delete(state.ownerId);
+      this.enemyWindup.delete(state.ownerId);
+      this.meleeFullTells.delete(state.ownerId);
+      this.enemyBufs.delete(state.ownerId);
+    }
+  }
+
   /** Reconcile rendered enemies against authoritative state (same race-proof pattern as blobs). */
   private syncEnemies(): void {
     if (!this.room) return;
+    this.syncWormRig();
     const enemies = this.room.state.enemies;
+    const wormOwner = this.room.state.wormBoss.active ? this.room.state.wormBoss.ownerId : "";
     const reducedMotion = prefersReducedPaperMotion();
     enemies.forEach((enemy, id) => {
+      if (id === wormOwner) return;
       if (!this.enemies.has(id)) {
         const kind = ENEMY_KINDS[enemy.kind];
         const rig = new SpriteRig(
@@ -3173,6 +3208,16 @@ export class ArenaScene extends Phaser.Scene {
       if (s) rig.setPosition(s.x, s.y);
       else rig.setPosition(enemy.x, enemy.y);
     });
+  }
+
+  /** Sample every worm slot from one delayed batch bracket; the rig owns all topology/action presentation. */
+  private interpolateWorm(deltaMs: number): void {
+    const state = this.room?.state;
+    if (!state || !this.wormRig || !state.wormBoss.active) return;
+    const renderTime = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : Math.max(0, state.tick * TICK_MS - INTERP_DELAY_MS);
+    this.wormRig.update(renderTime, state.wormBoss, state.tick, this.time.now, deltaMs);
   }
 
   /** Select one authoritative boss anticipation clock; concurrent casts never blend contradictory poses. */
@@ -3429,7 +3474,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const step = sample?.step ?? enemy.atkSeq % Math.max(1, melee.hits);
     const durationMs = (step === 0 ? melee.windup : melee.swingGap) * 1000;
-    const newEpoch = !sample || !sample.active || synced + 0.001 < sample.serverT;
+    const newEpoch = !sample?.active || synced + 0.001 < sample.serverT;
     if (!sample) {
       sample = {
         serverT: synced,
@@ -4388,7 +4433,16 @@ export class ArenaScene extends Phaser.Scene {
       if (ENEMY_KINDS[e.kind]?.archetype === "boss") boss = e;
     });
     const s = this.uiScale();
-    const bossMax = boss ? (ENEMY_KINDS[boss.kind]?.hp ?? 420) : 420;
+    const wormDef = this.room.state.wormBoss.active
+      ? BOSSES[this.room.state.bossKind]?.worm
+      : undefined;
+    const bossMax = boss
+      ? wormDef
+        ? wormDef.baseCoreHp *
+          enemyHpScale(this.room.state.players.size) *
+          depthHpScale(this.room.state.depth)
+        : (ENEMY_KINDS[boss.kind]?.hp ?? 420)
+      : 420;
     const dimName = getDimension(this.room.state.dimensionId).name;
     // §16 v0.109 label with the boss DEF's name when it's a bespoke boss; else the dimension's generic boss.
     const bossDefName = BOSSES[this.room.state.bossKind]?.name;
@@ -4433,6 +4487,17 @@ export class ArenaScene extends Phaser.Scene {
         const passed = this.bossShown <= ph.hpAbove;
         this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
         this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
+      }
+      if (this.wormRig && this.room.state.wormBoss.active) {
+        this.wormRig.drawBossBarNotches(
+          this.bossBarSegments,
+          this.room.state.wormBoss,
+          barLeft,
+          516 * s,
+          42 * s,
+          54 * s,
+          s,
+        );
       }
     } else {
       this.bossShown = -1;
@@ -5579,7 +5644,9 @@ export class ArenaScene extends Phaser.Scene {
     const gl = this.add.graphics().setDepth(-18);
     // centreline marking (mid-depth) + railings on both edges (the collision boundary, drawn)
     gl.lineStyle(6, 0xffd24a, 0.55).beginPath();
-    for (let i = 0; i < far.length; i++) gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    for (let i = 0; i < far.length; i++) {
+      gl.lineTo(far[i]!.x, (far[i]!.y + near[i]!.y) / 2);
+    }
     gl.strokePath();
     gl.lineStyle(5, 0x2f3742, 1).beginPath(); // far railing
     gl.moveTo(far[0]!.x, far[0]!.y);
@@ -7852,7 +7919,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §29 draw the world-space SHOPKEEPER at state.beltShopX (a lit market stall + keeper), a "Press F"
    *  prompt when the local player is in range, and re-tint when the SELL overlay is open. */
-  private updateShopkeeper(self: PlayerState, s: number): void {
+  private updateShopkeeper(self: PlayerState, _s: number): void {
     const shopX = this.room?.state.beltShopX ?? 0;
     if (shopX <= 0 || !this.beltLevel) {
       this.shopNpcG?.setVisible(false);
@@ -8003,7 +8070,7 @@ export class ArenaScene extends Phaser.Scene {
         }
         return z;
       })();
-      if (!item || !item.weapon) {
+      if (!item?.weapon) {
         zone.setVisible(false);
         continue;
       }
@@ -8084,7 +8151,7 @@ export class ArenaScene extends Phaser.Scene {
           .setDepth(100045)
           .setInteractive();
         z.on("pointerdown", () => {
-          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]!.id });
+          if (this.shopOpen) this.room?.send("buyUpgrade", { id: META_UPGRADES[i]?.id });
         });
         this.buyZones[i] = z;
       }
@@ -8291,6 +8358,7 @@ export class ArenaScene extends Phaser.Scene {
       this.snapFell.set(id, p.fellSeq);
     });
     state.enemies.forEach((e, id) => {
+      if (state.wormBoss.active && id === state.wormBoss.ownerId) return;
       let buf = this.enemyBufs.get(id);
       if (!buf) {
         buf = new SnapshotBuffer();
@@ -8298,6 +8366,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       buf.push(t, e.x, e.y);
     });
+    this.wormRig?.capture(state.wormBoss, state.tick);
     // Self: create the predictor on the first patch that carries us, then reconcile every patch.
     if (selfId) {
       const self = state.players.get(selfId);
@@ -8358,9 +8427,7 @@ export class ArenaScene extends Phaser.Scene {
     out.aimX = Number.isFinite(aimX) ? aimX : 1;
     out.aimY = Number.isFinite(aimY) ? aimY : 0;
     out.targetX = world.x;
-    out.targetY = this.belt
-      ? BELT_Y0 + (world.y - BELT_Y0) / BELT_FORESHORTEN
-      : world.y;
+    out.targetY = this.belt ? BELT_Y0 + (world.y - BELT_Y0) / BELT_FORESHORTEN : world.y;
     if (!Number.isFinite(out.targetX)) out.targetX = self?.x ?? 0;
     if (!Number.isFinite(out.targetY)) out.targetY = self?.y ?? 0;
     return out;
@@ -8370,11 +8437,8 @@ export class ArenaScene extends Phaser.Scene {
    * then replay only the unacknowledged tail with the same shared turn step as authority. */
   private reconcileBeamPrediction(state: ArenaState, self: PlayerState): void {
     if (this.beamPredictionStartSeq < 0) return;
-    const acked = (seq: number) => ((self.ackSeq - seq) >>> 0) < 0x80000000;
-    while (
-      this.beamPredictionPending.length > 0 &&
-      acked(this.beamPredictionPending[0]!.seq)
-    ) {
+    const acked = (seq: number) => (self.ackSeq - seq) >>> 0 < 0x80000000;
+    while (this.beamPredictionPending.length > 0 && acked(this.beamPredictionPending[0]!.seq)) {
       this.beamPredictionPending.shift();
     }
     const row = state.beams.get(self.id);
@@ -8473,9 +8537,7 @@ export class ArenaScene extends Phaser.Scene {
 
     let predicted: PredictedBeamCharge | undefined;
     const fade =
-      this.beamPredictionFadeAt < 0
-        ? 1
-        : 1 - (this.time.now - this.beamPredictionFadeAt) / 80;
+      this.beamPredictionFadeAt < 0 ? 1 : 1 - (this.time.now - this.beamPredictionFadeAt) / 80;
     const selfBeam = room.state.beams.get(room.sessionId);
     const awaitingRelease =
       !held &&
