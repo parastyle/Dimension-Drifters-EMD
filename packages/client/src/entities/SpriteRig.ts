@@ -2,6 +2,8 @@ import {
   ATTACK_HELD_WINDOW,
   CHOP_IMPACT_FRAC,
   comboStepForChain,
+  GRAVITY_APEX_BAND,
+  GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
   isWornWeapon,
   JIGGLE_FOOT_AIR_INERTIA,
@@ -37,6 +39,8 @@ import {
   JIGGLE_TURN_FOOT_KICK,
   JIGGLE_TURN_HAND_KICK,
   JIGGLE_WEAPON_HAND_INERTIA,
+  JUMP_VELOCITY,
+  landingThumpTier,
   MELEE_COMBO_SEQUENCES,
   type MeleeComboFamily,
   type MeleeComboHand,
@@ -44,11 +48,16 @@ import {
   type MeleeComboStep,
   type MeleeComboVariant,
   MOVE_SPEED,
+  type MoveStance,
   meleeComboSelectionFor,
   meleeComboSequenceFor,
   meleeReach,
   PLAYER_RADIUS,
   PROCEDURAL_JIGGLE,
+  STANCE_CROUCH,
+  STANCE_DASH,
+  STANCE_NONE,
+  STANCE_POUND,
   type SwingDescriptor,
   swingDescriptorFor,
   swingDescriptorWithComboStep,
@@ -848,6 +857,10 @@ export interface RigAnim {
    *  Optional (enemies have no momentum); defaults to 0. */
   recoilX?: number;
   recoilY?: number;
+  /** Jump-feel pose channels. Self supplies predictor truth; remotes supply synced height/vh/stance. */
+  jumpVh?: number;
+  moveStance?: MoveStance;
+  reducedMotion?: boolean;
 }
 
 export type PaperDeathTreatment = "crumple" | "flutter" | "tear" | "lite" | "pit";
@@ -925,6 +938,17 @@ export class SpriteRig {
   private paperDeath?: PaperDeathState;
   /** §7 v0.105 de-clunk — landing squash (0..1, decays) fired when the hop returns to the ground. */
   private landSquash = 0;
+  private landingSquashDepth = 0.14;
+  private landingKickScale = 1;
+  private jumpStartedMs = -1e9;
+  private lastPoseHopTarget = 0;
+  private peakHopPx = 0;
+  private maxFallSpeed = 0;
+  private moveStance: MoveStance = STANCE_NONE;
+  private airStance: MoveStance = STANCE_NONE;
+  private stanceStartedMs = -1e9;
+  private landedFromStance: MoveStance = STANCE_NONE;
+  private landedAtMs = -1e9;
   /** §7 v0.111 TURN-COMMIT ("pull the reins") — the directional WEIGHT lives in the ANIMATION, not the
    *  trajectory. `heading` tracks the smoothed run direction; when it swings hard while moving, `turnCommit`
    *  fires a one-time decaying punch toward the new heading (`turnDir`) — the body plants + leans + the hands
@@ -1117,6 +1141,8 @@ export class SpriteRig {
   /** §5/§20 ground shadow — stays grounded while the art lifts, so the gap reads as HEIGHT (jump /
    *  parry-launch / death-pop). Shrinks + fades as the rig rises. */
   private readonly shadow: Phaser.GameObjects.Ellipse;
+  /** Two-ellipse blur fake: a soft halo appears only as altitude separates the core from the card. */
+  private readonly shadowHalo: Phaser.GameObjects.Ellipse;
 
   constructor(
     scene: Phaser.Scene,
@@ -1208,10 +1234,13 @@ export class SpriteRig {
 
     // §5/§20 ground shadow at the feet — drawn FIRST (behind everything) so it sits under the rig; it
     // stays put while the art lifts on the hop, so the gap reads as altitude.
+    this.shadowHalo = scene.add
+      .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0)
+      .setOrigin(0.5);
     this.shadow = scene.add
       .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0.3)
       .setOrigin(0.5);
-    order.unshift(this.shadow);
+    order.unshift(this.shadowHalo, this.shadow);
 
     this.observedSourceRing = scene.add
       .ellipse(0, 0, 20, 12)
@@ -4005,6 +4034,102 @@ export class SpriteRig {
     return angle;
   }
 
+  /** Late additive movement pose: it composes after weapon authorship and before the shared lift/shadow pass. */
+  private applyJumpFeelPose(timeMs: number, anim: RigAnim): void {
+    const vh = anim.jumpVh ?? 0;
+    const reduced = anim.reducedMotion === true;
+    const stanceElapsed = Math.max(0, timeMs - this.stanceStartedMs);
+
+    if (this.moveStance === STANCE_CROUCH) {
+      let sy: number;
+      if (stanceElapsed < 50) sy = 1 - 0.14 * (stanceElapsed / 50);
+      else if (stanceElapsed < 150) sy = 0.86;
+      else if (stanceElapsed < 200) sy = 0.86 - 0.14 * ((stanceElapsed - 150) / 50);
+      else sy = 0.72 - 0.1 * smoothstep01((stanceElapsed - 200) / 300);
+      if (reduced) sy = Math.max(0.82, sy);
+      this.body.scaleY *= sy;
+      this.body.scaleX *= 1 + (1 - sy) * 0.32;
+      this.body.y += (1 - sy) * TARGET_BODY_H * 0.18;
+      this.body.rotation += 0.1 * (anim.moveX || Math.cos(anim.aimDir));
+      this.attackShadowScaleX *= 1.08;
+      this.attackShadowScaleY *= 1.08;
+      this.attackShadowAlpha *= 1.16;
+      for (const foot of this.feet) foot.img.x += (foot.front ? 1 : -1) * TARGET_BODY_H * 0.08;
+      for (const hand of this.hands) hand.img.y += TARGET_BODY_H * 0.08;
+    } else if (this.moveStance === STANCE_POUND) {
+      if (stanceElapsed <= 120 && !reduced) {
+        const e = clamp01(stanceElapsed / 120);
+        this.attackScaleY *= signedClamp(Math.cos(Math.PI * 2 * e), 0.14);
+        this.body.scaleX *= 1 - 0.2 * Math.max(0, 1 - Math.abs(Math.cos(Math.PI * 2 * e)));
+        this.attackLiftPx += 6 * Math.sin(Math.PI * e);
+        const pulse = 1 + 0.18 * Math.sin(Math.PI * e);
+        this.attackShadowScaleX *= pulse;
+        this.attackShadowScaleY *= pulse;
+        this.attackShadowAlpha *= 1 + 0.08 * Math.sin(Math.PI * e);
+      } else if (vh < 0) {
+        const stretch = reduced ? 1.08 : 1.18;
+        this.body.scaleY *= stretch;
+        this.body.scaleX *= 2 - stretch;
+        for (const foot of this.feet) foot.img.y += 10;
+        for (const hand of this.hands) hand.img.y -= 8;
+        this.attackShadowAlpha *= 1.14;
+      }
+    } else if (this.moveStance === STANCE_DASH) {
+      const launch = clamp01(stanceElapsed / 83);
+      const extreme = reduced ? 1.12 : 1.3;
+      const stretch = stanceElapsed < 83 ? extreme + (1.06 - extreme) * smoothstep01(launch) : 1.06;
+      this.body.scaleY *= stretch;
+      this.body.scaleX *= 2 - stretch;
+      this.body.rotation += Math.max(-0.22, Math.min(0.22, anim.moveX * 0.22));
+      this.attackShadowScaleX *= 1 + Math.abs(anim.moveX) * 0.18;
+      this.attackShadowScaleY *= 1 + Math.abs(anim.moveY) * 0.18;
+      for (const hand of this.hands) {
+        hand.img.x -= anim.moveX * TARGET_BODY_H * 0.1;
+        hand.img.y -= anim.moveY * TARGET_BODY_H * 0.1;
+      }
+    } else if (this.hopPx > 0.01) {
+      const sinceLaunch = timeMs - this.jumpStartedMs;
+      if (sinceLaunch >= 0 && sinceLaunch < 33) {
+        const squash = reduced ? 0.05 : 0.1;
+        this.body.scaleY *= 1 - squash * (1 - sinceLaunch / 33);
+        this.body.scaleX *= 1 + squash * 0.6 * (1 - sinceLaunch / 33);
+        this.attackShadowScaleX *= 1.04;
+        this.attackShadowScaleY *= 1.04;
+      }
+      if (vh > GRAVITY_APEX_BAND) {
+        const amount = (reduced ? 0.08 : 0.16) * clamp01(vh / JUMP_VELOCITY);
+        this.body.scaleY *= 1 + amount;
+        this.body.scaleX *= 1 - amount;
+      } else if (Math.abs(vh) <= GRAVITY_APEX_BAND) {
+        const breath = (reduced ? 0.01 : 0.02) * (0.5 + 0.5 * Math.sin(timeMs * 0.025));
+        this.body.scaleY *= 1.02 + breath;
+        this.body.rotation *= 0.82;
+      } else {
+        const amount = (reduced ? 0.03 : 0.06) * clamp01(-vh / JUMP_VELOCITY);
+        this.body.scaleY *= 1 - amount;
+        this.body.scaleX *= 1 + amount * 0.6;
+        this.body.rotation += Math.max(-0.05, Math.min(0.05, anim.moveX * 0.05));
+        for (const foot of this.feet) foot.img.y -= 6;
+      }
+    }
+
+    const sinceLanding = timeMs - this.landedAtMs;
+    if (this.landedFromStance === STANCE_POUND && sinceLanding >= 0 && sinceLanding < 280) {
+      const recovery =
+        sinceLanding < 80 ? 0.78 : 0.78 + 0.22 * backOut01((sinceLanding - 80) / 200);
+      this.body.scaleY *= reduced ? Math.max(0.88, recovery) : recovery;
+      this.body.scaleX *= 2 - recovery;
+    } else if (this.landedFromStance === STANCE_DASH && sinceLanding >= 0 && sinceLanding < 180) {
+      const q = 1 - smoothstep01(sinceLanding / 180);
+      this.body.rotation -= Math.max(-0.12, Math.min(0.12, anim.moveX * 0.12)) * q;
+      this.body.scaleY *= 1 - 0.12 * q;
+      this.body.scaleX *= 1 + 0.07 * q;
+    }
+
+    // Hands moved after the ordinary weapon mount pass; re-seat held art onto those final grip points.
+    for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -4038,12 +4163,44 @@ export class SpriteRig {
     // Landing is measured before part integration so the one-shot compression enters this frame's springs;
     // the final art lift/shadow pass remains last. With the rollback flag off the arithmetic/order of writes
     // is unchanged because no earlier target reads hopPx or landSquash.
+    const nextStance = anim.moveStance ?? STANCE_NONE;
+    if (nextStance !== this.moveStance) {
+      if (this.moveStance !== STANCE_NONE) this.airStance = this.moveStance;
+      this.moveStance = nextStance;
+      this.stanceStartedMs = timeMs;
+    }
+    if (this.hopTarget > GROUND_EPSILON && this.lastPoseHopTarget <= GROUND_EPSILON) {
+      this.jumpStartedMs = timeMs;
+      this.peakHopPx = this.hopTarget;
+      this.maxFallSpeed = 0;
+    }
+    this.lastPoseHopTarget = this.hopTarget;
+    this.peakHopPx = Math.max(this.peakHopPx, this.hopTarget, this.hopPx);
+    if ((anim.jumpVh ?? 0) < 0)
+      this.maxFallSpeed = Math.max(this.maxFallSpeed, -(anim.jumpVh ?? 0));
+    if (nextStance !== STANCE_NONE && this.hopTarget > GROUND_EPSILON) this.airStance = nextStance;
+
     const prevHop = this.hopPx;
     this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
     if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
     const landed = prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1;
-    if (landed) this.landSquash = 1;
-    this.landSquash = Math.max(0, this.landSquash - dtMs / 110);
+    if (landed) {
+      const landingStance = this.airStance;
+      const tier = landingThumpTier(
+        this.maxFallSpeed,
+        landingStance === STANCE_DASH ? MOVE_SPEED : 0,
+        landingStance === STANCE_DASH || landingStance === STANCE_POUND,
+      );
+      this.landSquash = 1;
+      this.landingSquashDepth = tier === 1 ? 0.1 : tier === 2 ? 0.18 : 0.26;
+      this.landingKickScale = tier === 1 ? 1 : tier === 2 ? 1.4 : 2;
+      this.landedFromStance = landingStance;
+      this.landedAtMs = timeMs;
+      this.airStance = STANCE_NONE;
+      this.peakHopPx = 0;
+      this.maxFallSpeed = 0;
+    }
+    this.landSquash = Math.max(0, this.landSquash - dtMs / 150);
     // The active counter resets as soon as readyAt+grace lapses. Its last authored guard remains only as a
     // 120ms cosmetic release; it cannot make a late trigger continue because family/weapon are already clear.
     if (this.comboFamily !== "none" && sceneNow > this.comboExpiresAtMs)
@@ -5119,7 +5276,7 @@ export class SpriteRig {
             impulseX += this.turnDirX * this.facing * JIGGLE_TURN_HAND_KICK;
             impulseY += this.turnDirY * JIGGLE_TURN_HAND_KICK;
           }
-          if (landed) impulseY += JIGGLE_LAND_HAND_KICK;
+          if (landed) impulseY += JIGGLE_LAND_HAND_KICK * this.landingKickScale;
           stepJigglePart(
             hnd,
             hx,
@@ -5443,6 +5600,8 @@ export class SpriteRig {
       }
     }
 
+    this.applyJumpFeelPose(timeMs, anim);
+
     // §5 jump hop was integrated at frame start so touchdown could excite springs; final art lift stays last.
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
     // ground), so the silhouette reads as "off the ground" rather than just sliding up.
@@ -5453,17 +5612,21 @@ export class SpriteRig {
         p.x += this.attackArtOffX;
         p.y += this.attackArtOffY - lift;
       }
+      // The slight per-part shear opens daylight under the card: feet leave most, torso trails a touch.
+      this.body.y += lift * 0.02;
+      for (const foot of this.feet) foot.img.y -= lift * 0.1;
       for (const w of this.weapons) {
         w.img.x += this.attackArtOffX;
         w.img.y += this.attackArtOffY - lift;
       }
-      // A touch of squash relief at the apex sells the leap (body stretches up) — from the JUMP only.
-      if (this.hopPx > 0.01) this.body.scaleY *= 1 + Math.min(0.12, this.hopPx / 300);
     }
     if (this.attackScaleY !== 1) {
       for (const p of this.parts) p.scaleY *= this.attackScaleY;
     }
-    if (this.landSquash > 0.01) this.body.scaleY *= 1 - 0.14 * this.landSquash; // squash on touchdown
+    if (this.landSquash > 0.01) {
+      this.body.scaleY *= 1 - this.landingSquashDepth * this.landSquash;
+      this.body.scaleX *= 1 + this.landingSquashDepth * 0.6 * this.landSquash;
+    }
     if (spawnActive) {
       // Attachments open after the body card; only visible transforms change, so jiggle ownership is intact.
       const handElapsed = spawnElapsedMs - 24;
@@ -5491,7 +5654,9 @@ export class SpriteRig {
     this.updateMeleeTellWeaponVisuals(sceneNow);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
-    const shrink = Math.max(0.42, 1 - this.hopPx / 420);
+    let shrink = Math.max(0.34, 1 - this.hopPx / 560);
+    if (this.moveStance === STANCE_DASH) shrink = Math.max(0.85, shrink);
+    if (this.moveStance === STANCE_CROUCH) shrink *= 1.08;
     const shadowOpen = spawnActive ? smoothstep01(spawnElapsedMs / 170) : 1;
     const shadowSpawnX = 0.45 + 0.55 * shadowOpen;
     const shadowSpawnY = 0.25 + 0.75 * shadowOpen;
@@ -5508,6 +5673,18 @@ export class SpriteRig {
         (shrink * this.attackShadowScaleX * shadowSpawnX) / shadowRootX,
         (shrink * this.attackShadowScaleY * shadowSpawnY) / shadowRootY,
       )
-      .setAlpha(shadowAlpha * shrink * this.attackShadowAlpha);
+      .setAlpha(Math.max(0.1, shadowAlpha * shrink) * this.attackShadowAlpha);
+    const haloAlpha = this.hopPx > 0.01 ? 0.05 * (1 - shrink) * shadowOpen : 0;
+    this.shadowHalo
+      .setPosition(
+        this.attackShadowX / shadowRootX,
+        (TARGET_BODY_H * 0.42 + this.attackShadowY) / shadowRootY,
+      )
+      .setRotation(this.attackShadowRotation - spawnRotation)
+      .setScale(
+        (shrink * 1.9 * this.attackShadowScaleX * shadowSpawnX) / shadowRootX,
+        (shrink * 1.9 * this.attackShadowScaleY * shadowSpawnY) / shadowRootY,
+      )
+      .setAlpha(haloAlpha * this.attackShadowAlpha);
   }
 }

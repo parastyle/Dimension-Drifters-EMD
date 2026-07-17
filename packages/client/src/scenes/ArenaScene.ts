@@ -46,6 +46,7 @@ import {
   effectiveMelee,
   enemyHpScale,
   FISTS_WEAPON,
+  GROUND_EPSILON,
   generateArena,
   getDimension,
   gunMuzzleReach,
@@ -56,10 +57,12 @@ import {
   inMeleeArc,
   isPitAtPx,
   LEVELUP_WINDOW_SECONDS,
+  landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
   META_UPGRADES,
   type MetaLevels,
+  type MoveStance,
   meleeReach,
   nextUpgradeCost,
   PARRY_CHAIN_CD,
@@ -69,6 +72,7 @@ import {
   PARRY_IFRAMES,
   PICKUP_RADIUS,
   type PlayerState,
+  POUND_RADIUS,
   QUAKE_REACH,
   RARITIES,
   RARITY_CURSED,
@@ -78,6 +82,10 @@ import {
   SALVAGE_HOLD_SECONDS,
   SCHEMA_VERSION,
   SHOP_RADIUS,
+  STANCE_CROUCH,
+  STANCE_DASH,
+  STANCE_NONE,
+  STANCE_POUND,
   type SwingDescriptor,
   salvageValue,
   sanitizeMetaLevels,
@@ -112,7 +120,12 @@ import {
   SpriteRig,
 } from "../entities/SpriteRig.js";
 import { WormRig } from "../entities/WormRig.js";
-import { SelfPredictor, type ServerView } from "../net/prediction.js";
+import {
+  type DistanceJumpIndicator,
+  SelfPredictor,
+  type ServerView,
+  SpaceGestureClassifier,
+} from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import { type FeedbackSettings, loadSettings, onSettingsChange } from "../settings.js";
@@ -141,6 +154,7 @@ import {
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
+import { JumpEffectRenderer } from "../vfx/jump-effects.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
@@ -258,6 +272,7 @@ const BELT_FORESHORTEN = 0.5;
 // deck + just a sliver of depth-lip, and zooms the characters up a touch as a bonus.
 const BELT_VIEW_H = 880;
 const BELT_SKY = 176;
+const PLAYER_SHADOW_LOCAL_Y = 76 * 0.42;
 
 /** Existing kindTag wire values, named locally so the first layered pass stays protocol-neutral. */
 const TelegraphKindTag = {
@@ -292,6 +307,30 @@ interface EnemyWindupSample {
   aimWorld: number;
   locked: boolean;
   glintAtMs: number;
+}
+
+interface JumpPresentationState {
+  height: number;
+  vh: number;
+  stance: MoveStance;
+  poundSeq: number;
+  coilSecondPlayed: boolean;
+  stanceStartedMs: number;
+}
+
+function poundRingColor(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 33 + id.charCodeAt(i)) >>> 0;
+  switch (hash & 3) {
+    case 0:
+      return 0x72d9ff;
+    case 1:
+      return 0xffd66e;
+    case 2:
+      return 0xb891ff;
+    default:
+      return 0x78e3a4;
+  }
 }
 
 interface LevelChoiceControl {
@@ -861,6 +900,7 @@ export class ArenaScene extends Phaser.Scene {
   private combatFeedback!: CombatFeedback;
   private damageNumberRenderer!: DamageNumberRenderer;
   private hitEffectRenderer!: HitEffectRenderer;
+  private jumpEffectRenderer!: JumpEffectRenderer;
   private feedbackSettings!: FeedbackSettings;
   private removeFeedbackSettingsListener?: () => void;
   /** §TELEGRAPH exact danger edges above terrain/zones and below actor rigs. Never quality-gated. */
@@ -1017,13 +1057,29 @@ export class ArenaScene extends Phaser.Scene {
   /** Fixed 50ms input-command accumulator (clamped ≤3 ticks/frame — a tab-throttle wake must not burst
    *  20 commands; a >250ms frame gap resets it and hard-resyncs, mirroring the server's own dt clamp). */
   private inputAccMs = 0;
-  /** SPACE pressed since the last minted command — the jump intent rides the next {seq,dx,dy,jump}. */
+  /** A classified tap released since the last command — jump rides the next numbered input. */
   private jumpQueued = false;
+  /** Space tap/hold/pound classifier + command-stream latches (tap emits on release). */
+  private readonly spaceGesture = new SpaceGestureClassifier();
+  private crouchHeld = false;
+  private poundQueued = false;
   /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
   private curDx = 0;
   private curDy = 0;
   /** Self height from the predictor this frame (the rig hop for SELF; remotes use synced height). */
   private selfPredHeight = 0;
+  private selfPredVh = 0;
+  private selfPredStance: MoveStance = STANCE_NONE;
+  private readonly distanceIndicator: DistanceJumpIndicator = {
+    rawX: 0,
+    rawY: 0,
+    x: 0,
+    y: 0,
+    dirX: 1,
+    dirY: 0,
+    clamped: false,
+  };
+  private readonly jumpPresentation = new Map<string, JumpPresentationState>();
   /** Whether the previous frame was hit-stop-frozen — on the unfreeze edge the accrued prediction
    *  displacement folds into the error offset so it glides instead of popping (review #11). */
   private wasFrozen = false;
@@ -1623,9 +1679,15 @@ export class ArenaScene extends Phaser.Scene {
     this.timeline.reset();
     this.inputAccMs = 0;
     this.jumpQueued = false;
+    this.spaceGesture.reset();
+    this.crouchHeld = false;
+    this.poundQueued = false;
     this.curDx = 0;
     this.curDy = 0;
     this.selfPredHeight = 0;
+    this.selfPredVh = 0;
+    this.selfPredStance = STANCE_NONE;
+    this.jumpPresentation.clear();
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
     this.beamPredictionStartSeq = -1;
@@ -1779,6 +1841,7 @@ export class ArenaScene extends Phaser.Scene {
     this.hitEffectRenderer = new HitEffectRenderer(this, (targetId, out) =>
       this.resolveFeedbackTarget(targetId, out),
     );
+    this.jumpEffectRenderer = new JumpEffectRenderer(this);
     this.damageNumberRenderer = new DamageNumberRenderer(
       this,
       this.feedbackSettings,
@@ -3091,6 +3154,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastAttackSeq.delete(id);
     this.lastAttackHeld.delete(id);
     this.lastFell.delete(id);
+    this.jumpPresentation.delete(id);
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -3116,6 +3180,20 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (levelWindowOpen) this.handleLevelWindowInput();
     const levelWindowInputBlocked = levelWindowOpen || this.levelWinInputReleaseLatch;
+    const predictedAirborne = this.predictor
+      ? this.selfPredHeight > GROUND_EPSILON
+      : (selfP?.height ?? 0) > GROUND_EPSILON;
+    const space = this.spaceGesture.sample(
+      this.time.now,
+      this.keys.SPACE.isDown,
+      Phaser.Input.Keyboard.JustDown(this.keys.SPACE),
+      Phaser.Input.Keyboard.JustUp(this.keys.SPACE),
+      predictedAirborne,
+      alive && !levelWindowInputBlocked,
+    );
+    if (space.jump) this.jumpQueued = true;
+    if (space.pound) this.poundQueued = true;
+    this.crouchHeld = space.crouchHeld;
     let canSalvage = false;
     this.grabTarget = null;
     if (!levelWindowInputBlocked) {
@@ -3169,9 +3247,8 @@ export class ArenaScene extends Phaser.Scene {
         this.rSalvaged = false;
         this.rGrabbed = false;
       }
-      // §5 traversal hop — §4 v0.107: the jump intent RIDES the next sequence-numbered input command (so
-      // its consume tick is part of the acked timeline) and the predictor hops the rig instantly.
-      if (Phaser.Input.Keyboard.JustDown(this.keys.SPACE) && alive) this.jumpQueued = true;
+      // Jump-feel Space routing is sampled above the context block so a level-window edge also clears the
+      // hold latch. Tap emits on release; held state and airborne pound ride the next numbered command.
       // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
       // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
       // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
@@ -3257,6 +3334,7 @@ export class ArenaScene extends Phaser.Scene {
     this.syncProjectiles();
     this.syncZones();
     this.syncPortal();
+    this.jumpEffectRenderer.beginFrame();
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
     if (this.time.now >= this.frozenUntil) {
@@ -3306,6 +3384,7 @@ export class ArenaScene extends Phaser.Scene {
       this.animClock,
       this.feedbackSettings.flashes === "reduced",
     );
+    this.jumpEffectRenderer.update(presentationDelta);
     this.stepEnemyFlinches(presentationDelta);
     this.stepCameraPunch(presentationDelta);
     this.damageNumberRenderer.update(deltaMs, this.time.now, prefersReducedPaperMotion());
@@ -6045,6 +6124,8 @@ export class ArenaScene extends Phaser.Scene {
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
         blob.setPosition(r.x, r.y);
         this.selfPredHeight = r.height;
+        this.selfPredVh = r.vh;
+        this.selfPredStance = r.stance;
         return;
       }
       const s =
@@ -6520,6 +6601,7 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
     const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait blend
+    const reducedMotion = prefersReducedPaperMotion();
 
     let aimX = 0;
     let aimY = 0;
@@ -6580,7 +6662,25 @@ export class ArenaScene extends Phaser.Scene {
       // by the v0.105 hop lerp in the rig).
       const pl = this.room?.state.players.get(id);
       const isSelfPred = id === selfId && this.predictor !== null;
-      blob.setHop(isSelfPred ? this.selfPredHeight : (pl?.height ?? 0));
+      const jumpHeight = isSelfPred ? this.selfPredHeight : (pl?.height ?? 0);
+      const jumpVh = isSelfPred ? this.selfPredVh : (pl?.vh ?? 0);
+      const moveStance = isSelfPred
+        ? this.selfPredStance
+        : ((pl?.moveStance ?? STANCE_NONE) as MoveStance);
+      blob.setHop(jumpHeight);
+      this.presentJumpFeel(
+        id,
+        blob,
+        jumpHeight,
+        jumpVh,
+        moveStance,
+        pl?.poundSeq ?? 0,
+        mx,
+        my,
+        speed,
+        id === selfId,
+        reducedMotion,
+      );
 
       // §6 DOWNED look + revive pop. A downed body greys out + fades; a rez (revivedSeq tick) pops it green.
       const alive = pl?.alive ?? true;
@@ -6610,9 +6710,143 @@ export class ArenaScene extends Phaser.Scene {
       anim.isSelf = isSelf;
       anim.recoilX = pl?.vx ?? 0; // §20 momentum flinch (gun recoil / hit knockback)
       anim.recoilY = pl?.vy ?? 0;
+      anim.jumpVh = jumpVh;
+      anim.moveStance = moveStance;
+      anim.reducedMotion = reducedMotion;
       blob.animate(this.animClock, anim);
       blob.setDepth(blob.y);
     }
+  }
+
+  /** One presentation edge tracker per player; all spawned geometry lands in fixed JumpEffectRenderer pools. */
+  private presentJumpFeel(
+    id: string,
+    blob: SpriteRig,
+    height: number,
+    vh: number,
+    stance: MoveStance,
+    poundSeq: number,
+    moveX: number,
+    moveY: number,
+    speed: number,
+    isSelf: boolean,
+    reducedMotion: boolean,
+  ): void {
+    let previous = this.jumpPresentation.get(id);
+    if (!previous) {
+      previous = {
+        height,
+        vh,
+        stance,
+        poundSeq,
+        coilSecondPlayed: false,
+        stanceStartedMs: this.animClock,
+      };
+      this.jumpPresentation.set(id, previous);
+    }
+    const x = blob.x;
+    const y = this.belt ? this.beltY(blob.y) : blob.y;
+    const visible = isSelf || this.cameras.main.worldView.contains(blob.x, blob.y);
+    const localAmt = isSelf ? 1 : 0.35;
+    const stanceChanged = stance !== previous.stance;
+    if (stanceChanged) {
+      previous.stanceStartedMs = this.animClock;
+      previous.coilSecondPlayed = false;
+      if (stance === STANCE_CROUCH) this.audio.play("leap:coil", { x, amt: 0.3 * localAmt });
+      if (stance === STANCE_POUND) this.audio.play("pound:tuck", { x, amt: localAmt });
+    }
+    if (
+      stance === STANCE_CROUCH &&
+      !previous.coilSecondPlayed &&
+      this.animClock - previous.stanceStartedMs >= 150
+    ) {
+      previous.coilSecondPlayed = true;
+      this.audio.play("leap:coil", { x, amt: 0.62 * localAmt });
+    }
+    if (stance === STANCE_POUND && vh < 0 && previous.vh >= 0)
+      this.audio.play("pound:drop", { x, amt: localAmt });
+
+    const authoritativePound = poundSeq !== previous.poundSeq;
+    if (authoritativePound) {
+      this.jumpEffectRenderer.spawnPoundImpact(
+        x,
+        y,
+        POUND_RADIUS,
+        poundRingColor(id),
+        reducedMotion || !visible,
+        this.belt ? BELT_FORESHORTEN : 1,
+      );
+      this.audio.play("pound:hit", { x, amt: localAmt });
+      if (isSelf) {
+        this.shakeCam(90, 0.0072);
+      } else {
+        const self = this.room ? this.blobs.get(this.room.sessionId) : undefined;
+        const falloff = self
+          ? Math.max(0, 1 - Math.hypot(blob.x - self.x, blob.y - self.y) / 760)
+          : 0;
+        if (falloff > 0) this.shakeCam(90 * falloff, 0.0072 * falloff);
+      }
+    }
+
+    const launched = previous.height <= GROUND_EPSILON && height > GROUND_EPSILON;
+    if (launched) {
+      if (stance === STANCE_DASH) this.audio.play("leap:launch", { x, amt: localAmt });
+      else this.audio.play("jump", { x, amt: localAmt });
+    }
+    const landed = previous.height > GROUND_EPSILON && height <= GROUND_EPSILON;
+    if (landed) {
+      const landingStance = previous.stance;
+      const forcedHeavy = landingStance === STANCE_DASH || landingStance === STANCE_POUND;
+      const tier = landingThumpTier(
+        previous.vh,
+        landingStance === STANCE_DASH ? speed : 0,
+        forcedHeavy,
+      );
+      this.jumpEffectRenderer.spawnLanding(
+        x,
+        y + PLAYER_SHADOW_LOCAL_Y,
+        tier,
+        moveX,
+        moveY,
+        landingStance === STANCE_DASH,
+        reducedMotion || !visible,
+        this.belt ? BELT_FORESHORTEN : 1,
+      );
+      if (landingStance !== STANCE_POUND && !authoritativePound)
+        this.audio.play("land", { x, amt: (tier / 3) * localAmt });
+      if (landingStance === STANCE_DASH) this.audio.play("leap:skid", { x, amt: localAmt });
+      else if (tier === 3 && landingStance !== STANCE_POUND && isSelf) this.shakeCam(75, 0.0045);
+    }
+
+    if (visible && stance === STANCE_POUND && vh < 0)
+      this.jumpEffectRenderer.drawPoundStreak(x, y, height, -vh, reducedMotion);
+    if (
+      isSelf &&
+      stance === STANCE_CROUCH &&
+      this.predictor?.writeDistanceJumpIndicator(
+        this.distanceIndicator,
+        this.curDx,
+        this.curDy,
+        this.selfAim.x,
+        this.selfAim.y,
+      )
+    ) {
+      this.jumpEffectRenderer.drawDistanceIndicator(
+        x,
+        y + PLAYER_SHADOW_LOCAL_Y,
+        this.distanceIndicator.x,
+        (this.belt ? this.beltY(this.distanceIndicator.y) : this.distanceIndicator.y) +
+          PLAYER_SHADOW_LOCAL_Y,
+        this.distanceIndicator.clamped,
+        this.animClock,
+        reducedMotion,
+      );
+    }
+
+    previous.height = height;
+    previous.vh = vh;
+    previous.stance = stance;
+    previous.poundSeq = poundSeq;
   }
 
   /** RMB held → fire the equipped weapon toward the cursor (§9). Server gates damage by cooldown;
@@ -8561,13 +8795,13 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
-          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse showroom pages (when clear) · Tab: summon · Space: jump · T: exit${who}`
+          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse · Tab: summon · Space tap/hold: jump/leap · air tap: pound · T: exit${who}`
           : this.belt
             ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
-              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space jump · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade${who}`
+              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space tap/hold jump · air tap pound · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade${who}`
             : bossrush
-              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry${who}`
-              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry${who}`,
+              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${who}`
+              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${who}`,
       )
       .setColor(
         lagging
@@ -10195,6 +10429,9 @@ export class ArenaScene extends Phaser.Scene {
           this.predictor.reconcile(view);
         } else {
           this.predictor = new SelfPredictor(view);
+          this.selfPredHeight = view.height;
+          this.selfPredVh = view.vh;
+          this.selfPredStance = view.moveStance ?? STANCE_NONE;
           if (this.belt) {
             this.predictor.setMap(undefined);
             this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
@@ -10220,6 +10457,8 @@ export class ArenaScene extends Phaser.Scene {
       vh: p.vh,
       ackSeq: p.ackSeq,
       teleportSeq: p.teleportSeq,
+      moveStance: p.moveStance as MoveStance,
+      stanceSeq: p.stanceSeq,
       alive: p.alive,
       frozen: p.flexPending > 0 || p.sigPending > 0,
     };
@@ -10478,7 +10717,11 @@ export class ArenaScene extends Phaser.Scene {
   private stepNetInput(deltaMs: number, levelWindowOpen = false): void {
     this.curDx = levelWindowOpen ? 0 : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
     this.curDy = levelWindowOpen ? 0 : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
-    if (levelWindowOpen) this.jumpQueued = false;
+    if (levelWindowOpen) {
+      this.jumpQueued = false;
+      this.poundQueued = false;
+      this.crouchHeld = false;
+    }
     if (!this.room || !this.predictor) return;
     if (deltaMs > 250) {
       // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
@@ -10499,7 +10742,15 @@ export class ArenaScene extends Phaser.Scene {
         this.input.activePointer.rightButtonDown();
       const aim = this.currentBeamAim();
       const cmd = {
-        ...this.predictor.mintCmd(this.curDx, this.curDy, this.jumpQueued),
+        ...this.predictor.mintCmd(
+          this.curDx,
+          this.curDy,
+          this.jumpQueued,
+          this.crouchHeld,
+          this.poundQueued,
+          aim.aimX,
+          aim.aimY,
+        ),
         fireHeld,
         aimX: aim.aimX,
         aimY: aim.aimY,
@@ -10507,6 +10758,7 @@ export class ArenaScene extends Phaser.Scene {
         targetY: aim.targetY,
       };
       this.jumpQueued = false;
+      this.poundQueued = false;
       this.stepBeamPrediction(cmd, self, weapon);
       this.room.send("input", cmd);
       this.predictor.tick(cmd);

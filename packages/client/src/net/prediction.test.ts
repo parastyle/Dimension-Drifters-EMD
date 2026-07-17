@@ -306,3 +306,96 @@ describe("SelfPredictor — §4 v0.107 prediction + reconciliation", () => {
     expect(pred.renderPos(0, 0, 0).height).toBe(0);
   });
 });
+
+describe("SelfPredictor — jump-feel stance replay", () => {
+  it("replays crouch through its ten command ticks and launches the predicted distance jump", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });
+    const preCrouch = server.view();
+
+    const first = pred.mintCmd(1, 0, false, true, false, 1, 0);
+    pred.tick(first);
+    expect(pred.moveStance).toBe(1);
+    pred.reconcile({ ...preCrouch, ackSeq: 0, moveStance: 0, stanceSeq: 0 });
+    expect(pred.moveStance).toBe(1);
+
+    for (let i = 1; i < 10; i++) pred.tick(pred.mintCmd(1, 0, false, true, false, 1, 0));
+    expect(pred.moveStance).toBe(2);
+    expect(pred.renderPos(1, 0, 0).height).toBeGreaterThan(0);
+  });
+
+  it("replays pound gather and constant-speed descent from the one-shot command bit", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor({ ...server.view(), moveStance: 0, stanceSeq: 0 });
+    pred.tick(pred.mintCmd(0, 0, true));
+    pred.tick(pred.mintCmd(0, 0, false));
+    expect(pred.renderPos(0, 0, 0).height).toBeGreaterThan(24);
+    const beforePound = { ...server.view(), height: pred.renderPos(0, 0, 0).height, vh: 0 };
+    const pound = pred.mintCmd(0, 0, false, false, true);
+    pred.tick(pound);
+    expect(pred.moveStance).toBe(3);
+    const gatheredHeight = pred.renderPos(0, 0, 0).height;
+    pred.reconcile({ ...beforePound, ackSeq: (pound.seq - 1) >>> 0, moveStance: 0, stanceSeq: 0 });
+    expect(pred.moveStance).toBe(3);
+    pred.tick(pred.mintCmd(0, 0, false));
+    pred.tick(pred.mintCmd(0, 0, false));
+    expect(pred.renderPos(0, 0, 0).height).toBeLessThan(gatheredHeight);
+  });
+
+  it("stanceSeq adopts authority, strips pending stance causes, and preserves the glide offset", () => {
+    const server = new MockServer();
+    const initial = { ...server.view(), moveStance: 0 as const, stanceSeq: 0 };
+    const pred = new SelfPredictor(initial);
+    pred.tick(pred.mintCmd(1, 0, false));
+    pred.tick(pred.mintCmd(1, 0, false, true));
+    expect(pred.moveStance).toBe(1);
+
+    const before = pred.renderPos(1, 0, 0);
+    const forced = { ...initial, x: initial.x - 8, moveStance: 0 as const, stanceSeq: 1 };
+    pred.reconcile(forced);
+    expect(pred.moveStance).toBe(0);
+    expect(pred.stats.errPx).toBeGreaterThan(0);
+    expect(Math.abs(pred.renderPos(1, 0, 0).x - before.x)).toBeLessThan(1);
+
+    for (let i = 0; i < 3; i++) {
+      pred.reconcile(forced);
+      expect(pred.moveStance).toBe(0);
+    }
+    pred.tick(pred.mintCmd(0, 0, false, true));
+    expect(pred.moveStance).toBe(0); // the same physical hold is not a new press
+    pred.tick(pred.mintCmd(0, 0, false, false));
+    pred.tick(pred.mintCmd(0, 0, false, true));
+    expect(pred.moveStance).toBe(1); // release then press legitimately re-arms crouch
+  });
+});
+
+describe("jump-feel input and indicator helpers", () => {
+  it("emits tap jump only on release, hold state at 150ms, and pound on an airborne press", async () => {
+    const { SpaceGestureClassifier } = await import("./prediction.js");
+    const input = new SpaceGestureClassifier();
+    expect(input.sample(0, true, true, false, false).jump).toBe(false);
+    expect(input.sample(90, false, false, true, false)).toMatchObject({
+      jump: true,
+      pound: false,
+      crouchHeld: false,
+    });
+
+    input.sample(200, true, true, false, false);
+    expect(input.sample(349, true, false, false, false).crouchHeld).toBe(false);
+    expect(input.sample(350, true, false, false, false).crouchHeld).toBe(true);
+    expect(input.sample(410, false, false, true, false).jump).toBe(false);
+    expect(input.sample(500, true, true, false, true).pound).toBe(true);
+  });
+
+  it("marks only server-validation changes red and reports the exact validated endpoint", async () => {
+    const { writeDistanceJumpIndicator } = await import("./prediction.js");
+    const out = { rawX: 0, rawY: 0, x: 0, y: 0, dirX: 0, dirY: 0, clamped: false };
+    expect(writeDistanceJumpIndicator(out, 1000, 1000, 1, 0, 0, 0)).toBe(true);
+    expect(out.x).toBeCloseTo(1372, 6);
+    expect(out.clamped).toBe(false);
+
+    expect(writeDistanceJumpIndicator(out, 4780, 1000, 1, 0, 0, 0)).toBe(true);
+    expect(out.x).toBeLessThan(out.rawX);
+    expect(out.clamped).toBe(true);
+  });
+});

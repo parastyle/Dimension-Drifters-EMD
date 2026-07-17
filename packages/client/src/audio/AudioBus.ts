@@ -160,6 +160,10 @@ export class AudioBus {
           "confirm-crit-ping",
           "confirm-kill-thock",
           "confirm-ratchet-grain",
+          "player-jump",
+          "player-land",
+          "player-dodge",
+          "boss-slam-generic",
         ]);
       } catch {
         this.failed = true;
@@ -1008,6 +1012,124 @@ export class AudioBus {
         break;
       case "pitdeath":
         this.tone(300, 0.32, { type: "sine", gain: 0.2, sweepTo: 80, x });
+        break;
+      // Jump-feel movement family. The installed movement ids predate `replaces` mappings, so these
+      // explicit sample-first branches address them directly and retain synth coverage during decode.
+      case "jump":
+        if (this.throttled(amt >= 0.75 ? "jumpSelf" : "jumpRemote", 70)) return;
+        if (
+          sampleBank.playSample("player-jump", {
+            volume: 0.22 + 0.38 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + 0.08 * amt,
+            priority: "low",
+          })
+        )
+          return;
+        this.tone(280, 0.09, {
+          type: "triangle",
+          gain: 0.07 + 0.07 * amt,
+          sweepTo: 420,
+          x,
+          priority: "low",
+        });
+        this.noise(0.06, { gain: 0.035 + 0.04 * amt, type: "highpass", freq: 1300, x });
+        break;
+      case "land":
+        if (this.throttled(amt >= 0.75 ? "landHeavy" : "land", 55)) return;
+        if (
+          sampleBank.playSample("player-land", {
+            volume: 0.2 + 0.55 * amt,
+            pan: this.panOf(x),
+            rate: 1.08 - 0.18 * amt,
+            priority: amt >= 0.75 ? "normal" : "low",
+          })
+        )
+          return;
+        this.tone(135 - 35 * amt, 0.07 + 0.04 * amt, {
+          type: "sine",
+          gain: 0.08 + 0.2 * amt,
+          sweepTo: 72 - 18 * amt,
+          x,
+        });
+        this.noise(0.045 + 0.035 * amt, {
+          gain: 0.04 + 0.11 * amt,
+          type: "lowpass",
+          freq: 1000 - 480 * amt,
+          x,
+        });
+        break;
+      case "pound:tuck":
+        this.noise(0.06, { gain: 0.08 + 0.06 * amt, type: "highpass", freq: 1800, x });
+        this.tone(500, 0.06, { type: "triangle", gain: 0.07, sweepTo: 700, x });
+        break;
+      case "pound:drop":
+        this.tone(600, 0.18, { type: "sine", gain: 0.08 + 0.08 * amt, sweepTo: 180, x });
+        break;
+      case "pound:hit":
+        if (this.throttled("poundHit", 90)) return;
+        // P2 manifest addition: a bespoke `player-pound-slam` should replace this reduced-gain generic
+        // debris layer. The player sub-boom stays distinct and one notch above the boss recipe in pitch.
+        sampleBank.playSample("boss-slam-generic", {
+          volume: 0.16 + 0.2 * amt,
+          pan: this.panOf(x),
+          rate: 1.22,
+          priority: amt >= 0.75 ? "critical" : "normal",
+        });
+        this.tone(72, 0.24, {
+          type: "sine",
+          gain: 0.2 + 0.24 * amt,
+          sweepTo: 38,
+          x,
+          priority: amt >= 0.75 ? "critical" : "normal",
+        });
+        this.noise(0.16, {
+          gain: 0.1 + 0.12 * amt,
+          type: "lowpass",
+          freq: 320,
+          x,
+        });
+        break;
+      case "leap:coil":
+        if (this.throttled("leapCoil", 80)) return;
+        this.tone(900 - 160 * amt, 0.025, {
+          type: "square",
+          gain: 0.055,
+          sweepTo: 760 - 120 * amt,
+          x,
+          priority: "low",
+        });
+        this.noise(0.035, { gain: 0.035, type: "bandpass", freq: 2100, x, priority: "low" });
+        break;
+      case "leap:launch":
+        if (
+          sampleBank.playSample("player-dodge", {
+            volume: 0.28 + 0.36 * amt,
+            pan: this.panOf(x),
+            rate: 0.9,
+          })
+        )
+          return;
+        this.noise(0.12, {
+          gain: 0.1 + 0.12 * amt,
+          type: "bandpass",
+          freq: 900,
+          sweepTo: 260,
+          x,
+        });
+        this.tone(200, 0.12, { type: "triangle", gain: 0.09, sweepTo: 90, x });
+        break;
+      case "leap:skid":
+        if (this.throttled("leapSkid", 120)) return;
+        this.noise(0.14, {
+          gain: 0.07 + 0.07 * amt,
+          type: "bandpass",
+          freq: 760,
+          q: 1.4,
+          sweepTo: 250,
+          x,
+          priority: "low",
+        });
         break;
       case "grab":
         this.tone(880, 0.06, { type: "sine", gain: 0.2 });
