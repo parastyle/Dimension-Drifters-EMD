@@ -13,6 +13,8 @@
  * - Volume/mute persist to localStorage; conservative default (0.35, unmuted) — co-op, don't blast a join.
  */
 
+import { type PlaySampleOpts, type SampleLoopHandle, sampleBank } from "./sample-bank.js";
+
 const LS_VOL = "dd.audio.vol";
 const LS_MUTED = "dd.audio.muted";
 
@@ -43,6 +45,33 @@ export class AudioBus {
   /** Last play time (ctx seconds) per throttle key, to rate-limit spammy events. */
   private readonly lastAt = new Map<string, number>();
   private readonly beamSustainAt = new Map<string, number>();
+  /**
+   * §50 soundkit — sample sustain loops (integration doc §4). One handle per beam owner (bounded to
+   * 16, matching `beamSustainAt`) plus the Serraketh rumble. `lastFedMs` is a WALL-CLOCK keepalive:
+   * the emitting streams (`beam:sustain` fires every frame while a beam is held; `boss:rumble:start`
+   * likewise while the worm is burrowed) refresh it, and the watchdog below reaps any loop whose
+   * stream went quiet — lost release edge, owner disconnect, scene swap, tab hide — so no loop can
+   * outlive its cause. (ArenaScene never shuts down, so scene-lifecycle hooks could not carry this.)
+   */
+  private readonly beamLoops = new Map<string, { handle: SampleLoopHandle; lastFedMs: number }>();
+  private bossRumble: { handle: SampleLoopHandle; lastFedMs: number } | null = null;
+  private loopWatchdog: ReturnType<typeof setInterval> | null = null;
+  private static readonly BEAM_LOOP_STALE_MS = 400;
+  private static readonly RUMBLE_STALE_MS = 1500;
+  /**
+   * §50 soundkit — cues routed through the generic sample-first gate at the top of `play()`
+   * (integration doc §2.2): no layering, no amt-driven params, no loop lifecycle, no throttle.
+   * Everything with per-cue nuance keeps an explicit in-case branch instead.
+   */
+  private static readonly PURE_REPLACEMENTS: ReadonlySet<string> = new Set([
+    "grab",
+    "revive",
+    "extract",
+    "descent",
+    "fall",
+    "pitdeath",
+    "levelup",
+  ]);
 
   constructor() {
     let v = 0.35;
@@ -56,6 +85,16 @@ export class AudioBus {
     }
     this.volume = v;
     this.muted = m;
+    // §50 soundkit seam (integration doc §1.2): AudioBus construction IS the composition root (the
+    // scenes share one instance via the game registry), so attach the sample bank to this bus's
+    // audio graph here and probe for the served manifest ONCE. With zero samples shipped (today)
+    // the fetch 404s quietly, the bank marks itself "absent", and every sample branch below is a
+    // permanent cheap no-op — the synth recipes run byte-identical.
+    sampleBank.attach({
+      getContext: () => this.context,
+      getDestination: () => this.masterNode,
+    });
+    void sampleBank.loadManifest();
   }
 
   /** Create + resume the AudioContext. MUST be called from within a user-gesture handler (click/keydown)
@@ -82,6 +121,11 @@ export class AudioBus {
             this.voices = 0;
             this.lastAt.clear();
             this.beamSustainAt.clear();
+            // §50 soundkit hygiene (doc §4.3): beam state is unknown after a suspend, so stop +
+            // clear the loop table with the same re-baseline. If the beam is still held, the live
+            // `beam:sustain` stream restarts its loop within a frame.
+            for (const l of this.beamLoops.values()) l.handle.stop(0.05);
+            this.beamLoops.clear();
           }
         };
         // Auto-resume when the tab becomes visible again, so audio recovers WITHOUT needing a fresh click.
@@ -101,6 +145,9 @@ export class AudioBus {
         this.master = master;
         this.noiseBuf = buf;
         this.applyGain(0);
+        // §50 soundkit optional warm-up (doc §1.2): now that a context exists, pre-decode the
+        // latency-critical cues. With the manifest absent (today) this is a no-op.
+        sampleBank.preload(["parry-clang", "player-hurt", "impact-flesh"]);
       } catch {
         this.failed = true;
         return;
@@ -120,6 +167,14 @@ export class AudioBus {
   }
   get isMuted(): boolean {
     return this.muted;
+  }
+  /** §50 soundkit seam (doc §1.1) — read-only context for the sample bank; null pre-gesture. */
+  get context(): AudioContext | null {
+    return this.ctx;
+  }
+  /** §50 soundkit seam (doc §1.1) — the master gain, so samples inherit volume/mute/ducking. */
+  get masterNode(): AudioNode | null {
+    return this.master;
   }
 
   setVolume(v: number): void {
@@ -267,6 +322,83 @@ export class AudioBus {
     return false;
   }
 
+  // ── §50 soundkit sample path (docs/soundkit-integration.md) ─────────────────────────────────────
+  // Every helper below is a guaranteed no-op while zero samples exist (today): the bank's manifest
+  // probe 404s once, `sampleForCue` returns null, `playSample`/`startLoop` return false/null, and
+  // every call site falls through to the synth recipe unchanged.
+
+  /** Doc §2.3 — the same world-x → pan math `out()` uses, shared by the sample path. */
+  private panOf(x?: number): number | undefined {
+    return x === undefined
+      ? undefined
+      : Math.max(-1, Math.min(1, (x - this.camMidX) / this.halfViewW));
+  }
+
+  /** Doc §2.1 sample-first shape: resolve the cue via the manifest's `replaces` mapping and try the
+   *  sample. `false` ⇒ "I made no sound; run your synth" (the ONE exception: a `minIntervalMs`
+   *  suppression returns true — handled by intentional silence, so the synth must NOT run). */
+  private sampleFirst(cue: string, opts: PlaySampleOpts): boolean {
+    const sid = sampleBank.sampleForCue(cue);
+    return sid !== null && sampleBank.playSample(sid, opts);
+  }
+
+  /** Doc §4.1 — start the per-owner beam sustain loop (idempotent per key, bounded like
+   *  `beamSustainAt`). Returns false ⇒ keep the existing pulsed-synth sustain. */
+  private startBeamLoop(ownerId: string | undefined, amt: number, x?: number): boolean {
+    const key = ownerId ?? "solo";
+    if (this.beamLoops.has(key) || this.beamLoops.size >= 16) return false;
+    const sid = sampleBank.sampleForCue("beam:sustain");
+    if (sid === null) return false;
+    const h = sampleBank.startLoop(sid, {
+      volume: 0.25 + 0.5 * amt,
+      pan: this.panOf(x),
+      fadeInSec: 0.06,
+    });
+    if (!h) return false;
+    this.beamLoops.set(key, { handle: h, lastFedMs: Date.now() });
+    this.armLoopWatchdog();
+    return true;
+  }
+
+  /** Doc §4.1 — per-owner loop stop on the release/overheat edges. Idempotent (`stop()` is safe
+   *  twice, missing key is a no-op), so double edges cost nothing. */
+  private stopBeamLoop(ownerId: string | undefined, fadeOutSec = 0.1): void {
+    const key = ownerId ?? "solo";
+    this.beamLoops.get(key)?.handle.stop(fadeOutSec);
+    this.beamLoops.delete(key);
+  }
+
+  /** Doc §4.3 teardown sweep, AudioBus-side: a lightweight interval (armed only while loops are
+   *  live, disarmed when none remain) that reaps any loop whose keepalive stream went quiet. This
+   *  IS the blanket net — ArenaScene never shuts down, so `SHUTDOWN`/`DESTROY` hooks can't be the
+   *  sweep; wall-clock staleness catches every exit path instead (release edge lost, owner
+   *  disconnect, mute, scene swap, tab hide). */
+  private armLoopWatchdog(): void {
+    if (this.loopWatchdog !== null) return;
+    this.loopWatchdog = setInterval(() => this.sweepStaleLoops(), 250);
+  }
+
+  private sweepStaleLoops(): void {
+    const now = Date.now();
+    for (const [key, l] of this.beamLoops) {
+      if (!l.handle.alive || now - l.lastFedMs > AudioBus.BEAM_LOOP_STALE_MS) {
+        l.handle.stop(0.1);
+        this.beamLoops.delete(key);
+      }
+    }
+    if (
+      this.bossRumble &&
+      (!this.bossRumble.handle.alive || now - this.bossRumble.lastFedMs > AudioBus.RUMBLE_STALE_MS)
+    ) {
+      this.bossRumble.handle.stop(0.5);
+      this.bossRumble = null;
+    }
+    if (this.beamLoops.size === 0 && this.bossRumble === null && this.loopWatchdog !== null) {
+      clearInterval(this.loopWatchdog);
+      this.loopWatchdog = null;
+    }
+  }
+
   // ── the one public dispatcher ────────────────────────────────────────────────────────────────────
 
   /** Play a game event. Unknown events are silently ignored. Safe to call every frame — all rate-limits
@@ -278,43 +410,126 @@ export class AudioBus {
       return;
     const x = opts.x;
     const amt = Math.max(0, Math.min(1, opts.amt ?? 0.5));
+    // §50 generic sample-first gate (doc §2.2) for un-special cues: no layering, no amt nuance, no
+    // loop lifecycle. Manifest absent (today) ⇒ `sampleFirst` is false ⇒ the switch runs unchanged.
+    if (
+      AudioBus.PURE_REPLACEMENTS.has(event) &&
+      this.sampleFirst(event, { volume: 0.4 + 0.5 * amt, pan: this.panOf(x) })
+    )
+      return;
     switch (event) {
       // High-frequency combat — per gun bulletKind (mirrors the GUN_FX visual split).
       case "shot:slug":
         if (this.throttled("shot", 30)) return;
+        // Sample-first (doc §2.1/§5): AudioBus's throttle above gates BOTH paths; rate jitter +
+        // round-robin variations de-machine-gun the sample. false ⇒ synth below, byte-identical.
+        if (
+          this.sampleFirst("shot:slug", {
+            volume: 0.55,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 30,
+          })
+        )
+          return;
         this.noise(0.09, { gain: 0.32, type: "bandpass", freq: 700, q: 1.2, x });
         this.tone(150, 0.11, { type: "sine", gain: 0.3, sweepTo: 60, x });
         break;
       case "shot:pellet":
         if (this.throttled("shot", 40)) return;
+        if (
+          this.sampleFirst("shot:pellet", {
+            volume: 0.6,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 40,
+          })
+        )
+          return;
         this.noise(0.13, { gain: 0.4, type: "lowpass", freq: 1400, q: 0.7, x });
         break;
       case "shot:tracer":
         if (this.throttled("shot", 45)) return;
+        if (
+          this.sampleFirst("shot:tracer", {
+            volume: 0.28,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 45,
+          })
+        )
+          return;
         this.noise(0.04, { gain: 0.16, type: "bandpass", freq: 1700, q: 2, x });
         break;
       case "shot:nail":
         if (this.throttled("shot", 35)) return;
+        if (
+          this.sampleFirst("shot:nail", {
+            volume: 0.32,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 35,
+          })
+        )
+          return;
         this.noise(0.05, { gain: 0.2, type: "highpass", freq: 2000, q: 1, x });
         break;
       case "shot:ricochet":
         if (this.throttled("shot", 35)) return;
+        if (
+          this.sampleFirst("shot:ricochet", {
+            volume: 0.35,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 35,
+          })
+        )
+          return;
         this.noise(0.06, { gain: 0.18, type: "bandpass", freq: 1100, q: 3, x });
         this.tone(900, 0.08, { type: "sine", gain: 0.16, sweepTo: 1600, x });
         break;
       case "hit": // melee/bullet landing on an enemy
         if (this.throttled("hit", 25)) return;
+        // Highest-frequency sound in the game — 4 manifest variations + jitter fight fatigue.
+        if (
+          this.sampleFirst("hit", {
+            volume: 0.3 + 0.35 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 25,
+          })
+        )
+          return;
         this.tone(180, 0.06, { type: "triangle", gain: 0.12 + 0.18 * amt, sweepTo: 90, x });
         this.noise(0.045, { gain: 0.1 + 0.12 * amt, type: "lowpass", freq: 1200, x });
         break;
       case "bighit": // a crushing blow (magnitude cue)
         if (this.throttled("bighit", 60)) return;
+        if (
+          this.sampleFirst("bighit", {
+            volume: 0.5 + 0.4 * amt,
+            pan: this.panOf(x),
+            rate: 0.97 + Math.random() * 0.06,
+          })
+        )
+          return;
         this.tone(120, 0.14, { type: "square", gain: 0.34, sweepTo: 55, x });
         this.noise(0.09, { gain: 0.28, type: "lowpass", freq: 900, x });
         break;
       // Accepted non-gun source/whiff vocabulary. Target/material impact remains a separate hit layer.
       case "melee:light":
         if (this.throttled(amt >= 0.75 ? "meleeLightSelf" : "meleeLight", 34)) return;
+        // Sample-first for every melee family: same shape — throttle above gates both paths, amt
+        // maps to gain only (manifest note: takes are tonally identical), jitter kills combing.
+        if (
+          this.sampleFirst("melee:light", {
+            volume: 0.3 + 0.3 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 34,
+          })
+        )
+          return;
         this.noise(0.1, {
           gain: 0.12 + 0.13 * amt,
           type: "bandpass",
@@ -326,6 +541,15 @@ export class AudioBus {
         break;
       case "melee:claw":
         if (this.throttled(amt >= 0.75 ? "meleeClawSelf" : "meleeClaw", 34)) return;
+        if (
+          this.sampleFirst("melee:claw", {
+            volume: 0.3 + 0.3 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 34,
+          })
+        )
+          return;
         this.noise(0.085, {
           gain: 0.13 + 0.14 * amt,
           type: "highpass",
@@ -337,6 +561,15 @@ export class AudioBus {
         break;
       case "melee:heavy":
         if (this.throttled(amt >= 0.75 ? "meleeHeavySelf" : "meleeHeavy", 55)) return;
+        if (
+          this.sampleFirst("melee:heavy", {
+            volume: 0.4 + 0.3 * amt,
+            pan: this.panOf(x),
+            rate: 0.97 + Math.random() * 0.06,
+            minIntervalMs: 55,
+          })
+        )
+          return;
         this.noise(0.16, {
           gain: 0.18 + 0.18 * amt,
           type: "lowpass",
@@ -353,6 +586,15 @@ export class AudioBus {
         break;
       case "melee:blunt":
         if (this.throttled(amt >= 0.75 ? "meleeBluntSelf" : "meleeBlunt", 55)) return;
+        if (
+          this.sampleFirst("melee:blunt", {
+            volume: 0.4 + 0.3 * amt,
+            pan: this.panOf(x),
+            rate: 0.97 + Math.random() * 0.06,
+            minIntervalMs: 55,
+          })
+        )
+          return;
         this.noise(0.14, {
           gain: 0.16 + 0.16 * amt,
           type: "bandpass",
@@ -370,6 +612,15 @@ export class AudioBus {
         break;
       case "melee:arcane":
         if (this.throttled(amt >= 0.75 ? "meleeArcaneSelf" : "meleeArcane", 45)) return;
+        if (
+          this.sampleFirst("melee:arcane", {
+            volume: 0.3 + 0.3 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 45,
+          })
+        )
+          return;
         this.tone(330 + amt * 130, 0.14, {
           type: "triangle",
           gain: 0.1 + 0.12 * amt,
@@ -386,6 +637,19 @@ export class AudioBus {
         break;
       // Beam lifecycle. Sustain is a bounded, throttled pressure pulse; phase edges remain distinct.
       case "beam:charge":
+        // Sample-first. The charge cue fires every frame of the windup (no AudioBus throttle — the
+        // retriggered 0.24s synth IS the texture), but the 0.9s sample must not restack per frame:
+        // `minIntervalMs` makes repeat calls inside the window "handled by intentional silence"
+        // (returns true ⇒ skip synth), which is exactly the one-sample-carries-the-rise behavior.
+        if (
+          this.sampleFirst("beam:charge", {
+            volume: 0.15 + 0.35 * amt,
+            pan: this.panOf(x),
+            rate: 0.9 + 0.2 * amt,
+            minIntervalMs: 700,
+          })
+        )
+          return;
         this.tone(150 + amt * 80, 0.24, {
           type: "sawtooth",
           gain: 0.045 + 0.085 * amt,
@@ -402,6 +666,11 @@ export class AudioBus {
         });
         break;
       case "beam:ignite":
+        // Layer (doc §3): the sample crack rides OVER the synth — result deliberately unused, the
+        // synth ALWAYS plays and alone remains the fallback.
+        this.sampleFirst("beam:ignite", { volume: 0.4 + 0.4 * amt, pan: this.panOf(x) });
+        // Doc §4.1: the ignite edge also starts the per-owner sustain loop (no-op without samples).
+        this.startBeamLoop(opts.ownerId, amt, x);
         this.noise(0.09, {
           gain: 0.12 + 0.2 * amt,
           type: "highpass",
@@ -416,7 +685,19 @@ export class AudioBus {
           x,
         });
         break;
-      case "beam:sustain":
+      case "beam:sustain": {
+        // Doc §4.1: when a sample loop is carrying this owner's sustain, retarget its gain WITHOUT
+        // restarting and feed the keepalive — the pulsed synth is skipped while the loop lives.
+        const live = this.beamLoops.get(opts.ownerId ?? "solo");
+        if (live?.handle.alive) {
+          live.lastFedMs = Date.now();
+          live.handle.setVolume(0.25 + 0.5 * amt);
+          return;
+        }
+        if (live) this.beamLoops.delete(opts.ownerId ?? "solo"); // dead handle hygiene
+        // Not looping (no sample decoded yet / voice cap / no files — today): try a mid-beam start
+        // (covers decode finishing after ignite), else the throttled pulse path runs unchanged.
+        if (this.startBeamLoop(opts.ownerId, amt, x)) return;
         if (this.beamSustainThrottled(opts.ownerId, amt >= 0.55 ? 120 : 220)) return;
         this.tone(92 + amt * 105, 0.11, {
           type: "sawtooth",
@@ -432,8 +713,17 @@ export class AudioBus {
           x,
         });
         break;
+      }
       case "beam:redline":
         if (this.throttled("beamRedline", 260)) return;
+        if (
+          this.sampleFirst("beam:redline", {
+            volume: 0.35 + 0.3 * amt,
+            pan: this.panOf(x),
+            priority: "critical",
+          })
+        )
+          return;
         this.tone(1080 + amt * 360, 0.07, {
           type: "square",
           gain: 0.1 + 0.08 * amt,
@@ -443,6 +733,10 @@ export class AudioBus {
         });
         break;
       case "beam:release":
+        // Doc §4.1: the release edge always sweeps this owner's sustain loop (idempotent).
+        this.stopBeamLoop(opts.ownerId, 0.1);
+        if (this.sampleFirst("beam:release", { volume: 0.3 + 0.4 * amt, pan: this.panOf(x) }))
+          return;
         this.noise(0.2, {
           gain: 0.07 + 0.13 * amt,
           type: "lowpass",
@@ -459,7 +753,15 @@ export class AudioBus {
         });
         break;
       case "beam:overheat": {
+        this.stopBeamLoop(opts.ownerId, 0.1);
         const priority: VoicePriority = amt >= 0.75 ? "critical" : "normal";
+        // Layer (doc §3): steam-vent hiss over the square-wave groan, at the SAME priority as the
+        // synth pair — result deliberately unused, the synth ALWAYS plays.
+        this.sampleFirst("beam:overheat", {
+          volume: 0.4 + 0.4 * amt,
+          pan: this.panOf(x),
+          priority,
+        });
         this.noise(0.24, {
           gain: 0.13 + 0.2 * amt,
           type: "bandpass",
@@ -480,6 +782,9 @@ export class AudioBus {
       }
       // Reward / skill stingers.
       case "parry": // the crispest sound in the game — this IS the skill beat
+        // Layer (doc §3): sample metal clang OVER the sine pair — result deliberately unused. The
+        // 1400/2100 Hz sines are the skill-beat's pitch identity and are never removed.
+        this.sampleFirst("parry", { volume: 0.7 + 0.3 * amt, priority: "critical" });
         this.tone(1400, 0.18, {
           type: "sine",
           gain: 0.3 + 0.12 * amt,
@@ -496,10 +801,23 @@ export class AudioBus {
         this.blip([523, 659, 784, 1046], 0.07, "triangle", 0.26);
         break;
       case "loot": // pitch rises with rarity (amt = rarity/6)
+        // Sample-first with the same rarity read: the engine pitch-shifts a neutral take (doc §2.1).
+        if (this.sampleFirst("loot", { volume: 0.5 + 0.5 * amt, rate: 1 + amt * 0.3 })) return;
         this.blip([660 + amt * 500, 990 + amt * 600, 1320 + amt * 700], 0.08, "sine", 0.22);
         break;
       case "xpTick": // one low-priority note per receipt bucket; never impersonates the loot arpeggio
         if (this.throttled("xpTick", 65)) return;
+        // Manifest note: neutral take, engine ramps playbackRate ~1.0x→1.8x across the catch streak
+        // (mirrors the synth's 430→930 Hz amt ramp). Low priority, same as the synth voice.
+        if (
+          this.sampleFirst("xpTick", {
+            volume: 0.3 + 0.2 * amt,
+            pan: this.panOf(x),
+            rate: 1 + 0.8 * amt,
+            priority: "low",
+          })
+        )
+          return;
         this.tone(430 + amt * 500, 0.075, {
           type: "sine",
           gain: 0.08 + 0.06 * amt,
@@ -509,6 +827,15 @@ export class AudioBus {
         break;
       case "xpCadence": // one restrained resolve for a meaningful catch batch
         if (this.throttled("xpCadence", 300)) return;
+        if (
+          this.sampleFirst("xpCadence", {
+            volume: 0.25 + 0.2 * amt,
+            pan: this.panOf(x),
+            rate: 1 + 0.15 * amt,
+            priority: "low",
+          })
+        )
+          return;
         this.tone(620 + amt * 220, 0.11, {
           type: "triangle",
           gain: 0.07 + 0.05 * amt,
@@ -519,6 +846,15 @@ export class AudioBus {
         break;
       case "death":
         if (this.throttled("death", 30)) return;
+        if (
+          this.sampleFirst("death", {
+            volume: 0.4 + 0.2 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.08,
+            minIntervalMs: 30,
+          })
+        )
+          return;
         this.noise(0.05, { gain: 0.22, type: "lowpass", freq: 500, x });
         this.tone(220, 0.09, { type: "triangle", gain: 0.14, sweepTo: 70, x });
         break;
@@ -531,6 +867,13 @@ export class AudioBus {
         break;
       // Big low-frequency moments (the shake wants a boom under it).
       case "bossslam":
+        // Layer (doc §3): sample debris/impact texture over the sine sub-boom — result deliberately
+        // unused. The synth sub is what the screen-shake sits on; the sample adds the "real" body.
+        this.sampleFirst("bossslam", {
+          volume: 0.6 + 0.4 * amt,
+          pan: this.panOf(x),
+          priority: "critical",
+        });
         this.tone(60, 0.4, {
           type: "sine",
           gain: 0.5,
@@ -556,6 +899,15 @@ export class AudioBus {
         break;
       case "hurt":
         if (this.throttled("hurt", 120)) return;
+        if (
+          this.sampleFirst("hurt", {
+            volume: 0.5 + 0.4 * amt,
+            pan: this.panOf(x),
+            rate: 0.97 + Math.random() * 0.06,
+            priority: "critical",
+          })
+        )
+          return;
         this.noise(0.12, {
           gain: 0.14 + 0.18 * amt,
           type: "lowpass",
@@ -576,6 +928,36 @@ export class AudioBus {
       case "revive":
         this.tone(523, 0.16, { type: "triangle", gain: 0.26 });
         this.tone(784, 0.2, { type: "triangle", gain: 0.24, delay: 0.09 });
+        break;
+      // §50 soundkit — Serraketh underground rumble (doc §4.2). NEW events with no synth
+      // predecessor: nothing emits them yet and they no-op without samples, so today's audio is
+      // untouched. Contract for the future scene glue: emit "boss:rumble:start" every frame while
+      // the worm is burrowed (idempotent — first call starts the loop welling up over 0.4s, repeats
+      // are the keepalive + gain retarget from proximity/phase amt) and "boss:rumble:stop" on
+      // surfacing/eruption/boss death; a missed stop is reaped by the keepalive watchdog.
+      case "boss:rumble:start": {
+        if (this.bossRumble?.handle.alive) {
+          this.bossRumble.lastFedMs = Date.now();
+          this.bossRumble.handle.setVolume(0.2 + 0.6 * amt, 0.25);
+          break;
+        }
+        this.bossRumble = null;
+        // `serraketh-rumble-loop` has `replaces: null` in the manifest (brand-new cue, no synth
+        // counterpart), so it is addressed by id rather than through `sampleForCue`.
+        const h = sampleBank.startLoop("serraketh-rumble-loop", {
+          volume: 0.2 + 0.6 * amt,
+          pan: this.panOf(x),
+          fadeInSec: 0.4, // doc §4.2: it should well up, not pop in
+        });
+        if (h) {
+          this.bossRumble = { handle: h, lastFedMs: Date.now() };
+          this.armLoopWatchdog();
+        }
+        break;
+      }
+      case "boss:rumble:stop":
+        this.bossRumble?.handle.stop(0.5);
+        this.bossRumble = null;
         break;
       default:
         break;
