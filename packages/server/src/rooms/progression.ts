@@ -1,12 +1,17 @@
 import {
   type Attr,
   augmentGateForWeapon,
-  classForCharacter,
+  BALLAST_POINTS_PER_LEVEL,
+  ballastAttrFor,
+  CHOSEN_POINTS_PER_LEVEL,
   deriveStats,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
+  META_VITALITY_HP,
   type PlayerState,
+  quirkForCharacter,
   SIGNATURE_INTERVAL,
+  spreadAdjustedCon,
   WEAPONS,
   xpToNextLevel,
 } from "@dd/shared";
@@ -21,8 +26,18 @@ import {
 export function allocate(player: PlayerState, attr: Attr, n: number): void {
   player[attr] += n;
   const prevMax = player.maxHp;
-  player.maxHp = deriveStats(player).maxHp;
+  const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
+  player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
   if (player.maxHp > prevMax) player.hp += player.maxHp - prevMax; // gain the new HP immediately
+}
+
+/** Resolve one level-up decision: +2 chosen, then +1 to the post-choice lowest attr (ATTRS tie order). */
+export function applyAllocationChoice(player: PlayerState, attr: Attr): Attr {
+  allocate(player, attr, CHOSEN_POINTS_PER_LEVEL);
+  const quirk = quirkForCharacter(player.runCharacter || player.character);
+  const ballast = ballastAttrFor(player, attr, quirk.mods?.ballastFollowsChoice === true);
+  allocate(player, ballast, BALLAST_POINTS_PER_LEVEL);
+  return ballast;
 }
 
 /** Consume one pending flex point; close the window (or refresh its timer) accordingly. The window stays
@@ -32,19 +47,14 @@ export function consumeFlex(player: PlayerState): void {
   player.flexTimer = player.flexPending > 0 || player.sigPending > 0 ? LEVELUP_WINDOW_SECONDS : 0;
 }
 
-/** Add XP to one player; each level reached (capped at 30) grants the §12 3-point allocation. */
+/** Add XP; each level reached owes one decision which later realizes all three attribute points. */
 export function levelUpPlayer(player: PlayerState, amount: number): void {
   if (player.level >= LEVEL_CAP) return;
   player.xp += amount;
   while (player.xp >= player.xpToNext && player.level < LEVEL_CAP) {
     player.xp -= player.xpToNext;
     player.level += 1;
-    // 2 auto points: +1 class attr, +1 requirement attr (§12/§38). Which attrs depends on the worn
-    // character's CLASS — a Bruiser grows STR+CON, a Caster INT+CON, a Scoundrel LUK+DEX, etc. Read live so
-    // swapping character (C) re-aims future growth. The 3rd point is the FLEX pick.
-    const cls = classForCharacter(player.character);
-    allocate(player, cls.classAttr, 1);
-    allocate(player, cls.reqAttr, 1);
+    // §classmerge: no class-biased auto-growth. One pending decision resolves +2 chosen +1 ballast.
     player.flexPending += 1;
     // §8 every 5th level ALSO grants a signature pick (an augment draft) — same window. The offer CSV is
     // rolled server-side once the window is open (GameRoom.openSigOffers).
@@ -59,3 +69,7 @@ export function levelUpPlayer(player: PlayerState, amount: number): void {
   }
   if (player.level >= LEVEL_CAP) player.xp = 0;
 }
+
+// Ultimate-wave ordering note: its planned `allocFlex` counter becomes total `allocRun`; every point applied
+// by applyAllocationChoice (including timeout/ballast) counts. Retune ULT_UNLOCK_ALLOCS ×3 (about 15/30)
+// there, not in 21a: the ultimate state and constants do not exist in this wave.

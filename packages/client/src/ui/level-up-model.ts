@@ -10,13 +10,16 @@ import {
   BRAND_DAMAGE_MULT,
   BRAND_DURATION,
   BULWARK_SHIELD,
+  BALLAST_POINTS_PER_LEVEL,
+  ballastAttrFor,
+  CHOSEN_POINTS_PER_LEVEL,
   CONFLAG_DELAY,
   classCount,
-  classForCharacter,
   countAugment,
   critChanceFor,
   type DamageSource,
   deriveStats,
+  defaultFlexAttr,
   EMBERGUARD_BASE_DMG,
   EMBERGUARD_PER_INT,
   effectiveDamageMult,
@@ -30,8 +33,10 @@ import {
   lootDamageMult,
   PARRY_IFRAMES,
   type PlayerState,
+  quirkForCharacter,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
+  spreadAdjustedCon,
   WEAPONS,
   type WeaponDef,
   weaponDamageSources,
@@ -50,8 +55,9 @@ export interface LevelChoiceView {
 }
 
 export interface LevelBuildContext {
-  autoAttribute: Attr;
-  automaticGrowth: string;
+  defaultAttribute: Attr;
+  allocationLaw: string;
+  timeoutAllocation: string;
   delivery: "PARRY" | "GUN" | "CAST";
   rail: string;
   compactRail: string;
@@ -86,6 +92,22 @@ function attrsOf(self: PlayerState): Record<Attr, number> {
     int: self.int,
     con: self.con,
     luk: self.luk,
+  };
+}
+
+function allocationPreview(
+  self: PlayerState,
+  chosen: Attr,
+): { after: Record<Attr, number>; ballast: Attr; receipt: string } {
+  const after = attrsOf(self);
+  after[chosen] += CHOSEN_POINTS_PER_LEVEL;
+  const quirk = quirkForCharacter(self.runCharacter || self.character);
+  const ballast = ballastAttrFor(after, chosen, quirk.mods?.ballastFollowsChoice === true);
+  after[ballast] += BALLAST_POINTS_PER_LEVEL;
+  return {
+    after,
+    ballast,
+    receipt: `+2 ${chosen.toUpperCase()} (YOU) • +1 ${ballast.toUpperCase()} (BALLAST)`,
   };
 }
 
@@ -185,7 +207,8 @@ export function attributeChoiceViews(self: PlayerState, squadBestLuk: number): L
   const attrs: Attr[] = ["str", "dex", "int", "con", "luk"];
   return attrs.map((attr) => {
     const before = attrsOf(self);
-    const after = { ...before, [attr]: before[attr] + 1 };
+    const allocation = allocationPreview(self, attr);
+    const after = allocation.after;
     const weapon = WEAPONS[self.weapon];
     const damage = bestDamageDelta(self, before, after);
     const req = weapon ? requirementContext(weapon, before, after) : undefined;
@@ -193,8 +216,8 @@ export function attributeChoiceViews(self: PlayerState, squadBestLuk: number): L
     let context: string;
 
     if (attr === "con") {
-      const oldStats = deriveStats(before);
-      const newStats = deriveStats(after);
+      const oldStats = deriveStats({ con: spreadAdjustedCon(before.con) });
+      const newStats = deriveStats({ con: spreadAdjustedCon(after.con) });
       outcome = `HP ${fmt(self.maxHp)} → ${fmt(newStats.maxHp)} (${newStats.maxHp >= self.maxHp ? "+" : ""}${fmt(newStats.maxHp - self.maxHp)})`;
       context =
         req ??
@@ -231,9 +254,11 @@ export function attributeChoiceViews(self: PlayerState, squadBestLuk: number): L
       outcome = `FIRE WAVE ${oldFire} → ${newFire} (+${newFire - oldFire})`;
       context = req ?? "EMBERGUARD OWNED • SIGNATURE SCALING";
     } else {
-      outcome = `${attr.toUpperCase()} ${before[attr]} → ${after[attr]} (+1)`;
+      outcome = `${attr.toUpperCase()} ${before[attr]} → ${after[attr]} (+${after[attr] - before[attr]})`;
       context = req ?? "NO HELD-WEAPON SCALING";
     }
+
+    context = `${context} • ${allocation.receipt}`;
 
     return {
       id: attr,
@@ -377,8 +402,9 @@ export function augmentChoiceViews(self: PlayerState): LevelChoiceView[] {
 }
 
 export function levelBuildContext(self: PlayerState): LevelBuildContext {
-  const cls = classForCharacter(self.character);
   const weapon = WEAPONS[self.weapon];
+  const defaultAttribute = defaultFlexAttr(weapon);
+  const timeoutAllocation = allocationPreview(self, defaultAttribute).receipt;
   const loadout = loadoutIds(self);
   const classPool = weapon?.tags.classPool;
   const sameClass = classPool ? classCount(loadout, classPool) : 0;
@@ -393,8 +419,9 @@ export function levelBuildContext(self: PlayerState): LevelBuildContext {
     ? `${classPool.toUpperCase()} ${sameClass}/3${setBonus > 1 ? ` (+${Math.round((setBonus - 1) * 100)}%)` : ""}`
     : "NO SET";
   return {
-    autoAttribute: cls.classAttr,
-    automaticGrowth: `AUTO-GROWTH APPLIED: +1 ${cls.classAttr.toUpperCase()} • +1 ${cls.reqAttr.toUpperCase()}`,
+    defaultAttribute,
+    allocationLaw: "PICK +2 • LOWEST +1 BALLAST",
+    timeoutAllocation,
     delivery: weapon?.cast ? "CAST" : weapon?.gun ? "GUN" : "PARRY",
     rail: `HELD: ${weapon?.name ?? self.weapon} • ${gradeText} • ${setText} • WORLD LIVE`,
     compactRail: `${weapon?.cast ? "CAST" : weapon?.gun ? "GUN" : "PARRY"} • ${weapon?.name ?? self.weapon} • WORLD LIVE`,

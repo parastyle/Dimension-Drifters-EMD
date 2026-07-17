@@ -1,13 +1,26 @@
 import {
+  applyCastGradeFloor,
+  ATTRS,
+  augmentGateForWeapon,
+  CAST_GRADE_FLOOR,
+  CAST_GRADE_FLOOR_ENABLED,
+  CHARACTER_LINEAGE,
   CON_HP_PER,
+  defaultFlexAttr,
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
+  PLAYABLE_CHARACTERS,
+  POINTS_PER_LEVEL,
   PlayerState,
+  quirkForCharacter,
   SIGNATURE_INTERVAL,
+  spreadForCharacter,
+  type WeaponDef,
+  WEAPONS,
   xpToNextLevel,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
-import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
+import { allocate, applyAllocationChoice, consumeFlex, levelUpPlayer } from "./progression.js";
 
 // §12 the per-run progression maths (XP → level → auto-allocation → flex/signature owed) are the most
 // consequential per-tick mutations and had ZERO direct coverage (only pure deriveStats was tested). An
@@ -16,14 +29,16 @@ import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
 const fresh = () => new PlayerState(); // defaults: level 1, xp 0, xpToNext 6, 1/1/1/1/1, hp/maxHp 100
 
 describe("levelUpPlayer (§12)", () => {
-  it("a single level: carries the xp remainder, +1 class +1 req, owes one flex point", () => {
+  it("a single level: carries the xp remainder, preserves stats until one +2/+1 decision", () => {
     const p = fresh();
+    p.runCharacter = "cc-asha-the-ash-walker";
     levelUpPlayer(p, p.xpToNext); // exactly one level's worth
     expect(p.level).toBe(2);
     expect(p.xp).toBe(0);
-    expect(p.str).toBe(2); // M0 class attr auto +1
-    expect(p.con).toBe(2); // M0 req attr auto +1
+    expect(ATTRS.map((attr) => p[attr])).toEqual([1, 1, 1, 1, 1]); // no class auto-growth
     expect(p.flexPending).toBe(1);
+    expect(applyAllocationChoice(p, "str")).toBe("dex"); // +2 STR, then ATTRS-first lowest ballast
+    expect(ATTRS.map((attr) => p[attr])).toEqual([3, 2, 1, 1, 1]);
     expect(p.xpToNext).toBeCloseTo(xpToNextLevel(2), 6);
     expect(p.flexTimer).toBe(LEVELUP_WINDOW_SECONDS);
   });
@@ -101,39 +116,141 @@ describe("consumeFlex (§12 pick window)", () => {
   });
 });
 
-// §38 per-character CLASSES: level-up auto-growth follows the worn character's archetype (was hardcoded STR+CON).
-describe("§38 character classes drive level-up growth", () => {
-  it("the default drifter is a Bruiser (STR+CON) — preserves the old M0 behaviour", () => {
-    const p = fresh();
-    levelUpPlayer(p, p.xpToNext);
-    expect(p.str).toBe(2);
-    expect(p.con).toBe(2);
-    expect(p.int).toBe(1);
+// §classmerge replacement for the dissolved class-growth premise: identity is seeded by the spread.
+describe("§classmerge character spreads replace class growth", () => {
+  it("the default Drifter is the flat sum-10 control spread", () => {
+    expect(spreadForCharacter("drifter")).toEqual({ str: 2, dex: 2, int: 2, con: 2, luk: 2 });
   });
-  it("a Caster grows INT+CON, a Scoundrel LUK+DEX, a Duelist DEX+LUK, a Warden CON+STR", () => {
-    const caster = fresh();
-    caster.character = "cc-pyra-cinderhowl-the-flame-caster";
-    levelUpPlayer(caster, caster.xpToNext);
-    expect(caster.int).toBe(2);
-    expect(caster.con).toBe(2);
-    expect(caster.str).toBe(1);
+  it("former caster/scoundrel/duelist/warden lineages seed their authored, equal-budget spreads", () => {
+    expect(spreadForCharacter("cc-pyra-cinderhowl-the-flame-caster")).toEqual({
+      str: 2,
+      dex: 2,
+      int: 4,
+      con: 1,
+      luk: 1,
+    });
+    expect(spreadForCharacter("cc-the-bandida-la-sombra")).toEqual({
+      str: 2,
+      dex: 3,
+      int: 1,
+      con: 1,
+      luk: 3,
+    });
+    expect(spreadForCharacter("cc-s-jiro-the-wayward-blade")).toEqual({
+      str: 3,
+      dex: 4,
+      int: 1,
+      con: 1,
+      luk: 1,
+    });
+    expect(spreadForCharacter("cc-sir-galloway-the-unbending")).toEqual({
+      str: 2,
+      dex: 1,
+      int: 1,
+      con: 4,
+      luk: 2,
+    });
+  });
+});
 
-    const scoundrel = fresh();
-    scoundrel.character = "cc-the-bandida-la-sombra";
-    levelUpPlayer(scoundrel, scoundrel.xpToNext);
-    expect(scoundrel.luk).toBe(2);
-    expect(scoundrel.dex).toBe(2);
+describe("§classmerge allocation and migration invariants", () => {
+  it("resolves +2 chosen and +1 current-lowest ballast while preserving one decision", () => {
+    const p = fresh();
+    p.runCharacter = "cc-asha-the-ash-walker";
+    p.str = 4;
+    p.dex = 3;
+    p.int = 2;
+    p.con = 2;
+    p.luk = 1;
+    const ballast = applyAllocationChoice(p, "dex");
+    expect(ballast).toBe("luk");
+    expect({ str: p.str, dex: p.dex, int: p.int, con: p.con, luk: p.luk }).toEqual({
+      str: 4,
+      dex: 5,
+      int: 2,
+      con: 2,
+      luk: 2,
+    });
+  });
 
-    const duelist = fresh();
-    duelist.character = "cc-s-jiro-the-wayward-blade";
-    levelUpPlayer(duelist, duelist.xpToNext);
-    expect(duelist.dex).toBe(2);
-    expect(duelist.luk).toBe(2);
+  it("keeps old per-level income and the non-Drifter mono-stat ceiling inside the 62 envelope", () => {
+    const p = fresh();
+    p.character = "cc-raijin-k-the-storm-fist";
+    p.runCharacter = p.character;
+    Object.assign(p, spreadForCharacter(p.runCharacter));
+    const before = ATTRS.reduce((sum, attr) => sum + p[attr], 0);
+    levelUpPlayer(p, 1e9);
+    while (p.flexPending > 0) {
+      applyAllocationChoice(p, "str");
+      consumeFlex(p);
+    }
+    const after = ATTRS.reduce((sum, attr) => sum + p[attr], 0);
+    expect(after - before).toBe((LEVEL_CAP - 1) * POINTS_PER_LEVEL);
+    expect(p.str).toBe(62);
+    expect(after).toBe(97);
+  });
 
-    const warden = fresh();
-    warden.character = "cc-sir-galloway-the-unbending";
-    levelUpPlayer(warden, warden.xpToNext);
-    expect(warden.con).toBe(2);
-    expect(warden.str).toBe(2);
+  it("applies the Drifter's Unwritten ballast bend without changing total income", () => {
+    const p = fresh();
+    p.runCharacter = "drifter";
+    const before = ATTRS.reduce((sum, attr) => sum + p[attr], 0);
+    expect(applyAllocationChoice(p, "int")).toBe("int");
+    expect(p.int).toBe(4);
+    expect(ATTRS.reduce((sum, attr) => sum + p[attr], 0) - before).toBe(POINTS_PER_LEVEL);
+  });
+
+  it("covers every playable id with lineage, a sum-10 1..4 spread, and one quirk", () => {
+    for (const id of PLAYABLE_CHARACTERS) {
+      const spread = spreadForCharacter(id);
+      expect(CHARACTER_LINEAGE[id]).toBeDefined();
+      expect(ATTRS.reduce((sum, attr) => sum + spread[attr], 0)).toBe(10);
+      for (const attr of ATTRS) expect(spread[attr]).toBeGreaterThanOrEqual(1);
+      for (const attr of ATTRS) expect(spread[attr]).toBeLessThanOrEqual(4);
+      expect(quirkForCharacter(id).id).toBeTruthy();
+    }
+  });
+
+  it("chooses timeout defaults by source grade, ATTRS tie order, and CON fallback", () => {
+    expect(defaultFlexAttr(WEAPONS["x-staff-arcane-lance"])).toBe("int");
+    expect(
+      defaultFlexAttr({ scalingGrades: { str: "S", dex: "S" } } as WeaponDef),
+    ).toBe("str");
+    expect(defaultFlexAttr(undefined)).toBe("con");
+  });
+
+  it("keeps weapon-class augment gate outputs byte-identical for the fixed six-lane arsenal", () => {
+    expect(
+      [
+        "gravediggers-spade",
+        "x-gun-revolver-cannon",
+        "x-staff-arcane-lance",
+        "x2-voltcaster-machine-pistol",
+        "rusty-cleaver",
+        "x2-null-grimoire-of-the-hollow-page",
+      ].map((id) => [id, augmentGateForWeapon(WEAPONS[id])]),
+    ).toEqual([
+      ["gravediggers-spade", "parry"],
+      ["x-gun-revolver-cannon", "gun"],
+      ["x-staff-arcane-lance", "cast"],
+      ["x2-voltcaster-machine-pistol", "beam"],
+      ["rusty-cleaver", "parry"],
+      ["x2-null-grimoire-of-the-hollow-page", "cast+beam"],
+    ]);
+  });
+
+  it("ships the cast grade floor flag off while pinning its enabled behavior", () => {
+    expect(CAST_GRADE_FLOOR_ENABLED).toBe(false);
+    expect(applyCastGradeFloor(1.05)).toBe(1.05);
+    expect(applyCastGradeFloor(1.05, true)).toBe(CAST_GRADE_FLOOR);
+    expect(applyCastGradeFloor(CAST_GRADE_FLOOR + 0.2, true)).toBeCloseTo(
+      CAST_GRADE_FLOOR + 0.2,
+    );
+  });
+
+  it("declares roll-dependent descriptors inert until wave 21b owns their seam", () => {
+    const coldsnap = quirkForCharacter("cc-cordell-coldsnap-vane");
+    expect(coldsnap.availability).toBe("inert");
+    expect(coldsnap.inert?.requires).toBe("dodge-roll");
+    expect(coldsnap.hooks?.onRollEnd?.({})).toEqual([{ kind: "reload-held-gun" }]);
   });
 });

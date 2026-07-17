@@ -1561,7 +1561,7 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
         "elapsed": 3,
         "mode": "arena",
         "outcome": "active",
-        "plantedAlive": 2,
+        "plantedAlive": 1,
         "players": [
           {
             "alive": true,
@@ -1573,11 +1573,11 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
           },
           {
             "alive": true,
-            "hp": 89,
+            "hp": 100,
             "id": "p2",
             "level": 1,
-            "x": 2439,
-            "y": 2314,
+            "x": 2362,
+            "y": 2379,
           },
         ],
         "portalOpen": false,
@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(20);
+    expect(h.state().schemaVersion).toBe(21);
   });
 });
 
@@ -3306,7 +3306,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(20);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3674,9 +3674,141 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(player.juggledSeq).toBe(juggled);
   });
 
-  it("ships schema 20 with the three appended uint8 stance/VFX defaults", () => {
+  it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(20);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
+  });
+});
+
+// Wave 21a — appended class-dissolution economy, identity-snapshot, quirk-seam, and schema fixtures.
+describe("GameRoom — classmerge 21a", () => {
+  const attrTotal = (player: {
+    str: number;
+    dex: number;
+    int: number;
+    con: number;
+    luk: number;
+  }) => player.str + player.dex + player.int + player.con + player.luk;
+
+  it("drains every timed-out decision in one pass through weapon default + normal ballast", () => {
+    const h = makeRoom();
+    h.join("timeout");
+    h.send("timeout", "toggleTraining");
+    h.send("timeout", "devEquip", { character: "cc-asha-the-ash-walker" });
+    const player = h.state().players.get("timeout");
+    player.weapon = "x-staff-arcane-lance";
+    player.flexPending = 2;
+    player.flexTimer = 0.01;
+    const beforeTotal = attrTotal(player);
+    const beforeInt = player.int;
+
+    h.tick(1);
+
+    expect(player.flexPending).toBe(0);
+    expect(player.flexTimer).toBe(0);
+    expect(player.int - beforeInt).toBe(4);
+    expect(attrTotal(player) - beforeTotal).toBe(6);
+  });
+
+  it("keeps C cosmetic mid-run, then snapshots the worn identity on restart and rift descent", () => {
+    const h = makeRoom();
+    h.join("identity");
+    const player = h.state().players.get("identity");
+    const combat = h.room.combat.get("identity");
+    expect(player.runCharacter).toBe("drifter");
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
+
+    h.send("identity", "cycleCharacter");
+    expect(player.character).toBe("cc-asha-the-ash-walker");
+    expect(player.runCharacter).toBe("drifter");
+    expect(combat.identityCharacter).toBe("drifter");
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 2, 2]);
+
+    h.room.restartRun();
+    expect(player.runCharacter).toBe("cc-asha-the-ash-walker");
+    expect(combat.identityCharacter).toBe(player.runCharacter);
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 2, 2, 3, 1]);
+
+    player.str += 5; // earned allocation survives the next boundary's spread-delta rebase
+    h.tick(1); // refill the action budget
+    h.send("identity", "cycleCharacter");
+    expect(player.character).toBe("cc-bastion-vance");
+    h.room.transitionDimension();
+    expect(player.runCharacter).toBe("cc-bastion-vance");
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([8, 1, 1, 4, 1]);
+  });
+
+  it("re-snapshots every training cycle by spread delta and preserves allocated points", () => {
+    const h = makeRoom();
+    h.join("training-kit");
+    const player = h.state().players.get("training-kit");
+    h.send("training-kit", "toggleTraining");
+    player.dex += 4;
+    const allocatedTotal = attrTotal(player) - 10;
+    h.send("training-kit", "cycleCharacter");
+
+    expect(player.character).toBe("cc-asha-the-ash-walker");
+    expect(player.runCharacter).toBe(player.character);
+    expect([player.str, player.dex, player.int, player.con, player.luk]).toEqual([2, 6, 2, 3, 1]);
+    expect(attrTotal(player) - 10).toBe(allocatedTotal);
+    expect(player.maxHp).toBe(PLAYER_MAX_HP + enemyComboShared.CON_HP_PER);
+    expect(player.hp).toBe(player.maxHp);
+  });
+
+  it("applies a cached scalar quirk at the existing parry knockback computation", () => {
+    const h = makeRoom();
+    h.join("kuro");
+    h.send("kuro", "toggleTraining");
+    h.send("kuro", "devEquip", { character: "cc-kuro-oni-the-demon-mask" });
+    const player = h.state().players.get("kuro");
+    const combat = h.room.combat.get("kuro");
+    const enemy = new EnemyState();
+    enemy.id = "temple-wall-target";
+    enemy.kind = "critter";
+    enemy.hp = 20;
+    enemy.x = player.x + 40;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+    const before = enemy.x;
+
+    h.room.executeParry(player, combat);
+
+    expect(combat.quirk.id).toBe("temple-wall");
+    expect(enemy.x - before).toBeCloseTo(enemyComboShared.PARRY_KNOCKBACK * 2, 6);
+  });
+
+  it("applies a pure onParrySuccess descriptor through the nearest-ally heal seam", () => {
+    const h = makeRoom();
+    h.join("asha");
+    h.join("ally");
+    h.send("asha", "toggleTraining");
+    h.send("asha", "devEquip", { character: "cc-asha-the-ash-walker" });
+    const player = h.state().players.get("asha");
+    const ally = h.state().players.get("ally");
+    const combat = h.room.combat.get("asha");
+    player.x = h.room.map.spawnX;
+    player.y = h.room.map.spawnY;
+    ally.x = player.x + 20;
+    ally.y = player.y;
+    ally.hp = 20;
+    const enemy = new EnemyState();
+    enemy.id = "mend-target";
+    enemy.kind = "critter";
+    enemy.hp = 20;
+    enemy.x = player.x + 40;
+    enemy.y = player.y;
+    const before = ally.hp;
+
+    h.room.resolveParry(player, combat, enemy, enemy.id);
+
+    expect(combat.quirk.id).toBe("mend-the-broken");
+    expect(ally.hp - before).toBe(enemyComboShared.PARRY_CHAIN_HEAL);
+  });
+
+  it("appends runCharacter at schema 21 with a safe Drifter default", () => {
+    const player = new enemyComboShared.PlayerState();
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
+    expect(player.runCharacter).toBe("drifter");
   });
 });

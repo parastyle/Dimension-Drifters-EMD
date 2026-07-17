@@ -29,25 +29,26 @@ no modifier, hold-nothing — an ultimate you have to chord is an ultimate you f
 
 ## 1. THE UNLOCK LAW
 
-### 1.1 What counts: FLEX allocations only
+### 1.1 What counts: total run allocations
 
-The law reads **only the player's FLEX picks** — the 1-of-3 point they consciously choose each
-level via `chooseAttribute`. The 2 auto points are excluded.
+The law reads **all attribute points allocated during the run**: the chosen attribute receives two
+counts and the deterministic ballast destination receives one. Base spreads never count. The later
+implementation names this server-private tally `allocRun` (replacing the obsolete planned
+`allocFlex`); `allocate` keeps its three-argument signature and every level-path allocation updates
+the tally.
 
-Why: auto points are 2/3 of all income and are fully determined by the worn character's class. If
-they counted, every Caster would get the fireball every run and the "frequency" mechanic would be a
-character-select screen with extra steps. Counting flex only makes the ultimate the **player's
-authored build statement** — two Casters in the same squad can attune differently, and the pick
-window (already the game's one contemplative beat) gains a second meaning: you're not just buying
-+1 INT, you're voting for your ultimate. The class still matters — it sets tie-breaks (1.4) and the
-raw attr totals that scale the ultimate's damage — it just doesn't cast your vote for you.
+Why: character classes and their automatic growth direction no longer exist. The +2 choice remains
+the player's strongest statement, while ballast records the build's standing-order correction and
+keeps the ultimate derived from the complete allocation shape. Base spreads belong in deterministic
+tie-breaks (1.4), not in the run tally.
 
-AFK/auto-resolve rule: if the 5s window expires and the server auto-resolves the flex point, that
-auto-resolved attribute **counts as a flex allocation** for the law. Every player attunes by the
-same level, even the one who never opens the menu.
+AFK/auto-resolve rule: if the 5s window expires, the owed choice resolves to the held weapon's
+highest scaling-grade attribute (S>A>B>C>D>E, `ATTRS` order on ties; ungraded falls back to CON),
+then ballast applies normally. **All three resolved points count in `allocRun`.** Every player still
+attunes on the same level, including one who never opens the menu.
 
-Tracking cost: one `Record<Attr, uint8>` of flex counts per player (5 bytes of schema), incremented
-inside the existing `chooseAttribute` handler. No new messages.
+Tracking cost: one server-private `Record<Attr, number>` of total run allocations. It is incremented
+at the allocation seam; no schema field and no new message are required.
 
 ### 1.2 The matrix: PRIMARY = family, SECONDARY = variant
 
@@ -62,15 +63,18 @@ polarity because the family is the expensive axis (animation, netcode shape, cou
 and the primary attribute is the *slow, high-inertia* signal — it takes many picks to change.
 The variant is cheap (numbers), matching the *fast, low-inertia* secondary signal.
 
-### 1.3 Timing: attune at the 5th flex spend, temper at the 10th
+### 1.3 Timing: attune at the 15th allocation, temper at the 30th
 
 | Beat | Trigger | What locks |
 |---|---|---|
-| **ATTUNEMENT** (the ceremony, §3.1) | The moment the player's **5th flex point** is allocated (≈ level 6, first third of dimension 1) | **Family locks forever** (for the run). Variant is provisional. |
-| **DRIFT window** | Flex spends 6–9 | Variant **re-evaluates after every flex spend**: if a different attribute overtakes the current secondary by ≥1, the variant swaps (mini-ceremony, §3.1). Family never re-evaluates. |
-| **TEMPER** | The **10th flex spend** (≈ level 11) | **Variant locks forever.** The kit is now fully yours; the meter gains its +10% temper bonus (max charge 100 → the fill sources pay +10%). |
+| **ATTUNEMENT** (the ceremony, §3.1) | The moment the player's **15th run allocation** lands (≈ level 6, first third of dimension 1) | **Family locks forever** (for the run). Variant is provisional. |
+| **DRIFT window** | Run allocations 16–29 | Variant **re-evaluates after each resolved level-up decision**: if a different attribute overtakes the current secondary by ≥1, the variant swaps (mini-ceremony, §3.1). Family never re-evaluates. |
+| **TEMPER** | The **30th run allocation** (≈ level 11) | **Variant locks forever.** The kit is now fully yours; the meter gains its +10% temper bonus (max charge 100 → the fill sources pay +10%). |
 
-Why 5: earlier and the sample is noise (2–3 picks); later and the ultimate misses the first-boss
+Implementation amendment: the ultimate wave retunes `ULT_UNLOCK_ALLOCS` ×3 (5→15 and 10→30);
+wave 21a parks the name and law but does not create ultimate state early.
+
+Why 15: earlier and the sample is noise (fewer than five level decisions); later and the ultimate misses the first-boss
 rehearsal window (players should have 3–6 uses banked *before* the L13–15 boss so the boss is the
 ultimate's exam, not its tutorial). Why family locks at attunement but variant drifts: shifting
 ratios mid-run *should* matter (the user asked for evolution), but re-skinning the player's core
@@ -82,14 +86,14 @@ family does not.**
 
 Evaluated at attunement, and at each drift re-evaluation, in order:
 
-1. **Higher flex count** wins (the law itself).
-2. Tie → higher **raw attribute total** (auto points included — the class breaks the tie toward
-   the character fantasy: a Caster splitting flex 2/2/1 attunes INT).
-3. Still tied → the worn character's **classAttr**, then **reqAttr**.
+1. **Higher `allocRun` count** wins (the law itself).
+2. Tie → the identity character's **base-spread bias**: highest spread attribute, then
+   second-highest.
+3. Still tied → higher **raw attribute total** (base spread and ballast included).
 4. Still tied → `ATTRS` declaration order (`str, dex, int, con, luk`) — the final court.
 
-Degenerate case (all 5 flex into one attribute): primary is trivially that attribute; secondary
-falls through rule 2→3 to the highest raw non-primary attr — for a mono-flex Bruiser that's CON.
+Degenerate case (every choice goes into one attribute): primary is trivially that attribute;
+secondary falls through the identity spread and raw totals to the highest non-primary attr.
 Every cell in the matrix is reachable and every player state resolves to exactly one cell.
 
 ---

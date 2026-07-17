@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 20; // jump-feel stance edges appended (moveStance/poundSeq/stanceSeq)
+export const SCHEMA_VERSION = 21; // class-merge run identity appended (PlayerState.runCharacter)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -19,6 +19,20 @@ export const TICK_MS = 1000 / TICK_RATE;
 
 /** Flat player move speed in px/sec. §7 [LOCKED]: flat move speed, no sprint layer. (tuning) */
 export const MOVE_SPEED = 320;
+
+/**
+ * Class-dissolution caster safety lever. INT-forward character spreads are the shipped mitigation; this
+ * C-grade-like multiplier floor remains flag-OFF until telemetry proves it necessary. Keep the application
+ * pure so the flag can be pinned without mutating shared module state in tests.
+ */
+export const CAST_GRADE_FLOOR_ENABLED = false as const;
+export const CAST_GRADE_FLOOR = 1.4 as const;
+export function applyCastGradeFloor(
+  multiplier: number,
+  enabled: boolean = CAST_GRADE_FLOOR_ENABLED,
+): number {
+  return enabled ? Math.max(multiplier, CAST_GRADE_FLOOR) : multiplier;
+}
 
 /**
  * §7 v0.111 PIVOT movement ("pull the reins"). Superseded the v0.105 continuous velocity-steer (which
@@ -370,10 +384,9 @@ export const DROP_GRACE_SECONDS = 0.7;
 /** §13 hold-to-salvage: seconds the drop key must be HELD before the held weapon salvages (tap = drop). */
 export const SALVAGE_HOLD_SECONDS = 0.6;
 
-/** §5 JUMP (Spacebar) — a low all-class traversal HOP that clears barriers + pitfalls (§17). It is PURE
- *  MOVEMENT, NOT a dodge — no i-frames (the parry stays the only defensive tool, so the two never overlap).
- *  Server-authoritative airborne timer + a short cooldown so it isn't a spammable bunny-hop; the §17 pit
- *  layer reads `airborne` to let a hopping player pass over a gap. */
+/** §5 JUMP (Spacebar) — universal traversal that clears barriers + pitfalls, with no i-frames. Defensive
+ *  channels stay distinct: parry answers WHITE and owns every reward; wave 21b's roll answers RED-projectile
+ *  and locked melee with safety only. Neither movement verb inherits the parry reward ladder. */
 export const JUMP_AIRTIME = 0.55;
 export const JUMP_COOLDOWN = 0.7;
 /** Peak visual hop height (px) the client lifts the rig at the top of the arc. */

@@ -33,6 +33,8 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
+  applyCastGradeFloor,
+  ATTRS,
   BOSS_DEF_IDS,
   BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
@@ -71,12 +73,13 @@ import {
   characterScale,
   clamp,
   clampQuakeEpicenter,
-  classForCharacter,
   isPlayableCharacter,
   coneAngles,
   countAugment,
   CRIT_MULT,
   critChanceFor,
+  damageMultFromGrades,
+  defaultFlexAttr,
   CROUCH_COMMIT_SECONDS,
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
@@ -209,8 +212,12 @@ import {
   pointInOrientedRect,
   prevWeapon,
   QUAKE_REACH,
+  type QuirkDef,
+  type QuirkEffect,
+  quirkForCharacter,
   RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
+  requirementPenalty,
   RETURN_DASH_TICKS,
   RETURN_STAGGER_TICKS,
   RETURN_STEP_MAX,
@@ -242,6 +249,8 @@ import {
   scripValue,
   selectChainTargets,
   spawnInterval,
+  spreadAdjustedCon,
+  spreadForCharacter,
   stepEnemyChase,
   stepEnemyKite,
   stepBeamAngle,
@@ -321,7 +330,7 @@ import {
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
-import { allocate, consumeFlex, levelUpPlayer } from "./progression.js";
+import { applyAllocationChoice, consumeFlex, levelUpPlayer } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 
 /** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
@@ -392,6 +401,10 @@ interface WeaponResourceLedger {
 
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
 interface CombatState {
+  /** Server-private identity lock. `player.character` may change cosmetically between snapshot edges. */
+  identityCharacter: string;
+  /** Resolved once per identity edge so hot combat paths never walk character maps. */
+  quirk: QuirkDef;
   aimX: number;
   aimY: number;
   /** Cursor world target (for slam-at-cursor weapons; clamped to QUAKE_REACH server-side). */
@@ -463,6 +476,9 @@ interface CombatState {
    *  attacker. `parryChainT` = seconds left before the chain lapses. */
   parryChain: number;
   parryChainT: number;
+  /** Graveside Manner's bounded event receipt; no per-tick allocation or synced counter. */
+  killHealWindowStart: number;
+  killHealWindowAmount: number;
   /** §13 salvage PROVENANCE (v0.103 anti-exploit): true only while the held weapon traces back to an
    *  ENEMY DROP. Cycled/conjured/gallery weapons are false — salvaging them pays nothing, so the
    *  cycle→salvage loop can't mint bankable salvage from thin air. */
@@ -1039,6 +1055,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (typeof message?.character === "string" && isPlayableCharacter(message.character)) {
         player.character = message.character;
+        this.snapshotRunCharacter(player, this.combat.get(client.sessionId), true);
       }
     });
 
@@ -1167,11 +1184,15 @@ export class GameRoom extends Room<ArenaState> {
       }
     });
 
-    // §7 swap the player's CHARACTER skin (C key). Cosmetic + per-player (not host-gated).
+    // §classmerge C key: cosmetic during a run; Testing Grounds deliberately re-snapshots the full kit.
     this.onMessage("cycleCharacter", (client) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
-      if (player) player.character = nextCharacter(player.character);
+      if (!player) return;
+      player.character = nextCharacter(player.character);
+      if (this.state.mode === "training") {
+        this.snapshotRunCharacter(player, this.combat.get(client.sessionId), true);
+      }
     });
 
     // §9/§13 R-TAP = DROP the held weapon on the floor (grabbable) in front of you; you fall back to
@@ -1342,14 +1363,14 @@ export class GameRoom extends Room<ArenaState> {
       },
     );
 
-    // §12 level-up window: the player spends their FLEX point on an attribute.
+    // §classmerge level-up: one validated choice resolves +2 chosen and +1 deterministic ballast.
     this.onMessage("chooseAttribute", (client, message: { attr?: string }) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
       if (!player || player.flexPending <= 0) return;
       const attr = message?.attr;
       if (!isAttr(attr)) return; // validate the untrusted field, then it narrows to Attr
-      allocate(player, attr, 1);
+      applyAllocationChoice(player, attr);
       consumeFlex(player);
       this.syncFlexTimer(player);
     });
@@ -1574,7 +1595,10 @@ export class GameRoom extends Room<ArenaState> {
     c.cd = Math.max(0, cooldown);
     c.reloadCd = Math.max(0, reload);
     c.attackBuffer = 0;
-    if (applyDrawLock) c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS);
+    if (applyDrawLock) {
+      const quirkMult = c.quirk.mods?.drawLockMult ?? 1;
+      c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
+    }
     player.maxCharges = max;
     player.charges = clamp(charges, 0, max);
   }
@@ -1720,13 +1744,115 @@ export class GameRoom extends Room<ArenaState> {
     );
   }
 
+  /** Cast-only grade floor lever. Flag-off is byte-identical to heldDamageMult. */
+  private heldCastDamageMult(
+    weapon: WeaponDef,
+    grades: Parameters<typeof effectiveDamageMult>[1],
+    player: PlayerState,
+  ): number {
+    const gradeMult = applyCastGradeFloor(
+      damageMultFromGrades(grades ?? weapon.scalingGrades, player),
+    );
+    return (
+      gradeMult *
+      requirementPenalty(weapon, player) *
+      lootDamageMult(player.weaponRarity, player.weaponAffix) *
+      weaponSetBonus(this.loadoutIds(player), player.weapon)
+    );
+  }
+
   /** §31 add the FULL stat bonus for the player's current permanent-upgrade levels (call ONCE at spawn on a
    *  fresh player; per-purchase deltas are applied in the buyUpgrade handler). */
   private applyMetaUpgrades(player: PlayerState): void {
     player.maxHp += META_VITALITY_HP * player.upVitality;
     player.hp = player.maxHp;
-    player.luk += META_FORTUNE_LUK * player.upFortune;
-    player.str += META_POWER_STR * player.upPower;
+    if (player.upFortune > 0) player.luk = 1 + META_FORTUNE_LUK * player.upFortune;
+    if (player.upPower > 0) player.str = 1 + META_POWER_STR * player.upPower;
+  }
+
+  /**
+   * Capture the cosmetic character as the run identity. Fresh edges seed the sum-10 spread; re-snapshot
+   * edges apply only the old→new spread delta so earned allocations and permanent upgrades survive.
+   */
+  private snapshotRunCharacter(
+    player: PlayerState,
+    combat: CombatState | undefined,
+    rebase: boolean,
+    topUpMaxHp = true,
+  ): void {
+    const identity = isPlayableCharacter(player.character) ? player.character : "drifter";
+    const nextSpread = spreadForCharacter(identity);
+    if (rebase) {
+      const previousSpread = spreadForCharacter(player.runCharacter);
+      for (const attr of ATTRS) player[attr] += nextSpread[attr] - previousSpread[attr];
+    } else {
+      for (const attr of ATTRS) player[attr] = nextSpread[attr];
+      if (player.upPower > 0) player.str = 1 + META_POWER_STR * player.upPower;
+      if (player.upFortune > 0) player.luk = 1 + META_FORTUNE_LUK * player.upFortune;
+    }
+    player.runCharacter = identity;
+    player.spreadSeeded = true;
+    if (combat) {
+      combat.identityCharacter = identity;
+      combat.quirk = quirkForCharacter(identity);
+    }
+    const previousMax = player.maxHp;
+    const derivedCon = spreadAdjustedCon(player.con);
+    player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
+    if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
+    player.hp = Math.min(player.hp, player.maxHp);
+  }
+
+  /** Interpret pure quirk descriptors at event seams through existing authoritative state machinery. */
+  private applyQuirkEffects(player: PlayerState, combat: CombatState, effects: readonly QuirkEffect[]): void {
+    for (const effect of effects) {
+      if (effect.kind === "heal-nearest-ally") {
+        if (effect.amount <= 0) continue;
+        const radiusSq = effect.radius * effect.radius;
+        let nearest: PlayerState | undefined;
+        let nearestSq = Number.POSITIVE_INFINITY;
+        this.state.players.forEach((ally) => {
+          if (!ally.alive || ally.id === player.id) return;
+          const dx = ally.x - player.x;
+          const dy = ally.y - player.y;
+          const distanceSq = dx * dx + dy * dy;
+          if (
+            distanceSq <= radiusSq &&
+            (distanceSq < nearestSq ||
+              (distanceSq === nearestSq && ally.id.localeCompare(nearest?.id ?? "") < 0))
+          ) {
+            nearest = ally;
+            nearestSq = distanceSq;
+          }
+        });
+        if (nearest) nearest.hp = Math.min(nearest.maxHp, nearest.hp + effect.amount);
+      } else if (effect.kind === "heal-self") {
+        const window = Math.floor(this.state.elapsed);
+        if (combat.killHealWindowStart !== window) {
+          combat.killHealWindowStart = window;
+          combat.killHealWindowAmount = 0;
+        }
+        const amount = Math.min(effect.amount, effect.capPerSecond - combat.killHealWindowAmount);
+        if (amount > 0) {
+          player.hp = Math.min(player.maxHp, player.hp + amount);
+          combat.killHealWindowAmount += amount;
+        }
+      }
+      // `reload-held-gun` is declared for Coldsnap but cannot arrive until wave 21b calls onRollEnd.
+    }
+  }
+
+  private applyParryQuirk(player: PlayerState, combat: CombatState, parryHeal: number): void {
+    const effects = combat.quirk.hooks?.onParrySuccess?.({ parryHeal });
+    if (effects) this.applyQuirkEffects(player, combat, effects);
+  }
+
+  private applyKillQuirk(player: PlayerState, combat: CombatState, enemy: EnemyState): void {
+    const effects = combat.quirk.hooks?.onKill?.({
+      killedEnemyId: enemy.id,
+      killDistance: Math.hypot(enemy.x - player.x, enemy.y - player.y),
+    });
+    if (effects) this.applyQuirkEffects(player, combat, effects);
   }
 
   /** §30 the player's equipped loadout as weapon ids — the active slot reads the LIVE held weapon (slots are
@@ -1911,7 +2037,8 @@ export class GameRoom extends Room<ArenaState> {
     this.spawnAccum = 0;
     this.enemySeq = 0;
     this.state.players.forEach((player, id) => {
-      // Fresh run → reset progression + attributes to the 1/1/1/1/1 start (§11/§12); carried salvage
+      const c = this.combat.get(id);
+      // Fresh run → reset progression and snapshot the worn character's sum-10 spread; carried salvage
       // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue), and the
       // held weapon sheds its rolled loot identity (drops are per-run).
       player.salvaged = 0;
@@ -1920,11 +2047,7 @@ export class GameRoom extends Room<ArenaState> {
       player.level = 1;
       player.xp = 0;
       player.xpToNext = xpToNextLevel(1);
-      player.str = 1;
-      player.dex = 1;
-      player.int = 1;
-      player.con = 1;
-      player.luk = 1;
+      this.snapshotRunCharacter(player, c, false);
       player.flexPending = 0;
       player.flexTimer = 0;
       player.flexTimerDs = 0;
@@ -1936,14 +2059,12 @@ export class GameRoom extends Room<ArenaState> {
       player.vx = 0; // §20 clear any residual momentum
       player.vy = 0;
       player.height = 0; // §5/§20 back to the ground
-      player.maxHp = PLAYER_MAX_HP;
       player.alive = true;
       player.hp = player.maxHp;
       player.x = this.map.spawnX + (Math.random() * 200 - 100);
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
       for (const slot of player.slots) slot.resourceReady = false;
       for (const slot of player.bag) slot.resourceReady = false;
-      const c = this.combat.get(id);
       if (c) {
         c.respawn = 0;
         c.cd = 0;
@@ -1967,6 +2088,8 @@ export class GameRoom extends Room<ArenaState> {
         c.bulwarkShield = 0;
         c.hairStreak = 0;
         c.lastParryAt = -999;
+        c.killHealWindowStart = -999;
+        c.killHealWindowAmount = 0;
         c.vh = 0;
         c.jumpCd = 0;
         c.distJumpCd = 0;
@@ -2127,6 +2250,7 @@ export class GameRoom extends Room<ArenaState> {
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
+    this.snapshotRunCharacter(player, undefined, false, false);
     // §29/§31 restore the player's persisted meta ACCOUNT (belt only): scrip bank + permanent upgrade
     // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
     // economy). The upgrades then apply their stat bonuses to this fresh player.
@@ -2189,6 +2313,8 @@ export class GameRoom extends Room<ArenaState> {
       mvy: 0,
     });
     this.combat.set(client.sessionId, {
+      identityCharacter: player.runCharacter,
+      quirk: quirkForCharacter(player.runCharacter),
       aimX: 1,
       aimY: 0,
       targetX: 0,
@@ -2230,6 +2356,8 @@ export class GameRoom extends Room<ArenaState> {
       lastParryAt: -999,
       parryChain: 0,
       parryChainT: 0,
+      killHealWindowStart: -999,
+      killHealWindowAmount: 0,
       vh: 0,
       heldEarned: false,
       bulwarkShield: 0,
@@ -2284,6 +2412,8 @@ export class GameRoom extends Room<ArenaState> {
   private damagePlayer(player: PlayerState, amount: number): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
+    const capFrac = c?.quirk.mods?.incomingDamageCapFrac;
+    if (capFrac !== undefined) left = Math.min(left, player.maxHp * capFrac);
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
     // snap-back cannot mint parry flashes, augments, chain economy, or worm accepts from a later quake.
     if (c && c.pitGrace > 0 && left > 0) return;
@@ -2295,7 +2425,13 @@ export class GameRoom extends Room<ArenaState> {
       c.bulwarkShield -= absorbed;
       left -= absorbed;
     }
-    if (left > 0) player.hp = Math.max(0, player.hp - left);
+    if (left > 0) {
+      player.hp = Math.max(0, player.hp - left);
+      if (c?.quirk.mods?.parryChainNeverExpires) {
+        c.parryChain = 0;
+        c.parryChainT = 0;
+      }
+    }
   }
 
   /** Consume the two jump-feel command bits on their exact acknowledged input tick. */
@@ -3008,8 +3144,10 @@ export class GameRoom extends Room<ArenaState> {
       c.invuln = Math.max(0, c.invuln - dt);
       c.juggleMercy = Math.max(0, c.juggleMercy - dt); // §51 G10 touchdown mercy ages out
       c.parryCd = Math.max(0, c.parryCd - dt);
-      c.parryChainT = Math.max(0, c.parryChainT - dt);
-      if (c.parryChainT <= 0) c.parryChain = 0; // §8 v0.114 the parry chain lapses if you don't keep it up
+      if (!c.quirk.mods?.parryChainNeverExpires) {
+        c.parryChainT = Math.max(0, c.parryChainT - dt);
+        if (c.parryChainT <= 0) c.parryChain = 0;
+      }
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.distJumpCd = Math.max(0, c.distJumpCd - dt);
       c.recoveryT = Math.max(0, c.recoveryT - dt);
@@ -3354,7 +3492,8 @@ export class GameRoom extends Room<ArenaState> {
         return;
       }
       anyAlive = true;
-      player.hp = Math.min(player.maxHp, player.hp + deriveStats(player).regen * dt);
+      const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
+      player.hp = Math.min(player.maxHp, player.hp + deriveStats({ con: derivedCon }).regen * dt);
     });
     // §6 WIPE: in a live run (survival OR boss rush), if there are players and NONE are still up, no one can
     // rez → the run is over.
@@ -3653,7 +3792,8 @@ export class GameRoom extends Room<ArenaState> {
     currentHeld: boolean,
     dt: number,
   ): void {
-    const coolMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
+    const coolMultiplier =
+      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
     for (const [weaponId, resource] of c.beamLedger) {
       const activelyChanneling =
         c.beamPhase !== 0 && c.beamDescriptor?.weaponId === weaponId;
@@ -3854,10 +3994,14 @@ export class GameRoom extends Room<ArenaState> {
     c.beamQuantumT = 0;
     if (overheated) {
       resource.heat = 1;
-      resource.lockT = Math.max(resource.lockT, c.beamDescriptor?.lockSeconds ?? 1.5);
+      resource.lockT = Math.max(
+        resource.lockT,
+        (c.beamDescriptor?.lockSeconds ?? 1.5) * (c.quirk.mods?.beamOverheatLockMult ?? 1),
+      );
       resource.requireRelease = true;
     } else {
-      const recoveryMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
+      const recoveryMultiplier =
+        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
       resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     const weapon = WEAPONS[player.weapon];
@@ -3878,7 +4022,8 @@ export class GameRoom extends Room<ArenaState> {
     if (descriptor && addCancelCost) {
       const resource = this.beamResource(c, descriptor.weaponId);
       resource.heat = Math.min(1, resource.heat + BEAM_EARLY_CANCEL_HEAT);
-      const recoveryMultiplier = 1 + AUG_BEAM_COOL_PER * c.beamVentStacks;
+      const recoveryMultiplier =
+        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
       resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     c.beamPhase = 0;
@@ -4899,9 +5044,8 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  /** §12/§8 window: roll the augment draft when a signature pick opens, count down the shared timer, and on
-   *  timeout auto-resolve the pending pick(s) — a flex point → the class attr, a signature pick → the first
-   *  offered augment ("pick in time or you exit it"; you never lose the pick). */
+  /** §classmerge/§8 window: on timeout drain every owed allocation decision through the held weapon's
+   *  deterministic default (+2 pick +1 ballast), then resolve one signature offer. */
   private tickLevelWindows(dt: number): void {
     this.state.players.forEach((player) => {
       // Open the augment draft for any signature pick that doesn't have one yet (server-authoritative roll).
@@ -4925,10 +5069,11 @@ export class GameRoom extends Room<ArenaState> {
         this.syncFlexTimer(player);
         return;
       }
-      // Timed out → auto-resolve one pending pick of each kind, then refresh/close the window.
-      if (player.flexPending > 0) {
-        allocate(player, classForCharacter(player.character).classAttr, 1); // §38 default flex → class attr
-        player.flexPending = Math.max(0, player.flexPending - 1);
+      // One pass drains stacked level debts; AFK invulnerability never stretches to N×5 seconds.
+      const timeoutAttr = defaultFlexAttr(WEAPONS[player.weapon]);
+      while (player.flexPending > 0) {
+        applyAllocationChoice(player, timeoutAttr);
+        player.flexPending--;
       }
       if (player.sigPending > 0) {
         const first = player.sigOffer.split(",").filter(Boolean)[0];
@@ -5498,7 +5643,7 @@ export class GameRoom extends Room<ArenaState> {
     if (!cast) return;
     // §38 CASTER signature augments: Overcharge boosts bolt damage, Arc Split adds forked bolts (per stack).
     const dmgMul = 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge");
-    const dmg = cast.damage * this.heldDamageMult(weapon, cast.scalingGrades, player) * dmgMul;
+    const dmg = cast.damage * this.heldCastDamageMult(weapon, cast.scalingGrades, player) * dmgMul;
     const forks = Math.min(AUG_CAST_SPLIT_MAX, AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"));
     const ttl = cast.range / cast.speed;
     const reach = gunMuzzleReach(weapon);
@@ -5796,6 +5941,9 @@ export class GameRoom extends Room<ArenaState> {
       );
     }
     this.maybeDropWeapon(enemy); // §13 wielding enemies drop the SPECIFIC weapon they carry
+    const killer = sourcePlayerId ? this.state.players.get(sourcePlayerId) : undefined;
+    const killerCombat = sourcePlayerId ? this.combat.get(sourcePlayerId) : undefined;
+    if (killer && killerCombat) this.applyKillQuirk(killer, killerCombat, enemy);
     kills.push(eid);
   }
 
@@ -5818,9 +5966,9 @@ export class GameRoom extends Room<ArenaState> {
       inp.held.pound = false;
       inp.held.fireHeld = false;
     }
+    const c = this.combat.get(id);
     const player = this.state.players.get(id);
     if (player) {
-      const c = this.combat.get(id);
       if (c) {
         c.crouchPrevHeld = false;
         this.cancelMoveStance(player, c, true);
@@ -6001,9 +6149,9 @@ export class GameRoom extends Room<ArenaState> {
     if (c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
-    c.invuln = Math.max(c.invuln, PARRY_IFRAMES);
+    c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (c.quirk.mods?.parryIFrameMult ?? 1));
     c.parryCd = PARRY_COOLDOWN;
-    const knockback = PARRY_KNOCKBACK;
+    const knockback = PARRY_KNOCKBACK * (c.quirk.mods?.parryKnockbackMult ?? 1);
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
       if (id === this.bossId && this.bossController?.wormRuntime) return;
@@ -7106,7 +7254,9 @@ export class GameRoom extends Room<ArenaState> {
     const dx = attacker.x - player.x;
     const dy = attacker.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
-    const ironKnockback = 1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance");
+    const ironKnockback =
+      (1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance")) *
+      (pc.quirk.mods?.parryKnockbackMult ?? 1);
     // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
     // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
@@ -7121,10 +7271,8 @@ export class GameRoom extends Room<ArenaState> {
     // parried attacker (if it runs the combo machine) + an extra shove.
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
-    player.hp = Math.min(
-      player.maxHp,
-      player.hp + PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS),
-    );
+    const parryHeal = PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS);
+    player.hp = Math.min(player.maxHp, player.hp + parryHeal);
     const est = this.comboState.get(attackerId);
     const def = est?.comboId ? TOUGH_COMBOS[est.comboId] : undefined;
     const authored = !!est && !!def;
@@ -7217,6 +7365,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     // G-02: augments belong to this success receipt, never to the button press that opened the window.
     this.applyParryAugments(player, pc);
+    this.applyParryQuirk(player, pc, parryHeal);
   }
 
   /** §16 Slice 3 — resolve a PARRYABLE boss melee wedge (the `meleeCombo` primitive). Mirrors the horde
@@ -7564,6 +7713,7 @@ export class GameRoom extends Room<ArenaState> {
     pc.parryChainT = PARRY_CHAIN_WINDOW;
     player.hp = Math.min(player.maxHp, player.hp + PARRY_CHAIN_HEAL);
     this.applyParryAugments(player, pc);
+    this.applyParryQuirk(player, pc, PARRY_CHAIN_HEAL);
   }
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
@@ -8062,12 +8212,13 @@ export class GameRoom extends Room<ArenaState> {
     // Carry the whole squad through the rift — downed bodies come too, arriving STILL DOWN at the new
     // spawn (the rez-or-dead rule doesn't soften mid-chain; a rez weapon works on the far side).
     this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      this.snapshotRunCharacter(player, c, true, player.alive);
       player.x = this.map.spawnX + (Math.random() * 200 - 100);
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
       player.vx = 0;
       player.vy = 0;
       player.height = 0;
-      const c = this.combat.get(id);
       if (c) {
         c.lastGroundX = player.x;
         c.lastGroundY = player.y;

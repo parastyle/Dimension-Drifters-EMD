@@ -40,8 +40,7 @@ export class PlayerState extends Schema {
   @type("boolean") alive = true;
   /** Equipped weapon id (keys WEAPONS + the sprite manifest). */
   @type("string") weapon = "rusty-cleaver";
-  /** §7 chosen CHARACTER skin (keys the sprite manifest) — cosmetic; cycled with the C key. Synced so
-   *  teammates see who you're playing. Defaults to the Drifter. */
+  /** §7 chosen CHARACTER skin (keys the sprite manifest). C may cycle this cosmetically mid-run. */
   @type("string") character = "drifter";
   /** §9 aim direction (radians, atan2 of the cursor aim) — synced so EVERY client can point a player's
    *  held GUN barrel + render their shots along their real aim. The local player uses its own live cursor;
@@ -53,20 +52,22 @@ export class PlayerState extends Schema {
   @type("number") xp = 0;
   /** XP needed to reach the next level (xpToNextLevel(level)). */
   @type("number") xpToNext = 6;
-  /** The five attributes (§11), all starting at 1 (the 1/1/1/1/1 spread). Drive derived combat stats. */
+  /** The five attributes (§11). Schema defaults are safe placeholders; run snapshots seed the sum-10 spread. */
   @type("number") str = 1;
   @type("number") dex = 1;
   @type("number") int = 1;
   @type("number") con = 1;
   @type("number") luk = 1;
-  /** Unspent FLEX points awaiting allocation (§12). While > 0 the player is in the invincible,
-   *  untargeted level-up window (frozen + immune) choosing where to spend each flex point. */
+  /** Unresolved level-up decisions (§classmerge). Each resolves +2 chosen and +1 ballast. While > 0 the
+   *  player is frozen, untargeted, and invincible inside the choice window. */
   @type("number") flexPending = 0;
   /** Reserved wire slot for the old per-tick float. Kept fixed so later PlayerState field offsets do not
    *  move; the client reads the appended integer-decisecond `flexTimerDs` instead. */
   @type("number") flexTimerLegacy = 0;
   /** Precise seconds left in the level-up window. Server-only (not decorated / not serialized). */
   flexTimer = 0;
+  /** Server-private: true after an authored run boundary has installed a sum-10 identity spread. */
+  spreadSeeded = false;
   /** §8 owned parry augments — CSV of augment ids (repeats = stacks). Drives the parry handler's offense
    *  (server) + the owned-augment HUD (client). */
   @type("string") augments = "";
@@ -161,6 +162,9 @@ export class PlayerState extends Schema {
   @type("uint8") poundSeq = 0;
   /** Soft reconcile edge bumped only when authority force-cancels a committed movement stance. */
   @type("uint8") stanceSeq = 0;
+  /** §classmerge run-boundary identity snapshot. Character cycling may change `character` cosmetically,
+   *  but spread/quirk consumers use this field until the next authored snapshot edge. APPENDED at v21. */
+  @type("string") runCharacter = "drifter";
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

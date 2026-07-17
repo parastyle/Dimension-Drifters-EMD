@@ -1,10 +1,11 @@
 /**
  * Leveling + the five-attribute model (§11/§12). PURE + data-driven. The server applies it; the
- * HUD reads the synced attributes. Per §12: XP is SQUAD-SHARED, each level grants 3 points (1 auto
- * class-attr + 1 auto requirement-attr + 1 FLEX the player chooses), the level-up window is an
- * invincible 5-second pick, signature nodes unlock every 5 levels (§8), and the per-run cap is 30.
+ * HUD reads the synced attributes. Per §classmerge: XP is SQUAD-SHARED, each level preserves one
+ * decision and three points of income (+2 to the chosen attribute, then +1 ballast to the current lowest),
+ * the level-up window is an invincible 5-second pick, and the per-run cap is 30.
  */
 import { PLAYER_MAX_HP, PLAYER_REGEN } from "./constants.js";
+import type { WeaponDef } from "./weapons.js";
 
 /** XP needed to go from level 1 → 2. */
 export const XP_BASE = 6;
@@ -18,6 +19,12 @@ export const XP_GROWTH = 1.15;
 export const LEVEL_CAP = 30;
 /** Seconds to pick in the level-up window before it auto-resolves (§12 [LOCKED]). */
 export const LEVELUP_WINDOW_SECONDS = 5;
+/** Total attribute income realized by one resolved level-up decision. */
+export const POINTS_PER_LEVEL = 3;
+export const CHOSEN_POINTS_PER_LEVEL = 2;
+export const BALLAST_POINTS_PER_LEVEL = 1;
+/** The Drifter's flat spread is the compatibility control for derived survivability. */
+export const SPREAD_CONTROL_ATTR = 2 as const;
 
 /** XP required to advance FROM `level` to `level+1`. Pure. */
 export function xpToNextLevel(level: number): number {
@@ -33,12 +40,60 @@ export function isAttr(value: unknown): value is Attr {
   return typeof value === "string" && (ATTRS as readonly string[]).includes(value);
 }
 
+export type AttrValues = Readonly<Record<Attr, number>>;
+
+/** Current lowest attribute; ties are resolved by the stable ATTRS declaration order. */
+export function lowestAttr(attrs: AttrValues): Attr {
+  let lowest: Attr = "str";
+  for (let i = 1; i < ATTRS.length; i++) {
+    const attr = ATTRS[i]!;
+    if (attrs[attr] < attrs[lowest]) lowest = attr;
+  }
+  return lowest;
+}
+
+/** Ballast destination after the +2 chosen points have been applied. */
+export function ballastAttrFor(
+  attrsAfterChoice: AttrValues,
+  chosen: Attr,
+  followsChoice = false,
+): Attr {
+  return followsChoice ? chosen : lowestAttr(attrsAfterChoice);
+}
+
+/** Translate a sum-10 spread's CON onto deriveStats' established 1-CON = 100 HP baseline. */
+export function spreadAdjustedCon(con: number): number {
+  return 1 + con - SPREAD_CONTROL_ATTR;
+}
+
+const GRADE_RANK = { E: 0, D: 1, C: 2, B: 3, A: 4, S: 5 } as const;
+
 /**
- * M0 melee Drifter auto-allocation (§12 "1 class attr + 1 requirement attr"). One character for M0;
- * per-character class/requirement attrs become data when more characters land. (tuning)
+ * AFK/timeout default: the held weapon's primary damage source's best scaling-grade attribute. Grade order
+ * is S>A>B>C>D>E and equal grades use ATTRS order. An absent/ungraded weapon falls back to CON so the
+ * timeout can never select a dead identifier.
  */
-export const M0_CLASS_ATTR: Attr = "str";
-export const M0_REQ_ATTR: Attr = "con";
+export function defaultFlexAttr(def: WeaponDef | undefined): Attr {
+  const grades =
+    def?.cast?.scalingGrades ??
+    def?.gun?.scalingGrades ??
+    def?.beam?.scalingGrades ??
+    def?.thrown?.scalingGrades ??
+    def?.scalingGrades;
+  if (!grades) return "con";
+  let best: Attr | undefined;
+  let bestRank = -1;
+  for (const attr of ATTRS) {
+    const grade = grades[attr];
+    if (!grade) continue;
+    const rank = GRADE_RANK[grade];
+    if (rank > bestRank) {
+      best = attr;
+      bestRank = rank;
+    }
+  }
+  return best ?? "con";
+}
 
 /** Per-point attribute scaling (tuning). All relative to the 1/1/1/1/1 start (§12). */
 export const CON_HP_PER = 8; // +8 max HP per CON over 1

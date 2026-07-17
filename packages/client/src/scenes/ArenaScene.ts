@@ -26,7 +26,6 @@ import {
   characterName,
   characterScale,
   clampQuakeEpicenter,
-  classForCharacter,
   critChanceFor,
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
@@ -74,6 +73,7 @@ import {
   type PlayerState,
   POUND_RADIUS,
   QUAKE_REACH,
+  quirkForCharacter,
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
@@ -5434,7 +5434,7 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100011);
     const contextCopy =
       mode === "flex"
-        ? `${context.automaticGrowth}${hasFollowup ? " • SIGNATURE FOLLOWS" : ""}`
+        ? `${context.allocationLaw}${hasFollowup ? " • SIGNATURE FOLLOWS" : ""}`
         : `SIGNATURE • ${layout.tier === "wide" ? context.rail : context.compactRail}`;
     const contextText = this.levelWindowText(cx, layout.contextY, contextCopy, {
       fontSize: "14px",
@@ -5875,10 +5875,10 @@ export class ArenaScene extends Phaser.Scene {
     const context = levelBuildContext(self);
     this.levelWinFocus = Math.max(
       0,
-      choices.findIndex((choice) => choice.id === context.autoAttribute),
+      choices.findIndex((choice) => choice.id === context.defaultAttribute),
     );
     const layout = this.buildLevelShell(self, "flex", choices.length, fullEntrance);
-    this.levelWinAutoLabel = `+1 ${context.autoAttribute.toUpperCase()}`;
+    this.levelWinAutoLabel = context.timeoutAllocation;
     choices.forEach((view, index) => {
       const slot = layout.cards[index];
       if (!slot) return;
@@ -8753,9 +8753,9 @@ export class ArenaScene extends Phaser.Scene {
 
     const training = this.room?.state.mode === "training";
     const bossrush = this.room?.state.mode === "bossrush";
-    // §38 show the worn character's CLASS so the swap reads as a build choice, not just a skin.
+    // §classmerge: skin may cycle cosmetically; KIT always names the snapshotted run identity.
     const who = self
-      ? ` · C: ${characterName(self.character)} [${classForCharacter(self.character).name}] — grows ${classForCharacter(self.character).classAttr.toUpperCase()}`
+      ? ` · C: ${characterName(self.character)} · KIT: ${quirkForCharacter(self.runCharacter || self.character).name}`
       : "";
     const dimName = getDimension(this.room?.state.dimensionId).name;
     // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
