@@ -1,7 +1,7 @@
 import {
   ATTACK_HELD_WINDOW,
   CHOP_IMPACT_FRAC,
-  comboStepForAttackSeq,
+  comboStepForChain,
   INTERP_SNAP_PLAYER,
   isWornWeapon,
   JIGGLE_FOOT_AIR_INERTIA,
@@ -101,12 +101,41 @@ const TOME_PAGE_INTERVAL_MS = 300;
 const TOME_PAGE_DURATION_MS = 320;
 const TOME_SETTLE_DURATION_MS = 260;
 const TOME_SCRAP_DURATION_MS = 540;
+/** Remote accepted attacks reuse the authored renderer only while their source can affect the camera read. */
+const REMOTE_SIGNATURE_LOD_MARGIN_PX = 220;
+/** Retained cast/tome source punctuation. It is sampled on the hit-stop-paused rig clock. */
+const REMOTE_SOURCE_FLASH_MS = 150;
 /** The rear held blade's ordinary idle lean is added by the weapon pass. Close-blade poses compensate it. */
 const DUAL_BACK_WEAPON_LEAN = 0.32;
 /** Close-blade lunges are fully released before a cadence hold can sample `tt = 1`. */
 const CLOSE_BLADE_RELEASE_T = 0.92;
 
 type RigComboFamily = MeleeComboFamily | "none";
+
+/** ArenaScene owns these presentation services. The rig consumes them structurally so the accepted remote
+ * beat can share the existing authored dispatcher without widening the scene API or duplicating VFX data. */
+interface RigAttackPresentationScene extends Phaser.Scene {
+  readonly vfxPlayer?: {
+    spawnsAtCursor(weaponId: string): boolean;
+  };
+  spawnSlash?(
+    x: number,
+    y: number,
+    aim: { x: number; y: number },
+    weapon: WeaponDef,
+    swing: SwingDescriptor,
+    exact?: boolean,
+  ): void;
+  spawnChain?(
+    x: number,
+    y: number,
+    aim: { x: number; y: number },
+    weapon: WeaponDef,
+  ): void;
+  readonly animClock?: number;
+  readonly frozenUntil?: number;
+  readonly wasFrozen?: boolean;
+}
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -159,6 +188,27 @@ function paperPopRotation(elapsedMs: number, durationMs: number): number {
 /** Preserve the sign while preventing one invisible edge-on frame. Zero chooses the positive face. */
 function signedClamp(value: number, floor: number): number {
   return (value < 0 ? -1 : 1) * Math.max(Math.abs(value), floor);
+}
+
+function attackSignatureColor(element: WeaponDef["tags"]["element"]): number {
+  switch (element) {
+    case "fire":
+      return 0xff6a2a;
+    case "frost":
+      return 0x6fd6ff;
+    case "shock":
+      return 0xffe24a;
+    case "holy":
+      return 0xffe6a0;
+    case "toxic":
+      return 0x9cff3b;
+    case "void":
+      return 0xb14bff;
+    case "arcane":
+      return 0x8f6aff;
+    default:
+      return 0xd6dde6;
+  }
 }
 
 /** PROCEDURAL_JIGGLE ownership envelope: anticipation ramps in, active is exact, follow-through hands off. */
@@ -852,6 +902,7 @@ export class SpriteRig {
   renderPrevX: number;
   renderPrevY: number;
   private readonly scene: Phaser.Scene;
+  private readonly isSelf: boolean;
   private readonly scale: number;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
@@ -945,11 +996,17 @@ export class SpriteRig {
   private comboFamily: RigComboFamily = "none";
   private comboStep = 0;
   private comboExpiresAtMs = -1e9;
+  private comboChainExpiresAtMs = -1e9;
   private comboWeaponId = "";
-  /** Latest forward uint32 beat seen through `setAttackBeat`. It selects presentation only; cadence/reset
-   * remains intentionally global until the Stage-2 accepted combo epoch exists. */
+  /** Latest forward uint32 beat seen through `setAttackBeat`. It orders/deduplicates presentation only. */
   private hasAttackBeatSeq = false;
   private attackBeatSeq = 0;
+  private attackBeatWallEpochMs = -1e9;
+  /** Last step's accepted synced snapshot. The global sequence only proves adjacency; weapon/family/time own
+   * combo identity, so unrelated attacks can never index a big-sword sentence. */
+  private comboHasAttackSeq = false;
+  private comboAttackSeq = 0;
+  private comboAcceptedAtMs = -1e9;
   private swingStep = 0;
   private swingDirection: -1 | 0 | 1 = 1;
   private swingFamily: RigComboFamily = "none";
@@ -1020,6 +1077,17 @@ export class SpriteRig {
   private closeBladeBackFootDx = 0;
   private closeBladeBackFootDy = 0;
   private signatureMotion?: MeleeComboMotion;
+  /** One retained aim vector and one pending action slot avoid per-attack rig allocations. The authored scene
+   * renderer remains pooled and is flushed only by `animate`, so an attack observed during hit-stop waits. */
+  private readonly observedSignatureAim = { x: 1, y: 0 };
+  private observedSignaturePending = false;
+  private observedSignatureWeapon?: WeaponDef;
+  private observedSignatureSwing?: SwingDescriptor;
+  private observedSignatureAtMs = -1e9;
+  /** Retained remote cast/tome source punctuation; transforms are rewritten in the rig's final pose pass. */
+  private readonly observedSourceFlash: Phaser.GameObjects.Ellipse;
+  private readonly observedSourceRing: Phaser.GameObjects.Ellipse;
+  private observedSourceFlashAtMs = -1e9;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -1060,6 +1128,7 @@ export class SpriteRig {
     const manifest = SPRITES[spriteId as keyof typeof SPRITES] as SpriteManifest | undefined;
     if (!manifest) throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
     this.scene = scene;
+    this.isSelf = isSelf;
     this.scale = TARGET_BODY_H / manifest.body.h;
 
     // Build parts. Draw order (back→front): back hand, feet, body, front hand. The front
@@ -1135,7 +1204,6 @@ export class SpriteRig {
           })
           .setOrigin(0.5)
       : undefined;
-    if (this.label) order.push(this.label);
 
     // §5/§20 ground shadow at the feet — drawn FIRST (behind everything) so it sits under the rig; it
     // stays put while the art lifts on the hop, so the gap reads as altitude.
@@ -1143,6 +1211,18 @@ export class SpriteRig {
       .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0.3)
       .setOrigin(0.5);
     order.unshift(this.shadow);
+
+    this.observedSourceRing = scene.add
+      .ellipse(0, 0, 20, 12)
+      .setStrokeStyle(2, 0xd6dde6, 0.9)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    this.observedSourceFlash = scene.add
+      .ellipse(0, 0, 11, 7, 0xffffff, 0.88)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    order.push(this.observedSourceRing, this.observedSourceFlash);
+    if (this.label) order.push(this.label);
 
     this.root = scene.add.container(x, y, order);
     this.renderPrevX = x;
@@ -1384,6 +1464,13 @@ export class SpriteRig {
     this.swing = undefined;
     this.swingAimWorld = Number.NaN;
     this.swingChained = false;
+    this.observedSignaturePending = false;
+    this.observedSignatureWeapon = undefined;
+    this.observedSignatureSwing = undefined;
+    this.observedSignatureAtMs = -1e9;
+    this.observedSourceFlashAtMs = -1e9;
+    this.observedSourceFlash.setVisible(false);
+    this.observedSourceRing.setVisible(false);
     this.resetComboChain(true);
   }
 
@@ -1487,12 +1574,104 @@ export class SpriteRig {
     this.comboFamily = "none";
     this.comboStep = 0;
     this.comboExpiresAtMs = -1e9;
+    this.comboChainExpiresAtMs = -1e9;
     this.comboWeaponId = "";
+    this.comboHasAttackSeq = false;
+    this.comboAttackSeq = 0;
+    this.comboAcceptedAtMs = -1e9;
     this.swingStep = 0;
     this.swingDirection = 1;
     this.swingFamily = "none";
     this.swingVariant = "default";
     if (clearHold) this.comboHoldPose = undefined;
+  }
+
+  /** Arena's `animClock` advances only on unfrozen frames. Accepted beats arrive in Phaser wall time, so
+   * preserve their relative offset while moving the epoch onto the one freeze-aware presentation clock. */
+  private presentationClockNow(): number {
+    const sceneClock = (this.scene as RigAttackPresentationScene).animClock;
+    if (typeof sceneClock === "number" && Number.isFinite(sceneClock)) return sceneClock;
+    return this.prevAnimMs >= 0 ? this.prevAnimMs : this.scene.time.now;
+  }
+
+  private presentationEpochForWallEpoch(epochMs: number): number {
+    const wallNow = this.scene.time.now;
+    const arena = this.scene as RigAttackPresentationScene;
+    const freezeHolding = (arena.frozenUntil ?? -Infinity) > wallNow || arena.wasFrozen === true;
+    // A beat accepted while presentation is held begins at the held phase. Authoritative simulation still
+    // advances; this only prevents the first unfrozen rig frame from inheriting wall time spent in hit-stop.
+    const relativeMs = freezeHolding ? Math.max(0, epochMs - wallNow) : epochMs - wallNow;
+    return this.presentationClockNow() + relativeMs;
+  }
+
+  /** Flush the one retained remote action intent only from `animate()`. Since Arena skips rig animation
+   * during hit-stop, an accepted beat observed inside the freeze cannot let its authored source flourish run
+   * ahead of the held actor. The predicting owner keeps ArenaScene's existing immediate dispatcher. */
+  private flushObservedAttackSignature(sceneNow: number, outsidePaperView: boolean): void {
+    if (!this.observedSignaturePending || sceneNow < this.observedSignatureAtMs) return;
+    this.observedSignaturePending = false;
+    const weapon = this.observedSignatureWeapon;
+    const swing = this.observedSignatureSwing;
+    const view = this.scene.cameras.main.worldView;
+    const outsideSignatureView =
+      this.root.x < view.left - REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.x > view.right + REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.y < view.top - REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.y > view.bottom + REMOTE_SIGNATURE_LOD_MARGIN_PX;
+    if (
+      !weapon ||
+      !swing ||
+      outsidePaperView ||
+      outsideSignatureView ||
+      weapon.gun ||
+      weapon.thrown ||
+      weapon.cast
+    )
+      return;
+    const elapsedMs = sceneNow - this.observedSignatureAtMs;
+    if (elapsedMs > swing.poseSeconds * 1000) return;
+
+    const scene = this.scene as RigAttackPresentationScene;
+    const exact = scene.vfxPlayer?.spawnsAtCursor(weapon.id) ?? false;
+    const reach = exact ? meleeReach(weapon) : 0;
+    const x = this.root.x + this.observedSignatureAim.x * reach;
+    const y = this.root.y + this.observedSignatureAim.y * reach;
+    scene.spawnSlash?.(x, y, this.observedSignatureAim, weapon, swing, exact);
+    if (weapon.chainLightning)
+      scene.spawnChain?.(this.root.x, this.root.y, this.observedSignatureAim, weapon);
+  }
+
+  /** Copy the final held-weapon transform into retained source shapes. This is the remote cast/tome LOD;
+   * it never allocates from the render loop and never competes with exact danger geometry. */
+  private syncObservedSourceFlash(sceneNow: number, outsidePaperView: boolean): void {
+    const elapsedMs = sceneNow - this.observedSourceFlashAtMs;
+    const weapon = this.weapons[0];
+    if (
+      this.isSelf ||
+      outsidePaperView ||
+      !weapon ||
+      elapsedMs < 0 ||
+      elapsedMs >= REMOTE_SOURCE_FLASH_MS
+    ) {
+      this.observedSourceFlash.setVisible(false);
+      this.observedSourceRing.setVisible(false);
+      return;
+    }
+    const q = clamp01(elapsedMs / REMOTE_SOURCE_FLASH_MS);
+    const tip = weapon.img.width * Math.abs(weapon.img.scaleX) * (1 - weapon.img.originX);
+    const x = weapon.img.x + Math.cos(weapon.img.rotation) * tip;
+    const y = weapon.img.y + Math.sin(weapon.img.rotation) * tip;
+    this.observedSourceFlash
+      .setPosition(x, y)
+      .setScale(0.72 + q * 0.9, 0.72 + q * 0.42)
+      .setAlpha((1 - q) * 0.88)
+      .setVisible(true);
+    this.observedSourceRing
+      .setPosition(x, y)
+      .setRotation(weapon.img.rotation)
+      .setScale(0.5 + q * 1.15, 0.5 + q * 0.72)
+      .setAlpha((1 - q) * 0.78)
+      .setVisible(true);
   }
 
   private destroyTomeVisual(): void {
@@ -1562,13 +1741,19 @@ export class SpriteRig {
   /** Feed either a predicted owner beat or an authoritative player beat into retained tome state. Uint32
    *  ordering ignores an older confirmation when local prediction has already advanced the visible book. */
   setAttackBeat(seq: number, held: boolean, epochMs: number): void {
+    const acceptedWallEpochMs = epochMs;
+    epochMs = this.presentationEpochForWallEpoch(epochMs);
     const beat = seq >>> 0;
     if (!this.hasAttackBeatSeq) {
       this.hasAttackBeatSeq = true;
       this.attackBeatSeq = beat;
+      this.attackBeatWallEpochMs = acceptedWallEpochMs;
     } else {
       const advance = (beat - this.attackBeatSeq) >>> 0;
-      if (advance > 0 && advance < 0x80000000) this.attackBeatSeq = beat;
+      if (advance > 0 && advance < 0x80000000) {
+        this.attackBeatSeq = beat;
+        this.attackBeatWallEpochMs = acceptedWallEpochMs;
+      }
     }
 
     const tome = this.tome;
@@ -1591,7 +1776,7 @@ export class SpriteRig {
       tome.lastSeq = beat;
     }
 
-    const now = this.scene.time.now;
+    const now = this.presentationClockNow();
     if (now >= tome.openUntilMs) tome.openAtMs = epochMs;
     else tome.openAtMs = Math.min(tome.openAtMs, epochMs);
     tome.openUntilMs = Math.max(
@@ -1833,6 +2018,7 @@ export class SpriteRig {
         if (frontHand) stack.push(frontHand.img);
       }
     }
+    stack.push(this.observedSourceRing, this.observedSourceFlash);
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
     const firstPart = manifest.parts[0];
@@ -1841,10 +2027,11 @@ export class SpriteRig {
     }
   }
 
-  /** Start a swing animation (damage is server-authoritative). `timeMs` is the scene clock accepted/predicted
-   *  epoch, shared locally by rig/VFX/quake; `aimWorld` freezes aim. The optional descriptor is computed once
-   *  by ArenaScene from effective cooldown; server acceptance sync is the later protocol reconciliation. */
+  /** Start a swing animation (damage is server-authoritative). `timeMs` is the accepted/predicted Phaser
+   * wall epoch and is mapped once onto Arena's freeze-aware presentation clock; `aimWorld` freezes aim. */
   triggerSwing(timeMs: number, aimWorld?: number, swing?: SwingDescriptor): void {
+    const acceptedAtMs = this.hasAttackBeatSeq ? this.attackBeatWallEpochMs : timeMs;
+    timeMs = this.presentationEpochForWallEpoch(timeMs);
     let nextSwing =
       swing ??
       (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
@@ -1872,10 +2059,24 @@ export class SpriteRig {
           ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
             sequence.length
           : this.hasAttackBeatSeq
-            ? comboStepForAttackSeq(this.attackBeatSeq, sequence.length)
+            ? comboStepForChain(
+                this.attackBeatSeq,
+                acceptedAtMs,
+                this.weaponDef.id,
+                family,
+                sequence.length,
+                this.comboHasAttackSeq ? this.comboAttackSeq : undefined,
+                this.comboAcceptedAtMs,
+                this.comboWeaponId,
+                this.comboFamily === "none" ? undefined : this.comboFamily,
+                this.comboStep,
+                this.comboChainExpiresAtMs,
+              )
             : continues
               ? (this.comboStep + 1) % sequence.length
               : 0;
+      // Compatibility note: the retired global branch was
+      // comboStepForAttackSeq(this.attackBeatSeq, sequence.length); weapon/family/time now own the chain.
       const authored = sequence[step];
       if (authored) {
         // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
@@ -1883,10 +2084,18 @@ export class SpriteRig {
         // this same `(weapon,family,step)` snapshot from authoritative swingSeq/comboStep.
         const expiresAtMs =
           timeMs + nextSwing.effectiveCooldown * 1000 + comboGraceMs(nextSwing.effectiveCooldown);
+        const chainExpiresAtMs =
+          acceptedAtMs +
+          nextSwing.effectiveCooldown * 1000 +
+          comboGraceMs(nextSwing.effectiveCooldown);
         this.comboFamily = family;
         this.comboStep = step;
         this.comboExpiresAtMs = expiresAtMs;
+        this.comboChainExpiresAtMs = chainExpiresAtMs;
         this.comboWeaponId = this.weaponDef.id;
+        this.comboHasAttackSeq = this.hasAttackBeatSeq;
+        this.comboAttackSeq = this.attackBeatSeq;
+        this.comboAcceptedAtMs = acceptedAtMs;
         this.swingStep = step;
         this.swingDirection = authored.direction;
         this.swingFamily = family;
@@ -1898,8 +2107,7 @@ export class SpriteRig {
           direction: authored.direction,
           expiresAtMs,
         };
-        // Stage 1 enriches the local immutable clock only. Arena/VFX/server retain the original descriptor,
-        // so gameplay remains the legacy centered single sweep and quake still fires on its accepted clock.
+        // Enrich the immutable presentation clock only. Geometry/damage remain the legacy centered sweep.
         nextSwing = swingDescriptorWithComboStep(nextSwing, this.weaponDef, step);
       }
     } else {
@@ -1908,6 +2116,20 @@ export class SpriteRig {
     this.swingStart = timeMs;
     this.swing = nextSwing;
     this.swingAimWorld = aimWorld ?? Number.NaN;
+    if (!this.isSelf && nextSwing && Number.isFinite(this.swingAimWorld) && this.weaponDef) {
+      this.observedSignatureAim.x = Math.cos(this.swingAimWorld);
+      this.observedSignatureAim.y = Math.sin(this.swingAimWorld);
+      this.observedSignaturePending = true;
+      this.observedSignatureWeapon = this.weaponDef;
+      this.observedSignatureSwing = nextSwing;
+      this.observedSignatureAtMs = timeMs;
+      if (this.weaponDef.cast) {
+        const color = attackSignatureColor(this.weaponDef.tags.element);
+        this.observedSourceFlashAtMs = timeMs;
+        this.observedSourceFlash.setFillStyle(color, 0.88);
+        this.observedSourceRing.setStrokeStyle(2, color, 0.9);
+      }
+    }
   }
 
   /** Sample a horde-melee anticipation directly from the latest reconstructed authoritative phase. */
@@ -1939,13 +2161,14 @@ export class SpriteRig {
     if (full && !this.meleeTellGlintFired && remainingMs <= MELEE_GLINT_LEAD_MS) {
       // A late first sample fires one shortened crest immediately; missed Claim frames are never replayed.
       this.meleeTellGlintFired = true;
-      this.meleeTellEdgeAtMs = this.scene.time.now;
+      this.meleeTellEdgeAtMs = this.presentationClockNow();
     }
     if (!full) this.clearMeleeTellTint();
   }
 
   /** Contact confirmation: keep the loaded vocabulary and run only its short follow-through. */
   resolveMeleeTell(timeMs: number, aimWorld: number): void {
+    timeMs = this.presentationEpochForWallEpoch(timeMs);
     this.meleeTellReleasePose = this.meleeTellFull;
     this.meleeTellAimWorld = aimWorld;
     this.meleeTellMode = "resolve";
@@ -1958,6 +2181,7 @@ export class SpriteRig {
   /** An authoritative reset without `atkSeq`: unwind the sampled chamber without crossing contact. */
   cancelMeleeTell(timeMs: number): void {
     if (this.meleeTellMode === "none") return;
+    timeMs = this.presentationEpochForWallEpoch(timeMs);
     this.meleeTellReleasePose = this.meleeTellFull;
     this.meleeTellCancelPhase = this.meleeTellPhase;
     this.meleeTellMode = "cancel";
@@ -3167,7 +3391,7 @@ export class SpriteRig {
       this.attackShadowScaleY = 1 - 0.14 * p;
     } else if (tt < 0.3) {
       const p = (tt - 0.18) / 0.12;
-      const tremor = Math.sin(this.scene.time.now * 0.018 * Math.PI * 2) * this.scale;
+      const tremor = Math.sin(this.presentationClockNow() * 0.018 * Math.PI * 2) * this.scale;
       this.attackArtOffX = (-fx * 0.03 - nx * 0.05) * H;
       this.attackArtOffY = (-fy * 0.03 - ny * 0.05) * H;
       this.body.rotation -= 0.16;
@@ -3332,7 +3556,7 @@ export class SpriteRig {
       this.attackShadowScaleY = 1 - 0.1 * p;
     } else if (tt < 0.34) {
       const p = smoothstep01((tt - 0.22) / 0.12);
-      const tremor = Math.sin(this.scene.time.now * 0.013 * Math.PI * 2) * this.scale;
+      const tremor = Math.sin(this.presentationClockNow() * 0.013 * Math.PI * 2) * this.scale;
       this.attackArtOffX = -fx * H * 0.04;
       this.attackArtOffY = -fy * H * 0.04;
       this.swingOffX = -fx * H * 0.1 + -fy * tremor;
@@ -3443,7 +3667,7 @@ export class SpriteRig {
     const dtMs = Math.max(0, Math.min(100, rawDtMs));
     this.prevAnimMs = timeMs;
     const s = this.scale;
-    const sceneNow = this.scene.time.now;
+    const sceneNow = timeMs;
     const springDtS = Math.min(JIGGLE_MAX_DT_S, dtMs / 1000);
     const rootDx = this.root.x - this.jigglePrevRootX;
     const rootDy = this.root.y - this.jigglePrevRootY;
@@ -3459,6 +3683,7 @@ export class SpriteRig {
         this.root.y < view.top - JIGGLE_LOD_MARGIN_PX ||
         this.root.y > view.bottom + JIGGLE_LOD_MARGIN_PX);
     const jiggleLodSkip = PROCEDURAL_JIGGLE && outsidePaperView;
+    this.flushObservedAttackSignature(sceneNow, outsidePaperView);
     this.prepareTomeVisual(sceneNow, outsidePaperView);
 
     // Landing is measured before part integration so the one-shot compression enters this frame's springs;
@@ -3815,10 +4040,9 @@ export class SpriteRig {
       // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
       const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
       weaponAngle = restA + Math.sin(t * 2.6) * 0.04; // gentle idle sway
-      // §44 use Phaser's scene epoch — the same clock as the VFX tween + quake timer. During local hit-stop
-      // the rendered frame holds because animate is skipped, then resumes at the CURRENT swing phase instead
-      // of extending authoritative danger. Pose shapes/envelopes below remain byte-for-byte normalized.
-      const el = this.scene.time.now - this.swingStart;
+      // The accepted wall epoch was mapped once; retained combo/tome/source art resumes from the held
+      // presentation phase instead of spending hit-stop wall time.
+      const el = sceneNow - this.swingStart;
       const style = this.swing?.style;
       const dur = (this.swing?.poseSeconds ?? 0) * 1000;
       let tt = -1;
@@ -4898,6 +5122,7 @@ export class SpriteRig {
     }
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.syncTomeVisual(sceneNow, outsidePaperView);
+    this.syncObservedSourceFlash(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.

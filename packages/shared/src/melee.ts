@@ -1103,6 +1103,45 @@ export function comboStepForAttackSeq(attackSeq: number, sequenceLength: number)
   return ((ordinal % length) + length) % length;
 }
 
+/** Resolve one accepted visual combo beat from the current `(weapon, family)` chain rather than from the
+ * player's global attack count. Every input is either immutable weapon data or synced accepted-beat data;
+ * callers retain the previous scalar snapshot, so owner prediction and remote observation make the same
+ * decision without allocating a chain object in the attack path.
+ *
+ * A duplicate beat keeps its already-selected step. Only the next contiguous uint32 beat may advance, and
+ * only while the same weapon/family remains inside the previously-authored cadence window. Snapshot gaps,
+ * weapon changes, family changes, clock reversal, and cadence expiry all restart at the opener. */
+export function comboStepForChain(
+  attackSeq: number,
+  acceptedAtMs: number,
+  weaponId: string,
+  family: MeleeComboFamily,
+  sequenceLength: number,
+  previousAttackSeq: number | undefined,
+  previousAcceptedAtMs: number,
+  previousWeaponId: string,
+  previousFamily: MeleeComboFamily | undefined,
+  previousStep: number,
+  previousExpiresAtMs: number,
+): number {
+  const length = Math.max(0, Math.trunc(sequenceLength));
+  if (length === 0) return 0;
+  const normalizedPrevious = ((Math.trunc(previousStep) % length) + length) % length;
+  if (previousAttackSeq === undefined) return 0;
+
+  const advance = ((attackSeq >>> 0) - (previousAttackSeq >>> 0)) >>> 0;
+  const sameIdentity = previousWeaponId === weaponId && previousFamily === family;
+  if (advance === 0 && sameIdentity) return normalizedPrevious;
+
+  const continues =
+    advance === 1 &&
+    sameIdentity &&
+    Number.isFinite(acceptedAtMs) &&
+    acceptedAtMs >= previousAcceptedAtMs &&
+    acceptedAtMs <= previousExpiresAtMs;
+  return continues ? (normalizedPrevious + 1) % length : 0;
+}
+
 /** Snapshot the selected predicted/accepted combo step onto an immutable swing without changing its legacy
  * active, impact, geometry, or damage clock. The server may call the same seam once accepted combo state is
  * authoritative; Stage 1 uses it only for client presentation. */
@@ -1132,8 +1171,8 @@ export function swingDescriptorWithComboStep(
   });
 }
 
-/** Enrich a visual descriptor from the globally synced count. This is deterministic presentation, not the
- * Stage-2 accepted combo-epoch protocol: a long idle or weapon swap intentionally does not reset the count. */
+/** @deprecated Compatibility helper for old tooling. Live rigs must use {@link comboStepForChain}; a global
+ * attack count cannot identify the current weapon/family chain after a swap or authored cadence timeout. */
 export function swingDescriptorForAttackSeq(
   swing: SwingDescriptor,
   def: WeaponDef,
