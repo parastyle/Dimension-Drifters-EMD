@@ -65,7 +65,30 @@ const CARD_ROLES = [
   "regrowth-bud-wounded",
 ] as const;
 
+const DIMENSION_ART_SUFFIX_BY_ID: Readonly<Record<string, string>> = {
+  "wild-west": "wildwest",
+  frostfell: "frostfell",
+  "verdant-ruins": "verdant",
+  ashlands: "ashlands",
+  "neon-cyber": "neoncyber",
+};
+
 const ROLE_DIAMETER = new Float32Array([104, 86, 78, 90, 74]);
+
+function dimensionArtSuffix(dimensionId: string): string | undefined {
+  return Object.hasOwn(DIMENSION_ART_SUFFIX_BY_ID, dimensionId)
+    ? DIMENSION_ART_SUFFIX_BY_ID[dimensionId]
+    : undefined;
+}
+
+function hasDimensionMaterialPass(card: number): boolean {
+  return (
+    card === WormCard.HeadArmored ||
+    card === WormCard.BodyIntact ||
+    card === WormCard.BodyWounded ||
+    card === WormCard.SpinnerClosed
+  );
+}
 
 function flat(frame: number, slot: number): number {
   return frame * SLOT_COUNT + slot;
@@ -462,6 +485,7 @@ export class WormRig {
   private stubCount = 0;
   private projectionOriginY = 0;
   private projectionScale = 1;
+  private artDimensionId = "";
   private destroyed = false;
 
   constructor(
@@ -501,18 +525,44 @@ export class WormRig {
   }
 
   capture(state: WormBossState, serverTick: number): void {
-    if (!this.destroyed && state.ownerId === this.ownerId) this.snapshots.push(state, serverTick);
+    if (this.destroyed) return;
+    const dimensionId = this.readDimensionId();
+    if (dimensionId !== this.artDimensionId) this.ensureArt();
+    if (state.ownerId === this.ownerId) this.snapshots.push(state, serverTick);
   }
 
   private ensureArt(): void {
+    this.artDimensionId = this.readDimensionId();
     this.refreshTextureSources();
     let queued = 0;
+    const atlas = this.scene.textures.exists(SPRITE_ATLAS)
+      ? this.scene.textures.get(SPRITE_ATLAS)
+      : null;
     for (let card = 0; card < CARD_ROLES.length; card++) {
-      if (this.textureKeys[card] !== WHITE_TEXTURE) continue;
       const role = CARD_ROLES[card]!;
+      const shortFrame = `seam-eater/${role}`;
+      const fullFrame = `seam-eater/seam-eater-${role}`;
+      const outputKey = `seam-eater:${role}`;
       const rawKey = `seam-eater:raw:${role}`;
-      if (!this.scene.textures.exists(rawKey)) {
+      const hasCanonical =
+        atlas?.has(shortFrame) ||
+        atlas?.has(fullFrame) ||
+        this.scene.textures.exists(outputKey) ||
+        this.scene.textures.exists(rawKey);
+      if (!hasCanonical) {
         this.scene.load.image(rawKey, `sprites/seam-eater/seam-eater-${role}.png`);
+        queued++;
+      }
+    }
+    const suffix = dimensionArtSuffix(this.artDimensionId);
+    if (suffix) {
+      for (let card = 0; card < CARD_ROLES.length; card++) {
+        if (!hasDimensionMaterialPass(card)) continue;
+        const role = CARD_ROLES[card]!;
+        const outputKey = `seam-eater:${role}--${suffix}`;
+        const rawKey = `seam-eater:raw:${role}--${suffix}`;
+        if (this.scene.textures.exists(outputKey) || this.scene.textures.exists(rawKey)) continue;
+        this.scene.load.image(rawKey, `sprites/seam-eater/seam-eater-${role}--${suffix}.png`);
         queued++;
       }
     }
@@ -524,6 +574,7 @@ export class WormRig {
   }
 
   private refreshTextureSources(): void {
+    const suffix = dimensionArtSuffix(this.readDimensionId());
     const hasAtlas = this.scene.textures.exists(SPRITE_ATLAS);
     const atlas = hasAtlas ? this.scene.textures.get(SPRITE_ATLAS) : null;
     let changed = false;
@@ -545,6 +596,15 @@ export class WormRig {
         chromaKeyLooseTexture(this.scene, rawKey, outputKey);
         if (this.scene.textures.exists(outputKey)) key = outputKey;
       }
+      if (suffix && hasDimensionMaterialPass(card)) {
+        const outputKey = `seam-eater:${role}--${suffix}`;
+        const rawKey = `seam-eater:raw:${role}--${suffix}`;
+        chromaKeyLooseTexture(this.scene, rawKey, outputKey);
+        if (this.scene.textures.exists(outputKey)) {
+          key = outputKey;
+          frame = undefined;
+        }
+      }
       if (this.textureKeys[card] !== key || this.textureFrames[card] !== frame) changed = true;
       this.textureKeys[card] = key;
       this.textureFrames[card] = frame;
@@ -554,6 +614,13 @@ export class WormRig {
       this.budCard.fill(-1);
       this.capCard.fill(-1);
     }
+  }
+
+  private readDimensionId(): string {
+    const dimensionId = (
+      this.scene as Phaser.Scene & { room?: { state?: { dimensionId?: unknown } } }
+    ).room?.state?.dimensionId;
+    return typeof dimensionId === "string" ? dimensionId : "";
   }
 
   private setCard(
