@@ -20,8 +20,8 @@ export interface MetaUpgrade {
 
 export const META_UPGRADES: readonly MetaUpgrade[] = [
   { id: "vitality", name: "Vitality", desc: "+20 max HP", maxLevel: 3, costs: [30, 70, 140] },
-  { id: "fortune", name: "Fortune", desc: "+1 LUK (rarity·crit·harvest)", maxLevel: 3, costs: [40, 90, 180] },
-  { id: "power", name: "Power", desc: "+1 STR (melee damage)", maxLevel: 3, costs: [45, 100, 200] },
+  { id: "fortune", name: "Fortune", desc: "+1 LUK — better loot & crits", maxLevel: 3, costs: [40, 90, 180] },
+  { id: "power", name: "Power", desc: "+1 STR — melee damage", maxLevel: 3, costs: [45, 100, 200] },
 ];
 
 /** Per-level stat deltas applied to a fresh player. */
