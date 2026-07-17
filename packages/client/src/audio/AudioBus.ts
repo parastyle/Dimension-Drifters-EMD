@@ -20,9 +20,12 @@ const LS_MUTED = "dd.audio.muted";
 export interface PlayOpts {
   x?: number;
   amt?: number;
+  /** Stable beam owner for per-channel sustain throttling (bounded to the room-sized voice table). */
+  ownerId?: string;
 }
 
 type Ctx = AudioContext;
+type VoicePriority = "low" | "normal" | "critical";
 
 export class AudioBus {
   private ctx: Ctx | null = null;
@@ -39,6 +42,7 @@ export class AudioBus {
   private halfViewW = 960;
   /** Last play time (ctx seconds) per throttle key, to rate-limit spammy events. */
   private readonly lastAt = new Map<string, number>();
+  private readonly beamSustainAt = new Map<string, number>();
 
   constructor() {
     let v = 0.35;
@@ -77,6 +81,7 @@ export class AudioBus {
           if (ctx.state === "running") {
             this.voices = 0;
             this.lastAt.clear();
+            this.beamSustainAt.clear();
           }
         };
         // Auto-resume when the tab becomes visible again, so audio recovers WITHOUT needing a fresh click.
@@ -157,9 +162,16 @@ export class AudioBus {
     return p;
   }
 
-  /** Count a voice on start, uncount on ended; returns false if we're over the concurrency budget. */
-  private claim(node: AudioScheduledSourceNode): boolean {
-    if (this.voices >= AudioBus.MAX_VOICES) return false;
+  /** Reserve headroom for rule/skill cues. Reward ticks stop at 16 voices, ordinary cues at 20, while
+   *  parry/hurt/boss/owner-overheat may use the complete bounded pool. */
+  private claim(node: AudioScheduledSourceNode, priority: VoicePriority): boolean {
+    const limit =
+      priority === "critical"
+        ? AudioBus.MAX_VOICES
+        : priority === "normal"
+          ? AudioBus.MAX_VOICES - 4
+          : AudioBus.MAX_VOICES - 8;
+    if (this.voices >= limit) return false;
     this.voices++;
     node.addEventListener("ended", () => {
       this.voices = Math.max(0, this.voices - 1);
@@ -171,13 +183,20 @@ export class AudioBus {
   private tone(
     freq: number,
     dur: number,
-    o: { type?: OscillatorType; gain?: number; sweepTo?: number; x?: number; delay?: number } = {},
+    o: {
+      type?: OscillatorType;
+      gain?: number;
+      sweepTo?: number;
+      x?: number;
+      delay?: number;
+      priority?: VoicePriority;
+    } = {},
   ): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const t0 = ctx.currentTime + (o.delay ?? 0);
     const osc = ctx.createOscillator();
-    if (!this.claim(osc)) return;
+    if (!this.claim(osc, o.priority ?? "normal")) return;
     osc.type = o.type ?? "sine";
     osc.frequency.setValueAtTime(freq, t0);
     if (o.sweepTo && o.sweepTo > 0) osc.frequency.exponentialRampToValueAtTime(o.sweepTo, t0 + dur);
@@ -201,13 +220,14 @@ export class AudioBus {
       q?: number;
       sweepTo?: number;
       x?: number;
+      priority?: VoicePriority;
     } = {},
   ): void {
     const ctx = this.ctx;
     if (!ctx || !this.noiseBuf) return;
     const t0 = ctx.currentTime;
     const src = ctx.createBufferSource();
-    if (!this.claim(src)) return;
+    if (!this.claim(src, o.priority ?? "normal")) return;
     src.buffer = this.noiseBuf;
     src.playbackRate.value = 1;
     const filt = ctx.createBiquadFilter();
@@ -232,6 +252,18 @@ export class AudioBus {
     const last = this.lastAt.get(key) ?? -1;
     if (now - last < minMs / 1000) return true;
     this.lastAt.set(key, now);
+    return false;
+  }
+
+  private beamSustainThrottled(ownerId: string | undefined, minMs: number): boolean {
+    if (!ownerId) return this.throttled("beamSustain", minMs);
+    const ctx = this.ctx;
+    if (!ctx) return true;
+    const last = this.beamSustainAt.get(ownerId) ?? -1;
+    if (ctx.currentTime - last < minMs / 1000) return true;
+    if (!this.beamSustainAt.has(ownerId) && this.beamSustainAt.size >= 16)
+      this.beamSustainAt.clear();
+    this.beamSustainAt.set(ownerId, ctx.currentTime);
     return false;
   }
 
@@ -280,16 +312,210 @@ export class AudioBus {
         this.tone(120, 0.14, { type: "square", gain: 0.34, sweepTo: 55, x });
         this.noise(0.09, { gain: 0.28, type: "lowpass", freq: 900, x });
         break;
+      // Accepted non-gun source/whiff vocabulary. Target/material impact remains a separate hit layer.
+      case "melee:light":
+        if (this.throttled(amt >= 0.75 ? "meleeLightSelf" : "meleeLight", 34)) return;
+        this.noise(0.1, {
+          gain: 0.12 + 0.13 * amt,
+          type: "bandpass",
+          freq: 1450,
+          q: 1.5,
+          sweepTo: 760,
+          x,
+        });
+        break;
+      case "melee:claw":
+        if (this.throttled(amt >= 0.75 ? "meleeClawSelf" : "meleeClaw", 34)) return;
+        this.noise(0.085, {
+          gain: 0.13 + 0.14 * amt,
+          type: "highpass",
+          freq: 1750,
+          q: 1.8,
+          sweepTo: 3100,
+          x,
+        });
+        break;
+      case "melee:heavy":
+        if (this.throttled(amt >= 0.75 ? "meleeHeavySelf" : "meleeHeavy", 55)) return;
+        this.noise(0.16, {
+          gain: 0.18 + 0.18 * amt,
+          type: "lowpass",
+          freq: 1050,
+          sweepTo: 260,
+          x,
+        });
+        this.tone(105, 0.15, {
+          type: "sine",
+          gain: 0.1 + 0.13 * amt,
+          sweepTo: 58,
+          x,
+        });
+        break;
+      case "melee:blunt":
+        if (this.throttled(amt >= 0.75 ? "meleeBluntSelf" : "meleeBlunt", 55)) return;
+        this.noise(0.14, {
+          gain: 0.16 + 0.16 * amt,
+          type: "bandpass",
+          freq: 420,
+          q: 0.8,
+          sweepTo: 150,
+          x,
+        });
+        this.tone(82, 0.17, {
+          type: "triangle",
+          gain: 0.11 + 0.12 * amt,
+          sweepTo: 45,
+          x,
+        });
+        break;
+      case "melee:arcane":
+        if (this.throttled(amt >= 0.75 ? "meleeArcaneSelf" : "meleeArcane", 45)) return;
+        this.tone(330 + amt * 130, 0.14, {
+          type: "triangle",
+          gain: 0.1 + 0.12 * amt,
+          sweepTo: 780 + amt * 220,
+          x,
+        });
+        this.noise(0.1, {
+          gain: 0.07 + 0.08 * amt,
+          type: "bandpass",
+          freq: 1250,
+          q: 3,
+          x,
+        });
+        break;
+      // Beam lifecycle. Sustain is a bounded, throttled pressure pulse; phase edges remain distinct.
+      case "beam:charge":
+        this.tone(150 + amt * 80, 0.24, {
+          type: "sawtooth",
+          gain: 0.045 + 0.085 * amt,
+          sweepTo: 410 + amt * 220,
+          x,
+        });
+        this.noise(0.18, {
+          gain: 0.025 + 0.055 * amt,
+          type: "bandpass",
+          freq: 720,
+          q: 3.5,
+          sweepTo: 1850,
+          x,
+        });
+        break;
+      case "beam:ignite":
+        this.noise(0.09, {
+          gain: 0.12 + 0.2 * amt,
+          type: "highpass",
+          freq: 1700,
+          q: 1.6,
+          x,
+        });
+        this.tone(260 + amt * 120, 0.12, {
+          type: "square",
+          gain: 0.08 + 0.14 * amt,
+          sweepTo: 95,
+          x,
+        });
+        break;
+      case "beam:sustain":
+        if (this.beamSustainThrottled(opts.ownerId, amt >= 0.55 ? 120 : 220)) return;
+        this.tone(92 + amt * 105, 0.11, {
+          type: "sawtooth",
+          gain: 0.025 + 0.055 * amt,
+          sweepTo: 104 + amt * 155,
+          x,
+        });
+        this.noise(0.1, {
+          gain: 0.018 + 0.045 * amt,
+          type: "bandpass",
+          freq: 520 + amt * 1280,
+          q: 2.2,
+          x,
+        });
+        break;
+      case "beam:redline":
+        if (this.throttled("beamRedline", 260)) return;
+        this.tone(1080 + amt * 360, 0.07, {
+          type: "square",
+          gain: 0.1 + 0.08 * amt,
+          sweepTo: 820,
+          x,
+          priority: "critical",
+        });
+        break;
+      case "beam:release":
+        this.noise(0.2, {
+          gain: 0.07 + 0.13 * amt,
+          type: "lowpass",
+          freq: 1500,
+          q: 0.9,
+          sweepTo: 210,
+          x,
+        });
+        this.tone(250, 0.18, {
+          type: "sine",
+          gain: 0.06 + 0.1 * amt,
+          sweepTo: 80,
+          x,
+        });
+        break;
+      case "beam:overheat": {
+        const priority: VoicePriority = amt >= 0.75 ? "critical" : "normal";
+        this.noise(0.24, {
+          gain: 0.13 + 0.2 * amt,
+          type: "bandpass",
+          freq: 340,
+          q: 1.1,
+          sweepTo: 95,
+          x,
+          priority,
+        });
+        this.tone(118, 0.27, {
+          type: "square",
+          gain: 0.11 + 0.16 * amt,
+          sweepTo: 42,
+          x,
+          priority,
+        });
+        break;
+      }
       // Reward / skill stingers.
       case "parry": // the crispest sound in the game — this IS the skill beat
-        this.tone(1400, 0.18, { type: "sine", gain: 0.3 + 0.12 * amt });
-        this.tone(2100, 0.16, { type: "sine", gain: 0.18 + 0.08 * amt, delay: 0.005 });
+        this.tone(1400, 0.18, {
+          type: "sine",
+          gain: 0.3 + 0.12 * amt,
+          priority: "critical",
+        });
+        this.tone(2100, 0.16, {
+          type: "sine",
+          gain: 0.18 + 0.08 * amt,
+          delay: 0.005,
+          priority: "critical",
+        });
         break;
       case "levelup":
         this.blip([523, 659, 784, 1046], 0.07, "triangle", 0.26);
         break;
       case "loot": // pitch rises with rarity (amt = rarity/6)
         this.blip([660 + amt * 500, 990 + amt * 600, 1320 + amt * 700], 0.08, "sine", 0.22);
+        break;
+      case "xpTick": // one low-priority note per receipt bucket; never impersonates the loot arpeggio
+        if (this.throttled("xpTick", 65)) return;
+        this.tone(430 + amt * 500, 0.075, {
+          type: "sine",
+          gain: 0.08 + 0.06 * amt,
+          x,
+          priority: "low",
+        });
+        break;
+      case "xpCadence": // one restrained resolve for a meaningful catch batch
+        if (this.throttled("xpCadence", 300)) return;
+        this.tone(620 + amt * 220, 0.11, {
+          type: "triangle",
+          gain: 0.07 + 0.05 * amt,
+          sweepTo: 760 + amt * 260,
+          x,
+          priority: "low",
+        });
         break;
       case "death":
         if (this.throttled("death", 30)) return;
@@ -305,8 +531,21 @@ export class AudioBus {
         break;
       // Big low-frequency moments (the shake wants a boom under it).
       case "bossslam":
-        this.tone(60, 0.4, { type: "sine", gain: 0.5, sweepTo: 30, x });
-        this.noise(0.35, { gain: 0.3, type: "bandpass", freq: 120, q: 0.8, x });
+        this.tone(60, 0.4, {
+          type: "sine",
+          gain: 0.5,
+          sweepTo: 30,
+          x,
+          priority: "critical",
+        });
+        this.noise(0.35, {
+          gain: 0.3,
+          type: "bandpass",
+          freq: 120,
+          q: 0.8,
+          x,
+          priority: "critical",
+        });
         break;
       case "descent":
         this.noise(0.6, { gain: 0.34, type: "lowpass", freq: 1200, q: 0.6, sweepTo: 200 });
@@ -317,8 +556,18 @@ export class AudioBus {
         break;
       case "hurt":
         if (this.throttled("hurt", 120)) return;
-        this.noise(0.12, { gain: 0.14 + 0.18 * amt, type: "lowpass", freq: 900 });
-        this.tone(200, 0.11, { type: "sine", gain: 0.16 + 0.14 * amt, sweepTo: 120 });
+        this.noise(0.12, {
+          gain: 0.14 + 0.18 * amt,
+          type: "lowpass",
+          freq: 900,
+          priority: "critical",
+        });
+        this.tone(200, 0.11, {
+          type: "sine",
+          gain: 0.16 + 0.14 * amt,
+          sweepTo: 120,
+          priority: "critical",
+        });
         break;
       case "fall":
         this.tone(80, 0.09, { type: "sine", gain: 0.3, sweepTo: 55, delay: 0.18 });

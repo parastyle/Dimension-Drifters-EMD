@@ -1,4 +1,4 @@
-import { BeamPhase, shortestAngleDelta } from "@dd/shared";
+import { BeamPhase, MAX_PLAYERS, shortestAngleDelta } from "@dd/shared";
 import Phaser from "phaser";
 import "./vfx-render.js";
 
@@ -7,6 +7,7 @@ export interface BeamRenderState {
   weaponId: string;
   seq: number;
   phase: number;
+  phaseStartTick: number;
   originX: number;
   originY: number;
   previousOriginX: number;
@@ -93,17 +94,19 @@ function hashKey(value: string): number {
   return hash >>> 0;
 }
 
-/** Four-entry retained beam pool: one shared procedural draw pass plus two shared-PER ropes per owner. */
+/** Room-ceiling retained beam pool plus one prediction slot. Exact damaging capsules are never culled. */
 export class BeamRenderer {
+  private readonly groundLight: Phaser.GameObjects.Graphics;
   private readonly graphics: Phaser.GameObjects.Graphics;
   private readonly entries: BeamEntry[] = [];
   private readonly capsulePoints: Phaser.Math.Vector2[] = [];
 
   constructor(private readonly scene: Phaser.Scene) {
     globalThis.VFXRENDER.ensureTextures(scene);
+    this.groundLight = scene.add.graphics().setDepth(2);
     this.graphics = scene.add.graphics().setDepth(9990);
     for (let i = 0; i < 18; i++) this.capsulePoints.push(new Phaser.Math.Vector2());
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < MAX_PLAYERS + 1; i++) {
       const body = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
       const lip = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
       body.setDepth(9991);
@@ -125,6 +128,7 @@ export class BeamRenderer {
   }
 
   destroy(): void {
+    this.groundLight.destroy();
     this.graphics.destroy();
     for (const entry of this.entries) {
       entry.body.destroy();
@@ -141,16 +145,12 @@ export class BeamRenderer {
     beltY0: number,
     beltYScale: number,
     predicted?: PredictedBeamCharge,
-    suppressSelfSeq = -1,
   ): void {
+    this.groundLight.clear();
     this.graphics.clear();
     for (const entry of this.entries) entry.seen = false;
     let hasAuthoritativeSelf = false;
     rows.forEach((row, ownerId) => {
-      if (ownerId === selfId && row.seq === suppressSelfSeq) {
-        hasAuthoritativeSelf = true;
-        return;
-      }
       const predictedOwnerCharge =
         ownerId === selfId && row.phase === BeamPhase.Charging && predicted?.startSeq === row.seq;
       if (ownerId === selfId && !predictedOwnerCharge) hasAuthoritativeSelf = true;
@@ -237,6 +237,9 @@ export class BeamRenderer {
       this.drawPaint(entry, row, color, local ? 12 : 8, nowMs, beltY0, beltYScale);
       if (entry.ignitionT > 0) {
         const q = entry.ignitionT / 0.07;
+        this.groundLight
+          .fillStyle(color, q * 0.13)
+          .fillEllipse(row.originX, oy + 5, 58 + 34 * q, 22 + 12 * q);
         this.graphics.fillStyle(0xffffff, q * 0.9).fillCircle(row.originX, oy, 8 + 24 * q);
       }
       return;

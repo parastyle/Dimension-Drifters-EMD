@@ -8,6 +8,8 @@ import {
   affixById,
   BAG_CAP,
   BEAM_MIN_CHARGE_SECONDS,
+  BEAM_OVERHEAT_LOCK_SECONDS,
+  BEAM_RESTART_HEAT,
   BELT_Y0,
   BeamPhase,
   type BeltLevel,
@@ -20,6 +22,7 @@ import {
   CAM_SNAP_DIST,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  CombatDelivery,
   characterName,
   characterScale,
   clampQuakeEpicenter,
@@ -120,7 +123,12 @@ import {
   weaponDockLayout,
   wrappedDockOffset,
 } from "../ui/weapon-dock-layout.js";
-import { BeamRenderer, type PredictedBeamCharge } from "../vfx/BeamRenderer.js";
+import {
+  BeamRenderer,
+  type BeamRenderRows,
+  type BeamRenderState,
+  type PredictedBeamCharge,
+} from "../vfx/BeamRenderer.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
@@ -326,6 +334,127 @@ interface MeleeTellCandidate {
   remainingMs: number;
 }
 
+function compareMeleeTellCandidates(a: MeleeTellCandidate, b: MeleeTellCandidate): number {
+  return (
+    Number(b.containsSelf) - Number(a.containsSelf) ||
+    a.distance - b.distance ||
+    a.remainingMs - b.remainingMs ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+interface BeamFeedbackState {
+  seq: number;
+  phase: number;
+  x: number;
+}
+
+interface DamageRecapEntry {
+  sourceKind: string;
+  sourceId: string;
+  sourceLabel: string;
+  damageType: string;
+  amount: number;
+  parryable: -1 | 0 | 1;
+  telegraphKind: string;
+  receiptKey: string;
+  tick: number;
+  recordedAtMs: number;
+}
+
+interface SyncedDamageAttribution {
+  lastDamageSeq?: number;
+  damageSeq?: number;
+  deathSeq?: number;
+  lastDamageSource?: string;
+  lastDamageKind?: string;
+  deathSource?: string;
+  downedByKind?: string;
+  lastDamageSourceKind?: string;
+  damageSourceKind?: string;
+  deathSourceKind?: string;
+  lastDamageSourceId?: string;
+  damageSourceId?: string;
+  deathSourceId?: string;
+  downedById?: string;
+  lastDamageSourceLabel?: string;
+  damageSourceLabel?: string;
+  deathSourceLabel?: string;
+  lastDamageType?: string;
+  damageType?: string;
+  deathDamageType?: string;
+  lastDamageAmount?: number;
+  damageAmount?: number;
+  deathDamage?: number;
+  downedByDamage?: number;
+  lastDamageParryable?: boolean | number;
+  damageParryable?: boolean | number;
+  deathParryable?: boolean | number;
+  downedByParryable?: boolean | number;
+  lastDamageTelegraphKind?: string | number;
+  damageTelegraphKind?: string | number;
+  deathTelegraphKind?: string | number;
+}
+
+interface SyncedDamageReceipt {
+  seq?: number;
+  tick?: number;
+  targetId?: string;
+  targetPlayerId?: string;
+  target?: string;
+  sourceKind?: string;
+  kind?: string;
+  sourceId?: string;
+  sourcePlayerId?: string;
+  sourceLabel?: string;
+  source?: string;
+  weaponId?: string;
+  delivery?: string | number;
+  element?: string;
+  damageType?: string;
+  damage?: number;
+  amount?: number;
+  value?: number;
+  parryable?: boolean | number;
+  telegraphKind?: string | number;
+}
+
+interface SyncedDamageReceiptRows {
+  forEach(callback: (row: SyncedDamageReceipt, id: string | number) => void): void;
+}
+
+interface ArenaDamageAttribution {
+  damageReceipts?: SyncedDamageReceiptRows;
+  hitReceipts?: SyncedDamageReceiptRows;
+  combatReceipts?: SyncedDamageReceiptRows;
+}
+
+function damageDeliveryKind(delivery: string | number | undefined): string {
+  if (typeof delivery === "string") return delivery;
+  switch (delivery) {
+    case CombatDelivery.Melee:
+      return "melee";
+    case CombatDelivery.Gun:
+      return "gun";
+    case CombatDelivery.Cast:
+      return "cast";
+    case CombatDelivery.Thrown:
+      return "thrown";
+    case CombatDelivery.Beam:
+      return "beam";
+    case CombatDelivery.Quake:
+      return "quake";
+    case CombatDelivery.Chain:
+      return "chain";
+    case CombatDelivery.Parry:
+      return "parry";
+    case CombatDelivery.Scatter:
+      return "scatter";
+    default:
+      return "";
+  }
+}
+
 function meleeTelegraphOwner(id: string): string | undefined {
   return id.startsWith(MELEE_TELEGRAPH_PREFIX)
     ? id.slice(MELEE_TELEGRAPH_PREFIX.length)
@@ -343,6 +472,47 @@ interface TelegraphGeometry {
   edges: TelegraphEdgePath[];
   centerX: number;
   centerY: number;
+}
+
+function telegraphGeometryContains(geometry: TelegraphGeometry, x: number, y: number): boolean {
+  let inside = false;
+  for (const edge of geometry.edges) {
+    if (!edge.closed || edge.points.length < 3) continue;
+    let edgeInside = false;
+    let previous = edge.points[edge.points.length - 1];
+    if (!previous) continue;
+    for (const point of edge.points) {
+      if (
+        point.y > y !== previous.y > y &&
+        x < ((previous.x - point.x) * (y - point.y)) / (previous.y - point.y || 1) + point.x
+      )
+        edgeInside = !edgeInside;
+      previous = point;
+    }
+    if (edgeInside) inside = !inside;
+  }
+  return inside;
+}
+
+function telegraphDamageKind(kindTag: number): string {
+  switch (kindTag) {
+    case TelegraphKindTag.Pool:
+      return "pool";
+    case TelegraphKindTag.Summon:
+      return "summon";
+    case TelegraphKindTag.Radial:
+      return "radial";
+    case TelegraphKindTag.Charge:
+      return "charge";
+    case TelegraphKindTag.ExpandingRing:
+      return "ring";
+    case TelegraphKindTag.Melee:
+      return "melee";
+    case TelegraphKindTag.Quake:
+      return "quake";
+    default:
+      return "slam";
+  }
 }
 
 interface PaperDeathEntry {
@@ -622,8 +792,11 @@ export class ArenaScene extends Phaser.Scene {
   private beamPredictionAngle = 0;
   private beamPredictionProgress = 0;
   private beamPredictionFadeAt = -1;
+  private beamHelpShown = false;
   private readonly beamPredictionPending: { seq: number; aimX: number; aimY: number }[] = [];
   private lastMintedInputSeq = 0;
+  private readonly beamFeedback = new Map<string, BeamFeedbackState>();
+  private readonly beamFeedbackSeen = new Set<string>();
   private readonly predictedBeam: PredictedBeamCharge = {
     ownerId: "",
     weaponId: "",
@@ -643,7 +816,7 @@ export class ArenaScene extends Phaser.Scene {
   private audio!: AudioBus;
   /** §TELEGRAPH exact danger edges above terrain/zones and below actor rigs. Never quality-gated. */
   private telegraphGroundGfx!: Phaser.GameObjects.Graphics;
-  /** §8 white source/rhythm layer — retained high so parry semantics survive body/projectile clutter. */
+  /** Protected response-edge/source layer above combat VFX and below HUD. */
   private telegraphGfx!: Phaser.GameObjects.Graphics;
   /** §TELEGRAPH optional painted world preludes; exact geometry does not depend on this pool. */
   private telegraphForeshadows!: TelegraphForeshadowPool;
@@ -741,8 +914,9 @@ export class ArenaScene extends Phaser.Scene {
   };
   /** One-tick-bounded presentation sampler. It can smooth the 20 Hz stairs but cannot declare contact. */
   private readonly enemyWindup = new Map<string, EnemyWindupSample>();
-  /** Stable nearest-six source salience; exact ground geometry is never culled. */
+  /** Stable nearest-six source salience plus uncullable local intersections/near-term threats. */
   private meleeFullTells = new Set<string>();
+  private meleeFullTellNext = new Set<string>();
   private readonly meleeTellCandidates: MeleeTellCandidate[] = [];
   private readonly meleeTellAnchor = { x: 0, y: 0 };
   private keys!: Record<
@@ -846,6 +1020,37 @@ export class ArenaScene extends Phaser.Scene {
   private pointerMoves = 0;
   private prevSelfHp = -1;
   private lastHurt = 0;
+  private observedSelfFellSeq = 0;
+  private lastDamageReceiptKey = "";
+  private readonly damageReceiptSeqBySlot = new Map<string | number, number>();
+  private readonly deathRecap: [DamageRecapEntry, DamageRecapEntry] = [
+    {
+      sourceKind: "",
+      sourceId: "",
+      sourceLabel: "",
+      damageType: "",
+      amount: 0,
+      parryable: -1,
+      telegraphKind: "",
+      receiptKey: "",
+      tick: 0,
+      recordedAtMs: -9999,
+    },
+    {
+      sourceKind: "",
+      sourceId: "",
+      sourceLabel: "",
+      damageType: "",
+      amount: 0,
+      parryable: -1,
+      telegraphKind: "",
+      receiptKey: "",
+      tick: 0,
+      recordedAtMs: -9999,
+    },
+  ];
+  private recentResolvedDangerKind = "";
+  private recentResolvedDangerAt = -9999;
   private localAtkCd = 0;
   /** Highest attack sequence for which the owning client has already played prediction. Confirmations at or
    *  below this contiguous high-water mark must not restart the local rig/tome page. */
@@ -921,6 +1126,7 @@ export class ArenaScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private xpBarBg!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
+  private beamHudGfx?: Phaser.GameObjects.Graphics;
   private levelText!: Phaser.GameObjects.Text;
   private prevLevel = -1;
   // §16 boss/extraction run loop.
@@ -1225,10 +1431,13 @@ export class ArenaScene extends Phaser.Scene {
     this.lastRevived.clear();
     this.lastAttackSeq.clear();
     this.lastAttackHeld.clear();
+    this.beamFeedback.clear();
+    this.beamFeedbackSeen.clear();
     this.telegraphCache.clear();
     this.telegraphForeshadows?.clear();
     this.enemyWindup.clear();
     this.meleeFullTells.clear();
+    this.meleeFullTellNext.clear();
     this.meleeTellCandidates.length = 0;
     this.playerBufs.clear();
     this.enemyBufs.clear();
@@ -1283,6 +1492,7 @@ export class ArenaScene extends Phaser.Scene {
     this.hpText = undefined!;
     this.xpBarBg = undefined!;
     this.xpBarFill = undefined!;
+    this.beamHudGfx = undefined;
     this.levelText = undefined!;
     this.bossBarBg = undefined!;
     this.bossBarFill = undefined!;
@@ -1333,8 +1543,14 @@ export class ArenaScene extends Phaser.Scene {
     this.beamPredictionAngle = 0;
     this.beamPredictionProgress = 0;
     this.beamPredictionFadeAt = -1;
+    this.beamHelpShown = false;
     this.beamPredictionPending.length = 0;
     this.lastMintedInputSeq = 0;
+    this.observedSelfFellSeq = 0;
+    this.lastDamageReceiptKey = "";
+    this.resetDeathRecap();
+    this.recentResolvedDangerKind = "";
+    this.recentResolvedDangerAt = -9999;
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -1428,8 +1644,8 @@ export class ArenaScene extends Phaser.Scene {
     // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
     this.telegraphGroundGfx = this.add.graphics().setDepth(3);
     this.telegraphForeshadows = new TelegraphForeshadowPool(this);
-    // §8 white source/rhythm layer: compact parry timing stays high enough to read over bodies.
-    this.telegraphGfx = this.add.graphics().setDepth(99990);
+    // Thin response boundaries and compact source cues stay above beams/XP, below HUD.
+    this.telegraphGfx = this.add.graphics().setDepth(99997);
     // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
     // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
     this.parryGfx = this.add.graphics().setDepth(99989);
@@ -1639,6 +1855,7 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100001);
+    this.beamHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
     this.levelText = this.add
       .text(0, 0, "", { fontSize: "13px", color: "#ffd479", fontStyle: "bold" })
       .setScrollFactor(0)
@@ -2204,6 +2421,48 @@ export class ArenaScene extends Phaser.Scene {
       weapon.cooldown * lootCooldownMult(player.weaponAffix),
     );
     rig.triggerSwing(epoch, player.aimDir, swing);
+    this.playWeaponSourceAudio(weapon, rig.x, player.id === this.room?.sessionId);
+  }
+
+  /** Accepted source/whiff sound; impact remains independently driven by authoritative HP loss. */
+  private playWeaponSourceAudio(weapon: WeaponDef, x: number, local: boolean): void {
+    if (weapon.gun || weapon.beam || weapon.thrown) return;
+    const family = weapon.tags.family.toLowerCase();
+    let cue = "melee:light";
+    if (
+      weapon.cast ||
+      weapon.tags.classPool === "caster" ||
+      family.includes("staff") ||
+      family.includes("wand") ||
+      family.includes("tome") ||
+      family.includes("rod")
+    )
+      cue = "melee:arcane";
+    else if (
+      family.includes("claw") ||
+      family.includes("talon") ||
+      family.includes("fist") ||
+      family.includes("dagger") ||
+      family.includes("knife")
+    )
+      cue = "melee:claw";
+    else if (
+      family.includes("maul") ||
+      family.includes("mace") ||
+      family.includes("hammer") ||
+      family.includes("flail") ||
+      family.includes("spade") ||
+      family.includes("club")
+    )
+      cue = "melee:blunt";
+    else if (
+      weapon.twoHanded ||
+      weapon.tags.grip === "2H" ||
+      weapon.tags.size === "L" ||
+      weapon.tags.size === "XL"
+    )
+      cue = "melee:heavy";
+    this.audio.play(cue, { x, amt: local ? 1 : 0.36 });
   }
 
   /** Curated world-only capture list: HUD and exact telegraphs remain live above the folding sheet. */
@@ -2952,10 +3211,10 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room?.state.players.get(this.room.sessionId);
     const levelEdge = !!self && this.prevLevel >= 0 && self.level > this.prevLevel;
     if (!levelEdge && now - this.xpAudioLastAt >= 70) {
-      // AudioBus's reward voice already rises with `amt`; one 70ms bucket speaks for every same-frame catch.
-      this.audio.play("loot", {
+      // A single low-priority receipt note rises across the catch streak; loot keeps its own rare arpeggio.
+      this.audio.play("xpTick", {
         x: event.x,
-        amt: Math.min(1, this.xpAudioStreak * 0.075),
+        amt: Math.min(1, this.xpAudioStreak * 0.06 + Math.log2(1 + event.value) * 0.12),
       });
       this.xpAudioStreak = Math.min(16, this.xpAudioStreak + 1);
       this.xpAudioLastAt = now;
@@ -2968,6 +3227,11 @@ export class ArenaScene extends Phaser.Scene {
       if (now - batch.lastAt < 200) continue;
       this.xpReceiptBatches.delete(collectorId);
       if (batch.value < 5) continue;
+      if (batch.value >= 12)
+        this.audio.play("xpCadence", {
+          x: batch.x,
+          amt: Math.min(1, Math.log2(1 + batch.value) / 6),
+        });
       const txt = this.add
         .text(batch.x, batch.y - 34, `+${batch.value} XP`, {
           fontFamily: "monospace",
@@ -3327,7 +3591,8 @@ export class ArenaScene extends Phaser.Scene {
     const self = state && this.room ? state.players.get(this.room.sessionId) : undefined;
     this.meleeTellCandidates.length = 0;
 
-    // Sample every phase and rank salience once before any rig consumes it. Geometry/rhythm is never culled.
+    // Sample every phase and rank salience once before any rig consumes it. Local intersections and attacks
+    // that can reach self imminently are uncullable; distant horde tells collapse to one source bracket.
     if (state) {
       state.enemies.forEach((enemy, id) => {
         const kind = ENEMY_KINDS[enemy.kind];
@@ -3413,7 +3678,7 @@ export class ArenaScene extends Phaser.Scene {
           windup.locked,
           kind?.archetype ?? "duelist",
           windup.step,
-          this.meleeFullTells.has(id),
+          kind?.archetype === "boss" || this.meleeFullTells.has(id),
         );
       }
       if (es && es.kind === this.room?.state.bossKind)
@@ -3426,23 +3691,25 @@ export class ArenaScene extends Phaser.Scene {
         const melee = effectiveMelee(ENEMY_KINDS[es.kind]);
         if (melee) {
           const row = state?.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+          const full = ENEMY_KINDS[es.kind]?.archetype === "boss" || this.meleeFullTells.has(id);
           const pulse =
             now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS;
-          this.drawMeleeRangeRing(
-            row?.x ?? es.x,
-            row?.y ?? es.y,
-            melee.range,
-            melee.halfArc,
-            row?.rot ?? windup.aimWorld,
-            windup.shownT,
-            windup.remainingMs,
-            windup.remainingMs <= PARRY_IFRAMES * 1000,
-            pulse,
-            !!row,
-          );
-          if (row) this.drawMeleeTravelStem(es.x, es.y, row.x, row.y);
-          if (this.meleeFullTells.has(id))
-            this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse);
+          // A synced row already supplies the exact footprint below. The fallback ruler exists only before
+          // that row arrives, so no selected windup draws both full ground geometries.
+          if (full && !row)
+            this.drawMeleeRangeRing(
+              es.x,
+              es.y,
+              melee.range,
+              melee.halfArc,
+              windup.aimWorld,
+              windup.shownT,
+              windup.remainingMs,
+              windup.remainingMs <= PARRY_IFRAMES * 1000,
+              pulse,
+              false,
+            );
+          this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse && full);
         }
       }
       rig.setDepth(rig.y);
@@ -3553,31 +3820,50 @@ export class ArenaScene extends Phaser.Scene {
     return sample;
   }
 
-  /** Keep incumbents unless a materially closer threat challenges; prevents the six source tells churning. */
+  /** Keep intersections/near-term reaches plus a stable nearest-six budget for all remaining horde tells. */
   private selectMeleeFullTells(): void {
-    const compare = (a: MeleeTellCandidate, b: MeleeTellCandidate): number =>
-      Number(b.containsSelf) - Number(a.containsSelf) ||
-      a.distance - b.distance ||
-      a.remainingMs - b.remainingMs ||
-      a.id.localeCompare(b.id);
-    this.meleeTellCandidates.sort(compare);
-    const next = new Set<string>();
+    this.meleeTellCandidates.sort(compareMeleeTellCandidates);
+    const next = this.meleeFullTellNext;
+    next.clear();
+    for (const candidate of this.meleeTellCandidates) {
+      if (
+        candidate.containsSelf ||
+        (candidate.distance <= 42 && candidate.remainingMs <= MELEE_GLINT_LEAD_MS + 120)
+      )
+        next.add(candidate.id);
+    }
+    const targetSize = Math.max(MELEE_FULL_TELL_COUNT, next.size);
     for (const id of this.meleeFullTells) {
-      if (next.size >= MELEE_FULL_TELL_COUNT) break;
-      if (this.meleeTellCandidates.some((candidate) => candidate.id === id)) next.add(id);
+      if (next.size >= targetSize) break;
+      for (const candidate of this.meleeTellCandidates) {
+        if (candidate.id === id) {
+          next.add(id);
+          break;
+        }
+      }
     }
     for (const candidate of this.meleeTellCandidates) {
-      if (next.size >= MELEE_FULL_TELL_COUNT) break;
+      if (next.size >= targetSize) break;
       next.add(candidate.id);
     }
     for (const challenger of this.meleeTellCandidates) {
-      if (next.has(challenger.id) || next.size < MELEE_FULL_TELL_COUNT) continue;
+      if (next.has(challenger.id) || next.size < targetSize) continue;
       let worst: MeleeTellCandidate | undefined;
       for (const incumbentId of next) {
-        const incumbent = this.meleeTellCandidates.find(
-          (candidate) => candidate.id === incumbentId,
-        );
-        if (incumbent && (!worst || compare(incumbent, worst) > 0)) worst = incumbent;
+        let incumbent: MeleeTellCandidate | undefined;
+        for (const candidate of this.meleeTellCandidates) {
+          if (candidate.id === incumbentId) {
+            incumbent = candidate;
+            break;
+          }
+        }
+        if (
+          incumbent &&
+          !incumbent.containsSelf &&
+          !(incumbent.distance <= 42 && incumbent.remainingMs <= MELEE_GLINT_LEAD_MS + 120) &&
+          (!worst || compareMeleeTellCandidates(incumbent, worst) > 0)
+        )
+          worst = incumbent;
       }
       if (!worst) continue;
       const priorityJump = challenger.containsSelf && !worst.containsSelf;
@@ -3589,6 +3875,7 @@ export class ArenaScene extends Phaser.Scene {
         next.add(challenger.id);
       }
     }
+    this.meleeFullTellNext = this.meleeFullTells;
     this.meleeFullTells = next;
   }
 
@@ -3804,6 +4091,8 @@ export class ArenaScene extends Phaser.Scene {
     const frame = ++this.telegraphFrame;
     st.telegraphs.forEach((row, id) => {
       const meleeOwner = meleeTelegraphOwner(id);
+      const meleeEnemy = meleeOwner ? st.enemies.get(meleeOwner) : undefined;
+      const bossMelee = !!meleeEnemy && ENEMY_KINDS[meleeEnemy.kind]?.archetype === "boss";
       const meleeSample = meleeOwner ? this.enemyWindup.get(meleeOwner) : undefined;
       const effectiveT = meleeOwner
         ? (meleeSample?.shownT ?? st.enemies.get(meleeOwner)?.windup ?? row.t)
@@ -3867,15 +4156,24 @@ export class ArenaScene extends Phaser.Scene {
           zoom,
         );
       }
-      this.drawTelegraph(
-        g,
-        cached.geometry,
-        effectiveT,
-        row.danger,
-        row.kindTag,
-        cached.hash,
-        meleePulse,
-      );
+      if (!meleeOwner || bossMelee || this.meleeFullTells.has(meleeOwner))
+        this.drawTelegraph(
+          g,
+          cached.geometry,
+          effectiveT,
+          row.danger,
+          row.kindTag,
+          cached.hash,
+          meleePulse,
+        );
+      if (!meleeOwner || bossMelee)
+        this.drawProtectedTelegraphEdge(
+          this.telegraphGfx,
+          cached.geometry,
+          effectiveT,
+          row.danger,
+          zoom,
+        );
       // Horde source charm is nearest-N rig-owned. Boss melee and every other row keep the shared paint pool.
       if (!meleeOwner)
         this.telegraphForeshadows.update(
@@ -3915,6 +4213,14 @@ export class ArenaScene extends Phaser.Scene {
       this.telegraphCache.delete(id);
       if (!c.sawFull) continue; // cancelled mid-windup → no phantom impact
       const impactY = projectTelegraphY(c.y, projectionYScale);
+      const self = this.room ? st.players.get(this.room.sessionId) : undefined;
+      if (
+        self &&
+        telegraphGeometryContains(c.geometry, self.x, projectTelegraphY(self.y, projectionYScale))
+      ) {
+        this.recentResolvedDangerKind = telegraphDamageKind(c.kindTag);
+        this.recentResolvedDangerAt = this.time.now;
+      }
       if (c.kindTag === TelegraphKindTag.Slam) {
         // slam / landing-zone — the full impact: burst + camera shake + the deep boom. v0.117: scale the
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
@@ -3988,6 +4294,24 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     this.drawTelegraphCadence(g, geometry, t, danger, hash, line, alpha, zoom);
+  }
+
+  /** Protected response channel: exact outer boundary only, above beams/XP and below screen-space HUD. */
+  private drawProtectedTelegraphEdge(
+    g: Phaser.GameObjects.Graphics,
+    geometry: TelegraphGeometry,
+    t: number,
+    danger: number,
+    zoom: number,
+  ): void {
+    const color = danger === 0 ? 0xffffff : 0xff755b;
+    const alpha = 0.5 + Math.max(0, Math.min(1, t)) * 0.34;
+    for (const edge of geometry.edges) {
+      g.lineStyle(5 / zoom, 0x100b09, 0.72);
+      this.strokeTelegraphPath(g, edge.points, edge.closed);
+      g.lineStyle(2.2 / zoom, color, alpha);
+      this.strokeTelegraphPath(g, edge.points, edge.closed);
+    }
   }
 
   /** The fairness layer: full static sector boundary, dominant range arc, forward notch, inward completion. */
@@ -6036,6 +6360,10 @@ export class ArenaScene extends Phaser.Scene {
         if (this.lastRevived.has(id) && alive) {
           blob.flash(170, 0x9cff3b);
           this.audio.play("revive", { x: blob.x }); // §19 a warm rising 2-note chord = life
+          if (id === selfId) {
+            this.resetDeathRecap();
+            this.lastDamageReceiptKey = "";
+          }
         }
         this.lastRevived.set(id, rs);
       }
@@ -6090,6 +6418,7 @@ export class ArenaScene extends Phaser.Scene {
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && swing)
       rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
+    if (weapon) this.playWeaponSourceAudio(weapon, rig?.x ?? self.x, true);
     // Cursor world position (for slam-at-cursor weapons).
     const cam = this.cameras.main;
     const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
@@ -6545,6 +6874,227 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  private clearDamageRecapEntry(entry: DamageRecapEntry): void {
+    entry.sourceKind = "";
+    entry.sourceId = "";
+    entry.sourceLabel = "";
+    entry.damageType = "";
+    entry.amount = 0;
+    entry.parryable = -1;
+    entry.telegraphKind = "";
+    entry.receiptKey = "";
+    entry.tick = 0;
+    entry.recordedAtMs = -9999;
+  }
+
+  private resetDeathRecap(): void {
+    this.clearDamageRecapEntry(this.deathRecap[0]);
+    this.clearDamageRecapEntry(this.deathRecap[1]);
+    this.lastDamageReceiptKey = "";
+    this.damageReceiptSeqBySlot.clear();
+  }
+
+  private copyDamageRecapEntry(target: DamageRecapEntry, source: DamageRecapEntry): void {
+    target.sourceKind = source.sourceKind;
+    target.sourceId = source.sourceId;
+    target.sourceLabel = source.sourceLabel;
+    target.damageType = source.damageType;
+    target.amount = source.amount;
+    target.parryable = source.parryable;
+    target.telegraphKind = source.telegraphKind;
+    target.receiptKey = source.receiptKey;
+    target.tick = source.tick;
+    target.recordedAtMs = source.recordedAtMs;
+  }
+
+  private recordDamageRecap(
+    sourceKind: string,
+    sourceId: string,
+    sourceLabel: string,
+    damageType: string,
+    amount: number,
+    parryable: boolean | number | undefined,
+    telegraphKind: string | number | undefined,
+    receiptKey: string,
+    tick: number,
+  ): void {
+    if (receiptKey && receiptKey === this.lastDamageReceiptKey) return;
+    const latest = this.deathRecap[0];
+    if (tick > 0 && latest.tick > tick) return;
+    this.copyDamageRecapEntry(this.deathRecap[1], latest);
+    latest.sourceKind = sourceKind;
+    latest.sourceId = sourceId;
+    latest.sourceLabel = sourceLabel;
+    latest.damageType = damageType;
+    latest.amount = Math.max(0, amount);
+    latest.parryable =
+      parryable === undefined
+        ? -1
+        : parryable === true || (typeof parryable === "number" && parryable > 0)
+          ? 1
+          : 0;
+    latest.telegraphKind = telegraphKind === undefined ? "" : String(telegraphKind);
+    latest.receiptKey = receiptKey;
+    latest.tick = tick;
+    latest.recordedAtMs = this.time.now;
+    this.lastDamageReceiptKey = receiptKey;
+  }
+
+  /** Accept either the dedicated damage ring or the broader hit ring being added by the server wave. */
+  private captureSyncedDamageReceipts(selfId: string): void {
+    const state = this.room?.state as (ArenaState & ArenaDamageAttribution) | undefined;
+    const rows = state?.damageReceipts ?? state?.hitReceipts ?? state?.combatReceipts;
+    if (!rows) return;
+    rows.forEach((row, id) => {
+      if ((row.targetPlayerId ?? row.targetId ?? row.target) !== selfId) return;
+      const amount = row.damage ?? row.amount ?? row.value ?? 0;
+      if (!(amount > 0)) return;
+      const tick = row.tick ?? state?.tick ?? 0;
+      const seq = row.seq ?? tick;
+      if (seq === 0) return;
+      if (this.damageReceiptSeqBySlot.get(id) === seq) return;
+      if (!this.damageReceiptSeqBySlot.has(id) && this.damageReceiptSeqBySlot.size >= 64)
+        this.damageReceiptSeqBySlot.clear();
+      this.damageReceiptSeqBySlot.set(id, seq);
+      const receiptKey = `receipt:${id}:${seq}`;
+      const delivery = damageDeliveryKind(row.delivery);
+      const weaponName = row.weaponId ? (WEAPONS[row.weaponId]?.name ?? "") : "";
+      this.recordDamageRecap(
+        row.sourceKind || row.kind || delivery || row.damageType || "attack",
+        row.sourceId || row.sourcePlayerId || "",
+        row.sourceLabel || row.source || weaponName,
+        row.damageType || delivery,
+        amount,
+        row.parryable,
+        row.telegraphKind,
+        receiptKey,
+        tick,
+      );
+    });
+  }
+
+  /** Read the append-only PlayerState variant without requiring this client wave to own shared schema. */
+  private capturePlayerDamageAttribution(self: PlayerState, amount: number): boolean {
+    const row = self as PlayerState & SyncedDamageAttribution;
+    const sourceKind =
+      row.lastDamageSourceKind ??
+      row.damageSourceKind ??
+      row.deathSourceKind ??
+      row.lastDamageKind ??
+      row.lastDamageSource ??
+      row.deathSource ??
+      row.downedByKind ??
+      "";
+    const sourceId =
+      row.lastDamageSourceId ?? row.damageSourceId ?? row.deathSourceId ?? row.downedById ?? "";
+    const sourceLabel =
+      row.lastDamageSourceLabel ?? row.damageSourceLabel ?? row.deathSourceLabel ?? "";
+    const damageType = row.lastDamageType ?? row.damageType ?? row.deathDamageType ?? "";
+    const candidateAmount =
+      row.lastDamageAmount ?? row.damageAmount ?? row.deathDamage ?? row.downedByDamage;
+    const syncedAmount =
+      candidateAmount !== undefined && candidateAmount > 0 ? candidateAmount : amount;
+    const parryable =
+      row.lastDamageParryable ??
+      row.damageParryable ??
+      row.deathParryable ??
+      row.downedByParryable ??
+      undefined;
+    const telegraphKind =
+      row.lastDamageTelegraphKind ?? row.damageTelegraphKind ?? row.deathTelegraphKind ?? undefined;
+    if (!sourceKind && !sourceId && !sourceLabel && !damageType) return false;
+    const tick = this.room?.state.tick ?? 0;
+    const recent = this.deathRecap[0];
+    if (recent.receiptKey.startsWith("receipt:") && tick - recent.tick <= 1) return true;
+    const seq = row.lastDamageSeq ?? row.damageSeq ?? row.deathSeq ?? tick;
+    this.recordDamageRecap(
+      sourceKind || damageType || "attack",
+      sourceId,
+      sourceLabel,
+      damageType,
+      syncedAmount,
+      parryable,
+      telegraphKind,
+      `player:${seq}:${tick}`,
+      tick,
+    );
+    return true;
+  }
+
+  /** Best client-side fallback for old servers: pit edge, resolved footprint, pool, then nearby contact. */
+  private inferDamageAttribution(self: PlayerState, amount: number): void {
+    const tick = this.room?.state.tick ?? 0;
+    if (self.fellSeq !== this.observedSelfFellSeq) {
+      this.recordDamageRecap(
+        "pit",
+        "",
+        "Pit Fall",
+        "fall",
+        amount,
+        false,
+        undefined,
+        `inferred:pit:${self.fellSeq}`,
+        tick,
+      );
+      return;
+    }
+    if (this.time.now - this.recentResolvedDangerAt <= TICK_MS * 3) {
+      const kind = this.recentResolvedDangerKind;
+      this.recordDamageRecap(
+        kind,
+        "",
+        "",
+        kind,
+        amount,
+        kind === "melee" || kind === "quake",
+        kind,
+        `inferred:telegraph:${tick}`,
+        tick,
+      );
+      return;
+    }
+    let zoneId = "";
+    this.room?.state.zones.forEach((zone, id) => {
+      if (!zoneId && (self.x - zone.x) ** 2 + (self.y - zone.y) ** 2 <= zone.radius ** 2)
+        zoneId = id;
+    });
+    if (zoneId) {
+      this.recordDamageRecap(
+        "pool",
+        zoneId,
+        "Acid Pool",
+        "zone",
+        amount,
+        false,
+        "pool",
+        `inferred:pool:${tick}`,
+        tick,
+      );
+      return;
+    }
+    let enemyId = "";
+    let best = Number.POSITIVE_INFINITY;
+    this.room?.state.enemies.forEach((enemy, id) => {
+      const radius = (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) + 52;
+      const distance = (self.x - enemy.x) ** 2 + (self.y - enemy.y) ** 2;
+      if (distance <= radius * radius && distance < best) {
+        best = distance;
+        enemyId = id;
+      }
+    });
+    this.recordDamageRecap(
+      enemyId ? "contact" : "attack",
+      enemyId,
+      "",
+      enemyId ? "contact" : "",
+      amount,
+      enemyId ? false : undefined,
+      undefined,
+      `inferred:${enemyId || "attack"}:${tick}`,
+      tick,
+    );
+  }
+
   /** Hit feedback driven off authoritative state diffs: enemy hp drops → flash + damage number;
    *  local player hp drops → flash + screen shake (§20 game-feel from day one). */
   private updateCombatFx(): void {
@@ -6664,6 +7214,17 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = selfId ? this.room.state.players.get(selfId) : undefined;
     if (self) {
+      this.captureSyncedDamageReceipts(selfId);
+      const damageTaken = this.prevSelfHp >= 0 ? this.prevSelfHp - self.hp : 0;
+      if (damageTaken > 0.01) {
+        const attributed = this.capturePlayerDamageAttribution(self, damageTaken);
+        const latest = this.deathRecap[0];
+        if (
+          !attributed &&
+          !(latest.receiptKey.startsWith("receipt:") && this.time.now - latest.recordedAtMs <= 120)
+        )
+          this.inferDamageAttribution(self, damageTaken);
+      }
       if (
         this.prevSelfHp >= 0 &&
         self.hp < this.prevSelfHp - 0.01 &&
@@ -6679,6 +7240,7 @@ export class ArenaScene extends Phaser.Scene {
         this.lastHurt = this.time.now;
       }
       this.prevSelfHp = self.hp;
+      this.observedSelfFellSeq = self.fellSeq;
 
       // Level-up celebration (§12): gold burst on the drifter + a screen toast.
       if (this.prevLevel >= 0 && self.level > this.prevLevel) {
@@ -6692,6 +7254,13 @@ export class ArenaScene extends Phaser.Scene {
       // tier OR an affix, banner it in the tier's color — "RARE KEEN NEON KATANA" is the dopamine beat.
       // (An affixed Common still reveals — ~a third of drops are Common with a real affix.)
       const heldKey = `${self.weapon}:${self.weaponRarity}:${self.weaponAffix}`;
+      if (!this.beamHelpShown && WEAPONS[self.weapon]?.beam) {
+        this.beamHelpShown = true;
+        this.flashBanner(
+          "BEAM — HOLD RMB TO CHARGE / CHANNEL\nRELEASE BEFORE OVERHEAT · COOL BELOW THE MARKER TO RESTART",
+          "#8fe9ff",
+        );
+      }
       if (
         this.prevHeldLoot !== "" &&
         heldKey !== this.prevHeldLoot &&
@@ -6944,6 +7513,166 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
+  private beamStatusText(
+    row: BeamRenderState | undefined,
+    weapon: WeaponDef,
+    tick: number,
+  ): string {
+    if (!weapon.beam || !row || row.weaponId !== weapon.id) return "READY 0%";
+    if (row.phase === BeamPhase.Charging) return `CHARGE ${Math.round(row.intensity * 100)}%`;
+    if (row.phase === BeamPhase.Active)
+      return `${row.heat >= 0.8 ? "REDLINE" : "BEAM"} ${Math.round(row.heat * 100)}%`;
+    if (row.phase === BeamPhase.Cooling)
+      return `${row.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat) ? "READY" : "VENT"} ${Math.round(row.heat * 100)}%`;
+    if (row.phase === BeamPhase.Overheated) {
+      const elapsed = ((tick - row.phaseStartTick) >>> 0) * (TICK_MS / 1000);
+      const remaining = Math.max(
+        0,
+        Math.max(BEAM_OVERHEAT_LOCK_SECONDS, weapon.beam.overheat.lockSeconds) - elapsed,
+      );
+      return remaining > 0 ? `LOCK ${remaining.toFixed(1)}s` : "RELEASE";
+    }
+    return `READY ${Math.round(row.heat * 100)}%`;
+  }
+
+  private beamStatusColor(row: BeamRenderState | undefined): number {
+    if (!row) return 0x8fe9ff;
+    if (row.phase === BeamPhase.Overheated) return 0xff5d5d;
+    if (row.phase === BeamPhase.Charging) return 0x6fd6ff;
+    if (row.phase === BeamPhase.Cooling || row.heat >= 0.8) return 0xff9a45;
+    return 0x8fe9ff;
+  }
+
+  /** Compact authoritative heat arc with restart marker; dock corner in arena, weapon rail in belt mode. */
+  private renderBeamHud(
+    self: PlayerState | undefined,
+    weapon: WeaponDef | undefined,
+    row: BeamRenderState | undefined,
+    barX: number,
+    xpY: number,
+    scale: number,
+  ): void {
+    const g = this.beamHudGfx;
+    if (!g) return;
+    g.clear();
+    if (!self || !weapon?.beam) return;
+    let x = barX + 266 * scale;
+    let y = xpY - 25 * scale;
+    let radius = 10 * scale;
+    const layout = !this.belt ? this.carouselDock?.layout : undefined;
+    if (layout) {
+      x = layout.junction.x + layout.junctionSize * 0.36;
+      y = layout.junction.y - layout.junctionSize * 0.35;
+      radius = Math.max(8, layout.junctionSize * 0.105);
+    }
+    const start = Math.PI * 0.72;
+    const span = Math.PI * 1.56;
+    const value = row?.phase === BeamPhase.Charging ? row.intensity : (row?.heat ?? 0);
+    const color = this.beamStatusColor(row);
+    const line = Math.max(2, 2.4 * scale);
+    g.lineStyle(line + 2, 0x080a0d, 0.82);
+    g.beginPath();
+    g.arc(x, y, radius, start, start + span, false);
+    g.strokePath();
+    g.lineStyle(line, 0x52616c, 0.65);
+    g.beginPath();
+    g.arc(x, y, radius, start, start + span, false);
+    g.strokePath();
+    if (value > 0) {
+      g.lineStyle(
+        line,
+        color,
+        row?.phase === BeamPhase.Overheated ? 0.72 + Math.sin(this.time.now / 70) * 0.2 : 0.96,
+      );
+      g.beginPath();
+      g.arc(x, y, radius, start, start + span * Math.max(0, Math.min(1, value)), false);
+      g.strokePath();
+    }
+    const restart = Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat);
+    const markerAngle = start + span * restart;
+    const mx = Math.cos(markerAngle);
+    const my = Math.sin(markerAngle);
+    g.lineStyle(Math.max(1.5, 1.7 * scale), 0xffffff, 0.92);
+    g.lineBetween(
+      x + mx * (radius - 4 * scale),
+      y + my * (radius - 4 * scale),
+      x + mx * (radius + 4 * scale),
+      y + my * (radius + 4 * scale),
+    );
+    const endX = Math.cos(start + span);
+    const endY = Math.sin(start + span);
+    g.lineStyle(Math.max(1.5, 1.8 * scale), 0xff5d5d, 0.95);
+    g.lineBetween(
+      x + endX * (radius - 4 * scale),
+      y + endY * (radius - 4 * scale),
+      x + endX * (radius + 4 * scale),
+      y + endY * (radius + 4 * scale),
+    );
+  }
+
+  private humanizeDamageId(value: string): string {
+    return value
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+      .trim();
+  }
+
+  private deathSourceLabel(entry: DamageRecapEntry): string {
+    if (entry.sourceLabel) return entry.sourceLabel;
+    const enemy = entry.sourceId ? this.room?.state.enemies.get(entry.sourceId) : undefined;
+    const enemyKind = enemy?.kind ?? "";
+    const bossId =
+      (BOSSES[entry.sourceId] ? entry.sourceId : "") ||
+      (BOSSES[enemyKind] ? enemyKind : "") ||
+      (BOSSES[entry.sourceKind] ? entry.sourceKind : "");
+    if (bossId) return BOSSES[bossId]?.name ?? this.humanizeDamageId(bossId);
+    if (enemyKind) return this.humanizeDamageId(enemyKind);
+    const kind = `${entry.sourceKind} ${entry.damageType}`.toLowerCase();
+    if (kind.includes("pit") || kind.includes("fall")) return "Pit Fall";
+    if (kind.includes("pool") || kind.includes("zone") || kind.includes("acid")) return "Acid Pool";
+    if (kind.includes("projectile") || kind.includes("spit") || kind.includes("bullet"))
+      return "Projectile";
+    if (kind.includes("contact")) return "Enemy Contact";
+    if (kind.includes("melee") || kind.includes("lunge")) return "Melee Strike";
+    if (kind.includes("quake")) return "Ground Quake";
+    if (kind.includes("ring")) return "Shockwave Ring";
+    if (kind.includes("beam")) return "Sweeping Beam";
+    if (kind.includes("charge") || kind.includes("dash")) return "Charge Lane";
+    if (kind.includes("slam") || kind.includes("aoe") || kind.includes("radial"))
+      return "Boss Slam";
+    return entry.sourceKind ? this.humanizeDamageId(entry.sourceKind) : "Hostile Attack";
+  }
+
+  private deathRecapLine(entry: DamageRecapEntry, prefix: string): string {
+    const response =
+      entry.parryable < 0 ? "" : entry.parryable === 1 ? " (parryable)" : " (unparryable)";
+    const amount = entry.amount > 0 ? `, ${Math.max(1, Math.round(entry.amount))} damage` : "";
+    return `${prefix}${this.deathSourceLabel(entry)}${response}${amount}`;
+  }
+
+  private deathCounter(entry: DamageRecapEntry): string {
+    const kind = `${entry.sourceKind} ${entry.damageType} ${entry.telegraphKind}`.toLowerCase();
+    if (kind.includes("pit") || kind.includes("fall"))
+      return "Counter: jump before crossing fractured ground.";
+    if (kind.includes("pool") || kind.includes("zone") || kind.includes("acid"))
+      return "Counter: move out of the red ground pool.";
+    if (entry.parryable === 1) return "Counter: parry the white timing edge.";
+    if (
+      kind.includes("slam") ||
+      kind.includes("ring") ||
+      kind.includes("beam") ||
+      kind.includes("charge") ||
+      kind.includes("radial")
+    )
+      return "Counter: leave the protected red footprint before it resolves.";
+    if (kind.includes("projectile") || kind.includes("spit") || kind.includes("bullet"))
+      return entry.parryable === 0
+        ? "Counter: dodge or break the firing lane."
+        : "Counter: parry the bright projectile or dodge its lane.";
+    if (kind.includes("contact")) return "Counter: make space from the enemy body after its swing.";
+    return "Counter: watch the final white/red response edge.";
+  }
+
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */
   private updateHud(): void {
     const selfId = this.room?.sessionId;
@@ -7008,6 +7737,12 @@ export class ArenaScene extends Phaser.Scene {
       );
 
     this.restartBtn.setPosition(this.screenW() - 14 * s, 14 * s);
+    const heldWeapon = self ? WEAPONS[self.weapon] : undefined;
+    const beamRow = self ? this.room?.state.beams.get(self.id) : undefined;
+    const beamResource =
+      self && heldWeapon?.beam
+        ? `   ◔ ${this.beamStatusText(beamRow, heldWeapon, this.room?.state.tick ?? 0)}`
+        : "";
     // Weapon name + an ammo readout: filled/empty pips for small mags (thrown/revolver), a numeric
     // "loaded/mag" for big-magazine guns (gatling/nailgun), or "reloading…" while empty.
     let charges = "";
@@ -7026,12 +7761,14 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(barX, xpY - 24 * s)
       .setText(
         self
-          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${WEAPONS[self.weapon]?.name ?? self.weapon}${charges}   ·   Q to cycle`
+          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? self.weapon}${charges}${beamResource}   ·   Q to cycle`
           : "",
       );
     // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else
     // green — with a rarity tint when the weapon carries one and ammo is healthy.
-    if (
+    if (heldWeapon?.beam) {
+      this.weaponText.setColor(`#${this.beamStatusColor(beamRow).toString(16).padStart(6, "0")}`);
+    } else if (
       self &&
       self.maxCharges > 0 &&
       self.charges <= Math.max(1, Math.ceil(self.maxCharges * 0.25))
@@ -7042,6 +7779,7 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       this.weaponText.setColor("#9cff3b");
     }
+    this.renderBeamHud(self, heldWeapon, beamRow, barX, xpY, s);
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
     if (self?.augments) {
@@ -7129,12 +7867,29 @@ export class ArenaScene extends Phaser.Scene {
     this.deathText.setVisible(downed);
     if (downed) {
       const wiped = this.room?.state.outcome === "defeat";
+      const latest = this.deathRecap[0];
+      const previous = this.deathRecap[1];
+      const hasCause = !!(
+        latest.sourceKind ||
+        latest.sourceId ||
+        latest.sourceLabel ||
+        latest.damageType
+      );
+      const cause = hasCause
+        ? `${this.deathRecapLine(latest, "Downed by ")}\n${this.deathCounter(latest)}`
+        : "Cause unavailable from this server snapshot.\nCounter: watch the final white/red response edge.";
+      const prior = previous.receiptKey
+        ? `\n${this.deathRecapLine(previous, "Previous hit: ")}`
+        : "";
+      const recovery = wiped
+        ? "(click Restart Run, top-right)"
+        : "A squadmate with Gravedigger's Spade can revive you.";
       this.deathText
         .setText(
-          wiped
-            ? "DEFEATED — the squad is down\n(click Restart Run, top-right)"
-            : "DOWNED — a squadmate with a rez weapon\n(Gravedigger's Spade) can revive you",
+          `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}`,
         )
+        .setFontSize(20 * s)
+        .setWordWrapWidth(Math.min(this.screenW() - 80 * s, 820 * s))
         .setColor(wiped ? "#ff5d5d" : "#ffd479")
         .setPosition(this.screenW() / 2, this.screenH() / 2);
     }
@@ -7442,7 +8197,12 @@ export class ArenaScene extends Phaser.Scene {
     dock.junction.loot
       .setText([rarity?.name ?? "", affix].filter(Boolean).join(" ").toUpperCase())
       .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
-    if (self.maxCharges > 0) {
+    if (def?.beam) {
+      const row = this.room?.state.beams.get(self.id);
+      dock.junction.resource
+        .setText(this.beamStatusText(row, def, this.room?.state.tick ?? 0))
+        .setColor(`#${this.beamStatusColor(row).toString(16).padStart(6, "0")}`);
+    } else if (self.maxCharges > 0) {
       dock.junction.resource
         .setText(self.charges <= 0 ? "RELOAD" : `${self.charges}/${self.maxCharges}`)
         .setColor(
@@ -8531,6 +9291,7 @@ export class ArenaScene extends Phaser.Scene {
       this.beamPredictionProgress = 0;
       this.beamPredictionFadeAt = -1;
       this.beamPredictionPending.length = 0;
+      this.audio.play("beam:charge", { x: self.x, amt: 1, ownerId: room.sessionId });
     } else if (!held && this.beamPredictionStartSeq >= 0 && this.beamPredictionFadeAt < 0) {
       this.beamPredictionFadeAt = this.time.now;
     }
@@ -8568,6 +9329,7 @@ export class ArenaScene extends Phaser.Scene {
       this.predictedBeam.element = weapon.tags.element;
       predicted = this.predictedBeam;
     }
+    this.updateBeamFeedback(room.state.beams, room.sessionId);
     this.beamRenderer.update(
       room.state.beams,
       room.sessionId,
@@ -8576,9 +9338,82 @@ export class ArenaScene extends Phaser.Scene {
       BELT_Y0,
       this.belt ? BELT_FORESHORTEN : 1,
       predicted,
-      awaitingRelease ? this.beamPredictionStartSeq : -1,
     );
     this.beamPredictionHeld = held;
+  }
+
+  /** Consume authoritative phase edges once per owner; sustained pressure is throttled inside AudioBus. */
+  private updateBeamFeedback(rows: BeamRenderRows, selfId: string): void {
+    this.beamFeedbackSeen.clear();
+    rows.forEach((row, ownerId) => {
+      this.beamFeedbackSeen.add(ownerId);
+      const local = ownerId === selfId;
+      let previous = this.beamFeedback.get(ownerId);
+      const newEpoch = !previous || previous.seq !== row.seq;
+      const phaseChanged = !previous || previous.phase !== row.phase;
+      if (newEpoch || phaseChanged) {
+        if (row.phase === BeamPhase.Charging) {
+          if (!(local && row.seq === this.beamPredictionStartSeq))
+            this.audio.play("beam:charge", {
+              x: row.originX,
+              amt: local ? 1 : 0.32,
+              ownerId,
+            });
+        } else if (row.phase === BeamPhase.Active) {
+          this.audio.play("beam:ignite", {
+            x: row.originX,
+            amt: local ? 1 : 0.4,
+            ownerId,
+          });
+          if (local) this.shakeCam(55, 0.0028);
+        } else if (row.phase === BeamPhase.Overheated) {
+          this.audio.play("beam:overheat", {
+            x: row.originX,
+            amt: local ? 1 : 0.38,
+            ownerId,
+          });
+          if (local) this.shakeCam(120, 0.006);
+        } else if (
+          row.phase === BeamPhase.Cooling &&
+          previous &&
+          (previous.phase === BeamPhase.Active ||
+            previous.phase === BeamPhase.Charging ||
+            previous.phase === BeamPhase.Overheated)
+        ) {
+          this.audio.play("beam:release", {
+            x: row.originX,
+            amt: local ? 0.82 : 0.25,
+            ownerId,
+          });
+        }
+      }
+      if (!previous) {
+        previous = { seq: row.seq, phase: row.phase, x: row.originX };
+        this.beamFeedback.set(ownerId, previous);
+      }
+      previous.seq = row.seq;
+      previous.phase = row.phase;
+      previous.x = row.originX;
+      if (row.phase === BeamPhase.Active) {
+        this.audio.play("beam:sustain", {
+          x: row.originX,
+          amt: local ? 0.58 + row.heat * 0.42 : 0.16 + row.heat * 0.22,
+          ownerId,
+        });
+        if (local && row.heat >= 0.8)
+          this.audio.play("beam:redline", { x: row.originX, amt: row.heat });
+      }
+    });
+    for (const [ownerId, previous] of this.beamFeedback) {
+      if (this.beamFeedbackSeen.has(ownerId)) continue;
+      if (previous.phase === BeamPhase.Active || previous.phase === BeamPhase.Charging)
+        this.audio.play("beam:release", {
+          x: previous.x,
+          amt: ownerId === selfId ? 0.82 : 0.25,
+          ownerId,
+        });
+      this.beamFeedback.delete(ownerId);
+    }
   }
 
   private stepNetInput(deltaMs: number, levelWindowOpen = false): void {
