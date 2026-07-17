@@ -22,6 +22,12 @@ import {
   CAM_SNAP_DIST,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
+  COMBO_FLAG_AIRBORNE,
+  COMBO_FLAG_EMPOWERED,
+  COMBO_FLAG_JUGGLE,
+  COMBO_LEAP_AIR_TICKS,
+  COMBO_LEAP_OFFER_TICKS,
+  COMBO_LEAP_RANGE,
   CombatDelivery,
   characterName,
   characterScale,
@@ -77,17 +83,17 @@ import {
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
+  ROOM_NAME,
+  requirementPenalty,
+  SALVAGE_HOLD_SECONDS,
+  SCHEMA_VERSION,
+  SHOP_RADIUS,
   SLIDE_COLD_REARM_TICKS,
   SLIDE_PHASE_GROUND,
   SLIDE_PHASE_OFF,
   SLIDE_SPEED_CAP,
   SLIDE_TICK_SECONDS,
   type SlidePhase,
-  ROOM_NAME,
-  requirementPenalty,
-  SALVAGE_HOLD_SECONDS,
-  SCHEMA_VERSION,
-  SHOP_RADIUS,
   STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
@@ -131,9 +137,9 @@ import {
   type DistanceJumpIndicator,
   SelfPredictor,
   type ServerView,
+  SpaceGestureClassifier,
   slideHeldFromBindings,
   slidePressedFromBindings,
-  SpaceGestureClassifier,
 } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
@@ -163,7 +169,12 @@ import {
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
-import { JumpEffectRenderer } from "../vfx/jump-effects.js";
+import {
+  enemyComboLeapHeight,
+  enemyComboLeapVelocity,
+  enemyComboOfferPhase,
+  JumpEffectRenderer,
+} from "../vfx/jump-effects.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
@@ -189,8 +200,8 @@ import {
   dimensionPropPack,
   drawArena,
   GATE_GROUND_DEPTH,
-  gateNeedsEdgeLocator,
   GATE_PROTECTED_DEPTH,
+  gateNeedsEdgeLocator,
   type PoiSprite,
   terrainRimKey,
   terrainTileKey,
@@ -302,6 +313,9 @@ const MELEE_TELEGRAPH_PREFIX = "melee:";
 const MELEE_FULL_TELL_COUNT = 6;
 const MELEE_GLINT_LEAD_MS = 280;
 const MELEE_GLINT_CREST_MS = 60;
+const EMPOWERED_GLINT_LEAD_MS = 450;
+const ENEMY_COMBO_LEAP_PEAK = 48;
+const ENEMY_COMBO_LEAP_MS = COMBO_LEAP_AIR_TICKS * TICK_MS;
 
 interface EnemyWindupSample {
   serverT: number;
@@ -319,6 +333,32 @@ interface EnemyWindupSample {
   aimWorld: number;
   locked: boolean;
   glintAtMs: number;
+  firstGlintAtMs: number;
+  gold: boolean;
+}
+
+interface EnemyComboPresentation {
+  observedSeq: number;
+  observedFlags: number;
+  presentedSeq: number;
+  presentedFlags: number;
+  pendingSeq: number;
+  pendingFlags: number;
+  pendingTick: number;
+  pendingStagger: boolean;
+  hasPending: boolean;
+  leapStartTick: number;
+  markerId: string;
+  markerX: number;
+  markerY: number;
+  markerRadius: number;
+  launchX: number;
+  launchY: number;
+}
+
+interface JugglePresentationState {
+  seq: number;
+  lastAtMs: number;
 }
 
 interface JumpPresentationState {
@@ -1028,6 +1068,10 @@ export class ArenaScene extends Phaser.Scene {
   };
   /** One-tick-bounded presentation sampler. It can smooth the 20 Hz stairs but cannot declare contact. */
   private readonly enemyWindup = new Map<string, EnemyWindupSample>();
+  /** §51 delayed-edge cursors: combo flags/seq are applied when the snapshot render timeline reaches their
+   * server tick, keeping the cosmetic arc attached to the authoritative horizontal ground track. */
+  private readonly enemyComboPresentation = new Map<string, EnemyComboPresentation>();
+  private readonly comboMarkerClaims = new Set<string>();
   /** Stable nearest-six source salience plus uncullable local intersections/near-term threats. */
   private meleeFullTells = new Set<string>();
   private meleeFullTellNext = new Set<string>();
@@ -1114,6 +1158,7 @@ export class ArenaScene extends Phaser.Scene {
     clamped: false,
   };
   private readonly jumpPresentation = new Map<string, JumpPresentationState>();
+  private readonly jugglePresentation = new Map<string, JugglePresentationState>();
   /** Whether the previous frame was hit-stop-frozen — on the unfreeze edge the accrued prediction
    *  displacement folds into the error offset so it glides instead of popping (review #11). */
   private wasFrozen = false;
@@ -1129,6 +1174,10 @@ export class ArenaScene extends Phaser.Scene {
   /** §19 v0.108 polish — low-HP red screen vignette (built in create, alpha driven each frame) + a 0..1
    *  hurt punch that spikes on a hit and decays, so both danger and impact read at the screen edges. */
   private dangerVignette!: Phaser.GameObjects.Graphics;
+  private juggleVignette!: Phaser.GameObjects.Graphics;
+  private juggleHint!: Phaser.GameObjects.Text;
+  private jugglePulseUntil = -1e9;
+  private juggleHintUntil = -1e9;
   private hurtFlash = 0;
   /** §19 v0.108 polish — smoothed bar fills (lerp toward the true ratio), so hits/heals/XP read as
    *  motion, not a per-patch jump. -1 = uninitialised (snap on the first frame). */
@@ -1604,6 +1653,8 @@ export class ArenaScene extends Phaser.Scene {
     this.telegraphCache.clear();
     this.telegraphForeshadows?.clear();
     this.enemyWindup.clear();
+    this.enemyComboPresentation.clear();
+    this.comboMarkerClaims.clear();
     this.meleeFullTells.clear();
     this.meleeFullTellNext.clear();
     this.meleeTellCandidates.length = 0;
@@ -1625,6 +1676,7 @@ export class ArenaScene extends Phaser.Scene {
     this.zones.clear();
     this.xpReceiptBatches.clear();
     this.lastFell.clear();
+    this.jugglePresentation.clear();
     this.pendingArt.clear();
     this.pendingTomeArt.clear();
     // Failed/missing-art sets deliberately follow Phaser's game-wide texture cache, not a run.
@@ -1670,6 +1722,8 @@ export class ArenaScene extends Phaser.Scene {
     this.beltBackdrop = null;
     this.beltClouds = null;
     this.dangerVignette = undefined!;
+    this.juggleVignette = undefined!;
+    this.juggleHint = undefined!;
     this.weaponText = undefined!;
     this.augmentText = undefined!;
     this.modeText = undefined!;
@@ -1750,6 +1804,8 @@ export class ArenaScene extends Phaser.Scene {
     this.recentResolvedDangerKind = "";
     this.recentResolvedDangerAt = -9999;
     this.hurtFlash = 0;
+    this.jugglePulseUntil = -1e9;
+    this.juggleHintUntil = -1e9;
     this.hpShown = -1;
     this.xpShown = -1;
     this.xpPulse = 0;
@@ -1870,6 +1926,20 @@ export class ArenaScene extends Phaser.Scene {
     this.grabGfx = this.add.graphics().setDepth(99988);
     // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
     this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
+    // §51 victim-side juggle read: one retained cool-white edge and one retained affordance label. Their
+    // alphas are edge-driven; no hit allocates a new HUD object or tween.
+    this.juggleVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
+    this.juggleHint = this.add
+      .text(0, 0, "AIR PARRY · LMB", {
+        fontSize: "14px",
+        color: "#e8f5ff",
+        stroke: "#15191d",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(99999)
+      .setAlpha(0);
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -2001,12 +2071,14 @@ export class ArenaScene extends Phaser.Scene {
       this.cameras.main.setSize(size.width, size.height);
       this.cameras.main.setZoom(RENDER_DPR).setOrigin(0, 0);
       this.drawVignette(); // §19 v0.108 re-fit the screen-space danger vignette to the new viewport
+      this.drawJuggleVignette();
     };
     this.scale.on("resize", this.resizeHandler);
 
     this.buildHud();
     this.buildCarousel();
     this.drawVignette();
+    this.drawJuggleVignette();
     // §19 v0.108 every run start feels intentional — a short black fade-in.
     this.cameras.main.fadeIn(420, 0, 0, 0);
     void this.connect(connectionGeneration);
@@ -2030,6 +2102,24 @@ export class ArenaScene extends Phaser.Scene {
     g.fillGradientStyle(red, red, red, red, 0.85, 0, 0.85, 0); // left
     g.fillRect(0, 0, band, h);
     g.fillGradientStyle(red, red, red, red, 0, 0.85, 0, 0.85); // right
+    g.fillRect(w - band, 0, band, h);
+  }
+
+  private drawJuggleVignette(): void {
+    const g = this.juggleVignette;
+    if (!g) return;
+    const w = this.screenW();
+    const h = this.screenH();
+    const band = Math.min(w, h) * 0.1;
+    const pale = 0xbfe8ff;
+    g.clear();
+    g.fillGradientStyle(pale, pale, pale, pale, 0.68, 0.68, 0, 0);
+    g.fillRect(0, 0, w, band);
+    g.fillGradientStyle(pale, pale, pale, pale, 0, 0, 0.68, 0.68);
+    g.fillRect(0, h - band, w, band);
+    g.fillGradientStyle(pale, pale, pale, pale, 0.68, 0, 0.68, 0);
+    g.fillRect(0, 0, band, h);
+    g.fillGradientStyle(pale, pale, pale, pale, 0, 0.68, 0, 0.68);
     g.fillRect(w - band, 0, band, h);
   }
 
@@ -3203,6 +3293,7 @@ export class ArenaScene extends Phaser.Scene {
     this.lastAttackHeld.delete(id);
     this.lastFell.delete(id);
     this.jumpPresentation.delete(id);
+    this.jugglePresentation.delete(id);
   }
 
   override update(_time: number, deltaMs: number): void {
@@ -3708,6 +3799,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyCrit.delete(id);
         this.enemyAtk.delete(id);
         this.enemyWindup.delete(id);
+        this.enemyComboPresentation.delete(id);
         this.meleeFullTells.delete(id);
         this.enemyBufs.delete(id); // §4 v0.107 ids RECYCLE (restart resets enemySeq) — never bracket stale snaps
         if (rig) {
@@ -3931,6 +4023,240 @@ export class ArenaScene extends Phaser.Scene {
     if (bossKind === "nul-sightline" || bossKind === "quickdraw-vane") anim.speed = 0;
   }
 
+  /** Match the only danger-0/kind-2 circle vocabulary to a combo leaper. The authoritative row supplies
+   * x/y/radius; nearest unclaimed ownership is merely presentation association and never re-derives it. */
+  private claimEnemyComboMarker(
+    enemy: { kind: string; x: number; y: number },
+    presentation: EnemyComboPresentation,
+  ): void {
+    const state = this.room?.state;
+    if (!state || !ENEMY_KINDS[enemy.kind]?.comboLeap) return;
+    if (presentation.markerId) {
+      const retained = state.telegraphs.get(presentation.markerId);
+      if (retained) {
+        presentation.markerX = retained.x;
+        presentation.markerY = retained.y;
+        presentation.markerRadius = retained.a;
+        this.comboMarkerClaims.add(presentation.markerId);
+        return;
+      }
+      const stillPresenting =
+        (presentation.presentedFlags & COMBO_FLAG_AIRBORNE) !== 0 ||
+        (presentation.hasPending && (presentation.pendingFlags & COMBO_FLAG_AIRBORNE) !== 0) ||
+        (presentation.observedFlags & COMBO_FLAG_AIRBORNE) !== 0;
+      if (stillPresenting) return;
+      presentation.markerId = "";
+    }
+
+    let bestId = "";
+    let bestDistance = Number.POSITIVE_INFINITY;
+    state.telegraphs.forEach((row, markerId) => {
+      if (
+        this.comboMarkerClaims.has(markerId) ||
+        row.shape !== TgShape.Circle ||
+        row.danger !== 0 ||
+        row.kindTag !== 2
+      )
+        return;
+      const distance = Math.hypot(row.x - enemy.x, row.y - enemy.y);
+      if (
+        distance > COMBO_LEAP_RANGE + 80 ||
+        distance > bestDistance ||
+        (distance === bestDistance && bestId !== "" && markerId >= bestId)
+      )
+        return;
+      bestDistance = distance;
+      bestId = markerId;
+    });
+    if (!bestId) return;
+    const row = state.telegraphs.get(bestId);
+    if (!row) return;
+    presentation.markerId = bestId;
+    presentation.markerX = row.x;
+    presentation.markerY = row.y;
+    presentation.markerRadius = row.a;
+    this.comboMarkerClaims.add(bestId);
+  }
+
+  private enemyComboAimWorld(
+    enemy: { x: number; y: number },
+    presentation: EnemyComboPresentation,
+  ): number {
+    let aimWorld = 0;
+    let best = Number.POSITIVE_INFINITY;
+    this.room?.state.players.forEach((player) => {
+      if (!player.alive) return;
+      // During the offer, the challenged victim is normally the living player nearest the committed
+      // footprint; afterward the nearest live body is the best synced head/lean anchor available.
+      const anchorX = presentation.markerId ? presentation.markerX : enemy.x;
+      const anchorY = presentation.markerId ? presentation.markerY : enemy.y;
+      const distance = (player.x - anchorX) ** 2 + (player.y - anchorY) ** 2;
+      if (distance >= best) return;
+      best = distance;
+      aimWorld = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+    });
+    return aimWorld;
+  }
+
+  /** Apply queued seq/flag edges on the same delayed server timeline as the enemy's snapshot position. */
+  private presentEnemyCombo(
+    id: string,
+    rig: SpriteRig,
+    enemy: { kind: string; x: number; y: number; comboSeq: number; comboFlags: number },
+    moveX: number,
+    moveY: number,
+    reducedMotion: boolean,
+    anim: RigAnim,
+  ): void {
+    let presentation = this.enemyComboPresentation.get(id);
+    if (!presentation) {
+      presentation = {
+        observedSeq: enemy.comboSeq,
+        observedFlags: enemy.comboFlags,
+        presentedSeq: enemy.comboSeq,
+        presentedFlags: enemy.comboFlags,
+        pendingSeq: enemy.comboSeq,
+        pendingFlags: enemy.comboFlags,
+        pendingTick: this.room?.state.tick ?? 0,
+        pendingStagger: false,
+        hasPending: false,
+        leapStartTick: this.room?.state.tick ?? 0,
+        markerId: "",
+        markerX: enemy.x,
+        markerY: enemy.y,
+        markerRadius: ENEMY_RADIUS + 10,
+        launchX: rig.x,
+        launchY: rig.y,
+      };
+      this.enemyComboPresentation.set(id, presentation);
+    }
+    this.claimEnemyComboMarker(enemy, presentation);
+    const presentationSignals =
+      presentation.observedFlags | presentation.presentedFlags | presentation.pendingFlags;
+    if (!presentation.markerId && presentationSignals === 0 && !presentation.hasPending) {
+      anim.jumpVh = 0;
+      rig.setEnemyComboPresentation(0, 0, false, 0);
+      return;
+    }
+    const renderTime = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : (this.room?.state.tick ?? 0) * TICK_MS;
+    const aimWorld = this.enemyComboAimWorld(enemy, presentation);
+    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
+    const markerY = this.belt ? this.beltY(presentation.markerY) : presentation.markerY;
+    const rigY = this.belt ? this.beltY(rig.y) : rig.y;
+    const markerVisible =
+      !!presentation.markerId &&
+      this.cameras.main.worldView.contains(presentation.markerX, presentation.markerY);
+    const visible = markerVisible || this.cameras.main.worldView.contains(rig.x, rig.y);
+
+    if (presentation.hasPending && renderTime >= presentation.pendingTick * TICK_MS) {
+      const priorFlags = presentation.presentedFlags;
+      presentation.presentedSeq = presentation.pendingSeq;
+      presentation.presentedFlags = presentation.pendingFlags;
+      presentation.hasPending = false;
+      const launched =
+        (priorFlags & COMBO_FLAG_AIRBORNE) === 0 &&
+        (presentation.presentedFlags & COMBO_FLAG_AIRBORNE) !== 0;
+      const landed =
+        (priorFlags & COMBO_FLAG_AIRBORNE) !== 0 &&
+        (presentation.presentedFlags & COMBO_FLAG_AIRBORNE) === 0;
+      const empowered =
+        (priorFlags & COMBO_FLAG_EMPOWERED) === 0 &&
+        (presentation.presentedFlags & COMBO_FLAG_EMPOWERED) !== 0;
+      const empowermentEnded =
+        (priorFlags & COMBO_FLAG_EMPOWERED) !== 0 &&
+        (presentation.presentedFlags & COMBO_FLAG_EMPOWERED) === 0;
+      if (launched) {
+        presentation.leapStartTick = presentation.pendingTick;
+        presentation.launchX = rig.x;
+        presentation.launchY = rig.y;
+        this.audio.play("enemy-combo:leap-launch", { x: rig.x, amt: visible ? 0.7 : 0.25 });
+      }
+      if (landed) {
+        rig.triggerEnemyComboLanding(this.animClock);
+        if (presentation.markerId) {
+          if (visible)
+            this.jumpEffectRenderer.spawnEnemyComboLanding(
+              presentation.markerX,
+              markerY,
+              presentation.markerRadius,
+              reducedMotion,
+              projectionYScale,
+            );
+          this.audio.play("enemy-combo:leap-land", {
+            x: presentation.markerX,
+            amt: visible ? 0.72 : 0.24,
+          });
+          if (visible && !reducedMotion) this.shakeCam(85, 0.0042);
+        }
+        presentation.markerId = "";
+      }
+      if (empowered) {
+        rig.triggerEnemyComboReturn(this.animClock);
+        let skidX = moveX;
+        let skidY = moveY;
+        if (Math.hypot(skidX, skidY) < 0.05) {
+          skidX = -Math.cos(aimWorld);
+          skidY = -Math.sin(aimWorld);
+        }
+        if (visible)
+          this.jumpEffectRenderer.spawnEnemyReturnSkid(
+            rig.x,
+            rigY + PLAYER_SHADOW_LOCAL_Y,
+            skidX,
+            skidY,
+            reducedMotion,
+            projectionYScale,
+          );
+        this.audio.play("enemy-combo:return-tell", { x: rig.x, amt: visible ? 0.78 : 0.24 });
+      }
+      if (empowermentEnded && presentation.pendingStagger) {
+        rig.triggerEnemyComboStagger(this.animClock);
+        if (visible && !reducedMotion) this.shakeCam(70, 0.0036);
+      }
+      presentation.pendingStagger = false;
+    }
+
+    const markerRow = presentation.markerId
+      ? this.room?.state.telegraphs.get(presentation.markerId)
+      : undefined;
+    const airborne = (presentation.presentedFlags & COMBO_FLAG_AIRBORNE) !== 0;
+    const leapFraction = airborne
+      ? Math.max(
+          0,
+          Math.min(1, (renderTime - presentation.leapStartTick * TICK_MS) / ENEMY_COMBO_LEAP_MS),
+        )
+      : 0;
+    const offerPhase =
+      !airborne && markerRow
+        ? enemyComboOfferPhase(markerRow.t, COMBO_LEAP_OFFER_TICKS, COMBO_LEAP_AIR_TICKS)
+        : 0;
+    const leapHeight = airborne ? enemyComboLeapHeight(leapFraction, ENEMY_COMBO_LEAP_PEAK) : 0;
+    anim.jumpVh = airborne
+      ? enemyComboLeapVelocity(leapFraction, ENEMY_COMBO_LEAP_MS, ENEMY_COMBO_LEAP_PEAK)
+      : 0;
+    rig.setEnemyComboPresentation(
+      offerPhase,
+      leapHeight,
+      (presentation.presentedFlags & COMBO_FLAG_EMPOWERED) !== 0,
+      aimWorld,
+    );
+    if (presentation.markerId && visible)
+      this.jumpEffectRenderer.drawEnemyComboPromise(
+        presentation.launchX,
+        this.belt ? this.beltY(presentation.launchY) : presentation.launchY,
+        presentation.markerX,
+        markerY,
+        presentation.markerRadius,
+        leapFraction,
+        offerPhase,
+        airborne && !markerRow,
+        reducedMotion,
+        projectionYScale,
+      );
+  }
+
   /** Drive each enemy's procedural animation from its render-velocity (faces its travel dir). */
   private animateEnemies(deltaMs: number): void {
     this.telegraphGroundGfx.clear();
@@ -3940,7 +4266,14 @@ export class ArenaScene extends Phaser.Scene {
     const now = this.time.now;
     const tick = state?.tick ?? 0;
     const self = state && this.room ? state.players.get(this.room.sessionId) : undefined;
+    const reducedMotion = prefersReducedPaperMotion();
     this.meleeTellCandidates.length = 0;
+    this.comboMarkerClaims.clear();
+    if (state)
+      for (const presentation of this.enemyComboPresentation.values()) {
+        if (presentation.markerId && state.telegraphs.has(presentation.markerId))
+          this.comboMarkerClaims.add(presentation.markerId);
+      }
 
     // Sample every phase and rank salience once before any rig consumes it. Local intersections and attacks
     // that can reach self imminently are uncullable; distant horde tells collapse to one source bracket.
@@ -4018,10 +4351,16 @@ export class ArenaScene extends Phaser.Scene {
       anim.aimDxPx = undefined;
       anim.aimDir = 0;
       anim.isSelf = false;
+      anim.jumpVh = 0;
+      anim.reducedMotion = reducedMotion;
       const es = this.room?.state.enemies.get(id);
       const windup = this.enemyWindup.get(id);
+      if (es) this.presentEnemyCombo(id, rig, es, mx, my, reducedMotion, anim);
       if (es && windup?.active) {
         const kind = ENEMY_KINDS[es.kind];
+        const comboFlags =
+          this.enemyComboPresentation.get(id)?.presentedFlags ?? es.comboFlags ?? 0;
+        const gold = (comboFlags & COMBO_FLAG_EMPOWERED) !== 0;
         rig.setMeleeTell(
           windup.shownT,
           windup.aimWorld,
@@ -4030,6 +4369,8 @@ export class ArenaScene extends Phaser.Scene {
           kind?.archetype ?? "duelist",
           windup.step,
           kind?.archetype === "boss" || this.meleeFullTells.has(id),
+          gold,
+          (comboFlags & COMBO_FLAG_JUGGLE) !== 0,
         );
       }
       if (es && es.kind === this.room?.state.bossKind)
@@ -4044,7 +4385,12 @@ export class ArenaScene extends Phaser.Scene {
           const row = state?.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
           const full = ENEMY_KINDS[es.kind]?.archetype === "boss" || this.meleeFullTells.has(id);
           const pulse =
-            now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS;
+            (now - windup.glintAtMs >= 0 && now - windup.glintAtMs <= MELEE_GLINT_CREST_MS) ||
+            (now - windup.firstGlintAtMs >= 0 &&
+              now - windup.firstGlintAtMs <= MELEE_GLINT_CREST_MS);
+          const comboFlags =
+            this.enemyComboPresentation.get(id)?.presentedFlags ?? es.comboFlags ?? 0;
+          const gold = (comboFlags & COMBO_FLAG_EMPOWERED) !== 0;
           // A synced row already supplies the exact footprint below. The fallback ruler exists only before
           // that row arrives, so no selected windup draws both full ground geometries.
           if (full && !row)
@@ -4060,7 +4406,7 @@ export class ArenaScene extends Phaser.Scene {
               pulse,
               false,
             );
-          this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse && full);
+          this.drawMeleeImplementBracket(rig, windup.aimWorld, windup.shownT, pulse && full, gold);
         }
       }
       rig.setDepth(rig.y);
@@ -4070,7 +4416,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private sampleEnemyWindup(
     id: string,
-    enemy: { windup: number; atkSeq: number; x: number; y: number },
+    enemy: { windup: number; atkSeq: number; x: number; y: number; comboFlags?: number },
     melee: { windup: number; swingGap: number; hits: number },
     tick: number,
     now: number,
@@ -4091,7 +4437,9 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     const step = sample?.step ?? enemy.atkSeq % Math.max(1, melee.hits);
-    const durationMs = (step === 0 ? melee.windup : melee.swingGap) * 1000;
+    let durationMs = (step === 0 ? melee.windup : melee.swingGap) * 1000;
+    if (((enemy.comboFlags ?? 0) & COMBO_FLAG_EMPOWERED) !== 0)
+      durationMs = Math.max(durationMs, 850);
     const newEpoch = !sample?.active || synced + 0.001 < sample.serverT;
     if (!sample) {
       sample = {
@@ -4110,6 +4458,8 @@ export class ArenaScene extends Phaser.Scene {
         aimWorld: 0,
         locked: false,
         glintAtMs: -1e9,
+        firstGlintAtMs: -1e9,
+        gold: false,
       };
       this.enemyWindup.set(id, sample);
     } else if (newEpoch) {
@@ -4125,6 +4475,8 @@ export class ArenaScene extends Phaser.Scene {
       sample.lastAtkSeq = enemy.atkSeq;
       sample.active = true;
       sample.glintAtMs = -1e9;
+      sample.firstGlintAtMs = -1e9;
+      sample.gold = false;
     } else if (tick !== sample.serverTick) {
       const tickDelta = (tick - sample.serverTick) >>> 0;
       if (synced > sample.serverT && tickDelta > 0) {
@@ -4135,8 +4487,11 @@ export class ArenaScene extends Phaser.Scene {
       sample.serverT = synced;
       sample.serverTick = tick;
       sample.observedAtMs = now;
+      if (sample.ratePerSecond > 0.001)
+        durationMs = Math.max(300, Math.min(2_000, 1_000 / sample.ratePerSecond));
       sample.durationMs = durationMs;
     }
+    durationMs = sample.durationMs;
     const extrapolateMs = Math.max(0, Math.min(TICK_MS, now - sample.observedAtMs));
     sample.shownT = Math.max(
       sample.serverT,
@@ -4144,15 +4499,32 @@ export class ArenaScene extends Phaser.Scene {
     );
     const priorRemaining = sample.remainingMs;
     sample.remainingMs = Math.max(0, (1 - sample.shownT) * durationMs);
+    const row = this.room?.state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+    const gold = ((enemy.comboFlags ?? 0) & COMBO_FLAG_EMPOWERED) !== 0;
+    const goldEpoch = gold && !sample.gold;
+    if (goldEpoch) {
+      // The empowerment edge can arrive mid-windup. Restart the retained crest cursor so a late edge still
+      // produces two separated gold flashes rather than merging into the ordinary white crest.
+      sample.glintAtMs = -1e9;
+      sample.firstGlintAtMs = -1e9;
+    }
+    sample.gold = gold;
+    if (
+      gold &&
+      sample.firstGlintAtMs < 0 &&
+      sample.remainingMs <= EMPOWERED_GLINT_LEAD_MS &&
+      (newEpoch || priorRemaining > EMPOWERED_GLINT_LEAD_MS || goldEpoch)
+    )
+      sample.firstGlintAtMs = now;
     if (
       sample.glintAtMs < 0 &&
       sample.remainingMs <= MELEE_GLINT_LEAD_MS &&
-      (newEpoch || priorRemaining > MELEE_GLINT_LEAD_MS)
+      (newEpoch || priorRemaining > MELEE_GLINT_LEAD_MS || gold) &&
+      (!gold || now - sample.firstGlintAtMs >= 90)
     ) {
       sample.glintAtMs = now;
     }
 
-    const row = this.room?.state.telegraphs.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
     if (row) {
       sample.aimWorld = row.rot;
       sample.locked = true;
@@ -4398,6 +4770,7 @@ export class ArenaScene extends Phaser.Scene {
     aimWorld: number,
     phase: number,
     pulse: boolean,
+    gold = false,
   ): void {
     rig.getMeleeTellAnchor(this.meleeTellAnchor);
     const x = this.meleeTellAnchor.x;
@@ -4409,10 +4782,11 @@ export class ArenaScene extends Phaser.Scene {
     const ny = Math.cos(aimWorld);
     const radius = (pulse ? 14 : 11 + phase * 2) / zoom;
     const g = this.telegraphGfx;
+    const accent = gold ? 0xffd66e : 0xffffff;
     for (let pass = 0; pass < 2; pass++) {
       g.lineStyle(
         (pass === 0 ? 5 : pulse ? 3 : 1.8) / zoom,
-        pass === 0 ? 0x17120f : 0xffffff,
+        pass === 0 ? 0x17120f : accent,
         pass === 0 ? 0.72 : pulse ? 0.98 : 0.42 + phase * 0.28,
       );
       g.beginPath();
@@ -4423,7 +4797,7 @@ export class ArenaScene extends Phaser.Scene {
       g.strokePath();
     }
     if (pulse) {
-      g.fillStyle(0xffffff, 0.95);
+      g.fillStyle(accent, 0.95);
       g.fillCircle(x, y, 3.2 / zoom);
     }
   }
@@ -4451,8 +4825,15 @@ export class ArenaScene extends Phaser.Scene {
       const meleePulse =
         !!meleeOwner &&
         !!meleeSample &&
-        this.time.now - meleeSample.glintAtMs >= 0 &&
-        this.time.now - meleeSample.glintAtMs <= MELEE_GLINT_CREST_MS;
+        ((this.time.now - meleeSample.glintAtMs >= 0 &&
+          this.time.now - meleeSample.glintAtMs <= MELEE_GLINT_CREST_MS) ||
+          (this.time.now - meleeSample.firstGlintAtMs >= 0 &&
+            this.time.now - meleeSample.firstGlintAtMs <= MELEE_GLINT_CREST_MS));
+      const goldMelee =
+        !!meleeOwner &&
+        ((this.enemyComboPresentation.get(meleeOwner)?.presentedFlags ?? 0) &
+          COMBO_FLAG_EMPOWERED) !==
+          0;
       let cached = this.telegraphCache.get(id);
       const geometryChanged =
         !cached ||
@@ -4516,6 +4897,8 @@ export class ArenaScene extends Phaser.Scene {
           row.kindTag,
           cached.hash,
           meleePulse,
+          !!meleeOwner,
+          goldMelee,
         );
       if (!meleeOwner || bossMelee)
         this.drawProtectedTelegraphEdge(
@@ -4609,9 +4992,11 @@ export class ArenaScene extends Phaser.Scene {
     kindTag: number,
     hash: number,
     meleePulse = false,
+    meleeOwner = false,
+    goldMelee = false,
   ): void {
-    if (danger === 0 && kindTag === TelegraphKindTag.Melee) {
-      this.drawMeleeExactFootprint(g, geometry, t, meleePulse);
+    if (danger === 0 && (kindTag === TelegraphKindTag.Melee || meleeOwner)) {
+      this.drawMeleeExactFootprint(g, geometry, t, meleePulse, goldMelee);
       return;
     }
     const zoom = Math.max(0.01, this.cameras.main.zoom);
@@ -4671,6 +5056,7 @@ export class ArenaScene extends Phaser.Scene {
     geometry: TelegraphGeometry,
     t: number,
     pulse: boolean,
+    gold = false,
   ): void {
     const edge = geometry.edges[0];
     if (!edge || edge.points.length < 4) return;
@@ -4681,21 +5067,22 @@ export class ArenaScene extends Phaser.Scene {
     const lastArc = points.length - 1;
     const midArc = Math.floor((firstArc + lastArc) / 2);
     const alpha = 0.24 + t * 0.28 + (pulse ? 0.28 : 0);
+    const accent = gold ? 0xffd66e : 0xffffff;
 
     // Exact sides remain visible but subordinate; the outer reach arc owns the floor read.
     g.lineStyle(4 / zoom, 0x17120f, 0.38);
     this.strokeTelegraphPath(g, points, true);
-    g.lineStyle(1.5 / zoom, 0xffffff, alpha * 0.65);
+    g.lineStyle(1.5 / zoom, accent, alpha * 0.65);
     this.strokeTelegraphPath(g, points, true);
-    g.lineStyle(1.1 / zoom, 0xffffff, alpha * 0.42);
+    g.lineStyle(1.1 / zoom, accent, alpha * 0.42);
     this.strokeTelegraphPath(g, echo, true);
-    g.lineStyle((pulse ? 3.2 : 2) / zoom, 0xffffff, alpha + 0.1);
+    g.lineStyle((pulse ? 3.2 : 2) / zoom, accent, alpha + 0.1);
     this.strokeTelegraphPointRange(g, points, firstArc, lastArc);
 
     // Progress advances from both angular limits and meets at the committed aim notch on contact.
     const sideCount = Math.max(1, midArc - firstArc);
     const fill = Math.min(sideCount, Math.ceil(sideCount * Math.max(0, Math.min(1, t))));
-    g.lineStyle((pulse ? 3.5 : 2.4) / zoom, 0xffffff, 0.42 + t * 0.42);
+    g.lineStyle((pulse ? 3.5 : 2.4) / zoom, accent, 0.42 + t * 0.42);
     this.strokeTelegraphPointRange(g, points, firstArc, firstArc + fill);
     this.strokeTelegraphPointRange(g, points, lastArc - fill, lastArc);
 
@@ -4704,7 +5091,7 @@ export class ArenaScene extends Phaser.Scene {
     const ndx = origin.x - notch.x;
     const ndy = origin.y - notch.y;
     const nl = Math.hypot(ndx, ndy) || 1;
-    g.lineStyle((pulse ? 3.3 : 2) / zoom, 0xffffff, 0.55 + t * 0.35);
+    g.lineStyle((pulse ? 3.3 : 2) / zoom, accent, 0.55 + t * 0.35);
     g.beginPath();
     g.moveTo(notch.x, notch.y);
     g.lineTo(notch.x + (ndx / nl) * (10 / zoom), notch.y + (ndy / nl) * (10 / zoom));
@@ -5060,9 +5447,7 @@ export class ArenaScene extends Phaser.Scene {
     const inner = this.add
       .circle(0, 0, EXTRACT_RADIUS * 0.5, core, 0.22)
       .setStrokeStyle(2, core, 0.9);
-    const ground = this.add
-      .container(x, y, [outer, inner])
-      .setDepth(GATE_GROUND_DEPTH);
+    const ground = this.add.container(x, y, [outer, inner]).setDepth(GATE_GROUND_DEPTH);
     const halo = this.add.circle(0, 0, EXTRACT_RADIUS).setStrokeStyle(3, ring, 0.95);
     const iconRead = this.add
       .text(0, 0, icon, {
@@ -6820,6 +7205,35 @@ export class ArenaScene extends Phaser.Scene {
         ? this.selfPredSlidePhase
         : ((pl?.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase);
       const slideTick = isSelfPred ? this.selfPredSlideTick : (pl?.slidePhaseTick ?? 0);
+      const juggledSeq = pl?.juggledSeq ?? 0;
+      let juggle = this.jugglePresentation.get(id);
+      if (!juggle) {
+        juggle = { seq: juggledSeq, lastAtMs: -1e9 };
+        this.jugglePresentation.set(id, juggle);
+      } else if (juggledSeq !== juggle.seq) {
+        const airKeep = this.time.now - juggle.lastAtMs <= 2_100;
+        juggle.seq = juggledSeq;
+        juggle.lastAtMs = this.time.now;
+        blob.triggerJuggled(this.animClock);
+        const projectedY = this.belt ? this.beltY(blob.y) : blob.y;
+        const visible = id === selfId || this.cameras.main.worldView.contains(blob.x, blob.y);
+        if (visible)
+          this.jumpEffectRenderer.spawnAirKeepHit(
+            blob.x,
+            projectedY + PLAYER_SHADOW_LOCAL_Y,
+            reducedMotion,
+            this.belt ? BELT_FORESHORTEN : 1,
+          );
+        if (airKeep)
+          this.audio.play("enemy-combo:airkeep-hit", {
+            x: blob.x,
+            amt: id === selfId ? 0.85 : visible ? 0.42 : 0.2,
+          });
+        if (id === selfId) {
+          this.jugglePulseUntil = this.time.now + 420;
+          this.juggleHintUntil = Math.max(this.juggleHintUntil, this.time.now + 760);
+        }
+      }
       blob.setHop(jumpHeight);
       this.presentJumpFeel(
         id,
@@ -6925,10 +7339,7 @@ export class ArenaScene extends Phaser.Scene {
           this.belt ? BELT_FORESHORTEN : 1,
         );
         this.audio.play("slide", { x, amt: localAmt });
-      } else if (
-        previous.stance === STANCE_SLIDE &&
-        previous.slidePhase === SLIDE_PHASE_GROUND
-      ) {
+      } else if (previous.stance === STANCE_SLIDE && previous.slidePhase === SLIDE_PHASE_GROUND) {
         this.jumpEffectRenderer.spawnSlidePlant(
           x,
           y + PLAYER_SHADOW_LOCAL_Y,
@@ -7388,8 +7799,7 @@ export class ArenaScene extends Phaser.Scene {
     const pipX = x + 27;
     const pipY = y + 20;
     if (slideCd > 0) {
-      const ready =
-        1 - Math.min(1, slideCd / (SLIDE_COLD_REARM_TICKS * SLIDE_TICK_SECONDS));
+      const ready = 1 - Math.min(1, slideCd / (SLIDE_COLD_REARM_TICKS * SLIDE_TICK_SECONDS));
       g.lineStyle(2, 0xc7a66c, 0.52);
       g.beginPath();
       g.arc(pipX, pipY, 5, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
@@ -8918,6 +9328,19 @@ export class ArenaScene extends Phaser.Scene {
     if (aliveSelf && ratio < 0.25) vig *= 0.72 + 0.28 * Math.sin(this.time.now / 220);
     vig = Math.max(vig, aliveSelf ? this.hurtFlash * 0.32 : 0);
     this.dangerVignette.setAlpha(Phaser.Math.Linear(this.dangerVignette.alpha, vig, 0.18));
+    const juggleLeft = Math.max(0, this.jugglePulseUntil - this.time.now);
+    const juggleFade = aliveSelf ? Math.min(1, juggleLeft / 420) : 0;
+    const juggleBeat = prefersReducedPaperMotion()
+      ? 1
+      : 0.78 + 0.22 * Math.sin((this.time.now / 1000) * Math.PI * 8);
+    this.juggleVignette.setAlpha(
+      Phaser.Math.Linear(this.juggleVignette.alpha, juggleFade * juggleBeat * 0.24, 0.24),
+    );
+    const hintLeft = Math.max(0, this.juggleHintUntil - this.time.now);
+    const hintAlpha = aliveSelf ? Math.min(0.78, hintLeft / 220) : 0;
+    this.juggleHint
+      .setPosition(this.screenW() * 0.5, this.screenH() * 0.72)
+      .setAlpha(Phaser.Math.Linear(this.juggleHint.alpha, hintAlpha, 0.28));
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
@@ -10642,6 +11065,86 @@ export class ArenaScene extends Phaser.Scene {
 
   /** §4 v0.107 one PATCH = one completed server tick. Stamp the snapshot timeline + remote rings and
    *  reconcile the self predictor. Data only — rigs are moved by the render step, never from here. */
+  private captureEnemyComboPatch(
+    state: ArenaState,
+    id: string,
+    enemy: { x: number; y: number; comboSeq: number; comboFlags: number },
+  ): void {
+    let presentation = this.enemyComboPresentation.get(id);
+    if (!presentation) {
+      let leapStartTick = state.tick;
+      if ((enemy.comboFlags & COMBO_FLAG_AIRBORNE) !== 0) {
+        let bestDistance = Number.POSITIVE_INFINITY;
+        state.telegraphs.forEach((row) => {
+          if (row.shape !== TgShape.Circle || row.danger !== 0 || row.kindTag !== 2) return;
+          const distance = Math.hypot(row.x - enemy.x, row.y - enemy.y);
+          if (distance >= bestDistance) return;
+          bestDistance = distance;
+          const totalTicks = COMBO_LEAP_OFFER_TICKS + COMBO_LEAP_AIR_TICKS;
+          const airFraction = Math.max(
+            0,
+            Math.min(1, (row.t * totalTicks - COMBO_LEAP_OFFER_TICKS) / COMBO_LEAP_AIR_TICKS),
+          );
+          leapStartTick = (state.tick - Math.round(airFraction * COMBO_LEAP_AIR_TICKS)) >>> 0;
+        });
+      }
+      presentation = {
+        observedSeq: enemy.comboSeq,
+        observedFlags: enemy.comboFlags,
+        presentedSeq: enemy.comboSeq,
+        presentedFlags: enemy.comboFlags,
+        pendingSeq: enemy.comboSeq,
+        pendingFlags: enemy.comboFlags,
+        pendingTick: state.tick,
+        pendingStagger: false,
+        hasPending: false,
+        leapStartTick,
+        markerId: "",
+        markerX: enemy.x,
+        markerY: enemy.y,
+        markerRadius: ENEMY_RADIUS + 10,
+        launchX: enemy.x,
+        launchY: enemy.y,
+      };
+      this.enemyComboPresentation.set(id, presentation);
+      return;
+    }
+    if (
+      enemy.comboSeq === presentation.observedSeq &&
+      enemy.comboFlags === presentation.observedFlags
+    )
+      return;
+
+    let parriedReturn = false;
+    if (
+      (presentation.observedFlags & COMBO_FLAG_EMPOWERED) !== 0 &&
+      (enemy.comboFlags & COMBO_FLAG_EMPOWERED) === 0
+    ) {
+      const cached = this.telegraphCache.get(`${MELEE_TELEGRAPH_PREFIX}${id}`);
+      state.players.forEach((player, playerId) => {
+        const previous = this.lastParried.get(playerId);
+        if (previous === undefined || previous === player.parriedSeq) return;
+        const projectedY = projectTelegraphY(
+          player.y,
+          cached?.projectionYScale ?? (this.belt ? BELT_FORESHORTEN : 1),
+        );
+        if (
+          cached
+            ? telegraphGeometryContains(cached.geometry, player.x, projectedY)
+            : Math.hypot(player.x - enemy.x, player.y - enemy.y) <= 420
+        )
+          parriedReturn = true;
+      });
+    }
+    presentation.observedSeq = enemy.comboSeq;
+    presentation.observedFlags = enemy.comboFlags;
+    presentation.pendingSeq = enemy.comboSeq;
+    presentation.pendingFlags = enemy.comboFlags;
+    presentation.pendingTick = state.tick;
+    presentation.pendingStagger = parriedReturn;
+    presentation.hasPending = true;
+  }
+
   private onPatch(state: ArenaState): void {
     const now = this.time.now;
     if (state.tick <= 0) return; // pre-sim state (menu/handshake)
@@ -10669,6 +11172,7 @@ export class ArenaScene extends Phaser.Scene {
         this.enemyBufs.set(id, buf);
       }
       buf.push(t, e.x, e.y);
+      this.captureEnemyComboPatch(state, id, e);
     });
     this.wormRig?.capture(state.wormBoss, state.tick);
     // Self: create the predictor on the first patch that carries us, then reconcile every patch.

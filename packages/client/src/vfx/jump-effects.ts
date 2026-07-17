@@ -9,6 +9,28 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+/** §51 fixed-duration enemy leap presentation. Horizontal truth stays in the snapshot buffer; this helper
+ * owns only the cosmetic height channel and is pure so late-join/packet-delay catch-up can sample it. */
+export function enemyComboLeapHeight(fraction: number, peak = 48): number {
+  const f = clamp01(fraction);
+  return 4 * Math.max(0, peak) * f * (1 - f);
+}
+
+/** Signed cosmetic vertical speed in px/s for the rig's rise/hang/fall silhouette. */
+export function enemyComboLeapVelocity(fraction: number, durationMs: number, peak = 48): number {
+  const seconds = Math.max(0.001, durationMs / 1000);
+  return (4 * Math.max(0, peak) * (1 - 2 * clamp01(fraction))) / seconds;
+}
+
+/** The offer owns only the first `offerTicks` of the shared offer+air telegraph clock. */
+export function enemyComboOfferPhase(
+  telegraphPhase: number,
+  offerTicks: number,
+  airTicks: number,
+): number {
+  return clamp01((telegraphPhase * Math.max(1, offerTicks + airTicks)) / Math.max(1, offerTicks));
+}
+
 /** Fixed pools + retained Graphics: jump-feel presentation creates no objects in steady state. */
 export class JumpEffectRenderer {
   private readonly ground: Phaser.GameObjects.Graphics;
@@ -153,6 +175,152 @@ export class JumpEffectRenderer {
       x - nx * 37 - px * 10,
       y - ny * 37 - py * 10,
     );
+  }
+
+  /** Continuous, allocation-free leap promise: a faint launch→landing chord, optional retained white
+   * footprint after the wire row disappears, and the offer's inward foot-dust strokes. */
+  drawEnemyComboPromise(
+    launchX: number,
+    launchY: number,
+    landingX: number,
+    landingY: number,
+    landingRadius: number,
+    phase: number,
+    offerPhase: number,
+    retainMarker: boolean,
+    reducedMotion: boolean,
+    projectionYScale = 1,
+  ): void {
+    const f = clamp01(phase);
+    const offer = clamp01(offerPhase);
+    if (retainMarker) {
+      const breathe = reducedMotion ? 1 : 1 + Math.sin(f * Math.PI * 5) * 0.025;
+      this.ground.lineStyle(4, 0x17120f, 0.42);
+      this.ground.strokeEllipse(
+        landingX,
+        landingY,
+        landingRadius * 2 * breathe,
+        landingRadius * 2 * projectionYScale * breathe,
+      );
+      this.ground.lineStyle(1.8, 0xffffff, 0.48 + f * 0.24);
+      this.ground.strokeEllipse(
+        landingX,
+        landingY,
+        landingRadius * 2 * breathe,
+        landingRadius * 2 * projectionYScale * breathe,
+      );
+    }
+    if (f > 0 && f < 1) {
+      const dx = landingX - launchX;
+      const dy = landingY - launchY;
+      this.ground.lineStyle(3, 0x17120f, 0.2);
+      this.ground.lineBetween(launchX, launchY, landingX, landingY);
+      this.ground.lineStyle(1.2, 0xffffff, 0.14 + 0.12 * Math.sin(Math.PI * f));
+      for (let i = 0; i < 8; i += 2) {
+        const a = i / 8;
+        const b = (i + 1) / 8;
+        this.ground.lineBetween(
+          launchX + dx * a,
+          launchY + dy * a,
+          launchX + dx * b,
+          launchY + dy * b,
+        );
+      }
+    }
+    if (offer <= 0 || f > 0 || reducedMotion) return;
+    for (let i = 0; i < 4; i++) {
+      const angle = i * (TAU / 4) + offer * 0.7;
+      const outer = 24 - offer * 8;
+      const inner = 12 - offer * 4;
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      this.live.lineStyle(1.4, 0xd8c7aa, 0.12 + offer * 0.2);
+      this.live.lineBetween(
+        launchX + c * outer,
+        launchY + s * outer * projectionYScale,
+        launchX + c * inner,
+        launchY + s * inner * projectionYScale,
+      );
+    }
+  }
+
+  /** Authoritative-marker landing: the white promise collapses inward while low paper dust stays bounded. */
+  spawnEnemyComboLanding(
+    x: number,
+    y: number,
+    radius: number,
+    reducedMotion: boolean,
+    projectionYScale = 1,
+  ): void {
+    this.spawnRing(x, y, radius, 2, 250, 0xffffff, false, projectionYScale);
+    if (reducedMotion) return;
+    for (let i = 0; i < 8; i++) {
+      const angle = i * (TAU / 8) + 0.23;
+      const speed = 38 + (i % 3) * 11;
+      this.spawnDust(
+        x,
+        y,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed * 0.52,
+        260 + (i % 3) * 34,
+        i >= 6 ? 2.8 : 1.8,
+        i >= 6 ? 0xb9a282 : 0xd8c9af,
+        Math.max(8, radius + 10),
+        projectionYScale,
+        i >= 6,
+      );
+    }
+  }
+
+  /** The bait's priced-in recoil: two heel cuts and a low dust wake from the fixed jump-effect pools. */
+  spawnEnemyReturnSkid(
+    x: number,
+    y: number,
+    dirX: number,
+    dirY: number,
+    reducedMotion: boolean,
+    projectionYScale = 1,
+  ): void {
+    const length = Math.hypot(dirX, dirY) || 1;
+    const nx = dirX / length;
+    const ny = dirY / length;
+    this.spawnSkid(x, y, nx, ny, -5);
+    this.spawnSkid(x, y, nx, ny, 5);
+    if (reducedMotion) return;
+    for (let i = 0; i < 5; i++) {
+      const side = (i - 2) * 9;
+      this.spawnDust(
+        x - nx * 8,
+        y - ny * 8,
+        -nx * (28 + i * 5) - ny * side,
+        -ny * (28 + i * 5) + nx * side,
+        230 + i * 18,
+        1.5 + (i % 2) * 0.6,
+        0xc9b58f,
+        0,
+        projectionYScale,
+        false,
+      );
+    }
+  }
+
+  /** A restrained vertical punctuation at the victim's ground shadow; height/vh remain the only arc truth. */
+  spawnAirKeepHit(x: number, y: number, reducedMotion: boolean, projectionYScale = 1): void {
+    this.spawnRing(x, y, 4, 12, 140, 0xe8f5ff, false, projectionYScale);
+    if (reducedMotion) return;
+    for (let i = 0; i < 4; i++)
+      this.spawnDust(
+        x + (i - 1.5) * 4,
+        y,
+        (i - 1.5) * 12,
+        -55 - i * 9,
+        180 + i * 18,
+        1.4,
+        0xe8f5ff,
+        0,
+        projectionYScale,
+        false,
+      );
   }
 
   /** Shift/Ctrl-down acceptance: a compact launch scuff and low paper-dust fan from the fixed pools. */

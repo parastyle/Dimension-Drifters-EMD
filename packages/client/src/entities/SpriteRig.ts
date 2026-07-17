@@ -1155,9 +1155,25 @@ export class SpriteRig {
   private meleeTellStep = 0;
   private meleeTellEdgeAtMs = -1e9;
   private meleeTellGlintFired = false;
+  private meleeTellFirstGlintAtMs = -1e9;
+  private meleeTellFirstGlintFired = false;
+  private meleeTellGold = false;
+  private meleeTellAirKeep = false;
   private meleeTellReleaseAtMs = -1e9;
   private meleeTellCancelPhase = 0;
   private meleeTellReleasePose = false;
+  /** §51 combo-only presentation channels. ArenaScene samples them exclusively from synced flags/rows and
+   *  feeds zeroes every inactive frame, so no private server phase leaks into this rig. */
+  private enemyComboOwnsHop = false;
+  private enemyComboHopPx = 0;
+  private enemyComboOfferPhase = 0;
+  private enemyComboAimWorld = 0;
+  private enemyComboEmpowered = false;
+  private enemyComboReturnAtMs = -1e9;
+  private enemyComboLandedAtMs = -1e9;
+  private enemyComboStaggerAtMs = -1e9;
+  private juggledAtMs = -1e9;
+  private juggleFlashActive = false;
   /** §5 jump: px the rendered art is lifted this frame (the hop arc). The container stays grounded so
    *  the camera + depth-sort use the ground position; only the visible parts rise. §7 v0.105 de-clunk:
    *  `hopPx` now EASES toward `hopTarget` (the synced height) so the 20Hz jump doesn't stair-step. */
@@ -1349,6 +1365,38 @@ export class SpriteRig {
    *  untouched, so the camera + depth-sort stay grounded — only the visible body/hands/feet/weapon rise. */
   setHop(px: number): void {
     this.hopTarget = px;
+  }
+
+  /** Exact cosmetic enemy-arc sample. Unlike player height, this value is already locally reconstructed at
+   *  render time; animate applies it without another network-smoothing lag. */
+  setEnemyComboPresentation(
+    offerPhase: number,
+    leapHeight: number,
+    empowered: boolean,
+    aimWorld: number,
+  ): void {
+    this.enemyComboOwnsHop = true;
+    this.enemyComboHopPx = Math.max(0, leapHeight);
+    this.enemyComboOfferPhase = clamp01(offerPhase);
+    this.enemyComboEmpowered = empowered;
+    this.enemyComboAimWorld = aimWorld;
+  }
+
+  triggerEnemyComboReturn(timeMs: number): void {
+    this.enemyComboReturnAtMs = timeMs;
+  }
+
+  triggerEnemyComboLanding(timeMs: number): void {
+    this.enemyComboLandedAtMs = timeMs;
+  }
+
+  triggerEnemyComboStagger(timeMs: number): void {
+    this.enemyComboStaggerAtMs = timeMs;
+  }
+
+  /** Victim-side transition edge. Height/vh remain authoritative; this is only the brief paper tumble. */
+  triggerJuggled(timeMs: number): void {
+    this.juggledAtMs = timeMs;
   }
 
   /** §33 COLOSSUS framing: a PERMANENT upward art-lift (in body-heights) so a giant renders feet-at-the-
@@ -2217,12 +2265,17 @@ export class SpriteRig {
     archetype = "duelist",
     step = 0,
     full = true,
+    gold = false,
+    airKeep = false,
   ): void {
     const sampled = Math.max(0, Math.min(0.985, phase));
     const newEpoch = this.meleeTellMode !== "windup" || sampled + 0.04 < this.meleeTellPhase;
-    if (newEpoch) {
+    const goldEpoch = gold && !this.meleeTellGold;
+    if (newEpoch || goldEpoch) {
       this.meleeTellGlintFired = false;
       this.meleeTellEdgeAtMs = -1e9;
+      this.meleeTellFirstGlintFired = false;
+      this.meleeTellFirstGlintAtMs = -1e9;
     }
     this.meleeTellMode = "windup";
     this.meleeTellReleasePose = false;
@@ -2234,10 +2287,22 @@ export class SpriteRig {
     this.meleeTellArchetype = archetype;
     this.meleeTellStep = Math.max(0, step | 0);
     this.meleeTellFull = full;
-    if (full && !this.meleeTellGlintFired && remainingMs <= MELEE_GLINT_LEAD_MS) {
+    this.meleeTellGold = gold;
+    this.meleeTellAirKeep = airKeep;
+    const sceneNow = this.presentationClockNow();
+    if (full && gold && !this.meleeTellFirstGlintFired && remainingMs <= 450) {
+      this.meleeTellFirstGlintFired = true;
+      this.meleeTellFirstGlintAtMs = sceneNow;
+    }
+    if (
+      full &&
+      !this.meleeTellGlintFired &&
+      remainingMs <= MELEE_GLINT_LEAD_MS &&
+      (!gold || sceneNow - this.meleeTellFirstGlintAtMs >= 90)
+    ) {
       // A late first sample fires one shortened crest immediately; missed Claim frames are never replayed.
       this.meleeTellGlintFired = true;
-      this.meleeTellEdgeAtMs = this.presentationClockNow();
+      this.meleeTellEdgeAtMs = sceneNow;
     }
     if (!full) this.clearMeleeTellTint();
   }
@@ -2437,6 +2502,10 @@ export class SpriteRig {
     this.meleeTellLocked = false;
     this.meleeTellFull = false;
     this.meleeTellGlintFired = false;
+    this.meleeTellFirstGlintFired = false;
+    this.meleeTellFirstGlintAtMs = -1e9;
+    this.meleeTellGold = false;
+    this.meleeTellAirKeep = false;
     this.meleeTellEdgeAtMs = -1e9;
     this.meleeTellReleaseAtMs = -1e9;
     this.meleeTellReleasePose = false;
@@ -2489,12 +2558,18 @@ export class SpriteRig {
     const show = this.meleeTellMode === "windup" && this.meleeTellFull;
     const crest =
       show &&
-      this.meleeTellGlintFired &&
-      sceneNow - this.meleeTellEdgeAtMs >= 0 &&
-      sceneNow - this.meleeTellEdgeAtMs <= MELEE_GLINT_CREST_MS;
+      ((this.meleeTellGlintFired &&
+        sceneNow - this.meleeTellEdgeAtMs >= 0 &&
+        sceneNow - this.meleeTellEdgeAtMs <= MELEE_GLINT_CREST_MS) ||
+        (this.meleeTellFirstGlintFired &&
+          sceneNow - this.meleeTellFirstGlintAtMs >= 0 &&
+          sceneNow - this.meleeTellFirstGlintAtMs <= MELEE_GLINT_CREST_MS));
+    const glintColor = this.meleeTellGold ? 0xffd66e : 0xffffff;
     for (const weapon of this.weapons) {
       if (!show) {
-        weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+        if (this.enemyComboEmpowered)
+          weapon.img.setTint(0xffd66e).setTintMode(Phaser.TintModes.MULTIPLY);
+        else weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
         weapon.tellRim?.setVisible(false);
         weapon.tellEcho?.setVisible(false);
         continue;
@@ -2503,6 +2578,7 @@ export class SpriteRig {
       const rim = weapon.tellRim;
       const echo = weapon.tellEcho;
       if (!rim || !echo) continue;
+      echo.setTint(glintColor);
       const displayH = Math.max(1, weapon.img.height * Math.abs(weapon.img.scaleY));
       const rimY = 1 + 5 / displayH;
       const echoY = 1 + (crest ? 5 : 2.4) / displayH;
@@ -2520,8 +2596,21 @@ export class SpriteRig {
         .setScale(weapon.img.scaleX, weapon.img.scaleY * echoY)
         .setAlpha(crest ? 0.95 : steady + (this.meleeTellLocked ? 0.08 : 0))
         .setVisible(true);
-      if (crest) weapon.img.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      if (crest) weapon.img.setTint(glintColor).setTintMode(Phaser.TintModes.FILL);
+      else if (this.meleeTellGold)
+        weapon.img.setTint(0xffd66e).setTintMode(Phaser.TintModes.MULTIPLY);
       else weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    }
+  }
+
+  private updateJuggleFlash(sceneNow: number): void {
+    const active = sceneNow - this.juggledAtMs >= 0 && sceneNow - this.juggledAtMs < 80;
+    if (active === this.juggleFlashActive) return;
+    this.juggleFlashActive = active;
+    if (active) {
+      for (const part of this.parts) part.setTint(0xe8f5ff).setTintMode(Phaser.TintModes.FILL);
+    } else {
+      this.restTint();
     }
   }
 
@@ -4170,7 +4259,7 @@ export class SpriteRig {
       this.moveStance === STANCE_SLIDE ? (anim.slidePhase ?? SLIDE_PHASE_OFF) : SLIDE_PHASE_OFF;
     this.slideRenderT =
       this.moveStance === STANCE_SLIDE
-        ? ((anim.slideTick ?? Math.floor(stanceElapsed / TICK_MS) + 1) * SLIDE_TICK_SECONDS)
+        ? (anim.slideTick ?? Math.floor(stanceElapsed / TICK_MS) + 1) * SLIDE_TICK_SECONDS
         : 0;
 
     if (this.moveStance === STANCE_CROUCH) {
@@ -4300,6 +4389,96 @@ export class SpriteRig {
     for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
   }
 
+  /** §51 late additive combo grammar. Every clock is presentation-only; root position and damaging geometry
+   * remain owned by snapshots/telegraphs. This pass is retained-transform work and allocates nothing. */
+  private applyEnemyComboPresentationPose(timeMs: number): void {
+    const offer = smoothstep01(this.enemyComboOfferPhase);
+    const aimLocal = Math.atan2(
+      Math.sin(this.enemyComboAimWorld),
+      Math.cos(this.enemyComboAimWorld) * this.facing,
+    );
+    if (offer > 0) {
+      // Duel offer: deep, still crouch; weapon closes across the body while the head/card commits to aim.
+      this.body.y += TARGET_BODY_H * 0.14 * offer;
+      this.body.scaleY *= 1 - 0.25 * offer;
+      this.body.scaleX *= 1 + 0.12 * offer;
+      this.body.rotation += Math.cos(aimLocal) * 0.12 * offer;
+      for (const foot of this.feet)
+        foot.img.x += (foot.front ? 1 : -1) * TARGET_BODY_H * 0.08 * offer;
+      for (const hand of this.hands) {
+        hand.img.x -= Math.cos(aimLocal) * TARGET_BODY_H * 0.06 * offer;
+        hand.img.y += TARGET_BODY_H * 0.08 * offer;
+      }
+      for (const weapon of this.weapons) {
+        weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
+        weapon.img.rotation = mixAngle(weapon.img.rotation, aimLocal + Math.PI / 2, offer);
+      }
+    }
+
+    const sinceLanding = timeMs - this.enemyComboLandedAtMs;
+    if (sinceLanding >= 0 && sinceLanding < 250) {
+      // Sacred settle: one knee absorbs the flight, then the weapon returns to a quiet guard. No attack
+      // clock starts here; the server's zero windup is the source of that honesty.
+      const q = clamp01(sinceLanding / 250);
+      const dip = Math.sin(Math.PI * q);
+      const guard = smoothstep01(q);
+      this.body.y += TARGET_BODY_H * 0.12 * dip;
+      this.body.scaleY *= 1 - 0.2 * dip;
+      this.body.scaleX *= 1 + 0.1 * dip;
+      for (const foot of this.feet)
+        foot.img.y += (foot.front ? 1 : 0.45) * TARGET_BODY_H * 0.06 * dip;
+      for (const weapon of this.weapons) {
+        weapon.img.rotation = mixAngle(weapon.img.rotation, -Math.PI / 2 + 0.16, guard);
+      }
+    }
+
+    const sinceReturn = timeMs - this.enemyComboReturnAtMs;
+    if (this.enemyComboEmpowered && sinceReturn >= 0 && sinceReturn < 400) {
+      // The 0.4s displaced hold proves the parry had mass: heels drag, torso counter-leans, gold edge stays
+      // awake. The later windup/dash inherits the ordinary melee pose with its gold/heavy modifiers.
+      const q = clamp01(sinceReturn / 400);
+      const hold = 1 - smoothstep01(q);
+      const fx = Math.cos(aimLocal);
+      const fy = Math.sin(aimLocal);
+      this.body.rotation -= Math.cos(aimLocal) * 0.24 * hold;
+      this.body.y += TARGET_BODY_H * 0.09 * hold;
+      this.body.scaleY *= 1 - 0.14 * hold;
+      this.body.scaleX *= 1 + 0.08 * hold;
+      for (const foot of this.feet) {
+        foot.img.x -= fx * TARGET_BODY_H * (foot.front ? 0.12 : 0.05) * hold;
+        foot.img.y -= fy * TARGET_BODY_H * (foot.front ? 0.12 : 0.05) * hold;
+      }
+    }
+
+    const sinceStagger = timeMs - this.enemyComboStaggerAtMs;
+    if (sinceStagger >= 0 && sinceStagger < 620) {
+      // Second-parry payoff: a sharper authored buckle that visibly ends the gold sentence.
+      const q = clamp01(sinceStagger / 620);
+      const buckle = 1 - smoothstep01(q);
+      this.body.rotation -= Math.cos(aimLocal) * 0.38 * buckle;
+      this.body.y += TARGET_BODY_H * 0.18 * buckle;
+      this.body.scaleY *= 1 - 0.26 * buckle;
+      this.body.scaleX *= 1 + 0.14 * buckle;
+      for (const hand of this.hands) hand.img.y += TARGET_BODY_H * 0.12 * buckle;
+      for (const weapon of this.weapons) weapon.img.rotation += 0.5 * this.facing * buckle;
+    }
+
+    const sinceJuggle = timeMs - this.juggledAtMs;
+    if (sinceJuggle >= 0 && sinceJuggle < 240) {
+      const q = clamp01(sinceJuggle / 240);
+      const tumble = Math.sin(Math.PI * q);
+      this.body.rotation += this.facing * 0.34 * tumble;
+      this.body.scaleX *= 1 + 0.08 * tumble;
+      this.body.scaleY *= 1 - 0.06 * tumble;
+      for (const hand of this.hands)
+        hand.img.x += (hand.front ? 1 : -1) * TARGET_BODY_H * 0.06 * tumble;
+      for (const foot of this.feet) foot.img.y -= TARGET_BODY_H * 0.06 * tumble;
+    }
+
+    // Hands may have moved after the weapon mount pass; keep the implement physically attached.
+    for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -4346,6 +4525,7 @@ export class SpriteRig {
       this.moveStance = nextStance;
       this.stanceStartedMs = timeMs;
     }
+    if (this.enemyComboOwnsHop) this.hopTarget = this.enemyComboHopPx;
     if (this.hopTarget > GROUND_EPSILON && this.lastPoseHopTarget <= GROUND_EPSILON) {
       this.jumpStartedMs = timeMs;
       this.peakHopPx = this.hopTarget;
@@ -4355,11 +4535,11 @@ export class SpriteRig {
     this.peakHopPx = Math.max(this.peakHopPx, this.hopTarget, this.hopPx);
     if ((anim.jumpVh ?? 0) < 0)
       this.maxFallSpeed = Math.max(this.maxFallSpeed, -(anim.jumpVh ?? 0));
-    if (nextStance !== STANCE_NONE && this.hopTarget > GROUND_EPSILON)
-      this.airStance = nextStance;
+    if (nextStance !== STANCE_NONE && this.hopTarget > GROUND_EPSILON) this.airStance = nextStance;
 
     const prevHop = this.hopPx;
-    this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
+    if (this.enemyComboOwnsHop) this.hopPx = this.hopTarget;
+    else this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
     if (this.hopPx < 0.05 && this.hopTarget < 0.05) this.hopPx = 0;
     const landed = prevHop > 6 && this.hopPx <= 6 && this.hopTarget < 1;
     if (landed) {
@@ -4462,13 +4642,15 @@ export class SpriteRig {
       (this.meleeTellMode === "windup" && this.meleeTellFull) ||
       ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
         this.meleeTellReleasePose);
-    const dirX = tellFacesAim
-      ? Math.cos(this.meleeTellAimWorld)
-      : anim.isSelf
-        ? anim.aimX
-        : this.weaponDef?.gun
-          ? Math.cos(anim.aimDir)
-          : anim.moveX;
+    const comboFacesAim = this.enemyComboOfferPhase > 0 || this.enemyComboEmpowered;
+    const dirX =
+      tellFacesAim || comboFacesAim
+        ? Math.cos(tellFacesAim ? this.meleeTellAimWorld : this.enemyComboAimWorld)
+        : anim.isSelf
+          ? anim.aimX
+          : this.weaponDef?.gun
+            ? Math.cos(anim.aimDir)
+            : anim.moveX;
     // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
     // (±6px hysteresis kills strobe at the exact centre) — a normalized-|aimX| threshold went sticky when the
     // cursor sat far above/below (|aimX|≈0 however clearly the midpoint was crossed). Remotes/enemies keep the
@@ -4663,7 +4845,11 @@ export class SpriteRig {
       let loadedA: number;
       let contactA = aimLocal;
       let followA: number;
-      if (direct) {
+      if (this.meleeTellAirKeep) {
+        loadedA = aimLocal + direction * 1.34;
+        contactA = aimLocal - direction * 0.42;
+        followA = aimLocal - direction * 0.82;
+      } else if (direct) {
         loadedA = aimLocal;
         followA = aimLocal;
       } else if (heavy || finalStep) {
@@ -4708,6 +4894,24 @@ export class SpriteRig {
       this.body.y += (3 * load + 4 * incoming - 2 * resolveT) * s * cancelBlend;
       this.body.scaleY *= 1 - (0.035 * load + 0.07 * incoming) * cancelBlend;
       if (finalStep) this.body.scaleY *= 1 + 0.055 * load * cancelBlend;
+      if (this.meleeTellGold) {
+        // Escalation is heavier, not hurried: a deeper load and committed forward lean ride the SAME
+        // synced windup clock. The root never moves here; bounded server snapshots remain travel truth.
+        this.swingOffX -= fx * TARGET_BODY_H * 0.08 * load * cancelBlend;
+        this.swingOffY -= fy * TARGET_BODY_H * 0.08 * load * cancelBlend;
+        this.body.rotation += direction * 0.08 * load * cancelBlend;
+        this.body.y += TARGET_BODY_H * 0.045 * load * cancelBlend;
+        this.body.scaleY *= 1 - 0.06 * load * cancelBlend;
+        this.body.scaleX *= 1 + 0.04 * load * cancelBlend;
+      }
+      if (this.meleeTellAirKeep) {
+        // Ground-to-sky read: the card and implement rise through contact while both feet stay visibly
+        // committed underneath the victim's synced shadow.
+        this.attackLiftPx += TARGET_BODY_H * (0.04 * load + 0.16 * incoming) * cancelBlend;
+        this.body.scaleY *= 1 + 0.1 * incoming * cancelBlend;
+        this.body.scaleX *= 1 - 0.05 * incoming * cancelBlend;
+        for (const foot of this.feet) foot.img.y += TARGET_BODY_H * 0.045 * load * cancelBlend;
+      }
     } else if (this.weaponDef?.gun && this.weapons.length > 0) {
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
       if (this.weaponDef.twoHanded) ownBack = 1;
@@ -5780,6 +5984,7 @@ export class SpriteRig {
     }
 
     this.applyJumpFeelPose(timeMs, anim);
+    this.applyEnemyComboPresentationPose(timeMs);
 
     // §5 jump hop was integrated at frame start so touchdown could excite springs; final art lift stays last.
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
@@ -5836,6 +6041,7 @@ export class SpriteRig {
         (this.slidePhase === SLIDE_PHASE_GROUND || this.slidePhase === SLIDE_PHASE_AIR) &&
         this.slideRenderT <= SLIDE_IFRAME_TICKS * SLIDE_TICK_SECONDS,
     );
+    this.updateJuggleFlash(sceneNow);
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.

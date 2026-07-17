@@ -1014,6 +1014,87 @@ export class AudioBus {
       case "pitdeath":
         this.tone(300, 0.32, { type: "sine", gain: 0.2, sweepTo: 80, x });
         break;
+      // §51 tough-combo presentation. All four ids are manifest-ready and sample-first; the compact synth
+      // fallbacks keep the grammar audible until bespoke launch/land/swell/air-hit samples ship.
+      case "enemy-combo:leap-launch":
+        if (this.throttled("enemyComboLeapLaunch", 70)) return;
+        if (
+          this.sampleFirst("enemy-combo:leap-launch", {
+            volume: 0.25 + 0.42 * amt,
+            pan: this.panOf(x),
+            priority: "normal",
+            minIntervalMs: 70,
+          })
+        )
+          return;
+        this.noise(0.14, {
+          gain: 0.06 + 0.1 * amt,
+          type: "bandpass",
+          freq: 1_150,
+          sweepTo: 360,
+          x,
+        });
+        this.tone(210, 0.12, { type: "triangle", gain: 0.07 + 0.05 * amt, sweepTo: 105, x });
+        break;
+      case "enemy-combo:leap-land":
+        if (this.throttled("enemyComboLeapLand", 70)) return;
+        if (
+          this.sampleFirst("enemy-combo:leap-land", {
+            volume: 0.28 + 0.44 * amt,
+            pan: this.panOf(x),
+            rate: 0.94,
+            priority: "normal",
+            minIntervalMs: 70,
+          })
+        )
+          return;
+        this.tone(105, 0.11, { type: "sine", gain: 0.1 + 0.12 * amt, sweepTo: 54, x });
+        this.noise(0.08, { gain: 0.06 + 0.09 * amt, type: "lowpass", freq: 720, x });
+        this.tone(1_800, 0.025, { type: "triangle", gain: 0.025 + 0.03 * amt, sweepTo: 1_250, x });
+        break;
+      case "enemy-combo:return-tell":
+        if (this.throttled("enemyComboReturnTell", 120)) return;
+        if (
+          this.sampleFirst("enemy-combo:return-tell", {
+            volume: 0.3 + 0.45 * amt,
+            pan: this.panOf(x),
+            rate: 0.96,
+            priority: "normal",
+            minIntervalMs: 120,
+          })
+        )
+          return;
+        this.tone(92, 0.42, { type: "sawtooth", gain: 0.07 + 0.08 * amt, sweepTo: 145, x });
+        this.noise(0.16, {
+          gain: 0.035 + 0.05 * amt,
+          type: "bandpass",
+          freq: 480,
+          sweepTo: 1_650,
+          x,
+        });
+        this.tone(1_250, 0.055, {
+          type: "triangle",
+          gain: 0.04 + 0.04 * amt,
+          sweepTo: 2_400,
+          x,
+          delay: 0.34,
+        });
+        break;
+      case "enemy-combo:airkeep-hit":
+        if (this.throttled("enemyComboAirKeep", 65)) return;
+        if (
+          this.sampleFirst("enemy-combo:airkeep-hit", {
+            volume: 0.24 + 0.4 * amt,
+            pan: this.panOf(x),
+            rate: 0.98,
+            priority: "normal",
+            minIntervalMs: 65,
+          })
+        )
+          return;
+        this.noise(0.07, { gain: 0.07 + 0.08 * amt, type: "highpass", freq: 1_500, x });
+        this.tone(420, 0.09, { type: "triangle", gain: 0.08 + 0.07 * amt, sweepTo: 710, x });
+        break;
       // Jump-feel movement family. The installed movement ids predate `replaces` mappings, so these
       // explicit sample-first branches address them directly and retain synth coverage during decode.
       case "jump":
