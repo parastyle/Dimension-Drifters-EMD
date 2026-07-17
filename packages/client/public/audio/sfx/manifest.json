@@ -110,6 +110,15 @@
    "replaces": "melee:arcane"
   },
   {
+   "id": "swing-fist-jab",
+   "category": "weapon-swing",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:light"
+  },
+  {
    "id": "gun-fire-slug",
    "category": "weapon-fire",
    "priority": 1,
@@ -135,6 +144,24 @@
    "loop": false,
    "variations": 3,
    "replaces": "shot:nail"
+  },
+  {
+   "id": "gun-fire-tracer",
+   "category": "weapon-fire",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "shot:tracer"
+  },
+  {
+   "id": "gun-fire-ricochet-shot",
+   "category": "weapon-fire",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "shot:ricochet"
   },
   {
    "id": "gun-fire-fire",
@@ -170,6 +197,33 @@
    "durationSeconds": 0.6,
    "loop": false,
    "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-toxic",
+   "category": "weapon-fire",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-arcane",
+   "category": "weapon-fire",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-holy",
+   "category": "weapon-fire",
+   "priority": 2,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
    "replaces": "shot:slug"
   },
   {
@@ -272,6 +326,15 @@
    "replaces": "bighit"
   },
   {
+   "id": "impact-ricochet",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:ricochet"
+  },
+  {
    "id": "impact-elem-fire",
    "category": "impact",
    "priority": 1,
@@ -299,12 +362,57 @@
    "replaces": "hit"
   },
   {
+   "id": "impact-elem-toxic",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-elem-void",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-elem-arcane",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-elem-holy",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
    "id": "kill-confirm-small",
    "category": "impact",
    "priority": 1,
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
+   "replaces": "death"
+  },
+  {
+   "id": "kill-confirm-medium",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
    "replaces": "death"
   },
   {
@@ -315,6 +423,24 @@
    "loop": false,
    "variations": 2,
    "replaces": "death"
+  },
+  {
+   "id": "kill-confirm-colossus",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "death"
+  },
+  {
+   "id": "player-hurt",
+   "category": "impact",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hurt"
   },
   {
    "id": "parry-clang",
@@ -335,6 +461,15 @@
    "replaces": "parry"
   },
   {
+   "id": "parry-glint-cue",
+   "category": "parry",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
    "id": "serraketh-dive",
    "category": "boss",
    "priority": 1,
@@ -342,6 +477,15 @@
    "loop": false,
    "variations": 2,
    "replaces": "descent"
+  },
+  {
+   "id": "serraketh-rumble-loop",
+   "category": "boss",
+   "priority": 2,
+   "durationSeconds": 4,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
   },
   {
    "id": "serraketh-eruption",
@@ -360,6 +504,285 @@
    "loop": false,
    "variations": 2,
    "replaces": "bighit"
+  },
+  {
+   "id": "serraketh-regrow",
+   "category": "boss",
+   "priority": 2,
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "serraketh-death",
+   "category": "boss",
+   "priority": 2,
+   "durationSeconds": 3,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "boss-slam-generic",
+   "category": "boss",
+   "priority": 2,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 2,
+   "replaces": "bossslam"
+  },
+  {
+   "id": "ui-dock-tick",
+   "category": "ui",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "ui-dock-open",
+   "category": "ui",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ui-dock-close",
+   "category": "ui",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ui-card-hover",
+   "category": "ui",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "ui-card-confirm",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": "grab"
+  },
+  {
+   "id": "levelup-fanfare",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "levelup"
+  },
+  {
+   "id": "levelup-time-dilate",
+   "category": "ui",
+   "priority": 3,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "levelup-card-reveal",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "extract-complete",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 1,
+   "replaces": "extract"
+  },
+  {
+   "id": "player-revive",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 1,
+   "replaces": "revive"
+  },
+  {
+   "id": "xp-mote-catch",
+   "category": "xp",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "xpTick"
+  },
+  {
+   "id": "xp-cadence-resolve",
+   "category": "xp",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "xpCadence"
+  },
+  {
+   "id": "loot-drop-rarity",
+   "category": "xp",
+   "priority": 2,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 3,
+   "replaces": "loot"
+  },
+  {
+   "id": "footstep-dust",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": null
+  },
+  {
+   "id": "footstep-snow",
+   "category": "movement",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": null
+  },
+  {
+   "id": "footstep-moss",
+   "category": "movement",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": null
+  },
+  {
+   "id": "footstep-cinder",
+   "category": "movement",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": null
+  },
+  {
+   "id": "footstep-chrome",
+   "category": "movement",
+   "priority": 3,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": null
+  },
+  {
+   "id": "player-jump",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "player-land",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "fall"
+  },
+  {
+   "id": "player-dodge",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "pit-death",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "pitdeath"
+  },
+  {
+   "id": "descent-transition",
+   "category": "ambient",
+   "priority": 2,
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "descent"
+  },
+  {
+   "id": "ambient-wild-west",
+   "category": "ambient",
+   "priority": 3,
+   "durationSeconds": 12,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ambient-frostfell",
+   "category": "ambient",
+   "priority": 3,
+   "durationSeconds": 12,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ambient-verdant-ruins",
+   "category": "ambient",
+   "priority": 3,
+   "durationSeconds": 12,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ambient-ashlands",
+   "category": "ambient",
+   "priority": 3,
+   "durationSeconds": 12,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
+  },
+  {
+   "id": "ambient-neon-cyber",
+   "category": "ambient",
+   "priority": 3,
+   "durationSeconds": 12,
+   "loop": true,
+   "variations": 1,
+   "replaces": null
   }
  ]
 }
