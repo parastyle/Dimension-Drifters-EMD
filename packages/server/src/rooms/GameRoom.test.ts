@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(23);
+    expect(h.state().schemaVersion).toBe(24);
   });
 });
 
@@ -3310,7 +3310,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(23);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3680,7 +3680,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(23);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3812,7 +3812,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(23);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4270,7 +4270,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(23);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4537,8 +4537,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(23);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(23);
+    expect(fixture.h.state().schemaVersion).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -4714,5 +4714,366 @@ describe("GameRoom — MAP QOL final enemy-spawn fairness", () => {
     h.room.runSpawnDirector(0.05, [{ x: player.x, y: player.y }]);
     expect(h.state().enemies.size).toBe(0);
     expect(h.room.spawnAccum).toBeCloseTo(2.05, 8);
+  });
+});
+
+// ULT U1 — appended server-core coverage. Positions are pinned on an all-ground arena so map RNG cannot
+// change target order, swept-capsule contacts, or nav-valid endpoint assertions.
+function makeUltimateRoom(
+  family: number,
+  variant: "str" | "dex" | "int" | "con" | "luk",
+  id = "ult-player",
+) {
+  const h = makeRoom();
+  h.join(id);
+  h.room.map.pois.length = 0;
+  h.room.map.tiles.fill(TILE_GROUND);
+  h.room.spawnAccum = -999;
+  const player = h.state().players.get(id);
+  player.x = 1000;
+  player.y = 1000;
+  const combat = h.room.combat.get(id);
+  player.ultFamily = family;
+  player.ultVariant = variant;
+  player.ultArchetype = enemyComboShared.ultimateCodeFor(family, variant);
+  combat.ultChargeF = 1;
+  player.ultCharge = 100;
+  return { h, id, player, combat };
+}
+
+function addUltimateEnemy(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  x: number,
+  y: number,
+  hp = 1000,
+  kind = "boothill",
+) {
+  const enemy = new EnemyState();
+  enemy.id = id;
+  enemy.kind = kind;
+  enemy.x = x;
+  enemy.y = y;
+  enemy.hp = hp;
+  h.state().enemies.set(id, enemy);
+  h.room.insertEnemyGrid(id, enemy);
+  return enemy;
+}
+
+describe("ULT U1 unlock timeout, charge truth, and validation", () => {
+  it("drains AFK decisions through +2 pick/+1 ballast and attunes on the fifth decision", () => {
+    const h = makeRoom();
+    h.join("ult-afk");
+    const player = h.state().players.get("ult-afk");
+    player.weapon = "x-staff-arcane-lance"; // deterministic INT timeout default
+    player.flexPending = 5;
+    player.flexTimer = 0.01;
+    h.tick();
+    expect(enemyComboShared.ATTRS.reduce((n, attr) => n + player.allocRun[attr], 0)).toBe(15);
+    expect(player.allocRun.int).toBe(15);
+    expect(enemyComboShared.ultimateFamilyForCode(player.ultArchetype)).toBe(
+      enemyComboShared.UltimateFamily.SunspiteComet,
+    );
+  });
+
+  it("credits applied personal damage once, emits the ready edge, and enforces every anti-farm gate", () => {
+    const { h, id, player, combat } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.Seismarch,
+      "dex",
+      "ult-charge",
+    );
+    const enemy = addUltimateEnemy(h, "charge-target", 1100, 1000, 10000);
+    const reset = () => {
+      combat.ultChargeF = 0;
+      combat.ultAccrualThisTick = 0;
+      player.ultCharge = 0;
+    };
+    reset();
+    h.room.damageEnemy(
+      enemy,
+      enemy.id,
+      30,
+      [],
+      0,
+      id,
+      "rusty-cleaver",
+      enemyComboShared.CombatDelivery.Melee,
+    );
+    expect(player.ultCharge).toBe(1); // DEX Seismarch's +15% still quantizes one displayed point.
+
+    reset();
+    const dummy = addUltimateEnemy(h, "charge-dummy", 1100, 1000, DUMMY_HP, "dummy");
+    h.room.damageEnemy(dummy, dummy.id, 30, [], 0, id, "rusty-cleaver", 1);
+    expect(player.ultCharge).toBe(0);
+
+    reset();
+    h.state().mode = "training";
+    h.room.damageEnemy(enemy, enemy.id, 30, [], 0, id, "rusty-cleaver", 1);
+    expect(player.ultCharge).toBe(0);
+    h.state().mode = "arena";
+
+    reset();
+    h.room.damageEnemy(
+      enemy,
+      enemy.id,
+      300,
+      [],
+      0,
+      id,
+      "ult:test",
+      enemyComboShared.CombatDelivery.Ultimate,
+    );
+    expect(player.ultCharge).toBe(0); // delayed ultimate payloads never charge their own next cast.
+
+    reset();
+    for (let i = 0; i < 8; i++)
+      h.room.damageEnemy(enemy, enemy.id, 1000, [], 0, id, "rusty-cleaver", 1);
+    expect(combat.ultChargeF).toBeCloseTo(enemyComboShared.ULT_CHARGE_TICK_CAP, 8);
+
+    combat.ultAccrualThisTick = 0;
+    combat.ultChargeF = 0.99;
+    player.ultCharge = 99;
+    const seq = player.ultSeq;
+    h.room.damageEnemy(enemy, enemy.id, 30, [], 0, id, "rusty-cleaver", 1);
+    expect(player.ultCharge).toBe(100);
+    expect(player.ultSeq).toBe((seq + 1) & 0xffff);
+  });
+
+  it("rejects uncharged, downed, juggled, and level-window activations before spending", () => {
+    const { h, id, player, combat } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.DimensionDoor,
+      "int",
+      "ult-gates",
+    );
+    combat.ultChargeF = 0.99;
+    player.ultCharge = 99;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    h.tick();
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
+    combat.ultBuffer = 0;
+
+    combat.ultChargeF = 1;
+    player.ultCharge = 100;
+    combat.juggleArmed = true;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    h.tick();
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
+    combat.ultBuffer = 0;
+
+    combat.juggleArmed = false;
+    player.flexPending = 1;
+    player.flexTimer = 5;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    h.tick();
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
+    combat.ultBuffer = 0;
+    player.flexPending = 0;
+    player.flexTimer = 0;
+
+    player.alive = false;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    expect(combat.ultBuffer).toBe(0);
+    player.alive = true;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    h.tick();
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Windup);
+    expect(combat.ultChargeF).toBe(0);
+  });
+});
+
+describe("ULT U1 five authoritative family executions", () => {
+  it("Seismarch leaps to the resolved point, damages the inner ring, and opens a stun+ICD window", () => {
+    const { h, id, player } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.Seismarch,
+      "dex",
+      "ult-seis",
+    );
+    const enemy = addUltimateEnemy(h, "seis-dummy", 1200, 1000, DUMMY_HP, "dummy");
+    const teleportSeq = player.teleportSeq;
+    h.send(id, "ultimate", { tx: 1200, ty: 1000 });
+    h.tick(1 + enemyComboShared.ULT_SEISMARCH_WINDUP_TICKS + enemyComboShared.ULT_SEISMARCH_AIR_TICKS);
+    expect(player.x).toBeCloseTo(1200, 4);
+    expect(player.teleportSeq).toBe(teleportSeq + 2); // scripted-motion start and landing
+    expect(enemy.hp).toBeLessThan(DUMMY_HP);
+    expect(h.room.poundEnemyEffects.get(enemy.id)?.staggerT).toBeGreaterThan(1);
+    expect(h.room.ultimateStunUntil.has(enemy.id)).toBe(true);
+  });
+
+  it("Alpha Strike captures only the nearest hard cap and hits on its fixed two-tick cadence", () => {
+    const { h, id, player } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.AlphaStrike,
+      "int",
+      "ult-alpha",
+    );
+    const enemies: EnemyState[] = [];
+    for (let i = 0; i < enemyComboShared.ULT_ALPHA_MAX_TARGETS + 3; i++) {
+      const enemy = addUltimateEnemy(h, `alpha-${i}`, 1080 + i * 45, 1000);
+      h.room.poundEnemyEffects.set(enemy.id, { vx: 0, vy: 0, staggerT: 10 });
+      enemies.push(enemy);
+    }
+    h.send(id, "ultimate", { tx: 1500, ty: 1000 });
+    h.tick();
+    const captured = h.room.combat.get(id).ult.targets.map((target: { id: string }) => target.id);
+    expect(captured).toEqual(enemies.slice(0, enemyComboShared.ULT_ALPHA_MAX_TARGETS).map((e) => e.id));
+    h.tick(16);
+    expect(enemies.slice(0, 5).every((enemy) => enemy.hp < 1000)).toBe(true);
+    expect(enemies.slice(5).every((enemy) => enemy.hp === 1000)).toBe(true);
+    const receipts = [...h.state().combatReceipts]
+      .filter(
+        (row) =>
+          row.seq > 0 &&
+          row.sourcePlayerId === id &&
+          row.delivery === enemyComboShared.CombatDelivery.Ultimate,
+      )
+      .sort((a, b) => a.tick - b.tick);
+    expect(receipts).toHaveLength(5);
+    expect(receipts.slice(1).map((row, i) => row.tick - receipts[i].tick)).toEqual([2, 2, 2, 2]);
+    expect(player.ultEndTick).toBeGreaterThan(player.ultResolveTick);
+  });
+
+  it("Event Horizon sweeps one capsule hit per on-line target and leaves off-line/behind bodies untouched", () => {
+    const { h, id, player } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.EventHorizon,
+      "luk",
+      "ult-event",
+    );
+    const onLine = addUltimateEnemy(h, "event-line", 1200, 1000);
+    const offLine = addUltimateEnemy(h, "event-off", 1200, 1200);
+    const behind = addUltimateEnemy(h, "event-behind", 850, 1000);
+    for (const enemy of [onLine, offLine, behind])
+      h.room.poundEnemyEffects.set(enemy.id, { vx: 0, vy: 0, staggerT: 10 });
+    const teleportSeq = player.teleportSeq;
+    h.send(id, "ultimate", { aimX: 1, aimY: 0, tx: 1600, ty: 1000 });
+    h.tick(12);
+    expect(onLine.hp).toBeLessThan(1000);
+    expect(offLine.hp).toBe(1000);
+    expect(behind.hp).toBe(1000);
+    expect(h.room.ultimateBrands.has(onLine.id)).toBe(true);
+    expect(player.teleportSeq).toBe(teleportSeq + 2);
+    expect(player.mvx).toBe(0);
+    expect(player.mvy).toBe(0);
+  });
+
+  it("Sunspite launches one WYSIWYG fireball through the existing explode/detonate receipt pipeline", () => {
+    const { h, id } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.SunspiteComet,
+      "luk",
+      "ult-comet",
+    );
+    const direct = addUltimateEnemy(h, "comet-direct", 1400, 1000);
+    const near = addUltimateEnemy(h, "comet-near", 1500, 1000);
+    const far = addUltimateEnemy(h, "comet-far", 1700, 1000);
+    for (const enemy of [direct, near, far])
+      h.room.poundEnemyEffects.set(enemy.id, { vx: 0, vy: 0, staggerT: 10 });
+    h.send(id, "ultimate", { aimX: 1, aimY: 0, tx: 2000, ty: 1000 });
+    h.tick(1 + enemyComboShared.ULT_FIREBALL_WINDUP_TICKS);
+    const projectile = [...h.state().projectiles.values()].find(
+      (row) => row.kind === "fireball" && !row.hostile,
+    );
+    expect(projectile?.explodeR).toBe(enemyComboShared.ULT_NUKE_RADIUS);
+    h.tick(20);
+    expect(direct.hp).toBeLessThan(1000);
+    expect(near.hp).toBeLessThan(1000);
+    expect(far.hp).toBe(1000);
+    expect(
+      [...h.state().combatReceipts].some(
+        (row) =>
+          row.seq > 0 &&
+          row.sourcePlayerId === id &&
+          row.weaponId === "ult:sunspite-comet" &&
+          row.delivery === enemyComboShared.CombatDelivery.Ultimate,
+      ),
+    ).toBe(true);
+  });
+
+  it("Dimension Door clamps nav range, bumps teleportSeq once, creates a decoy, and honors the return ticket", () => {
+    const { h, id, player } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.DimensionDoor,
+      "dex",
+      "ult-door",
+    );
+    const origin = { x: player.x, y: player.y };
+    const teleportSeq = player.teleportSeq;
+    h.send(id, "ultimate", { tx: 9000, ty: 1000 });
+    h.tick();
+    expect(Math.hypot(player.ultTargetX - origin.x, player.ultTargetY - origin.y)).toBeLessThanOrEqual(
+      enemyComboShared.ULT_BLINK_RANGE + 1e-6,
+    );
+    h.tick(enemyComboShared.ULT_BLINK_WINDUP_TICKS);
+    expect(player.teleportSeq).toBe(teleportSeq + 1);
+    expect(h.room.ultimateDecoys.has(id)).toBe(true);
+    h.tick(enemyComboShared.ULT_BLINK_RECOVERY_TICKS + 1);
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
+    h.send(id, "ultimate", {});
+    h.tick();
+    expect(player.x).toBeCloseTo(origin.x, 4);
+    expect(player.y).toBeCloseTo(origin.y, 4);
+    expect(player.teleportSeq).toBe(teleportSeq + 2);
+    expect(h.room.ultimateDecoys.has(id)).toBe(false);
+  });
+
+  it("Alpha Strike's STR finisher applies the shared stun ICD exactly once", () => {
+    const { h, id } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.AlphaStrike,
+      "str",
+      "ult-alpha-stun",
+    );
+    const enemy = addUltimateEnemy(h, "alpha-stun-target", 1120, 1000, 1000, "critter");
+    h.room.poundEnemyEffects.set(enemy.id, { vx: 0, vy: 0, staggerT: 10 });
+    h.send(id, "ultimate", { tx: enemy.x, ty: enemy.y });
+    h.tick(3);
+    expect(enemy.hp).toBeLessThan(1000);
+    expect(enemy.hp).toBeGreaterThan(0);
+    expect(h.state().enemies.has(enemy.id)).toBe(true);
+    expect(h.room.combat.get(id).ult?.variant).toBe("str");
+    const firstUntil = h.room.ultimateStunUntil.get(enemy.id);
+    expect(firstUntil).toBeGreaterThan(h.state().tick);
+    expect(h.room.applyUltimateStun(enemy, enemy.id, 0.5)).toBe(false);
+    expect(h.room.ultimateStunUntil.get(enemy.id)).toBe(firstUntil);
+  });
+});
+
+describe("ULT U1 lifecycle, co-op, and schema 24", () => {
+  it("cancels on an external teleport, preserves charge through downing, and keeps downed owners inert", () => {
+    const { h, id, player, combat } = makeUltimateRoom(
+      enemyComboShared.UltimateFamily.EventHorizon,
+      "str",
+      "ult-life",
+    );
+    h.join("ult-life-ally");
+    h.send(id, "ultimate", { aimX: 1, aimY: 0, tx: 1400, ty: 1000 });
+    h.tick();
+    h.room.zeroMoveVel(id); // pit/rift/revive share this authoritative external teleport signal.
+    h.tick();
+    expect(player.ultPhase).toBe(enemyComboShared.UltimatePhase.Idle);
+
+    combat.ultChargeF = 0.5;
+    player.ultCharge = 50;
+    player.hp = 0;
+    h.tick();
+    expect(player.alive).toBe(false);
+    expect(combat.ultChargeF).toBe(0.5);
+    expect(player.ultCharge).toBe(50);
+  });
+
+  it("ships schema 24 with nine nested wire fields and direct PlayerState accessors for U2", () => {
+    const h = makeRoom();
+    h.join("ult-schema");
+    const player = h.state().players.get("ult-schema");
+    expect(h.state().schemaVersion).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect([
+      player.ultimate.archetype,
+      player.ultimate.charge,
+      player.ultimate.phase,
+      player.ultimate.seq,
+      player.ultimate.startTick,
+      player.ultimate.resolveTick,
+      player.ultimate.endTick,
+      player.ultimate.targetX,
+      player.ultimate.targetY,
+    ]).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    player.ultCharge = 42;
+    expect(player.ultimate.charge).toBe(42);
   });
 });

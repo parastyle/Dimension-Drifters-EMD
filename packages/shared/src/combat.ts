@@ -27,6 +27,8 @@ import {
 } from "./constants.js";
 import type { Vec2 } from "./movement.js";
 import type { WeaponDef } from "./weapons.js";
+import { spreadForCharacter } from "./character-classes.js";
+import { ATTRS, type Attr, type AttrValues } from "./leveling.js";
 
 /** Contact-only opening immunity inherited from 21b. It is derived, never written into parry state. */
 export function slideContactInvulnerable(
@@ -62,8 +64,116 @@ export const CombatDelivery = {
   Chain: 7,
   Parry: 8,
   Scatter: 9,
+  Ultimate: 10,
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
+
+/** §ULT family ids follow ATTRS order: STR, DEX, INT, CON, LUK. */
+export const UltimateFamily = {
+  Locked: 0,
+  Seismarch: 1,
+  AlphaStrike: 2,
+  SunspiteComet: 3,
+  EventHorizon: 4,
+  DimensionDoor: 5,
+} as const;
+export type UltimateFamilyValue = (typeof UltimateFamily)[keyof typeof UltimateFamily];
+
+export const UltimatePhase = {
+  Idle: 0,
+  Windup: 1,
+  Active: 2,
+  Recovery: 3,
+} as const;
+export type UltimatePhaseValue = (typeof UltimatePhase)[keyof typeof UltimatePhase];
+
+/** Stable 5×4 modifier grammar. Each row omits its own family attribute. */
+export const ULTIMATE_VARIANTS = [
+  ["dex", "int", "con", "luk"],
+  ["str", "int", "con", "luk"],
+  ["str", "dex", "con", "luk"],
+  ["str", "dex", "int", "luk"],
+  ["str", "dex", "int", "con"],
+] as const satisfies readonly (readonly Attr[])[];
+
+export function ultimateFamilyAttr(family: number): Attr {
+  return ATTRS[Math.max(0, Math.min(ATTRS.length - 1, Math.floor(family) - 1))] ?? "str";
+}
+
+/** Pack one family+secondary cell into 1..20; 0 remains the locked wire value. */
+export function ultimateCodeFor(family: number, variant: Attr): number {
+  if (family < UltimateFamily.Seismarch || family > UltimateFamily.DimensionDoor) return 0;
+  const row = ULTIMATE_VARIANTS[family - 1]!;
+  const variantIndex = row.indexOf(variant as never);
+  return variantIndex < 0 ? 0 : (family - 1) * 4 + variantIndex + 1;
+}
+
+export function ultimateFamilyForCode(code: number): UltimateFamilyValue {
+  if (!Number.isInteger(code) || code < 1 || code > 20) return UltimateFamily.Locked;
+  return (Math.floor((code - 1) / 4) + 1) as UltimateFamilyValue;
+}
+
+export function ultimateVariantForCode(code: number): Attr | "" {
+  const family = ultimateFamilyForCode(code);
+  if (family === UltimateFamily.Locked) return "";
+  return ULTIMATE_VARIANTS[family - 1]![((code - 1) % 4)] ?? "";
+}
+
+function allocationRanksAhead(
+  left: Attr,
+  right: Attr,
+  allocRun: Readonly<Record<Attr, number>>,
+  base: AttrValues,
+  raw: AttrValues,
+): boolean {
+  if (allocRun[left] !== allocRun[right]) return allocRun[left] > allocRun[right];
+  if (base[left] !== base[right]) return base[left] > base[right];
+  if (raw[left] !== raw[right]) return raw[left] > raw[right];
+  return ATTRS.indexOf(left) < ATTRS.indexOf(right);
+}
+
+/** Amended deterministic law: allocRun, identity spread, raw total, then ATTRS order. */
+export function ultimateRankingForAllocation(
+  allocRun: Readonly<Record<Attr, number>>,
+  runCharacter: string,
+  raw: AttrValues,
+): readonly [Attr, Attr] {
+  const base = spreadForCharacter(runCharacter);
+  let first: Attr = "str";
+  let second: Attr = "dex";
+  if (allocationRanksAhead(second, first, allocRun, base, raw)) [first, second] = [second, first];
+  for (let i = 2; i < ATTRS.length; i++) {
+    const attr = ATTRS[i]!;
+    if (allocationRanksAhead(attr, first, allocRun, base, raw)) {
+      second = first;
+      first = attr;
+    } else if (allocationRanksAhead(attr, second, allocRun, base, raw)) {
+      second = attr;
+    }
+  }
+  return [first, second] as const;
+}
+
+/** Best current modifier while excluding the family that is permanently locked. */
+export function ultimateVariantForAllocation(
+  allocRun: Readonly<Record<Attr, number>>,
+  runCharacter: string,
+  raw: AttrValues,
+  familyAttr: Attr,
+): Attr {
+  const base = spreadForCharacter(runCharacter);
+  let best: Attr | undefined;
+  for (const attr of ATTRS) {
+    if (attr === familyAttr) continue;
+    if (!best || allocationRanksAhead(attr, best, allocRun, base, raw)) best = attr;
+  }
+  return best ?? (familyAttr === "str" ? "dex" : "str");
+}
+
+/** Ultimate damage deliberately reads attrs+crit only: no weapon/augment/set multiplicative tower. */
+export function ultimateDamageScale(raw: AttrValues, primary: Attr, secondary: Attr): number {
+  return 1 + 0.1 * Math.max(0, raw[primary] - 1) + 0.045 * Math.max(0, raw[secondary] - 1);
+}
 
 /** Immutable accepted beam epoch. Damage and timing are snapshotted at channel acceptance. */
 export interface BeamDescriptor {

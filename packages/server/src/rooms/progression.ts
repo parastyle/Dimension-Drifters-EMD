@@ -1,5 +1,6 @@
 import {
   type Attr,
+  ATTRS,
   augmentGateForWeapon,
   BALLAST_POINTS_PER_LEVEL,
   ballastAttrFor,
@@ -13,6 +14,13 @@ import {
   SIGNATURE_INTERVAL,
   spreadAdjustedCon,
   WEAPONS,
+  ULT_TEMPER_ALLOCS,
+  ULT_UNLOCK_ALLOCS,
+  UltimateFamily,
+  ultimateCodeFor,
+  ultimateFamilyAttr,
+  ultimateRankingForAllocation,
+  ultimateVariantForAllocation,
   xpToNextLevel,
 } from "@dd/shared";
 
@@ -25,6 +33,7 @@ import {
 /** Allocate `n` points into an attribute and re-derive maxHp (CON), topping up the gained HP. */
 export function allocate(player: PlayerState, attr: Attr, n: number): void {
   player[attr] += n;
+  if (n > 0) player.allocRun[attr] += n;
   const prevMax = player.maxHp;
   const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
   player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
@@ -37,7 +46,37 @@ export function applyAllocationChoice(player: PlayerState, attr: Attr): Attr {
   const quirk = quirkForCharacter(player.runCharacter || player.character);
   const ballast = ballastAttrFor(player, attr, quirk.mods?.ballastFollowsChoice === true);
   allocate(player, ballast, BALLAST_POINTS_PER_LEVEL);
+  evaluateUltimateAllocation(player);
   return ballast;
+}
+
+/** Evaluate only after a complete +2/+1 decision. Family locks at 15; variant tempers at 30. */
+export function evaluateUltimateAllocation(player: PlayerState): void {
+  const total = ATTRS.reduce((sum, attr) => sum + player.allocRun[attr], 0);
+  if (total < ULT_UNLOCK_ALLOCS) return;
+  const runCharacter = player.runCharacter || player.character;
+  if (player.ultFamily === UltimateFamily.Locked) {
+    const [primary, secondary] = ultimateRankingForAllocation(player.allocRun, runCharacter, player);
+    player.ultFamily = ATTRS.indexOf(primary) + 1;
+    player.ultVariant = secondary;
+  } else if (!player.ultTempered) {
+    const familyAttr = ultimateFamilyAttr(player.ultFamily);
+    const candidate = ultimateVariantForAllocation(
+      player.allocRun,
+      runCharacter,
+      player,
+      familyAttr,
+    );
+    if (
+      !player.ultVariant ||
+      (candidate !== player.ultVariant &&
+        player.allocRun[candidate] >= player.allocRun[player.ultVariant] + 1)
+    ) {
+      player.ultVariant = candidate;
+    }
+  }
+  if (total >= ULT_TEMPER_ALLOCS) player.ultTempered = true;
+  player.ultArchetype = ultimateCodeFor(player.ultFamily, player.ultVariant || "str");
 }
 
 /** Consume one pending flex point; close the window (or refresh its timer) accordingly. The window stays

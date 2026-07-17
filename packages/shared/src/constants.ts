@@ -10,7 +10,70 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 23 as const; // slide momentum replay anchor appended
+export const SCHEMA_VERSION = 24 as const; // ultimate family/charge/action epochs appended
+
+/** §ULT authoritative allocation, meter, action, and five-family tuning (20Hz tick epochs). */
+export const ULT_UNLOCK_ALLOCS = 15 as const;
+export const ULT_TEMPER_ALLOCS = 30 as const;
+export const ULT_CHARGE_MAX = 100 as const;
+/** Precise charge is normalized 0..1: 30 applied damage pays one displayed charge point. */
+export const ULT_CHARGE_PER_DAMAGE = 0.0003333333333333333 as const;
+export const ULT_CHARGE_KILL_BONUS = 0.003 as const;
+export const ULT_CHARGE_PARRY_BONUS = 0.04 as const;
+export const ULT_CHARGE_TICK_CAP = 0.04 as const;
+export const ULT_TEMPER_CHARGE_MULT = 1.1 as const;
+export const ULT_BUFFER_SECONDS = 0.2 as const;
+export const ULT_RECOVERY_TICKS = 8 as const;
+
+export const ULT_SEISMARCH_RANGE = 380 as const;
+export const ULT_SEISMARCH_DEX_RANGE = 520 as const;
+export const ULT_SEISMARCH_WINDUP_TICKS = 7 as const;
+export const ULT_SEISMARCH_AIR_TICKS = 10 as const;
+export const ULT_SEISMARCH_INNER_RADIUS = 160 as const;
+export const ULT_SEISMARCH_MID_RADIUS = 300 as const;
+export const ULT_SEISMARCH_OUTER_RADIUS = 440 as const;
+export const ULT_SEISMARCH_INNER_DAMAGE = 60 as const;
+export const ULT_SEISMARCH_MID_DAMAGE = 32 as const;
+export const ULT_SEISMARCH_OUTER_DAMAGE = 14 as const;
+export const ULT_SEISMARCH_STUN_SECONDS = 1.2 as const;
+export const ULT_STUN_ICD_TICKS = 60 as const;
+export const ULT_SEISMARCH_FISSURE_SECONDS = 3 as const;
+export const ULT_SEISMARCH_FISSURE_DAMAGE = 6 as const;
+
+export const ULT_ALPHA_RADIUS = 600 as const;
+export const ULT_ALPHA_MAX_TARGETS = 5 as const;
+export const ULT_ALPHA_HIT_TICKS = 2 as const;
+export const ULT_ALPHA_DAMAGE = 22 as const;
+export const ULT_ALPHA_EXECUTE_FRAC = 0.15 as const;
+export const ULT_ALPHA_EXECUTE_MULT = 2.5 as const;
+export const ULT_ALPHA_SINGLE_MULT = 1.5 as const;
+export const ULT_ALPHA_WINDUP_TICKS = 2 as const;
+
+export const ULT_FIREBALL_WINDUP_TICKS = 8 as const;
+export const ULT_FIREBALL_SPEED = 520 as const;
+export const ULT_FIREBALL_RANGE = 1100 as const;
+export const ULT_FIREBALL_DAMAGE = 48 as const;
+export const ULT_NUKE_RADIUS = 260 as const;
+export const ULT_NUKE_DAMAGE = 26 as const;
+
+export const ULT_PHASE_WINDUP_TICKS = 2 as const;
+export const ULT_PHASE_RANGE = 420 as const;
+export const ULT_PHASE_SPEED = 1400 as const;
+export const ULT_PHASE_HALFWIDTH = 52 as const;
+export const ULT_PHASE_DAMAGE = 36 as const;
+export const ULT_PHASE_BRAND_SECONDS = 4 as const;
+export const ULT_PHASE_BRAND_MULT = 1.2 as const;
+
+export const ULT_BLINK_RANGE = 1400 as const;
+export const ULT_BLINK_WINDUP_TICKS = 2 as const;
+export const ULT_BLINK_IFRAMES = 0.5 as const;
+export const ULT_BLINK_RECOVERY_TICKS = 8 as const;
+export const ULT_DOOR_DECOY_SECONDS = 2.5 as const;
+export const ULT_DOOR_RETURN_SECONDS = 4 as const;
+export const ULT_DOOR_DECOY_HP = 40 as const;
+export const ULT_DOOR_DECOY_RADIUS = 300 as const;
+export const ULT_DOOR_DETONATE_RADIUS = 200 as const;
+export const ULT_DOOR_DETONATE_DAMAGE = 34 as const;
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;

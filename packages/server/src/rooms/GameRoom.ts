@@ -35,6 +35,7 @@ import {
   addImpulse,
   applyCastGradeFloor,
   ATTRS,
+  type Attr,
   BOSS_DEF_IDS,
   BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
@@ -352,6 +353,66 @@ import {
   DIST_JUMP_SPEED,
   DIST_JUMP_STEER_RADIANS_PER_SECOND,
   DIST_JUMP_VERTICAL_VELOCITY,
+  ULT_ALPHA_DAMAGE,
+  ULT_ALPHA_EXECUTE_FRAC,
+  ULT_ALPHA_EXECUTE_MULT,
+  ULT_ALPHA_HIT_TICKS,
+  ULT_ALPHA_MAX_TARGETS,
+  ULT_ALPHA_RADIUS,
+  ULT_ALPHA_SINGLE_MULT,
+  ULT_ALPHA_WINDUP_TICKS,
+  ULT_BLINK_IFRAMES,
+  ULT_BLINK_RANGE,
+  ULT_BLINK_RECOVERY_TICKS,
+  ULT_BLINK_WINDUP_TICKS,
+  ULT_BUFFER_SECONDS,
+  ULT_CHARGE_KILL_BONUS,
+  ULT_CHARGE_MAX,
+  ULT_CHARGE_PARRY_BONUS,
+  ULT_CHARGE_PER_DAMAGE,
+  ULT_CHARGE_TICK_CAP,
+  ULT_DOOR_DECOY_HP,
+  ULT_DOOR_DECOY_RADIUS,
+  ULT_DOOR_DECOY_SECONDS,
+  ULT_DOOR_DETONATE_DAMAGE,
+  ULT_DOOR_DETONATE_RADIUS,
+  ULT_DOOR_RETURN_SECONDS,
+  ULT_FIREBALL_DAMAGE,
+  ULT_FIREBALL_RANGE,
+  ULT_FIREBALL_SPEED,
+  ULT_FIREBALL_WINDUP_TICKS,
+  ULT_NUKE_DAMAGE,
+  ULT_NUKE_RADIUS,
+  ULT_PHASE_BRAND_MULT,
+  ULT_PHASE_BRAND_SECONDS,
+  ULT_PHASE_DAMAGE,
+  ULT_PHASE_HALFWIDTH,
+  ULT_PHASE_RANGE,
+  ULT_PHASE_SPEED,
+  ULT_PHASE_WINDUP_TICKS,
+  ULT_RECOVERY_TICKS,
+  ULT_SEISMARCH_AIR_TICKS,
+  ULT_SEISMARCH_DEX_RANGE,
+  ULT_SEISMARCH_FISSURE_DAMAGE,
+  ULT_SEISMARCH_FISSURE_SECONDS,
+  ULT_SEISMARCH_INNER_DAMAGE,
+  ULT_SEISMARCH_INNER_RADIUS,
+  ULT_SEISMARCH_MID_DAMAGE,
+  ULT_SEISMARCH_MID_RADIUS,
+  ULT_SEISMARCH_OUTER_DAMAGE,
+  ULT_SEISMARCH_OUTER_RADIUS,
+  ULT_SEISMARCH_RANGE,
+  ULT_SEISMARCH_STUN_SECONDS,
+  ULT_SEISMARCH_WINDUP_TICKS,
+  ULT_STUN_ICD_TICKS,
+  ULT_TEMPER_CHARGE_MULT,
+  UltimateFamily,
+  type UltimateFamilyValue,
+  UltimatePhase,
+  ultimateDamageScale,
+  ultimateFamilyAttr,
+  ultimateFamilyForCode,
+  ultimateVariantForCode,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
@@ -369,6 +430,25 @@ const COMBO_RIPOSTE_STAGGER_TICKS = 20;
 /** Shared immutable no-input sample for rooted stance movement; avoids a fresh object in the 20Hz loop. */
 const ZERO_MOVE_INPUT = { dx: 0, dy: 0 } as const;
 const ZERO_IMPULSE = { vx: 0, vy: 0 } as const;
+const tickReached = (now: number, target: number): boolean => ((now - target) | 0) >= 0;
+const ticksFromSeconds = (seconds: number): number => Math.max(1, Math.round(seconds * 1000 / TICK_MS));
+
+function pointSegmentDistanceSq(
+  px: number,
+  py: number,
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+): number {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const vv = vx * vx + vy * vy;
+  const t = vv > 1e-9 ? clamp(((px - ax) * vx + (py - ay) * vy) / vv, 0, 1) : 0;
+  const dx = px - (ax + vx * t);
+  const dy = py - (ay + vy * t);
+  return dx * dx + dy * dy;
+}
 /** QOL-01: visible stabilisation beat, then an intentional spatial hold after a fresh entry. */
 const EXTRACT_ARM_SECONDS = 0.8;
 const EXTRACT_HOLD_SECONDS = 0.75;
@@ -432,6 +512,30 @@ interface WeaponResourceLedger {
   cooldown: number;
   reload: number;
   charges: number;
+}
+
+interface UltimateTarget {
+  id: string;
+  slot: number;
+  generation: number;
+  distanceSq: number;
+}
+
+interface UltimateRuntime {
+  family: UltimateFamilyValue;
+  variant: Attr;
+  startX: number;
+  startY: number;
+  dirX: number;
+  dirY: number;
+  activeEndTick: number;
+  teleportSeqAtAccept: number;
+  targets: UltimateTarget[];
+  hitIndex: number;
+  nextHitTick: number;
+  hit: Set<string>;
+  impactDone: boolean;
+  sourceKey: string;
 }
 
 /** Per-player combat/aux state, kept server-side (not all of it needs to sync). */
@@ -565,6 +669,14 @@ interface CombatState {
   beamHitIds: Set<string>;
   beamPendingDamage: Map<string, number>;
   beamLedger: Map<string, BeamResourceLedger>;
+  /** §ULT precise meter + buffered action + accepted immutable runtime. */
+  ultChargeF: number;
+  ultBuffer: number;
+  ultAccrualThisTick: number;
+  ult?: UltimateRuntime;
+  ultAlphaBonusTargets: number;
+  ultCritCharges: number;
+  ultCritEndTick: number;
 }
 
 /** §15/§51 per-enemy duelist machine entry (server-private, pruned with the enemy, cleared by
@@ -753,6 +865,35 @@ export class GameRoom extends Room<ArenaState> {
     string,
     { vx: number; vy: number; staggerT: number }
   >();
+  /** §ULT shared hard-CC immunity: no enemy can be re-stunned by stacked ults inside three seconds. */
+  private readonly ultimateStunUntil = new Map<string, number>();
+  /** Event Horizon's phase-brand is separate from the signature Brand lane and stacks additively. */
+  private readonly ultimateBrands = new Map<string, { remaining: number; multiplier: number }>();
+  /** Dimension Door decoys are server-picked taunt bodies and return tickets, never client claims. */
+  private readonly ultimateDecoys = new Map<
+    string,
+    {
+      x: number;
+      y: number;
+      hp: number;
+      detonateTick: number;
+      returnEndTick: number;
+      detonated: boolean;
+      damage: number;
+    }
+  >();
+  /** Seismarch fissures tick at a fixed 1Hz cadence; rows allocate only on impact. */
+  private readonly ultimateFissures: {
+    x: number;
+    y: number;
+    ownerId: string;
+    damage: number;
+    nextTick: number;
+    endTick: number;
+  }[] = [];
+  /** Shared scratch for ultimate damage primitives; emptied before every bounded execution beat. */
+  private readonly ultimateKills: string[] = [];
+  private readonly ultimateTargetCandidates: UltimateTarget[] = [];
   /** §20/§44 in-flight swept blades. `swing` is the immutable descriptor captured at the accepted `canAct`
    *  epoch; `elapsed` advances that one server clock through wind-up + active frames. The blade origin stays
    *  live, while `hit` preserves once-per-enemy-per-accepted-swing semantics regardless of active length. */
@@ -766,6 +907,7 @@ export class GameRoom extends Room<ArenaState> {
       halfWidth: number;
       edgeDamage: number;
       weaponId: string;
+      crit: number;
       elapsed: number;
       hit: Set<string>;
     }
@@ -1033,6 +1175,34 @@ export class GameRoom extends Room<ArenaState> {
         c.targetY = Number.isFinite(message?.ty)
           ? (message.ty as number)
           : (player?.y ?? 0) + c.aimY;
+      },
+    );
+
+    // G = one ordinary, budgeted buffered ultimate action. The client supplies intent only; aim is
+    // normalized here and every destination/target set is rebuilt from authoritative state at acceptance.
+    this.onMessage(
+      "ultimate",
+      (client, message: { aimX?: number; aimY?: number; tx?: number; ty?: number }) => {
+        if (!this.takeAction(client)) return;
+        const player = this.state.players.get(client.sessionId);
+        const c = this.combat.get(client.sessionId);
+        if (!player?.alive || !c) return;
+        let aimX = Number.isFinite(message?.aimX) ? (message.aimX as number) : c.aimX;
+        let aimY = Number.isFinite(message?.aimY) ? (message.aimY as number) : c.aimY;
+        const len = Math.hypot(aimX, aimY);
+        if (len > 1e-4) {
+          aimX /= len;
+          aimY /= len;
+        } else {
+          aimX = 1;
+          aimY = 0;
+        }
+        c.aimX = aimX;
+        c.aimY = aimY;
+        c.targetX = Number.isFinite(message?.tx) ? (message.tx as number) : player.x + aimX;
+        c.targetY = Number.isFinite(message?.ty) ? (message.ty as number) : player.y + aimY;
+        player.aimDir = Math.atan2(aimY, aimX);
+        c.ultBuffer = ULT_BUFFER_SECONDS;
       },
     );
 
@@ -1493,6 +1663,10 @@ export class GameRoom extends Room<ArenaState> {
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
     this.poundEnemyEffects.clear();
+    this.ultimateStunUntil.clear();
+    this.ultimateBrands.clear();
+    this.ultimateDecoys.clear();
+    this.ultimateFissures.length = 0;
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pickupGrace.clear();
@@ -1524,8 +1698,16 @@ export class GameRoom extends Room<ArenaState> {
       c.slideColdArmed = true;
       c.slideColdRearmTicks = 0;
       c.slideParryLockT = 0;
+      c.ultBuffer = 0;
+      c.ultAccrualThisTick = 0;
+      c.ult = undefined;
+      c.ultCritCharges = 0;
+      c.ultCritEndTick = 0;
       const player = this.state.players.get(id);
-      if (player) this.cancelMoveStance(player, c, true);
+      if (player) {
+        player.ultPhase = UltimatePhase.Idle;
+        this.cancelMoveStance(player, c, true);
+      }
     }
     this.state.telegraphs.clear(); // §16/§15 clear any orphan leap/boss markers on a reset
     this.enemyGrid.clear(); // §45 no cleared combat body may remain queryable across the boundary
@@ -1982,6 +2164,7 @@ export class GameRoom extends Room<ArenaState> {
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
       p.salvaged = 0;
+      p.ultCharge = 0;
       // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
       // risk-free reroll booth whose Legendary rides back into the real run (adversarial-verify).
       p.weaponRarity = RARITY_COMMON;
@@ -1991,6 +2174,8 @@ export class GameRoom extends Room<ArenaState> {
       c.lastParryAt = -999;
       c.hairStreak = 0;
       c.heldEarned = false;
+      c.ultChargeF = 0;
+      c.ultAccrualThisTick = 0;
     });
     this.bossSpawned = false;
     this.clearBoss();
@@ -2143,6 +2328,18 @@ export class GameRoom extends Room<ArenaState> {
       player.sigPending = 0;
       player.sigOffer = "";
       player.sigGateQueue = "";
+      for (const attr of ATTRS) player.allocRun[attr] = 0;
+      player.ultFamily = UltimateFamily.Locked;
+      player.ultVariant = "";
+      player.ultTempered = false;
+      player.ultArchetype = 0;
+      player.ultCharge = 0;
+      player.ultPhase = UltimatePhase.Idle;
+      player.ultStartTick = 0;
+      player.ultResolveTick = 0;
+      player.ultEndTick = 0;
+      player.ultTargetX = 0;
+      player.ultTargetY = 0;
       player.vx = 0; // §20 clear any residual momentum
       player.vy = 0;
       player.height = 0; // §5/§20 back to the ground
@@ -2158,6 +2355,13 @@ export class GameRoom extends Room<ArenaState> {
         c.attackBuffer = 0;
         c.parryBuffer = 0;
         c.jumpBuffer = 0;
+        c.ultChargeF = 0;
+        c.ultBuffer = 0;
+        c.ultAccrualThisTick = 0;
+        c.ult = undefined;
+        c.ultAlphaBonusTargets = 0;
+        c.ultCritCharges = 0;
+        c.ultCritEndTick = 0;
         c.reloadCd = 0;
         c.lastWeapon = player.weapon;
         c.drawLock = 0;
@@ -2493,6 +2697,12 @@ export class GameRoom extends Room<ArenaState> {
       beamHitIds: new Set<string>(),
       beamPendingDamage: new Map<string, number>(),
       beamLedger: new Map<string, BeamResourceLedger>(),
+      ultChargeF: 0,
+      ultBuffer: 0,
+      ultAccrualThisTick: 0,
+      ultAlphaBonusTargets: 0,
+      ultCritCharges: 0,
+      ultCritEndTick: 0,
     });
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
@@ -2532,6 +2742,10 @@ export class GameRoom extends Room<ArenaState> {
   private damagePlayer(player: PlayerState, amount: number): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
+    if (
+      player.ultPhase === UltimatePhase.Windup &&
+      ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
+    ) left *= 0.4;
     const capFrac = c?.quirk.mods?.incomingDamageCapFrac;
     if (capFrac !== undefined) left = Math.min(left, player.maxHp * capFrac);
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
@@ -3250,6 +3464,8 @@ export class GameRoom extends Room<ArenaState> {
       }
       const input = this.inputs.get(id);
       if (!input) return;
+      const tickCombat = this.combat.get(id);
+      if (tickCombat) tickCombat.ultAccrualThisTick = 0;
       input.msgBudget = INPUT_MSGS_PER_TICK;
       input.actionBudget = ACTION_MSGS_PER_TICK; // §44 refill the action budget alongside input's
       if (input.queue.length > 1) input.queue.splice(0, input.queue.length - 1);
@@ -3319,6 +3535,13 @@ export class GameRoom extends Room<ArenaState> {
         player.mvy = 0;
         return;
       }
+      if (this.ultimateOwnsMovement(player)) {
+        input.mvx = 0;
+        input.mvy = 0;
+        player.mvx = 0;
+        player.mvy = 0;
+        return;
+      }
       // §7 v0.105 STEERED movement (course correction): the velocity blends toward the input's target,
       // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
       // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
@@ -3330,7 +3553,7 @@ export class GameRoom extends Room<ArenaState> {
       ) {
         this.cancelMoveStance(player, beamRuntime, true);
       }
-      const beamSpeed = beamRuntime?.beamDescriptor
+      const channelSpeed = beamRuntime?.beamDescriptor
         ? MOVE_SPEED *
           (beamRuntime.beamPhase === 1
             ? beamRuntime.beamDescriptor.chargeMoveMul
@@ -3338,6 +3561,11 @@ export class GameRoom extends Room<ArenaState> {
               ? beamRuntime.beamDescriptor.channelMoveMul
               : 1)
         : MOVE_SPEED;
+      const beamSpeed =
+        player.ultPhase === UltimatePhase.Windup &&
+        ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.SunspiteComet
+          ? channelSpeed * 0.55
+          : channelSpeed;
       let nextX: number;
       let nextY: number;
       let slideSpeed = 0;
@@ -3438,6 +3666,10 @@ export class GameRoom extends Room<ArenaState> {
     const bodies: Vec2[] = [];
     this.state.players.forEach((player, id) => {
       if (!player.alive) return;
+      if (
+        player.ultPhase === UltimatePhase.Active &&
+        ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.AlphaStrike
+      ) return;
       ids.push(id);
       bodies.push({ x: player.x, y: player.y });
     });
@@ -3519,6 +3751,7 @@ export class GameRoom extends Room<ArenaState> {
         c.beamFocusStacks = countAugment(player.augments, "beam-focus");
       }
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
+      if (this.ultimateOwnsMovement(player)) return;
       if (
         player.height > GROUND_EPSILON ||
         c.vh > 0 ||
@@ -3637,7 +3870,10 @@ export class GameRoom extends Room<ArenaState> {
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
       const acting =
-        this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
+        this.state.outcome === "active" &&
+        player.alive &&
+        !this.inLevelWindow(player) &&
+        player.ultPhase === UltimatePhase.Idle;
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
       if (
         acting &&
@@ -3809,6 +4045,26 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
 
+    // 4.7 §ULT immutable-epoch action machines settle before enemy targeting reads player positions.
+    this.stepUltimates(dt);
+    if (this.state.outcome !== "active") {
+      this.clearCombatEntities();
+      return;
+    }
+    // `bodies` was captured before phase 4.7; remove a just-resolved Alpha Strike on this same tick so
+    // duelists/spitters cannot aim at the newly untargetable body for one stale frame.
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const id = ids[i]!;
+      const player = this.state.players.get(id);
+      if (
+        player?.ultPhase === UltimatePhase.Active &&
+        ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.AlphaStrike
+      ) {
+        ids.splice(i, 1);
+        bodies.splice(i, 1);
+      }
+    }
+
     // 5. Enemy AI — melee archetypes rush the nearest LIVING drifter; spitters KITE (§15). Duelists
     // (kind.melee) move + attack in stepDuelists, so they're skipped here.
     for (const id of [...this.dodgeState.keys()]) {
@@ -3822,7 +4078,7 @@ export class GameRoom extends Room<ArenaState> {
       // generic pass only chases/kites the rest (ranged spitters kite). §16 v0.109 the boss is stepped by
       // its BossController (which owns movement), so skip it here to avoid a double-move.
       if (!kind || effectiveMelee(kind) || id === this.bossId) return;
-      const target = nearestPoint(enemy, bodies);
+      const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
       // §15 v0.113 DODGE-ROLL (rangers): if a player has closed inside `dodge.range` and the roll is off
       // cooldown, burst AWAY from them for `duration` sec — evasive repositioning that overrides the kite.
       if (kind.dodge) {
@@ -4058,6 +4314,771 @@ export class GameRoom extends Room<ArenaState> {
     this.tickLevelWindows(dt);
   }
 
+  private ultimateOwnsMovement(player: PlayerState): boolean {
+    if (player.ultPhase !== UltimatePhase.Active) return false;
+    const family = ultimateFamilyForCode(player.ultArchetype);
+    return (
+      family === UltimateFamily.Seismarch ||
+      family === UltimateFamily.AlphaStrike ||
+      family === UltimateFamily.EventHorizon
+    );
+  }
+
+  private nearestDoorDecoy(pos: Vec2): Vec2 | undefined {
+    let best: Vec2 | undefined;
+    let bestDistanceSq = ULT_DOOR_DECOY_RADIUS * ULT_DOOR_DECOY_RADIUS;
+    for (const decoy of this.ultimateDecoys.values()) {
+      if (decoy.detonated) continue;
+      const distanceSq = (decoy.x - pos.x) ** 2 + (decoy.y - pos.y) ** 2;
+      if (distanceSq > bestDistanceSq) continue;
+      bestDistanceSq = distanceSq;
+      best = decoy;
+    }
+    return best;
+  }
+
+  /** One postcondition for every blink/hop/dash endpoint: range, bounds, POI/deck, pit, gate. */
+  private navValidDest(
+    player: PlayerState,
+    c: CombatState,
+    targetX: number,
+    targetY: number,
+    maxRange: number,
+  ): { x: number; y: number } {
+    const ranged = Number.isFinite(maxRange)
+      ? clampQuakeEpicenter(player, { x: targetX, y: targetY }, Math.max(0, maxRange))
+      : { x: targetX, y: targetY };
+    if (this.belt && this.beltLevel) {
+      const right = (this.state.beltLockX > 0 ? this.state.beltLockX : this.beltLevel.length) - PLAYER_RADIUS;
+      let x = clamp(ranged.x, PLAYER_RADIUS, right);
+      x = beltSafeX(this.beltLevel, x, player.x);
+      const obstacle = resolveBeltObstacles(
+        this.beltLevel,
+        x,
+        clamp(ranged.y, BELT_Y0, BELT_Y0 + DEPTH_MAX),
+        PLAYER_RADIUS,
+      );
+      x = Math.min(right, beltSafeX(this.beltLevel, obstacle.x, player.x));
+      return { x, y: clampBeltFloorY(this.beltLevel, x, obstacle.y, PLAYER_RADIUS) };
+    }
+    let x = clamp(ranged.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+    let y = clamp(ranged.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
+    const poi = resolvePoiCollision(this.map, x, y, PLAYER_RADIUS);
+    x = poi.x;
+    y = poi.y;
+    if (isPitAtPx(this.map, x, y)) {
+      const safe = nearestGroundPx(this.map, x, y);
+      x = safe.x;
+      y = safe.y;
+    }
+    if (Number.isFinite(maxRange)) {
+      const finalRange = clampQuakeEpicenter(player, { x, y }, Math.max(0, maxRange));
+      x = clamp(finalRange.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
+      y = clamp(finalRange.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
+      if (isPitAtPx(this.map, x, y)) {
+        const safe = nearestGroundPx(this.map, x, y);
+        x = safe.x;
+        y = safe.y;
+      }
+    }
+    return { x, y };
+  }
+
+  private ultimateTargetPosition(target: UltimateTarget): { x: number; y: number; radius: number } | null {
+    if (target.slot >= 0) {
+      const runtime = this.bossController?.wormRuntime;
+      if (
+        !runtime ||
+        !runtime.isTargetable(target.slot) ||
+        runtime.segmentGeneration(target.slot) !== target.generation
+      ) return null;
+      return {
+        x: runtime.x[target.slot]!,
+        y: runtime.y[target.slot]!,
+        radius: runtime.segmentRadius(target.slot),
+      };
+    }
+    const enemy = this.state.enemies.get(target.id);
+    if (!enemy || enemy.hp <= 0 || (target.id === this.bossId && !!this.bossController?.wormRuntime))
+      return null;
+    return {
+      x: enemy.x,
+      y: enemy.y,
+      radius: ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
+    };
+  }
+
+  /** SpatialGrid selection is nearest-first, exact-radius, immutable, and protocol-capped at five. */
+  private selectAlphaTargets(player: PlayerState, maxTargets: number): UltimateTarget[] {
+    this.ultimateTargetCandidates.length = 0;
+    this.enemyGrid.queryRadius(player.x, player.y, ULT_ALPHA_RADIUS, this.enemyCandidates);
+    const radiusSq = ULT_ALPHA_RADIUS * ULT_ALPHA_RADIUS;
+    for (const id of this.enemyCandidates) {
+      if (id === this.bossId && this.bossController?.wormRuntime) continue;
+      const enemy = this.state.enemies.get(id);
+      if (!enemy || enemy.hp <= 0) continue;
+      const distanceSq = (enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2;
+      if (distanceSq > radiusSq) continue;
+      this.ultimateTargetCandidates.push({ id, slot: -1, generation: 0, distanceSq });
+    }
+    const worm = this.bossController?.wormRuntime;
+    if (worm) {
+      let wormTargets = 0;
+      this.wormSegmentGrid.queryRadius(
+        player.x,
+        player.y,
+        ULT_ALPHA_RADIUS + 52,
+        this.wormSegmentCandidates,
+      );
+      for (const slot of this.wormSegmentCandidates) {
+        if (wormTargets >= 2) break;
+        if (!worm.isTargetable(slot)) continue;
+        const distanceSq = (worm.x[slot]! - player.x) ** 2 + (worm.y[slot]! - player.y) ** 2;
+        if (distanceSq > radiusSq) continue;
+        const generation = worm.segmentGeneration(slot);
+        this.ultimateTargetCandidates.push({
+          id: `worm:${slot}:${generation}`,
+          slot,
+          generation,
+          distanceSq,
+        });
+        wormTargets++;
+      }
+    }
+    this.ultimateTargetCandidates.sort((a, b) => a.distanceSq - b.distanceSq);
+    return this.ultimateTargetCandidates.splice(0, Math.min(ULT_ALPHA_MAX_TARGETS, maxTargets));
+  }
+
+  private acceptUltimate(player: PlayerState, c: CombatState): boolean {
+    if (
+      this.state.outcome !== "active" ||
+      !player.alive ||
+      this.inLevelWindow(player) ||
+      c.juggleArmed ||
+      c.recoveryT > 0 ||
+      player.ultPhase !== UltimatePhase.Idle ||
+      c.ult ||
+      c.ultChargeF < 1 - 1e-9
+    ) return false;
+    const family = ultimateFamilyForCode(player.ultArchetype);
+    const variant = player.ultVariant || ultimateVariantForCode(player.ultArchetype);
+    if (family === UltimateFamily.Locked || !variant) return false;
+
+    let targets: UltimateTarget[] = [];
+    if (family === UltimateFamily.AlphaStrike) {
+      const cap = variant === "str" ? Math.min(4, ULT_ALPHA_MAX_TARGETS) : ULT_ALPHA_MAX_TARGETS;
+      targets = this.selectAlphaTargets(player, cap);
+      if (targets.length === 0) return false;
+    }
+    if (c.beamPhase !== 0 || c.beamDescriptor) this.cancelBeam(player, player.id, c, true, false);
+    if (c.stance !== STANCE_NONE) this.cancelMoveStance(player, c, true);
+
+    const now = this.state.tick;
+    let targetX = c.targetX;
+    let targetY = c.targetY;
+    let resolveTick = now;
+    let activeEndTick = now;
+    let endTick = now;
+    const aim = this.aimDir(player, c);
+
+    if (family === UltimateFamily.Seismarch) {
+      const range = variant === "dex" ? ULT_SEISMARCH_DEX_RANGE : ULT_SEISMARCH_RANGE;
+      const dest = this.navValidDest(player, c, targetX, targetY, range);
+      targetX = dest.x;
+      targetY = dest.y;
+      resolveTick = (now + ULT_SEISMARCH_WINDUP_TICKS) >>> 0;
+      activeEndTick = (resolveTick + ULT_SEISMARCH_AIR_TICKS) >>> 0;
+      endTick = (activeEndTick + ULT_RECOVERY_TICKS) >>> 0;
+    } else if (family === UltimateFamily.AlphaStrike) {
+      const first = this.ultimateTargetPosition(targets[0]!);
+      if (!first) return false;
+      targetX = first.x;
+      targetY = first.y;
+      resolveTick = (now + ULT_ALPHA_WINDUP_TICKS) >>> 0;
+      activeEndTick = (resolveTick + Math.max(1, targets.length) * ULT_ALPHA_HIT_TICKS) >>> 0;
+      endTick = (activeEndTick + ULT_RECOVERY_TICKS) >>> 0;
+    } else if (family === UltimateFamily.SunspiteComet) {
+      const aimed = clampQuakeEpicenter(player, { x: targetX, y: targetY }, ULT_FIREBALL_RANGE);
+      targetX = aimed.x;
+      targetY = aimed.y;
+      const speed = variant === "dex" ? 680 : ULT_FIREBALL_SPEED;
+      resolveTick = (now + ULT_FIREBALL_WINDUP_TICKS) >>> 0;
+      activeEndTick = (resolveTick + ticksFromSeconds(ULT_FIREBALL_RANGE / speed)) >>> 0;
+      endTick = (activeEndTick + ULT_RECOVERY_TICKS) >>> 0;
+    } else if (family === UltimateFamily.EventHorizon) {
+      const dest = this.navValidDest(
+        player,
+        c,
+        player.x + aim.x * ULT_PHASE_RANGE,
+        player.y + aim.y * ULT_PHASE_RANGE,
+        ULT_PHASE_RANGE,
+      );
+      targetX = dest.x;
+      targetY = dest.y;
+      const distance = Math.hypot(targetX - player.x, targetY - player.y);
+      resolveTick = (now + ULT_PHASE_WINDUP_TICKS) >>> 0;
+      activeEndTick = (resolveTick + ticksFromSeconds(distance / ULT_PHASE_SPEED)) >>> 0;
+      endTick = (activeEndTick + ULT_RECOVERY_TICKS) >>> 0;
+    } else {
+      const range = variant === "str" ? 1100 : ULT_BLINK_RANGE;
+      const dest = this.navValidDest(player, c, targetX, targetY, range);
+      targetX = dest.x;
+      targetY = dest.y;
+      resolveTick = (now + ULT_BLINK_WINDUP_TICKS) >>> 0;
+      activeEndTick = (resolveTick + 1) >>> 0;
+      endTick = (activeEndTick + ULT_BLINK_RECOVERY_TICKS) >>> 0;
+    }
+
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    player.ultStartTick = now;
+    player.ultResolveTick = resolveTick;
+    player.ultEndTick = endTick;
+    player.ultTargetX = targetX;
+    player.ultTargetY = targetY;
+    player.ultPhase = UltimatePhase.Windup;
+    player.ultSeq = (player.ultSeq + 1) & 0xffff;
+    c.ultChargeF = 0;
+    this.syncUltimateCharge(player, c);
+    c.ultBuffer = 0;
+    c.ult = {
+      family,
+      variant,
+      startX: player.x,
+      startY: player.y,
+      dirX: dx / distance,
+      dirY: dy / distance,
+      activeEndTick,
+      teleportSeqAtAccept: player.teleportSeq,
+      targets,
+      hitIndex: 0,
+      nextHitTick: resolveTick,
+      hit: new Set<string>(),
+      impactDone: false,
+      sourceKey: `ult:${player.id}:${player.ultSeq}`,
+    };
+    return true;
+  }
+
+  private tryDimensionDoorReturn(player: PlayerState, c: CombatState): boolean {
+    const ticket = this.ultimateDecoys.get(player.id);
+    if (
+      !ticket ||
+      tickReached(this.state.tick, ticket.returnEndTick) ||
+      ultimateFamilyForCode(player.ultArchetype) !== UltimateFamily.DimensionDoor ||
+      !player.alive ||
+      this.inLevelWindow(player) ||
+      c.juggleArmed ||
+      player.ultPhase !== UltimatePhase.Idle
+    ) return false;
+    const dest = this.navValidDest(player, c, ticket.x, ticket.y, Number.POSITIVE_INFINITY);
+    this.ultimateDecoys.delete(player.id);
+    player.ultStartTick = this.state.tick;
+    player.ultResolveTick = this.state.tick;
+    player.ultEndTick = (this.state.tick + ULT_BLINK_RECOVERY_TICKS) >>> 0;
+    player.ultTargetX = dest.x;
+    player.ultTargetY = dest.y;
+    player.ultPhase = UltimatePhase.Recovery;
+    player.ultSeq = (player.ultSeq + 1) & 0xffff;
+    player.x = dest.x;
+    player.y = dest.y;
+    c.lastGroundX = dest.x;
+    c.lastGroundY = dest.y;
+    c.pitGrace = PIT_FALL_GRACE;
+    c.invuln = Math.max(c.invuln, ULT_BLINK_IFRAMES);
+    this.zeroMoveVel(player.id);
+    c.ultBuffer = 0;
+    c.ult = {
+      family: UltimateFamily.DimensionDoor,
+      variant: player.ultVariant || "str",
+      startX: player.x,
+      startY: player.y,
+      dirX: 0,
+      dirY: 0,
+      activeEndTick: this.state.tick,
+      teleportSeqAtAccept: player.teleportSeq,
+      targets: [],
+      hitIndex: 0,
+      nextHitTick: this.state.tick,
+      hit: new Set<string>(),
+      impactDone: true,
+      sourceKey: `ult:return:${player.id}:${player.ultSeq}`,
+    };
+    return true;
+  }
+
+  private beginUltimate(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    player.ultPhase = UltimatePhase.Active;
+    if (ult.family === UltimateFamily.SunspiteComet) {
+      this.launchSunspiteComet(player, c, ult);
+      return;
+    }
+    if (ult.family === UltimateFamily.DimensionDoor) {
+      this.ultimateDecoys.set(player.id, {
+        x: ult.startX,
+        y: ult.startY,
+        hp: ULT_DOOR_DECOY_HP * Math.max(1, this.state.players.size),
+        detonateTick: (this.state.tick + ticksFromSeconds(ULT_DOOR_DECOY_SECONDS)) >>> 0,
+        returnEndTick: (this.state.tick + ticksFromSeconds(ULT_DOOR_RETURN_SECONDS)) >>> 0,
+        detonated: false,
+        damage: (ult.variant === "int" ? 50 : ULT_DOOR_DETONATE_DAMAGE) *
+          this.ultimateScale(player, ult),
+      });
+      player.x = player.ultTargetX;
+      player.y = player.ultTargetY;
+      c.lastGroundX = player.x;
+      c.lastGroundY = player.y;
+      c.pitGrace = PIT_FALL_GRACE;
+      c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.9 : ULT_BLINK_IFRAMES);
+      this.zeroMoveVel(player.id);
+      ult.teleportSeqAtAccept = player.teleportSeq;
+      if (ult.variant === "str") {
+        this.detonate(
+          player.x,
+          player.y,
+          140,
+          28 * this.ultimateScale(player, ult),
+          critChanceFor(player.luk, player.dex),
+          player.id,
+          "ult:dimension-door",
+          CombatDelivery.Ultimate,
+        );
+      } else if (ult.variant === "con") {
+        c.bulwarkShield = Math.max(c.bulwarkShield, 15);
+      }
+      c.ultCritCharges = ult.variant === "con" ? 0 : ult.variant === "str" ? 2 : 3;
+      c.ultCritEndTick = (this.state.tick + ticksFromSeconds(4)) >>> 0;
+      return;
+    }
+    ult.startX = player.x;
+    ult.startY = player.y;
+    const dx = player.ultTargetX - player.x;
+    const dy = player.ultTargetY - player.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    ult.dirX = dx / distance;
+    ult.dirY = dy / distance;
+    this.zeroMoveVel(player.id);
+    ult.teleportSeqAtAccept = player.teleportSeq;
+    const activeTicks = Math.max(1, (ult.activeEndTick - this.state.tick) >>> 0);
+    c.invuln = Math.max(c.invuln, activeTicks * TICK_MS / 1000 + TICK_MS / 1000);
+  }
+
+  private ultimateScale(player: PlayerState, ult: UltimateRuntime): number {
+    return ultimateDamageScale(player, ultimateFamilyAttr(ult.family), ult.variant);
+  }
+
+  private weaponCritChance(player: PlayerState, c: CombatState): number {
+    if (c.ultCritCharges > 0 && tickReached(this.state.tick, c.ultCritEndTick)) c.ultCritCharges = 0;
+    if (c.ultCritCharges > 0) {
+      c.ultCritCharges--;
+      return 1;
+    }
+    return critChanceFor(player.luk, player.dex);
+  }
+
+  private launchSunspiteComet(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    const aim = this.aimDir(player, c);
+    const speed = ult.variant === "dex" ? 680 : ULT_FIREBALL_SPEED;
+    const direct = (ult.variant === "str" ? 70 : ULT_FIREBALL_DAMAGE) * this.ultimateScale(player, ult);
+    const blast = (ult.variant === "con" ? 20 : ULT_NUKE_DAMAGE) * this.ultimateScale(player, ult);
+    const muzzle = gunMuzzleReach(WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON]!);
+    const mx = player.x + aim.x * muzzle;
+    const my = player.y + aim.y * muzzle;
+    this.fireProjectile(
+      { x: mx, y: my },
+      { x: mx + aim.x, y: my + aim.y },
+      speed,
+      direct,
+      false,
+      "fireball",
+      1,
+      ULT_FIREBALL_RANGE / speed,
+      { radius: ULT_NUKE_RADIUS, damage: blast },
+      0,
+      critChanceFor(player.luk, player.dex),
+      player.id,
+      "ult:sunspite-comet",
+      CombatDelivery.Ultimate,
+    );
+  }
+
+  private stepSeismarch(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    const elapsed = ((this.state.tick - player.ultResolveTick) >>> 0) + 1;
+    const progress = Math.min(1, elapsed / ULT_SEISMARCH_AIR_TICKS);
+    player.x = ult.startX + (player.ultTargetX - ult.startX) * progress;
+    player.y = ult.startY + (player.ultTargetY - ult.startY) * progress;
+    if (progress < 1 || ult.impactDone) return;
+    ult.impactDone = true;
+    this.resolveSeismarchImpact(player, c, ult);
+    this.zeroMoveVel(player.id);
+    ult.teleportSeqAtAccept = player.teleportSeq;
+    player.ultPhase = UltimatePhase.Recovery;
+  }
+
+  private resolveSeismarchImpact(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    const shrink = ult.variant === "dex" ? 0.8 : 1;
+    const inner = ULT_SEISMARCH_INNER_RADIUS * shrink;
+    const mid = ULT_SEISMARCH_MID_RADIUS * shrink;
+    const outer = ULT_SEISMARCH_OUTER_RADIUS * shrink;
+    const scale = this.ultimateScale(player, ult);
+    const crit = Math.min(1, critChanceFor(player.luk, player.dex) * (ult.variant === "luk" ? 1.5 : 1));
+    this.ultimateKills.length = 0;
+    this.enemyGrid.queryRadius(player.x, player.y, outer, this.enemyCandidates);
+    for (const id of this.enemyCandidates) {
+      const enemy = this.state.enemies.get(id);
+      if (!enemy || (id === this.bossId && this.bossController?.wormRuntime)) continue;
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > outer) continue;
+      const damage =
+        distance <= inner
+          ? (ult.variant === "con" ? 48 : ULT_SEISMARCH_INNER_DAMAGE)
+          : distance <= mid
+            ? ULT_SEISMARCH_MID_DAMAGE
+            : ULT_SEISMARCH_OUTER_DAMAGE;
+      this.damageEnemy(
+        enemy,
+        id,
+        damage * scale,
+        this.ultimateKills,
+        crit,
+        player.id,
+        "ult:seismarch",
+        CombatDelivery.Ultimate,
+        player.x,
+        player.y,
+      );
+      if (distance <= inner && enemy.hp > 0)
+        this.applyUltimateStun(enemy, id, ULT_SEISMARCH_STUN_SECONDS);
+      else if (distance > mid && distance > 1e-4) {
+        enemy.x += (dx / distance) * PARRY_KNOCKBACK;
+        enemy.y += (dy / distance) * PARRY_KNOCKBACK;
+        this.updateEnemyGrid(id, enemy);
+      }
+    }
+    this.damageWormSlots(
+      this.collectWormRadiusHits(player.x, player.y, outer),
+      ULT_SEISMARCH_INNER_DAMAGE * scale,
+      ult.sourceKey,
+      this.ultimateKills,
+      crit,
+      false,
+      player.id,
+      "ult:seismarch",
+      CombatDelivery.Ultimate,
+      player.x,
+      player.y,
+    );
+    for (const id of this.ultimateKills) this.state.enemies.delete(id);
+    if (ult.variant === "dex") c.jumpCd = 0;
+    if (ult.variant === "con") {
+      this.state.players.forEach((ally) => {
+        if (!ally.alive || (ally.x - player.x) ** 2 + (ally.y - player.y) ** 2 > outer * outer) return;
+        const allyCombat = this.combat.get(ally.id);
+        if (allyCombat) allyCombat.bulwarkShield = Math.max(allyCombat.bulwarkShield, 20);
+      });
+    }
+    this.ultimateFissures.push({
+      x: player.x,
+      y: player.y,
+      ownerId: player.id,
+      damage: (ult.variant === "int" ? 12 : ULT_SEISMARCH_FISSURE_DAMAGE) * scale,
+      nextTick: (this.state.tick + ticksFromSeconds(1)) >>> 0,
+      endTick: (this.state.tick + ticksFromSeconds(ult.variant === "int" ? 5 : ULT_SEISMARCH_FISSURE_SECONDS)) >>> 0,
+    });
+  }
+
+  private applyUltimateStun(enemy: EnemyState, id: string, seconds: number): boolean {
+    if (ENEMY_KINDS[enemy.kind]?.archetype === "boss") return false;
+    const until = this.ultimateStunUntil.get(id);
+    if (until !== undefined && !tickReached(this.state.tick, until)) return false;
+    this.ultimateStunUntil.set(id, (this.state.tick + ULT_STUN_ICD_TICKS) >>> 0);
+    const existing = this.poundEnemyEffects.get(id);
+    if (existing) existing.staggerT = Math.max(existing.staggerT, seconds);
+    else this.poundEnemyEffects.set(id, { vx: 0, vy: 0, staggerT: seconds });
+    return true;
+  }
+
+  private stepEventHorizon(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    const duration = Math.max(1, (ult.activeEndTick - player.ultResolveTick) >>> 0);
+    const elapsed = ((this.state.tick - player.ultResolveTick) >>> 0) + 1;
+    const progress = Math.min(1, elapsed / duration);
+    const fromX = player.x;
+    const fromY = player.y;
+    const toX = ult.startX + (player.ultTargetX - ult.startX) * progress;
+    const toY = ult.startY + (player.ultTargetY - ult.startY) * progress;
+    this.damageEventHorizonSweep(player, ult, fromX, fromY, toX, toY);
+    player.x = toX;
+    player.y = toY;
+    if (progress < 1) return;
+    this.zeroMoveVel(player.id);
+    ult.teleportSeqAtAccept = player.teleportSeq;
+    player.ultPhase = UltimatePhase.Recovery;
+  }
+
+  private damageEventHorizonSweep(
+    player: PlayerState,
+    ult: UltimateRuntime,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+  ): void {
+    const halfWidth = ult.variant === "int" ? 120 : ULT_PHASE_HALFWIDTH;
+    const pad = halfWidth + MAX_ENEMY_RADIUS;
+    this.enemyGrid.queryAabb(
+      Math.min(fromX, toX) - pad,
+      Math.min(fromY, toY) - pad,
+      Math.max(fromX, toX) + pad,
+      Math.max(fromY, toY) + pad,
+      this.enemyCandidates,
+    );
+    this.ultimateKills.length = 0;
+    const scale = this.ultimateScale(player, ult);
+    for (const id of this.enemyCandidates) {
+      if (ult.hit.has(id) || (id === this.bossId && this.bossController?.wormRuntime)) continue;
+      const enemy = this.state.enemies.get(id);
+      if (!enemy) continue;
+      const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+      const reach = halfWidth + radius;
+      if (pointSegmentDistanceSq(enemy.x, enemy.y, fromX, fromY, toX, toY) > reach * reach) continue;
+      ult.hit.add(id);
+      this.damageEnemy(
+        enemy,
+        id,
+        ULT_PHASE_DAMAGE * (ult.variant === "str" ? 1.5 : 1) * scale,
+        this.ultimateKills,
+        critChanceFor(player.luk, player.dex),
+        player.id,
+        "ult:event-horizon",
+        CombatDelivery.Ultimate,
+        fromX,
+        fromY,
+      );
+      if (enemy.hp > 0 && ENEMY_KINDS[enemy.kind]?.archetype !== "boss") {
+        this.ultimateBrands.set(id, {
+          remaining: ULT_PHASE_BRAND_SECONDS,
+          multiplier: ult.variant === "luk" ? 0.28 : ULT_PHASE_BRAND_MULT - 1,
+        });
+        enemy.branded = 1;
+      }
+    }
+    const worm = this.bossController?.wormRuntime;
+    if (worm) {
+      this.wormHitSlots.length = 0;
+      this.wormSegmentGrid.queryAabb(
+        Math.min(fromX, toX) - halfWidth - 52,
+        Math.min(fromY, toY) - halfWidth - 52,
+        Math.max(fromX, toX) + halfWidth + 52,
+        Math.max(fromY, toY) + halfWidth + 52,
+        this.wormSegmentCandidates,
+      );
+      for (const slot of this.wormSegmentCandidates) {
+        const key = `worm:${slot}:${worm.segmentGeneration(slot)}`;
+        if (ult.hit.has(key)) continue;
+        if (!worm.segmentIntersectsSweptCapsule(slot, fromX, fromY, toX, toY, halfWidth)) continue;
+        ult.hit.add(key);
+        this.wormHitSlots.push(slot);
+      }
+      this.damageWormSlots(
+        this.wormHitSlots,
+        ULT_PHASE_DAMAGE * scale,
+        ult.sourceKey,
+        this.ultimateKills,
+        critChanceFor(player.luk, player.dex),
+        true,
+        player.id,
+        "ult:event-horizon",
+        CombatDelivery.Ultimate,
+        fromX,
+        fromY,
+      );
+    }
+    for (const id of this.ultimateKills) this.state.enemies.delete(id);
+  }
+
+  private stepAlphaStrike(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
+    if (ult.hitIndex < ult.targets.length && tickReached(this.state.tick, ult.nextHitTick)) {
+      const target = ult.targets[ult.hitIndex]!;
+      const position = this.ultimateTargetPosition(target);
+      ult.hitIndex++;
+      ult.nextHitTick = (ult.nextHitTick + ULT_ALPHA_HIT_TICKS) >>> 0;
+      if (position) {
+        const ax = position.x - player.x;
+        const ay = position.y - player.y;
+        const distance = Math.hypot(ax, ay) || 1;
+        const dest = this.navValidDest(
+          player,
+          c,
+          position.x - (ax / distance) * (position.radius + PLAYER_RADIUS),
+          position.y - (ay / distance) * (position.radius + PLAYER_RADIUS),
+          Number.POSITIVE_INFINITY,
+        );
+        player.x = dest.x;
+        player.y = dest.y;
+        c.lastGroundX = dest.x;
+        c.lastGroundY = dest.y;
+        this.zeroMoveVel(player.id);
+        ult.teleportSeqAtAccept = player.teleportSeq;
+        const scale = this.ultimateScale(player, ult);
+        let base = ult.variant === "str" ? 38 : ULT_ALPHA_DAMAGE;
+        if (ult.targets.length === 1) base *= ULT_ALPHA_SINGLE_MULT;
+        this.ultimateKills.length = 0;
+        if (target.slot >= 0) {
+          this.wormHitSlots.length = 0;
+          this.wormHitSlots.push(target.slot);
+          this.damageWormSlots(
+            this.wormHitSlots,
+            base * scale,
+            `${ult.sourceKey}:${target.id}`,
+            this.ultimateKills,
+            critChanceFor(player.luk, player.dex),
+            false,
+            player.id,
+            "ult:alpha-strike",
+            CombatDelivery.Ultimate,
+            player.x,
+            player.y,
+          );
+        } else {
+          const enemy = this.state.enemies.get(target.id);
+          if (enemy) {
+            const kind = ENEMY_KINDS[enemy.kind];
+            const maxHp = (kind?.hp ?? enemy.hp) * enemyHpScale(this.state.depth) *
+              (enemy.tough ? TOUGH_HP_MULT : 1);
+            const executeAt = ult.variant === "luk" ? 0.25 : ULT_ALPHA_EXECUTE_FRAC;
+            if (maxHp > 0 && enemy.hp / maxHp < executeAt) base *= ULT_ALPHA_EXECUTE_MULT;
+            this.damageEnemy(
+              enemy,
+              target.id,
+              base * scale,
+              this.ultimateKills,
+              critChanceFor(player.luk, player.dex),
+              player.id,
+              "ult:alpha-strike",
+              CombatDelivery.Ultimate,
+              player.x,
+              player.y,
+            );
+            if (ult.variant === "str" && enemy.hp > 0) this.applyUltimateStun(enemy, target.id, 0.5);
+          }
+        }
+        for (const id of this.ultimateKills) this.state.enemies.delete(id);
+      }
+    }
+    if (!tickReached(this.state.tick, ult.activeEndTick)) return;
+    c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.6 : 0.25);
+    if (ult.variant === "con") c.bulwarkShield = Math.max(c.bulwarkShield, 15 * Math.floor(ult.hitIndex / 2));
+    player.ultPhase = UltimatePhase.Recovery;
+  }
+
+  private cancelUltimate(player: PlayerState, c: CombatState): void {
+    if (this.ultimateOwnsMovement(player)) this.zeroMoveVel(player.id);
+    player.ultPhase = UltimatePhase.Idle;
+    c.ult = undefined;
+  }
+
+  private stepUltimateWorldEffects(dt: number): void {
+    for (const [id, brand] of this.ultimateBrands) {
+      const enemy = this.state.enemies.get(id);
+      if (!enemy) {
+        this.ultimateBrands.delete(id);
+        continue;
+      }
+      brand.remaining -= dt;
+      if (brand.remaining > 0) continue;
+      this.ultimateBrands.delete(id);
+      if (!this.brandedTimers.has(id)) enemy.branded = 0;
+    }
+    for (let i = this.ultimateFissures.length - 1; i >= 0; i--) {
+      const fissure = this.ultimateFissures[i]!;
+      if (tickReached(this.state.tick, fissure.endTick)) {
+        this.ultimateFissures.splice(i, 1);
+        continue;
+      }
+      if (!tickReached(this.state.tick, fissure.nextTick)) continue;
+      fissure.nextTick = (fissure.nextTick + ticksFromSeconds(1)) >>> 0;
+      this.detonate(
+        fissure.x,
+        fissure.y,
+        ULT_SEISMARCH_INNER_RADIUS,
+        fissure.damage,
+        0,
+        fissure.ownerId,
+        "ult:seismarch-fissure",
+        CombatDelivery.Ultimate,
+      );
+    }
+    for (const [ownerId, decoy] of this.ultimateDecoys) {
+      if (!decoy.detonated) {
+        this.state.enemies.forEach((enemy) => {
+          if (decoy.hp <= 0 || ENEMY_KINDS[enemy.kind]?.archetype === "boss") return;
+          const kind = ENEMY_KINDS[enemy.kind];
+          const reach = (kind?.radius ?? ENEMY_RADIUS) + PLAYER_RADIUS;
+          if ((enemy.x - decoy.x) ** 2 + (enemy.y - decoy.y) ** 2 <= reach * reach)
+            decoy.hp -= (kind?.contactDamage ?? 0) * dt;
+        });
+        if (decoy.hp <= 0 || tickReached(this.state.tick, decoy.detonateTick)) {
+          decoy.detonated = true;
+          this.detonate(
+            decoy.x,
+            decoy.y,
+            ULT_DOOR_DETONATE_RADIUS,
+            decoy.damage,
+            0,
+            ownerId,
+            "ult:dimension-door-decoy",
+            CombatDelivery.Ultimate,
+          );
+        }
+      }
+      if (tickReached(this.state.tick, decoy.returnEndTick)) this.ultimateDecoys.delete(ownerId);
+    }
+  }
+
+  private stepUltimates(dt: number): void {
+    this.stepUltimateWorldEffects(dt);
+    this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      if (!c) return;
+      c.ultBuffer = Math.max(0, c.ultBuffer - dt);
+      const ult = c.ult;
+      if (ult) {
+        if (
+          !player.alive ||
+          this.state.outcome !== "active" ||
+          player.teleportSeq !== ult.teleportSeqAtAccept
+        ) {
+          this.cancelUltimate(player, c);
+        } else {
+          if (
+            player.ultPhase === UltimatePhase.Windup &&
+            tickReached(this.state.tick, player.ultResolveTick)
+          ) this.beginUltimate(player, c, ult);
+          if (player.ultPhase === UltimatePhase.Active) {
+            if (ult.family === UltimateFamily.Seismarch) this.stepSeismarch(player, c, ult);
+            else if (ult.family === UltimateFamily.AlphaStrike) this.stepAlphaStrike(player, c, ult);
+            else if (ult.family === UltimateFamily.EventHorizon) this.stepEventHorizon(player, c, ult);
+            else if (tickReached(this.state.tick, ult.activeEndTick))
+              player.ultPhase = UltimatePhase.Recovery;
+          }
+          if (
+            player.ultPhase === UltimatePhase.Recovery &&
+            tickReached(this.state.tick, player.ultEndTick)
+          ) {
+            player.ultPhase = UltimatePhase.Idle;
+            c.ult = undefined;
+          }
+        }
+      }
+      if (player.ultPhase === UltimatePhase.Idle && c.ultBuffer > 0) {
+        if (!this.tryDimensionDoorReturn(player, c)) this.acceptUltimate(player, c);
+      }
+    });
+  }
+
   /** Publish one authoritative player-attack acceptance edge. Damage/cooldown behavior remains elsewhere. */
   private stampAttackBeat(player: PlayerState): void {
     player.attackSeq = (player.attackSeq + 1) >>> 0;
@@ -4075,6 +5096,7 @@ export class GameRoom extends Room<ArenaState> {
     weapon: WeaponDef,
     swing: SwingDescriptor,
   ): void {
+    const attackCrit = this.weaponCritChance(player, c);
     // §14 WYSIWYG: each damage SOURCE scales independently. The EDGE uses the weapon's own grades; the
     // layers below carry their own and may scale off DIFFERENT attributes (e.g. INT magma on a STR blade).
     const edgePower = this.heldDamageMult(weapon, weapon.scalingGrades, player); // §10 edge grades × §11 req penalty
@@ -4093,6 +5115,7 @@ export class GameRoom extends Room<ArenaState> {
       halfWidth: MELEE_BLADE_HALFWIDTH,
       edgeDamage: weapon.damage * edgePower,
       weaponId: weapon.id,
+      crit: attackCrit,
       elapsed: 0,
       hit: new Set<string>(),
     });
@@ -4181,7 +5204,7 @@ export class GameRoom extends Room<ArenaState> {
                 cl.damage * cl.falloff ** n * clPower,
                 `chain:${player.id}:${player.attackSeq}`,
                 kills,
-                critChanceFor(player.luk, player.dex),
+                attackCrit,
                 true,
                 player.id,
                 weapon.id,
@@ -4199,7 +5222,7 @@ export class GameRoom extends Room<ArenaState> {
               t.id,
               cl.damage * cl.falloff ** n * clPower,
               kills,
-              critChanceFor(player.luk, player.dex),
+              attackCrit,
               player.id,
               weapon.id,
               CombatDelivery.Chain,
@@ -4225,7 +5248,7 @@ export class GameRoom extends Room<ArenaState> {
         y: ep.y,
         radius: weapon.quake.radius,
         damage: weapon.quake.damage * qPower,
-        crit: critChanceFor(player.luk, player.dex),
+        crit: attackCrit,
         sourcePlayerId: player.id,
         sourceWeaponId: weapon.id,
       });
@@ -4426,7 +5449,7 @@ export class GameRoom extends Room<ArenaState> {
           c.beamChannelT = 0;
           c.beamPulseT = 0;
           c.beamQuantumT = 0;
-          c.beamCrit = critChanceFor(player.luk, player.dex);
+          c.beamCrit = this.weaponCritChance(player, c);
           const row = this.state.beams.get(id);
           if (row) row.phaseStartTick = this.state.tick;
           this.stepActiveBeam(player, id, c, descriptor, resource, dt);
@@ -4883,7 +5906,7 @@ export class GameRoom extends Room<ArenaState> {
         if (sw.elapsed >= sw.swing.activeEndSeconds) this.meleeSwings.delete(pid);
         continue;
       }
-      const critC = critChanceFor(player.luk, player.dex); // §30 the swinger's crit, rolled per edge hit
+      const critC = sw.crit;
       if (this.belt) {
         // §29 BELT melee is LANE-based (SoR4 model), not the top-down angular sweep: a hit needs horizontal
         // reach in the facing direction AND depth alignment |Δy| ≤ DEPTH_TOL_PLAYER (+ the target radius).
@@ -5970,7 +6993,7 @@ export class GameRoom extends Room<ArenaState> {
         this.enemyFireCd.set(id, cd);
         return;
       }
-      const target = nearestPoint(enemy, bodies);
+      const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
       if (target && Math.hypot(target.x - enemy.x, target.y - enemy.y) <= ranged.range) {
         const dmg =
           ranged.damage *
@@ -6102,7 +7125,7 @@ export class GameRoom extends Room<ArenaState> {
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
     const mx = player.x + aim.x * reach;
     const my = player.y + aim.y * reach;
-    const crit = critChanceFor(player.luk, player.dex); // §30 capture the shooter's crit at fire time
+    const crit = this.weaponCritChance(player, c); // §ULT Door rider consumes once per trigger pull
     // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
     // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
     const el = weapon.tags?.element;
@@ -6153,7 +7176,7 @@ export class GameRoom extends Room<ArenaState> {
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT
     const mx = player.x + aim.x * reach;
     const my = player.y + aim.y * reach;
-    const crit = critChanceFor(player.luk, player.dex);
+    const crit = this.weaponCritChance(player, c);
     // §35 element-tint the bolt (arcane/shock/void…) so different caster weapons read distinct.
     const el = weapon.tags?.element;
     const bulletKind = el && el !== "physical" ? `orb:${el}` : "orb";
@@ -6198,7 +7221,7 @@ export class GameRoom extends Room<ArenaState> {
       ttl,
       undefined,
       0,
-      critChanceFor(player.luk, player.dex), // §30 thrown weapons crit too
+      this.weaponCritChance(player, c), // §ULT Door rider consumes once per throw
       player.id,
       weapon.id,
       CombatDelivery.Thrown,
@@ -6224,7 +7247,7 @@ export class GameRoom extends Room<ArenaState> {
       : undefined;
     const aim = this.aimDir(player, c); // §37 aim the cone at the cursor POINT
     const baseAng = Math.atan2(aim.y, aim.x);
-    const crit = critChanceFor(player.luk, player.dex); // §30
+    const crit = this.weaponCritChance(player, c); // §ULT Door rider consumes once per scatter cast
     // §41 the ball carries its weapon's ELEMENT on the kind ("magma:frost") so the client renders
     // element-true balls + explosions — the frost Hailshard was shooting lava because every scatter
     // weapon inherited the Wyrmtooth's magma visual. "physical" (the Wyrmtooth's literal magma) keeps
@@ -6273,6 +7296,7 @@ export class GameRoom extends Room<ArenaState> {
     const runtime = controller?.wormRuntime;
     const boss = this.bossId ? this.state.enemies.get(this.bossId) : undefined;
     if (!controller || !runtime || !boss || slots.length === 0 || boss.hp <= 0) return;
+    const hpBefore = boss.hp;
     let damage = raw;
     let didCrit = false;
     if (crit > 0 && Math.random() < crit) {
@@ -6280,7 +7304,9 @@ export class GameRoom extends Room<ArenaState> {
       didCrit = true;
       boss.critFlash = (boss.critFlash + 1) & 0xff;
     }
-    if (this.brandedTimers.has(boss.id)) damage *= BRAND_DAMAGE_MULT;
+    const signatureBrand = this.brandedTimers.has(boss.id) ? BRAND_DAMAGE_MULT - 1 : 0;
+    const ultimateBrand = this.ultimateBrands.get(boss.id)?.multiplier ?? 0;
+    damage *= 1 + signatureBrand + ultimateBrand;
     const result = controller.damageWormSegments(
       slots,
       damage,
@@ -6290,6 +7316,13 @@ export class GameRoom extends Room<ArenaState> {
       boss,
     );
     if (!result.accepted) return;
+    this.accrueUltimateCharge(
+      sourcePlayerId,
+      Math.min(hpBefore, Math.max(result.coreDamage, damage)),
+      result.terminal,
+      boss.kind,
+      delivery,
+    );
     const firstSlot = slots[0] ?? 0;
     this.writeCombatReceipt(
       `worm:${firstSlot}:${runtime.segmentGeneration(firstSlot)}`,
@@ -6356,9 +7389,19 @@ export class GameRoom extends Room<ArenaState> {
       didCrit = true;
       enemy.critFlash = (enemy.critFlash + 1) & 0xff;
     }
-    const applied = dmg * (this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT : 1);
+    const hpBefore = enemy.hp;
+    const signatureBrand = this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT - 1 : 0;
+    const ultimateBrand = this.ultimateBrands.get(eid)?.multiplier ?? 0;
+    const applied = dmg * (1 + signatureBrand + ultimateBrand);
     const finalBlow = enemy.kind !== "dummy" && enemy.hp - applied <= 0;
     enemy.hp -= applied;
+    this.accrueUltimateCharge(
+      sourcePlayerId,
+      Math.min(Math.max(0, hpBefore), Math.max(0, applied)),
+      finalBlow,
+      enemy.kind,
+      delivery,
+    );
     this.writeCombatReceipt(
       eid,
       enemy.x,
@@ -6393,6 +7436,8 @@ export class GameRoom extends Room<ArenaState> {
       enemy.hp = DUMMY_HP;
       return;
     }
+    this.ultimateStunUntil.delete(eid);
+    this.ultimateBrands.delete(eid);
     if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
     if (combo?.tg) this.removeTelegraphRow(combo.tg);
     if (combo?.targetId && this.duelTokens.get(combo.targetId) === eid)
@@ -6819,7 +7864,7 @@ export class GameRoom extends Room<ArenaState> {
         this.updateEnemyGrid(id, enemy);
         return;
       }
-      const target = nearestPoint(enemy, bodies);
+      const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
       const dist = target
         ? Math.hypot(target.x - enemy.x, target.y - enemy.y)
         : Number.POSITIVE_INFINITY;
@@ -7835,6 +8880,7 @@ export class GameRoom extends Room<ArenaState> {
     pc.parryChainT = PARRY_CHAIN_WINDOW;
     const parryHeal = PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS);
     player.hp = Math.min(player.maxHp, player.hp + parryHeal);
+    this.addUltimateFlatCharge(player, pc, ULT_CHARGE_PARRY_BONUS);
     const est = this.comboState.get(attackerId);
     const def = est?.comboId ? TOUGH_COMBOS[est.comboId] : undefined;
     const authored = !!est && !!def;
@@ -8432,6 +9478,70 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.spawnEnemy(anchors)) break;
       this.spawnAccum -= interval;
     }
+  }
+
+  /** Beam-heat-style ultimate truth: private float, quantized mirror, one ready sequence edge. */
+  private syncUltimateCharge(player: PlayerState, c: CombatState): void {
+    const quantized = Math.max(
+      0,
+      Math.min(ULT_CHARGE_MAX, Math.floor(c.ultChargeF * ULT_CHARGE_MAX + 1e-9)),
+    );
+    if (player.ultCharge === quantized) return;
+    const becameReady = player.ultCharge < ULT_CHARGE_MAX && quantized >= ULT_CHARGE_MAX;
+    player.ultCharge = quantized;
+    if (becameReady) player.ultSeq = (player.ultSeq + 1) & 0xffff;
+  }
+
+  /** Personal anti-farm seam shared by ordinary enemies and Serraketh slots. */
+  private accrueUltimateCharge(
+    sourcePlayerId: string,
+    applied: number,
+    finalBlow: boolean,
+    enemyKind: string,
+    delivery: number,
+  ): void {
+    if (!sourcePlayerId || enemyKind === "dummy" || this.state.mode === "training") return;
+    const player = this.state.players.get(sourcePlayerId);
+    const c = this.combat.get(sourcePlayerId);
+    if (
+      !player?.alive ||
+      !c ||
+      player.ultArchetype === 0 ||
+      player.ultPhase !== UltimatePhase.Idle ||
+      delivery === CombatDelivery.Ultimate ||
+      c.ultChargeF >= 1 ||
+      c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
+    ) return;
+    const family = ultimateFamilyForCode(player.ultArchetype);
+    let gain = Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE;
+    if (family === UltimateFamily.SunspiteComet) gain *= 1.25;
+    let killGain = finalBlow ? ULT_CHARGE_KILL_BONUS : 0;
+    if (family === UltimateFamily.AlphaStrike) killGain *= 1.5;
+    gain += killGain;
+    if (family === UltimateFamily.Seismarch && player.ultVariant === "dex") gain *= 1.15;
+    if (player.ultTempered) gain *= ULT_TEMPER_CHARGE_MULT;
+    const admitted = Math.min(gain, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
+    if (admitted <= 0) return;
+    c.ultAccrualThisTick += admitted;
+    c.ultChargeF += admitted;
+    this.syncUltimateCharge(player, c);
+  }
+
+  private addUltimateFlatCharge(player: PlayerState, c: CombatState, amount: number): void {
+    if (
+      this.state.mode === "training" ||
+      !player.alive ||
+      player.ultArchetype === 0 ||
+      player.ultPhase !== UltimatePhase.Idle ||
+      c.ultChargeF >= 1 ||
+      c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
+    ) return;
+    const scaled = amount * (player.ultTempered ? ULT_TEMPER_CHARGE_MULT : 1);
+    const admitted = Math.min(scaled, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
+    if (admitted <= 0) return;
+    c.ultAccrualThisTick += admitted;
+    c.ultChargeF += admitted;
+    this.syncUltimateCharge(player, c);
   }
 
   /** Validate the FINAL corrected point against every living player's warning circle and a conservative

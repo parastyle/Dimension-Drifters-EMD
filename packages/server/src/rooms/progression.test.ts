@@ -254,3 +254,58 @@ describe("§classmerge allocation and migration invariants", () => {
     expect(coldsnap.hooks?.onRollEnd?.({})).toEqual([{ kind: "reload-held-gun" }]);
   });
 });
+
+// ULT U1 — appended authoritative allocation law coverage.
+const ultimateShared = await import("@dd/shared");
+const ultimateProgression = await import("./progression.js");
+
+describe("ULT U1 allocation-frequency attunement and temper", () => {
+  it("locks the family on the fifth +2/+1 decision and counts ballast in allocRun", () => {
+    const p = fresh();
+    p.runCharacter = "drifter";
+    for (let i = 0; i < 4; i++) applyAllocationChoice(p, "str");
+    expect(ATTRS.reduce((sum, attr) => sum + p.allocRun[attr], 0)).toBe(12);
+    expect(p.ultArchetype).toBe(0);
+    applyAllocationChoice(p, "str");
+    expect(p.allocRun.str).toBe(15); // Drifter ballast follows the chosen attribute.
+    expect(ultimateShared.ultimateFamilyForCode(p.ultArchetype)).toBe(
+      ultimateShared.UltimateFamily.Seismarch,
+    );
+    expect(ultimateShared.ultimateVariantForCode(p.ultArchetype)).toBe("dex");
+  });
+
+  it("keeps the family locked, drifts only after an overtaking allocation, and tempers at 30", () => {
+    const p = fresh();
+    p.runCharacter = "drifter";
+    for (let i = 0; i < 5; i++) applyAllocationChoice(p, "str");
+    const family = p.ultFamily;
+    for (let i = 0; i < 5; i++) applyAllocationChoice(p, "int");
+    expect(ATTRS.reduce((sum, attr) => sum + p.allocRun[attr], 0)).toBe(30);
+    expect(p.ultFamily).toBe(family);
+    expect(p.ultVariant).toBe("int");
+    expect(p.ultTempered).toBe(true);
+    applyAllocationChoice(p, "luk");
+    expect(p.ultVariant).toBe("int"); // post-temper allocations cannot rewrite the variant.
+  });
+
+  it("applies spread bias, raw totals, then ATTRS order for replay-stable ties", () => {
+    const spreadBias = fresh();
+    spreadBias.runCharacter = "cc-pyra-cinderhowl-the-flame-caster";
+    for (const attr of ATTRS) spreadBias.allocRun[attr] = 3;
+    ultimateProgression.evaluateUltimateAllocation(spreadBias);
+    expect(ultimateShared.ultimateFamilyForCode(spreadBias.ultArchetype)).toBe(
+      ultimateShared.UltimateFamily.SunspiteComet,
+    );
+    expect(spreadBias.ultVariant).toBe("str");
+
+    const rawTie = fresh();
+    rawTie.runCharacter = "drifter";
+    for (const attr of ATTRS) rawTie.allocRun[attr] = 3;
+    rawTie.luk = 9;
+    ultimateProgression.evaluateUltimateAllocation(rawTie);
+    expect(ultimateShared.ultimateFamilyForCode(rawTie.ultArchetype)).toBe(
+      ultimateShared.UltimateFamily.DimensionDoor,
+    );
+    expect(rawTie.ultVariant).toBe("str");
+  });
+});

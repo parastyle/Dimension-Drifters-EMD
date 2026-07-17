@@ -1,6 +1,7 @@
 import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema";
 import { SCHEMA_VERSION } from "./constants.js";
 import { DEFAULT_DIMENSION } from "./dimensions.js";
+import type { Attr } from "./leveling.js";
 
 /** §29 v0.118 one stored weapon in a player's ARSENAL — a 3-slot loadout plus a bag. Mirrors the loot
  *  identity carried on the held weapon (`weapon`/`weaponRarity`/`weaponAffix`) so a stowed weapon keeps its
@@ -18,6 +19,19 @@ export class ArsenalSlot extends Schema {
   cooldown = 0;
   reload = 0;
   resourceCharges = 0;
+}
+
+/** Ultimate's nine-field wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
+export class UltimateState extends Schema {
+  @type("uint8") archetype = 0;
+  @type("uint8") charge = 0;
+  @type("uint8") phase = 0;
+  @type("uint16") seq = 0;
+  @type("uint32") startTick = 0;
+  @type("uint32") resolveTick = 0;
+  @type("uint32") endTick = 0;
+  @type("float32") targetX = 0;
+  @type("float32") targetY = 0;
 }
 
 /**
@@ -173,6 +187,36 @@ export class PlayerState extends Schema {
   /** Slide subphase + exact sentence tick, sufficient to adopt/replay a mid-chain authoritative patch. */
   @type("uint8") slidePhase = 0;
   @type("uint8") slidePhaseTick = 0;
+  // ── §ULT schema v24. The resolved family+variant is packed into one byte so the amended 5×4
+  // matrix remains late-join safe without exceeding the panel's nine-field wire budget. Tick epochs are
+  // immutable for an accepted cast; the client interpolates phases without a per-tick schema write.
+  @type(UltimateState) ultimate = new UltimateState();
+  /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
+  get ultArchetype(): number { return this.ultimate.archetype; }
+  set ultArchetype(value: number) { this.ultimate.archetype = value; }
+  get ultCharge(): number { return this.ultimate.charge; }
+  set ultCharge(value: number) { this.ultimate.charge = value; }
+  get ultPhase(): number { return this.ultimate.phase; }
+  set ultPhase(value: number) { this.ultimate.phase = value; }
+  get ultSeq(): number { return this.ultimate.seq; }
+  set ultSeq(value: number) { this.ultimate.seq = value; }
+  get ultStartTick(): number { return this.ultimate.startTick; }
+  set ultStartTick(value: number) { this.ultimate.startTick = value; }
+  get ultResolveTick(): number { return this.ultimate.resolveTick; }
+  set ultResolveTick(value: number) { this.ultimate.resolveTick = value; }
+  get ultEndTick(): number { return this.ultimate.endTick; }
+  set ultEndTick(value: number) { this.ultimate.endTick = value; }
+  get ultTargetX(): number { return this.ultimate.targetX; }
+  set ultTargetX(value: number) { this.ultimate.targetX = value; }
+  get ultTargetY(): number { return this.ultimate.targetY; }
+  set ultTargetY(value: number) { this.ultimate.targetY = value; }
+
+  /** Server-only §ULT allocation truth. Base spreads/meta bonuses never enter this tally. */
+  allocRun: Record<Attr, number> = { str: 0, dex: 0, int: 0, con: 0, luk: 0 };
+  /** Locked family/variant state is private; ultArchetype is its packed read-only presentation. */
+  ultFamily = 0;
+  ultVariant: Attr | "" = "";
+  ultTempered = false;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */
