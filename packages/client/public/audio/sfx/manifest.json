@@ -1,0 +1,365 @@
+{
+ "version": 1,
+ "sounds": [
+  {
+   "id": "swing-sword-light",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:light"
+  },
+  {
+   "id": "swing-sword-heavy",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:heavy"
+  },
+  {
+   "id": "swing-greatsword-step1",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:heavy"
+  },
+  {
+   "id": "swing-greatsword-step2",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:heavy"
+  },
+  {
+   "id": "swing-greatsword-slam",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:heavy"
+  },
+  {
+   "id": "swing-dagger-light",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:claw"
+  },
+  {
+   "id": "swing-dagger-lunge",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:claw"
+  },
+  {
+   "id": "swing-claw-rake",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:claw"
+  },
+  {
+   "id": "swing-hammer-flip",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:blunt"
+  },
+  {
+   "id": "swing-fist-haymaker",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:blunt"
+  },
+  {
+   "id": "swing-thrust-stinger",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:light"
+  },
+  {
+   "id": "swing-tome-pageflip",
+   "category": "weapon-swing",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "melee:arcane"
+  },
+  {
+   "id": "gun-fire-slug",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-pellet",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:pellet"
+  },
+  {
+   "id": "gun-fire-nail",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:nail"
+  },
+  {
+   "id": "gun-fire-fire",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-frost",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-shock",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "gun-fire-void",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 3,
+   "replaces": "shot:slug"
+  },
+  {
+   "id": "beam-charge",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 2,
+   "replaces": "beam:charge"
+  },
+  {
+   "id": "beam-ignite",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "beam:ignite"
+  },
+  {
+   "id": "beam-sustain-loop",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 2.4,
+   "loop": true,
+   "variations": 2,
+   "replaces": "beam:sustain"
+  },
+  {
+   "id": "beam-redline",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "beam:redline"
+  },
+  {
+   "id": "beam-release",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "beam:release"
+  },
+  {
+   "id": "beam-overheat",
+   "category": "weapon-fire",
+   "priority": 1,
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 2,
+   "replaces": "beam:overheat"
+  },
+  {
+   "id": "impact-flesh",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 4,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-armor",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-stone",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-crush",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "bighit"
+  },
+  {
+   "id": "impact-hammer-slam",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 2,
+   "replaces": "bighit"
+  },
+  {
+   "id": "impact-elem-fire",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-elem-frost",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "impact-elem-shock",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "hit"
+  },
+  {
+   "id": "kill-confirm-small",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "death"
+  },
+  {
+   "id": "kill-confirm-large",
+   "category": "impact",
+   "priority": 1,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "death"
+  },
+  {
+   "id": "parry-clang",
+   "category": "parry",
+   "priority": 1,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "parry"
+  },
+  {
+   "id": "parry-empowered-return",
+   "category": "parry",
+   "priority": 1,
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 1,
+   "replaces": "parry"
+  },
+  {
+   "id": "serraketh-dive",
+   "category": "boss",
+   "priority": 1,
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 2,
+   "replaces": "descent"
+  },
+  {
+   "id": "serraketh-eruption",
+   "category": "boss",
+   "priority": 1,
+   "durationSeconds": 1.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "bossslam"
+  },
+  {
+   "id": "serraketh-sever",
+   "category": "boss",
+   "priority": 1,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 2,
+   "replaces": "bighit"
+  }
+ ]
+}

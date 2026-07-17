@@ -216,6 +216,23 @@ async function main() {
     console.log(`\nDRY-RUN done — ${selected.length} entries planned, no API calls made.`);
     return;
   }
+
+  // Publish the runtime manifest the client's sample-bank probes (public/audio/sfx/manifest.json).
+  // Only entries whose EVERY variation file is installed are listed — the bank treats presence in this
+  // file as a promise the mp3 exists (its 404-avoidance law). Re-derived from disk on every run, over
+  // the FULL manifest (not just this run's priority slice), so partial batches stay honest.
+  const live = entries.filter((e) => variationFiles(e).every(({ file }) => existsSync(resolve(DST, file))));
+  if (live.length > 0) {
+    const publicManifest = resolve(DST, "manifest.json");
+    writeFileSync(
+      publicManifest,
+      JSON.stringify({ version: 1, sounds: live.map(({ id, category, priority, durationSeconds, loop, variations, replaces }) => ({ id, category, priority, durationSeconds, loop, variations, replaces })) }, null, 1),
+    );
+    console.log(`PUBLISHED ${publicManifest} (${live.length}/${entries.length} entries live)`);
+  } else {
+    console.log("no fully-installed entries yet — public manifest not written (sample bank stays no-op)");
+  }
+
   console.log(`\nSUMMARY: ${generated} generated, ${skipped} skipped (resumable), ${installed} installed, ${failed} failed`);
   if (failed > 0) {
     console.error(`DONE with ${failed} failure(s) — re-run to resume (existing raws are skipped).`);
