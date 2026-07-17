@@ -783,6 +783,33 @@
    "loop": true,
    "variations": 1,
    "replaces": null
+  },
+  {
+   "id": "player-pound-slam",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "player-roll-whoosh",
+   "category": "movement",
+   "priority": 2,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": null
+  },
+  {
+   "id": "ultimate-ready-chime",
+   "category": "ui",
+   "priority": 2,
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 1,
+   "replaces": null
   }
  ]
 }
