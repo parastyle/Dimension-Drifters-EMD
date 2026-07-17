@@ -77,6 +77,9 @@ import {
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
+  ROLL_COOLDOWN,
+  ROLL_SPEED_CURVE,
+  ROLL_TICK_SECONDS,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
@@ -86,6 +89,7 @@ import {
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
+  STANCE_ROLL,
   type SwingDescriptor,
   salvageValue,
   sanitizeMetaLevels,
@@ -331,6 +335,23 @@ function poundRingColor(id: string): number {
     default:
       return 0x78e3a4;
   }
+}
+
+/** The synced override speed identifies the server's just-consumed curve sample without another field. */
+function remoteRollTime(mvx: number, mvy: number): number {
+  const speed = Math.hypot(mvx, mvy);
+  let best = 0;
+  let bestError = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < ROLL_SPEED_CURVE.length; i++) {
+    const sample = ROLL_SPEED_CURVE[i];
+    if (sample === undefined) continue;
+    const error = Math.abs(speed - sample);
+    if (error < bestError) {
+      best = i;
+      bestError = error;
+    }
+  }
+  return (best + 1) * ROLL_TICK_SECONDS;
 }
 
 interface LevelChoiceControl {
@@ -933,6 +954,8 @@ export class ArenaScene extends Phaser.Scene {
   private riftArrow: Phaser.GameObjects.Container | null = null;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
+  /** Roll null-whiffs have a separate cosmetic edge and never enter the parry reward presentation. */
+  private readonly lastDodged = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
   private readonly lastRevived = new Map<string, number>();
   /** Last routed authoritative attack edge/latch per session. Local edges confirm prediction; remote edges
@@ -1023,6 +1046,7 @@ export class ArenaScene extends Phaser.Scene {
     | "M"
     | "TAB"
     | "SPACE"
+    | "SHIFT"
     | "ONE"
     | "TWO"
     | "THREE"
@@ -1063,6 +1087,11 @@ export class ArenaScene extends Phaser.Scene {
   private readonly spaceGesture = new SpaceGestureClassifier();
   private crouchHeld = false;
   private poundQueued = false;
+  /** Shift keydown edge waiting for the next (forced-immediate) numbered command. */
+  private rollQueued = false;
+  private rollDryWindowAt = -1e9;
+  private rollDryPresses = 0;
+  private rollDryToastShown = false;
   /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
   private curDx = 0;
   private curDy = 0;
@@ -1070,6 +1099,7 @@ export class ArenaScene extends Phaser.Scene {
   private selfPredHeight = 0;
   private selfPredVh = 0;
   private selfPredStance: MoveStance = STANCE_NONE;
+  private selfPredRollT = 0;
   private readonly distanceIndicator: DistanceJumpIndicator = {
     rawX: 0,
     rawY: 0,
@@ -1561,6 +1591,7 @@ export class ArenaScene extends Phaser.Scene {
     this.paperDeaths.length = 0;
     this.closingPickups.clear();
     this.lastParried.clear();
+    this.lastDodged.clear();
     this.lastRevived.clear();
     this.lastAttackSeq.clear();
     this.lastAttackHeld.clear();
@@ -1682,11 +1713,16 @@ export class ArenaScene extends Phaser.Scene {
     this.spaceGesture.reset();
     this.crouchHeld = false;
     this.poundQueued = false;
+    this.rollQueued = false;
+    this.rollDryWindowAt = -1e9;
+    this.rollDryPresses = 0;
+    this.rollDryToastShown = false;
     this.curDx = 0;
     this.curDy = 0;
     this.selfPredHeight = 0;
     this.selfPredVh = 0;
     this.selfPredStance = STANCE_NONE;
+    this.selfPredRollT = 0;
     this.jumpPresentation.clear();
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
@@ -1871,7 +1907,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -1887,6 +1923,7 @@ export class ArenaScene extends Phaser.Scene {
       | "M"
       | "TAB"
       | "SPACE"
+      | "SHIFT"
       | "ONE"
       | "TWO"
       | "THREE"
@@ -3150,6 +3187,7 @@ export class ArenaScene extends Phaser.Scene {
     this.snapFell.delete(id);
     // §8/§6/§17 edge-trigger cursors are session-scoped too — a departed id must not live in these maps.
     this.lastParried.delete(id);
+    this.lastDodged.delete(id);
     this.lastRevived.delete(id);
     this.lastAttackSeq.delete(id);
     this.lastAttackHeld.delete(id);
@@ -3194,6 +3232,36 @@ export class ArenaScene extends Phaser.Scene {
     if (space.jump) this.jumpQueued = true;
     if (space.pound) this.poundQueued = true;
     this.crouchHeld = space.crouchHeld;
+    if (Phaser.Input.Keyboard.JustDown(this.keys.SHIFT) && alive && !levelWindowInputBlocked) {
+      const parryWindowOpen = (this.time.now - this.lastParryPress) / 1000 < PARRY_IFRAMES;
+      if (this.predictor?.canRoll && !parryWindowOpen) {
+        this.rollQueued = true;
+        this.rollDryPresses = 0;
+        this.rollDryWindowAt = -1e9;
+        // Shift is latency-critical: force the normal numbered-command loop to mint this frame.
+        this.inputAccMs = Math.max(this.inputAccMs, TICK_MS);
+      } else {
+        if (this.time.now - this.rollDryWindowAt > 2_000) {
+          this.rollDryWindowAt = this.time.now;
+          this.rollDryPresses = 0;
+        }
+        this.rollDryPresses++;
+        if (this.rollDryPresses === 3 && !this.rollDryToastShown) {
+          this.rollDryToastShown = true;
+          this.flashBanner("ROLL RECHARGING", "#c7a66c");
+        }
+        if (this.rollDryPresses <= 3) {
+          const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
+          if (rig)
+            this.jumpEffectRenderer.spawnRollDry(
+              rig.x,
+              (this.belt ? this.beltY(rig.y) : rig.y) + PLAYER_SHADOW_LOCAL_Y,
+              this.belt ? BELT_FORESHORTEN : 1,
+            );
+          this.audio.play("roll:dry", { x: rig?.x, amt: 0.35 });
+        }
+      }
+    }
     let canSalvage = false;
     this.grabTarget = null;
     if (!levelWindowInputBlocked) {
@@ -5628,6 +5696,7 @@ export class ArenaScene extends Phaser.Scene {
       this.keys.S,
       this.keys.D,
       this.keys.SPACE,
+      this.keys.SHIFT,
       this.keys.ONE,
       this.keys.TWO,
       this.keys.THREE,
@@ -6126,6 +6195,7 @@ export class ArenaScene extends Phaser.Scene {
         this.selfPredHeight = r.height;
         this.selfPredVh = r.vh;
         this.selfPredStance = r.stance;
+        this.selfPredRollT = r.rollT;
         return;
       }
       const s =
@@ -6667,6 +6737,11 @@ export class ArenaScene extends Phaser.Scene {
       const moveStance = isSelfPred
         ? this.selfPredStance
         : ((pl?.moveStance ?? STANCE_NONE) as MoveStance);
+      const rollT = isSelfPred
+        ? this.selfPredRollT
+        : moveStance === STANCE_ROLL
+          ? remoteRollTime(pl?.mvx ?? 0, pl?.mvy ?? 0)
+          : undefined;
       blob.setHop(jumpHeight);
       this.presentJumpFeel(
         id,
@@ -6674,6 +6749,7 @@ export class ArenaScene extends Phaser.Scene {
         jumpHeight,
         jumpVh,
         moveStance,
+        rollT,
         pl?.poundSeq ?? 0,
         mx,
         my,
@@ -6712,6 +6788,7 @@ export class ArenaScene extends Phaser.Scene {
       anim.recoilY = pl?.vy ?? 0;
       anim.jumpVh = jumpVh;
       anim.moveStance = moveStance;
+      anim.rollT = rollT;
       anim.reducedMotion = reducedMotion;
       blob.animate(this.animClock, anim);
       blob.setDepth(blob.y);
@@ -6725,6 +6802,7 @@ export class ArenaScene extends Phaser.Scene {
     height: number,
     vh: number,
     stance: MoveStance,
+    rollT: number | undefined,
     poundSeq: number,
     moveX: number,
     moveY: number,
@@ -6754,6 +6832,26 @@ export class ArenaScene extends Phaser.Scene {
       previous.coilSecondPlayed = false;
       if (stance === STANCE_CROUCH) this.audio.play("leap:coil", { x, amt: 0.3 * localAmt });
       if (stance === STANCE_POUND) this.audio.play("pound:tuck", { x, amt: localAmt });
+      if (stance === STANCE_ROLL) {
+        this.jumpEffectRenderer.spawnRollBurst(
+          x,
+          y + PLAYER_SHADOW_LOCAL_Y,
+          moveX,
+          moveY,
+          reducedMotion || !visible,
+          this.belt ? BELT_FORESHORTEN : 1,
+        );
+        this.audio.play("roll", { x, amt: localAmt });
+      } else if (previous.stance === STANCE_ROLL) {
+        this.jumpEffectRenderer.spawnRollPlant(
+          x,
+          y + PLAYER_SHADOW_LOCAL_Y,
+          moveX,
+          moveY,
+          reducedMotion || !visible,
+          this.belt ? BELT_FORESHORTEN : 1,
+        );
+      }
     }
     if (
       stance === STANCE_CROUCH &&
@@ -6820,6 +6918,8 @@ export class ArenaScene extends Phaser.Scene {
 
     if (visible && stance === STANCE_POUND && vh < 0)
       this.jumpEffectRenderer.drawPoundStreak(x, y, height, -vh, reducedMotion);
+    if (visible && stance === STANCE_ROLL && rollT !== undefined && rollT <= 0.25)
+      this.jumpEffectRenderer.drawRollWake(x, y, moveX, moveY, rollT, reducedMotion);
     if (
       isSelf &&
       stance === STANCE_CROUCH &&
@@ -6857,6 +6957,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (this.predictor?.rollAttackLocked) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.beam) return;
@@ -7125,6 +7226,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (this.predictor?.rollParryLocked) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
@@ -7178,6 +7280,21 @@ export class ArenaScene extends Phaser.Scene {
       // READY — a faint full ring (parry available).
       g.lineStyle(2, 0x8fdcff, 0.28);
       g.strokeCircle(x, y, R);
+    }
+
+    // A thumbnail-sized roll pip shares the restrained cooldown language without competing with parry.
+    const rollCd = this.predictor?.rollCooldownRemaining ?? 0;
+    const pipX = x + 27;
+    const pipY = y + 20;
+    if (rollCd > 0) {
+      const ready = 1 - Math.min(1, rollCd / ROLL_COOLDOWN);
+      g.lineStyle(2, 0xc7a66c, 0.52);
+      g.beginPath();
+      g.arc(pipX, pipY, 5, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
+      g.strokePath();
+    } else {
+      g.fillStyle(0xe8d7b8, 0.32);
+      g.fillCircle(pipX, pipY, 2.25);
     }
   }
 
@@ -8116,6 +8233,23 @@ export class ArenaScene extends Phaser.Scene {
       if (this.feedbackSettings.hitSparks && crit)
         this.hitEffectRenderer.critStar(id, rig.x, rig.y, dirX, dirY, this.animClock, reducedFlash);
     }
+
+    // Roll null-whiffs have their own quiet edge. They never share parry sparks, audio, chain, or cooldown.
+    this.room.state.players.forEach((p, id) => {
+      const previous = this.lastDodged.get(id);
+      this.lastDodged.set(id, p.dodgedSeq);
+      if (previous === undefined || previous === p.dodgedSeq) return;
+      const rig = this.blobs.get(id);
+      this.jumpEffectRenderer.spawnRollWhiff(
+        rig?.x ?? p.x,
+        (rig?.y ?? (this.belt ? this.beltY(p.y) : p.y)) + PLAYER_SHADOW_LOCAL_Y,
+        this.belt ? BELT_FORESHORTEN : 1,
+      );
+      this.audio.play("roll:whiff", {
+        x: rig?.x ?? p.x,
+        amt: id === this.room?.sessionId ? 0.55 : 0.24,
+      });
+    });
 
     // §8 successful-parry flash (Stage C): a white burst when ANY player parries a telegraphed attack;
     // the LOCAL player's parry cooldown refreshes (§8 flow) so they can immediately parry the next swing.
@@ -10432,6 +10566,7 @@ export class ArenaScene extends Phaser.Scene {
           this.selfPredHeight = view.height;
           this.selfPredVh = view.vh;
           this.selfPredStance = view.moveStance ?? STANCE_NONE;
+          this.selfPredRollT = 0;
           if (this.belt) {
             this.predictor.setMap(undefined);
             this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
@@ -10720,6 +10855,7 @@ export class ArenaScene extends Phaser.Scene {
     if (levelWindowOpen) {
       this.jumpQueued = false;
       this.poundQueued = false;
+      this.rollQueued = false;
       this.crouchHeld = false;
     }
     if (!this.room || !this.predictor) return;
@@ -10750,6 +10886,7 @@ export class ArenaScene extends Phaser.Scene {
           this.poundQueued,
           aim.aimX,
           aim.aimY,
+          this.rollQueued,
         ),
         fireHeld,
         aimX: aim.aimX,
@@ -10759,6 +10896,7 @@ export class ArenaScene extends Phaser.Scene {
       };
       this.jumpQueued = false;
       this.poundQueued = false;
+      this.rollQueued = false;
       this.stepBeamPrediction(cmd, self, weapon);
       this.room.send("input", cmd);
       this.predictor.tick(cmd);

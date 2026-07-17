@@ -22,15 +22,17 @@ import {
   MOVE_RECOVER_ACCEL,
   MOVE_SPEED,
   MOVE_STOP_DECEL,
+  PLAYER_RADIUS,
   POUND_DAMAGE_BASE,
   POUND_DAMAGE_CAP,
   POUND_DAMAGE_PER_HEIGHT,
-  PLAYER_RADIUS,
-  type VerticalPhase,
+  ROLL_SPEED_CURVE,
+  ROLL_TICK_SECONDS,
   VERTICAL_PHASE_APEX,
   VERTICAL_PHASE_FALLING,
   VERTICAL_PHASE_GROUNDED,
   VERTICAL_PHASE_RISING,
+  type VerticalPhase,
 } from "./constants.js";
 import { clamp } from "./math.js";
 
@@ -305,4 +307,14 @@ export function poundDamage(triggerHeight: number): number {
     POUND_DAMAGE_CAP,
     POUND_DAMAGE_BASE + POUND_DAMAGE_PER_HEIGHT * Math.max(0, triggerHeight),
   );
+}
+
+/** Allocation-free dodge-roll speed sample shared by authority and pending-command replay. */
+export function rollSpeedAt(rollT: number): number {
+  const tick = Math.min(
+    ROLL_SPEED_CURVE.length - 1,
+    Math.max(0, Math.floor((rollT + 1e-9) / ROLL_TICK_SECONDS)),
+  );
+  const speed = ROLL_SPEED_CURVE[tick];
+  return speed ?? 300;
 }

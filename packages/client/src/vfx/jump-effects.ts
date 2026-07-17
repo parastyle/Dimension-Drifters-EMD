@@ -123,6 +123,113 @@ export class JumpEffectRenderer {
     this.live.lineBetween(x + 18, top - length * 0.72, x + 18, top - 4);
   }
 
+  /** Retained-frame wake: two sparse paper strokes, never a particle allocation. */
+  drawRollWake(
+    x: number,
+    y: number,
+    dirX: number,
+    dirY: number,
+    rollT: number,
+    reducedMotion: boolean,
+  ): void {
+    if (reducedMotion) return;
+    const length = Math.hypot(dirX, dirY) || 1;
+    const nx = dirX / length;
+    const ny = dirY / length;
+    const px = -ny;
+    const py = nx;
+    const fade = clamp01(1 - rollT / 0.25);
+    this.live.lineStyle(3, 0xeadfc9, 0.2 + fade * 0.26);
+    this.live.lineBetween(
+      x - nx * 20 + px * 8,
+      y - ny * 20 + py * 8,
+      x - nx * 48 + px * 11,
+      y - ny * 48 + py * 11,
+    );
+    this.live.lineStyle(1.5, 0x796a58, 0.14 + fade * 0.18);
+    this.live.lineBetween(
+      x - nx * 15 - px * 7,
+      y - ny * 15 - py * 7,
+      x - nx * 37 - px * 10,
+      y - ny * 37 - py * 10,
+    );
+  }
+
+  /** Shift-down acceptance: a compact launch scuff and paper-dust fan from the fixed pools. */
+  spawnRollBurst(
+    x: number,
+    y: number,
+    dirX: number,
+    dirY: number,
+    reducedMotion: boolean,
+    projectionYScale = 1,
+  ): void {
+    const length = Math.hypot(dirX, dirY) || 1;
+    const nx = dirX / length;
+    const ny = dirY / length;
+    this.spawnRing(x, y, 3, 10, 150, 0xd9c8aa, false, projectionYScale);
+    if (reducedMotion) return;
+    for (let i = 0; i < 6; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const lateral = side * (18 + i * 2);
+      this.spawnDust(
+        x - nx * 8,
+        y - ny * 8,
+        -nx * (48 + i * 7) - ny * lateral,
+        -ny * (48 + i * 7) + nx * lateral,
+        190 + i * 18,
+        1.4 + (i % 3) * 0.45,
+        0xd5c6ac,
+        0,
+        projectionYScale,
+        i >= 4,
+      );
+    }
+    this.spawnSkid(x, y, nx, ny, -5);
+    this.spawnSkid(x, y, nx, ny, 5);
+  }
+
+  /** Vulnerable-tail handoff: two short heel marks and a low dust settle. */
+  spawnRollPlant(
+    x: number,
+    y: number,
+    dirX: number,
+    dirY: number,
+    reducedMotion: boolean,
+    projectionYScale = 1,
+  ): void {
+    const length = Math.hypot(dirX, dirY) || 1;
+    const nx = dirX / length;
+    const ny = dirY / length;
+    this.spawnRing(x, y, 2, 8, 130, 0xb8a587, false, projectionYScale);
+    this.spawnSkid(x, y, nx, ny, -4);
+    this.spawnSkid(x, y, nx, ny, 4);
+    if (reducedMotion) return;
+    for (let i = 0; i < 3; i++)
+      this.spawnDust(
+        x,
+        y,
+        -nx * (26 + i * 8) - ny * (i - 1) * 11,
+        -ny * (26 + i * 8) + nx * (i - 1) * 11,
+        180 + i * 22,
+        1.6,
+        0xbcae95,
+        0,
+        projectionYScale,
+        false,
+      );
+  }
+
+  /** An attack crossed an i-frame: pale, deliberately quieter than the white parry reward burst. */
+  spawnRollWhiff(x: number, y: number, projectionYScale = 1): void {
+    this.spawnRing(x, y, 5, 15, 115, 0xeee5d2, false, projectionYScale);
+  }
+
+  /** Rejected Shift: a tiny ochre scuff, never an apparent successful roll. */
+  spawnRollDry(x: number, y: number, projectionYScale = 1): void {
+    this.spawnRing(x, y, 2, 6, 100, 0x856f52, false, projectionYScale);
+  }
+
   spawnLanding(
     x: number,
     y: number,
@@ -359,5 +466,15 @@ export class JumpEffectRenderer {
     this.dustLimit[slot] = radiusLimit;
     this.dustLimitYScale[slot] = radiusLimitYScale;
     this.dustColor[slot] = color;
+  }
+
+  private spawnSkid(x: number, y: number, dirX: number, dirY: number, side: number): void {
+    const slot = this.skidCursor++ % SKID_MAX;
+    this.skidActive[slot] = 1;
+    this.skidAge[slot] = 0;
+    this.skidX[slot] = x - dirY * side;
+    this.skidY[slot] = y + dirX * side;
+    this.skidDx[slot] = -dirX * 16;
+    this.skidDy[slot] = -dirY * 16;
   }
 }

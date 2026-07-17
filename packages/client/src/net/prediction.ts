@@ -30,12 +30,19 @@ import {
   POUND_SPEED,
   PRED_ERR_DECAY,
   PRED_PENDING_MAX,
+  ROLL_ATTACK_CANCEL_SECONDS,
+  ROLL_COOLDOWN,
+  ROLL_DURATION,
+  ROLL_IFRAME_SECONDS,
+  ROLL_PARRY_LOCK_SECONDS,
   resolveBeltObstacles,
   resolvePoiCollision,
+  rollSpeedAt,
   STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
+  STANCE_ROLL,
   safeSpawnPos,
   shortestAngleDelta,
   stepImpulse,
@@ -75,6 +82,7 @@ export interface PredCmd {
   jump: boolean;
   crouchHeld?: boolean;
   pound?: boolean;
+  roll?: boolean;
   /** Present on ArenaScene's real command; optional keeps the pure predictor usable in small tests. */
   aimX?: number;
   aimY?: number;
@@ -132,6 +140,9 @@ interface PendingPredCmd extends PredCmd {
   poundUsedBefore: boolean;
   poundGatherTBefore: number;
   recoveryTBefore: number;
+  rollTBefore: number;
+  rollCdBefore: number;
+  rollParryLockTBefore: number;
   aimXBefore: number;
   aimYBefore: number;
 }
@@ -159,6 +170,9 @@ interface PredStanceState {
   poundUsed: boolean;
   poundGatherT: number;
   recoveryT: number;
+  rollT: number;
+  rollCd: number;
+  rollParryLockT: number;
   aimX: number;
   aimY: number;
 }
@@ -294,6 +308,7 @@ function clearCommittedStance(s: PredStanceState): void {
   s.dashSpeed = 0;
   s.dashSteer = 0;
   s.poundGatherT = 0;
+  s.rollT = 0;
 }
 
 function steerDistanceJump(s: PredStanceState, cmd: PredCmd, dt: number): void {
@@ -352,11 +367,12 @@ function stepStanceHorizontal(
   map?: ArenaMap,
   belt?: BeltLevel,
 ): PredState {
-  if (s.stance !== STANCE_DASH) {
+  if (s.stance !== STANCE_DASH && s.stance !== STANCE_ROLL) {
     const rooted = s.stance === STANCE_CROUCH || s.stance === STANCE_POUND || s.recoveryT > 0;
     return stepHorizontal(p, rooted ? 0 : cmd.dx, rooted ? 0 : cmd.dy, dt, map, belt);
   }
-  steerDistanceJump(s, cmd, dt);
+  if (s.stance === STANCE_DASH) steerDistanceJump(s, cmd, dt);
+  else s.dashSpeed = rollSpeedAt(s.rollT);
   const mvx = s.dashDirX * s.dashSpeed;
   const mvy = s.dashDirY * s.dashSpeed;
   let x = Math.max(PLAYER_RADIUS, Math.min(ARENA_WIDTH - PLAYER_RADIUS, p.x + mvx * dt));
@@ -387,6 +403,10 @@ function consumeStanceInput(
     s.aimX = (cmd.aimX ?? 0) / aimLen;
     s.aimY = (cmd.aimY ?? 0) / aimLen;
   }
+  if (cmd.fireHeld && s.stance === STANCE_ROLL && s.rollT + 1e-9 >= ROLL_ATTACK_CANCEL_SECONDS) {
+    s.rollCd = ROLL_COOLDOWN;
+    clearCommittedStance(s);
+  }
   if (cmd.fireHeld && s.stance === STANCE_CROUCH) clearCommittedStance(s);
   if (cmd.pound) {
     if (
@@ -403,6 +423,43 @@ function consumeStanceInput(
       s.stance = STANCE_POUND;
     } else if (v.height > GROUND_EPSILON && v.height <= POUND_MIN_HEIGHT) {
       v.jumpBuf = JUMP_BUFFER_SECONDS;
+    }
+  }
+
+  if (
+    cmd.roll &&
+    v.height <= GROUND_EPSILON &&
+    s.stance === STANCE_NONE &&
+    s.recoveryT <= 0 &&
+    s.rollCd <= 0
+  ) {
+    let dx = cmd.dx;
+    let dy = cmd.dy;
+    let len = Math.hypot(dx, dy);
+    if (len <= 1e-4) {
+      dx = p.mvx;
+      dy = p.mvy;
+      len = Math.hypot(dx, dy);
+    }
+    if (len <= 1e-4) {
+      dx = s.aimX;
+      dy = s.aimY;
+      len = Math.hypot(dx, dy);
+    }
+    if (len > 1e-4) {
+      s.dashDirX = dx / len;
+      s.dashDirY = dy / len;
+      s.dashBaseDirX = s.dashDirX;
+      s.dashBaseDirY = s.dashDirY;
+      s.dashSteer = 0;
+      s.dashSpeed = rollSpeedAt(0);
+      s.rollT = 0;
+      // The timer phase runs later in this same predicted tick; seed one sample high to preserve the
+      // authoritative [consume, consume+10) parry lock.
+      s.rollParryLockT = ROLL_PARRY_LOCK_SECONDS + TICK_MS / 1000;
+      p.mvx = s.dashDirX * s.dashSpeed;
+      p.mvy = s.dashDirY * s.dashSpeed;
+      s.stance = STANCE_ROLL;
     }
   }
 
@@ -486,7 +543,12 @@ function stepPredictionTick(
   map?: ArenaMap,
   belt?: BeltLevel,
 ): PredState {
-  if (cmd.jump) v.jumpBuf = JUMP_BUFFER_SECONDS;
+  if (cmd.jump) {
+    v.jumpBuf =
+      s.stance === STANCE_ROLL
+        ? Math.max(v.jumpBuf, ROLL_DURATION - s.rollT + dt)
+        : JUMP_BUFFER_SECONDS;
+  }
   consumeStanceInput(p, v, s, cmd);
   const next = stepStanceHorizontal(p, s, cmd, dt, map, belt);
 
@@ -494,6 +556,9 @@ function stepPredictionTick(
   v.jumpBuf = Math.max(0, v.jumpBuf - dt);
   s.distJumpCd = Math.max(0, s.distJumpCd - dt);
   s.recoveryT = Math.max(0, s.recoveryT - dt);
+  s.rollCd = Math.max(0, s.rollCd - dt);
+  s.rollParryLockT = Math.max(0, s.rollParryLockT - dt);
+  if (s.rollParryLockT <= 1e-9) s.rollParryLockT = 0;
   if (s.stance === STANCE_CROUCH) {
     if (!cmd.crouchHeld) {
       clearCommittedStance(s);
@@ -508,6 +573,17 @@ function stepPredictionTick(
         if (s.distJumpCd > 0) clearCommittedStance(s);
         else launchDistanceJump(next, v, s, cmd, indicator, map, belt);
       }
+    }
+  }
+  if (s.stance === STANCE_ROLL) {
+    s.rollT += dt;
+    if (s.rollT + 1e-9 >= ROLL_DURATION) {
+      const dx = s.dashDirX;
+      const dy = s.dashDirY;
+      s.rollCd = ROLL_COOLDOWN;
+      clearCommittedStance(s);
+      next.mvx = dx * MOVE_SPEED;
+      next.mvy = dy * MOVE_SPEED;
     }
   }
   if (
@@ -600,6 +676,7 @@ export class SelfPredictor {
     jump: false,
     crouchHeld: false,
     pound: false,
+    roll: false,
   };
   private readonly previewStance: PredStanceState = {
     stance: STANCE_NONE,
@@ -617,6 +694,9 @@ export class SelfPredictor {
     poundUsed: false,
     poundGatherT: 0,
     recoveryT: 0,
+    rollT: 0,
+    rollCd: 0,
+    rollParryLockT: 0,
     aimX: 1,
     aimY: 0,
   };
@@ -647,16 +727,19 @@ export class SelfPredictor {
       crouchPrevHeld: false,
       crouchAimX: 0,
       crouchAimY: 0,
-      dashDirX: serverStance === STANCE_DASH ? dirX : 0,
-      dashDirY: serverStance === STANCE_DASH ? dirY : 0,
-      dashBaseDirX: serverStance === STANCE_DASH ? dirX : 0,
-      dashBaseDirY: serverStance === STANCE_DASH ? dirY : 0,
-      dashSpeed: serverStance === STANCE_DASH ? speed : 0,
+      dashDirX: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirX : 0,
+      dashDirY: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirY : 0,
+      dashBaseDirX: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirX : 0,
+      dashBaseDirY: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirY : 0,
+      dashSpeed: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? speed : 0,
       dashSteer: 0,
       distJumpCd: 0,
       poundUsed: serverStance === STANCE_POUND,
       poundGatherT: 0,
       recoveryT: 0,
+      rollT: 0,
+      rollCd: 0,
+      rollParryLockT: 0,
       aimX: speed > 1e-4 ? dirX : 1,
       aimY: speed > 1e-4 ? dirY : 0,
     };
@@ -683,9 +766,10 @@ export class SelfPredictor {
     pound = false,
     aimX?: number,
     aimY?: number,
+    roll = false,
   ): PredCmd {
     this.seq = (this.seq + 1) >>> 0;
-    return { seq: this.seq, dx, dy, jump, crouchHeld, pound, aimX, aimY };
+    return { seq: this.seq, dx, dy, jump, crouchHeld, pound, roll, aimX, aimY };
   }
 
   /** Advance one exact 50ms predicted tick with `cmd` (the scene sends the same cmd to the server). */
@@ -715,6 +799,9 @@ export class SelfPredictor {
       poundUsedBefore: this.stance.poundUsed,
       poundGatherTBefore: this.stance.poundGatherT,
       recoveryTBefore: this.stance.recoveryT,
+      rollTBefore: this.stance.rollT,
+      rollCdBefore: this.stance.rollCd,
+      rollParryLockTBefore: this.stance.rollParryLockT,
       aimXBefore: this.stance.aimX,
       aimYBefore: this.stance.aimY,
     };
@@ -759,16 +846,19 @@ export class SelfPredictor {
       crouchPrevHeld: false,
       crouchAimX: 0,
       crouchAimY: 0,
-      dashDirX: serverStance === STANCE_DASH ? dirX : 0,
-      dashDirY: serverStance === STANCE_DASH ? dirY : 0,
-      dashBaseDirX: serverStance === STANCE_DASH ? dirX : 0,
-      dashBaseDirY: serverStance === STANCE_DASH ? dirY : 0,
-      dashSpeed: serverStance === STANCE_DASH ? speed : 0,
+      dashDirX: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirX : 0,
+      dashDirY: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirY : 0,
+      dashBaseDirX: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirX : 0,
+      dashBaseDirY: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? dirY : 0,
+      dashSpeed: serverStance === STANCE_DASH || serverStance === STANCE_ROLL ? speed : 0,
       dashSteer: 0,
       distJumpCd: 0,
       poundUsed: serverStance === STANCE_POUND,
       poundGatherT: 0,
       recoveryT: 0,
+      rollT: serverStance === STANCE_ROLL ? this.stance.rollT : 0,
+      rollCd: this.stance.rollCd,
+      rollParryLockT: this.stance.rollParryLockT,
       aimX: speed > 1e-4 ? dirX : this.stance.aimX || 1,
       aimY: speed > 1e-4 ? dirY : this.stance.aimY,
     };
@@ -792,6 +882,9 @@ export class SelfPredictor {
       poundUsed: cmd.poundUsedBefore,
       poundGatherT: cmd.poundGatherTBefore,
       recoveryT: cmd.recoveryTBefore,
+      rollT: cmd.rollTBefore,
+      rollCd: cmd.rollCdBefore,
+      rollParryLockT: cmd.rollParryLockTBefore,
       aimX: cmd.aimXBefore,
       aimY: cmd.aimYBefore,
     };
@@ -813,6 +906,9 @@ export class SelfPredictor {
     out.poundUsed = source.poundUsed;
     out.poundGatherT = source.poundGatherT;
     out.recoveryT = source.recoveryT;
+    out.rollT = source.rollT;
+    out.rollCd = source.rollCd;
+    out.rollParryLockT = source.rollParryLockT;
     out.aimX = source.aimX;
     out.aimY = source.aimY;
   }
@@ -822,6 +918,7 @@ export class SelfPredictor {
     for (const cmd of this.pending) {
       cmd.crouchHeld = false;
       cmd.pound = false;
+      cmd.roll = false;
       cmd.stanceBefore = adopted.stance;
       cmd.crouchTBefore = adopted.crouchT;
       cmd.crouchPrevHeldBefore = false;
@@ -837,6 +934,9 @@ export class SelfPredictor {
       cmd.poundUsedBefore = adopted.poundUsed;
       cmd.poundGatherTBefore = adopted.poundGatherT;
       cmd.recoveryTBefore = adopted.recoveryT;
+      cmd.rollTBefore = adopted.rollT;
+      cmd.rollCdBefore = adopted.rollCd;
+      cmd.rollParryLockTBefore = adopted.rollParryLockT;
       cmd.aimXBefore = adopted.aimX;
       cmd.aimYBefore = adopted.aimY;
     }
@@ -863,7 +963,10 @@ export class SelfPredictor {
       // to resurrect it, while the position residual below keeps its ordinary glide treatment.
       this.suppressCrouchUntilRelease =
         this.stance.crouchPrevHeld || this.pending.some((cmd) => cmd.crouchHeld === true);
+      const canceledRoll = this.stance.stance === STANCE_ROLL;
       this.stance = this.stanceFromServer(server);
+      if (canceledRoll && this.stance.stance !== STANCE_ROLL)
+        this.stance.rollCd = Math.max(this.stance.rollCd, ROLL_COOLDOWN);
       this.stripPendingStanceBits(this.stance);
     }
 
@@ -987,7 +1090,7 @@ export class SelfPredictor {
     dx: number,
     dy: number,
     sinceTickSec: number,
-  ): { x: number; y: number; height: number; vh: number; stance: MoveStance } {
+  ): { x: number; y: number; height: number; vh: number; stance: MoveStance; rollT: number } {
     if (this.paused || this.stalled) {
       // Frozen (level window / down) or stalled: hold at server truth PLUS the decaying offset — the
       // pause-entry fold (amendment #14) glides the pre-freeze visual lead out under the level-up UI
@@ -998,6 +1101,7 @@ export class SelfPredictor {
         height: this.height,
         vh: this.vh,
         stance: this.stance.stance,
+        rollT: this.stance.rollT,
       };
     }
     const frac = Math.min(Math.max(sinceTickSec, 0), DT);
@@ -1037,6 +1141,7 @@ export class SelfPredictor {
       height,
       vh,
       stance: this.stance.stance,
+      rollT: this.stance.rollT,
     };
   }
 
@@ -1047,6 +1152,36 @@ export class SelfPredictor {
 
   get moveStance(): MoveStance {
     return this.stance.stance;
+  }
+
+  /** Frame-fresh local admission check used to keep dry Shift taps off the wire. */
+  get canRoll(): boolean {
+    return (
+      !this.paused &&
+      !this.stalled &&
+      this.height <= GROUND_EPSILON &&
+      this.stance.stance === STANCE_NONE &&
+      this.stance.recoveryT <= 0 &&
+      this.stance.rollCd <= 0
+    );
+  }
+
+  get rollInvulnerable(): boolean {
+    return this.stance.stance === STANCE_ROLL && this.stance.rollT <= ROLL_IFRAME_SECONDS + 1e-9;
+  }
+
+  get rollCooldownRemaining(): number {
+    return this.stance.stance === STANCE_ROLL ? ROLL_COOLDOWN : this.stance.rollCd;
+  }
+
+  get rollParryLocked(): boolean {
+    return this.stance.rollParryLockT > 0 || this.stance.stance === STANCE_ROLL;
+  }
+
+  get rollAttackLocked(): boolean {
+    return (
+      this.stance.stance === STANCE_ROLL && this.stance.rollT + 1e-9 < ROLL_ATTACK_CANCEL_SECONDS
+    );
   }
 
   /** Write the truthful local crouch target into caller-owned storage; false means no usable heading. */

@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(21);
+    expect(h.state().schemaVersion).toBe(22);
   });
 });
 
@@ -3306,7 +3306,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(22);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3676,7 +3676,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(22);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3808,7 +3808,414 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(21);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(22);
     expect(player.runCharacter).toBe("drifter");
+  });
+});
+
+// Wave 21b — the dodge roll. Every spatial fixture starts on the cleared spawn disc/all-ground map so
+// map generation cannot decide whether an authored hit connects.
+function sendRollInput(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  seq: number,
+  fields: {
+    dx?: number;
+    dy?: number;
+    roll?: boolean;
+    jump?: boolean;
+    fireHeld?: boolean;
+  } = {},
+) {
+  h.send(id, "input", {
+    seq,
+    dx: fields.dx ?? 0,
+    dy: fields.dy ?? 0,
+    jump: fields.jump ?? false,
+    crouchHeld: false,
+    pound: false,
+    roll: fields.roll ?? false,
+    fireHeld: fields.fireHeld ?? false,
+    aimX: 1,
+    aimY: 0,
+    targetX: 0,
+    targetY: 0,
+  });
+  h.tick(1);
+}
+
+function makeRollRoom(id = "roll-player") {
+  return makeJumpFeelRoom(id);
+}
+
+function beginRoll(fixture: ReturnType<typeof makeRollRoom>, seq = 1, dx = 1, dy = 0) {
+  sendRollInput(fixture.h, fixture.player.id, seq, { dx, dy, roll: true });
+  expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_ROLL);
+}
+
+function addRollMeleeEnemy(
+  fixture: ReturnType<typeof makeRollRoom>,
+  id: string,
+  offsetX = -40,
+) {
+  const enemy = addJumpDummy(
+    fixture.h,
+    id,
+    fixture.player.x + offsetX,
+    fixture.player.y,
+    1_000,
+  );
+  enemy.kind = "vault-ronin";
+  return enemy;
+}
+
+describe("GameRoom — classmerge 21b dodge roll", () => {
+  it("accepts only grounded, off-cooldown, non-juggled entry commands", () => {
+    const fixture = makeRollRoom("roll-gates");
+    fixture.player.height = 1;
+    sendRollInput(fixture.h, fixture.player.id, 1, { dx: 1, roll: true });
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+
+    fixture.player.height = 0;
+    fixture.combat.rollCd = 1;
+    sendRollInput(fixture.h, fixture.player.id, 2, { dx: 1, roll: true });
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+
+    fixture.combat.rollCd = 0;
+    fixture.combat.juggleArmed = true;
+    sendRollInput(fixture.h, fixture.player.id, 3, { dx: 1, roll: true });
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+
+    fixture.combat.juggleArmed = false;
+    beginRoll(fixture, 4);
+  });
+
+  it("derives exactly five immune ticks: tick 4 null-whiffs and tick 5 is vulnerable", () => {
+    const fixture = makeRollRoom("roll-window");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    const dodged = fixture.player.dodgedSeq;
+    for (let tick = 0; tick < 5; tick++) {
+      fixture.h.room.applyBossMelee(
+        fixture.player.x - 20,
+        fixture.player.y,
+        1,
+        0,
+        80,
+        1,
+        7,
+        0,
+      );
+      expect(fixture.player.hp).toBe(hp);
+      if (tick < 4) fixture.h.tick(1);
+    }
+    expect(fixture.combat.rollT).toBeCloseTo(enemyComboShared.ROLL_IFRAME_SECONDS, 8);
+    expect(fixture.player.dodgedSeq).toBe((dodged + 5) & 0xff);
+
+    fixture.h.tick(1);
+    fixture.h.room.applyBossMelee(
+      fixture.player.x - 20,
+      fixture.player.y,
+      1,
+      0,
+      80,
+      1,
+      7,
+      0,
+    );
+    expect(fixture.player.hp).toBe(hp - 7);
+  });
+
+  it("null-whiffs enemy contact DPS during the roll window", () => {
+    const fixture = makeRollRoom("roll-contact");
+    const contactEntry = Object.entries(ENEMY_KINDS).find(([, kind]) => kind.contactDamage > 0);
+    if (!contactEntry) throw new Error("test roster needs a contact-damage enemy");
+    const [kindId, kind] = contactEntry;
+    const enemy = addJumpDummy(
+      fixture.h,
+      "roll-contact-enemy",
+      fixture.player.x + kind.radius + enemyComboShared.PLAYER_RADIUS,
+      fixture.player.y,
+    );
+    enemy.kind = kindId;
+    fixture.combat.stance = enemyComboShared.STANCE_ROLL;
+    fixture.combat.rollT = 0;
+    fixture.combat.dashDirX = 0;
+    fixture.combat.dashDirY = 0;
+    fixture.player.moveStance = enemyComboShared.STANCE_ROLL;
+    const hp = fixture.player.hp;
+    const dodged = fixture.player.dodgedSeq;
+    fixture.h.tick(1);
+    expect(fixture.player.hp).toBe(hp);
+    expect(fixture.player.dodgedSeq).toBeGreaterThan(dodged);
+    const contacted = fixture.player.dodgedSeq;
+    enemy.x = fixture.player.x + 1_000;
+    enemy.y = fixture.player.y + 1_000;
+    fixture.h.tick(1);
+    expect(fixture.player.dodgedSeq).toBe(contacted); // no cosmetic edge without real contact
+  });
+
+  it("null-whiffs hostile projectiles without reflecting or consuming them", () => {
+    const fixture = makeRollRoom("roll-projectile");
+    beginRoll(fixture);
+    fixture.h.room.fireProjectile(
+      { x: fixture.player.x, y: fixture.player.y },
+      { x: fixture.player.x + 1, y: fixture.player.y },
+      0,
+      13,
+    );
+    const projectile = [...fixture.h.state().projectiles.values()].at(-1);
+    if (!projectile) throw new Error("expected hostile roll fixture projectile");
+    const hp = fixture.player.hp;
+    fixture.h.room.stepProjectiles(0.05);
+    expect(fixture.player.hp).toBe(hp);
+    expect(fixture.h.state().projectiles.has(projectile.id)).toBe(true);
+    expect(projectile.hostile).toBe(true);
+  });
+
+  it("null-whiffs the duelist sweep without parry knockback, chain, or riposte rewards", () => {
+    const fixture = makeRollRoom("roll-duelist");
+    beginRoll(fixture);
+    const enemy = addRollMeleeEnemy(fixture, "roll-duelist-enemy");
+    fixture.combat.parryChain = 2;
+    const hp = fixture.player.hp;
+    const enemyX = enemy.x;
+    const parried = fixture.player.parriedSeq;
+    const dodged = fixture.player.dodgedSeq;
+    fixture.h.room.duelistSwing(
+      enemy,
+      enemy.id,
+      fixture.player,
+      { range: 200, halfArc: 1.2, damage: 20 },
+      { aimX: 1, aimY: 0 },
+    );
+    expect(fixture.player.hp).toBe(hp);
+    expect(fixture.player.parriedSeq).toBe(parried);
+    expect(fixture.player.dodgedSeq).toBe((dodged + 1) & 0xff);
+    expect(fixture.combat.parryChain).toBe(2);
+    expect([fixture.player.vx, fixture.player.vy]).toEqual([0, 0]);
+    expect(enemy.x).toBe(enemyX);
+  });
+
+  it("null-whiffs boss/worm melee wedges without accepting a worm parry", () => {
+    const fixture = makeRollRoom("roll-worm-wedge");
+    beginRoll(fixture);
+    const acceptWormParry = vi.fn();
+    fixture.h.room.bossController = { acceptWormParry };
+    const hp = fixture.player.hp;
+    const parried = fixture.player.parriedSeq;
+    fixture.h.room.applyBossMelee(
+      fixture.player.x - 20,
+      fixture.player.y,
+      1,
+      0,
+      80,
+      1,
+      15,
+      200,
+    );
+    expect(fixture.player.hp).toBe(hp);
+    expect(fixture.player.parriedSeq).toBe(parried);
+    expect(acceptWormParry).not.toHaveBeenCalled();
+  });
+
+  it("null-whiffs the juggle launcher and never arms the juggle", () => {
+    const fixture = makeRollRoom("roll-launcher");
+    beginRoll(fixture);
+    const enemy = addRollMeleeEnemy(fixture, "roll-launcher-enemy");
+    const hp = fixture.player.hp;
+    const juggled = fixture.player.juggledSeq;
+    fixture.h.room.comboSwing(
+      enemy,
+      enemy.id,
+      { targetId: fixture.player.id, juggleCombo: true, comboDamage: 0 },
+      { kind: "launcher", windupTicks: 6, step: 0, damageMult: 1, launch: { vh: 480, push: 90 } },
+      { range: 200, halfArc: 1.2, damageMult: 1, knockbackMult: 1 },
+      { x: enemy.x, y: enemy.y, aimX: 1, aimY: 0 },
+    );
+    expect(fixture.player.hp).toBe(hp);
+    expect(fixture.player.juggledSeq).toBe(juggled);
+    expect(fixture.combat.juggleArmed).toBe(false);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_ROLL);
+  });
+
+  it("keeps boss AoE damage unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-aoe");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    fixture.h.room.applyBossAoE(fixture.player.x, fixture.player.y, 80, 9, 0);
+    expect(fixture.player.hp).toBe(hp - 9);
+  });
+
+  it("keeps grounded quake damage unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-quake");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    fixture.h.room.applyBossQuake(fixture.player.x, fixture.player.y, 80, 9, 0);
+    expect(fixture.player.hp).toBe(hp - 9);
+  });
+
+  it("keeps beam-lane damage unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-beam");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    fixture.h.room.damageBeamRect(
+      fixture.player.x - 20,
+      fixture.player.y,
+      40,
+      20,
+      0,
+      9,
+      0,
+    );
+    expect(fixture.player.hp).toBe(hp - 9);
+  });
+
+  it("keeps ring-band damage unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-ring");
+    beginRoll(fixture);
+    const hp = fixture.player.hp;
+    fixture.h.room.damageRingBand(
+      fixture.player.x - 50,
+      fixture.player.y,
+      50,
+      2,
+      0,
+      0,
+      9,
+    );
+    expect(fixture.player.hp).toBe(hp - 9);
+  });
+
+  it("keeps puddle damage unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-puddle");
+    beginRoll(fixture);
+    const zone = new ZoneState();
+    zone.id = "roll-puddle-zone";
+    zone.x = fixture.player.x;
+    zone.y = fixture.player.y;
+    zone.radius = ZONE_RADIUS;
+    fixture.h.state().zones.set(zone.id, zone);
+    fixture.h.room.zoneMeta.set(zone.id, ZONE_TTL);
+    const hp = fixture.player.hp;
+    fixture.h.room.stepZones(0.05);
+    expect(fixture.player.hp).toBeLessThan(hp);
+  });
+
+  it("keeps pit falls unchanged and force-cancels a rolling player", () => {
+    const fixture = makeRollRoom("roll-pit");
+    beginRoll(fixture);
+    const map = fixture.h.room.map;
+    const col = Math.floor(fixture.player.x / map.tileSize);
+    const row = Math.floor(fixture.player.y / map.tileSize);
+    for (let y = row - 2; y <= row + 2; y++)
+      for (let x = col - 1; x <= col + 4; x++) map.tiles[y * map.cols + x] = TILE_PIT;
+    const hp = fixture.player.hp;
+    const fell = fixture.player.fellSeq;
+    fixture.h.tick(1);
+    expect(fixture.player.fellSeq).toBe((fell + 1) & 0xff);
+    expect(fixture.player.hp).toBeLessThan(hp);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+  });
+
+  it("keeps air-keep damage and juggle writes unchanged during roll i-frames", () => {
+    const fixture = makeRollRoom("roll-airkeep");
+    beginRoll(fixture);
+    const enemy = addRollMeleeEnemy(fixture, "roll-airkeep-enemy");
+    const hp = fixture.player.hp;
+    const juggled = fixture.player.juggledSeq;
+    fixture.h.room.comboSwing(
+      enemy,
+      enemy.id,
+      { targetId: fixture.player.id, juggleCombo: true, comboDamage: 0, juggleHits: 0 },
+      { kind: "airkeep", windupTicks: 6, step: 1, damageMult: 1, airkeep: { vh: 0, push: 0 } },
+      { range: 200, halfArc: 1.2, damageMult: 1, knockbackMult: 1 },
+      { x: enemy.x, y: enemy.y, aimX: 1, aimY: 0 },
+    );
+    expect(fixture.player.hp).toBeLessThan(hp);
+    expect(fixture.player.juggledSeq).toBe((juggled + 1) & 0xff);
+  });
+
+  it("freezes direction for all eight curve samples and travels exactly 188 px", () => {
+    const fixture = makeRollRoom("roll-direction");
+    const startX = fixture.player.x;
+    const startY = fixture.player.y;
+    beginRoll(fixture);
+    for (let seq = 2; seq <= 8; seq++) sendRollInput(fixture.h, fixture.player.id, seq, { dy: 1 });
+    expect(fixture.player.x - startX).toBeCloseTo(enemyComboShared.ROLL_DISTANCE, 6);
+    expect(fixture.player.y).toBeCloseTo(startY, 6);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+  });
+
+  it("starts the three-second cooldown on roll end and rejects rolls until it drains", () => {
+    const fixture = makeRollRoom("roll-cooldown");
+    beginRoll(fixture);
+    fixture.h.tick(7);
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(fixture.combat.rollCd).toBeCloseTo(enemyComboShared.ROLL_COOLDOWN, 8);
+
+    sendRollInput(fixture.h, fixture.player.id, 2, { dx: 1, roll: true });
+    expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    fixture.h.tick(60);
+    beginRoll(fixture, 3);
+  });
+
+  it("enforces the attack, parry, and buffered-jump channel split on exact ticks", () => {
+    const attack = makeRollRoom("roll-attack-split");
+    beginRoll(attack);
+    attack.h.send(attack.player.id, "attack", { aimX: 1, aimY: 0 });
+    expect(attack.combat.stance).toBe(enemyComboShared.STANCE_ROLL);
+    expect(attack.combat.attackBuffer).toBe(0);
+    attack.h.tick(5);
+    expect(attack.combat.rollT).toBeCloseTo(enemyComboShared.ROLL_ATTACK_CANCEL_SECONDS, 8);
+    attack.h.send(attack.player.id, "attack", { aimX: 1, aimY: 0 });
+    expect(attack.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(attack.combat.attackBuffer).toBeGreaterThan(0);
+
+    const fromParry = makeRollRoom("parry-roll-gate");
+    fromParry.combat.invuln = 0.1;
+    sendRollInput(fromParry.h, fromParry.player.id, 1, { dx: 1, roll: true });
+    expect(fromParry.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+
+    const parry = makeRollRoom("roll-parry-lock");
+    beginRoll(parry);
+    for (let tick = 1; tick <= 9; tick++) {
+      parry.h.send(parry.player.id, "parry");
+      parry.h.tick(1);
+      expect(parry.combat.invuln).toBe(0);
+    }
+    parry.h.send(parry.player.id, "parry");
+    parry.h.tick(1);
+    expect(parry.combat.invuln).toBeGreaterThan(0); // earliest acceptance is consume + 10
+
+    const jump = makeRollRoom("roll-jump-buffer");
+    beginRoll(jump);
+    jump.h.tick(6);
+    sendRollInput(jump.h, jump.player.id, 2, { jump: true });
+    expect(jump.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(jump.player.height).toBeGreaterThan(0);
+  });
+
+  it("bumps stanceSeq on forced roll cancellation but not natural recovery", () => {
+    const forced = makeRollRoom("roll-forced-cancel");
+    beginRoll(forced);
+    const forcedSeq = forced.player.stanceSeq;
+    forced.h.room.zeroMoveVel(forced.player.id);
+    expect(forced.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(forced.player.stanceSeq).toBe((forcedSeq + 1) & 0xff);
+    expect(forced.combat.rollCd).toBe(enemyComboShared.ROLL_COOLDOWN);
+
+    const natural = makeRollRoom("roll-natural-end");
+    beginRoll(natural);
+    const naturalSeq = natural.player.stanceSeq;
+    natural.h.tick(7);
+    expect(natural.combat.stance).toBe(enemyComboShared.STANCE_NONE);
+    expect(natural.player.stanceSeq).toBe(naturalSeq);
+  });
+
+  it("ships schema 22 with the appended uint8 dodge edge", () => {
+    const player = new enemyComboShared.PlayerState();
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(22);
+    expect(player.dodgedSeq).toBe(0);
   });
 });

@@ -399,3 +399,102 @@ describe("jump-feel input and indicator helpers", () => {
     expect(out.clamped).toBe(true);
   });
 });
+
+const rollPredictionShared = await import("@dd/shared");
+
+describe("SelfPredictor — classmerge 21b roll replay", () => {
+  it("replays the frozen eight-sample curve deterministically to exactly 188px", () => {
+    const initial: ServerView = {
+      x: 1000,
+      y: 1000,
+      mvx: 0,
+      mvy: 0,
+      vx: 0,
+      vy: 0,
+      height: 0,
+      vh: 0,
+      ackSeq: 0,
+      teleportSeq: 0,
+      moveStance: rollPredictionShared.STANCE_NONE,
+      stanceSeq: 0,
+      alive: true,
+      frozen: false,
+    };
+    const a = new SelfPredictor(initial);
+    const b = new SelfPredictor(initial);
+    for (let tick = 0; tick < 8; tick++) {
+      const roll = tick === 0;
+      const aCmd = a.mintCmd(roll ? 1 : 0, roll ? 0 : 1, false, false, false, 1, 0, roll);
+      const bCmd = b.mintCmd(roll ? 1 : 0, roll ? 0 : 1, false, false, false, 1, 0, roll);
+      a.tick(aCmd);
+      b.tick(bCmd);
+    }
+    const beforeReplay = a.renderPos(0, 1, 0);
+    expect(beforeReplay.x - initial.x).toBeCloseTo(rollPredictionShared.ROLL_DISTANCE, 9);
+    expect(beforeReplay.y).toBeCloseTo(initial.y, 9);
+    expect(a.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    expect(b.renderPos(0, 1, 0)).toEqual(beforeReplay);
+
+    // A delayed pre-roll patch rebases at ack 0; all eight pending commands must reproduce the same state.
+    a.reconcile(initial);
+    const replayed = a.renderPos(0, 1, 0);
+    expect(replayed.x).toBeCloseTo(beforeReplay.x, 9);
+    expect(replayed.y).toBeCloseTo(beforeReplay.y, 9);
+    expect(a.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+  });
+
+  it("exposes the exact five-tick visual window and the vulnerable tail", () => {
+    const server = new MockServer();
+    const pred = new SelfPredictor({
+      ...server.view(),
+      moveStance: rollPredictionShared.STANCE_NONE,
+      stanceSeq: 0,
+    });
+    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true));
+    expect(pred.rollInvulnerable).toBe(true); // consume tick 0
+    for (let tick = 1; tick < 5; tick++) {
+      pred.tick(pred.mintCmd(0, 1, false, false, false, 1, 0));
+      expect(pred.rollInvulnerable).toBe(true);
+    }
+    pred.tick(pred.mintCmd(0, 1, false, false, false, 1, 0));
+    expect(pred.rollInvulnerable).toBe(false); // tick 5: ink/vulnerability returns
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_ROLL);
+    for (let tick = 6; tick <= 9; tick++) {
+      pred.tick(pred.mintCmd(0, 1, false, false, false, 1, 0));
+      expect(pred.rollParryLocked).toBe(true);
+    }
+    pred.tick(pred.mintCmd(0, 1, false, false, false, 1, 0));
+    expect(pred.rollParryLocked).toBe(false); // consume + 10: the vulnerable seam has elapsed
+  });
+
+  it("adopts a stanceSeq forced cancel, strips pending roll causes, and preserves glide correction", () => {
+    const server = new MockServer();
+    const initial = {
+      ...server.view(),
+      moveStance: rollPredictionShared.STANCE_NONE,
+      stanceSeq: 0,
+    };
+    const pred = new SelfPredictor(initial);
+    pred.tick(pred.mintCmd(1, 0, false, false, false, 1, 0, true));
+    pred.tick(pred.mintCmd(0, 1, false, false, false, 1, 0));
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_ROLL);
+    const before = pred.renderPos(0, 1, 0);
+
+    const forced = {
+      ...initial,
+      x: initial.x - 8,
+      moveStance: rollPredictionShared.STANCE_NONE,
+      stanceSeq: 1,
+    };
+    pred.reconcile(forced);
+    expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    expect(pred.stats.errPx).toBeGreaterThan(0);
+    expect(Math.abs(pred.renderPos(0, 1, 0).x - before.x)).toBeLessThan(1);
+    expect(pred.canRoll).toBe(false);
+
+    for (let patch = 0; patch < 3; patch++) {
+      pred.reconcile(forced);
+      expect(pred.moveStance).toBe(rollPredictionShared.STANCE_NONE);
+    }
+  });
+});

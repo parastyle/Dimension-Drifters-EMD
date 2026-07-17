@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 21; // class-merge run identity appended (PlayerState.runCharacter)
+export const SCHEMA_VERSION = 22 as const; // dodge-roll null-whiff edge appended (PlayerState.dodgedSeq)
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -416,11 +416,13 @@ export const STANCE_NONE = 0 as const;
 export const STANCE_CROUCH = 1 as const;
 export const STANCE_DASH = 2 as const;
 export const STANCE_POUND = 3 as const;
+export const STANCE_ROLL = 4 as const;
 export type MoveStance =
   | typeof STANCE_NONE
   | typeof STANCE_CROUCH
   | typeof STANCE_DASH
-  | typeof STANCE_POUND;
+  | typeof STANCE_POUND
+  | typeof STANCE_ROLL;
 /** Normal vertical phases are derived, never stored or serialized as part of the committed stance byte. */
 export const VERTICAL_PHASE_GROUNDED = "grounded" as const;
 export const VERTICAL_PHASE_RISING = "rising" as const;
@@ -441,8 +443,7 @@ export const DIST_JUMP_VERTICAL_VELOCITY = 380; // px/s; ≈59px apex under the 
 export const DIST_JUMP_AIRTIME = 0.6;
 export const DIST_JUMP_REACH = DIST_JUMP_SPEED * DIST_JUMP_AIRTIME; // 372px, clears a 320px gap
 export const DIST_JUMP_STEER_RADIANS_PER_SECOND = Math.PI / 4; // 45°/s
-export const DIST_JUMP_MAX_STEER_RADIANS =
-  DIST_JUMP_STEER_RADIANS_PER_SECOND * DIST_JUMP_AIRTIME; // ±27° over the flight
+export const DIST_JUMP_MAX_STEER_RADIANS = DIST_JUMP_STEER_RADIANS_PER_SECOND * DIST_JUMP_AIRTIME; // ±27° over the flight
 export const DIST_JUMP_COOLDOWN = 2.5;
 export const DIST_JUMP_LANDING_SPEED_MULT = 0.6;
 /** Even ignoring its cooldown, hold + commit + flight averages below ordinary walking speed. */
@@ -461,6 +462,19 @@ export const POUND_KNOCKBACK_SPEED = 260;
 export const POUND_STAGGER_SECONDS = 0.35;
 export const POUND_RECOVERY_SECONDS = 0.25;
 export const POUND_JUMP_COOLDOWN = 0.9;
+
+/** Wave 21b dodge roll: eight exact 20 Hz samples total 188 px. The first five consumed-command
+ * ticks are direct-contact i-frames; the final three remain a vulnerable moving recovery. Roll immunity
+ * is derived from STANCE_ROLL + rollT and must never be copied into the parry `invuln` channel. */
+export const ROLL_TICK_SECONDS = 0.05 as const;
+export const ROLL_DURATION = 0.4 as const;
+export const ROLL_DISTANCE = 188 as const;
+export const ROLL_SPEED_CURVE = [680, 640, 580, 500, 420, 340, 300, 300] as const;
+export const ROLL_IFRAME_TICKS = 5 as const;
+export const ROLL_IFRAME_SECONDS = 0.25 as const;
+export const ROLL_ATTACK_CANCEL_SECONDS = 0.3 as const;
+export const ROLL_PARRY_LOCK_SECONDS = 0.5 as const;
+export const ROLL_COOLDOWN = 3 as const;
 
 export const LANDING_TIER_SOFT = 1 as const;
 export const LANDING_TIER_SOLID = 2 as const;

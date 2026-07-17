@@ -163,6 +163,7 @@ export class AudioBus {
           "player-jump",
           "player-land",
           "player-dodge",
+          "player-roll-whoosh",
           "boss-slam-generic",
         ]);
       } catch {
@@ -1034,6 +1035,30 @@ export class AudioBus {
           priority: "low",
         });
         this.noise(0.06, { gain: 0.035 + 0.04 * amt, type: "highpass", freq: 1300, x });
+        break;
+      case "roll":
+        if (this.throttled(amt >= 0.75 ? "rollSelf" : "rollRemote", 120)) return;
+        if (
+          sampleBank.playSample("player-roll-whoosh", {
+            volume: 0.24 + 0.42 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + 0.07 * amt,
+            priority: amt >= 0.75 ? "normal" : "low",
+          })
+        )
+          return;
+        this.noise(0.13, { gain: 0.07 + 0.09 * amt, type: "highpass", freq: 900, x });
+        this.tone(260, 0.1, { type: "triangle", gain: 0.045 + 0.04 * amt, sweepTo: 150, x });
+        break;
+      case "roll:dry":
+        if (this.throttled("rollDry", 90)) return;
+        this.noise(0.035, { gain: 0.035 * amt, type: "lowpass", freq: 520, x });
+        this.tone(155, 0.04, { type: "triangle", gain: 0.045 * amt, sweepTo: 120, x });
+        break;
+      case "roll:whiff":
+        if (this.throttled("rollWhiff", 55)) return;
+        this.noise(0.045, { gain: 0.055 * amt, type: "highpass", freq: 2_100, x });
+        this.tone(720, 0.025, { type: "triangle", gain: 0.025 * amt, sweepTo: 560, x });
         break;
       case "land":
         if (this.throttled(amt >= 0.75 ? "landHeavy" : "land", 55)) return;

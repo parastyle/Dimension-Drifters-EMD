@@ -54,10 +54,13 @@ import {
   meleeReach,
   PLAYER_RADIUS,
   PROCEDURAL_JIGGLE,
+  ROLL_DURATION,
+  ROLL_IFRAME_SECONDS,
   STANCE_CROUCH,
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
+  STANCE_ROLL,
   type SwingDescriptor,
   swingDescriptorFor,
   swingDescriptorWithComboStep,
@@ -860,6 +863,8 @@ export interface RigAnim {
   /** Jump-feel pose channels. Self supplies predictor truth; remotes supply synced height/vh/stance. */
   jumpVh?: number;
   moveStance?: MoveStance;
+  /** Predicted roll clock for self. Remotes quantize their stance edge to the same 20 Hz ticks. */
+  rollT?: number;
   reducedMotion?: boolean;
 }
 
@@ -916,6 +921,9 @@ export class SpriteRig {
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
   private baseScale = 1;
   private readonly body: Phaser.GameObjects.Image;
+  /** Two retained, body-card-only roll echoes; their slots are recycled for every roll. */
+  private readonly rollAfterimageA: Phaser.GameObjects.Image;
+  private readonly rollAfterimageB: Phaser.GameObjects.Image;
   private readonly hands: RigHand[] = [];
   private readonly feet: RigFoot[] = [];
   private readonly parts: Phaser.GameObjects.Image[] = [];
@@ -949,6 +957,18 @@ export class SpriteRig {
   private stanceStartedMs = -1e9;
   private landedFromStance: MoveStance = STANCE_NONE;
   private landedAtMs = -1e9;
+  private rollRenderT = 0;
+  private rollReverseFace = false;
+  private rollEchoSampling = false;
+  private rollEchoSampleAtMs = -1e9;
+  private rollEchoSampleX = 0;
+  private rollEchoSampleY = 0;
+  private rollEchoAX = 0;
+  private rollEchoAY = 0;
+  private rollEchoAAtMs = -1e9;
+  private rollEchoBX = 0;
+  private rollEchoBY = 0;
+  private rollEchoBAtMs = -1e9;
   /** §7 v0.111 TURN-COMMIT ("pull the reins") — the directional WEIGHT lives in the ANIMATION, not the
    *  trajectory. `heading` tracks the smoothed run direction; when it swings hard while moving, `turnCommit`
    *  fires a one-time decaying punch toward the new heading (`turnDir`) — the body plants + leans + the hands
@@ -1217,7 +1237,26 @@ export class SpriteRig {
     if (!bodyImg) throw new Error(`SpriteRig: "${spriteId}" has no body part`);
     this.body = bodyImg;
 
+    const bodyFrame = this.body.frame.name;
+    this.rollAfterimageA = scene.add
+      .image(this.body.x, this.body.y, this.body.texture.key, bodyFrame)
+      .setOrigin(0.5)
+      .setScale(this.scale)
+      .setTint(0xe8dfce)
+      .setTintMode(Phaser.TintModes.FILL)
+      .setAlpha(0)
+      .setVisible(false);
+    this.rollAfterimageB = scene.add
+      .image(this.body.x, this.body.y, this.body.texture.key, bodyFrame)
+      .setOrigin(0.5)
+      .setScale(this.scale)
+      .setTint(0xd7cdbb)
+      .setTintMode(Phaser.TintModes.FILL)
+      .setAlpha(0)
+      .setVisible(false);
+
     const order: Phaser.GameObjects.GameObject[] = [];
+    order.push(this.rollAfterimageB, this.rollAfterimageA);
     for (const f of this.feet) order.push(f.img);
     for (const h of this.hands) if (!h.front) order.push(h.img);
     order.push(this.body);
@@ -2300,6 +2339,84 @@ export class SpriteRig {
       else if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
       else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     }
+  }
+
+  /** The pale unprinted face is the roll's exact i-frame tell; it never borrows parry's white flash. */
+  private applyRollInkTell(on: boolean): void {
+    if (!on && !this.rollReverseFace) return;
+    this.rollReverseFace = on;
+    if (on) {
+      for (const part of this.parts) part.setTint(0xeee8dc).setTintMode(Phaser.TintModes.FILL);
+      for (const weapon of this.weapons)
+        weapon.img.setTint(0xd8d0c1).setTintMode(Phaser.TintModes.FILL);
+      return;
+    }
+    this.restTint();
+    for (const weapon of this.weapons)
+      weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+  }
+
+  /** Sample two world-space card echoes at 60 ms spacing, then fade their retained images over 120 ms. */
+  private updateRollAfterimages(timeMs: number, reducedMotion: boolean): void {
+    const sampling =
+      this.moveStance === STANCE_ROLL && this.rollRenderT <= ROLL_IFRAME_SECONDS && !reducedMotion;
+    if (sampling && !this.rollEchoSampling) {
+      this.rollEchoSampling = true;
+      this.rollEchoSampleAtMs = timeMs;
+      this.rollEchoSampleX = this.root.x;
+      this.rollEchoSampleY = this.root.y;
+      this.rollEchoAAtMs = -1e9;
+      this.rollEchoBAtMs = -1e9;
+    } else if (!sampling) {
+      this.rollEchoSampling = false;
+    }
+    if (sampling && timeMs - this.rollEchoSampleAtMs >= 60) {
+      this.rollEchoBX = this.rollEchoAX;
+      this.rollEchoBY = this.rollEchoAY;
+      this.rollEchoBAtMs = this.rollEchoAAtMs;
+      this.rollEchoAX = this.rollEchoSampleX;
+      this.rollEchoAY = this.rollEchoSampleY;
+      this.rollEchoAAtMs = timeMs;
+      this.rollEchoSampleX = this.root.x;
+      this.rollEchoSampleY = this.root.y;
+      this.rollEchoSampleAtMs = timeMs;
+    }
+    this.writeRollAfterimage(
+      this.rollAfterimageA,
+      this.rollEchoAX,
+      this.rollEchoAY,
+      timeMs - this.rollEchoAAtMs,
+      0.28,
+      reducedMotion,
+    );
+    this.writeRollAfterimage(
+      this.rollAfterimageB,
+      this.rollEchoBX,
+      this.rollEchoBY,
+      timeMs - this.rollEchoBAtMs,
+      0.2,
+      reducedMotion,
+    );
+  }
+
+  private writeRollAfterimage(
+    image: Phaser.GameObjects.Image,
+    worldX: number,
+    worldY: number,
+    ageMs: number,
+    maxAlpha: number,
+    reducedMotion: boolean,
+  ): void {
+    if (reducedMotion || ageMs < 0 || ageMs >= 120) {
+      image.setVisible(false);
+      return;
+    }
+    image
+      .setVisible(true)
+      .setAlpha(maxAlpha * (1 - ageMs / 120))
+      .setPosition(worldX - this.root.x + this.body.x, worldY - this.root.y + this.body.y)
+      .setScale(Math.abs(this.body.scaleX), this.body.scaleY)
+      .setRotation(this.body.rotation);
   }
 
   private clearMeleeTellState(): void {
@@ -4039,6 +4156,11 @@ export class SpriteRig {
     const vh = anim.jumpVh ?? 0;
     const reduced = anim.reducedMotion === true;
     const stanceElapsed = Math.max(0, timeMs - this.stanceStartedMs);
+    this.rollRenderT =
+      this.moveStance === STANCE_ROLL
+        ? (anim.rollT ??
+          Math.min(ROLL_DURATION, (Math.floor(stanceElapsed / TICK_MS) + 1) * (TICK_MS / 1000)))
+        : 0;
 
     if (this.moveStance === STANCE_CROUCH) {
       let sy: number;
@@ -4074,6 +4196,44 @@ export class SpriteRig {
         for (const hand of this.hands) hand.img.y -= 8;
         this.attackShadowAlpha *= 1.14;
       }
+    } else if (this.moveStance === STANCE_ROLL) {
+      const rollT = this.rollRenderT;
+      const heading = anim.moveX < -0.05 ? -1 : 1;
+      let paperTurn = 1;
+      if (rollT <= 0.05) {
+        const crease = clamp01(rollT / 0.05);
+        const squash = reduced ? 0.78 : 0.62;
+        this.body.scaleY *= 1 + (squash - 1) * crease;
+        this.body.scaleX *= 1 + (1 - squash) * 0.42 * crease;
+        this.body.rotation += heading * 0.32 * crease;
+        this.body.y += TARGET_BODY_H * 0.12 * crease;
+      } else if (rollT <= ROLL_IFRAME_SECONDS) {
+        const turn = clamp01((rollT - 0.05) / (ROLL_IFRAME_SECONDS - 0.05));
+        paperTurn = reduced
+          ? signedClamp(Math.cos(Math.PI * 2 * turn), 0.35)
+          : signedClamp(Math.cos(Math.PI * 2 * turn), 0.1);
+        this.body.rotation += heading * (0.3 - 0.16 * Math.sin(Math.PI * turn));
+        this.body.scaleY *= 0.88 + Math.abs(paperTurn) * 0.12;
+      } else {
+        const plant = clamp01(
+          (rollT - ROLL_IFRAME_SECONDS) / (ROLL_DURATION - ROLL_IFRAME_SECONDS),
+        );
+        const unfold = 1 + 0.08 * Math.sin(Math.PI * plant) * (1 - plant * 0.35);
+        this.body.scaleX *= unfold;
+        this.body.scaleY *= 2 - unfold;
+        this.body.rotation += heading * 0.22 * (1 - smoothstep01(plant));
+      }
+      if (paperTurn !== 1) {
+        for (const part of this.parts) part.scaleX *= paperTurn;
+        for (const weapon of this.weapons) weapon.img.scaleX *= paperTurn;
+      }
+      for (const weapon of this.weapons) {
+        weapon.img.scaleY *= 0.24;
+        weapon.img.x += (this.body.x - weapon.img.x) * 0.52;
+        weapon.img.y += (this.body.y - weapon.img.y) * 0.52;
+      }
+      this.attackShadowScaleX *= 1.18;
+      this.attackShadowScaleY *= 0.86;
     } else if (this.moveStance === STANCE_DASH) {
       const launch = clamp01(stanceElapsed / 83);
       const extreme = reduced ? 1.12 : 1.3;
@@ -4124,6 +4284,11 @@ export class SpriteRig {
       this.body.rotation -= Math.max(-0.12, Math.min(0.12, anim.moveX * 0.12)) * q;
       this.body.scaleY *= 1 - 0.12 * q;
       this.body.scaleX *= 1 + 0.07 * q;
+    } else if (this.landedFromStance === STANCE_ROLL && sinceLanding >= 0 && sinceLanding < 180) {
+      const q = 1 - smoothstep01(sinceLanding / 180);
+      this.body.rotation -= Math.max(-0.15, Math.min(0.15, anim.moveX * 0.15)) * q;
+      this.body.scaleY *= 1 - 0.1 * q;
+      this.body.scaleX *= 1 + 0.08 * q;
     }
 
     // Hands moved after the ordinary weapon mount pass; re-seat held art onto those final grip points.
@@ -4164,8 +4329,15 @@ export class SpriteRig {
     // the final art lift/shadow pass remains last. With the rollback flag off the arithmetic/order of writes
     // is unchanged because no earlier target reads hopPx or landSquash.
     const nextStance = anim.moveStance ?? STANCE_NONE;
+    let rollRecovered = false;
     if (nextStance !== this.moveStance) {
-      if (this.moveStance !== STANCE_NONE) this.airStance = this.moveStance;
+      if (this.moveStance === STANCE_ROLL) {
+        rollRecovered = true;
+        this.landedFromStance = STANCE_ROLL;
+        this.landedAtMs = timeMs;
+      }
+      if (this.moveStance !== STANCE_NONE && this.moveStance !== STANCE_ROLL)
+        this.airStance = this.moveStance;
       this.moveStance = nextStance;
       this.stanceStartedMs = timeMs;
     }
@@ -4178,7 +4350,8 @@ export class SpriteRig {
     this.peakHopPx = Math.max(this.peakHopPx, this.hopTarget, this.hopPx);
     if ((anim.jumpVh ?? 0) < 0)
       this.maxFallSpeed = Math.max(this.maxFallSpeed, -(anim.jumpVh ?? 0));
-    if (nextStance !== STANCE_NONE && this.hopTarget > GROUND_EPSILON) this.airStance = nextStance;
+    if (nextStance !== STANCE_NONE && nextStance !== STANCE_ROLL && this.hopTarget > GROUND_EPSILON)
+      this.airStance = nextStance;
 
     const prevHop = this.hopPx;
     this.hopPx += (this.hopTarget - this.hopPx) * (1 - Math.exp((-22 * dtMs) / 1000));
@@ -5277,6 +5450,7 @@ export class SpriteRig {
             impulseY += this.turnDirY * JIGGLE_TURN_HAND_KICK;
           }
           if (landed) impulseY += JIGGLE_LAND_HAND_KICK * this.landingKickScale;
+          if (rollRecovered) impulseY += JIGGLE_LAND_HAND_KICK * 1.4;
           stepJigglePart(
             hnd,
             hx,
@@ -5652,10 +5826,15 @@ export class SpriteRig {
     this.syncTomeVisual(sceneNow, outsidePaperView);
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);
+    this.applyRollInkTell(
+      this.moveStance === STANCE_ROLL && this.rollRenderT <= ROLL_IFRAME_SECONDS,
+    );
+    this.updateRollAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
     let shrink = Math.max(0.34, 1 - this.hopPx / 560);
     if (this.moveStance === STANCE_DASH) shrink = Math.max(0.85, shrink);
+    if (this.moveStance === STANCE_ROLL) shrink = Math.max(0.88, shrink) * 1.08;
     if (this.moveStance === STANCE_CROUCH) shrink *= 1.08;
     const shadowOpen = spawnActive ? smoothstep01(spawnElapsedMs / 170) : 1;
     const shadowSpawnX = 0.45 + 0.55 * shadowOpen;

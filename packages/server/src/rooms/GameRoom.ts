@@ -230,6 +230,12 @@ import {
   rollAffix,
   rollDropWeapon,
   rollRarity,
+  rollSpeedAt,
+  ROLL_ATTACK_CANCEL_SECONDS,
+  ROLL_COOLDOWN,
+  ROLL_DURATION,
+  ROLL_IFRAME_SECONDS,
+  ROLL_PARRY_LOCK_SECONDS,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
   SHIFTER_FIRST_SECONDS,
@@ -261,6 +267,7 @@ import {
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
+  STANCE_ROLL,
   type MoveStance,
   TelegraphState,
   TgShape,
@@ -362,6 +369,7 @@ interface InputCmd {
   jump: boolean;
   crouchHeld: boolean;
   pound: boolean;
+  roll: boolean;
   fireHeld: boolean;
   aimX: number;
   aimY: number;
@@ -458,6 +466,12 @@ interface CombatState {
   poundGatherT: number;
   poundTriggerHeight: number;
   recoveryT: number;
+  /** Seconds elapsed in the active grounded roll; its i-frame predicate derives from stance + this value. */
+  rollT: number;
+  /** Cooldown starts when the roll stance ends, including an authoritative forced cancel. */
+  rollCd: number;
+  /** Anti-stacking seam: parry cannot begin before consume+10 ticks. */
+  rollParryLockT: number;
   lastLandingTier: LandingThumpTier;
   lastLandingSpeed: number;
   /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
@@ -882,6 +896,7 @@ export class GameRoom extends Room<ArenaState> {
         jump?: boolean;
         crouchHeld?: boolean;
         pound?: boolean;
+        roll?: boolean;
         fireHeld?: boolean;
         aimX?: number;
         aimY?: number;
@@ -909,6 +924,7 @@ export class GameRoom extends Room<ArenaState> {
           jump: message?.jump === true,
           crouchHeld: message?.crouchHeld === true,
           pound: message?.pound === true,
+          roll: message?.roll === true,
           fireHeld: message?.fireHeld === true,
           aimX: Number.isFinite(message?.aimX) ? (message.aimX as number) : rec.held.aimX,
           aimY: Number.isFinite(message?.aimY) ? (message.aimY as number) : rec.held.aimY,
@@ -935,6 +951,10 @@ export class GameRoom extends Room<ArenaState> {
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
         if (!c) return;
+        if (player && c.stance === STANCE_ROLL) {
+          if (c.rollT + 1e-9 < ROLL_ATTACK_CANCEL_SECONDS) return;
+          this.cancelMoveStance(player, c, true);
+        }
         if (player && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
         // §7 v0.105 de-clunk: QUEUE the attack rather than latch a boolean — the tick fires it the instant
         // the cooldown drains, so a press that lands a tick early (off-grid melee cadences, held trigger)
@@ -976,6 +996,10 @@ export class GameRoom extends Room<ArenaState> {
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || !c) return;
       if (c.recoveryT > 0) return; // pound recovery is explicitly a no-parry window
+      if (c.rollParryLockT > 0 || c.stance === STANCE_ROLL) {
+        c.parryBuffer = PARRY_BUFFER_SECONDS;
+        return;
+      }
       // §44 (Sol audit): NO parry inside the level-up window — the tick path already defines acting as
       // alive AND not in the window, but this immediate path skipped that gate, so a frozen-invincible
       // player could scan/knock the whole horde risk-free every cooldown. Queue it instead: the tick
@@ -1439,6 +1463,9 @@ export class GameRoom extends Room<ArenaState> {
       c.poundUsed = false;
       c.poundGatherT = 0;
       c.recoveryT = 0;
+      c.rollT = 0;
+      c.rollCd = 0;
+      c.rollParryLockT = 0;
       const player = this.state.players.get(id);
       if (player) this.cancelMoveStance(player, c, true);
     }
@@ -2095,6 +2122,9 @@ export class GameRoom extends Room<ArenaState> {
         c.distJumpCd = 0;
         c.poundUsed = false;
         c.recoveryT = 0;
+        c.rollT = 0;
+        c.rollCd = 0;
+        c.rollParryLockT = 0;
       }
       this.zeroMoveVel(id); // §7 fresh run, fresh momentum
     });
@@ -2299,6 +2329,7 @@ export class GameRoom extends Room<ArenaState> {
         jump: false,
         crouchHeld: false,
         pound: false,
+        roll: false,
         fireHeld: false,
         aimX: 1,
         aimY: 0,
@@ -2347,6 +2378,9 @@ export class GameRoom extends Room<ArenaState> {
       poundGatherT: 0,
       poundTriggerHeight: 0,
       recoveryT: 0,
+      rollT: 0,
+      rollCd: 0,
+      rollParryLockT: 0,
       lastLandingTier: LANDING_TIER_SOFT,
       lastLandingSpeed: 0,
       lastGroundX: player.x,
@@ -2406,6 +2440,16 @@ export class GameRoom extends Room<ArenaState> {
    *  signature augment pick is owed — both freeze + immune the player so they choose safely. */
   private inLevelWindow(player: PlayerState): boolean {
     return player.flexPending > 0 || player.sigPending > 0;
+  }
+
+  /** Direct-contact dodge predicate. It is deliberately separate from rewarded parry `invuln`. Because
+   * rollT advances after movement and before damage, <=0.25 covers consume ticks 0..4 exactly. */
+  private rollInvulnerable(c: CombatState): boolean {
+    return c.stance === STANCE_ROLL && c.rollT <= ROLL_IFRAME_SECONDS + 1e-9;
+  }
+
+  private noteRollDodge(player: PlayerState): void {
+    player.dodgedSeq = (player.dodgedSeq + 1) & 0xff;
   }
 
   /** One authoritative player-damage seam. Bulwark spends its successful-parry shield before HP. */
@@ -2468,6 +2512,54 @@ export class GameRoom extends Room<ArenaState> {
       }
     }
 
+    // Shift is an unbuffered command edge. Authority re-checks every gate on the consumed tick, then
+    // freezes the heading from held movement -> current steering -> aim. The roll never writes invuln.
+    if (
+      cmd.roll &&
+      player.alive &&
+      !this.inLevelWindow(player) &&
+      player.height <= GROUND_EPSILON &&
+      c.stance === STANCE_NONE &&
+      c.recoveryT <= 0 &&
+      c.rollCd <= 0 &&
+      !c.juggleArmed &&
+      c.invuln <= 0
+    ) {
+      let dx = cmd.dx;
+      let dy = cmd.dy;
+      let len = Math.hypot(dx, dy);
+      if (len <= 1e-4) {
+        dx = input.mvx;
+        dy = input.mvy;
+        len = Math.hypot(dx, dy);
+      }
+      if (len <= 1e-4) {
+        dx = c.aimX;
+        dy = c.aimY;
+        len = Math.hypot(dx, dy);
+      }
+      if (len > 1e-4) {
+        c.dashDirX = dx / len;
+        c.dashDirY = dy / len;
+        c.dashBaseDirX = c.dashDirX;
+        c.dashBaseDirY = c.dashDirY;
+        c.dashSteer = 0;
+        c.dashSpeed = rollSpeedAt(0);
+        c.rollT = 0;
+        // Timers age later in this same consumed-command tick; seed one tick high so the live lock is
+        // exactly [consume, consume+10), not an accidental nine-tick window.
+        c.rollParryLockT = ROLL_PARRY_LOCK_SECONDS + TICK_MS / 1000;
+        c.attackBuffer = 0;
+        input.mvx = c.dashDirX * c.dashSpeed;
+        input.mvy = c.dashDirY * c.dashSpeed;
+        player.mvx = input.mvx;
+        player.mvy = input.mvy;
+        if (c.beamPhase !== 0 || c.beamDescriptor)
+          this.cancelBeam(player, player.id, c, true, false);
+        this.setMoveStance(player, c, STANCE_ROLL);
+      }
+    }
+
     const pressed = cmd.crouchHeld && !c.crouchPrevHeld;
     const released = !cmd.crouchHeld && c.crouchPrevHeld;
     c.crouchPrevHeld = cmd.crouchHeld;
@@ -2504,6 +2596,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Forced cancels alone bump stanceSeq; organic abort/launch/landing edges only change moveStance. */
   private cancelMoveStance(player: PlayerState, c: CombatState, forced: boolean): void {
     if (c.stance === STANCE_NONE) return;
+    if (c.stance === STANCE_ROLL) c.rollCd = Math.max(c.rollCd, ROLL_COOLDOWN);
     c.stance = STANCE_NONE;
     player.moveStance = STANCE_NONE;
     c.crouchT = 0;
@@ -2517,7 +2610,29 @@ export class GameRoom extends Room<ArenaState> {
     c.dashSteer = 0;
     c.poundGatherT = 0;
     c.poundTriggerHeight = 0;
+    c.rollT = 0;
     if (forced) player.stanceSeq = (player.stanceSeq + 1) & 0xff;
+  }
+
+  /** Advance the roll after its movement sample. Cooldown begins on this authored end edge. */
+  private stepRollStance(
+    player: PlayerState,
+    c: CombatState,
+    input: InputState | undefined,
+    dt: number,
+  ): void {
+    if (c.stance !== STANCE_ROLL) return;
+    c.rollT += dt;
+    if (c.rollT + 1e-9 < ROLL_DURATION) return;
+    const dx = c.dashDirX;
+    const dy = c.dashDirY;
+    this.cancelMoveStance(player, c, false);
+    if (input) {
+      input.mvx = dx * MOVE_SPEED;
+      input.mvy = dy * MOVE_SPEED;
+      player.mvx = input.mvx;
+      player.mvy = input.mvy;
+    }
   }
 
   /** Advance the fixed ten-tick crouch; launch direction is sampled from this exact authoritative tick. */
@@ -2890,7 +3005,12 @@ export class GameRoom extends Room<ArenaState> {
         // message (the consume gate re-checks grounded/cooldown/alive/level-window).
         if (cmd.jump) {
           const c = this.combat.get(id);
-          if (c) c.jumpBuffer = JUMP_BUFFER_SECONDS;
+          if (c) {
+            c.jumpBuffer =
+              c.stance === STANCE_ROLL
+                ? Math.max(c.jumpBuffer, ROLL_DURATION - c.rollT + TICK_MS / 1000)
+                : JUMP_BUFFER_SECONDS;
+          }
         }
         const stance = this.combat.get(id);
         if (stance) this.consumeMoveStanceInput(player, input, stance, cmd);
@@ -2925,6 +3045,13 @@ export class GameRoom extends Room<ArenaState> {
       // so forward→up sweeps through the diagonal, taps ease in, releases ease out — no more snap-turns.
       // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
       const beamRuntime = this.combat.get(id);
+      if (
+        beamRuntime?.stance === STANCE_ROLL &&
+        input.held.fireHeld &&
+        beamRuntime.rollT + 1e-9 >= ROLL_ATTACK_CANCEL_SECONDS
+      ) {
+        this.cancelMoveStance(player, beamRuntime, true);
+      }
       const beamSpeed = beamRuntime?.beamDescriptor
         ? MOVE_SPEED *
           (beamRuntime.beamPhase === 1
@@ -2935,8 +3062,10 @@ export class GameRoom extends Room<ArenaState> {
         : MOVE_SPEED;
       let nextX: number;
       let nextY: number;
-      if (beamRuntime?.stance === STANCE_DASH) {
-        this.steerDistanceJump(beamRuntime, input.held, dt);
+      if (beamRuntime?.stance === STANCE_DASH || beamRuntime?.stance === STANCE_ROLL) {
+        if (beamRuntime.stance === STANCE_DASH)
+          this.steerDistanceJump(beamRuntime, input.held, dt);
+        else beamRuntime.dashSpeed = rollSpeedAt(beamRuntime.rollT);
         input.mvx = beamRuntime.dashDirX * beamRuntime.dashSpeed;
         input.mvy = beamRuntime.dashDirY * beamRuntime.dashSpeed;
         nextX = clamp(player.x + input.mvx * dt, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
@@ -3151,6 +3280,9 @@ export class GameRoom extends Room<ArenaState> {
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.distJumpCd = Math.max(0, c.distJumpCd - dt);
       c.recoveryT = Math.max(0, c.recoveryT - dt);
+      c.rollCd = Math.max(0, c.rollCd - dt);
+      c.rollParryLockT = Math.max(0, c.rollParryLockT - dt);
+      if (c.rollParryLockT <= 1e-9) c.rollParryLockT = 0;
       // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
@@ -3158,11 +3290,19 @@ export class GameRoom extends Room<ArenaState> {
       const acting =
         this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
       // BUFFERED PARRY — a press that arrived on cooldown fires the instant the cd drains.
-      if (acting && c.recoveryT <= 0 && c.parryBuffer > 0 && c.parryCd <= 0) {
+      if (
+        acting &&
+        c.recoveryT <= 0 &&
+        c.rollParryLockT <= 0 &&
+        c.stance !== STANCE_ROLL &&
+        c.parryBuffer > 0 &&
+        c.parryCd <= 0
+      ) {
         c.parryBuffer = 0;
         this.executeParry(player, c);
       }
       if (acting) this.stepCrouchStance(player, c, this.inputs.get(id), dt);
+      if (acting) this.stepRollStance(player, c, this.inputs.get(id), dt);
       // BUFFERED JUMP — seed the hop BEFORE stepVertical so it lifts off this same tick (grounded + ready).
       if (
         acting &&
@@ -3219,7 +3359,7 @@ export class GameRoom extends Room<ArenaState> {
 
       if (weapon?.beam) {
         c.attackBuffer = 0;
-        this.stepPlayerBeam(player, id, c, weapon, dt, acting);
+        this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_ROLL);
         return;
       }
       this.stepBeamResources(c, player.weapon, false, dt);
@@ -3229,7 +3369,12 @@ export class GameRoom extends Room<ArenaState> {
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
       // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
       // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
-      const canAct = acting && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
+      const canAct =
+        acting &&
+        c.stance !== STANCE_ROLL &&
+        c.attackBuffer > 0 &&
+        c.cd <= 0 &&
+        c.drawLock <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
@@ -3465,6 +3610,10 @@ export class GameRoom extends Room<ArenaState> {
               DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
           : dx * dx + dy * dy <= reach * reach;
         if (contact) {
+          if (pcc && this.rollInvulnerable(pcc)) {
+            this.noteRollDodge(player);
+            return;
+          }
           this.damagePlayer(player, kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt);
           // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
           if (kind.contactDamage > 0) {
@@ -5964,6 +6113,7 @@ export class GameRoom extends Room<ArenaState> {
       inp.held.jump = false;
       inp.held.crouchHeld = false;
       inp.held.pound = false;
+      inp.held.roll = false;
       inp.held.fireHeld = false;
     }
     const c = this.combat.get(id);
@@ -6145,7 +6295,7 @@ export class GameRoom extends Room<ArenaState> {
    *  out of the message handler (v0.105 de-clunk) so a BUFFERED parry (one that arrived during the cooldown)
    *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
   private executeParry(player: PlayerState, c: CombatState): void {
-    if (c.recoveryT > 0) return;
+    if (c.recoveryT > 0 || c.rollParryLockT > 0 || c.stance === STANCE_ROLL) return;
     if (c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
@@ -6491,6 +6641,10 @@ export class GameRoom extends Room<ArenaState> {
       if (pc && pc.invuln > 0) {
         // §8 PARRIED — negate + punish + FLOW + the v0.114 chain reward (shared with the boss meleeCombo).
         this.resolveParry(player, pc, enemy, enemyId);
+        return;
+      }
+      if (pc && this.rollInvulnerable(pc)) {
+        this.noteRollDodge(player);
         return;
       }
       if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy covers ALL melee, legacy included
@@ -7162,6 +7316,10 @@ export class GameRoom extends Room<ArenaState> {
         this.resolveParry(player, pc, enemy, enemyId); // §8 negate + reward; §51 branches live inside
         return;
       }
+      if (pc && !step?.airkeep && this.rollInvulnerable(pc)) {
+        this.noteRollDodge(player);
+        return;
+      }
       if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy — no landing-gank
       let dmg = base;
       if (player.id === st.targetId && st.juggleCombo) {
@@ -7179,7 +7337,9 @@ export class GameRoom extends Room<ArenaState> {
       if (
         displacementHit &&
         pc &&
-        (pc.stance === STANCE_CROUCH || pc.stance === STANCE_DASH)
+        (pc.stance === STANCE_CROUCH ||
+          pc.stance === STANCE_DASH ||
+          (step?.launch !== undefined && pc.stance === STANCE_ROLL))
       ) {
         this.cancelMoveStance(player, pc, true);
       }
@@ -7396,6 +7556,10 @@ export class GameRoom extends Room<ArenaState> {
         this.bossController?.acceptWormParry(player.id, this.state.tick);
         return;
       }
+      if (pc && this.rollInvulnerable(pc)) {
+        this.noteRollDodge(player);
+        return;
+      }
       this.damagePlayer(player, damage); // already depth-scaled by the controller
       const hx = player.x - x;
       const hy = player.y - y;
@@ -7515,6 +7679,10 @@ export class GameRoom extends Room<ArenaState> {
             this.reflectProjectile(pr, meta, player, pc);
             reflected = true;
             consumed = true;
+            return;
+          }
+          if (pc && this.rollInvulnerable(pc)) {
+            this.noteRollDodge(player);
             return;
           }
           this.damagePlayer(player, meta.damage);
