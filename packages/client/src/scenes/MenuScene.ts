@@ -1,14 +1,22 @@
 import { beltLevelFor, DEFAULT_DIMENSION, DIMENSION_IDS, getDimension } from "@dd/shared";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
+// Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
+// lazily inside launch(), alongside the lazy ArenaScene import).
+import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
 
 /**
  * §17 title / dimension-select screen — the first scene. Lists every dimension as a themed card (its own
  * palette as the swatch + frame); click one (or press its number) to launch the run, which hands the pick
  * to `ArenaScene` via `scene.start("arena", { dimensionId })`. ArenaScene forwards it as the room's
- * `dimensionId` join option (only the room CREATOR's pick takes effect; joiners inherit the host's synced
- * dimension). Screen-space + DPR-aware, mirroring ArenaScene's hi-DPI camera so it stays crisp + responsive
+ * `dimensionId` join option, and that pick is a REAL matchmaking filter (§50 finding #1): the server's
+ * `filterBy(["belt", "beltLevel", "dimensionId", "bossRush"])` means a launch can only ever match a room
+ * created with the same pick. The menu also chooses a launch INTENT — QUICK JOIN (share a matching live
+ * run, or start one) vs HOST NEW RUN (always mint a fresh room) — armed via `net/matchmaking.ts`, which
+ * additionally discloses on arrival what was actually joined (mode/dimension/depth/drifters, plus an
+ * explicit notice if a matched run has since descended past the requested dimension).
+ * Screen-space + DPR-aware, mirroring ArenaScene's hi-DPI camera so it stays crisp + responsive
  * from a laptop up to a 4K ultrawide.
  *
  * Cards are a FIXED size (built once at full size so each card's input hit area matches its geometry — a
@@ -48,6 +56,12 @@ export class MenuScene extends Phaser.Scene {
   /** §17 P0.5 optional dimension key-art that failed to load; absent renders preserve the vector card. */
   private readonly menuArtMissing = new Set<string>();
   private launching = false;
+  /** §50 finding #1 — the launch intent a card click will use: QUICK JOIN (default; joinOrCreate, which the
+   *  server filters to same-pick rooms) or HOST NEW RUN (always create a fresh room). Handed to
+   *  `net/matchmaking.ts` at launch, where it steers the arena's join call. */
+  private launchIntent: LaunchIntent = "quick";
+  private intentRow?: Phaser.GameObjects.Container;
+  private intentCaption?: Phaser.GameObjects.Text;
 
   constructor() {
     super("menu");
@@ -87,6 +101,9 @@ export class MenuScene extends Phaser.Scene {
     this.hint = undefined!;
     this.audioLabel = undefined;
     this.audioRow = undefined;
+    this.intentRow = undefined;
+    this.intentCaption = undefined;
+    this.launchIntent = "quick";
     this.launching = false;
     // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
     // straight into a Testing-Grounds sandbox (top-down arena, full room to fight) with that asset applied.
@@ -153,10 +170,15 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–5 → the nth DIMENSION, a top-down run); B → the boss-rush gauntlet.
+    // Number-key shortcuts (1–5 → the nth DIMENSION, a top-down run); B → the boss-rush gauntlet;
+    // H → toggle the QUICK JOIN / HOST NEW RUN launch intent (§50 finding #1).
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
       if (e.key === "b" || e.key === "B") {
         this.launch(DEFAULT_DIMENSION, true);
+        return;
+      }
+      if (e.key === "h" || e.key === "H") {
+        this.setLaunchIntent(this.launchIntent === "quick" ? "host" : "quick");
         return;
       }
       const n = Number.parseInt(e.key, 10);
@@ -175,8 +197,65 @@ export class MenuScene extends Phaser.Scene {
       ease: "Sine.inOut",
     });
 
+    this.buildIntentRow();
     this.buildAudioRow();
     this.layout();
+  }
+
+  /** §50 finding #1 — the QUICK JOIN / HOST NEW RUN selector (between the subtitle and the cards), so the
+   *  card click is an honest, chosen contract rather than an implicit joinOrCreate. */
+  private buildIntentRow(): void {
+    const mkChip = (
+      label: string,
+      intent: LaunchIntent,
+      x: number,
+    ): Phaser.GameObjects.Container => {
+      const bg = this.add.rectangle(0, 0, 168, 30, 0x1b1822, 0.9).setStrokeStyle(1.5, 0x3a3550);
+      const txt = this.add
+        .text(0, 0, label, { fontSize: "14px", color: "#9aa0ac", fontStyle: "bold" })
+        .setOrigin(0.5);
+      const c = this.add.container(x, 0, [bg, txt]);
+      bg.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+        this.audio.resume();
+        this.setLaunchIntent(intent);
+      });
+      c.setData("bg", bg);
+      c.setData("txt", txt);
+      c.setData("intent", intent);
+      return c;
+    };
+    const quick = mkChip("QUICK JOIN", "quick", -92);
+    const host = mkChip("HOST NEW RUN", "host", 92);
+    this.intentCaption = this.add
+      .text(0, 26, "", { fontSize: "13px", color: "#9aa0ac" })
+      .setOrigin(0.5, 0.5);
+    this.intentRow = this.add.container(0, 0, [quick, host, this.intentCaption]);
+    this.refreshIntentRow();
+  }
+
+  private setLaunchIntent(intent: LaunchIntent): void {
+    this.launchIntent = intent;
+    this.refreshIntentRow();
+  }
+
+  private refreshIntentRow(): void {
+    if (!this.intentRow || !this.intentCaption) return;
+    for (const child of this.intentRow.list) {
+      const chip = child as Phaser.GameObjects.Container;
+      const intent = chip.getData?.("intent") as LaunchIntent | undefined;
+      if (!intent) continue; // the caption text
+      const bg = chip.getData("bg") as Phaser.GameObjects.Rectangle;
+      const txt = chip.getData("txt") as Phaser.GameObjects.Text;
+      const selected = intent === this.launchIntent;
+      bg.setStrokeStyle(selected ? 2 : 1.5, selected ? 0x33e6ff : 0x3a3550);
+      bg.setFillStyle(selected ? 0x14232a : 0x1b1822, selected ? 1 : 0.9);
+      txt.setColor(selected ? TITLE_COLOR : "#9aa0ac");
+    }
+    this.intentCaption.setText(
+      this.launchIntent === "quick"
+        ? "Pick a card to JOIN a live run with the same pick — or start one if none is open.   (H toggles)"
+        : "Pick a card to HOST a fresh run — drifters making the same pick can still join you.   (H toggles)",
+    );
   }
 
   /** §19 v0.108 audio settings row (bottom-left): −/+ volume + a mute toggle, reflecting the persisted
@@ -243,7 +322,10 @@ export class MenuScene extends Phaser.Scene {
     const artKey = `${MENU_ART_PREFIX}${dimensionId}`;
     let art: Phaser.GameObjects.Image | undefined;
     if (!this.menuArtMissing.has(artKey) && this.textures.exists(artKey)) {
-      const source = this.textures.get(artKey).getSourceImage() as { width: number; height: number };
+      const source = this.textures.get(artKey).getSourceImage() as {
+        width: number;
+        height: number;
+      };
       if (source.width > 8 && source.height > 8) {
         const coverScale = Math.max(CARD_W / source.width, CARD_H / source.height);
         const cropW = CARD_W / coverScale;
@@ -357,6 +439,8 @@ export class MenuScene extends Phaser.Scene {
     const h = this.screenH();
     this.title.setPosition(w / 2, Math.max(70, h * 0.13)).setFontSize(Math.min(56, w / 13));
     this.subtitle.setPosition(w / 2, Math.max(70, h * 0.13) + 44);
+    // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
+    this.intentRow?.setPosition(w / 2, Math.max(70, h * 0.13) + 88);
 
     const n = this.cards.length;
     const gapX = 26;
@@ -365,7 +449,7 @@ export class MenuScene extends Phaser.Scene {
     const rows = Math.ceil(n / cols);
     const gridW = cols * CARD_W + (cols - 1) * gapX;
     const startX = (w - gridW) / 2 + CARD_W / 2;
-    const startY = Math.max(200, h * 0.3) + CARD_H / 2;
+    const startY = Math.max(236, h * 0.32) + CARD_H / 2;
 
     this.cards.forEach((card, i) => {
       const col = i % cols;
@@ -382,11 +466,26 @@ export class MenuScene extends Phaser.Scene {
   private launch(id: string, bossRush = false, belt = false, beltLevel?: string): void {
     if (this.launching) return; // guard the key+click double-fire
     this.launching = true;
-    const arenaReady = ensureArenaScene(this.scene);
+    const intent = this.launchIntent;
+    const ready = Promise.all([
+      ensureArenaScene(this.scene),
+      // §50 finding #1 — arm the matchmaking contract BEFORE the arena connects: the wrapper routes the
+      // arena's joinOrCreate through the chosen intent (QUICK JOIN vs HOST NEW RUN) and discloses the
+      // joined room's actual mode/dimension/depth on arrival. Lazy import: same chunk timing as the
+      // arena itself, so the menu's first paint stays net-free.
+      import("../net/matchmaking.js").then((m) => {
+        m.setLaunchIntent(intent);
+        return m.installMatchmakingContract();
+      }),
+    ]);
     // §19 v0.108 fade to black, THEN start the arena — every run start feels intentional.
     this.cameras.main.fadeOut(280, 0, 0, 0);
-    this.cameras.main.once("camerafadeoutcomplete", () =>
-      void arenaReady.then(() => this.scene.start("arena", { dimensionId: id, bossRush, belt, beltLevel })),
+    this.cameras.main.once(
+      "camerafadeoutcomplete",
+      () =>
+        void ready.then(() =>
+          this.scene.start("arena", { dimensionId: id, bossRush, belt, beltLevel }),
+        ),
     );
   }
 

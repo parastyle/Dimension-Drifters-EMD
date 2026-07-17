@@ -208,6 +208,28 @@ The current path is immediate: a card fades straight into `joinOrCreate`; `onJoi
 
 **Recommendation:** Add a restrained dimension ambience/music bed with combat and boss stems, plus separate Music / SFX / UI sliders. Preserve positional one-shots; the bed's job is place and pacing, not volume.
 
+## Finding #1 — implementation status + DEFERRED SERVER HALF
+
+**Shipped (client boundary, §50):** The pick is now an honest contract end to end on the client. The
+server's `filterBy(["belt", "beltLevel", "dimensionId", "bossRush"])` (`packages/server/src/index.ts:18`)
+already guarantees `joinOrCreate` can only match a room *created* with the same pick; on top of that,
+`MenuScene` now exposes an explicit **QUICK JOIN / HOST NEW RUN** intent selector (H toggles) and
+`packages/client/src/net/matchmaking.ts` routes the arena's join call through that intent (HOST →
+`client.create`, QUICK JOIN → the filtered `joinOrCreate`) and, on the first synced state, shows an
+arrival-truth notice: verb (HOSTING/JOINED/STARTED), mode, dimension, depth, drifter count — plus an
+explicit amber warning when the landed room differs from the request (unit-tested in
+`matchmaking.test.ts`; live-verified: same-pick shares, different-pick separates, host forks).
+
+**DEFERRED SERVER HALF (needs GameRoom.ts, owned elsewhere):** `filterBy` compares **creation-time**
+options only, but `ArenaState.dimensionId`/`depth` advance on every §6 rift descent, so a quick-joiner
+asking for dimension A can still legitimately land in a same-origin room that has since descended to
+dimension C at depth 3 — the client now *discloses* this on arrival but cannot *prevent* it. The server
+fix: on each rift descent (and on boss-rush round advance if desired), update the room's matchmaking
+listing to its current reality — e.g. `this.setMetadata({ dimensionId: this.state.dimensionId, depth:
+this.state.depth })` plus switching the filter to that metadata, or simply `this.lock()`/unlisting rooms
+past depth 1 so deep runs are never quick-join targets. Either variant is a `GameRoom.ts` edit
+(descent/restart path) and must keep `homeDimension` semantics intact for run restarts.
+
 ## Recommended first-session order
 
 The highest-return sequence is: make menu choice truthful; protect and prioritize response edges; expose beam state; restore combo hit truth; add death receipts; then add party awareness and one-shot contextual teaching for XP, hazards, pickups, level-up vocabulary, and each boss. Accessibility settings should ship alongside the protected telegraph channel, because both depend on centralizing visual-response policy rather than adding more isolated effects.
