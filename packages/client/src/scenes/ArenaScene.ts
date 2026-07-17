@@ -77,9 +77,12 @@ import {
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
-  ROLL_COOLDOWN,
-  ROLL_SPEED_CURVE,
-  ROLL_TICK_SECONDS,
+  SLIDE_COLD_REARM_TICKS,
+  SLIDE_PHASE_GROUND,
+  SLIDE_PHASE_OFF,
+  SLIDE_SPEED_CAP,
+  SLIDE_TICK_SECONDS,
+  type SlidePhase,
   ROOM_NAME,
   requirementPenalty,
   SALVAGE_HOLD_SECONDS,
@@ -89,7 +92,7 @@ import {
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
-  STANCE_ROLL,
+  STANCE_SLIDE,
   type SwingDescriptor,
   salvageValue,
   sanitizeMetaLevels,
@@ -128,6 +131,8 @@ import {
   type DistanceJumpIndicator,
   SelfPredictor,
   type ServerView,
+  slideHeldFromBindings,
+  slidePressedFromBindings,
   SpaceGestureClassifier,
 } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
@@ -317,6 +322,7 @@ interface JumpPresentationState {
   height: number;
   vh: number;
   stance: MoveStance;
+  slidePhase: SlidePhase;
   poundSeq: number;
   coilSecondPlayed: boolean;
   stanceStartedMs: number;
@@ -335,23 +341,6 @@ function poundRingColor(id: string): number {
     default:
       return 0x78e3a4;
   }
-}
-
-/** The synced override speed identifies the server's just-consumed curve sample without another field. */
-function remoteRollTime(mvx: number, mvy: number): number {
-  const speed = Math.hypot(mvx, mvy);
-  let best = 0;
-  let bestError = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < ROLL_SPEED_CURVE.length; i++) {
-    const sample = ROLL_SPEED_CURVE[i];
-    if (sample === undefined) continue;
-    const error = Math.abs(speed - sample);
-    if (error < bestError) {
-      best = i;
-      bestError = error;
-    }
-  }
-  return (best + 1) * ROLL_TICK_SECONDS;
 }
 
 interface LevelChoiceControl {
@@ -954,7 +943,7 @@ export class ArenaScene extends Phaser.Scene {
   private riftArrow: Phaser.GameObjects.Container | null = null;
   /** §8 last-seen `parriedSeq` per player, to fire the white parry flash on a successful parry. */
   private readonly lastParried = new Map<string, number>();
-  /** Roll null-whiffs have a separate cosmetic edge and never enter the parry reward presentation. */
+  /** Slide null-whiffs have a separate cosmetic edge and never enter the parry reward presentation. */
   private readonly lastDodged = new Map<string, number>();
   /** §6 last-seen `revivedSeq` per player, to fire the green revive pop when a rez brings them back. */
   private readonly lastRevived = new Map<string, number>();
@@ -1047,6 +1036,7 @@ export class ArenaScene extends Phaser.Scene {
     | "TAB"
     | "SPACE"
     | "SHIFT"
+    | "CTRL"
     | "ONE"
     | "TWO"
     | "THREE"
@@ -1087,11 +1077,11 @@ export class ArenaScene extends Phaser.Scene {
   private readonly spaceGesture = new SpaceGestureClassifier();
   private crouchHeld = false;
   private poundQueued = false;
-  /** Shift keydown edge waiting for the next (forced-immediate) numbered command. */
-  private rollQueued = false;
-  private rollDryWindowAt = -1e9;
-  private rollDryPresses = 0;
-  private rollDryToastShown = false;
+  /** Shift/Ctrl keydown edge waiting for the next forced-immediate numbered command. */
+  private slideQueued = false;
+  private slideDryWindowAt = -1e9;
+  private slideDryPresses = 0;
+  private slideDryToastShown = false;
   /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
   private curDx = 0;
   private curDy = 0;
@@ -1099,7 +1089,8 @@ export class ArenaScene extends Phaser.Scene {
   private selfPredHeight = 0;
   private selfPredVh = 0;
   private selfPredStance: MoveStance = STANCE_NONE;
-  private selfPredRollT = 0;
+  private selfPredSlidePhase: SlidePhase = SLIDE_PHASE_OFF;
+  private selfPredSlideTick = 0;
   private readonly distanceIndicator: DistanceJumpIndicator = {
     rawX: 0,
     rawY: 0,
@@ -1713,16 +1704,17 @@ export class ArenaScene extends Phaser.Scene {
     this.spaceGesture.reset();
     this.crouchHeld = false;
     this.poundQueued = false;
-    this.rollQueued = false;
-    this.rollDryWindowAt = -1e9;
-    this.rollDryPresses = 0;
-    this.rollDryToastShown = false;
+    this.slideQueued = false;
+    this.slideDryWindowAt = -1e9;
+    this.slideDryPresses = 0;
+    this.slideDryToastShown = false;
     this.curDx = 0;
     this.curDy = 0;
     this.selfPredHeight = 0;
     this.selfPredVh = 0;
     this.selfPredStance = STANCE_NONE;
-    this.selfPredRollT = 0;
+    this.selfPredSlidePhase = SLIDE_PHASE_OFF;
+    this.selfPredSlideTick = 0;
     this.jumpPresentation.clear();
     this.wasFrozen = false;
     this.lastSelfMuzzleAt = -9999;
@@ -1907,7 +1899,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,SHIFT,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -1924,6 +1916,7 @@ export class ArenaScene extends Phaser.Scene {
       | "TAB"
       | "SPACE"
       | "SHIFT"
+      | "CTRL"
       | "ONE"
       | "TWO"
       | "THREE"
@@ -3228,37 +3221,44 @@ export class ArenaScene extends Phaser.Scene {
       Phaser.Input.Keyboard.JustUp(this.keys.SPACE),
       predictedAirborne,
       alive && !levelWindowInputBlocked,
+      this.predictor?.isGroundSliding ?? false,
     );
     if (space.jump) this.jumpQueued = true;
     if (space.pound) this.poundQueued = true;
     this.crouchHeld = space.crouchHeld;
-    if (Phaser.Input.Keyboard.JustDown(this.keys.SHIFT) && alive && !levelWindowInputBlocked) {
+    const shiftSlidePressed = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT);
+    const ctrlSlidePressed = Phaser.Input.Keyboard.JustDown(this.keys.CTRL);
+    if (
+      slidePressedFromBindings(shiftSlidePressed, ctrlSlidePressed) &&
+      alive &&
+      !levelWindowInputBlocked
+    ) {
       const parryWindowOpen = (this.time.now - this.lastParryPress) / 1000 < PARRY_IFRAMES;
-      if (this.predictor?.canRoll && !parryWindowOpen) {
-        this.rollQueued = true;
-        this.rollDryPresses = 0;
-        this.rollDryWindowAt = -1e9;
-        // Shift is latency-critical: force the normal numbered-command loop to mint this frame.
+      if (this.predictor?.canSlide && !parryWindowOpen) {
+        this.slideQueued = true;
+        this.slideDryPresses = 0;
+        this.slideDryWindowAt = -1e9;
+        // Both bindings are latency-critical: force the normal numbered-command loop this frame.
         this.inputAccMs = Math.max(this.inputAccMs, TICK_MS);
-      } else {
-        if (this.time.now - this.rollDryWindowAt > 2_000) {
-          this.rollDryWindowAt = this.time.now;
-          this.rollDryPresses = 0;
+      } else if ((this.predictor?.slideCooldownRemaining ?? 0) > 0) {
+        if (this.time.now - this.slideDryWindowAt > 2_000) {
+          this.slideDryWindowAt = this.time.now;
+          this.slideDryPresses = 0;
         }
-        this.rollDryPresses++;
-        if (this.rollDryPresses === 3 && !this.rollDryToastShown) {
-          this.rollDryToastShown = true;
-          this.flashBanner("ROLL RECHARGING", "#c7a66c");
+        this.slideDryPresses++;
+        if (this.slideDryPresses === 3 && !this.slideDryToastShown) {
+          this.slideDryToastShown = true;
+          this.flashBanner("SLIDE NEEDS A RUN-UP", "#c7a66c");
         }
-        if (this.rollDryPresses <= 3) {
+        if (this.slideDryPresses <= 3) {
           const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
           if (rig)
-            this.jumpEffectRenderer.spawnRollDry(
+            this.jumpEffectRenderer.spawnSlideDry(
               rig.x,
               (this.belt ? this.beltY(rig.y) : rig.y) + PLAYER_SHADOW_LOCAL_Y,
               this.belt ? BELT_FORESHORTEN : 1,
             );
-          this.audio.play("roll:dry", { x: rig?.x, amt: 0.35 });
+          this.audio.play("slide:dry", { x: rig?.x, amt: 0.35 });
         }
       }
     }
@@ -6195,7 +6195,8 @@ export class ArenaScene extends Phaser.Scene {
         this.selfPredHeight = r.height;
         this.selfPredVh = r.vh;
         this.selfPredStance = r.stance;
-        this.selfPredRollT = r.rollT;
+        this.selfPredSlidePhase = r.slidePhase;
+        this.selfPredSlideTick = r.slideTick;
         return;
       }
       const s =
@@ -6737,11 +6738,10 @@ export class ArenaScene extends Phaser.Scene {
       const moveStance = isSelfPred
         ? this.selfPredStance
         : ((pl?.moveStance ?? STANCE_NONE) as MoveStance);
-      const rollT = isSelfPred
-        ? this.selfPredRollT
-        : moveStance === STANCE_ROLL
-          ? remoteRollTime(pl?.mvx ?? 0, pl?.mvy ?? 0)
-          : undefined;
+      const slidePhase = isSelfPred
+        ? this.selfPredSlidePhase
+        : ((pl?.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase);
+      const slideTick = isSelfPred ? this.selfPredSlideTick : (pl?.slidePhaseTick ?? 0);
       blob.setHop(jumpHeight);
       this.presentJumpFeel(
         id,
@@ -6749,7 +6749,8 @@ export class ArenaScene extends Phaser.Scene {
         jumpHeight,
         jumpVh,
         moveStance,
-        rollT,
+        slidePhase,
+        slideTick,
         pl?.poundSeq ?? 0,
         mx,
         my,
@@ -6788,7 +6789,8 @@ export class ArenaScene extends Phaser.Scene {
       anim.recoilY = pl?.vy ?? 0;
       anim.jumpVh = jumpVh;
       anim.moveStance = moveStance;
-      anim.rollT = rollT;
+      anim.slidePhase = slidePhase;
+      anim.slideTick = slideTick;
       anim.reducedMotion = reducedMotion;
       blob.animate(this.animClock, anim);
       blob.setDepth(blob.y);
@@ -6802,7 +6804,8 @@ export class ArenaScene extends Phaser.Scene {
     height: number,
     vh: number,
     stance: MoveStance,
-    rollT: number | undefined,
+    slidePhase: SlidePhase,
+    slideTick: number,
     poundSeq: number,
     moveX: number,
     moveY: number,
@@ -6816,6 +6819,7 @@ export class ArenaScene extends Phaser.Scene {
         height,
         vh,
         stance,
+        slidePhase,
         poundSeq,
         coilSecondPlayed: false,
         stanceStartedMs: this.animClock,
@@ -6827,13 +6831,14 @@ export class ArenaScene extends Phaser.Scene {
     const visible = isSelf || this.cameras.main.worldView.contains(blob.x, blob.y);
     const localAmt = isSelf ? 1 : 0.35;
     const stanceChanged = stance !== previous.stance;
-    if (stanceChanged) {
+    const slidePhaseChanged = slidePhase !== previous.slidePhase;
+    if (stanceChanged || slidePhaseChanged) {
       previous.stanceStartedMs = this.animClock;
       previous.coilSecondPlayed = false;
       if (stance === STANCE_CROUCH) this.audio.play("leap:coil", { x, amt: 0.3 * localAmt });
       if (stance === STANCE_POUND) this.audio.play("pound:tuck", { x, amt: localAmt });
-      if (stance === STANCE_ROLL) {
-        this.jumpEffectRenderer.spawnRollBurst(
+      if (stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND) {
+        this.jumpEffectRenderer.spawnSlideBurst(
           x,
           y + PLAYER_SHADOW_LOCAL_Y,
           moveX,
@@ -6841,9 +6846,12 @@ export class ArenaScene extends Phaser.Scene {
           reducedMotion || !visible,
           this.belt ? BELT_FORESHORTEN : 1,
         );
-        this.audio.play("roll", { x, amt: localAmt });
-      } else if (previous.stance === STANCE_ROLL) {
-        this.jumpEffectRenderer.spawnRollPlant(
+        this.audio.play("slide", { x, amt: localAmt });
+      } else if (
+        previous.stance === STANCE_SLIDE &&
+        previous.slidePhase === SLIDE_PHASE_GROUND
+      ) {
+        this.jumpEffectRenderer.spawnSlidePlant(
           x,
           y + PLAYER_SHADOW_LOCAL_Y,
           moveX,
@@ -6853,6 +6861,12 @@ export class ArenaScene extends Phaser.Scene {
         );
       }
     }
+    if (visible && stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND)
+      this.audio.play("slide:scrape", {
+        x,
+        amt: Math.min(1, Math.max(0, speed / SLIDE_SPEED_CAP)) * localAmt,
+        ownerId: id,
+      });
     if (
       stance === STANCE_CROUCH &&
       !previous.coilSecondPlayed &&
@@ -6889,6 +6903,7 @@ export class ArenaScene extends Phaser.Scene {
     const launched = previous.height <= GROUND_EPSILON && height > GROUND_EPSILON;
     if (launched) {
       if (stance === STANCE_DASH) this.audio.play("leap:launch", { x, amt: localAmt });
+      else if (stance === STANCE_SLIDE) this.audio.play("slide:hop", { x, amt: localAmt });
       else this.audio.play("jump", { x, amt: localAmt });
     }
     const landed = previous.height > GROUND_EPSILON && height <= GROUND_EPSILON;
@@ -6918,8 +6933,15 @@ export class ArenaScene extends Phaser.Scene {
 
     if (visible && stance === STANCE_POUND && vh < 0)
       this.jumpEffectRenderer.drawPoundStreak(x, y, height, -vh, reducedMotion);
-    if (visible && stance === STANCE_ROLL && rollT !== undefined && rollT <= 0.25)
-      this.jumpEffectRenderer.drawRollWake(x, y, moveX, moveY, rollT, reducedMotion);
+    if (visible && stance === STANCE_SLIDE && slidePhase === SLIDE_PHASE_GROUND)
+      this.jumpEffectRenderer.drawSlideWake(
+        x,
+        y,
+        moveX,
+        moveY,
+        slideTick * SLIDE_TICK_SECONDS,
+        reducedMotion,
+      );
     if (
       isSelf &&
       stance === STANCE_CROUCH &&
@@ -6946,6 +6968,7 @@ export class ArenaScene extends Phaser.Scene {
     previous.height = height;
     previous.vh = vh;
     previous.stance = stance;
+    previous.slidePhase = slidePhase;
     previous.poundSeq = poundSeq;
   }
 
@@ -6957,7 +6980,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
-    if (this.predictor?.rollAttackLocked) return;
+    if (this.predictor?.slideAttackLocked) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.beam) return;
@@ -7226,7 +7249,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
-    if (this.predictor?.rollParryLocked) return;
+    if (this.predictor?.slideParryLocked) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
@@ -7282,12 +7305,13 @@ export class ArenaScene extends Phaser.Scene {
       g.strokeCircle(x, y, R);
     }
 
-    // A thumbnail-sized roll pip shares the restrained cooldown language without competing with parry.
-    const rollCd = this.predictor?.rollCooldownRemaining ?? 0;
+    // The carried-over pip now shows the six qualifying run-up ticks before another cold pop.
+    const slideCd = this.predictor?.slideCooldownRemaining ?? 0;
     const pipX = x + 27;
     const pipY = y + 20;
-    if (rollCd > 0) {
-      const ready = 1 - Math.min(1, rollCd / ROLL_COOLDOWN);
+    if (slideCd > 0) {
+      const ready =
+        1 - Math.min(1, slideCd / (SLIDE_COLD_REARM_TICKS * SLIDE_TICK_SECONDS));
       g.lineStyle(2, 0xc7a66c, 0.52);
       g.beginPath();
       g.arc(pipX, pipY, 5, -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
@@ -8234,18 +8258,18 @@ export class ArenaScene extends Phaser.Scene {
         this.hitEffectRenderer.critStar(id, rig.x, rig.y, dirX, dirY, this.animClock, reducedFlash);
     }
 
-    // Roll null-whiffs have their own quiet edge. They never share parry sparks, audio, chain, or cooldown.
+    // Slide null-whiffs have their own quiet edge. They never share parry sparks, audio, chain, or run-up.
     this.room.state.players.forEach((p, id) => {
       const previous = this.lastDodged.get(id);
       this.lastDodged.set(id, p.dodgedSeq);
       if (previous === undefined || previous === p.dodgedSeq) return;
       const rig = this.blobs.get(id);
-      this.jumpEffectRenderer.spawnRollWhiff(
+      this.jumpEffectRenderer.spawnSlideWhiff(
         rig?.x ?? p.x,
         (rig?.y ?? (this.belt ? this.beltY(p.y) : p.y)) + PLAYER_SHADOW_LOCAL_Y,
         this.belt ? BELT_FORESHORTEN : 1,
       );
-      this.audio.play("roll:whiff", {
+      this.audio.play("slide:whiff", {
         x: rig?.x ?? p.x,
         amt: id === this.room?.sessionId ? 0.55 : 0.24,
       });
@@ -10566,7 +10590,8 @@ export class ArenaScene extends Phaser.Scene {
           this.selfPredHeight = view.height;
           this.selfPredVh = view.vh;
           this.selfPredStance = view.moveStance ?? STANCE_NONE;
-          this.selfPredRollT = 0;
+          this.selfPredSlidePhase = (view.slidePhase ?? SLIDE_PHASE_OFF) as SlidePhase;
+          this.selfPredSlideTick = view.slidePhaseTick ?? 0;
           if (this.belt) {
             this.predictor.setMap(undefined);
             this.predictor.setBeltLevel(this.beltLevel ?? beltLevelFor("sky-carrier"));
@@ -10594,6 +10619,10 @@ export class ArenaScene extends Phaser.Scene {
       teleportSeq: p.teleportSeq,
       moveStance: p.moveStance as MoveStance,
       stanceSeq: p.stanceSeq,
+      momentumX: p.momentumX,
+      momentumY: p.momentumY,
+      slidePhase: p.slidePhase,
+      slidePhaseTick: p.slidePhaseTick,
       alive: p.alive,
       frozen: p.flexPending > 0 || p.sigPending > 0,
     };
@@ -10855,7 +10884,7 @@ export class ArenaScene extends Phaser.Scene {
     if (levelWindowOpen) {
       this.jumpQueued = false;
       this.poundQueued = false;
-      this.rollQueued = false;
+      this.slideQueued = false;
       this.crouchHeld = false;
     }
     if (!this.room || !this.predictor) return;
@@ -10877,6 +10906,10 @@ export class ArenaScene extends Phaser.Scene {
         !!weapon?.beam &&
         this.input.activePointer.rightButtonDown();
       const aim = this.currentBeamAim();
+      const slideHeld =
+        !levelWindowOpen &&
+        !this.levelWinInputReleaseLatch &&
+        slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
       const cmd = {
         ...this.predictor.mintCmd(
           this.curDx,
@@ -10886,7 +10919,8 @@ export class ArenaScene extends Phaser.Scene {
           this.poundQueued,
           aim.aimX,
           aim.aimY,
-          this.rollQueued,
+          this.slideQueued,
+          slideHeld,
         ),
         fireHeld,
         aimX: aim.aimX,
@@ -10896,7 +10930,7 @@ export class ArenaScene extends Phaser.Scene {
       };
       this.jumpQueued = false;
       this.poundQueued = false;
-      this.rollQueued = false;
+      this.slideQueued = false;
       this.stepBeamPrediction(cmd, self, weapon);
       this.room.send("input", cmd);
       this.predictor.tick(cmd);

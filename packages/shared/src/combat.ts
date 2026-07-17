@@ -19,9 +19,28 @@ import {
   BEAM_MIN_CHARGE_SECONDS,
   BEAM_OVERHEAT_LOCK_SECONDS,
   BEAM_RESTART_HEAT,
+  SLIDE_IFRAME_TICKS,
+  SLIDE_PHASE_AIR,
+  SLIDE_PHASE_GROUND,
+  STANCE_SLIDE,
+  type MoveStance,
 } from "./constants.js";
 import type { Vec2 } from "./movement.js";
 import type { WeaponDef } from "./weapons.js";
+
+/** Contact-only opening immunity inherited from 21b. It is derived, never written into parry state. */
+export function slideContactInvulnerable(
+  stance: MoveStance,
+  phase: number,
+  slideTick: number,
+): boolean {
+  return (
+    stance === STANCE_SLIDE &&
+    (phase === SLIDE_PHASE_GROUND || phase === SLIDE_PHASE_AIR) &&
+    slideTick > 0 &&
+    slideTick <= SLIDE_IFRAME_TICKS
+  );
+}
 
 export const BeamPhase = {
   Idle: 0,

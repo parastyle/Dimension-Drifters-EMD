@@ -124,12 +124,12 @@ export class JumpEffectRenderer {
   }
 
   /** Retained-frame wake: two sparse paper strokes, never a particle allocation. */
-  drawRollWake(
+  drawSlideWake(
     x: number,
     y: number,
     dirX: number,
     dirY: number,
-    rollT: number,
+    slideT: number,
     reducedMotion: boolean,
   ): void {
     if (reducedMotion) return;
@@ -138,7 +138,7 @@ export class JumpEffectRenderer {
     const ny = dirY / length;
     const px = -ny;
     const py = nx;
-    const fade = clamp01(1 - rollT / 0.25);
+    const fade = clamp01(1 - slideT / 0.5);
     this.live.lineStyle(3, 0xeadfc9, 0.2 + fade * 0.26);
     this.live.lineBetween(
       x - nx * 20 + px * 8,
@@ -155,8 +155,8 @@ export class JumpEffectRenderer {
     );
   }
 
-  /** Shift-down acceptance: a compact launch scuff and paper-dust fan from the fixed pools. */
-  spawnRollBurst(
+  /** Shift/Ctrl-down acceptance: a compact launch scuff and low paper-dust fan from the fixed pools. */
+  spawnSlideBurst(
     x: number,
     y: number,
     dirX: number,
@@ -190,7 +190,7 @@ export class JumpEffectRenderer {
   }
 
   /** Vulnerable-tail handoff: two short heel marks and a low dust settle. */
-  spawnRollPlant(
+  spawnSlidePlant(
     x: number,
     y: number,
     dirX: number,
@@ -221,12 +221,12 @@ export class JumpEffectRenderer {
   }
 
   /** An attack crossed an i-frame: pale, deliberately quieter than the white parry reward burst. */
-  spawnRollWhiff(x: number, y: number, projectionYScale = 1): void {
+  spawnSlideWhiff(x: number, y: number, projectionYScale = 1): void {
     this.spawnRing(x, y, 5, 15, 115, 0xeee5d2, false, projectionYScale);
   }
 
-  /** Rejected Shift: a tiny ochre scuff, never an apparent successful roll. */
-  spawnRollDry(x: number, y: number, projectionYScale = 1): void {
+  /** Rejected Shift/Ctrl: a tiny ochre scuff, never an apparent successful slide. */
+  spawnSlideDry(x: number, y: number, projectionYScale = 1): void {
     this.spawnRing(x, y, 2, 6, 100, 0x856f52, false, projectionYScale);
   }
 

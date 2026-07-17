@@ -165,8 +165,14 @@ export class PlayerState extends Schema {
   /** §classmerge run-boundary identity snapshot. Character cycling may change `character` cosmetically,
    *  but spread/quirk consumers use this field until the next authored snapshot edge. APPENDED at v21. */
   @type("string") runCharacter = "drifter";
-  /** Dodge-roll null-whiff edge. It is cosmetic only and never aliases the rewarded parry receipt. APPENDED at v22. */
+  /** Contact null-whiff edge. Cosmetic only; never aliases the rewarded parry receipt. APPENDED at v22. */
   @type("uint8") dodgedSeq = 0;
+  /** Player-authored slide carry replay anchor. External impulse remains exclusively in vx/vy. APPENDED at v23. */
+  @type("number") momentumX = 0;
+  @type("number") momentumY = 0;
+  /** Slide subphase + exact sentence tick, sufficient to adopt/replay a mid-chain authoritative patch. */
+  @type("uint8") slidePhase = 0;
+  @type("uint8") slidePhaseTick = 0;
 }
 
 /** One authoritative enemy (§15). Full Tier-1 sync for the POC (modest counts). */

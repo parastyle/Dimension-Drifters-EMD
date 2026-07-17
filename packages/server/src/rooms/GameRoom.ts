@@ -230,12 +230,29 @@ import {
   rollAffix,
   rollDropWeapon,
   rollRarity,
-  rollSpeedAt,
-  ROLL_ATTACK_CANCEL_SECONDS,
-  ROLL_COOLDOWN,
-  ROLL_DURATION,
-  ROLL_IFRAME_SECONDS,
-  ROLL_PARRY_LOCK_SECONDS,
+  clampSlideSpeed,
+  slideContactInvulnerable,
+  slideGroundNextSpeed,
+  slideHopSpeed,
+  slideLandingSpeed,
+  slideSteeredAngle,
+  SLIDE_ATTACK_CANCEL_SECONDS,
+  SLIDE_COLD_REARM_TICKS,
+  SLIDE_COMMIT_TICKS,
+  SLIDE_ENTRY_SPEED,
+  SLIDE_GROUND_TICKS,
+  SLIDE_HOP_MAX_TICK,
+  SLIDE_HOP_MIN_TICK,
+  SLIDE_HOP_VERTICAL_VELOCITY,
+  SLIDE_LAND_WINDOW_TICKS,
+  SLIDE_PARRY_LOCK_SECONDS,
+  SLIDE_PHASE_AIR,
+  SLIDE_PHASE_GROUND,
+  SLIDE_PHASE_LAND_WINDOW,
+  SLIDE_PHASE_OFF,
+  SLIDE_PRELAND_BUFFER_TICKS,
+  SLIDE_SPEED_CAP,
+  type SlidePhase,
   SECOND_WIND_BASE,
   SECOND_WIND_PER_CON,
   SHIFTER_FIRST_SECONDS,
@@ -267,7 +284,7 @@ import {
   STANCE_DASH,
   STANCE_NONE,
   STANCE_POUND,
-  STANCE_ROLL,
+  STANCE_SLIDE,
   type MoveStance,
   TelegraphState,
   TgShape,
@@ -369,7 +386,8 @@ interface InputCmd {
   jump: boolean;
   crouchHeld: boolean;
   pound: boolean;
-  roll: boolean;
+  slide: boolean;
+  slideHeld: boolean;
   fireHeld: boolean;
   aimX: number;
   aimY: number;
@@ -466,12 +484,24 @@ interface CombatState {
   poundGatherT: number;
   poundTriggerHeight: number;
   recoveryT: number;
-  /** Seconds elapsed in the active grounded roll; its i-frame predicate derives from stance + this value. */
-  rollT: number;
-  /** Cooldown starts when the roll stance ends, including an authoritative forced cancel. */
-  rollCd: number;
-  /** Anti-stacking seam: parry cannot begin before consume+10 ticks. */
-  rollParryLockT: number;
+  /** Schema-23 persistent player-authored carry. Never includes recoil/hostile impulse. */
+  momentumX: number;
+  momentumY: number;
+  slidePhase: SlidePhase;
+  /** Sentence age across GROUND/AIR; LAND_WINDOW reuses it as elapsed landing age. */
+  slidePhaseTick: number;
+  slidePrevHeld: boolean;
+  slideHopBuffered: boolean;
+  slidePrelandTicks: number;
+  slideLandMomentumX: number;
+  slideLandMomentumY: number;
+  slideColdArmed: boolean;
+  slideColdRearmTicks: number;
+  slideParryLockT: number;
+  lastSlideLandingTick: number;
+  /** Allocation-free collision feedback anchors for the active authored step. */
+  slideStepStartX: number;
+  slideStepStartY: number;
   lastLandingTier: LandingThumpTier;
   lastLandingSpeed: number;
   /** §17 last GROUNDED position (world px) — where a pit-fall snaps the player back to. Updated every
@@ -896,7 +926,8 @@ export class GameRoom extends Room<ArenaState> {
         jump?: boolean;
         crouchHeld?: boolean;
         pound?: boolean;
-        roll?: boolean;
+        slide?: boolean;
+        slideHeld?: boolean;
         fireHeld?: boolean;
         aimX?: number;
         aimY?: number;
@@ -924,7 +955,8 @@ export class GameRoom extends Room<ArenaState> {
           jump: message?.jump === true,
           crouchHeld: message?.crouchHeld === true,
           pound: message?.pound === true,
-          roll: message?.roll === true,
+          slide: message?.slide === true,
+          slideHeld: message?.slideHeld === true,
           fireHeld: message?.fireHeld === true,
           aimX: Number.isFinite(message?.aimX) ? (message.aimX as number) : rec.held.aimX,
           aimY: Number.isFinite(message?.aimY) ? (message.aimY as number) : rec.held.aimY,
@@ -951,8 +983,8 @@ export class GameRoom extends Room<ArenaState> {
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
         if (!c) return;
-        if (player && c.stance === STANCE_ROLL) {
-          if (c.rollT + 1e-9 < ROLL_ATTACK_CANCEL_SECONDS) return;
+        if (player && c.stance === STANCE_SLIDE) {
+          if (c.slidePhaseTick * (TICK_MS / 1000) + 1e-9 < SLIDE_ATTACK_CANCEL_SECONDS) return;
           this.cancelMoveStance(player, c, true);
         }
         if (player && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
@@ -996,7 +1028,7 @@ export class GameRoom extends Room<ArenaState> {
       const c = this.combat.get(client.sessionId);
       if (!player?.alive || !c) return;
       if (c.recoveryT > 0) return; // pound recovery is explicitly a no-parry window
-      if (c.rollParryLockT > 0 || c.stance === STANCE_ROLL) {
+      if (c.slideParryLockT > 0) {
         c.parryBuffer = PARRY_BUFFER_SECONDS;
         return;
       }
@@ -1187,6 +1219,7 @@ export class GameRoom extends Room<ArenaState> {
     this.onMessage("buyUpgrade", (client, message: { id?: string }) => {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || !this.belt) return;
+      if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
       const shopX = this.state.beltShopX;
       if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
       const id = message?.id;
@@ -1227,7 +1260,9 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return; // §44 action budget (each drop allocates a synced pickup)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
-      this.dropHeldWeapon(player, this.combat.get(client.sessionId));
+      const c = this.combat.get(client.sessionId);
+      if (c?.stance === STANCE_SLIDE) return;
+      this.dropHeldWeapon(player, c);
     });
 
     // §13 R-HOLD = SALVAGE the held weapon (consumed, no pickup) → fall back to FISTS. §6 v0.103: salvage
@@ -1238,6 +1273,7 @@ export class GameRoom extends Room<ArenaState> {
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       const c = this.combat.get(client.sessionId);
+      if (c?.stance === STANCE_SLIDE) return;
       if (c) this.saveWeaponResource(player, c);
       if (c?.heldEarned) {
         player.salvaged += salvageValue(player.weaponRarity); // §13 v0.104: rarity drives the parts value
@@ -1257,6 +1293,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.takeAction(client)) return; // §44 action budget (O(pickups) scan per call)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
+      if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
       let best: PickupState | null = null;
       let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
       this.state.pickups.forEach((pk, pid) => {
@@ -1463,9 +1500,13 @@ export class GameRoom extends Room<ArenaState> {
       c.poundUsed = false;
       c.poundGatherT = 0;
       c.recoveryT = 0;
-      c.rollT = 0;
-      c.rollCd = 0;
-      c.rollParryLockT = 0;
+      c.momentumX = 0;
+      c.momentumY = 0;
+      c.slidePhase = SLIDE_PHASE_OFF;
+      c.slidePhaseTick = 0;
+      c.slideColdArmed = true;
+      c.slideColdRearmTicks = 0;
+      c.slideParryLockT = 0;
       const player = this.state.players.get(id);
       if (player) this.cancelMoveStance(player, c, true);
     }
@@ -2122,9 +2163,13 @@ export class GameRoom extends Room<ArenaState> {
         c.distJumpCd = 0;
         c.poundUsed = false;
         c.recoveryT = 0;
-        c.rollT = 0;
-        c.rollCd = 0;
-        c.rollParryLockT = 0;
+        c.momentumX = 0;
+        c.momentumY = 0;
+        c.slidePhase = SLIDE_PHASE_OFF;
+        c.slidePhaseTick = 0;
+        c.slideColdArmed = true;
+        c.slideColdRearmTicks = 0;
+        c.slideParryLockT = 0;
       }
       this.zeroMoveVel(id); // §7 fresh run, fresh momentum
     });
@@ -2329,7 +2374,8 @@ export class GameRoom extends Room<ArenaState> {
         jump: false,
         crouchHeld: false,
         pound: false,
-        roll: false,
+        slide: false,
+        slideHeld: false,
         fireHeld: false,
         aimX: 1,
         aimY: 0,
@@ -2378,9 +2424,21 @@ export class GameRoom extends Room<ArenaState> {
       poundGatherT: 0,
       poundTriggerHeight: 0,
       recoveryT: 0,
-      rollT: 0,
-      rollCd: 0,
-      rollParryLockT: 0,
+      momentumX: 0,
+      momentumY: 0,
+      slidePhase: SLIDE_PHASE_OFF,
+      slidePhaseTick: 0,
+      slidePrevHeld: false,
+      slideHopBuffered: false,
+      slidePrelandTicks: 0,
+      slideLandMomentumX: 0,
+      slideLandMomentumY: 0,
+      slideColdArmed: true,
+      slideColdRearmTicks: 0,
+      slideParryLockT: 0,
+      lastSlideLandingTick: -1,
+      slideStepStartX: player.x,
+      slideStepStartY: player.y,
       lastLandingTier: LANDING_TIER_SOFT,
       lastLandingSpeed: 0,
       lastGroundX: player.x,
@@ -2442,13 +2500,12 @@ export class GameRoom extends Room<ArenaState> {
     return player.flexPending > 0 || player.sigPending > 0;
   }
 
-  /** Direct-contact dodge predicate. It is deliberately separate from rewarded parry `invuln`. Because
-   * rollT advances after movement and before damage, <=0.25 covers consume ticks 0..4 exactly. */
-  private rollInvulnerable(c: CombatState): boolean {
-    return c.stance === STANCE_ROLL && c.rollT <= ROLL_IFRAME_SECONDS + 1e-9;
+  /** Direct-contact slide predicate. Separate from parry `invuln`; ticks 1..5 are the inherited budget. */
+  private slideInvulnerable(c: CombatState): boolean {
+    return slideContactInvulnerable(c.stance, c.slidePhase, c.slidePhaseTick);
   }
 
-  private noteRollDodge(player: PlayerState): void {
+  private noteSlideDodge(player: PlayerState): void {
     player.dodgedSeq = (player.dodgedSeq + 1) & 0xff;
   }
 
@@ -2488,13 +2545,15 @@ export class GameRoom extends Room<ArenaState> {
     if (cmd.fireHeld && c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
 
     if (cmd.pound) {
+      const slideAir = c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR;
       if (
         player.alive &&
         !this.inLevelWindow(player) &&
         player.height > POUND_MIN_HEIGHT &&
         !c.poundUsed &&
-        (c.stance === STANCE_NONE || c.stance === STANCE_DASH)
+        (c.stance === STANCE_NONE || c.stance === STANCE_DASH || slideAir)
       ) {
+        if (slideAir) this.cancelMoveStance(player, c, false);
         c.poundUsed = true;
         c.poundGatherT = POUND_GATHER_SECONDS;
         c.poundTriggerHeight = player.height;
@@ -2506,57 +2565,77 @@ export class GameRoom extends Room<ArenaState> {
         player.mvy = 0;
         c.dashSpeed = 0;
         this.setMoveStance(player, c, STANCE_POUND);
+      } else if (
+        slideAir &&
+        verticalTimeToGround(player.height, c.vh) <=
+          SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
+      ) {
+        // A fresh near-ground Space edge can be the next hop only when the landing slide is also armed.
+        c.slideHopBuffered = true;
       } else if (player.height > GROUND_EPSILON && player.height <= POUND_MIN_HEIGHT) {
         // The first/last sliver keeps the old "press before landing" buffer rather than stealing it.
         c.jumpBuffer = JUMP_BUFFER_SECONDS;
       }
     }
 
-    // Shift is an unbuffered command edge. Authority re-checks every gate on the consumed tick, then
-    // freezes the heading from held movement -> current steering -> aim. The roll never writes invuln.
+    const slideReleased = !cmd.slideHeld && c.slidePrevHeld;
+    c.slidePrevHeld = cmd.slideHeld;
     if (
-      cmd.roll &&
+      slideReleased &&
+      c.stance === STANCE_SLIDE &&
+      c.slidePhase === SLIDE_PHASE_GROUND &&
+      c.slidePhaseTick >= SLIDE_COMMIT_TICKS
+    ) {
+      this.cancelMoveStance(player, c, false);
+    }
+
+    if (cmd.slide && c.stance === STANCE_SLIDE) {
+      if (c.slidePhase === SLIDE_PHASE_LAND_WINDOW) {
+        this.acceptSlideLandingChain(player, c, input);
+      } else if (
+        c.slidePhase === SLIDE_PHASE_AIR &&
+        verticalTimeToGround(player.height, c.vh) <= SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
+      ) {
+        c.slidePrelandTicks = SLIDE_PRELAND_BUFFER_TICKS;
+      }
+    }
+
+    // Shift and Ctrl collapse to the same unbuffered edge. Cold entry is movement-gated and never retries
+    // from a held key; landing windows are the explicit held/buffered exception.
+    if (
+      cmd.slide &&
       player.alive &&
       !this.inLevelWindow(player) &&
       player.height <= GROUND_EPSILON &&
       c.stance === STANCE_NONE &&
       c.recoveryT <= 0 &&
-      c.rollCd <= 0 &&
+      c.slideColdArmed &&
       !c.juggleArmed &&
-      c.invuln <= 0
+      c.invuln <= 0 &&
+      c.pitGrace <= 0 &&
+      c.beamPhase === 0 &&
+      Math.hypot(cmd.dx, cmd.dy) > 1e-4
     ) {
-      let dx = cmd.dx;
-      let dy = cmd.dy;
-      let len = Math.hypot(dx, dy);
-      if (len <= 1e-4) {
-        dx = input.mvx;
-        dy = input.mvy;
-        len = Math.hypot(dx, dy);
-      }
-      if (len <= 1e-4) {
-        dx = c.aimX;
-        dy = c.aimY;
-        len = Math.hypot(dx, dy);
-      }
-      if (len > 1e-4) {
-        c.dashDirX = dx / len;
-        c.dashDirY = dy / len;
-        c.dashBaseDirX = c.dashDirX;
-        c.dashBaseDirY = c.dashDirY;
-        c.dashSteer = 0;
-        c.dashSpeed = rollSpeedAt(0);
-        c.rollT = 0;
-        // Timers age later in this same consumed-command tick; seed one tick high so the live lock is
-        // exactly [consume, consume+10), not an accidental nine-tick window.
-        c.rollParryLockT = ROLL_PARRY_LOCK_SECONDS + TICK_MS / 1000;
+      const speed = Math.hypot(input.mvx, input.mvy);
+      if (speed + 1e-9 >= SLIDE_ENTRY_SPEED) {
+        c.momentumX = (input.mvx / speed) * SLIDE_SPEED_CAP;
+        c.momentumY = (input.mvy / speed) * SLIDE_SPEED_CAP;
+        c.slidePhase = SLIDE_PHASE_GROUND;
+        c.slidePhaseTick = 0;
+        c.slideHopBuffered = false;
+        c.slidePrelandTicks = 0;
+        c.slideLandMomentumX = 0;
+        c.slideLandMomentumY = 0;
+        c.slideColdArmed = false;
+        c.slideColdRearmTicks = 0;
+        c.lastSlideLandingTick = -1;
+        c.slideParryLockT = SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000;
         c.attackBuffer = 0;
-        input.mvx = c.dashDirX * c.dashSpeed;
-        input.mvy = c.dashDirY * c.dashSpeed;
+        input.mvx = c.momentumX;
+        input.mvy = c.momentumY;
         player.mvx = input.mvx;
         player.mvy = input.mvy;
-        if (c.beamPhase !== 0 || c.beamDescriptor)
-          this.cancelBeam(player, player.id, c, true, false);
-        this.setMoveStance(player, c, STANCE_ROLL);
+        this.setMoveStance(player, c, STANCE_SLIDE);
       }
     }
 
@@ -2593,10 +2672,72 @@ export class GameRoom extends Room<ArenaState> {
     player.moveStance = stance;
   }
 
+  private syncSlideWire(player: PlayerState, c: CombatState): void {
+    if (c.slidePhase === SLIDE_PHASE_LAND_WINDOW) {
+      const raw = Math.hypot(c.slideLandMomentumX, c.slideLandMomentumY);
+      const speed = clampSlideSpeed(raw);
+      if (raw > 1e-4 && Number.isFinite(raw)) {
+        const scale = speed / raw;
+        c.slideLandMomentumX *= scale;
+        c.slideLandMomentumY *= scale;
+      } else {
+        c.slideLandMomentumX = 0;
+        c.slideLandMomentumY = 0;
+      }
+      player.momentumX = c.slideLandMomentumX;
+      player.momentumY = c.slideLandMomentumY;
+    } else if (c.stance === STANCE_SLIDE) {
+      const speed = clampSlideSpeed(Math.hypot(c.momentumX, c.momentumY));
+      const raw = Math.hypot(c.momentumX, c.momentumY);
+      if (raw > 1e-4 && Number.isFinite(raw)) {
+        const scale = speed / raw;
+        c.momentumX *= scale;
+        c.momentumY *= scale;
+      } else {
+        c.momentumX = 0;
+        c.momentumY = 0;
+      }
+      player.momentumX = c.momentumX;
+      player.momentumY = c.momentumY;
+    } else {
+      player.momentumX = 0;
+      player.momentumY = 0;
+    }
+    player.slidePhase = c.slidePhase;
+    player.slidePhaseTick = Math.max(0, Math.min(255, c.slidePhaseTick));
+  }
+
   /** Forced cancels alone bump stanceSeq; organic abort/launch/landing edges only change moveStance. */
   private cancelMoveStance(player: PlayerState, c: CombatState, forced: boolean): void {
     if (c.stance === STANCE_NONE) return;
-    if (c.stance === STANCE_ROLL) c.rollCd = Math.max(c.rollCd, ROLL_COOLDOWN);
+    if (c.stance === STANCE_SLIDE) {
+      const input = this.inputs.get(player.id);
+      if (input) {
+        if (!forced && (c.slidePhase === SLIDE_PHASE_GROUND || c.slidePhase === SLIDE_PHASE_AIR)) {
+          input.mvx = c.momentumX;
+          input.mvy = c.momentumY;
+        } else {
+          input.mvx = 0;
+          input.mvy = 0;
+        }
+        player.mvx = input.mvx;
+        player.mvy = input.mvy;
+      }
+      c.momentumX = 0;
+      c.momentumY = 0;
+      c.slidePhase = SLIDE_PHASE_OFF;
+      c.slidePhaseTick = 0;
+      c.slideHopBuffered = false;
+      c.slidePrelandTicks = 0;
+      c.slideLandMomentumX = 0;
+      c.slideLandMomentumY = 0;
+      c.lastSlideLandingTick = -1;
+      c.slideColdRearmTicks = 0;
+      player.momentumX = 0;
+      player.momentumY = 0;
+      player.slidePhase = SLIDE_PHASE_OFF;
+      player.slidePhaseTick = 0;
+    }
     c.stance = STANCE_NONE;
     player.moveStance = STANCE_NONE;
     c.crouchT = 0;
@@ -2610,28 +2751,70 @@ export class GameRoom extends Room<ArenaState> {
     c.dashSteer = 0;
     c.poundGatherT = 0;
     c.poundTriggerHeight = 0;
-    c.rollT = 0;
     if (forced) player.stanceSeq = (player.stanceSeq + 1) & 0xff;
   }
 
-  /** Advance the roll after its movement sample. Cooldown begins on this authored end edge. */
-  private stepRollStance(
+  private launchSlideHop(player: PlayerState, c: CombatState): void {
+    const speed = Math.hypot(c.momentumX, c.momentumY);
+    if (speed <= 1e-4) return;
+    const nextSpeed = slideHopSpeed(speed);
+    c.momentumX = (c.momentumX / speed) * nextSpeed;
+    c.momentumY = (c.momentumY / speed) * nextSpeed;
+    c.slidePhase = SLIDE_PHASE_AIR;
+    c.slideHopBuffered = false;
+    c.vh = SLIDE_HOP_VERTICAL_VELOCITY;
+    c.jumpCd = Math.max(c.jumpCd, JUMP_COOLDOWN);
+    player.vh = c.vh;
+  }
+
+  private acceptSlideLandingChain(
     player: PlayerState,
     c: CombatState,
-    input: InputState | undefined,
-    dt: number,
-  ): void {
-    if (c.stance !== STANCE_ROLL) return;
-    c.rollT += dt;
-    if (c.rollT + 1e-9 < ROLL_DURATION) return;
-    const dx = c.dashDirX;
-    const dy = c.dashDirY;
-    this.cancelMoveStance(player, c, false);
-    if (input) {
-      input.mvx = dx * MOVE_SPEED;
-      input.mvy = dy * MOVE_SPEED;
-      player.mvx = input.mvx;
-      player.mvy = input.mvy;
+    input: InputState,
+  ): boolean {
+    if (
+      c.stance !== STANCE_SLIDE ||
+      c.slidePhase !== SLIDE_PHASE_LAND_WINDOW ||
+      c.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS ||
+      c.lastSlideLandingTick < 0 ||
+      c.pitGrace > 0
+    ) return false;
+    const landingSpeed = Math.hypot(c.slideLandMomentumX, c.slideLandMomentumY);
+    if (landingSpeed <= 1e-4) return false;
+    const nextSpeed = slideLandingSpeed(landingSpeed);
+    c.momentumX = (c.slideLandMomentumX / landingSpeed) * nextSpeed;
+    c.momentumY = (c.slideLandMomentumY / landingSpeed) * nextSpeed;
+    c.slideLandMomentumX = 0;
+    c.slideLandMomentumY = 0;
+    c.lastSlideLandingTick = -1;
+    c.slidePhase = SLIDE_PHASE_GROUND;
+    c.slidePhaseTick = 0;
+    c.slidePrelandTicks = 0;
+    c.slideParryLockT = Math.max(
+      c.slideParryLockT,
+      SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000,
+    );
+    input.mvx = c.momentumX;
+    input.mvy = c.momentumY;
+    player.mvx = input.mvx;
+    player.mvy = input.mvy;
+    return true;
+  }
+
+  /** Tick-only slide transitions that occur after horizontal integration. */
+  private stepSlideStance(player: PlayerState, c: CombatState): void {
+    if (c.stance !== STANCE_SLIDE) return;
+    if (c.slidePhase === SLIDE_PHASE_GROUND) {
+      if (c.slideHopBuffered && c.slidePhaseTick >= SLIDE_HOP_MIN_TICK) {
+        this.launchSlideHop(player, c);
+      } else if (c.slidePhaseTick >= SLIDE_GROUND_TICKS) {
+        this.cancelMoveStance(player, c, false);
+      }
+      return;
+    }
+    if (c.slidePhase === SLIDE_PHASE_LAND_WINDOW) {
+      c.slidePhaseTick++;
+      if (c.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS) this.cancelMoveStance(player, c, false);
     }
   }
 
@@ -2752,7 +2935,11 @@ export class GameRoom extends Room<ArenaState> {
     c.lastLandingSpeed = Math.abs(impactVh);
     c.lastLandingTier = landingThumpTier(
       impactVh,
-      landingStance === STANCE_DASH ? c.dashSpeed : 0,
+      landingStance === STANCE_DASH
+        ? c.dashSpeed
+        : landingStance === STANCE_SLIDE
+          ? Math.hypot(c.momentumX, c.momentumY)
+          : 0,
       landingStance === STANCE_DASH || landingStance === STANCE_POUND,
     );
     if (landingStance === STANCE_POUND) {
@@ -2769,8 +2956,30 @@ export class GameRoom extends Room<ArenaState> {
         player.mvx = input.mvx;
         player.mvy = input.mvy;
       }
+    } else if (landingStance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR) {
+      const unsafe = this.belt && this.beltLevel
+        ? beltPitAtX(this.beltLevel, player.x)
+        : !this.belt && isPitAtPx(this.map, player.x, player.y);
+      if (unsafe) {
+        this.cancelMoveStance(player, c, true);
+      } else {
+        c.slideLandMomentumX = c.momentumX;
+        c.slideLandMomentumY = c.momentumY;
+        c.momentumX = 0;
+        c.momentumY = 0;
+        c.slidePhase = SLIDE_PHASE_LAND_WINDOW;
+        c.slidePhaseTick = 0;
+        c.lastSlideLandingTick = this.state.tick;
+        const input = this.inputs.get(player.id);
+        const chained =
+          !!input &&
+          (input.held.slideHeld || c.slidePrelandTicks > 0) &&
+          this.acceptSlideLandingChain(player, c, input);
+        if (!chained) c.slideHopBuffered = false;
+      }
     }
-    if (landingStance !== STANCE_NONE) this.cancelMoveStance(player, c, false);
+    if (landingStance !== STANCE_NONE && landingStance !== STANCE_SLIDE)
+      this.cancelMoveStance(player, c, false);
     c.poundUsed = false;
   }
 
@@ -3006,10 +3215,13 @@ export class GameRoom extends Room<ArenaState> {
         if (cmd.jump) {
           const c = this.combat.get(id);
           if (c) {
-            c.jumpBuffer =
-              c.stance === STANCE_ROLL
-                ? Math.max(c.jumpBuffer, ROLL_DURATION - c.rollT + TICK_MS / 1000)
-                : JUMP_BUFFER_SECONDS;
+            if (c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_GROUND) {
+              if (c.slidePhaseTick < SLIDE_HOP_MIN_TICK) c.slideHopBuffered = true;
+              else if (c.slidePhaseTick <= SLIDE_HOP_MAX_TICK) this.launchSlideHop(player, c);
+              else c.jumpBuffer = JUMP_BUFFER_SECONDS;
+            } else {
+              c.jumpBuffer = JUMP_BUFFER_SECONDS;
+            }
           }
         }
         const stance = this.combat.get(id);
@@ -3046,9 +3258,9 @@ export class GameRoom extends Room<ArenaState> {
       // §29 belt mode confines DEPTH (y) to the shallow band; the client predictor passes identical bounds.
       const beamRuntime = this.combat.get(id);
       if (
-        beamRuntime?.stance === STANCE_ROLL &&
+        beamRuntime?.stance === STANCE_SLIDE &&
         input.held.fireHeld &&
-        beamRuntime.rollT + 1e-9 >= ROLL_ATTACK_CANCEL_SECONDS
+        beamRuntime.slidePhaseTick * (TICK_MS / 1000) + 1e-9 >= SLIDE_ATTACK_CANCEL_SECONDS
       ) {
         this.cancelMoveStance(player, beamRuntime, true);
       }
@@ -3062,18 +3274,56 @@ export class GameRoom extends Room<ArenaState> {
         : MOVE_SPEED;
       let nextX: number;
       let nextY: number;
-      if (beamRuntime?.stance === STANCE_DASH || beamRuntime?.stance === STANCE_ROLL) {
-        if (beamRuntime.stance === STANCE_DASH)
+      let slideSpeed = 0;
+      const activeSlide =
+        beamRuntime?.stance === STANCE_SLIDE &&
+        (beamRuntime.slidePhase === SLIDE_PHASE_GROUND ||
+          beamRuntime.slidePhase === SLIDE_PHASE_AIR);
+      if (beamRuntime?.stance === STANCE_DASH || activeSlide) {
+        if (beamRuntime?.stance === STANCE_DASH) {
           this.steerDistanceJump(beamRuntime, input.held, dt);
-        else beamRuntime.dashSpeed = rollSpeedAt(beamRuntime.rollT);
-        input.mvx = beamRuntime.dashDirX * beamRuntime.dashSpeed;
-        input.mvy = beamRuntime.dashDirY * beamRuntime.dashSpeed;
+          input.mvx = beamRuntime.dashDirX * beamRuntime.dashSpeed;
+          input.mvy = beamRuntime.dashDirY * beamRuntime.dashSpeed;
+        } else if (beamRuntime) {
+          slideSpeed = clampSlideSpeed(Math.hypot(beamRuntime.momentumX, beamRuntime.momentumY));
+          if (slideSpeed <= 1e-4) {
+            this.cancelMoveStance(player, beamRuntime, false);
+            input.mvx = 0;
+            input.mvy = 0;
+          } else {
+            const angle = slideSteeredAngle(
+              beamRuntime.momentumX,
+              beamRuntime.momentumY,
+              input.held.dx,
+              input.held.dy,
+              dt,
+              beamRuntime.slidePhase === SLIDE_PHASE_AIR,
+            );
+            beamRuntime.momentumX = Math.cos(angle) * slideSpeed;
+            beamRuntime.momentumY = Math.sin(angle) * slideSpeed;
+            input.mvx = beamRuntime.momentumX;
+            input.mvy = beamRuntime.momentumY;
+            beamRuntime.slideStepStartX = player.x;
+            beamRuntime.slideStepStartY = player.y;
+          }
+        }
         nextX = clamp(player.x + input.mvx * dt, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
         nextY = clamp(
           player.y + input.mvy * dt,
           this.belt ? BELT_Y0 : PLAYER_RADIUS,
           this.belt ? BELT_Y0 + DEPTH_MAX : ARENA_HEIGHT - PLAYER_RADIUS,
         );
+        if (activeSlide && beamRuntime?.stance === STANCE_SLIDE) {
+          if (beamRuntime.slidePhase === SLIDE_PHASE_GROUND) {
+            const nextSpeed = slideGroundNextSpeed(slideSpeed);
+            const scale = slideSpeed > 1e-4 ? nextSpeed / slideSpeed : 0;
+            beamRuntime.momentumX *= scale;
+            beamRuntime.momentumY *= scale;
+          }
+          beamRuntime.slidePhaseTick++;
+          input.mvx = beamRuntime.momentumX;
+          input.mvy = beamRuntime.momentumY;
+        }
       } else {
         const rooted =
           beamRuntime?.stance === STANCE_CROUCH ||
@@ -3158,6 +3408,38 @@ export class GameRoom extends Room<ArenaState> {
       });
     }
 
+    // Collision may only remove renewable carry. The post-solver displacement can never refill it from
+    // hostile impulse/body separation, and a head-on result below the entry floor breaks the sentence.
+    this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      if (
+        !c ||
+        c.stance !== STANCE_SLIDE ||
+        (c.slidePhase !== SLIDE_PHASE_GROUND && c.slidePhase !== SLIDE_PHASE_AIR)
+      ) return;
+      const authoredSpeed = Math.hypot(c.momentumX, c.momentumY);
+      const actualSpeed = Math.hypot(
+        player.x - c.slideStepStartX,
+        player.y - c.slideStepStartY,
+      ) / dt;
+      if (actualSpeed + 1 < authoredSpeed) {
+        const retained = Math.min(authoredSpeed, actualSpeed);
+        if (retained < SLIDE_ENTRY_SPEED) {
+          this.cancelMoveStance(player, c, false);
+          return;
+        }
+        c.momentumX = (c.momentumX / authoredSpeed) * retained;
+        c.momentumY = (c.momentumY / authoredSpeed) * retained;
+        const input = this.inputs.get(id);
+        if (input) {
+          input.mvx = c.momentumX;
+          input.mvy = c.momentumY;
+          player.mvx = input.mvx;
+          player.mvy = input.mvy;
+        }
+      }
+    });
+
     // 2.5 §17 PITFALL — a GROUNDED player whose body is over a pit falls: chip damage + snap back to the
     // last solid tile + a brief grace (i-frames, no re-fall). An AIRBORNE player (mid-jump, §5) clears the
     // gap and is immune. We also remember the last grounded spot here so the snap-back has somewhere to go.
@@ -3171,7 +3453,10 @@ export class GameRoom extends Room<ArenaState> {
         c.beamFocusStacks = countAugment(player.augments, "beam-focus");
       }
       if (c.pitGrace > 0) c.pitGrace = Math.max(0, c.pitGrace - dt);
-      if (player.height > GROUND_EPSILON) return; // airborne (mid-jump) — the hop carries you over
+      if (
+        player.height > GROUND_EPSILON ||
+        (c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR && c.vh > 0)
+      ) return; // airborne (including the exact slide-hop launch tick) — the hop carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
       // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
       if (this.belt && this.beltLevel) {
@@ -3280,9 +3565,8 @@ export class GameRoom extends Room<ArenaState> {
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.distJumpCd = Math.max(0, c.distJumpCd - dt);
       c.recoveryT = Math.max(0, c.recoveryT - dt);
-      c.rollCd = Math.max(0, c.rollCd - dt);
-      c.rollParryLockT = Math.max(0, c.rollParryLockT - dt);
-      if (c.rollParryLockT <= 1e-9) c.rollParryLockT = 0;
+      c.slideParryLockT = Math.max(0, c.slideParryLockT - dt);
+      if (c.slideParryLockT <= 1e-9) c.slideParryLockT = 0;
       // §7 v0.105 de-clunk: age the queued-input buffers, then fire any that the cooldown has just cleared.
       c.attackBuffer = Math.max(0, c.attackBuffer - dt);
       c.parryBuffer = Math.max(0, c.parryBuffer - dt);
@@ -3293,16 +3577,16 @@ export class GameRoom extends Room<ArenaState> {
       if (
         acting &&
         c.recoveryT <= 0 &&
-        c.rollParryLockT <= 0 &&
-        c.stance !== STANCE_ROLL &&
+        c.slideParryLockT <= 0 &&
         c.parryBuffer > 0 &&
         c.parryCd <= 0
       ) {
         c.parryBuffer = 0;
         this.executeParry(player, c);
       }
+      const slideColdCandidate = c.stance === STANCE_NONE;
       if (acting) this.stepCrouchStance(player, c, this.inputs.get(id), dt);
-      if (acting) this.stepRollStance(player, c, this.inputs.get(id), dt);
+      if (acting) this.stepSlideStance(player, c);
       // BUFFERED JUMP — seed the hop BEFORE stepVertical so it lifts off this same tick (grounded + ready).
       if (
         acting &&
@@ -3341,6 +3625,24 @@ export class GameRoom extends Room<ArenaState> {
       player.vh = c.vh; // §4 v0.107 synced mirror — the predicting client rebases its jump arc exactly
       const landed = wasAirborne && player.height <= GROUND_EPSILON;
       if (landed) this.finishPlayerLanding(player, c, landingStance, impactVh);
+      const moveInput = this.inputs.get(id);
+      if (!c.slideColdArmed) {
+        const qualifying =
+          slideColdCandidate &&
+          c.stance === STANCE_NONE &&
+          player.height <= GROUND_EPSILON &&
+          c.recoveryT <= 0 &&
+          c.pitGrace <= 0 &&
+          !!moveInput &&
+          Math.hypot(moveInput.held.dx, moveInput.held.dy) > 1e-4 &&
+          Math.hypot(moveInput.mvx, moveInput.mvy) + 1e-9 >= SLIDE_ENTRY_SPEED;
+        c.slideColdRearmTicks = qualifying ? c.slideColdRearmTicks + 1 : 0;
+        if (c.slideColdRearmTicks >= SLIDE_COLD_REARM_TICKS) {
+          c.slideColdArmed = true;
+          c.slideColdRearmTicks = SLIDE_COLD_REARM_TICKS;
+        }
+      }
+      this.syncSlideWire(player, c);
       // §51 G10 landing mercy: an enemy-initiated launch (juggle) that returns to ground grants a brief
       // melee/contact immunity — armed ONLY by the launcher hit, never by the player's own jumps.
       if (c.juggleArmed && landed) {
@@ -3359,7 +3661,7 @@ export class GameRoom extends Room<ArenaState> {
 
       if (weapon?.beam) {
         c.attackBuffer = 0;
-        this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_ROLL);
+        this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
         return;
       }
       this.stepBeamResources(c, player.weapon, false, dt);
@@ -3371,7 +3673,7 @@ export class GameRoom extends Room<ArenaState> {
       // the buffer so it can't double-fire. A held trigger re-arms the buffer each client cooldown.
       const canAct =
         acting &&
-        c.stance !== STANCE_ROLL &&
+        c.stance !== STANCE_SLIDE &&
         c.attackBuffer > 0 &&
         c.cd <= 0 &&
         c.drawLock <= 0;
@@ -3610,8 +3912,8 @@ export class GameRoom extends Room<ArenaState> {
               DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
           : dx * dx + dy * dy <= reach * reach;
         if (contact) {
-          if (pcc && this.rollInvulnerable(pcc)) {
-            this.noteRollDodge(player);
+          if (pcc && this.slideInvulnerable(pcc)) {
+            this.noteSlideDodge(player);
             return;
           }
           this.damagePlayer(player, kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt);
@@ -6113,7 +6415,8 @@ export class GameRoom extends Room<ArenaState> {
       inp.held.jump = false;
       inp.held.crouchHeld = false;
       inp.held.pound = false;
-      inp.held.roll = false;
+      inp.held.slide = false;
+      inp.held.slideHeld = false;
       inp.held.fireHeld = false;
     }
     const c = this.combat.get(id);
@@ -6121,10 +6424,25 @@ export class GameRoom extends Room<ArenaState> {
     if (player) {
       if (c) {
         c.crouchPrevHeld = false;
+        c.slidePrevHeld = false;
+        c.slideColdArmed = false;
+        c.slideColdRearmTicks = 0;
+        c.slideHopBuffered = false;
+        c.slidePrelandTicks = 0;
+        c.momentumX = 0;
+        c.momentumY = 0;
+        c.slideLandMomentumX = 0;
+        c.slideLandMomentumY = 0;
+        c.slidePhase = SLIDE_PHASE_OFF;
+        c.slidePhaseTick = 0;
         this.cancelMoveStance(player, c, true);
       }
       player.mvx = 0;
       player.mvy = 0;
+      player.momentumX = 0;
+      player.momentumY = 0;
+      player.slidePhase = SLIDE_PHASE_OFF;
+      player.slidePhaseTick = 0;
       player.teleportSeq = (player.teleportSeq + 1) >>> 0;
     }
   }
@@ -6295,7 +6613,8 @@ export class GameRoom extends Room<ArenaState> {
    *  out of the message handler (v0.105 de-clunk) so a BUFFERED parry (one that arrived during the cooldown)
    *  can fire from the tick the instant the cd drains, not just synchronously on message arrival. */
   private executeParry(player: PlayerState, c: CombatState): void {
-    if (c.recoveryT > 0 || c.rollParryLockT > 0 || c.stance === STANCE_ROLL) return;
+    if (c.recoveryT > 0 || c.slideParryLockT > 0) return;
+    if (c.stance === STANCE_SLIDE) this.cancelMoveStance(player, c, false);
     if (c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
@@ -6643,8 +6962,8 @@ export class GameRoom extends Room<ArenaState> {
         this.resolveParry(player, pc, enemy, enemyId);
         return;
       }
-      if (pc && this.rollInvulnerable(pc)) {
-        this.noteRollDodge(player);
+      if (pc && this.slideInvulnerable(pc)) {
+        this.noteSlideDodge(player);
         return;
       }
       if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy covers ALL melee, legacy included
@@ -7012,11 +7331,29 @@ export class GameRoom extends Room<ArenaState> {
       fy = 0;
       fd = 1;
     }
-    const landing = this.negotiateComboLanding(enemy, prey, kind, def, fx / fd, fy / fd);
+    const effectiveVx = prey.mvx + prey.vx;
+    const effectiveVy = prey.mvy + prey.vy;
+    const effectiveSpeed = Math.hypot(effectiveVx, effectiveVy);
+    let forecastX = prey.x;
+    let forecastY = prey.y;
+    if (effectiveSpeed > 400) {
+      const lead = Math.min(140, effectiveSpeed * 0.3);
+      forecastX += (effectiveVx / effectiveSpeed) * lead;
+      forecastY += (effectiveVy / effectiveSpeed) * lead;
+    }
+    const landing = this.negotiateComboLanding(
+      enemy,
+      forecastX,
+      forecastY,
+      kind,
+      def,
+      fx / fd,
+      fy / fd,
+    );
     st.negotiatedX = landing.x;
     st.negotiatedY = landing.y;
-    st.negotiatedTargetX = prey.x;
-    st.negotiatedTargetY = prey.y;
+    st.negotiatedTargetX = forecastX;
+    st.negotiatedTargetY = forecastY;
     st.settleTicks = COMBO_LEAP_SETTLE_TICKS + (landing.awkward ? 2 : 0);
     // WHITE duel-offer ring (danger 0 — the landing itself damages NOTHING; the settle beat is sacred,
     // so a red dodge marker would be a lie), full footprint from the first tick, visible 0.65s before
@@ -7032,13 +7369,23 @@ export class GameRoom extends Room<ArenaState> {
    *  the player's front 90° arc and marks the landing awkward (+0.10s settle), as authored. */
   private negotiateComboLanding(
     enemy: EnemyState,
-    prey: PlayerState,
+    targetX: number,
+    targetY: number,
     kind: EnemyKind,
     def: ToughComboDef,
     facingX: number,
     facingY: number,
   ): { x: number; y: number; awkward: boolean } {
-    let best = this.comboLandingCandidate(enemy, prey, kind, def.frontOffset, facingX, facingY, 0);
+    let best = this.comboLandingCandidate(
+      enemy,
+      targetX,
+      targetY,
+      kind,
+      def.frontOffset,
+      facingX,
+      facingY,
+      0,
+    );
     const awkward = best.navShift > 40;
     if (awkward) {
       // ±15°, ±30°, ±45°: nearest-bearing-first, bounded and allocation-free apart from decision-edge
@@ -7048,7 +7395,8 @@ export class GameRoom extends Room<ArenaState> {
         const angle = i % 2 === 1 ? magnitude : -magnitude;
         const candidate = this.comboLandingCandidate(
           enemy,
-          prey,
+          targetX,
+          targetY,
           kind,
           def.frontOffset,
           facingX,
@@ -7069,7 +7417,8 @@ export class GameRoom extends Room<ArenaState> {
    *  not the authored 560px range pullback. */
   private comboLandingCandidate(
     enemy: EnemyState,
-    prey: PlayerState,
+    targetX: number,
+    targetY: number,
     kind: EnemyKind,
     offset: number,
     facingX: number,
@@ -7080,8 +7429,8 @@ export class GameRoom extends Room<ArenaState> {
     const sa = Math.sin(angle);
     const fx = facingX * ca - facingY * sa;
     const fy = facingX * sa + facingY * ca;
-    let rawX = prey.x + fx * offset;
-    let rawY = prey.y + fy * offset;
+    let rawX = targetX + fx * offset;
+    let rawY = targetY + fy * offset;
     const dx = rawX - enemy.x;
     const dy = rawY - enemy.y;
     const d = Math.hypot(dx, dy);
@@ -7316,8 +7665,8 @@ export class GameRoom extends Room<ArenaState> {
         this.resolveParry(player, pc, enemy, enemyId); // §8 negate + reward; §51 branches live inside
         return;
       }
-      if (pc && !step?.airkeep && this.rollInvulnerable(pc)) {
-        this.noteRollDodge(player);
+      if (pc && !step?.airkeep && this.slideInvulnerable(pc)) {
+        this.noteSlideDodge(player);
         return;
       }
       if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy — no landing-gank
@@ -7339,7 +7688,7 @@ export class GameRoom extends Room<ArenaState> {
         pc &&
         (pc.stance === STANCE_CROUCH ||
           pc.stance === STANCE_DASH ||
-          (step?.launch !== undefined && pc.stance === STANCE_ROLL))
+          pc.stance === STANCE_SLIDE)
       ) {
         this.cancelMoveStance(player, pc, true);
       }
@@ -7556,8 +7905,8 @@ export class GameRoom extends Room<ArenaState> {
         this.bossController?.acceptWormParry(player.id, this.state.tick);
         return;
       }
-      if (pc && this.rollInvulnerable(pc)) {
-        this.noteRollDodge(player);
+      if (pc && this.slideInvulnerable(pc)) {
+        this.noteSlideDodge(player);
         return;
       }
       this.damagePlayer(player, damage); // already depth-scaled by the controller
@@ -7681,8 +8030,8 @@ export class GameRoom extends Room<ArenaState> {
             consumed = true;
             return;
           }
-          if (pc && this.rollInvulnerable(pc)) {
-            this.noteRollDodge(player);
+          if (pc && this.slideInvulnerable(pc)) {
+            this.noteSlideDodge(player);
             return;
           }
           this.damagePlayer(player, meta.damage);
@@ -8405,16 +8754,16 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Step a living player into the open portal → run complete (§16). */
   private checkExtraction(bodies: Vec2[]): void {
-    if (!this.state.portalOpen || this.state.outcome !== "active") return;
+    if (!this.state.portalOpen || this.state.outcome !== "active" || bodies.length === 0) return;
     const r2 = EXTRACT_RADIUS * EXTRACT_RADIUS;
-    for (const b of bodies) {
-      const dx = b.x - this.state.portalX;
-      const dy = b.y - this.state.portalY;
-      if (dx * dx + dy * dy <= r2) {
-        this.beginXpBoundary("extract");
-        return;
-      }
-    }
+    let reached = false;
+    this.state.players.forEach((player, id) => {
+      if (!player.alive || this.combat.get(id)?.stance === STANCE_SLIDE) return;
+      const dx = player.x - this.state.portalX;
+      const dy = player.y - this.state.portalY;
+      if (dx * dx + dy * dy <= r2) reached = true;
+    });
+    if (reached) this.beginXpBoundary("extract");
   }
 
   /** §6 the other half of the greed decision (v0.103): the DEEPER rift is a CHANNEL — a living player
@@ -8428,14 +8777,13 @@ export class GameRoom extends Room<ArenaState> {
     }
     const r2 = EXTRACT_RADIUS * EXTRACT_RADIUS;
     let holding = false;
-    for (const b of bodies) {
-      const dx = b.x - this.state.riftX;
-      const dy = b.y - this.state.riftY;
-      if (dx * dx + dy * dy <= r2) {
-        holding = true;
-        break;
-      }
-    }
+    if (bodies.length > 0)
+      this.state.players.forEach((player, id) => {
+        if (!player.alive || this.combat.get(id)?.stance === STANCE_SLIDE) return;
+        const dx = player.x - this.state.riftX;
+        const dy = player.y - this.state.riftY;
+        if (dx * dx + dy * dy <= r2) holding = true;
+      });
     if (holding) {
       this.state.riftCharge = Math.min(1, this.state.riftCharge + dt / RIFT_CHANNEL_SECONDS);
       if (this.state.riftCharge >= 1) {

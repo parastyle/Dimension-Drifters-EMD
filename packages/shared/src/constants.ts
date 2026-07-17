@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 22 as const; // dodge-roll null-whiff edge appended (PlayerState.dodgedSeq)
+export const SCHEMA_VERSION = 23 as const; // slide momentum replay anchor appended
 
 /** Server simulation tick rate. §4 [LOCKED]: 20Hz (bullets are client-sim'd). */
 export const TICK_RATE = 20;
@@ -385,8 +385,8 @@ export const DROP_GRACE_SECONDS = 0.7;
 export const SALVAGE_HOLD_SECONDS = 0.6;
 
 /** §5 JUMP (Spacebar) — universal traversal that clears barriers + pitfalls, with no i-frames. Defensive
- *  channels stay distinct: parry answers WHITE and owns every reward; wave 21b's roll answers RED-projectile
- *  and locked melee with safety only. Neither movement verb inherits the parry reward ladder. */
+ *  channels stay distinct: parry answers WHITE and owns every reward; schema-23 slide opening answers
+ *  RED-projectile and locked melee with safety only. Neither movement verb inherits the parry reward ladder. */
 export const JUMP_AIRTIME = 0.55;
 export const JUMP_COOLDOWN = 0.7;
 /** Peak visual hop height (px) the client lifts the rig at the top of the arc. */
@@ -416,13 +416,14 @@ export const STANCE_NONE = 0 as const;
 export const STANCE_CROUCH = 1 as const;
 export const STANCE_DASH = 2 as const;
 export const STANCE_POUND = 3 as const;
-export const STANCE_ROLL = 4 as const;
+/** Schema-23 slide-hop reuses the retired roll's stance byte; wire id 4 never changed meaning mid-patch. */
+export const STANCE_SLIDE = 4 as const;
 export type MoveStance =
   | typeof STANCE_NONE
   | typeof STANCE_CROUCH
   | typeof STANCE_DASH
   | typeof STANCE_POUND
-  | typeof STANCE_ROLL;
+  | typeof STANCE_SLIDE;
 /** Normal vertical phases are derived, never stored or serialized as part of the committed stance byte. */
 export const VERTICAL_PHASE_GROUNDED = "grounded" as const;
 export const VERTICAL_PHASE_RISING = "rising" as const;
@@ -463,18 +464,42 @@ export const POUND_STAGGER_SECONDS = 0.35;
 export const POUND_RECOVERY_SECONDS = 0.25;
 export const POUND_JUMP_COOLDOWN = 0.9;
 
-/** Wave 21b dodge roll: eight exact 20 Hz samples total 188 px. The first five consumed-command
- * ticks are direct-contact i-frames; the final three remain a vulnerable moving recovery. Roll immunity
- * is derived from STANCE_ROLL + rollT and must never be copied into the parry `invuln` channel. */
-export const ROLL_TICK_SECONDS = 0.05 as const;
-export const ROLL_DURATION = 0.4 as const;
-export const ROLL_DISTANCE = 188 as const;
-export const ROLL_SPEED_CURVE = [680, 640, 580, 500, 420, 340, 300, 300] as const;
-export const ROLL_IFRAME_TICKS = 5 as const;
-export const ROLL_IFRAME_SECONDS = 0.25 as const;
-export const ROLL_ATTACK_CANCEL_SECONDS = 0.3 as const;
-export const ROLL_PARRY_LOCK_SECONDS = 0.5 as const;
-export const ROLL_COOLDOWN = 3 as const;
+/** Schema-23 Megabonk slide-hop. All timing is authored in 20 Hz ticks. The first five consumed-command
+ * ticks inherit 21b's contact-only null-whiff budget; it never aliases parry `invuln` or its rewards. */
+export const SLIDE_TICK_SECONDS = 0.05 as const;
+export const SLIDE_ENTRY_SPEED = 256 as const;
+export const SLIDE_SPEED_CAP = 544 as const;
+export const SLIDE_GROUND_DECAY = 0.97 as const;
+export const SLIDE_GROUND_TICKS = 10 as const;
+export const SLIDE_COMMIT_TICKS = 3 as const;
+export const SLIDE_GROUND_STEER_RADIANS_PER_SECOND = 1.5707963267948966 as const;
+export const SLIDE_HOP_MIN_TICK = 2 as const;
+export const SLIDE_HOP_MAX_TICK = 8 as const;
+export const SLIDE_HOP_VERTICAL_VELOCITY = 285 as const;
+export const SLIDE_HOP_RETENTION = 0.96 as const;
+export const SLIDE_AIR_STEER_RADIANS_PER_SECOND = 2.0943951023931953 as const;
+export const SLIDE_LANDING_RETENTION = 0.95 as const;
+export const SLIDE_LANDING_KICK = 72 as const;
+export const SLIDE_PRELAND_BUFFER_TICKS = 2 as const;
+export const SLIDE_LAND_WINDOW_TICKS = 3 as const;
+export const SLIDE_COLD_REARM_TICKS = 6 as const;
+export const SLIDE_IFRAME_TICKS = 5 as const;
+export const SLIDE_IFRAME_SECONDS = 0.25 as const;
+export const SLIDE_ATTACK_CANCEL_TICKS = 6 as const;
+export const SLIDE_ATTACK_CANCEL_SECONDS = 0.3 as const;
+export const SLIDE_PARRY_LOCK_TICKS = 10 as const;
+export const SLIDE_PARRY_LOCK_SECONDS = 0.5 as const;
+
+/** Wire/replay slide subphases. `slidePhaseTick` is the age of the current slide sentence until landing. */
+export const SLIDE_PHASE_OFF = 0 as const;
+export const SLIDE_PHASE_GROUND = 1 as const;
+export const SLIDE_PHASE_AIR = 2 as const;
+export const SLIDE_PHASE_LAND_WINDOW = 3 as const;
+export type SlidePhase =
+  | typeof SLIDE_PHASE_OFF
+  | typeof SLIDE_PHASE_GROUND
+  | typeof SLIDE_PHASE_AIR
+  | typeof SLIDE_PHASE_LAND_WINDOW;
 
 export const LANDING_TIER_SOFT = 1 as const;
 export const LANDING_TIER_SOLID = 2 as const;
