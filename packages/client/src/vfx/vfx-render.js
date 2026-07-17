@@ -142,6 +142,33 @@
     { id: "void", color: 0xb14bff, wisp: 1, bolt: 6 },
     { id: "arcane", color: 0x8f6aff, wisp: 0, bolt: 2 },
   ];
+  // Optional loose sheets for the four Driftblade-model adopters. The combo variant is already carried by
+  // the enriched swing descriptor, so both local prediction and remote observation resolve the same art.
+  // Every sheet is 10 equal 96x96 cells; frame 0 is the canonical phase and the remaining cells are safe
+  // phase variants for tooling/future use. Driftblade itself deliberately has no entry and keeps PER_PAINTS.
+  const PER_WISP_ART = {
+    "nodachi-coldcourt": {
+      key: "per-wisp-gravechill",
+      url: "particles/per-wisp-gravechill.png",
+      frame: 0,
+    },
+    "nodachi-petalfall": {
+      key: "per-wisp-stormpetal",
+      url: "particles/per-wisp-stormpetal.png",
+      frame: 0,
+    },
+    "katana-threehails": {
+      key: "per-wisp-hailwidow",
+      url: "particles/per-wisp-hailwidow.png",
+      frame: 0,
+    },
+    "katana-thunderlag": {
+      key: "per-wisp-voltfang",
+      url: "particles/per-wisp-voltfang.png",
+      frame: 0,
+    },
+  };
+  const PER_WISP_LOADS = new WeakMap();
   const PER_SIZE = {
     S: { body: 14, lip: 4, history: 0.16, cap: 0.35 },
     M: { body: 22, lip: 6, history: 0.22, cap: 0.5 },
@@ -175,6 +202,46 @@
       S.scene.load.start();
     }
     return false;
+  }
+  function requestPerWispArt(S, art) {
+    const scene = S.scene;
+    if (scene?.textures?.exists(art.key)) return true;
+    if (!scene?.load?.spritesheet) return false;
+    let state = PER_WISP_LOADS.get(scene);
+    if (!state) {
+      state = { pending: Object.create(null), failed: Object.create(null) };
+      PER_WISP_LOADS.set(scene, state);
+    }
+    if (state.failed[art.key]) return false;
+    if (!state.pending[art.key]) {
+      state.pending[art.key] = true;
+      // Optional expansion-style loose art: queue only when this adopter first swings. Until COMPLETE,
+      // resolvePerTexture below returns the shipped element wisp rather than dropping to canvas fallback.
+      scene.load.spritesheet(art.key, art.url, { frameWidth: 96, frameHeight: 96 });
+      if (typeof scene.load.once === "function") {
+        scene.load.once("complete", () => {
+          delete state.pending[art.key];
+          if (!scene.textures?.exists(art.key)) {
+            state.failed[art.key] = true;
+            console.warn(`[vfx-render] optional PER wisp failed to lazy-load: ${art.key}`);
+          }
+        });
+      }
+      scene.load.start();
+    }
+    return false;
+  }
+  function resolvePerTexture(S, meta, paint, shape) {
+    if (shape === "wisp") {
+      const art = PER_WISP_ART[meta.swing?.comboVariant];
+      if (art && requestPerWispArt(S, art)) return { key: art.key, frame: art.frame, ready: true };
+    }
+    const key = `ptcl:${paint.id}-${shape}`;
+    return {
+      key,
+      frame: shape === "wisp" ? paint.wisp : paint.bolt,
+      ready: requestPerTexture(S, paint, shape),
+    };
   }
   function hidePer(S) {
     S.perBody?.setVisible(false);
@@ -463,6 +530,8 @@
   }
   function drawPerFallback(S, frame, profile, color, quality) {
     const gfx = S.gfxAdd;
+    // Loose wisp identity is intentionally WebGL-only: canvas remains an honest geometry + paint-color
+    // fallback and never claims to sample a texture it cannot draw through Phaser's Rope path.
     // §50 fallback parity: the same authored per-step comboRibbon head treatment the WebGL rope applies
     // (the band/width reshape already arrived pre-folded in frame.bodyWidth). Absent → identical draw.
     const fallbackSwing = S.per ? S.per.swing : undefined;
@@ -511,8 +580,10 @@
     const quality = S.perQuality === 4 || S.perQuality === 8 ? S.perQuality : 12;
     const bodyShape = profile === "thrust" ? "bolt" : "wisp";
     const secondShape = profile === "twin" ? "wisp" : "bolt";
-    const bodyReady = requestPerTexture(S, paint, bodyShape);
-    const secondReady = quality <= 4 || requestPerTexture(S, paint, secondShape);
+    const bodyTexture = resolvePerTexture(S, meta, paint, bodyShape);
+    const secondTexture = quality <= 4 ? undefined : resolvePerTexture(S, meta, paint, secondShape);
+    const bodyReady = bodyTexture.ready;
+    const secondReady = quality <= 4 || secondTexture?.ready;
     const frame = S.perFrame;
     if (!samplePerClock(S, p, params, profile, frame)) return;
 
@@ -563,8 +634,8 @@
       return;
     }
 
-    const bodyKey = `ptcl:${paint.id}-${bodyShape}`;
-    const bodyTextureFrame = bodyShape === "wisp" ? paint.wisp : paint.bolt;
+    const bodyKey = bodyTexture.key;
+    const bodyTextureFrame = bodyTexture.frame;
     const bodyWidth =
       profile === "thrust"
         ? frame.bodyWidth * 0.72
@@ -598,8 +669,8 @@
       if (
         updateArcRope(
           S.perLip,
-          bodyKey,
-          paint.wisp,
+          secondTexture.key,
+          secondTexture.frame,
           quality,
           frame.reach,
           bodyWidth,
@@ -615,13 +686,12 @@
       )
         strips++;
     } else if (quality > 4 && frame.active && frame.lipAlpha > 0) {
-      const lipKey = `ptcl:${paint.id}-bolt`;
       const head = frame.startAngle + frame.arc * frame.q;
       if (
         updateRadialRope(
           S.perLip,
-          lipKey,
-          paint.bolt,
+          secondTexture.key,
+          secondTexture.frame,
           quality,
           frame.reach,
           frame.clearance,
