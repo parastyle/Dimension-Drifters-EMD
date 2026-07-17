@@ -6533,11 +6533,14 @@ export class ArenaScene extends Phaser.Scene {
           this.belt ? this.beltY(ep.y) : ep.y,
           this.selfAim,
           weapon,
-          swing,
+          // §50 the rig's descriptor was enriched with the accepted/predicted combo step by triggerSwing
+          // above; passing it (not the base descriptor) lets the wielder see their own per-step ribbon,
+          // matching the remote observed-signature path.
+          rig?.activeSwing ?? swing,
           true,
         );
       } else {
-        this.spawnSlash(rx, ry, this.selfAim, weapon, swing);
+        this.spawnSlash(rx, ry, this.selfAim, weapon, rig?.activeSwing ?? swing);
       }
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
       if (weapon.chainLightning) this.spawnChain(rx, ry, this.selfAim, weapon);

@@ -262,6 +262,7 @@
     alpha,
     color,
     tintMode,
+    endStyle,
   ) {
     if (alpha <= 0 || width <= 0 || reach <= 0) return false;
     const absArc = Math.max(0.0001, Math.abs(arc));
@@ -286,9 +287,16 @@
     for (let i = 0; i < points.length; i++) {
       const f = i / (points.length - 1);
       const angle = tailAngle + (headAngle - tailAngle) * f;
-      points[i].x = (Math.cos(angle) * radius) / scale;
-      points[i].y = (Math.sin(angle) * radius) / scale;
-      writePerVertex(rope, i, alpha * f * f, color);
+      // §50 Driftblade-model panel: authored per-step head treatment. No `endStyle` (every legacy caller)
+      // is byte-identical to the shipped f² ramp; every treatment stays AT or UNDER the `alpha` ceiling.
+      let r = radius;
+      let a = alpha * (endStyle === "open" ? f : f * f); // "open": the arc bleeds past the tear-off
+      if (endStyle === "squared" && f >= 0.9) a = alpha; // flat bright cut, no tip taper
+      else if (endStyle === "torn" && f >= 0.8) a *= i % 2 === 0 ? 0.45 : 1; // jagged dying edge
+      else if (endStyle === "hooked" && f >= 0.85) r -= width * 0.55 * ((f - 0.85) / 0.15); // inward curl
+      points[i].x = (Math.cos(angle) * r) / scale;
+      points[i].y = (Math.sin(angle) * r) / scale;
+      writePerVertex(rope, i, a, color);
     }
     rope.setDirty().setVisible(true);
     return true;
@@ -430,7 +438,7 @@
     }
     return false;
   }
-  function drawPerFallbackArc(gfx, reach, width, tail, head, color, alpha, segs, offset) {
+  function drawPerFallbackArc(gfx, reach, width, tail, head, color, alpha, segs, offset, endStyle) {
     const radius = Math.max(width / 2, reach - width / 2 + offset);
     for (let i = 0; i < segs; i++) {
       const f0 = i / segs;
@@ -439,7 +447,11 @@
       const a1 = tail + (head - tail) * f1;
       const w0 = width * (0.18 + 0.82 * f0);
       const w1 = width * (0.18 + 0.82 * f1);
-      gfx.fillStyle(color, Math.min(0.55, alpha) * f1 * f1);
+      // Fallback parity with updateArcRope's authored head treatment; ceilings unchanged.
+      let segA = Math.min(0.55, alpha) * (endStyle === "open" ? f1 : f1 * f1);
+      if (endStyle === "squared" && f1 >= 0.9) segA = Math.min(0.55, alpha);
+      else if (endStyle === "torn" && f0 >= 0.8) segA *= i % 2 === 0 ? 0.45 : 1;
+      gfx.fillStyle(color, segA);
       gfx.beginPath();
       gfx.moveTo(Math.cos(a0) * (radius + w0 / 2), Math.sin(a0) * (radius + w0 / 2));
       gfx.lineTo(Math.cos(a1) * (radius + w1 / 2), Math.sin(a1) * (radius + w1 / 2));
@@ -451,6 +463,11 @@
   }
   function drawPerFallback(S, frame, profile, color, quality) {
     const gfx = S.gfxAdd;
+    // §50 fallback parity: the same authored per-step comboRibbon head treatment the WebGL rope applies
+    // (the band/width reshape already arrived pre-folded in frame.bodyWidth). Absent → identical draw.
+    const fallbackSwing = S.per ? S.per.swing : undefined;
+    const fallbackRibbon = fallbackSwing ? fallbackSwing.comboRibbon : undefined;
+    const fallbackEnd = fallbackRibbon ? fallbackRibbon.end : undefined;
     gfx.save();
     gfx.translateCanvas(frame.originX, frame.originY);
     const head = frame.startAngle + frame.arc * frame.q;
@@ -483,7 +500,7 @@
         drawPerFallbackArc(gfx, frame.reach, lobeWidth, rearTail, rearHead, color, frame.bodyAlpha * 0.42, quality, -frame.bodyWidth * 0.39);
       }
     } else {
-      drawPerFallbackArc(gfx, frame.reach, frame.bodyWidth, tail, head, color, frame.bodyAlpha, quality, 0);
+      drawPerFallbackArc(gfx, frame.reach, frame.bodyWidth, tail, head, color, frame.bodyAlpha, quality, 0, fallbackEnd);
     }
     gfx.restore();
   }
@@ -509,6 +526,22 @@
     frame.originX = finite(meta.originX, 0);
     frame.originY = finite(meta.originY, 0);
     frame.bodyWidth = Math.min(42, size.body, Math.max(2, frame.reach - frame.clearance));
+    // §50 Driftblade-model panel: the authored per-step combo ribbon rides the enriched accepted/predicted
+    // descriptor (meta.swing.comboRibbon). Geometry only, under the shipped ceilings: widthMultiplier is
+    // re-capped at 42px; radialStart clamps the strip inside the outer [radialStart×reach, reach] band (it
+    // multiplies reach, so it scales with blade length automatically); widthMultiplier 0 is authored
+    // SILENCE (the model's compact beat paints nothing). Absent ribbon → byte-identical legacy render.
+    const ribbon = meta.swing ? meta.swing.comboRibbon : undefined;
+    frame.ribbonEnd = ribbon ? ribbon.end : undefined;
+    if (ribbon) {
+      const widthMul = Math.max(0, finite(ribbon.widthMultiplier, 1));
+      if (widthMul <= 0) {
+        hidePer(S);
+        return;
+      }
+      const band = frame.reach * (1 - bounded(ribbon.radialStart, 0, 0, 0.95));
+      frame.bodyWidth = Math.max(2, Math.min(42, frame.bodyWidth * widthMul, band));
+    }
     frame.lipWidth = Math.min(9, size.lip, frame.bodyWidth);
     const historyMul = bounded(params.history, 1, 0, 1);
     const artCap = (frame.bodyWidth * 6.6) / Math.max(1, frame.reach - frame.bodyWidth / 2);
@@ -556,6 +589,7 @@
       frame.bodyAlpha,
       0xffffff,
       0,
+      frame.ribbonEnd,
     )
       ? 1
       : 0;

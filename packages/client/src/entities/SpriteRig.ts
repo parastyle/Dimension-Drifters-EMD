@@ -126,12 +126,7 @@ interface RigAttackPresentationScene extends Phaser.Scene {
     swing: SwingDescriptor,
     exact?: boolean,
   ): void;
-  spawnChain?(
-    x: number,
-    y: number,
-    aim: { x: number; y: number },
-    weapon: WeaponDef,
-  ): void;
+  spawnChain?(x: number, y: number, aim: { x: number; y: number }, weapon: WeaponDef): void;
   readonly animClock?: number;
   readonly frozenUntil?: number;
   readonly wasFrozen?: boolean;
@@ -980,6 +975,12 @@ export class SpriteRig {
   /** §44 immutable predicted/accepted swing clock. The normalized pose branches below are untouched; only
    *  their `tt` time base comes from this effective-cooldown descriptor. */
   private swing?: SwingDescriptor;
+  /** §50 Driftblade-model panel: the latest triggered descriptor, ENRICHED with the accepted/predicted
+   *  combo step by `triggerSwing`. ArenaScene's owner-side `spawnSlash` reads it so the per-step ribbon
+   *  reaches the wielder's own VFX exactly like the remote observed-signature path. */
+  get activeSwing(): SwingDescriptor | undefined {
+    return this.swing;
+  }
   /** §40 fake-3D ORBIT slash (two-handed melee): 0..1 progress while active, −1 otherwise. Set by the
    *  weapon-angle pass, consumed by the weapon render pass (which overrides position/rotation/scale/depth). */
   private orbitT = -1;
@@ -3656,6 +3657,354 @@ export class SpriteRig {
     return angle;
   }
 
+  /** Gravechill Nodachi "Cold Court" + the shared hang-then-fall payoff chassis (§50 Driftblade-model
+   * panel). Where Driftblade flows, Gravechill deliberates: a reversed rising draw, a tall guard check
+   * whose exit travels upward into the executioner's raise, then an overhead hang and a p² sentence.
+   * Voltfang's `thunder-fall` rides the same fall chassis parameterized — shorter hang, 0.4× tremor, a
+   * single depth swap instead of the length collapse, and a low forward point instead of a plant. All
+   * travel stays on the visual channels (swingOff/attackArtOff/shadow/lift), never the root. */
+  private applyGravechillCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+
+    if (motion === "draw-cut") {
+      // Drawn Frost: reversed opener — a rising draw from a low near-hip line to high across aim, blade
+      // broadside the whole way. Wide formal 0.44H spacing; the exit hangs high over the check's entry.
+      const low = aimLocal + 1.42;
+      const high = aimLocal - 1.12;
+      this.attackHandSpacing = H * 0.44;
+      if (tt < 0.26) {
+        const p = smoothstep01(tt / 0.26);
+        angle = low + 0.12 * p;
+        this.attackArtOffX = (-fx * 0.03 + nx * 0.02) * H * p;
+        this.attackArtOffY = (-fy * 0.03 + ny * 0.02) * H * p;
+        this.swingOffX = -fx * H * 0.05 * p;
+        this.swingOffY = -fy * H * 0.05 * p + H * 0.03 * p;
+        this.body.rotation += 0.1 * p * Math.cos(aimLocal);
+        this.body.scaleY *= 1 - 0.04 * p;
+      } else if (tt < 0.54) {
+        const p = clamp01((tt - 0.26) / 0.28);
+        const e = p * p;
+        angle = low + 0.12 + (high - low - 0.12) * e;
+        const forward = -0.03 + 0.12 * e;
+        this.attackArtOffX = H * (fx * forward - nx * 0.02 * e);
+        this.attackArtOffY = H * (fy * forward - ny * 0.02 * e);
+        this.swingOffX = fx * H * 0.1 * e - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.1 * e - this.attackArtOffY - H * 0.05 * e;
+        this.body.rotation += (0.1 - 0.26 * e) * Math.cos(aimLocal);
+        this.body.scaleY *= 0.96 + 0.08 * e;
+      } else if (tt < 0.68) {
+        const p = smoothstep01((tt - 0.54) / 0.14);
+        angle = high - 0.06 * p;
+        this.attackArtOffX = H * (fx * 0.09 - nx * 0.02);
+        this.attackArtOffY = H * (fy * 0.09 - ny * 0.02);
+        this.swingOffX = fx * H * 0.1 - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.1 - this.attackArtOffY - H * 0.05;
+        this.body.rotation -= 0.16 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.04;
+      } else {
+        // The courtroom pause: blade held high on the off side, directly over the Tsuba Check's start.
+        angle = high - 0.06;
+        this.attackArtOffX = H * (fx * 0.07 - nx * 0.02);
+        this.attackArtOffY = H * (fy * 0.07 - ny * 0.02);
+        this.swingOffX = fx * H * 0.08 - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.08 - this.attackArtOffY - H * 0.05;
+        this.body.rotation -= 0.16 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.04;
+      }
+      this.attackShadowRotation = aimLocal - 0.35;
+      this.attackShadowScaleX = 1.06;
+      this.attackShadowScaleY = 0.9;
+      this.setComboFootwork(tt, 0.26, 0.54, 0.68, aimLocal, 0.05, -0.03, -0.04, 0.02);
+      return angle;
+    }
+
+    if (motion === "guard-check") {
+      // Shared compact chassis (Tsuba Check / Widow's Knock): the crossguard leads a short body-driven
+      // jab down aim. NOT a pommel bash — the blade never reverses, the body stays tall (no crunch),
+      // and the exit travels UPWARD into the two-hand raise rather than into a rear load.
+      const overhead = -Math.PI / 2 - 0.42;
+      if (tt < 0.14) {
+        const p = smoothstep01(tt / 0.14);
+        angle = aimLocal + 0.14 * (1 - p);
+        this.attackHandSpacing = H * (0.44 - 0.22 * p);
+        this.swingOffX = -fx * H * 0.04 * p;
+        this.swingOffY = -fy * H * 0.04 * p;
+        this.body.scaleY *= 1 + 0.02 * p; // tall and formal — no crunch
+      } else if (tt < 0.3) {
+        const p = cubicOut01((tt - 0.14) / 0.16);
+        angle = aimLocal;
+        this.attackHandSpacing = H * 0.22;
+        const drive = H * 0.045 * p;
+        this.attackArtOffX = fx * drive;
+        this.attackArtOffY = fy * drive;
+        this.swingOffX = fx * H * (-0.04 + 0.2 * p) - this.attackArtOffX;
+        this.swingOffY = fy * H * (-0.04 + 0.2 * p) - this.attackArtOffY;
+        this.body.rotation += 0.06 * p * Math.cos(aimLocal);
+        this.attackShadowX = fx * H * 0.04 * p;
+        this.attackShadowY = fy * H * 0.04 * p;
+      } else if (tt < 0.46) {
+        const p = smoothstep01((tt - 0.3) / 0.16);
+        angle = aimLocal + (overhead - aimLocal) * p;
+        this.attackHandSpacing = H * (0.22 + 0.14 * p);
+        this.attackArtOffX = fx * H * 0.045 * (1 - p);
+        this.attackArtOffY = fy * H * 0.045 * (1 - p);
+        this.swingOffX = fx * H * 0.16 * (1 - p);
+        this.swingOffY = fy * H * 0.16 * (1 - p) - H * 0.08 * p;
+        this.attackLiftPx = H * 0.04 * p;
+        this.body.rotation -= 0.08 * p * Math.cos(aimLocal);
+        this.body.scaleY *= 1 + 0.03 * p;
+      } else {
+        angle = overhead;
+        this.attackHandSpacing = H * 0.36;
+        this.swingOffY = -H * 0.08;
+        this.attackLiftPx = H * 0.04;
+        this.body.rotation -= 0.08 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.03;
+      }
+      this.setComboFootwork(tt, 0.14, 0.3, 0.46, aimLocal, 0.06, 0, -0.02, 0);
+      return angle;
+    }
+
+    // sentence-fall / thunder-fall: the parameterized hang-then-fall payoff.
+    const thunder = motion === "thunder-fall";
+    const hangEnd = thunder ? 0.48 : 0.5; // authored activeStart
+    const impactAt = thunder ? 0.56 : 0.63; // authored impact
+    const deformEnd = impactAt + (thunder ? 0.025 : 0.03); // ≤0.03-pose deformation beat
+    const holdEnd = thunder ? 0.78 : 0.84; // authored followEnd
+    const overhead = -Math.PI / 2 - 0.12;
+    const plant = thunder ? aimLocal + 0.18 : 0.85; // low forward point vs centered low plant
+    const raiseEnd = 0.34;
+    this.attackHandSpacing = H * 0.4;
+    if (tt < raiseEnd) {
+      // Raise out of the check's high exit into the full two-hand hold.
+      const p = smoothstep01(tt / raiseEnd);
+      angle = overhead - 0.14 * (1 - p);
+      this.attackLiftPx = H * 0.06 * p * (thunder ? 0.6 : 1);
+      this.swingOffY = -H * (0.08 + 0.04 * p);
+      this.body.rotation -= 0.1 * Math.cos(aimLocal) * p;
+      this.body.scaleY *= 1 + 0.05 * p;
+      this.attackShadowScaleX = 1 - 0.08 * p;
+      this.attackShadowScaleY = 1 - 0.12 * p;
+      this.attackShadowAlpha = 1 - 0.1 * p;
+    } else if (tt < hangEnd) {
+      // The hang: the TCS charge tremor generator at reduced amplitude (0.6× court, 0.4× volt).
+      const tremor =
+        Math.sin(this.presentationClockNow() * 0.013 * Math.PI * 2) *
+        this.scale *
+        (thunder ? 0.4 : 0.6);
+      angle = overhead;
+      this.attackLiftPx = H * 0.06 * (thunder ? 0.6 : 1);
+      this.swingOffX = nx * tremor;
+      this.swingOffY = -H * 0.12 + ny * tremor;
+      this.body.rotation -= 0.12 * Math.cos(aimLocal);
+      this.body.scaleY *= 1.06;
+      if (!thunder)
+        this.weaponLengthScale = 1 - 0.1 * smoothstep01((tt - raiseEnd) / (hangEnd - raiseEnd));
+      this.attackShadowScaleX = 0.92;
+      this.attackShadowScaleY = 0.88;
+      this.attackShadowAlpha = 0.9;
+    } else if (tt < impactAt) {
+      // The fall: p² through the overhead-to-forward projection. One fake-3D trick only — the court's
+      // length collapse (1 → 0.30 → 1.03, blade briefly seen point-on) OR the volt's single depth swap.
+      const p = clamp01((tt - hangEnd) / (impactAt - hangEnd));
+      const fall = p * p;
+      angle = overhead + (plant - overhead) * fall;
+      this.attackLiftPx = H * 0.06 * (1 - fall) * (thunder ? 0.6 : 1);
+      this.attackArtOffX = fx * H * 0.14 * fall;
+      this.attackArtOffY = fy * H * 0.14 * fall;
+      this.swingOffX = fx * H * 0.22 * fall - this.attackArtOffX;
+      this.swingOffY = fy * H * 0.22 * fall - this.attackArtOffY;
+      this.body.rotation += (-0.12 + 0.34 * fall) * Math.cos(aimLocal);
+      this.body.scaleY *= 1.06 - 0.2 * fall;
+      if (thunder) {
+        this.attackWeaponDepth = fall > 0.5 ? 1 : -1;
+      } else {
+        this.weaponLengthScale =
+          p < 0.5
+            ? 0.9 - (0.9 - 0.3) * smoothstep01(p / 0.5)
+            : 0.3 + 0.73 * smoothstep01((p - 0.5) / 0.5);
+      }
+      this.attackShadowX = fx * H * 0.14 * fall;
+      this.attackShadowY = fy * H * 0.14 * fall;
+      this.attackShadowRotation = aimLocal;
+      this.attackShadowScaleX = 0.92 + 0.3 * fall;
+      this.attackShadowScaleY = 0.88 - 0.1 * fall;
+      this.attackShadowAlpha = 0.9 + 0.1 * fall;
+    } else if (tt < deformEnd) {
+      // Contact-deformation micro-beat, same width as the model's 0.61–0.64.
+      const p = clamp01((tt - impactAt) / (deformEnd - impactAt));
+      angle = plant;
+      this.attackArtOffX = fx * H * 0.14;
+      this.attackArtOffY = fy * H * 0.14;
+      this.body.rotation += 0.22 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.86;
+      this.weaponLengthScale = (thunder ? 1 : 1.03) - 0.08 * Math.sin(Math.PI * p);
+      this.attackShadowX = fx * H * 0.14;
+      this.attackShadowY = fy * H * 0.14;
+      this.attackShadowScaleX = 1.22;
+      this.attackShadowScaleY = 0.78;
+    } else if (tt < holdEnd) {
+      // The hold: the court's plant is the longest in the family; the volt points low down aim.
+      angle = plant;
+      this.attackArtOffX = fx * H * 0.14;
+      this.attackArtOffY = fy * H * 0.14;
+      this.body.rotation += 0.22 * Math.cos(aimLocal);
+      this.body.scaleY *= 0.9;
+      this.weaponLengthScale = thunder ? 1 : 1.03;
+      this.attackShadowX = fx * H * 0.14;
+      this.attackShadowY = fy * H * 0.14;
+      this.attackShadowScaleX = 1.14;
+      this.attackShadowScaleY = 0.84;
+    } else {
+      // The court adjourns slowly; the volt releases briskly toward the next fang.
+      const p = smoothstep01((tt - holdEnd) / Math.max(0.01, 1 - holdEnd));
+      angle = plant - 0.1 * p;
+      this.attackArtOffX = fx * H * 0.14 * (1 - 0.6 * p);
+      this.attackArtOffY = fy * H * 0.14 * (1 - 0.6 * p);
+      this.body.rotation += 0.22 * Math.cos(aimLocal) * (1 - p);
+      this.body.scaleY *= 0.9 + 0.08 * p;
+      this.weaponLengthScale = 1;
+      this.attackShadowX = fx * H * 0.14 * (1 - 0.6 * p);
+      this.attackShadowY = fy * H * 0.14 * (1 - 0.6 * p);
+      this.attackShadowScaleX = 1.14 - 0.1 * p;
+      this.attackShadowScaleY = 0.84 + 0.12 * p;
+    }
+    this.setComboFootwork(tt, hangEnd, impactAt, holdEnd, aimLocal, 0.08, 0.02, -0.02, -0.02);
+    return angle;
+  }
+
+  /** Stormpetal Odachi "Petalfall" (§50 Driftblade-model panel): wind through a flowering tree. The
+   * compact beat is a choked blade FLIP (the model's fake-3D budget deliberately relocated from beat 3
+   * to beat 2), and the finisher is a single-window S-cut that settles into a light high guard with one
+   * visible breath — the anti-Sentence. Crosswind (beat 1, reused `slash`) rides the generic branch. */
+  private applyStormpetalCombo(motion: MeleeComboMotion, tt: number, aimLocal: number): number {
+    this.signatureMotion = motion;
+    const H = TARGET_BODY_H;
+    const fx = Math.cos(aimLocal);
+    const fy = Math.sin(aimLocal);
+    const nx = -fy;
+    const ny = fx;
+    let angle = aimLocal;
+
+    if (motion === "choked-turn") {
+      // Leaf Turn: grip chokes 0.42H → 0.20H and the odachi twirls ONCE about the grip (dir −1), the
+      // length scale dipping to 0.50 at the edge-on frames. Exit leaves the blade reversed and low
+      // behind the off hip — Petalfall's entry.
+      const start = aimLocal + 0.4;
+      const exit = aimLocal + Math.PI - 0.35;
+      if (tt < 0.1) {
+        const p = smoothstep01(tt / 0.1);
+        angle = start * p + aimLocal * (1 - p);
+        this.attackHandSpacing = H * (0.42 - 0.22 * p);
+        this.swingOffY = -H * 0.03 * p;
+        this.body.scaleY *= 1 - 0.02 * p;
+      } else if (tt < 0.26) {
+        const p = clamp01((tt - 0.1) / 0.16);
+        const e = cubicOut01(p);
+        angle = start - Math.PI * 2 * e;
+        this.attackHandSpacing = H * 0.2;
+        this.weaponLengthScale = Math.max(0.5, Math.abs(Math.cos(Math.PI * 2 * e)));
+        this.attackWeaponDepth = e > 0.25 && e < 0.75 ? -1 : 1;
+        this.swingOffX = nx * H * 0.04 * Math.sin(Math.PI * p);
+        this.swingOffY = -H * 0.03 + ny * H * 0.04 * Math.sin(Math.PI * p);
+        this.body.rotation -= 0.06 * Math.sin(Math.PI * p) * Math.cos(aimLocal);
+        this.attackShadowScaleX = 1 - 0.08 * Math.sin(Math.PI * p);
+        this.attackShadowScaleY = 1 - 0.04 * Math.sin(Math.PI * p);
+      } else if (tt < 0.42) {
+        const p = smoothstep01((tt - 0.26) / 0.16);
+        angle = start - Math.PI * 2 + (exit - (start - Math.PI * 2)) * p;
+        this.attackHandSpacing = H * (0.2 + 0.06 * p);
+        this.weaponLengthScale = 1;
+        this.swingOffX = -fx * H * 0.06 * p;
+        this.swingOffY = -fy * H * 0.06 * p + H * 0.04 * p;
+        this.body.rotation += 0.04 * p * Math.cos(aimLocal);
+      } else {
+        angle = exit;
+        this.attackHandSpacing = H * 0.26;
+        this.swingOffX = -fx * H * 0.06;
+        this.swingOffY = -fy * H * 0.06 + H * 0.04;
+        this.body.rotation += 0.04 * Math.cos(aimLocal);
+      }
+      this.setComboFootwork(tt, 0.1, 0.26, 0.42, aimLocal, 0.03, 0.03, -0.02, 0.02);
+      return angle;
+    }
+
+    // Petalfall: a single-window S-cut — reverse rise for the first 40% of active travel, then a
+    // forehand fall through aim. Torso stays tall; reach comes from the art, not a lunge.
+    const reversedLow = aimLocal + Math.PI - 0.35;
+    const apex = aimLocal - 1.35;
+    const through = aimLocal + 1.15;
+    this.attackHandSpacing = H * 0.4;
+    if (tt < 0.24) {
+      const p = smoothstep01(tt / 0.24);
+      angle = reversedLow + 0.1 * p;
+      this.swingOffX = -fx * H * 0.05 * p;
+      this.swingOffY = -fy * H * 0.05 * p + H * 0.04 * p;
+      this.body.rotation += 0.06 * p * Math.cos(aimLocal);
+      this.body.scaleY *= 1 - 0.02 * p;
+    } else if (tt < 0.44) {
+      const p = smoothstep01((tt - 0.24) / 0.2);
+      angle = reversedLow + 0.1 + (apex - (reversedLow + 0.1)) * p * 0.55;
+      this.swingOffX = -fx * H * 0.05 * (1 - p);
+      this.swingOffY = -fy * H * 0.05 * (1 - p) - H * 0.04 * p;
+      this.body.rotation += (0.06 - 0.1 * p) * Math.cos(aimLocal);
+      this.body.scaleY *= 0.98 + 0.04 * p;
+    } else if (tt < 0.62) {
+      const p = clamp01((tt - 0.44) / 0.18);
+      if (p < 0.4) {
+        // First stroke of the S: the rise completes in reverse.
+        const q = p / 0.4;
+        const riseFrom = reversedLow + 0.1 + (apex - (reversedLow + 0.1)) * 0.55;
+        angle = riseFrom + (apex - riseFrom) * smoothstep01(q);
+        this.swingOffY = -H * (0.04 + 0.04 * q);
+        this.body.rotation -= 0.04 * Math.cos(aimLocal);
+        this.body.scaleY *= 1.02;
+      } else {
+        // Second stroke: forehand fall through aim; two-frame overshoot 1.00 → 1.04 → 0.99.
+        const q = (p - 0.4) / 0.6;
+        const e = q * q;
+        angle = apex + (through - apex) * e;
+        this.attackArtOffX = fx * H * 0.06 * e;
+        this.attackArtOffY = fy * H * 0.06 * e;
+        this.swingOffX = fx * H * 0.1 * e - this.attackArtOffX;
+        this.swingOffY = fy * H * 0.1 * e - this.attackArtOffY - H * 0.08 * (1 - e);
+        this.body.rotation += (-0.04 + 0.18 * e) * Math.cos(aimLocal);
+        this.body.scaleY *= 1.02 - 0.06 * e; // 0.96y at contact — tall, no crunch
+        this.weaponLengthScale = q > 0.8 ? 1 + 0.04 * Math.sin(Math.PI * ((q - 0.8) / 0.2)) : 1;
+      }
+      this.attackShadowRotation = aimLocal + 0.3;
+      this.attackShadowScaleX = 1.08;
+      this.attackShadowScaleY = 0.9;
+    } else if (tt < 0.82) {
+      // Exhale settle into a light high guard — no plant, no crunch.
+      const p = smoothstep01((tt - 0.62) / 0.2);
+      const guard = aimLocal - 0.9;
+      angle = through + (guard - through) * p;
+      this.weaponLengthScale = 0.99 + 0.01 * p;
+      this.attackArtOffX = fx * H * 0.06 * (1 - p);
+      this.attackArtOffY = fy * H * 0.06 * (1 - p);
+      this.swingOffX = fx * H * 0.04 * (1 - p);
+      this.swingOffY = fy * H * 0.04 * (1 - p) - H * 0.05 * p;
+      this.body.rotation += 0.14 * (1 - p) * Math.cos(aimLocal);
+      this.body.scaleY *= 0.96 + 0.05 * p;
+    } else {
+      // One visible breath: a light spring settle in the high guard.
+      const p = clamp01((tt - 0.82) / 0.18);
+      const breath = Math.sin(Math.PI * p) * 0.02;
+      angle = aimLocal - 0.9 + breath;
+      this.swingOffY = -H * (0.05 + breath);
+      this.body.scaleY *= 1.01 + breath;
+    }
+    this.setComboFootwork(tt, 0.44, 0.62, 0.82, aimLocal, 0.04, 0.02, -0.02, 0.03);
+    return angle;
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -4074,7 +4423,12 @@ export class SpriteRig {
         poseVariant === "greatsword-momentum" ||
         poseVariant === "claymore-breach" ||
         poseVariant === "glaive-compass" ||
-        poseVariant === "bardiche-hookbreak";
+        poseVariant === "bardiche-hookbreak" ||
+        // §50 Driftblade-model adopters: gravechill is a quake carrier — its variant MUST stay in this
+        // list or the ground crack detonates on the wrong pose frame. Petalfall carries no quake today;
+        // its entry is inert behind the `def.quake` guard but future-safe.
+        poseVariant === "nodachi-coldcourt" ||
+        poseVariant === "nodachi-petalfall";
       if (comboPose?.timing.impact !== undefined && def.quake && panelQuakePose && tt >= 0) {
         const descriptorImpact = clamp01(
           (this.swing?.impactSeconds ?? 0) / Math.max(1e-6, this.swing?.poseSeconds ?? 1),
@@ -4145,6 +4499,17 @@ export class SpriteRig {
           comboPose?.motion === "gallows-turn"
         ) {
           weaponAngle = this.applyHookbreakCombo(comboPose.motion, tt, aimLocal);
+        } else if (
+          comboPose?.motion === "draw-cut" ||
+          comboPose?.motion === "guard-check" ||
+          comboPose?.motion === "sentence-fall" ||
+          comboPose?.motion === "thunder-fall"
+        ) {
+          // Cold Court verbs + the shared hang-then-fall chassis (the designer's one-branch, two-paints
+          // rule: Voltfang's Thunder is the Sentence with a shorter hang and no length collapse).
+          weaponAngle = this.applyGravechillCombo(comboPose.motion, tt, aimLocal);
+        } else if (comboPose?.motion === "choked-turn" || comboPose?.motion === "petalfall") {
+          weaponAngle = this.applyStormpetalCombo(comboPose.motion, tt, aimLocal);
         } else if (comboPose?.motion === "fulcrum-flip") {
           weaponAngle = this.applyFulcrumFlip(tt, aimLocal);
         } else if (comboPose?.motion === "stinger") {

@@ -75,12 +75,20 @@ describe("big-sword visual combo panel", () => {
         expect(meleeComboSelectionFor(weapon(id)), id).toMatchObject({ family: "chop", variant });
       }
     }
-    for (const id of ["driftblade", "x2-gravechill-nodachi", "x2-stormpetal-odachi"] as const) {
-      expect(meleeComboSelectionFor(weapon(id)), id).toMatchObject({
-        family: "chop",
-        variant: "greatsword",
-      });
-    }
+    // §50 Driftblade-model rollout split: the MODEL anchor stays on `greatsword`; the two nodachi are
+    // no longer byte-for-byte clones — they route to their own adopter variants (de-clone, M8).
+    expect(meleeComboSelectionFor(weapon("driftblade")), "driftblade").toMatchObject({
+      family: "chop",
+      variant: "greatsword",
+    });
+    expect(meleeComboSelectionFor(weapon("x2-gravechill-nodachi"))).toMatchObject({
+      family: "chop",
+      variant: "nodachi-coldcourt",
+    });
+    expect(meleeComboSelectionFor(weapon("x2-stormpetal-odachi"))).toMatchObject({
+      family: "chop",
+      variant: "nodachi-petalfall",
+    });
   });
 
   it("does not flatten Dervish, Anchor, spade, or true quake maulers", () => {

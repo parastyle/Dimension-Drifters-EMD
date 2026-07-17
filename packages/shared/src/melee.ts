@@ -46,7 +46,11 @@ export type MeleeComboVariant =
   | "greatsword-momentum"
   | "claymore-breach"
   | "glaive-compass"
-  | "bardiche-hookbreak";
+  | "bardiche-hookbreak"
+  | "nodachi-coldcourt"
+  | "nodachi-petalfall"
+  | "katana-threehails"
+  | "katana-thunderlag";
 
 /** Weapon-authored combo seam. Optional fields let current data use shared shape defaults while future
  * weapon entries opt into an exact family/variant without teaching the renderer weapon ids or names. */
@@ -87,7 +91,15 @@ export type MeleeComboMotion =
   | "compass-rose"
   | "headsmans-drop"
   | "hook-and-haul"
-  | "gallows-turn";
+  | "gallows-turn"
+  | "draw-cut"
+  | "guard-check"
+  | "sentence-fall"
+  | "choked-turn"
+  | "petalfall"
+  | "coil-drag"
+  | "thunder-fall"
+  | "splinter-fall";
 export type MeleeComboHand = "lead" | "off" | "both";
 export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
 export type MeleeComboRibbonProfile =
@@ -784,6 +796,280 @@ export const GALLOWS_TURN_COMBO_STEP = Object.freeze({
   },
 } as const satisfies MeleeComboStep);
 
+/** Driftblade-model panel (§50+): four adopters keep the model's three-role skeleton (DRAW → PUNCTUATE →
+ * PAYOFF) in their own words. Every step ships the Stage-1 unit sweep; timing/ribbon are the authored
+ * identity. A `widthMultiplier: 0` ribbon is authored SILENCE — the model's compact beat paints nothing. */
+
+// ── Gravechill Nodachi "Cold Court": the executioner deliberates; everything lands 0.02–0.04 late. ──
+export const DRAWN_FROST_COMBO_STEP = Object.freeze({
+  name: "drawn frost",
+  motion: "draw-cut" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.26, activeEnd: 0.54, impact: 0.54, followEnd: 0.68 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "rising-plane" as const,
+    radialStart: 0.34,
+    radialEnd: 1,
+    widthMultiplier: 1,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const TSUBA_CHECK_COMBO_STEP = Object.freeze({
+  name: "tsuba check",
+  motion: "guard-check" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.14, activeEnd: 0.3, impact: 0.3, followEnd: 0.46 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "guard-plane" as const,
+    radialStart: 0.5,
+    radialEnd: 1,
+    widthMultiplier: 0,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const SENTENCE_FALL_COMBO_STEP = Object.freeze({
+  name: "the sentence",
+  motion: "sentence-fall" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.5, activeEnd: 0.66, impact: 0.63, followEnd: 0.84 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "head-wedge" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.28,
+    end: "squared" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+// ── Stormpetal Odachi "Petalfall": the longest blade moves like it weighs nothing; slightly early. ──
+export const CROSSWIND_COMBO_STEP = Object.freeze({
+  name: "crosswind",
+  motion: "slash" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.22, activeEnd: 0.52, impact: 0.5, followEnd: 0.66 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "open-c" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 0.92,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const LEAF_TURN_COMBO_STEP = Object.freeze({
+  name: "leaf turn",
+  motion: "choked-turn" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.1, activeEnd: 0.26, impact: 0.26, followEnd: 0.42 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "guard-plane" as const,
+    radialStart: 0.5,
+    radialEnd: 1,
+    widthMultiplier: 0,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const PETALFALL_COMBO_STEP = Object.freeze({
+  name: "petalfall",
+  motion: "petalfall" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.44, activeEnd: 0.62, impact: 0.59, followEnd: 0.82 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "heavy-sickle" as const,
+    radialStart: 0.28,
+    radialEnd: 1,
+    widthMultiplier: 1.104,
+    end: "torn" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+// ── Hailwidow Katana "Three Hails": staccato — the model's fractions at half the pose. ──
+export const FIRST_HAIL_COMBO_STEP = Object.freeze({
+  name: "first hail",
+  motion: "shoulder-chop" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.24, activeEnd: 0.5, impact: 0.48, followEnd: 0.62 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "open-c" as const,
+    radialStart: 0.32,
+    radialEnd: 1,
+    widthMultiplier: 1,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const WIDOWS_KNOCK_COMBO_STEP = Object.freeze({
+  name: "widow's knock",
+  motion: "guard-check" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.12, activeEnd: 0.28, impact: 0.26, followEnd: 0.4 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "guard-plane" as const,
+    radialStart: 0.5,
+    radialEnd: 1,
+    widthMultiplier: 0,
+    end: "clean" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const SPLINTER_COMBO_STEP = Object.freeze({
+  name: "splinter",
+  motion: "splinter-fall" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.42, activeEnd: 0.6, impact: 0.56, followEnd: 0.76 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "head-wedge" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.15,
+    end: "torn" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+// ── Voltfang Tachi "Fang, Then Thunder": contact early, paint late; the coil hums into the fall. ──
+export const FANG_COMBO_STEP = Object.freeze({
+  name: "fang",
+  motion: "slash" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.2, activeEnd: 0.46, impact: 0.44, followEnd: 0.6 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "open-c" as const,
+    radialStart: 0.32,
+    radialEnd: 1,
+    widthMultiplier: 1,
+    end: "open" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const COIL_DRAG_COMBO_STEP = Object.freeze({
+  name: "coil",
+  motion: "coil-drag" as const,
+  direction: -1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.14, activeEnd: 0.3, impact: 0.3, followEnd: 0.48 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "guard-plane" as const,
+    radialStart: 0.5,
+    radialEnd: 1,
+    widthMultiplier: 0,
+    end: "clean" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} as const satisfies MeleeComboStep);
+
+export const THUNDER_FALL_COMBO_STEP = Object.freeze({
+  name: "thunder",
+  motion: "thunder-fall" as const,
+  direction: 1 as const,
+  hand: "both" as const,
+  timing: { activeStart: 0.48, activeEnd: 0.62, impact: 0.56, followEnd: 0.78 },
+  path: {
+    kind: "sweep" as const,
+    arcMultiplier: 1,
+    rangeMultiplier: 1,
+    damageMultiplier: 1,
+    knockback: 0,
+  },
+  ribbon: {
+    profile: "head-wedge" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.18,
+    end: "open" as const,
+  },
+} as const satisfies MeleeComboStep);
+
 type CloseBladeComboVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
 type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default" | CloseBladeComboVariant>;
 
@@ -842,7 +1128,44 @@ export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
     HOOK_AND_HAUL_COMBO_STEP,
     GALLOWS_TURN_COMBO_STEP,
   ]),
+  "nodachi-coldcourt": Object.freeze([
+    DRAWN_FROST_COMBO_STEP,
+    TSUBA_CHECK_COMBO_STEP,
+    SENTENCE_FALL_COMBO_STEP,
+  ]),
+  "nodachi-petalfall": Object.freeze([
+    CROSSWIND_COMBO_STEP,
+    LEAF_TURN_COMBO_STEP,
+    PETALFALL_COMBO_STEP,
+  ]),
+  "katana-threehails": Object.freeze([
+    FIRST_HAIL_COMBO_STEP,
+    WIDOWS_KNOCK_COMBO_STEP,
+    SPLINTER_COMBO_STEP,
+  ]),
+  "katana-thunderlag": Object.freeze([
+    FANG_COMBO_STEP,
+    COIL_DRAG_COMBO_STEP,
+    THUNDER_FALL_COMBO_STEP,
+  ]),
 });
+
+/** Driftblade-model rollout table (panel §50+). Non-generated ids only, same law as
+ * `bigSwordPanelVariantFor`: this map is consulted at that one audited seam BEFORE every structural
+ * heuristic (order is load-bearing — gravechill is a quake carrier and would otherwise fall through to
+ * `quake-mauler`). Driftblade itself stays on `"greatsword"`: it is the model, not an adopter. */
+export const DRIFT_MODEL_ADOPTERS = Object.freeze({
+  "x2-gravechill-nodachi": "nodachi-coldcourt",
+  "x2-stormpetal-odachi": "nodachi-petalfall",
+  "x2-hailwidow-katana": "katana-threehails",
+  "x2-voltfang-tachi": "katana-thunderlag",
+} as const satisfies Record<string, SignatureMeleeComboVariant>);
+
+function driftModelAdopterVariantFor(weaponId: string): SignatureMeleeComboVariant | undefined {
+  return Object.hasOwn(DRIFT_MODEL_ADOPTERS, weaponId)
+    ? DRIFT_MODEL_ADOPTERS[weaponId as keyof typeof DRIFT_MODEL_ADOPTERS]
+    : undefined;
+}
 
 export interface MeleeComboSelection {
   readonly family: MeleeComboFamily;
@@ -861,6 +1184,9 @@ export function meleeComboFamilyForStyle(
 function familyForSignatureVariant(variant: SignatureMeleeComboVariant): MeleeComboFamily {
   if (variant === "stinger") return "thrust";
   if (variant === "hero-spin") return "arc";
+  // R4-1 (analyst): the default is correct for every chop-family variant, including all four
+  // Driftblade-model adopters. A future NON-chop variant must add its mapping here FIRST, or it silently
+  // routes to chop and degrades to the base family sequence with no error.
   return "chop";
 }
 
@@ -892,10 +1218,12 @@ function closeBladeComboVariantFor(
 /** Exact Stage-1 roster routing lives in shared combat presentation, never in SpriteRig. Weapon metadata
  * remains the higher-priority seam; these ids are the non-generated rollout table permitted by the panel. */
 function bigSwordPanelVariantFor(def: WeaponDef): SignatureMeleeComboVariant | undefined {
+  // Driftblade-model adopters resolve FIRST: gravechill left the "greatsword" case below, and without
+  // this early match its `twoHanded && quake && XL` data would fall through to the quake-mauler heuristic.
+  const adopted = driftModelAdopterVariantFor(def.id);
+  if (adopted) return adopted;
   switch (def.id) {
     case "driftblade":
-    case "x2-gravechill-nodachi":
-    case "x2-stormpetal-odachi":
       return "greatsword";
     case "tombstone-greatsword":
     case "x-sword-coffin":
