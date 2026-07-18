@@ -29,10 +29,16 @@ export interface PlayOpts {
 
 type Ctx = AudioContext;
 type VoicePriority = "low" | "normal" | "critical";
+type BossScoreState = "off" | "entrance" | "phase1" | "phase2" | "phase3" | "final" | "death";
 
 export class AudioBus {
   private ctx: Ctx | null = null;
   private master: GainNode | null = null;
+  /** Non-spatial titan bed: four voices maximum, behind the shared SFX priority/voice cap. */
+  private bossMusicGain: GainNode | null = null;
+  private bossScoreState: BossScoreState = "off";
+  private bossPulseAt = 0;
+  private bossMusicVoices = 0;
   private noiseBuf: AudioBuffer | null = null;
   private failed = false;
   private volume: number;
@@ -117,12 +123,17 @@ export class AudioBus {
         const ctx = new Ctor();
         const master = ctx.createGain();
         master.connect(ctx.destination);
+        const bossMusicGain = ctx.createGain();
+        bossMusicGain.gain.value =
+          this.bossScoreState === "off" || this.bossScoreState === "death" ? 0.0001 : 0.15;
+        bossMusicGain.connect(master);
         // Self-heal: if the context ever suspends (mobile tab-hide / OS audio-focus loss) the scheduled
         // sources' `ended` events don't fire on the frozen clock, so `voices` could pin at the cap. Re-baseline
         // it (and the throttle map) whenever the context returns to running (adversarial-verify finding).
         ctx.onstatechange = () => {
           if (ctx.state === "running") {
             this.voices = 0;
+            this.bossMusicVoices = 0;
             this.lastAt.clear();
             this.beamSustainAt.clear();
             // §50 soundkit hygiene (doc §4.3): beam state is unknown after a suspend, so stop +
@@ -147,6 +158,7 @@ export class AudioBus {
         for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
         this.ctx = ctx;
         this.master = master;
+        this.bossMusicGain = bossMusicGain;
         this.noiseBuf = buf;
         this.applyGain(0);
         // §50 soundkit optional warm-up (doc §1.2): now that a context exists, pre-decode the
@@ -214,6 +226,58 @@ export class AudioBus {
     if (persist) updateSettings({ feedback: { confirmVolume: this.confirmVolume } });
   }
 
+  /** Feed the authored titan score state once per frame. Pulses are AudioBus-owned and never spatialized. */
+  setBossScore(state: BossScoreState): void {
+    const ctx = this.ctx;
+    const gain = this.bossMusicGain;
+    const changed = state !== this.bossScoreState;
+    this.bossScoreState = state;
+    if (!ctx || !gain || ctx.state !== "running") return;
+    if (changed) {
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setTargetAtTime(
+        state === "off" || state === "death" ? 0.0001 : 0.15,
+        ctx.currentTime,
+        0.08,
+      );
+      this.bossPulseAt = ctx.currentTime + (state === "final" ? 0.6 : 0);
+    }
+    if (state === "off" || state === "death" || ctx.currentTime < this.bossPulseAt) return;
+
+    if (state === "entrance") {
+      this.musicTone(48, 0.86, "sine", 0.34, 31);
+      this.bossPulseAt = ctx.currentTime + 1.2;
+    } else if (state === "phase1") {
+      this.musicTone(55, 0.28, "sine", 0.28, 42);
+      this.musicTone(330, 0.055, "triangle", 0.08, 280, 0.75);
+      this.bossPulseAt = ctx.currentTime + 1;
+    } else if (state === "phase2") {
+      this.musicTone(58, 0.25, "sine", 0.28, 44);
+      this.bossPulseAt = ctx.currentTime + 0.75;
+    } else if (state === "phase3") {
+      this.musicTone(58, 0.25, "sine", 0.26, 44);
+      this.musicTone(120, 0.13, "triangle", 0.13, 82, 0.375);
+      this.musicTone(87, 0.3, "sine", 0.08, 82, 0.375);
+      this.bossPulseAt = ctx.currentTime + 0.75;
+    } else {
+      // Final Tread's real contacts remain the percussion; this is only a restrained post-breath floor.
+      this.musicTone(52, 0.22, "sine", 0.2, 38);
+      this.bossPulseAt = ctx.currentTime + 0.75;
+    }
+  }
+
+  /** Brief authored bed duck; combat/reward SFX stay on the unducked master path. */
+  duckBossScore(db: number, durationSeconds: number): void {
+    const ctx = this.ctx;
+    const gain = this.bossMusicGain;
+    if (!ctx || !gain) return;
+    const base = this.bossScoreState === "off" || this.bossScoreState === "death" ? 0.0001 : 0.15;
+    const ducked = Math.max(0.0001, base * 10 ** (-Math.max(0, db) / 20));
+    gain.gain.cancelScheduledValues(ctx.currentTime);
+    gain.gain.setTargetAtTime(ducked, ctx.currentTime, 0.025);
+    gain.gain.setTargetAtTime(base, ctx.currentTime + Math.max(0.05, durationSeconds), 0.1);
+  }
+
   /** Toggle mute; returns the new muted state. */
   toggleMute(): boolean {
     this.muted = !this.muted;
@@ -272,6 +336,7 @@ export class AudioBus {
       x?: number;
       delay?: number;
       priority?: VoicePriority;
+      destination?: AudioNode;
     } = {},
   ): void {
     const ctx = this.ctx;
@@ -287,7 +352,37 @@ export class AudioBus {
     g.gain.setValueAtTime(0.0002, t0);
     g.gain.exponentialRampToValueAtTime(peak, t0 + 0.006);
     g.gain.exponentialRampToValueAtTime(0.0002, t0 + dur);
-    osc.connect(g).connect(this.out(o.x));
+    osc.connect(g).connect(o.destination ?? this.out(o.x));
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.03);
+  }
+
+  private musicTone(
+    freq: number,
+    dur: number,
+    type: OscillatorType,
+    gain: number,
+    sweepTo: number,
+    delay = 0,
+  ): void {
+    const ctx = this.ctx;
+    const destination = this.bossMusicGain;
+    if (!ctx || !destination || this.bossMusicVoices >= 4) return;
+    const t0 = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    if (!this.claim(osc, "low")) return;
+    this.bossMusicVoices++;
+    osc.addEventListener("ended", () => {
+      this.bossMusicVoices = Math.max(0, this.bossMusicVoices - 1);
+    });
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(1, sweepTo), t0 + dur);
+    const envelope = ctx.createGain();
+    envelope.gain.setValueAtTime(0.0002, t0);
+    envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t0 + 0.012);
+    envelope.gain.exponentialRampToValueAtTime(0.0002, t0 + dur);
+    osc.connect(envelope).connect(destination);
     osc.start(t0);
     osc.stop(t0 + dur + 0.03);
   }
@@ -934,6 +1029,93 @@ export class AudioBus {
         });
         break;
       }
+      // Vastaghar's manifest-ready score punctuation. Every id is sample-first; synth is the fallback.
+      case "boss:titan:intro":
+        if (this.sampleFirst(event, { volume: 0.82, priority: "critical" })) return;
+        this.tone(52, 0.9, { type: "sine", gain: 0.3, sweepTo: 30, priority: "critical" });
+        this.noise(0.72, {
+          gain: 0.12,
+          type: "lowpass",
+          freq: 110,
+          sweepTo: 62,
+          priority: "critical",
+        });
+        break;
+      case "boss:titan:lift":
+        if (this.throttled("titanLift", 300)) return;
+        if (this.sampleFirst(event, { volume: 0.35 + 0.35 * amt, pan: this.panOf(x) })) return;
+        this.tone(85, 0.22, { type: "triangle", gain: 0.07 + 0.05 * amt, sweepTo: 130, x });
+        this.noise(0.18, { gain: 0.035 + 0.035 * amt, type: "bandpass", freq: 420, x });
+        break;
+      case "boss:titan:glint":
+        if (this.throttled("titanGlint", 120)) return;
+        if (this.sampleFirst(event, { volume: 0.36 + 0.34 * amt, pan: this.panOf(x) })) return;
+        this.tone(900, 0.15, { type: "triangle", gain: 0.07 + 0.05 * amt, sweepTo: 1_350, x });
+        break;
+      case "boss:titan:wheel":
+        if (this.throttled("titanWheel", 500)) return;
+        if (this.sampleFirst(event, { volume: 0.4 + 0.35 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.16, { gain: 0.08 + 0.07 * amt, type: "bandpass", freq: 680, x });
+        this.tone(140, 0.2, { type: "triangle", gain: 0.08, sweepTo: 82, x });
+        break;
+      case "boss:titan:step":
+        if (this.throttled("titanStep", 70)) return;
+        if (
+          this.sampleFirst(event, {
+            volume: 0.62 + 0.38 * amt,
+            pan: this.panOf(x),
+            priority: "critical",
+          })
+        )
+          return;
+        this.tone(52, 0.42, { type: "sine", gain: 0.48, sweepTo: 26, x, priority: "critical" });
+        this.noise(0.34, {
+          gain: 0.24,
+          type: "lowpass",
+          freq: 150,
+          sweepTo: 70,
+          x,
+          priority: "critical",
+        });
+        break;
+      case "boss:titan:phase":
+        if (this.throttled("titanPhase", 500)) return;
+        if (this.sampleFirst(event, { volume: 0.82, priority: "critical" })) return;
+        this.tone(196, 0.22, { type: "triangle", gain: 0.16, sweepTo: 165, priority: "critical" });
+        this.tone(294, 0.28, {
+          type: "triangle",
+          gain: 0.17,
+          sweepTo: 392,
+          delay: 0.2,
+          priority: "critical",
+        });
+        break;
+      case "boss:titan:break":
+        if (this.throttled("titanBreak", 400)) return;
+        if (this.sampleFirst(event, { volume: 0.9, pan: this.panOf(x), priority: "critical" }))
+          return;
+        this.noise(0.14, { gain: 0.2, type: "bandpass", freq: 280, x, priority: "critical" });
+        this.tone(78, 0.32, { type: "sine", gain: 0.24, sweepTo: 42, x, priority: "critical" });
+        break;
+      case "boss:titan:death":
+        if (this.throttled("titanDeath", 800)) return;
+        if (this.sampleFirst(event, { volume: 1, priority: "critical" })) return;
+        this.tone(45, 0.62, { type: "sine", gain: 0.4, sweepTo: 22, priority: "critical" });
+        this.noise(0.4, {
+          gain: 0.2,
+          type: "lowpass",
+          freq: 320,
+          sweepTo: 85,
+          priority: "critical",
+        });
+        this.tone(330, 0.3, {
+          type: "triangle",
+          gain: 0.13,
+          sweepTo: 494,
+          delay: 0.55,
+          priority: "critical",
+        });
+        break;
       // Reward / skill stingers.
       case "parry": // the crispest sound in the game — this IS the skill beat
         // Layer (doc §3): sample metal clang OVER the sine pair — result deliberately unused. The

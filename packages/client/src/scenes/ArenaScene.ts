@@ -120,6 +120,11 @@ import {
   UltimatePhase,
   type UltimatePhaseValue,
   ultimateFamilyForCode,
+  VASTAGHAR_ENCOUNTER,
+  type VastagharActionDef,
+  VastagharActionKind,
+  VastagharMode,
+  VastagharPhase,
   VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
   WEAPONS,
@@ -203,6 +208,7 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
+import { playFxPack } from "../vfx/fx-composer.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import {
   enemyComboLeapHeight,
@@ -213,6 +219,11 @@ import {
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
 import { UltimateVfx } from "../vfx/ultimate-vfx.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
+import {
+  type VastagharPresentationFrame,
+  VastagharShakeBudget,
+  VastagharVfx,
+} from "../vfx/vastaghar-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
   bakeCardArt,
@@ -265,6 +276,9 @@ import {
   spawnWeaponKillFx,
   TelegraphForeshadowPool,
 } from "./arena/vfx.js";
+
+const VASTAGHAR_ACTIONS: Readonly<Partial<Record<number, VastagharActionDef>>> =
+  VASTAGHAR_ENCOUNTER.actions;
 
 /** Which sprite manifest the player renders as (§23: melee class, one character for M0). */
 const PLAYER_SPRITE = "drifter";
@@ -343,6 +357,10 @@ const TelegraphKindTag = {
   ExpandingRing: 5,
   Melee: 6,
   Quake: 7,
+  Eruption: 8,
+  WormSweep: 9,
+  TitanSweep: 10,
+  TitanLandmark: 11,
 } as const;
 
 const MELEE_TELEGRAPH_PREFIX = "melee:";
@@ -900,6 +918,56 @@ function buildTelegraphGeometry(
   return { edges, centerX: x, centerY };
 }
 
+/** Schema-owned titan sweep: the live capsule begins at the frozen inner range, never at the body root. */
+function buildVastagharSweepGeometry(
+  x: number,
+  y: number,
+  innerRange: number,
+  outerRange: number,
+  halfWidth: number,
+  rot: number,
+  projectionYScale: number,
+  zoom: number,
+): TelegraphGeometry {
+  const ux = Math.cos(rot);
+  const uy = Math.sin(rot);
+  const innerX = x + ux * innerRange;
+  const innerY = y + uy * innerRange;
+  const outerX = x + ux * outerRange;
+  const outerY = y + uy * outerRange;
+  const capSamples = Math.max(8, Math.min(16, Math.ceil((Math.PI * halfWidth * zoom) / 8)));
+  const world: { x: number; y: number }[] = [];
+  // One closed radial capsule: outer cap faces travel, inner cap faces the planted pivot. Rounded caps keep
+  // the protected edge faithful to the server's annular-capsule half-width instead of underdrawing corners.
+  for (let i = 0; i <= capSamples; i++) {
+    const angle = rot + Math.PI / 2 - (Math.PI * i) / capSamples;
+    world.push({
+      x: outerX + Math.cos(angle) * halfWidth,
+      y: outerY + Math.sin(angle) * halfWidth,
+    });
+  }
+  for (let i = 0; i <= capSamples; i++) {
+    const angle = rot - Math.PI / 2 - (Math.PI * i) / capSamples;
+    world.push({
+      x: innerX + Math.cos(angle) * halfWidth,
+      y: innerY + Math.sin(angle) * halfWidth,
+    });
+  }
+  const points = world.map((point) => ({
+    x: point.x,
+    y: projectTelegraphY(point.y, projectionYScale),
+  }));
+  let centerX = 0;
+  let centerY = 0;
+  for (const point of points) {
+    centerX += point.x;
+    centerY += point.y;
+  }
+  centerX /= points.length;
+  centerY /= points.length;
+  return { edges: [polygonEdge(points, centerX, centerY, zoom)], centerX, centerY };
+}
+
 /** §17 stand-in sprite per archetype — used when a themed-dimension enemy's BESPOKE art hasn't been
  *  harvest-installed yet (its manifest id isn't in SPRITES). Keeps every new dimension playable on day one
  *  with an archetype-matched Wild-West rig (the same POC pattern as old-rust/ronin/gatlin → boothill); once
@@ -919,6 +987,8 @@ const ENEMY_FALLBACK_SPRITE: Record<string, string> = {
 /** Resolve the sprite manifest id to render for an enemy kind: the bespoke sprite if its art is installed,
  *  else the archetype stand-in (so an un-rendered themed enemy doesn't crash SpriteRig). */
 function resolveEnemySprite(kind: EnemyKind | undefined, rawKind: string): string {
+  // The schema-26 flagship owns installed four-foot art even while the shared legacy fallback remains grull.
+  if (rawKind === "world-titan" && SPRITES["world-titan"]) return rawKind;
   const want = kind?.sprite ?? rawKind;
   if (SPRITES[want as keyof typeof SPRITES]) return want;
   return ENEMY_FALLBACK_SPRITE[kind?.archetype ?? "rusher"] ?? "critter";
@@ -974,6 +1044,9 @@ export class ArenaScene extends Phaser.Scene {
   private vfxPlayer!: VfxPlayer;
   private beamRenderer!: BeamRenderer;
   private ultimateVfx!: UltimateVfx;
+  /** One fixed-pool flagship director; semantic epochs never compete with player VFX surfaces. */
+  private vastagharVfx!: VastagharVfx;
+  private readonly vastagharShakeBudget = new VastagharShakeBudget();
   private readonly lastUltimateSeq = new Map<string, number>();
   private readonly lastUltimateArchetype = new Map<string, number>();
   private ultimateCastPendingUntil = -1e9;
@@ -1007,6 +1080,7 @@ export class ArenaScene extends Phaser.Scene {
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
   /** Bounded painted renderer for the server-authoritative kill-XP Echo map. */
   private xpMotes!: XpMoteRenderer;
+  private vastagharCrownCaught = false;
   /** §19 v0.108 procedural audio — the whole game's SFX play through this (see AudioBus). Shared across
    *  scene re-entries via the registry so the volume/mute setting + context survive a menu round-trip. */
   private audio!: AudioBus;
@@ -1074,6 +1148,8 @@ export class ArenaScene extends Phaser.Scene {
       rot: number;
       danger: number;
       kindTag: number;
+      ownerId: string;
+      castSeq: number;
       sawFull: boolean;
       seenFrame: number;
       projectionYScale: number;
@@ -1690,6 +1766,7 @@ export class ArenaScene extends Phaser.Scene {
     this.xpMotes?.destroy();
     this.beamRenderer?.destroy();
     this.ultimateVfx?.destroy();
+    this.vastagharVfx?.destroy();
     this.damageNumberRenderer?.destroy();
     this.hitEffectRenderer?.destroy();
     this.combatFeedback?.reset();
@@ -1698,6 +1775,7 @@ export class ArenaScene extends Phaser.Scene {
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
+    this.vastagharShakeBudget.reset();
     for (const rig of this.petRigs.values()) rig.destroy();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
@@ -1734,6 +1812,7 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyBufs.clear();
     this.snapFell.clear();
     this.enemyHp.clear();
+    this.vastagharCrownCaught = false;
     this.enemyCrit.clear();
     this.enemyFlinches.clear();
     this.predictedMeleeContacts.length = 0;
@@ -1775,6 +1854,7 @@ export class ArenaScene extends Phaser.Scene {
     this.vfxPlayer = undefined!;
     this.beamRenderer = undefined!;
     this.ultimateVfx = undefined as unknown as UltimateVfx;
+    this.vastagharVfx = undefined as unknown as VastagharVfx;
     this.xpMotes = undefined!;
     this.damageNumberRenderer = undefined!;
     this.hitEffectRenderer = undefined!;
@@ -1977,6 +2057,8 @@ export class ArenaScene extends Phaser.Scene {
     this.beamRenderer = undefined!;
     this.ultimateVfx?.destroy();
     this.ultimateVfx = undefined as unknown as UltimateVfx;
+    this.vastagharVfx?.destroy();
+    this.vastagharVfx = undefined as unknown as VastagharVfx;
     this.damageNumberRenderer?.destroy();
     this.damageNumberRenderer = undefined!;
     this.hitEffectRenderer?.destroy();
@@ -2060,6 +2142,14 @@ export class ArenaScene extends Phaser.Scene {
     this.game.registry.set("audio", this.audio);
     const settings = loadSettings();
     this.feedbackSettings = settings.feedback;
+    this.vastagharVfx = new VastagharVfx(this, {
+      audio: (cue, x, amount) => this.audio.play(cue, { x, amt: amount }),
+      pack: (name, x, y, radius) => playFxPack(this, name, x, y, { radius }),
+      score: (state) => this.audio.setBossScore(state),
+      duckScore: (db, durationSeconds) => this.audio.duckBossScore(db, durationSeconds),
+      shake: (x, y, durationMs, intensity, tier, localThreatened) =>
+        this.requestVastagharShake(x, y, durationMs, intensity, tier, localThreatened),
+    });
     this.verbUi = new VerbLegendManager({
       scene: this,
       onboarding: settings.onboarding,
@@ -3699,8 +3789,7 @@ export class ArenaScene extends Phaser.Scene {
         this.slideQueued = true;
         this.slideDryPresses = 0;
         this.slideDryWindowAt = -1e9;
-        // Both bindings are latency-critical: force the normal numbered-command loop this frame.
-        this.inputAccMs = Math.max(this.inputAccMs, TICK_MS);
+        // Both bindings are latency-critical; stepNetInput sees this latch and mints an immediate command.
       } else if ((this.predictor?.slideCooldownRemaining ?? 0) > 0) {
         if (this.time.now - this.slideDryWindowAt > 2_000) {
           this.slideDryWindowAt = this.time.now;
@@ -3852,7 +3941,11 @@ export class ArenaScene extends Phaser.Scene {
     this.renderGrabHighlight();
 
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
-    this.stepNetInput(deltaMs, levelWindowInputBlocked); // §4 v0.107 mint/send/predict this frame's input commands
+    this.stepNetInput(
+      deltaMs,
+      levelWindowInputBlocked,
+      ultimatePressed && !nearBeltShop && !levelWindowInputBlocked,
+    ); // §4 v0.107 mint/send/predict this frame's input commands
     this.syncBlobs();
     this.syncPetRigs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
@@ -3865,6 +3958,7 @@ export class ArenaScene extends Phaser.Scene {
     this.beginCombatFeedbackFrame();
     this.drainCombatFeedback();
     this.syncEnemies();
+    this.updateVastagharPresentation(deltaMs);
     this.syncPickups();
     this.syncProjectiles();
     this.syncZones();
@@ -3962,6 +4056,16 @@ export class ArenaScene extends Phaser.Scene {
   /** One delivered patch owns the catch ring, squad HUD pulse, pitch bucket, and optional +N label. */
   private onXpReceipt(event: XpMoteReceipt): void {
     const now = this.time.now;
+    const vastaghar = this.room?.state.vastaghar;
+    if (
+      !this.vastagharCrownCaught &&
+      vastaghar?.active &&
+      vastaghar.victoryXp > 0 &&
+      event.value >= vastaghar.victoryXp
+    ) {
+      this.vastagharCrownCaught = true;
+      this.audio.duckBossScore(5, 0.34);
+    }
     this.xpPulse = Math.min(1, Math.max(this.xpPulse, 0.56 + Math.log2(1 + event.value) * 0.1));
     let batch = this.xpReceiptBatches.get(event.collectorId);
     if (!batch || now - batch.lastAt > 200) {
@@ -4048,10 +4152,12 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Reconcile rendered enemies against authoritative state (same race-proof pattern as blobs). */
   private syncEnemies(): void {
-    if (!this.room) return;
+    const room = this.room;
+    if (!room) return;
     this.syncWormRig();
-    const enemies = this.room.state.enemies;
-    const wormOwner = this.room.state.wormBoss.active ? this.room.state.wormBoss.ownerId : "";
+    const enemies = room.state.enemies;
+    const wormOwner = room.state.wormBoss.active ? room.state.wormBoss.ownerId : "";
+    const vastagharOwner = room.state.vastaghar.active ? room.state.vastaghar.ownerId : "";
     const reducedMotion = prefersReducedPaperMotion();
     enemies.forEach((enemy, id) => {
       if (id === wormOwner) return;
@@ -4085,9 +4191,17 @@ export class ArenaScene extends Phaser.Scene {
         }
         const paperPriority: 0 | 1 | 2 = kind?.archetype === "boss" ? 2 : enemy.tough ? 1 : 0;
         this.enemyPaperPriority.set(id, paperPriority);
-        if (!reducedMotion) rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
+        if (!reducedMotion && id !== vastagharOwner)
+          rig.playSpawnUnfold(this.animClock, paperPriority > 0 ? 280 : 220);
         this.enemies.set(id, rig);
         this.enemyAtk.set(id, enemy.atkSeq);
+        if (vastagharOwner && enemy.kind === "mote-swarm")
+          this.vastagharVfx.emitAddEntrance(
+            enemy.x,
+            enemy.y,
+            (room.state.tick ^ (telegraphHash01(id) * 0xffff_ffff)) >>> 0,
+            reducedMotion,
+          );
       }
       // `atkSeq` is the authoritative contact edge. Continue from the sampled loaded pose; never replay a
       // complete swing from idle after the damage patch has already landed.
@@ -4176,6 +4290,19 @@ export class ArenaScene extends Phaser.Scene {
             rig.deathPop(0, 0, "pit");
             this.paperDeaths.push({ rig, full: false });
           } else {
+            const flagshipDeath =
+              id === vastagharOwner && room.state.vastaghar.mode === VastagharMode.Victory;
+            if (flagshipDeath) {
+              const visible = this.cameras.main.worldView.contains(rig.x, rig.y);
+              if (visible) {
+                const full = !reducedMotion;
+                rig.deathPop(0, 0, full ? "tear" : "lite");
+                this.paperDeaths.push({ rig, full });
+              } else {
+                rig.destroy();
+              }
+              continue; // the epoch director owns the one death sound, pack stack, shake, and crown order
+            }
             spawnPoof(this, rig.x, rig.y); // dust at the kill point
             this.audio.play("death", { x: rig.x }); // §19 kill crunch (throttled for horde clears)
             // §20 death-pop: fling the corpse AWAY from the nearest living player (≈ the killer) + up.
@@ -4286,6 +4413,82 @@ export class ArenaScene extends Phaser.Scene {
       ? this.timeline.renderTime(this.time.now)
       : Math.max(0, state.tick * TICK_MS - INTERP_DELAY_MS);
     this.wormRig.update(renderTime, state.wormBoss, state.tick, this.time.now, deltaMs);
+  }
+
+  /** Exact local danger cancels spectacle camera weather; no Vastaghar path ever pans or zooms ownership. */
+  private localPlayerInVastagharDanger(): boolean {
+    const room = this.room;
+    if (!room || !room.state.vastaghar.active) return false;
+    const self = room.state.players.get(room.sessionId);
+    if (!self?.alive) return true;
+    const ownerId = room.state.vastaghar.ownerId;
+    const projectionYScale = this.belt ? BELT_FORESHORTEN : 1;
+    const selfY = projectTelegraphY(self.y, projectionYScale);
+    for (const cached of this.telegraphCache.values()) {
+      if (cached.ownerId !== ownerId || cached.t >= 0.999) continue;
+      if (telegraphGeometryContains(cached.geometry, self.x, selfY)) return true;
+    }
+    const frame = this.vastagharVfx.presentation;
+    const action = VASTAGHAR_ACTIONS[frame.actionKind];
+    const radius = action?.stepRadii[frame.stepIndex] ?? action?.stepRadii[0] ?? 0;
+    return (
+      frame.responseActive &&
+      radius > 0 &&
+      Math.hypot(self.x - frame.impactX, self.y - frame.impactY) <= radius
+    );
+  }
+
+  private updateVastagharPresentation(deltaMs: number): void {
+    const room = this.room;
+    if (!room || !this.vastagharVfx) return;
+    const state = room.state.vastaghar;
+    const owner = state.ownerId ? room.state.enemies.get(state.ownerId) : undefined;
+    const rig = state.ownerId ? this.enemies.get(state.ownerId) : undefined;
+    const self = room.state.players.get(room.sessionId);
+    const selfRig = this.blobs.get(room.sessionId);
+    const fallbackBossX = Number.isFinite(this.lastBossX) ? this.lastBossX : 0;
+    const fallbackBossY = Number.isFinite(this.lastBossY) ? this.lastBossY : 0;
+    // Limbs and answer glints use the estimated current server timeline. Remote root translation keeps its
+    // ordinary interpolation delay, but delaying a five-tick response surface would make the body lie.
+    const estimatedPresentationMs = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now) + INTERP_DELAY_MS
+      : room.state.tick * TICK_MS;
+    const authorityMs = room.state.tick * TICK_MS;
+    const presentationMs = Math.max(
+      authorityMs,
+      Math.min(authorityMs + TICK_MS, estimatedPresentationMs),
+    );
+    this.vastagharVfx.update(
+      {
+        state,
+        authorityTick: room.state.tick,
+        renderTick: presentationMs / TICK_MS,
+        bossX: rig?.x ?? owner?.x ?? fallbackBossX,
+        bossY: rig?.y ?? owner?.y ?? fallbackBossY,
+        localX: selfRig?.x ?? self?.x ?? 0,
+        localY: selfRig?.y ?? self?.y ?? 0,
+        localThreatened: this.localPlayerInVastagharDanger(),
+        reducedMotion: prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+      },
+      deltaMs,
+    );
+  }
+
+  private applyVastagharRigPose(
+    rig: SpriteRig,
+    frame: VastagharPresentationFrame,
+    anim: RigAnim,
+  ): void {
+    rig.setVastagharPose(frame);
+    const ownsBody =
+      frame.transitionActive ||
+      frame.downedGuard ||
+      (frame.actionKind !== VastagharActionKind.None && frame.actionT < 1);
+    if (!ownsBody) return;
+    anim.speed = 0;
+    anim.moveX = Math.cos(frame.aim);
+    anim.moveY = Math.sin(frame.aim);
+    anim.aimDir = frame.aim;
   }
 
   /** Select one authoritative boss anticipation clock; concurrent casts never blend contradictory poses. */
@@ -4735,8 +4938,14 @@ export class ArenaScene extends Phaser.Scene {
           (comboFlags & COMBO_FLAG_JUGGLE) !== 0,
         );
       }
-      if (es && es.kind === this.room?.state.bossKind)
-        this.applyBossTelegraphPose(rig, es.kind, anim);
+      const vastaghar = this.room?.state.vastaghar;
+      if (vastaghar?.active && id === vastaghar.ownerId) {
+        this.applyVastagharRigPose(rig, this.vastagharVfx.presentation, anim);
+      } else {
+        rig.setVastagharPose(undefined);
+        if (es && es.kind === this.room?.state.bossKind)
+          this.applyBossTelegraphPose(rig, es.kind, anim);
+      }
       rig.animate(this.animClock, anim);
       // §8 Brand tint — and §16 OLD RUST glows the same heat-orange at P3 ENRAGE (overheating).
       const enraged = es?.kind === "old-rust" && (this.room?.state.bossPhase ?? 0) >= 3;
@@ -5196,6 +5405,34 @@ export class ArenaScene extends Phaser.Scene {
         ((this.enemyComboPresentation.get(meleeOwner)?.presentedFlags ?? 0) &
           COMBO_FLAG_EMPOWERED) !==
           0;
+      const vastagharOwned = st.vastaghar.active && row.ownerId === st.vastaghar.ownerId;
+      const vastagharSweep =
+        vastagharOwned && row.kindTag === TelegraphKindTag.TitanSweep
+          ? VASTAGHAR_ACTIONS[st.vastaghar.actionKind]
+          : undefined;
+      const buildCurrentGeometry = (): TelegraphGeometry =>
+        vastagharSweep
+          ? buildVastagharSweepGeometry(
+              row.x,
+              row.y,
+              vastagharSweep.innerRange,
+              vastagharSweep.outerRange,
+              vastagharSweep.halfWidth,
+              row.rot,
+              projectionYScale,
+              zoom,
+            )
+          : buildTelegraphGeometry(
+              row.shape,
+              row.x,
+              row.y,
+              row.a,
+              row.b,
+              row.rot,
+              row.kindTag,
+              projectionYScale,
+              zoom,
+            );
       let cached = this.telegraphCache.get(id);
       const geometryChanged =
         !cached ||
@@ -5206,6 +5443,8 @@ export class ArenaScene extends Phaser.Scene {
         cached.b !== row.b ||
         cached.rot !== row.rot ||
         cached.kindTag !== row.kindTag ||
+        cached.ownerId !== row.ownerId ||
+        cached.castSeq !== row.castSeq ||
         cached.projectionYScale !== projectionYScale ||
         cached.zoom !== zoom;
       if (!cached) {
@@ -5219,36 +5458,18 @@ export class ArenaScene extends Phaser.Scene {
           rot: row.rot,
           danger: row.danger,
           kindTag: row.kindTag,
+          ownerId: row.ownerId,
+          castSeq: row.castSeq,
           sawFull: false,
           seenFrame: frame,
           projectionYScale,
           zoom,
           hash: telegraphHash01(id),
-          geometry: buildTelegraphGeometry(
-            row.shape,
-            row.x,
-            row.y,
-            row.a,
-            row.b,
-            row.rot,
-            row.kindTag,
-            projectionYScale,
-            zoom,
-          ),
+          geometry: buildCurrentGeometry(),
         };
         this.telegraphCache.set(id, cached);
       } else if (geometryChanged) {
-        cached.geometry = buildTelegraphGeometry(
-          row.shape,
-          row.x,
-          row.y,
-          row.a,
-          row.b,
-          row.rot,
-          row.kindTag,
-          projectionYScale,
-          zoom,
-        );
+        cached.geometry = buildCurrentGeometry();
       }
       if (!meleeOwner || bossMelee || this.meleeFullTells.has(meleeOwner))
         this.drawTelegraph(
@@ -5296,6 +5517,33 @@ export class ArenaScene extends Phaser.Scene {
       cached.rot = row.rot;
       cached.danger = row.danger;
       cached.kindTag = row.kindTag;
+      cached.ownerId = row.ownerId;
+      cached.castSeq = row.castSeq;
+      if (
+        !cached.sawFull &&
+        vastagharOwned &&
+        row.kindTag === TelegraphKindTag.Quake &&
+        effectiveT >= 0.999
+      ) {
+        const self = this.room ? st.players.get(this.room.sessionId) : undefined;
+        const localThreatened =
+          !!self &&
+          telegraphGeometryContains(
+            cached.geometry,
+            self.x,
+            projectTelegraphY(self.y, projectionYScale),
+          );
+        this.vastagharVfx.resolveQuake({
+          encounterSeq: st.vastaghar.encounterSeq,
+          castSeq: row.castSeq,
+          actionKind: st.vastaghar.actionKind,
+          x: row.x,
+          y: row.y,
+          radius: row.a,
+          localThreatened,
+          reducedMotion: prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+        });
+      }
       cached.sawFull ||= !meleeOwner && effectiveT >= 0.999;
       cached.seenFrame = frame;
       cached.projectionYScale = projectionYScale;
@@ -5317,7 +5565,9 @@ export class ArenaScene extends Phaser.Scene {
         this.recentResolvedDangerKind = telegraphDamageKind(c.kindTag);
         this.recentResolvedDangerAt = this.time.now;
       }
-      if (c.kindTag === TelegraphKindTag.Slam) {
+      if (c.ownerId === st.vastaghar.ownerId && c.kindTag === TelegraphKindTag.Quake) {
+        continue; // schema epoch fired the exact ring on the retained t=1 resolve patch
+      } else if (c.kindTag === TelegraphKindTag.Slam) {
         // slam / landing-zone — the full impact: burst + camera shake + the deep boom. v0.117: scale the
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
         // screen harder than a normal slam — a big body hits like a big body (WYSIWYG weight).
@@ -6037,12 +6287,15 @@ export class ArenaScene extends Phaser.Scene {
     const wormDef = this.room.state.wormBoss.active
       ? BOSSES[this.room.state.bossKind]?.worm
       : undefined;
+    const vastaghar = this.room.state.vastaghar;
     const bossMax = boss
-      ? wormDef
-        ? wormDef.baseCoreHp *
-          enemyHpScale(this.room.state.players.size) *
-          depthHpScale(this.room.state.depth)
-        : (ENEMY_KINDS[boss.kind]?.hp ?? 420)
+      ? vastaghar.active && boss.kind === "world-titan" && vastaghar.maxHp > 0
+        ? vastaghar.maxHp
+        : wormDef
+          ? wormDef.baseCoreHp *
+            enemyHpScale(this.room.state.players.size) *
+            depthHpScale(this.room.state.depth)
+          : (ENEMY_KINDS[boss.kind]?.hp ?? 420)
       : 420;
     const dimName = getDimension(this.room.state.dimensionId).name;
     // §16 v0.109 label with the boss DEF's name when it's a bespoke boss; else the dimension's generic boss.
@@ -6056,38 +6309,73 @@ export class ArenaScene extends Phaser.Scene {
         // §16 v0.117 boss ENTRANCE juice — the first frame a boss appears, the ground quakes + the screen
         // flashes + a deep boom announces it. The COLOSSUS (renderScale ≥5) gets a far heavier, longer quake
         // so a "massive boss" ARRIVES like a cataclysm, not just another spawn.
-        const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
-        const titanic = rs >= 5;
-        this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
-        this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
-        this.audio.play("bossslam", { x: boss.x, amt: 1 });
-        // §33 teach the colossus's footstep mechanic the moment he looms in — you can't out-DPS a quake.
-        if (boss.kind === "world-titan") {
-          this.time.delayedCall(900, () =>
-            this.flashBanner("⚠ JUMP or PARRY his footsteps", "#ffd24a"),
-          );
+        if (!(vastaghar.active && boss.kind === "world-titan")) {
+          const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
+          const titanic = rs >= 5;
+          this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
+          this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
+          this.audio.play("bossslam", { x: boss.x, amt: 1 });
         }
       }
-      this.bossShown = Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
+      // Schema-26's frozen max HP makes the flagship bar authoritative: no smoothing lag may conceal or
+      // visually cross the 70/35/8% phase edges after the server has committed them.
+      this.bossShown =
+        vastaghar.active && boss.kind === "world-titan"
+          ? bossRatio
+          : Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
       this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
       const barLeft = this.screenW() / 2 - 258 * s;
       this.bossBarFill.setPosition(barLeft, 48 * s).setVisible(true);
       this.bossBarFill.width = 516 * s * this.bossShown;
+      const vastagharPhaseName =
+        vastaghar.phase === VastagharPhase.LearnWeight
+          ? "LEARN THE WEIGHT"
+          : vastaghar.phase === VastagharPhase.BreakStride
+            ? "BREAK THE STRIDE"
+            : vastaghar.phase === VastagharPhase.UnderHeel
+              ? "UNDER THE HEEL"
+              : vastaghar.phase === VastagharPhase.FinalTread
+                ? "FINAL TREAD"
+                : "";
       this.bossText
         .setPosition(this.screenW() / 2, 38 * s)
-        .setText(bossDefName ? bossDefName.toUpperCase() : `${dimName.toUpperCase()} BOSS`)
+        .setText(
+          vastaghar.active
+            ? `VASTAGHAR, THE WORLD-TREAD  •  ${vastagharPhaseName}`
+            : bossDefName
+              ? bossDefName.toUpperCase()
+              : `${dimName.toUpperCase()} BOSS`,
+        )
         .setVisible(true);
       // §16 v0.116 Polish B — draw a tick at each PHASE threshold so the escalation gates are visible on the
       // bar. The def's phases[i].hpAbove is the HP fraction where phase i+1 begins; skip the final 0-floor.
-      const phases = BOSSES[this.room.state.bossKind]?.phases ?? [];
+      const phaseThresholds = vastaghar.active
+        ? VASTAGHAR_ENCOUNTER.thresholds
+        : (BOSSES[this.room.state.bossKind]?.phases ?? []).map((phase) => phase.hpAbove);
       this.bossBarSegments.setVisible(true).clear();
-      for (const ph of phases) {
-        if (ph.hpAbove <= 0 || ph.hpAbove >= 1) continue;
-        const x = barLeft + 516 * s * ph.hpAbove;
+      for (const threshold of phaseThresholds) {
+        if (threshold <= 0 || threshold >= 1) continue;
+        const x = barLeft + 516 * s * threshold;
         // A crossed threshold (fill drained past it) dims; an upcoming one glows — reads the fight's progress.
-        const passed = this.bossShown <= ph.hpAbove;
+        const passed = this.bossShown <= threshold;
         this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
         this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
+      }
+      if (vastaghar.active) {
+        const pipY = 62 * s;
+        for (let i = 0; i < VASTAGHAR_ENCOUNTER.strideBreakPips; i++) {
+          const pipX = this.screenW() / 2 + (i - 1) * 24 * s;
+          const earned = i < vastaghar.stridePips;
+          const downed = vastaghar.mode === VastagharMode.StrideBreak;
+          this.bossBarSegments.fillStyle(
+            downed ? 0xffd978 : earned ? 0xd8b665 : 0x352d27,
+            downed ? 0.95 : earned ? 0.9 : 0.75,
+          );
+          this.bossBarSegments.fillCircle(pipX, pipY, 7 * s);
+          this.bossBarSegments.lineStyle(1.5 * s, 0x17120f, 0.8);
+          this.bossBarSegments.lineBetween(pipX - 4 * s, pipY - 5 * s, pipX, pipY);
+          this.bossBarSegments.lineBetween(pipX, pipY, pipX + 4 * s, pipY + 5 * s);
+        }
       }
       if (this.wormRig && this.room.state.wormBoss.active) {
         this.wormRig.drawBossBarNotches(
@@ -6108,7 +6396,7 @@ export class ArenaScene extends Phaser.Scene {
       this.bossText.setVisible(false);
     }
     // Boss-approach toast on first appearance.
-    if (present && !this.prevBossPresent && this.bannerShownFor !== "boss") {
+    if (present && !vastaghar.active && !this.prevBossPresent && this.bannerShownFor !== "boss") {
       this.bannerShownFor = "boss";
       this.flashBanner(`⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`, "#ff5d3b");
     }
@@ -9193,6 +9481,28 @@ export class ArenaScene extends Phaser.Scene {
    *  shake ran (up to 70% duty on a gatling), got-hit / boss-slam / fall / explosion shakes were silently
    *  swallowed. Route every shake here: one at least as strong as the running shake FORCE-restarts (the
    *  important hit always lands); a weaker one is dropped (a tracer stream can't stomp a boss slam). */
+  private requestVastagharShake(
+    x: number,
+    y: number,
+    durationMs: number,
+    intensity: number,
+    tier: 1 | 2 | 3,
+    localThreatened: boolean,
+  ): void {
+    // Camera ownership is never reassigned. A local danger read also suppresses boss weather entirely so
+    // dodge/parry/hurt feedback keeps the camera; distant impacts fall off like ally-ultimate weather.
+    if (localThreatened) return;
+    const view = this.cameras.main.worldView;
+    const distance = Math.hypot(x - view.centerX, y - view.centerY);
+    const falloff = Math.max(0, Math.min(1, 1 - distance / 1_050));
+    if (falloff <= 0.08) return;
+    const scaledDuration = durationMs * (0.55 + falloff * 0.45);
+    const scaledIntensity = intensity * falloff;
+    if (!this.vastagharShakeBudget.accept(this.time.now, scaledDuration, scaledIntensity, tier))
+      return;
+    this.shakeCam(scaledDuration, scaledIntensity);
+  }
+
   shakeCam(duration: number, intensity: number): void {
     const motionScale = prefersReducedPaperMotion() ? 0 : (this.feedbackSettings?.screenShake ?? 1);
     intensity *= motionScale * this.ultimateExplosionShakeScale;
@@ -12310,7 +12620,7 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private stepNetInput(deltaMs: number, levelWindowOpen = false): void {
+  private stepNetInput(deltaMs: number, levelWindowOpen = false, ultimatePressed = false): void {
     this.curDx = levelWindowOpen ? 0 : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
     this.curDy = levelWindowOpen ? 0 : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
     if (levelWindowOpen) {
@@ -12326,22 +12636,34 @@ export class ArenaScene extends Phaser.Scene {
       this.inputAccMs = 0;
       this.predictor.forceResync();
     }
+    const self = this.room.state.players.get(this.room.sessionId);
+    const weapon = self ? WEAPONS[self.weapon] : undefined;
+    const fireHeld =
+      !!self?.alive &&
+      !levelWindowOpen &&
+      !this.levelWinInputReleaseLatch &&
+      !!weapon?.beam &&
+      this.input.activePointer.rightButtonDown();
+    const aim = this.currentBeamAim();
+    const slideHeld =
+      !levelWindowOpen &&
+      !this.levelWinInputReleaseLatch &&
+      slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
+    let immediate = this.predictor.shouldMintImmediateInput(
+      this.curDx,
+      this.curDy,
+      this.jumpQueued,
+      this.crouchHeld,
+      this.poundQueued,
+      this.slideQueued,
+      slideHeld,
+      fireHeld,
+      ultimatePressed,
+    );
     this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
-    while (this.inputAccMs >= TICK_MS) {
-      this.inputAccMs -= TICK_MS;
-      const self = this.room.state.players.get(this.room.sessionId);
-      const weapon = self ? WEAPONS[self.weapon] : undefined;
-      const fireHeld =
-        !!self?.alive &&
-        !levelWindowOpen &&
-        !this.levelWinInputReleaseLatch &&
-        !!weapon?.beam &&
-        this.input.activePointer.rightButtonDown();
-      const aim = this.currentBeamAim();
-      const slideHeld =
-        !levelWindowOpen &&
-        !this.levelWinInputReleaseLatch &&
-        slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
+    while (immediate || this.inputAccMs >= TICK_MS) {
+      const heartbeat = !immediate;
+      if (heartbeat) this.inputAccMs -= TICK_MS;
       const cmd = {
         ...this.predictor.mintCmd(
           this.curDx,
@@ -12363,9 +12685,37 @@ export class ArenaScene extends Phaser.Scene {
       this.jumpQueued = false;
       this.poundQueued = false;
       this.slideQueued = false;
+      if (heartbeat)
+        this.predictor.noteInputHeartbeat(
+          this.curDx,
+          this.curDy,
+          this.crouchHeld,
+          slideHeld,
+          fireHeld,
+        );
+      const beamWasHeld = this.beamPredictionHeld;
+      if (
+        fireHeld &&
+        self &&
+        weapon?.beam &&
+        this.beamPredictionFadeAt < 0 &&
+        (this.beamPredictionStartSeq < 0 ||
+          (!this.beamPredictionAccepted && this.beamPredictionPending.length === 0))
+      ) {
+        this.beamPredictionStartSeq = cmd.seq;
+        this.beamPredictionAccepted = false;
+        this.beamPredictionAngle = Math.atan2(aim.aimY, aim.aimX);
+        this.beamPredictionProgress = 0;
+        this.beamPredictionFadeAt = -1;
+        this.beamPredictionPending.length = 0;
+        if (!beamWasHeld)
+          this.audio.play("beam:charge", { x: self.x, amt: 1, ownerId: this.room.sessionId });
+      }
+      this.beamPredictionHeld = fireHeld;
       this.stepBeamPrediction(cmd, self, weapon);
       this.room.send("input", cmd);
       this.predictor.tick(cmd);
+      immediate = false;
     }
   }
 }

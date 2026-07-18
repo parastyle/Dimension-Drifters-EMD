@@ -74,6 +74,9 @@ import {
   type UltimateFamilyValue,
   UltimatePhase,
   type UltimatePhaseValue,
+  VastagharActionKind,
+  VastagharFoot,
+  VastagharMode,
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
@@ -878,6 +881,32 @@ export interface RigAnim {
   reducedMotion?: boolean;
 }
 
+/** Client-only schema-26 titan pose channels. Exact danger remains on the telegraph renderer. */
+export interface VastagharRigPose {
+  active: boolean;
+  mode: number;
+  actionKind: number;
+  actionLive: boolean;
+  sourceFoot: number;
+  aim: number;
+  impactX: number;
+  impactY: number;
+  actionT: number;
+  windupT: number;
+  activeT: number;
+  recoveryT: number;
+  stepT: number;
+  responseT: number;
+  responseActive: boolean;
+  impactActive: boolean;
+  transitionActive: boolean;
+  downedGuard: boolean;
+  desperation: boolean;
+  entranceT: number;
+  deathT: number;
+  worldwheelAngle: number;
+}
+
 export type PaperDeathTreatment = "crumple" | "flutter" | "tear" | "lite" | "pit";
 
 interface PaperDeathPartPose {
@@ -939,6 +968,9 @@ export class SpriteRig {
   private readonly parts: Phaser.GameObjects.Image[] = [];
   private readonly label?: Phaser.GameObjects.Text;
   private readonly phase: number;
+  /** The flagship owns one idempotent semantic pose sampled from server epochs each rendered frame. */
+  private vastagharPose?: VastagharRigPose;
+  private vastagharDepthFront = false;
   /** §29 quantized display-list depth last sent to Phaser; unchanged writes force a global re-sort. */
   private lastDepth = Number.NaN;
   private facing = 1;
@@ -1420,6 +1452,15 @@ export class SpriteRig {
    *  many body-heights to lift; 0 = normal. */
   setLowerBodyFrame(frac: number): void {
     this.baseLift = frac * TARGET_BODY_H;
+  }
+
+  /** Set/clear the seekable flagship pose. The caller reasserts it each frame; no milestone tween owns it. */
+  setVastagharPose(pose: VastagharRigPose | undefined): void {
+    this.vastagharPose = pose?.active ? pose : undefined;
+    if (!this.vastagharPose && this.vastagharDepthFront) {
+      for (const foot of this.feet) this.root.moveBelow(foot.img, this.body);
+      this.vastagharDepthFront = false;
+    }
   }
 
   /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
@@ -4641,6 +4682,175 @@ export class SpriteRig {
     }
   }
 
+  private vastagharFoot(sourceFoot: number): RigFoot | undefined {
+    // Wire order is outer-left, outer-right, inner-left, inner-right; art order is left outer→inner→right.
+    const artIndex =
+      sourceFoot === VastagharFoot.OuterLeft
+        ? 0
+        : sourceFoot === VastagharFoot.OuterRight
+          ? 3
+          : sourceFoot === VastagharFoot.InnerLeft
+            ? 1
+            : 2;
+    return this.feet[artIndex];
+  }
+
+  /** Boss-local paper theatre sampled from immutable action epochs; never moves the authoritative root. */
+  private applyVastagharPose(reducedMotion: boolean): void {
+    const pose = this.vastagharPose;
+    if (!pose) return;
+    const source =
+      pose.sourceFoot === VastagharFoot.Body ? undefined : this.vastagharFoot(pose.sourceFoot);
+    const action = pose.actionLive ? pose.actionKind : VastagharActionKind.None;
+    const footfallAction =
+      action === VastagharActionKind.Crownstep ||
+      action === VastagharActionKind.ThreefoldMarch ||
+      action === VastagharActionKind.TwinTread ||
+      action === VastagharActionKind.FinalTread;
+    const entrance = clamp01(pose.entranceT);
+
+    // Arrival is a two-piece bottom hinge: feet become broadside first, torso follows one short beat later.
+    if (pose.mode === VastagharMode.Entrance && entrance < 1) {
+      const feetOpen = reducedMotion ? (entrance > 0 ? 1 : 0.08) : smoothstep01(entrance / 0.82);
+      const bodyOpen = reducedMotion ? feetOpen : smoothstep01(Math.max(0, entrance - 0.15) / 0.85);
+      for (const foot of this.feet) foot.img.scaleY *= signedClamp(feetOpen, 0.045);
+      this.body.scaleY *= signedClamp(bodyOpen, 0.045);
+      this.body.rotation += (1 - bodyOpen) * 0.055;
+    }
+
+    // The named source foot owns its fixed authoritative plant throughout lift/drop. Correct for the
+    // permanent lower-body art lift so the visible sole and the schema impact point coincide at resolve.
+    if (source && footfallAction && pose.impactX !== 0 && pose.impactY !== 0) {
+      const dx = pose.impactX - this.root.x;
+      const dy = pose.impactY - this.root.y;
+      const c = Math.cos(-this.root.rotation);
+      const s = Math.sin(-this.root.rotation);
+      const localX = (dx * c - dy * s) / signedClamp(this.root.scaleX, 0.04);
+      const localY = (dx * s + dy * c) / signedClamp(this.root.scaleY, 0.04);
+      const load = smoothstep01(pose.stepT / 0.72);
+      const drop = pose.responseActive ? 1 - smoothstep01(pose.responseT) : pose.stepT < 1 ? 1 : 0;
+      const lift = load * drop;
+      const leftFoot =
+        pose.sourceFoot === VastagharFoot.OuterLeft || pose.sourceFoot === VastagharFoot.InnerLeft;
+      source.img.x = localX;
+      source.img.y = localY + this.baseLift - TARGET_BODY_H * 0.18 * lift;
+      source.img.rotation += (leftFoot ? -1 : 1) * 0.08 * lift;
+      this.body.x += (leftFoot ? 1 : -1) * 5 * lift;
+      this.body.y += 4 * load;
+      this.body.rotation += (leftFoot ? 1 : -1) * 0.045 * load;
+      if (pose.impactActive) {
+        this.body.y += 5;
+        this.body.scaleY *= 0.94;
+      }
+    }
+
+    // Heel Reap and Worldwheel put the attacking foot on the sampled annular edge. The protected exact
+    // capsule remains the fairness carrier; this makes the paper weapon visibly travel with it.
+    if (
+      source &&
+      (action === VastagharActionKind.HeelReap || action === VastagharActionKind.Worldwheel)
+    ) {
+      const sweepRadius = action === VastagharActionKind.Worldwheel ? 590 : 520;
+      const angle = pose.worldwheelAngle;
+      const worldX = this.root.x + Math.cos(angle) * sweepRadius;
+      const worldY = this.root.y + Math.sin(angle) * sweepRadius;
+      const dx = worldX - this.root.x;
+      const dy = worldY - this.root.y;
+      source.img.x = dx / signedClamp(this.root.scaleX, 0.04);
+      source.img.y = dy / signedClamp(this.root.scaleY, 0.04) + this.baseLift;
+      source.img.rotation = angle * this.facing;
+      const tuck = 1 - smoothstep01(pose.windupT);
+      this.body.y += 5 * (1 - tuck);
+      this.body.scaleY *= 0.92 + 0.08 * tuck;
+      if (
+        action === VastagharActionKind.Worldwheel &&
+        pose.activeT > 0 &&
+        pose.activeT < 1 &&
+        !reducedMotion
+      ) {
+        const plane = signedClamp(Math.cos(angle), 0.06);
+        this.body.scaleX *= plane;
+        for (const foot of this.feet) foot.img.scaleX *= plane;
+        const foreground = Math.sin(angle) >= 0;
+        if (foreground !== this.vastagharDepthFront) {
+          if (foreground) this.root.moveAbove(source.img, this.body);
+          else this.root.moveBelow(source.img, this.body);
+          this.vastagharDepthFront = foreground;
+        }
+      }
+      if (pose.recoveryT > 0) {
+        this.body.rotation += 0.12 * (1 - smoothstep01(pose.recoveryT));
+        source.img.x += 4 * (1 - pose.recoveryT);
+      }
+    } else if (this.vastagharDepthFront) {
+      for (const foot of this.feet) this.root.moveBelow(foot.img, this.body);
+      this.vastagharDepthFront = false;
+    }
+
+    // Dodge-only cards brace/pitch without borrowing the response-white foot language.
+    if (action === VastagharActionKind.ShedMountain) {
+      const brace = 1 - Math.abs(pose.windupT * 2 - 1);
+      this.body.y += 5 * brace;
+      this.body.scaleY *= 1 - 0.05 * brace;
+      for (const foot of this.feet) foot.img.rotation *= 0.2;
+    } else if (action === VastagharActionKind.LandmarkBreak) {
+      const load = smoothstep01(pose.windupT);
+      this.body.rotation -= 0.1 * load;
+      this.body.scaleY *= 1 - 0.08 * load;
+    }
+
+    // The authored 16-tick breaks stay boss-local: a crease/through-plane turn, never a screen takeover.
+    if (pose.transitionActive) {
+      const q = smoothstep01(pose.windupT);
+      if (action === VastagharActionKind.PhaseStuckStep) {
+        this.body.rotation += 0.16 * Math.sin(q * Math.PI);
+        this.body.scaleX *= signedClamp(Math.cos(q * Math.PI), reducedMotion ? 0.45 : 0.06);
+      } else if (action === VastagharActionKind.PhaseWorldTurn) {
+        const plane = reducedMotion ? 0.72 : signedClamp(Math.cos(q * Math.PI), 0.06);
+        this.body.scaleX *= plane;
+        for (const foot of this.feet) foot.img.scaleX *= plane;
+      }
+    }
+
+    // Three earned pips produce a unmistakable folded hold for the complete 64-tick damage window.
+    if (pose.downedGuard || action === VastagharActionKind.StrideBreak) {
+      const replant = smoothstep01((pose.actionT - (1 - 9 / 64)) / (9 / 64));
+      const fold = 1 - replant;
+      this.body.y += 9 * fold;
+      this.body.scaleY *= 1 - 0.14 * fold;
+      this.body.rotation += 0.055 * fold;
+      const innerLeft = this.feet[1];
+      const innerRight = this.feet[2];
+      const outerLeft = this.feet[0];
+      const outerRight = this.feet[3];
+      if (innerLeft) {
+        innerLeft.img.y += 8 * fold;
+        innerLeft.img.rotation -= 0.22 * fold;
+      }
+      if (innerRight) innerRight.img.rotation += 0.12 * fold;
+      if (outerLeft) {
+        outerLeft.img.x -= 7 * fold;
+        outerLeft.img.rotation -= 0.16 * fold;
+      }
+      if (outerRight) {
+        outerRight.img.x += 7 * fold;
+        outerRight.img.rotation += 0.16 * fold;
+      }
+      this.attackShadowScaleX *= 1 + 0.3 * fold;
+      this.attackShadowScaleY *= 1 - 0.32 * fold;
+      this.attackShadowAlpha *= 1 - 0.1 * fold;
+    }
+
+    if (pose.desperation && pose.mode !== VastagharMode.Victory) {
+      const tighten = 0.04 + 0.025 * Math.sin(pose.stepT * Math.PI);
+      for (const foot of this.feet) {
+        foot.img.x *= 1 - tighten;
+        foot.img.y *= 1 - tighten * 0.35;
+      }
+      this.body.rotation += Math.sin(pose.stepT * Math.PI * 4) * 0.012;
+    }
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -6150,6 +6360,7 @@ export class SpriteRig {
 
     this.applyJumpFeelPose(timeMs, anim);
     this.applyEnemyComboPresentationPose(timeMs);
+    this.applyVastagharPose(anim.reducedMotion === true);
 
     // §5 jump hop was integrated at frame start so touchdown could excite springs; final art lift stays last.
     // After every part is positioned, lift the whole rig's ART up the arc. Feet lift most (they leave the
