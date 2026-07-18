@@ -71,6 +71,7 @@ export class JumpEffectRenderer {
   private readonly skidDx = new Float32Array(SKID_MAX);
   private readonly skidDy = new Float32Array(SKID_MAX);
   private readonly skidAge = new Float32Array(SKID_MAX);
+  private readonly skidChevron = new Uint8Array(SKID_MAX);
   private skidCursor = 0;
 
   constructor(scene: Phaser.Scene) {
@@ -280,12 +281,17 @@ export class JumpEffectRenderer {
     dirY: number,
     reducedMotion: boolean,
     projectionYScale = 1,
+    assistShapes = false,
   ): void {
     const length = Math.hypot(dirX, dirY) || 1;
     const nx = dirX / length;
     const ny = dirY / length;
     this.spawnSkid(x, y, nx, ny, -5);
     this.spawnSkid(x, y, nx, ny, 5);
+    if (assistShapes) {
+      this.spawnChevron(x - nx * 7, y - ny * 7, nx, ny);
+      this.spawnChevron(x - nx * 19, y - ny * 19, nx, ny);
+    }
     if (reducedMotion) return;
     for (let i = 0; i < 5; i++) {
       const side = (i - 2) * 9;
@@ -560,6 +566,26 @@ export class JumpEffectRenderer {
       this.effects.lineStyle(1.5, 0x2b241d, (1 - q) * 0.35);
       const skidX = this.skidX[i] ?? 0;
       const skidY = this.skidY[i] ?? 0;
+      if (this.skidChevron[i] !== 0) {
+        const nx = this.skidDx[i] ?? 0;
+        const ny = this.skidDy[i] ?? 0;
+        const px = -ny;
+        const py = nx;
+        for (let pass = 0; pass < 2; pass++) {
+          this.effects.lineStyle(
+            pass === 0 ? 4 : 1.8,
+            pass === 0 ? 0x241b12 : 0xffd66e,
+            (1 - q) * 0.9,
+          );
+          this.effects.beginPath();
+          this.effects.moveTo(skidX + nx * 7, skidY + ny * 7);
+          this.effects.lineTo(skidX - nx * 5 + px * 5, skidY - ny * 5 + py * 5);
+          this.effects.moveTo(skidX + nx * 7, skidY + ny * 7);
+          this.effects.lineTo(skidX - nx * 5 - px * 5, skidY - ny * 5 - py * 5);
+          this.effects.strokePath();
+        }
+        continue;
+      }
       this.effects.lineBetween(
         skidX,
         skidY,
@@ -573,6 +599,7 @@ export class JumpEffectRenderer {
     this.ringActive.fill(0);
     this.dustActive.fill(0);
     this.skidActive.fill(0);
+    this.skidChevron.fill(0);
     this.ground.clear();
     this.live.clear();
     this.effects.clear();
@@ -639,10 +666,22 @@ export class JumpEffectRenderer {
   private spawnSkid(x: number, y: number, dirX: number, dirY: number, side: number): void {
     const slot = this.skidCursor++ % SKID_MAX;
     this.skidActive[slot] = 1;
+    this.skidChevron[slot] = 0;
     this.skidAge[slot] = 0;
     this.skidX[slot] = x - dirY * side;
     this.skidY[slot] = y + dirX * side;
     this.skidDx[slot] = -dirX * 16;
     this.skidDy[slot] = -dirY * 16;
+  }
+
+  private spawnChevron(x: number, y: number, dirX: number, dirY: number): void {
+    const slot = this.skidCursor++ % SKID_MAX;
+    this.skidActive[slot] = 1;
+    this.skidChevron[slot] = 1;
+    this.skidAge[slot] = 0;
+    this.skidX[slot] = x;
+    this.skidY[slot] = y;
+    this.skidDx[slot] = dirX;
+    this.skidDy[slot] = dirY;
   }
 }

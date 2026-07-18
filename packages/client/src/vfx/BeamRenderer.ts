@@ -1,5 +1,11 @@
 import { BeamPhase, MAX_PLAYERS, shortestAngleDelta } from "@dd/shared";
 import Phaser from "phaser";
+import type { ColorblindAssistMode } from "../settings.js";
+import {
+  colorblindShapesEnabled,
+  type ElementAssistPattern,
+  elementAssistPattern,
+} from "./colorblind-assist.js";
 import "./vfx-render.js";
 
 export interface BeamRenderState {
@@ -68,24 +74,61 @@ const COLOR: Record<string, number> = {
 };
 const DEFAULT_COLOR = 0x8f6aff;
 
+export interface BeamPaint {
+  readonly id: string;
+  readonly wisp: number;
+  readonly bolt: number;
+}
+
 const DEFAULT_PAINT = { id: "arcane", wisp: 0, bolt: 2 } as const;
-const PAINT: Record<string, { id: string; wisp: number; bolt: number }> = {
+const PAINT: Record<string, BeamPaint> = {
   physical: { id: "steel", wisp: 7, bolt: 0 },
   fire: { id: "fire", wisp: 4, bolt: 0 },
   frost: { id: "frost", wisp: 6, bolt: 5 },
+  water: { id: "water", wisp: 9, bolt: 1 },
   shock: { id: "shock", wisp: 9, bolt: 0 },
   holy: { id: "holy", wisp: 4, bolt: 6 },
   toxic: { id: "toxic", wisp: 6, bolt: 7 },
+  nature: { id: "nature", wisp: 7, bolt: 5 },
   void: { id: "void", wisp: 1, bolt: 6 },
   arcane: DEFAULT_PAINT,
 };
 
-function paintFor(element: string): { id: string; wisp: number; bolt: number } {
+export function beamPaintFor(element: string): BeamPaint {
   if (element === "solar") return PAINT.fire ?? DEFAULT_PAINT;
-  if (element === "water") return PAINT.frost ?? DEFAULT_PAINT;
-  if (element === "nature") return PAINT.toxic ?? DEFAULT_PAINT;
   if (element === "shadow") return PAINT.void ?? DEFAULT_PAINT;
   return PAINT[element] ?? DEFAULT_PAINT;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function mixColor(from: number, to: number, amount: number): number {
+  const t = clamp01(amount);
+  const r = ((from >>> 16) & 0xff) + (((to >>> 16) & 0xff) - ((from >>> 16) & 0xff)) * t;
+  const g = ((from >>> 8) & 0xff) + (((to >>> 8) & 0xff) - ((from >>> 8) & 0xff)) * t;
+  const b = (from & 0xff) + ((to & 0xff) - (from & 0xff)) * t;
+  return (Math.round(r) << 16) | (Math.round(g) << 8) | Math.round(b);
+}
+
+function redlineFor(heat: number): number {
+  return clamp01((heat - 0.68) / 0.32);
+}
+
+/** Breathing is strictly inset: no pulse or heat escalation can overstate the authoritative diameter. */
+export function beamVisualWidth(
+  authoritativeWidth: number,
+  nowMs: number,
+  seed: number,
+  heat: number,
+): number {
+  const width = Math.max(0, authoritativeWidth);
+  const phase = seed * Math.PI * 2;
+  const slowPulse = 0.5 + 0.5 * Math.sin(nowMs * 0.012 + phase);
+  const dangerPulse = 0.5 + 0.5 * Math.sin(nowMs * 0.032 + phase * 1.7);
+  const fraction = 0.94 + slowPulse * 0.045 + dangerPulse * redlineFor(heat) * 0.015;
+  return Math.min(width, width * fraction);
 }
 
 function hashKey(value: string): number {
@@ -100,6 +143,7 @@ export class BeamRenderer {
   private readonly graphics: Phaser.GameObjects.Graphics;
   private readonly entries: BeamEntry[] = [];
   private readonly capsulePoints: Phaser.Math.Vector2[] = [];
+  private colorblindShapes = false;
 
   constructor(private readonly scene: Phaser.Scene) {
     globalThis.VFXRENDER.ensureTextures(scene);
@@ -125,6 +169,10 @@ export class BeamRenderer {
         lip,
       });
     }
+  }
+
+  setColorblindAssist(mode: ColorblindAssistMode | undefined): void {
+    this.colorblindShapes = colorblindShapesEnabled(mode);
   }
 
   destroy(): void {
@@ -173,6 +221,7 @@ export class BeamRenderer {
           predicted.angle,
           Math.min(0.95, predicted.progress),
           COLOR[predicted.element] ?? DEFAULT_COLOR,
+          predicted.element,
           nowMs,
           entry.seed,
           predicted.opacity,
@@ -228,19 +277,31 @@ export class BeamRenderer {
     if (row.phase === BeamPhase.Charging) {
       entry.body.setVisible(false);
       entry.lip.setVisible(false);
-      this.drawCharge(row.originX, oy, row.angle, row.intensity, color, nowMs, entry.seed);
+      this.drawCharge(
+        row.originX,
+        oy,
+        row.angle,
+        row.intensity,
+        color,
+        row.element,
+        nowMs,
+        entry.seed,
+      );
       return;
     }
 
     if (row.phase === BeamPhase.Active && row.effectiveLength > 0 && row.width > 0) {
-      this.drawSustain(row, color, beltY0, beltYScale);
-      this.drawPaint(entry, row, color, local ? 12 : 8, nowMs, beltY0, beltYScale);
+      const visualWidth = beamVisualWidth(row.width, nowMs, entry.seed, row.heat);
+      this.drawSustain(entry, row, color, visualWidth, nowMs, beltY0, beltYScale);
+      this.drawPaint(entry, row, color, visualWidth, local ? 12 : 8, nowMs, beltY0, beltYScale);
       if (entry.ignitionT > 0) {
         const q = entry.ignitionT / 0.07;
         this.groundLight
           .fillStyle(color, q * 0.13)
           .fillEllipse(row.originX, oy + 5, 58 + 34 * q, 22 + 12 * q);
-        this.graphics.fillStyle(0xffffff, q * 0.9).fillCircle(row.originX, oy, 8 + 24 * q);
+        this.graphics
+          .fillStyle(0xffffff, q * 0.9)
+          .fillCircle(row.originX, oy, Math.min(row.width * 0.5, 8 + 24 * q));
       }
       return;
     }
@@ -263,10 +324,28 @@ export class BeamRenderer {
     }
     const heatPulse = 0.65 + 0.35 * Math.sin(nowMs * 0.028 + entry.seed * Math.PI * 2);
     if (row.phase === BeamPhase.Overheated) {
+      const burst = clamp01(entry.overheatT / 0.18);
       this.graphics
-        .lineStyle(4, 0xff5a2e, 0.8 * heatPulse)
-        .strokeCircle(row.originX, oy, 16 + 7 * heatPulse);
-      this.graphics.fillStyle(0xffd27a, 0.65).fillCircle(row.originX, oy, 7);
+        .lineStyle(5, 0xff3b24, 0.82 * heatPulse)
+        .strokeCircle(row.originX, oy, 16 + 9 * heatPulse + burst * 8)
+        .lineStyle(2, 0xffefad, 0.72 + burst * 0.25)
+        .strokeCircle(row.originX, oy, 9 + 5 * (1 - heatPulse));
+      this.graphics
+        .fillStyle(0xffd27a, 0.72 + burst * 0.2)
+        .fillCircle(row.originX, oy, 7 + burst * 4);
+      for (let i = 0; i < 6; i++) {
+        const angle = entry.seed * Math.PI * 2 + (i * Math.PI) / 3 + nowMs * 0.0018;
+        const inner = 9 + heatPulse * 3;
+        const outer = inner + 7 + burst * 12 * (0.5 + 0.5 * Math.sin(nowMs * 0.02 + i));
+        this.graphics
+          .lineStyle(2, i % 2 === 0 ? 0xffffff : 0xff5a2e, 0.55 + burst * 0.35)
+          .lineBetween(
+            row.originX + Math.cos(angle) * inner,
+            oy + Math.sin(angle) * inner,
+            row.originX + Math.cos(angle) * outer,
+            oy + Math.sin(angle) * outer,
+          );
+      }
     } else if (row.heat > 0.02) {
       this.graphics
         .lineStyle(2, color, 0.25 + row.heat * 0.35)
@@ -280,6 +359,7 @@ export class BeamRenderer {
     angle: number,
     progress: number,
     color: number,
+    element: string,
     nowMs: number,
     seed: number,
     opacity = 1,
@@ -298,15 +378,34 @@ export class BeamRenderer {
         .fillStyle(color, 0.45 * alpha)
         .fillCircle(x + Math.cos(a) * r, y + Math.sin(a) * r, 2);
     }
+    if (this.colorblindShapes) {
+      const markerX = x + Math.cos(angle) * (radius + 7);
+      const markerY = y + Math.sin(angle) * (radius + 7);
+      this.drawElementMark(
+        markerX,
+        markerY,
+        angle,
+        4 + p * 2,
+        elementAssistPattern(element),
+        alpha,
+      );
+    }
   }
 
   private drawSustain(
+    entry: BeamEntry,
     row: BeamRenderState,
     color: number,
+    visualWidth: number,
+    nowMs: number,
     beltY0: number,
     beltYScale: number,
   ): void {
     const delta = shortestAngleDelta(row.previousAngle, row.angle);
+    const redline = redlineFor(row.heat);
+    const edgeColor = mixColor(color, 0xff3824, redline * 0.9);
+    const chromaColor = mixColor(color, 0xffd06a, redline * 0.48);
+    const coreColor = mixColor(0xffffff, 0xfff0a8, redline * 0.8);
     const samples = Math.max(
       1,
       Math.min(4, Math.ceil((Math.abs(delta) * row.effectiveLength) / Math.max(8, row.width / 2))),
@@ -314,15 +413,28 @@ export class BeamRenderer {
     for (let layerIndex = 0; layerIndex < 4; layerIndex++) {
       const layerWidth =
         layerIndex === 0
-          ? row.width + 16
+          ? visualWidth
           : layerIndex === 1
-            ? row.width
+            ? visualWidth * 0.87
             : layerIndex === 2
-              ? row.width * 0.82
-              : row.width * 0.3;
-      const layerColor = layerIndex === 1 ? 0x140f20 : layerIndex === 3 ? 0xffffff : color;
+              ? visualWidth * 0.68
+              : visualWidth * (0.22 + redline * 0.07);
+      const layerColor =
+        layerIndex === 0
+          ? edgeColor
+          : layerIndex === 1
+            ? 0x140912
+            : layerIndex === 2
+              ? chromaColor
+              : coreColor;
       const layerAlpha =
-        layerIndex === 0 ? 0.1 : layerIndex === 1 ? 0.92 : layerIndex === 2 ? 0.88 : 0.94;
+        layerIndex === 0
+          ? 0.14 + redline * 0.16
+          : layerIndex === 1
+            ? 0.9
+            : layerIndex === 2
+              ? 0.9 + redline * 0.08
+              : 0.96;
       for (let sample = 0; sample <= samples; sample++) {
         const f = sample / samples;
         const ox = row.previousOriginX + (row.originX - row.previousOriginX) * f;
@@ -342,28 +454,166 @@ export class BeamRenderer {
         );
       }
     }
+    if (redline > 0) {
+      const sourceY = this.projectY(row.originY, beltY0, beltYScale);
+      const dangerPulse = 0.5 + 0.5 * Math.sin(nowMs * 0.034 + entry.seed * Math.PI * 2);
+      const radius = visualWidth * (0.22 + dangerPulse * 0.1);
+      this.graphics
+        .lineStyle(2 + redline * 1.5, 0xff3b24, redline * (0.52 + dangerPulse * 0.38))
+        .strokeEllipse(row.originX, sourceY, radius * 2, radius * 2 * beltYScale);
+    }
+    this.drawTerminus(entry, row, edgeColor, visualWidth, nowMs, beltY0, beltYScale);
+    if (this.colorblindShapes) this.drawElementPattern(row, beltY0, beltYScale);
+  }
+
+  private drawTerminus(
+    entry: BeamEntry,
+    row: BeamRenderState,
+    color: number,
+    visualWidth: number,
+    nowMs: number,
+    beltY0: number,
+    beltYScale: number,
+  ): void {
     const endX = row.originX + Math.cos(row.angle) * row.effectiveLength;
     const endY = this.projectY(
       row.originY + Math.sin(row.angle) * row.effectiveLength,
       beltY0,
       beltYScale,
     );
+    const capRadius = visualWidth * 0.5;
+    const redline = redlineFor(row.heat);
+    const phase = entry.seed * Math.PI * 2;
+    const pulse = 0.5 + 0.5 * Math.sin(nowMs * (0.018 + redline * 0.014) + phase);
+    const ringRadius = capRadius * (0.48 + pulse * 0.27);
+    const lineWidth = Math.min(3, Math.max(1.4, visualWidth * 0.045));
     this.graphics
-      .lineStyle(2, 0xffffff, 0.7)
-      .strokeCircle(endX, endY, Math.max(4, row.width * 0.16));
-    this.graphics.fillStyle(color, 0.45).fillCircle(endX, endY, Math.max(3, row.width * 0.1));
+      .lineStyle(lineWidth, mixColor(0xffffff, 0xffb36a, redline), 0.55 + pulse * 0.4)
+      .strokeEllipse(endX, endY, ringRadius * 2, ringRadius * 2 * beltYScale);
+    this.graphics
+      .fillStyle(color, 0.42 + redline * 0.28)
+      .fillEllipse(
+        endX,
+        endY,
+        capRadius * (0.2 + pulse * 0.08),
+        capRadius * (0.2 + pulse * 0.08) * beltYScale,
+      );
+    for (let i = 0; i < 5; i++) {
+      const sparkPulse = 0.5 + 0.5 * Math.sin(nowMs * 0.026 + phase + i * 1.73);
+      const angle = phase + (i * Math.PI * 2) / 5 + Math.sin(nowMs * 0.004 + i) * 0.16;
+      const inner = capRadius * 0.18;
+      const outer = capRadius * (0.48 + sparkPulse * (0.22 + redline * 0.1));
+      const c = Math.cos(angle);
+      const s = Math.sin(angle) * beltYScale;
+      this.graphics
+        .lineStyle(
+          Math.max(1, lineWidth * 0.58),
+          i % 2 === 0 ? 0xffffff : color,
+          0.55 + sparkPulse * 0.4,
+        )
+        .lineBetween(endX + c * inner, endY + s * inner, endX + c * outer, endY + s * outer);
+    }
+  }
+
+  private drawElementPattern(row: BeamRenderState, beltY0: number, beltYScale: number): void {
+    const length = Math.max(0, row.effectiveLength);
+    const count = Math.max(1, Math.min(10, Math.floor(length / 54)));
+    const c = Math.cos(row.angle);
+    const s = Math.sin(row.angle);
+    const pattern = elementAssistPattern(row.element);
+    const size = Math.max(3.5, Math.min(7, row.width * 0.13));
+    for (let i = 1; i <= count; i++) {
+      const distance = (length * i) / (count + 1);
+      this.drawElementMark(
+        row.originX + c * distance,
+        this.projectY(row.originY + s * distance, beltY0, beltYScale),
+        Math.atan2(s * beltYScale, c),
+        size,
+        pattern,
+        0.76,
+      );
+    }
+  }
+
+  private drawElementMark(
+    x: number,
+    y: number,
+    angle: number,
+    size: number,
+    pattern: ElementAssistPattern,
+    alpha: number,
+  ): void {
+    const ux = Math.cos(angle) * size;
+    const uy = Math.sin(angle) * size;
+    const vx = -Math.sin(angle) * size;
+    const vy = Math.cos(angle) * size;
+    const trace = (): void => {
+      if (pattern === "dots") {
+        this.graphics.strokeCircle(x, y, size * 0.62);
+        return;
+      }
+      this.graphics.beginPath();
+      if (pattern === "bars") {
+        this.graphics.moveTo(x - vx, y - vy);
+        this.graphics.lineTo(x + vx, y + vy);
+      } else if (pattern === "triangles") {
+        this.graphics.moveTo(x + ux, y + uy);
+        this.graphics.lineTo(x - ux * 0.72 + vx, y - uy * 0.72 + vy);
+        this.graphics.lineTo(x - ux * 0.72 - vx, y - uy * 0.72 - vy);
+        this.graphics.closePath();
+      } else if (pattern === "diamonds") {
+        this.graphics.moveTo(x + ux, y + uy);
+        this.graphics.lineTo(x + vx, y + vy);
+        this.graphics.lineTo(x - ux, y - uy);
+        this.graphics.lineTo(x - vx, y - vy);
+        this.graphics.closePath();
+      } else if (pattern === "zigzag") {
+        this.graphics.moveTo(x - ux - vx * 0.45, y - uy - vy * 0.45);
+        this.graphics.lineTo(x - vx * 0.5, y - vy * 0.5);
+        this.graphics.lineTo(x + vx * 0.5, y + vy * 0.5);
+        this.graphics.lineTo(x + ux + vx * 0.45, y + uy + vy * 0.45);
+      } else if (pattern === "crosses") {
+        this.graphics.moveTo(x - ux, y - uy);
+        this.graphics.lineTo(x + ux, y + uy);
+        this.graphics.moveTo(x - vx, y - vy);
+        this.graphics.lineTo(x + vx, y + vy);
+      } else if (pattern === "squares") {
+        this.graphics.moveTo(x + ux + vx, y + uy + vy);
+        this.graphics.lineTo(x - ux + vx, y - uy + vy);
+        this.graphics.lineTo(x - ux - vx, y - uy - vy);
+        this.graphics.lineTo(x + ux - vx, y + uy - vy);
+        this.graphics.closePath();
+      } else {
+        this.graphics.moveTo(x - ux, y - uy);
+        this.graphics.lineTo(x + ux, y + uy);
+        this.graphics.moveTo(x - vx, y - vy);
+        this.graphics.lineTo(x + vx, y + vy);
+        this.graphics.moveTo(x - ux * 0.7 - vx * 0.7, y - uy * 0.7 - vy * 0.7);
+        this.graphics.lineTo(x + ux * 0.7 + vx * 0.7, y + uy * 0.7 + vy * 0.7);
+        this.graphics.moveTo(x - ux * 0.7 + vx * 0.7, y - uy * 0.7 + vy * 0.7);
+        this.graphics.lineTo(x + ux * 0.7 - vx * 0.7, y + uy * 0.7 - vy * 0.7);
+      }
+      this.graphics.strokePath();
+    };
+    this.graphics.lineStyle(4, 0x140f20, alpha * 0.72);
+    trace();
+    this.graphics.lineStyle(1.6, 0xffffff, alpha);
+    trace();
   }
 
   private drawPaint(
     entry: BeamEntry,
     row: BeamRenderState,
     color: number,
+    visualWidth: number,
     quality: 8 | 12,
     nowMs: number,
     beltY0: number,
     beltYScale: number,
   ): void {
-    const paint = paintFor(row.element);
+    // These are the shipped element wisp/bolt sheets, including dedicated water and nature families. The
+    // procedural capsules remain a truth/readability backing, never the beam's sole presentation.
+    const paint = beamPaintFor(row.element);
     const bodyKey = `ptcl:${paint.id}-wisp`;
     const lipKey = `ptcl:${paint.id}-bolt`;
     if (!this.scene.textures.exists(bodyKey) || !this.scene.textures.exists(lipKey)) {
@@ -379,8 +629,11 @@ export class BeamRenderer {
       beltY0,
       beltYScale,
     );
-    const projectedWidth = row.width * (beltYScale < 1 ? 0.72 : 1);
+    const projectedWidth = visualWidth * (beltYScale < 1 ? 0.72 : 1);
     const phase = nowMs * 0.0006 + entry.seed;
+    const redline = redlineFor(row.heat);
+    const paintColor = mixColor(color, 0xff3b24, redline * 0.86);
+    const coreColor = mixColor(0xffffff, 0xffdf80, redline * 0.72);
     globalThis.VFXRENDER.updateLinearRope(
       entry.body,
       bodyKey,
@@ -390,11 +643,11 @@ export class BeamRenderer {
       y0,
       x1,
       y1,
-      projectedWidth * 0.5,
-      0.42,
-      color,
+      projectedWidth * (0.48 + redline * 0.06),
+      0.42 + redline * 0.16,
+      paintColor,
       phase,
-      projectedWidth * 0.035,
+      projectedWidth * (0.035 + redline * 0.018),
     );
     globalThis.VFXRENDER.updateLinearRope(
       entry.lip,
@@ -405,11 +658,11 @@ export class BeamRenderer {
       y0,
       x1,
       y1,
-      projectedWidth * 0.18,
-      0.5,
-      0xffffff,
+      projectedWidth * (0.17 + redline * 0.04),
+      0.52 + redline * 0.2,
+      coreColor,
       -phase * 1.4,
-      projectedWidth * 0.018,
+      projectedWidth * (0.018 + redline * 0.008),
     );
   }
 

@@ -5,6 +5,7 @@ export type DamageNumberStyle = "detailed" | "aggregate";
 export type DamageNumberScale = 0.8 | 0.9 | 1 | 1.1 | 1.2 | 1.3 | 1.4;
 export type ScreenShakeScale = 0 | 0.5 | 1;
 export type RenderScaleMode = "auto" | "native" | "performance";
+export type ColorblindAssistMode = "off" | "shapes";
 
 export interface FeedbackSettings {
   damageNumbers: DamageNumberVisibility;
@@ -17,6 +18,8 @@ export interface FeedbackSettings {
   screenShake: ScreenShakeScale;
   hitStop: boolean;
   flashes: "full" | "reduced";
+  /** Optional for callers authored before the v1 accessibility append; sanitized settings always fill it. */
+  colorblindAssist?: ColorblindAssistMode;
 }
 
 export interface RenderingSettings {
@@ -64,6 +67,7 @@ export const DEFAULT_SETTINGS: Readonly<ClientSettings> = Object.freeze({
     screenShake: 1,
     hitStop: true,
     flashes: "full",
+    colorblindAssist: "off",
   }),
   rendering: Object.freeze({
     renderScale: "auto",
@@ -143,6 +147,7 @@ export function sanitizeSettings(value: unknown): ClientSettings {
       screenShake: shakeScale(raw.screenShake),
       hitStop: typeof raw.hitStop === "boolean" ? raw.hitStop : true,
       flashes: raw.flashes === "reduced" || raw.flashes === "full" ? raw.flashes : "full",
+      colorblindAssist: raw.colorblindAssist === "shapes" ? "shapes" : "off",
     },
     rendering: {
       renderScale:

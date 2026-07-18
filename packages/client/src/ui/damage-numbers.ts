@@ -2,6 +2,7 @@ import type Phaser from "phaser";
 import { type DamageNumberEvent, TokenBucket } from "../combat-feedback.js";
 import { textRenderDpr } from "../render-dpr.js";
 import type { FeedbackSettings } from "../settings.js";
+import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 
 export const DAMAGE_NUMBER_DEPTH = 99995;
 export const MAX_DAMAGE_LABELS = 40;
@@ -630,7 +631,9 @@ export class DamageNumberRenderer {
     const drift = anchored || reducedMotion ? 0 : ((slot & 1) * 2 - 1) * 8 * clamp01(age / life);
     label
       .setPosition(view.x + drift, view.y - rise)
-      .setScale(scale)
+      // Damage glyphs live directly on the scene display list: owner facing never enters this matrix. Keep
+      // both axes explicit so a future pooling/display-layer refactor cannot silently reintroduce reflection.
+      .setScale(screenTrueScaleX(1, 1, scale), Math.abs(scale))
       .setAlpha(alpha)
       .setVisible(true);
   }

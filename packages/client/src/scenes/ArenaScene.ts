@@ -29,10 +29,8 @@ import {
   COMBO_LEAP_OFFER_TICKS,
   COMBO_LEAP_RANGE,
   CombatDelivery,
-  characterName,
   characterScale,
   clampQuakeEpicenter,
-  critChanceFor,
   DEBUG_SPAWN_MAX,
   DEFAULT_DIMENSION,
   DEFAULT_PORT,
@@ -87,7 +85,6 @@ import {
   petLevelForXp,
   petModsForLevel,
   QUAKE_REACH,
-  quirkForCharacter,
   RARITIES,
   RARITY_CURSED,
   RING_BAND_HALF,
@@ -181,6 +178,11 @@ import {
   type LevelChoiceView,
   levelBuildContext,
 } from "../ui/level-up-model.js";
+import {
+  type ObjectiveHudRect,
+  objectiveHudCopy,
+  objectiveHudLayout,
+} from "../ui/objective-hud-layout.js";
 import { type PairPreviewItem, pairPreview } from "../ui/pair-preview.js";
 import {
   formatPetProgressReceipt,
@@ -213,6 +215,13 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
+import {
+  colorblindShapesEnabled,
+  MELEE_FINAL_GLINT_LEAD_MS,
+  MELEE_FIRST_GLINT_LEAD_MS,
+  meleeTellUsesDoublePulse,
+  parryDoublePulseStrength,
+} from "../vfx/colorblind-assist.js";
 import { playFxPack } from "../vfx/fx-composer.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import {
@@ -371,9 +380,7 @@ const TelegraphKindTag = {
 
 const MELEE_TELEGRAPH_PREFIX = "melee:";
 const MELEE_FULL_TELL_COUNT = 6;
-const MELEE_GLINT_LEAD_MS = 280;
 const MELEE_GLINT_CREST_MS = 60;
-const EMPOWERED_GLINT_LEAD_MS = 450;
 const ENEMY_COMBO_LEAP_PEAK = 48;
 const ENEMY_COMBO_LEAP_MS = COMBO_LEAP_AIR_TICKS * TICK_MS;
 
@@ -1468,7 +1475,14 @@ export class ArenaScene extends Phaser.Scene {
   private readonly lastFell = new Map<string, number>();
   private weaponText!: Phaser.GameObjects.Text;
   private augmentText!: Phaser.GameObjects.Text;
-  private modeText!: Phaser.GameObjects.Text;
+  private objectiveHudGfx!: Phaser.GameObjects.Graphics;
+  private objectiveText!: Phaser.GameObjects.Text;
+  private objectiveLocationText!: Phaser.GameObjects.Text;
+  private objectiveEconomyText!: Phaser.GameObjects.Text;
+  private objectiveNoticeText!: Phaser.GameObjects.Text;
+  private objectiveHudLayoutSig = "";
+  private objectiveProgressTop = 96;
+  private objectiveProgressWidth = 520;
   private hpBarBg!: Phaser.GameObjects.Rectangle;
   private hpBarFill!: Phaser.GameObjects.Rectangle;
   private hpText!: Phaser.GameObjects.Text;
@@ -1907,7 +1921,14 @@ export class ArenaScene extends Phaser.Scene {
     this.verbUi = undefined;
     this.weaponText = undefined!;
     this.augmentText = undefined!;
-    this.modeText = undefined!;
+    this.objectiveHudGfx = undefined!;
+    this.objectiveText = undefined!;
+    this.objectiveLocationText = undefined!;
+    this.objectiveEconomyText = undefined!;
+    this.objectiveNoticeText = undefined!;
+    this.objectiveHudLayoutSig = "";
+    this.objectiveProgressTop = 96;
+    this.objectiveProgressWidth = 520;
     this.hpBarBg = undefined!;
     this.hpBarFill = undefined!;
     this.hpText = undefined!;
@@ -2170,6 +2191,7 @@ export class ArenaScene extends Phaser.Scene {
     this.game.registry.set("audio", this.audio);
     const settings = loadSettings();
     this.feedbackSettings = settings.feedback;
+    this.beamRenderer.setColorblindAssist(settings.feedback.colorblindAssist);
     this.vastagharVfx = new VastagharVfx(this, {
       audio: (cue, x, amount) => this.audio.play(cue, { x, amt: amount }),
       pack: (name, x, y, radius) => playFxPack(this, name, x, y, { radius }),
@@ -2209,6 +2231,8 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.removeFeedbackSettingsListener = onSettingsChange((settings) => {
       this.feedbackSettings = settings.feedback;
+      this.beamRenderer.setColorblindAssist(settings.feedback.colorblindAssist);
+      this.setZoneAssistVisibility();
       this.audio.setConfirmVolume(settings.feedback.confirmVolume ?? 1, false);
       this.damageNumberRenderer.applySettings(settings.feedback);
     });
@@ -2389,7 +2413,10 @@ export class ArenaScene extends Phaser.Scene {
     this.levelText.setFontSize(13 * s);
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
-    this.modeText.setFontSize(15 * s);
+    this.objectiveText.setFontSize(Math.max(15, 16 * s));
+    this.objectiveLocationText.setFontSize(Math.max(10, 11 * s));
+    this.objectiveEconomyText.setFontSize(Math.max(10, 11 * s));
+    this.objectiveNoticeText.setFontSize(Math.max(10, 11 * s));
     this.ultimateHudText?.setFontSize(9 * s);
     this.bossText.setFontSize(14 * s);
     this.restartBtn.setFontSize(14 * s);
@@ -2442,9 +2469,18 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(100006)
       .setVisible(false);
     this.levelText = this.add
-      .text(0, 0, "", { fontSize: "13px", color: "#ffd479", fontStyle: "bold" })
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#ffd479",
+        fontStyle: "bold",
+        backgroundColor: "#0a0805",
+        padding: { x: 4, y: 2 },
+      })
       .setScrollFactor(0)
       .setOrigin(0, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002);
     this.deathText = this.add
       .text(0, 0, "DOWNED — respawning…\n(click Restart Run, top-right)", {
@@ -2488,29 +2524,73 @@ export class ArenaScene extends Phaser.Scene {
 
     // Equipped-weapon readout (sits just above the HP bar).
     this.weaponText = this.add
-      .text(0, 0, "", { fontSize: "13px", color: "#9cff3b", fontStyle: "bold" })
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#9cff3b",
+        fontStyle: "bold",
+        backgroundColor: "#0a0805",
+        padding: { x: 4, y: 2 },
+      })
       .setScrollFactor(0)
       .setOrigin(0, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002);
 
     // §8 owned parry-augment readout (sits just above the weapon readout).
     this.augmentText = this.add
-      .text(0, 0, "", { fontSize: "12px", color: "#b07bd6", fontStyle: "bold" })
-      .setScrollFactor(0)
-      .setOrigin(0, 1)
-      .setDepth(100002);
-
-    // Mode banner (top-center) — shows the Testing Grounds hint, and "T" toggle either way.
-    this.modeText = this.add
       .text(0, 0, "", {
-        fontSize: "15px",
-        color: "#33e6ff",
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#b07bd6",
         fontStyle: "bold",
-        align: "center",
+        backgroundColor: "#0a0805",
+        padding: { x: 4, y: 2 },
       })
       .setScrollFactor(0)
-      .setOrigin(0.5, 0)
+      .setOrigin(0, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002);
+
+    // Finding #11: retained top HUD = objective/progress, session-vital chips, and a resolving notice chip.
+    // Every glyph rides a dark plate; objective copy is width-bound and may use at most two lines.
+    this.objectiveHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100000);
+    const objectiveResolution = Math.max(2, Math.ceil(RENDER_DPR));
+    this.objectiveText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "16px",
+        color: "#f1e8cf",
+        fontStyle: "bold",
+        align: "center",
+        maxLines: 2,
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(objectiveResolution)
+      .setDepth(100002);
+    const chipStyle: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      color: "#cfc6ae",
+      fontStyle: "bold",
+      align: "center",
+      maxLines: 1,
+    };
+    const buildChipText = (color: string) =>
+      this.add
+        .text(0, 0, "", { ...chipStyle, color })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setShadow(0, 1, "#000000", 2, true, true)
+        .setResolution(objectiveResolution)
+        .setDepth(100002);
+    this.objectiveLocationText = buildChipText("#cfc6ae");
+    this.objectiveEconomyText = buildChipText("#d9c78f");
+    this.objectiveNoticeText = buildChipText("#ffb26b").setVisible(false);
 
     // Boss health bar (§16) — a wide bar under a name plate at the top, shown only during the fight.
     this.bossBarBg = this.add
@@ -2534,12 +2614,17 @@ export class ArenaScene extends Phaser.Scene {
       .setVisible(false);
     this.bossText = this.add
       .text(0, 0, "OLD RUST", {
+        fontFamily: "monospace",
         fontSize: "14px",
         color: "#ffb23b",
         fontStyle: "bold",
+        backgroundColor: "#0a0805",
+        padding: { x: 5, y: 2 },
       })
       .setScrollFactor(0)
       .setOrigin(0.5, 1)
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)))
       .setDepth(100002)
       .setVisible(false);
 
@@ -3349,7 +3434,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private announcePaperDescent(depth: number, dimensionName: string): void {
     this.audio.play("descent");
-    this.flashBanner(`⇓  DEPTH ${depth} — ${dimensionName.toUpperCase()}  ⇓`, "#b478ff");
+    this.flashBanner(`⇓ Depth ${depth} — ${dimensionName}`, "#b478ff");
   }
 
   /** Close the old snapshot, swap its pixels only while edge-on, then unfold the accepted new world. */
@@ -3551,10 +3636,7 @@ export class ArenaScene extends Phaser.Scene {
       // re-mints the map (fresh terrain each run) but starts back at depth 1.
       if (riftDescent && !worldFold) {
         this.audio.play("descent"); // §19 the downward whoosh into the next dimension
-        this.flashBanner(
-          `⇓  DEPTH ${s.depth} — ${getDimension(s.dimensionId).name.toUpperCase()}  ⇓`,
-          "#b478ff",
-        );
+        this.flashBanner(`⇓ Depth ${s.depth} — ${getDimension(s.dimensionId).name}`, "#b478ff");
       }
       if (worldFold) this.playPaperWorldFold(worldFold, s.depth, dimension.name);
     }
@@ -3826,7 +3908,7 @@ export class ArenaScene extends Phaser.Scene {
         this.slideDryPresses++;
         if (this.slideDryPresses === 3 && !this.slideDryToastShown) {
           this.slideDryToastShown = true;
-          this.flashBanner("SLIDE NEEDS A RUN-UP", "#c7a66c");
+          this.flashBanner("Slide needs a run-up", "#c7a66c");
         }
         if (this.slideDryPresses <= 3) {
           const rig = this.room ? this.blobs.get(this.room.sessionId) : undefined;
@@ -3940,7 +4022,7 @@ export class ArenaScene extends Phaser.Scene {
       // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
       if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
         const muted = this.audio.toggleMute();
-        this.flashBanner(muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON", "#8fdcff");
+        this.flashBanner(muted ? "🔇 Audio off" : "🔊 Audio on", "#8fdcff");
       }
       // Tab: §29 belt opens the ARSENAL BAG overlay; elsewhere it's the §21 dev summon menu (Testing Grounds).
       if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
@@ -4800,6 +4882,7 @@ export class ArenaScene extends Phaser.Scene {
             skidY,
             reducedMotion,
             projectionYScale,
+            colorblindShapesEnabled(this.feedbackSettings.colorblindAssist),
           );
         this.audio.play("enemy-combo:return-tell", { x: rig.x, amt: visible ? 0.78 : 0.24 });
         if (visible) this.offerContextHint("empoweredReturn");
@@ -5108,18 +5191,19 @@ export class ArenaScene extends Phaser.Scene {
       sample.firstGlintAtMs = -1e9;
     }
     sample.gold = gold;
+    const doublePulse = meleeTellUsesDoublePulse(this.feedbackSettings.colorblindAssist, gold);
     if (
-      gold &&
+      doublePulse &&
       sample.firstGlintAtMs < 0 &&
-      sample.remainingMs <= EMPOWERED_GLINT_LEAD_MS &&
-      (newEpoch || priorRemaining > EMPOWERED_GLINT_LEAD_MS || goldEpoch)
+      sample.remainingMs <= MELEE_FIRST_GLINT_LEAD_MS &&
+      (newEpoch || priorRemaining > MELEE_FIRST_GLINT_LEAD_MS || goldEpoch)
     )
       sample.firstGlintAtMs = now;
     if (
       sample.glintAtMs < 0 &&
-      sample.remainingMs <= MELEE_GLINT_LEAD_MS &&
-      (newEpoch || priorRemaining > MELEE_GLINT_LEAD_MS || gold) &&
-      (!gold || now - sample.firstGlintAtMs >= 90)
+      sample.remainingMs <= MELEE_FINAL_GLINT_LEAD_MS &&
+      (newEpoch || priorRemaining > MELEE_FINAL_GLINT_LEAD_MS || doublePulse) &&
+      (!doublePulse || now - sample.firstGlintAtMs >= 90)
     ) {
       sample.glintAtMs = now;
     }
@@ -5150,7 +5234,7 @@ export class ArenaScene extends Phaser.Scene {
     for (const candidate of this.meleeTellCandidates) {
       if (
         candidate.containsSelf ||
-        (candidate.distance <= 42 && candidate.remainingMs <= MELEE_GLINT_LEAD_MS + 120)
+        (candidate.distance <= 42 && candidate.remainingMs <= MELEE_FINAL_GLINT_LEAD_MS + 120)
       )
         next.add(candidate.id);
     }
@@ -5182,7 +5266,7 @@ export class ArenaScene extends Phaser.Scene {
         if (
           incumbent &&
           !incumbent.containsSelf &&
-          !(incumbent.distance <= 42 && incumbent.remainingMs <= MELEE_GLINT_LEAD_MS + 120) &&
+          !(incumbent.distance <= 42 && incumbent.remainingMs <= MELEE_FINAL_GLINT_LEAD_MS + 120) &&
           (!worst || compareMeleeTellCandidates(incumbent, worst) > 0)
         )
           worst = incumbent;
@@ -5399,6 +5483,60 @@ export class ArenaScene extends Phaser.Scene {
       g.fillStyle(accent, 0.95);
       g.fillCircle(x, y, 3.2 / zoom);
     }
+    if (!colorblindShapesEnabled(this.feedbackSettings.colorblindAssist)) return;
+    if (gold) {
+      const ux = Math.cos(aimWorld);
+      const uy = Math.sin(aimWorld);
+      this.strokeAssistChevrons(g, x + ux * radius, y + uy * radius, ux, uy, zoom, accent);
+      return;
+    }
+    // Two hollow diamonds remain beside the source between crests: the parry tell promises two pulses even
+    // when flash intensity or white/gold hue is unavailable.
+    g.lineStyle((pulse ? 2.4 : 1.5) / zoom, accent, pulse ? 0.98 : 0.7);
+    for (const side of [-1, 1]) {
+      const cx = x + nx * side * (radius + 5 / zoom);
+      const cy = y + ny * side * (radius + 5 / zoom);
+      const r = (pulse ? 3.8 : 3.2) / zoom;
+      g.beginPath();
+      g.moveTo(cx, cy - r);
+      g.lineTo(cx + r, cy);
+      g.lineTo(cx, cy + r);
+      g.lineTo(cx - r, cy);
+      g.closePath();
+      g.strokePath();
+    }
+  }
+
+  private strokeAssistChevrons(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    dirX: number,
+    dirY: number,
+    zoom: number,
+    color: number,
+  ): void {
+    const length = Math.hypot(dirX, dirY) || 1;
+    const ux = dirX / length;
+    const uy = dirY / length;
+    const px = -uy;
+    const py = ux;
+    for (let pass = 0; pass < 2; pass++) {
+      g.lineStyle((pass === 0 ? 4.2 : 1.8) / zoom, pass === 0 ? 0x17120f : color, 0.9);
+      g.beginPath();
+      for (let i = 0; i < 2; i++) {
+        const offset = (i * 9) / zoom;
+        const apexX = x + ux * offset;
+        const apexY = y + uy * offset;
+        const backX = apexX - ux * (7 / zoom);
+        const backY = apexY - uy * (7 / zoom);
+        g.moveTo(apexX, apexY);
+        g.lineTo(backX + px * (4 / zoom), backY + py * (4 / zoom));
+        g.moveTo(apexX, apexY);
+        g.lineTo(backX - px * (4 / zoom), backY - py * (4 / zoom));
+      }
+      g.strokePath();
+    }
   }
 
   /** §TELEGRAPH exact hybrid renderer: invariant thin geometry plus optional retained painted preludes. */
@@ -5518,6 +5656,7 @@ export class ArenaScene extends Phaser.Scene {
           effectiveT,
           row.danger,
           zoom,
+          cached.hash,
         );
       // Horde source charm is nearest-N rig-owned. Boss melee and every other row keep the shared paint pool.
       if (!meleeOwner)
@@ -5678,15 +5817,19 @@ export class ArenaScene extends Phaser.Scene {
     t: number,
     danger: number,
     zoom: number,
+    hash: number,
   ): void {
+    const assistShapes = colorblindShapesEnabled(this.feedbackSettings.colorblindAssist);
+    const doublePulse = assistShapes && danger === 0 ? parryDoublePulseStrength(t) : 0;
     const color = danger === 0 ? 0xffffff : 0xff755b;
-    const alpha = 0.5 + Math.max(0, Math.min(1, t)) * 0.34;
+    const alpha = Math.min(1, 0.5 + Math.max(0, Math.min(1, t)) * 0.34 + doublePulse * 0.16);
     for (const edge of geometry.edges) {
       g.lineStyle(5 / zoom, 0x100b09, 0.72);
       this.strokeTelegraphPath(g, edge.points, edge.closed);
-      g.lineStyle(2.2 / zoom, color, alpha);
+      g.lineStyle((2.2 + doublePulse * 1.4) / zoom, color, alpha);
       this.strokeTelegraphPath(g, edge.points, edge.closed);
     }
+    if (assistShapes) this.drawTelegraphCadence(g, geometry, t, danger, hash, color, alpha, zoom);
   }
 
   /** The fairness layer: full static sector boundary, dominant range arc, forward notch, inward completion. */
@@ -5748,6 +5891,9 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     g.strokePath();
+    if (gold && colorblindShapesEnabled(this.feedbackSettings.colorblindAssist)) {
+      this.strokeAssistChevrons(g, notch.x, notch.y, ndx, ndy, zoom, accent);
+    }
   }
 
   private strokeTelegraphPointRange(
@@ -6079,7 +6225,11 @@ export class ArenaScene extends Phaser.Scene {
       const fill = this.add.ellipse(0, 0, rx * 2, ry * 2, 0x8f2d18, 0.44);
       const inner = this.add.ellipse(0, 0, rx * 1.25, ry * 1.25, 0xff5d2e, 0.32);
       const rim = this.add.ellipse(0, 0, rx * 2, ry * 2).setStrokeStyle(4, 0xff7a3a, 0.95);
-      const c = this.add.container(zone.x, zone.y, [fill, inner, rim]).setDepth(1);
+      const assistPattern = this.add.graphics();
+      this.drawZoneAssistPattern(assistPattern, rx, ry);
+      assistPattern.setVisible(colorblindShapesEnabled(this.feedbackSettings.colorblindAssist));
+      const c = this.add.container(zone.x, zone.y, [fill, inner, rim, assistPattern]).setDepth(1);
+      c.setData("colorblindPattern", assistPattern);
       // Fade in, then bubble; the server owns the actual lifetime/expiry.
       c.setAlpha(0);
       this.tweens.add({ targets: c, alpha: 1, duration: 220 });
@@ -6099,6 +6249,43 @@ export class ArenaScene extends Phaser.Scene {
         this.zones.delete(id);
       }
     }
+  }
+
+  private setZoneAssistVisibility(): void {
+    const visible = colorblindShapesEnabled(this.feedbackSettings.colorblindAssist);
+    for (const zone of this.zones.values()) {
+      const pattern = zone.getData("colorblindPattern") as Phaser.GameObjects.Graphics | undefined;
+      pattern?.setVisible(visible);
+    }
+  }
+
+  /** Dashed perimeter plus clipped diagonal hatching: persistent MOVE-OUT zones never rely on red fill. */
+  private drawZoneAssistPattern(g: Phaser.GameObjects.Graphics, rx: number, ry: number): void {
+    const trace = (): void => {
+      g.beginPath();
+      const dashCount = 28;
+      const dashSpan = (Math.PI * 2) / dashCount;
+      for (let i = 0; i < dashCount; i += 2) {
+        const start = i * dashSpan;
+        const end = start + dashSpan * 0.78;
+        g.moveTo(Math.cos(start) * rx, Math.sin(start) * ry);
+        g.lineTo(Math.cos(end) * rx, Math.sin(end) * ry);
+      }
+      const dx = Math.SQRT1_2;
+      const dy = -Math.SQRT1_2;
+      const px = -dy;
+      const py = dx;
+      for (const offset of [-0.66, -0.22, 0.22, 0.66]) {
+        const half = Math.sqrt(Math.max(0, 1 - offset * offset));
+        g.moveTo((px * offset - dx * half) * rx, (py * offset - dy * half) * ry);
+        g.lineTo((px * offset + dx * half) * rx, (py * offset + dy * half) * ry);
+      }
+      g.strokePath();
+    };
+    g.lineStyle(5, 0x1b100c, 0.78);
+    trace();
+    g.lineStyle(2, 0xffb066, 0.96);
+    trace();
   }
 
   /** Build one QOL-04 gate: broad disc/core are honest ground art below actors; the thin halo, icon, and
@@ -6350,28 +6537,34 @@ export class ArenaScene extends Phaser.Scene {
         vastaghar.active && boss.kind === "world-titan"
           ? bossRatio
           : Phaser.Math.Linear(this.bossShown, bossRatio, 0.2);
-      this.bossBarBg.setPosition(this.screenW() / 2, 40 * s).setVisible(true);
-      const barLeft = this.screenW() / 2 - 258 * s;
-      this.bossBarFill.setPosition(barLeft, 48 * s).setVisible(true);
-      this.bossBarFill.width = 516 * s * this.bossShown;
+      const progressTop = this.objectiveProgressTop;
+      const progressWidth = this.objectiveProgressWidth;
+      const progressInnerWidth = Math.max(1, progressWidth - 4 * s);
+      this.bossBarBg
+        .setSize(progressWidth, 16 * s)
+        .setPosition(this.screenW() / 2, progressTop)
+        .setVisible(true);
+      const barLeft = this.screenW() / 2 - progressInnerWidth / 2;
+      this.bossBarFill.setPosition(barLeft, progressTop + 8 * s).setVisible(true);
+      this.bossBarFill.width = progressInnerWidth * this.bossShown;
       const vastagharPhaseName =
         vastaghar.phase === VastagharPhase.LearnWeight
-          ? "LEARN THE WEIGHT"
+          ? "Learn the Weight"
           : vastaghar.phase === VastagharPhase.BreakStride
-            ? "BREAK THE STRIDE"
+            ? "Break the Stride"
             : vastaghar.phase === VastagharPhase.UnderHeel
-              ? "UNDER THE HEEL"
+              ? "Under the Heel"
               : vastaghar.phase === VastagharPhase.FinalTread
-                ? "FINAL TREAD"
+                ? "Final Tread"
                 : "";
       this.bossText
-        .setPosition(this.screenW() / 2, 38 * s)
+        .setPosition(this.screenW() / 2, progressTop - 2 * s)
         .setText(
           vastaghar.active
-            ? `VASTAGHAR, THE WORLD-TREAD  •  ${vastagharPhaseName}`
+            ? `Vastaghar, the World-Tread · ${vastagharPhaseName}`
             : bossDefName
-              ? bossDefName.toUpperCase()
-              : `${dimName.toUpperCase()} BOSS`,
+              ? bossDefName
+              : `${dimName} boss`,
         )
         .setVisible(true);
       // §16 v0.116 Polish B — draw a tick at each PHASE threshold so the escalation gates are visible on the
@@ -6382,14 +6575,14 @@ export class ArenaScene extends Phaser.Scene {
       this.bossBarSegments.setVisible(true).clear();
       for (const threshold of phaseThresholds) {
         if (threshold <= 0 || threshold >= 1) continue;
-        const x = barLeft + 516 * s * threshold;
+        const x = barLeft + progressInnerWidth * threshold;
         // A crossed threshold (fill drained past it) dims; an upcoming one glows — reads the fight's progress.
         const passed = this.bossShown <= threshold;
         this.bossBarSegments.lineStyle(2 * s, passed ? 0x6a2a1a : 0x1a0d08, passed ? 0.7 : 0.95);
-        this.bossBarSegments.lineBetween(x, 42 * s, x, 54 * s);
+        this.bossBarSegments.lineBetween(x, progressTop + 2 * s, x, progressTop + 14 * s);
       }
       if (vastaghar.active) {
-        const pipY = 62 * s;
+        const pipY = progressTop + 22 * s;
         for (let i = 0; i < VASTAGHAR_ENCOUNTER.strideBreakPips; i++) {
           const pipX = this.screenW() / 2 + (i - 1) * 24 * s;
           const earned = i < vastaghar.stridePips;
@@ -6409,9 +6602,9 @@ export class ArenaScene extends Phaser.Scene {
           this.bossBarSegments,
           this.room.state.wormBoss,
           barLeft,
-          516 * s,
-          42 * s,
-          54 * s,
+          progressInnerWidth,
+          progressTop + 2 * s,
+          progressTop + 14 * s,
           s,
         );
       }
@@ -6425,7 +6618,7 @@ export class ArenaScene extends Phaser.Scene {
     // Boss-approach toast on first appearance.
     if (present && !vastaghar.active && !this.prevBossPresent && this.bannerShownFor !== "boss") {
       this.bannerShownFor = "boss";
-      this.flashBanner(`⚠  THE ${dimName.toUpperCase()} BOSS APPROACHES  ⚠`, "#ff5d3b");
+      this.flashBanner(`⚠ The ${dimName} boss approaches`, "#ff5d3b");
     }
     if (!present) this.bannerShownFor = "";
     this.prevBossPresent = present;
@@ -6450,7 +6643,7 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** A big transient centered banner that fades (boss approach, etc.). */
+  /** Pooled-lifetime notice plate: width-bound, two lines maximum, and always self-retiring. */
   private flashBanner(msg: string, color: string): void {
     // §7 v0.105 de-clunk: STACK banners that land within the fade window instead of overprinting the exact
     // same point (a loot reveal + a depth banner used to render on top of each other, unreadable). Reset the
@@ -6458,34 +6651,68 @@ export class ArenaScene extends Phaser.Scene {
     const now = this.time.now;
     this.bannerSlot = now - this.lastBannerAt > 2200 ? 0 : (this.bannerSlot + 1) % 4;
     this.lastBannerAt = now;
-    const baseY = this.screenH() / 2 - 80 + this.bannerSlot * 40;
-    const t = this.add
-      .text(this.screenW() / 2, baseY, msg, {
-        fontSize: "32px",
+    const scale = this.uiScale();
+    const baseY = this.screenH() / 2 - 80 * scale + this.bannerSlot * 54 * scale;
+    const maxPlateWidth = Math.max(160, Math.min(620 * scale, this.screenW() - 32 * scale));
+    const text = this.add
+      .text(0, 0, msg, {
+        fontFamily: "monospace",
+        fontSize: `${Math.max(18, 24 * scale)}px`,
         color,
         fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: Math.max(120, maxPlateWidth - 32 * scale), useAdvancedWrap: true },
+        maxLines: 2,
       })
-      .setScrollFactor(0)
       .setOrigin(0.5)
-      .setDepth(100003)
-      .setScale(1.25)
-      .setAlpha(0);
+      .setShadow(0, 1, "#000000", 2, true, true)
+      .setResolution(Math.max(2, Math.ceil(RENDER_DPR)));
+    const plateWidth = Math.min(maxPlateWidth, Math.max(160, text.width + 32 * scale));
+    const plateHeight = text.height + 20 * scale;
+    const plate = this.add.graphics();
+    plate
+      .fillStyle(0x000000, 0.46)
+      .fillRoundedRect(
+        -plateWidth / 2 + 2 * scale,
+        -plateHeight / 2 + 3 * scale,
+        plateWidth,
+        plateHeight,
+        8 * scale,
+      )
+      .fillStyle(0x0a0805, 0.92)
+      .fillRoundedRect(-plateWidth / 2, -plateHeight / 2, plateWidth, plateHeight, 8 * scale)
+      .lineStyle(Math.max(1, scale), Phaser.Display.Color.HexStringToColor(color).color, 0.68)
+      .strokeRoundedRect(-plateWidth / 2, -plateHeight / 2, plateWidth, plateHeight, 8 * scale);
+    const root = this.add
+      .container(this.screenW() / 2, baseY, [plate, text])
+      .setScrollFactor(0)
+      .setDepth(100003);
+    const retire = () => {
+      if (root.active) root.destroy(true);
+    };
+    if (prefersReducedPaperMotion()) {
+      // Reduced motion keeps the same readable dwell, then snaps off at the lifetime endpoint.
+      root.setAlpha(1).setScale(1);
+      this.time.delayedCall(2280, retire);
+      return;
+    }
+    root.setScale(1.12).setAlpha(0);
     // §19 v0.108 A10: a snappy entrance POP (overshoot-in) before the long fade — lifts every transient
     // banner (boss approach, loot reveal, depth) from "appears" to "arrives".
     this.tweens.add({
-      targets: t,
+      targets: root,
       scale: 1,
       alpha: 1,
       duration: 180,
       ease: "Back.easeOut",
       onComplete: () => {
         this.tweens.add({
-          targets: t,
+          targets: root,
           y: baseY - 24,
           alpha: 0,
           duration: 2100,
           ease: "Cubic.easeIn",
-          onComplete: () => t.destroy(),
+          onComplete: retire,
         });
       },
     });
@@ -7830,8 +8057,7 @@ export class ArenaScene extends Phaser.Scene {
     this.drawBeltGate(lock);
     // §29 room banner on entering a new room + swap to the storm BRIDGE backdrop for the boss room.
     const roomName = this.room?.state.beltRoomName ?? "";
-    if (roomName && roomName !== this.lastBeltRoom)
-      this.flashBanner(`▶  ${roomName.toUpperCase()}`, "#ffd24a");
+    if (roomName && roomName !== this.lastBeltRoom) this.flashBanner(`▶ ${roomName}`, "#ffd24a");
     this.lastBeltRoom = roomName;
     if (this.beltBackdrop && this.selectedBeltLevel === "sky-carrier") {
       // §31 each SKY-CARRIER room gets its own Codex backdrop (Flight Deck → Catwalk → Arena Mouth → the
@@ -8119,6 +8345,12 @@ export class ArenaScene extends Phaser.Scene {
       anim.slidePhase = slidePhase;
       anim.slideTick = slideTick;
       anim.reducedMotion = reducedMotion;
+      const beam = this.room?.state.beams.get(id);
+      const beamChannelLive =
+        beam?.phase === BeamPhase.Charging || beam?.phase === BeamPhase.Active;
+      const localBeamHeld =
+        isSelf && !!pl?.alive && !!(pl && WEAPONS[pl.weapon]?.beam) && pointer.rightButtonDown();
+      anim.fireHeld = pl?.attackHeld === true || beamChannelLive || localBeamHeld;
       if (pl) {
         const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
         const ultimatePhase = isSelf
@@ -9973,7 +10205,7 @@ export class ArenaScene extends Phaser.Scene {
       if (!this.beamHelpShown && WEAPONS[self.weapon]?.beam) {
         this.beamHelpShown = true;
         this.flashBanner(
-          "BEAM — HOLD RMB TO CHARGE / CHANNEL\nRELEASE BEFORE OVERHEAT · COOL BELOW THE MARKER TO RESTART",
+          "[RMB] Hold to charge and channel\nRelease before overheat · Cool below the marker to restart",
           "#8fe9ff",
         );
       }
@@ -9987,7 +10219,7 @@ export class ArenaScene extends Phaser.Scene {
         const affix = self.weaponAffix ? `${affixById(self.weaponAffix).name} ` : "";
         const name = WEAPONS[self.weapon]?.name ?? self.weapon;
         this.flashBanner(
-          `${tierName}${affix}${name}`.toUpperCase(),
+          `${tierName}${affix}${name}`,
           `#${(rar?.color ?? 0xffd479).toString(16).padStart(6, "0")}`,
         );
         // §19 the loot chime rises in pitch with rarity — a Legendary literally sounds better than a Common.
@@ -10458,6 +10690,123 @@ export class ArenaScene extends Phaser.Scene {
     return "Counter: watch the final white/red response edge.";
   }
 
+  private drawObjectiveHudPlate(
+    graphics: Phaser.GameObjects.Graphics,
+    rect: ObjectiveHudRect,
+    stroke: number,
+    strokeAlpha: number,
+    scale: number,
+  ): void {
+    const radius = Math.min(8 * scale, rect.height * 0.25);
+    graphics
+      .fillStyle(0x000000, 0.42)
+      .fillRoundedRect(rect.x + 2 * scale, rect.y + 3 * scale, rect.width, rect.height, radius)
+      .fillStyle(0x0a0805, 0.9)
+      .fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius)
+      .lineStyle(Math.max(1, scale), stroke, strokeAlpha)
+      .strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
+  }
+
+  /** Finding #11: one objective, supporting session truths, and one resolving connection notice. */
+  private renderObjectiveHud(scale: number): void {
+    const state = this.room?.state;
+    const depth = state?.depth ?? 1;
+    let carriedSalvage = 0;
+    state?.players.forEach((player) => {
+      carriedSalvage += player.salvaged;
+    });
+    const bossActive = (state?.bossPhase ?? 0) >= 1;
+    const lagging =
+      this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
+    const mode =
+      state?.mode === "training"
+        ? "training"
+        : this.belt
+          ? "belt"
+          : state?.mode === "bossrush"
+            ? "bossrush"
+            : "arena";
+    const copy = objectiveHudCopy({
+      mode,
+      dimensionName: getDimension(state?.dimensionId).name,
+      depth,
+      bossActive,
+      portalOpen: !!state?.portalOpen,
+      bossEtaSeconds: Math.max(0, bossSpawnAt(depth) - (state?.elapsedSeconds ?? 0)),
+      carriedSalvage,
+      bankedSalvage: state?.bankedSalvage ?? 0,
+      beltRoomName: state?.beltRoomName,
+      beltLocked: (state?.beltLockX ?? 0) > 0,
+      lagging,
+    });
+    const layout = objectiveHudLayout({
+      screenWidth: this.screenW(),
+      uiScale: scale,
+      showEconomy: copy.economy !== undefined,
+      showNotice: copy.notice !== undefined,
+    });
+    this.objectiveProgressTop = layout.progressTop;
+    this.objectiveProgressWidth = layout.progressWidth;
+
+    const layoutSig = [
+      layout.objective.x,
+      layout.objective.width,
+      layout.objective.height,
+      layout.location.x,
+      layout.location.width,
+      layout.economy?.x ?? -1,
+      layout.economy?.width ?? -1,
+      layout.notice?.x ?? -1,
+      layout.notice?.width ?? -1,
+      copy.accent,
+    ].join(":");
+    if (layoutSig !== this.objectiveHudLayoutSig) {
+      this.objectiveHudLayoutSig = layoutSig;
+      const graphics = this.objectiveHudGfx.clear();
+      this.drawObjectiveHudPlate(graphics, layout.objective, copy.accent, 0.72, scale);
+      this.drawObjectiveHudPlate(graphics, layout.location, 0xcfc6ae, 0.35, scale);
+      if (layout.economy)
+        this.drawObjectiveHudPlate(graphics, layout.economy, 0xd9c78f, 0.42, scale);
+      if (layout.notice) this.drawObjectiveHudPlate(graphics, layout.notice, 0xff8a2b, 0.75, scale);
+    }
+
+    this.objectiveText
+      .setPosition(
+        layout.objective.x + layout.objective.width / 2,
+        layout.objective.y + layout.objective.height / 2,
+      )
+      .setWordWrapWidth(Math.max(80, layout.objective.width - 20 * scale))
+      .setText(copy.objective)
+      .setColor(copy.color);
+    this.objectiveLocationText
+      .setPosition(
+        layout.location.x + layout.location.width / 2,
+        layout.location.y + layout.location.height / 2,
+      )
+      .setWordWrapWidth(Math.max(60, layout.location.width - 12 * scale))
+      .setText(copy.location);
+    this.objectiveEconomyText.setVisible(!!layout.economy && copy.economy !== undefined);
+    if (layout.economy && copy.economy !== undefined) {
+      this.objectiveEconomyText
+        .setPosition(
+          layout.economy.x + layout.economy.width / 2,
+          layout.economy.y + layout.economy.height / 2,
+        )
+        .setWordWrapWidth(Math.max(60, layout.economy.width - 12 * scale))
+        .setText(copy.economy);
+    }
+    this.objectiveNoticeText.setVisible(!!layout.notice && copy.notice !== undefined);
+    if (layout.notice && copy.notice !== undefined) {
+      this.objectiveNoticeText
+        .setPosition(
+          layout.notice.x + layout.notice.width / 2,
+          layout.notice.y + layout.notice.height / 2,
+        )
+        .setWordWrapWidth(Math.max(60, layout.notice.width - 12 * scale))
+        .setText(copy.notice);
+    }
+  }
+
   /** HP bar + downed overlay, repositioned each frame against the live viewport size. */
   private updateHud(): void {
     const selfId = this.room?.sessionId;
@@ -10523,11 +10872,7 @@ export class ArenaScene extends Phaser.Scene {
     this.xpBarFill.setAlpha(0.92 + this.xpPulse * 0.08);
     this.levelText
       .setPosition(barX, xpY - 9 * s)
-      .setText(
-        self
-          ? `Lv ${self.level}   STR ${self.str} · DEX ${self.dex} · INT ${self.int} · CON ${self.con} · LUK ${self.luk}   ⚡${Math.round(critChanceFor(self.luk, self.dex) * 100)}% crit`
-          : "",
-      );
+      .setText(self ? `Level ${self.level} · XP ${self.xp}/${self.xpToNext}` : "");
 
     this.restartBtn.setPosition(this.screenW() - 14 * s, 14 * s);
     const heldWeapon = self ? WEAPONS[self.weapon] : undefined;
@@ -10554,7 +10899,7 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(barX, xpY - 24 * s)
       .setText(
         self
-          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${charges}${beamResource}   ·   [Q]/[E] Switch`
+          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${charges}${beamResource}`
           : "",
       );
     // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else
@@ -10592,70 +10937,8 @@ export class ArenaScene extends Phaser.Scene {
       this.augmentText.setVisible(false);
     }
 
-    const training = this.room?.state.mode === "training";
-    const bossrush = this.room?.state.mode === "bossrush";
-    // §classmerge: skin may cycle cosmetically; KIT always names the snapshotted run identity.
-    const who = self
-      ? ` · C: ${characterName(self.character)} · KIT: ${quirkForCharacter(self.runCharacter || self.character).name}`
-      : "";
-    const ultimateControl = self?.ultimate.archetype ? " · F ultimate" : "";
-    const dimName = getDimension(this.room?.state.dimensionId).name;
-    // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
-    // fight, then what stepping into the portal actually DOES (bank + end). H9: the two core verbs (RMB fire,
-    // LMB parry) ride on the always-on line so there's a path to learning the controls.
-    const st = this.room?.state;
-    const elapsed = st?.elapsedSeconds ?? 0;
-    const depth = st?.depth ?? 1;
-    const bossActive = (st?.bossPhase ?? 0) >= 1;
-    let objective: string;
-    if (st?.portalOpen) {
-      objective = "▼ bank & end · ⇓ rift: push deeper";
-    } else if (bossActive) {
-      objective = "⚠ BOSS — defeat it to open the gates";
-    } else {
-      const left = Math.max(0, bossSpawnAt(depth) - elapsed);
-      const mmss = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, "0")}`;
-      objective = `survive — boss in ${mmss}`;
-    }
-    // §6 chain HUD: depth + the carried (at-risk) vs banked salvage — the stakes of the greed decision.
-    let carried = 0;
-    st?.players.forEach((p) => {
-      carried += p.salvaged;
-    });
-    const stakes = `⛏ ${carried} carried · ${st?.bankedSalvage ?? 0} banked`;
-    // §4 v0.107 connection-degraded hint (amendment #13): >~1.2s of un-acked input commands = the link
-    // is stalling — tell the player WHY their character stopped responding instead of failing silently.
-    const lagging =
-      this.predictor !== null && (this.predictor.isStalled || this.predictor.stats.pending > 24);
-    const lagPrefix = lagging ? "⚠ CONNECTION LAG · " : "";
-    // §16 v0.116 BOSS RUSH — a dedicated objective line: which boss of 10 is up, or the breather between.
-    const BOSS_RUSH_TOTAL = 10;
-    const rushObjective = bossActive
-      ? `⚠ BOSS ${Math.min(depth, BOSS_RUSH_TOTAL)}/${BOSS_RUSH_TOTAL} — cut it down`
-      : `☠ BOSS RUSH — next boss incoming…`;
-    this.modeText
-      .setPosition(this.screenW() / 2, 12 * s)
-      .setText(
-        training
-          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse · Tab: summon · Space tap/hold: jump/leap · air tap: pound · T: exit${ultimateControl}${who}`
-          : this.belt
-            ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
-              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space tap/hold jump · air tap pound · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade/Ultimate${who}`
-            : bossrush
-              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${ultimateControl}${who}`
-              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${ultimateControl}${who}`,
-      )
-      .setColor(
-        lagging
-          ? "#ff8a2b"
-          : this.belt
-            ? "#7fb0d8"
-            : training
-              ? "#33e6ff"
-              : bossrush
-                ? "#ff5d3b"
-                : "#5a6472",
-      );
+    // Character, kit, attributes, and controls belong to the weapon/level or contextual verb surfaces.
+    this.renderObjectiveHud(s);
 
     // §6 rez-or-dead: a downed player waits for a rez (no respawn); a full wipe ends the run.
     const downed = !!self && !self.alive;
@@ -12849,7 +13132,7 @@ export class ArenaScene extends Phaser.Scene {
       else if (kind === "weapon" && arg) room.send("devEquip", { weapon: arg });
       else if (kind === "char" && arg) room.send("devEquip", { character: arg });
       else if (kind === "enemy" && arg) room.send("debugSpawn", { kind: arg, count: 3 });
-      this.flashBanner(`▶  DEV: ${kind} ${arg}`, "#33e6ff");
+      this.flashBanner(`▶ Dev: ${kind} ${arg}`, "#33e6ff");
     };
     // toggleTraining is a TOGGLE — send it AT MOST ONCE (re-sending before the mode syncs back over the
     // round-trip flips it back and forth). Then just WAIT for the synced confirmation before firing the target.

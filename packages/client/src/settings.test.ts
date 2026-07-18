@@ -103,3 +103,22 @@ describe("confirm-volume settings", () => {
     expect(store.update({ feedback: { confirmVolume: 9 } }).feedback.confirmVolume).toBe(1.5);
   });
 });
+
+describe("colorblind-assist settings", () => {
+  it("defaults invalid or absent v1 values to off and persists Shapes in the shared blob", () => {
+    const storage = new MemoryStorage();
+    const store = new SettingsStore(storage);
+    expect(store.load().feedback.colorblindAssist).toBe("off");
+    expect(
+      store.update({ feedback: { colorblindAssist: "shapes" } }).feedback.colorblindAssist,
+    ).toBe("shapes");
+
+    const reloaded = new SettingsStore(storage);
+    expect(reloaded.load().feedback.colorblindAssist).toBe("shapes");
+    storage.values.set(
+      SETTINGS_STORAGE_KEY,
+      JSON.stringify({ version: 1, feedback: { colorblindAssist: "palette-only" } }),
+    );
+    expect(new SettingsStore(storage).load().feedback.colorblindAssist).toBe("off");
+  });
+});

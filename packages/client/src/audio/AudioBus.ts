@@ -1548,12 +1548,12 @@ export class AudioBus {
         break;
       case "pound:hit":
         if (this.throttled("poundHit", 90)) return;
-        // P2 manifest addition: a bespoke `player-pound-slam` should replace this reduced-gain generic
-        // debris layer. The player sub-boom stays distinct and one notch above the boss recipe in pitch.
-        sampleBank.playSample("boss-slam-generic", {
-          volume: 0.16 + 0.2 * amt,
+        // `player-pound-slam` is a direct-id layer: it supplies the real stone/body debris while the
+        // player sub-boom below stays distinct and one notch above the boss recipe in pitch.
+        sampleBank.playSample("player-pound-slam", {
+          volume: 0.28 + 0.36 * amt,
           pan: this.panOf(x),
-          rate: 1.22,
+          rate: 0.96 + 0.04 * amt,
           priority: amt >= 0.75 ? "critical" : "normal",
         });
         this.tone(72, 0.24, {

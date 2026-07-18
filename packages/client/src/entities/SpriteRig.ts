@@ -90,6 +90,7 @@ import {
 } from "../sprites/art-geometry.generated.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
+import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 
 /** §28 the packed sprite MULTIATLAS key (tools/artkit/pack-atlas.mjs → public/sprites/dd-sprites.json). When
  *  loaded, every non-expansion part lives here as the frame "<id>/<role>", so the WebGL batcher binds ONE
@@ -141,6 +142,10 @@ const TOME_SCRAP_DURATION_MS = 540;
 const REMOTE_SIGNATURE_LOD_MARGIN_PX = 220;
 /** Retained cast/tome source punctuation. It is sampled on the hit-stop-paused rig clock. */
 const REMOTE_SOURCE_FLASH_MS = 150;
+/** Ranged implements stay shouldered for one readable beat after the fire latch releases. */
+export const RANGED_AIM_LINGER_MS = 250;
+export const RANGED_AIM_RAISE_MS = 90;
+export const RANGED_AIM_SETTLE_MS = 180;
 /** The rear held blade's ordinary idle lean is added by the weapon pass. Close-blade poses compensate it. */
 const DUAL_BACK_WEAPON_LEAN = 0.32;
 /** Close-blade lunges are fully released before a cadence hold can sample `tt = 1`. */
@@ -1046,6 +1051,19 @@ export interface RigAnim {
   slidePhase?: SlidePhase;
   slideTick?: number;
   reducedMotion?: boolean;
+  /** Attack-held for guns or fireHeld/authoritative channel state for beams. Presentation only. */
+  fireHeld?: boolean;
+}
+
+/** Pure ranged-pose envelope. The held window owns the plateau; linger precedes a soft rest-pose settle. */
+export function sampleRangedAimBlend(
+  nowMs: number,
+  raiseAtMs: number,
+  activeUntilMs: number,
+): number {
+  if (nowMs < raiseAtMs) return 0;
+  if (nowMs <= activeUntilMs) return smoothstep01((nowMs - raiseAtMs) / RANGED_AIM_RAISE_MS);
+  return 1 - smoothstep01((nowMs - activeUntilMs) / RANGED_AIM_SETTLE_MS);
 }
 
 /** Client-only schema-26 titan pose channels. Exact danger remains on the telegraph renderer. */
@@ -1384,6 +1402,8 @@ export class SpriteRig {
   /** Alternating gun recoil is retained here; Arena routes muzzle/camera data through the same hand. */
   private gunRecoilAtMs = -1e9;
   private gunRecoilHand: 0 | 1 = 0;
+  private rangedAimRaiseAtMs = -1e9;
+  private rangedAimActiveUntilMs = -1e9;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -1606,6 +1626,14 @@ export class SpriteRig {
     if (!this.weapons[hand]?.def.gun) return;
     this.gunRecoilAtMs = this.presentationEpochForWallEpoch(timeMs);
     this.gunRecoilHand = hand;
+  }
+
+  private holdRangedAim(epochMs: number, durationMs: number): void {
+    if (!this.weaponDef?.gun && !this.weaponDef?.beam) return;
+    if (epochMs > this.rangedAimActiveUntilMs + RANGED_AIM_SETTLE_MS) {
+      this.rangedAimRaiseAtMs = epochMs;
+    }
+    this.rangedAimActiveUntilMs = Math.max(this.rangedAimActiveUntilMs, epochMs + durationMs);
   }
 
   private offWeaponLean(): number {
@@ -2184,13 +2212,19 @@ export class SpriteRig {
     const y = weapon.img.y + Math.sin(weapon.semanticRotation) * tip;
     this.observedSourceFlash
       .setPosition(x, y)
-      .setScale(0.72 + q * 0.9, 0.72 + q * 0.42)
+      .setScale(
+        screenTrueScaleX(this.root.scaleX, this.root.scaleY, 0.72 + q * 0.9),
+        0.72 + q * 0.42,
+      )
       .setAlpha((1 - q) * 0.88)
       .setVisible(true);
     this.observedSourceRing
       .setPosition(x, y)
       .setRotation(weapon.semanticRotation)
-      .setScale(0.5 + q * 1.15, 0.5 + q * 0.72)
+      .setScale(
+        screenTrueScaleX(this.root.scaleX, this.root.scaleY, 0.5 + q * 1.15),
+        0.5 + q * 0.72,
+      )
       .setAlpha((1 - q) * 0.78)
       .setVisible(true);
   }
@@ -2266,6 +2300,9 @@ export class SpriteRig {
     const acceptedWallEpochMs = epochMs;
     epochMs = this.presentationEpochForWallEpoch(epochMs);
     const beat = seq >>> 0;
+    if (held) {
+      this.holdRangedAim(epochMs, ATTACK_HELD_WINDOW * TICK_MS + RANGED_AIM_LINGER_MS);
+    }
     if (!this.hasAttackBeatSeq) {
       this.hasAttackBeatSeq = true;
       this.attackBeatSeq = beat;
@@ -2516,6 +2553,8 @@ export class SpriteRig {
     this.pairBarStep = -1;
     this.pairBarExpiresAtMs = -1e9;
     this.gunRecoilAtMs = -1e9;
+    this.rangedAimRaiseAtMs = -1e9;
+    this.rangedAimActiveUntilMs = -1e9;
     if (off) {
       if (pairBaseSeq !== undefined) this.setDualWieldBaseSeq(pairBaseSeq);
       else if (!previousPaired) {
@@ -5504,7 +5543,7 @@ export class SpriteRig {
         ? Math.cos(tellFacesAim ? this.meleeTellAimWorld : this.enemyComboAimWorld)
         : anim.isSelf
           ? anim.aimX
-          : this.weaponDef?.gun
+          : this.weaponDef?.gun || this.weaponDef?.beam
             ? Math.cos(anim.aimDir)
             : anim.moveX;
     // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
@@ -5537,7 +5576,7 @@ export class SpriteRig {
     // character blows the text up (weapons counter the same way, §29). scaleX also counters the facing mirror.
     if (this.label) {
       const inv = 1 / (this.baseScale || 1);
-      this.label.scaleX = this.facing * inv;
+      this.label.scaleX = screenTrueScaleX(this.root.scaleX, this.root.scaleY, inv);
       this.label.scaleY = inv;
     }
 
@@ -5602,6 +5641,7 @@ export class SpriteRig {
     let ownFront = 0;
     let ownBack = 0;
     let ownFeet = 0;
+    let rangedAimBlend = 0;
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
@@ -5774,13 +5814,24 @@ export class SpriteRig {
         this.body.scaleX *= 1 - 0.05 * incoming * cancelBlend;
         for (const foot of this.feet) foot.img.y += TARGET_BODY_H * 0.045 * load * cancelBlend;
       }
-    } else if (this.weaponDef?.gun && this.weapons.length > 0) {
+    } else if ((this.weaponDef?.gun || this.weaponDef?.beam) && this.weapons.length > 0) {
+      if (anim.fireHeld) this.holdRangedAim(sceneNow, RANGED_AIM_LINGER_MS);
+      rangedAimBlend = sampleRangedAimBlend(
+        sceneNow,
+        this.rangedAimRaiseAtMs,
+        this.rangedAimActiveUntilMs,
+      );
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
       if (this.weaponDef.twoHanded || this.weapons.length > 1) ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
       weaponAngle = heldAimLocal;
+      if (this.weapons.length > 1) backWeaponAngle = heldAimLocal - this.offWeaponLean();
+      if (this.weaponDef.twoHanded)
+        this.attackHandSpacing = TARGET_BODY_H * (0.42 - 0.1 * rangedAimBlend);
+      this.body.x += TARGET_BODY_H * 0.018 * rangedAimBlend;
+      this.body.rotation += this.facing * 0.055 * rangedAimBlend;
       const recoilElapsed = sceneNow - this.gunRecoilAtMs;
       if (recoilElapsed >= 0 && recoilElapsed < 140) {
         const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
@@ -6561,6 +6612,18 @@ export class SpriteRig {
         hy += idleY;
         hy += trailY;
       }
+      const holdsRangedWeapon =
+        !!(this.weaponDef?.gun || this.weaponDef?.beam) &&
+        (hnd.front ? this.weapons.length > 0 : this.weapons.length > 1);
+      if (rangedAimBlend > 0 && holdsRangedWeapon) {
+        const aimShoulderX = hnd.front ? TARGET_BODY_H * 0.16 : TARGET_BODY_H * 0.055;
+        const aimShoulderY = hnd.front ? -TARGET_BODY_H * 0.27 : -TARGET_BODY_H * 0.2;
+        const aimReach = hnd.front ? TARGET_BODY_H * 0.045 : TARGET_BODY_H * 0.035;
+        const targetX = aimShoulderX + Math.cos(heldAimLocal) * aimReach;
+        const targetY = aimShoulderY + Math.sin(heldAimLocal) * aimReach;
+        hx += (targetX - hx) * rangedAimBlend;
+        hy += (targetY - hy) * rangedAimBlend;
+      }
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
@@ -7014,7 +7077,10 @@ export class SpriteRig {
           (leadWeapon.img.y + offWeapon.img.y) * 0.5,
         )
         .setRotation((leadWeapon.semanticRotation + offWeapon.semanticRotation) * 0.5 + Math.PI / 2)
-        .setScale(0.72 + this.pairGlintAlpha * 0.5, 0.7 + this.pairGlintAlpha * 0.3)
+        .setScale(
+          screenTrueScaleX(this.root.scaleX, this.root.scaleY, 0.72 + this.pairGlintAlpha * 0.5),
+          0.7 + this.pairGlintAlpha * 0.3,
+        )
         .setAlpha(this.pairGlintAlpha)
         .setVisible(true);
     } else {
