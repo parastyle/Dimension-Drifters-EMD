@@ -954,6 +954,30 @@ export class AudioBus {
       case "levelup":
         this.blip([523, 659, 784, 1046], 0.07, "triangle", 0.26);
         break;
+      case "pet:bond-progress":
+        if (this.throttled("petBondProgress", 500)) return;
+        if (this.sampleFirst("pet-bond-progress", { volume: 0.46, priority: "normal" })) return;
+        // A soft paper/wood resolve, deliberately below and unlike the ultimate-ready chime.
+        this.noise(0.09, { gain: 0.055, type: "bandpass", freq: 760, q: 0.8 });
+        this.tone(294, 0.18, { type: "triangle", gain: 0.1, sweepTo: 370 });
+        this.tone(440, 0.16, { type: "sine", gain: 0.065, delay: 0.09 });
+        break;
+      case "pet:evolve:awakened":
+      case "pet:evolve:ascendant": {
+        const ascendant = event === "pet:evolve:ascendant";
+        const cue = ascendant ? "pet-evolve-ascendant" : "pet-evolve-awakened";
+        if (this.sampleFirst(cue, { volume: ascendant ? 0.72 : 0.58, priority: "critical" }))
+          return;
+        this.noise(0.22, {
+          gain: ascendant ? 0.12 : 0.09,
+          type: "bandpass",
+          freq: 620,
+          q: 0.7,
+          priority: "critical",
+        });
+        this.blip(ascendant ? [220, 294, 392, 587] : [294, 370, 440], 0.1, "triangle", 0.16);
+        break;
+      }
       // ULTIMATES. Every semantic cue is manifest-ready; the shipped ready chime is addressed by id
       // because it intentionally has `replaces: null`. Remote casts pass a restrained `amt` and read as
       // battlefield weather, while the owning player's cue keeps its full transient.

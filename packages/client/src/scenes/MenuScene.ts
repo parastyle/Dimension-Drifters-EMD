@@ -1,10 +1,19 @@
-import { beltLevelFor, DEFAULT_DIMENSION, DIMENSION_IDS, getDimension } from "@dd/shared";
+import {
+  beltLevelFor,
+  DEFAULT_DIMENSION,
+  DIMENSION_IDS,
+  getDimension,
+  type MetaAccountV2,
+  PET_IDS,
+  type PetId,
+} from "@dd/shared";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 // Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
 // lazily inside launch(), alongside the lazy ArenaScene import).
 import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
+import { loadPetMetaAccount, petSelectionView, selectPet } from "../ui/pet-select.js";
 
 /**
  * §17 title / dimension-select screen — the first scene. Lists every dimension as a themed card (its own
@@ -44,6 +53,14 @@ interface MenuCard {
   root: Phaser.GameObjects.Container;
 }
 
+interface CompanionChip {
+  id: PetId;
+  root: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  portrait: Phaser.GameObjects.Image;
+  lock: Phaser.GameObjects.Text;
+}
+
 export class MenuScene extends Phaser.Scene {
   private title!: Phaser.GameObjects.Text;
   private subtitle!: Phaser.GameObjects.Text;
@@ -62,6 +79,11 @@ export class MenuScene extends Phaser.Scene {
   private launchIntent: LaunchIntent = "quick";
   private intentRow?: Phaser.GameObjects.Container;
   private intentCaption?: Phaser.GameObjects.Text;
+  private metaAccount!: MetaAccountV2;
+  private companionRow?: Phaser.GameObjects.Container;
+  private companionName?: Phaser.GameObjects.Text;
+  private companionDetail?: Phaser.GameObjects.Text;
+  private companionChips: CompanionChip[] = [];
 
   constructor() {
     super("menu");
@@ -87,6 +109,12 @@ export class MenuScene extends Phaser.Scene {
         queueOptionalArt(key, `ui/menu/${dimensionId}.jpg`);
       }
     }
+    // Until dedicated portraits land, the folio uses the approved Hatchling body cutouts. These are the
+    // only pet textures loaded by the menu; ArenaScene keeps all animated stage parts lazy.
+    for (const petId of PET_IDS) {
+      const key = `pet-select:${petId}`;
+      if (!this.textures.exists(key)) this.load.image(key, `sprites/pets/${petId}/s1/body.png`);
+    }
     this.load.on("loaderror", (file: Phaser.Loader.File) => {
       if (file.key.startsWith(MENU_ART_PREFIX)) this.menuArtMissing.add(file.key);
     });
@@ -103,6 +131,10 @@ export class MenuScene extends Phaser.Scene {
     this.audioRow = undefined;
     this.intentRow = undefined;
     this.intentCaption = undefined;
+    this.companionRow = undefined;
+    this.companionName = undefined;
+    this.companionDetail = undefined;
+    this.companionChips = [];
     this.launchIntent = "quick";
     this.launching = false;
     // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
@@ -127,6 +159,7 @@ export class MenuScene extends Phaser.Scene {
     // real gesture (a menu click), then wire the volume/mute row.
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
+    this.metaAccount = loadPetMetaAccount();
     this.input.on("pointerdown", () => this.audio.resume());
     // Mirror ArenaScene's hi-DPI camera: zoom by RENDER_DPR + origin (0,0) so screen-space UI maps 1:1 to
     // CSS px and we lay everything out in `screenW()/screenH()` (the visible CSS size).
@@ -198,6 +231,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.buildIntentRow();
+    this.buildCompanionRow();
     this.buildAudioRow();
     this.layout();
   }
@@ -256,6 +290,105 @@ export class MenuScene extends Phaser.Scene {
         ? "Pick a card to JOIN a live run with the same pick — or start one if none is open.   (H toggles)"
         : "Pick a card to HOST a fresh run — drifters making the same pick can still join you.   (H toggles)",
     );
+  }
+
+  /** Pre-ready companion folio. Selection writes the account payload immediately and freezes on launch. */
+  private buildCompanionRow(): void {
+    const panel = this.add
+      .rectangle(0, 0, 930, 112, 0x14121b, 0.98)
+      .setStrokeStyle(2, 0x3a3550, 0.95);
+    const heading = this.add
+      .text(-445, -45, "COMPANIONS", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#8fdcff",
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.companionName = this.add
+      .text(-445, -22, "", {
+        fontSize: "18px",
+        color: TITLE_COLOR,
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.companionDetail = this.add
+      .text(-445, 2, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#b8b1c4",
+        lineSpacing: 3,
+      })
+      .setOrigin(0, 0);
+    this.companionRow = this.add.container(0, 0, [
+      panel,
+      heading,
+      this.companionName,
+      this.companionDetail,
+    ]);
+
+    for (const [i, id] of PET_IDS.entries()) {
+      const x = -30 + i * 62;
+      const frame = this.add.rectangle(0, 0, 52, 58, 0x1b1822, 1).setStrokeStyle(1.5, 0x3a3550, 1);
+      const portrait = this.add
+        .image(0, -2, `pet-select:${id}`)
+        .setDisplaySize(124, 124)
+        .setOrigin(0.5);
+      const lock = this.add
+        .text(0, 22, "LOCKED", {
+          fontFamily: "monospace",
+          fontSize: "10px",
+          color: "#8d8794",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
+      const root = this.add.container(x, 0, [frame, portrait, lock]);
+      frame
+        .setInteractive({ useHandCursor: true })
+        .on("pointerover", () => {
+          if (!this.launching) {
+            this.refreshCompanionRow(id);
+            frame.setFillStyle(0x292332, 1);
+          }
+        })
+        .on("pointerout", () => this.refreshCompanionRow())
+        .on("pointerdown", () => {
+          if (this.launching || !this.metaAccount.pets[id]) return;
+          this.audio.resume();
+          this.metaAccount = selectPet(this.metaAccount, id);
+          this.refreshCompanionRow();
+        });
+      this.companionRow.add(root);
+      this.companionChips.push({ id, root, frame, portrait, lock });
+    }
+    this.refreshCompanionRow();
+  }
+
+  private refreshCompanionRow(previewId?: PetId): void {
+    if (!this.companionName || !this.companionDetail) return;
+    const selectedId = (previewId ?? this.metaAccount.selectedPetId) || "verdant-wing";
+    const selected = petSelectionView(this.metaAccount, selectedId);
+    this.companionName.setText(
+      `${selected.name} · Lv ${selected.level}/10${selected.owned ? "" : " · LOCKED"}`,
+    );
+    const progress = !selected.owned
+      ? selected.id === "slate-tortoise"
+        ? "Wild egg · Verdant Ruins terminal victories"
+        : "◈ 160 Scrip egg · Companion shop"
+      : selected.nextBondXp === null
+        ? "Maxed Bond"
+        : `${selected.bondXp.toLocaleString()} / ${selected.nextBondXp.toLocaleString()} Bond XP`;
+    this.companionDetail.setText(
+      `${progress} · ${selected.stage}\n${selected.bonus}\n${selected.capstone}`,
+    );
+    for (const chip of this.companionChips) {
+      const view = petSelectionView(this.metaAccount, chip.id);
+      chip.frame.setFillStyle(view.selected ? 0x14232a : 0x1b1822, 1);
+      chip.frame.setStrokeStyle(view.selected ? 2.5 : 1.5, view.selected ? 0x33e6ff : 0x3a3550, 1);
+      chip.portrait.setAlpha(view.owned ? 1 : 0.25).setTint(view.owned ? 0xffffff : 0x55545b);
+      chip.lock.setVisible(!view.owned);
+      chip.root.setScale(view.selected ? 1.06 : 1);
+    }
   }
 
   /** §19 v0.108 audio settings row (bottom-left): −/+ volume + a mute toggle, reflecting the persisted
@@ -441,6 +574,9 @@ export class MenuScene extends Phaser.Scene {
     this.subtitle.setPosition(w / 2, Math.max(70, h * 0.13) + 44);
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
     this.intentRow?.setPosition(w / 2, Math.max(70, h * 0.13) + 88);
+    this.companionRow
+      ?.setPosition(w / 2, Math.max(70, h * 0.13) + 168)
+      .setScale(Math.min(1, (w - 24) / 930));
 
     const n = this.cards.length;
     const gapX = 26;
@@ -449,7 +585,7 @@ export class MenuScene extends Phaser.Scene {
     const rows = Math.ceil(n / cols);
     const gridW = cols * CARD_W + (cols - 1) * gapX;
     const startX = (w - gridW) / 2 + CARD_W / 2;
-    const startY = Math.max(236, h * 0.32) + CARD_H / 2;
+    const startY = Math.max(370, h * 0.43) + CARD_H / 2;
 
     this.cards.forEach((card, i) => {
       const col = i % cols;
@@ -484,7 +620,13 @@ export class MenuScene extends Phaser.Scene {
       "camerafadeoutcomplete",
       () =>
         void ready.then(() =>
-          this.scene.start("arena", { dimensionId: id, bossRush, belt, beltLevel }),
+          this.scene.start("arena", {
+            dimensionId: id,
+            bossRush,
+            belt,
+            beltLevel,
+            selectedPetId: this.metaAccount.selectedPetId,
+          }),
         ),
     );
   }

@@ -60,12 +60,14 @@ import {
   INTERP_SNAP_ENEMY,
   INTERP_SNAP_PLAYER,
   inMeleeArc,
+  isPetId,
   isPitAtPx,
   LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
   lootDamageMult,
   META_UPGRADES,
+  type MetaAccountV2,
   type MetaLevels,
   type MoveStance,
   meleeReach,
@@ -75,9 +77,13 @@ import {
   PARRY_CHAIN_WINDOW,
   PARRY_COOLDOWN,
   PARRY_IFRAMES,
+  type PetProgressReceipt,
+  type PetStageBand,
   PICKUP_RADIUS,
   type PlayerState,
   POUND_RADIUS,
+  petLevelForXp,
+  petModsForLevel,
   QUAKE_REACH,
   quirkForCharacter,
   RARITIES,
@@ -130,6 +136,7 @@ import {
   type DamageNumberEvent,
   type HitContactEvent,
 } from "../combat-feedback.js";
+import { PetRig, playPetEvolutionCeremony } from "../entities/PetRig.js";
 import {
   type PaperDeathTreatment,
   partTexture,
@@ -156,6 +163,7 @@ import {
 } from "../settings.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
+import { loadPetPartsManifest, type PetPartsManifest } from "../sprites/pet-parts.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { DamageNumberRenderer } from "../ui/damage-numbers.js";
 import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
@@ -166,6 +174,12 @@ import {
   type LevelChoiceView,
   levelBuildContext,
 } from "../ui/level-up-model.js";
+import {
+  formatPetProgressReceipt,
+  loadPetMetaAccount,
+  petEvolutionLabel,
+  savePetMetaAccount,
+} from "../ui/pet-select.js";
 import { ultimateHudLayout } from "../ui/ultimate-hud-layout.js";
 import {
   canReleaseUltimateReveal,
@@ -931,6 +945,16 @@ export class ArenaScene extends Phaser.Scene {
   private resumeAudioPointerHandler: (() => void) | null = null;
   private resumeAudioKeyHandler: (() => void) | null = null;
   private readonly blobs = new Map<string, SpriteRig>();
+  /** Client-only followers reconcile from PlayerState descriptors and the already-rendered owner roots. */
+  private readonly petRigs = new Map<string, PetRig>();
+  private readonly petOwnerHp = new Map<string, number>();
+  private petManifest: PetPartsManifest | null | undefined;
+  private petMetaAccount!: MetaAccountV2;
+  private selectedPetId: MetaAccountV2["selectedPetId"] = "verdant-wing";
+  private readonly petPickupEligibility = new Set<string>();
+  private petResultLine = "";
+  private lastPetReceiptKey = "";
+  private readonly petAvoidanceScratch = { x: 0, y: 0, alpha: 1 };
   private readonly enemies = new Map<string, SpriteRig>();
   /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
   private wormRig: WormRig | null = null;
@@ -1426,6 +1450,7 @@ export class ArenaScene extends Phaser.Scene {
   private rGrabbed = false;
   /** §13 v0.106 (A11): the nearest grabbable pickup this frame (world px), for the highlight ring. */
   private grabTarget: { x: number; y: number } | null = null;
+  private grabRadius = PICKUP_RADIUS;
   /** §13 v0.106 (A11): the pulsing amber ring drawn on the pickup R will take. */
   private grabGfx!: Phaser.GameObjects.Graphics;
   private dropBar?: Phaser.GameObjects.Graphics;
@@ -1484,6 +1509,7 @@ export class ArenaScene extends Phaser.Scene {
     belt?: boolean;
     beltLevel?: string;
     dev?: string;
+    selectedPetId?: MetaAccountV2["selectedPetId"];
   }): void {
     // §4 Phaser reuses this Scene instance: launch options must be derived afresh, never inherited from the
     // previous run (notably a belt launch followed by a normal top-down launch).
@@ -1495,6 +1521,8 @@ export class ArenaScene extends Phaser.Scene {
     const urlLevel = params.get("belt");
     this.selectedBeltLevel =
       data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
+    this.petMetaAccount = loadPetMetaAccount();
+    this.selectedPetId = data?.selectedPetId ?? this.petMetaAccount.selectedPetId;
     // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
@@ -1670,6 +1698,7 @@ export class ArenaScene extends Phaser.Scene {
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
+    for (const rig of this.petRigs.values()) rig.destroy();
     this.removeSceneListeners();
     this.leaveCurrentRoom();
     this.destroyPaperPagePool();
@@ -1677,6 +1706,9 @@ export class ArenaScene extends Phaser.Scene {
 
     // Entity, reconciliation, and event-history collections.
     this.blobs.clear();
+    this.petRigs.clear();
+    this.petOwnerHp.clear();
+    this.petPickupEligibility.clear();
     this.enemies.clear();
     this.enemyPaperPriority.clear();
     this.paperDeaths.length = 0;
@@ -1920,10 +1952,14 @@ export class ArenaScene extends Phaser.Scene {
     this.rSalvaged = false;
     this.rGrabbed = false;
     this.grabTarget = null;
+    this.grabRadius = PICKUP_RADIUS;
     this.bagOpen = false;
     this.shopOpen = false;
     this.lastScrip = -1;
     this.lastUpgradeSig = "";
+    this.petManifest = undefined;
+    this.petResultLine = "";
+    this.lastPetReceiptKey = "";
     this.ultimateCastPendingUntil = -1e9;
     this.ultimateHudPulseUntil = -1e9;
     this.queuedUltimateReveal = undefined;
@@ -1953,6 +1989,10 @@ export class ArenaScene extends Phaser.Scene {
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
     this.wormRig = null;
+    for (const rig of this.petRigs.values()) rig.destroy();
+    this.petRigs.clear();
+    this.petOwnerHp.clear();
+    this.petPickupEligibility.clear();
     this.destroyPaperPagePool();
     this.clearLevelPaperCounters();
     this.removeSceneListeners();
@@ -1963,6 +2003,9 @@ export class ArenaScene extends Phaser.Scene {
     this.resetSceneState();
     const connectionGeneration = ++this.connectionGeneration;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdownScene, this);
+    void loadPetPartsManifest().then((manifest) => {
+      if (connectionGeneration === this.connectionGeneration) this.petManifest = manifest;
+    });
 
     // The themed floor (bed/grid/rail + pits/rim) is drawn in `maybeBuildFloor` once the server's seeds +
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
@@ -3061,6 +3104,7 @@ export class ArenaScene extends Phaser.Scene {
   private paperWorldObjects(): Phaser.GameObjects.GameObject[] {
     const out: Phaser.GameObjects.GameObject[] = [...this.floorObjs];
     for (const rig of this.blobs.values()) out.push(rig.root);
+    for (const rig of this.petRigs.values()) out.push(rig.root);
     for (const rig of this.enemies.values()) out.push(rig.root);
     for (const pickup of this.pickups.values()) out.push(pickup);
     for (const projectile of this.projectiles.values()) out.push(projectile);
@@ -3445,6 +3489,8 @@ export class ArenaScene extends Phaser.Scene {
         // §17 pass the menu's dimension pick as a join option (the room creator scopes the run to it; a
         // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
         const joinOpts = {
+          metaAccount: this.petMetaAccount,
+          selectedPetId: this.selectedPetId,
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
           belt: this.belt, // §29 belt-scroller mode — the server shapes the sim into a belt band
@@ -3468,6 +3514,28 @@ export class ArenaScene extends Phaser.Scene {
           return;
         }
         this.room = room;
+        const disposeMetaAccount = room.onMessage<unknown>("metaAccount", (payload) => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          this.petMetaAccount = savePetMetaAccount(payload);
+          this.selectedPetId = this.petMetaAccount.selectedPetId;
+        }) as () => void;
+        const disposePetProgress = room.onMessage<unknown>("petProgressReceipt", (payload) => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          this.onPetProgressReceipt(payload);
+        }) as () => void;
+        const disposePetPickup = room.onMessage<{ ids?: unknown }>(
+          "petPickupEligibility",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            this.petPickupEligibility.clear();
+            if (!Array.isArray(payload?.ids)) return;
+            for (let i = 0; i < Math.min(128, payload.ids.length); i++) {
+              const id = payload.ids[i];
+              if (typeof id === "string") this.petPickupEligibility.add(id);
+            }
+          },
+        ) as () => void;
+        this.roomStateDisposers.push(disposeMetaAccount, disposePetProgress, disposePetPickup);
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
@@ -3538,6 +3606,9 @@ export class ArenaScene extends Phaser.Scene {
   private removeBlob(id: string): void {
     this.blobs.get(id)?.destroy();
     this.blobs.delete(id);
+    this.petRigs.get(id)?.destroy();
+    this.petRigs.delete(id);
+    this.petOwnerHp.delete(id);
     this.equipped.delete(id);
     this.charOf.delete(id);
     this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
@@ -3654,21 +3725,26 @@ export class ArenaScene extends Phaser.Scene {
     }
     let canSalvage = false;
     this.grabTarget = null;
+    this.grabRadius = PICKUP_RADIUS;
     if (!levelWindowInputBlocked) {
       const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
       // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
       // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
       let nearPickup = false;
       if (selfP && alive) {
-        let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
-        this.room.state.pickups.forEach((pk) => {
+        let bestD = Number.POSITIVE_INFINITY;
+        this.room.state.pickups.forEach((pk, id) => {
           const dx = pk.x - selfP.x;
           const dy = pk.y - selfP.y;
           const d = dx * dx + dy * dy;
-          if (d <= bestD) {
+          const radius = this.petPickupEligibility.has(id)
+            ? this.copperPickupPromptRadius()
+            : PICKUP_RADIUS;
+          if (d <= radius * radius && d <= bestD) {
             bestD = d;
             nearPickup = true;
             this.grabTarget = { x: pk.x, y: pk.y };
+            this.grabRadius = radius;
           }
         });
       }
@@ -3778,6 +3854,7 @@ export class ArenaScene extends Phaser.Scene {
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
     this.stepNetInput(deltaMs, levelWindowInputBlocked); // §4 v0.107 mint/send/predict this frame's input commands
     this.syncBlobs();
+    this.syncPetRigs();
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
     this.routePlayerAttacks();
@@ -3818,6 +3895,7 @@ export class ArenaScene extends Phaser.Scene {
       this.moveProjectiles(this.deltaSec);
       this.animateBlobs(deltaMs);
       this.animateEnemies(deltaMs);
+      this.updatePetRigs(deltaMs);
       this.projectBelt(); // §29 belt mode: remap floor objects onto the depth band + depth-sort (no-op otherwise)
       this.renderProjectileTells(); // M2: parry tell on incoming hostile shots (drawn on the white-tell layer)
     } else {
@@ -5902,6 +5980,51 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** Boss health bar + approach banner + victory screen (§16). */
+  private onPetProgressReceipt(payload: unknown): void {
+    if (!payload || typeof payload !== "object") return;
+    const row = payload as Partial<PetProgressReceipt>;
+    if (
+      !isPetId(row.petId) ||
+      (row.outcome !== "victory" && row.outcome !== "defeat") ||
+      !Number.isFinite(row.awardedBondXp) ||
+      !Number.isFinite(row.oldLevel) ||
+      !Number.isFinite(row.newLevel) ||
+      (row.oldStageBand !== 1 && row.oldStageBand !== 2 && row.oldStageBand !== 3) ||
+      (row.newStageBand !== 1 && row.newStageBand !== 2 && row.newStageBand !== 3)
+    )
+      return;
+    const receipt = payload as PetProgressReceipt;
+    const key = `${receipt.petId}:${receipt.oldBondXp}:${receipt.newBondXp}:${receipt.outcome}`;
+    if (key === this.lastPetReceiptKey) return;
+    this.lastPetReceiptKey = key;
+    this.petResultLine = formatPetProgressReceipt(receipt);
+    if (receipt.slateTortoiseAwarded)
+      this.petResultLine += "\nSlate Tortoise joined your Companions folio.";
+    const evolution = receipt.oldStageBand !== receipt.newStageBand || receipt.reachedCapstone;
+    this.audio.play(
+      evolution
+        ? receipt.newStageBand === 2
+          ? "pet:evolve:awakened"
+          : "pet:evolve:ascendant"
+        : "pet:bond-progress",
+    );
+    if (!evolution) return;
+    const generation = this.connectionGeneration;
+    const play = (manifest: PetPartsManifest | null): void => {
+      if (!manifest || generation !== this.connectionGeneration) return;
+      playPetEvolutionCeremony(
+        this,
+        manifest,
+        receipt.petId,
+        receipt.oldStageBand,
+        receipt.newStageBand,
+        petEvolutionLabel(receipt),
+      );
+    };
+    if (this.petManifest !== undefined) play(this.petManifest);
+    else void loadPetPartsManifest().then(play);
+  }
+
   private updateRunState(): void {
     if (!this.room) return;
     // Locate the boss (if any) — §17 ANY dimension's boss (archetype "boss"), not just OLD RUST — and total
@@ -6007,6 +6130,7 @@ export class ArenaScene extends Phaser.Scene {
             ? `☠  GAUNTLET CLEARED  ☠\nall 10 bosses down ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`
             : `EXTRACTED at depth ${this.room.state.depth} ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`,
         )
+        .setText(`${this.victoryText.text}${this.petResultLine ? `\n${this.petResultLine}` : ""}`)
         .setPosition(this.screenW() / 2, this.screenH() / 2);
     }
   }
@@ -6987,6 +7111,47 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** Reconcile every public pet descriptor beside, but never inside, the schema entity collections. */
+  private syncPetRigs(): void {
+    if (!this.room || !this.petManifest) return;
+    let partySlot = 0;
+    this.room.state.players.forEach((player, id) => {
+      const rawBand = player.petLevelBand;
+      const validBand = rawBand === 1 || rawBand === 2 || rawBand === 3;
+      if (!isPetId(player.petId) || !validBand) {
+        this.petRigs.get(id)?.destroy();
+        this.petRigs.delete(id);
+        this.petOwnerHp.delete(id);
+        partySlot++;
+        return;
+      }
+      const band = rawBand as PetStageBand;
+      let rig = this.petRigs.get(id);
+      if (!rig) {
+        rig = new PetRig(
+          this,
+          this.petManifest!,
+          id,
+          player.petId,
+          band,
+          id === this.room?.sessionId,
+          partySlot,
+        );
+        rig.setProjection(this.belt ? BELT_Y0 : 0, this.belt ? BELT_FORESHORTEN : 1);
+        this.petRigs.set(id, rig);
+      } else {
+        rig.setDescriptor(player.petId, band);
+      }
+      partySlot++;
+    });
+    for (const [id, rig] of this.petRigs) {
+      if (this.room.state.players.has(id)) continue;
+      rig.destroy();
+      this.petRigs.delete(id);
+      this.petOwnerHp.delete(id);
+    }
+  }
+
   private interpolate(deltaMs: number): void {
     if (!this.room) return;
     // §4 v0.107: SELF renders the PREDICTOR (instant response — no lerp, no round-trip); REMOTES render
@@ -7656,6 +7821,149 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  private updatePetRigs(deltaMs: number): void {
+    if (!this.room) return;
+    const selfId = this.room.sessionId;
+    const reducedMotion = prefersReducedPaperMotion();
+    this.room.state.players.forEach((player, id) => {
+      const pet = this.petRigs.get(id);
+      const owner = this.blobs.get(id);
+      if (!pet || !owner) return;
+      const previousHp = this.petOwnerHp.get(id);
+      if (previousHp !== undefined && player.hp < previousHp - 0.01)
+        pet.onOwnerHit(player.vx, player.vy, this.time.now);
+      this.petOwnerHp.set(id, player.hp);
+      const isSelf = id === selfId;
+      const stance =
+        isSelf && this.predictor ? this.selfPredStance : (player.moveStance as MoveStance);
+      const aimX = isSelf ? this.selfAim.x : Math.cos(player.aimDir);
+      const aimY = isSelf ? this.selfAim.y : Math.sin(player.aimDir);
+      pet.update(
+        this.time.now,
+        deltaMs,
+        owner.x,
+        owner.y,
+        aimX,
+        aimY,
+        stance,
+        player.teleportSeq,
+        player.attackSeq,
+        !player.alive,
+        reducedMotion,
+      );
+      this.writePetTelegraphAvoidance(
+        pet.screenX,
+        pet.screenY,
+        pet.radius,
+        this.petAvoidanceScratch,
+      );
+      pet.setAvoidance(
+        this.petAvoidanceScratch.x,
+        this.petAvoidanceScratch.y,
+        this.petAvoidanceScratch.alpha,
+      );
+    });
+  }
+
+  /** Expand truth edges by the pet radius + 14px, detour at most 28px, then hide if no legal tangent exists. */
+  private writePetTelegraphAvoidance(
+    x: number,
+    y: number,
+    radius: number,
+    out: { x: number; y: number; alpha: number },
+  ): void {
+    out.x = 0;
+    out.y = 0;
+    out.alpha = 1;
+    const clearance = radius + 14;
+    let bestNeed = 0;
+    let bestX = 0;
+    let bestY = 0;
+    for (const cached of this.telegraphCache.values()) {
+      if (cached.seenFrame !== this.telegraphFrame) continue;
+      const geometry = cached.geometry;
+      const inside = telegraphGeometryContains(geometry, x, y);
+      let closestSq = Number.POSITIVE_INFINITY;
+      let closestX = x;
+      let closestY = y;
+      for (const edge of geometry.edges) {
+        const points = edge.points;
+        const segmentCount = edge.closed ? points.length : points.length - 1;
+        for (let index = 0; index < segmentCount; index++) {
+          const start = points[index];
+          const end = points[(index + 1) % points.length];
+          if (!start || !end) continue;
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const lengthSq = dx * dx + dy * dy;
+          const t =
+            lengthSq > 1e-8
+              ? Math.max(0, Math.min(1, ((x - start.x) * dx + (y - start.y) * dy) / lengthSq))
+              : 0;
+          const px = start.x + dx * t;
+          const py = start.y + dy * t;
+          const distanceSq = (x - px) ** 2 + (y - py) ** 2;
+          if (distanceSq >= closestSq) continue;
+          closestSq = distanceSq;
+          closestX = px;
+          closestY = py;
+        }
+      }
+      const distance = Math.sqrt(closestSq);
+      if (!inside && !(distance < clearance)) continue;
+      const need = inside ? distance + clearance : clearance - distance;
+      if (need > 28) {
+        out.alpha = 0;
+        return;
+      }
+      if (need <= bestNeed) continue;
+      let directionX = inside ? closestX - x : x - closestX;
+      let directionY = inside ? closestY - y : y - closestY;
+      let length = Math.hypot(directionX, directionY);
+      if (length < 1e-5) {
+        directionX = x - geometry.centerX;
+        directionY = y - geometry.centerY;
+        length = Math.hypot(directionX, directionY) || 1;
+      }
+      bestNeed = need;
+      bestX = (directionX / length) * need;
+      bestY = (directionY / length) * need;
+    }
+    if (bestNeed <= 0) return;
+    out.x = bestX;
+    out.y = bestY;
+    if (this.petOverlapsTelegraph(x + bestX, y + bestY, clearance)) out.alpha = 0;
+  }
+
+  private petOverlapsTelegraph(x: number, y: number, clearance: number): boolean {
+    const clearanceSq = clearance * clearance;
+    for (const cached of this.telegraphCache.values()) {
+      if (cached.seenFrame !== this.telegraphFrame) continue;
+      const geometry = cached.geometry;
+      if (telegraphGeometryContains(geometry, x, y)) return true;
+      for (const edge of geometry.edges) {
+        const points = edge.points;
+        const segmentCount = edge.closed ? points.length : points.length - 1;
+        for (let index = 0; index < segmentCount; index++) {
+          const start = points[index];
+          const end = points[(index + 1) % points.length];
+          if (!start || !end) continue;
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const lengthSq = dx * dx + dy * dy;
+          const t =
+            lengthSq > 1e-8
+              ? Math.max(0, Math.min(1, ((x - start.x) * dx + (y - start.y) * dy) / lengthSq))
+              : 0;
+          const px = start.x + dx * t;
+          const py = start.y + dy * t;
+          if ((x - px) ** 2 + (y - py) ** 2 < clearanceSq) return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /** One presentation edge tracker per player; all spawned geometry lands in fixed JumpEffectRenderer pools. */
   private presentJumpFeel(
     id: string,
@@ -8202,7 +8510,15 @@ export class ArenaScene extends Phaser.Scene {
     if (!t) return;
     const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
     g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
-    g.strokeCircle(t.x, t.y, PICKUP_RADIUS * (0.7 + 0.06 * pulse));
+    g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
+  }
+
+  private copperPickupPromptRadius(): number {
+    const bondXp = this.petMetaAccount?.pets["copper-snail"]?.bondXp ?? 0;
+    return Math.max(
+      PICKUP_RADIUS,
+      petModsForLevel("copper-snail", petLevelForXp(bondXp)).earnedPickupRadius,
+    );
   }
 
   /** H10 §20 parry-state ring under the LOCAL drifter so the timing is learnable: a bright flash through the
@@ -8550,6 +8866,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private onCombatFeedbackContact(event: HitContactEvent): void {
+    if (event.finalBlow && event.sourcePlayerId)
+      this.petRigs.get(event.sourcePlayerId)?.onOwnerKill(this.time.now);
     const point = this.enemySample;
     const resolved = this.resolveFeedbackTarget(event.targetId, point);
     const x = resolved ? point.x : event.x;
@@ -10027,6 +10345,9 @@ export class ArenaScene extends Phaser.Scene {
       this.deathText
         .setText(
           `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}`,
+        )
+        .setText(
+          `${this.deathText.text}${wiped && this.petResultLine ? `\n${this.petResultLine}` : ""}`,
         )
         .setFontSize(20 * s)
         .setWordWrapWidth(Math.min(this.screenW() - 80 * s, 820 * s))
