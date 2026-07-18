@@ -179,6 +179,27 @@ export function ultimateVariantForAllocation(
   return best ?? (familyAttr === "str" ? "dex" : "str");
 }
 
+/** Gear-era lock law: permanent starting state never participates in family/variant ranking. */
+export function ultimateRankingForRunAllocation(
+  allocRun: Readonly<Record<Attr, number>>,
+): readonly [Attr, Attr] {
+  const ranked = [...ATTRS].sort((left, right) =>
+    allocRun[right] - allocRun[left] || ATTRS.indexOf(left) - ATTRS.indexOf(right));
+  return [ranked[0] ?? "str", ranked[1] ?? "dex"] as const;
+}
+
+export function ultimateVariantForRunAllocation(
+  allocRun: Readonly<Record<Attr, number>>,
+  familyAttr: Attr,
+): Attr {
+  let best: Attr | undefined;
+  for (const attr of ATTRS) {
+    if (attr === familyAttr) continue;
+    if (!best || allocRun[attr] > allocRun[best]) best = attr;
+  }
+  return best ?? (familyAttr === "str" ? "dex" : "str");
+}
+
 /** Ultimate damage deliberately reads attrs+crit only: no weapon/augment/set multiplicative tower. */
 export function ultimateDamageScale(raw: AttrValues, primary: Attr, secondary: Attr): number {
   return 1 + 0.1 * Math.max(0, raw[primary] - 1) + 0.045 * Math.max(0, raw[secondary] - 1);

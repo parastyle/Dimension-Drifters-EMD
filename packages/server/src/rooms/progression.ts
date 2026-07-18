@@ -20,9 +20,11 @@ import {
   ultimateCodeFor,
   ultimateFamilyAttr,
   ultimateRankingForAllocation,
+  ultimateRankingForRunAllocation,
   ultimateVariantForAllocation,
+  ultimateVariantForRunAllocation,
   xpToNextLevel,
-  type MetaAccountV2,
+  type MetaAccount,
   PET_MAX_BOND_XP,
   type PetId,
   petLevelForXp,
@@ -42,15 +44,20 @@ export function allocate(player: PlayerState, attr: Attr, n: number): void {
   if (n > 0) player.allocRun[attr] += n;
   const prevMax = player.maxHp;
   const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
-  player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
+  player.maxHp =
+    deriveStats({ con: derivedCon }).maxHp +
+    META_VITALITY_HP * player.upVitality +
+    player.gearMaxHpAdd;
   if (player.maxHp > prevMax) player.hp += player.maxHp - prevMax; // gain the new HP immediately
 }
 
 /** Resolve one level-up decision: +2 chosen, then +1 to the post-choice lowest attr (ATTRS tie order). */
 export function applyAllocationChoice(player: PlayerState, attr: Attr): Attr {
   allocate(player, attr, CHOSEN_POINTS_PER_LEVEL);
-  const quirk = quirkForCharacter(player.runCharacter || player.character);
-  const ballast = ballastAttrFor(player, attr, quirk.mods?.ballastFollowsChoice === true);
+  const followsChoice = player.gearSeeded
+    ? player.identityBallastFollowsChoice
+    : quirkForCharacter(player.runCharacter || player.character).mods?.ballastFollowsChoice === true;
+  const ballast = ballastAttrFor(player, attr, followsChoice);
   allocate(player, ballast, BALLAST_POINTS_PER_LEVEL);
   evaluateUltimateAllocation(player);
   return ballast;
@@ -60,19 +67,26 @@ export function applyAllocationChoice(player: PlayerState, attr: Attr): Attr {
 export function evaluateUltimateAllocation(player: PlayerState): void {
   const total = ATTRS.reduce((sum, attr) => sum + player.allocRun[attr], 0);
   if (total < ULT_UNLOCK_ALLOCS) return;
-  const runCharacter = player.runCharacter || player.character;
   if (player.ultFamily === UltimateFamily.Locked) {
-    const [primary, secondary] = ultimateRankingForAllocation(player.allocRun, runCharacter, player);
+    const [primary, secondary] = player.gearSeeded
+      ? ultimateRankingForRunAllocation(player.allocRun)
+      : ultimateRankingForAllocation(
+          player.allocRun,
+          player.runCharacter || player.character,
+          player,
+        );
     player.ultFamily = ATTRS.indexOf(primary) + 1;
     player.ultVariant = secondary;
   } else if (!player.ultTempered) {
     const familyAttr = ultimateFamilyAttr(player.ultFamily);
-    const candidate = ultimateVariantForAllocation(
-      player.allocRun,
-      runCharacter,
-      player,
-      familyAttr,
-    );
+    const candidate = player.gearSeeded
+      ? ultimateVariantForRunAllocation(player.allocRun, familyAttr)
+      : ultimateVariantForAllocation(
+          player.allocRun,
+          player.runCharacter || player.character,
+          player,
+          familyAttr,
+        );
     if (
       !player.ultVariant ||
       (candidate !== player.ultVariant &&
@@ -130,7 +144,7 @@ export interface PetBondBankResult {
 /** Bank one terminal run receipt into the selected owned pet. Account revision/other mutations stay atomic
  * at the caller's settlement seam; this helper owns only clamped Bond XP and its derived presentation. */
 export function bankPetBondXp(
-  account: MetaAccountV2,
+  account: MetaAccount,
   petId: PetId,
   value: unknown,
 ): PetBondBankResult {

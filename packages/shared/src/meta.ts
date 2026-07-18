@@ -60,6 +60,16 @@ export function nextUpgradeCost(id: MetaUpgradeId, currentLevel: number): number
 export * from "./pets.js";
 
 import {
+  GEAR_CATALOG,
+  GEAR_IDS,
+  isGearId,
+  sanitizeEquippedGear,
+  STARTER_GEAR_IDS,
+  STARTER_GEAR_LOADOUT,
+  type GearId,
+  type GearSlot,
+} from "./gear.js";
+import {
   isPetId,
   PET_IDS,
   type PetId,
@@ -83,6 +93,19 @@ export interface MetaAccountV2 {
   slateTortoisePityMisses: number;
 }
 
+export interface MetaAccountV3 {
+  version: 3;
+  revision: number;
+  scrip: number;
+  pets: Partial<Record<PetId, PersistedPet>>;
+  selectedPetId: PetId | "";
+  slateTortoisePityMisses: number;
+  ownedGear: GearId[];
+  equippedGear: Record<GearSlot, GearId>;
+}
+
+export type MetaAccount = MetaAccountV2 | MetaAccountV3;
+
 export type PetTerminalOutcome = "victory" | "defeat";
 
 export interface PetProgressReceipt {
@@ -100,20 +123,34 @@ export interface PetProgressReceipt {
   slateTortoiseAwarded: boolean;
 }
 
-export const META_ACCOUNT_VERSION = 2 as const;
+export const META_ACCOUNT_V2_VERSION = 2 as const;
+export const META_ACCOUNT_VERSION = 3 as const;
 export const META_ACCOUNT_SCRIP_MAX = 65535 as const;
 export const META_ACCOUNT_REVISION_MAX = 0xffffffff as const;
 export const STARTER_PET_ID: PetId = "verdant-wing";
 
 export function createMetaAccountV2(): MetaAccountV2 {
   return {
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V2_VERSION,
     revision: 0,
     scrip: 0,
     upgrades: { ...EMPTY_META },
     pets: { [STARTER_PET_ID]: { bondXp: 0 } },
     selectedPetId: STARTER_PET_ID,
     slateTortoisePityMisses: 0,
+  };
+}
+
+export function createMetaAccountV3(): MetaAccountV3 {
+  return {
+    version: META_ACCOUNT_VERSION,
+    revision: 0,
+    scrip: 0,
+    pets: { [STARTER_PET_ID]: { bondXp: 0 } },
+    selectedPetId: STARTER_PET_ID,
+    slateTortoisePityMisses: 0,
+    ownedGear: [...STARTER_GEAR_IDS],
+    equippedGear: { ...STARTER_GEAR_LOADOUT },
   };
 }
 
@@ -132,7 +169,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * starter record; unknown ids and malformed rows are dropped, and levels are never accepted directly.
  */
 export function sanitizeMetaAccountV2(input: unknown): MetaAccountV2 {
-  if (!isRecord(input) || input.version !== META_ACCOUNT_VERSION) return createMetaAccountV2();
+  if (!isRecord(input) || input.version !== META_ACCOUNT_V2_VERSION) return createMetaAccountV2();
 
   const pets: Partial<Record<PetId, PersistedPet>> = {};
   const rawPets = isRecord(input.pets) ? input.pets : {};
@@ -151,12 +188,86 @@ export function sanitizeMetaAccountV2(input: unknown): MetaAccountV2 {
   }
 
   return {
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V2_VERSION,
     revision: sanitizedInt(input.revision, META_ACCOUNT_REVISION_MAX),
     scrip: sanitizedInt(input.scrip, META_ACCOUNT_SCRIP_MAX),
     upgrades: sanitizeMetaLevels(input.upgrades),
     pets,
     selectedPetId,
     slateTortoisePityMisses: sanitizedInt(input.slateTortoisePityMisses, 7),
+  };
+}
+
+/** Old numerical tracks become one ordinary, visible item at the highest owned rank. */
+export const LEGACY_UPGRADE_GRANTS = {
+  vitality: [null, "mended-workshirt", "reinforced-workshirt", "shopkeeps-sunday-best"],
+  fortune: [null, "brass-readers", "lucky-readers", "loaded-readers"],
+  power: [null, "work-gloves", "knuckled-gloves", "ironhand-gloves"],
+} as const satisfies Readonly<Record<MetaUpgradeId, readonly (GearId | null)[]>>;
+
+export function migrateMetaAccountV2(input: MetaAccountV2): MetaAccountV3 {
+  const source = sanitizeMetaAccountV2(input);
+  const ownedGear: GearId[] = [...STARTER_GEAR_IDS];
+  const equippedGear = { ...STARTER_GEAR_LOADOUT } as Record<GearSlot, GearId>;
+  for (const upgrade of META_UPGRADES) {
+    const grant = LEGACY_UPGRADE_GRANTS[upgrade.id][source.upgrades[upgrade.id]];
+    if (!grant) continue;
+    ownedGear.push(grant);
+    const slot = GEAR_CATALOG[grant].slot;
+    equippedGear[slot] = grant;
+  }
+  return {
+    version: META_ACCOUNT_VERSION,
+    revision: source.revision,
+    scrip: source.scrip,
+    pets: source.pets,
+    selectedPetId: source.selectedPetId,
+    slateTortoisePityMisses: source.slateTortoisePityMisses,
+    ownedGear,
+    equippedGear,
+  };
+}
+
+/**
+ * Canonical local-trust account boundary. Ownership ids are trusted only as presence claims; every stat,
+ * hook, slot, code, and modifier is re-derived from the closed catalog after this function returns.
+ */
+export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
+  if (!isRecord(input)) return createMetaAccountV3();
+  if (input.version === META_ACCOUNT_V2_VERSION) {
+    return migrateMetaAccountV2(sanitizeMetaAccountV2(input));
+  }
+  if (input.version !== META_ACCOUNT_VERSION) return createMetaAccountV3();
+
+  const pets: Partial<Record<PetId, PersistedPet>> = {};
+  const rawPets = isRecord(input.pets) ? input.pets : {};
+  for (const id of PET_IDS) {
+    const rawPet = rawPets[id];
+    if (isRecord(rawPet)) pets[id] = { bondXp: sanitizeBondXp(rawPet.bondXp) };
+  }
+  pets[STARTER_PET_ID] ??= { bondXp: 0 };
+
+  let selectedPetId: PetId | "" = STARTER_PET_ID;
+  if (input.selectedPetId === "") selectedPetId = "";
+  else if (isPetId(input.selectedPetId) && pets[input.selectedPetId]) selectedPetId = input.selectedPetId;
+
+  const requested = new Set<GearId>();
+  if (Array.isArray(input.ownedGear)) {
+    for (const value of input.ownedGear) if (isGearId(value)) requested.add(value);
+  }
+  for (const id of STARTER_GEAR_IDS) requested.add(id);
+  const ownedGear = GEAR_IDS.filter((id) => requested.has(id));
+  const owned = new Set<GearId>(ownedGear);
+  const equippedGear = sanitizeEquippedGear(input.equippedGear, owned);
+
+  return {
+    version: META_ACCOUNT_VERSION,
+    revision: sanitizedInt(input.revision, META_ACCOUNT_REVISION_MAX),
+    scrip: sanitizedInt(input.scrip, META_ACCOUNT_SCRIP_MAX),
+    pets,
+    selectedPetId,
+    slateTortoisePityMisses: sanitizedInt(input.slateTortoisePityMisses, 7),
+    ownedGear,
+    equippedGear,
   };
 }

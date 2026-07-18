@@ -47,6 +47,8 @@ export const PLAYABLE_CHARACTERS = [
 ] as const;
 
 export const DEFAULT_CHARACTER = "drifter";
+/** G1/G2 compatibility: the other kits remain migration/art references until wardrobe rendering lands. */
+export const BOILERPLATE_SPRITE_ID = "drifter" as const;
 
 export type PlayableCharacter = (typeof PLAYABLE_CHARACTERS)[number];
 

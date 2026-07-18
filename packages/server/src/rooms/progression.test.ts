@@ -395,3 +395,204 @@ describe("pet v1 account sanitization and deterministic progression", () => {
     expect(maxed).toMatchObject({ awardedBondXp: 0, oldLevel: 10, newLevel: 10 });
   });
 });
+
+describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
+  it("ships the 96 authored launch rows with closed slots/codes and enforces every slot budget", () => {
+    expect(petShared.GEAR_SLOTS).toEqual([
+      "hat", "glasses", "facialHair", "shirt", "gloves", "pants", "boots", "cloak",
+    ]);
+    expect(petShared.LAUNCH_GEAR_IDS).toHaveLength(96);
+    expect(petShared.GEAR_IDS).toHaveLength(113);
+    const codes = new Set<number>();
+    for (const id of petShared.GEAR_IDS) {
+      const item: import("@dd/shared").GearDef = petShared.GEAR_CATALOG[id];
+      expect(item.id).toBe(id);
+      expect(item.artKey.length).toBeGreaterThan(0);
+      expect(codes.has(item.netCode)).toBe(false);
+      codes.add(item.netCode);
+      if (item.budgetUnits > petShared.GEAR_SLOT_BUDGETS[item.slot]) {
+        expect({ id, exception: item.budgetException }).toEqual({
+          id: "ironhand-gloves",
+          exception: "legacy-upgrade-rank-3",
+        });
+      }
+      if (item.quirkRef) expect(item.slot).toBe("hat");
+      expect(petShared.gearForNetCode(item.netCode)?.id).toBe(id);
+    }
+  });
+
+  it("reconstructs all twelve launch spreads and leaves the blank starter at flat 2s with no quirk", () => {
+    const expected = {
+      "ash-walker": [2, 2, 2, 3, 1],
+      "ashen-crusader": [3, 1, 1, 4, 1],
+      "molten-core": [2, 1, 4, 2, 1],
+      coldsnap: [1, 3, 1, 2, 3],
+      graveside: [2, 2, 2, 1, 3],
+      "nine-veils": [1, 2, 4, 1, 2],
+      "demon-mask": [3, 2, 1, 3, 1],
+      thornwatch: [2, 4, 1, 2, 1],
+      "neon-mirage": [1, 4, 1, 2, 2],
+      "house-edge": [1, 2, 1, 2, 4],
+      unbending: [2, 1, 1, 4, 2],
+      pressurized: [1, 2, 4, 2, 1],
+    } as const;
+    for (const [setId, spread] of Object.entries(expected)) {
+      const loadout: Record<
+        import("@dd/shared").GearSlot,
+        import("@dd/shared").GearId
+      > = { ...petShared.STARTER_GEAR_LOADOUT };
+      for (const slot of petShared.GEAR_SLOTS) {
+        const suffix = slot === "facialHair" ? "facial-hair" : slot;
+        const id = `${setId}-${suffix}`;
+        expect(petShared.isGearId(id)).toBe(true);
+        if (petShared.isGearId(id)) loadout[slot] = id;
+      }
+      const runtime = petShared.resolveGearLoadout(loadout);
+      expect(petShared.ATTRS.map((attr) => runtime.baseStats[attr])).toEqual(spread);
+      expect(petShared.ATTRS.reduce((sum, attr) => sum + runtime.baseStats[attr], 0)).toBe(10);
+    }
+    const blank = petShared.resolveGearLoadout(petShared.STARTER_GEAR_LOADOUT);
+    expect(blank.baseStats).toEqual({ str: 2, dex: 2, int: 2, con: 2, luk: 2 });
+    expect(blank.quirk.id).toBe("none");
+  });
+
+  it("canonicalizes unknown, unowned, wrong-slot, duplicate, extra, and malformed account claims", () => {
+    const account = petShared.sanitizeMetaAccountV3({
+      version: 3,
+      revision: 1e30,
+      scrip: Number.NaN,
+      pets: { "brass-crab": { bondXp: 1e30 }, constructor: { bondXp: 99 } },
+      selectedPetId: "unknown-pet",
+      slateTortoisePityMisses: 99,
+      ownedGear: ["neon-mirage-hat", "neon-mirage-hat", "unknown-gear", 7],
+      equippedGear: {
+        hat: "neon-mirage-hat",
+        glasses: "neon-mirage-hat",
+        facialHair: "unknown-gear",
+        shirt: "mended-workshirt",
+        gloves: "blank-drifter-gloves",
+        pants: "blank-drifter-pants",
+        boots: "blank-drifter-boots",
+        cloak: "blank-drifter-cloak",
+        prototype: "pressurized-hat",
+      },
+      stats: { str: 999 },
+      mods: { drawLockMult: -100 },
+      quirkRef: "package-deal",
+    });
+    expect(account.version).toBe(3);
+    expect(account.revision).toBe(0xffffffff);
+    expect(account.scrip).toBe(0);
+    expect(account.pets).toEqual({
+      "verdant-wing": { bondXp: 0 },
+      "brass-crab": { bondXp: 3600 },
+    });
+    expect(account.selectedPetId).toBe("verdant-wing");
+    expect(account.slateTortoisePityMisses).toBe(7);
+    expect(account.ownedGear).toEqual([
+      ...petShared.STARTER_GEAR_IDS,
+      "neon-mirage-hat",
+    ]);
+    expect(account.equippedGear).toEqual({
+      ...petShared.STARTER_GEAR_LOADOUT,
+      hat: "neon-mirage-hat",
+    });
+    expect(Object.keys(account).sort()).toEqual([
+      "equippedGear", "ownedGear", "pets", "revision", "scrip", "selectedPetId",
+      "slateTortoisePityMisses", "version",
+    ]);
+    expect(petShared.sanitizeMetaAccountV3({ version: 3, ownedGear: {} }).ownedGear)
+      .toEqual([...petShared.STARTER_GEAR_IDS]);
+    expect(petShared.sanitizeMetaAccountV3({ version: 99, ownedGear: ["neon-mirage-hat"] }))
+      .toEqual(petShared.createMetaAccountV3());
+  });
+
+  it("migrates META_UPGRADES once into visible highest-rank gear and never stores invisible levels", () => {
+    const old = petShared.createMetaAccountV2();
+    old.revision = 41;
+    old.scrip = 321;
+    old.upgrades = { vitality: 2, fortune: 3, power: 1 };
+    old.pets["hearth-newt"] = { bondXp: 840 };
+    old.selectedPetId = "hearth-newt";
+    old.slateTortoisePityMisses = 6;
+    const migrated = petShared.sanitizeMetaAccountV3(old);
+    expect(migrated).toMatchObject({
+      version: 3,
+      revision: 41,
+      scrip: 321,
+      selectedPetId: "hearth-newt",
+      slateTortoisePityMisses: 6,
+      equippedGear: {
+        ...petShared.STARTER_GEAR_LOADOUT,
+        shirt: "reinforced-workshirt",
+        glasses: "loaded-readers",
+        gloves: "work-gloves",
+      },
+    });
+    expect(migrated.ownedGear).toEqual([
+      ...petShared.STARTER_GEAR_IDS,
+      "reinforced-workshirt",
+      "loaded-readers",
+      "work-gloves",
+    ]);
+    expect("upgrades" in migrated).toBe(false);
+    expect(petShared.sanitizeMetaAccountV3(migrated)).toEqual(migrated);
+  });
+
+  it("uses the identical old quirk object/modifier seam when a hat carries that quirk", () => {
+    const loadout = { ...petShared.STARTER_GEAR_LOADOUT, hat: "ash-walker-hat" } as const;
+    const gear = petShared.resolveGearLoadout(loadout);
+    const legacy = petShared.quirkForCharacter("cc-asha-the-ash-walker");
+    expect(gear.quirk).toBe(legacy);
+    expect(gear.quirk.hooks?.onParrySuccess?.({ parryHeal: 9 }))
+      .toEqual(legacy.hooks?.onParrySuccess?.({ parryHeal: 9 }));
+    const neon = petShared.resolveGearLoadout({
+      ...petShared.STARTER_GEAR_LOADOUT,
+      hat: "neon-mirage-hat",
+    });
+    expect(neon.mods.drawLockMult).toBe(
+      petShared.runtimeModsForQuirk(
+        petShared.quirkForCharacter("cc-neon-mirage"),
+      ).drawLockMult,
+    );
+  });
+
+  it("keeps gear and raw attributes outside the ultimate allocation ledger", () => {
+    const first = fresh();
+    const second = fresh();
+    for (const player of [first, second]) {
+      player.gearSeeded = true;
+      Object.assign(player.allocRun, { str: 6, dex: 3, int: 3, con: 3, luk: 0 });
+    }
+    Object.assign(first, { str: 20, dex: 1, int: 1, con: 1, luk: 1 });
+    Object.assign(second, { str: 1, dex: 1, int: 1, con: 1, luk: 20 });
+    ultimateProgression.evaluateUltimateAllocation(first);
+    ultimateProgression.evaluateUltimateAllocation(second);
+    expect([first.ultArchetype, first.ultFamily, first.ultVariant]).toEqual([
+      second.ultArchetype,
+      second.ultFamily,
+      second.ultVariant,
+    ]);
+    expect(petShared.ATTRS.reduce((sum, attr) => sum + first.allocRun[attr], 0)).toBe(15);
+  });
+
+  it("pins schema 28 and appends two cosmetic strings to the final schema-27 envelope", () => {
+    expect(petShared.SCHEMA_VERSION).toBe(28);
+    const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
+    const playerMetadata = (petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>)[playerSymbols[0]!];
+    if (!playerMetadata) throw new Error("PlayerState schema metadata is required");
+    expect(playerMetadata[63]?.name).toBe("dualWield");
+    expect(playerMetadata[64]).toBeUndefined();
+    const tailSymbols = Object.getOwnPropertySymbols(petShared.DualWieldState);
+    const tailMetadata = (petShared.DualWieldState as unknown as Record<symbol, Record<number, { name: string }>>)[tailSymbols[0]!];
+    if (!tailMetadata) throw new Error("DualWieldState schema metadata is required");
+    expect([tailMetadata[4]?.name, tailMetadata[5]?.name]).toEqual(["gearUpper", "gearLower"]);
+    const player = new petShared.PlayerState();
+    player.gearUpper = "1,2,3,4,5";
+    player.gearLower = "6,7,8";
+    expect([player.dualWield.gearUpper, player.dualWield.gearLower]).toEqual([
+      "1,2,3,4,5",
+      "6,7,8",
+    ]);
+  });
+});

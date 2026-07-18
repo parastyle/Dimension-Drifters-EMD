@@ -18,7 +18,8 @@ export function isPlayableCharacter(id: string): boolean {
 
 export type CharacterLineage = "bruiser" | "duelist" | "caster" | "warden" | "scoundrel";
 export type CharacterSpread = Readonly<Record<Attr, number>>;
-export type QuirkId = (typeof CHARACTER_KITS)[PlayableCharacter]["quirk"];
+export type LegacyQuirkId = (typeof CHARACTER_KITS)[PlayableCharacter]["quirk"];
+export type QuirkId = LegacyQuirkId | "none";
 export type QuirkAvailability = "active" | "partial" | "inert";
 
 export interface QuirkCtx {
@@ -127,6 +128,12 @@ const inert = (requires: string, note: string): InertQuirkDescriptor => ({ requi
  * named system exists; keeping them in the table prevents silent placeholder behavior.
  */
 export const QUIRKS = {
+  none: {
+    id: "none",
+    name: "No signature",
+    blurb: "The blank Drifter has no signature rule.",
+    availability: "active",
+  },
   unwritten: {
     id: "unwritten",
     name: "Unwritten",

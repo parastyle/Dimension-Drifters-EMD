@@ -10,6 +10,7 @@ export * from "./combat.js";
 export * from "./constants.js";
 export * from "./dimensions.js";
 export * from "./enemies.js";
+export * from "./gear.js";
 export * from "./leveling.js";
 export * from "./loot.js";
 export * from "./mapgen.js";

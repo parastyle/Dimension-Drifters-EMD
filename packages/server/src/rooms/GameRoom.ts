@@ -82,6 +82,7 @@ import {
   isPlayableCharacter,
   coneAngles,
   countAugment,
+  CRIT_CHANCE_CAP,
   CRIT_MULT,
   critChanceFor,
   damageMultFromGrades,
@@ -142,7 +143,9 @@ import {
   META_POWER_STR,
   META_VITALITY_HP,
   META_ACCOUNT_REVISION_MAX,
-  type MetaAccountV2,
+  type MetaAccountV3,
+  GEAR_IDS,
+  LEGACY_UPGRADE_GRANTS,
   nextUpgradeCost,
   PET_CATALOG_VERSION,
   type PetId,
@@ -154,7 +157,13 @@ import {
   petModsForLevel,
   petStageBandForLevel,
   sanitizeMetaAccountV2,
+  sanitizeMetaAccountV3,
   sanitizeMetaLevels,
+  encodeGearCosmetics,
+  resolveGearLoadout,
+  runtimeModsForQuirk,
+  type GearRunRuntime,
+  type RuntimeMods,
   hasAugment,
   ACTION_MSGS_PER_TICK,
   INPUT_MSGS_PER_TICK,
@@ -608,6 +617,8 @@ interface CombatState {
   identityCharacter: string;
   /** Resolved once per identity edge so hot combat paths never walk character maps. */
   quirk: QuirkDef;
+  /** Character fallback or gear runtime scalars, composed once outside the 20 Hz loop. */
+  mods: RuntimeMods;
   aimX: number;
   aimY: number;
   /** Cursor world target (for slam-at-cursor weapons; clamped to QUAKE_REACH server-side). */
@@ -879,7 +890,9 @@ export class GameRoom extends Room<ArenaState> {
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
-  private readonly metaAccounts = new Map<string, MetaAccountV2>();
+  private readonly metaAccounts = new Map<string, MetaAccountV3>();
+  /** Present only when a validated v3 loadout, rather than the compatibility character kit, owns identity. */
+  private readonly gearRuns = new Map<string, GearRunRuntime>();
   /** Exact pet level/modifiers and all hot counters are server-private and snapshotted once per run. */
   private readonly petRuns = new Map<string, PetRunRuntime>();
   private readonly petSettledAccounts = new Set<string>();
@@ -1407,7 +1420,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (typeof message?.character === "string" && isPlayableCharacter(message.character)) {
         player.character = message.character;
-        this.snapshotRunCharacter(player, this.combat.get(client.sessionId), true);
+        this.snapshotRunIdentity(player, this.combat.get(client.sessionId), true);
       }
     });
 
@@ -1563,7 +1576,7 @@ export class GameRoom extends Room<ArenaState> {
       c.pairComboFamily = meleeComboSelectionFor(lead)?.family ?? "arc";
       c.pairComboStep = 0;
       c.pairComboExpiresAtMs = 0;
-      const quirkMult = c.quirk.mods?.drawLockMult ?? 1;
+      const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
       if (c.beamPhase !== 0 || c.beamDescriptor) {
         this.cancelBeam(player, player.id, c, true, true);
@@ -1590,11 +1603,34 @@ export class GameRoom extends Room<ArenaState> {
       if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
       const id = message?.id;
       if (id !== "vitality" && id !== "fortune" && id !== "power") return;
-      const cur = id === "vitality" ? player.upVitality : id === "fortune" ? player.upFortune : player.upPower;
+      const account = this.metaAccounts.get(player.id);
+      if (!account) return;
+      const grants = LEGACY_UPGRADE_GRANTS[id];
+      let ownedRank = 0;
+      for (let rank = 1; rank < grants.length; rank++) {
+        const gearId = grants[rank];
+        if (gearId && account.ownedGear.includes(gearId)) ownedRank = rank;
+      }
+      const legacyRank = id === "vitality"
+        ? player.upVitality
+        : id === "fortune"
+          ? player.upFortune
+          : player.upPower;
+      const cur = Math.max(ownedRank, legacyRank);
       const cost = nextUpgradeCost(id, cur);
       if (cost === null || player.scrip < cost) return; // maxed or can't afford
       player.scrip -= cost;
-      if (id === "vitality") {
+      const granted = grants[cur + 1];
+      if (granted && !account.ownedGear.includes(granted)) {
+        const requested = new Set([...account.ownedGear, granted]);
+        account.ownedGear = GEAR_IDS.filter((gearId) => requested.has(gearId));
+      }
+      // A v3 wardrobe is frozen for the run. The compatibility path keeps old clients playable while the
+      // client wardrobe wave is absent; its tombstones never feed a gear-seeded run.
+      if (this.gearRuns.has(player.id)) {
+        this.publishAccountMutation(player);
+        return;
+      } else if (id === "vitality") {
         player.upVitality += 1;
         player.maxHp += META_VITALITY_HP;
         player.hp = Math.min(player.maxHp, player.hp + META_VITALITY_HP); // heal the new headroom
@@ -1615,7 +1651,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!player) return;
       player.character = nextCharacter(player.character);
       if (this.state.mode === "training") {
-        this.snapshotRunCharacter(player, this.combat.get(client.sessionId), true);
+        this.snapshotRunIdentity(player, this.combat.get(client.sessionId), true);
       }
     });
 
@@ -2007,7 +2043,7 @@ export class GameRoom extends Room<ArenaState> {
     this.meleeSwings.delete(`${player.id}:0`);
     this.meleeSwings.delete(`${player.id}:1`);
     if (armDrawLock) {
-      const quirkMult = c.quirk.mods?.drawLockMult ?? 1;
+      const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
     }
   }
@@ -2139,7 +2175,7 @@ export class GameRoom extends Room<ArenaState> {
     c.reloadCd = Math.max(0, reload);
     c.attackBuffer = 0;
     if (applyDrawLock) {
-      const quirkMult = c.quirk.mods?.drawLockMult ?? 1;
+      const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
     }
     player.maxCharges = max;
@@ -2307,8 +2343,22 @@ export class GameRoom extends Room<ArenaState> {
       sourceDamageMult(weapon, grades, player) *
       requirement *
       lootDamageMult(rarity, affix) *
-      weaponSetBonus(this.loadoutIds(player), weapon.id) // §30 class set-bonus (2/3-of-a-class)
+      weaponSetBonus(this.loadoutIds(player), weapon.id) * // §30 class set-bonus (2/3-of-a-class)
+      (c?.mods.outgoingWeaponDamageMult ?? 1)
     );
+  }
+
+  /** One audited recovery seam for held, paired, cast, gun, thrown, beam, and stored cooldown debt. */
+  private weaponRecoveryMult(player: PlayerState, weapon: WeaponDef): number {
+    const mods = this.combat.get(player.id)?.mods;
+    if (!mods) return 1;
+    let mult = mods.weaponCooldownMult;
+    if (weapon.gun) mult *= mods.gunCooldownMult;
+    else if (weapon.beam) mult *= mods.beamCooldownMult;
+    else if (weapon.cast || weapon.tags.classPool === "caster") mult *= mods.casterCooldownMult;
+    else mult *= mods.meleeCooldownMult;
+    if (weapon.tags.grip === "2H") mult *= mods.heavyCooldownMult;
+    return mult;
   }
 
   /** Cast-only grade floor lever. Flag-off is byte-identical to heldDamageMult. */
@@ -2351,17 +2401,9 @@ export class GameRoom extends Room<ArenaState> {
       gradeMult *
       requirement *
       lootDamageMult(rarity, affix) *
-      weaponSetBonus(this.loadoutIds(player), weapon.id)
+      weaponSetBonus(this.loadoutIds(player), weapon.id) *
+      (c?.mods.outgoingWeaponDamageMult ?? 1)
     );
-  }
-
-  /** §31 add the FULL stat bonus for the player's current permanent-upgrade levels (call ONCE at spawn on a
-   *  fresh player; per-purchase deltas are applied in the buyUpgrade handler). */
-  private applyMetaUpgrades(player: PlayerState): void {
-    player.maxHp += META_VITALITY_HP * player.upVitality;
-    player.hp = player.maxHp;
-    if (player.upFortune > 0) player.luk = 1 + META_FORTUNE_LUK * player.upFortune;
-    if (player.upPower > 0) player.str = 1 + META_POWER_STR * player.upPower;
   }
 
   /**
@@ -2386,15 +2428,70 @@ export class GameRoom extends Room<ArenaState> {
     }
     player.runCharacter = identity;
     player.spreadSeeded = true;
+    player.gearSeeded = false;
+    player.gearMaxHpAdd = 0;
+    player.gearUpper = "";
+    player.gearLower = "";
+    const quirk = quirkForCharacter(identity);
+    player.identityBallastFollowsChoice = quirk.mods?.ballastFollowsChoice === true;
     if (combat) {
       combat.identityCharacter = identity;
-      combat.quirk = quirkForCharacter(identity);
+      combat.quirk = quirk;
+      combat.mods = runtimeModsForQuirk(quirk);
     }
     const previousMax = player.maxHp;
     const derivedCon = spreadAdjustedCon(player.con);
     player.maxHp = deriveStats({ con: derivedCon }).maxHp + META_VITALITY_HP * player.upVitality;
     if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
     player.hp = Math.min(player.hp, player.maxHp);
+  }
+
+  /** Install one validated, catalog-derived wardrobe snapshot. No allocation counter is touched here. */
+  private snapshotGearRun(
+    player: PlayerState,
+    combat: CombatState | undefined,
+    runtime: GearRunRuntime,
+    topUpMaxHp = true,
+  ): void {
+    for (const attr of ATTRS) player[attr] = runtime.baseStats[attr];
+    player.character = "drifter";
+    player.runCharacter = "drifter";
+    player.spreadSeeded = true;
+    player.gearSeeded = true;
+    player.gearMaxHpAdd = runtime.mods.maxHpAdd;
+    player.identityBallastFollowsChoice = runtime.mods.ballastFollowsChoice;
+    player.upVitality = 0;
+    player.upFortune = 0;
+    player.upPower = 0;
+    const cosmetics = encodeGearCosmetics(runtime.idsBySlot);
+    player.gearUpper = cosmetics.gearUpper;
+    player.gearLower = cosmetics.gearLower;
+    if (combat) {
+      combat.identityCharacter = "drifter";
+      combat.quirk = runtime.quirk;
+      combat.mods = runtime.mods;
+    }
+    const previousMax = player.maxHp;
+    player.maxHp =
+      deriveStats({ con: spreadAdjustedCon(player.con) }).maxHp + runtime.mods.maxHpAdd;
+    if (topUpMaxHp && player.maxHp > previousMax) player.hp += player.maxHp - previousMax;
+    player.hp = Math.min(player.hp, player.maxHp);
+  }
+
+  /** Gear owns identity when present; character kits remain the compatibility fallback until the art wave. */
+  private snapshotRunIdentity(
+    player: PlayerState,
+    combat: CombatState | undefined,
+    rebase: boolean,
+    topUpMaxHp = true,
+  ): void {
+    const gear = this.gearRuns.get(player.id);
+    if (gear) {
+      // Rift/cosmetic rebase edges may not mutate an active gear snapshot.
+      if (!rebase) this.snapshotGearRun(player, combat, gear, topUpMaxHp);
+      return;
+    }
+    this.snapshotRunCharacter(player, combat, rebase, topUpMaxHp);
   }
 
   /** Interpret pure quirk descriptors at event seams through existing authoritative state machinery. */
@@ -2493,15 +2590,12 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private bumpAccountRevision(account: MetaAccountV2): void {
+  private bumpAccountRevision(account: MetaAccountV3): void {
     account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
   }
 
-  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV2): void {
+  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV3): void {
     account.scrip = Math.max(0, Math.min(65535, Math.floor(player.scrip)));
-    account.upgrades.vitality = player.upVitality;
-    account.upgrades.fortune = player.upFortune;
-    account.upgrades.power = player.upPower;
   }
 
   private publishAccountMutation(player: PlayerState): void {
@@ -2611,7 +2705,7 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private rollSlateTortoise(account: MetaAccountV2, outcome: "defeat" | "victory"): boolean {
+  private rollSlateTortoise(account: MetaAccountV3, outcome: "defeat" | "victory"): boolean {
     if (outcome !== "victory" || account.pets["slate-tortoise"]) return false;
     const misses = Math.max(0, Math.min(7, Math.floor(account.slateTortoisePityMisses)));
     const success = misses >= 7 || Math.random() < 0.08 * (misses + 1);
@@ -2661,7 +2755,8 @@ export class GameRoom extends Room<ArenaState> {
   private applyHeal(target: PlayerState, rawAmount: number, applyReceivedMultiplier = true): number {
     if (!target.alive || rawAmount <= 0) return 0;
     const multiplier = applyReceivedMultiplier
-      ? (this.petRuns.get(target.id)?.mods.healingReceivedMultiplier ?? 1)
+      ? (this.petRuns.get(target.id)?.mods.healingReceivedMultiplier ?? 1) *
+        (this.combat.get(target.id)?.mods.healingReceivedMult ?? 1)
       : 1;
     const before = target.hp;
     target.hp = Math.min(target.maxHp, target.hp + rawAmount * multiplier);
@@ -2857,7 +2952,7 @@ export class GameRoom extends Room<ArenaState> {
       player.level = 1;
       player.xp = 0;
       player.xpToNext = xpToNextLevel(1);
-      this.snapshotRunCharacter(player, c, false);
+      this.snapshotRunIdentity(player, c, false);
       player.flexPending = 0;
       player.flexTimer = 0;
       player.flexTimerDs = 0;
@@ -3126,7 +3221,6 @@ export class GameRoom extends Room<ArenaState> {
     player.maxHp = PLAYER_MAX_HP;
     player.alive = true;
     player.weapon = DEFAULT_WEAPON;
-    this.snapshotRunCharacter(player, undefined, false, false);
     // §29/§31 restore the player's persisted meta ACCOUNT (belt only): scrip bank + permanent upgrade
     // levels. Client-supplied → clamped (a sane bound; the persistence model is an MVP, not a trusted
     // economy). The upgrades then apply their stat bonuses to this fresh player.
@@ -3134,14 +3228,22 @@ export class GameRoom extends Room<ArenaState> {
     // deploy any client could join claiming 65,535 scrip + max upgrades. INTERIM until an authenticated
     // account store owns progression; production joins start at the defaults.
     const trustLegacyMeta = this.belt && this.devToolsEnabled();
-    const account = sanitizeMetaAccountV2(options?.metaAccount);
+    const suppliedV3Gear =
+      typeof options?.metaAccount === "object" &&
+      options.metaAccount !== null &&
+      !Array.isArray(options.metaAccount) &&
+      (options.metaAccount as { version?: unknown }).version === 3;
+    const legacyAccount = sanitizeMetaAccountV2(options?.metaAccount);
     // Legacy local keys remain a bounded migration input only when no v2 blob was supplied.
     if (options?.metaAccount === undefined && trustLegacyMeta) {
       if (Number.isFinite(options?.scrip)) {
-        account.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
+        legacyAccount.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
       }
-      account.upgrades = sanitizeMetaLevels(options?.up);
+      legacyAccount.upgrades = sanitizeMetaLevels(options?.up);
     }
+    const account = suppliedV3Gear
+      ? sanitizeMetaAccountV3(options?.metaAccount)
+      : sanitizeMetaAccountV3(legacyAccount);
     const requestedPetId = options?.selectedPetId ?? options?.petId;
     if (requestedPetId === "") account.selectedPetId = "";
     else if (isPetId(requestedPetId) && account.pets[requestedPetId]) {
@@ -3149,10 +3251,20 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.metaAccounts.set(client.sessionId, account);
     player.scrip = account.scrip;
-    player.upVitality = account.upgrades.vitality;
-    player.upFortune = account.upgrades.fortune;
-    player.upPower = account.upgrades.power;
-    this.applyMetaUpgrades(player);
+    if (suppliedV3Gear) {
+      const gear = resolveGearLoadout(account.equippedGear);
+      this.gearRuns.set(client.sessionId, gear);
+      this.snapshotGearRun(player, undefined, gear, false);
+      player.hp = player.maxHp;
+    } else {
+      // Compatibility sequencing: current v2 clients retain their playable kit until they send a v3
+      // wardrobe. The canonical account has already migrated the three upgrade tracks to owned items.
+      player.upVitality = legacyAccount.upgrades.vitality;
+      player.upFortune = legacyAccount.upgrades.fortune;
+      player.upPower = legacyAccount.upgrades.power;
+      this.snapshotRunCharacter(player, undefined, false, false);
+      player.hp = player.maxHp;
+    }
     this.snapshotPetRun(player, account.selectedPetId);
     // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
     // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
@@ -3201,9 +3313,12 @@ export class GameRoom extends Room<ArenaState> {
       mvx: 0,
       mvy: 0,
     });
+    const joinedGear = this.gearRuns.get(client.sessionId);
+    const joinedQuirk = joinedGear?.quirk ?? quirkForCharacter(player.runCharacter);
     this.combat.set(client.sessionId, {
       identityCharacter: player.runCharacter,
-      quirk: quirkForCharacter(player.runCharacter),
+      quirk: joinedQuirk,
+      mods: joinedGear?.mods ?? runtimeModsForQuirk(joinedQuirk),
       aimX: 1,
       aimY: 0,
       targetX: 0,
@@ -3317,6 +3432,7 @@ export class GameRoom extends Room<ArenaState> {
     this.combat.delete(client.sessionId);
     // No reservation machinery in local/offline v1: an unsettled abandoned connection forfeits pending XP.
     this.petRuns.delete(client.sessionId);
+    this.gearRuns.delete(client.sessionId);
     this.metaAccounts.delete(client.sessionId);
     this.petSettledAccounts.delete(client.sessionId);
     // Host left → hand off to whoever's still here (or null if the room's now empty).
@@ -3355,10 +3471,12 @@ export class GameRoom extends Room<ArenaState> {
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
     ) left *= 0.4;
     if (player.alive && (kind === "pit" || kind === "ground-hazard")) {
-      left *= this.petRuns.get(player.id)?.mods.groundHazardDamageMultiplier ?? 1;
+      left *=
+        (this.petRuns.get(player.id)?.mods.groundHazardDamageMultiplier ?? 1) *
+        (c?.mods.groundHazardDamageMult ?? 1);
     }
-    const capFrac = c?.quirk.mods?.incomingDamageCapFrac;
-    if (capFrac !== undefined) left = Math.min(left, player.maxHp * capFrac);
+    const capFrac = c?.mods.incomingDamageCapFrac ?? 1;
+    if (capFrac < 1) left = Math.min(left, player.maxHp * capFrac);
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
     // snap-back cannot mint parry flashes, augments, chain economy, or worm accepts from a later quake.
     if (c && c.pitGrace > 0 && left > 0) return;
@@ -3372,7 +3490,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (left > 0) {
       player.hp = Math.max(0, player.hp - left);
-      if (c?.quirk.mods?.parryChainNeverExpires) {
+      if (c?.mods.parryChainNeverExpires) {
         c.parryChain = 0;
         c.parryChainT = 0;
       }
@@ -4517,7 +4635,7 @@ export class GameRoom extends Room<ArenaState> {
       c.invuln = Math.max(0, c.invuln - dt);
       c.juggleMercy = Math.max(0, c.juggleMercy - dt); // §51 G10 touchdown mercy ages out
       c.parryCd = Math.max(0, c.parryCd - dt);
-      if (!c.quirk.mods?.parryChainNeverExpires) {
+      if (!c.mods.parryChainNeverExpires) {
         c.parryChainT = Math.max(0, c.parryChainT - dt);
         if (c.parryChainT <= 0) c.parryChain = 0;
       }
@@ -4698,7 +4816,7 @@ export class GameRoom extends Room<ArenaState> {
           this.stampAttackBeat(player);
           this.fireGun(player, c, weapon);
           player.charges -= 1;
-          c.cd += weapon.gun.fireRate * cdMul; // ACCUMULATE (not assign) so the sub-tick remainder carries
+          c.cd += weapon.gun.fireRate * cdMul * this.weaponRecoveryMult(player, weapon); // carry remainder
           if (player.charges <= 0) {
             c.reloadCd =
               weapon.gun.reloadSeconds *
@@ -4716,7 +4834,7 @@ export class GameRoom extends Room<ArenaState> {
           this.stampAttackBeat(player);
           this.throwWeapon(player, c, weapon);
           player.charges -= 1;
-          c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
+          c.cd = weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
           if (player.charges <= 0) {
             c.reloadCd =
               weapon.thrown.refillSeconds *
@@ -4729,13 +4847,16 @@ export class GameRoom extends Room<ArenaState> {
           c.attackBuffer = 0;
           this.stampAttackBeat(player);
           this.fireCast(player, c, weapon);
-          c.cd = weapon.cast.cooldown * cdMul;
+          c.cd = weapon.cast.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
         }
       } else if (weapon && canAct) {
         c.attackBuffer = 0;
         // §44 AUTHORITATIVE EPOCH: construct exactly once when `canAct` accepts — never on message arrival.
         // Client prediction starts from local send until a later swing-seq protocol can reconcile buffering.
-        const swing = swingDescriptorFor(weapon, weapon.cooldown * cdMul);
+        const swing = swingDescriptorFor(
+          weapon,
+          weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon),
+        );
         this.stampAttackBeat(player);
         this.resolveSwing(player, c, weapon, swing);
         c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; the loot affix owns speed
@@ -4997,7 +5118,7 @@ export class GameRoom extends Room<ArenaState> {
         pet && pet.tortoisePitRegenSeconds > 0 ? pet.mods.pitRegenMultiplier : 1;
       const regen =
         deriveStats({ con: derivedCon }).regen *
-        (combat?.quirk.mods?.regenMult ?? 1) *
+        (combat?.mods.regenMult ?? 1) *
         (pet?.mods.passiveRegenMultiplier ?? 1) *
         pitRegenMultiplier;
       player.hp = Math.min(player.maxHp, player.hp + regen * dt);
@@ -5426,7 +5547,10 @@ export class GameRoom extends Room<ArenaState> {
       c.ultCritCharges--;
       return 1;
     }
-    return critChanceFor(player.luk, player.dex);
+    return Math.max(
+      0,
+      Math.min(CRIT_CHANCE_CAP, critChanceFor(player.luk, player.dex) + c.mods.critChanceAdd),
+    );
   }
 
   private launchSunspiteComet(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
@@ -5944,7 +6068,8 @@ export class GameRoom extends Room<ArenaState> {
     const paired = !!offSlot;
     const weapon = hand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot?.weapon ?? ""];
     if (!weapon) return;
-    const cadenceMult = lootCooldownMult(player.weaponAffix);
+    const cadenceMult =
+      lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon);
     const soloCooldown = weaponAttackCooldown(weapon) * cadenceMult;
     c.attackBuffer = 0;
     this.stampAttackBeat(player);
@@ -6242,7 +6367,7 @@ export class GameRoom extends Room<ArenaState> {
     dt: number,
   ): void {
     const coolMultiplier =
-      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
+      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
     for (const [weaponId, resource] of c.beamLedger) {
       const activelyChanneling =
         c.beamPhase !== 0 && c.beamDescriptor?.weaponId === weaponId;
@@ -6306,7 +6431,7 @@ export class GameRoom extends Room<ArenaState> {
         this.state.tick,
         input.held.fireStartSeq || input.held.seq,
         this.heldDamageMult(weapon, weapon.beam.scalingGrades, player) * classDamage,
-        lootCooldownMult(player.weaponAffix),
+        lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon),
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
       c.beamPhase = 1;
@@ -6446,12 +6571,12 @@ export class GameRoom extends Room<ArenaState> {
       resource.heat = 1;
       resource.lockT = Math.max(
         resource.lockT,
-        (c.beamDescriptor?.lockSeconds ?? 1.5) * (c.quirk.mods?.beamOverheatLockMult ?? 1),
+        (c.beamDescriptor?.lockSeconds ?? 1.5) * c.mods.beamOverheatLockMult,
       );
       resource.requireRelease = true;
     } else {
       const recoveryMultiplier =
-        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
+        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
       resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     const weapon = WEAPONS[player.weapon];
@@ -6473,7 +6598,7 @@ export class GameRoom extends Room<ArenaState> {
       const resource = this.beamResource(c, descriptor.weaponId);
       resource.heat = Math.min(1, resource.heat + BEAM_EARLY_CANCEL_HEAT);
       const recoveryMultiplier =
-        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * (c.quirk.mods?.beamVentMult ?? 1);
+        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
       resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
     }
     c.beamPhase = 0;
@@ -7515,7 +7640,11 @@ export class GameRoom extends Room<ArenaState> {
       player.salvaged = 0;
     });
     const harvest = Math.round(
-      banked * Math.min(HARVEST_CAP, HARVEST_PER_LUK * (this.bestLuk() - 1)),
+      banked *
+        Math.min(
+          HARVEST_CAP,
+          HARVEST_PER_LUK * (this.bestLuk() - 1) * this.bestHarvestMultiplier(),
+        ),
     );
     this.state.bankedSalvage += banked + harvest;
     this.state.riftOpen = false;
@@ -8191,7 +8320,7 @@ export class GameRoom extends Room<ArenaState> {
   private vastagharParryActive(player: PlayerState, combat: CombatState): boolean {
     if (combat.invuln <= 0 || combat.parryOpenedTick === 0xffffffff) return false;
     const windowSeconds = Math.max(
-      PARRY_IFRAMES * (combat.quirk.mods?.parryIFrameMult ?? 1),
+      PARRY_IFRAMES * combat.mods.parryIFrameMult,
       PARRY_IFRAMES *
         (1 + IRON_STANCE_IFRAME_PER * countAugment(player.augments, "iron-stance")),
     );
@@ -9161,10 +9290,10 @@ export class GameRoom extends Room<ArenaState> {
     if (c.stance === STANCE_CROUCH) this.cancelMoveStance(player, c, true);
     if (c.beamPhase !== 0) this.cancelBeam(player, player.id, c, true, false);
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
-    c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (c.quirk.mods?.parryIFrameMult ?? 1));
-    c.parryCd = PARRY_COOLDOWN;
+    c.invuln = Math.max(c.invuln, PARRY_IFRAMES * c.mods.parryIFrameMult);
+    c.parryCd = PARRY_COOLDOWN * c.mods.parryCooldownMult;
     c.parryOpenedTick = this.state.tick;
-    const knockback = PARRY_KNOCKBACK * (c.quirk.mods?.parryKnockbackMult ?? 1);
+    const knockback = PARRY_KNOCKBACK * c.mods.parryKnockbackMult;
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
       if (id === this.bossId && (this.bossController?.wormRuntime || this.vastagharEncounter)) return;
@@ -10310,7 +10439,7 @@ export class GameRoom extends Room<ArenaState> {
     const d = Math.hypot(dx, dy) || 1;
     const ironKnockback =
       (1 + IRON_STANCE_KNOCKBACK_PER * countAugment(player.augments, "iron-stance")) *
-      (pc.quirk.mods?.parryKnockbackMult ?? 1);
+      pc.mods.parryKnockbackMult;
     // §8 flow: refresh the cooldown so the next swing can be parried immediately (chain), and §20 Stage D
     // LAUNCH the parrier (upward kick + a shove along the attack vector — chain to ride the flurry UP).
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
@@ -10779,6 +10908,22 @@ export class GameRoom extends Room<ArenaState> {
     this.applyParryAugments(player, pc);
     this.applyParryQuirk(player, pc, PARRY_CHAIN_HEAL);
     this.recordPetAcceptedAction(player.id);
+  }
+
+  private bestHarvestMultiplier(): number {
+    let bestLuk = 1;
+    let multiplier = 1;
+    this.state.players.forEach((player) => {
+      if (!player.alive) return;
+      const candidate = this.combat.get(player.id)?.mods.harvestMult ?? 1;
+      if (player.luk > bestLuk) {
+        bestLuk = player.luk;
+        multiplier = candidate;
+      } else if (player.luk === bestLuk) {
+        multiplier = Math.max(multiplier, candidate);
+      }
+    });
+    return multiplier;
   }
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
@@ -11507,7 +11652,7 @@ export class GameRoom extends Room<ArenaState> {
     // spawn (the rez-or-dead rule doesn't soften mid-chain; a rez weapon works on the far side).
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
-      this.snapshotRunCharacter(player, c, true, player.alive);
+      this.snapshotRunIdentity(player, c, true, player.alive);
       player.x = this.map.spawnX + (Math.random() * 200 - 100);
       player.y = this.map.spawnY + (Math.random() * 200 - 100);
       player.vx = 0;

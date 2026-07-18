@@ -34,12 +34,16 @@ export class UltimateState extends Schema {
   @type("float32") targetY = 0;
 }
 
-/** Dual-wield's four-field wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
+/** Player tail wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
 export class DualWieldState extends Schema {
   @type("uint8") offhandSlot = 255;
   @type("uint32") pairBaseSeq = 0;
   @type("uint8") offCharges = 0;
   @type("uint8") offMaxCharges = 0;
+  /** Schema v28; order: hat,glasses,facialHair,shirt,cloak. */
+  @type("string") gearUpper = "";
+  /** Schema v28; order: gloves,pants,boots. */
+  @type("string") gearLower = "";
 }
 
 /**
@@ -205,6 +209,11 @@ export class PlayerState extends Schema {
   @type("uint8") petLevelBand = 0;
   // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
   @type(DualWieldState) dualWield = new DualWieldState();
+  /** Schema v28 accessors append two frozen wardrobe strings to the existing final wire envelope. */
+  get gearUpper(): string { return this.dualWield.gearUpper; }
+  set gearUpper(value: string) { this.dualWield.gearUpper = value; }
+  get gearLower(): string { return this.dualWield.gearLower; }
+  set gearLower(value: string) { this.dualWield.gearLower = value; }
   get offhandSlot(): number { return this.dualWield.offhandSlot; }
   set offhandSlot(value: number) { this.dualWield.offhandSlot = value; }
   get pairBaseSeq(): number { return this.dualWield.pairBaseSeq; }
@@ -235,6 +244,12 @@ export class PlayerState extends Schema {
 
   /** Server-only §ULT allocation truth. Base spreads/meta bonuses never enter this tally. */
   allocRun: Record<Attr, number> = { str: 0, dex: 0, int: 0, con: 0, luk: 0 };
+  /** Server-only identity guard: true only when a validated v3 loadout, not a character fallback, seeded. */
+  gearSeeded = false;
+  /** Frozen allocation routing rule; gear application never mutates allocRun itself. */
+  identityBallastFollowsChoice = false;
+  /** Frozen authored max-HP addition, reused when CON allocations re-derive max HP. */
+  gearMaxHpAdd = 0;
   /** Locked family/variant state is private; ultArchetype is its packed read-only presentation. */
   ultFamily = 0;
   ultVariant: Attr | "" = "";
