@@ -564,6 +564,14 @@ function assemblyPart(
  * Promote a manifest part's alpha bounds to a retained Phaser frame. Multi-part masters (paired gloves,
  * paired boots, cloak/clasp) can then move each authored component without drawing its siblings twice.
  */
+const reportedGearFrameIssues = new Set<string>();
+
+function warnGearFrameIssue(issue: string, message: string): void {
+  if (reportedGearFrameIssues.has(issue)) return;
+  reportedGearFrameIssues.add(issue);
+  console.warn(message);
+}
+
 export function ensureGearPartFrame(
   scene: Phaser.Scene,
   part: GearAssemblyPart,
@@ -574,8 +582,52 @@ export function ensureGearPartFrame(
   const frameName = `part:${part.source.id}`;
   if (!texture.has(frameName)) {
     const bounds = part.source.alphaBounds;
-    if (!texture.add(frameName, 0, bounds.left, bounds.top, bounds.width, bounds.height))
+    const textureSource = texture.source?.[0];
+    const sourceWidth =
+      finite(textureSource?.width) && textureSource.width > 0
+        ? textureSource.width
+        : part.item.image.width;
+    const sourceHeight =
+      finite(textureSource?.height) && textureSource.height > 0
+        ? textureSource.height
+        : part.item.image.height;
+    const left = clamp(bounds.left, 0, Math.max(0, sourceWidth - 1));
+    const top = clamp(bounds.top, 0, Math.max(0, sourceHeight - 1));
+    const right = clamp(bounds.left + bounds.width, left + 1, sourceWidth);
+    const bottom = clamp(bounds.top + bounds.height, top + 1, sourceHeight);
+    if (
+      sourceWidth !== part.item.image.width ||
+      sourceHeight !== part.item.image.height ||
+      left !== bounds.left ||
+      top !== bounds.top ||
+      right - left !== bounds.width ||
+      bottom - top !== bounds.height
+    ) {
+      warnGearFrameIssue(
+        `${key}:${part.source.id}:bounds`,
+        `[gear] texture/manifest bounds mismatch for "${part.item.id}" (${key}, part ${part.source.id}): loaded ${sourceWidth}x${sourceHeight}, manifest ${part.item.image.width}x${part.item.image.height}, bounds ${bounds.left},${bounds.top},${bounds.width},${bounds.height}; rendering the in-range crop`,
+      );
+    }
+    if (!texture.add(frameName, 0, left, top, right - left, bottom - top)) {
+      warnGearFrameIssue(
+        `${key}:${part.source.id}:retain`,
+        `[gear] failed to retain manifest frame for "${part.item.id}" (${key}, part ${part.source.id})`,
+      );
       return undefined;
+    }
+  }
+  const retainedFrame = texture.get?.(frameName);
+  if (
+    retainedFrame &&
+    finite(retainedFrame.cutX) &&
+    finite(retainedFrame.cutY) &&
+    finite(retainedFrame.cutWidth) &&
+    retainedFrame.cutWidth > 0 &&
+    finite(retainedFrame.cutHeight) &&
+    retainedFrame.cutHeight > 0
+  ) {
+    part.originX = (part.source.pivotSource.x - retainedFrame.cutX) / retainedFrame.cutWidth;
+    part.originY = (part.source.pivotSource.y - retainedFrame.cutY) / retainedFrame.cutHeight;
   }
   return frameName;
 }

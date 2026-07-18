@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   assembleBoilerplate,
   assembleGearLoadout,
   DEFAULT_LOADOUT_HEAD_TEXTURE,
+  ensureGearPartFrame,
   type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
@@ -220,5 +221,108 @@ describe("loadout head texture seam", () => {
       textureKey: "gear:alternative-head:future-knight-head",
       frame: "closed-oval",
     });
+  });
+});
+
+// v0.118 gear-layer live reproduction — append-only exact mixed-set loadout coverage.
+describe("mixed-set eight-slot gear assembly", () => {
+  it("places all eight equipped items into the body, hands, feet, and sprung-head groups", () => {
+    const loadout = {
+      hat: "coldsnap-hat",
+      glasses: "pressurized-glasses",
+      facialHair: "pressurized-facial-hair",
+      shirt: "pressurized-shirt",
+      gloves: "house-edge-gloves",
+      pants: "pressurized-pants",
+      boots: "house-edge-boots",
+      cloak: "thornwatch-cloak",
+    } as Record<GearSlot, GearId>;
+    const assembly = assembleGearLoadout(requireManifest(), loadout);
+    const groupForReceiver = (receiver: string): "body" | "hands" | "feet" | "head" => {
+      if (receiver.startsWith("hand-")) return "hands";
+      if (receiver.startsWith("foot-")) return "feet";
+      if (receiver === "head" || receiver.startsWith("face.")) return "head";
+      return "body";
+    };
+    const placedItems = new Map<GearId, Set<string>>();
+    for (const part of assembly.parts) {
+      const groups = placedItems.get(part.gearId) ?? new Set<string>();
+      groups.add(groupForReceiver(part.source.receiver));
+      placedItems.set(part.gearId, groups);
+    }
+
+    expect(placedItems.size).toBe(8);
+    expect(
+      Object.fromEntries([...placedItems].map(([gearId, groups]) => [gearId, [...groups].sort()])),
+    ).toEqual({
+      "thornwatch-cloak": ["body"],
+      "house-edge-boots": ["feet"],
+      "house-edge-gloves": ["hands"],
+      "pressurized-pants": ["body"],
+      "pressurized-shirt": ["body"],
+      "pressurized-facial-hair": ["head"],
+      "pressurized-glasses": ["head"],
+      "coldsnap-hat": ["head"],
+    });
+    // Paired gloves and boots expand the eight equipped items into ten retained render parts.
+    expect(assembly.parts).toHaveLength(10);
+    expect(new Set(assembly.parts.map((part) => groupForReceiver(part.source.receiver)))).toEqual(
+      new Set(["body", "hands", "feet", "head"]),
+    );
+  });
+});
+
+// v0.118 gear-layer bounds diagnostics — append-only loaded-texture mismatch coverage.
+describe("retained gear frame diagnostics", () => {
+  it("names a loaded mismatched item, clips its frame, and preserves its manifest pivot", () => {
+    const loadout = {
+      ...STARTER_GEAR_LOADOUT,
+      shirt: "pressurized-shirt" as GearId,
+    } as Record<GearSlot, GearId>;
+    const part = assembleGearLoadout(requireManifest(), loadout).parts.find(
+      (candidate) => candidate.gearId === "pressurized-shirt",
+    );
+    if (!part) throw new Error("Boiler Shirt did not assemble");
+
+    const frames = new Map<
+      string,
+      { cutX: number; cutY: number; cutWidth: number; cutHeight: number }
+    >();
+    const texture = {
+      source: [{ width: 500, height: 500 }],
+      has: (name: string) => frames.has(name),
+      add: (
+        name: string,
+        _sourceIndex: number,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+      ) => {
+        const frame = { cutX: x, cutY: y, cutWidth: width, cutHeight: height };
+        frames.set(name, frame);
+        return frame;
+      },
+      get: (name: string) => frames.get(name),
+    };
+    const scene = {
+      textures: {
+        exists: () => true,
+        get: () => texture,
+      },
+    } as unknown as Parameters<typeof ensureGearPartFrame>[0];
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    expect(ensureGearPartFrame(scene, part)).toBe("part:torso-panel");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"boiler-shirt"'));
+    expect(frames.get("part:torso-panel")).toEqual({
+      cutX: 401,
+      cutY: 365,
+      cutWidth: 99,
+      cutHeight: 135,
+    });
+    expect(part.originX).toBeCloseTo((part.source.pivotSource.x - 401) / 99, 10);
+    expect(part.originY).toBeCloseTo((part.source.pivotSource.y - 365) / 135, 10);
+    warn.mockRestore();
   });
 });

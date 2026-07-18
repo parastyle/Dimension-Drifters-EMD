@@ -1,4 +1,4 @@
-import { type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
+import { encodeGearCosmetics, type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
 import type Phaser from "phaser";
 import { describe, expect, it, vi } from "vitest";
 
@@ -414,5 +414,62 @@ describe("SpriteRig alternative-head texture seam", () => {
 
     rig.equipGearLoadout(STARTER_GEAR_LOADOUT, manifest);
     expect(truth.boilerplateHead?.texture.key).toBe("boilerplate:head");
+  });
+});
+
+// v0.118 gear-layer live reproduction — append-only four-group runtime coverage.
+describe("SpriteRig mixed-set gear attachment groups", () => {
+  it("retains and places every part from the exact eight-slot loadout through the synced wire path", () => {
+    const manifest = GEAR_PARTS_MANIFEST;
+    if (!manifest) throw new Error("real gear manifest failed validation");
+    const loadout = {
+      hat: "coldsnap-hat",
+      glasses: "pressurized-glasses",
+      facialHair: "pressurized-facial-hair",
+      shirt: "pressurized-shirt",
+      gloves: "house-edge-gloves",
+      pants: "pressurized-pants",
+      boots: "house-edge-boots",
+      cloak: "thornwatch-cloak",
+    } as Record<GearSlot, GearId>;
+    const encoded = encodeGearCosmetics(loadout);
+    expect(encoded).toEqual({
+      gearUpper: "x,2q,2r,2s,20",
+      gearLower: "2d,2u,2f",
+    });
+
+    const rig = new SpriteRig(fakeScene(), 0, 0, false, "mixed-gear-truth", "drifter", manifest);
+    expect(rig.equipSyncedGear(encoded.gearUpper, encoded.gearLower, manifest)).toBe(true);
+    const truth = rig as unknown as RigTruth & {
+      syncGearPose(
+        elapsedSeconds: number,
+        outsidePaperView: boolean,
+        rebase: boolean,
+        reducedMotion: boolean,
+        excitation: number,
+        dashLean: number,
+        landed: boolean,
+      ): void;
+    };
+    truth.syncGearPose(1 / 60, false, true, false, 0, 0, false);
+
+    const groups = { body: 0, hands: 0, feet: 0, head: 0 };
+    for (const attachment of truth.gearAttachments) {
+      const receiver = attachment.spec.source.receiver;
+      if (receiver.startsWith("hand-")) groups.hands++;
+      else if (receiver.startsWith("foot-")) groups.feet++;
+      else if (receiver === "head" || receiver.startsWith("face.")) groups.head++;
+      else groups.body++;
+      expect(attachment.image.visible).toBe(true);
+      expect((rig.root as unknown as FakeContainer).list).toContain(attachment.image);
+    }
+    expect(groups).toEqual({ body: 3, hands: 2, feet: 2, head: 3 });
+    expect(truth.gearAttachments).toHaveLength(10);
+    expect(new Set(truth.gearAttachments.map((attachment) => attachment.spec.gearId)).size).toBe(8);
+    expect(truth.gearAttachments.map((attachment) => attachment.spec.depth)).toEqual(
+      [...truth.gearAttachments]
+        .sort((a, b) => a.spec.depth - b.spec.depth)
+        .map((attachment) => attachment.spec.depth),
+    );
   });
 });
