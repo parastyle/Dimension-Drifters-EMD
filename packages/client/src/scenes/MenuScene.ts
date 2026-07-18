@@ -24,6 +24,11 @@ import { AudioBus } from "../audio/AudioBus.js";
 import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
 import {
+  boilerplateTextureKey,
+  boilerplateTextureUrl,
+  GEAR_PARTS_MANIFEST,
+} from "../sprites/gear-parts.js";
+import {
   type ArmoryDraft,
   armoryCarrySelection,
   armoryEntryViews,
@@ -212,6 +217,16 @@ export class MenuScene extends Phaser.Scene {
       const key = `${MENU_ART_PREFIX}${dimensionId}`;
       if (!this.textures.exists(key) && !this.menuArtMissing.has(key)) {
         queueOptionalArt(key, `ui/menu/${dimensionId}.jpg`);
+      }
+    }
+    // The shared baker owns every composed result. Preloading only its canonical six base sources keeps the
+    // first wardrobe pose visible while the initial scene-scoped lease is acquired.
+    if (GEAR_PARTS_MANIFEST) {
+      for (const part of GEAR_PARTS_MANIFEST.boilerplate.parts) {
+        const key = boilerplateTextureKey(part.id);
+        if (!this.textures.exists(key)) {
+          this.load.image(key, boilerplateTextureUrl(part.texture));
+        }
       }
     }
     // Until dedicated portraits land, the folio uses the approved Hatchling body cutouts. These are the
@@ -708,6 +723,13 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setMenuTab(tab: MenuTab): void {
+    if (tab !== "wardrobe" && this.wardrobeHoveredGearId) {
+      this.wardrobeHoveredGearId = undefined;
+      this.wardrobePreviewSurface?.refresh(
+        this.metaAccount.equippedGear,
+        this.metaAccount.prestige,
+      );
+    }
     this.menuTab = tab;
     for (const [id, chip] of this.tabButtons) {
       const selected = id === tab;
@@ -853,10 +875,19 @@ export class MenuScene extends Phaser.Scene {
           if (!id) return;
           this.wardrobeHoveredGearId = id;
           this.refreshWardrobeInspector(id);
+          this.wardrobePreviewSurface?.refresh(
+            this.metaAccount.equippedGear,
+            this.metaAccount.prestige,
+            id,
+          );
         })
         .on("pointerout", () => {
           this.wardrobeHoveredGearId = undefined;
           this.refreshWardrobeInspector();
+          this.wardrobePreviewSurface?.refresh(
+            this.metaAccount.equippedGear,
+            this.metaAccount.prestige,
+          );
         });
       root.add(row);
       this.wardrobeItemRows.push(row);
@@ -974,7 +1005,11 @@ export class MenuScene extends Phaser.Scene {
     );
     this.wardrobeTitle.setText(fittedTitle);
     this.refreshWardrobeInspector(this.wardrobeHoveredGearId);
-    this.wardrobePreviewSurface?.refresh(this.metaAccount.equippedGear, this.metaAccount.prestige);
+    this.wardrobePreviewSurface?.refresh(
+      this.metaAccount.equippedGear,
+      this.metaAccount.prestige,
+      this.wardrobeHoveredGearId,
+    );
     const preview = wardrobePreview(this.metaAccount);
     this.setBoundedWardrobeText(
       this.wardrobeStats,
