@@ -1,3 +1,7 @@
+// Dock consumers import the authority projection beside the pure geometry API; the implementation lives
+// separately so its unit tests never need Phaser or layout fixtures.
+export { type LoadoutEntryView, loadoutEntryView } from "./loadout-entry-view.js";
+
 export type WeaponDockPoint = {
   x: number;
   y: number;

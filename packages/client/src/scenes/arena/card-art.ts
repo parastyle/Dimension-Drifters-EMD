@@ -26,6 +26,12 @@ export type Card = {
   reqTokens: { text: Phaser.GameObjects.Text; attr: Attr; need: number }[];
   /** Charges (thrown, live) or durability (melee, static for now) readout. */
   resource: Phaser.GameObjects.Text;
+  /** Paired entries keep the lead card full-size and add one compact, truthful off-hand strip. */
+  offSummary: Phaser.GameObjects.Container;
+  offSummaryPaper: Phaser.GameObjects.Graphics;
+  offName: Phaser.GameObjects.Text;
+  offStats: Phaser.GameObjects.Text;
+  offGrades: Phaser.GameObjects.Text;
 };
 
 /** Lightweight, stat-free roster entry used by the mirrored-L dock. Neighbour chips carry art + a key
@@ -36,6 +42,7 @@ export type DockChip = {
   art: Phaser.GameObjects.Image;
   paper: Phaser.GameObjects.Graphics;
   order: Phaser.GameObjects.Text;
+  pairGlyph: Phaser.GameObjects.Text;
 };
 
 /** The authoritative active-weapon core at the dock's bottom-right elbow. `loot` (tier · affix) lives in
@@ -53,6 +60,7 @@ export type DockJunction = {
   resourcePlate: Phaser.GameObjects.Graphics;
   name: Phaser.GameObjects.Text;
   resource: Phaser.GameObjects.Text;
+  resource2: Phaser.GameObjects.Text;
 };
 
 /** Per-weapon accent colour for card frames (rarity tinting lands with the loot system). Also keys the
@@ -178,8 +186,19 @@ export function buildDockChip(scene: Phaser.Scene, id: string): DockChip {
     .setOrigin(0.5, 0.5)
     .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const container = scene.add.container(0, 0, [art, paper, order]);
-  return { id, container, art, paper, order };
+  const pairGlyph = scene.add
+    .text(0, 0, "⚯", {
+      fontFamily: "sans-serif",
+      fontSize: "13px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+    })
+    .setOrigin(0.5)
+    .setShadow(0, 1, "#000000", 2, true, true)
+    .setResolution(dockTextResolution())
+    .setVisible(false);
+  const container = scene.add.container(0, 0, [art, paper, order, pairGlyph]);
+  return { id, container, art, paper, order, pairGlyph };
 }
 
 /** Resize/repaint one passive chip. This is deliberately event-driven rather than a frame update.
@@ -190,6 +209,7 @@ export function layoutDockChip(
   height: number,
   order: string,
   scale: number,
+  paired = false,
 ): void {
   const accent = WEAPON_ACCENT[chip.id] ?? 0xb9975b;
   chip.art.setCrop(0, 0, 212, 212).setDisplaySize(width, height);
@@ -216,6 +236,10 @@ export function layoutDockChip(
     .setText(order)
     .setFontSize(Math.max(9, 11 * scale))
     .setPosition(width / 2 - plateW / 2, -height / 2 + plateH / 2);
+  chip.pairGlyph
+    .setVisible(paired)
+    .setFontSize(Math.max(11, 13 * scale))
+    .setPosition(-width / 2 + 9 * scale, -height / 2 + 8 * scale);
 }
 
 /** Build the fixed active core. Its truth layer (name + ammo badge) remains opaque while art/chrome —
@@ -267,7 +291,17 @@ export function buildDockJunction(scene: Phaser.Scene): DockJunction {
     .setOrigin(1, 0)
     .setShadow(0, 1, "#000000", 2, true, true)
     .setResolution(dockTextResolution());
-  const truth = scene.add.container(0, 0, [truthPaper, resourcePlate, name, resource]);
+  const resource2 = scene.add
+    .text(0, 0, "", {
+      fontFamily: "monospace",
+      fontSize: "13px",
+      color: "#f1e8cf",
+      fontStyle: "bold",
+    })
+    .setOrigin(1, 0)
+    .setShadow(0, 1, "#000000", 2, true, true)
+    .setResolution(dockTextResolution());
+  const truth = scene.add.container(0, 0, [truthPaper, resourcePlate, name, resource, resource2]);
   const container = scene.add.container(0, 0, [art, chrome, truth]);
   return {
     container,
@@ -282,16 +316,56 @@ export function buildDockJunction(scene: Phaser.Scene): DockJunction {
     resourcePlate,
     name,
     resource,
+    resource2,
   };
 }
 
-/** Swap only the authoritative junction art; no predicted keypress ever calls this helper. */
-export function setDockJunctionWeapon(
+export function bakeSplitDockArt(scene: Phaser.Scene, leadId: string, offId: string): string {
+  const key = `dockpair-${leadId}-${offId}`;
+  if (scene.textures.exists(key)) return key;
+  const size = 212;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return key;
+  const drawHalf = (id: string, upperLeft: boolean) => {
+    const artKey = bakeCardArt(scene, id, 212, 296, 14);
+    const src = scene.textures.get(artKey).getSourceImage() as CanvasImageSource;
+    ctx.save();
+    ctx.beginPath();
+    if (upperLeft) {
+      ctx.moveTo(0, 0);
+      ctx.lineTo(size, 0);
+      ctx.lineTo(0, size);
+    } else {
+      ctx.moveTo(size, 0);
+      ctx.lineTo(size, size);
+      ctx.lineTo(0, size);
+    }
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(src, 0, 0, size, size, 0, 0, size, size);
+    ctx.restore();
+  };
+  drawHalf(leadId, true);
+  drawHalf(offId, false);
+  scene.textures.addCanvas(key, canvas);
+  return key;
+}
+
+/** Swap only authoritative junction art; paired entries bake both card faces into one atomic square. */
+export function setDockJunctionLoadout(
   scene: Phaser.Scene,
   junction: DockJunction,
-  id: string,
+  leadId: string,
+  offId?: string,
 ): void {
-  junction.art.setTexture(bakeCardArt(scene, id, 212, 296, 14)).setCrop(0, 0, 212, 212);
+  junction.art
+    .setTexture(
+      offId ? bakeSplitDockArt(scene, leadId, offId) : bakeCardArt(scene, leadId, 212, 296, 14),
+    )
+    .setCrop(0, 0, 212, 212);
 }
 
 /** Colourblind-safe tier pips (dockux-panel §4): 0–6 small diamonds, Common 0 … Ultimate 5; Cursed's 6
@@ -343,6 +417,7 @@ export function layoutDockJunction(
   unarmed: boolean,
   dockScale = 1,
   rarity = 0,
+  offAccent?: number,
 ): void {
   const half = size / 2;
   const footerHeight = Math.max(30, size * 0.3);
@@ -358,9 +433,20 @@ export function layoutDockJunction(
   junction.truthPaper.clear();
   junction.truthPaper
     .fillStyle(0x0a0805, 0.9)
-    .fillRect(-half, half - footerHeight, size, footerHeight)
-    .lineStyle(3, accent, 0.98)
-    .strokeRect(-half, -half, size, size);
+    .fillRect(-half, half - footerHeight, size, footerHeight);
+  if (offAccent === undefined) {
+    junction.truthPaper.lineStyle(3, accent, 0.98).strokeRect(-half, -half, size, size);
+  } else {
+    junction.truthPaper
+      .lineStyle(3, accent, 0.98)
+      .lineBetween(-half, -half, half, -half)
+      .lineBetween(-half, -half, -half, half)
+      .lineStyle(3, offAccent, 0.98)
+      .lineBetween(half, -half, half, half)
+      .lineBetween(-half, half, half, half)
+      .lineStyle(2, 0xf1e8cf, 0.72)
+      .lineBetween(half, -half, -half, half);
+  }
 
   junction.emptyHands.clear().setVisible(unarmed);
   if (unarmed) {
@@ -379,6 +465,9 @@ export function layoutDockJunction(
     .setPosition(-half + 5, half - footerHeight + 3);
   junction.loot.setFontSize(Math.max(10, size * 0.1)).setPosition(-half + 5, half - 3);
   junction.resource.setFontSize(Math.max(11, size * 0.115)).setPosition(half - 5, -half + 4);
+  junction.resource2
+    .setFontSize(Math.max(11, size * 0.115))
+    .setPosition(half - 5, -half + 6 + junction.resource.displayHeight);
 
   // Backing plates (§1.5): index top-left at 0.78; the ammo/heat badge gets its own pill stroked in the
   // badge's live state colour — the single most-glanced number never sits on raw painted art.
@@ -394,14 +483,35 @@ export function layoutDockJunction(
       );
   }
   junction.resourcePlate.clear();
-  if (junction.resource.text.length > 0) {
-    const rw = junction.resource.displayWidth;
-    const rh = junction.resource.displayHeight;
+  if (junction.resource.text.length > 0 || junction.resource2.text.length > 0) {
+    const rw = Math.max(junction.resource.displayWidth, junction.resource2.displayWidth);
+    const rh =
+      junction.resource.displayHeight +
+      (junction.resource2.text.length > 0 ? junction.resource2.displayHeight + 2 : 0);
+    const stateColor =
+      junction.resource2.text.length > 0 && junction.resource2.alpha >= junction.resource.alpha
+        ? textColorInt(junction.resource2, 0xf1e8cf)
+        : textColorInt(junction.resource, 0xf1e8cf);
     junction.resourcePlate
       .fillStyle(0x0a0805, 0.88)
       .fillRoundedRect(half - 5 - rw - 4, -half + 4 - 2, rw + 8, rh + 4, 4)
-      .lineStyle(1, textColorInt(junction.resource, 0xf1e8cf), 0.6)
+      .lineStyle(1, stateColor, 0.6)
       .strokeRoundedRect(half - 5 - rw - 4, -half + 4 - 2, rw + 8, rh + 4, 4);
+    const drawAmmoBar = (text: Phaser.GameObjects.Text) => {
+      if (!text.text) return;
+      const fraction = Math.max(0, Math.min(1, Number(text.getData("fraction")) || 0));
+      const width = Math.max(26, text.displayWidth);
+      const x = half - 5 - width;
+      const y = text.y + text.displayHeight - 2;
+      const color = textColorInt(text, 0xf1e8cf);
+      junction.resourcePlate
+        .fillStyle(0x24201a, 0.96)
+        .fillRect(x, y, width, 2)
+        .fillStyle(color, text.alpha)
+        .fillRect(x, y, Math.max(fraction > 0 ? 1 : 0, width * fraction), 2);
+    };
+    drawAmmoBar(junction.resource);
+    drawAmmoBar(junction.resource2);
   }
   // Redundant tier pips ride the loot line (chrome — they fade with it).
   if (rarity > 0 && junction.loot.text.length > 0) {
@@ -656,10 +766,40 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
   const resource = mk(padL + 17, resY, 12, accentHex, "", 0, true);
   o.push(resource);
 
+  // Pair-only summary strip. It stays hidden for ordinary cards and intentionally overlays the quiet
+  // bottom resource row when shown: one compact strip is clearer than shrinking the lead's full card.
+  const offSummaryPaper = scene.add.graphics();
+  offSummaryPaper
+    .fillStyle(0x070503, 0.97)
+    .fillRect(L + 3, H / 2 - 68, W - 6, 64)
+    .lineStyle(1, 0xcfc6ae, 0.5)
+    .lineBetween(L + 4, H / 2 - 68, -L - 4, H / 2 - 68);
+  const offName = mk(padL, H / 2 - 64, 12, "#f1e8cf", "", 0, true);
+  const offStats = mk(padL, H / 2 - 46, 10, "#d8cfb8", "");
+  const offGrades = mk(padL, H / 2 - 30, 9, "#9fb0c2", "");
+  const offSummary = scene.add
+    .container(0, 0, [offSummaryPaper, offName, offStats, offGrades])
+    .setVisible(false);
+  o.push(offSummary);
+
   // Crisp text — Phaser Text defaults to resolution 1, which blurs on high-DPI + when scaled.
   const res = Math.max(2, Math.ceil(window.devicePixelRatio || 1));
   for (const obj of o) if (obj instanceof Phaser.GameObjects.Text) obj.setResolution(res);
+  for (const text of [offName, offStats, offGrades]) {
+    text.setResolution(res).setShadow(0, 1, "#000000", 2, true, true);
+  }
 
   const container = scene.add.container(0, 0, o).setScrollFactor(0).setDepth(100000);
-  return { id, container, sources, reqTokens, resource };
+  return {
+    id,
+    container,
+    sources,
+    reqTokens,
+    resource,
+    offSummary,
+    offSummaryPaper,
+    offName,
+    offStats,
+    offGrades,
+  };
 }

@@ -82,6 +82,8 @@ import {
   PICKUP_RADIUS,
   type PlayerState,
   POUND_RADIUS,
+  pairEligible,
+  pairRequirementPenalty,
   petLevelForXp,
   petModsForLevel,
   QUAKE_REACH,
@@ -179,6 +181,7 @@ import {
   type LevelChoiceView,
   levelBuildContext,
 } from "../ui/level-up-model.js";
+import { type PairPreviewItem, pairPreview } from "../ui/pair-preview.js";
 import {
   formatPetProgressReceipt,
   loadPetMetaAccount,
@@ -198,6 +201,8 @@ import {
 import { type ContextHintId, VerbLegendManager } from "../ui/verb-legend.js";
 import {
   IDLE_DOCK_SCALE,
+  type LoadoutEntryView,
+  loadoutEntryView,
   type WeaponDockLayout,
   weaponDockLayout,
   wrappedDockOffset,
@@ -227,6 +232,7 @@ import {
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
   bakeCardArt,
+  bakeSplitDockArt,
   buildCard,
   buildDockChip,
   buildDockJunction,
@@ -237,7 +243,7 @@ import {
   drawTierPips,
   layoutDockChip,
   layoutDockJunction,
-  setDockJunctionWeapon,
+  setDockJunctionLoadout,
   WEAPON_ACCENT,
 } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
@@ -492,6 +498,12 @@ interface CarouselDock {
   inspectStartedAt: number;
   blocked: boolean;
 }
+
+type PairCandidateSelection = {
+  source: "slot" | "bag";
+  index: number;
+  identity: string;
+};
 
 interface MeleeTellCandidate {
   id: string;
@@ -1539,11 +1551,19 @@ export class ArenaScene extends Phaser.Scene {
   // slot → stash to bag). Immediate-mode Graphics + pooled Text; interactive zones rebuilt when the panel opens.
   private arsenalG: Phaser.GameObjects.Graphics | null = null;
   private arsenalTexts: Phaser.GameObjects.Text[] = [];
+  private arsenalPairArt: Phaser.GameObjects.Image | null = null;
   private bagOpen = false;
   private bagG: Phaser.GameObjects.Graphics | null = null;
   private bagTexts: Phaser.GameObjects.Text[] = [];
   private bagZones: Phaser.GameObjects.Rectangle[] = [];
   private slotZones: Phaser.GameObjects.Rectangle[] = [];
+  private pairSlotZones: Phaser.GameObjects.Rectangle[] = [];
+  private bagPairZones: Phaser.GameObjects.Rectangle[] = [];
+  private pairConfirmZone: Phaser.GameObjects.Rectangle | null = null;
+  private unbindZone: Phaser.GameObjects.Rectangle | null = null;
+  private pairCandidate: PairCandidateSelection | null = null;
+  private pairRequestLockedUntil = 0;
+  private lastPairKey = "";
   // dockux-panel §3: Backpack item-card pooled art thumbnails, the display-order sort mapping (server bag
   // order stays authoritative for messages), hover state, and the open/close choreography clocks.
   private bagArts: Phaser.GameObjects.Image[] = [];
@@ -1841,9 +1861,17 @@ export class ArenaScene extends Phaser.Scene {
     this.summonObjects = [];
     this.carouselDock = undefined;
     this.arsenalTexts = [];
+    this.arsenalPairArt = null;
     this.bagTexts = [];
     this.bagZones = [];
     this.slotZones = [];
+    this.pairSlotZones = [];
+    this.bagPairZones = [];
+    this.pairConfirmZone = null;
+    this.unbindZone = null;
+    this.pairCandidate = null;
+    this.pairRequestLockedUntil = 0;
+    this.lastPairKey = "";
     this.buyZones = [];
     this.bagArts = [];
     this.bagDisplayOrder = [];
@@ -3887,12 +3915,12 @@ export class ArenaScene extends Phaser.Scene {
       // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
       // keeps the roster carousel.
       if (this.belt) {
-        if (qDown) this.room?.send("cycleSlot", { dir: 1 });
-        if (eFree) this.room?.send("cycleSlot", { dir: -1 });
-        if (Phaser.Input.Keyboard.JustDown(this.keys.ONE)) this.room?.send("swapSlot", { slot: 0 });
-        if (Phaser.Input.Keyboard.JustDown(this.keys.TWO)) this.room?.send("swapSlot", { slot: 1 });
+        if (qDown && selfP) this.cycleBeltLoadout(selfP, 1);
+        if (eFree && selfP) this.cycleBeltLoadout(selfP, -1);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.ONE) && selfP) this.selectBeltSlot(selfP, 0);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.TWO) && selfP) this.selectBeltSlot(selfP, 1);
         if (Phaser.Input.Keyboard.JustDown(this.keys.THREE))
-          this.room?.send("swapSlot", { slot: 2 });
+          if (selfP) this.selectBeltSlot(selfP, 2);
       } else if (this.room?.state.mode === "training") {
         // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
         if (qDown) this.room?.send("galleryPage", { dir: 1 });
@@ -5566,7 +5594,6 @@ export class ArenaScene extends Phaser.Scene {
         this.recentResolvedDangerAt = this.time.now;
       }
       if (c.ownerId === st.vastaghar.ownerId && c.kindTag === TelegraphKindTag.Quake) {
-        continue; // schema epoch fired the exact ring on the retained t=1 resolve patch
       } else if (c.kindTag === TelegraphKindTag.Slam) {
         // slam / landing-zone — the full impact: burst + camera shake + the deep boom. v0.117: scale the
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
@@ -10878,8 +10905,8 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private carouselDockAccent(self: PlayerState): number {
-    return RARITIES[self.weaponRarity]?.color ?? WEAPON_ACCENT[self.weapon] ?? 0xb9975b;
+  private carouselDockAccent(entry: LoadoutEntryView): number {
+    return RARITIES[entry.rarity]?.color ?? WEAPON_ACCENT[entry.leadId] ?? 0xb9975b;
   }
 
   private layoutCarouselDock(
@@ -10890,6 +10917,7 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     const dock = this.carouselDock;
     if (!dock) return;
+    const entry = loadoutEntryView(self);
     for (const chip of dock.chips.values()) {
       if (chip.container.visible) chip.container.setVisible(false);
     }
@@ -10953,7 +10981,7 @@ export class ArenaScene extends Phaser.Scene {
     const total = n * tickGap;
     const tickX = layout.junction.x - total / 2;
     const tickY = layout.cornerTop - 3 * layout.scale;
-    const accent = this.carouselDockAccent(self);
+    const accent = this.carouselDockAccent(entry);
     dock.ticks.clear();
     for (let index = 0; index < n; index++) {
       dock.ticks
@@ -10970,9 +10998,12 @@ export class ArenaScene extends Phaser.Scene {
       dock.junction,
       layout.junctionSize,
       accent,
-      self.weapon === FISTS_WEAPON,
+      entry.leadId === FISTS_WEAPON,
       layout.scale,
-      self.weaponRarity,
+      entry.rarity,
+      entry.offRarity === undefined
+        ? undefined
+        : (RARITIES[entry.offRarity]?.color ?? WEAPON_ACCENT[entry.offId ?? ""] ?? 0xb9975b),
     );
     dock.layout = layout;
     // The idle-scale anchor moved with the layout — re-apply the current fade so the body stays flush.
@@ -10989,41 +11020,79 @@ export class ArenaScene extends Phaser.Scene {
   private updateCarouselDockJunction(self: PlayerState): void {
     const dock = this.carouselDock;
     if (!dock) return;
-    const unarmed = self.weapon === FISTS_WEAPON;
-    const def = WEAPONS[self.weapon];
-    const rarity = self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
-    const affix = self.weaponAffix ? affixById(self.weaponAffix).name : "";
-    const accent = this.carouselDockAccent(self);
+    const entry = loadoutEntryView(self);
+    const unarmed = entry.leadId === FISTS_WEAPON;
+    const def = WEAPONS[entry.leadId];
+    const offDef = entry.offId ? WEAPONS[entry.offId] : undefined;
+    const rarity = entry.rarity > 0 ? RARITIES[entry.rarity] : undefined;
+    const offRarity = entry.offRarity === undefined ? undefined : RARITIES[entry.offRarity];
+    const affix = entry.affix ? affixById(entry.affix).name : "";
+    const offAffix = entry.offAffix ? affixById(entry.offAffix).name : "";
+    const accent = this.carouselDockAccent(entry);
     dock.junction.index.setText(
       dock.selectedIndex >= 0
         ? `${dock.selectedIndex + 1}/${WEAPON_IDS.length}`
         : `—/${WEAPON_IDS.length}`,
     );
     // dockux-panel §2.2: sentence-case state, no id leaks, tier · affix with the interpunct, and
-    // RELOADING as a state in progress rather than a command. Truncation rises to 20 chars so the two
-    // longest roster names fit untruncated at the new junction sizes.
-    const rawName = unarmed ? "Unarmed" : (def?.name ?? "Unknown weapon");
-    dock.junction.name.setText(rawName.length > 20 ? `${rawName.slice(0, 19)}…` : rawName);
+    // RELOADING as a state in progress rather than a command. Pair names keep the dock's 17-char
+    // ellipsis contract so the second hand never pushes combat truth off the junction.
+    const leadName = unarmed ? "Unarmed" : (def?.name ?? "Unknown weapon");
+    const offName = offDef?.name ?? (entry.offId ? "Unknown weapon" : "");
+    const rawName = offName ? `${leadName} × ${offName}` : leadName;
+    dock.junction.name.setText(rawName.length > 17 ? `${rawName.slice(0, 16)}…` : rawName);
     dock.junction.loot
-      .setText([rarity?.name ?? "", affix].filter(Boolean).join(" · "))
+      .setText(
+        [
+          [rarity?.name ?? "", affix].filter(Boolean).join(" · "),
+          offDef ? [offRarity?.name ?? "", offAffix].filter(Boolean).join(" · ") : "",
+        ]
+          .filter(Boolean)
+          .join(" / "),
+      )
       .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
     if (def?.beam) {
       const row = this.room?.state.beams.get(self.id);
       dock.junction.resource
         .setText(this.beamStatusText(row, def, this.room?.state.tick ?? 0))
-        .setColor(`#${this.beamStatusColor(row).toString(16).padStart(6, "0")}`);
-    } else if (self.maxCharges > 0) {
-      dock.junction.resource
-        .setText(self.charges <= 0 ? "RELOADING" : `${self.charges}/${self.maxCharges}`)
-        .setColor(
-          self.charges <= 0
+        .setColor(`#${this.beamStatusColor(row).toString(16).padStart(6, "0")}`)
+        .setAlpha(1)
+        .setData("fraction", 0);
+      dock.junction.resource2.setText("").setData("fraction", 0);
+    } else if (entry.maxCharges > 0) {
+      const resource = (charges: number, maxCharges: number) => ({
+        text: charges <= 0 ? "RELOADING" : `▮ ${charges}/${maxCharges}`,
+        color:
+          charges <= 0
             ? "#ff5d5d"
-            : self.charges <= Math.max(1, Math.ceil(self.maxCharges * 0.25))
+            : charges <= Math.max(1, Math.ceil(maxCharges * 0.25))
               ? "#ff8a2b"
               : "#f1e8cf",
-        );
+      });
+      const leadResource = resource(entry.charges, entry.maxCharges);
+      dock.junction.resource
+        .setText(leadResource.text)
+        .setColor(leadResource.color)
+        .setAlpha(entry.nextHand === 0 ? 1 : 0.7)
+        .setData("fraction", entry.maxCharges > 0 ? entry.charges / entry.maxCharges : 0);
+      if ((entry.offMaxCharges ?? 0) > 0) {
+        const offResource = resource(entry.offCharges ?? 0, entry.offMaxCharges ?? 0);
+        dock.junction.resource2
+          .setText(offResource.text)
+          .setColor(offResource.color)
+          .setAlpha(entry.nextHand === 1 ? 1 : 0.7)
+          .setData(
+            "fraction",
+            (entry.offMaxCharges ?? 0) > 0
+              ? (entry.offCharges ?? 0) / (entry.offMaxCharges ?? 1)
+              : 0,
+          );
+      } else {
+        dock.junction.resource2.setText("").setData("fraction", 0);
+      }
     } else {
-      dock.junction.resource.setText("");
+      dock.junction.resource.setText("").setData("fraction", 0);
+      dock.junction.resource2.setText("").setData("fraction", 0);
     }
     if (dock.layout) {
       layoutDockJunction(
@@ -11032,7 +11101,10 @@ export class ArenaScene extends Phaser.Scene {
         accent,
         unarmed,
         dock.layout.scale,
-        self.weaponRarity,
+        entry.rarity,
+        entry.offRarity === undefined
+          ? undefined
+          : (RARITIES[entry.offRarity]?.color ?? WEAPON_ACCENT[entry.offId ?? ""] ?? 0xb9975b),
       );
     }
   }
@@ -11156,6 +11228,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Preserve the original WYSIWYG equations; only the one visible inspector is ever refreshed. */
   private refreshCarouselDockCard(card: Card, def: WeaponDef | undefined, self: PlayerState): void {
+    const entry = loadoutEntryView(self);
     const attrs: Record<Attr, number> = {
       str: self.str,
       dex: self.dex,
@@ -11164,8 +11237,14 @@ export class ArenaScene extends Phaser.Scene {
       luk: self.luk,
     };
     const fmt = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1));
-    const penalty = def ? requirementPenalty(def, attrs) : 1;
-    const loot = card.id === self.weapon ? lootDamageMult(self.weaponRarity, self.weaponAffix) : 1;
+    const offDef = entry.offId ? WEAPONS[entry.offId] : undefined;
+    const activePairCard = card.id === entry.leadId && !!def && !!offDef;
+    const penalty = def
+      ? activePairCard
+        ? pairRequirementPenalty(def, offDef, attrs)
+        : requirementPenalty(def, attrs)
+      : 1;
+    const loot = card.id === entry.leadId ? lootDamageMult(entry.rarity, entry.affix) : 1;
     for (const source of card.sources) {
       const mult = damageMultFromGrades(source.src.grades, attrs) * penalty * loot;
       const total = source.src.base * mult;
@@ -11188,6 +11267,43 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       card.resource.setText("");
     }
+    if (activePairCard && offDef && entry.offId) {
+      const preview = pairPreview({
+        lead: {
+          weaponId: entry.leadId,
+          rarity: entry.rarity,
+          affix: entry.affix,
+          earned: entry.earned,
+        },
+        off: {
+          weaponId: entry.offId,
+          rarity: entry.offRarity ?? 0,
+          affix: entry.offAffix ?? "",
+          earned: entry.offEarned ?? false,
+        },
+        attrs,
+        loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
+      });
+      const rarity = RARITIES[entry.offRarity ?? 0];
+      const color = rarity?.color ?? WEAPON_ACCENT[entry.offId] ?? 0xcfc6ae;
+      const grades = Object.entries(offDef.scalingGrades ?? { str: "B" })
+        .map(([attr, grade]) => `${attr.toUpperCase()} ${grade}`)
+        .join(" · ");
+      card.offSummaryPaper
+        .clear()
+        .fillStyle(0x070503, 0.97)
+        .fillRect(-103, 80, 206, 64)
+        .lineStyle(2, color, 0.86)
+        .lineBetween(-102, 80, 102, 80);
+      card.offName.setText(`⚯ ${offDef.name}`).setColor(`#${color.toString(16).padStart(6, "0")}`);
+      card.offStats.setText(
+        `Damage ${fmt(preview.offDamage)} · Cadence ${preview.offGapSeconds.toFixed(2)}s`,
+      );
+      card.offGrades.setText(`Grades ${grades} · Pair ${fmt(preview.combinedDps)}/s`);
+      card.offSummary.setVisible(true);
+    } else {
+      card.offSummary.setVisible(false);
+    }
   }
 
   /** Synchronize the fixed dock. Stable idle frames compare signatures and mutate no dock objects. */
@@ -11205,6 +11321,7 @@ export class ArenaScene extends Phaser.Scene {
     }
     const self = this.room.state.players.get(this.room.sessionId);
     if (!self) return;
+    const entry = loadoutEntryView(self);
     const blocked =
       this.inputModalBlocked(self) ||
       this.summonOpen ||
@@ -11214,7 +11331,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const ids = WEAPON_IDS;
     const n = ids.length;
-    const selectedId = self.weapon;
+    const selectedId = entry.leadId;
     const selectedIndex = ids.indexOf(selectedId);
     const selectionChanged = selectedId !== dock.selectedId || selectedIndex !== dock.selectedIndex;
     if (selectionChanged) {
@@ -11222,7 +11339,7 @@ export class ArenaScene extends Phaser.Scene {
       dock.selectedIndex = selectedIndex;
       dock.layoutSig = "";
       dock.liveSig = "";
-      setDockJunctionWeapon(this, dock.junction, selectedId);
+      setDockJunctionLoadout(this, dock.junction, selectedId, entry.offId);
       dock.junction.art.setVisible(selectedId !== FISTS_WEAPON);
     }
 
@@ -11298,17 +11415,23 @@ export class ArenaScene extends Phaser.Scene {
     }
 
     const activeSig = [
-      self.weapon,
-      self.weaponRarity,
-      self.weaponAffix,
-      self.charges,
-      self.maxCharges,
+      entry.pairKey,
+      entry.rarity,
+      entry.affix,
+      entry.charges,
+      entry.maxCharges,
+      entry.offRarity,
+      entry.offAffix,
+      entry.offCharges,
+      entry.offMaxCharges,
+      entry.nextHand,
     ].join(":");
     if (activeSig !== dock.activeSig) {
       dock.activeSig = activeSig;
+      setDockJunctionLoadout(this, dock.junction, entry.leadId, entry.offId);
       this.updateCarouselDockJunction(self);
     }
-    const heldSig = `${self.weapon}:${self.weaponRarity}:${self.weaponAffix}`;
+    const heldSig = `${entry.pairKey}:${entry.rarity}:${entry.affix}:${entry.offRarity}:${entry.offAffix}`;
     if (heldSig !== dock.heldSig) {
       dock.heldSig = heldSig;
       this.wakeCarouselDock();
@@ -11325,11 +11448,15 @@ export class ArenaScene extends Phaser.Scene {
         self.int,
         self.con,
         self.luk,
-        self.weapon,
-        self.weaponRarity,
-        self.weaponAffix,
-        self.charges,
-        self.maxCharges,
+        entry.pairKey,
+        entry.rarity,
+        entry.affix,
+        entry.charges,
+        entry.maxCharges,
+        entry.offRarity,
+        entry.offAffix,
+        entry.offCharges,
+        entry.offMaxCharges,
       ].join(":");
       if (liveSig !== dock.liveSig) {
         dock.liveSig = liveSig;
@@ -11393,12 +11520,84 @@ export class ArenaScene extends Phaser.Scene {
     return t;
   }
 
-  /** The (weapon id, rarity) shown for slot `i` — the ACTIVE slot reads the live held weapon (the server only
-   *  re-syncs the slot on a swap/grab), the others read their stored slot. */
-  private slotView(self: PlayerState, i: number): { wid: string; rarity: number } {
-    if (i === self.activeSlot) return { wid: self.weapon, rarity: self.weaponRarity };
+  private selectBeltSlot(self: PlayerState, slot: number): void {
+    const entry = loadoutEntryView(self);
+    if (entry.offSlot === slot) {
+      this.flashBanner("That weapon is bound as the off-hand", "#ff8a2b");
+      return;
+    }
+    if (slot !== entry.leadSlot) this.room?.send("swapSlot", { slot });
+  }
+
+  /** Q/E sees a bound pair as one entry and never lands on its linked off-hand slot. */
+  private cycleBeltLoadout(self: PlayerState, dir: -1 | 1): void {
+    const entry = loadoutEntryView(self);
+    for (let step = 1; step < 3; step++) {
+      const slot = (((entry.leadSlot + dir * step) % 3) + 3) % 3;
+      if (slot === entry.offSlot || !self.slots[slot]?.weapon) continue;
+      this.room?.send("swapSlot", { slot });
+      return;
+    }
+  }
+
+  /** Active identity is projected through loadoutEntryView; the linked off row is display-only. */
+  private slotView(
+    self: PlayerState,
+    i: number,
+    entry = loadoutEntryView(self),
+  ): { wid: string; rarity: number; linkedOff: boolean; paired: boolean } {
+    if (i === entry.leadSlot) {
+      return { wid: entry.leadId, rarity: entry.rarity, linkedOff: false, paired: !!entry.offId };
+    }
+    if (i === entry.offSlot) {
+      return {
+        wid: entry.offId ?? "",
+        rarity: entry.offRarity ?? 0,
+        linkedOff: true,
+        paired: true,
+      };
+    }
     const sl = self.slots[i];
-    return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0 };
+    return { wid: sl?.weapon ?? "", rarity: sl?.rarity ?? 0, linkedOff: false, paired: false };
+  }
+
+  private pairItemIdentity(item: PairPreviewItem): string {
+    return `${item.weaponId}|${item.rarity}|${item.affix}|${Number(item.earned)}`;
+  }
+
+  private slotPairItem(self: PlayerState, slot: number): PairPreviewItem | undefined {
+    if (slot === self.activeSlot) {
+      const entry = loadoutEntryView(self);
+      return {
+        weaponId: entry.leadId,
+        rarity: entry.rarity,
+        affix: entry.affix,
+        earned: entry.earned,
+      };
+    }
+    const item = self.slots[slot];
+    if (!item?.weapon) return undefined;
+    return { weaponId: item.weapon, rarity: item.rarity, affix: item.affix, earned: item.earned };
+  }
+
+  private bagPairItem(self: PlayerState, index: number): PairPreviewItem | undefined {
+    const item = self.bag[index];
+    if (!item?.weapon) return undefined;
+    return { weaponId: item.weapon, rarity: item.rarity, affix: item.affix, earned: item.earned };
+  }
+
+  private selectedPairItem(self: PlayerState): PairPreviewItem | undefined {
+    const selected = this.pairCandidate;
+    if (!selected) return undefined;
+    const item =
+      selected.source === "slot"
+        ? this.slotPairItem(self, selected.index)
+        : this.bagPairItem(self, selected.index);
+    if (!item || this.pairItemIdentity(item) !== selected.identity) {
+      this.pairCandidate = null;
+      return undefined;
+    }
+    return item;
   }
 
   /** §29 belt ARSENAL HUD — 3 slot chips (active raised + bright rarity border, others dim) showing the
@@ -11407,6 +11606,7 @@ export class ArenaScene extends Phaser.Scene {
   private updateArsenalHud(): void {
     const self = this.room?.state.players.get(this.room?.sessionId ?? "");
     if (!self) return;
+    const entry = loadoutEntryView(self);
     const s = this.uiScale();
     if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
     const g = this.arsenalG;
@@ -11417,9 +11617,10 @@ export class ArenaScene extends Phaser.Scene {
     const total = 3 * chipW + 2 * gap;
     const x0 = this.screenW() / 2 - total / 2;
     const baseY = this.screenH() - 84 * s;
+    this.arsenalPairArt?.setVisible(false);
     for (let i = 0; i < 3; i++) {
-      const active = i === self.activeSlot;
-      const { wid, rarity } = this.slotView(self, i);
+      const active = i === entry.leadSlot;
+      const { wid, rarity, linkedOff, paired } = this.slotView(self, i, entry);
       const empty = !wid || wid === "fists";
       const col = empty ? 0x39424e : (RARITIES[rarity]?.color ?? 0x9aa5b1);
       const x = x0 + i * (chipW + gap);
@@ -11432,6 +11633,49 @@ export class ArenaScene extends Phaser.Scene {
         chipH,
         7 * s,
       );
+      if (active && entry.offId) {
+        const offCol = RARITIES[entry.offRarity ?? 0]?.color ?? 0xcfc6ae;
+        g.lineStyle(2 * s, offCol, 0.95).lineBetween(x, y + chipH, x + chipW, y);
+        const artKey = bakeSplitDockArt(this, entry.leadId, entry.offId);
+        if (!this.arsenalPairArt) {
+          this.arsenalPairArt = this.add.image(0, 0, artKey).setScrollFactor(0).setDepth(100049);
+        } else if (this.arsenalPairArt.texture.key !== artKey) {
+          this.arsenalPairArt.setTexture(artKey);
+        }
+        const artSize = 34 * s;
+        const artX = x + 30 * s;
+        const artY = y + chipH / 2;
+        this.arsenalPairArt
+          .setDisplaySize(artSize, artSize)
+          .setPosition(artX, artY)
+          .setVisible(true);
+        g.lineStyle(1.5 * s, col, 1)
+          .lineBetween(
+            artX - artSize / 2,
+            artY - artSize / 2,
+            artX + artSize / 2,
+            artY - artSize / 2,
+          )
+          .lineBetween(
+            artX - artSize / 2,
+            artY - artSize / 2,
+            artX - artSize / 2,
+            artY + artSize / 2,
+          )
+          .lineStyle(1.5 * s, offCol, 1)
+          .lineBetween(
+            artX + artSize / 2,
+            artY - artSize / 2,
+            artX + artSize / 2,
+            artY + artSize / 2,
+          )
+          .lineBetween(
+            artX - artSize / 2,
+            artY + artSize / 2,
+            artX + artSize / 2,
+            artY + artSize / 2,
+          );
+      }
       // slot key
       const key = this.hudText(this.arsenalTexts, i, 100049)
         .setText(String(i + 1))
@@ -11439,16 +11683,82 @@ export class ArenaScene extends Phaser.Scene {
         .setPosition(x + 8 * s, y + 5 * s);
       key.setFontSize(12 * s).setOrigin(0, 0);
       // weapon name (rarity-tinted); an empty slot says so instead of a dash that reads as a bug
-      const nm = empty ? "Empty" : (WEAPONS[wid]?.name ?? "Unknown weapon");
+      const leadName = WEAPONS[wid]?.name ?? "Unknown weapon";
+      const nm = linkedOff
+        ? `Bound to slot ${entry.leadSlot + 1}`
+        : active && entry.offId
+          ? `${leadName} × ${WEAPONS[entry.offId]?.name ?? "Unknown weapon"}`
+          : empty
+            ? "Empty"
+            : leadName;
       const name = this.hudText(this.arsenalTexts, 3 + i, 100049)
         .setText(nm)
         .setColor(empty ? "#5c6672" : `#${col.toString(16).padStart(6, "0")}`)
-        .setPosition(x + chipW / 2, y + chipH / 2 + 3 * s);
-      name.setFontSize((empty ? 11 : nm.length > 16 ? 11 : 13) * s).setOrigin(0.5, 0.5);
+        .setPosition(
+          active && entry.offId ? x + chipW * 0.66 : x + chipW / 2,
+          y + chipH / 2 + 3 * s,
+        );
+      name
+        .setFontSize((empty || linkedOff ? 11 : nm.length > 22 ? 10 : nm.length > 16 ? 11 : 13) * s)
+        .setOrigin(0.5, 0.5);
+      const pairGlyph = this.hudText(this.arsenalTexts, 10 + i, 100049)
+        .setText("⚯")
+        .setColor(linkedOff ? "#7a8290" : "#f1e8cf")
+        .setPosition(x + chipW - 7 * s, y + chipH - 3 * s)
+        .setVisible(paired);
+      pairGlyph.setFontSize(13 * s).setOrigin(1, 1);
+      const ammo = this.hudText(this.arsenalTexts, 13 + i, 100049).setVisible(
+        active && !!entry.offId && entry.maxCharges > 0,
+      );
+      if (active && entry.offId && entry.maxCharges > 0) {
+        ammo
+          .setText(
+            `${entry.charges}/${entry.maxCharges} · ${entry.offCharges ?? 0}/${entry.offMaxCharges ?? 0}`,
+          )
+          .setColor("#cfc6ae")
+          .setPosition(x + chipW / 2, y + chipH - 3 * s)
+          .setFontSize(9 * s)
+          .setOrigin(0.5, 1);
+        const barW = 46 * s;
+        const barX = x + chipW - barW - 8 * s;
+        const drawHandBar = (
+          rowY: number,
+          charges: number,
+          maxCharges: number,
+          emphasized: boolean,
+        ) => {
+          const fraction = maxCharges > 0 ? Math.max(0, Math.min(1, charges / maxCharges)) : 0;
+          const color =
+            charges <= 0
+              ? 0xff5d5d
+              : charges <= Math.max(1, Math.ceil(maxCharges * 0.25))
+                ? 0xff8a2b
+                : 0xf1e8cf;
+          g.fillStyle(0x24201a, 0.95)
+            .fillRect(barX, rowY, barW, 2 * s)
+            .fillStyle(color, emphasized ? 1 : 0.7)
+            .fillRect(barX, rowY, Math.max(fraction > 0 ? 1 : 0, barW * fraction), 2 * s);
+        };
+        drawHandBar(y + chipH - 7 * s, entry.charges, entry.maxCharges, entry.nextHand === 0);
+        drawHandBar(
+          y + chipH - 3 * s,
+          entry.offCharges ?? 0,
+          entry.offMaxCharges ?? 0,
+          entry.nextHand === 1,
+        );
+      }
       // dockux-panel §3.4: while the panel is open, the slot chip itself says what a click does.
       const panelUp = this.bagOpen || this.shopOpen;
       const tag = this.hudText(this.arsenalTexts, 7 + i, 100049)
-        .setText(this.shopOpen ? "[Click] Sell" : "[Click] Stow")
+        .setText(
+          paired
+            ? linkedOff
+              ? "Off-hand"
+              : "Atomic pair"
+            : this.shopOpen
+              ? "[Click] Sell"
+              : "[Click] Stow",
+        )
         .setColor(this.shopOpen ? "#ffd24a" : "#9fb0c2")
         .setPosition(x + chipW - 6 * s, y + 4 * s)
         .setVisible(panelUp);
@@ -11457,30 +11767,88 @@ export class ArenaScene extends Phaser.Scene {
       let z = this.slotZones[i];
       if (!z) {
         z = this.add
-          .rectangle(0, 0, 1, 1, 0, 0)
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
           .setScrollFactor(0)
           .setDepth(100047)
           .setInteractive();
         z.on("pointerdown", () => {
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          if (!me) return;
+          const live = loadoutEntryView(me);
+          if (i === live.leadSlot && live.offId) {
+            this.flashBanner(
+              "Unbind for free at the Trading Post before moving either half",
+              "#ff8a2b",
+            );
+            return;
+          }
+          if (i === live.offSlot) {
+            this.flashBanner("The off-hand is part of one atomic pair", "#ff8a2b");
+            return;
+          }
           if (this.shopOpen) {
             this.room?.send("sellWeapon", { from: "slot", index: i });
           } else if (this.bagOpen) {
             // dockux-panel §2.2: say WHY a stow did nothing instead of failing silently.
-            const me = this.room?.state.players.get(this.room?.sessionId ?? "");
-            if (me && me.bag.length >= BAG_CAP)
+            if (me.bag.length >= BAG_CAP)
               this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, "#ff8a2b");
             else this.room?.send("bagStore", { slot: i });
           } else {
-            this.room?.send("swapSlot", { slot: i });
+            this.selectBeltSlot(me, i);
           }
         });
         this.slotZones[i] = z;
       }
       z.setPosition(x + chipW / 2, y + chipH / 2).setSize(chipW, chipH);
+
+      const canPairSlot =
+        this.shopOpen &&
+        !entry.offId &&
+        !active &&
+        !empty &&
+        pairEligible(WEAPONS[entry.leadId], WEAPONS[wid]);
+      const slotPairItem = canPairSlot ? this.slotPairItem(self, i) : undefined;
+      const pairSlotSelected =
+        !!slotPairItem &&
+        this.pairCandidate?.source === "slot" &&
+        this.pairCandidate.index === i &&
+        this.pairCandidate.identity === this.pairItemIdentity(slotPairItem);
+      let pairZone = this.pairSlotZones[i];
+      if (!pairZone) {
+        pairZone = this.add
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+          .setScrollFactor(0)
+          .setDepth(100050)
+          .setInteractive();
+        pairZone.on("pointerdown", () => {
+          if (!this.shopOpen) return;
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          const item = me ? this.slotPairItem(me, i) : undefined;
+          const lead = me ? loadoutEntryView(me) : undefined;
+          if (!item || !lead || !pairEligible(WEAPONS[lead.leadId], WEAPONS[item.weaponId])) return;
+          this.pairCandidate = {
+            source: "slot",
+            index: i,
+            identity: this.pairItemIdentity(item),
+          };
+        });
+        this.pairSlotZones[i] = pairZone;
+      }
+      pairZone
+        .setVisible(canPairSlot)
+        .setPosition(x + chipW - 19 * s, y + chipH - 15 * s)
+        .setSize(38 * s, 30 * s);
+      if (canPairSlot) {
+        g.fillStyle(0x0a0805, 0.92)
+          .fillRoundedRect(x + chipW - 36 * s, y + chipH - 27 * s, 30 * s, 21 * s, 5 * s)
+          .lineStyle(1.5 * s, pairSlotSelected ? 0x9cff6a : 0xffd479, 0.95)
+          .strokeRoundedRect(x + chipW - 36 * s, y + chipH - 27 * s, 30 * s, 21 * s, 5 * s);
+        pairGlyph.setColor(pairSlotSelected ? "#9cff6a" : "#ffd479").setVisible(true);
+      }
     }
     // §30 class set-bonus for the current loadout (active slot = live held weapon, others = stored).
-    const loadout = [0, 1, 2].map((i) => this.slotView(self, i).wid);
-    const setB = weaponSetBonus(loadout, self.weapon);
+    const loadout = [0, 1, 2].map((i) => this.slotView(self, i, entry).wid);
+    const setB = weaponSetBonus(loadout, entry.leadId);
     // scrip + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
     // is open the capacity lives in the panel title instead (§3.2) — no duplicate Pack readout.
     const parts = [`◈ ${self.scrip} Scrip`];
@@ -11492,6 +11860,20 @@ export class ArenaScene extends Phaser.Scene {
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
     info.setFontSize(12 * s).setOrigin(0.5, 1);
+    if (this.lastPairKey && entry.pairKey !== this.lastPairKey) {
+      if (entry.offId) {
+        this.pairCandidate = null;
+        this.pairRequestLockedUntil = 0;
+        const leadName = WEAPONS[entry.leadId]?.name ?? "Unknown weapon";
+        const offName = WEAPONS[entry.offId]?.name ?? "Unknown weapon";
+        this.flashBanner(`Bound — ${leadName} × ${offName}`, "#ffd479");
+        this.audio.play("grab");
+      } else if (this.lastPairKey.includes("|")) {
+        this.pairCandidate = null;
+        this.flashBanner("Unbound — no fee", "#9cff6a");
+      }
+    }
+    this.lastPairKey = entry.pairKey;
     // §29 sale feedback: flash the scrip gained + a pickup blip when the total ticks up, and PERSIST the
     // running scrip bank so it carries to the next run (meta-progression — "send stuff back").
     if (self.scrip !== this.lastScrip) {
@@ -11529,6 +11911,10 @@ export class ArenaScene extends Phaser.Scene {
         this.bagPanelCloseAt = this.time.now;
         for (const z of this.bagZones) z.setVisible(false);
         for (const z of this.buyZones) z.setVisible(false);
+        for (const z of this.pairSlotZones) z.setVisible(false);
+        for (const z of this.bagPairZones) z.setVisible(false);
+        this.pairConfirmZone?.setVisible(false);
+        this.unbindZone?.setVisible(false);
         this.bagHoverCell = -1;
       }
       const done = prefersReducedPaperMotion() || this.time.now - this.bagPanelCloseAt >= 150;
@@ -11677,6 +12063,7 @@ export class ArenaScene extends Phaser.Scene {
     const g = this.bagG.setVisible(true);
     g.clear();
     const shop = this.bagPanelMode === "shop";
+    const entry = loadoutEntryView(self);
     // §3.5 choreography: 120 ms cubic-out rise on open, 150 ms cubic-in drop on close (zones are
     // already disabled by the caller on close frame 0). Reduced motion snaps.
     const reduced = prefersReducedPaperMotion();
@@ -11698,7 +12085,9 @@ export class ArenaScene extends Phaser.Scene {
     const show = (t: Phaser.GameObjects.Text) => t.setVisible(true).setAlpha(panelAlpha);
 
     const panelW = Math.min(this.screenW() - 80 * s, 720 * s);
-    const bandH = shop ? 74 * s : 0; // §31 the permanent-upgrade BUY band (shop only)
+    const upgradeBandH = shop ? 74 * s : 0;
+    const pairBandH = shop ? 100 * s : 0;
+    const bandH = upgradeBandH + pairBandH;
     const headerH = 34 * s;
     const cellH = 56 * s;
     const rowGap = 8 * s;
@@ -11731,10 +12120,25 @@ export class ArenaScene extends Phaser.Scene {
 
     if (shop) {
       this.renderUpgradeBand(self, s, px, py + headerH, panelW, panelAlpha, zonesActive);
+      this.renderBindBand(
+        self,
+        s,
+        px,
+        py + headerH + upgradeBandH,
+        panelW,
+        pairBandH,
+        panelAlpha,
+        zonesActive,
+      );
     } else {
       // Bag mode: make sure the shop's upgrade band (zones + texts) is hidden so it can't intercept clicks.
       for (const z of this.buyZones) z.setVisible(false);
+      for (const z of this.pairSlotZones) z.setVisible(false);
+      for (const z of this.bagPairZones) z.setVisible(false);
+      this.pairConfirmZone?.setVisible(false);
+      this.unbindZone?.setVisible(false);
       for (let i = 70; i <= 80; i++) this.bagTexts[i]?.setVisible(false);
+      for (let i = 82; i <= 89; i++) this.bagTexts[i]?.setVisible(false);
     }
 
     // §3.2 display-order sort (tier desc → name asc → stable). The server's bag array order stays
@@ -11764,7 +12168,7 @@ export class ArenaScene extends Phaser.Scene {
         let z = this.bagZones[k];
         if (!z) {
           z = this.add
-            .rectangle(0, 0, 1, 1, 0, 0)
+            .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
             .setScrollFactor(0)
             .setDepth(100045)
             .setInteractive();
@@ -11797,20 +12201,33 @@ export class ArenaScene extends Phaser.Scene {
         this.bagTexts[10 + k]?.setVisible(false);
         this.bagTexts[25 + k]?.setVisible(false);
         this.bagTexts[40 + k]?.setVisible(false);
+        this.bagTexts[100 + k]?.setVisible(false);
+        this.bagPairZones[k]?.setVisible(false);
         continue;
       }
+      const bagItem: PairPreviewItem = {
+        weaponId: item.weapon,
+        rarity: item.rarity,
+        affix: item.affix,
+        earned: item.earned,
+      };
+      const pairable =
+        shop && !entry.offId && pairEligible(WEAPONS[entry.leadId], WEAPONS[item.weapon]);
+      const pairSelected =
+        pairable &&
+        this.pairCandidate?.source === "bag" &&
+        this.pairCandidate.index === bagIndex &&
+        this.pairCandidate.identity === this.pairItemIdentity(bagItem);
       const hovered = zonesActive && this.bagHoverCell === k;
       const col = RARITIES[item.rarity]?.color ?? 0x9aa5b1;
       const colHex = `#${col.toString(16).padStart(6, "0")}`;
       g.fillStyle(0x121821, 0.95).fillRoundedRect(cx, cy, w, cellH, 6 * s);
       // §3.3 the border shifts to amber on hover in Trading mode — this click sells.
-      g.lineStyle(1.5 * s, shop && hovered ? 0xffd24a : col, hovered ? 1 : 0.8).strokeRoundedRect(
-        cx,
-        cy,
-        w,
-        cellH,
-        6 * s,
-      );
+      g.lineStyle(
+        (pairSelected ? 2.5 : 1.5) * s,
+        pairSelected ? 0x9cff6a : shop && hovered ? 0xffd24a : col,
+        hovered || pairSelected ? 1 : 0.8,
+      ).strokeRoundedRect(cx, cy, w, cellH, 6 * s);
       // §3.1 item card in the dock's visual language: 44×44 art thumbnail off the shared cardbg bake.
       const artKey = bakeCardArt(this, item.weapon, 212, 296, 14);
       let art = this.bagArts[k];
@@ -11876,6 +12293,51 @@ export class ArenaScene extends Phaser.Scene {
       } else {
         this.bagTexts[40 + k]?.setVisible(false);
       }
+      const pairBadge = this.hudText(this.bagTexts, 100 + k, 100051)
+        .setText("⚯")
+        .setColor(pairSelected ? "#9cff6a" : "#ffd479")
+        .setPosition(cx + w - 7 * s, cy + 5 * s)
+        .setVisible(pairable)
+        .setAlpha(panelAlpha);
+      pairBadge.setFontSize(14 * s).setOrigin(1, 0);
+      let pairZone = this.bagPairZones[k];
+      if (!pairZone) {
+        pairZone = this.add
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+          .setScrollFactor(0)
+          .setDepth(100052)
+          .setInteractive();
+        pairZone.on("pointerdown", () => {
+          if (!this.shopOpen) return;
+          const idx = this.bagDisplayOrder[k];
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          const selected = idx === undefined || !me ? undefined : this.bagPairItem(me, idx);
+          const lead = me ? loadoutEntryView(me) : undefined;
+          if (
+            idx === undefined ||
+            !selected ||
+            !lead ||
+            !pairEligible(WEAPONS[lead.leadId], WEAPONS[selected.weaponId])
+          )
+            return;
+          this.pairCandidate = {
+            source: "bag",
+            index: idx,
+            identity: this.pairItemIdentity(selected),
+          };
+        });
+        this.bagPairZones[k] = pairZone;
+      }
+      pairZone
+        .setVisible(pairable && zonesActive)
+        .setPosition(cx + w - 18 * s, cy + 17 * s)
+        .setSize(36 * s, 34 * s);
+      if (pairable) {
+        g.fillStyle(0x0a0805, 0.9)
+          .fillRoundedRect(cx + w - 34 * s, cy + 4 * s, 28 * s, 24 * s, 5 * s)
+          .lineStyle(1 * s, pairSelected ? 0x9cff6a : 0xffd479, 0.9)
+          .strokeRoundedRect(cx + w - 34 * s, cy + 4 * s, 28 * s, 24 * s, 5 * s);
+      }
       if (hovered) {
         hoverLine = shop
           ? price > 0
@@ -11929,6 +12391,220 @@ export class ArenaScene extends Phaser.Scene {
     } else {
       footer.setVisible(false);
     }
+  }
+
+  private confirmPair(self: PlayerState): void {
+    if (this.time.now < this.pairRequestLockedUntil) return;
+    const entry = loadoutEntryView(self);
+    if (entry.offId) return;
+    const candidate = this.selectedPairItem(self);
+    if (!candidate) return;
+    const lead: PairPreviewItem = {
+      weaponId: entry.leadId,
+      rarity: entry.rarity,
+      affix: entry.affix,
+      earned: entry.earned,
+    };
+    const preview = pairPreview({
+      lead,
+      off: candidate,
+      attrs: { str: self.str, dex: self.dex, int: self.int, con: self.con, luk: self.luk },
+      loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
+    });
+    if (!preview.eligible) {
+      this.flashBanner("These weapons cannot be bound", "#ff8a2b");
+      return;
+    }
+    if (self.scrip < preview.fee) {
+      this.flashBanner(`Not enough Scrip — need ◈ ${preview.fee}`, "#ff8a2b");
+      return;
+    }
+    const selected = this.pairCandidate;
+    if (!selected) return;
+    this.pairRequestLockedUntil = this.time.now + 1200;
+    if (selected.source === "slot") {
+      this.room?.send("bindPair", { off: selected.index });
+    } else {
+      const offSlots = [0, 1, 2]
+        .filter((slot) => slot !== entry.leadSlot)
+        .sort((a, b) => Number(!!self.slots[a]?.weapon) - Number(!!self.slots[b]?.weapon) || a - b);
+      const target = offSlots[0];
+      if (target === undefined) return;
+      // Colyseus preserves message order: first move the chosen pack identity into its deterministic
+      // arsenal row, then bind that row. The preview remains exact and no mutation happens before confirm.
+      this.room?.send("bagEquip", { index: selected.index, slot: target });
+      this.room?.send("bindPair", { off: target });
+    }
+  }
+
+  private renderBindBand(
+    self: PlayerState,
+    s: number,
+    px: number,
+    y: number,
+    panelW: number,
+    h: number,
+    panelAlpha: number,
+    zonesActive: boolean,
+  ): void {
+    const g = this.bagG;
+    if (!g) return;
+    const entry = loadoutEntryView(self);
+    const lead: PairPreviewItem = {
+      weaponId: entry.leadId,
+      rarity: entry.rarity,
+      affix: entry.affix,
+      earned: entry.earned,
+    };
+    const candidate = entry.offId ? undefined : this.selectedPairItem(self);
+    const preview = candidate
+      ? pairPreview({
+          lead,
+          off: candidate,
+          attrs: { str: self.str, dex: self.dex, int: self.int, con: self.con, luk: self.luk },
+          loadoutIds: [0, 1, 2].map((slot) => this.slotView(self, slot, entry).wid),
+        })
+      : undefined;
+    const eligibleCount = entry.offId
+      ? 0
+      : [
+          ...[0, 1, 2]
+            .filter((slot) => slot !== entry.leadSlot)
+            .map((slot) => self.slots[slot]?.weapon ?? ""),
+          ...self.bag.map((item) => item.weapon),
+        ].filter((id) => pairEligible(WEAPONS[entry.leadId], WEAPONS[id])).length;
+    const bx = px + 16 * s;
+    const bw = panelW - 32 * s;
+    const buttonW = 132 * s;
+    const buttonH = 42 * s;
+    const buttonX = bx + bw - buttonW;
+    const buttonY = y + (h - buttonH) / 2;
+    g.fillStyle(0x0d1219, 0.98)
+      .fillRoundedRect(bx, y + 4 * s, bw, h - 8 * s, 7 * s)
+      .lineStyle(1.5 * s, entry.offId ? 0x9cff6a : 0xffd479, 0.75)
+      .strokeRoundedRect(bx, y + 4 * s, bw, h - 8 * s, 7 * s);
+    const show = (text: Phaser.GameObjects.Text) => text.setVisible(true).setAlpha(panelAlpha);
+    const title = this.hudText(this.bagTexts, 82, 100046)
+      .setText(entry.offId ? "BOUND PAIR" : "BIND")
+      .setColor(entry.offId ? "#9cff6a" : "#ffd479")
+      .setPosition(bx + 10 * s, y + 10 * s)
+      .setFontSize(11 * s)
+      .setFontStyle("bold");
+    show(title);
+
+    const line1 = this.hudText(this.bagTexts, 83, 100046)
+      .setPosition(bx + 10 * s, y + 29 * s)
+      .setFontSize(12 * s)
+      .setFontStyle("bold");
+    const line2 = this.hudText(this.bagTexts, 84, 100046)
+      .setPosition(bx + 10 * s, y + 48 * s)
+      .setFontSize(10 * s);
+    const line3 = this.hudText(this.bagTexts, 85, 100046)
+      .setPosition(bx + 10 * s, y + 64 * s)
+      .setFontSize(10 * s);
+    const truth = this.hudText(this.bagTexts, 86, 100046)
+      .setPosition(bx + 10 * s, y + 80 * s)
+      .setFontSize(9 * s)
+      .setColor("#7a8290");
+    const fmt = (value: number) =>
+      Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+
+    if (entry.offId) {
+      const leadName = WEAPONS[entry.leadId]?.name ?? "Unknown weapon";
+      const offName = WEAPONS[entry.offId]?.name ?? "Unknown weapon";
+      line1.setText(`${leadName} × ${offName}`).setColor("#f1e8cf");
+      line2.setText("One atomic loadout entry · alternating hands").setColor("#cfd6de");
+      line3.setText("Unbind fee ◈ 0").setColor("#9cff6a");
+      truth.setText("Both halves keep their exact tier, affix, ammo, and reload debt.");
+    } else if (candidate && preview?.eligible) {
+      const leadName = WEAPONS[lead.weaponId]?.name ?? "Unknown weapon";
+      const offName = WEAPONS[candidate.weaponId]?.name ?? "Unknown weapon";
+      line1.setText(`${leadName} × ${offName}`).setColor("#f1e8cf");
+      line2
+        .setText(
+          `Damage ${fmt(preview.leadDamage)} + ${fmt(preview.offDamage)} · Pair ${fmt(preview.combinedDps)}/s`,
+        )
+        .setColor("#cfd6de");
+      line3
+        .setText(
+          `Cadence ${preview.leadGapSeconds.toFixed(2)}s / ${preview.offGapSeconds.toFixed(2)}s${preview.separateMagazines ? " · Separate magazines" : ""}`,
+        )
+        .setColor("#cfd6de");
+      truth.setText(
+        `Fee ◈ ${preview.fee} — better half's sell value · Preview is final; no rerolls.`,
+      );
+    } else {
+      line1
+        .setText(
+          eligibleCount > 0
+            ? "Choose an ⚯ weapon from your slots or pack"
+            : "No compatible carried weapon",
+        )
+        .setColor(eligibleCount > 0 ? "#f1e8cf" : "#7a8290");
+      line2.setText("The held weapon stays in the lead hand.").setColor("#cfd6de");
+      line3
+        .setText("Requires a different one-handed weapon of the same class and delivery.")
+        .setColor("#7a8290");
+      truth.setText("Nothing changes until you review the preview and confirm.");
+    }
+    show(line1);
+    show(line2);
+    show(line3);
+    show(truth);
+
+    const buttonEnabled = entry.offId || !!preview?.eligible;
+    const requestPending = !entry.offId && this.time.now < this.pairRequestLockedUntil;
+    const affordable = entry.offId || !preview || self.scrip >= preview.fee;
+    g.fillStyle(buttonEnabled ? 0x151d24 : 0x0a0d11, 0.98)
+      .fillRoundedRect(buttonX, buttonY, buttonW, buttonH, 7 * s)
+      .lineStyle(2 * s, buttonEnabled ? (affordable ? 0xffd479 : 0xff8a2b) : 0x39424e, 0.9)
+      .strokeRoundedRect(buttonX, buttonY, buttonW, buttonH, 7 * s);
+    const button = this.hudText(this.bagTexts, 87, 100053)
+      .setText(
+        entry.offId
+          ? "Unbind — Free"
+          : requestPending
+            ? "Binding…"
+            : preview
+              ? `Bind — ◈ ${preview.fee}`
+              : "Select off-hand",
+      )
+      .setColor(buttonEnabled ? (affordable ? "#f1e8cf" : "#ff8a2b") : "#5c6672")
+      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
+      .setFontSize(11 * s)
+      .setFontStyle("bold")
+      .setOrigin(0.5);
+    show(button);
+
+    if (!this.pairConfirmZone) {
+      this.pairConfirmZone = this.add
+        .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+        .setScrollFactor(0)
+        .setDepth(100054)
+        .setInteractive();
+      this.pairConfirmZone.on("pointerdown", () => {
+        const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+        if (this.shopOpen && me) this.confirmPair(me);
+      });
+    }
+    if (!this.unbindZone) {
+      this.unbindZone = this.add
+        .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+        .setScrollFactor(0)
+        .setDepth(100054)
+        .setInteractive();
+      this.unbindZone.on("pointerdown", () => {
+        if (this.shopOpen) this.room?.send("unbindPair");
+      });
+    }
+    this.pairConfirmZone
+      .setVisible(zonesActive && !entry.offId && !!preview?.eligible && !requestPending)
+      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
+      .setSize(buttonW, buttonH);
+    this.unbindZone
+      .setVisible(zonesActive && !!entry.offId)
+      .setPosition(buttonX + buttonW / 2, buttonY + buttonH / 2)
+      .setSize(buttonW, buttonH);
   }
 
   /** §31 the shop's permanent-upgrade BUY band: one card per META_UPGRADE with its owned level, effect, and
@@ -11986,7 +12662,7 @@ export class ArenaScene extends Phaser.Scene {
       let z = this.buyZones[i];
       if (!z) {
         z = this.add
-          .rectangle(0, 0, 1, 1, 0, 0)
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
           .setScrollFactor(0)
           .setDepth(100045)
           .setInteractive();
@@ -12034,6 +12710,10 @@ export class ArenaScene extends Phaser.Scene {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
     for (const z of this.buyZones) z.setVisible(false);
+    for (const z of this.pairSlotZones) z.setVisible(false);
+    for (const z of this.bagPairZones) z.setVisible(false);
+    this.pairConfirmZone?.setVisible(false);
+    this.unbindZone?.setVisible(false);
     for (const a of this.bagArts) a?.setVisible(false);
     for (let i = 1; i < this.bagTexts.length; i++) this.bagTexts[i]?.setVisible(false);
     this.bagTexts[0]?.setVisible(false);
