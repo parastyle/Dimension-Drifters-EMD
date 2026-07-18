@@ -40,10 +40,17 @@ describe("gear part manifest assembly", () => {
     ).toBeNull();
   });
 
-  it("assembles the blank kit from source pivots into the 76px body-height frame", () => {
+  it("assembles each untrimmed blank-kit pivot onto exactly one frozen receiver", () => {
     const assembly = assembleBoilerplate(requireManifest());
     expect(assembly.parts).toHaveLength(6);
     expect(assembly.scale).toBeCloseTo(76 / 512, 10);
+    const root = requireManifest().socketFrame.bodyRootSource;
+    for (const part of assembly.parts) {
+      const raw = part.source.receiverAnchor.raw;
+      expect(raw).toBeTruthy();
+      expect(part.x).toBeCloseTo(((raw?.x ?? root.x) - root.x) * assembly.scale, 10);
+      expect(part.y).toBeCloseTo(((raw?.y ?? root.y) - root.y) * assembly.scale, 10);
+    }
     const body = assembly.parts.find((part) => part.source.id === "body");
     const head = assembly.parts.find((part) => part.source.id === "head");
     const leftHand = assembly.parts.find((part) => part.source.id === "hand-l");
@@ -55,6 +62,24 @@ describe("gear part manifest assembly", () => {
     expect(leftHand?.y).toBeCloseTo((522 - 512) * (76 / 512), 10);
     expect(rightFoot?.x).toBeCloseTo((576 - 512) * (76 / 512), 10);
     expect(rightFoot?.y).toBeCloseTo((736 - 512) * (76 / 512), 10);
+  });
+
+  it("keeps the real head on the body socket and every base texture below raw scale", () => {
+    const value = requireManifest();
+    const assembly = assembleBoilerplate(value);
+    const head = assembly.parts.find((part) => part.source.id === "head");
+    expect(head).toBeDefined();
+    const socketX = (head?.source.receiverAnchor.xL ?? 0) * 76;
+    const socketY = (head?.source.receiverAnchor.yL ?? 0) * 76;
+    const connectorToleranceAtRigScale = 4 * assembly.scale;
+    expect(Math.hypot((head?.x ?? 0) - socketX, (head?.y ?? 0) - socketY)).toBeLessThanOrEqual(
+      connectorToleranceAtRigScale,
+    );
+    for (const part of assembly.parts) {
+      expect(part.scale).toBeLessThan(1);
+      expect(part.source.alphaBounds.width * part.scale).toBeLessThan(part.source.image.width);
+      expect(part.source.alphaBounds.height * part.scale).toBeLessThan(part.source.image.height);
+    }
   });
 
   it("maps validated ids onto normalized sockets and expands prestige hats only", () => {

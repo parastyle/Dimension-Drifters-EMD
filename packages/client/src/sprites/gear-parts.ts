@@ -84,6 +84,7 @@ export interface BoilerplateManifestPart {
   restAngle: number;
   mountScale: number;
   plane: number;
+  alphaBounds: { left: number; top: number; width: number; height: number };
   image: { width: number; height: number };
 }
 
@@ -295,6 +296,7 @@ function itemShape(value: unknown, slot: GearSlot): value is GearManifestItem {
 function boilerplatePartShape(value: unknown): value is BoilerplateManifestPart {
   if (!isRecord(value)) return false;
   const image = value.image;
+  const bounds = value.alphaBounds;
   return (
     (value.id === "body" ||
       value.id === "head" ||
@@ -310,11 +312,22 @@ function boilerplatePartShape(value: unknown): value is BoilerplateManifestPart 
     finite(value.restAngle) &&
     finite(value.mountScale) &&
     finite(value.plane) &&
+    isRecord(bounds) &&
+    finite(bounds.left) &&
+    finite(bounds.top) &&
+    finite(bounds.width) &&
+    finite(bounds.height) &&
+    bounds.left >= 0 &&
+    bounds.top >= 0 &&
+    bounds.width > 0 &&
+    bounds.height > 0 &&
     isRecord(image) &&
     finite(image.width) &&
     finite(image.height) &&
     image.width > 0 &&
-    image.height > 0
+    image.height > 0 &&
+    bounds.left + bounds.width <= image.width &&
+    bounds.top + bounds.height <= image.height
   );
 }
 
@@ -414,15 +427,12 @@ export function assembleBoilerplate(
   const root = manifest.socketFrame.bodyRootSource;
   const parts = manifest.boilerplate.parts
     .map<BoilerplateAssemblyPart>((source) => {
-      let x = 0;
-      let y = 0;
-      if (source.id === "head") {
-        x = source.receiverAnchor.xL * targetBodyHeight;
-        y = source.receiverAnchor.yL * targetBodyHeight;
-      } else if (source.id !== "body") {
-        x = (source.pivotSource.x - root.x) * scale;
-        y = (source.pivotSource.y - root.y) * scale;
-      }
+      // Boilerplate files retain the untrimmed 1024 socket frame. Position the authored pivot at exactly
+      // one receiver: prefer its frozen source-space point, with normalized L units only as a fallback.
+      // The image origin then consumes the pivot once; alphaBounds never contributes a second offset.
+      const raw = source.receiverAnchor.raw;
+      const x = raw ? (raw.x - root.x) * scale : source.receiverAnchor.xL * targetBodyHeight;
+      const y = raw ? (raw.y - root.y) * scale : source.receiverAnchor.yL * targetBodyHeight;
       return {
         source,
         x,

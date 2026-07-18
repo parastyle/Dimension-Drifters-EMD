@@ -38,6 +38,15 @@ import {
   selectPet,
 } from "../ui/pet-select.js";
 import {
+  truncateMeasuredBlock,
+  truncateMeasuredLine,
+  WARDROBE_ITEM_CARD_HEIGHT,
+  WARDROBE_ITEM_CARD_WIDTH,
+  WARDROBE_ITEM_TEXT_WIDTH,
+  WARDROBE_LAYOUT,
+  wardrobeViewportLayout,
+} from "../ui/wardrobe/layout.js";
+import {
   applyWardrobePreset,
   beginPrestigeReceiptFlow,
   equipWardrobeItem,
@@ -57,6 +66,7 @@ import {
   wardrobeSetViews,
   wardrobeSlotItems,
 } from "../ui/wardrobe/model.js";
+import { WardrobeCharacterPreview } from "../ui/wardrobe/preview.js";
 
 /**
  * §17 title / dimension-select screen — the first scene. Lists every dimension as a themed card (its own
@@ -146,6 +156,8 @@ export class MenuScene extends Phaser.Scene {
   private wardrobeStats?: Phaser.GameObjects.Text;
   private wardrobeCollections?: Phaser.GameObjects.Text;
   private wardrobeFooter?: Phaser.GameObjects.Text;
+  private wardrobePreviewSurface?: WardrobeCharacterPreview;
+  private wardrobeHoveredGearId?: GearId;
   private wardrobeItemRows: Phaser.GameObjects.Container[] = [];
   private wardrobeSlotRows: Phaser.GameObjects.Container[] = [];
   private wardrobePresetRows: Phaser.GameObjects.Container[] = [];
@@ -232,6 +244,8 @@ export class MenuScene extends Phaser.Scene {
     this.tabRow = undefined;
     this.tabButtons.clear();
     this.wardrobeRoot = undefined;
+    this.wardrobePreviewSurface = undefined;
+    this.wardrobeHoveredGearId = undefined;
     this.wardrobeItemRows = [];
     this.wardrobeSlotRows = [];
     this.wardrobePresetRows = [];
@@ -396,8 +410,11 @@ export class MenuScene extends Phaser.Scene {
     label: string,
     width: number,
     onClick: () => void,
+    height = 30,
   ): Phaser.GameObjects.Container {
-    const bg = this.add.rectangle(0, 0, width, 30, 0x1b1822, 0.96).setStrokeStyle(1.5, 0x3a3550);
+    const bg = this.add
+      .rectangle(0, 0, width, height, 0x1b1822, 0.96)
+      .setStrokeStyle(1.5, 0x3a3550);
     const labelText = this.add
       .text(0, 0, label, {
         fontFamily: "monospace",
@@ -455,50 +472,56 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private buildPrestigeSurface(parent: Phaser.GameObjects.Container): void {
-    const root = this.add.container(405, 103);
+    const prestige = WARDROBE_LAYOUT.prestige;
+    const rootX = prestige.x + prestige.width / 2;
+    const rootY = prestige.y + prestige.height / 2;
+    const root = this.add.container(rootX, rootY);
     const panel = this.add
-      .rectangle(0, 0, 310, 202, 0x130d0b, 0.99)
+      .rectangle(0, 0, prestige.width, prestige.height, 0x130d0b, 0.99)
       .setStrokeStyle(2, 0x9d6b38, 0.95);
     this.prestigeTierText = this.add
-      .text(-142, -87, "", {
+      .text(-142, -81, "", {
         fontFamily: "monospace",
-        fontSize: "11px",
+        fontSize: "10px",
         color: "#ffd479",
         fontStyle: "bold",
-        lineSpacing: 2,
+        lineSpacing: 1,
+        wordWrap: { width: 284 },
       })
       .setOrigin(0, 0);
     this.prestigeCostText = this.add
-      .text(-142, -48, "", {
+      .text(-142, -49, "", {
         fontFamily: "monospace",
-        fontSize: "9px",
+        fontSize: "8px",
         color: "#ff9a6a",
-        lineSpacing: 1,
+        lineSpacing: 0,
+        wordWrap: { width: 284 },
       })
       .setOrigin(0, 0);
     this.prestigeSurvivorText = this.add
-      .text(-142, 18, "", {
+      .text(-142, 7, "", {
         fontFamily: "monospace",
-        fontSize: "9px",
+        fontSize: "8px",
         color: "#9cff8a",
-        lineSpacing: 1,
+        lineSpacing: 0,
+        wordWrap: { width: 284 },
       })
       .setOrigin(0, 0);
     this.prestigeButtonBg = this.add
-      .rectangle(0, 72, 280, 30, 0x2b1711, 1)
+      .rectangle(0, 68, 280, 28, 0x2b1711, 1)
       .setStrokeStyle(2, 0xff8a2b)
       .setInteractive({ useHandCursor: true });
     this.prestigeButtonText = this.add
-      .text(0, 72, "", {
+      .text(0, 68, "", {
         fontFamily: "monospace",
-        fontSize: "10px",
+        fontSize: "9px",
         color: "#ffd8a8",
         fontStyle: "bold",
       })
       .setOrigin(0.5);
-    const holdTrack = this.add.rectangle(-140, 94, 280, 5, 0x331c17, 1).setOrigin(0, 0.5);
+    const holdTrack = this.add.rectangle(-140, 88, 280, 4, 0x331c17, 1).setOrigin(0, 0.5);
     this.prestigeHoldFill = this.add
-      .rectangle(-140, 94, 280, 5, 0xffb24a, 1)
+      .rectangle(-140, 88, 280, 4, 0xffb24a, 1)
       .setOrigin(0, 0.5)
       .setScale(0, 1);
     this.prestigeButtonBg
@@ -572,11 +595,17 @@ export class MenuScene extends Phaser.Scene {
     )
       return;
     const view = prestigeCeremonyView(this.metaAccount, this.hasPrestigeGameClear());
-    this.prestigeTierText.setText(
+    this.setBoundedWardrobeText(
+      this.prestigeTierText,
       `PRESTIGE ${view.worldTier} · WORLD TIER ${view.worldTier}\n${view.nextHatPromise}`,
+      WARDROBE_LAYOUT.prestigeTier,
     );
-    this.prestigeCostText.setText(view.costCopy);
-    this.prestigeSurvivorText.setText(view.survivorCopy);
+    this.setBoundedWardrobeText(this.prestigeCostText, view.costCopy, WARDROBE_LAYOUT.prestigeCost);
+    this.setBoundedWardrobeText(
+      this.prestigeSurvivorText,
+      view.survivorCopy,
+      WARDROBE_LAYOUT.prestigeSurvivor,
+    );
     const pending =
       this.prestigeFlow?.status === "pending" || this.prestigeFlow?.status === "awaiting-account";
     const revealed = this.prestigeFlow?.status === "revealed";
@@ -591,7 +620,16 @@ export class MenuScene extends Phaser.Scene {
           : this.prestigeArmed
             ? `HOLD 2.0s · WORLD TIER ${view.worldTier} → ${view.nextWorldTier}`
             : "FAREWELL THE ARMORY · REVIEW";
-    this.prestigeButtonText.setText(label).setFontSize(label.length > 34 ? 8 : 10);
+    this.prestigeButtonText.setFontSize(label.length > 34 ? 8 : 9);
+    const fittedLabel = truncateMeasuredLine(
+      label,
+      WARDROBE_LAYOUT.prestigeButton.width - 14,
+      (candidate) => {
+        this.prestigeButtonText?.setText(candidate);
+        return this.prestigeButtonText?.width ?? 0;
+      },
+    );
+    this.prestigeButtonText.setText(fittedLabel);
     this.prestigeButtonBg
       .setFillStyle(view.eligible && !pending ? 0x2b1711 : 0x151316, 1)
       .setStrokeStyle(view.eligible && !pending ? 2 : 1.5, view.eligible ? 0xff8a2b : 0x4d454d);
@@ -692,9 +730,11 @@ export class MenuScene extends Phaser.Scene {
 
   private buildWardrobePanel(): void {
     const root = this.add.container(0, 0);
-    const panel = this.add.rectangle(0, 0, 1160, 440, 0x0b0a0f, 0.98).setStrokeStyle(2, 0x3a3550);
+    const panel = this.add
+      .rectangle(0, 0, WARDROBE_LAYOUT.panel.width, WARDROBE_LAYOUT.panel.height, 0x0b0a0f, 0.98)
+      .setStrokeStyle(2, 0x3a3550);
     const heading = this.add
-      .text(-560, -204, "THE WARDROBE", {
+      .text(WARDROBE_LAYOUT.heading.x, WARDROBE_LAYOUT.heading.y, "THE WARDROBE", {
         fontFamily: "monospace",
         fontSize: "14px",
         color: ACCENT,
@@ -702,64 +742,64 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
     this.wardrobeTitle = this.add
-      .text(-560, -180, "", { fontSize: "19px", color: TITLE_COLOR, fontStyle: "bold" })
+      .text(
+        WARDROBE_LAYOUT.headerTitle.x,
+        WARDROBE_LAYOUT.headerTitle.y + WARDROBE_LAYOUT.headerTitle.height / 2,
+        "",
+        { fontSize: "18px", color: TITLE_COLOR, fontStyle: "bold" },
+      )
       .setOrigin(0, 0.5);
 
-    // Wave 4 owns the boilerplate preview; Wave 5 will replace this silhouette with layered rig parts.
-    const mannequin = this.add.container(-250, -25);
-    const shadow = this.add.ellipse(0, 140, 150, 30, 0x000000, 0.45);
-    const cloak = this.add.triangle(0, 40, 0, -20, -62, 132, 62, 132, 0x22202a, 1);
-    const body = this.add.rectangle(0, 48, 74, 138, 0xc7c1b7, 1).setStrokeStyle(3, 0x16141a);
-    const head = this.add.circle(0, -57, 39, 0xd4cec3, 1).setStrokeStyle(3, 0x16141a);
-    const face = this.add.rectangle(10, -53, 34, 5, 0x202027, 1);
-    const hatLine = this.add.rectangle(0, -101, 88, 9, 0x33e6ff, 0.75);
-    const boilerplate = this.add
-      .text(0, 168, "THE DRIFTER · COMPOSITE PREVIEW", {
-        fontFamily: "monospace",
-        fontSize: "10px",
-        color: "#8d8794",
-      })
-      .setOrigin(0.5);
-    mannequin.add([shadow, cloak, body, head, face, hatLine, boilerplate]);
+    this.wardrobePreviewSurface = new WardrobeCharacterPreview(this);
 
     this.wardrobeInspector = this.add
-      .text(-365, 105, "", {
+      .text(WARDROBE_LAYOUT.inspector.x, WARDROBE_LAYOUT.inspector.y, "", {
         fontFamily: "monospace",
-        fontSize: "11px",
+        fontSize: "9px",
         color: "#d8cfb8",
-        lineSpacing: 4,
-        wordWrap: { width: 260 },
+        lineSpacing: 2,
+        wordWrap: { width: WARDROBE_LAYOUT.inspector.width, useAdvancedWrap: true },
       })
       .setOrigin(0, 0);
     this.wardrobeStats = this.add
-      .text(-250, 168, "", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#bfefff",
-        align: "center",
-      })
+      .text(
+        WARDROBE_LAYOUT.stats.x + WARDROBE_LAYOUT.stats.width / 2,
+        WARDROBE_LAYOUT.stats.y,
+        "",
+        {
+          fontFamily: "monospace",
+          fontSize: "10px",
+          color: "#bfefff",
+          align: "center",
+        },
+      )
       .setOrigin(0.5, 0);
     this.wardrobeCollections = this.add
-      .text(270, -164, "", {
+      .text(WARDROBE_LAYOUT.collections.x, WARDROBE_LAYOUT.collections.y, "", {
         fontFamily: "monospace",
-        fontSize: "10px",
+        fontSize: "8px",
         color: "#8d8794",
-        lineSpacing: 2,
-        wordWrap: { width: 280 },
+        lineSpacing: -1,
+        wordWrap: { width: WARDROBE_LAYOUT.collections.width },
       })
       .setOrigin(0, 0);
     this.wardrobeFooter = this.add
-      .text(0, 205, "[Click] Equip · [R] Clear slot · [1-6] Preset · [Enter] Ready", {
-        fontFamily: "monospace",
-        fontSize: "11px",
-        color: "#9fb0c2",
-      })
+      .text(
+        0,
+        WARDROBE_LAYOUT.footerY,
+        "[Click] Equip · [R] Clear slot · [1-6] Preset · [Enter] Ready",
+        {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#9fb0c2",
+        },
+      )
       .setOrigin(0.5);
     root.add([
       panel,
       heading,
       this.wardrobeTitle,
-      mannequin,
+      this.wardrobePreviewSurface.root,
       this.wardrobeInspector,
       this.wardrobeStats,
       this.wardrobeCollections,
@@ -774,14 +814,17 @@ export class MenuScene extends Phaser.Scene {
         () => {
           this.selectedGearSlot = slot;
           this.wardrobeItemPage = 0;
+          this.wardrobeHoveredGearId = undefined;
           this.refreshWardrobePanel();
         },
+        prominent ? 42 : 30,
       );
-      chip.setPosition(-490, -135 + index * 38);
+      chip.setPosition(
+        WARDROBE_LAYOUT.slotX,
+        WARDROBE_LAYOUT.slotStartY + index * WARDROBE_LAYOUT.slotStepY,
+      );
       if (prominent) {
-        (chip.getData("bg") as Phaser.GameObjects.Rectangle)
-          .setSize(190, 42)
-          .setStrokeStyle(2.5, 0xffd479);
+        (chip.getData("bg") as Phaser.GameObjects.Rectangle).setStrokeStyle(2.5, 0xffd479);
         (chip.getData("text") as Phaser.GameObjects.Text)
           .setText("HAT GALLERY")
           .setColor("#ffd479");
@@ -790,30 +833,52 @@ export class MenuScene extends Phaser.Scene {
       this.wardrobeSlotRows.push(chip);
     }
     for (let index = 0; index < 6; index++) {
-      const row = this.makeMenuChip("", 330, () => {
-        const id = row.getData("gearId") as GearId | undefined;
-        if (id) this.equipWardrobe(id);
-      });
-      row.setPosition(85, -127 + index * 47);
+      const row = this.makeMenuChip(
+        "",
+        WARDROBE_ITEM_CARD_WIDTH,
+        () => {
+          const id = row.getData("gearId") as GearId | undefined;
+          if (id) this.equipWardrobe(id);
+        },
+        WARDROBE_ITEM_CARD_HEIGHT,
+      );
+      row.setPosition(
+        WARDROBE_LAYOUT.itemX,
+        WARDROBE_LAYOUT.itemStartY + index * WARDROBE_LAYOUT.itemStepY,
+      );
+      const rowBg = row.getData("bg") as Phaser.GameObjects.Rectangle;
+      rowBg
+        .on("pointerover", () => {
+          const id = row.getData("catalogGearId") as GearId | undefined;
+          if (!id) return;
+          this.wardrobeHoveredGearId = id;
+          this.refreshWardrobeInspector(id);
+        })
+        .on("pointerout", () => {
+          this.wardrobeHoveredGearId = undefined;
+          this.refreshWardrobeInspector();
+        });
       root.add(row);
       this.wardrobeItemRows.push(row);
     }
-    for (let index = 0; index < 6; index++) {
-      const chip = this.makeMenuChip(String(index + 1), 44, () =>
+    for (const [index, rect] of WARDROBE_LAYOUT.presetChipRects.entries()) {
+      const chip = this.makeMenuChip(String(index + 1), rect.width, () =>
         this.applyWardrobePresetIndex(index),
       );
-      chip.setPosition(-365 + index * 54, -188);
+      chip.setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2);
       root.add(chip);
       this.wardrobePresetRows.push(chip);
     }
     const previous = this.makeMenuChip("‹", 38, () => {
       this.wardrobeItemPage = Math.max(0, this.wardrobeItemPage - 1);
+      this.wardrobeHoveredGearId = undefined;
       this.refreshWardrobePanel();
-    }).setPosition(205, -188);
+    }).setPosition(WARDROBE_LAYOUT.pagePrevious.x, WARDROBE_LAYOUT.pagePrevious.y);
     const next = this.makeMenuChip("›", 38, () => {
       this.wardrobeItemPage++;
+      this.wardrobeHoveredGearId = undefined;
       this.refreshWardrobePanel();
-    }).setPosition(245, -188);
+    }).setPosition(WARDROBE_LAYOUT.pageNext.x, WARDROBE_LAYOUT.pageNext.y);
     root.add([previous, next]);
     this.buildPrestigeSurface(root);
     this.wardrobeRoot = root;
@@ -843,6 +908,41 @@ export class MenuScene extends Phaser.Scene {
     this.refreshWardrobePanel();
   }
 
+  private setBoundedWardrobeText(
+    text: Phaser.GameObjects.Text,
+    value: string,
+    bounds: { width: number; height: number },
+  ): void {
+    const fitted = truncateMeasuredBlock(value, bounds, (candidate) => {
+      text.setText(candidate);
+      return { width: text.width, height: text.height };
+    });
+    text.setText(fitted);
+  }
+
+  private refreshWardrobeInspector(id?: GearId): void {
+    if (!this.wardrobeInspector) return;
+    const inspectedId = id ?? this.metaAccount.equippedGear[this.selectedGearSlot];
+    const def = GEAR_CATALOG[inspectedId];
+    const item = wardrobeSlotItems(this.metaAccount, def.slot).find(
+      (row) => row.id === inspectedId,
+    );
+    const availability = item?.equipped
+      ? "Equipped for the next run"
+      : item?.owned
+        ? "Owned · click the card to equip"
+        : (item?.lockedCopy ?? "Locked");
+    const dependency =
+      "effectAvailability" in def && def.effectAvailability === "inert"
+        ? "Dependency pending · preview only"
+        : availability;
+    this.setBoundedWardrobeText(
+      this.wardrobeInspector,
+      `${def.name}\n${def.rarity} · ${gearRarityPips(def)} · ${def.gearClass}\n${def.effectText}\n${dependency}`,
+      WARDROBE_LAYOUT.inspector,
+    );
+  }
+
   private refreshWardrobePanel(): void {
     if (
       !this.wardrobeRoot ||
@@ -860,28 +960,46 @@ export class MenuScene extends Phaser.Scene {
       this.wardrobeItemPage * pageSize,
       (this.wardrobeItemPage + 1) * pageSize,
     );
-    const equipped = GEAR_CATALOG[this.metaAccount.equippedGear[this.selectedGearSlot]];
-    this.wardrobeTitle.setText(
+    const titleCopy =
       this.selectedGearSlot === "hat"
         ? `HAT GALLERY · ${items.filter((row) => row.owned).length}/${items.length} launch signatures · 27 legacy pedestals archived`
-        : `${this.selectedGearSlot.toUpperCase()} · OWNED FIRST · LOCKED SILHOUETTES AFTER`,
+        : `${this.selectedGearSlot.toUpperCase()} · OWNED FIRST · LOCKED SILHOUETTES AFTER`;
+    const fittedTitle = truncateMeasuredLine(
+      titleCopy,
+      WARDROBE_LAYOUT.headerTitle.width,
+      (candidate) => {
+        this.wardrobeTitle?.setText(candidate);
+        return this.wardrobeTitle?.width ?? 0;
+      },
     );
-    this.wardrobeInspector.setText(
-      `${equipped.name}\n${equipped.rarity} · ${gearRarityPips(equipped)} · ${equipped.gearClass}\n${equipped.effectText}\n${"effectAvailability" in equipped && equipped.effectAvailability === "inert" ? "Dependency pending · preview only" : "Equipped for the next run"}`,
-    );
+    this.wardrobeTitle.setText(fittedTitle);
+    this.refreshWardrobeInspector(this.wardrobeHoveredGearId);
+    this.wardrobePreviewSurface?.refresh(this.metaAccount.equippedGear, this.metaAccount.prestige);
     const preview = wardrobePreview(this.metaAccount);
-    this.wardrobeStats.setText(
+    this.setBoundedWardrobeText(
+      this.wardrobeStats,
       `STR ${preview.baseStats.str} · DEX ${preview.baseStats.dex} · INT ${preview.baseStats.int} · CON ${preview.baseStats.con} · LUK ${preview.baseStats.luk}\nSIGNATURE · ${preview.quirk.name}`,
+      WARDROBE_LAYOUT.stats,
     );
     const sets = wardrobeSetViews(this.metaAccount);
-    this.wardrobeCollections.setText(
-      `LEGACY SET COLLECTIONS\n${sets
-        .map(
-          (set) =>
-            `${set.name} ${set.owned}/${set.total}${set.equipped > 0 ? ` · worn ${set.equipped}` : ""}`,
-        )
-        .join("\n")}`,
+    const collectionLines = [
+      "LEGACY SET COLLECTIONS",
+      ...sets.map(
+        (set) =>
+          `${set.name} ${set.owned}/${set.total}${set.equipped > 0 ? ` · worn ${set.equipped}` : ""}`,
+      ),
+    ];
+    this.wardrobeCollections.setFontSize(8);
+    const fittedCollectionLines = collectionLines.map((line) =>
+      truncateMeasuredLine(line, WARDROBE_LAYOUT.collections.width, (candidate) => {
+        this.wardrobeCollections?.setText(candidate);
+        return this.wardrobeCollections?.width ?? 0;
+      }),
     );
+    this.wardrobeCollections.setText(fittedCollectionLines.join("\n"));
+    if (this.wardrobeCollections.height > WARDROBE_LAYOUT.collections.height) {
+      this.wardrobeCollections.setFontSize(7);
+    }
     this.wardrobeSlotRows.forEach((row, index) => {
       const selected = GEAR_SLOTS[index] === this.selectedGearSlot;
       (row.getData("bg") as Phaser.GameObjects.Rectangle).setFillStyle(
@@ -891,15 +1009,25 @@ export class MenuScene extends Phaser.Scene {
     });
     this.wardrobeItemRows.forEach((row, index) => {
       const item = page[index];
-      row.setVisible(!!item).setData("gearId", item?.owned ? item.id : undefined);
+      row
+        .setVisible(!!item)
+        .setData("catalogGearId", item?.id)
+        .setData("gearId", item?.owned ? item.id : undefined);
       if (!item) return;
       const text = row.getData("text") as Phaser.GameObjects.Text;
       const bg = row.getData("bg") as Phaser.GameObjects.Rectangle;
+      text.setFontSize(10).setLineSpacing(1).setAlign("center");
+      const fitLine = (value: string): string =>
+        truncateMeasuredLine(value, WARDROBE_ITEM_TEXT_WIDTH, (candidate) => {
+          text.setText(candidate);
+          return text.width;
+        });
+      const nameLine = fitLine(`${item.equipped ? "EQUIPPED · " : ""}${item.def.name}`);
+      const detailLine = fitLine(
+        `${item.def.rarity} · ${item.owned ? item.def.effectText : item.lockedCopy}`,
+      );
       text
-        .setText(
-          `${item.equipped ? "EQUIPPED · " : ""}${item.def.name}\n${item.def.rarity} · ${item.owned ? item.def.effectText : item.lockedCopy}`,
-        )
-        .setFontSize(this.selectedGearSlot === "hat" ? 11 : 10)
+        .setText(`${nameLine}\n${detailLine}`)
         .setColor(item.owned ? (item.equipped ? "#9cff6a" : TITLE_COLOR) : "#686472");
       bg.setFillStyle(
         item.equipped ? 0x173021 : item.owned ? 0x1b1822 : 0x111016,
@@ -1413,10 +1541,13 @@ export class MenuScene extends Phaser.Scene {
     this.title.setPosition(w / 2, titleY).setFontSize(Math.min(52, w / 13));
     this.subtitle.setPosition(w / 2, titleY + 40);
     this.tabRow?.setPosition(w / 2, titleY + 76);
-    const loadoutScale = Math.min(1, (w - 24) / 1160, Math.max(0.72, (h - 300) / 440));
-    const loadoutY = titleY + 76 + 36 + 220 * loadoutScale;
-    this.wardrobeRoot?.setPosition(w / 2, loadoutY).setScale(loadoutScale);
-    this.armoryRoot?.setPosition(w / 2, loadoutY).setScale(loadoutScale);
+    const wardrobeLayout = wardrobeViewportLayout(w, h);
+    const loadoutScale = wardrobeLayout.scale;
+    const loadoutY = wardrobeLayout.centerY;
+    this.wardrobeRoot
+      ?.setPosition(wardrobeLayout.centerX, wardrobeLayout.centerY)
+      .setScale(loadoutScale);
+    this.armoryRoot?.setPosition(wardrobeLayout.centerX, loadoutY).setScale(loadoutScale);
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
     this.intentRow?.setPosition(w / 2, titleY + 126);
     this.companionRow

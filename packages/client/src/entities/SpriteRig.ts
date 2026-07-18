@@ -1671,7 +1671,6 @@ export class SpriteRig {
       if (part.source.id === "body") this.boilerplateBodyAssembly = part;
       else if (part.source.id === "head") this.boilerplateHeadAssembly = part;
     }
-    this.baseScale = 1;
     if (!this.boilerplateHead) {
       this.boilerplateHead = this.scene.add.image(0, 0, "__WHITE").setVisible(false);
       this.root.add(this.boilerplateHead);
@@ -1680,7 +1679,38 @@ export class SpriteRig {
     this.installBoilerplateIfReady();
   }
 
-  /** Retarget the five legacy retained nodes plus the detached head once all six loose textures exist. */
+  /** A compatibility scaffold may omit a limb; promote the authored boilerplate part into the normal
+   * hand/foot arrays so every pose and jiggle writer sees the same complete five-node base skeleton. */
+  private createBoilerplateLimb(part: BoilerplateAssemblyPart): RigHand {
+    const img = this.scene.add
+      .image(part.x, part.y, boilerplateTextureKey(part.source.id))
+      .setOrigin(part.originX, part.originY)
+      .setScale(part.scale)
+      .setRotation(part.rotation);
+    const limb: RigHand = {
+      img,
+      ox: part.x,
+      oy: part.y,
+      front: part.source.id.endsWith("-r"),
+      jx: 0,
+      jy: 0,
+      jvx: 0,
+      jvy: 0,
+      prevAx: 0,
+      prevAy: 0,
+      prevAvx: 0,
+      prevAvy: 0,
+      prevOwn: 0,
+      springReady: false,
+    };
+    this.parts.push(img);
+    this.root.add(img);
+    if (part.source.id.startsWith("hand-")) this.hands.push(limb);
+    else this.feet.push(limb);
+    return limb;
+  }
+
+  /** Atomically retarget the retained skeleton once all six loose textures exist. */
   private installBoilerplateIfReady(): void {
     if (this.boilerplateReady || !this.boilerplateAssembly) return;
     for (const part of this.boilerplateAssembly.parts)
@@ -1694,36 +1724,64 @@ export class SpriteRig {
     this.body
       .setTexture(boilerplateTextureKey("body"))
       .setOrigin(body.originX, body.originY)
-      .setScale(body.scale);
+      .setPosition(body.x, body.y)
+      .setScale(body.scale)
+      .setRotation(body.rotation);
     this.boilerplateHead
       .setTexture(boilerplateTextureKey("head"))
       .setOrigin(head.originX, head.originY)
+      .setPosition(head.x, head.y)
       .setScale(head.scale)
+      .setRotation(head.rotation)
       .setVisible(true);
 
+    const boilerplateNodes = new Set<Phaser.GameObjects.Image>([this.body]);
     for (const part of assembly.parts) {
       const right = part.source.id.endsWith("-r");
       if (part.source.id.startsWith("hand-")) {
-        const hand = this.hands.find((candidate) => candidate.front === right);
-        if (!hand) continue;
+        const hand =
+          this.hands.find((candidate) => candidate.front === right) ??
+          this.createBoilerplateLimb(part);
         hand.ox = part.x;
         hand.oy = part.y;
         hand.img
           .setTexture(boilerplateTextureKey(part.source.id))
           .setOrigin(part.originX, part.originY)
           .setPosition(part.x, part.y)
-          .setScale(part.scale);
+          .setScale(part.scale)
+          .setRotation(part.rotation);
+        boilerplateNodes.add(hand.img);
       } else if (part.source.id.startsWith("foot-")) {
-        const foot = this.feet.find((candidate) => candidate.front === right);
-        if (!foot) continue;
+        const foot =
+          this.feet.find((candidate) => candidate.front === right) ??
+          this.createBoilerplateLimb(part);
         foot.ox = part.x;
         foot.oy = part.y;
         foot.img
           .setTexture(boilerplateTextureKey(part.source.id))
           .setOrigin(part.originX, part.originY)
           .setPosition(part.x, part.y)
-          .setScale(part.scale);
+          .setScale(part.scale)
+          .setRotation(part.rotation);
+        boilerplateNodes.add(foot.img);
       }
+    }
+    for (let index = this.hands.length - 1; index >= 0; index--) {
+      const hand = this.hands[index];
+      if (!hand || boilerplateNodes.has(hand.img)) continue;
+      hand.img.destroy();
+      this.hands.splice(index, 1);
+    }
+    for (let index = this.feet.length - 1; index >= 0; index--) {
+      const foot = this.feet[index];
+      if (!foot || boilerplateNodes.has(foot.img)) continue;
+      foot.img.destroy();
+      this.feet.splice(index, 1);
+    }
+    for (let index = this.parts.length - 1; index >= 0; index--) {
+      const image = this.parts[index];
+      if (!image || boilerplateNodes.has(image)) continue;
+      this.parts.splice(index, 1);
     }
     this.slideAfterimageA
       .setTexture(boilerplateTextureKey("body"))
@@ -5784,10 +5842,9 @@ export class SpriteRig {
     const head = this.boilerplateHead;
     const source = this.boilerplateHeadAssembly;
     if (!head || !source || !this.boilerplateReady) return;
-    const localX =
-      source.source.receiverAnchor.xL * (this.boilerplateManifest?.socketFrame.bodyHeightL ?? 512);
-    const localY =
-      source.source.receiverAnchor.yL * (this.boilerplateManifest?.socketFrame.bodyHeightL ?? 512);
+    const assemblyScale = this.boilerplateAssembly?.scale ?? 1;
+    const localX = source.x / assemblyScale;
+    const localY = source.y / assemblyScale;
     const dx = localX * this.body.scaleX;
     const dy = localY * this.body.scaleY;
     const cosine = Math.cos(this.body.rotation);

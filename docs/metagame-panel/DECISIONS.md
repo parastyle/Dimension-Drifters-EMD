@@ -36,3 +36,18 @@ Recorded 2026-07-18. The confirmed direction, overriding conflicting panel outpu
   - Readability law: the tower miniaturizes as it grows and never occludes telegraphs; render-cap
     with a "+N" tassel beyond ~12 visible hats if perf or clarity demands.
   - One account int (prestige count) + the equipped tower composition; same local-trust model.
+
+## The boilerplate identity — STITCH-SEAM DUMMY (user ruling, 2026-07-18 morning)
+
+- The approved base character is the **stitch-seam training dummy** concept
+  (tools/artkit/out/character-concepts/stitch-seam-dummy.png): oatmeal canvas, one vertical
+  charcoal stitch seam up the torso midline, a darker-weave shoulder patch, a cross-stitch X face.
+- **Design-language amendments (binding, two fronts):**
+  1. Hands AND feet are **nearly indistinguishable soft blobs** — no fingers/thumb lobe, no
+     wedge/heel/toe foot shape. One shared lump language for all four extremities.
+  2. The head is a **fully floating object with NO neck** — exactly like Madness. The head must
+     bob and jiggle independently ("we were missing the feel because the head wasn't jiggling").
+- Consequence embraced by the ruling: **helmets become ALTERNATIVE HEADS** in the wardrobe — a
+  head-replacement gear class alongside stack-on-top hats.
+- Rig kit: six fully detached parts — torso bean (no legs), floating head, 2 blob hands,
+  2 blob feet — all riding the SpriteRig jiggle skeleton.

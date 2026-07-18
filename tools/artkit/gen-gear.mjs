@@ -320,34 +320,37 @@ const ITEMS = parseLaunchItems();
 
 const BOILERPLATE_PARTS = [
   {
+    // OWNER RULING 2026-07-18 (stitch-seam identity): torso bean ONLY — no legs, no head; the head is
+    // a fully floating neckless part (Madness bob law; enables helmet alternative-heads); hands and
+    // feet are the SAME near-featureless soft blob language (no thumb, no wedge/heel/toe).
     id: "body", parent: null, receiver: "body", pivot: BODY_ROOT_SOURCE, desiredAnchor: [0.5, 0.5],
     maxPartBox: { width: 390, height: 500 }, planeId: "body",
-    description: "ONLY the pale blank torso/body card from shoulders through pelvis and joined simple upper legs; no head, hands, feet, clothing, hair, gear, or shadow",
+    description: "ONLY the oatmeal-canvas stitch-seam torso BEAN — no legs, no pelvis taper into limbs, no head or neck; a single vertical charcoal stitch seam up the midline and one small darker-weave shoulder patch; no hands, feet, clothing, hair, gear, or shadow",
   },
   {
-    id: "head", parent: "body", receiver: "head", pivot: { x: 512, y: 330 }, desiredAnchor: [0.5, 0.66],
-    maxPartBox: { width: 250, height: 240 }, planeId: "body",
-    description: "ONLY the blank near-featureless pale pill/wedge head with a short neck overlap tab; no torso, hair, hat, ears, eyewear, facial hair, or shadow",
+    id: "head", parent: "body", receiver: "head", pivot: { x: 512, y: 300 }, desiredAnchor: [0.5, 0.55],
+    maxPartBox: { width: 250, height: 220 }, planeId: "body",
+    description: "ONLY the FLOATING blank egg head with NO neck, no connector tab, no shoulder hint — a clean closed oval bottom edge — carrying one small charcoal cross-stitch X where a face would be; no torso, hair, hat, ears, eyewear, facial hair, or shadow",
   },
   {
     id: "hand-l", parent: "hand-l", receiver: "hand-l", pivot: { x: 384, y: 522 }, desiredAnchor: [0.5, 0.5],
     maxPartBox: { width: 120, height: 100 }, planeId: "backHand",
-    description: "ONLY the back/left detached pale mitten-bean hand, relaxed and readable without fingers; no arm, glove, weapon, or shadow",
+    description: "ONLY the back/left detached soft blob hand — a near-featureless rounded canvas lump with NO thumb lobe or finger reads; no arm, glove, weapon, or shadow",
   },
   {
     id: "hand-r", parent: "hand-r", receiver: "hand-r", pivot: { x: 640, y: 522 }, desiredAnchor: [0.5, 0.5],
     maxPartBox: { width: 120, height: 100 }, planeId: "frontHand",
-    description: "ONLY the front/right detached pale mitten-bean hand, relaxed and readable without fingers; no arm, glove, weapon, or shadow",
+    description: "ONLY the front/right detached soft blob hand — a near-featureless rounded canvas lump with NO thumb lobe or finger reads; no arm, glove, weapon, or shadow",
   },
   {
     id: "foot-l", parent: "foot-l", receiver: "foot-l", pivot: { x: 448, y: 736 }, desiredAnchor: [0.5, 0.5],
     maxPartBox: { width: 145, height: 105 }, planeId: "baseFeet",
-    description: "ONLY the back/left detached pale wedge foot, plain and bootless; no leg, boot, ground, or shadow",
+    description: "ONLY the back/left detached soft blob foot — the SAME near-featureless rounded canvas lump language as the hands, NO wedge, heel, or toe shape; no leg, boot, ground, or shadow",
   },
   {
     id: "foot-r", parent: "foot-r", receiver: "foot-r", pivot: { x: 576, y: 736 }, desiredAnchor: [0.5, 0.5],
     maxPartBox: { width: 145, height: 105 }, planeId: "baseFeet",
-    description: "ONLY the front/right detached pale wedge foot, plain and bootless; no leg, boot, ground, or shadow",
+    description: "ONLY the front/right detached soft blob foot — the SAME near-featureless rounded canvas lump language as the hands, NO wedge, heel, or toe shape; no leg, boot, ground, or shadow",
   },
 ];
 
@@ -450,24 +453,31 @@ function houseStyleBlock() {
 }
 
 function promptForBoilerplateMaster() {
+  // OWNER RULING 2026-07-18: the approved identity is the STITCH-SEAM DUMMY concept, amended on two
+  // fronts — (1) hands AND feet are nearly indistinguishable soft blobs (no thumb lobe, no wedge/foot
+  // shape), (2) the head is a FULLY FLOATING object with NO neck (Madness law: the head bobs free;
+  // helmets can later replace it as alternative heads).
   return `# CHAT ISOLATION — BOILERPLATE IDENTITY MASTER
 Generate ONE standalone raster source image for Dimension Drifters. This establishes the immutable blank-slate character that all gear must fit.
 
 ${executionBlock()}
 
+REFERENCE IMAGES
+- Image 1: the OWNER-APPROVED stitch-seam identity concept. Match its burlap/canvas material, stitch language, palette, and charm exactly. It is a style reference; the rig layout below overrides its part layout.
+
 Use case: stylized-concept
 Asset type: game-ready blank character identity master
-Primary request: an ORIGINAL near-featureless pale Flash-era arena mannequin, inspired by the brutally simple readable silhouette language of early web combat cartoons without copying any named character.
-Subject: one assembled neutral Drifter — smooth pill/wedge head with no hair, ears, nose, mouth, or eyes; at most one tiny charcoal registration-like face notch; compact pale paper torso; exactly two detached mitten-bean hands and exactly two detached wedge feet with clear green gaps. Gender-neutral, modest, deliberately empty of identity so equipment supplies all personality.
-Pose: neutral idle, side-profile-biased facing screen-right; hands relaxed; feet planted; no action.
-Palette: warm bone-paper #ded8c8, pale ash #b9b5aa shadow band, tiny muted taupe edge wear, near-black #101014 contour. No bright white.
-Constraints: no clothing seams that read as gear, no shirt, pants, boots, gloves, cloak, glasses, facial hair, hat, armor, weapon, hair, face, shadow, VFX, or prop. Keep the complete assembled silhouette in a centered safe box around (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}).
+Primary request: an ORIGINAL stitch-seam training-dummy Drifter in the brutally simple readable silhouette language of early web combat cartoons, without copying any named character.
+Subject: one assembled neutral Drifter built from exactly SIX fully detached floating pieces with clear green gaps between ALL of them — (a) one compact oatmeal-canvas TORSO bean (no head, no legs) carrying a single vertical charcoal stitch seam up its midline and one small darker-weave patch on one shoulder; (b) one FLOATING egg head hovering above the torso with NO neck, no connector, carrying a small charcoal cross-stitch X where a face would be; (c) exactly two small soft blob hands — near-featureless rounded lumps, NO thumb lobe or finger reads; (d) exactly two small soft blob feet — the SAME near-featureless rounded lump language as the hands, NO wedge/heel/toe shape. Gender-neutral, deliberately empty of identity so equipment supplies all personality.
+Pose: neutral idle, side-profile-biased facing screen-right; head hovering centered above the torso gap; blobs relaxed at the sides; feet-blobs planted a body-width apart; no action.
+Palette: oatmeal canvas #c9b593, deeper burlap #a8906c hard shadow band, charcoal #2a2622 stitching, near-black #101014 contour. No bright white.
+Constraints: no clothing seams that read as gear beyond the stated stitch/patch, no shirt, pants, boots, gloves, cloak, glasses, facial hair, hat, armor, weapon, hair, eyes, shadow, VFX, or prop. Keep the complete assembled silhouette in a centered safe box around (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}).
 
 ${houseStyleBlock()}
 
 ${chromaOutputBlock()}
 
-Before returning verify: one assembled pale blank identity; exactly one head/body, two detached hands, two detached feet; screen-right top-down 3/4; green gaps; no gear, face, prop, shadow, text, or VFX.`;
+Before returning verify: SIX fully detached pieces (floating neckless head, torso bean, two blob hands, two blob feet) with green gaps between every piece; hands and feet read as the same blob language; screen-right top-down 3/4; no gear, eyes, prop, shadow, text, or VFX.`;
 }
 
 function promptForBoilerplatePart(part) {
@@ -929,11 +939,14 @@ async function runBoilerplate(options) {
   const masterDst = installedBoilerplatePath(BOILERPLATE_MASTER.id);
   if (!options.validateOnly) {
     const logPath = codexLogPath("boilerplate", "boilerplate", BOILERPLATE_MASTER.id);
+    // The owner-approved stitch-seam concept anchors the master's material/charm (style ref only;
+    // the prompt's six-piece floating rig layout overrides the concept's fused-head layout).
+    const approvedConcept = resolve(REPO, "tools/artkit/out/character-concepts/stitch-seam-dummy.png");
     const render = await renderIfNeeded({
       key: `boilerplate/${BOILERPLATE_MASTER.id}`,
       raw: masterRaw,
       dst: masterDst,
-      refs: [],
+      refs: existsSync(approvedConcept) ? [approvedConcept] : [],
       prompt: promptForBoilerplateMaster(),
       logPath,
       force: options.force,
