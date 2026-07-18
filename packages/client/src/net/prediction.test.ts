@@ -687,3 +687,72 @@ describe("input transport — immediate changes retain the 20Hz heartbeat", () =
     ).toBe(true);
   });
 });
+
+// Movement-reconciliation wave — append-only regression proof for the owner jitter fix.
+describe("owner reconciliation presentation — aligned ticks and bounded correction", () => {
+  it("keeps a movement-only edge transport-only until the next fixed heartbeat", () => {
+    const predictor = new SelfPredictor(new MockServer().view());
+    const before = predictor.renderPos(0, 0, 0);
+    const edge = predictor.mintCmd(1, 0, false);
+
+    // ArenaScene sends this edge immediately but deliberately does not call tick(edge).
+    expect(edge.seq).toBe(1);
+    expect(predictor.stats.pending).toBe(0);
+    expect(predictor.renderPos(0, 0, 0)).toMatchObject(before);
+
+    const heartbeat = predictor.mintCmd(1, 0, false);
+    predictor.tick(heartbeat);
+    expect(heartbeat.seq).toBe(2);
+    expect(predictor.stats.pending).toBe(1);
+    expect(predictor.renderPos(0, 0, 0).x).toBeGreaterThan(before.x);
+  });
+
+  it("folds a coarse-frame resync and keeps ordinary correction inside the commanded forward cone", () => {
+    const server = new MockServer();
+    const predictor = new SelfPredictor(server.view());
+    predictor.tick(predictor.mintCmd(1, 0, false));
+    const before = predictor.renderPos(1, 0, 0);
+
+    predictor.forceResync();
+    predictor.reconcile({ ...server.view(), x: server.x - 180 });
+    expect(predictor.renderPos(1, 0, 0).x).toBeCloseTo(before.x, 6);
+    expect(predictor.stats.errPx).toBeGreaterThan(150);
+
+    predictor.decayError(DT, 1, 0);
+    const candidate = predictor.renderPos(1, 0, DT);
+    const presented = predictor.constrainRenderStep(
+      before.x,
+      before.y,
+      candidate.x,
+      candidate.y,
+      1,
+      0,
+    );
+    const stepAngle = Math.abs(Math.atan2(presented.y - before.y, presented.x - before.x));
+    expect(presented.x).toBeGreaterThan(before.x);
+    expect(stepAngle).toBeLessThanOrEqual(Math.PI / 18 + 1e-9);
+  });
+
+  it("never presentation-folds an explicit teleport edge", () => {
+    const server = new MockServer();
+    const predictor = new SelfPredictor(server.view());
+    const before = predictor.renderPos(1, 0, 0);
+    predictor.reconcile({
+      ...server.view(),
+      x: 3000,
+      y: 2600,
+      teleportSeq: 1,
+    });
+    const candidate = predictor.renderPos(1, 0, 0);
+    const presented = predictor.constrainRenderStep(
+      before.x,
+      before.y,
+      candidate.x,
+      candidate.y,
+      1,
+      0,
+    );
+    expect(presented).toMatchObject({ x: 3000, y: 2600 });
+    expect(predictor.stats.errPx).toBe(0);
+  });
+});

@@ -151,6 +151,7 @@ import {
 import { WormRig } from "../entities/WormRig.js";
 import {
   type DistanceJumpIndicator,
+  type PredCmd,
   SelfPredictor,
   type ServerView,
   SpaceGestureClassifier,
@@ -168,6 +169,11 @@ import {
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { loadPetPartsManifest, type PetPartsManifest } from "../sprites/pet-parts.js";
+import {
+  nextPoseShowroomOption,
+  poseShowroomVariantSetFor,
+  weaponPoseFamilyFor,
+} from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { DamageNumberRenderer } from "../ui/damage-numbers.js";
 import { driveCostView, driveHudView } from "../ui/drive-hud.js";
@@ -1258,6 +1264,7 @@ export class ArenaScene extends Phaser.Scene {
     | "S"
     | "D"
     | "R"
+    | "P"
     | "Q"
     | "E"
     | "F"
@@ -2281,13 +2288,14 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,Q,E,F,H,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,P,Q,E,F,H,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
       | "S"
       | "D"
       | "R"
+      | "P"
       | "Q"
       | "E"
       | "F"
@@ -4113,6 +4121,10 @@ export class ArenaScene extends Phaser.Scene {
         // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
         if (qDown) this.room?.send("galleryPage", { dir: 1 });
         if (eFree) this.room?.send("galleryPage", { dir: -1 });
+        if (import.meta.env.DEV && Phaser.Input.Keyboard.JustDown(this.keys.P) && selfP) {
+          const def = WEAPONS[selfP.weapon];
+          if (def) this.cyclePoseShowroom(def);
+        }
       } else {
         if (qDown) {
           this.room?.send("cycleWeapon", { dir: 1 });
@@ -6844,6 +6856,21 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  /** Dev-only Testing-Grounds art-direction switch; registry state dies with the client session. */
+  private cyclePoseShowroom(def: WeaponDef): void {
+    const variants = poseShowroomVariantSetFor(def);
+    if (!variants?.registryKey) {
+      const family = weaponPoseFamilyFor(def).replaceAll("-", " ");
+      this.flashBanner(`POSE · ${family}: panel default`, "#33e6ff");
+      return;
+    }
+    const current = this.game.registry.get(variants.registryKey);
+    const next = nextPoseShowroomOption(variants, current);
+    if (!next) return;
+    this.game.registry.set(variants.registryKey, next.value);
+    this.flashBanner(`POSE · ${next.label}`, "#33e6ff");
+  }
+
   /** Pooled-lifetime notice plate: width-bound, two lines maximum, and always self-retiring. */
   private flashBanner(msg: string, color: string): void {
     // §7 v0.105 de-clunk: STACK banners that land within the fade window instead of overprinting the exact
@@ -7922,9 +7949,18 @@ export class ArenaScene extends Phaser.Scene {
       const blob = this.blobs.get(id);
       if (!blob) return;
       if (id === selfId && this.predictor) {
-        this.predictor.decayError(deltaMs / 1000);
+        this.predictor.decayError(deltaMs / 1000, this.curDx, this.curDy);
         const r = this.predictor.renderPos(this.curDx, this.curDy, this.inputAccMs / 1000);
-        blob.setPosition(r.x, r.y);
+        const presented = this.predictor.constrainRenderStep(
+          blob.x,
+          blob.y,
+          r.x,
+          r.y,
+          this.curDx,
+          this.curDy,
+          r.stance === STANCE_NONE,
+        );
+        blob.setPosition(presented.x, presented.y);
         this.selfPredHeight = r.height;
         this.selfPredVh = r.vh;
         this.selfPredStance = r.stance;
@@ -13381,9 +13417,8 @@ export class ArenaScene extends Phaser.Scene {
   private onPatch(state: ArenaState): void {
     const now = this.time.now;
     if (state.tick <= 0) return; // pre-sim state (menu/handshake)
-    const gearRows: Array<
-      [string, { gearUpper: unknown; gearLower: unknown; prestige: unknown }]
-    > = [];
+    const gearRows: Array<[string, { gearUpper: unknown; gearLower: unknown; prestige: unknown }]> =
+      [];
     state.players.forEach((player, id) => {
       gearRows.push([
         id,
@@ -13726,20 +13761,67 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  private dispatchNetInput(
+    cmd: PredCmd & {
+      fireHeld: boolean;
+      aimX: number;
+      aimY: number;
+      targetX: number;
+      targetY: number;
+    },
+    self: PlayerState | undefined,
+    weapon: WeaponDef | undefined,
+    predictTick: boolean,
+  ): void {
+    if (!this.room || !this.predictor) return;
+    const beamWasHeld = this.beamPredictionHeld;
+    if (
+      cmd.fireHeld &&
+      self &&
+      weapon?.beam &&
+      this.beamPredictionFadeAt < 0 &&
+      (this.beamPredictionStartSeq < 0 ||
+        (!this.beamPredictionAccepted && this.beamPredictionPending.length === 0))
+    ) {
+      this.beamPredictionStartSeq = cmd.seq;
+      this.beamPredictionAccepted = false;
+      this.beamPredictionAngle = Math.atan2(cmd.aimY, cmd.aimX);
+      this.beamPredictionProgress = 0;
+      this.beamPredictionFadeAt = -1;
+      this.beamPredictionPending.length = 0;
+      if (!beamWasHeld)
+        this.audio.play("beam:charge", { x: self.x, amt: 1, ownerId: this.room.sessionId });
+    }
+    this.beamPredictionHeld = cmd.fireHeld;
+    this.stepBeamPrediction(cmd, self, weapon);
+    this.room.send("input", cmd);
+    if (predictTick) this.predictor.tick(cmd);
+  }
+
   private stepNetInput(deltaMs: number, levelWindowOpen = false, ultimatePressed = false): void {
-    this.curDx = levelWindowOpen ? 0 : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
-    this.curDy = levelWindowOpen ? 0 : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+    const nextDx = levelWindowOpen
+      ? 0
+      : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
+    const nextDy = levelWindowOpen
+      ? 0
+      : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
     if (levelWindowOpen) {
       this.jumpQueued = false;
       this.poundQueued = false;
       this.slideQueued = false;
       this.crouchHeld = false;
     }
-    if (!this.room || !this.predictor) return;
+    if (!this.room || !this.predictor) {
+      this.curDx = nextDx;
+      this.curDy = nextDy;
+      return;
+    }
+    let elapsedForInput = deltaMs;
     if (deltaMs > 250) {
       // A real frame stall (throttled tab wake / GC pause): drop the input backlog AND hard-resync the
       // predictor on the next patch — its pending window is stale by the whole gap (amendment #12).
       this.inputAccMs = 0;
+      elapsedForInput = 0;
       this.predictor.forceResync();
     }
     const self = this.room.state.players.get(this.room.sessionId);
@@ -13755,25 +13837,16 @@ export class ArenaScene extends Phaser.Scene {
       !levelWindowOpen &&
       !this.levelWinInputReleaseLatch &&
       slideHeldFromBindings(this.keys.SHIFT.isDown, this.keys.CTRL.isDown);
-    let immediate = this.predictor.shouldMintImmediateInput(
-      this.curDx,
-      this.curDy,
-      this.jumpQueued,
-      this.crouchHeld,
-      this.poundQueued,
-      this.slideQueued,
-      slideHeld,
-      fireHeld,
-      ultimatePressed,
-    );
-    this.inputAccMs = Math.min(this.inputAccMs + deltaMs, TICK_MS * 3);
-    while (immediate || this.inputAccMs >= TICK_MS) {
-      const heartbeat = !immediate;
-      if (heartbeat) this.inputAccMs -= TICK_MS;
+    this.inputAccMs = Math.min(this.inputAccMs + elapsedForInput, TICK_MS * 3);
+
+    // Catch-up remains a fixed-timestep simulation: each elapsed 50ms heartbeat advances prediction once.
+    // Transport-only edges below may lower input latency, but never create additional movement time.
+    while (this.inputAccMs >= TICK_MS) {
+      this.inputAccMs -= TICK_MS;
       const cmd = {
         ...this.predictor.mintCmd(
-          this.curDx,
-          this.curDy,
+          nextDx,
+          nextDy,
           this.jumpQueued,
           this.crouchHeld,
           this.poundQueued,
@@ -13791,37 +13864,55 @@ export class ArenaScene extends Phaser.Scene {
       this.jumpQueued = false;
       this.poundQueued = false;
       this.slideQueued = false;
-      if (heartbeat)
-        this.predictor.noteInputHeartbeat(
-          this.curDx,
-          this.curDy,
+      this.predictor.noteInputHeartbeat(nextDx, nextDy, this.crouchHeld, slideHeld, fireHeld);
+      this.dispatchNetInput(cmd, self, weapon, true);
+    }
+
+    // The fresh sample drives the render preview now and reaches the server as a transport edge. It must
+    // not mint a second 50ms prediction step; the next heartbeat owns that step on both simulations.
+    this.curDx = nextDx;
+    this.curDy = nextDy;
+    const immediate = this.predictor.shouldMintImmediateInput(
+      nextDx,
+      nextDy,
+      this.jumpQueued,
+      this.crouchHeld,
+      this.poundQueued,
+      this.slideQueued,
+      slideHeld,
+      fireHeld,
+      ultimatePressed,
+    );
+    if (immediate) {
+      const cmd = {
+        ...this.predictor.mintCmd(
+          nextDx,
+          nextDy,
+          this.jumpQueued,
           this.crouchHeld,
+          this.poundQueued,
+          aim.aimX,
+          aim.aimY,
+          this.slideQueued,
           slideHeld,
-          fireHeld,
-        );
-      const beamWasHeld = this.beamPredictionHeld;
-      if (
-        fireHeld &&
-        self &&
-        weapon?.beam &&
-        this.beamPredictionFadeAt < 0 &&
-        (this.beamPredictionStartSeq < 0 ||
-          (!this.beamPredictionAccepted && this.beamPredictionPending.length === 0))
-      ) {
-        this.beamPredictionStartSeq = cmd.seq;
-        this.beamPredictionAccepted = false;
-        this.beamPredictionAngle = Math.atan2(aim.aimY, aim.aimX);
-        this.beamPredictionProgress = 0;
-        this.beamPredictionFadeAt = -1;
-        this.beamPredictionPending.length = 0;
-        if (!beamWasHeld)
-          this.audio.play("beam:charge", { x: self.x, amt: 1, ownerId: this.room.sessionId });
-      }
-      this.beamPredictionHeld = fireHeld;
-      this.stepBeamPrediction(cmd, self, weapon);
-      this.room.send("input", cmd);
-      this.predictor.tick(cmd);
-      immediate = false;
+        ),
+        fireHeld,
+        aimX: aim.aimX,
+        aimY: aim.aimY,
+        targetX: aim.targetX,
+        targetY: aim.targetY,
+      };
+      this.jumpQueued = false;
+      this.poundQueued = false;
+      this.slideQueued = false;
+      // Movement-only edges are transport samples, not time. One-shot traversal edges keep their existing
+      // local-first prediction so jump/slide feedback is not delayed until the next heartbeat.
+      this.dispatchNetInput(
+        cmd,
+        self,
+        weapon,
+        cmd.jump || cmd.pound === true || cmd.slide === true || cmd.crouchHeld === true,
+      );
     }
   }
 }

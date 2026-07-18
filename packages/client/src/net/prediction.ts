@@ -430,6 +430,15 @@ class ImmediateInputSendGate {
 
 /** Height divergence (px) beyond which the local vertical prediction adopts the server's arc. */
 const HEIGHT_ADOPT_PX = 12;
+/** Position-only reconciliation must be unmistakably teleport-sized before it may cut. Authored pit,
+ *  blink, restart, and ultimate teleports use their explicit sequence edges and still snap immediately. */
+const PRED_HARD_SNAP_PX = Math.max(INTERP_SNAP_PLAYER * 8, MOVE_SPEED * 5);
+/** While commanded movement is active, correction presentation stays inside this directional envelope:
+ *  it can help forward motion, but cannot overpower it or bend a 45-degree input step into a reversal. */
+const PRED_CORRECTION_FORWARD_SHARE = 0.6;
+const PRED_CORRECTION_REVERSE_SHARE = 0.1;
+const PRED_CORRECTION_SIDE_SHARE = 0.05;
+const PRED_PRESENT_MAX_COMMAND_DELTA = Math.PI / 18;
 
 function sanitizePredMomentum(p: PredState): void {
   const raw = Math.hypot(p.momentumX, p.momentumY);
@@ -961,6 +970,7 @@ export class SelfPredictor {
     momentumX: 0,
     momentumY: 0,
   };
+  private readonly constrainedRenderPos = { x: 0, y: 0 };
   private readonly pending: PendingPredCmd[] = [];
   private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
@@ -973,6 +983,10 @@ export class SelfPredictor {
   private errY = 0;
   /** Set when the pending buffer overflows (a stall) — forces a hard resync on the next patch. */
   private needResync = false;
+  /** A short client-frame discontinuity drops stale replay history but still folds correction visually. */
+  private smoothResync = false;
+  /** One-shot bypass so an authored teleport remains a cut instead of being folded into presentation. */
+  private presentationSnapPending = false;
   /** True while dead/frozen — prediction pauses and renders server truth directly. */
   private paused = false;
   /** True while the connection has STALLED (pending overflowed with no ack) — the predictor FREEZES
@@ -1233,6 +1247,7 @@ export class SelfPredictor {
       // The connection STALLED (~3.2s of un-acked commands): FREEZE prediction (tick() short-circuits
       // from now on) and rebase hard when truth next arrives — amendment #13.
       this.needResync = true;
+      this.smoothResync = false;
       this.stalled = true;
     }
   }
@@ -1380,6 +1395,7 @@ export class SelfPredictor {
   /** Reconcile against a fresh patch (call from room.onStateChange — data only, never touch rigs here). */
   reconcile(server: ServerView): void {
     const teleported = server.teleportSeq !== this.lastTeleportSeq;
+    if (teleported) this.presentationSnapPending = true;
     this.lastTeleportSeq = server.teleportSeq;
     const stanceSeq = server.stanceSeq ?? 0;
     const stanceChanged = stanceSeq !== this.lastStanceSeq;
@@ -1443,20 +1459,22 @@ export class SelfPredictor {
       //   GLIDES back under the level-up UI (~⅓s decay) instead of popping backward by ~RTT×speed;
       // - mid-freeze reconciles PRESERVE the decaying offset (re-zeroing would undo the fold).
       const enteringPause = pauseNow && !this.paused;
-      if (teleported || this.needResync) {
+      if (teleported || (this.needResync && !this.smoothResync)) {
         this.errX = 0;
         this.errY = 0;
-      } else if (enteringPause) {
+      } else if (enteringPause || this.smoothResync) {
         this.errX = visX - server.x;
         this.errY = visY - server.y;
-        if (Math.hypot(this.errX, this.errY) > INTERP_SNAP_PLAYER) {
+        if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
           this.errX = 0;
           this.errY = 0;
+          this.presentationSnapPending = true;
         }
       }
       // else: staying paused / resuming — keep the (already-decayed) offset as-is.
       this.pending.length = 0;
       this.needResync = false;
+      this.smoothResync = false;
       this.stalled = false; // truth arrived — the stall (if any) is over
       this.height = server.height;
       this.vh = server.vh;
@@ -1499,9 +1517,10 @@ export class SelfPredictor {
     // Fold the correction into the error offset so it GLIDES out; teleport-sized error snaps.
     this.errX = visX - this.pred.x;
     this.errY = visY - this.pred.y;
-    if (Math.hypot(this.errX, this.errY) > INTERP_SNAP_PLAYER) {
+    if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
       this.errX = 0;
       this.errY = 0;
+      this.presentationSnapPending = true;
     }
 
     // Vertical: only a residual AFTER authoritative rebase + pending replay is real divergence (a denied
@@ -1520,17 +1539,53 @@ export class SelfPredictor {
   foldError(dx: number, dy: number): void {
     this.errX += dx;
     this.errY += dy;
-    if (Math.hypot(this.errX, this.errY) > INTERP_SNAP_PLAYER) {
+    if (Math.hypot(this.errX, this.errY) > PRED_HARD_SNAP_PX) {
       this.errX = 0;
       this.errY = 0;
+      this.presentationSnapPending = true;
     }
   }
 
-  /** Decay the visual error offset (call once per render frame). */
-  decayError(dtSec: number): void {
-    const k = Math.exp(-PRED_ERR_DECAY * dtSec);
-    this.errX *= k;
-    this.errY *= k;
+  /** Decay the visual error offset (call once per render frame). The exponential remains the target, but
+   *  its rendered displacement is bounded relative to held movement so correction cannot overpower the
+   *  command and make the owner rig travel backward for a frame. */
+  decayError(dtSec: number, dx = 0, dy = 0): void {
+    const dt = Math.min(Math.max(dtSec, 0), 0.25);
+    if (dt <= 0) return;
+    const k = Math.exp(-PRED_ERR_DECAY * dt);
+    let correctionX = this.errX * (k - 1);
+    let correctionY = this.errY * (k - 1);
+    const inputLength = Math.hypot(dx, dy);
+    const movementBudget = MOVE_SPEED * dt;
+    if (inputLength > 1e-4) {
+      const ux = dx / inputLength;
+      const uy = dy / inputLength;
+      const parallel = correctionX * ux + correctionY * uy;
+      const boundedParallel = Math.max(
+        -movementBudget * PRED_CORRECTION_REVERSE_SHARE,
+        Math.min(movementBudget * PRED_CORRECTION_FORWARD_SHARE, parallel),
+      );
+      let sideX = correctionX - parallel * ux;
+      let sideY = correctionY - parallel * uy;
+      const sideLength = Math.hypot(sideX, sideY);
+      const sideLimit = movementBudget * PRED_CORRECTION_SIDE_SHARE;
+      if (sideLength > sideLimit && sideLength > 1e-4) {
+        const scale = sideLimit / sideLength;
+        sideX *= scale;
+        sideY *= scale;
+      }
+      correctionX = boundedParallel * ux + sideX;
+      correctionY = boundedParallel * uy + sideY;
+    } else {
+      const correctionLength = Math.hypot(correctionX, correctionY);
+      if (correctionLength > movementBudget && correctionLength > 1e-4) {
+        const scale = movementBudget / correctionLength;
+        correctionX *= scale;
+        correctionY *= scale;
+      }
+    }
+    this.errX += correctionX;
+    this.errY += correctionY;
     if (Math.abs(this.errX) + Math.abs(this.errY) < 0.5) {
       this.errX = 0;
       this.errY = 0;
@@ -1619,6 +1674,46 @@ export class SelfPredictor {
       slidePhase: this.stance.slidePhase,
       slideTick: this.stance.slidePhaseTick,
     };
+  }
+
+  /** Final owner-presentation gate for ordinary grounded steering. Reconciliation may leave a large
+   *  decaying offset whose desired correction points across the freshly commanded heading; keep that
+   *  visual step in a narrow forward cone and fold the withheld displacement back into the offset for
+   *  later frames. Explicit teleport/hard-snap edges bypass this exactly once. */
+  constrainRenderStep(
+    previousX: number,
+    previousY: number,
+    candidateX: number,
+    candidateY: number,
+    dx: number,
+    dy: number,
+    enabled = true,
+  ): { x: number; y: number } {
+    const out = this.constrainedRenderPos;
+    out.x = candidateX;
+    out.y = candidateY;
+    if (this.presentationSnapPending) {
+      this.presentationSnapPending = false;
+      return out;
+    }
+    if (!enabled || this.paused || this.stalled) return out;
+    const inputLength = Math.hypot(dx, dy);
+    const stepX = candidateX - previousX;
+    const stepY = candidateY - previousY;
+    const stepLength = Math.hypot(stepX, stepY);
+    if (inputLength <= 1e-4 || stepLength <= 0.3) return out;
+
+    const commandAngle = Math.atan2(dy, dx);
+    const stepAngle = Math.atan2(stepY, stepX);
+    const delta = shortestAngleDelta(commandAngle, stepAngle);
+    if (Math.abs(delta) <= PRED_PRESENT_MAX_COMMAND_DELTA) return out;
+    const constrainedAngle =
+      commandAngle +
+      Math.max(-PRED_PRESENT_MAX_COMMAND_DELTA, Math.min(PRED_PRESENT_MAX_COMMAND_DELTA, delta));
+    out.x = previousX + Math.cos(constrainedAngle) * stepLength;
+    out.y = previousY + Math.sin(constrainedAngle) * stepLength;
+    this.foldError(out.x - candidateX, out.y - candidateY);
+    return out;
   }
 
   /** Frame-fresh input routing seam: airborne Space becomes pound without waiting for a patch. */
@@ -1714,6 +1809,7 @@ export class SelfPredictor {
    *  throttled-tab wake), mirroring the server's own stall posture (amendment #12). */
   forceResync(): void {
     this.needResync = true;
+    this.smoothResync = true;
   }
 
   /** True while prediction is paused (dead / level-window freeze) — the scene renders server truth. */
