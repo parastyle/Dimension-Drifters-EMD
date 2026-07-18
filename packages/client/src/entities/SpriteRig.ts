@@ -88,6 +88,11 @@ import {
   type WeaponArtStateGeometry,
   weaponArtGeometryFor,
 } from "../sprites/art-geometry.generated.js";
+import {
+  firingHandTarget,
+  firingStanceFor,
+  usesAimedFiringStance,
+} from "../sprites/firing-stance.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
@@ -1629,7 +1634,7 @@ export class SpriteRig {
   }
 
   private holdRangedAim(epochMs: number, durationMs: number): void {
-    if (!this.weaponDef?.gun && !this.weaponDef?.beam) return;
+    if (!this.weapons.some((weapon) => usesAimedFiringStance(weapon.def))) return;
     if (epochMs > this.rangedAimActiveUntilMs + RANGED_AIM_SETTLE_MS) {
       this.rangedAimRaiseAtMs = epochMs;
     }
@@ -5543,7 +5548,7 @@ export class SpriteRig {
         ? Math.cos(tellFacesAim ? this.meleeTellAimWorld : this.enemyComboAimWorld)
         : anim.isSelf
           ? anim.aimX
-          : this.weaponDef?.gun || this.weaponDef?.beam
+          : this.weaponDef && usesAimedFiringStance(this.weaponDef)
             ? Math.cos(anim.aimDir)
             : anim.moveX;
     // §37 facing flip. SELF: commit on the RAW pixel offset of the cursor from the character's midpoint
@@ -5642,6 +5647,8 @@ export class SpriteRig {
     let ownBack = 0;
     let ownFeet = 0;
     let rangedAimBlend = 0;
+    const leadFiringStance = this.weaponDef ? firingStanceFor(this.weaponDef) : undefined;
+    const hasAimedFiringWeapon = this.weapons.some((weapon) => usesAimedFiringStance(weapon.def));
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
     this.orbitSpin = false;
     this.swingOffX = 0;
@@ -5814,7 +5821,7 @@ export class SpriteRig {
         this.body.scaleX *= 1 - 0.05 * incoming * cancelBlend;
         for (const foot of this.feet) foot.img.y += TARGET_BODY_H * 0.045 * load * cancelBlend;
       }
-    } else if ((this.weaponDef?.gun || this.weaponDef?.beam) && this.weapons.length > 0) {
+    } else if (hasAimedFiringWeapon && this.weaponDef && leadFiringStance) {
       if (anim.fireHeld) this.holdRangedAim(sceneNow, RANGED_AIM_LINGER_MS);
       rangedAimBlend = sampleRangedAimBlend(
         sceneNow,
@@ -5822,16 +5829,23 @@ export class SpriteRig {
         this.rangedAimActiveUntilMs,
       );
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
-      if (this.weaponDef.twoHanded || this.weapons.length > 1) ownBack = 1;
+      if (this.weaponDef.twoHanded || this.weapons.length > 1 || leadFiringStance.castingHand)
+        ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
       weaponAngle = heldAimLocal;
       if (this.weapons.length > 1) backWeaponAngle = heldAimLocal - this.offWeaponLean();
-      if (this.weaponDef.twoHanded)
-        this.attackHandSpacing = TARGET_BODY_H * (0.42 - 0.1 * rangedAimBlend);
-      this.body.x += TARGET_BODY_H * 0.018 * rangedAimBlend;
-      this.body.rotation += this.facing * 0.055 * rangedAimBlend;
+      if (this.weaponDef.twoHanded && leadFiringStance.family !== "tome") {
+        this.attackHandSpacing =
+          TARGET_BODY_H * (0.42 + (leadFiringStance.twoHandSpacing - 0.42) * rangedAimBlend);
+      }
+      this.body.x += TARGET_BODY_H * leadFiringStance.bodyAdvance * rangedAimBlend;
+      const hasFistGun = this.weapons.some(
+        (weapon) => firingStanceFor(weapon.def).family === "fist-gun",
+      );
+      this.body.rotation +=
+        this.facing * (hasFistGun ? 0 : leadFiringStance.bodyTurn) * rangedAimBlend;
       const recoilElapsed = sceneNow - this.gunRecoilAtMs;
       if (recoilElapsed >= 0 && recoilElapsed < 140) {
         const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
@@ -6596,6 +6610,11 @@ export class SpriteRig {
     );
     const excitationScale =
       (MOVE_SPEED * JIGGLE_SIGNAL_IMPULSE_HZ * springDtS) / (this.baseScale || 1);
+    const tomeCastingHandActive =
+      rangedAimBlend > 0 &&
+      !!leadFiringStance?.castingHand &&
+      !!this.weaponDef &&
+      usesAimedFiringStance(this.weaponDef);
     for (const hnd of this.hands) {
       const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
       const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
@@ -6612,15 +6631,19 @@ export class SpriteRig {
         hy += idleY;
         hy += trailY;
       }
-      const holdsRangedWeapon =
-        !!(this.weaponDef?.gun || this.weaponDef?.beam) &&
-        (hnd.front ? this.weapons.length > 0 : this.weapons.length > 1);
-      if (rangedAimBlend > 0 && holdsRangedWeapon) {
-        const aimShoulderX = hnd.front ? TARGET_BODY_H * 0.16 : TARGET_BODY_H * 0.055;
-        const aimShoulderY = hnd.front ? -TARGET_BODY_H * 0.27 : -TARGET_BODY_H * 0.2;
-        const aimReach = hnd.front ? TARGET_BODY_H * 0.045 : TARGET_BODY_H * 0.035;
-        const targetX = aimShoulderX + Math.cos(heldAimLocal) * aimReach;
-        const targetY = aimShoulderY + Math.sin(heldAimLocal) * aimReach;
+      const handIndex = hnd.front ? 0 : 1;
+      const heldFiringDef = this.weapons[handIndex]?.def;
+      const castsFromFreeHand = !hnd.front && !heldFiringDef && tomeCastingHandActive;
+      const posedFiringDef = heldFiringDef ?? (castsFromFreeHand ? this.weaponDef : undefined);
+      if (
+        rangedAimBlend > 0 &&
+        posedFiringDef &&
+        (castsFromFreeHand || usesAimedFiringStance(posedFiringDef))
+      ) {
+        const role = castsFromFreeHand ? "casting" : hnd.front ? "lead" : "off";
+        const target = firingHandTarget(posedFiringDef, role, heldAimLocal);
+        const targetX = target.x * TARGET_BODY_H;
+        const targetY = target.y * TARGET_BODY_H;
         hx += (targetX - hx) * rangedAimBlend;
         hy += (targetY - hy) * rangedAimBlend;
       }
@@ -6670,7 +6693,8 @@ export class SpriteRig {
       if (PROCEDURAL_JIGGLE) {
         const own = hnd.front ? ownFront : ownBack;
         // Orbit and the rear 2H grip have authoritative late writers; synchronize at those final seams below.
-        const deferToConstraint = this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded);
+        const deferToConstraint =
+          this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded && !tomeCastingHandActive);
         if (!deferToConstraint) {
           const holdsWeapon = hnd.front ? this.weapons.length > 0 : this.weapons.length > 1;
           const inertia = holdsWeapon ? JIGGLE_WEAPON_HAND_INERTIA : JIGGLE_FREE_HAND_INERTIA;
@@ -6716,7 +6740,7 @@ export class SpriteRig {
 
     // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
     // §40: skipped while an ORBIT slash is live — the orbit pass below owns both hands.
-    if (this.weaponDef?.twoHanded && this.orbitT < 0) {
+    if (this.weaponDef?.twoHanded && this.orbitT < 0 && !tomeCastingHandActive) {
       const front = this.hands.find((h) => h.front);
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
