@@ -811,7 +811,13 @@
     },
     "twin-slash": (S, g, p, o) => renderPer(S, g, p, o, "twin"),
     "thrust-streak": (S, g, p, o) => renderPer(S, g, p, o, "thrust"),
-    "cleave-flash": (S, g, p, o) => {
+    // §50 Drowned Anchor root cause: the synthesized heavy suite includes this hit-trigger layer and
+    // VfxPlayer advances melee suites in "all" mode, so this old diameter stroke fired on every swing.
+    // Because unauthored melee surfaces are re-centred on the wielder, the segment below crossed the
+    // character exactly. Keep the diagnostic renderer under an explicit legacy id; production cleaves use
+    // the same painted edge geometry as every other melee sweep.
+    "cleave-flash": (S, g, p, o) => renderPer(S, g, p, o, "blade"),
+    "cleave-flash-legacy": (S, g, p, o) => {
       const a = burst(p, 0.3, 0.12) * o.params.intensity;
       if (a <= 0) return;
       S.gfxAdd.lineStyle(4, 0xf6ffff, a);
