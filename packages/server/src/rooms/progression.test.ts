@@ -309,3 +309,89 @@ describe("ULT U1 allocation-frequency attunement and temper", () => {
     expect(rawTie.ultVariant).toBe("str");
   });
 });
+
+// Pet P1 — appended pure account/catalog/progression contract coverage.
+const petShared = await import("@dd/shared");
+
+describe("pet v1 account sanitization and deterministic progression", () => {
+  it("drops unknown/malformed rows, clamps NaN/huge XP, and falls back from an unowned selection", () => {
+    const account = petShared.sanitizeMetaAccountV2({
+      version: 2,
+      revision: -4,
+      scrip: Number.POSITIVE_INFINITY,
+      upgrades: { vitality: 99, fortune: -3, power: "2.9" },
+      pets: {
+        "unknown-pet": { bondXp: 300 },
+        "hearth-newt": "malformed",
+        "gilded-gecko": { bondXp: Number.NaN },
+        "brass-crab": { bondXp: 1e30 },
+        "copper-snail": null,
+      },
+      selectedPetId: "copper-snail",
+      slateTortoisePityMisses: 99,
+    });
+    expect(account).toEqual({
+      version: 2,
+      revision: 0,
+      scrip: 0,
+      upgrades: { vitality: 3, fortune: 0, power: 2 },
+      pets: {
+        "verdant-wing": { bondXp: 0 },
+        "gilded-gecko": { bondXp: 0 },
+        "brass-crab": { bondXp: 3600 },
+      },
+      selectedPetId: "verdant-wing",
+      slateTortoisePityMisses: 7,
+    });
+    expect(petShared.petLevelForXp(account.pets["gilded-gecko"]?.bondXp)).toBe(1);
+    expect(petShared.petLevelForXp(account.pets["brass-crab"]?.bondXp)).toBe(10);
+  });
+
+  it("rejects unsupported/malformed account versions as a safe starter record", () => {
+    expect(petShared.sanitizeMetaAccountV2({ version: 3, pets: { "brass-crab": { bondXp: 3600 } } }))
+      .toEqual(petShared.createMetaAccountV2());
+    expect(petShared.sanitizeMetaAccountV2(["not", "an", "account"]))
+      .toEqual(petShared.createMetaAccountV2());
+  });
+
+  it("pins every lifetime threshold and derives stage/capstone goldens at levels 1, 9, and 10", () => {
+    expect(petShared.PET_BOND_XP_THRESHOLDS).toEqual([
+      0, 120, 300, 540, 840, 1200, 1620, 2100, 2700, 3600,
+    ]);
+    expect(petShared.PET_BOND_XP_THRESHOLDS.map((xp) => petShared.petLevelForXp(xp)))
+      .toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(petShared.petLevelForXp(3599)).toBe(9);
+    expect([1, 9, 10].map(petShared.petStageBandForLevel)).toEqual([1, 3, 3]);
+    expect([1, 9, 10].map(petShared.petHasCapstone)).toEqual([false, false, true]);
+  });
+
+  it("resolves all eight approved roster formulas at levels 1/9/10", () => {
+    const mods = (id: (typeof petShared.PET_IDS)[number]) =>
+      [1, 9, 10].map((level) => petShared.petModsForLevel(id, level));
+    expect(mods("verdant-wing").map((m) => [m.passiveRegenMultiplier, m.weaponChargeCapacityAdd]))
+      .toEqual([[1.05, 0], [1.45, 0], [1.5, 1]]);
+    expect(mods("hearth-newt").map((m) => [m.healingReceivedMultiplier, m.descentHealMaxHpFraction]))
+      .toEqual([[1.02, 0], [1.18, 0], [1.2, 0.15]]);
+    expect(mods("lodestar-moth").map((m) => [180 + m.xpMoteReachAdd, m.boundaryEchoReach]))
+      .toEqual([[198, 0], [342, 0], [360, 600]]);
+    expect(mods("copper-snail").map((m) => [m.earnedPickupRadius, m.bagCapacityAdd]))
+      .toEqual([[50, 0], [82, 0], [86, 1]]);
+    expect(mods("gilded-gecko").map((m) => [m.saleBonusRate, m.saleBonusCap]))
+      .toEqual([[0.02, 2], [0.18, 18], [0.2, 30]]);
+    expect(mods("brass-crab").map((m) => [m.reloadDurationMultiplier, m.stowedReloadRate]))
+      .toEqual([[0.99, 1], [0.91, 1], [0.9, 1.25]]);
+    expect(mods("pale-firefly").map((m) => [96 + m.reviveReachAdd, m.reviveHpFraction]))
+      .toEqual([[102, 0], [150, 0], [156, 0.4]]);
+    expect(mods("slate-tortoise").map((m) => [m.groundHazardDamageMultiplier, m.pitRegenMultiplier]))
+      .toEqual([[0.985, 1], [0.865, 1], [0.85, 1.5]]);
+  });
+
+  it("banks only bounded XP into an owned row and discards overflow at level 10", () => {
+    const account = petShared.createMetaAccountV2();
+    account.pets["verdant-wing"]!.bondXp = 3500;
+    const first = ultimateProgression.bankPetBondXp(account, "verdant-wing", 999999);
+    expect(first).toMatchObject({ earnedBondXp: 500, awardedBondXp: 100, newBondXp: 3600, newLevel: 10 });
+    const maxed = ultimateProgression.bankPetBondXp(account, "verdant-wing", 500);
+    expect(maxed).toMatchObject({ awardedBondXp: 0, oldLevel: 10, newLevel: 10 });
+  });
+});

@@ -55,3 +55,108 @@ export function nextUpgradeCost(id: MetaUpgradeId, currentLevel: number): number
   if (!u || currentLevel >= u.maxLevel) return null;
   return u.costs[currentLevel] ?? null;
 }
+
+// Pet APIs are re-exported through meta so the package's existing public index remains stable in P1.
+export * from "./pets.js";
+
+import {
+  isPetId,
+  PET_IDS,
+  type PetId,
+  type PetStageBand,
+  sanitizeBondXp,
+} from "./pets.js";
+
+export interface PersistedPet {
+  /** Lifetime total. Presence of the canonical id in `pets` is the ownership bit. */
+  bondXp: number;
+}
+
+export interface MetaAccountV2 {
+  version: 2;
+  revision: number;
+  scrip: number;
+  upgrades: MetaLevels;
+  pets: Partial<Record<PetId, PersistedPet>>;
+  /** Empty is the explicit accessibility "No pet" selection. */
+  selectedPetId: PetId | "";
+  slateTortoisePityMisses: number;
+}
+
+export type PetTerminalOutcome = "victory" | "defeat";
+
+export interface PetProgressReceipt {
+  petId: PetId;
+  outcome: PetTerminalOutcome;
+  earnedBondXp: number;
+  awardedBondXp: number;
+  oldBondXp: number;
+  newBondXp: number;
+  oldLevel: number;
+  newLevel: number;
+  oldStageBand: PetStageBand;
+  newStageBand: PetStageBand;
+  reachedCapstone: boolean;
+  slateTortoiseAwarded: boolean;
+}
+
+export const META_ACCOUNT_VERSION = 2 as const;
+export const META_ACCOUNT_SCRIP_MAX = 65535 as const;
+export const META_ACCOUNT_REVISION_MAX = 0xffffffff as const;
+export const STARTER_PET_ID: PetId = "verdant-wing";
+
+export function createMetaAccountV2(): MetaAccountV2 {
+  return {
+    version: META_ACCOUNT_VERSION,
+    revision: 0,
+    scrip: 0,
+    upgrades: { ...EMPTY_META },
+    pets: { [STARTER_PET_ID]: { bondXp: 0 } },
+    selectedPetId: STARTER_PET_ID,
+    slateTortoisePityMisses: 0,
+  };
+}
+
+function sanitizedInt(value: unknown, max: number): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(max, Math.floor(numeric)));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Validate the local/offline client-claimed account payload. Unsupported/missing versions become a fresh
+ * starter record; unknown ids and malformed rows are dropped, and levels are never accepted directly.
+ */
+export function sanitizeMetaAccountV2(input: unknown): MetaAccountV2 {
+  if (!isRecord(input) || input.version !== META_ACCOUNT_VERSION) return createMetaAccountV2();
+
+  const pets: Partial<Record<PetId, PersistedPet>> = {};
+  const rawPets = isRecord(input.pets) ? input.pets : {};
+  for (const id of PET_IDS) {
+    const rawPet = rawPets[id];
+    if (!isRecord(rawPet)) continue;
+    pets[id] = { bondXp: sanitizeBondXp(rawPet.bondXp) };
+  }
+  // Onboarding ownership is invariant even when a cache is partially corrupt.
+  pets[STARTER_PET_ID] ??= { bondXp: 0 };
+
+  let selectedPetId: PetId | "" = STARTER_PET_ID;
+  if (input.selectedPetId === "") selectedPetId = "";
+  else if (isPetId(input.selectedPetId) && pets[input.selectedPetId]) {
+    selectedPetId = input.selectedPetId;
+  }
+
+  return {
+    version: META_ACCOUNT_VERSION,
+    revision: sanitizedInt(input.revision, META_ACCOUNT_REVISION_MAX),
+    scrip: sanitizedInt(input.scrip, META_ACCOUNT_SCRIP_MAX),
+    upgrades: sanitizeMetaLevels(input.upgrades),
+    pets,
+    selectedPetId,
+    slateTortoisePityMisses: sanitizedInt(input.slateTortoisePityMisses, 7),
+  };
+}

@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(24);
+    expect(h.state().schemaVersion).toBe(25);
   });
 });
 
@@ -3310,7 +3310,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3680,7 +3680,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3812,7 +3812,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4270,7 +4270,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4537,8 +4537,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(24);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(fixture.h.state().schemaVersion).toBe(25);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5033,7 +5033,7 @@ describe("ULT U1 five authoritative family executions", () => {
   });
 });
 
-describe("ULT U1 lifecycle, co-op, and schema 24", () => {
+describe("ULT U1 lifecycle, co-op, and schema 25", () => {
   it("cancels on an external teleport, preserves charge through downing, and keeps downed owners inert", () => {
     const { h, id, player, combat } = makeUltimateRoom(
       enemyComboShared.UltimateFamily.EventHorizon,
@@ -5056,12 +5056,12 @@ describe("ULT U1 lifecycle, co-op, and schema 24", () => {
     expect(player.ultCharge).toBe(50);
   });
 
-  it("ships schema 24 with nine nested wire fields and direct PlayerState accessors for U2", () => {
+  it("ships schema 25 with nine nested wire fields and direct PlayerState accessors for U2", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(24);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(24);
+    expect(h.state().schemaVersion).toBe(25);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(25);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5075,5 +5075,364 @@ describe("ULT U1 lifecycle, co-op, and schema 24", () => {
     ]).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
     player.ultCharge = 42;
     expect(player.ultimate.charge).toBe(42);
+  });
+});
+
+// Pet P1 — appended server authority, bonus-seam, G-01, lifecycle, and settlement coverage.
+function joinPet(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  petId: (typeof enemyComboShared.PET_IDS)[number],
+  bondXp = 0,
+  configure?: (account: ReturnType<typeof enemyComboShared.createMetaAccountV2>) => void,
+) {
+  const account = enemyComboShared.createMetaAccountV2();
+  account.pets[petId] = { bondXp };
+  account.selectedPetId = petId;
+  configure?.(account);
+  const client = { sessionId: id };
+  h.room.clients.push(client);
+  h.room.onJoin(client, { metaAccount: account, selectedPetId: petId });
+  return {
+    player: h.state().players.get(id),
+    combat: h.room.combat.get(id),
+    pet: h.room.petRuns.get(id),
+    account: h.room.metaAccounts.get(id),
+  };
+}
+
+describe("pet v1 join snapshot, lock, and schema 25", () => {
+  it("sanitizes an unowned request, syncs only id/band, and ignores attempted mid-run selection", () => {
+    const h = makeRoom();
+    const account = enemyComboShared.createMetaAccountV2();
+    account.pets["hearth-newt"] = { bondXp: 2700 };
+    account.selectedPetId = "hearth-newt";
+    const client = { sessionId: "pet-lock" };
+    h.room.clients.push(client);
+    h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
+    const player = h.state().players.get("pet-lock");
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([25, 25]);
+    expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
+      petId: "hearth-newt",
+      petLevelBand: 3,
+    });
+    expect(player.petLevel).toBeUndefined();
+    expect(player.petBondXp).toBeUndefined();
+    h.send("pet-lock", "selectPet", { petId: "verdant-wing" });
+    expect(player.petId).toBe("hearth-newt");
+    expect(h.room.petRuns.get("pet-lock").level).toBe(9);
+  });
+});
+
+describe("pet v1 approved roster bonus enforcement", () => {
+  it("Verdant Wing multiplies only passive regen and its capstone honors the G-01 ledger matrix", () => {
+    const h = makeRoom();
+    const { player, combat } = joinPet(h, "verdant-max", "verdant-wing", 3600);
+    h.state().mode = "training";
+    player.hp = 50;
+    const derivedCon = enemyComboShared.spreadAdjustedCon(player.con);
+    const baseRegen = enemyComboShared.deriveStats({ con: derivedCon }).regen;
+    h.room.stepSim(0.05);
+    expect(player.hp).toBeCloseTo(50 + baseRegen * 1.5 * 0.05, 6);
+
+    expect(h.room.effectiveMaxWeaponCharges("x-gun-coffin-shotgun", player.id)).toBe(3);
+    expect(h.room.effectiveMaxWeaponCharges("x-sword-railspike", player.id)).toBe(3);
+    expect(h.room.effectiveMaxWeaponCharges("x-gun-gatling", player.id)).toBe(
+      WEAPONS["x-gun-gatling"]!.gun!.magazine + 1,
+    );
+    expect(h.room.effectiveMaxWeaponCharges("x-staff-arcane-lance", player.id)).toBe(0);
+
+    player.weapon = "x-gun-coffin-shotgun";
+    h.room.restoreWeaponResource(player, combat, true, false);
+    player.charges = 1;
+    combat.cd = 0.4;
+    combat.reloadCd = 0.7;
+    h.room.saveWeaponResource(player, combat);
+    player.weapon = "rusty-cleaver";
+    h.room.restoreWeaponResource(player, combat, true, false);
+    player.weapon = "x-gun-coffin-shotgun";
+    h.room.restoreWeaponResource(player, combat, false, false);
+    expect({ charges: player.charges, cooldown: combat.cd, reload: combat.reloadCd }).toEqual({
+      charges: 1,
+      cooldown: 0.4,
+      reload: 0.7,
+    });
+    const shotgun = combat.weaponLedger.get("x-gun-coffin-shotgun");
+    shotgun.charges = 0;
+    shotgun.reload = 0.05;
+    player.weapon = "rusty-cleaver";
+    h.room.restoreWeaponResource(player, combat, false, false);
+    h.room.stepStowedWeaponResources(player, combat, 0.05);
+    expect(shotgun).toMatchObject({ reload: 0, charges: 3 });
+  });
+
+  it("Hearth Newt scales received event heals once and keeps its descent capstone exactly 15%", () => {
+    const h = makeRoom();
+    const { player } = joinPet(h, "hearth-max", "hearth-newt", 3600);
+    player.hp = 50;
+    h.room.applyHeal(player, 10);
+    expect(player.hp).toBe(62);
+    player.hp = 50;
+    h.room.transitionDimension();
+    expect(player.hp).toBe(65);
+  });
+
+  it("Lodestar Moth extends owner-centred reach and latches its 600px boundary sweep", () => {
+    const h = makeRoom();
+    const { player } = joinPet(h, "moth-max", "lodestar-moth", 3600);
+    expect(h.room.xpMoteReach(player)).toBe(360);
+    const echo = new enemyComboShared.XpEchoState();
+    echo.id = "pet-moth-echo";
+    echo.x = player.x + 500;
+    echo.y = player.y;
+    echo.value = 10;
+    h.state().xpEchoes.set(echo.id, echo);
+    h.room.beginXpBoundary("descent");
+    expect(echo.collectorId).toBe(player.id);
+  });
+
+  it("Copper Snail expands only earned pickup reach and raises only the capstone bag admission", () => {
+    const h = makeRoom();
+    const { player } = joinPet(h, "copper-max", "copper-snail", 3600);
+    expect(h.room.bagCapacity(player)).toBe(13);
+    const unearned = new PickupState();
+    unearned.id = "drop-pet-unearned";
+    unearned.weapon = "x-gun-gatling";
+    unearned.weaponPublic = unearned.weapon;
+    unearned.x = player.x + 80;
+    unearned.y = player.y;
+    h.state().pickups.set(unearned.id, unearned);
+    const earned = new PickupState();
+    earned.id = "drop-pet-earned";
+    earned.weapon = "x-gun-coffin-shotgun";
+    earned.weaponPublic = earned.weapon;
+    earned.x = player.x + 80;
+    earned.y = player.y;
+    h.state().pickups.set(earned.id, earned);
+    h.room.earnedPickups.add(earned.id);
+    h.send(player.id, "grabWeapon");
+    expect(h.state().pickups.has(earned.id)).toBe(false);
+    expect(h.state().pickups.has(unearned.id)).toBe(true);
+
+    const low = makeRoom();
+    const lowPet = joinPet(low, "copper-nine", "copper-snail", 2700);
+    expect(low.room.bagCapacity(lowPet.player)).toBe(12);
+  });
+
+  it("Gilded Gecko mints only earned-sale fractions and stops at the approved level-10 cap", () => {
+    const h = makeRoom({ belt: true });
+    const { player, pet } = joinPet(h, "gecko-max", "gilded-gecko", 3600);
+    expect(h.room.petSalePayout(player, 4, false)).toBe(0);
+    expect(h.room.petSalePayout(player, 4, true)).toBe(72);
+    expect(h.room.petSalePayout(player, 4, true)).toBe(72);
+    expect(h.room.petSalePayout(player, 4, true)).toBe(66);
+    expect(h.room.petSalePayout(player, 4, true)).toBe(60);
+    expect(pet.geckoMinted).toBe(30);
+    expect(pet.geckoFraction).toBeCloseTo(6, 8);
+  });
+
+  it("Brass Crab shortens assignment once and accelerates only living stowed reload debt", () => {
+    const h = makeRoom();
+    const { player, combat } = joinPet(h, "brass-max", "brass-crab", 3600);
+    h.state().mode = "training";
+    player.weapon = "x-gun-coffin-shotgun";
+    h.room.restoreWeaponResource(player, combat, true, false);
+    player.charges = 1;
+    combat.attackBuffer = 1;
+    h.room.stepSim(0.05);
+    expect(combat.reloadCd).toBeCloseTo(1.6 * 0.9, 8);
+    h.room.saveWeaponResource(player, combat);
+    player.weapon = "rusty-cleaver";
+    h.room.restoreWeaponResource(player, combat, true, false);
+    const shotgun = combat.weaponLedger.get("x-gun-coffin-shotgun");
+    h.room.stepStowedWeaponResources(player, combat, 0.2);
+    expect(shotgun.reload).toBeCloseTo(1.44 - 0.25, 8);
+    player.alive = false;
+    h.room.stepStowedWeaponResources(player, combat, 0.2);
+    expect(shotgun.reload).toBeCloseTo(1.44 - 0.25 - 0.2, 8);
+  });
+
+  it("Pale Firefly uses the owner's level for 156px reach and exactly 40% revive HP", () => {
+    const h = makeRoom();
+    const rezzer = joinPet(h, "firefly-max", "pale-firefly", 3600).player;
+    const target = joinPet(h, "firefly-target", "slate-tortoise", 0).player;
+    target.x = rezzer.x + 150;
+    target.y = rezzer.y;
+    target.alive = false;
+    target.hp = 0;
+    h.room.tryRez(rezzer, 96);
+    expect(target.alive).toBe(true);
+    expect(target.hp).toBe(Math.round(target.maxHp * 0.4));
+  });
+
+  it("Slate Tortoise mitigates only typed neutral hazards and refreshes a preserved 3s regen window", () => {
+    const h = makeRoom();
+    const { player, pet } = joinPet(h, "tortoise-max", "slate-tortoise", 3600);
+    h.state().mode = "training";
+    player.maxHp = 200;
+    player.hp = 200;
+    h.room.damagePlayer(player, 20, "pit");
+    expect(player.hp).toBe(183);
+    player.hp = 200;
+    h.room.damagePlayer(player, 20, "enemy");
+    expect(player.hp).toBe(180);
+    player.hp = 100;
+    h.room.damagePitFall(player);
+    expect(pet.tortoisePitRegenSeconds).toBe(3);
+    h.room.damagePitFall(player);
+    expect(pet.tortoisePitRegenSeconds).toBe(3);
+    player.hp = 50;
+    const baseRegen = enemyComboShared.deriveStats({
+      con: enemyComboShared.spreadAdjustedCon(player.con),
+    }).regen;
+    h.room.stepSim(0.05);
+    expect(player.hp).toBeCloseTo(50 + baseRegen * 1.5 * 0.05, 6);
+    expect(pet.tortoisePitRegenSeconds).toBeCloseTo(2.95, 8);
+  });
+});
+
+describe("pet v1 Bond XP qualification, terminal banking, and lifecycle", () => {
+  it("requires 60 seconds plus three accepted outcomes once per epoch", () => {
+    const h = makeRoom();
+    const { pet } = joinPet(h, "bond-eligibility", "verdant-wing", 0);
+    pet.dimensionPresenceSeconds = 59.95;
+    pet.acceptedActionsThisDimension = 3;
+    h.room.awardPetDimensionClear();
+    expect(pet.pendingBondXp).toBe(0);
+    h.room.beginNextPetDimension();
+    pet.dimensionPresenceSeconds = 60;
+    pet.acceptedActionsThisDimension = 2;
+    h.room.awardPetDimensionClear();
+    expect(pet.pendingBondXp).toBe(0);
+    h.room.beginNextPetDimension();
+    pet.dimensionPresenceSeconds = 60;
+    pet.acceptedActionsThisDimension = 3;
+    h.room.awardPetDimensionClear();
+    h.room.awardPetDimensionClear();
+    expect({ pending: pet.pendingBondXp, clears: pet.clearReceipts }).toEqual({ pending: 100, clears: 1 });
+  });
+
+  it("training/dummy attacks never qualify a Bond action or clear receipt", () => {
+    const h = makeRoom();
+    const { player, pet } = joinPet(h, "bond-training", "verdant-wing", 0);
+    h.room.toggleTraining();
+    h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+    h.tick(2);
+    expect(pet.acceptedActionsThisDimension).toBe(0);
+    pet.dimensionPresenceSeconds = 120;
+    pet.acceptedActionsThisDimension = 99;
+    h.room.awardPetDimensionClear();
+    expect(pet.pendingBondXp).toBe(0);
+  });
+
+  it("banks selected-pet-only XP on defeat, victory, and extraction, idempotently", () => {
+    const settle = (kind: "defeat" | "victory" | "extract") => {
+      const h = makeRoom();
+      const joined = joinPet(h, `bond-${kind}`, "hearth-newt", 0, (account) => {
+        account.pets["verdant-wing"] = { bondXp: 120 };
+        account.pets["slate-tortoise"] = { bondXp: 0 };
+      });
+      joined.pet.pendingBondXp = 100;
+      joined.pet.clearReceipts = 1;
+      if (kind === "extract") h.room.completeExtraction();
+      else h.room.enterTerminalOutcome(kind);
+      h.room.enterTerminalOutcome(kind === "defeat" ? "defeat" : "victory");
+      return joined.account;
+    };
+    const defeat = settle("defeat");
+    const victory = settle("victory");
+    const extraction = settle("extract");
+    expect(defeat.pets["hearth-newt"].bondXp).toBe(100);
+    expect(victory.pets["hearth-newt"].bondXp).toBe(180);
+    expect(extraction.pets["hearth-newt"].bondXp).toBe(180);
+    expect([
+      defeat.pets["verdant-wing"].bondXp,
+      victory.pets["verdant-wing"].bondXp,
+      extraction.pets["verdant-wing"].bondXp,
+    ]).toEqual([120, 120, 120]);
+  });
+
+  it("preserves the exact pet snapshot, counters, capacity, charges, and debt through down/revive", () => {
+    const h = makeRoom();
+    const owner = joinPet(h, "pet-downed", "verdant-wing", 3600);
+    const ally = joinPet(h, "pet-rezzer", "hearth-newt", 0);
+    owner.player.weapon = "x-gun-coffin-shotgun";
+    h.room.restoreWeaponResource(owner.player, owner.combat, true, false);
+    owner.player.charges = 1;
+    owner.combat.reloadCd = 0.7;
+    owner.pet.pendingBondXp = 240;
+    owner.pet.acceptedActionsThisDimension = 7;
+    const sameRuntime = owner.pet;
+    owner.player.hp = 0;
+    h.tick();
+    expect(owner.player.alive).toBe(false);
+    h.room.tryRez(ally.player, 10000);
+    expect(owner.player.alive).toBe(true);
+    expect(h.room.petRuns.get(owner.player.id)).toBe(sameRuntime);
+    expect({
+      petId: owner.player.petId,
+      band: owner.player.petLevelBand,
+      pending: owner.pet.pendingBondXp,
+      actions: owner.pet.acceptedActionsThisDimension,
+      maxCharges: owner.player.maxCharges,
+      charges: owner.player.charges,
+      reload: owner.combat.reloadCd,
+    }).toEqual({
+      petId: "verdant-wing",
+      band: 3,
+      pending: 240,
+      actions: 7,
+      maxCharges: 3,
+      charges: 1,
+      reload: 0.7,
+    });
+  });
+
+  it("keeps Slate's terminal-victory pity roll separate from defeat settlement", () => {
+    const victory = makeRoom();
+    const won = joinPet(victory, "slate-win", "verdant-wing", 0, (account) => {
+      account.slateTortoisePityMisses = 7;
+    });
+    victory.room.enterTerminalOutcome("victory");
+    expect(won.account.pets["slate-tortoise"]).toEqual({ bondXp: 0 });
+
+    const defeat = makeRoom();
+    const lost = joinPet(defeat, "slate-loss", "verdant-wing", 0, (account) => {
+      account.slateTortoisePityMisses = 7;
+    });
+    defeat.room.enterTerminalOutcome("defeat");
+    expect(lost.account.pets["slate-tortoise"]).toBeUndefined();
+    expect(lost.account.slateTortoisePityMisses).toBe(7);
+  });
+});
+
+describe("pet v1 owner-private protocol seams", () => {
+  it("sends Copper earned-pickup eligibility only to an eligible owner", () => {
+    const h = makeRoom();
+    const copperMessages: Array<{ type: string; payload: unknown }> = [];
+    const otherMessages: Array<{ type: string; payload: unknown }> = [];
+    const copperAccount = enemyComboShared.createMetaAccountV2();
+    copperAccount.pets["copper-snail"] = { bondXp: 120 };
+    copperAccount.selectedPetId = "copper-snail";
+    const copper = {
+      sessionId: "copper-private",
+      send: (type: string, payload: unknown) => copperMessages.push({ type, payload }),
+    };
+    const other = {
+      sessionId: "non-copper-private",
+      send: (type: string, payload: unknown) => otherMessages.push({ type, payload }),
+    };
+    h.room.clients.push(copper, other);
+    h.room.onJoin(copper, { metaAccount: copperAccount });
+    h.room.onJoin(other, { metaAccount: enemyComboShared.createMetaAccountV2() });
+    copperMessages.length = 0;
+    otherMessages.length = 0;
+
+    h.room.earnedPickups.add("drop-earned-private");
+    h.room.publishPetPickupEligibility();
+    expect(copperMessages).toEqual([
+      { type: "petPickupEligibility", payload: { ids: ["drop-earned-private"] } },
+    ]);
+    expect(otherMessages).toEqual([]);
   });
 });

@@ -191,6 +191,10 @@ export class PlayerState extends Schema {
   // matrix remains late-join safe without exceeding the panel's nine-field wire budget. Tick epochs are
   // immutable for an accepted cast; the client interpolates phases without a per-tick schema write.
   @type(UltimateState) ultimate = new UltimateState();
+  /** Pet v1's complete public follower descriptor. Exact account XP/level stays owner-private. */
+  @type("string") petId = "";
+  /** 0 none Â· 1 Hatchling (L1-3) Â· 2 Awakened (L4-7) Â· 3 Ascendant (L8-10). */
+  @type("uint8") petLevelBand = 0;
   /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
   get ultArchetype(): number { return this.ultimate.archetype; }
   set ultArchetype(value: number) { this.ultimate.archetype = value; }

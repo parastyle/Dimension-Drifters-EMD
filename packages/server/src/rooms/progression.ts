@@ -22,6 +22,12 @@ import {
   ultimateRankingForAllocation,
   ultimateVariantForAllocation,
   xpToNextLevel,
+  type MetaAccountV2,
+  PET_MAX_BOND_XP,
+  type PetId,
+  petLevelForXp,
+  petStageBandForLevel,
+  sanitizeBondXp,
 } from "@dd/shared";
 
 /**
@@ -107,6 +113,50 @@ export function levelUpPlayer(player: PlayerState, amount: number): void {
     player.xpToNext = xpToNextLevel(player.level);
   }
   if (player.level >= LEVEL_CAP) player.xp = 0;
+}
+
+export interface PetBondBankResult {
+  earnedBondXp: number;
+  awardedBondXp: number;
+  oldBondXp: number;
+  newBondXp: number;
+  oldLevel: number;
+  newLevel: number;
+  oldStageBand: 1 | 2 | 3;
+  newStageBand: 1 | 2 | 3;
+  reachedCapstone: boolean;
+}
+
+/** Bank one terminal run receipt into the selected owned pet. Account revision/other mutations stay atomic
+ * at the caller's settlement seam; this helper owns only clamped Bond XP and its derived presentation. */
+export function bankPetBondXp(
+  account: MetaAccountV2,
+  petId: PetId,
+  value: unknown,
+): PetBondBankResult {
+  const pet = account.pets[petId];
+  const oldBondXp = sanitizeBondXp(pet?.bondXp);
+  const numeric = Number(value);
+  const earnedBondXp = Number.isFinite(numeric)
+    ? Math.max(0, Math.min(500, Math.floor(numeric)))
+    : 0;
+  const oldLevel = petLevelForXp(oldBondXp);
+  const newBondXp = pet
+    ? Math.min(PET_MAX_BOND_XP, oldBondXp + earnedBondXp)
+    : oldBondXp;
+  if (pet) pet.bondXp = newBondXp;
+  const newLevel = petLevelForXp(newBondXp);
+  return {
+    earnedBondXp,
+    awardedBondXp: newBondXp - oldBondXp,
+    oldBondXp,
+    newBondXp,
+    oldLevel,
+    newLevel,
+    oldStageBand: petStageBandForLevel(oldLevel),
+    newStageBand: petStageBandForLevel(newLevel),
+    reachedCapstone: oldLevel < 10 && newLevel === 10,
+  };
 }
 
 // Ultimate-wave ordering note: its planned `allocFlex` counter becomes total `allocRun`; every point applied

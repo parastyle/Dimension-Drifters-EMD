@@ -129,7 +129,19 @@ import {
   META_FORTUNE_LUK,
   META_POWER_STR,
   META_VITALITY_HP,
+  META_ACCOUNT_REVISION_MAX,
+  type MetaAccountV2,
   nextUpgradeCost,
+  PET_CATALOG_VERSION,
+  type PetId,
+  type PetMods,
+  type PetProgressReceipt,
+  type PetStageBand,
+  isPetId,
+  petLevelForXp,
+  petModsForLevel,
+  petStageBandForLevel,
+  sanitizeMetaAccountV2,
   sanitizeMetaLevels,
   hasAugment,
   ACTION_MSGS_PER_TICK,
@@ -416,7 +428,7 @@ import {
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { BossController, type BossEmitSink } from "./BossController.js";
-import { applyAllocationChoice, consumeFlex, levelUpPlayer } from "./progression.js";
+import { applyAllocationChoice, bankPetBondXp, consumeFlex, levelUpPlayer } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 
 /** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
@@ -512,6 +524,25 @@ interface WeaponResourceLedger {
   cooldown: number;
   reload: number;
   charges: number;
+}
+
+type PlayerDamageKind = "pit" | "ground-hazard" | "enemy" | "self";
+
+interface PetRunRuntime {
+  petId: PetId;
+  level: number;
+  stageBand: PetStageBand;
+  catalogVersion: number;
+  mods: Readonly<PetMods>;
+  pendingBondXp: number;
+  clearReceipts: number;
+  lastEvaluatedDimensionEpoch: number;
+  dimensionPresenceSeconds: number;
+  acceptedActionsThisDimension: number;
+  geckoFraction: number;
+  geckoMinted: number;
+  tortoisePitRegenSeconds: number;
+  settled: boolean;
 }
 
 interface UltimateTarget {
@@ -794,6 +825,12 @@ export class GameRoom extends Room<ArenaState> {
   private beamCurrentLength = 0;
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
+  /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
+  private readonly metaAccounts = new Map<string, MetaAccountV2>();
+  /** Exact pet level/modifiers and all hot counters are server-private and snapshotted once per run. */
+  private readonly petRuns = new Map<string, PetRunRuntime>();
+  private readonly petSettledAccounts = new Set<string>();
+  private petDimensionEpoch = 0;
   /** Per-enemy ranged-attack cooldown, sec (spitters). Keyed by enemy id; pruned with the enemy. */
   private readonly enemyFireCd = new Map<string, number>();
   /** §16 v0.109 the active boss's data-driven controller (replaces the hardcoded OLD RUST phase timers).
@@ -998,6 +1035,8 @@ export class GameRoom extends Room<ArenaState> {
   private beltRoomIdx = 0;
   private beltPhase: "enter" | "fight" | "cleared" = "enter";
   private bossId: string | null = null;
+  /** Debug-spawned bosses never qualify the run-structure Bond receipt. */
+  private bossPetAwardEligible = false;
   /** §17 shifter-incursion director: cd to the next incursion, the active shifter's enemy id + remaining
    *  hunt window (0 = none active), and how many incursions have fired (drives the per-wave HP ramp). */
   private shifterCd = SHIFTER_FIRST_SECONDS;
@@ -1342,7 +1381,7 @@ export class GameRoom extends Room<ArenaState> {
       const c = this.combat.get(client.sessionId);
       if (i === player.activeSlot) this.syncActiveSlot(player, c); // capture the live held weapon first
       const s = player.slots[i]!;
-      if (!s.weapon || player.bag.length >= BAG_CAP) return;
+      if (!s.weapon || player.bag.length >= this.bagCapacity(player)) return;
       const b = new ArsenalSlot();
       this.copySlot(b, s);
       player.bag.push(b);
@@ -1389,14 +1428,16 @@ export class GameRoom extends Room<ArenaState> {
         if (idx === player.activeSlot) this.syncActiveSlot(player, c);
         const s = player.slots[idx]!;
         if (!s.weapon) return;
-        player.scrip = Math.min(65535, player.scrip + scripValue(s.rarity, s.earned));
+        player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, s.rarity, s.earned));
         this.copySlot(s, null);
         if (idx === player.activeSlot) this.loadSlot(player, c, idx);
+        this.publishAccountMutation(player);
       } else {
         if (idx < 0 || idx >= player.bag.length) return;
         const b = player.bag[idx]!;
-        player.scrip = Math.min(65535, player.scrip + scripValue(b.rarity, b.earned));
+        player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, b.rarity, b.earned));
         player.bag.splice(idx, 1);
+        this.publishAccountMutation(player);
       }
     });
 
@@ -1426,6 +1467,7 @@ export class GameRoom extends Room<ArenaState> {
         player.upPower += 1;
         player.str += META_POWER_STR;
       }
+      this.publishAccountMutation(player);
     });
 
     // §classmerge C key: cosmetic during a run; Testing Grounds deliberately re-snapshots the full kit.
@@ -1482,11 +1524,13 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive) return;
       if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
       let best: PickupState | null = null;
-      let bestD = PICKUP_RADIUS * PICKUP_RADIUS;
+      let bestD = Number.POSITIVE_INFINITY;
       this.state.pickups.forEach((pk, pid) => {
         if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
         const d = (pk.x - player.x) ** 2 + (pk.y - player.y) ** 2;
-        if (d <= bestD) {
+        const petReach = this.petRuns.get(player.id)?.mods.earnedPickupRadius ?? 0;
+        const radius = this.earnedPickups.has(pid) && petReach > 0 ? petReach : PICKUP_RADIUS;
+        if (d <= radius * radius && d <= bestD) {
           bestD = d;
           best = pk;
         }
@@ -1531,7 +1575,7 @@ export class GameRoom extends Room<ArenaState> {
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
-        this.earnedPickups.delete(grabbed.id);
+        if (this.earnedPickups.delete(grabbed.id)) this.publishPetPickupEligibility();
         this.hiddenPickupIdentities.delete(grabbed.id);
       }
     });
@@ -1577,7 +1621,9 @@ export class GameRoom extends Room<ArenaState> {
     // §44 dev-gated (a public run earns its boss on the timer).
     this.onMessage("spawnBoss", (client) => {
       if (!this.devToolsEnabled() || !this.takeAction(client)) return;
-      if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) this.spawnBoss();
+      if (this.isHost(client) && this.state.mode === "arena" && !this.bossSpawned) {
+        this.spawnBoss(undefined, false);
+      }
     });
 
     // §16 v0.109 Debug BOSS PICKER: spawn a SPECIFIC boss def by kind to playtest its style (works in arena
@@ -1590,7 +1636,7 @@ export class GameRoom extends Room<ArenaState> {
         typeof kindId !== "string" ||
         (ENEMY_KINDS[kindId]?.archetype !== "boss" && !BOSS_DEF_IDS.includes(kindId))
       ) return;
-      this.spawnBoss(kindId);
+      this.spawnBoss(kindId, false);
     });
 
     // §21 Dev summon (Tab menu): spawn N of a chosen enemy kind on a ring around the requester, optionally
@@ -1670,7 +1716,10 @@ export class GameRoom extends Room<ArenaState> {
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pickupGrace.clear();
-    this.earnedPickups.clear();
+    if (this.earnedPickups.size > 0) {
+      this.earnedPickups.clear();
+      this.publishPetPickupEligibility();
+    }
     this.hiddenPickupIdentities.clear();
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
@@ -1733,6 +1782,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
   private enterTerminalOutcome(outcome: "defeat" | "victory"): void {
+    this.settlePetAccounts(outcome);
     // A wipe has no eligible collector and explicitly forfeits unclaimed field XP with the failed run.
     // Victory routes reach here only after `beginXpBoundary` has visibly caught every paid packet.
     if (outcome === "defeat") this.clearXpEchoes();
@@ -1764,7 +1814,10 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
-    if (c?.heldEarned) this.earnedPickups.add(pk.id);
+    if (c?.heldEarned) {
+      this.earnedPickups.add(pk.id);
+      this.publishPetPickupEligibility();
+    }
     if (c && (c.beamPhase !== 0 || c.beamDescriptor)) {
       this.cancelBeam(player, player.id, c, true, true);
     }
@@ -1791,9 +1844,33 @@ export class GameRoom extends Room<ArenaState> {
     dst.resourceCharges = src?.resourceCharges ?? 0;
   }
 
-  private maxWeaponCharges(weaponId: string): number {
+  /** G-01 single source of truth: authored base -> character rule -> pet adjustment -> integer clamp. */
+  private effectiveMaxWeaponCharges(weaponId: string, playerId: string): number {
     const weapon = WEAPONS[weaponId];
-    return weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
+    const authored = weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
+    // Character capacity is currently declarative/inert; this seam is the one place it will compose.
+    const petAdd = this.petRuns.get(playerId)?.mods.weaponChargeCapacityAdd ?? 0;
+    return Math.max(0, Math.floor(authored + (authored > 0 ? petAdd : 0)));
+  }
+
+  private bagCapacity(player: PlayerState): number {
+    return BAG_CAP + (this.petRuns.get(player.id)?.mods.bagCapacityAdd ?? 0);
+  }
+
+  /** Base earned sale plus Gecko's fractional, per-run-capped mint. Unearned/zero sales never feed it. */
+  private petSalePayout(player: PlayerState, rarity: number, earned: boolean): number {
+    const base = scripValue(rarity, earned);
+    if (base <= 0 || !player.alive) return base;
+    const pet = this.petRuns.get(player.id);
+    if (!pet || pet.mods.saleBonusRate <= 0 || pet.geckoMinted >= pet.mods.saleBonusCap) return base;
+    pet.geckoFraction += base * pet.mods.saleBonusRate;
+    const available = Math.max(0, Math.floor(pet.mods.saleBonusCap - pet.geckoMinted));
+    const minted = Math.min(available, Math.floor(pet.geckoFraction));
+    if (minted > 0) {
+      pet.geckoFraction -= minted;
+      pet.geckoMinted += minted;
+    }
+    return base + minted;
   }
 
   /** Persist the active weapon's cooldown/ammo before identity changes. */
@@ -1827,7 +1904,7 @@ export class GameRoom extends Room<ArenaState> {
     applyDrawLock = true,
   ): void {
     const weaponId = player.weapon;
-    const max = this.maxWeaponCharges(weaponId);
+    const max = this.effectiveMaxWeaponCharges(weaponId, player.id);
     let cooldown = 0;
     let reload = 0;
     let charges = max;
@@ -1899,26 +1976,36 @@ export class GameRoom extends Room<ArenaState> {
       for (let i = 0; i < player.slots.length; i++) {
         if (i === player.activeSlot) continue;
         const slot = player.slots[i];
-        if (slot?.resourceReady) this.stepStoredSlot(slot, dt);
+        if (slot?.resourceReady) this.stepStoredSlot(player, slot, dt);
       }
-      for (const slot of player.bag) if (slot.resourceReady) this.stepStoredSlot(slot, dt);
+      for (const slot of player.bag) if (slot.resourceReady) this.stepStoredSlot(player, slot, dt);
       return;
     }
+    const reloadRate = player.alive
+      ? (this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1)
+      : 1;
     for (const [weaponId, ledger] of c.weaponLedger) {
       if (weaponId === player.weapon) continue;
       ledger.cooldown = Math.max(0, ledger.cooldown - dt);
       if (ledger.reload > 0) {
-        ledger.reload = Math.max(0, ledger.reload - dt);
-        if (ledger.reload <= 0) ledger.charges = this.maxWeaponCharges(weaponId);
+        ledger.reload = Math.max(0, ledger.reload - dt * reloadRate);
+        if (ledger.reload <= 0) {
+          ledger.charges = this.effectiveMaxWeaponCharges(weaponId, player.id);
+        }
       }
     }
   }
 
-  private stepStoredSlot(slot: ArsenalSlot, dt: number): void {
+  private stepStoredSlot(player: PlayerState, slot: ArsenalSlot, dt: number): void {
     slot.cooldown = Math.max(0, slot.cooldown - dt);
     if (slot.reload > 0) {
-      slot.reload = Math.max(0, slot.reload - dt);
-      if (slot.reload <= 0) slot.resourceCharges = this.maxWeaponCharges(slot.resourceWeapon);
+      const reloadRate = player.alive
+        ? (this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1)
+        : 1;
+      slot.reload = Math.max(0, slot.reload - dt * reloadRate);
+      if (slot.reload <= 0) {
+        slot.resourceCharges = this.effectiveMaxWeaponCharges(slot.resourceWeapon, player.id);
+      }
     }
   }
 
@@ -1977,7 +2064,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (target === -1) {
       const old = player.slots[player.activeSlot]!;
-      if (old.weapon && player.bag.length < BAG_CAP) {
+      if (old.weapon && player.bag.length < this.bagCapacity(player)) {
         const b = new ArsenalSlot();
         this.copySlot(b, old);
         player.bag.push(b);
@@ -2092,7 +2179,7 @@ export class GameRoom extends Room<ArenaState> {
             nearestSq = distanceSq;
           }
         });
-        if (nearest) nearest.hp = Math.min(nearest.maxHp, nearest.hp + effect.amount);
+        if (nearest) this.applyHeal(nearest, effect.amount);
       } else if (effect.kind === "heal-self") {
         const window = Math.floor(this.state.elapsed);
         if (combat.killHealWindowStart !== window) {
@@ -2101,7 +2188,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         const amount = Math.min(effect.amount, effect.capPerSecond - combat.killHealWindowAmount);
         if (amount > 0) {
-          player.hp = Math.min(player.maxHp, player.hp + amount);
+          this.applyHeal(player, amount);
           combat.killHealWindowAmount += amount;
         }
       }
@@ -2143,6 +2230,202 @@ export class GameRoom extends Room<ArenaState> {
     return Math.max(1, n);
   }
 
+  private ownerClient(playerId: string): Client | undefined {
+    for (const client of this.clients) if (client.sessionId === playerId) return client;
+    return undefined;
+  }
+
+  private sendOwnerMessage(playerId: string, type: string, payload: unknown): void {
+    const client = this.ownerClient(playerId);
+    if (client && typeof client.send === "function") client.send(type, payload);
+  }
+
+  /** Copper Gecko's wider reach is intentionally private: only its owner receives the earned-id rail that
+   *  lets P2 render an honest local prompt. This runs only when that rare set changes, never per tick. */
+  private publishPetPickupEligibility(): void {
+    let ids: string[] | undefined;
+    this.state.players.forEach((player) => {
+      if ((this.petRuns.get(player.id)?.mods.earnedPickupRadius ?? 0) <= 0) return;
+      ids ??= Array.from(this.earnedPickups);
+      this.sendOwnerMessage(player.id, "petPickupEligibility", { ids });
+    });
+  }
+
+  private bumpAccountRevision(account: MetaAccountV2): void {
+    account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
+  }
+
+  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV2): void {
+    account.scrip = Math.max(0, Math.min(65535, Math.floor(player.scrip)));
+    account.upgrades.vitality = player.upVitality;
+    account.upgrades.fortune = player.upFortune;
+    account.upgrades.power = player.upPower;
+  }
+
+  private publishAccountMutation(player: PlayerState): void {
+    const account = this.metaAccounts.get(player.id);
+    if (!account) return;
+    this.syncAccountFromPlayer(player, account);
+    this.bumpAccountRevision(account);
+    this.sendOwnerMessage(player.id, "metaAccount", account);
+  }
+
+  /** New run/ready boundary: exact XP becomes a private immutable level/mod snapshot; only id/band sync. */
+  private snapshotPetRun(player: PlayerState, selectedPetId: PetId | ""): void {
+    const account = this.metaAccounts.get(player.id);
+    const persisted = selectedPetId ? account?.pets[selectedPetId] : undefined;
+    this.petSettledAccounts.delete(player.id);
+    if (!selectedPetId || !persisted) {
+      this.petRuns.delete(player.id);
+      player.petId = "";
+      player.petLevelBand = 0;
+      return;
+    }
+    const level = petLevelForXp(persisted.bondXp);
+    const stageBand = petStageBandForLevel(level);
+    this.petRuns.set(player.id, {
+      petId: selectedPetId,
+      level,
+      stageBand,
+      catalogVersion: PET_CATALOG_VERSION,
+      mods: petModsForLevel(selectedPetId, level),
+      pendingBondXp: 0,
+      clearReceipts: 0,
+      lastEvaluatedDimensionEpoch: -1,
+      dimensionPresenceSeconds: 0,
+      acceptedActionsThisDimension: 0,
+      geckoFraction: 0,
+      geckoMinted: 0,
+      tortoisePitRegenSeconds: 0,
+      settled: false,
+    });
+    player.petId = selectedPetId;
+    player.petLevelBand = stageBand;
+  }
+
+  private resetPetAccrual(playerId: string): void {
+    const pet = this.petRuns.get(playerId);
+    if (!pet) return;
+    pet.pendingBondXp = 0;
+    pet.clearReceipts = 0;
+    pet.lastEvaluatedDimensionEpoch = -1;
+    pet.dimensionPresenceSeconds = 0;
+    pet.acceptedActionsThisDimension = 0;
+    pet.geckoFraction = 0;
+    pet.geckoMinted = 0;
+    pet.tortoisePitRegenSeconds = 0;
+    pet.settled = false;
+    this.petSettledAccounts.delete(playerId);
+  }
+
+  /** Allocation-free 20 Hz qualification clock; training/debug rooms never build Bond eligibility. */
+  private advancePetPresence(dt: number): void {
+    if (
+      this.state.outcome !== "active" ||
+      (this.state.mode !== "arena" && this.state.mode !== "bossrush")
+    ) return;
+    this.petRuns.forEach((pet, playerId) => {
+      if (!this.state.players.has(playerId) || pet.settled) return;
+      pet.dimensionPresenceSeconds += dt;
+    });
+  }
+
+  /** Count only a server-accepted combat/support result, never a message, movement tick, dummy, or training. */
+  private recordPetAcceptedAction(playerId: string): void {
+    if (
+      this.state.outcome !== "active" ||
+      (this.state.mode !== "arena" && this.state.mode !== "bossrush")
+    ) return;
+    const player = this.state.players.get(playerId);
+    const pet = this.petRuns.get(playerId);
+    if (!player?.alive || !pet || pet.settled) return;
+    pet.acceptedActionsThisDimension++;
+  }
+
+  /** Evaluate each authored dimension/boss epoch once. Failed presence/action qualification cannot pay later. */
+  private awardPetDimensionClear(): void {
+    if (this.state.mode !== "arena" && this.state.mode !== "bossrush") return;
+    const awards = [100, 140, 180] as const;
+    this.petRuns.forEach((pet, playerId) => {
+      if (pet.lastEvaluatedDimensionEpoch === this.petDimensionEpoch) return;
+      pet.lastEvaluatedDimensionEpoch = this.petDimensionEpoch;
+      if (
+        !this.state.players.has(playerId) ||
+        pet.settled ||
+        pet.clearReceipts >= awards.length ||
+        pet.dimensionPresenceSeconds + 1e-9 < 60 ||
+        pet.acceptedActionsThisDimension < 3
+      ) return;
+      pet.pendingBondXp = Math.min(500, pet.pendingBondXp + awards[pet.clearReceipts]!);
+      pet.clearReceipts++;
+    });
+  }
+
+  private beginNextPetDimension(): void {
+    this.petDimensionEpoch++;
+    this.petRuns.forEach((pet) => {
+      pet.dimensionPresenceSeconds = 0;
+      pet.acceptedActionsThisDimension = 0;
+    });
+  }
+
+  private rollSlateTortoise(account: MetaAccountV2, outcome: "defeat" | "victory"): boolean {
+    if (outcome !== "victory" || account.pets["slate-tortoise"]) return false;
+    const misses = Math.max(0, Math.min(7, Math.floor(account.slateTortoisePityMisses)));
+    const success = misses >= 7 || Math.random() < 0.08 * (misses + 1);
+    if (success) {
+      account.pets["slate-tortoise"] = { bondXp: 0 };
+      account.slateTortoisePityMisses = 0;
+      return true;
+    }
+    account.slateTortoisePityMisses = Math.min(7, misses + 1);
+    return false;
+  }
+
+  /** One idempotent terminal path for defeat and every victory/extraction route. */
+  private settlePetAccounts(outcome: "defeat" | "victory"): void {
+    this.state.players.forEach((player, playerId) => {
+      if (this.petSettledAccounts.has(playerId)) return;
+      const account = this.metaAccounts.get(playerId);
+      if (!account) return;
+      this.petSettledAccounts.add(playerId);
+      this.syncAccountFromPlayer(player, account);
+      const pet = this.petRuns.get(playerId);
+      let receipt: PetProgressReceipt | undefined;
+      if (pet) {
+        pet.settled = true;
+        const earnedBondXp = Math.min(
+          500,
+          pet.pendingBondXp + (outcome === "victory" && pet.clearReceipts > 0 ? 80 : 0),
+        );
+        const banked = bankPetBondXp(account, pet.petId, earnedBondXp);
+        receipt = {
+          petId: pet.petId,
+          outcome,
+          ...banked,
+          slateTortoiseAwarded: false,
+        };
+      }
+      const slateTortoiseAwarded = this.rollSlateTortoise(account, outcome);
+      if (receipt) receipt.slateTortoiseAwarded = slateTortoiseAwarded;
+      this.bumpAccountRevision(account);
+      if (receipt) this.sendOwnerMessage(playerId, "petProgressReceipt", receipt);
+      this.sendOwnerMessage(playerId, "metaAccount", account);
+    });
+  }
+
+  /** Explicit event/intermission heal; passive regen, revive HP, meta headroom and Hearth's own 15% use
+   * their dedicated paths. The receiver's selected pet owns the multiplier. */
+  private applyHeal(target: PlayerState, rawAmount: number, applyReceivedMultiplier = true): number {
+    if (!target.alive || rawAmount <= 0) return 0;
+    const multiplier = applyReceivedMultiplier
+      ? (this.petRuns.get(target.id)?.mods.healingReceivedMultiplier ?? 1)
+      : 1;
+    const before = target.hp;
+    target.hp = Math.min(target.maxHp, target.hp + rawAmount * multiplier);
+    return target.hp - before;
+  }
+
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
   private toggleTraining(): void {
     // Entering/leaving the workshop aborts the expedition; unclaimed run XP is explicitly forfeited.
@@ -2157,12 +2440,14 @@ export class GameRoom extends Room<ArenaState> {
     this.resetExtractionIntent();
     this.state.riftOpen = false; // §6 chain — the Testing Grounds sits outside the run structure
     this.state.depth = 1;
+    this.petDimensionEpoch = 0;
     this.visitedDims.clear();
     // §6 bank-or-lose (v0.103): stepping OUT of a live run into the workshop ABORTS the expedition —
     // everything carried is lost (only extraction banks). Without this, T is a wipe-panic button that
     // launders deep-run salvage through a depth reset (adversarial-verify finding F2). Also clear the
     // elapsed-clock parry timestamps (elapsed resets below) + weapon provenance (the gallery is free).
     this.state.players.forEach((p) => {
+      this.resetPetAccrual(p.id);
       p.salvaged = 0;
       p.ultCharge = 0;
       // …and the held weapon sheds its rolled loot identity too — without this, the workshop is a
@@ -2308,8 +2593,10 @@ export class GameRoom extends Room<ArenaState> {
     this.resetShifters();
     this.spawnAccum = 0;
     this.enemySeq = 0;
+    this.petDimensionEpoch = 0;
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
+      this.snapshotPetRun(player, this.metaAccounts.get(id)?.selectedPetId ?? "");
       // Fresh run → reset progression and snapshot the worn character's sum-10 spread; carried salvage
       // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue), and the
       // held weapon sheds its rolled loot identity (drops are per-run).
@@ -2366,7 +2653,7 @@ export class GameRoom extends Room<ArenaState> {
         c.lastWeapon = player.weapon;
         c.drawLock = 0;
         c.weaponLedger.clear();
-        player.maxCharges = this.maxWeaponCharges(player.weapon);
+        player.maxCharges = this.effectiveMaxWeaponCharges(player.weapon, player.id);
         player.charges = player.maxCharges;
         const active = player.slots[player.activeSlot];
         if (active) {
@@ -2541,7 +2828,16 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  override onJoin(client: Client, options?: { scrip?: number; up?: unknown }): void {
+  override onJoin(
+    client: Client,
+    options?: {
+      scrip?: number;
+      up?: unknown;
+      metaAccount?: unknown;
+      selectedPetId?: unknown;
+      petId?: unknown;
+    },
+  ): void {
     const player = new PlayerState();
     player.id = client.sessionId;
     player.hp = PLAYER_MAX_HP;
@@ -2555,24 +2851,34 @@ export class GameRoom extends Room<ArenaState> {
     // §44 (Sol audit): client-authored progression is only honoured while dev tools are on — on a public
     // deploy any client could join claiming 65,535 scrip + max upgrades. INTERIM until an authenticated
     // account store owns progression; production joins start at the defaults.
-    const trustMeta = this.belt && this.devToolsEnabled();
-    if (trustMeta && Number.isFinite(options?.scrip)) {
-      player.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
+    const trustLegacyMeta = this.belt && this.devToolsEnabled();
+    const account = sanitizeMetaAccountV2(options?.metaAccount);
+    // Legacy local keys remain a bounded migration input only when no v2 blob was supplied.
+    if (options?.metaAccount === undefined && trustLegacyMeta) {
+      if (Number.isFinite(options?.scrip)) {
+        account.scrip = Math.max(0, Math.min(65535, Math.floor(options?.scrip as number)));
+      }
+      account.upgrades = sanitizeMetaLevels(options?.up);
     }
-    if (trustMeta) {
-      const lv = sanitizeMetaLevels(options?.up);
-      player.upVitality = lv.vitality;
-      player.upFortune = lv.fortune;
-      player.upPower = lv.power;
-      this.applyMetaUpgrades(player);
+    const requestedPetId = options?.selectedPetId ?? options?.petId;
+    if (requestedPetId === "") account.selectedPetId = "";
+    else if (isPetId(requestedPetId) && account.pets[requestedPetId]) {
+      account.selectedPetId = requestedPetId;
     }
+    this.metaAccounts.set(client.sessionId, account);
+    player.scrip = account.scrip;
+    player.upVitality = account.upgrades.vitality;
+    player.upFortune = account.upgrades.fortune;
+    player.upPower = account.upgrades.power;
+    this.applyMetaUpgrades(player);
+    this.snapshotPetRun(player, account.selectedPetId);
     // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
     // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
     player.slots[0]!.weapon = DEFAULT_WEAPON;
     player.slots[0]!.resourceWeapon = DEFAULT_WEAPON;
     player.slots[0]!.resourceReady = true;
-    player.maxCharges = this.maxWeaponCharges(DEFAULT_WEAPON);
+    player.maxCharges = this.effectiveMaxWeaponCharges(DEFAULT_WEAPON, player.id);
     player.charges = player.maxCharges;
     player.slots[0]!.resourceCharges = player.charges;
     player.activeSlot = 0;
@@ -2704,6 +3010,8 @@ export class GameRoom extends Room<ArenaState> {
       ultCritCharges: 0,
       ultCritEndTick: 0,
     });
+    this.publishPetPickupEligibility();
+    if (typeof client.send === "function") client.send("metaAccount", account);
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
   }
 
@@ -2715,6 +3023,10 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.delete(client.sessionId);
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
+    // No reservation machinery in local/offline v1: an unsettled abandoned connection forfeits pending XP.
+    this.petRuns.delete(client.sessionId);
+    this.metaAccounts.delete(client.sessionId);
+    this.petSettledAccounts.delete(client.sessionId);
     // Host left → hand off to whoever's still here (or null if the room's now empty).
     if (client.sessionId === this.hostId) {
       const next = this.state.players.keys().next();
@@ -2739,13 +3051,20 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** One authoritative player-damage seam. Bulwark spends its successful-parry shield before HP. */
-  private damagePlayer(player: PlayerState, amount: number): void {
+  private damagePlayer(
+    player: PlayerState,
+    amount: number,
+    kind: PlayerDamageKind = "enemy",
+  ): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
     if (
       player.ultPhase === UltimatePhase.Windup &&
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
     ) left *= 0.4;
+    if (player.alive && (kind === "pit" || kind === "ground-hazard")) {
+      left *= this.petRuns.get(player.id)?.mods.groundHazardDamageMultiplier ?? 1;
+    }
     const capFrac = c?.quirk.mods?.incomingDamageCapFrac;
     if (capFrac !== undefined) left = Math.min(left, player.maxHp * capFrac);
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
@@ -3047,6 +3366,14 @@ export class GameRoom extends Room<ArenaState> {
     if (c.slidePhase === SLIDE_PHASE_LAND_WINDOW) {
       c.slidePhaseTick++;
       if (c.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS) this.cancelMoveStance(player, c, false);
+    }
+  }
+
+  private damagePitFall(player: PlayerState): void {
+    this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC, "pit");
+    const pet = this.petRuns.get(player.id);
+    if (player.hp > 0 && pet?.mods.pitRegenSeconds) {
+      pet.tortoisePitRegenSeconds = pet.mods.pitRegenSeconds;
     }
   }
 
@@ -3453,6 +3780,7 @@ export class GameRoom extends Room<ArenaState> {
     //    window and replay ~400ms of stale directions on resume). A backlog drains by jumping straight to
     //    the NEWEST command (input only sets direction; the ack jump is client-safe by design).
     this.state.tick = (this.state.tick + 1) >>> 0;
+    this.advancePetPresence(dt);
     this.state.players.forEach((player, id) => {
       // The wire latch derives only from accepted attack epochs. Wrap-safe uint32 subtraction keeps the
       // short window correct across ArenaState.tick rollover; write only on the true→false lapse edge.
@@ -3765,7 +4093,7 @@ export class GameRoom extends Room<ArenaState> {
           return;
         }
         if (c.pitGrace > 0) return;
-        this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC);
+        this.damagePitFall(player);
         player.x = beltSafeX(this.beltLevel, player.x, c.lastGroundX);
         c.lastGroundX = player.x;
         c.pitGrace = PIT_FALL_GRACE;
@@ -3781,7 +4109,7 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (c.pitGrace > 0) return; // just fell/landed — don't immediately re-fall
       // FALL.
-      this.damagePlayer(player, player.maxHp * PIT_FALL_DAMAGE_FRAC);
+      this.damagePitFall(player);
       const safe = isPitAtPx(this.map, c.lastGroundX, c.lastGroundY)
         ? nearestGroundPx(this.map, player.x, player.y)
         : { x: c.lastGroundX, y: c.lastGroundY };
@@ -3979,7 +4307,11 @@ export class GameRoom extends Room<ArenaState> {
           this.fireGun(player, c, weapon);
           player.charges -= 1;
           c.cd += weapon.gun.fireRate * cdMul; // ACCUMULATE (not assign) so the sub-tick remainder carries
-          if (player.charges <= 0) c.reloadCd = weapon.gun.reloadSeconds;
+          if (player.charges <= 0) {
+            c.reloadCd =
+              weapon.gun.reloadSeconds *
+              (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1);
+          }
         }
       } else if (weapon?.thrown) {
         // Refill all charges once a depleted weapon's cooldown elapses (§10 three-layer model).
@@ -3993,7 +4325,11 @@ export class GameRoom extends Room<ArenaState> {
           this.throwWeapon(player, c, weapon);
           player.charges -= 1;
           c.cd = weapon.cooldown * cdMul; // flat (DEX is damage-only; the affix is the only speed source)
-          if (player.charges <= 0) c.reloadCd = weapon.thrown.refillSeconds;
+          if (player.charges <= 0) {
+            c.reloadCd =
+              weapon.thrown.refillSeconds *
+              (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1);
+          }
         }
       } else if (weapon?.cast) {
         // §38 CASTER: conjure a piercing arcane bolt on a flat cooldown (no ammo/reload) — INT-scaled.
@@ -4224,7 +4560,11 @@ export class GameRoom extends Room<ArenaState> {
             this.noteSlideDodge(player);
             return;
           }
-          this.damagePlayer(player, kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt);
+          this.damagePlayer(
+            player,
+            kind.contactDamage * dmgMul * depthDamageScale(this.state.depth) * dt,
+            "enemy",
+          );
           // §20 contact knockback (Stage A): a gentle continuous shove AWAY while a damaging enemy touches.
           if (kind.contactDamage > 0) {
             const d = Math.hypot(dx, dy) || 1;
@@ -4252,7 +4592,19 @@ export class GameRoom extends Room<ArenaState> {
       }
       anyAlive = true;
       const derivedCon = player.spreadSeeded ? spreadAdjustedCon(player.con) : player.con;
-      player.hp = Math.min(player.maxHp, player.hp + deriveStats({ con: derivedCon }).regen * dt);
+      const combat = this.combat.get(player.id);
+      const pet = this.petRuns.get(player.id);
+      const pitRegenMultiplier =
+        pet && pet.tortoisePitRegenSeconds > 0 ? pet.mods.pitRegenMultiplier : 1;
+      const regen =
+        deriveStats({ con: derivedCon }).regen *
+        (combat?.quirk.mods?.regenMult ?? 1) *
+        (pet?.mods.passiveRegenMultiplier ?? 1) *
+        pitRegenMultiplier;
+      player.hp = Math.min(player.maxHp, player.hp + regen * dt);
+      if (pet && pet.tortoisePitRegenSeconds > 0) {
+        pet.tortoisePitRegenSeconds = Math.max(0, pet.tortoisePitRegenSeconds - dt);
+      }
     });
     // §6 WIPE: in a live run (survival OR boss rush), if there are players and NONE are still up, no one can
     // rez → the run is over.
@@ -4558,6 +4910,7 @@ export class GameRoom extends Room<ArenaState> {
       impactDone: false,
       sourceKey: `ult:${player.id}:${player.ultSeq}`,
     };
+    this.recordPetAcceptedAction(player.id);
     return true;
   }
 
@@ -5084,6 +5437,7 @@ export class GameRoom extends Room<ArenaState> {
     player.attackSeq = (player.attackSeq + 1) >>> 0;
     player.attackTick = this.state.tick;
     player.attackHeld = true;
+    this.recordPetAcceptedAction(player.id);
   }
 
   /** Fire one weapon swing (§20 WYSIWYG). The EDGE is registered as a SWEPT BLADE (`stepMeleeSwings` sweeps
@@ -5267,16 +5621,20 @@ export class GameRoom extends Room<ArenaState> {
    *  ally comes back at `REVIVE_HP_FRAC` of max HP, WHERE THEY FELL, with the spawn pile cleared so they
    *  don't instantly re-down; `revivedSeq` bumps the client's revive VFX. One rez per swing. */
   private tryRez(rezzer: PlayerState, radius: number): void {
+    const petMods = this.petRuns.get(rezzer.id)?.mods;
+    const effectiveRadius = radius + (petMods?.reviveReachAdd ?? 0);
     let best: PlayerState | null = null;
-    let bestD = radius * radius;
+    let bestId = "";
+    let bestD = effectiveRadius * effectiveRadius;
     this.state.players.forEach((p) => {
       if (p.alive || p.id === rezzer.id) return; // only DOWNED allies
       const dx = p.x - rezzer.x;
       const dy = p.y - rezzer.y;
       const d2 = dx * dx + dy * dy;
-      if (d2 <= bestD) {
+      if (d2 < bestD || (d2 === bestD && (bestId === "" || p.id.localeCompare(bestId) < 0))) {
         bestD = d2;
         best = p;
+        bestId = p.id;
       }
     });
     if (!best) return;
@@ -5287,9 +5645,11 @@ export class GameRoom extends Room<ArenaState> {
     // revive — otherwise stepSteeredMovement resumes from that stale velocity and slides the player
     // uncommanded for ~100ms on the first tick back, feeding that tick's pit/wall checks.
     this.zeroMoveVel(ally.id);
-    ally.hp = Math.max(1, Math.round(ally.maxHp * REVIVE_HP_FRAC));
+    const reviveHpFraction = petMods?.reviveHpFraction || REVIVE_HP_FRAC;
+    ally.hp = Math.max(1, Math.round(ally.maxHp * reviveHpFraction));
     ally.revivedSeq = (ally.revivedSeq + 1) % 100000;
     this.clearEnemiesNear(ally.x, ally.y, RESPAWN_CLEAR_RADIUS);
+    this.recordPetAcceptedAction(rezzer.id);
   }
 
   /** §20/§44 advance accepted descriptor time, sweeping only while the unchanged pose envelope is dangerous.
@@ -5387,6 +5747,7 @@ export class GameRoom extends Room<ArenaState> {
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
       c.beamPhase = 1;
+      this.recordPetAcceptedAction(player.id);
       c.beamPhaseT = 0;
       c.beamChannelT = 0;
       c.beamPulseT = 0;
@@ -6100,7 +6461,8 @@ export class GameRoom extends Room<ArenaState> {
       if (id === "mote-reach") stacks++;
     }
     return clamp(
-      BASE_XP_MOTE_REACH * (1 + stacks * XP_MOTE_REACH_PER_STACK),
+      BASE_XP_MOTE_REACH * (1 + stacks * XP_MOTE_REACH_PER_STACK) +
+        (this.petRuns.get(player.id)?.mods.xpMoteReachAdd ?? 0),
       XP_MOTE_REACH_MIN,
       XP_MOTE_REACH_MAX,
     );
@@ -6397,9 +6759,37 @@ export class GameRoom extends Room<ArenaState> {
     return best;
   }
 
+  /** Level-10 Lodestar owners claim nearby live rows before the ordinary bounded boundary cleanup. */
+  private sweepLodestarEchoes(): void {
+    this.state.xpEchoes.forEach((echo) => {
+      if (echo.delivered || echo.collectorId || this.lockedWormEchoIds.has(echo.id)) return;
+      let best: PlayerState | null = null;
+      let bestId = "";
+      let bestD2 = Number.POSITIVE_INFINITY;
+      this.state.players.forEach((player, playerId) => {
+        if (!player.alive || this.inLevelWindow(player)) return;
+        const reach = this.petRuns.get(playerId)?.mods.boundaryEchoReach ?? 0;
+        if (reach <= 0) return;
+        const dx = player.x - echo.x;
+        const dy = player.y - echo.y;
+        const d2 = dx * dx + dy * dy;
+        if (
+          d2 <= reach * reach &&
+          (d2 < bestD2 || (d2 === bestD2 && (bestId === "" || playerId.localeCompare(bestId) < 0)))
+        ) {
+          best = player;
+          bestId = playerId;
+          bestD2 = d2;
+        }
+      });
+      if (best) this.latchXpEcho(echo, best, false, true);
+    });
+  }
+
   /** Hold a committed teardown while the bounded field performs its six-per-tick cleanup vacuum. */
   private beginXpBoundary(kind: XpBoundary): void {
     if (this.xpBoundary) return;
+    this.sweepLodestarEchoes();
     if (this.state.xpEchoes.size === 0) {
       this.completeXpBoundary(kind);
       return;
@@ -6659,6 +7049,7 @@ export class GameRoom extends Room<ArenaState> {
     for (const id of this.lockedWormEchoIds) this.state.xpEchoes.delete(id);
     this.lockedWormEchoIds.clear();
     this.bossId = null;
+    this.bossPetAwardEligible = false;
     this.bossAddIds.clear();
     this.state.bossPhase = 0;
     this.state.bossKind = "";
@@ -6844,7 +7235,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
-      this.damagePlayer(p, damage); // §16 unparryable — dodge it, don't block it
+      this.damagePlayer(p, damage, "enemy"); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
@@ -6878,7 +7269,7 @@ export class GameRoom extends Room<ArenaState> {
         this.bossController?.acceptWormParry(p.id, this.state.tick);
         return;
       }
-      this.damagePlayer(p, damage);
+      this.damagePlayer(p, damage, "enemy");
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
       p.vx = k.vx;
@@ -6902,7 +7293,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (!p.alive || this.inLevelWindow(p)) return;
       if (!pointInOrientedRect(p.x, p.y, x, y, len, halfW, rot)) return;
-      this.damagePlayer(p, damage);
+      this.damagePlayer(p, damage, "enemy");
       if (knockback > 0) {
         const side = (p.x - x) * nx + (p.y - y) * ny >= 0 ? 1 : -1; // shove to the side they're already on
         const k = addImpulse(p, nx * side * knockback, ny * side * knockback);
@@ -6926,7 +7317,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (!p.alive || this.inLevelWindow(p)) return;
       if (!pointInAnnulusGap(p.x, p.y, cx, cy, bandR, bandHalf, gapCenter, gapHalf)) return;
-      this.damagePlayer(p, damage);
+      this.damagePlayer(p, damage, "enemy");
     });
   }
 
@@ -7453,6 +7844,7 @@ export class GameRoom extends Room<ArenaState> {
       );
     }
     if (kind?.archetype === "boss") {
+      if (enemy.id === this.bossId && this.bossPetAwardEligible) this.awardPetDimensionClear();
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
       // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
       // telegraphs (never resolved) + a leaked controller — stepBoss early-returns once bossId is null and
@@ -7581,6 +7973,7 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
+    this.publishPetPickupEligibility();
   }
 
   /** §29 place a dropped pickup on solid ground: the BELT deck (clamped into the depth band, nudged off any
@@ -7751,7 +8144,7 @@ export class GameRoom extends Room<ArenaState> {
     const sw = countAugment(owned, "second-wind");
     if (sw > 0) {
       const heal = sw * (SECOND_WIND_BASE + SECOND_WIND_PER_CON * Math.max(0, player.con - 1));
-      player.hp = Math.min(player.maxHp, player.hp + heal);
+      this.applyHeal(player, heal);
     }
     if (hasAugment(owned, "bulwark")) {
       c.bulwarkShield = Math.max(c.bulwarkShield, BULWARK_SHIELD);
@@ -8067,7 +8460,7 @@ export class GameRoom extends Room<ArenaState> {
       if (pc && pc.juggleMercy > 0) return; // §51 G10 touchdown mercy covers ALL melee, legacy included
       // §20 a clean (un-parried) hit lands with UMPH — damage + a knockback shove along the strike, so a
       // duelist combo visibly drives you back (and makes parrying the alternative feel earned).
-      this.damagePlayer(player, m.damage * dmgMul * depthDamageScale(this.state.depth));
+      this.damagePlayer(player, m.damage * dmgMul * depthDamageScale(this.state.depth), "enemy");
       const hx = player.x - enemy.x;
       const hy = player.y - enemy.y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -8776,7 +9169,7 @@ export class GameRoom extends Room<ArenaState> {
         dmg = Math.min(dmg, budget);
         st.comboDamage = (st.comboDamage ?? 0) + dmg;
       }
-      if (dmg > 0) this.damagePlayer(player, dmg);
+      if (dmg > 0) this.damagePlayer(player, dmg, "enemy");
       const hx = player.x - enemy.x;
       const hy = player.y - enemy.y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -8857,6 +9250,7 @@ export class GameRoom extends Room<ArenaState> {
     attacker: EnemyState,
     attackerId: string,
   ): void {
+    this.recordPetAcceptedAction(player.id);
     player.parriedSeq = (player.parriedSeq + 1) % 100000;
     const dx = attacker.x - player.x;
     const dy = attacker.y - player.y;
@@ -8879,7 +9273,7 @@ export class GameRoom extends Room<ArenaState> {
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
     const parryHeal = PARRY_CHAIN_HEAL * Math.min(pc.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS);
-    player.hp = Math.min(player.maxHp, player.hp + parryHeal);
+    this.applyHeal(player, parryHeal);
     this.addUltimateFlatCharge(player, pc, ULT_CHARGE_PARRY_BONUS);
     const est = this.comboState.get(attackerId);
     const def = est?.comboId ? TOUGH_COMBOS[est.comboId] : undefined;
@@ -9008,7 +9402,7 @@ export class GameRoom extends Room<ArenaState> {
         this.noteSlideDodge(player);
         return;
       }
-      this.damagePlayer(player, damage); // already depth-scaled by the controller
+      this.damagePlayer(player, damage, "enemy"); // already depth-scaled by the controller
       const hx = player.x - x;
       const hy = player.y - y;
       const hd = Math.hypot(hx, hy) || 1;
@@ -9042,6 +9436,7 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // §13 v0.103: an ENEMY drop is EARNED — it carries salvage value
+    this.publishPetPickupEligibility();
   }
 
   /** Advance every projectile, expire at TTL/arena edge. HOSTILE projectiles hit players (parry-/
@@ -9133,7 +9528,7 @@ export class GameRoom extends Room<ArenaState> {
             this.noteSlideDodge(player);
             return;
           }
-          this.damagePlayer(player, meta.damage);
+          this.damagePlayer(player, meta.damage, "enemy");
           // §20 knockback (Stage A): a sharp bump along the bullet's travel direction.
           const sp = Math.hypot(pr.vx, pr.vy) || 1;
           const k = addImpulse(
@@ -9327,9 +9722,10 @@ export class GameRoom extends Room<ArenaState> {
     pc.parryCd = Math.min(pc.parryCd, PARRY_CHAIN_CD);
     pc.parryChain = pc.parryChainT > 0 ? pc.parryChain + 1 : 1;
     pc.parryChainT = PARRY_CHAIN_WINDOW;
-    player.hp = Math.min(player.maxHp, player.hp + PARRY_CHAIN_HEAL);
+    this.applyHeal(player, PARRY_CHAIN_HEAL);
     this.applyParryAugments(player, pc);
     this.applyParryQuirk(player, pc, PARRY_CHAIN_HEAL);
+    this.recordPetAcceptedAction(player.id);
   }
 
   /** Zoners drop a corrosive puddle under themselves on a cooldown (§15 area denial). */
@@ -9377,8 +9773,10 @@ export class GameRoom extends Room<ArenaState> {
         if (!player.alive || this.inLevelWindow(player)) return;
         const dx = player.x - zone.x;
         const dy = player.y - zone.y;
-        if (dx * dx + dy * dy <= r2)
-          this.damagePlayer(player, ZONE_DPS * depthDamageScale(this.state.depth) * dt);
+        if (dx * dx + dy * dy <= r2) {
+          // Enemy-created zoner puddles are not authored neutral ground hazards.
+          this.damagePlayer(player, ZONE_DPS * depthDamageScale(this.state.depth) * dt, "enemy");
+        }
       });
     });
     for (const id of doomed) {
@@ -9674,7 +10072,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((p) => {
       if (!p.alive) return;
       p.salvaged += wage;
-      p.hp = Math.min(p.maxHp, p.hp + p.maxHp * BOSSRUSH_HEAL_FRAC);
+      this.applyHeal(p, p.maxHp * BOSSRUSH_HEAL_FRAC);
     });
     this.dropLoot(x, y, 1, LOOT_TIER_LUK_BOSS); // the reward for the clear (boss-tier rarity)
     this.bossRushIndex++;
@@ -9683,6 +10081,7 @@ export class GameRoom extends Room<ArenaState> {
       this.beginXpBoundary("bossrush-victory");
       return;
     }
+    this.beginNextPetDimension();
     // Escalate the difficulty (HP + damage) with each round, and queue the next boss after a breather.
     this.state.depth = Math.min(255, this.bossRushIndex + 1);
     this.bossRushNextTimer = BOSSRUSH_BREATHER;
@@ -9691,7 +10090,7 @@ export class GameRoom extends Room<ArenaState> {
   /** Spawn a BOSS on a ring around a player (§16) — the run's capstone threat. `overrideKind` (the debug
    *  picker) spawns a specific boss BODY; otherwise the active dimension's boss. The body kind supplies the
    *  sprite/hp/radius; its `BossDef` (or CLASSIC_BOSS fallback) drives the attacks via the BossController. */
-  private spawnBoss(overrideKind?: string): void {
+  private spawnBoss(overrideKind?: string, petAwardEligible = true): void {
     const bossKind =
       overrideKind &&
       (ENEMY_KINDS[overrideKind]?.archetype === "boss" || BOSS_DEF_IDS.includes(overrideKind))
@@ -9750,6 +10149,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(boss.id, boss);
     this.bossSpawned = true;
     this.bossId = boss.id;
+    this.bossPetAwardEligible = petAwardEligible && this.state.mode !== "training";
     // §16 v0.109 the data-driven controller runs this boss's def (CLASSIC_BOSS = OLD RUST for any kind
     // without a bespoke def, so every dimension boss keeps its behaviour). maxHp frozen for phase thresholds.
     this.bossController = new BossController(def, boss.hp, randomSeed());
@@ -9907,6 +10307,7 @@ export class GameRoom extends Room<ArenaState> {
     // Normal descent reaches this only after the cleanup vacuum; defensive cleanup prevents stale rows if a
     // server operator invokes the transition directly during recovery/testing.
     this.clearXpEchoes();
+    this.beginNextPetDimension();
     this.state.depth = Math.min(250, this.state.depth + 1);
     // Next dimension: prefer one the chain hasn't visited; once all are seen, any OTHER dimension.
     this.visitedDims.add(this.state.dimensionId);
@@ -9950,6 +10351,8 @@ export class GameRoom extends Room<ArenaState> {
         c.lastParryAt = -999;
         c.hairStreak = 0;
       }
+      const descentHeal = this.petRuns.get(id)?.mods.descentHealMaxHpFraction ?? 0;
+      if (descentHeal > 0) this.applyHeal(player, player.maxHp * descentHeal, false);
       this.zeroMoveVel(id); // §7 the descent repositions the body — momentum doesn't cross dimensions
     });
     console.log(
