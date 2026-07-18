@@ -216,6 +216,15 @@ export interface ToughComboDef {
   advanced?: boolean;
 }
 
+/** Server-tuning wave: ordinary melee closes 25% faster; negotiated-leap/shifter kinds use the gentler
+ * +20% rail so their fixed offer/arc choreography keeps its authored displacement assumptions. */
+export const MELEE_ENEMY_SPEED_MULT = 1.25;
+export const LEAP_MELEE_ENEMY_SPEED_MULT = 1.2;
+/** Authoritative melee sectors are 30% larger in both reach and half-arc. Telegraphs consume these same
+ * values, so the enlarged danger remains WYSIWYG without touching any windup or juggle law. */
+export const MELEE_ENEMY_RANGE_MULT = 1.3;
+export const MELEE_ENEMY_ARC_MULT = 1.3;
+
 /** §51 the combo library, keyed by id. Timings/damage are the designer's authored numbers on the 50ms
  *  grid; each inter-impact gap is ≥ the 0.25s chain-parry fairness floor. */
 export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
@@ -497,6 +506,21 @@ export const TOUGH_COMBOS: Record<string, ToughComboDef> = {
     advanced: true,
   },
 };
+
+// Tough geometry is authored above in its original weapon-family proportions, then widened once at module
+// load. Keeping the multiplier here makes the equal-strength 1.30× pass auditable while leaving every
+// windupTicks, step, damage, recover, launch, airkeep, and juggle cap byte-for-byte unchanged.
+for (const combo of Object.values(TOUGH_COMBOS)) {
+  combo.frontOffset *= MELEE_ENEMY_RANGE_MULT;
+  for (const step of combo.steps) {
+    step.range *= MELEE_ENEMY_RANGE_MULT;
+    step.halfArc = Math.min(Math.PI, step.halfArc * MELEE_ENEMY_ARC_MULT);
+  }
+  if (combo.return) {
+    combo.return.range *= MELEE_ENEMY_RANGE_MULT;
+    combo.return.halfArc = Math.min(Math.PI, combo.return.halfArc * MELEE_ENEMY_ARC_MULT);
+  }
+}
 
 /** §51 does this combo carry a parry-bait branch / a juggle string? (pillar classification for G15). */
 export function comboIsBait(id: string): boolean {
@@ -1048,6 +1072,26 @@ for (const kind of Object.values(ENEMY_KINDS)) {
   }
 }
 
+// One roster-wide melee tuning pass covers both hand-authored and generated dimension kinds without
+// editing generated output. Tough instances read the same kind row, so they inherit the speed increase.
+// Explicit combo sectors widen here; derived rusher/swarm/zoner sectors widen in effectiveMelee below.
+for (const kind of Object.values(ENEMY_KINDS)) {
+  const meleeMover =
+    kind.archetype === "rusher" ||
+    kind.archetype === "swarm" ||
+    kind.archetype === "zoner" ||
+    kind.archetype === "duelist" ||
+    kind.archetype === "leaper";
+  if (!meleeMover) continue;
+  kind.speed *= kind.archetype === "leaper" || kind.shifter
+    ? LEAP_MELEE_ENEMY_SPEED_MULT
+    : MELEE_ENEMY_SPEED_MULT;
+  if (!kind.melee) continue;
+  kind.melee.approach *= MELEE_ENEMY_RANGE_MULT;
+  kind.melee.range *= MELEE_ENEMY_RANGE_MULT;
+  kind.melee.halfArc = Math.min(Math.PI, kind.melee.halfArc * MELEE_ENEMY_ARC_MULT);
+}
+
 export const ENEMY_KIND_IDS = Object.keys(ENEMY_KINDS);
 
 /** §17 the DIMENSION-SHIFTER kind ids, ordered by tier (1 = earliest/weakest Marshal → 3 = Warden). Derived
@@ -1089,11 +1133,11 @@ export function effectiveMelee(kind: EnemyKind | undefined): EnemyKind["melee"] 
   let derived: NonNullable<EnemyKind["melee"]> | null = null;
   if (LUNGE_ARCHETYPES.has(kind.archetype)) {
     const swarm = kind.archetype === "swarm";
-    const reach = kind.radius + LUNGE_REACH_PAD;
+    const reach = (kind.radius + LUNGE_REACH_PAD) * MELEE_ENEMY_RANGE_MULT;
     derived = {
-      approach: reach + 16, // start winding up a touch before contact range
+      approach: reach + 16 * MELEE_ENEMY_RANGE_MULT, // preserve the pre-contact windup margin
       range: reach,
-      halfArc: 0.95, // forgiving cone — readable, not a sniper jab
+      halfArc: 0.95 * MELEE_ENEMY_ARC_MULT, // forgiving cone — readable, not a sniper jab
       damage: Math.max(LUNGE_MIN_DAMAGE, kind.contactDamage * LUNGE_DAMAGE_MULT),
       hits: 1, // a single jab (duelists override with a real multi-hit combo)
       windup: swarm ? LUNGE_WINDUP_SWARM : LUNGE_WINDUP,

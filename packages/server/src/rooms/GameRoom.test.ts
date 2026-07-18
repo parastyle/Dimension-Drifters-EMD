@@ -1573,11 +1573,11 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
           },
           {
             "alive": true,
-            "hp": 100,
+            "hp": 90,
             "id": "p2",
             "level": 1,
-            "x": 2362,
-            "y": 2379,
+            "x": 2405,
+            "y": 2333,
           },
         ],
         "portalOpen": false,
@@ -3118,7 +3118,7 @@ function pinVictimInFront(player: AnyRoom, enemy: AnyRoom) {
 }
 
 describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => {
-  it("negotiates 110px ahead of the slow facing anchor, then never moves the marker or landing", () => {
+  it("negotiates 143px ahead of the slow facing anchor, then never moves the marker or landing", () => {
     const { h, player } = makeEnemyComboRoom(1);
     const enemy = addComboEnemy(h, player, "combo-leaper", "vault-ronin", 300);
     player.aimDir = Math.PI; // live mouse aim points LEFT; approach bearing/facing is RIGHT by law
@@ -3128,7 +3128,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     const row = h.state().telegraphs.get(st.tg);
     expect(st.phase).toBe("leapwind");
     expect(row.danger).toBe(0); // white duel offer, never the legacy red assault marker
-    expect(row.x - player.x).toBeCloseTo(110, 6);
+    expect(row.x - player.x).toBeCloseTo(143, 6);
     expect(row.y).toBeCloseTo(player.y, 6);
     expect(enemy.comboSeq).toBe(0); // marker decision is not a documented wire edge
     const promisedX = row.x;
@@ -3324,8 +3324,8 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
       minDepth: 6,
     });
     for (const def of Object.values(enemyComboShared.TOUGH_COMBOS)) {
-      expect(def.frontOffset).toBeGreaterThanOrEqual(110);
-      expect(def.frontOffset).toBeLessThanOrEqual(120);
+      expect(def.frontOffset).toBeGreaterThanOrEqual(143);
+      expect(def.frontOffset).toBeLessThanOrEqual(156);
       expect(def.steps.filter((step) => step.kind === "airkeep").length).toBeLessThanOrEqual(2);
       for (const step of def.steps) {
         expect(step.windupTicks).toBeGreaterThanOrEqual(6);
@@ -4532,7 +4532,7 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
     const row = h.state().telegraphs.get(st.tg);
     expect(st.negotiatedTargetX - player.x).toBeCloseTo(140, 8);
     expect(st.negotiatedTargetY).toBeCloseTo(player.y, 8);
-    expect(row.x - player.x).toBeCloseTo(250, 8);
+    expect(row.x - player.x).toBeCloseTo(283, 8); // 250 → 283 from the 110 → 143 melee offset
   });
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
@@ -5795,5 +5795,112 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     });
     expect([fresh.offhandSlot, fresh.pairBaseSeq, fresh.offCharges, fresh.offMaxCharges])
       .toEqual([255, 0, 0, 0]);
+  });
+});
+
+// Server-tuning wave — appended regression laws for the shared pivot, melee goldens, and grid separation.
+describe("server-tuning wave — momentum, melee pressure, and enemy separation", () => {
+  it("retains at least 95.8% movement speed on a full reversal after the 90% gate reduction", () => {
+    const reversed = enemyComboShared.steerVelocity(
+      { vx: enemyComboShared.MOVE_SPEED, vy: 0 },
+      { dx: -1, dy: 0 },
+      0.05,
+    );
+    const retention = Math.hypot(reversed.vx, reversed.vy) / enemyComboShared.MOVE_SPEED;
+    expect(enemyComboShared.MOVE_HITCH_DIP).toBe(0.042); // 0.42 → 0.042
+    expect(retention).toBeCloseTo(1 - enemyComboShared.MOVE_HITCH_DIP, 10);
+    expect(retention).toBeGreaterThanOrEqual(0.958);
+  });
+
+  it("pins the faster melee roster and 1.30x authoritative swing sectors", () => {
+    expect(ENEMY_KINDS.critter?.speed).toBe(210); // 168 → 210
+    expect(ENEMY_KINDS["mote-swarm"]?.speed).toBe(281.25); // 225 → 281.25
+    expect(ENEMY_KINDS.pricklepulp?.speed).toBe(77.5); // 62 → 77.5
+    expect(ENEMY_KINDS.ronin?.speed).toBe(195); // 156 → 195
+    expect(ENEMY_KINDS["vault-ronin"]?.speed).toBe(180); // 150 → 180 (leap rail)
+    expect(ENEMY_KINDS["frozen-knight"]?.speed).toBe(187.5); // 150 → 187.5
+    expect(ENEMY_KINDS["shifter-cinder-marshal"]?.speed).toBeCloseTo(158.4, 10); // 132 → 158.4
+
+    const critterMelee = enemyComboShared.effectiveMelee(ENEMY_KINDS.critter);
+    if (!critterMelee) throw new Error("critter must retain its derived melee definition");
+    expect(critterMelee.range).toBeCloseTo(62.4, 10); // (18 + 30) × 1.30
+    expect(critterMelee.halfArc).toBeCloseTo(1.235, 10); // 0.95 × 1.30
+    expect(ENEMY_KINDS.ronin?.melee?.range).toBeCloseTo(179.4, 10);
+    expect(ENEMY_KINDS.ronin?.melee?.halfArc).toBeCloseTo(1.17, 10);
+    expect(ENEMY_KINDS["vault-ronin"]?.melee?.range).toBeCloseTo(182, 10);
+    expect(ENEMY_KINDS["vault-ronin"]?.melee?.halfArc).toBeCloseTo(1.235, 10);
+    expect(ENEMY_KINDS["frozen-knight"]?.melee?.range).toBeCloseTo(187.2, 10);
+    expect(ENEMY_KINDS["frozen-knight"]?.melee?.halfArc).toBeCloseTo(1.196, 10);
+
+    const sanren = enemyComboShared.TOUGH_COMBOS["k1-sanren"];
+    if (!sanren) throw new Error("K1 Sanren tuning fixture is required");
+    expect(sanren.frontOffset).toBe(143); // 110 → 143; preserves negotiated 0.8× opener geometry
+    expect(sanren.steps[0]?.range).toBeCloseTo(179.4, 10);
+    expect(sanren.steps[0]?.halfArc).toBeCloseTo(1.17, 10);
+    expect(sanren.steps.map((step) => step.windupTicks)).toEqual([8, 6, 15]);
+    expect(enemyComboShared.TOUGH_COMBOS["h1-sweep-overhead"]?.steps[0]?.halfArc)
+      .toBeCloseTo(2.951, 10); // 2.27 → 2.951
+  });
+
+  function addStackedEnemy(
+    h: ReturnType<typeof makeRoom>,
+    id: string,
+    x: number,
+    y: number,
+  ): EnemyState {
+    const enemy = new EnemyState();
+    enemy.id = id;
+    enemy.kind = "critter";
+    enemy.hp = 100;
+    enemy.x = x;
+    enemy.y = y;
+    h.state().enemies.set(id, enemy);
+    return enemy;
+  }
+
+  it("de-overlaps two exactly stacked living enemies within eight 20Hz separation ticks", () => {
+    const h = makeRoom();
+    const a = addStackedEnemy(h, "separate-a", 2000, 1800);
+    const b = addStackedEnemy(h, "separate-b", 2000, 1800);
+    for (let tick = 0; tick < 8; tick++) {
+      h.room.rebuildEnemyGrid();
+      h.room.resolveEnemyCollisions();
+    }
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(35.5);
+  });
+
+  it("settles a crowd of 20 coincident enemies to a non-overlap equilibrium without full scans", () => {
+    const h = makeRoom();
+    const crowd: EnemyState[] = [];
+    for (let i = 0; i < 20; i++) crowd.push(addStackedEnemy(h, `crowd-${i}`, 2400, 1800));
+    for (let tick = 0; tick < 80; tick++) {
+      h.room.rebuildEnemyGrid();
+      h.room.resolveEnemyCollisions();
+    }
+    let minimumGap = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < crowd.length; i++) {
+      for (let j = i + 1; j < crowd.length; j++) {
+        const a = crowd[i];
+        const b = crowd[j];
+        if (!a || !b) throw new Error("crowd fixture index escaped its fixed bounds");
+        minimumGap = Math.min(
+          minimumGap,
+          Math.hypot(a.x - b.x, a.y - b.y),
+        );
+      }
+    }
+    expect(minimumGap).toBeGreaterThanOrEqual(35.5);
+  });
+
+  it("never displaces a player while separating enemies from the same occupied point", () => {
+    const h = makeRoom();
+    h.join("separation-player");
+    const player = h.state().players.get("separation-player");
+    const before = { x: player.x, y: player.y };
+    addStackedEnemy(h, "player-stack-a", player.x, player.y);
+    addStackedEnemy(h, "player-stack-b", player.x, player.y);
+    h.room.rebuildEnemyGrid();
+    h.room.resolveEnemyCollisions();
+    expect({ x: player.x, y: player.y }).toEqual(before);
   });
 });

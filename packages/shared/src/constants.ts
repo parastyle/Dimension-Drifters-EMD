@@ -102,17 +102,16 @@ export function applyCastGradeFloor(
  * curved the PATH on every turn = mushy). The heading is now DIRECT — the body faces input instantly
  * (responsive, essential for a dodge game) — and the directional WEIGHT is a discrete, ONE-TIME
  * TURN-HITCH: a SHARP direction change (> MOVE_HITCH_MIN_ANGLE) briefly dips the speed (the "stop"),
- * scaled by how sharp the turn is (a full reversal nearly stops; a 45° nudge barely dips), then speed
+ * scaled by how sharp the turn is (a full reversal now retains 95.8%; a 45° nudge is free), then speed
  * recovers over MOVE_RECOVER_ACCEL (the "go"). A slow arc keeps each tick's turn angle small → never
  * hitches. The dip fires ONCE because the heading snaps to input each tick (next tick already aligned
  * → no re-dip). All state lives in the (synced) velocity, so client prediction is unchanged. (tuning)
  */
 /** Sharp-turn threshold (rad). Below this the turn is smooth/free; above it dips the speed. ~45°. */
 export const MOVE_HITCH_MIN_ANGLE = Math.PI / 4;
-/** Max fraction the speed dips on the sharpest (180°) turn. v0.117 playtest EASE — 0.72→0.42 so a full
- *  reversal keeps ~58% speed (was ~28%): direction-swap dodging stops feeling like wading through mud while
- *  the pivot still reads as WEIGHT, not a dead stop. A 90° turn now dips only to ~85%. */
-export const MOVE_HITCH_DIP = 0.42;
+/** Max fraction the speed dips on the sharpest (180°) turn. Server-tuning wave: 0.42→0.042 cuts the
+ *  direction-switch gate's INTENSITY by 90%, so a full reversal retains 95.8% speed. */
+export const MOVE_HITCH_DIP = 0.042;
 /** Below this speed (px/s) a turn can't hitch — starting from ~rest just accelerates, never "pivots". */
 export const MOVE_HITCH_MIN_SPEED = 40;
 /** Speed recovery after a hitch / spin-up from rest (px/s²). v0.117 EASE 1800→2600 (~0.12s to top, was
@@ -724,8 +723,9 @@ export const BOSS_ADD_COUNT = 2;
 /** §16 v0.109 DATA-DRIVEN BOSS FRAMEWORK budget rails (feasibility, load-bearing — no AoI yet, so every
  *  projectile is broadcast to every client). The BossController enforces these so no boss def can flood the
  *  10-player wire: a hard ceiling on concurrent HOSTILE projectiles arena-wide (boss + horde + spitters),
- *  and a per-boss cap on live adds regardless of player count (resolveEnemyCollisions is ~O(n²)). Spectacle
- *  comes from cheap TELEGRAPHED zones/beams/dashes, not bullet density. */
+ *  and a per-boss cap on live adds regardless of player count. Enemy separation is grid-batched, but the
+ *  add cap remains a wire/AI budget rail. Spectacle comes from cheap TELEGRAPHED zones/beams/dashes, not
+ *  bullet density. */
 export const BOSS_PROJECTILE_BUDGET = 120;
 export const BOSS_ADD_CAP = 12;
 /** Serraketh's synchronized/body budgets are protocol contracts, not designer-expandable tuning. */

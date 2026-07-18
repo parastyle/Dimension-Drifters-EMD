@@ -504,6 +504,10 @@ const MAX_ENEMY_RADIUS = Math.max(
   ENEMY_RADIUS,
   ...Object.values(ENEMY_KINDS).map((kind) => kind.radius),
 );
+/** Soft horde separation consumes this fraction of each pair's radius overlap per 20Hz tick. */
+const ENEMY_SEPARATION_OVERLAP_FRACTION = 0.45;
+/** A dense crowd can contribute many pair forces; cap the accumulated body correction per tick. */
+const ENEMY_SEPARATION_MAX_STEP = 12;
 
 /** §4 v0.107 one sequence-numbered input COMMAND from a client (~one per 50ms client tick). `jump` rides
  *  the command (not a separate message) so its consume tick is part of the acked timeline (review #5). */
@@ -850,6 +854,10 @@ export class GameRoom extends Room<ArenaState> {
   private readonly enemyGrid = new SpatialGrid<string>(ENEMY_GRID_CELL_SIZE);
   private readonly enemyCandidates: string[] = [];
   private readonly oversizedEnemyIds: string[] = [];
+  /** Grid insertion order is a dense [0, MAX_ENEMIES) tick-local handle, so fixed numeric buffers can
+   * accumulate pair forces without allocating vectors/maps in the 20Hz loop. */
+  private readonly enemySeparationX = new Float64Array(MAX_ENEMIES);
+  private readonly enemySeparationY = new Float64Array(MAX_ENEMIES);
   /** Worm segments are stable numeric handles, never ordinary EnemyState rows. */
   private readonly wormSegmentGrid = new SpatialGrid<number>(ENEMY_GRID_CELL_SIZE);
   private readonly wormSegmentCandidates: number[] = [];
@@ -2993,83 +3001,112 @@ export class GameRoom extends Room<ArenaState> {
     return this.state.enemies.size + runtime.effectiveBodyCount - 1;
   }
 
-  /** §5/§45 body collision for the horde: two identical relaxation passes, grid-filtered broad phase, then
-   *  enemies pushed out of players. Candidate sorting retains the old MapSchema `i < j` pair order. */
+  /** §5/§45 horde body collision. Each unordered grid pair contributes a radius-overlap correction into
+   * fixed tick-local buffers; one capped integration prevents pair-order shoves and enemy stacks without
+   * an O(n²) scan. Boss/dummy bodies are anchors (ordinary enemies move one-way around them); the worm's
+   * compatibility root/segments never enter this grid. Player push-out remains the existing one-way law. */
   private resolveEnemyCollisions(): void {
-    const rad = (e: EnemyState): number => ENEMY_KINDS[e.kind]?.radius ?? ENEMY_RADIUS;
-    for (let iter = 0; iter < 2; iter++) {
-      this.state.enemies.forEach((a, aid) => {
-        if (aid === this.bossId && this.bossController?.wormRuntime) return;
-        const ra = rad(a);
-        const aOrder = this.enemyGrid.orderOf(aid);
-        if (ra > ENEMY_GRID_CELL_SIZE / 2) {
-          // Colossi can overlap bodies beyond one neighboring cell, so only their own query expands.
-          this.enemyGrid.queryRadius(
-            a.x,
-            a.y,
-            ra + MAX_ENEMY_RADIUS,
-            this.enemyCandidates,
-          );
+    this.enemySeparationX.fill(0);
+    this.enemySeparationY.fill(0);
+    this.state.enemies.forEach((a, aid) => {
+      if (a.hp <= 0) return;
+      const aOrder = this.enemyGrid.orderOf(aid);
+      if (aOrder === undefined || aOrder >= MAX_ENEMIES) return;
+      const aKind = ENEMY_KINDS[a.kind];
+      const ra = aKind?.radius ?? ENEMY_RADIUS;
+      const aMovable = aKind?.archetype !== "boss" && aKind?.archetype !== "dummy";
+      if (ra > ENEMY_GRID_CELL_SIZE / 2) {
+        this.enemyGrid.queryRadius(a.x, a.y, ra + MAX_ENEMY_RADIUS, this.enemyCandidates);
+      } else {
+        // Ordinary bodies inspect only the current 128px cell and its eight neighbors; oversized anchors
+        // are appended because their edges can reach into this neighborhood from farther-away centres.
+        this.enemyGrid.queryRadius(a.x, a.y, ENEMY_GRID_CELL_SIZE, this.enemyCandidates);
+        for (const id of this.oversizedEnemyIds) {
+          if (this.state.enemies.has(id) && !this.enemyCandidates.includes(id)) {
+            this.enemyCandidates.push(id);
+          }
+        }
+        this.enemyCandidates.sort(
+          (left, right) =>
+            (this.enemyGrid.orderOf(left) ?? 0) - (this.enemyGrid.orderOf(right) ?? 0),
+        );
+      }
+      for (const bid of this.enemyCandidates) {
+        const bOrder = this.enemyGrid.orderOf(bid);
+        if (bOrder === undefined || bOrder <= aOrder || bOrder >= MAX_ENEMIES) continue;
+        const b = this.state.enemies.get(bid);
+        if (!b || b.hp <= 0) continue;
+        const bKind = ENEMY_KINDS[b.kind];
+        const bMovable = bKind?.archetype !== "boss" && bKind?.archetype !== "dummy";
+        if (!aMovable && !bMovable) continue;
+        const minDistance = ra + (bKind?.radius ?? ENEMY_RADIUS);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const distanceSq = dx * dx + dy * dy;
+        let distance = 0;
+        let nx: number;
+        let ny: number;
+        if (distanceSq > 1e-12) {
+          distance = Math.sqrt(distanceSq);
+          if (distance >= minDistance) continue;
+          nx = dx / distance;
+          ny = dy / distance;
         } else {
-          // Ordinary horde bodies only inspect the current 128px cell and its eight neighbors.
-          this.enemyGrid.queryRadius(a.x, a.y, ENEMY_GRID_CELL_SIZE, this.enemyCandidates);
-          for (const id of this.oversizedEnemyIds) {
-            if (this.state.enemies.has(id) && !this.enemyCandidates.includes(id)) {
-              this.enemyCandidates.push(id);
-            }
-          }
-          this.enemyCandidates.sort(
-            (left, right) =>
-              (this.enemyGrid.orderOf(left) ?? 0) - (this.enemyGrid.orderOf(right) ?? 0),
-          );
+          // Exact stacks have no geometric normal. A stable pair hash fans a crowd across many directions
+          // without random state or per-pair objects, instead of marching every coincident body along +x.
+          const hash = (((aOrder + 1) * 73856093) ^ ((bOrder + 1) * 19349663)) >>> 0;
+          const angle = (hash / 0x100000000) * Math.PI * 2;
+          nx = Math.cos(angle);
+          ny = Math.sin(angle);
         }
-        for (const bid of this.enemyCandidates) {
-          if ((this.enemyGrid.orderOf(bid) ?? -1) <= (aOrder ?? -1)) continue;
-          const b = this.state.enemies.get(bid);
-          if (!b) continue;
-          const min = ra + rad(b);
-          let dx = b.x - a.x;
-          let dy = b.y - a.y;
-          let d = Math.hypot(dx, dy);
-          if (d === 0) {
-            dx = 1;
-            dy = 0;
-            d = 1;
-          }
-          if (d < min) {
-            const push = (min - d) / 2;
-            a.x -= (dx / d) * push;
-            a.y -= (dy / d) * push;
-            b.x += (dx / d) * push;
-            b.y += (dy / d) * push;
-            this.updateEnemyGrid(aid, a);
-            this.updateEnemyGrid(bid, b);
-          }
+        const movers = (aMovable ? 1 : 0) + (bMovable ? 1 : 0);
+        const push = ((minDistance - distance) * ENEMY_SEPARATION_OVERLAP_FRACTION) / movers;
+        if (aMovable) {
+          this.enemySeparationX[aOrder] = (this.enemySeparationX[aOrder] ?? 0) - nx * push;
+          this.enemySeparationY[aOrder] = (this.enemySeparationY[aOrder] ?? 0) - ny * push;
         }
-        // Push the enemy out of any living player (the player stays put — authoritative).
-        this.state.players.forEach((p) => {
-          if (!p.alive || !a) return;
-          const min = ra + PLAYER_RADIUS;
-          let dx = a.x - p.x;
-          let dy = a.y - p.y;
-          let d = Math.hypot(dx, dy);
-          if (d === 0) {
-            dx = 1;
-            dy = 0;
-            d = 1;
-          }
-          if (d < min) {
-            a.x = p.x + (dx / d) * min;
-            a.y = p.y + (dy / d) * min;
-            this.updateEnemyGrid(aid, a);
-          }
-        });
+        if (bMovable) {
+          this.enemySeparationX[bOrder] = (this.enemySeparationX[bOrder] ?? 0) + nx * push;
+          this.enemySeparationY[bOrder] = (this.enemySeparationY[bOrder] ?? 0) + ny * push;
+        }
+      }
+    });
+
+    this.state.enemies.forEach((enemy, id) => {
+      const order = this.enemyGrid.orderOf(id);
+      if (enemy.hp <= 0 || order === undefined || order >= MAX_ENEMIES) return;
+      let sx = this.enemySeparationX[order] ?? 0;
+      let sy = this.enemySeparationY[order] ?? 0;
+      const separation = Math.hypot(sx, sy);
+      if (separation > ENEMY_SEPARATION_MAX_STEP) {
+        const scale = ENEMY_SEPARATION_MAX_STEP / separation;
+        sx *= scale;
+        sy *= scale;
+      }
+      enemy.x += sx;
+      enemy.y += sy;
+
+      // Preserve the established one-way player body law: only the enemy is projected, never the player.
+      const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+      this.state.players.forEach((player) => {
+        if (!player.alive) return;
+        const minDistance = radius + PLAYER_RADIUS;
+        let dx = enemy.x - player.x;
+        let dy = enemy.y - player.y;
+        let distance = Math.hypot(dx, dy);
+        if (distance === 0) {
+          dx = 1;
+          dy = 0;
+          distance = 1;
+        }
+        if (distance < minDistance) {
+          enemy.x = player.x + (dx / distance) * minDistance;
+          enemy.y = player.y + (dy / distance) * minDistance;
+        }
       });
-    }
-    this.state.enemies.forEach((e, id) => {
-      e.x = clamp(e.x, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
-      e.y = clamp(e.y, ENEMY_RADIUS, ARENA_HEIGHT - ENEMY_RADIUS);
-      this.updateEnemyGrid(id, e);
+      enemy.x = clamp(enemy.x, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
+      enemy.y = clamp(enemy.y, ENEMY_RADIUS, ARENA_HEIGHT - ENEMY_RADIUS);
+      this.updateEnemyGrid(id, enemy);
     });
   }
 

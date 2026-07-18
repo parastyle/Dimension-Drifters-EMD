@@ -100,7 +100,8 @@ export interface Impulse {
  * to the input direction every tick (responsive — vital for dodging). The WEIGHT is a one-time speed dip on
  * a SHARP turn: if the angle between the current heading and the new input heading exceeds
  * MOVE_HITCH_MIN_ANGLE (~45°), the speed dips to `1 − t·MOVE_HITCH_DIP` (t = 0 at the threshold → 1 at a
- * 180° reversal), then RECOVERS toward top speed at MOVE_RECOVER_ACCEL. It fires ONCE per turn: after the
+ * 180° reversal). The tuned dip is deliberately light (95.8% retention on a reversal), then RECOVERS
+ * toward top speed at MOVE_RECOVER_ACCEL. It fires ONCE per turn: after the
  * dip the heading already matches input, so the next tick's angle is ~0 and the speed just recovers. A slow
  * arc keeps each tick's angle small → never hitches. Released input decelerates to 0 (MOVE_STOP_DECEL, no
  * ice-skating). PURE + deterministic; all state is the returned velocity, so client prediction is unchanged.
