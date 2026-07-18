@@ -314,7 +314,7 @@ describe("retained gear frame diagnostics", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(ensureGearPartFrame(scene, part)).toBe("part:torso-panel");
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"boiler-shirt"'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"pressurized-shirt"'));
     expect(frames.get("part:torso-panel")).toEqual({
       cutX: 401,
       cutY: 365,

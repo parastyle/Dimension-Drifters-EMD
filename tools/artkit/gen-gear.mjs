@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 // artkit/gen-gear.mjs — GEAR_SOCKET_FRAME_V1 boilerplate + launch wardrobe art.
 //
 // MASTERS FIRST: the blank boilerplate identity master is rendered before its body/head/hand/foot
@@ -11,28 +12,41 @@
 //
 // MACHINE MANIFEST: tools/artkit/out/gear/gear-parts-manifest.json
 //
+// ART LAWS (owner direction 2026-07-18)
+// - Measured legacy body alpha W:H (blade-twins, boothill, Asha, Cordell, Neon, Odette):
+//   0.750, 0.560, 0.530, 0.988, 0.542, 0.530; median 0.551. Visual head/headwear
+//   zones span 0.32-0.40 of body-sprite height (median about 0.36).
+// - Rejected boilerplate body measured 362x516 (0.702 W:H); its separate 200px head was only
+//   0.552 of the 362px torso width. The approved master head zone itself was already about 0.36 high.
+// - Boilerplate target: torso W:H 0.58-0.62; shoulder:hip width 0.95-1.05; head:torso
+//   width 0.82-0.90; head zone 0.36-0.39 of the assembled head+torso height. No belly flare.
+// - The rig is side-profile only (semantic right; runtime mirrors). Shirt/cloak = one visible-side
+//   panel; pants = lower-bean wrap; each boot/glove = one blob-cover; hat = profile brim; glasses =
+//   one lens + arm; facial hair = cheek/jaw attachment. Never generate a frontal/back garment read.
+//
 // Usage:
 //   node tools/artkit/gen-gear.mjs --stage=boilerplate
 //   node tools/artkit/gen-gear.mjs --slot=hats
-//   node tools/artkit/gen-gear.mjs --slot=boots [--only=cinderstep-wraps]
+//   node tools/artkit/gen-gear.mjs --slot=boots [--only=ash-walker-boots]
 //   node tools/artkit/gen-gear.mjs --validate-only
-//   node tools/artkit/gen-gear.mjs --force --slot=hats --only=thornwatch-plume
+//   node tools/artkit/gen-gear.mjs --force --slot=hats --only=thornwatch-hat
 
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createHash } from "node:crypto";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { configureCodex, runCodexExec } from "./lib/codex.mjs";
+import { readGearCatalog } from "./lib/gear-catalog.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -42,6 +56,7 @@ const LOGS = resolve(OUT, "logs");
 const LOCKS = resolve(OUT, "locks");
 const MANIFEST_PATH = resolve(OUT, "gear-parts-manifest.json");
 const SYSTEMS_DOC = resolve(REPO, "docs/metagame-panel/gear-systems.md");
+const GEAR_CATALOG_SOURCE = resolve(REPO, "packages/shared/src/gear.ts");
 const CONCEPTS_FILE = resolve(HERE, "subjects.concepts.json");
 const SPRITES = resolve(REPO, "packages/client/public/sprites");
 const BOILERPLATE_DST = resolve(SPRITES, "boilerplate");
@@ -55,6 +70,18 @@ const FRAME_ID = "GEAR_SOCKET_FRAME_V1";
 const STACK_BAND_ID = "HAT_STACK_BAND_V1";
 const OUTLINE = Object.freeze({ color: "#101014", rgba: [0x10, 0x10, 0x14, 0xff], baseWidth: 4, referenceCanvas: 512 });
 const CONNECTOR_TOLERANCE = Object.freeze({ pixels: 4, degrees: 2 });
+const PROPORTION_LAW = Object.freeze({
+  // OWNER FIT-CHECK CORRECTION 2026-07-18: the measured legacy 0.58-0.62 W:H is the ratio of a
+  // WHOLE legacy bean (head fused in). Applying it to the torso ALONE stretched the body into a
+  // tall pill. The torso-only ratio must be squat so head+torso ASSEMBLED lands back on the
+  // legacy bean shape: with the head zone at ~0.36-0.39 of assembled height, torso-only W:H is
+  // roughly (assembled W:H) / (1 - headZone) ≈ 0.92-1.00 — a compact squat capsule.
+  torsoWidthHeight: "0.92-1.00",
+  assembledWidthHeight: "0.58-0.62",
+  shoulderHipWidth: "0.95-1.05",
+  headTorsoWidth: "0.82-0.90",
+  headZoneShare: "0.36-0.39",
+});
 
 mkdirSync(MASTERS, { recursive: true });
 mkdirSync(LOGS, { recursive: true });
@@ -197,42 +224,50 @@ const SLOT_SPECS = [
   {
     id: "boots", directory: "boots", docHeader: "Boots", receivers: ["foot-l", "foot-r"], componentIds: ["boot-l", "boot-r"],
     sourcePivots: [{ x: 340, y: 700 }, { x: 684, y: 700 }], maxPartBox: { width: 190, height: 190 }, planeIds: ["boots", "boots"],
-    artDirection: "a matched left/right pair of boots or footwear, two separated complete paper islands",
+    artDirection: "a matched far/near rig pair of boots or footwear, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached foot, with no toes, heel, sole perspective, or frontal shoe construction",
+    profileLaw: "BOOTS: each piece is a single screen-right profile cover for one soft foot-blob. Preserve the foot's rounded lump silhouette; no toes, heel block, frontal pair view, or anatomical foot. The two islands are the far/near rig pieces, not opposite-facing shoes.",
   },
   {
     id: "gloves", directory: "gloves", docHeader: "Gloves", receivers: ["hand-l", "hand-r"], componentIds: ["glove-l", "glove-r"],
     sourcePivots: [{ x: 300, y: 512 }, { x: 724, y: 512 }], maxPartBox: { width: 180, height: 180 }, planeIds: ["backGlove", "frontGlove"],
-    artDirection: "a matched left/right pair of gloves, gauntlets, or hand wraps, two separated complete paper islands",
+    artDirection: "a matched far/near rig pair of gloves, gauntlets, or wraps, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached hand, with no fingers, thumb, palm, or frontal glove construction",
+    profileLaw: "GLOVES: each piece is a single screen-right profile cover for one soft hand-blob. Preserve the rounded lump silhouette; no fingers, thumb, palm anatomy, or frontal glove display. The two islands are the far/near rig pieces, not opposite-facing gloves.",
   },
   {
     id: "shirt", directory: "shirt", docHeader: "Shirt", receivers: ["torso"], componentIds: ["torso-panel"],
-    sourcePivots: [{ x: 512, y: 492 }], desiredAnchor: [0.5, 0.34], maxPartBox: { width: 420, height: 350 }, planeIds: ["shirt"],
-    artDirection: "one isolated torso garment panel with a modest hidden neck/shoulder overlap; no head, arms, hands, pants, or cloak",
+    sourcePivots: [{ x: 512, y: 492 }], desiredAnchor: [0.5, 0.34], maxPartBox: { width: 340, height: 350 }, planeIds: ["shirt"],
+    artDirection: "one isolated visible-side profile torso panel with a modest hidden neck/shoulder overlap; shirts, jackets, vests, coats, and robes show only the single side worn in profile, never a complete front or back",
+    profileLaw: "SHIRT/TORSO GARMENT: render ONLY the one visible-side profile panel as worn. Collar, lapel/closure, sleeve root, and hem must read from the side. No open-front interior, paired lapels, symmetric front, second side panel, or back-of-garment; no head, arms, hands, pants, or cloak.",
   },
   {
     id: "pants", directory: "pants", docHeader: "Pants", receivers: ["legs"], componentIds: ["legs-panel"],
-    sourcePivots: [{ x: 512, y: 660 }], desiredAnchor: [0.5, 0.30], maxPartBox: { width: 370, height: 280 }, planeIds: ["pants"],
-    artDirection: "one isolated lower-body pants panel with a modest hidden waistband overlap; no torso, boots, feet, or cloak",
+    sourcePivots: [{ x: 512, y: 660 }], desiredAnchor: [0.5, 0.30], maxPartBox: { width: 330, height: 280 }, planeIds: ["pants"],
+    artDirection: "one isolated screen-right profile lower-bean wrap with a modest hidden waistband overlap; it wraps the lower torso zone and never splits into two frontal trouser legs",
+    profileLaw: "PANTS: one profile silhouette wrapping the lower torso/bean zone. The body has no legs: use a waistband plus one continuous lower-bean cover, with side-view folds/hem only. No two-leg frontal split, crotch, separate leg tubes, torso, boots, feet, or cloak.",
   },
   {
     id: "cloak", directory: "cloak", docHeader: "Cloak", receivers: ["back"], componentIds: ["far-cloth"],
     sourcePivots: [{ x: 451, y: 492 }], desiredAnchor: [0.62, 0.24], maxPartBox: { width: 480, height: 540 }, planeIds: ["cloakFar"],
-    artDirection: "one isolated far-cloth cloak, mantle, vestment, coat-tail, or apron silhouette; no body, arms, hands, held prop, or VFX",
+    artDirection: "one isolated visible-side profile cloth panel for a cloak, mantle, vestment, coat-tail, robe, or apron; show only the single side worn in profile, not a complete back or open-front garment",
+    profileLaw: "CLOAK/OUTER GARMENT: render ONLY the one visible-side profile panel as worn. Collar/mantle edge, clasp edge, drape, and hem read from the side. No open-front interior, both lapels, symmetric front, second side, or back-of-garment; no body, arms, hands, held prop, or VFX.",
   },
   {
     id: "glasses", directory: "glasses", docHeader: "Glasses", receivers: ["face.eyes"], componentIds: ["eyes"],
     sourcePivots: [{ x: 553, y: 364 }], desiredAnchor: [0.5, 0.5], maxPartBox: { width: 300, height: 150 }, planeIds: ["glasses"],
-    artDirection: "one isolated eyewear cutout; solid lenses/frames only, no face, head, emitted glow, reticle, telegraph, or text",
+    artDirection: "one isolated screen-right profile eyewear cutout consisting of the temple arm plus exactly one visible lens/frame; never two frontal lenses",
+    profileLaw: "GLASSES: strict screen-right profile: one visible lens/frame plus its temple arm following the side of the head. Never two lenses, a frontal bridge, goggles seen head-on, or a symmetric eyewear display; no face, head, emitted glow, reticle, telegraph, or text.",
   },
   {
     id: "facialHair", directory: "facial-hair", docHeader: "Facial hair", receivers: ["face.mouth"], componentIds: ["mouth"],
     sourcePivots: [{ x: 568, y: 410 }], desiredAnchor: [0.5, 0.38], maxPartBox: { width: 290, height: 210 }, planeIds: ["facialHair"],
-    artDirection: "one isolated lower-face cosmetic cutout (hair, cord, tusks, mask detail, or digital stubble as named); no face, head, text, particles, or glow",
+    artDirection: "one isolated screen-right profile lower-face attachment fitted to the floating head's visible cheek/jaw zone (hair, cord, tusks, mask detail, or digital stubble as named)",
+    profileLaw: "FACIAL HAIR: one screen-right profile attachment following the floating head's visible cheek and jaw. Show only the near-side silhouette/tuft/tusk/cord; no mirrored second cheek, frontal moustache spread, face, head, text, particles, or glow.",
   },
   {
     id: "hat", directory: "hats", docHeader: "Hat", receivers: ["head"], componentIds: ["hat"],
     sourcePivots: [HAT_STACK_BAND.sourcePivot], desiredAnchor: [0.5, 0.82], maxPartBox: { width: 560, height: 340 }, planeIds: ["hat"],
-    artDirection: "one signature isolated hat/headwear segment. It must read immediately as the named legacy character's headwear and also as one stable segment in a tall comic prestige hat stack",
+    artDirection: "one signature isolated screen-right profile hat/headwear segment whose crown and brim direction read unmistakably left/right, also functioning as one stable segment in a tall comic prestige hat stack",
+    profileLaw: "HAT: strict screen-right profile fitted to the large floating head; crown, band, brim, veil, or mask extension must have a side-view left/right read. No frontal brim ellipse, symmetric face-on crown, rear view, full head, or second side.",
   },
 ];
 
@@ -267,7 +302,7 @@ function loadConcepts() {
   return new Map(rows.filter((row) => row?.id).map((row) => [row.id, row]));
 }
 
-function parseLaunchItems() {
+function parseLaunchArtDescriptions() {
   const text = readFileSync(SYSTEMS_DOC, "utf8");
   const start = text.indexOf("| Set | Boots | Gloves | Shirt | Pants | Cloak | Glasses | Facial hair | Hat |");
   const end = text.indexOf("\n### Full-set bonuses", start);
@@ -290,7 +325,7 @@ function parseLaunchItems() {
       if (!parsed) throw new Error(`Could not parse ${setName}/${spec.docHeader}: ${cell}`);
       const name = parsed[1].trim();
       items.push({
-        id: slug(name),
+        legacyArtId: slug(name),
         name,
         rarity: parsed[2].trim(),
         effect: parsed[3].trim(),
@@ -304,7 +339,7 @@ function parseLaunchItems() {
       });
     }
   }
-  const ids = new Set(items.map((item) => item.id));
+  const ids = new Set(items.map((item) => item.legacyArtId));
   if (items.length !== 96 || ids.size !== 96) {
     throw new Error(`Launch table contract drift: expected 96 unique items, found ${items.length}/${ids.size}`);
   }
@@ -316,21 +351,98 @@ function parseLaunchItems() {
   return items;
 }
 
-const ITEMS = parseLaunchItems();
+const CATALOG_ONLY_ART_DESCRIPTIONS = new Map([
+  ["mended-workshirt", "a practical patched canvas workshirt with visible mending and a modest reinforced collar"],
+  ["reinforced-workshirt", "a sturdy canvas workshirt with doubled seams, reinforced shoulders, and durable work patches"],
+  ["shopkeeps-sunday-best", "a polished Trading Post workshirt with tidy brass fasteners and best-cloth reinforced panels"],
+  ["brass-readers", "simple side-profile brass reading glasses with a plain round lens and practical temple arm"],
+  ["lucky-readers", "brass reading glasses upgraded with a small lucky-notch motif and a brighter finished frame"],
+  ["loaded-readers", "premium heavy brass readers with three restrained luck marks and a richly finished frame"],
+  ["work-gloves", "plain sturdy canvas work gloves with a leather palm patch and practical cuff"],
+  ["knuckled-gloves", "reinforced work gloves with a compact padded knuckle band and doubled leather cuff"],
+  ["ironhand-gloves", "heavy iron-reinforced work gloves with blunt riveted knuckle plates and a strong leather cuff"],
+]);
+
+function catalogItems() {
+  const catalog = readGearCatalog(GEAR_CATALOG_SOURCE);
+  const blankRows = catalog.filter((item) => item.id.startsWith("blank-drifter-"));
+  const blankSlots = new Set(blankRows.map((item) => item.slot));
+  if (blankRows.length !== SLOT_SPECS.length || blankSlots.size !== SLOT_SPECS.length) {
+    throw new Error("Blank Drifter art rule drift: expected exactly one intentionally artless default per slot");
+  }
+
+  const launchArt = parseLaunchArtDescriptions();
+  const launchBySetSlot = new Map(launchArt.map((item) => [`${item.setId}/${item.slot}`, item]));
+  const concepts = loadConcepts();
+  const items = [];
+  for (const catalogItem of catalog) {
+    // The blank Drifter pieces mean "wearing nothing" and intentionally have no wearable PNG.
+    if (catalogItem.id.startsWith("blank-drifter-")) continue;
+    const spec = SLOT_SPECS.find((candidate) => candidate.id === catalogItem.slot);
+    if (!spec) throw new Error(`Catalog item ${catalogItem.id} has unsupported art slot ${catalogItem.slot}`);
+
+    const launch = launchBySetSlot.get(`${catalogItem.setId}/${catalogItem.slot}`);
+    if (launch) {
+      if (launch.name !== catalogItem.name || launch.rarity !== catalogItem.rarity) {
+        throw new Error(
+          `Launch art metadata drift for ${catalogItem.id}: doc has ${launch.name} (${launch.rarity}), catalog has ${catalogItem.name} (${catalogItem.rarity})`,
+        );
+      }
+      const concept = concepts.get(launch.sourceCharacterId);
+      if (!concept) throw new Error(`No concept identity found for ${launch.sourceCharacterId}`);
+      items.push({
+        ...catalogItem,
+        legacyArtId: launch.legacyArtId,
+        artDescription: launch.effect,
+        setName: launch.setName,
+        slotDirectory: spec.directory,
+        sourceCharacterId: launch.sourceCharacterId,
+        sourceCharacterName: concept.name,
+        identityBrief: concept.prompt,
+        expectedReferenceCount: 3,
+      });
+      launchBySetSlot.delete(`${catalogItem.setId}/${catalogItem.slot}`);
+      continue;
+    }
+
+    const artDescription = CATALOG_ONLY_ART_DESCRIPTIONS.get(catalogItem.id);
+    if (!artDescription) throw new Error(`Catalog item ${catalogItem.id} needs an honest art description`);
+    items.push({
+      ...catalogItem,
+      legacyArtId: null,
+      artDescription,
+      setName: "Trading Post starter gear",
+      slotDirectory: spec.directory,
+      sourceCharacterId: null,
+      sourceCharacterName: "the Trading Post starter line",
+      identityBrief: artDescription,
+      expectedReferenceCount: 1,
+    });
+  }
+  if (launchBySetSlot.size > 0) {
+    throw new Error(`Launch art rows lack catalog counterparts: ${[...launchBySetSlot.keys()].join(", ")}`);
+  }
+  if (CATALOG_ONLY_ART_DESCRIPTIONS.size !== items.filter((item) => !item.legacyArtId).length) {
+    throw new Error("Catalog-only art descriptions contain an unknown or duplicate catalog id");
+  }
+  return items;
+}
+
+const ITEMS = catalogItems();
 
 const BOILERPLATE_PARTS = [
   {
-    // OWNER RULING 2026-07-18 (stitch-seam identity): torso bean ONLY — no legs, no head; the head is
+    // OWNER RULING 2026-07-18 (stitch-seam identity): torso capsule ONLY — no legs, no head; the head is
     // a fully floating neckless part (Madness bob law; enables helmet alternative-heads); hands and
     // feet are the SAME near-featureless soft blob language (no thumb, no wedge/heel/toe).
     id: "body", parent: null, receiver: "body", pivot: BODY_ROOT_SOURCE, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 390, height: 500 }, planeId: "body",
-    description: "ONLY the oatmeal-canvas stitch-seam torso BEAN — no legs, no pelvis taper into limbs, no head or neck; a single vertical charcoal stitch seam up the midline and one small darker-weave shoulder patch; no hands, feet, clothing, hair, gear, or shadow",
+    maxPartBox: { width: 320, height: 500 }, planeId: "body",
+    description: `ONLY the oatmeal-canvas stitch-seam TORSO: a compact SQUAT capsule, nearly as wide as tall, alpha-bounds width:height ${PROPORTION_LAW.torsoWidthHeight}, with flat-to-gently-curved sides, shoulder:hip width ${PROPORTION_LAW.shoulderHipWidth}, and only a subtle lower taper. Absolutely NO pear shape, pot belly, belly/hip flare, waist bulge, legs, pelvis taper into limbs, head, or neck. Carry one vertical charcoal stitch seam up the midline and one small darker-weave shoulder patch; no hands, feet, clothing, hair, gear, or shadow`,
   },
   {
     id: "head", parent: "body", receiver: "head", pivot: { x: 512, y: 300 }, desiredAnchor: [0.5, 0.55],
-    maxPartBox: { width: 250, height: 220 }, planeId: "body",
-    description: "ONLY the FLOATING blank egg head with NO neck, no connector tab, no shoulder hint — a clean closed oval bottom edge — carrying one small charcoal cross-stitch X where a face would be; no torso, hair, hat, ears, eyewear, facial hair, or shadow",
+    maxPartBox: { width: 285, height: 260 }, planeId: "body",
+    description: `ONLY the LARGE FLOATING blank egg head with NO neck, connector tab, or shoulder hint and a clean closed oval bottom edge. Match head width to ${PROPORTION_LAW.headTorsoWidth} of the approved slim torso width and preserve a ${PROPORTION_LAW.headZoneShare} head-zone share in the assembled head+torso silhouette. Carry one small charcoal cross-stitch X where a face would be; no torso, hair, hat, ears, eyewear, facial hair, or shadow`,
   },
   {
     id: "hand-l", parent: "hand-l", receiver: "hand-l", pivot: { x: 384, y: 522 }, desiredAnchor: [0.5, 0.5],
@@ -411,21 +523,34 @@ function installedItemPath(item) {
   return resolve(GEAR_DST, item.slotDirectory, `${item.id}.png`);
 }
 
-function codexLogPath(kind, directory, id) {
+function codexLogPath(_kind, directory, id) {
   return resolve(LOGS, directory, `${id}.codex.log`);
 }
 
-function statusLogPath(kind, directory, id) {
+function statusLogPath(_kind, directory, id) {
   return resolve(LOGS, directory, `${id}.install.json`);
 }
 
 function referencesForItem(item) {
-  const refs = [
-    resolve(PORTRAITS, `${item.sourceCharacterId}.jpg`),
-    resolve(SPRITES, item.sourceCharacterId, "body.png"),
-    installedBoilerplatePath("identity-master"),
-  ];
+  const refs = item.sourceCharacterId
+    ? [
+        resolve(PORTRAITS, `${item.sourceCharacterId}.jpg`),
+        resolve(SPRITES, item.sourceCharacterId, "body.png"),
+        installedBoilerplatePath("identity-master"),
+      ]
+    : [installedBoilerplatePath("identity-master")];
   return refs.every(existsSync) ? refs : [];
+}
+
+function itemReferenceBlock(item) {
+  if (!item.sourceCharacterId) {
+    return `REFERENCE IMAGE
+- Image 1: approved blank boilerplate identity master. This is the BINDING invisible mannequin: use only its body/head scale, screen-right profile, and socket placement; do not paint any boilerplate pixels.`;
+  }
+  return `REFERENCE IMAGES — IDENTITY, NOT COMPOSITION
+- Image 1: canonical portrait identity reference for ${item.sourceCharacterName}. Copy its specific costume design language, materials, palette, motifs, and especially the named item's recognizable construction.
+- Image 2: canonical shipped body-sprite identity reference for the same character. Match its simplified paper-cutout contour, palette blocking, item identity, and screen-right profile construction; do not copy its whole-body anatomy or garment interior.
+- Image 3: approved blank boilerplate identity master. This is the BINDING invisible mannequin: a compact squat capsule torso (${PROPORTION_LAW.torsoWidthHeight} W:H, shoulders and hips nearly equal, no belly flare) plus a large floating head (${PROPORTION_LAW.headTorsoWidth} of torso width). Use ONLY its new body/head scale, screen-right profile, and socket placement; do not paint any boilerplate pixels.`;
 }
 
 function executionBlock() {
@@ -447,9 +572,16 @@ function chromaOutputBlock() {
 function houseStyleBlock() {
   return `HOUSE STYLE — NON-NEGOTIABLE
 - Original HD 2D Flash-era paper-cutout arena art: bold compact silhouette, matte painted card stock, a few paper edge nicks, and a heavy slightly uneven near-black exterior contour.
-- Slightly high three-quarter top-down view, semantic facing +X/screen-right, visual depth compression about 0.62. Not front view, isometric, pixel art, soft anime, photorealism, polished 3D toy, or vector-flat clipart.
+- Strict side-profile construction with a slight high top-down pitch, semantic facing +X/screen-right, visual depth compression about 0.62; runtime mirrors the complete rig for screen-left. Never show a frontal, symmetric-front, or back view. Not isometric, pixel art, soft anime, photorealism, polished 3D toy, or vector-flat clipart.
 - Flat cel shading only: base color plus ONE hard shadow band and AT MOST ONE hard highlight per material. No gradients, airbrush, ambient occlusion, bloom, rim light, or baked glow.
 - About 5–7 decisive colors, few interior ink marks, no rarity halo, combat ring, telegraph red, parry-white flash, or extraction instruction color as a major silhouette feature.`;
+}
+
+function proportionLawBlock() {
+  return `MADNESS PROPORTION LAW — MEASURED AND BINDING
+- Torso painted alpha bounds must be width:height ${PROPORTION_LAW.torsoWidthHeight}: a compact SQUAT capsule (nearly as wide as tall — the assembled head+torso, not the torso alone, carries the classic ${PROPORTION_LAW.assembledWidthHeight} bean ratio).
+- Shoulder width:hip width must stay ${PROPORTION_LAW.shoulderHipWidth}; use flat-to-gently-curved sides and only a subtle lower taper. NO pear silhouette, pot belly, belly room, hip flare, or bulbous lower half.
+- Floating head width must be ${PROPORTION_LAW.headTorsoWidth} of torso width, and the visual head zone must occupy ${PROPORTION_LAW.headZoneShare} of assembled head+torso height. The head is large, close to torso width, and fully neckless.`;
 }
 
 function promptForBoilerplateMaster() {
@@ -468,16 +600,18 @@ REFERENCE IMAGES
 Use case: stylized-concept
 Asset type: game-ready blank character identity master
 Primary request: an ORIGINAL stitch-seam training-dummy Drifter in the brutally simple readable silhouette language of early web combat cartoons, without copying any named character.
-Subject: one assembled neutral Drifter built from exactly SIX fully detached floating pieces with clear green gaps between ALL of them — (a) one compact oatmeal-canvas TORSO bean (no head, no legs) carrying a single vertical charcoal stitch seam up its midline and one small darker-weave patch on one shoulder; (b) one FLOATING egg head hovering above the torso with NO neck, no connector, carrying a small charcoal cross-stitch X where a face would be; (c) exactly two small soft blob hands — near-featureless rounded lumps, NO thumb lobe or finger reads; (d) exactly two small soft blob feet — the SAME near-featureless rounded lump language as the hands, NO wedge/heel/toe shape. Gender-neutral, deliberately empty of identity so equipment supplies all personality.
-Pose: neutral idle, side-profile-biased facing screen-right; head hovering centered above the torso gap; blobs relaxed at the sides; feet-blobs planted a body-width apart; no action.
+Subject: one assembled neutral Drifter built from exactly SIX fully detached floating pieces with clear green gaps between ALL of them — (a) one compact SQUAT oatmeal-canvas TORSO capsule (no head, no legs), nearly as wide as tall with flat-to-gently-curved sides — the LARGE head above it supplies the rest of the silhouette height, so the assembled pair reads as the classic bean, shoulders about as wide as hips, only a subtle lower taper, a single vertical charcoal stitch seam up its midline, and one small darker-weave patch on one shoulder; (b) one LARGE FLOATING egg head hovering above the torso with NO neck or connector, width close to torso width, carrying a small charcoal cross-stitch X where a face would be; (c) exactly two small soft blob hands — near-featureless rounded lumps, NO thumb lobe or finger reads; (d) exactly two small soft blob feet — the SAME near-featureless rounded lump language as the hands, NO wedge/heel/toe shape. Gender-neutral, deliberately empty of identity so equipment supplies all personality.
+Pose: neutral idle in strict side profile facing screen-right with only the house-style high top-down pitch; head hovering centered above the torso gap; blobs relaxed at the sides; feet-blobs planted a body-width apart; no action.
 Palette: oatmeal canvas #c9b593, deeper burlap #a8906c hard shadow band, charcoal #2a2622 stitching, near-black #101014 contour. No bright white.
-Constraints: no clothing seams that read as gear beyond the stated stitch/patch, no shirt, pants, boots, gloves, cloak, glasses, facial hair, hat, armor, weapon, hair, eyes, shadow, VFX, or prop. Keep the complete assembled silhouette in a centered safe box around (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}).
+Constraints: absolutely NO pear shape, pot belly, belly/hip flare, bulbous lower torso, or extra belly room. No clothing seams that read as gear beyond the stated stitch/patch, no shirt, pants, boots, gloves, cloak, glasses, facial hair, hat, armor, weapon, hair, eyes, shadow, VFX, or prop. Keep the complete assembled silhouette in a centered safe box around (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}).
+
+${proportionLawBlock()}
 
 ${houseStyleBlock()}
 
 ${chromaOutputBlock()}
 
-Before returning verify: SIX fully detached pieces (floating neckless head, torso bean, two blob hands, two blob feet) with green gaps between every piece; hands and feet read as the same blob language; screen-right top-down 3/4; no gear, eyes, prop, shadow, text, or VFX.`;
+Before returning verify: SIX fully detached pieces (large floating neckless head, squat capsule torso, two blob hands, two blob feet) with green gaps between every piece; torso/head ratios obey the measured law; hands and feet read as the same blob language; strict screen-right profile with slight top-down pitch; no gear, eyes, prop, shadow, text, or VFX.`;
 }
 
 function promptForBoilerplatePart(part) {
@@ -494,6 +628,8 @@ Asset type: game-ready paper-cutout rig part
 Primary request: ${part.description}.
 Composition: exactly ONE complete opaque paper island. Place its authored connector stock near source pivot (${part.pivot.x},${part.pivot.y}); the pivot must lie inside ordinary painted material with 8–12% hidden overlap stock. Keep the entire part inside a ${part.maxPartBox.width}x${part.maxPartBox.height} safe footprint after registration.
 Constraints: no other anatomy, duplicate, montage, guide, socket mark, pivot dot, label, body shadow, equipment, clothing, VFX, or prop. Preserve the canonical identity; do not redesign it.
+
+${["body", "head"].includes(part.id) ? proportionLawBlock() : ""}
 
 ${houseStyleBlock()}
 
@@ -518,22 +654,28 @@ function promptForItem(item, spec) {
 - Plumes, veil tabs, mask horns, pipes, and tilted brims may express identity inside that envelope, but may not turn the segment into a full head/body, VFX plume, or wildly off-axis tower branch.`
     : "";
   return `# CHAT ISOLATION — ONE GEAR ITEM ${item.id}
-Generate ONE standalone raster source image for Dimension Drifters. This ticket targets only ${item.name}, slot ${spec.directory}, from the ${item.setName} launch set.
+Generate ONE standalone raster source image for Dimension Drifters. This ticket targets only ${item.name}, slot ${spec.directory}, from ${item.setName}.
 
 ${executionBlock()}
 
-REFERENCE IMAGES — IDENTITY, NOT COMPOSITION
-- Image 1: canonical portrait identity reference for ${item.sourceCharacterName}. Copy its specific costume design language, materials, palette, motifs, and especially the named item's recognizable construction.
-- Image 2: canonical shipped body-sprite identity reference for the same character. Match its simplified paper-cutout proportions, contour, palette blocking, and screen-right worn perspective.
-- Image 3: approved blank boilerplate identity master. Use ONLY its body scale, screen-right top-down perspective, and socket placement as the invisible mannequin; do not paint any boilerplate pixels.
+${itemReferenceBlock(item)}
 
 Use case: identity-preserve
 Asset type: game-ready isolated wearable sprite part
 Primary request: render ${item.name} (${item.rarity}) — ${spec.artDirection}.
+Item-specific art description: ${item.artDescription}.
 Legacy provenance: ${item.identityBrief}
 Systems flavor only: ${item.effect}
 Composition: wearable pixels ALONE, as if worn on the invisible boilerplate at the ${spec.receivers.join(" + ")} receiver. ${paired ? "Exactly TWO separated matched paper islands, left component in the left bay and right component in the right bay." : "Exactly ONE complete opaque paper island."}
 Source pivots: ${pivotText}. Every pivot must lie inside solid ordinary connector stock with 8–12% hidden overlap. No baked skin, head, body, hands, feet, shadow, held weapon, portrait, text, label, VFX, environment, or extra gear.
+
+PROFILE GARMENT LAW — BINDING FOR ${spec.directory.toUpperCase()}
+- ${spec.profileLaw}
+- Construct only what a strict side-profile character can expose. Do not complete hidden interiors, the far side, a full front, or a full back merely because the legacy reference shows them.
+
+INVISIBLE MANNEQUIN FIT LAW
+- Fit Image 3's NEW slim capsule and large head, not the legacy character's anatomy and not a generic fat bean. Torso wearables hug a ${PROPORTION_LAW.torsoWidthHeight} W:H capsule with shoulder:hip width ${PROPORTION_LAW.shoulderHipWidth}; keep flat-to-gently-curved sides and leave NO belly room or lower-body flare.
+- Head wearables fit a head ${PROPORTION_LAW.headTorsoWidth} of torso width and preserve the ${PROPORTION_LAW.headZoneShare} assembled head-zone share. Blob wearables preserve the near-featureless rounded hand/foot language.
 
 ${houseStyleBlock()}
 
@@ -552,7 +694,7 @@ ${hatBlock}
 
 ${chromaOutputBlock()}
 
-Before returning verify: exactly ${paired ? "two matched wearable islands" : "one wearable island"}; ${item.name} unmistakably belongs to ${item.sourceCharacterName}; screen-right worn perspective; every source pivot covered; stack law obeyed if a hat; no boilerplate pixels, anatomy, shadow, prop, text, or VFX.`;
+Before returning verify: exactly ${paired ? "two matched wearable islands" : "one wearable island"}; ${item.name} unmistakably belongs to ${item.sourceCharacterName}; strict screen-right profile; slot-specific visible-side law obeyed; new slim-capsule/large-head fit with no belly room; every source pivot covered; stack law obeyed if a hat; no boilerplate pixels, anatomy, shadow, prop, text, or VFX.`;
 }
 
 function alphaBounds(data, width, height, threshold = 8, region = null) {
@@ -1045,7 +1187,7 @@ async function runSlot(options, spec) {
     const refs = referencesForItem(item);
     const logPath = codexLogPath("gear", spec.directory, item.id);
     if (!options.validateOnly) {
-      if (refs.length !== 3) {
+      if (refs.length !== item.expectedReferenceCount) {
         console.log(`RENDER FAIL ${key}: identity reference missing`);
         failures++;
         continue;
@@ -1105,7 +1247,7 @@ async function emitSocketReferenceSheet() {
     .map((id) => installedBoilerplatePath(id))
     .filter(existsSync)
     .map((input) => ({ input }));
-  const markers = RECEIVERS.map((row, index) => {
+  const markers = RECEIVERS.map((row, _index) => {
     const color = row.id === "head" ? "#ffcf4a" : row.id.startsWith("face") ? "#62d4ff" : "#f2eee2";
     const labelX = row.raw.x + (row.raw.x < 512 ? -12 : 12);
     const anchor = row.raw.x < 512 ? "end" : "start";
@@ -1236,11 +1378,7 @@ async function buildManifest() {
         installedPaths.add(repoPath(path));
         installedItemCount++;
         installedPartCount += spec.componentIds.length;
-        const identityReferences = [
-          resolve(PORTRAITS, `${item.sourceCharacterId}.jpg`),
-          resolve(SPRITES, item.sourceCharacterId, "body.png"),
-          installedBoilerplatePath("identity-master"),
-        ].map(repoPath);
+        const identityReferences = referencesForItem(item).map(repoPath);
         rows.push({
           id: item.id,
           name: item.name,
@@ -1275,15 +1413,16 @@ async function buildManifest() {
         });
       } catch (error) { invalid.push({ file: repoPath(path), error: error.message }); }
     }
+    const expectedItems = ITEMS.filter((candidate) => candidate.slot === spec.id);
     slotRows.push({
       id: spec.id,
       directory: spec.directory,
       shardCommand: `node tools/artkit/gen-gear.mjs --slot=${spec.directory}`,
       receivers: spec.receivers,
       componentIds: spec.componentIds,
-      expectedItemCount: 12,
+      expectedItemCount: expectedItems.length,
       installedItemCount: rows.length,
-      expectedPartCount: 12 * spec.componentIds.length,
+      expectedPartCount: expectedItems.length * spec.componentIds.length,
       installedPartCount: rows.length * spec.componentIds.length,
       items: rows,
     });
@@ -1296,7 +1435,12 @@ async function buildManifest() {
   const manifest = {
     schemaVersion: 1,
     generator: "tools/artkit/gen-gear.mjs",
-    contentSource: "docs/metagame-panel/gear-systems.md#6-launch-content-12-sets--8-slots",
+    contentSource: "packages/shared/src/gear.ts#GEAR_CATALOG",
+    artDescriptionSources: [
+      "docs/metagame-panel/gear-systems.md#2-progression-and-the-old-shop",
+      "docs/metagame-panel/gear-systems.md#6-launch-content-12-sets--8-slots",
+    ],
+    blankArtRule: "blank-drifter-* catalog rows mean wearing nothing and intentionally have no wearable PNG or manifest item",
     renderContractSource: "docs/metagame-panel/gear-tech.md#6-rendering-and-the-art-program-contract",
     socketFrame: {
       id: FRAME_ID,
@@ -1328,7 +1472,10 @@ async function buildManifest() {
     },
     expectedItemCount: ITEMS.length,
     installedItemCount,
-    expectedPartCount: SLOT_SPECS.reduce((sum, spec) => sum + 12 * spec.componentIds.length, 0),
+    expectedPartCount: SLOT_SPECS.reduce(
+      (sum, spec) => sum + ITEMS.filter((item) => item.slot === spec.id).length * spec.componentIds.length,
+      0,
+    ),
     installedPartCount,
     slots: slotRows,
     missing,
