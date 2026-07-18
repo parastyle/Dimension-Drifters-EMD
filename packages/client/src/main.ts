@@ -1,6 +1,15 @@
 import Phaser from "phaser";
-import { RENDER_DPR } from "./render-dpr.js";
+import { RENDER_DPR, updateRenderDpr } from "./render-dpr.js";
 import { MenuScene } from "./scenes/MenuScene.js";
+import { loadSettings, onSettingsChange, type RenderScaleMode } from "./settings.js";
+
+let renderScaleMode: RenderScaleMode = loadSettings().rendering.renderScale;
+updateRenderDpr(
+  window.innerWidth,
+  window.innerHeight,
+  window.devicePixelRatio || 1,
+  renderScaleMode,
+);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -10,10 +19,9 @@ const game = new Phaser.Game({
   // keeping the arena/net/registry graph out of first paint. §29 `?belt=1` still selects its belt renderer.
   scene: [MenuScene],
   scale: {
-    // §28 crispness: the DRAWING BUFFER is the window size × RENDER_DPR (so it matches the physical
-    // display), but the canvas is DISPLAYED at the CSS window size (`zoom = 1/RENDER_DPR`). RESIZE mode
-    // would force the buffer back to 1× CSS, so we size manually (NONE) and re-resize on window changes.
-    // ArenaScene zooms the world camera by RENDER_DPR so the visible slice is unchanged — just sharper.
+    // §28 crispness: the DRAWING BUFFER is CSS size × the pixel-budgeted RENDER_DPR, while the canvas is
+    // DISPLAYED at CSS size (`zoom = 1/RENDER_DPR`). RESIZE mode would force the buffer back to 1× CSS,
+    // so we size manually (NONE). Scene camera zoom keeps the visible world and UI layout unchanged.
     mode: Phaser.Scale.NONE,
     width: window.innerWidth * RENDER_DPR,
     height: window.innerHeight * RENDER_DPR,
@@ -44,9 +52,32 @@ const game = new Phaser.Game({
   },
 });
 
-// Keep the buffer at window × RENDER_DPR as the window resizes (NONE mode doesn't auto-fit).
-window.addEventListener("resize", () => {
-  game.scale.resize(window.innerWidth * RENDER_DPR, window.innerHeight * RENDER_DPR);
+// NONE mode doesn't auto-fit. Coalesce resize storms, then update the live DPR before Phaser notifies
+// scene resize handlers; cameras and CSS-space UI therefore observe one consistent buffer/scale pair.
+let resizeFrame = 0;
+function requestRendererResize(): void {
+  if (resizeFrame !== 0) return;
+  resizeFrame = requestAnimationFrame(() => {
+    resizeFrame = 0;
+    const cssWidth = Math.max(1, window.innerWidth);
+    const cssHeight = Math.max(1, window.innerHeight);
+    const renderDpr = updateRenderDpr(
+      cssWidth,
+      cssHeight,
+      window.devicePixelRatio || 1,
+      renderScaleMode,
+    );
+    // ScaleManager.resize reads this public zoom while updating both canvas CSS size and its buffer.
+    game.scale.zoom = 1 / renderDpr;
+    game.scale.resize(cssWidth * renderDpr, cssHeight * renderDpr);
+  });
+}
+
+window.addEventListener("resize", requestRendererResize);
+onSettingsChange((settings) => {
+  if (settings.rendering.renderScale === renderScaleMode) return;
+  renderScaleMode = settings.rendering.renderScale;
+  requestRendererResize();
 });
 
 // Debug handle — lets us inspect scale/camera state from the console. Harmless to ship.

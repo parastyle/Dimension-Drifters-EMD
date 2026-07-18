@@ -1,5 +1,6 @@
 import type Phaser from "phaser";
 import { type DamageNumberEvent, TokenBucket } from "../combat-feedback.js";
+import { textRenderDpr } from "../render-dpr.js";
 import type { FeedbackSettings } from "../settings.js";
 
 export const DAMAGE_NUMBER_DEPTH = 99995;
@@ -506,17 +507,19 @@ export class DamageNumberRenderer {
   private readonly targetPoint = { x: 0, y: 0 };
   private settings: FeedbackSettings;
   private readonly baseScale: number;
+  private readonly dpr: number;
 
   constructor(
     private readonly scene: Phaser.Scene,
     settings: FeedbackSettings,
     private readonly resolveTarget: DamageNumberTargetResolver,
-    private readonly dpr = 1,
+    renderDpr = 1,
     tuning: DamageNumberTuning = { ...DEFAULT_DAMAGE_NUMBER_TUNING },
   ) {
     this.settings = settings;
     this.engine = new DamageNumberEngine(tuning);
-    this.baseScale = 1 / Math.max(1, dpr);
+    this.dpr = textRenderDpr(renderDpr);
+    this.baseScale = 1 / this.dpr;
     this.ensureAtlas();
     this.shownInteger = new Int32Array(this.engine.size);
     this.shownStyle = new Int8Array(this.engine.size);
@@ -525,7 +528,7 @@ export class DamageNumberRenderer {
     for (let slot = 0; slot < this.engine.size; slot++) {
       this.labels.push(
         scene.add
-          .bitmapText(0, 0, `${FONT_PREFIX}0`, "0", 14 * dpr)
+          .bitmapText(0, 0, `${FONT_PREFIX}0`, "0", 14 * this.dpr)
           .setOrigin(0.5)
           .setDepth(DAMAGE_NUMBER_DEPTH)
           .setScale(this.baseScale)

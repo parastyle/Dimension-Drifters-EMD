@@ -4,6 +4,7 @@ export type DamageNumberVisibility = "all" | "own" | "off";
 export type DamageNumberStyle = "detailed" | "aggregate";
 export type DamageNumberScale = 0.8 | 0.9 | 1 | 1.1 | 1.2 | 1.3 | 1.4;
 export type ScreenShakeScale = 0 | 0.5 | 1;
+export type RenderScaleMode = "auto" | "native" | "performance";
 
 export interface FeedbackSettings {
   damageNumbers: DamageNumberVisibility;
@@ -18,9 +19,28 @@ export interface FeedbackSettings {
   flashes: "full" | "reduced";
 }
 
+export interface RenderingSettings {
+  renderScale: RenderScaleMode;
+}
+
+export interface ContextHintSettings {
+  beamOverheat: number;
+  juggle: number;
+  ultimateReady: number;
+  pitFall: number;
+  empoweredReturn: number;
+}
+
+export interface OnboardingSettings {
+  verbLegendSeen: boolean;
+  contextHints: ContextHintSettings;
+}
+
 export interface ClientSettings {
   version: 1;
   feedback: FeedbackSettings;
+  rendering: RenderingSettings;
+  onboarding: OnboardingSettings;
 }
 
 export type DeepPartial<T> = {
@@ -45,6 +65,19 @@ export const DEFAULT_SETTINGS: Readonly<ClientSettings> = Object.freeze({
     hitStop: true,
     flashes: "full",
   }),
+  rendering: Object.freeze({
+    renderScale: "auto",
+  }),
+  onboarding: Object.freeze({
+    verbLegendSeen: false,
+    contextHints: Object.freeze({
+      beamOverheat: 0,
+      juggle: 0,
+      ultimateReady: 0,
+      pitFall: 0,
+      empoweredReturn: 0,
+    }),
+  }),
 });
 
 type UnknownRecord = Record<string, unknown>;
@@ -54,7 +87,15 @@ function isRecord(value: unknown): value is UnknownRecord {
 }
 
 function cloneDefaults(): ClientSettings {
-  return { version: 1, feedback: { ...DEFAULT_SETTINGS.feedback } };
+  return {
+    version: 1,
+    feedback: { ...DEFAULT_SETTINGS.feedback },
+    rendering: { ...DEFAULT_SETTINGS.rendering },
+    onboarding: {
+      ...DEFAULT_SETTINGS.onboarding,
+      contextHints: { ...DEFAULT_SETTINGS.onboarding.contextHints },
+    },
+  };
 }
 
 function numberScale(value: unknown): DamageNumberScale {
@@ -72,9 +113,18 @@ function confirmVolume(value: unknown): number {
     : 1;
 }
 
+function hintCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(2, Math.floor(value)))
+    : 0;
+}
+
 export function sanitizeSettings(value: unknown): ClientSettings {
   if (!isRecord(value) || value.version !== 1) return cloneDefaults();
   const raw = isRecord(value.feedback) ? value.feedback : {};
+  const rawRendering = isRecord(value.rendering) ? value.rendering : {};
+  const rawOnboarding = isRecord(value.onboarding) ? value.onboarding : {};
+  const rawContextHints = isRecord(rawOnboarding.contextHints) ? rawOnboarding.contextHints : {};
   return {
     version: 1,
     feedback: {
@@ -94,6 +144,23 @@ export function sanitizeSettings(value: unknown): ClientSettings {
       hitStop: typeof raw.hitStop === "boolean" ? raw.hitStop : true,
       flashes: raw.flashes === "reduced" || raw.flashes === "full" ? raw.flashes : "full",
     },
+    rendering: {
+      renderScale:
+        rawRendering.renderScale === "native" || rawRendering.renderScale === "performance"
+          ? rawRendering.renderScale
+          : "auto",
+    },
+    onboarding: {
+      verbLegendSeen:
+        typeof rawOnboarding.verbLegendSeen === "boolean" ? rawOnboarding.verbLegendSeen : false,
+      contextHints: {
+        beamOverheat: hintCount(rawContextHints.beamOverheat),
+        juggle: hintCount(rawContextHints.juggle),
+        ultimateReady: hintCount(rawContextHints.ultimateReady),
+        pitFall: hintCount(rawContextHints.pitFall),
+        empoweredReturn: hintCount(rawContextHints.empoweredReturn),
+      },
+    },
   };
 }
 
@@ -110,6 +177,11 @@ function knownFields(settings: ClientSettings): UnknownRecord {
   return {
     version: settings.version,
     feedback: { ...settings.feedback },
+    rendering: { ...settings.rendering },
+    onboarding: {
+      ...settings.onboarding,
+      contextHints: { ...settings.onboarding.contextHints },
+    },
   };
 }
 
