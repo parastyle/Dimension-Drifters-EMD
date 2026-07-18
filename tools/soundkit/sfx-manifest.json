@@ -19,6 +19,14 @@
    "description": "The skill beat: success clang, the empowered-return escalation, and the pre-window weapon-glint shimmer that telegraphs timing."
   },
   {
+   "id": "confirm",
+   "description": "Center-mono hit-marker grammar: normal, armor, rapid-stream grain, critical, and kill confirmation."
+  },
+  {
+   "id": "ultimate",
+   "description": "Ultimate readiness, unlock/temper ceremonies, and distinct material-rich phase cues for every archetype."
+  },
+  {
    "id": "boss",
    "description": "Serraketh the worm (dive, underground rumble, eruption, segment sever, regrow, death) plus the generic colossus slam."
   },
@@ -44,8 +52,8 @@
    "id": "swing-sword-light",
    "category": "weapon-swing",
    "priority": 1,
-   "prompt": "Light one-handed sword swing whoosh, thin steel blade cutting fast through air, crisp airy swish with a slight metallic ring in the body, quick attack, very short dry tail, no impact, no music.",
-   "durationSeconds": 0.35,
+   "prompt": "Light one-handed sword cut recorded close: a nicked steel blade parts air over a leather grip creak and faint sleeve scrape, with layered sharp transient, dirty analog texture, tape saturation, and a small untreated room-tone tail. Fast, physical, no impact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
    "replaces": "melee:light",
@@ -55,7 +63,7 @@
    "id": "swing-sword-heavy",
    "category": "weapon-swing",
    "priority": 1,
-   "prompt": "Heavy sword swing whoosh, broad steel blade sweeping through air with weight and momentum, deep whoosh body that starts low and pushes air, slight blade whistle on top, short tail, no impact, no music.",
+   "prompt": "Heavy broad-sword sweep recorded close: battered steel shoves a thick wall of air while leather bindings strain and the blade gives a dull uneven whistle, layered low transient, analog texture, tape saturation, and a short grimy room-tone tail. Weighty, physical, no impact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
@@ -121,8 +129,8 @@
    "id": "swing-claw-rake",
    "category": "weapon-swing",
    "priority": 1,
-   "prompt": "Double claw rake through air, two curved metal talons slicing in a fast scissor motion, twin overlapping high whishes a few milliseconds apart with a thin metallic edge, very short, no impact, no music.",
-   "durationSeconds": 0.3,
+   "prompt": "Double claw rake recorded as real-material foley: two rough curved steel talons scissor through air a few milliseconds apart, with leather wrist-wrap snap, scratched metal edge, layered twin transients, analog texture, tape saturation, and a tiny dirty room tail. No impact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
    "replaces": "melee:claw",
@@ -187,7 +195,7 @@
    "id": "gun-fire-slug",
    "category": "weapon-fire",
    "priority": 1,
-   "prompt": "Single heavy revolver gunshot, close perspective, punchy low-mid bark with a tight mechanical snap, brief powder crack, short dry desert tail under half a second, no ricochet, no music.",
+   "prompt": "Single heavy revolver report recorded close in a dusty stone room: violent powder crack, blunt low-mid muzzle bark, real steel cylinder and hammer clack, grit kicked from the floor, layered transient, analog texture, tape saturation, and a short uneven room-tone tail. No ricochet melody, no music, no chiptune, no synthesized bleeps, dense and gritty.",
    "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
@@ -198,7 +206,7 @@
    "id": "gun-fire-pellet",
    "category": "weapon-fire",
    "priority": 1,
-   "prompt": "Shotgun blast, close perspective, wide deep boom with heavy low-end thump and a spray of grit-like crackle from the pellet cloud, mechanical shell clunk buried in the transient, medium-short tail, no music.",
+   "prompt": "Close twelve-gauge shotgun blast in a battered stone-and-timber room: wide concussive powder boom, dense chest thump, steel action clack, pellet grit and dust spray, layered cracked transient, analog texture, tape saturation, and a rough medium-short room-tone tail. No music, no chiptune, no synthesized bleeps, dense and gritty.",
    "durationSeconds": 0.7,
    "loop": false,
    "variations": 3,
@@ -209,8 +217,8 @@
    "id": "gun-fire-nail",
    "category": "weapon-fire",
    "priority": 1,
-   "prompt": "Rapid pneumatic nailgun shot, single sharp metallic spit with a compressed-air chuff and a thin steel ping, extremely short and clicky, no tail, no music.",
-   "durationSeconds": 0.22,
+   "prompt": "One industrial pneumatic nailgun discharge recorded close: compressed-air cough, greasy steel piston snap, nail biting scrap wood and a tiny metal chatter, layered hard transient, analog texture, tape saturation, and barely-there workshop room tone. No musical ring, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
    "replaces": "shot:nail",
@@ -385,8 +393,8 @@
    "id": "impact-flesh",
    "category": "impact",
    "priority": 1,
-   "prompt": "Blade striking flesh, a wet meaty thud with a subtle tearing squelch, dense soft-body impact with almost no ring, thick and organic, very short dry tail, no scream, no music.",
-   "durationSeconds": 0.3,
+   "prompt": "Blade impact into dense flesh built from real wet hide, raw meat, leather, and a faint bone knock: layered hard cut transient, heavy organic thud, fibrous tear, analog texture, tape saturation, and a short dirty room-tone tail. No scream, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 4,
    "replaces": "hit",
@@ -396,8 +404,8 @@
    "id": "impact-armor",
    "category": "impact",
    "priority": 1,
-   "prompt": "Weapon striking metal armor plate, a hard clanking impact with a short dull steel ring and a slight scrape, dense metallic body, quick damped decay, no long resonance, no music.",
-   "durationSeconds": 0.35,
+   "prompt": "Weapon slams into dented steel armor over leather padding: layered brutal metal transient, plate buckle, rivet chatter, short abrasive scrape, analog texture, tape saturation, and a cramped dirty room-tone tail. Damped and physical, no clean bell, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
    "replaces": "hit",
@@ -407,8 +415,8 @@
    "id": "impact-stone",
    "category": "impact",
    "priority": 1,
-   "prompt": "Weapon striking stone, a hard chalky crack with grit and small rock chips scattering, dense mineral thock with a dry dusty crumble, very short tail, no music.",
-   "durationSeconds": 0.35,
+   "prompt": "Weapon impact against rough stone recorded close: layered mineral crack and dense rock thock, chips, sand, and mortar grit scattering across the floor, analog texture, tape saturation, and a short dusty room-tone tail. No clean synthetic snap, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
    "loop": false,
    "variations": 3,
    "replaces": "hit",
@@ -583,7 +591,7 @@
    "id": "parry-clang",
    "category": "parry",
    "priority": 1,
-   "prompt": "Perfect sword parry, a brilliant ringing steel-on-steel clang, two blades meeting hard with a bright bell-like metallic ring sustaining briefly, crisp powerful transient, clean decay under a second, heroic, no music.",
+   "prompt": "Perfect sword parry: two battered steel blades collide hard, edge scrape and guard rattle over leather-handled weight, layered explosive metal transient, imperfect forged resonance, analog texture, tape saturation, and a brief stone-room tail. Heroic but dirty, no clean bell, no music, no chiptune, no synthesized bleeps, dense and gritty.",
    "durationSeconds": 0.7,
    "loop": false,
    "variations": 2,
@@ -610,7 +618,7 @@
    "loop": false,
    "variations": 2,
    "replaces": null,
-   "notes": "Audio companion to the visual weapon glint that telegraphs the parry timing window (SpriteRig/worm glint). Quiet, mixed under combat \u2014 a subconscious timing aid."
+   "notes": "Visual-only generic parry glint asset; there is currently no AudioBus cue site for it. Vastaghar's runtime glint resolves separately through vastaghar-glint -> boss:titan:glint."
   },
   {
    "id": "serraketh-dive",
@@ -896,7 +904,7 @@
    "loop": false,
    "variations": 2,
    "replaces": null,
-   "notes": "Jump launch; material-agnostic (the scuff stays neutral so it works over any footstep set)."
+   "notes": "Direct id convention: AudioBus jump calls sampleBank.playSample(player-jump); material-agnostic across floor sets."
   },
   {
    "id": "player-land",
@@ -907,7 +915,7 @@
    "loop": false,
    "variations": 2,
    "replaces": "fall",
-   "notes": "Replaces the synth fall thump for ordinary landings; big drops can layer impact-crush at low gain."
+   "notes": "Direct id convention: AudioBus land calls sampleBank.playSample(player-land) and rate/gain carries the three landing tiers; replaces=fall also serves void-fall recovery."
   },
   {
    "id": "player-dodge",
@@ -918,7 +926,7 @@
    "loop": false,
    "variations": 2,
    "replaces": null,
-   "notes": "Dodge feedback (the dodge-integrity work made the dodge a first-class verb; it currently has no audio at all)."
+   "notes": "Direct id convention: AudioBus leap:launch calls sampleBank.playSample(player-dodge) for the evasive movement burst."
   },
   {
    "id": "pit-death",
@@ -1006,7 +1014,7 @@
    "loop": false,
    "variations": 2,
    "replaces": null,
-   "notes": "Ground pound landing; replaces the temporary boss-slam layer in AudioBus pound cue."
+   "notes": "Direct id convention: AudioBus pound:hit calls sampleBank.playSample(player-pound-slam) as a debris/body layer over its authored sub-boom."
   },
   {
    "id": "player-roll-whoosh",
@@ -1017,7 +1025,7 @@
    "loop": false,
    "variations": 2,
    "replaces": null,
-   "notes": "Dodge roll (class-merge wave 21b); wire when the roll ships."
+   "notes": "Direct id convention: AudioBus slide/roll calls sampleBank.playSample(player-roll-whoosh)."
   },
   {
    "id": "ultimate-ready-chime",
@@ -1028,7 +1036,447 @@
    "loop": false,
    "variations": 1,
    "replaces": null,
-   "notes": "Ultimate READY moment (wave 23); wire when ultimates ship."
+   "notes": "Direct id convention: AudioBus ult:ready calls sampleBank.playSample(ultimate-ready-chime)."
+  },
+  {
+   "id": "confirm-tick",
+   "category": "confirm",
+   "priority": 4,
+   "prompt": "One tiny center-mono hit-marker tick made from a fingernail striking worn hardwood, a pinhead leather snap, and a dusty high click, with a layered tactile transient, dirty analog texture, light tape saturation, and only a breath of real room tone after the dry attack. No tonal note, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:hit",
+   "notes": "High-frequency discrete hit confirm; sampleForCue resolves through replaces and AudioBus adds rate jitter."
+  },
+  {
+   "id": "confirm-armor-tink",
+   "category": "confirm",
+   "priority": 4,
+   "prompt": "Tiny center-mono armor confirmation: a fingernail flick on thin dented steel over a scrap of leather, with a short rivet chatter, layered sharp transient, dirty analog texture, tape saturation, and a barely audible workshop room-tone tail. Instantly damped, no clean bell, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "confirm:armor",
+   "notes": "Mitigated-hit rung; sampleForCue resolves through replaces."
+  },
+  {
+   "id": "confirm-ratchet-grain",
+   "category": "confirm",
+   "priority": 4,
+   "prompt": "One extremely short grain from a greasy hand ratchet: worn steel tooth, bone-dry wood contact, and a papery leather flick layered into one tactile transient, with analog texture, tape saturation, and the faintest dirty room-tone tail. No full ratchet sequence, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:ratchet",
+   "notes": "Rapid-stream grain; sampleForCue resolves through replaces and AudioBus rate-limits it."
+  },
+  {
+   "id": "confirm-crit-ping",
+   "category": "confirm",
+   "priority": 4,
+   "prompt": "Small critical-hit marker made from a steel needle striking chipped glass over a muted bone click, rising slightly in character without becoming a musical note, with layered crisp transient, gritty analog texture, tape saturation, and a tiny imperfect room-tone tail. No clean sparkle preset, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "confirm:crit",
+   "notes": "Critical-hit rung; sampleForCue resolves through replaces."
+  },
+  {
+   "id": "confirm-kill-thock",
+   "category": "confirm",
+   "priority": 4,
+   "prompt": "Single satisfying kill thock made from a leather-wrapped wooden mallet striking a dense butcher block over a subtle bone knock, with layered low transient, dirty analog texture, tape saturation, and a short dead-room tail. Downward finality, no tonal ring, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:kill",
+   "notes": "Kill-confirm rung; sampleForCue resolves through replaces and AudioBus pitch-steps streaks."
+  },
+  {
+   "id": "swing-crossfall",
+   "category": "weapon-swing",
+   "priority": 4,
+   "prompt": "Dual-wield Crossfall finisher: two battered steel blades carve a heavy X through air nineteen milliseconds apart, leather grips strain, cloth snaps, and the crossed paths form one layered descending transient with analog texture, tape saturation, and a short gritty stone-room tail. No impact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:crossfall",
+   "notes": "sampleForCue resolves the combined Crossfall swing through replaces."
+  },
+  {
+   "id": "pairing-x-lock",
+   "category": "ui",
+   "priority": 4,
+   "prompt": "Weapon-pairing ceremony lock: two real steel weapons slide across rough wood, cross into an X, then their guards seat with a compact two-stage metal shing over leather and paper friction, layered transients, analog texture, tape saturation, and a short intimate room-tone tail. No melody, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pair",
+   "notes": "sampleForCue resolves the pairing ceremony through replaces."
+  },
+  {
+   "id": "player-pound-tuck",
+   "category": "movement",
+   "priority": 4,
+   "prompt": "Ground-pound tuck: a fast body fold with heavy canvas and leather clothing snapping around a brief metal-buckle flick, layered with a tight air transient, analog texture, tape saturation, and a tiny gritty room-tone tail. Physical and compact, no voice, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pound:tuck",
+   "notes": "sampleForCue resolves the pound tuck through replaces."
+  },
+  {
+   "id": "player-pound-drop",
+   "category": "movement",
+   "priority": 4,
+   "prompt": "Ground-pound descent starting abruptly: dense body and leather gear tear downward through air, low pressure rush over flapping canvas and a faint metal buckle rattle, layered transient, analog texture, tape saturation, and a short dirty room-tone tail that falls away. No impact, no voice, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pound:drop",
+   "notes": "sampleForCue resolves the pound descent through replaces."
+  },
+  {
+   "id": "ultimate-dry-click",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Ultimate unavailable feedback: a worn steel latch fails to catch inside a leather-lined mechanism, one low dry mechanical click with a wooden stop, layered tactile transient, analog texture, tape saturation, and a dead room-tone tail. Restrained, no magical tone, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:dry",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-unlock-forge",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Ultimate unlock ceremony built from a forge door opening: iron latch release, leather bellows breath, stone furnace pressure, and four rising layers of struck imperfect steel, with analog texture, tape saturation, layered transients, and a gritty room-tone tail. Triumphant but not musical, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:unlock",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-temper-brand",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Ultimate temper choice confirmed: red-hot steel quenched against stone with a hard iron tap, leather glove movement, steam hiss, and a brief stressed-metal rise, layered transients, analog texture, tape saturation, and a smoky room-tone tail. No melody, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.0,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:temper",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-seismarch-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Seismarch charge gathering underfoot: boots grind into stone as deep rock plates strain, leather armor creaks, dust trickles, and a layered subterranean pressure transient swells with analog texture, tape saturation, and a cavern room-tone tail. No electronic tone, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.0,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:seismarch:charge",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-seismarch-launch",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Seismarch launch: a massive stone slab punches free from packed earth, gravel sprays, leather gear snaps, and displaced air cracks in one layered upward transient with analog texture, tape saturation, and a rough cavern room-tone tail. No impact landing, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:seismarch:launch",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-seismarch-impact",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Seismarch ultimate impact: enormous stone and iron mass crushes into bedrock, layered concussive transient, cracking slabs, gravel avalanche, bone-deep weight, analog texture, tape saturation, and a long dirty cavern room-tone tail. Huge but tactile, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:seismarch:impact",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-alpha-lock",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Alpha-strike target lock made physically: a spring-loaded steel sight snaps onto a notched rail, leather glove tightens, and a thin blade edge catches once, with layered precise transient, analog texture, tape saturation, and a close room-tone tail. No digital chirp, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:alpha:lock",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-alpha-hop",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "One alpha-strike micro-dash: short leather boot pivot, coat snap, steel blade skimming air, and a tiny grit scuff layered into an aggressive transient with analog texture, tape saturation, and almost no room tail. No sci-fi teleport, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:alpha:hop",
+   "notes": "High-repeat hop; sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-alpha-finish",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Alpha-strike finisher: battered steel blade stops against bone and armor with a layered cut, leather strain, hard body thock, and brief metal scrape, colored by analog texture, tape saturation, and a gritty stone-room tail. Final and compact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:alpha:finish",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-fire-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Fire ultimate charge built from real forge materials: leather bellows pumping, charcoal and timber crackle, iron chamber strain, and stone furnace roar swelling under layered transients, analog texture, tape saturation, and a smoky room-tone tail. No electronic oscillator, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:fire:charge",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-fire-launch",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Fire ultimate launch: iron cannon throat vents a violent blast of burning gas, charcoal grit and ember spray, leather harness snap, and a layered concussive transient with analog texture, tape saturation, and a rough exterior room-tone tail. No impact, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:fire:launch",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-fire-impact",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Fire ultimate impact: pressurized flame and iron debris slam into stone, layered explosive transient, timber crack, gravel blast, dense burning gas, analog texture, tape saturation, and a long smoky room-tone tail full of falling grit. No music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:fire:impact",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-phase-in",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Phase-in made from physical material: reversed canvas pull resolves into a leather boot plant, loose steel links settle, air pressure folds inward, and fine stone dust drops in layered transients with analog texture, tape saturation, and an uncanny room-tone tail. No digital teleport, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:phase:in",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-phase-out",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Phase-out made from physical material: leather and heavy canvas are yanked through a narrowing air pocket, steel links scrape, grit lifts from stone, and the layered transient collapses into a hollow real room-tone tail with analog texture and tape saturation. No digital teleport, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:phase:out",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-blink-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Blink charge as a mechanical tension build: leather straps pull tight around a steel spring cage while stone grit skitters inward and room air compresses, with layered transients, analog texture, tape saturation, and a tense dirty room-tone tail. No electronic whine, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:charge",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-blink-out",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Blink departure: hard leather coat snap, steel buckle whip, and stone dust sucked through a sudden pressure void, layered into a dry outward transient with analog texture, tape saturation, and a short hollow room-tone tail. No electronic zap, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:out",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-blink-in",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Blink arrival: compressed room air slaps outward as leather boots hit stone, a steel buckle rattles, and gravel scatters in a layered close transient with analog texture, tape saturation, and a short gritty room-tone tail. No electronic zap, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:in",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-blink-return",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Blink return with finality: air folds inward then releases around a heavy leather boot plant, steel gear clacks, and stone grit traces the return path in layered transients with analog texture, tape saturation, and a darker room-tone tail. No electronic zap, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:return",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "ultimate-crit-rider",
+   "category": "ultimate",
+   "priority": 4,
+   "prompt": "Ultimate critical rider: a steel edge bites through armor into bone, adding a narrow layered crack, rivet spit, and gritty leather snap above the main impact, with analog texture, tape saturation, and an extremely short real room-tone tail. No reward chime, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:crit-rider",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-intro",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar titan introduction: colossal stone body shifts behind an iron gate, ancient chains drag, leather-sized hide plates flex, and deep rock pressure rolls through a cavern in layered transients with analog texture, tape saturation, and a long oppressive room-tone tail. No music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 2.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:intro",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-lift",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar lifting a titanic limb: grinding stone joints, stretched hide and leather-like tendons, iron restraint strain, and falling grit layered into a heavy upward transient with analog texture, tape saturation, and cavern room tone. Restrained telegraph, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:lift",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-glint",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar parry glint telegraph: a single chipped steel edge scraped by stone then struck lightly, bright grit and a tiny chain twitch layered into a fast tactile transient with analog texture, tape saturation, and a short cavern room-tone tail. No clean magical sparkle, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:glint",
+   "notes": "sampleForCue resolves the titan glint through replaces; distinct from the existing visual-only parry-glint-cue asset."
+  },
+  {
+   "id": "vastaghar-wheel",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar wheel attack starts: colossal rough stone mass rolls against stone, iron bands grind, hide straps whip, and gravel sprays in a layered rotating transient with analog texture, tape saturation, and a cavern room-tone tail. No engine synth, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.1,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:wheel",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-step",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "One Vastaghar titan footstep: mountain-heavy stone and bone mass crushes into bedrock, layered sub-heavy transient, slab cracks, armor plates buckle, and gravel rains through a cavern with analog texture, tape saturation, and a long gritty room-tone tail. No music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:step",
+   "notes": "Repeated authoritative step; sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-phase",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar phase shift: three ancient stone locks shear in sequence, iron chains answer, hide plates tense, then a vast cavern pressure wave opens behind layered transients, analog texture, and tape saturation with a long dirty room-tone tail. No melodic chord, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:phase",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-break",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar armor break: immense stone plate fractures over a bone-deep body thud, iron rivets and chain links scatter, grit showers down, and pressure releases in layered transients with analog texture, tape saturation, and a heavy cavern room-tone tail. No music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:break",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "vastaghar-death",
+   "category": "boss",
+   "priority": 4,
+   "prompt": "Vastaghar titan death: colossal stone, bone, and iron body fails in stages, hide tears, armor shelves collapse, chains snap, and tons of rubble settle through a long cavern decay, with layered transients, analog texture, tape saturation, and oppressive room tone. No musical resolve, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 4.0,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:death",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "enemy-combo-leap-launch",
+   "category": "movement",
+   "priority": 4,
+   "prompt": "Tough enemy leap launch: clawed leather boot tears from gravel, body armor and bone ornaments snap upward, and displaced air cracks in a layered aggressive transient with analog texture, tape saturation, and a short dirty room-tone tail. No voice, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:leap-launch",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "enemy-combo-leap-land",
+   "category": "movement",
+   "priority": 4,
+   "prompt": "Tough enemy leap landing: armored boots and bone weight hammer stone, gravel spits outward, leather gear snaps, and one layered low transient settles into a short gritty room-tone tail with analog texture and tape saturation. No voice, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:leap-land",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "enemy-combo-return-tell",
+   "category": "movement",
+   "priority": 4,
+   "prompt": "Tough enemy return-step tell: leather and hide coil under tension while a rough steel weapon scrapes stone, chain links tighten, then one sharp metal catch marks release, layered with analog texture, tape saturation, and an ominous dirty room-tone tail. No electronic swell, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 1.0,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:return-tell",
+   "notes": "sampleForCue resolves through replaces."
+  },
+  {
+   "id": "enemy-combo-airkeep-hit",
+   "category": "impact",
+   "priority": 4,
+   "prompt": "Tough enemy air-keep hit: compact upward weapon strike through leather armor into bone, with a layered dry body crack, steel edge scrape, cloth snap, analog texture, tape saturation, and a tiny gritty room-tone tail. Fast enough for a combo string, no voice, no music, no chiptune, no synthesized bleeps, dense and gritty.",
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:airkeep-hit",
+   "notes": "High-repeat air hit; sampleForCue resolves through replaces."
   }
  ]
 }

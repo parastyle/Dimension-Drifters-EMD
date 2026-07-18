@@ -8,6 +8,7 @@
 //   node tools/soundkit/gen-sfx.mjs                    # priority 1 only (default)
 //   node tools/soundkit/gen-sfx.mjs --priority 2       # a different priority tier
 //   node tools/soundkit/gen-sfx.mjs --only <id>        # one entry, any priority
+//   node tools/soundkit/gen-sfx.mjs --only <id> --force # regenerate, archiving existing raw first
 //   node tools/soundkit/gen-sfx.mjs --dry-run          # print the request plan; no key, no API calls
 //   node tools/soundkit/gen-sfx.mjs --manifest <path>  # alternate manifest (testing escape hatch)
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -29,10 +30,12 @@ const args = process.argv.slice(2);
 let priority = 1;
 let only = null;
 let dryRun = false;
+let force = false;
 let manifestPath = resolve(here, "sfx-manifest.json");
 for (let i = 0; i < args.length; i++) {
   const a = args[i];
   if (a === "--dry-run") dryRun = true;
+  else if (a === "--force") force = true;
   else if (a === "--priority") {
     priority = Number(args[++i]);
     if (!Number.isInteger(priority) || priority < 1) fatal(`--priority must be a positive integer, got: ${args[i]}`);
@@ -42,7 +45,7 @@ for (let i = 0; i < args.length; i++) {
   } else if (a === "--manifest") {
     manifestPath = resolve(args[++i] ?? "");
     if (!args[i]) fatal("--manifest requires a path");
-  } else fatal(`unknown argument: ${a} (expected --priority N | --only <id> | --dry-run | --manifest <path>)`);
+  } else fatal(`unknown argument: ${a} (expected --priority N | --only <id> | --force | --dry-run | --manifest <path>)`);
 }
 
 function fatal(msg) {
@@ -162,6 +165,11 @@ async function main() {
 
   mkdirSync(OUT, { recursive: true });
   if (!dryRun) mkdirSync(DST, { recursive: true });
+  const historyDir = resolve(
+    OUT,
+    "history",
+    new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-"),
+  );
 
   console.log(
     `${dryRun ? "DRY-RUN plan" : "Generating"}: ${selected.length} entr${selected.length === 1 ? "y" : "ies"} ` +
@@ -177,7 +185,11 @@ async function main() {
       const text = requestText(entry, n);
 
       if (dryRun) {
-        const state = existsSync(raw) ? "SKIP (raw exists)" : "GENERATE";
+        const state = existsSync(raw)
+          ? force
+            ? "REGENERATE (archive raw)"
+            : "SKIP (raw exists)"
+          : "GENERATE";
         console.log(`\n[${state}] ${label}  (${entry.category}, P${entry.priority}, ${entry.durationSeconds}s${entry.loop ? ", loop" : ""})`);
         console.log(`  POST ${API_URL}  { duration_seconds: ${entry.durationSeconds}, prompt_influence: ${PROMPT_INFLUENCE} }`);
         console.log(`  text: ${text}`);
@@ -186,11 +198,17 @@ async function main() {
         continue;
       }
 
-      if (existsSync(raw)) {
+      if (existsSync(raw) && !force) {
         console.log(`SKIP ${label}: raw exists`);
         skipped++;
       } else {
         try {
+          if (force && existsSync(raw)) {
+            mkdirSync(historyDir, { recursive: true });
+            const archived = resolve(historyDir, file);
+            copyFileSync(raw, archived);
+            console.log(`ARCHIVED ${archived}`);
+          }
           console.log(`GEN  ${label} (${entry.durationSeconds}s${entry.loop ? ", loop" : ""}) …`);
           const audio = await generateSound(apiKey, text, entry.durationSeconds, label);
           if (audio.length < 512) throw new Error(`response too small (${audio.length} bytes) — not audio?`);
@@ -226,7 +244,7 @@ async function main() {
     const publicManifest = resolve(DST, "manifest.json");
     writeFileSync(
       publicManifest,
-      JSON.stringify({ version: 1, sounds: live.map(({ id, category, priority, durationSeconds, loop, variations, replaces }) => ({ id, category, priority, durationSeconds, loop, variations, replaces })) }, null, 1),
+      JSON.stringify({ version: 1, entries: live.map(({ id, category, priority, durationSeconds, loop, variations, replaces }) => ({ id, category, priority, durationSeconds, loop, variations, replaces })) }, null, 1),
     );
     console.log(`PUBLISHED ${publicManifest} (${live.length}/${entries.length} entries live)`);
   } else {

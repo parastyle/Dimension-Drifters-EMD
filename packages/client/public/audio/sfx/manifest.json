@@ -1,6 +1,6 @@
 {
  "version": 1,
- "sounds": [
+ "entries": [
   {
    "id": "swing-sword-light",
    "category": "weapon-swing",
@@ -810,6 +810,366 @@
    "loop": false,
    "variations": 1,
    "replaces": null
+  },
+  {
+   "id": "confirm-tick",
+   "category": "confirm",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:hit"
+  },
+  {
+   "id": "confirm-armor-tink",
+   "category": "confirm",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "confirm:armor"
+  },
+  {
+   "id": "confirm-ratchet-grain",
+   "category": "confirm",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:ratchet"
+  },
+  {
+   "id": "confirm-crit-ping",
+   "category": "confirm",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "confirm:crit"
+  },
+  {
+   "id": "confirm-kill-thock",
+   "category": "confirm",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 3,
+   "replaces": "confirm:kill"
+  },
+  {
+   "id": "swing-crossfall",
+   "category": "weapon-swing",
+   "priority": 4,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "melee:crossfall"
+  },
+  {
+   "id": "pairing-x-lock",
+   "category": "ui",
+   "priority": 4,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pair"
+  },
+  {
+   "id": "player-pound-tuck",
+   "category": "movement",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pound:tuck"
+  },
+  {
+   "id": "player-pound-drop",
+   "category": "movement",
+   "priority": 4,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 2,
+   "replaces": "pound:drop"
+  },
+  {
+   "id": "ultimate-dry-click",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:dry"
+  },
+  {
+   "id": "ultimate-unlock-forge",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:unlock"
+  },
+  {
+   "id": "ultimate-temper-brand",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:temper"
+  },
+  {
+   "id": "ultimate-seismarch-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:seismarch:charge"
+  },
+  {
+   "id": "ultimate-seismarch-launch",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:seismarch:launch"
+  },
+  {
+   "id": "ultimate-seismarch-impact",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:seismarch:impact"
+  },
+  {
+   "id": "ultimate-alpha-lock",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:alpha:lock"
+  },
+  {
+   "id": "ultimate-alpha-hop",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:alpha:hop"
+  },
+  {
+   "id": "ultimate-alpha-finish",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:alpha:finish"
+  },
+  {
+   "id": "ultimate-fire-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1.2,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:fire:charge"
+  },
+  {
+   "id": "ultimate-fire-launch",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:fire:launch"
+  },
+  {
+   "id": "ultimate-fire-impact",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:fire:impact"
+  },
+  {
+   "id": "ultimate-phase-in",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:phase:in"
+  },
+  {
+   "id": "ultimate-phase-out",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.75,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:phase:out"
+  },
+  {
+   "id": "ultimate-blink-charge",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:charge"
+  },
+  {
+   "id": "ultimate-blink-out",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.6,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:out"
+  },
+  {
+   "id": "ultimate-blink-in",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.65,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:in"
+  },
+  {
+   "id": "ultimate-blink-return",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "ult:blink:return"
+  },
+  {
+   "id": "ultimate-crit-rider",
+   "category": "ultimate",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "ult:crit-rider"
+  },
+  {
+   "id": "vastaghar-intro",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 2.4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:intro"
+  },
+  {
+   "id": "vastaghar-lift",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 0.9,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:lift"
+  },
+  {
+   "id": "vastaghar-glint",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 0.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:glint"
+  },
+  {
+   "id": "vastaghar-wheel",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 1.1,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:wheel"
+  },
+  {
+   "id": "vastaghar-step",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 1.5,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:step"
+  },
+  {
+   "id": "vastaghar-phase",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 1.8,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:phase"
+  },
+  {
+   "id": "vastaghar-break",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 1.4,
+   "loop": false,
+   "variations": 2,
+   "replaces": "boss:titan:break"
+  },
+  {
+   "id": "vastaghar-death",
+   "category": "boss",
+   "priority": 4,
+   "durationSeconds": 4,
+   "loop": false,
+   "variations": 1,
+   "replaces": "boss:titan:death"
+  },
+  {
+   "id": "enemy-combo-leap-launch",
+   "category": "movement",
+   "priority": 4,
+   "durationSeconds": 0.7,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:leap-launch"
+  },
+  {
+   "id": "enemy-combo-leap-land",
+   "category": "movement",
+   "priority": 4,
+   "durationSeconds": 0.8,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:leap-land"
+  },
+  {
+   "id": "enemy-combo-return-tell",
+   "category": "movement",
+   "priority": 4,
+   "durationSeconds": 1,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:return-tell"
+  },
+  {
+   "id": "enemy-combo-airkeep-hit",
+   "category": "impact",
+   "priority": 4,
+   "durationSeconds": 0.55,
+   "loop": false,
+   "variations": 2,
+   "replaces": "enemy-combo:airkeep-hit"
   }
  ]
 }
