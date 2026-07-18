@@ -9148,7 +9148,10 @@ export class ArenaScene extends Phaser.Scene {
     } else if (weapon?.gun) {
       // Gun recoil — a per-gun camera kick (heavy slug THUMPS, gatling barely buzzes). The shake duration
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
-      this.shakeCam(Math.min(70, weapon.gun.fireRate * 700), weapon.gun.recoil ?? 0.0017);
+      this.shakeCam(
+        Math.min(70, weapon.gun.fireRate * 700),
+        (weapon.gun.recoil ?? 0.0017) * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE,
+      );
       // §4 v0.107 PREDICTED muzzle flash: fire feedback on the CLICK at the rendered barrel (the old
       // path waited a full round-trip for the synced projectile — ~60-125ms of "did it fire?" online).
       // The authoritative bullet still renders from state; syncProjectiles suppresses its duplicate
@@ -9953,7 +9956,10 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     if (this.feedbackShakeIntensity > 0)
-      this.shakeCam(this.feedbackShakeDuration, this.feedbackShakeIntensity);
+      this.shakeCam(
+        this.feedbackShakeDuration,
+        this.feedbackShakeIntensity * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE,
+      );
     if (
       Math.hypot(this.feedbackPunchX, this.feedbackPunchY) > 0 &&
       now - this.lastCameraPunchAt >= 90
@@ -10017,6 +10023,11 @@ export class ArenaScene extends Phaser.Scene {
       return;
     this.shakeCam(scaledDuration, scaledIntensity);
   }
+
+  /** Owner ruling 2026-07-18: shake MADE BY THE PLAYER'S OWN WEAPONS (gun recoil, hit-confirm
+   *  receipt feel, beam ignite/overheat) runs at 2% of its authored amplitude. World shakes —
+   *  bosses, pounds, damage taken, enemy combos, ultimates — keep full weight. */
+  static readonly PLAYER_WEAPON_SHAKE_SCALE = 0.02;
 
   shakeCam(duration: number, intensity: number): void {
     const motionScale = prefersReducedPaperMotion() ? 0 : (this.feedbackSettings?.screenShake ?? 1);
@@ -13707,7 +13718,7 @@ export class ArenaScene extends Phaser.Scene {
             amt: local ? 1 : 0.4,
             ownerId,
           });
-          if (local) this.shakeCam(55, 0.0028);
+          if (local) this.shakeCam(55, 0.0028 * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE);
         } else if (row.phase === BeamPhase.Overheated) {
           this.audio.play("beam:overheat", {
             x: row.originX,
@@ -13715,7 +13726,7 @@ export class ArenaScene extends Phaser.Scene {
             ownerId,
           });
           if (local) {
-            this.shakeCam(120, 0.006);
+            this.shakeCam(120, 0.006 * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE);
             this.offerContextHint("beamOverheat");
           }
         } else if (
