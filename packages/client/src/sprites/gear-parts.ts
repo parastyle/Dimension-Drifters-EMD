@@ -4,8 +4,103 @@ import generatedManifest from "../../../../tools/artkit/out/gear/gear-parts-mani
 
 export const GEAR_SOCKET_FRAME_ID = "GEAR_SOCKET_FRAME_V1" as const;
 export const HAT_STACK_BAND_ID = "HAT_STACK_BAND_V1" as const;
+export const GEAR_REPLACEMENT_CONTRACT_ID = "GEAR_REPLACEMENT_V1" as const;
 export const MAX_VISIBLE_HATS = 12;
 export const MAX_HAT_SLOTS = 30;
+
+export const GEAR_BAKED_PART_IDS = [
+  "body",
+  "head",
+  "hand-l",
+  "hand-r",
+  "foot-l",
+  "foot-r",
+] as const;
+
+export type GearBakedPartId = (typeof GEAR_BAKED_PART_IDS)[number];
+export type GearRenderRole =
+  | "body-patch"
+  | "replace-hand"
+  | "replace-foot"
+  | "head-accessory"
+  | "overlay-hat"
+  | "replace-head"
+  | "cloak-far";
+
+export interface GearBakeFrame {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+  readonly origin: { readonly x: number; readonly y: number };
+}
+
+export interface GearReplacementContract {
+  readonly id: typeof GEAR_REPLACEMENT_CONTRACT_ID;
+  /** Optional generator revision. Schema + contract id remain the stable fallback revision. */
+  readonly revision?: string;
+  readonly partFrames?: Partial<Record<GearBakedPartId, unknown>>;
+  readonly bakeFrames?: Partial<Record<GearBakedPartId, unknown>>;
+  readonly frames?: Partial<Record<GearBakedPartId, unknown>>;
+  readonly fixedPartFrames?: Partial<Record<GearBakedPartId, unknown>>;
+  readonly maskHashes?: Readonly<Record<string, unknown>>;
+  readonly canonicalMaskHashes?: Readonly<Record<string, unknown>>;
+  readonly compositionOrders?: {
+    readonly body?: readonly string[];
+    readonly head?: readonly string[];
+  };
+  readonly compositionOrder?: {
+    readonly body?: readonly string[];
+    readonly head?: readonly string[];
+  };
+}
+
+export type GearBakeLayerRole =
+  | "base"
+  | "pants"
+  | "shirt"
+  | "replacement-head"
+  | "facialHair"
+  | "glasses"
+  | "glove"
+  | "boot"
+  | "cloak"
+  | "hat";
+
+export interface GearBakeSourceDependency {
+  readonly role: GearBakeLayerRole;
+  readonly slot: GearSlot | null;
+  readonly gearId: GearId | null;
+  readonly textureKey: string;
+  readonly textureUrl: string | null;
+  readonly sourceRevision: string;
+  readonly state: GearTextureState;
+  readonly blank: boolean;
+}
+
+export interface GearPartBakeRecipe {
+  readonly partId: GearBakedPartId;
+  readonly frame: GearBakeFrame;
+  readonly layers: readonly GearBakeSourceDependency[];
+  readonly dependencies: readonly GearBakeSourceDependency[];
+  readonly key: string;
+}
+
+export interface GearBakeDiagnostic {
+  readonly kind: "missing-art" | "invalid-art";
+  readonly partId: GearBakedPartId | "cloak" | "hat";
+  readonly slot: GearSlot;
+  readonly gearId: GearId;
+  readonly textureKey: string;
+  readonly message: string;
+}
+
+export interface GearBakeRecipe {
+  readonly contractRevision: string;
+  readonly parts: Readonly<Record<GearBakedPartId, GearPartBakeRecipe>>;
+  readonly readiness: GearTextureState | "fallback";
+  readonly diagnostics: readonly GearBakeDiagnostic[];
+}
 
 export type GearReceiverId =
   | "head"
@@ -48,6 +143,8 @@ export interface GearManifestPart {
   plane: number;
   spring: GearPartSpringManifest | null;
   alphaBounds: { left: number; top: number; width: number; height: number };
+  sourceRevision?: string;
+  sourceHash?: string;
 }
 
 export interface GearManifestItem {
@@ -57,8 +154,24 @@ export interface GearManifestItem {
   slot: GearSlot;
   slotDirectory: string;
   texture: string;
-  image: { width: number; height: number };
+  image: { width: number; height: number; sha256?: string };
   parts: GearManifestPart[];
+  renderRole?: GearRenderRole;
+  sourceRevision?: string;
+  sourceHash?: string;
+  replacementTexture?:
+    | string
+    | {
+        texture: string;
+        sourceRevision?: string;
+        sourceHash?: string;
+        sha256?: string;
+      };
+  replacementSourceRevision?: string;
+  replacementTextureHash?: string;
+  replacementSourceHash?: string;
+  replacementTextureRevision?: string;
+  replacementImage?: { sha256?: string; sourceRevision?: string; sourceHash?: string };
   stackBandVerification?: {
     frame: string;
     verified: boolean;
@@ -85,7 +198,9 @@ export interface BoilerplateManifestPart {
   mountScale: number;
   plane: number;
   alphaBounds: { left: number; top: number; width: number; height: number };
-  image: { width: number; height: number };
+  image: { width: number; height: number; sha256?: string };
+  sourceRevision?: string;
+  sourceHash?: string;
 }
 
 export interface GearPartsManifest {
@@ -108,6 +223,7 @@ export interface GearPartsManifest {
   zOrder: { plane: number; id: string }[];
   boilerplate: { parts: BoilerplateManifestPart[] };
   slots: GearManifestSlot[];
+  replacementContract?: GearReplacementContract;
 }
 
 export interface BoilerplateAssemblyPart {
@@ -142,6 +258,7 @@ export interface GearAssemblyPart {
   stackIndex: number;
   stackScale: number;
   topSocketSource: { x: number; y: number } | null;
+  extraRole?: "cloak-far" | "overlay-hat" | "prestige-cap";
 }
 
 export interface GearLoadoutAssembly {
@@ -150,6 +267,24 @@ export interface GearLoadoutAssembly {
   towerVisible: number;
   towerOverflow: number;
 }
+
+export interface GearExtraAssembly extends GearLoadoutAssembly {
+  readonly cloak: GearAssemblyPart | null;
+  readonly hats: readonly GearAssemblyPart[];
+  /** Replacement heads consume one headwear position without entering the visible extras list. */
+  readonly replacementHeadPosition: boolean;
+  readonly diagnostics: readonly GearBakeDiagnostic[];
+}
+
+export interface GearBakeResolution {
+  readonly recipe: GearBakeRecipe;
+  readonly extras: GearExtraAssembly;
+  readonly dependencies: readonly GearBakeSourceDependency[];
+}
+
+export type GearTextureStateResolver = (
+  dependency: Omit<GearBakeSourceDependency, "state">,
+) => GearTextureState;
 
 /** Plumbed replacement-head seam. Alternative heads remain texture-only until their gear class ships. */
 export interface AlternativeHeadTextureSelection {
@@ -198,6 +333,125 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+const FROZEN_GEAR_BAKE_FRAMES: Readonly<Record<GearBakedPartId, GearBakeFrame>> = Object.freeze({
+  body: Object.freeze({
+    left: 344,
+    top: 324,
+    width: 336,
+    height: 376,
+    origin: Object.freeze({ x: 168 / 336, y: 188 / 376 }),
+  }),
+  head: Object.freeze({
+    left: 352,
+    top: 112,
+    width: 384,
+    height: 456,
+    origin: Object.freeze({ x: 160 / 384, y: 188 / 456 }),
+  }),
+  "hand-l": Object.freeze({
+    left: 294,
+    top: 432,
+    width: 180,
+    height: 180,
+    origin: Object.freeze({ x: 0.5, y: 0.5 }),
+  }),
+  "hand-r": Object.freeze({
+    left: 550,
+    top: 432,
+    width: 180,
+    height: 180,
+    origin: Object.freeze({ x: 0.5, y: 0.5 }),
+  }),
+  "foot-l": Object.freeze({
+    left: 353,
+    top: 641,
+    width: 190,
+    height: 190,
+    origin: Object.freeze({ x: 0.5, y: 0.5 }),
+  }),
+  "foot-r": Object.freeze({
+    left: 481,
+    top: 641,
+    width: 190,
+    height: 190,
+    origin: Object.freeze({ x: 0.5, y: 0.5 }),
+  }),
+});
+
+export const GEAR_BAKE_FRAMES = FROZEN_GEAR_BAKE_FRAMES;
+
+function frameTuple(value: unknown): readonly number[] | null {
+  if (Array.isArray(value) && value.length === 4 && value.every(finite)) return value;
+  if (!isRecord(value)) return null;
+  const candidate = value.frame ?? value.rect ?? value.sourceRect;
+  if (Array.isArray(candidate) && candidate.length === 4 && candidate.every(finite))
+    return candidate;
+  if (finite(value.left) && finite(value.top) && finite(value.width) && finite(value.height)) {
+    return [value.left, value.top, value.width, value.height];
+  }
+  return null;
+}
+
+export function replacementBakeFrame(
+  manifest: GearPartsManifest,
+  partId: GearBakedPartId,
+): GearBakeFrame | null {
+  const contract = manifest.replacementContract;
+  if (!contract) return null;
+  const raw =
+    contract.partFrames?.[partId] ??
+    contract.bakeFrames?.[partId] ??
+    contract.frames?.[partId] ??
+    contract.fixedPartFrames?.[partId];
+  const tuple = frameTuple(raw);
+  const frozen = FROZEN_GEAR_BAKE_FRAMES[partId];
+  if (
+    !tuple ||
+    tuple[0] !== frozen.left ||
+    tuple[1] !== frozen.top ||
+    tuple[2] !== frozen.width ||
+    tuple[3] !== frozen.height
+  ) {
+    return null;
+  }
+  return frozen;
+}
+
+function replacementCompositionOrdersValid(contract: GearReplacementContract): boolean {
+  const orders = contract.compositionOrders ?? contract.compositionOrder;
+  return (
+    Array.isArray(orders?.body) &&
+    orders.body.join(",") === "body,pants,shirt" &&
+    Array.isArray(orders.head) &&
+    orders.head.join(",") === "head,facialHair,glasses"
+  );
+}
+
+function sourceRevisionOf(
+  item: Pick<GearManifestItem, "sourceRevision" | "sourceHash" | "image" | "texture">,
+  part?: Pick<GearManifestPart, "sourceRevision" | "sourceHash">,
+): string {
+  return (
+    part?.sourceRevision ??
+    part?.sourceHash ??
+    item.sourceRevision ??
+    item.sourceHash ??
+    item.image.sha256 ??
+    item.texture
+  );
+}
+
+function boilerplateRevisionOf(part: BoilerplateManifestPart): string {
+  return part.sourceRevision ?? part.sourceHash ?? part.image.sha256 ?? part.texture;
+}
+
+function manifestHash(value: unknown): string | null {
+  if (typeof value === "string" && value.length > 0) return value;
+  if (!isRecord(value)) return null;
+  const hash = value.sha256 ?? value.hash ?? value.sourceHash;
+  return typeof hash === "string" && hash.length > 0 ? hash : null;
 }
 
 function pointShape(value: unknown): value is { x: number; y: number } {
@@ -258,6 +512,88 @@ function partShape(value: unknown): value is GearManifestPart {
     finite(bounds.width) &&
     finite(bounds.height)
   );
+}
+
+function renderRole(value: unknown): value is GearRenderRole {
+  return (
+    value === "body-patch" ||
+    value === "replace-hand" ||
+    value === "replace-foot" ||
+    value === "head-accessory" ||
+    value === "overlay-hat" ||
+    value === "replace-head" ||
+    value === "cloak-far"
+  );
+}
+
+function expectedRenderRole(slot: GearSlot): readonly GearRenderRole[] {
+  switch (slot) {
+    case "shirt":
+    case "pants":
+      return ["body-patch"];
+    case "gloves":
+      return ["replace-hand"];
+    case "boots":
+      return ["replace-foot"];
+    case "glasses":
+    case "facialHair":
+      return ["head-accessory"];
+    case "cloak":
+      return ["cloak-far"];
+    case "hat":
+      return ["overlay-hat", "replace-head"];
+  }
+}
+
+function replacementTextureInfo(item: GearManifestItem): {
+  texture: string;
+  sourceRevision: string;
+} | null {
+  const replacement = item.replacementTexture;
+  if (typeof replacement === "string" && replacement.length > 0) {
+    const revision =
+      item.replacementSourceRevision ??
+      item.replacementTextureRevision ??
+      item.replacementTextureHash ??
+      item.replacementSourceHash ??
+      item.replacementImage?.sourceRevision ??
+      item.replacementImage?.sourceHash ??
+      item.replacementImage?.sha256;
+    return revision ? { texture: replacement, sourceRevision: revision } : null;
+  }
+  if (!isRecord(replacement) || typeof replacement.texture !== "string") return null;
+  const revision = replacement.sourceRevision ?? replacement.sourceHash ?? replacement.sha256;
+  return typeof revision === "string" && revision.length > 0
+    ? { texture: replacement.texture, sourceRevision: revision }
+    : null;
+}
+
+function v2ItemRoleValid(item: GearManifestItem): boolean {
+  if (!renderRole(item.renderRole) || !expectedRenderRole(item.slot).includes(item.renderRole))
+    return false;
+  if (item.slot === "hat") {
+    const replacementId = item.id === "demon-mask-hat" || item.id === "unbending-hat";
+    if (replacementId !== (item.renderRole === "replace-head")) return false;
+    if (replacementId && !replacementTextureInfo(item)) return false;
+  }
+  const receivers = new Set(item.parts.map((part) => part.receiver));
+  const receiversValid =
+    (item.slot === "gloves" &&
+      receivers.size === 2 &&
+      receivers.has("hand-l") &&
+      receivers.has("hand-r")) ||
+    (item.slot === "boots" &&
+      receivers.size === 2 &&
+      receivers.has("foot-l") &&
+      receivers.has("foot-r")) ||
+    (item.slot === "shirt" && item.parts.length === 1 && receivers.has("torso")) ||
+    (item.slot === "pants" && item.parts.length === 1 && receivers.has("legs")) ||
+    (item.slot === "glasses" && item.parts.length === 1 && receivers.has("face.eyes")) ||
+    (item.slot === "facialHair" && item.parts.length === 1 && receivers.has("face.mouth")) ||
+    (item.slot === "cloak" && item.parts.length === 1 && receivers.has("back")) ||
+    (item.slot === "hat" && item.parts.length === 1 && receivers.has("head"));
+  const hasRevision = Boolean(item.sourceRevision ?? item.sourceHash ?? item.image.sha256);
+  return receiversValid && hasRevision;
 }
 
 function itemShape(value: unknown, slot: GearSlot): value is GearManifestItem {
@@ -346,7 +682,8 @@ function boilerplatePartShape(value: unknown): value is BoilerplateManifestPart 
 
 /** Validate the generated art contract without requiring all still-rendering slots to be present. */
 export function validateGearPartsManifest(value: unknown): GearPartsManifest | null {
-  if (!isRecord(value) || value.schemaVersion !== 1) return null;
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2)) return null;
+  const schemaVersion = value.schemaVersion;
   const frame = value.socketFrame;
   const boilerplate = value.boilerplate;
   const outline = value.outlinePass;
@@ -372,6 +709,28 @@ export function validateGearPartsManifest(value: unknown): GearPartsManifest | n
     !Array.isArray(value.slots)
   ) {
     return null;
+  }
+
+  if (schemaVersion === 2) {
+    const contract = value.replacementContract;
+    const rawMaskHashes = isRecord(contract)
+      ? (contract.maskHashes ?? contract.canonicalMaskHashes)
+      : null;
+    const maskHashes = isRecord(rawMaskHashes) ? rawMaskHashes : null;
+    if (
+      !isRecord(contract) ||
+      contract.id !== GEAR_REPLACEMENT_CONTRACT_ID ||
+      !maskHashes ||
+      !["bodyFill", "shirtRequired", "shirtAllowed", "pantsRequired", "pantsAllowed"].every(
+        (key) => manifestHash(maskHashes[key]) !== null,
+      ) ||
+      !replacementCompositionOrdersValid(contract as unknown as GearReplacementContract)
+    ) {
+      return null;
+    }
+    const manifestCandidate = value as unknown as GearPartsManifest;
+    for (const partId of GEAR_BAKED_PART_IDS)
+      if (!replacementBakeFrame(manifestCandidate, partId)) return null;
   }
 
   const boilerplateIds = new Set<string>();
@@ -406,6 +765,7 @@ export function validateGearPartsManifest(value: unknown): GearPartsManifest | n
     const itemIds = new Set<string>();
     for (const item of row.items) {
       if (!itemShape(item, row.id) || itemIds.has(item.id)) return null;
+      if (schemaVersion === 2 && !v2ItemRoleValid(item)) return null;
       itemIds.add(item.id);
     }
   }
@@ -415,6 +775,22 @@ export function validateGearPartsManifest(value: unknown): GearPartsManifest | n
 
 /** Synchronous because Vite bundles the generated machine manifest with this typed loader. */
 export const GEAR_PARTS_MANIFEST = validateGearPartsManifest(generatedManifest as unknown);
+
+if (!GEAR_PARTS_MANIFEST) {
+  console.warn(
+    "[gear-bake] replacement manifest invalid or unavailable; preserving the compatibility rig",
+  );
+}
+
+export function isGearReplacementManifest(
+  manifest: GearPartsManifest | null | undefined,
+): manifest is GearPartsManifest & { replacementContract: GearReplacementContract } {
+  return (
+    manifest?.schemaVersion === 2 &&
+    manifest.replacementContract?.id === GEAR_REPLACEMENT_CONTRACT_ID &&
+    GEAR_BAKED_PART_IDS.every((partId) => replacementBakeFrame(manifest, partId) !== null)
+  );
+}
 
 export function boilerplateTextureKey(partId: string): string {
   return `boilerplate:${partId}`;
@@ -429,13 +805,49 @@ export const DEFAULT_LOADOUT_HEAD_TEXTURE: Readonly<ResolvedLoadoutHeadTexture> 
   textureKey: boilerplateTextureKey("head"),
 });
 
-/**
- * One texture-only loadout seam for future alternative-head gear. No catalog knowledge lives here: until a
- * caller supplies both a stable gear id and a ready texture key, the six-part boilerplate head remains truth.
- */
+export function gearReplacementHeadTextureKey(item: Pick<GearManifestItem, "id">): string {
+  return `gear:replacement-head:${item.id}`;
+}
+
+export function gearReplacementHeadTextureUrl(item: GearManifestItem): string | null {
+  const info = replacementTextureInfo(item);
+  return info ? `sprites/gear/heads/${info.texture}` : null;
+}
+
 export function resolveLoadoutHeadTexture(
   selection?: Readonly<AlternativeHeadTextureSelection> | null,
+): Readonly<ResolvedLoadoutHeadTexture>;
+export function resolveLoadoutHeadTexture(
+  manifest: GearPartsManifest,
+  loadout: Readonly<Record<GearSlot, GearId>>,
+  textureReady?: (textureKey: string) => boolean,
+): Readonly<ResolvedLoadoutHeadTexture>;
+/**
+ * The v2 production seam is manifest-driven. The selection overload remains solely for the schema-v1
+ * compatibility renderer while the replacement art fleet is not installed.
+ */
+export function resolveLoadoutHeadTexture(
+  manifestOrSelection?: GearPartsManifest | Readonly<AlternativeHeadTextureSelection> | null,
+  loadout?: Readonly<Record<GearSlot, GearId>>,
+  textureReady: (textureKey: string) => boolean = () => false,
 ): Readonly<ResolvedLoadoutHeadTexture> {
+  if (
+    manifestOrSelection &&
+    "schemaVersion" in manifestOrSelection &&
+    loadout &&
+    isGearReplacementManifest(manifestOrSelection)
+  ) {
+    const gearId = loadout.hat;
+    if (!isGearId(gearId) || GEAR_CATALOG[gearId].slot !== "hat")
+      return DEFAULT_LOADOUT_HEAD_TEXTURE;
+    const item = gearManifestItem(manifestOrSelection, gearId);
+    if (item?.renderRole !== "replace-head" || !replacementTextureInfo(item))
+      return DEFAULT_LOADOUT_HEAD_TEXTURE;
+    const textureKey = gearReplacementHeadTextureKey(item);
+    return textureReady(textureKey) ? { gearId, textureKey } : DEFAULT_LOADOUT_HEAD_TEXTURE;
+  }
+
+  const selection = manifestOrSelection as Readonly<AlternativeHeadTextureSelection> | null;
   if (
     !selection ||
     selection.gearId.trim().length === 0 ||
@@ -512,6 +924,442 @@ export function gearManifestItem(
   return undefined;
 }
 
+function blankGearId(gearId: GearId): boolean {
+  return gearId.startsWith("blank-drifter-");
+}
+
+function contractRevision(manifest: GearPartsManifest): string {
+  const revision = manifest.replacementContract?.revision;
+  return `${manifest.schemaVersion}:${GEAR_REPLACEMENT_CONTRACT_ID}:${revision ?? "contract"}`;
+}
+
+function dependencyWithState(
+  source: Omit<GearBakeSourceDependency, "state">,
+  resolveState: GearTextureStateResolver,
+): GearBakeSourceDependency {
+  return {
+    ...source,
+    state: source.textureUrl === null && !source.blank ? "missing" : resolveState(source),
+  };
+}
+
+function baseDependency(
+  manifest: GearPartsManifest,
+  partId: GearBakedPartId,
+  resolveState: GearTextureStateResolver,
+): GearBakeSourceDependency {
+  const source = manifest.boilerplate.parts.find((candidate) => candidate.id === partId);
+  const textureKey = boilerplateTextureKey(partId);
+  return dependencyWithState(
+    {
+      role: "base",
+      slot: null,
+      gearId: null,
+      textureKey,
+      textureUrl: source ? boilerplateTextureUrl(source.texture) : null,
+      sourceRevision: source ? boilerplateRevisionOf(source) : "missing",
+      blank: false,
+    },
+    resolveState,
+  );
+}
+
+function selectedItemDependency(
+  manifest: GearPartsManifest,
+  loadout: Readonly<Record<GearSlot, GearId>>,
+  slot: GearSlot,
+  role: GearBakeLayerRole,
+  resolveState: GearTextureStateResolver,
+  receiver?: GearReceiverId,
+): GearBakeSourceDependency | null {
+  const gearId = loadout[slot];
+  if (!isGearId(gearId) || GEAR_CATALOG[gearId].slot !== slot || blankGearId(gearId)) return null;
+  const item = gearManifestItem(manifest, gearId);
+  const part = receiver
+    ? item?.parts.find((candidate) => candidate.receiver === receiver)
+    : undefined;
+  const hasRequiredPart = !receiver || part !== undefined;
+  return dependencyWithState(
+    {
+      role,
+      slot,
+      gearId,
+      textureKey: item ? gearTextureKey(item) : `gear:${slot}:${gearId}`,
+      textureUrl: item && hasRequiredPart ? gearTextureUrl(item) : null,
+      sourceRevision: item ? sourceRevisionOf(item, part) : "missing",
+      blank: false,
+    },
+    resolveState,
+  );
+}
+
+function replacementHeadDependency(
+  manifest: GearPartsManifest,
+  loadout: Readonly<Record<GearSlot, GearId>>,
+  resolveState: GearTextureStateResolver,
+): GearBakeSourceDependency | null {
+  const gearId = loadout.hat;
+  if (!isGearId(gearId) || GEAR_CATALOG[gearId].slot !== "hat" || blankGearId(gearId)) return null;
+  const item = gearManifestItem(manifest, gearId);
+  if (item?.renderRole !== "replace-head") return null;
+  const info = replacementTextureInfo(item);
+  return dependencyWithState(
+    {
+      role: "replacement-head",
+      slot: "hat",
+      gearId,
+      textureKey: gearReplacementHeadTextureKey(item),
+      textureUrl: info ? `sprites/gear/heads/${info.texture}` : null,
+      sourceRevision: info?.sourceRevision ?? "missing",
+      blank: false,
+    },
+    resolveState,
+  );
+}
+
+function fallbackDiagnostic(
+  dependency: GearBakeSourceDependency,
+  partId: GearBakedPartId | "cloak" | "hat",
+): GearBakeDiagnostic | null {
+  if (dependency.state !== "missing" || !dependency.gearId || !dependency.slot) return null;
+  const fallback =
+    partId === "cloak" || partId === "hat" ? `omitting ${partId}` : `using bare ${partId}`;
+  return {
+    kind: "missing-art",
+    partId,
+    slot: dependency.slot,
+    gearId: dependency.gearId,
+    textureKey: dependency.textureKey,
+    message: `[gear-bake] missing replacement art for "${dependency.gearId}" (${dependency.textureKey}); ${fallback} fallback`,
+  };
+}
+
+function dependencyToken(dependency: GearBakeSourceDependency | null): string {
+  if (!dependency) return "blank";
+  const identity = dependency.gearId ?? "boilerplate";
+  if (dependency.state === "missing") return `${identity}@fallback`;
+  if (dependency.state === "pending") return `${identity}@pending`;
+  return `${identity}@${dependency.sourceRevision}`;
+}
+
+export function gearPartRecipeKey(
+  manifest: GearPartsManifest,
+  partId: GearBakedPartId,
+  dependencies: readonly (GearBakeSourceDependency | null)[],
+): string {
+  return `gear-bake:${contractRevision(manifest)}:${partId}:${dependencies
+    .map(dependencyToken)
+    .join("|")}`;
+}
+
+function makePartRecipe(
+  manifest: GearPartsManifest,
+  partId: GearBakedPartId,
+  dependencies: readonly (GearBakeSourceDependency | null)[],
+  layerDependencies: readonly (GearBakeSourceDependency | null)[] = dependencies,
+  keyDependencies: readonly (GearBakeSourceDependency | null)[] = dependencies,
+): GearPartBakeRecipe {
+  const frame = replacementBakeFrame(manifest, partId) ?? FROZEN_GEAR_BAKE_FRAMES[partId];
+  const present = dependencies.filter(
+    (dependency): dependency is GearBakeSourceDependency => dependency !== null,
+  );
+  return {
+    partId,
+    frame,
+    dependencies: present,
+    layers: layerDependencies.filter(
+      (dependency): dependency is GearBakeSourceDependency =>
+        dependency !== null && dependency.state === "ready",
+    ),
+    key: gearPartRecipeKey(manifest, partId, keyDependencies),
+  };
+}
+
+function defaultTextureState(): GearTextureState {
+  return "ready";
+}
+
+function itemExtraDependency(
+  item: GearManifestItem,
+  gearId: GearId,
+  role: "cloak" | "hat",
+  resolveState: GearTextureStateResolver,
+): GearBakeSourceDependency {
+  return dependencyWithState(
+    {
+      role,
+      slot: item.slot,
+      gearId,
+      textureKey: gearTextureKey(item),
+      textureUrl: gearTextureUrl(item),
+      sourceRevision: sourceRevisionOf(item),
+      blank: false,
+    },
+    resolveState,
+  );
+}
+
+function missingExtraDependency(slot: "cloak" | "hat", gearId: GearId): GearBakeSourceDependency {
+  return {
+    role: slot,
+    slot,
+    gearId,
+    textureKey: `gear:${slot}:${gearId}`,
+    textureUrl: null,
+    sourceRevision: "missing",
+    state: "missing",
+    blank: false,
+  };
+}
+
+function legalTowerItem(
+  manifest: GearPartsManifest,
+  requested: GearId | undefined,
+): GearManifestItem | undefined {
+  if (!requested || !isGearId(requested) || GEAR_CATALOG[requested].slot !== "hat")
+    return undefined;
+  const item = gearManifestItem(manifest, requested);
+  return item?.renderRole === "overlay-hat" ? item : undefined;
+}
+
+/** Resolve only the v2 six-part bake and the cloak/hat structural extras. */
+export function resolveGearBakeLoadout(
+  manifest: GearPartsManifest,
+  loadout: Readonly<Record<GearSlot, GearId>>,
+  prestige = 0,
+  towerComposition: readonly GearId[] = [],
+  resolveState: GearTextureStateResolver = defaultTextureState,
+): GearBakeResolution {
+  const bodyBase = baseDependency(manifest, "body", resolveState);
+  const pants = selectedItemDependency(manifest, loadout, "pants", "pants", resolveState);
+  const shirt = selectedItemDependency(manifest, loadout, "shirt", "shirt", resolveState);
+  const headBase = baseDependency(manifest, "head", resolveState);
+  const replacementHead = replacementHeadDependency(manifest, loadout, resolveState);
+  const facialHair = selectedItemDependency(
+    manifest,
+    loadout,
+    "facialHair",
+    "facialHair",
+    resolveState,
+  );
+  const glasses = selectedItemDependency(manifest, loadout, "glasses", "glasses", resolveState);
+  const handLeftBase = baseDependency(manifest, "hand-l", resolveState);
+  const handRightBase = baseDependency(manifest, "hand-r", resolveState);
+  const gloveLeft = selectedItemDependency(
+    manifest,
+    loadout,
+    "gloves",
+    "glove",
+    resolveState,
+    "hand-l",
+  );
+  const gloveRight = selectedItemDependency(
+    manifest,
+    loadout,
+    "gloves",
+    "glove",
+    resolveState,
+    "hand-r",
+  );
+  const footLeftBase = baseDependency(manifest, "foot-l", resolveState);
+  const footRightBase = baseDependency(manifest, "foot-r", resolveState);
+  const bootLeft = selectedItemDependency(
+    manifest,
+    loadout,
+    "boots",
+    "boot",
+    resolveState,
+    "foot-l",
+  );
+  const bootRight = selectedItemDependency(
+    manifest,
+    loadout,
+    "boots",
+    "boot",
+    resolveState,
+    "foot-r",
+  );
+
+  const winningHead = replacementHead?.state === "ready" ? replacementHead : headBase;
+  const winningLeftHand = gloveLeft?.state === "ready" ? gloveLeft : handLeftBase;
+  const winningRightHand = gloveRight?.state === "ready" ? gloveRight : handRightBase;
+  const winningLeftFoot = bootLeft?.state === "ready" ? bootLeft : footLeftBase;
+  const winningRightFoot = bootRight?.state === "ready" ? bootRight : footRightBase;
+  const headKeyDependencies = replacementHead
+    ? replacementHead.state === "ready"
+      ? [replacementHead, facialHair, glasses]
+      : [headBase, replacementHead, facialHair, glasses]
+    : [headBase, facialHair, glasses];
+  const parts: Record<GearBakedPartId, GearPartBakeRecipe> = {
+    body: makePartRecipe(manifest, "body", [bodyBase, pants, shirt]),
+    head: makePartRecipe(
+      manifest,
+      "head",
+      [headBase, replacementHead, facialHair, glasses],
+      [winningHead, facialHair, glasses],
+      headKeyDependencies,
+    ),
+    "hand-l": makePartRecipe(
+      manifest,
+      "hand-l",
+      [handLeftBase, gloveLeft],
+      [winningLeftHand],
+      [gloveLeft ?? handLeftBase],
+    ),
+    "hand-r": makePartRecipe(
+      manifest,
+      "hand-r",
+      [handRightBase, gloveRight],
+      [winningRightHand],
+      [gloveRight ?? handRightBase],
+    ),
+    "foot-l": makePartRecipe(
+      manifest,
+      "foot-l",
+      [footLeftBase, bootLeft],
+      [winningLeftFoot],
+      [bootLeft ?? footLeftBase],
+    ),
+    "foot-r": makePartRecipe(
+      manifest,
+      "foot-r",
+      [footRightBase, bootRight],
+      [winningRightFoot],
+      [bootRight ?? footRightBase],
+    ),
+  };
+
+  const diagnostics: GearBakeDiagnostic[] = [];
+  for (const [dependency, partId] of [
+    [pants, "body"],
+    [shirt, "body"],
+    [replacementHead, "head"],
+    [facialHair, "head"],
+    [glasses, "head"],
+    [gloveLeft, "hand-l"],
+    [gloveRight, "hand-r"],
+    [bootLeft, "foot-l"],
+    [bootRight, "foot-r"],
+  ] as const) {
+    if (!dependency) continue;
+    const diagnostic = fallbackDiagnostic(dependency, partId);
+    if (diagnostic) diagnostics.push(diagnostic);
+  }
+
+  const extraDependencies: GearBakeSourceDependency[] = [];
+  let cloak: GearAssemblyPart | null = null;
+  const cloakId = loadout.cloak;
+  if (isGearId(cloakId) && !blankGearId(cloakId)) {
+    const item = gearManifestItem(manifest, cloakId);
+    const source = item?.renderRole === "cloak-far" ? item.parts[0] : undefined;
+    const dependency = item
+      ? itemExtraDependency(item, cloakId, "cloak", resolveState)
+      : missingExtraDependency("cloak", cloakId);
+    extraDependencies.push(dependency);
+    if (source && dependency.state === "ready")
+      cloak = assemblyPart(
+        manifest,
+        cloakId,
+        item as GearManifestItem,
+        source,
+        -1,
+        1,
+        -1,
+        "cloak-far",
+      );
+    const diagnostic = fallbackDiagnostic(dependency, "cloak");
+    if (diagnostic) diagnostics.push(diagnostic);
+  }
+
+  const hats: GearAssemblyPart[] = [];
+  const boundedPrestige = Number.isFinite(prestige)
+    ? Math.min(MAX_HAT_SLOTS, Math.max(0, Math.floor(prestige)))
+    : 0;
+  const selectedHatId = loadout.hat;
+  const selectedHat =
+    isGearId(selectedHatId) && !blankGearId(selectedHatId)
+      ? gearManifestItem(manifest, selectedHatId)
+      : undefined;
+  const replacementRole = selectedHat?.renderRole === "replace-head";
+  const requestedSegmentCount = replacementRole
+    ? Math.min(29, boundedPrestige)
+    : selectedHat?.renderRole === "overlay-hat"
+      ? Math.min(MAX_HAT_SLOTS, boundedPrestige + 1)
+      : 0;
+  const visibleSegmentLimit = replacementRole ? MAX_VISIBLE_HATS - 1 : MAX_VISIBLE_HATS;
+  let readySegmentTotal = 0;
+  let readyVisibleSegments = 0;
+  for (let index = 0; index < requestedSegmentCount; index++) {
+    const requestedId = towerComposition[index] ?? towerComposition[towerComposition.length - 1];
+    const composed = legalTowerItem(manifest, requestedId);
+    const item = composed ?? selectedHat;
+    const gearId = composed ? (requestedId as GearId) : selectedHatId;
+    if (!item || !isGearId(gearId)) continue;
+    const legalSource =
+      item.renderRole === "overlay-hat" || (replacementRole && item === selectedHat)
+        ? item.parts[0]
+        : undefined;
+    const dependency = itemExtraDependency(item, gearId, "hat", resolveState);
+    if (!extraDependencies.some((candidate) => candidate.textureKey === dependency.textureKey))
+      extraDependencies.push(dependency);
+    if (!legalSource || dependency.state !== "ready") {
+      const diagnostic = fallbackDiagnostic(dependency, "hat");
+      if (diagnostic && !diagnostics.some((row) => row.textureKey === diagnostic.textureKey))
+        diagnostics.push(diagnostic);
+      continue;
+    }
+    readySegmentTotal++;
+    if (readyVisibleSegments >= visibleSegmentLimit) continue;
+    const visibleCountForScale = Math.min(requestedSegmentCount, visibleSegmentLimit);
+    hats.push(
+      assemblyPart(
+        manifest,
+        gearId,
+        item,
+        legalSource,
+        readyVisibleSegments,
+        visibleCountForScale + (replacementRole ? 1 : 0),
+        readyVisibleSegments + (replacementRole ? 1 : 0),
+        replacementRole && item === selectedHat ? "prestige-cap" : "overlay-hat",
+      ),
+    );
+    readyVisibleSegments++;
+  }
+  const replacementHeadPosition = replacementRole && replacementHead?.state === "ready";
+  const towerTotal = readySegmentTotal + (replacementHeadPosition ? 1 : 0);
+  const towerVisible = readyVisibleSegments + (replacementHeadPosition ? 1 : 0);
+  const extras: GearExtraAssembly = {
+    parts: [...(cloak ? [cloak] : []), ...hats].sort(
+      (a, b) => a.depth - b.depth || a.stackIndex - b.stackIndex,
+    ),
+    cloak,
+    hats,
+    replacementHeadPosition,
+    towerTotal,
+    towerVisible,
+    towerOverflow: Math.max(0, readySegmentTotal - readyVisibleSegments),
+    diagnostics,
+  };
+  const dependencies = [
+    ...new Map(
+      [...Object.values(parts).flatMap((part) => part.dependencies), ...extraDependencies].map(
+        (dependency) => [dependency.textureKey, dependency],
+      ),
+    ).values(),
+  ];
+  const pending = dependencies.some((dependency) => dependency.state === "pending");
+  return {
+    recipe: {
+      contractRevision: contractRevision(manifest),
+      parts,
+      readiness: pending ? "pending" : diagnostics.length > 0 ? "fallback" : "ready",
+      diagnostics,
+    },
+    extras,
+    dependencies,
+  };
+}
+
 export function hatTowerTotal(prestige: number): number {
   const bounded = Number.isFinite(prestige) ? Math.max(0, Math.floor(prestige)) : 0;
   return Math.min(MAX_HAT_SLOTS, bounded + 1);
@@ -537,9 +1385,11 @@ function assemblyPart(
   source: GearManifestPart,
   stackIndex: number,
   stackCount: number,
+  scaleIndex = stackIndex,
+  extraRole?: GearAssemblyPart["extraRole"],
 ): GearAssemblyPart {
   const targetBodyHeight = 76;
-  const stackScale = stackIndex >= 0 ? hatStackScale(stackIndex, stackCount) : 1;
+  const stackScale = stackIndex >= 0 ? hatStackScale(scaleIndex, stackCount) : 1;
   const bounds = source.alphaBounds;
   return {
     key: `${gearId}:${source.id}:${stackIndex}`,
@@ -557,6 +1407,7 @@ function assemblyPart(
     stackIndex,
     stackScale,
     topSocketSource: item.stackBandVerification?.topSocketSource ?? null,
+    ...(extraRole ? { extraRole } : {}),
   };
 }
 
@@ -639,6 +1490,8 @@ export function assembleGearLoadout(
   prestige = 0,
   towerComposition: readonly GearId[] = [],
 ): GearLoadoutAssembly {
+  if (isGearReplacementManifest(manifest))
+    return resolveGearBakeLoadout(manifest, loadout, prestige, towerComposition).extras;
   const parts: GearAssemblyPart[] = [];
   for (const slot of GEAR_SLOTS) {
     if (slot === "hat") continue;

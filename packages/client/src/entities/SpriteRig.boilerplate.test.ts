@@ -13,7 +13,17 @@ import {
   assembleBoilerplate,
   GEAR_PARTS_MANIFEST,
   type GearAssemblyPart,
+  type GearBakeSourceDependency,
+  type GearPartBakeRecipe,
+  type GearPartsManifest,
+  type GearTextureState,
+  validateGearPartsManifest,
 } from "../sprites/gear-parts.js";
+import {
+  type GearTextureBakeBackend,
+  type GearTextureResource,
+  gearTextureBakeCacheForScene,
+} from "../sprites/gear-texture-baker.js";
 import {
   FLOATING_HEAD_SPRING_TUNING,
   type FloatingHeadSpringState,
@@ -175,6 +185,7 @@ function fakeScene(): Phaser.Scene {
 }
 
 interface RigTruth {
+  body: FakeDisplayObject;
   parts: FakeDisplayObject[];
   hands: Array<{ img: FakeDisplayObject; front: boolean }>;
   feet: Array<{ img: FakeDisplayObject; front: boolean }>;
@@ -471,5 +482,266 @@ describe("SpriteRig mixed-set gear attachment groups", () => {
         .sort((a, b) => a.spec.depth - b.spec.depth)
         .map((attachment) => attachment.spec.depth),
     );
+  });
+});
+
+function replacementManifest(): GearPartsManifest {
+  if (!GEAR_PARTS_MANIFEST) throw new Error("real gear manifest failed validation");
+  const candidate = structuredClone(GEAR_PARTS_MANIFEST);
+  candidate.schemaVersion = 2;
+  candidate.replacementContract = {
+    id: "GEAR_REPLACEMENT_V1",
+    revision: "rig-test-r1",
+    partFrames: {
+      body: [344, 324, 336, 376],
+      head: [352, 112, 384, 456],
+      "hand-l": [294, 432, 180, 180],
+      "hand-r": [550, 432, 180, 180],
+      "foot-l": [353, 641, 190, 190],
+      "foot-r": [481, 641, 190, 190],
+    },
+    maskHashes: {
+      bodyFill: "body-fill",
+      shirtRequired: "shirt-required",
+      shirtAllowed: "shirt-allowed",
+      pantsRequired: "pants-required",
+      pantsAllowed: "pants-allowed",
+    },
+    compositionOrders: {
+      body: ["body", "pants", "shirt"],
+      head: ["head", "facialHair", "glasses"],
+    },
+  };
+  const roleForSlot = {
+    boots: "replace-foot",
+    cloak: "cloak-far",
+    facialHair: "head-accessory",
+    glasses: "head-accessory",
+    gloves: "replace-hand",
+    hat: "overlay-hat",
+    pants: "body-patch",
+    shirt: "body-patch",
+  } as const;
+  for (const slot of candidate.slots) {
+    for (const item of slot.items) {
+      item.renderRole =
+        item.id === "demon-mask-hat" || item.id === "unbending-hat"
+          ? "replace-head"
+          : roleForSlot[slot.id];
+      item.sourceRevision = `source:${item.id}`;
+      for (const part of item.parts) part.sourceRevision = `source:${item.id}:${part.id}`;
+      if (item.renderRole === "replace-head") {
+        item.replacementTexture = {
+          texture: `${item.id}.png`,
+          sourceRevision: `head:${item.id}`,
+        };
+      }
+    }
+  }
+  const validated = validateGearPartsManifest(candidate);
+  if (!validated) throw new Error("synthetic replacement manifest failed validation");
+  return validated;
+}
+
+class RigBakeBackend implements GearTextureBakeBackend {
+  readonly createCalls: GearPartBakeRecipe[] = [];
+  private readonly bakedKeys = new Set<string>();
+  private gate?: Promise<void>;
+  private openGate?: () => void;
+
+  constructor(scene: Phaser.Scene) {
+    const originalExists = scene.textures.exists.bind(scene.textures);
+    scene.textures.exists = (key: string) => this.bakedKeys.has(key) || originalExists(key);
+  }
+
+  delaySources(): void {
+    this.gate = new Promise((resolve) => {
+      this.openGate = resolve;
+    });
+  }
+
+  settleSources(): void {
+    this.openGate?.();
+    this.openGate = undefined;
+    this.gate = undefined;
+  }
+
+  async ensureSources(
+    dependencies: readonly GearBakeSourceDependency[],
+  ): Promise<ReadonlyMap<string, GearTextureState>> {
+    await this.gate;
+    return new Map(dependencies.map((dependency) => [dependency.textureKey, "ready"]));
+  }
+
+  createTexture(recipe: GearPartBakeRecipe): GearTextureResource {
+    this.createCalls.push(recipe);
+    this.bakedKeys.add(recipe.key);
+    let destroyed = false;
+    return {
+      textureKey: recipe.key,
+      get destroyed() {
+        return destroyed;
+      },
+      destroy: () => {
+        destroyed = true;
+        this.bakedKeys.delete(recipe.key);
+      },
+    };
+  }
+
+  destroy(): void {
+    this.settleSources();
+    this.bakedKeys.clear();
+  }
+}
+
+function replacementScene(): { scene: Phaser.Scene; backend: RigBakeBackend } {
+  const scene = fakeScene();
+  (scene as unknown as { time: unknown }).time = {
+    delayedCall: () => ({ remove: () => undefined }),
+  };
+  const backend = new RigBakeBackend(scene);
+  gearTextureBakeCacheForScene(scene, backend);
+  return { scene, backend };
+}
+
+interface ReplacementRigTruth extends RigTruth {
+  gearAssembly?: {
+    parts: GearAssemblyPart[];
+    towerTotal: number;
+    towerVisible: number;
+    towerOverflow: number;
+  };
+  hatAttachments: RigTruth["gearAttachments"];
+  hatOverflowLabel?: FakeDisplayObject;
+  syncGearPose(
+    elapsedSeconds: number,
+    outsidePaperView: boolean,
+    rebase: boolean,
+    reducedMotion: boolean,
+    excitation: number,
+    dashLean: number,
+    landed: boolean,
+  ): void;
+}
+
+// GEAR REPLACEMENT BOT 3 — append-only retained-node and atomic-commit coverage.
+describe("SpriteRig replacement bake integration", () => {
+  it("commits six baked textures atomically and creates only cloak/hat extras", async () => {
+    const manifest = replacementManifest();
+    const { scene, backend } = replacementScene();
+    backend.delaySources();
+    const rig = new SpriteRig(scene, 0, 0, false, "replacement-rig", "drifter", manifest);
+    const truth = rig as unknown as ReplacementRigTruth;
+    const loadout = {
+      hat: "coldsnap-hat",
+      glasses: "pressurized-glasses",
+      facialHair: "pressurized-facial-hair",
+      shirt: "pressurized-shirt",
+      gloves: "house-edge-gloves",
+      pants: "pressurized-pants",
+      boots: "house-edge-boots",
+      cloak: "thornwatch-cloak",
+    } as Record<GearSlot, GearId>;
+    rig.equipGearLoadout(loadout, manifest);
+
+    expect(truth.parts.every((part) => part.texture.key.startsWith("boilerplate:"))).toBe(true);
+    expect(truth.boilerplateHead?.texture.key).toBe("boilerplate:head");
+    backend.settleSources();
+    await vi.waitFor(() =>
+      expect(truth.parts.every((part) => part.texture.key.startsWith("gear-bake:"))).toBe(true),
+    );
+
+    expect(truth.parts).toHaveLength(5);
+    expect(truth.hands).toHaveLength(2);
+    expect(truth.feet).toHaveLength(2);
+    expect(truth.boilerplateHead?.texture.key).toMatch(/^gear-bake:.*:head:/);
+    expect(truth.slideAfterimageA.texture.key).toBe(truth.body.texture.key);
+    expect(truth.slideAfterimageA.texture.key).toBe(truth.slideAfterimageB.texture.key);
+    expect(truth.gearAttachments.map((attachment) => attachment.spec.slot).sort()).toEqual([
+      "cloak",
+      "hat",
+    ]);
+    expect(
+      truth.gearAttachments.every((attachment) => attachment.spec.extraRole !== undefined),
+    ).toBe(true);
+    expect(backend.createCalls).toHaveLength(6);
+
+    const display = (rig.root as unknown as FakeContainer).list;
+    const cloak = truth.gearAttachments.find((attachment) => attachment.spec.slot === "cloak");
+    const hat = truth.gearAttachments.find((attachment) => attachment.spec.slot === "hat");
+    const backHand = truth.hands.find((hand) => !hand.front)?.img;
+    const frontHand = truth.hands.find((hand) => hand.front)?.img;
+    if (!cloak || !hat || !backHand || !frontHand || !truth.boilerplateHead)
+      throw new Error("replacement render stack was incomplete");
+    expect(display.indexOf(cloak.image)).toBeLessThan(display.indexOf(truth.body));
+    expect(display.indexOf(backHand)).toBeLessThan(display.indexOf(truth.body));
+    expect(display.indexOf(truth.body)).toBeLessThan(display.indexOf(truth.boilerplateHead));
+    expect(display.indexOf(truth.boilerplateHead)).toBeLessThan(display.indexOf(hat.image));
+    expect(display.indexOf(hat.image)).toBeLessThan(display.indexOf(frontHand));
+
+    rig.setBranded(true);
+    expect(
+      [
+        ...truth.parts,
+        truth.boilerplateHead,
+        ...truth.gearAttachments.map((row) => row.image),
+      ].every((part) => part?.isTinted),
+    ).toBe(true);
+    rig.flash(80, 0xabcdef);
+    expect(truth.body.tintTopLeft).toBe(0xabcdef);
+    expect(truth.boilerplateHead.tintTopLeft).toBe(0xabcdef);
+    expect(truth.gearAttachments.every((row) => row.image.tintTopLeft === 0xabcdef)).toBe(true);
+
+    truth.syncGearPose(1 / 60, true, false, false, 1, 1, false);
+    truth.syncGearPose(1 / 60, false, false, false, 1, 1, false);
+    truth.syncGearPose(1 / 60, false, false, false, 1, 1, false);
+    for (let frame = 0; frame < 240; frame++)
+      truth.syncGearPose(1 / 60, false, false, true, 1, 1, false);
+    expect(Math.max(...truth.hatAttachments.map((row) => Math.abs(row.angle)))).toBeLessThan(0.001);
+    expect(backend.createCalls).toHaveLength(6);
+  });
+
+  it("bakes replacement heads with accessories and stacks only eleven prestige caps", async () => {
+    const manifest = replacementManifest();
+    const { scene, backend } = replacementScene();
+    const rig = new SpriteRig(scene, 0, 0, false, "replacement-head-rig", "drifter", manifest);
+    const truth = rig as unknown as ReplacementRigTruth;
+    const loadout = {
+      ...STARTER_GEAR_LOADOUT,
+      hat: "demon-mask-hat" as GearId,
+      glasses: "pressurized-glasses" as GearId,
+      facialHair: "pressurized-facial-hair" as GearId,
+    } as Record<GearSlot, GearId>;
+    rig.equipGearLoadout(loadout, manifest, 30);
+    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(11));
+
+    expect(truth.boilerplateHead?.texture.key).toContain("demon-mask-hat");
+    expect(
+      truth.hatAttachments.every((attachment) => attachment.spec.extraRole === "prestige-cap"),
+    ).toBe(true);
+    expect(truth.gearAttachments).toHaveLength(11);
+    expect(truth.gearAssembly).toMatchObject({
+      towerTotal: 30,
+      towerVisible: 12,
+      towerOverflow: 18,
+    });
+    expect(truth.hatOverflowLabel).toBeDefined();
+    const headBake = backend.createCalls.find((recipe) => recipe.partId === "head");
+    expect(headBake?.layers.map((layer) => layer.role)).toEqual([
+      "replacement-head",
+      "facialHair",
+      "glasses",
+    ]);
+
+    const createdBeforePrestigeOnlyChange = backend.createCalls.length;
+    rig.equipGearLoadout(loadout, manifest, 0);
+    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(0));
+    expect(truth.gearAssembly).toMatchObject({
+      towerTotal: 1,
+      towerVisible: 1,
+      towerOverflow: 0,
+    });
+    expect(backend.createCalls).toHaveLength(createdBeforePrestigeOnlyChange);
   });
 });

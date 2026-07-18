@@ -113,12 +113,17 @@ import {
   gearTextureKey,
   type HatChainInput,
   type HatSpringState,
+  isGearReplacementManifest,
   MAX_HAT_SLOTS,
   type ResolvedLoadoutHeadTexture,
   resolveLoadoutHeadTexture,
   stepGearAngularSpring,
   stepHatSpringChain,
 } from "../sprites/gear-parts.js";
+import {
+  type GearTextureBakeLease,
+  gearTextureBakeCacheForScene,
+} from "../sprites/gear-texture-baker.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
   aimRelativePoint,
@@ -1414,6 +1419,10 @@ export class SpriteRig {
   private gearAssembly?: GearLoadoutAssembly;
   private gearArtComplete = false;
   private gearLoadoutKey = "";
+  private gearBakeGeneration = 0;
+  private gearBakeLease?: GearTextureBakeLease;
+  private gearUsesReplacement = false;
+  private gearBakeFailureReported = false;
   private syncedGearUpper = "";
   private syncedGearLower = "";
   private syncedGearPrestige = -1;
@@ -1913,6 +1922,7 @@ export class SpriteRig {
   private applyLoadoutHeadTexture(): void {
     const head = this.boilerplateHead;
     if (!head) return;
+    if (this.gearUsesReplacement && this.gearBakeLease) return;
     const requested = this.loadoutHeadTexture;
     const selected = this.scene.textures.exists(requested.textureKey)
       ? requested
@@ -2038,6 +2048,119 @@ export class SpriteRig {
     this.restTint();
   }
 
+  private clearGearAttachments(): void {
+    for (const attachment of this.gearAttachments) attachment.image.destroy();
+    this.gearAttachments.length = 0;
+    this.hatAttachments.length = 0;
+  }
+
+  private syncHatOverflowLabel(assembly: GearLoadoutAssembly): void {
+    if (assembly.towerOverflow > 0) {
+      this.hatOverflowLabel ??= this.scene.add
+        .text(0, 0, `+${assembly.towerOverflow}`, {
+          fontFamily: "monospace",
+          fontSize: "9px",
+          color: "#f3df9d",
+          fontStyle: "bold",
+          stroke: "#101014",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, 1)
+        .setVisible(false);
+      this.hatOverflowLabel.setText(`+${assembly.towerOverflow}`);
+      if (!this.hatOverflowLabel.parentContainer) this.root.add(this.hatOverflowLabel);
+    } else if (this.hatOverflowLabel) {
+      this.hatOverflowLabel.destroy();
+      this.hatOverflowLabel = undefined;
+    }
+  }
+
+  private restoreBoilerplateTextures(): void {
+    if (!this.boilerplateReady) return;
+    const body = this.boilerplateBodyAssembly;
+    const head = this.boilerplateHeadAssembly;
+    if (!body || !head || !this.boilerplateHead) return;
+    this.body.setTexture(boilerplateTextureKey("body")).setOrigin(body.originX, body.originY);
+    this.boilerplateHead
+      .setTexture(boilerplateTextureKey("head"))
+      .setOrigin(head.originX, head.originY);
+    for (const hand of this.hands) {
+      const id = hand.front ? "hand-r" : "hand-l";
+      const source = this.boilerplateAssembly?.parts.find((part) => part.source.id === id);
+      if (source)
+        hand.img.setTexture(boilerplateTextureKey(id)).setOrigin(source.originX, source.originY);
+    }
+    for (const foot of this.feet) {
+      const id = foot.front ? "foot-r" : "foot-l";
+      const source = this.boilerplateAssembly?.parts.find((part) => part.source.id === id);
+      if (source)
+        foot.img.setTexture(boilerplateTextureKey(id)).setOrigin(source.originX, source.originY);
+    }
+    this.slideAfterimageA
+      .setTexture(boilerplateTextureKey("body"))
+      .setOrigin(body.originX, body.originY);
+    this.slideAfterimageB
+      .setTexture(boilerplateTextureKey("body"))
+      .setOrigin(body.originX, body.originY);
+  }
+
+  private commitGearBakeLease(lease: GearTextureBakeLease): boolean {
+    this.installBoilerplateIfReady();
+    const head = this.boilerplateHead;
+    const leftHand = this.hands.find((candidate) => !candidate.front)?.img;
+    const rightHand = this.hands.find((candidate) => candidate.front)?.img;
+    const leftFoot = this.feet.find((candidate) => !candidate.front)?.img;
+    const rightFoot = this.feet.find((candidate) => candidate.front)?.img;
+    if (!this.boilerplateReady || !head || !leftHand || !rightHand || !leftFoot || !rightFoot) {
+      lease.release();
+      return false;
+    }
+    const handles = lease.handles;
+    if (Object.values(handles).some((handle) => !this.scene.textures.exists(handle.textureKey))) {
+      lease.release();
+      return false;
+    }
+
+    // One synchronous commit owns all six writes; Phaser cannot render a half-old loadout between them.
+    this.body
+      .setTexture(handles.body.textureKey)
+      .setOrigin(handles.body.origin.x, handles.body.origin.y);
+    head
+      .setTexture(handles.head.textureKey)
+      .setOrigin(handles.head.origin.x, handles.head.origin.y);
+    leftHand
+      .setTexture(handles["hand-l"].textureKey)
+      .setOrigin(handles["hand-l"].origin.x, handles["hand-l"].origin.y);
+    rightHand
+      .setTexture(handles["hand-r"].textureKey)
+      .setOrigin(handles["hand-r"].origin.x, handles["hand-r"].origin.y);
+    leftFoot
+      .setTexture(handles["foot-l"].textureKey)
+      .setOrigin(handles["foot-l"].origin.x, handles["foot-l"].origin.y);
+    rightFoot
+      .setTexture(handles["foot-r"].textureKey)
+      .setOrigin(handles["foot-r"].origin.x, handles["foot-r"].origin.y);
+    this.slideAfterimageA
+      .setTexture(handles.body.textureKey)
+      .setOrigin(handles.body.origin.x, handles.body.origin.y);
+    this.slideAfterimageB
+      .setTexture(handles.body.textureKey)
+      .setOrigin(handles.body.origin.x, handles.body.origin.y);
+
+    const previousLease = this.gearBakeLease;
+    this.gearBakeLease = lease;
+    this.gearAssembly = lease.extras;
+    this.gearArtComplete = false;
+    this.clearGearAttachments();
+    this.syncGearArt();
+    this.syncHatOverflowLabel(lease.extras);
+    this.gearLodSleeping = true;
+    this.rebuildRenderStack();
+    this.restTint();
+    previousLease?.release();
+    return true;
+  }
+
   /**
    * Diff a validated account loadout onto retained gear images. The optional composition is already bounded
    * account data; absent composition repeats the equipped signature hat through unlocked prestige slots.
@@ -2074,13 +2197,54 @@ export class SpriteRig {
     towerComposition: readonly GearId[] = [],
     alternativeHead?: Readonly<AlternativeHeadTextureSelection> | null,
   ): void {
-    const nextHeadTexture = resolveLoadoutHeadTexture(alternativeHead);
-    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}|head:${nextHeadTexture.gearId ?? "boilerplate"}:${nextHeadTexture.textureKey}:${nextHeadTexture.frame ?? ""}`;
+    const replacement = isGearReplacementManifest(manifest);
+    const nextHeadTexture = replacement
+      ? DEFAULT_LOADOUT_HEAD_TEXTURE
+      : resolveLoadoutHeadTexture(alternativeHead);
+    const headSignature = replacement
+      ? "manifest"
+      : `${nextHeadTexture.gearId ?? "boilerplate"}:${nextHeadTexture.textureKey}:${nextHeadTexture.frame ?? ""}`;
+    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}|head:${headSignature}`;
     if (key === this.gearLoadoutKey && this.boilerplateManifest === manifest) return;
+    const generation = ++this.gearBakeGeneration;
+    this.gearUsesReplacement = replacement;
     this.loadoutHeadTexture = nextHeadTexture;
     this.requestBoilerplate(manifest);
     if (this.boilerplateReady) this.applyLoadoutHeadTexture();
     this.gearLoadoutKey = key;
+
+    if (replacement) {
+      const cache = gearTextureBakeCacheForScene(this.scene);
+      void cache
+        .acquireForGeneration(
+          { manifest, loadout, prestige, towerComposition },
+          generation,
+          (candidate) => candidate === this.gearBakeGeneration,
+        )
+        .then((lease) => {
+          if (!lease) return;
+          if (!this.commitGearBakeLease(lease) && !this.gearBakeFailureReported) {
+            this.gearBakeFailureReported = true;
+            console.warn(
+              "[gear-bake] complete bake could not be committed; preserving the prior complete rig",
+            );
+          }
+        })
+        .catch(() => {
+          if (generation !== this.gearBakeGeneration || this.gearBakeFailureReported) return;
+          this.gearBakeFailureReported = true;
+          console.warn(
+            "[gear-bake] replacement bake failed; preserving the prior complete rig/boilerplate",
+          );
+        });
+      return;
+    }
+
+    const previousLease = this.gearBakeLease;
+    this.gearBakeLease = undefined;
+    this.restoreBoilerplateTextures();
+    this.applyLoadoutHeadTexture();
+    previousLease?.release();
     const next = assembleGearLoadout(manifest, loadout, prestige, towerComposition);
     this.gearAssembly = next;
     this.gearArtComplete = false;
@@ -2107,25 +2271,7 @@ export class SpriteRig {
     }
     this.hatAttachments.length = 0;
     this.syncGearArt();
-
-    if (next.towerOverflow > 0) {
-      this.hatOverflowLabel ??= this.scene.add
-        .text(0, 0, `+${next.towerOverflow}`, {
-          fontFamily: "monospace",
-          fontSize: "9px",
-          color: "#f3df9d",
-          fontStyle: "bold",
-          stroke: "#101014",
-          strokeThickness: 3,
-        })
-        .setOrigin(0.5, 1)
-        .setVisible(false);
-      this.hatOverflowLabel.setText(`+${next.towerOverflow}`);
-      if (!this.hatOverflowLabel.parentContainer) this.root.add(this.hatOverflowLabel);
-    } else if (this.hatOverflowLabel) {
-      this.hatOverflowLabel.destroy();
-      this.hatOverflowLabel = undefined;
-    }
+    this.syncHatOverflowLabel(next);
     this.gearLodSleeping = true;
     this.rebuildRenderStack();
   }
@@ -2492,6 +2638,7 @@ export class SpriteRig {
 
   /** Freeze the current printed layers into a lightweight Dimension Door decoy (no logical actor). */
   createPaperCopy(x: number, y: number, tint = 0x8f82d8): Phaser.GameObjects.Container {
+    const secondaryLease = this.gearBakeLease?.retain();
     const layers: Phaser.GameObjects.Image[] = [];
     for (const child of this.root.list) {
       if (!(child instanceof Phaser.GameObjects.Image)) continue;
@@ -2505,11 +2652,13 @@ export class SpriteRig {
         .setTintMode(Phaser.TintModes.MULTIPLY);
       layers.push(layer);
     }
-    return this.scene.add
+    const copy = this.scene.add
       .container(x, y, layers)
       .setScale(this.facing * this.baseScale, this.baseScale)
       .setAlpha(0.58)
       .setDepth(99540);
+    if (secondaryLease) copy.once("destroy", () => secondaryLease.release());
+    return copy;
   }
 
   /** Immediate key response only: authoritative phase replaces this as soon as the row advances. */
@@ -4050,6 +4199,7 @@ export class SpriteRig {
   }
 
   destroy(): void {
+    this.gearBakeGeneration++;
     // §20 the delayed callback closes over this rig; detach it before destroying the visible hierarchy.
     this.flashTimer?.remove(false);
     this.flashTimer = undefined;
@@ -4062,6 +4212,8 @@ export class SpriteRig {
     this.gearAttachments.length = 0;
     this.hatAttachments.length = 0;
     this.root.destroy();
+    this.gearBakeLease?.release();
+    this.gearBakeLease = undefined;
   }
 
   /** Absolute two-foot targets layer under the authored body translation. Ownership reaches zero by the
