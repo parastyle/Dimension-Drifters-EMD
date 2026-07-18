@@ -109,6 +109,11 @@ import {
   TgShape,
   TICK_MS,
   TOUGH_SCALE,
+  ULT_RECOVERY_TICKS,
+  UltimateFamily,
+  UltimatePhase,
+  type UltimatePhaseValue,
+  ultimateFamilyForCode,
   VFX_RADIUS_DEFAULT,
   WEAPON_IDS,
   WEAPONS,
@@ -156,6 +161,16 @@ import {
   type LevelChoiceView,
   levelBuildContext,
 } from "../ui/level-up-model.js";
+import { ultimateHudLayout } from "../ui/ultimate-hud-layout.js";
+import {
+  canReleaseUltimateReveal,
+  playUltimateReveal,
+  playUltimateStamp,
+  type UltimateRevealDescriptor,
+  ultimateInputAffordance,
+  ultimateRevealDescriptor,
+  ultimateSeqEdge,
+} from "../ui/ultimate-reveal.js";
 import {
   IDLE_DOCK_SCALE,
   type WeaponDockLayout,
@@ -176,6 +191,7 @@ import {
   JumpEffectRenderer,
 } from "../vfx/jump-effects.js";
 import { elementPack, particleBurst, preloadParticlePacks } from "../vfx/particles.js";
+import { UltimateVfx } from "../vfx/ultimate-vfx.js";
 import { VfxPlayer } from "../vfx/VfxPlayer.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
 import {
@@ -927,6 +943,15 @@ export class ArenaScene extends Phaser.Scene {
   /** Plays each weapon's authored VFX suite (§14 CODE-8) on its swing via the shared renderer. */
   private vfxPlayer!: VfxPlayer;
   private beamRenderer!: BeamRenderer;
+  private ultimateVfx!: UltimateVfx;
+  private readonly lastUltimateSeq = new Map<string, number>();
+  private readonly lastUltimateArchetype = new Map<string, number>();
+  private ultimateCastPendingUntil = -1e9;
+  private ultimateHudPulseUntil = -1e9;
+  private queuedUltimateReveal?: UltimateRevealDescriptor;
+  private queuedUltimateTemper = false;
+  private ultimateRevealBusyUntil = -1e9;
+  private lastUltimateSelfLevel = -1;
   private beamPredictionStartSeq = -1;
   private beamPredictionHeld = false;
   private beamPredictionAccepted = false;
@@ -1257,6 +1282,9 @@ export class ArenaScene extends Phaser.Scene {
    *  stomps a stronger one still running, and every shake FORCE-restarts past Phaser's drop-if-busy guard. */
   private shakeUntil = 0;
   private shakeIntensity = 0;
+  /** One synchronous explosion call can attenuate its ally-ultimate camera weather by distance/duty. */
+  private ultimateExplosionShakeScale = 1;
+  private lastUltimateWeatherShakeAt = -1e9;
   /** §7 v0.105 de-clunk — hit-stop budget (leaky bucket): non-priority freezes (kill crunches) may spend at
    *  most FREEZE_BUDGET_MS of every FREEZE_WINDOW_MS, so a horde clear can't freeze ~40% of the time. */
   private freezeSpent = 0;
@@ -1329,6 +1357,8 @@ export class ArenaScene extends Phaser.Scene {
   private xpBarBg!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
   private beamHudGfx?: Phaser.GameObjects.Graphics;
+  private ultimateHudGfx?: Phaser.GameObjects.Graphics;
+  private ultimateHudText?: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
   private prevLevel = -1;
   // §16 boss/extraction run loop.
@@ -1625,6 +1655,7 @@ export class ArenaScene extends Phaser.Scene {
     // Defensive as well as shutdown-driven: a direct create cannot inherit global listeners or a room.
     this.xpMotes?.destroy();
     this.beamRenderer?.destroy();
+    this.ultimateVfx?.destroy();
     this.damageNumberRenderer?.destroy();
     this.hitEffectRenderer?.destroy();
     this.combatFeedback?.reset();
@@ -1648,6 +1679,8 @@ export class ArenaScene extends Phaser.Scene {
     this.lastRevived.clear();
     this.lastAttackSeq.clear();
     this.lastAttackHeld.clear();
+    this.lastUltimateSeq.clear();
+    this.lastUltimateArchetype.clear();
     this.beamFeedback.clear();
     this.beamFeedbackSeen.clear();
     this.telegraphCache.clear();
@@ -1702,6 +1735,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bagPanelCloseAt = 0;
     this.vfxPlayer = undefined!;
     this.beamRenderer = undefined!;
+    this.ultimateVfx = undefined as unknown as UltimateVfx;
     this.xpMotes = undefined!;
     this.damageNumberRenderer = undefined!;
     this.hitEffectRenderer = undefined!;
@@ -1733,6 +1767,8 @@ export class ArenaScene extends Phaser.Scene {
     this.xpBarBg = undefined!;
     this.xpBarFill = undefined!;
     this.beamHudGfx = undefined;
+    this.ultimateHudGfx = undefined;
+    this.ultimateHudText = undefined;
     this.levelText = undefined!;
     this.bossBarBg = undefined!;
     this.bossBarFill = undefined!;
@@ -1834,6 +1870,8 @@ export class ArenaScene extends Phaser.Scene {
     this.animClock = 0;
     this.shakeUntil = 0;
     this.shakeIntensity = 0;
+    this.ultimateExplosionShakeScale = 1;
+    this.lastUltimateWeatherShakeAt = -1e9;
     this.freezeSpent = 0;
     this.freezeSpentAt = 0;
     this.lastKillStop = 0;
@@ -1880,6 +1918,12 @@ export class ArenaScene extends Phaser.Scene {
     this.shopOpen = false;
     this.lastScrip = -1;
     this.lastUpgradeSig = "";
+    this.ultimateCastPendingUntil = -1e9;
+    this.ultimateHudPulseUntil = -1e9;
+    this.queuedUltimateReveal = undefined;
+    this.queuedUltimateTemper = false;
+    this.ultimateRevealBusyUntil = -1e9;
+    this.lastUltimateSelfLevel = -1;
   }
 
   /** §4 the single shutdown path for globals and network ownership. */
@@ -1889,6 +1933,8 @@ export class ArenaScene extends Phaser.Scene {
     this.xpMotes = undefined!;
     this.beamRenderer?.destroy();
     this.beamRenderer = undefined!;
+    this.ultimateVfx?.destroy();
+    this.ultimateVfx = undefined as unknown as UltimateVfx;
     this.damageNumberRenderer?.destroy();
     this.damageNumberRenderer = undefined!;
     this.hitEffectRenderer?.destroy();
@@ -1914,6 +1960,28 @@ export class ArenaScene extends Phaser.Scene {
     // `dimensionId` sync — so it uses the ACTIVE §17 dimension's palette, not a guessed default.
     this.vfxPlayer = new VfxPlayer(this);
     this.beamRenderer = new BeamRenderer(this);
+    this.ultimateVfx = new UltimateVfx(this, {
+      actor: (ownerId, out) => {
+        const rig = this.blobs.get(ownerId);
+        if (!rig) return false;
+        out.x = rig.root.x;
+        out.y = rig.root.y;
+        return true;
+      },
+      target: (targetId, out) => this.resolveFeedbackTarget(targetId, out),
+      projectY: (worldY) => (this.belt ? this.beltY(worldY) : worldY),
+      projectionYScale: () => (this.belt ? BELT_FORESHORTEN : 1),
+      visible: (x, y) => this.cameras.main.worldView.contains(x, y),
+      audio: (cue, x, amount) => this.audio.play(cue, { x, amt: amount }),
+      arrival: (ownerId, clockMs) => this.blobs.get(ownerId)?.playSpawnUnfold(clockMs, 220),
+      paperCopy: (ownerId, x, y) => this.blobs.get(ownerId)?.createPaperCopy(x, y),
+      connectAccent: (family, _x, _y, stopMs) => {
+        this.hitStop(stopMs, true);
+        // Sunspite's authoritative explosion pack owns its one camera kick.
+        if (family !== UltimateFamily.SunspiteComet)
+          this.shakeCam(75, this.feedbackSettings.flashes === "reduced" ? 0.00225 : 0.0045);
+      },
+    });
     // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
     this.telegraphGroundGfx = this.add.graphics().setDepth(3);
     this.telegraphForeshadows = new TelegraphForeshadowPool(this);
@@ -2154,6 +2222,7 @@ export class ArenaScene extends Phaser.Scene {
     this.weaponText.setFontSize(13 * s);
     this.augmentText.setFontSize(12 * s);
     this.modeText.setFontSize(15 * s);
+    this.ultimateHudText?.setFontSize(9 * s);
     this.bossText.setFontSize(14 * s);
     this.restartBtn.setFontSize(14 * s);
     this.deathText.setFontSize(26 * s);
@@ -2192,6 +2261,18 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(100001);
     this.beamHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
+    this.ultimateHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
+    this.ultimateHudText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "9px",
+        color: "#9fd9df",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(1, 1)
+      .setDepth(100006)
+      .setVisible(false);
     this.levelText = this.add
       .text(0, 0, "", { fontSize: "13px", color: "#ffd479", fontStyle: "bold" })
       .setScrollFactor(0)
@@ -2747,6 +2828,171 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
+  /** Consume the dual-purpose uint16 seq: READY is classified from the post-edge authoritative row. */
+  private routeUltimates(): void {
+    const room = this.room;
+    if (!room) return;
+    const selfId = room.sessionId;
+    room.state.players.forEach((player, id) => {
+      const row = player.ultimate;
+      const code = row.archetype;
+      const oldCode = this.lastUltimateArchetype.get(id) ?? 0;
+      if (id === selfId && oldCode === 0 && code !== 0) {
+        this.queuedUltimateReveal = ultimateRevealDescriptor(code);
+      }
+      this.lastUltimateArchetype.set(id, code);
+
+      if (id === selfId) {
+        if (
+          this.lastUltimateSelfLevel >= 0 &&
+          this.lastUltimateSelfLevel < 11 &&
+          player.level >= 11 &&
+          code !== 0
+        ) {
+          this.queuedUltimateTemper = true;
+        }
+        this.lastUltimateSelfLevel = player.level;
+      }
+
+      const seq = row.seq & 0xffff;
+      const previous = this.lastUltimateSeq.get(id);
+      const edge = ultimateSeqEdge(previous, seq, row.charge, row.phase);
+      this.lastUltimateSeq.set(id, seq);
+      if (previous === undefined) {
+        // A late join still receives a live cast's complete epoch-driven presentation.
+        if (row.phase !== UltimatePhase.Idle)
+          this.ultimateVfx.cueCast({
+            ownerId: id,
+            seq,
+            code,
+            phase: row.phase,
+            startTick: row.startTick,
+            resolveTick: row.resolveTick,
+            endTick: row.endTick,
+            targetX: row.targetX,
+            targetY: row.targetY,
+            originX: this.blobs.get(id)?.x ?? player.x,
+            originY: this.ultimateActorWorldY(id, player.y),
+            isSelf: id === selfId,
+            nowMs: this.time.now,
+          });
+        return;
+      }
+      if (edge === "ready") {
+        if (id === selfId) this.audio.play("ult:ready");
+        return;
+      }
+      if (edge !== "cast") return;
+      if (id === selfId) this.ultimateCastPendingUntil = -1e9;
+      this.ultimateVfx.cueCast({
+        ownerId: id,
+        seq,
+        code,
+        phase: row.phase,
+        startTick: row.startTick,
+        resolveTick: row.resolveTick,
+        endTick: row.endTick,
+        targetX: row.targetX,
+        targetY: row.targetY,
+        originX: this.blobs.get(id)?.x ?? player.x,
+        originY: this.ultimateActorWorldY(id, player.y),
+        isSelf: id === selfId,
+        nowMs: this.time.now,
+      });
+    });
+  }
+
+  private ultimateActorWorldY(id: string, fallback: number): number {
+    const renderedY = this.blobs.get(id)?.y;
+    if (renderedY === undefined) return fallback;
+    return this.belt ? BELT_Y0 + (renderedY - BELT_Y0) / BELT_FORESHORTEN : renderedY;
+  }
+
+  private maybePlayUltimateReveal(self: PlayerState | undefined): void {
+    const pending = !!this.queuedUltimateReveal || this.queuedUltimateTemper;
+    if (
+      !canReleaseUltimateReveal(
+        pending,
+        this.inLevelWindow(self),
+        this.levelWinInputReleaseLatch,
+        !!self?.alive,
+      ) ||
+      this.time.now < this.ultimateRevealBusyUntil
+    )
+      return;
+    if (this.queuedUltimateReveal) {
+      const reveal = this.queuedUltimateReveal;
+      this.queuedUltimateReveal = undefined;
+      playUltimateReveal(this, this.screenW(), this.screenH(), reveal, prefersReducedPaperMotion());
+      this.audio.play("ult:unlock");
+      this.ultimateRevealBusyUntil = this.time.now + 1_900;
+      return;
+    }
+    this.queuedUltimateTemper = false;
+    const family = ultimateFamilyForCode(self?.ultimate.archetype ?? 0);
+    playUltimateStamp(
+      this,
+      this.screenW(),
+      this.screenH(),
+      `10TH ATTUNEMENT · ${family === UltimateFamily.Locked ? "TEMPERED" : "VARIANT TEMPERED"}`,
+    );
+    this.audio.play("ult:temper");
+    this.ultimateRevealBusyUntil = this.time.now + 1_050;
+  }
+
+  private updateUltimateVfx(): void {
+    const room = this.room;
+    if (!room) return;
+    const renderTime = this.timeline.ready
+      ? this.timeline.renderTime(this.time.now)
+      : Math.max(0, room.state.tick * TICK_MS - INTERP_DELAY_MS);
+    this.ultimateVfx.update(
+      room.state.players,
+      room.sessionId,
+      room.state.tick,
+      Math.max(0, Math.floor(renderTime / TICK_MS)),
+      this.time.now,
+      this.animClock,
+      prefersReducedPaperMotion(),
+      this.feedbackSettings.flashes === "reduced",
+    );
+  }
+
+  private ultimatePresentationPhase(
+    row: PlayerState["ultimate"],
+    tick: number,
+  ): UltimatePhaseValue {
+    if (row.phase === UltimatePhase.Idle || !this.tickAtOrAfter(tick, row.startTick))
+      return UltimatePhase.Idle;
+    if (!this.tickAtOrAfter(tick, row.resolveTick)) return UltimatePhase.Windup;
+    const activeEnd = (row.endTick - ULT_RECOVERY_TICKS) >>> 0;
+    if (!this.tickAtOrAfter(tick, activeEnd)) return UltimatePhase.Active;
+    if (!this.tickAtOrAfter(tick, row.endTick)) return UltimatePhase.Recovery;
+    return UltimatePhase.Idle;
+  }
+
+  private tickAtOrAfter(tick: number, target: number): boolean {
+    return (tick - target) >>> 0 < 0x8000_0000;
+  }
+
+  private ultimatePhaseProgress(
+    row: PlayerState["ultimate"],
+    tick: number,
+    phase: UltimatePhaseValue,
+  ): number {
+    let start = row.startTick;
+    let end = row.resolveTick;
+    if (phase === UltimatePhase.Active) {
+      start = row.resolveTick;
+      end = (row.endTick - ULT_RECOVERY_TICKS) >>> 0;
+    } else if (phase === UltimatePhase.Recovery) {
+      start = (row.endTick - ULT_RECOVERY_TICKS) >>> 0;
+      end = row.endTick;
+    }
+    const duration = Math.max(1, (end - start) >>> 0);
+    return Math.max(0, Math.min(1, ((tick - start) >>> 0) / duration));
+  }
+
   private triggerAcceptedRigAttack(rig: SpriteRig, player: PlayerState, epoch: number): void {
     const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
@@ -3291,6 +3537,8 @@ export class ArenaScene extends Phaser.Scene {
     this.lastRevived.delete(id);
     this.lastAttackSeq.delete(id);
     this.lastAttackHeld.delete(id);
+    this.lastUltimateSeq.delete(id);
+    this.lastUltimateArchetype.delete(id);
     this.lastFell.delete(id);
     this.jumpPresentation.delete(id);
     this.jugglePresentation.delete(id);
@@ -3313,6 +3561,10 @@ export class ArenaScene extends Phaser.Scene {
     // (Restart the run is now the on-screen button, top-right.)
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
+    const ultimatePressed = Phaser.Input.Keyboard.JustDown(this.keys.F);
+    const beltShopX = this.belt ? (this.room.state.beltShopX ?? 0) : 0;
+    const nearBeltShop =
+      this.belt && !!selfP && beltShopX > 0 && Math.abs(selfP.x - beltShopX) <= SHOP_RADIUS;
     const levelWindowOpen = this.inLevelWindow(selfP);
     if (!levelWindowOpen && this.levelWinInputReleaseLatch && this.levelWindowInputsReleased()) {
       this.levelWinInputReleaseLatch = false;
@@ -3480,15 +3732,13 @@ export class ArenaScene extends Phaser.Scene {
       }
       // §29 F = trade with the shopkeeper when standing near them; walking away auto-closes the SELL overlay.
       if (this.belt) {
-        const shopX = this.room?.state.beltShopX ?? 0;
-        const selfX = this.room?.state.players.get(this.room?.sessionId ?? "")?.x ?? 0;
-        const nearShop = shopX > 0 && Math.abs(selfX - shopX) <= SHOP_RADIUS;
-        if (Phaser.Input.Keyboard.JustDown(this.keys.F) && nearShop) {
+        if (ultimatePressed && nearBeltShop) {
           this.shopOpen = !this.shopOpen;
           if (this.shopOpen) this.bagOpen = false;
         }
-        if (!nearShop) this.shopOpen = false;
+        if (!nearBeltShop) this.shopOpen = false;
       }
+      if (ultimatePressed && !nearBeltShop) this.sendUltimate();
       if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
       if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
     }
@@ -3501,6 +3751,8 @@ export class ArenaScene extends Phaser.Scene {
     this.checkFalls(); // §17 fall VFX (after blobs so the landing poof lands right)
     this.equipWeapons();
     this.routePlayerAttacks();
+    this.routeUltimates();
+    this.maybePlayUltimateReveal(selfP);
     // Receipts must drain while last frame's target rigs still exist. This both preserves the death contact
     // point and makes the one-frame receiptTouched interlock line up with the HP-delta pass below.
     this.beginCombatFeedbackFrame();
@@ -3542,6 +3794,7 @@ export class ArenaScene extends Phaser.Scene {
       this.wasFrozen = true;
     }
     // XP motion is server-timed and continues through local hit-stop; a frozen rig is a stable catch target.
+    this.updateUltimateVfx();
     this.updateBeams();
     this.updateXpMotes(deltaMs);
     this.updateXpReceiptLabels();
@@ -5225,7 +5478,8 @@ export class ArenaScene extends Phaser.Scene {
         existing.destroy();
         this.projectiles.delete(id);
       }
-      const fx = GUN_FX[baseKind(pr.kind)]; // §35 strip the ":element" tint suffix for the kind lookup
+      const comet = baseKind(pr.kind) === "fireball";
+      const fx = comet ? gunFx("orb:fire") : GUN_FX[baseKind(pr.kind)];
       const container = fx
         ? makeBullet(this, pr)
         : pr.kind === "cleaver"
@@ -5236,6 +5490,7 @@ export class ArenaScene extends Phaser.Scene {
               ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
               : makeSpit(this, pr);
       container.setData("kind", pr.kind);
+      container.setData("ultimateProjectile", comet);
       // §8 v0.117 a BASE-parry "deflect" spark glances off + FADES OUT (bullet-off-Superman): tween its
       // alpha + scale down over the deflect lifetime so it dissipates rather than flying off like a shot.
       if (pr.kind === "deflect") {
@@ -5292,8 +5547,9 @@ export class ArenaScene extends Phaser.Scene {
             );
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
-            this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
+            if (!comet) this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
           }
+          if (isSelf && comet) this.audio.play("ult:fire:launch", { x: p?.x, amt: 1 });
         }
       }
     });
@@ -5311,7 +5567,31 @@ export class ArenaScene extends Phaser.Scene {
             const ci = k.indexOf(":");
             const sourceWeapon = WEAPONS[c.getData("sourceWeapon") as string];
             const element = sourceWeapon?.tags.element ?? (ci < 0 ? "fire" : k.slice(ci + 1));
-            spawnExplosion(this, c.x, c.y, er, element);
+            const ultimateProjectile = c.getData("ultimateProjectile") === true;
+            const local = c.getData("sourcePlayer") === room.sessionId;
+            if (ultimateProjectile)
+              this.ultimateExplosionShakeScale =
+                this.feedbackSettings.flashes === "reduced" ? 0.5 : 1;
+            if (ultimateProjectile && !local) {
+              const selfRig = this.blobs.get(room.sessionId);
+              const distance = selfRig
+                ? Math.hypot(c.x - selfRig.x, c.y - selfRig.y)
+                : Number.POSITIVE_INFINITY;
+              const dutyOpen = this.time.now - this.lastUltimateWeatherShakeAt >= 700;
+              this.ultimateExplosionShakeScale *= dutyOpen
+                ? Math.max(0, 1 - distance / 760) * 0.5
+                : 0;
+              if (this.ultimateExplosionShakeScale > 0)
+                this.lastUltimateWeatherShakeAt = this.time.now;
+            }
+            try {
+              spawnExplosion(this, c.x, c.y, er, element);
+            } finally {
+              this.ultimateExplosionShakeScale = 1;
+            }
+            if (ultimateProjectile) {
+              this.audio.play("ult:fire:impact", { x: c.x, amt: local ? 1 : 0.35 });
+            }
           } else if (GUN_FX[bk])
             spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
           else spawnSplat(this, c.x, c.y, k);
@@ -5327,6 +5607,7 @@ export class ArenaScene extends Phaser.Scene {
   private moveProjectiles(dtSec: number): void {
     if (!this.room) return;
     const room = this.room;
+    this.ultimateVfx.beginProjectileFrame();
     room.state.projectiles.forEach((pr, id) => {
       const c = this.projectiles.get(id);
       if (!c) return;
@@ -5345,8 +5626,10 @@ export class ArenaScene extends Phaser.Scene {
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
       if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
+      if (baseKind(pr.kind) === "fireball") this.ultimateVfx.trackComet(id, c.x, c.y, pr.vx, pr.vy);
       if (
         !pr.hostile &&
+        baseKind(pr.kind) !== "fireball" &&
         c.getData("sourcePlayer") === room.sessionId &&
         c.getData("feedbackContact") !== true
       ) {
@@ -6176,6 +6459,7 @@ export class ArenaScene extends Phaser.Scene {
   private levelWindowInputsReleased(): boolean {
     return (
       this.levelWindowModalKeys().every((key) => !key.isDown) &&
+      !this.keys.F.isDown &&
       !this.input.activePointer.leftButtonDown() &&
       !this.input.activePointer.rightButtonDown()
     );
@@ -7134,6 +7418,14 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room?.sessionId;
     const cam = this.cameras.main;
     const pointer = this.input.activePointer;
+    const remoteUltimateTick = Math.max(
+      0,
+      Math.floor(
+        (this.timeline.ready
+          ? this.timeline.renderTime(this.time.now)
+          : (this.room?.state.tick ?? 0) * TICK_MS - INTERP_DELAY_MS) / TICK_MS,
+      ),
+    );
     const invDt = deltaMs > 0 ? 1000 / deltaMs : 0; // px/frame → px/s for the §5 gait blend
     const reducedMotion = prefersReducedPaperMotion();
 
@@ -7284,6 +7576,18 @@ export class ArenaScene extends Phaser.Scene {
       anim.slidePhase = slidePhase;
       anim.slideTick = slideTick;
       anim.reducedMotion = reducedMotion;
+      if (pl) {
+        const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
+        const ultimatePhase = isSelf
+          ? (pl.ultimate.phase as UltimatePhaseValue)
+          : this.ultimatePresentationPhase(pl.ultimate, ultimateTick);
+        blob.setUltimatePresentation(
+          ultimateFamilyForCode(pl.ultimate.archetype),
+          ultimatePhase,
+          this.ultimatePhaseProgress(pl.ultimate, ultimateTick, ultimatePhase),
+          reducedMotion,
+        );
+      }
       blob.animate(this.animClock, anim);
       blob.setDepth(blob.y);
     }
@@ -7463,6 +7767,83 @@ export class ArenaScene extends Phaser.Scene {
 
   /** RMB held → fire the equipped weapon toward the cursor (§9). Server gates damage by cooldown;
    *  the client mirrors the cooldown locally to fire the swing animation in sync (cosmetic). */
+  /** F keydown is a one-shot, budgeted action. All displacement/damage remains server-authoritative. */
+  private sendUltimate(): void {
+    if (!this.room) return;
+    const selfId = this.room.sessionId;
+    const self = this.room.state.players.get(selfId);
+    if (!self) return;
+    const row = self.ultimate;
+    const family = ultimateFamilyForCode(row.archetype);
+    const doorReturn =
+      family === UltimateFamily.DimensionDoor &&
+      this.ultimateVfx.hasDoorTicket(selfId, this.room.state.tick);
+    const affordance = ultimateInputAffordance({
+      alive: self.alive,
+      modal: this.inLevelWindow(self) || this.levelWinInputReleaseLatch,
+      nearShop: false,
+      unlocked: family !== UltimateFamily.Locked,
+      charge: row.charge,
+      phase: row.phase,
+      pending: this.time.now < this.ultimateCastPendingUntil,
+      doorReturn,
+    });
+    const rig = this.blobs.get(selfId);
+    if (affordance === "blocked") return;
+    if (affordance === "dry") {
+      this.ultimateHudPulseUntil = this.time.now + 240;
+      this.audio.play("ult:dry", { x: rig?.x ?? self.x, amt: 0.35 });
+      this.ultimateVfx.fizzlePrediction(selfId, rig?.x ?? self.x, rig?.y ?? self.y);
+      return;
+    }
+
+    const cam = this.cameras.main;
+    const px = this.pointerScreen.set ? this.pointerScreen.x : this.input.activePointer.x;
+    const py = this.pointerScreen.set ? this.pointerScreen.y : this.input.activePointer.y;
+    const world = cam.getWorldPoint(px, py);
+    const targetX = world.x;
+    const targetY = this.belt ? BELT_Y0 + (world.y - BELT_Y0) / BELT_FORESHORTEN : world.y;
+    const aimLength = Math.hypot(targetX - self.x, targetY - self.y) || 1;
+    const actionAimX = (targetX - self.x) / aimLength;
+    const actionAimY = (targetY - self.y) / aimLength;
+    this.room.send("ultimate", {
+      aimX: actionAimX,
+      aimY: actionAimY,
+      tx: targetX,
+      ty: targetY,
+    });
+    this.ultimateCastPendingUntil = this.time.now + 400;
+    rig?.triggerUltimateWindup(this.animClock, family);
+    if (family === UltimateFamily.DimensionDoor) rig?.playFoldUp(this.animClock, 120);
+    this.ultimateVfx.cuePrediction(
+      selfId,
+      family,
+      rig?.x ?? self.x,
+      rig?.y ?? (this.belt ? this.beltY(self.y) : self.y),
+      targetX,
+      targetY,
+      this.time.now,
+      prefersReducedPaperMotion(),
+    );
+    if (family === UltimateFamily.SunspiteComet) {
+      const visualOriginY = rig?.y ?? (this.belt ? this.beltY(self.y) : self.y);
+      const angle = Math.atan2(world.y - visualOriginY, world.x - (rig?.x ?? self.x));
+      const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+      const reach = weaponMuzzleReach(weapon);
+      const fx = gunFx("orb:fire");
+      spawnMuzzleFlash(
+        this,
+        (rig?.x ?? self.x) + Math.cos(angle) * reach,
+        visualOriginY + Math.sin(angle) * reach,
+        angle,
+        fx.size,
+        fx.color,
+        fx.style,
+      );
+      this.lastSelfMuzzleAt = this.time.now;
+    }
+  }
+
   private sendAttack(): void {
     if (!this.room) return;
     this.localAtkCd = Math.max(0, this.localAtkCd - this.deltaSec);
@@ -8114,6 +8495,17 @@ export class ArenaScene extends Phaser.Scene {
     const rig = this.enemies.get(event.targetId);
     const reducedFlash = this.feedbackSettings.flashes === "reduced";
     const color = ArenaScene.ELEMENT_SPARK[event.element] ?? 0xd6dde6;
+    this.ultimateVfx.onReceipt({
+      sourcePlayerId: event.sourcePlayerId,
+      targetId: event.targetId,
+      weaponId: event.weaponId,
+      delivery: event.delivery,
+      tick: event.tick,
+      crit: event.crit,
+      finalBlow: event.finalBlow,
+      x,
+      y,
+    });
 
     if (event.layer === "instant") {
       if (this.feedbackSettings.hitSparks)
@@ -8288,6 +8680,7 @@ export class ArenaScene extends Phaser.Scene {
   private isRapidDelivery(delivery: number): boolean {
     return (
       delivery === CombatDelivery.Beam ||
+      delivery === CombatDelivery.Ultimate ||
       delivery === CombatDelivery.Scatter ||
       delivery === CombatDelivery.Gun ||
       delivery === CombatDelivery.Chain ||
@@ -8421,7 +8814,7 @@ export class ArenaScene extends Phaser.Scene {
    *  important hit always lands); a weaker one is dropped (a tracer stream can't stomp a boss slam). */
   shakeCam(duration: number, intensity: number): void {
     const motionScale = prefersReducedPaperMotion() ? 0 : (this.feedbackSettings?.screenShake ?? 1);
-    intensity *= motionScale;
+    intensity *= motionScale * this.ultimateExplosionShakeScale;
     if (intensity <= 0) return;
     const now = this.time.now;
     if (now >= this.shakeUntil || intensity >= this.shakeIntensity) {
@@ -9224,6 +9617,66 @@ export class ArenaScene extends Phaser.Scene {
     );
   }
 
+  /** Authoritative-only charge arc, mirrored onto the dock junction's opposite (upper-left) shoulder. */
+  private renderUltimateHud(
+    self: PlayerState | undefined,
+    barX: number,
+    xpY: number,
+    scale: number,
+  ): void {
+    const g = this.ultimateHudGfx;
+    const label = this.ultimateHudText;
+    if (!g || !label) return;
+    g.clear();
+    label.setVisible(false);
+    const row = self?.ultimate;
+    if (!self || !row || row.archetype === 0) return;
+    const layout = ultimateHudLayout({
+      screenWidth: this.screenW(),
+      screenHeight: this.screenH(),
+      barX,
+      xpY,
+      uiScale: scale,
+      belt: this.belt,
+      dock: !this.belt ? this.carouselDock?.layout : undefined,
+      dockBodyScale: this.carouselDock?.body.scaleX,
+    });
+    const start = Math.PI * 0.72;
+    const span = Math.PI * 1.56;
+    const charge = Math.max(0, Math.min(100, row.charge));
+    const fraction = charge / 100;
+    const ready = charge >= 100 && row.phase === UltimatePhase.Idle;
+    const pulse =
+      this.time.now < this.ultimateHudPulseUntil
+        ? 1 + Math.sin((this.ultimateHudPulseUntil - this.time.now) / 24) * 0.28
+        : 1;
+    const line = Math.max(2, 2.4 * scale) * pulse;
+    g.lineStyle(line + 2, 0x080a0d, 0.82);
+    g.beginPath();
+    g.arc(layout.x, layout.y, layout.radius, start, start + span, false);
+    g.strokePath();
+    g.lineStyle(line, 0x52616c, 0.64);
+    g.beginPath();
+    g.arc(layout.x, layout.y, layout.radius, start, start + span, false);
+    g.strokePath();
+    if (fraction > 0) {
+      const breath =
+        ready && !prefersReducedPaperMotion() ? 0.82 + Math.sin(this.time.now / 420) * 0.14 : 0.94;
+      g.lineStyle(line, ready ? 0xa8f1e8 : 0x78c9df, breath);
+      g.beginPath();
+      g.arc(layout.x, layout.y, layout.radius, start, start + span * fraction, false);
+      g.strokePath();
+    }
+    const remaining = this.ultimateVfx.doorTicketRemaining(self.id, this.room?.state.tick ?? 0);
+    const copy =
+      remaining > 0 ? `F RETURN ${remaining.toFixed(1)}` : ready ? "F READY" : `${charge}%`;
+    label
+      .setPosition(layout.labelX, layout.labelY)
+      .setText(copy)
+      .setColor(ready || remaining > 0 ? "#a8f1e8" : "#78aeba")
+      .setVisible(true);
+  }
+
   private humanizeDamageId(value: string): string {
     return value
       .replace(/[-_]+/g, " ")
@@ -9407,6 +9860,7 @@ export class ArenaScene extends Phaser.Scene {
       this.weaponText.setColor("#9cff3b");
     }
     this.renderBeamHud(self, heldWeapon, beamRow, barX, xpY, s);
+    this.renderUltimateHud(self, barX, xpY, s);
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
     if (self?.augments) {
@@ -9431,6 +9885,7 @@ export class ArenaScene extends Phaser.Scene {
     const who = self
       ? ` · C: ${characterName(self.character)} · KIT: ${quirkForCharacter(self.runCharacter || self.character).name}`
       : "";
+    const ultimateControl = self?.ultimate.archetype ? " · F ultimate" : "";
     const dimName = getDimension(this.room?.state.dimensionId).name;
     // M19 §6 greed loop: surface the time-gated objective from the synced clock — a boss countdown, then the
     // fight, then what stepping into the portal actually DOES (bank + end). H9: the two core verbs (RMB fire,
@@ -9469,13 +9924,13 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(this.screenW() / 2, 12 * s)
       .setText(
         training
-          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse · Tab: summon · Space tap/hold: jump/leap · air tap: pound · T: exit${who}`
+          ? `${lagPrefix}⛶ TESTING GROUNDS — E/R: grab · Q/E: browse · Tab: summon · Space tap/hold: jump/leap · air tap: pound · T: exit${ultimateControl}${who}`
           : this.belt
             ? // §29 belt controls hint — surfaces the arsenal (1/2/3 · Q/E), bag (Tab), and shopkeeper (F).
-              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space tap/hold jump · air tap pound · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade${who}`
+              `${lagPrefix}${this.room?.state.beltRoomName || "SKY CARRIER"} · RMB fire · LMB parry · Space tap/hold jump · air tap pound · [R] Grab · [1-3] Swap · [Tab] Backpack · [F] Trade/Ultimate${who}`
             : bossrush
-              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${who}`
-              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${who}`,
+              ? `${lagPrefix}${rushObjective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${ultimateControl}${who}`
+              : `${lagPrefix}${dimName} · depth ${depth} · ${objective} · ${stakes} · RMB fire · LMB parry · Space tap/hold/air: jump/leap/pound${ultimateControl}${who}`,
       )
       .setColor(
         lagging

@@ -165,6 +165,7 @@ export class AudioBus {
           "player-dodge",
           "player-roll-whoosh",
           "boss-slam-generic",
+          "ultimate-ready-chime",
         ]);
       } catch {
         this.failed = true;
@@ -952,6 +953,119 @@ export class AudioBus {
         break;
       case "levelup":
         this.blip([523, 659, 784, 1046], 0.07, "triangle", 0.26);
+        break;
+      // ULTIMATES. Every semantic cue is manifest-ready; the shipped ready chime is addressed by id
+      // because it intentionally has `replaces: null`. Remote casts pass a restrained `amt` and read as
+      // battlefield weather, while the owning player's cue keeps its full transient.
+      case "ult:ready":
+        if (this.throttled("ultimateReady", 500)) return;
+        if (
+          sampleBank.playSample("ultimate-ready-chime", {
+            volume: 0.52,
+            priority: "normal",
+            minIntervalMs: 500,
+          })
+        )
+          return;
+        this.blip([523, 784, 1046], 0.075, "sine", 0.15);
+        break;
+      case "ult:dry":
+        if (this.throttled("ultimateDry", 180)) return;
+        if (this.sampleFirst(event, { volume: 0.28, priority: "low" })) return;
+        this.tone(190, 0.08, { type: "square", gain: 0.07, sweepTo: 145, priority: "low" });
+        break;
+      case "ult:unlock":
+        if (this.sampleFirst(event, { volume: 0.7, priority: "critical" })) return;
+        this.blip([392, 523, 659, 988], 0.095, "triangle", 0.21);
+        break;
+      case "ult:temper":
+        if (this.sampleFirst(event, { volume: 0.62, priority: "normal" })) return;
+        this.tone(740, 0.22, { type: "triangle", gain: 0.14, sweepTo: 1180 });
+        this.tone(1480, 0.08, { type: "sine", gain: 0.1, delay: 0.15 });
+        break;
+      case "ult:seismarch:charge":
+        if (this.sampleFirst(event, { volume: 0.35 + 0.35 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.18, { gain: 0.09 + 0.1 * amt, type: "lowpass", freq: 360, x });
+        this.tone(90, 0.2, { type: "sine", gain: 0.1 + 0.1 * amt, sweepTo: 62, x });
+        break;
+      case "ult:seismarch:launch":
+        if (this.sampleFirst(event, { volume: 0.35 + 0.45 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.13, { gain: 0.13 + 0.12 * amt, type: "bandpass", freq: 720, x });
+        break;
+      case "ult:seismarch:impact":
+        if (
+          this.sampleFirst(event, {
+            volume: 0.4 + 0.55 * amt,
+            pan: this.panOf(x),
+            priority: "critical",
+          })
+        )
+          return;
+        this.tone(54, 0.42, { type: "sine", gain: 0.28 * amt, sweepTo: 30, x });
+        this.noise(0.34, { gain: 0.24 * amt, type: "lowpass", freq: 520, x });
+        break;
+      case "ult:alpha:lock":
+        if (this.sampleFirst(event, { volume: 0.32 + 0.42 * amt, pan: this.panOf(x) })) return;
+        this.tone(1260, 0.1, { type: "square", gain: 0.1 * amt, sweepTo: 1720, x });
+        break;
+      case "ult:alpha:hop":
+        if (this.throttled(`ultimateAlphaHop:${opts.ownerId ?? "all"}`, 55)) return;
+        if (this.sampleFirst(event, { volume: 0.24 + 0.34 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.055, { gain: 0.07 + 0.09 * amt, type: "highpass", freq: 2800, x });
+        break;
+      case "ult:alpha:finish":
+        if (this.sampleFirst(event, { volume: 0.38 + 0.5 * amt, pan: this.panOf(x) })) return;
+        this.tone(1800, 0.09, { type: "sine", gain: 0.16 * amt, sweepTo: 650, x });
+        this.noise(0.11, { gain: 0.13 * amt, type: "bandpass", freq: 1700, x });
+        break;
+      case "ult:fire:charge":
+        if (this.sampleFirst(event, { volume: 0.32 + 0.4 * amt, pan: this.panOf(x) })) return;
+        this.tone(240, 0.24, { type: "sawtooth", gain: 0.1 * amt, sweepTo: 620, x });
+        break;
+      case "ult:fire:launch":
+        if (this.sampleFirst(event, { volume: 0.35 + 0.48 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.18, { gain: 0.13 + 0.12 * amt, type: "bandpass", freq: 980, x });
+        this.tone(260, 0.16, { type: "triangle", gain: 0.12 * amt, sweepTo: 105, x });
+        break;
+      case "ult:fire:impact":
+        if (
+          this.sampleFirst(event, {
+            volume: 0.42 + 0.52 * amt,
+            pan: this.panOf(x),
+            priority: "critical",
+          })
+        )
+          return;
+        this.tone(48, 0.5, { type: "sine", gain: 0.3 * amt, sweepTo: 26, x });
+        this.noise(0.42, { gain: 0.25 * amt, type: "lowpass", freq: 760, x });
+        break;
+      case "ult:phase:in":
+      case "ult:phase:out":
+        if (this.sampleFirst(event, { volume: 0.3 + 0.42 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.18, {
+          gain: 0.08 + 0.1 * amt,
+          type: "bandpass",
+          freq: event.endsWith("in") ? 2100 : 950,
+          sweepTo: event.endsWith("in") ? 720 : 2600,
+          x,
+        });
+        break;
+      case "ult:blink:charge":
+      case "ult:blink:out":
+      case "ult:blink:in":
+      case "ult:blink:return":
+        if (this.sampleFirst(event, { volume: 0.32 + 0.44 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.1, { gain: 0.08 + 0.1 * amt, type: "highpass", freq: 2300, x });
+        this.tone(event.endsWith("in") ? 980 : 1320, 0.11, {
+          type: "triangle",
+          gain: 0.1 * amt,
+          sweepTo: event.endsWith("return") ? 620 : 1880,
+          x,
+        });
+        break;
+      case "ult:crit-rider":
+        if (this.sampleFirst(event, { volume: 0.35 + 0.4 * amt, pan: this.panOf(x) })) return;
+        this.tone(2460, 0.12, { type: "sine", gain: 0.12 * amt, sweepTo: 3300, x });
         break;
       case "loot": // pitch rises with rarity (amt = rarity/6)
         // Sample-first with the same rarity read: the engine pitch-shifts a neutral take (doc §2.1).

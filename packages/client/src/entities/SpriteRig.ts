@@ -70,6 +70,10 @@ import {
   swingDescriptorFor,
   swingDescriptorWithComboStep,
   TICK_MS,
+  UltimateFamily,
+  type UltimateFamilyValue,
+  UltimatePhase,
+  type UltimatePhaseValue,
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
@@ -948,6 +952,17 @@ export class SpriteRig {
   /** Paper arrival is composed into the live pose writer; no Tween owns root or part transforms. */
   private spawnStartMs = -1;
   private spawnDurationMs = 220;
+  /** Dimension Door's departure half. This never moves the logical actor or prediction state. */
+  private foldStartMs = -1;
+  private foldDurationMs = 120;
+  private foldHiddenUntilMs = -1;
+  /** Authoritative ultimate row sampled by ArenaScene, plus a short input-only anticipation envelope. */
+  private ultimateFamily: UltimateFamilyValue = UltimateFamily.Locked;
+  private ultimatePhase: UltimatePhaseValue = UltimatePhase.Idle;
+  private ultimateProgress = 0;
+  private ultimateReducedMotion = false;
+  private ultimateInputAtMs = -1e9;
+  private ultimateInputFamily: UltimateFamilyValue = UltimateFamily.Locked;
   /** Detached deaths advance only when ArenaScene advances its freeze-aware paper-death list. */
   private paperDeath?: PaperDeathState;
   /** §7 v0.105 de-clunk — landing squash (0..1, decays) fired when the hop returns to the ground. */
@@ -1409,11 +1424,66 @@ export class SpriteRig {
 
   /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
   playSpawnUnfold(timeMs: number, durationMs = 220): void {
+    this.foldStartMs = -1;
+    this.foldHiddenUntilMs = -1;
     this.spawnDurationMs = Math.max(1, durationMs);
     this.spawnStartMs = timeMs + Math.floor(this.phase * 70);
     this.root.scaleX = this.baseScale * 0.82;
     this.root.scaleY = this.baseScale * -0.04;
     this.root.rotation = 0.045;
+  }
+
+  /** Cosmetic-only departure twin of `playSpawnUnfold`; teleport ownership stays entirely server-side. */
+  playFoldUp(timeMs: number, durationMs = 120): void {
+    this.spawnStartMs = -1;
+    this.foldStartMs = timeMs;
+    this.foldDurationMs = Math.max(1, durationMs);
+    // A rejected cast cannot strand the card invisible while the pending-input latch expires.
+    this.foldHiddenUntilMs = timeMs + this.foldDurationMs + 360;
+  }
+
+  /** Freeze the current printed layers into a lightweight Dimension Door decoy (no logical actor). */
+  createPaperCopy(x: number, y: number, tint = 0x8f82d8): Phaser.GameObjects.Container {
+    const layers: Phaser.GameObjects.Image[] = [];
+    for (const child of this.root.list) {
+      if (!(child instanceof Phaser.GameObjects.Image)) continue;
+      const layer = this.scene.add
+        .image(child.x, child.y, child.texture.key, child.frame.name)
+        .setOrigin(child.originX, child.originY)
+        .setScale(child.scaleX, child.scaleY)
+        .setRotation(child.rotation)
+        .setAlpha(Math.min(0.72, child.alpha))
+        .setTint(tint)
+        .setTintMode(Phaser.TintModes.MULTIPLY);
+      layers.push(layer);
+    }
+    return this.scene.add
+      .container(x, y, layers)
+      .setScale(this.facing * this.baseScale, this.baseScale)
+      .setAlpha(0.58)
+      .setDepth(99540);
+  }
+
+  /** Immediate key response only: authoritative phase replaces this as soon as the row advances. */
+  triggerUltimateWindup(timeMs: number, family: UltimateFamilyValue): void {
+    this.ultimateInputAtMs = timeMs;
+    this.ultimateInputFamily = family;
+  }
+
+  /** Drive lasting pose/tint state exclusively from the synced nested UltimateState row. */
+  setUltimatePresentation(
+    family: UltimateFamilyValue,
+    phase: UltimatePhaseValue,
+    progress: number,
+    reducedMotion: boolean,
+  ): void {
+    const changed = family !== this.ultimateFamily || phase !== this.ultimatePhase;
+    this.ultimateFamily = family;
+    this.ultimatePhase = phase;
+    this.ultimateProgress = clamp01(progress);
+    this.ultimateReducedMotion = reducedMotion;
+    if (phase !== UltimatePhase.Idle) this.ultimateInputAtMs = -1e9;
+    if (changed) this.restTint();
   }
 
   /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/pit fold. */
@@ -2400,14 +2470,23 @@ export class SpriteRig {
       }
       this.clearMeleeTellState();
     }
-    this.root.setAlpha(on ? 0.5 : 1);
     this.restTint();
   }
 
-  /** Re-apply the resting tint (downed grey > Brand ember-orange > none). */
+  /** Re-apply the resting tint (downed grey > phase-walk ink > Brand ember-orange > none). */
   private restTint(): void {
     for (const p of this.parts) {
       if (this.downed) p.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (
+        this.ultimatePhase === UltimatePhase.Active &&
+        this.ultimateFamily === UltimateFamily.EventHorizon
+      )
+        p.setTint(0x7c6cff).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (
+        this.ultimatePhase === UltimatePhase.Active &&
+        this.ultimateFamily === UltimateFamily.AlphaStrike
+      )
+        p.setTint(0xbfefff).setTintMode(Phaser.TintModes.MULTIPLY);
       else if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
       else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     }
@@ -4479,6 +4558,89 @@ export class SpriteRig {
     for (const weapon of this.weapons) weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
   }
 
+  private applyUltimateRootPresentation(timeMs: number): void {
+    let alpha = this.downed ? 0.5 : 1;
+    if (!this.downed && this.ultimatePhase === UltimatePhase.Active) {
+      if (this.ultimateFamily === UltimateFamily.EventHorizon) alpha = 0.42;
+      else if (this.ultimateFamily === UltimateFamily.AlphaStrike) alpha = 0.24;
+    }
+    if (
+      this.ultimatePhase === UltimatePhase.Active &&
+      this.ultimateFamily === UltimateFamily.EventHorizon
+    ) {
+      const plane = this.ultimateReducedMotion
+        ? 0.72
+        : signedClamp(Math.cos(this.ultimateProgress * Math.PI * 2), 0.04);
+      this.root.scaleX *= plane;
+    } else if (
+      this.ultimatePhase === UltimatePhase.Active &&
+      this.ultimateFamily === UltimateFamily.AlphaStrike &&
+      !this.ultimateReducedMotion
+    ) {
+      this.root.scaleX *= 1 + Math.sin(this.ultimateProgress * Math.PI * 12) * 0.12;
+    }
+
+    if (this.foldStartMs >= 0) {
+      const elapsed = timeMs - this.foldStartMs;
+      if (elapsed < this.foldDurationMs) {
+        const q = smoothstep01(Math.max(0, elapsed) / this.foldDurationMs);
+        this.root.scaleX *= 1 - q * 0.82;
+        this.root.scaleY *= Math.max(0.025, 1 - q);
+        this.root.rotation += q * 0.055;
+        alpha *= Math.max(0.04, 1 - q);
+      } else if (timeMs < this.foldHiddenUntilMs) {
+        this.root.scaleY *= 0.025;
+        alpha *= 0.03;
+      } else {
+        this.foldStartMs = -1;
+        this.foldHiddenUntilMs = -1;
+      }
+    }
+    this.root.setAlpha(alpha);
+  }
+
+  /** Late additive paper pose: never changes the actor root position, targetability, or collision geometry. */
+  private applyUltimatePose(timeMs: number): void {
+    const inputElapsed = timeMs - this.ultimateInputAtMs;
+    const inputWindup =
+      this.ultimatePhase === UltimatePhase.Idle &&
+      inputElapsed >= 0 &&
+      inputElapsed < 180 &&
+      this.ultimateInputFamily !== UltimateFamily.Locked;
+    const family = inputWindup ? this.ultimateInputFamily : this.ultimateFamily;
+    const windup =
+      this.ultimatePhase === UltimatePhase.Windup
+        ? 1 - this.ultimateProgress * 0.35
+        : inputWindup
+          ? Math.sin(Math.PI * (inputElapsed / 180))
+          : 0;
+    if (windup > 0) {
+      const strength = this.ultimateReducedMotion ? windup * 0.45 : windup;
+      const squash = family === UltimateFamily.EventHorizon ? 0.2 : 0.14;
+      this.attackScaleY *= 1 - squash * strength;
+      this.body.y += TARGET_BODY_H * 0.08 * strength;
+      this.body.rotation +=
+        this.facing * (family === UltimateFamily.AlphaStrike ? 0.18 : 0.1) * strength;
+      for (const hand of this.hands) {
+        hand.img.x -= this.facing * TARGET_BODY_H * 0.04 * strength;
+        hand.img.y += TARGET_BODY_H * 0.05 * strength;
+      }
+    }
+
+    if (this.ultimatePhase !== UltimatePhase.Active) return;
+    const p = this.ultimateProgress;
+    if (family === UltimateFamily.Seismarch) {
+      this.attackLiftPx += Math.sin(Math.PI * p) * (this.ultimateReducedMotion ? 34 : 92);
+      this.attackScaleY *= 0.82 + Math.sin(Math.PI * p) * 0.18;
+    } else if (family === UltimateFamily.AlphaStrike) {
+      this.attackScaleY *= 0.76 + 0.12 * Math.sin(p * Math.PI * 12);
+      this.body.rotation += this.facing * Math.sin(p * Math.PI * 12) * 0.16;
+    } else if (family === UltimateFamily.EventHorizon) {
+      this.attackScaleY *= 0.9;
+      this.body.rotation += this.facing * Math.sin(p * Math.PI * 2) * 0.08;
+    }
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
@@ -4675,6 +4837,7 @@ export class SpriteRig {
     this.root.scaleX = this.facingBlend * this.baseScale * spawnScaleX;
     this.root.scaleY = this.baseScale * spawnScaleY;
     this.root.rotation = spawnRotation;
+    this.applyUltimateRootPresentation(timeMs);
     // Keep the "you" label a FIXED on-screen size + readable regardless of the character's rig scale: the
     // label is a child of the root (scaled by baseScale), so counter baseScale on both axes — else a bigger
     // character blows the text up (weapons counter the same way, §29). scaleX also counters the facing mirror.
@@ -5788,6 +5951,8 @@ export class SpriteRig {
         ? Math.cos(ph) * 0.14 * gait - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
         : Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.18; // pivot + lean into accel
     }
+
+    this.applyUltimatePose(timeMs);
 
     // Weapon(s): held in hand at the angle computed above (upright at rest → chop on swing).
     for (let i = 0; i < this.weapons.length; i++) {
