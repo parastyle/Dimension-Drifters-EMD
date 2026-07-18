@@ -178,6 +178,10 @@ export function runCodexExec(o) {
     const fd = o.stdoutFile ? openSync(o.stdoutFile, "w") : null;
     proc.stdout.on("data", (d) => fd && writeSync(fd, d));
     proc.stderr.on("data", (d) => fd && writeSync(fd, d));
+    // A child that fails during Windows DLL/process initialization can close stdin before the prompt
+    // write completes. Treat EPIPE as an ordinary failed render; the close handler below resolves the
+    // job and lets resumable generators continue instead of crashing on an unhandled stream error.
+    proc.stdin.on("error", (e) => LOG(`CODEX STDIN FAIL ${label}: ${e.code ?? e.message}`));
     proc.stdin.write(o.prompt);
     proc.stdin.end();
     proc.on("close", (code) => {

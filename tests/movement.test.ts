@@ -4,6 +4,7 @@ import {
   GRAVITY,
   IMPULSE_MAX,
   JUMP_VELOCITY,
+  MOVE_HITCH_DIP,
   MOVE_SPEED,
   PLAYER_RADIUS,
   steerVelocity,
@@ -78,8 +79,10 @@ describe("steerVelocity / stepSteeredMovement (§7 v0.111 pivot / turn-hitch)", 
     expect(Math.abs(v.vx)).toBeLessThan(1e-6); // heading SNAPPED to vertical — no rightward glide
     expect(v.vy).toBeLessThan(0); // moving up
     const dipped = Math.hypot(v.vx, v.vy);
-    expect(dipped).toBeLessThan(MOVE_SPEED * 0.95); // the HITCH — speed dipped on the sharp turn
-    expect(dipped).toBeGreaterThan(MOVE_SPEED * 0.4); // a 90° turn dips only partway (not a full stop)
+    // A 90° turn is one-third of the 45°→180° hitch curve: 275.2 → 315.52 after
+    // the requested 90% gate-intensity reduction (MOVE_HITCH_DIP 0.42 → 0.042).
+    expect(dipped).toBeCloseTo(MOVE_SPEED * (1 - MOVE_HITCH_DIP / 3), 10);
+    expect(dipped).toBeLessThan(MOVE_SPEED); // the hitch remains, but is intentionally subtle
     // …then it recovers to full speed up over the next few ticks (the "go").
     for (let i = 0; i < 6; i++) v = steerVelocity(v, { dx: 0, dy: -1 }, TICK);
     expect(Math.abs(v.vx)).toBeLessThan(1e-6);

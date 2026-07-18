@@ -30,3 +30,5 @@ tools/artkit/review/flags.json
 .env
 .env.*
 tools/soundkit/out/
+tools/artkit/.artkit-codex-homes/
+tools/artkit/output/

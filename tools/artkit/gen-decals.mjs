@@ -13,6 +13,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { configureCodex, runCodexExec } from "./lib/codex.mjs";
+import { writePaddedCutout } from "./lib/map-art-processing.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, "../..");
@@ -39,8 +40,9 @@ EMPTY SPACE between them — every prop a SEPARATE island that does NOT touch an
 the frame edge. Props (one each, varied sizes): a weathered grey boulder; a small cluster of pebbles; a dead
 dry scrub bush (brown/olive); a tumbleweed; a bleached cattle SKULL; a little pile of bones; a stubby barrel
 CACTUS (muted green); a flat cracked rock slab; a broken wooden wagon wheel. Style: HD cel-shaded, thick dark
-outlines, MUTED desaturated Wild-West palette (dusty tan/rust/olive/bone/grey), each prop with a small SOFT
-dark contact shadow directly under it. EVEN flat top-down lighting, no long cast shadows. The ENTIRE
+outlines, MUTED desaturated Wild-West palette (dusty tan/rust/olive/bone/grey), each prop as an isolated
+silhouette with NO painted shadow. EVEN flat top-down lighting. No cast shadow, no contact shadow, no ground
+patch, and no ambient occlusion painted outside the physical material. The ENTIRE
 background is a FLAT PURE CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else on it — no ground, no texture,
 no gradient. Each prop must be fully painted + fully inside the frame, well separated, so they can be cut out
 individually.`,
@@ -62,16 +64,20 @@ bottom of the object and the structure rising UP — the same staging as the gam
 Structures (one each): a wooden OIL DERRICK; a farm WINDMILL with a bladed wheel; a tall dead leafless TREE;
 a crumbling ADOBE wall ruin; a wooden WATER TOWER on legs; a jagged tall RED-ROCK spire. Style: HD cel-shaded,
 thick dark outlines, MUTED desaturated Wild-West palette (weathered wood brown, rust, adobe tan, bleached
-grey, red rock), each with a small SOFT dark contact shadow at its base. The ENTIRE background is a FLAT PURE
-CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else — no ground, no sky, no gradient. Each landmark fully
+grey, red rock). Isolated physical structures only: no cast shadow, no contact shadow, no ground patch, and
+no ambient occlusion painted outside the physical base. Give each landmark one explicit centered footline
+at the bottom and keep the complete base in frame. The ENTIRE background is a FLAT PURE CHROMA GREEN
+#00ff00 (RGB 0,255,0) with NOTHING else — no ground, no sky, no gradient. Each landmark fully
 painted + fully inside the frame, well separated, so they can be cut out individually.`,
   },
 };
 
 // §47 CODEX FINAL RUN P0.2 — THEMED packs per dimension (the original two packs above are wild-west).
 // Same machinery: one render, chroma-key, island-extract. Style line shared so every dim reads as one game.
-const STYLE = `Style: HD cel-shaded, thick dark outlines, MUTED desaturated palette, each prop with a small
-SOFT dark contact shadow. EVEN flat lighting, no long cast shadows. The ENTIRE background is a FLAT PURE
+const STYLE = `Style: HD cel-shaded, thick dark outlines, MUTED desaturated palette. Isolated physical
+material/object only, with EVEN flat lighting. No cast shadow, no contact shadow, no ground patch, no glow
+pool, and no ambient occlusion painted outside the physical base. Upright structures must have one explicit
+centered footline at the bottom and the complete base in frame. The ENTIRE background is a FLAT PURE
 CHROMA GREEN #00ff00 (RGB 0,255,0) with NOTHING else — no ground, no texture, no gradient. Every prop fully
 painted, fully inside the frame, well separated so each can be cut out individually.`;
 const themedDecals = (dim, list) => ({
@@ -335,9 +341,10 @@ async function main() {
     .sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
   console.log(`extracting ${comps.length} props`);
   const ids = [];
+  let failures = 0;
   for (let i = 0; i < comps.length; i++) {
     const c = comps[i];
-    const pad = 3;
+    const pad = 8;
     const left = Math.max(0, c.x0 - pad);
     const top = Math.max(0, c.y0 - pad);
     const w = Math.min(width, c.x1 + 1 + pad) - left; // the component bbox IS the trim — no sharp .trim()
@@ -345,16 +352,19 @@ async function main() {
     if (w < 6 || h < 6) continue;
     const id = `${PACK.idPrefix}-${String(ids.length).padStart(2, "0")}`;
     try {
-      await sharp(data, { raw: { width, height, channels: 4 } })
+      const extracted = await sharp(data, { raw: { width, height, channels: 4 } })
         .extract({ left, top, width: w, height: h })
-        .resize(PACK.max, PACK.max, { fit: "inside", withoutEnlargement: true })
         .png()
-        .toFile(resolve(PACK.public, `${id}.png`));
+        .toBuffer();
+      await writePaddedCutout({ input: extracted, target: resolve(PACK.public, `${id}.png`), maxSize: PACK.max });
       ids.push(id);
     } catch (e) {
       console.log(`  skip ${id} (${w}×${h}): ${e.message}`);
+      failures++;
     }
   }
+
+  if (failures > 0) throw new Error(`${failures} ${packName} cutouts failed the four-pixel alpha-padding gate`);
 
   writeFileSync(
     PACK.manifest,

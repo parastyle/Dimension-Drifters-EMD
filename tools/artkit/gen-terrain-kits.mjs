@@ -12,6 +12,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { configureCodex, runCodexExec } from "./lib/codex.mjs";
+import { normalizeRim, normalizeTileFamily } from "./lib/map-art-processing.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, "../..");
@@ -26,11 +27,15 @@ const TILE_FRAME = `Paint ONE SQUARE image: a TOP-DOWN orthographic GROUND TEXTU
 viewed from directly overhead. It must be SEAMLESSLY TILEABLE — the left edge continues the right edge and
 the top continues the bottom, with NO visible seams, NO vignette, NO lighting gradient, NO border. LOW
 CONTRAST and MUTED so characters and effects read clearly on top: no strong shapes, no objects, no creatures,
-no text, no shadows from off-screen. Subtle natural variation only, edge to edge.`;
+no text, no shadows from off-screen. Subtle natural variation only, edge to edge. Keep luminance and chroma
+uniform throughout the outer 10% on every side. No large feature, crack, panel, reflection, debris, or accent
+may enter the outer 10% unless it continues toroidally through the exact opposite edge.`;
 const RIM_FRAME = `Paint ONE WIDE image (roughly 4:1): a horizontal TOP-DOWN strip of a CLIFF RIM — the lip
 where solid ground breaks off into a pit below. The TOP HALF is the ground surface meeting the edge; the
 BOTTOM HALF falls into darkness. Crisp broken edge with small overhangs and debris, TILEABLE horizontally
-(left edge continues right edge). Muted palette, no objects, no creatures, no text, no border.`;
+(left edge continues right edge). Left/right material, lip height, wall depth, and value must continue at the
+exact same height; no unique crack, root, cable, vine, or debris may begin or end in the outer 10%. Muted
+palette, no objects, no creatures, no text, no border.`;
 const KEY_FRAME = `WIDE 16:9 LANDSCAPE painting: a dramatic ESTABLISHING VISTA for a video-game level-select
 card. Painterly, HD cel-shaded accents, thick value structure, one clear focal landmark, moody controlled
 palette with a few glow accents. NO people, NO creatures, NO text, NO logos, NO UI, NO border. Fill the
@@ -39,6 +44,7 @@ entire canvas edge to edge.`;
 /** Per-dimension art direction: [ground palette/material], the 4 tile variants, the rim, the vista. */
 const DIMS = {
   "wild-west": {
+    edgeBase: 0,
     ground: "sun-bleached desert hardpan: dusty tan and pale ochre packed earth",
     tiles: [
       "fine dry dust with faint wind ripples",
@@ -51,6 +57,7 @@ const DIMS = {
 poles marching into heat haze, a huge amber sky. Palette: dusty tan, rust, bone, deep amber.`,
   },
   frostfell: {
+    edgeBase: 1,
     ground: "ancient glacial ice and wind-packed snow: pale blue-white with deep blue undertones",
     tiles: [
       "wind-packed snow with faint sastrugi ridges",
@@ -63,6 +70,7 @@ poles marching into heat haze, a huge amber sky. Palette: dusty tan, rust, bone,
 frozen waterfalls, drifting ice-mist. Palette: glacial blue, cyan, near-black shadow, pale sky glow.`,
   },
   "verdant-ruins": {
+    edgeBase: 0,
     ground: "overgrown ancient stonework: moss-swallowed flagstones in deep greens over grey stone",
     tiles: [
       "moss carpet with faint flagstone seams ghosting through",
@@ -75,6 +83,7 @@ frozen waterfalls, drifting ice-mist. Palette: glacial blue, cyan, near-black sh
 light, colossal mossy statues half-sunk in foliage. Palette: deep greens, grey stone, gold light.`,
   },
   ashlands: {
+    edgeBase: 2,
     ground: "volcanic ashfield: charcoal-grey ash over cooled black lava crust with dying ember veins",
     tiles: [
       "fine grey ash with faint wind ripples and soot mottling",
@@ -87,6 +96,7 @@ light, colossal mossy statues half-sunk in foliage. Palette: deep greens, grey s
 rivers of dull ember light through black rock. Palette: charcoal, soot grey, ember orange, blood red glow.`,
   },
   "neon-cyber": {
+    edgeBase: 0,
     ground: "megacity rooftop industrial plating: dark gunmetal deck panels with faint grime and paint wear",
     tiles: [
       "brushed gunmetal deck plates with hairline panel seams",
@@ -162,4 +172,18 @@ async function worker(queue) {
 }
 const queue = [...jobs];
 await Promise.all(Array.from({ length: CONC }, () => worker(queue)));
+for (const [dim, d] of Object.entries(DIMS)) {
+  if (only && dim !== only) continue;
+  const pubDir = resolve(TILES, dim);
+  const tileFiles = [0, 1, 2, 3].map((index) => resolve(pubDir, `tile-${index}.png`));
+  const rimFile = resolve(pubDir, "rim.png");
+  if (tileFiles.every(existsSync)) {
+    await normalizeTileFamily({ files: tileFiles, baseFile: tileFiles[d.edgeBase], strip: 32 });
+    console.log(`NORMALIZED ${dim} tile family from quiet tile-${d.edgeBase}`);
+  }
+  if (existsSync(rimFile)) {
+    await normalizeRim(rimFile, 32);
+    console.log(`NORMALIZED ${dim} rim`);
+  }
+}
 console.log(`terrain kits: ${done} rendered, ${skipped} already present, ${jobs.length} total jobs`);
