@@ -152,3 +152,21 @@ describe("prestige hat tower math", () => {
     expect(states).toEqual(Array.from({ length: 6 }, () => ({ angle: 0, velocity: 0 })));
   });
 });
+
+// METAGAME WAVE 6 — append-only synced-count tower composition coverage.
+describe("public prestige tower composition", () => {
+  it("treats the synced remote count exactly like owner-private prestige", () => {
+    const loadout = {
+      ...STARTER_GEAR_LOADOUT,
+      hat: "ash-walker-hat" as GearId,
+    } as Record<GearSlot, GearId>;
+    const syncedRemotePrestige = 12;
+    const remote = assembleGearLoadout(requireManifest(), loadout, syncedRemotePrestige);
+    const owner = assembleGearLoadout(requireManifest(), loadout, syncedRemotePrestige);
+    expect(remote).toMatchObject({ towerTotal: 13, towerVisible: 12, towerOverflow: 1 });
+    expect(remote.parts.map((part) => [part.gearId, part.stackIndex])).toEqual(
+      owner.parts.map((part) => [part.gearId, part.stackIndex]),
+    );
+    expect(remote.parts.every((part) => part.gearId === "ash-walker-hat")).toBe(true);
+  });
+});

@@ -2555,7 +2555,19 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(100002)
       .setInteractive({ useHandCursor: true });
-    this.restartBtn.on("pointerdown", () => this.room?.send("restart"));
+    this.restartBtn.on("pointerdown", () => {
+      const room = this.room;
+      if (!room) return;
+      if (room.state.outcome === "active") {
+        room.send("restart");
+        return;
+      }
+      this.scene.pause();
+      this.scene.launch("menu", {
+        prestigeRoom: room,
+        prestigeGameCleared: room.state.outcome === "victory",
+      });
+    });
 
     // §9/§13 drop/salvage hold bar — fills while R is held; release before full = drop, full = salvage.
     this.dropBar = this.add.graphics().setScrollFactor(0).setDepth(100003).setVisible(false);
@@ -3879,7 +3891,7 @@ export class ArenaScene extends Phaser.Scene {
         player.gearUpper,
         player.gearLower,
         manifest,
-        isSelf ? this.petMetaAccount.prestige : 0,
+        isSelf ? this.petMetaAccount.prestige : player.prestige,
       );
     else rig.setRigScale(characterScale(charId)); // W1 compatibility: no cosmetics means legacy kit.
     this.blobs.set(id, rig);
@@ -6814,8 +6826,8 @@ export class ArenaScene extends Phaser.Scene {
       this.victoryText
         .setText(
           this.room.state.mode === "bossrush"
-            ? `☠  GAUNTLET CLEARED  ☠\n${outcome}\n(Restart Run — top-right)`
-            : `EXTRACTED · DEPTH ${this.room.state.depth}\n${outcome}\n(Restart Run — top-right)`,
+            ? `☠  GAUNTLET CLEARED  ☠\n${outcome}\n(Wardrobe — top-right)`
+            : `EXTRACTED · DEPTH ${this.room.state.depth}\n${outcome}\n(Wardrobe — top-right)`,
         )
         .setText(`${this.victoryText.text}${this.petResultLine ? `\n${this.petResultLine}` : ""}`)
         .setPosition(this.screenW() / 2, this.screenH() / 2);
@@ -7830,7 +7842,7 @@ export class ArenaScene extends Phaser.Scene {
             player.gearUpper,
             player.gearLower,
             GEAR_PARTS_MANIFEST,
-            id === this.room?.sessionId ? this.petMetaAccount.prestige : 0,
+            id === this.room?.sessionId ? this.petMetaAccount.prestige : player.prestige,
           );
         // The 40-kit swap remains only for compatibility rooms whose gear tail is genuinely absent.
         if (!gearSynced && this.charOf.get(id) !== player.character) {
@@ -11040,7 +11052,9 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(barX, xpY - 9 * s)
       .setText(self ? `Level ${self.level} · XP ${self.xp}/${self.xpToNext}` : "");
 
-    this.restartBtn.setPosition(this.screenW() - 14 * s, 14 * s);
+    this.restartBtn
+      .setPosition(this.screenW() - 14 * s, 14 * s)
+      .setText(this.room?.state.outcome === "active" ? "⟳ Restart Run" : "⌂ Wardrobe");
     const heldWeapon = self ? WEAPONS[self.weapon] : undefined;
     const driveCost = heldWeapon ? driveCostView(heldWeapon.id) : undefined;
     // Loot identity and the generated neutral Drive debit share one line; no per-weapon ammo clock remains.
@@ -11106,7 +11120,7 @@ export class ArenaScene extends Phaser.Scene {
         ? `\n${this.deathRecapLine(previous, "Previous hit: ")}`
         : "";
       const recovery = wiped
-        ? "(click Restart Run, top-right)"
+        ? "(open Wardrobe, top-right)"
         : "A squadmate with Gravedigger's Spade can revive you.";
       const stakes =
         wiped && this.settlementResult
@@ -13351,9 +13365,14 @@ export class ArenaScene extends Phaser.Scene {
   private onPatch(state: ArenaState): void {
     const now = this.time.now;
     if (state.tick <= 0) return; // pre-sim state (menu/handshake)
-    const gearRows: Array<[string, { gearUpper: unknown; gearLower: unknown }]> = [];
+    const gearRows: Array<
+      [string, { gearUpper: unknown; gearLower: unknown; prestige: unknown }]
+    > = [];
     state.players.forEach((player, id) => {
-      gearRows.push([id, { gearUpper: player.gearUpper, gearLower: player.gearLower }]);
+      gearRows.push([
+        id,
+        { gearUpper: player.gearUpper, gearLower: player.gearLower, prestige: player.prestige },
+      ]);
     });
     syncRemoteGearLoadouts(this.syncedGearLoadouts, gearRows);
     this.timeline.onPatch(state.tick, now);

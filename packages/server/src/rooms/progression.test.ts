@@ -576,8 +576,8 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     expect(petShared.ATTRS.reduce((sum, attr) => sum + first.allocRun[attr], 0)).toBe(15);
   });
 
-  it("pins schema 30 while retaining the final schema-28 wire envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(30);
+  it("pins schema 31 while retaining the nested final wire envelope", () => {
+    expect(petShared.SCHEMA_VERSION).toBe(31);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>)[playerSymbols[0]!];
     if (!playerMetadata) throw new Error("PlayerState schema metadata is required");

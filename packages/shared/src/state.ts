@@ -65,6 +65,8 @@ export class DualWieldState extends Schema {
   @type("string") gearLower = "";
   /** Schema v30. Nested here because PlayerState's 64 direct field indexes are all occupied. */
   @type(WeaponResourceState) weaponResource = new WeaponResourceState();
+  /** Schema v31. Compact public hat-tower count; the full account remains owner-private. */
+  @type("uint8") prestige = 0;
 }
 
 /**
@@ -237,6 +239,9 @@ export class PlayerState extends Schema {
   set gearUpper(value: string) { this.dualWield.gearUpper = value; }
   get gearLower(): string { return this.dualWield.gearLower; }
   set gearLower(value: string) { this.dualWield.gearLower = value; }
+  /** Schema v31 public tower count, packed beside the cosmetic gear strings. */
+  get prestige(): number { return this.dualWield.prestige; }
+  set prestige(value: number) { this.dualWield.prestige = value; }
   get offhandSlot(): number { return this.dualWield.offhandSlot; }
   set offhandSlot(value: number) { this.dualWield.offhandSlot = value; }
   get pairBaseSeq(): number { return this.dualWield.pairBaseSeq; }

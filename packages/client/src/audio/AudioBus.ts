@@ -1682,6 +1682,12 @@ export class AudioBus {
         this.tone(196, 0.24, { type: "triangle", gain: 0.18, sweepTo: 110 });
         this.tone(146, 0.38, { type: "sine", gain: 0.15, sweepTo: 73, delay: 0.12 });
         break;
+      case "prestige:reveal":
+        if (this.sampleFirst(event, { volume: 0.76, priority: "critical" })) return;
+        this.noise(0.24, { gain: 0.13, type: "bandpass", freq: 1_450, q: 2.4 });
+        this.blip([262, 392, 523, 784], 0.13, "triangle", 0.25);
+        this.tone(1_176, 0.42, { type: "sine", gain: 0.14, delay: 0.48 });
+        break;
       case "hurt":
         if (this.throttled("hurt", 120)) return;
         if (

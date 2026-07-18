@@ -1,9 +1,22 @@
-import { createMetaAccountV4, GEAR_SLOTS, STARTER_GEAR_LOADOUT } from "@dd/shared";
+import {
+  createMetaAccountV4,
+  GEAR_SLOTS,
+  type PairedWeaponEntryV1,
+  type SingleWeaponEntryV1,
+  STARTER_GEAR_LOADOUT,
+  type WeaponInstanceV1,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   applyWardrobePreset,
+  beginPrestigeReceiptFlow,
   equipWardrobeItem,
   overwriteWardrobePreset,
+  PRESTIGE_CONFIRM_HOLD_MS,
+  prestigeCeremonyView,
+  prestigeHoldProgress,
+  receivePrestigeAccount,
+  receivePrestigeReceipt,
   sanitizeWardrobePresetState,
   wardrobePresetViews,
   wardrobePreview,
@@ -60,5 +73,110 @@ describe("wardrobe model", () => {
     expect(sets).toHaveLength(12);
     expect(sets.every((row) => row.total === GEAR_SLOTS.length)).toBe(true);
     expect(sets[0]?.name).toContain("Asha");
+  });
+});
+
+// METAGAME WAVE 6 — append-only ceremony eligibility, consequence copy, and receipt flow.
+const prestigeWeapon = (n: number, weaponId: string): WeaponInstanceV1 => ({
+  instanceId: `wi_${n.toString(36).padStart(22, "0")}`,
+  weaponId,
+  rarity: "common",
+  affix: "",
+  provenance: "enemy-drop",
+  sourceWorldTier: 0,
+});
+
+describe("wardrobe prestige ceremony model", () => {
+  it("uses the game-clear + cap law and names the complete at-stake and survivor ledgers", () => {
+    const account = createMetaAccountV4();
+    account.prestige = 4;
+    account.scrip = 321;
+    const single: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: prestigeWeapon(1, "rusty-cleaver").instanceId,
+      weapon: prestigeWeapon(1, "rusty-cleaver"),
+    };
+    const pair: PairedWeaponEntryV1 = {
+      kind: "pair",
+      entryId: `wp_${"2".padStart(22, "0")}`,
+      lead: prestigeWeapon(2, "rattler-sabre"),
+      offhand: prestigeWeapon(3, "gravediggers-spade"),
+    };
+    const intake: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: prestigeWeapon(4, "rusty-cleaver").instanceId,
+      weapon: prestigeWeapon(4, "rusty-cleaver"),
+    };
+    account.weaponBank.stash.push(single, pair);
+    account.weaponBank.intake.push(intake);
+    account.weaponBank.lastCarry.placements.push({
+      entryId: single.entryId,
+      zone: "active",
+      start: 0,
+    });
+
+    expect(prestigeCeremonyView(account, false)).toMatchObject({
+      eligible: false,
+      worldTier: 4,
+      hatSlots: 5,
+      nextHatSlots: 6,
+    });
+    const view = prestigeCeremonyView(account, true);
+    expect(view).toMatchObject({
+      eligible: true,
+      nextWorldTier: 5,
+      atStake: {
+        stashEntries: 2,
+        intakeEntries: 1,
+        totalEntries: 3,
+        physicalWeapons: 4,
+        pairEntries: 1,
+        distinctWeaponIds: 3,
+        lastCarryReferences: 1,
+      },
+    });
+    expect(view.costCopy).toContain("ENTIRE WEAPON BANK WIPED");
+    expect(view.costCopy).toContain("SCRIP PAID · 0");
+    expect(view.survivorCopy).toContain("Fists + Home-Issue Rusty Cleaver starter floor");
+    expect(view.survivorCopy).toContain("gear");
+    expect(view.survivorCopy).toContain("pets");
+    expect(view.survivorCopy).toContain("321 Scrip");
+
+    account.prestige = 30;
+    expect(prestigeCeremonyView(account, true)).toMatchObject({
+      eligible: false,
+      eligibilityCopy: "WORLD TIER 30 · HAT TOWER AT CAP",
+      hatSlots: 30,
+      nextHatSlots: 30,
+    });
+  });
+
+  it("requires the deliberate two-second hold and reveals only after receipt + canonical refresh agree", () => {
+    const account = createMetaAccountV4();
+    account.prestige = 2;
+    account.revision = 7;
+    expect(prestigeHoldProgress(1_000, 1_000 + PRESTIGE_CONFIRM_HOLD_MS - 1)).toBeLessThan(1);
+    expect(prestigeHoldProgress(1_000, 1_000 + PRESTIGE_CONFIRM_HOLD_MS)).toBe(1);
+
+    const started = beginPrestigeReceiptFlow(account, true, "  prestige-test  ");
+    expect(started?.request).toEqual({ requestId: "prestige-test", expectedRevision: 7 });
+    if (!started) throw new Error("eligible prestige flow required");
+    const withReceipt = receivePrestigeReceipt(started, {
+      ok: true,
+      removedEntries: 3,
+      removedPhysical: 4,
+      prestige: 3,
+      scripPaid: 0,
+      revision: 8,
+    });
+    expect(withReceipt.status).toBe("awaiting-account");
+    const refreshed = createMetaAccountV4();
+    refreshed.prestige = 3;
+    refreshed.revision = 8;
+    expect(receivePrestigeAccount(withReceipt, refreshed).status).toBe("revealed");
+
+    const accountFirst = receivePrestigeAccount(started, refreshed);
+    expect(accountFirst.status).toBe("pending");
+    expect(receivePrestigeReceipt(accountFirst, withReceipt.receipt).status).toBe("revealed");
   });
 });

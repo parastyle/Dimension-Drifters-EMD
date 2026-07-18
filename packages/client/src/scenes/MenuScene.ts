@@ -1,4 +1,5 @@
 import {
+  type ArenaState,
   beltLevelFor,
   DEFAULT_DIMENSION,
   DIMENSION_IDS,
@@ -14,6 +15,7 @@ import {
   petModsForLevel,
   STARTER_GEAR_LOADOUT,
 } from "@dd/shared";
+import type { Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 // Type-only: erased at build time so the menu/boot chunk stays net-free (the module itself is imported
@@ -36,10 +38,17 @@ import {
 } from "../ui/pet-select.js";
 import {
   applyWardrobePreset,
+  beginPrestigeReceiptFlow,
   equipWardrobeItem,
   gearRarityPips,
   loadWardrobePresetState,
   overwriteWardrobePreset,
+  PRESTIGE_CONFIRM_HOLD_MS,
+  type PrestigeReceiptFlow,
+  prestigeCeremonyView,
+  prestigeHoldProgress,
+  receivePrestigeAccount,
+  receivePrestigeReceipt,
   saveWardrobePresetState,
   type WardrobePresetState,
   wardrobePresetViews,
@@ -94,6 +103,11 @@ interface CompanionChip {
   lock: Phaser.GameObjects.Text;
 }
 
+interface MenuSceneData {
+  prestigeRoom?: Room<ArenaState>;
+  prestigeGameCleared?: boolean;
+}
+
 type MenuTab = "wardrobe" | "armory" | "run";
 
 export class MenuScene extends Phaser.Scene {
@@ -134,6 +148,20 @@ export class MenuScene extends Phaser.Scene {
   private wardrobeItemRows: Phaser.GameObjects.Container[] = [];
   private wardrobeSlotRows: Phaser.GameObjects.Container[] = [];
   private wardrobePresetRows: Phaser.GameObjects.Container[] = [];
+  private prestigeRoom?: Room<ArenaState>;
+  private prestigeGameCleared = false;
+  private prestigeRoot?: Phaser.GameObjects.Container;
+  private prestigeTierText?: Phaser.GameObjects.Text;
+  private prestigeCostText?: Phaser.GameObjects.Text;
+  private prestigeSurvivorText?: Phaser.GameObjects.Text;
+  private prestigeButtonBg?: Phaser.GameObjects.Rectangle;
+  private prestigeButtonText?: Phaser.GameObjects.Text;
+  private prestigeHoldFill?: Phaser.GameObjects.Rectangle;
+  private prestigeArmed = false;
+  private prestigeHoldStartedAt = -1;
+  private prestigeFlow?: PrestigeReceiptFlow;
+  private prestigeRevealPlayedFor = -1;
+  private prestigeDisposers: Array<() => void> = [];
   private armoryRoot?: Phaser.GameObjects.Container;
   private armoryDraft!: ArmoryDraft;
   private armoryPage = 0;
@@ -145,6 +173,12 @@ export class MenuScene extends Phaser.Scene {
 
   constructor() {
     super("menu");
+  }
+
+  init(data?: MenuSceneData): void {
+    this.disposePrestigeTransport();
+    this.prestigeRoom = data?.prestigeRoom;
+    this.prestigeGameCleared = data?.prestigeGameCleared === true;
   }
 
   /** §17 P0.5 preload every level-select key frame. A detached render may not have installed all five yet;
@@ -200,6 +234,17 @@ export class MenuScene extends Phaser.Scene {
     this.wardrobeItemRows = [];
     this.wardrobeSlotRows = [];
     this.wardrobePresetRows = [];
+    this.prestigeRoot = undefined;
+    this.prestigeTierText = undefined;
+    this.prestigeCostText = undefined;
+    this.prestigeSurvivorText = undefined;
+    this.prestigeButtonBg = undefined;
+    this.prestigeButtonText = undefined;
+    this.prestigeHoldFill = undefined;
+    this.prestigeArmed = false;
+    this.prestigeHoldStartedAt = -1;
+    this.prestigeFlow = undefined;
+    this.prestigeRevealPlayedFor = -1;
     this.armoryRoot = undefined;
     this.armoryRows = [];
     this.launchIntent = "quick";
@@ -251,7 +296,11 @@ export class MenuScene extends Phaser.Scene {
       this.layout();
     };
     this.scale.on("resize", onResize);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off("resize", onResize));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off("resize", onResize);
+      this.disposePrestigeTransport();
+    });
+    this.installPrestigeTransport();
 
     this.title = this.add
       .text(0, 0, "DIMENSION DRIFTERS", { fontSize: "52px", color: TITLE_COLOR, fontStyle: "bold" })
@@ -358,6 +407,244 @@ export class MenuScene extends Phaser.Scene {
     });
     root.setData("bg", bg).setData("text", labelText);
     return root;
+  }
+
+  private disposePrestigeTransport(): void {
+    for (const dispose of this.prestigeDisposers.splice(0)) dispose();
+  }
+
+  private installPrestigeTransport(): void {
+    const room = this.prestigeRoom;
+    if (!room) return;
+    const disposeReceipt = room.onMessage<unknown>("prestigeReceipt", (payload) => {
+      if (this.prestigeRoom !== room || !this.prestigeFlow) return;
+      const previous = this.prestigeFlow.status;
+      this.prestigeFlow = receivePrestigeReceipt(this.prestigeFlow, payload);
+      this.refreshPrestigeSurface();
+      if (previous !== "revealed" && this.prestigeFlow.status === "revealed") {
+        this.finishPrestigeReveal();
+      }
+    }) as () => void;
+    const disposeAccount = room.onMessage<unknown>("metaAccount", (payload) => {
+      if (this.prestigeRoom !== room) return;
+      this.metaAccount = savePetMetaAccount(payload);
+      if (this.prestigeFlow) {
+        const previous = this.prestigeFlow.status;
+        this.prestigeFlow = receivePrestigeAccount(this.prestigeFlow, this.metaAccount);
+        if (previous !== "revealed" && this.prestigeFlow.status === "revealed") {
+          this.finishPrestigeReveal();
+        }
+      }
+      const selectedPet = this.metaAccount.selectedPetId;
+      const petXp = selectedPet ? (this.metaAccount.pets[selectedPet]?.bondXp ?? 0) : 0;
+      const packCapacity =
+        12 + (selectedPet ? petModsForLevel(selectedPet, petLevelForXp(petXp)).bagCapacityAdd : 0);
+      this.armoryDraft = createArmoryDraft(this.metaAccount, packCapacity);
+      this.refreshWardrobePanel();
+      this.refreshArmoryPanel();
+      this.refreshPrestigeSurface();
+    }) as () => void;
+    this.prestigeDisposers.push(disposeReceipt, disposeAccount);
+  }
+
+  private buildPrestigeSurface(parent: Phaser.GameObjects.Container): void {
+    const root = this.add.container(405, 103);
+    const panel = this.add
+      .rectangle(0, 0, 310, 202, 0x130d0b, 0.99)
+      .setStrokeStyle(2, 0x9d6b38, 0.95);
+    this.prestigeTierText = this.add
+      .text(-142, -87, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#ffd479",
+        fontStyle: "bold",
+        lineSpacing: 2,
+      })
+      .setOrigin(0, 0);
+    this.prestigeCostText = this.add
+      .text(-142, -48, "", {
+        fontFamily: "monospace",
+        fontSize: "9px",
+        color: "#ff9a6a",
+        lineSpacing: 1,
+      })
+      .setOrigin(0, 0);
+    this.prestigeSurvivorText = this.add
+      .text(-142, 18, "", {
+        fontFamily: "monospace",
+        fontSize: "9px",
+        color: "#9cff8a",
+        lineSpacing: 1,
+      })
+      .setOrigin(0, 0);
+    this.prestigeButtonBg = this.add
+      .rectangle(0, 72, 280, 30, 0x2b1711, 1)
+      .setStrokeStyle(2, 0xff8a2b)
+      .setInteractive({ useHandCursor: true });
+    this.prestigeButtonText = this.add
+      .text(0, 72, "", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#ffd8a8",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const holdTrack = this.add.rectangle(-140, 94, 280, 5, 0x331c17, 1).setOrigin(0, 0.5);
+    this.prestigeHoldFill = this.add
+      .rectangle(-140, 94, 280, 5, 0xffb24a, 1)
+      .setOrigin(0, 0.5)
+      .setScale(0, 1);
+    this.prestigeButtonBg
+      .on("pointerdown", () => {
+        const view = prestigeCeremonyView(this.metaAccount, this.hasPrestigeGameClear());
+        if (!view.eligible || this.prestigeFlow?.status === "pending") return;
+        this.audio.resume();
+        if (!this.prestigeArmed) {
+          this.prestigeArmed = true;
+          this.audio.play("armory:stage");
+          this.refreshPrestigeSurface();
+          return;
+        }
+        this.prestigeHoldStartedAt = this.time.now;
+      })
+      .on("pointerup", () => this.finishPrestigeHold())
+      .on("pointerout", () => this.cancelPrestigeHold());
+    root.add([
+      panel,
+      this.prestigeTierText,
+      this.prestigeCostText,
+      this.prestigeSurvivorText,
+      this.prestigeButtonBg,
+      this.prestigeButtonText,
+      holdTrack,
+      this.prestigeHoldFill,
+    ]);
+    parent.add(root);
+    this.prestigeRoot = root;
+    this.refreshPrestigeSurface();
+  }
+
+  private hasPrestigeGameClear(): boolean {
+    return (
+      this.prestigeGameCleared &&
+      this.prestigeRoom?.state.outcome === "victory" &&
+      this.prestigeFlow?.status !== "revealed"
+    );
+  }
+
+  private cancelPrestigeHold(): void {
+    this.prestigeHoldStartedAt = -1;
+    this.prestigeHoldFill?.setScale(0, 1);
+  }
+
+  private finishPrestigeHold(): void {
+    const progress = prestigeHoldProgress(this.prestigeHoldStartedAt, this.time.now);
+    if (progress >= 1) this.submitPrestige();
+    else this.cancelPrestigeHold();
+  }
+
+  private submitPrestige(): void {
+    if (!this.prestigeRoom || this.prestigeFlow) return;
+    const requestId = `prestige_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const flow = beginPrestigeReceiptFlow(this.metaAccount, this.hasPrestigeGameClear(), requestId);
+    if (!flow) return;
+    this.prestigeFlow = flow;
+    this.prestigeHoldStartedAt = -1;
+    this.prestigeRoom.send("prestigeReset", flow.request);
+    this.refreshPrestigeSurface();
+  }
+
+  private refreshPrestigeSurface(): void {
+    if (
+      !this.prestigeRoot ||
+      !this.prestigeTierText ||
+      !this.prestigeCostText ||
+      !this.prestigeSurvivorText ||
+      !this.prestigeButtonBg ||
+      !this.prestigeButtonText
+    )
+      return;
+    const view = prestigeCeremonyView(this.metaAccount, this.hasPrestigeGameClear());
+    this.prestigeTierText.setText(
+      `PRESTIGE ${view.worldTier} · WORLD TIER ${view.worldTier}\n${view.nextHatPromise}`,
+    );
+    this.prestigeCostText.setText(view.costCopy);
+    this.prestigeSurvivorText.setText(view.survivorCopy);
+    const pending =
+      this.prestigeFlow?.status === "pending" || this.prestigeFlow?.status === "awaiting-account";
+    const revealed = this.prestigeFlow?.status === "revealed";
+    const label = revealed
+      ? `WORLD TIER ${this.prestigeFlow?.expectedPrestige} REVEALED`
+      : pending
+        ? this.prestigeFlow?.status === "awaiting-account"
+          ? "RECEIPT HELD · REFRESHING ACCOUNT"
+          : "FAREWELL SENT · AWAITING RECEIPT"
+        : !view.eligible
+          ? view.eligibilityCopy
+          : this.prestigeArmed
+            ? `HOLD 2.0s · WORLD TIER ${view.worldTier} → ${view.nextWorldTier}`
+            : "FAREWELL THE ARMORY · REVIEW";
+    this.prestigeButtonText.setText(label).setFontSize(label.length > 34 ? 8 : 10);
+    this.prestigeButtonBg
+      .setFillStyle(view.eligible && !pending ? 0x2b1711 : 0x151316, 1)
+      .setStrokeStyle(view.eligible && !pending ? 2 : 1.5, view.eligible ? 0xff8a2b : 0x4d454d);
+  }
+
+  private finishPrestigeReveal(): void {
+    const prestige = this.prestigeFlow?.expectedPrestige;
+    if (!prestige || this.prestigeRevealPlayedFor === prestige) return;
+    this.prestigeRevealPlayedFor = prestige;
+    this.prestigeGameCleared = false;
+    this.prestigeArmed = false;
+    this.cancelPrestigeHold();
+    this.audio.play("prestige:reveal");
+
+    const width = Math.min(620, Math.max(330, this.screenW() - 56));
+    const paper = this.add.graphics();
+    paper.fillStyle(0x171219, 0.98).fillRoundedRect(-width / 2, -72, width, 144, 12);
+    paper.lineStyle(3, 0xffd479, 1).strokeRoundedRect(-width / 2, -72, width, 144, 12);
+    paper.lineStyle(1, 0x9d6b38, 0.75).lineBetween(-width / 2 + 22, 31, width / 2 - 22, 31);
+    const title = this.add
+      .text(0, -31, `WORLD TIER ${prestige}`, {
+        fontFamily: "monospace",
+        fontSize: "28px",
+        color: "#ffd479",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const detail = this.add
+      .text(0, 18, `HAT TIER ${Math.min(30, prestige + 1)} REVEALED\nTHE SPRING TOWER GROWS`, {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#e8f5ff",
+        fontStyle: "bold",
+        align: "center",
+        lineSpacing: 4,
+      })
+      .setOrigin(0.5);
+    const reveal = this.add
+      .container(this.screenW() / 2, this.screenH() / 2, [paper, title, detail])
+      .setDepth(1000);
+    const reduced = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    reveal.setAlpha(0).setScale(reduced ? 1 : 0.08, 1);
+    this.tweens.add({
+      targets: reveal,
+      alpha: 1,
+      scaleX: 1,
+      duration: reduced ? 160 : 420,
+      ease: reduced ? "Linear" : "Back.Out",
+      onComplete: () => {
+        this.tweens.add({
+          targets: reveal,
+          alpha: 0,
+          y: reveal.y - (reduced ? 0 : 18),
+          delay: 1_450,
+          duration: 360,
+          onComplete: () => reveal.destroy(true),
+        });
+      },
+    });
+    this.refreshPrestigeSurface();
   }
 
   private buildTabRow(): void {
@@ -521,6 +808,7 @@ export class MenuScene extends Phaser.Scene {
       this.refreshWardrobePanel();
     }).setPosition(245, -188);
     root.add([previous, next]);
+    this.buildPrestigeSurface(root);
     this.wardrobeRoot = root;
     this.refreshWardrobePanel();
   }
@@ -624,6 +912,17 @@ export class MenuScene extends Phaser.Scene {
         .setFillStyle(preset?.selected ? 0x14232a : 0x1b1822, 1)
         .setStrokeStyle(preset?.selected ? 2 : 1.5, preset?.selected ? 0x33e6ff : 0x3a3550);
     });
+    this.refreshPrestigeSurface();
+  }
+
+  override update(): void {
+    if (this.prestigeHoldStartedAt < 0 || this.prestigeFlow) return;
+    const progress = prestigeHoldProgress(this.prestigeHoldStartedAt, this.time.now);
+    this.prestigeHoldFill?.setScale(progress, 1);
+    this.prestigeButtonText?.setText(
+      `HOLDING · ${((PRESTIGE_CONFIRM_HOLD_MS * (1 - progress)) / 1_000).toFixed(1)}s`,
+    );
+    if (progress >= 1) this.submitPrestige();
   }
 
   private buildArmoryPanel(): void {

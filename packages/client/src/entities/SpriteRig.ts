@@ -111,6 +111,7 @@ import {
   gearTextureKey,
   type HatChainInput,
   type HatSpringState,
+  MAX_HAT_SLOTS,
   stepGearAngularSpring,
   stepHatSpringChain,
 } from "../sprites/gear-parts.js";
@@ -1749,7 +1750,9 @@ export class SpriteRig {
     prestige = 0,
   ): boolean {
     if (gearUpper.length === 0 || gearLower.length === 0) return false;
-    const boundedPrestige = Number.isFinite(prestige) ? Math.max(0, Math.floor(prestige)) : 0;
+    const boundedPrestige = Number.isFinite(prestige)
+      ? Math.min(MAX_HAT_SLOTS, Math.max(0, Math.floor(prestige)))
+      : 0;
     if (
       gearUpper === this.syncedGearUpper &&
       gearLower === this.syncedGearLower &&

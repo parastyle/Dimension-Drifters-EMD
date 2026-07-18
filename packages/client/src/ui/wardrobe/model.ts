@@ -9,6 +9,8 @@ import {
   resolveGearLoadout,
   STARTER_GEAR_LOADOUT,
   sanitizeMetaAccountV4,
+  weaponEntryInstances,
+  weaponEntryPhysicalSize,
 } from "@dd/shared";
 
 export const WARDROBE_PRESET_STORAGE_KEY = "dd.wardrobe.presets.v1";
@@ -48,6 +50,54 @@ export interface WardrobeSetView {
   complete: boolean;
 }
 
+export const PRESTIGE_CAP = 30;
+export const PRESTIGE_CONFIRM_HOLD_MS = 2_000;
+
+export interface PrestigeAtStakeSummary {
+  stashEntries: number;
+  intakeEntries: number;
+  totalEntries: number;
+  physicalWeapons: number;
+  pairEntries: number;
+  distinctWeaponIds: number;
+  lastCarryReferences: number;
+}
+
+export interface PrestigeCeremonyView {
+  eligible: boolean;
+  eligibilityCopy: string;
+  worldTier: number;
+  nextWorldTier: number | null;
+  hatSlots: number;
+  nextHatSlots: number;
+  nextHatPromise: string;
+  atStake: PrestigeAtStakeSummary;
+  costCopy: string;
+  survivorCopy: string;
+}
+
+export interface PrestigeResetRequest {
+  requestId: string;
+  expectedRevision: number;
+}
+
+export interface PrestigeReceiptView {
+  ok: true;
+  removedEntries: number;
+  removedPhysical: number;
+  prestige: number;
+  scripPaid: 0;
+  revision: number;
+}
+
+export interface PrestigeReceiptFlow {
+  request: PrestigeResetRequest;
+  expectedPrestige: number;
+  status: "pending" | "awaiting-account" | "revealed";
+  receipt?: PrestigeReceiptView;
+  refreshedAccount?: MetaAccountV4;
+}
+
 interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -70,6 +120,158 @@ const SET_NAMES: Readonly<Record<string, string>> = {
 
 function copyLoadout(loadout: Readonly<Record<GearSlot, GearId>>): Record<GearSlot, GearId> {
   return { ...loadout };
+}
+
+export function prestigeHatSlots(prestige: number): number {
+  const bounded = Number.isFinite(prestige) ? Math.max(0, Math.floor(prestige)) : 0;
+  return Math.min(PRESTIGE_CAP, bounded + 1);
+}
+
+export function prestigeAtStakeSummary(account: MetaAccountV4): PrestigeAtStakeSummary {
+  const entries = [...account.weaponBank.stash, ...account.weaponBank.intake];
+  const weaponIds = new Set<string>();
+  let physicalWeapons = 0;
+  let pairEntries = 0;
+  for (const entry of entries) {
+    physicalWeapons += weaponEntryPhysicalSize(entry);
+    if (entry.kind === "pair") pairEntries++;
+    for (const weapon of weaponEntryInstances(entry)) weaponIds.add(weapon.weaponId);
+  }
+  return {
+    stashEntries: account.weaponBank.stash.length,
+    intakeEntries: account.weaponBank.intake.length,
+    totalEntries: entries.length,
+    physicalWeapons,
+    pairEntries,
+    distinctWeaponIds: weaponIds.size,
+    lastCarryReferences: account.weaponBank.lastCarry.placements.length,
+  };
+}
+
+/** Binding prestige law: a terminal game clear, no live expedition, and the World Tier 30 cap. */
+export function prestigeCeremonyView(
+  account: MetaAccountV4,
+  gameCleared: boolean,
+): PrestigeCeremonyView {
+  const worldTier = Math.min(PRESTIGE_CAP, Math.max(0, Math.floor(account.prestige)));
+  const atStake = prestigeAtStakeSummary(account);
+  const atCap = worldTier >= PRESTIGE_CAP;
+  const expeditionActive = account.weaponBank.expedition !== null;
+  const eligible = gameCleared && !expeditionActive && !atCap;
+  const eligibilityCopy = atCap
+    ? "WORLD TIER 30 · HAT TOWER AT CAP"
+    : expeditionActive
+      ? "CLOSE THE ACTIVE EXPEDITION BEFORE PRESTIGE"
+      : gameCleared
+        ? "GAME CLEAR RECEIPT HELD · FAREWELL AVAILABLE"
+        : `BEAT THE GAME AT WORLD TIER ${worldTier} TO PRESTIGE`;
+  const hatSlots = prestigeHatSlots(worldTier);
+  const nextHatSlots = prestigeHatSlots(worldTier + 1);
+  const nextHatPromise =
+    nextHatSlots > hatSlots
+      ? `NEXT HAT SLOT · ${hatSlots} → ${nextHatSlots} stacked hats`
+      : `NEXT HAT SLOT · tower remains capped at ${PRESTIGE_CAP} hats`;
+  return {
+    eligible,
+    eligibilityCopy,
+    worldTier,
+    nextWorldTier: atCap ? null : worldTier + 1,
+    hatSlots,
+    nextHatSlots,
+    nextHatPromise,
+    atStake,
+    costCopy: [
+      "ENTIRE WEAPON BANK WIPED",
+      `${atStake.totalEntries} entries · ${atStake.physicalWeapons} weapons`,
+      `Stash ${atStake.stashEntries} · Intake ${atStake.intakeEntries} · Pairs ${atStake.pairEntries}`,
+      `Distinct bases ${atStake.distinctWeaponIds} · Last Carry refs ${atStake.lastCarryReferences}`,
+      "SCRIP PAID · 0",
+    ].join("\n"),
+    survivorCopy: [
+      "SURVIVE",
+      "Fists + Home-Issue Rusty Cleaver starter floor",
+      `${account.ownedGear.length} unlocked gear · ${Object.keys(account.pets).length} pets`,
+      `${account.scrip.toLocaleString()} Scrip · Armory shelves · cosmetics`,
+    ].join("\n"),
+  };
+}
+
+export function prestigeHoldProgress(startedAtMs: number, nowMs: number): number {
+  if (!Number.isFinite(startedAtMs) || !Number.isFinite(nowMs) || nowMs <= startedAtMs) return 0;
+  return Math.min(1, (nowMs - startedAtMs) / PRESTIGE_CONFIRM_HOLD_MS);
+}
+
+export function beginPrestigeReceiptFlow(
+  account: MetaAccountV4,
+  gameCleared: boolean,
+  requestId: string,
+): PrestigeReceiptFlow | null {
+  if (!prestigeCeremonyView(account, gameCleared).eligible) return null;
+  const cleanRequestId = requestId.trim().slice(0, 64);
+  if (!cleanRequestId) return null;
+  return {
+    request: { requestId: cleanRequestId, expectedRevision: account.revision },
+    expectedPrestige: account.prestige + 1,
+    status: "pending",
+  };
+}
+
+function parsePrestigeReceipt(payload: unknown): PrestigeReceiptView | undefined {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return undefined;
+  const row = payload as Partial<PrestigeReceiptView>;
+  if (
+    row.ok !== true ||
+    !Number.isInteger(row.removedEntries) ||
+    Number(row.removedEntries) < 0 ||
+    !Number.isInteger(row.removedPhysical) ||
+    Number(row.removedPhysical) < 0 ||
+    !Number.isInteger(row.prestige) ||
+    Number(row.prestige) < 1 ||
+    Number(row.prestige) > PRESTIGE_CAP ||
+    row.scripPaid !== 0 ||
+    !Number.isInteger(row.revision) ||
+    Number(row.revision) < 0
+  ) {
+    return undefined;
+  }
+  return row as PrestigeReceiptView;
+}
+
+function settlePrestigeReceiptFlow(flow: PrestigeReceiptFlow): PrestigeReceiptFlow {
+  if (
+    flow.receipt &&
+    flow.refreshedAccount &&
+    flow.receipt.prestige === flow.expectedPrestige &&
+    flow.refreshedAccount.prestige === flow.receipt.prestige &&
+    flow.refreshedAccount.revision >= flow.receipt.revision
+  ) {
+    return { ...flow, status: "revealed" };
+  }
+  return { ...flow, status: flow.receipt ? "awaiting-account" : "pending" };
+}
+
+/** Receipt and canonical account may arrive on adjacent frames; reveal only after both agree. */
+export function receivePrestigeReceipt(
+  flow: PrestigeReceiptFlow,
+  payload: unknown,
+): PrestigeReceiptFlow {
+  const receipt = parsePrestigeReceipt(payload);
+  if (
+    !receipt ||
+    receipt.prestige !== flow.expectedPrestige ||
+    receipt.revision <= flow.request.expectedRevision
+  ) {
+    return flow;
+  }
+  return settlePrestigeReceiptFlow({ ...flow, receipt });
+}
+
+export function receivePrestigeAccount(
+  flow: PrestigeReceiptFlow,
+  account: MetaAccountV4,
+): PrestigeReceiptFlow {
+  if (account.revision < flow.request.expectedRevision) return flow;
+  return settlePrestigeReceiptFlow({ ...flow, refreshedAccount: account });
 }
 
 function canonicalPresetLoadout(value: unknown, account: MetaAccountV4): Record<GearSlot, GearId> {

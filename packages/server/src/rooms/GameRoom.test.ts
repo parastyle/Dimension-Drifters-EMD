@@ -2256,7 +2256,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(30);
+    expect(h.state().schemaVersion).toBe(31);
   });
 });
 
@@ -3318,7 +3318,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3688,7 +3688,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3820,7 +3820,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4278,7 +4278,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4545,8 +4545,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(30);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(fixture.h.state().schemaVersion).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5068,8 +5068,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(30);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(h.state().schemaVersion).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5119,7 +5119,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([30, 30]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([31, 31]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5816,8 +5816,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(31);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6346,7 +6346,7 @@ describe("GameRoom - weapon-bank explicit abandon boundary", () => {
 });
 
 // METAGAME WAVE 3 — append-only Drive authority, economy, and equivalence coverage.
-describe("GameRoom — schema-30 Drive authority", () => {
+describe("GameRoom — schema-31 Drive authority", () => {
   it("ships the nested quantized mirror while affordability remains on the private float", () => {
     const h = makeRoom();
     h.join("drive-float");
@@ -6360,8 +6360,8 @@ describe("GameRoom — schema-30 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
-    expect(h.state().schemaVersion).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(h.state().schemaVersion).toBe(31);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({ valueQ: 10_000, regenMode: 1, beamLockEndTick: 0 });
 
@@ -6572,6 +6572,76 @@ describe("GameRoom — schema-30 Drive authority", () => {
     h.tick(1);
     expect(combat.drive.valueF).toBeCloseTo(value + 1, 8);
     expect(combat.drive.recoveryDebtF).toBeCloseTo(debt - 0.05, 8);
+  });
+});
+
+// METAGAME WAVE 6 — append-only public prestige, clear eligibility, and receipt coverage.
+describe("GameRoom — schema-31 public prestige ceremony", () => {
+  it("publishes join prestige, requires and consumes one game-clear receipt, then refreshes the wire row", () => {
+    const h = makeRoom();
+    const messages: Array<{ type: string; payload: unknown }> = [];
+    const client = {
+      sessionId: "prestige-public",
+      send: (type: string, payload: unknown) => messages.push({ type, payload }),
+    };
+    const supplied = enemyComboShared.createMetaAccountV4();
+    supplied.prestige = 4;
+    supplied.scrip = 777;
+    supplied.weaponBank.stash.push(roomBankSingle(88, "rattler-sabre"));
+    h.room.clients.push(client);
+    h.room.onJoin(client, { metaAccount: supplied });
+    const player = h.state().players.get(client.sessionId);
+    const account = h.room.metaAccounts.get(client.sessionId) as import("@dd/shared").MetaAccountV4;
+    expect([player.prestige, player.dualWield.prestige]).toEqual([4, 4]);
+
+    h.send(client.sessionId, "prestigeReset", {
+      requestId: "before-clear",
+      expectedRevision: account.revision,
+    });
+    expect(account.prestige).toBe(4);
+    expect(messages.some((message) => message.type === "prestigeReceipt")).toBe(false);
+
+    h.room.enterTerminalOutcome("victory");
+    messages.length = 0;
+    h.tick(1);
+    h.send(client.sessionId, "prestigeReset", {
+      requestId: "earned-clear",
+      expectedRevision: account.revision,
+    });
+    expect(account).toMatchObject({ prestige: 5, scrip: 777 });
+    expect(account.weaponBank.stash).toEqual([]);
+    expect([player.prestige, player.dualWield.prestige]).toEqual([5, 5]);
+    expect(messages.find((message) => message.type === "prestigeReceipt")?.payload).toMatchObject({
+      ok: true,
+      prestige: 5,
+      removedEntries: 1,
+      removedPhysical: 1,
+      scripPaid: 0,
+      revision: account.revision,
+    });
+    expect(messages.at(-1)).toMatchObject({ type: "metaAccount", payload: account });
+
+    messages.length = 0;
+    h.tick(1);
+    h.send(client.sessionId, "prestigeReset", {
+      requestId: "same-clear-again",
+      expectedRevision: account.revision,
+    });
+    expect(account.prestige).toBe(5);
+    expect(messages.some((message) => message.type === "prestigeReceipt")).toBe(false);
+  });
+
+  it("appends one uint8 public count to the existing nested cosmetic and Drive tail row", () => {
+    const tailSymbols = Object.getOwnPropertySymbols(enemyComboShared.DualWieldState);
+    const metadata = (
+      enemyComboShared.DualWieldState as unknown as Record<
+        symbol,
+        Record<number, { name: string; type: string }>
+      >
+    )[tailSymbols[0]!];
+    if (!metadata) throw new Error("DualWieldState schema metadata is required");
+    expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
   });
 });
 

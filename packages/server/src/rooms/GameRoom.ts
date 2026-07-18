@@ -985,6 +985,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly weaponSettlementReceipts = new Map<string, WeaponSettlementResult>();
   private readonly stashSaleReceipts = new Map<string, StashSaleResult>();
   private readonly prestigeReceipts = new Map<string, unknown>();
+  /** One optional farewell per terminal game clear; consumed only by an accepted prestige receipt. */
+  private readonly prestigeGameClearReceipts = new Set<string>();
   /** Present only when a validated v3 loadout, rather than the compatibility character kit, owns identity. */
   private readonly gearRuns = new Map<string, GearRunRuntime>();
   /** Exact pet level/modifiers and all hot counters are server-private and snapshotted once per run. */
@@ -1682,8 +1684,20 @@ export class GameRoom extends Room<ArenaState> {
           this.sendOwnerMessage(client.sessionId, "prestigeReceipt", replay);
           return;
         }
+        // A prestige is the optional result-screen transaction earned by clearing the current run. The
+        // bank helper retains its atomic no-expedition + cap laws; this room owns the game-clear receipt.
+        if (
+          this.state.outcome !== "victory" ||
+          !this.prestigeGameClearReceipts.has(client.sessionId)
+        )
+          return;
         const result = wipeWeaponBankForPrestige(account);
         if (!result.ok) return;
+        this.prestigeGameClearReceipts.delete(client.sessionId);
+        const player =
+          this.state.players.get(client.sessionId) ??
+          this.disconnectedPlayers.get(client.sessionId)?.player;
+        if (player) player.prestige = account.prestige;
         const receipt = { ...result, prestige: account.prestige, scripPaid: 0, revision: account.revision };
         this.prestigeReceipts.set(receiptKey, receipt);
         this.sendOwnerMessage(client.sessionId, "prestigeReceipt", receipt);
@@ -3322,6 +3336,8 @@ export class GameRoom extends Room<ArenaState> {
     this.metaAccounts.forEach((account, playerId) => {
       if (this.petSettledAccounts.has(playerId)) return;
       this.petSettledAccounts.add(playerId);
+      if (outcome === "victory") this.prestigeGameClearReceipts.add(playerId);
+      else this.prestigeGameClearReceipts.delete(playerId);
       const player = this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
       if (player) {
         this.syncWeaponRunFromArsenal(player);
@@ -3954,6 +3970,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.metaAccounts.set(client.sessionId, account);
     player.scrip = account.scrip;
+    player.prestige = account.prestige;
     if (suppliedGearAccount) {
       const gear = resolveGearLoadout(account.equippedGear);
       this.gearRuns.set(client.sessionId, gear);
