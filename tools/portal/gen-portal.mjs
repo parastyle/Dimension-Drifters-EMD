@@ -33,7 +33,7 @@ const {
   EXPANSION_WEAPON_IDS,
   PLAYABLE_CHARACTERS,
   characterName,
-  classForCharacter,
+  CHARACTER_KITS,
   BELT_LEVELS,
 } = shared;
 
@@ -78,12 +78,12 @@ const weapons = [...WEAPON_IDS, ...EXPANSION_WEAPON_IDS]
   })
   .sort((a, b) => Number(b.base) - Number(a.base) || a.name.localeCompare(b.name));
 
-const characters = PLAYABLE_CHARACTERS.map((id) => ({
-  id,
-  name: characterName(id),
-  cls: classForCharacter(id).name,
-  grows: classForCharacter(id).classAttr.toUpperCase(),
-})).sort((a, b) => a.name.localeCompare(b.name));
+// §classmerge identity 2.0: classes dissolved — the catalog shows the sum-10 spread + signature quirk.
+const characters = PLAYABLE_CHARACTERS.map((id) => {
+  const kit = CHARACTER_KITS[id] ?? { spread: {}, quirk: "—" };
+  const spread = Object.entries(kit.spread ?? {}).map(([k, v]) => `${k.toUpperCase()} ${v}`).join(" · ");
+  return { id, name: characterName(id), cls: kit.quirk ?? "—", grows: spread };
+}).sort((a, b) => a.name.localeCompare(b.name));
 
 const levels = Object.values(BELT_LEVELS).map((l) => ({
   id: l.id,
