@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("phaser", () => ({ default: {} }));
 
 import {
+  createPoseLanguageInput,
+  createPoseLanguageSample,
+  poseBlendUnderOwnership,
+  samplePoseLanguage,
+  WEAPON_POSE_SPECS,
+} from "../sprites/pose-language.js";
+import {
   type CloseBladePoseInput,
   createCloseBladePoseSample,
   sampleCloseBladePose,
@@ -166,5 +173,45 @@ describe("close-blade full-body pose sampler", () => {
     );
     expect(Math.hypot(sample.artX, sample.artY)).toBeLessThanOrEqual(6);
     expect(Math.hypot(sample.shadowX, sample.shadowY)).toBeLessThanOrEqual(3);
+  });
+});
+
+// POSE IMPLEMENTATION WAVE — append-only proof that the generic ward yields to committed lunge truth.
+describe("close-blade pose-language interruption", () => {
+  it("zeros the generic family layer while exact lunge hands and feet are owned", () => {
+    const idleInput = createPoseLanguageInput();
+    idleInput.spec = WEAPON_POSE_SPECS["close-blade"];
+    idleInput.freeHand = 1;
+    const idlePose = samplePoseLanguage(idleInput, createPoseLanguageSample());
+    expect(idlePose.offBlend).toBeGreaterThan(0);
+
+    const committed = createCloseBladePoseSample();
+    sampleCloseBladePose(input({ t: 0.5, hand: "lead" }), committed);
+    expect(committed.frontOwn).toBe(1);
+    expect(committed.feetOwn).toBe(1);
+    expect(poseBlendUnderOwnership(idlePose.offBlend, committed.frontOwn, true)).toBe(0);
+    expect(poseBlendUnderOwnership(idlePose.footBlend, committed.feetOwn, true)).toBe(0);
+  });
+
+  it("keeps reach, paper advance, plant, and terminal identity unchanged with a ward underneath", () => {
+    const committed = createCloseBladePoseSample();
+    const poseInput = input({ t: 0.45, hand: "both", effectiveCooldown: 0.46 });
+    sampleCloseBladePose(poseInput, committed);
+    const tip = tipRadius(
+      committed.frontGripX,
+      committed.frontGripY,
+      committed.frontAngle,
+      poseInput.businessLength,
+      committed.artX,
+      committed.artY,
+    );
+    expect(tip).toBeCloseTo(TARGET_TIP, 5);
+    expect(Math.hypot(committed.artX, committed.artY)).toBeLessThanOrEqual(6);
+    expect(committed.frontFootBlend).toBeGreaterThan(0);
+    sampleCloseBladePose(input({ t: 0.92, hand: "both" }), committed);
+    expect(committed.frontGripBlend).toBe(0);
+    expect(committed.backGripBlend).toBe(0);
+    expect(committed.frontFootBlend).toBe(0);
+    expect(committed.backFootBlend).toBe(0);
   });
 });

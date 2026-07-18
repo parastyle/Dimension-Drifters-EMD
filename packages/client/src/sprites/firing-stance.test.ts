@@ -10,6 +10,12 @@ import {
   firingStanceFor,
   usesAimedFiringStance,
 } from "./firing-stance.js";
+import {
+  createPoseLanguageInput,
+  createPoseLanguageSample,
+  samplePoseLanguage,
+  weaponPoseSpecFor,
+} from "./pose-language.js";
 
 function weapon(id: string): WeaponDef {
   const def = WEAPONS[id];
@@ -88,5 +94,37 @@ describe("weapon firing-stance table", () => {
     expect(firingStanceFor(thrown)).toBe(FIRING_STANCES.thrown);
     expect(usesAimedFiringStance(thrown)).toBe(false);
     expect(firingHandTarget(thrown, "lead", -Math.PI / 2)).toEqual({ x: 0, y: 0 });
+  });
+});
+
+// POSE IMPLEMENTATION WAVE — append-only firing-height invariants with a live off-hand equilibrium.
+describe("firing stance composed with pose language", () => {
+  it("leaves every aimed firing-hand band and face-line cap canonical", () => {
+    for (const [, id] of FAMILY_FIXTURES) {
+      const def = weapon(id);
+      if (!usesAimedFiringStance(def)) continue;
+      const stance = firingStanceFor(def);
+      const input = createPoseLanguageInput();
+      input.spec = weaponPoseSpecFor(def);
+      input.freeHand = 1;
+      input.phase = "active";
+      input.phaseT = 0.5;
+      samplePoseLanguage(input, createPoseLanguageSample());
+      for (const role of ["lead", "off"] as const) {
+        const target = firingHandTarget(def, role, Math.PI / 3);
+        expect(target.y, `${id}:${role}:min`).toBeGreaterThanOrEqual(stance.yBand[0]);
+        expect(target.y, `${id}:${role}:max`).toBeLessThanOrEqual(stance.yBand[1]);
+        expect(target.y, `${id}:${role}:face`).toBeGreaterThan(FIRING_FACE_LINE_Y);
+      }
+    }
+  });
+
+  it("keeps thrown outside aimed linger and fist-guns under the chest cap", () => {
+    expect(usesAimedFiringStance(weapon("x-sword-railspike"))).toBe(false);
+    const fistGun = weapon("x2-hellmouth-palmcaster");
+    expect(firingHandTarget(fistGun, "lead", -Math.PI / 2).y).toBeGreaterThanOrEqual(
+      FIST_GUN_CHEST_CAP_Y,
+    );
+    expect(weaponPoseSpecFor(fistGun).family).toBe("fist-gun");
   });
 });

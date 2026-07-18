@@ -120,6 +120,28 @@ import {
   stepHatSpringChain,
 } from "../sprites/gear-parts.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
+import {
+  aimRelativePoint,
+  createPoseLanguageInput,
+  createPoseLanguageSample,
+  createPoseVariantSelection,
+  oneHandBladePoseVariantFrom,
+  POSE_ONE_HAND_BLADE_VARIANT_REGISTRY_KEY,
+  POSE_PISTOL_VARIANT_REGISTRY_KEY,
+  POSE_TWO_HAND_AUTHORITY_REGISTRY_KEY,
+  type PoseActionPhase,
+  type PoseBeamPhase,
+  type PoseLanguageInput,
+  type PoseLanguageSample,
+  pistolPoseVariantFrom,
+  poseImpulsePending,
+  poseSupportHandFor,
+  samplePoseLanguage,
+  twoHandedPoseFor,
+  twoHandPoseAuthorityFrom,
+  type WeaponPoseSpec,
+  weaponPoseSpecFor,
+} from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 
@@ -1517,6 +1539,17 @@ export class SpriteRig {
     tellEcho?: Phaser.GameObjects.Image;
   }[] = [];
   private weaponDef?: WeaponDef;
+  /** Session-local art-direction choices are read from Phaser's registry and cached as descriptor refs. */
+  private readonly poseVariants = createPoseVariantSelection();
+  private poseLeadSpec?: WeaponPoseSpec;
+  private poseOffSpec?: WeaponPoseSpec;
+  private poseTwoHanded = false;
+  private readonly poseLeadInput = createPoseLanguageInput();
+  private readonly poseLeadSample = createPoseLanguageSample();
+  private readonly poseSupportInput = createPoseLanguageInput();
+  private readonly poseSupportSample = createPoseLanguageSample();
+  private readonly posePoint = { x: 0, y: 0 };
+  private poseRecoilConsumedAtMs = -1e9;
   private loadoutKey = "";
   private pairBaseSeq = 0;
   private pairBaseSeqReady = false;
@@ -2182,7 +2215,7 @@ export class SpriteRig {
     const frontWeapon = this.weapons[0];
     const backWeapon = this.weapons[1];
     if (this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
-    if (!backWeapon && !this.weaponDef?.twoHanded && backHand) {
+    if (!backWeapon && !this.poseTwoHanded && backHand) {
       stack.push(backHand.img);
       for (const attachment of this.gearAttachments)
         if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
@@ -2191,7 +2224,7 @@ export class SpriteRig {
     if (this.boilerplateHead) stack.push(this.boilerplateHead);
     this.pushGearPlane(stack, 10, 32);
 
-    if (this.weaponDef?.twoHanded) {
+    if (this.poseTwoHanded) {
       if (!this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
       if (backHand) {
         stack.push(backHand.img);
@@ -2248,6 +2281,63 @@ export class SpriteRig {
     return this.weapons[hand]?.def;
   }
 
+  /** Refresh descriptor references without allocating; dev showroom changes become visible next frame. */
+  private refreshPoseLanguageSelection(rebuildGeometry: boolean, force = false): void {
+    const registry = this.scene.game?.registry;
+    const pistol = pistolPoseVariantFrom(registry?.get(POSE_PISTOL_VARIANT_REGISTRY_KEY));
+    const oneHandBlade = oneHandBladePoseVariantFrom(
+      registry?.get(POSE_ONE_HAND_BLADE_VARIANT_REGISTRY_KEY),
+    );
+    const twoHandAuthority = twoHandPoseAuthorityFrom(
+      registry?.get(POSE_TWO_HAND_AUTHORITY_REGISTRY_KEY),
+    );
+    const changed =
+      pistol !== this.poseVariants.pistol ||
+      oneHandBlade !== this.poseVariants.oneHandBlade ||
+      twoHandAuthority !== this.poseVariants.twoHandAuthority;
+    if (!force && !changed) return;
+
+    this.poseVariants.pistol = pistol;
+    this.poseVariants.oneHandBlade = oneHandBlade;
+    this.poseVariants.twoHandAuthority = twoHandAuthority;
+    const priorTwoHanded = this.poseTwoHanded;
+    const leadDef = this.weapons[0]?.def ?? this.weaponDef;
+    const offDef = this.weapons[1]?.def;
+    this.poseLeadSpec = leadDef ? weaponPoseSpecFor(leadDef, this.poseVariants) : undefined;
+    this.poseOffSpec = offDef ? weaponPoseSpecFor(offDef, this.poseVariants) : undefined;
+    this.poseTwoHanded = !!leadDef && twoHandedPoseFor(leadDef, twoHandAuthority);
+    if (rebuildGeometry && priorTwoHanded !== this.poseTwoHanded) {
+      const backHand = this.hands.find((hand) => !hand.front);
+      if (backHand) backHand.springReady = false;
+      this.rebuildRenderStack();
+    }
+  }
+
+  private sampleWeaponPose(
+    input: PoseLanguageInput,
+    out: PoseLanguageSample,
+    spec: WeaponPoseSpec,
+    timeS: number,
+    phase: PoseActionPhase,
+    phaseT: number,
+    strikingHand: 0 | 1,
+    freeHand: 0 | 1 | -1,
+    reducedMotion: boolean,
+    beamPhase: PoseBeamPhase | undefined,
+  ): void {
+    input.spec = spec;
+    input.timeS = timeS;
+    input.gait = this.gait;
+    input.moveAmount = this.gait;
+    input.phase = phase;
+    input.phaseT = phaseT;
+    input.strikingHand = strikingHand;
+    input.freeHand = freeHand;
+    input.reducedMotion = reducedMotion;
+    input.beamPhase = beamPhase;
+    samplePoseLanguage(input, out);
+  }
+
   /** World-space grip anchor after jiggle, lift, and the container's facing transform. */
   handWorldAnchor(hand: 0 | 1): { x: number; y: number } {
     const held = this.weapons[hand];
@@ -2285,6 +2375,7 @@ export class SpriteRig {
     this.jiggleSignalX = 0;
     this.jiggleSignalY = 0;
     this.jiggleRootReady = false;
+    this.poseRecoilConsumedAtMs = -1e9;
     this.floatingHeadSpring.x = 0;
     this.floatingHeadSpring.y = 0;
     this.floatingHeadSpring.vx = 0;
@@ -3207,6 +3298,7 @@ export class SpriteRig {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    this.refreshPoseLanguageSelection(false, true);
     this.loadoutKey = `${lead.spriteId}:${lead.def.id}|${off ? `${off.spriteId}:${off.def.id}` : ""}`;
     // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
     // swing carries into the NEW weapon's timeline. §45 the combo/hold shares that exact lifetime boundary.
@@ -3288,7 +3380,7 @@ export class SpriteRig {
         stack.push(hand.img);
       }
     };
-    if (def.twoHanded) {
+    if (this.poseTwoHanded) {
       // 2H: one weapon, BOTH hands gripping it above the body.
       stack.push(this.body);
       if (frontWpn) stack.push(frontWpn);
@@ -3313,6 +3405,7 @@ export class SpriteRig {
     if (firstPart) {
       this.setupTomeVisual(spriteId, def, partTexture(this.scene, spriteId, firstPart.role));
     }
+    this.refreshPoseLanguageSelection(false, true);
     if (backWpn && previousKey.length > 0 && previousKey !== this.loadoutKey) {
       this.pairCeremonyStartMs = this.presentationClockNow();
       this.flash(90);
@@ -3942,6 +4035,7 @@ export class SpriteRig {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    this.refreshPoseLanguageSelection(false, true);
     this.loadoutKey = def.id;
     this.pairBaseSeq = 0;
     this.pairBaseSeqReady = false;
@@ -6352,6 +6446,7 @@ export class SpriteRig {
 
   animate(timeMs: number, anim: RigAnim): void {
     this.installBoilerplateIfReady();
+    this.refreshPoseLanguageSelection(true);
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
     // clamped so a hit-stop gap or first frame can't produce a jump.
@@ -6648,7 +6743,7 @@ export class SpriteRig {
     this.attackBackGripX = 0;
     this.attackBackGripY = 0;
     this.attackGripBoth = false;
-    this.attackHandSpacing = TARGET_BODY_H * 0.42;
+    this.attackHandSpacing = TARGET_BODY_H * (this.poseLeadSpec?.gripSpacing ?? 0.42);
     this.attackFrontGripX = 0;
     this.attackFrontGripY = 0;
     this.attackFrontGripBlend = 0;
@@ -6722,7 +6817,7 @@ export class SpriteRig {
       const finalStep = this.meleeTellStep % 3 === 2;
       const direct = this.meleeTellArchetype === "rusher" || this.meleeTellArchetype === "swarm";
       const shove = this.meleeTellArchetype === "zoner";
-      const heavy = !!this.weaponDef?.twoHanded;
+      const heavy = this.poseTwoHanded;
       let loadedA: number;
       let contactA = aimLocal;
       let followA: number;
@@ -6801,16 +6896,18 @@ export class SpriteRig {
         this.rangedAimActiveUntilMs,
       );
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
-      if (this.weaponDef.twoHanded || this.weapons.length > 1 || leadFiringStance.castingHand)
+      if (this.poseTwoHanded || this.weapons.length > 1 || leadFiringStance.castingHand)
         ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
       weaponAngle = heldAimLocal;
       if (this.weapons.length > 1) backWeaponAngle = heldAimLocal - this.offWeaponLean();
-      if (this.weaponDef.twoHanded && leadFiringStance.family !== "tome") {
+      if (this.poseTwoHanded && leadFiringStance.family !== "tome") {
+        const restSpacing = this.poseLeadSpec?.gripSpacing ?? 0.42;
         this.attackHandSpacing =
-          TARGET_BODY_H * (0.42 + (leadFiringStance.twoHandSpacing - 0.42) * rangedAimBlend);
+          TARGET_BODY_H *
+          (restSpacing + (leadFiringStance.twoHandSpacing - restSpacing) * rangedAimBlend);
       }
       this.body.x += TARGET_BODY_H * leadFiringStance.bodyAdvance * rangedAimBlend;
       const hasFistGun = this.weapons.some(
@@ -7241,7 +7338,7 @@ export class SpriteRig {
           // §45 PUNCH reuses the existing chamber/extension/hip-drive vocabulary as jab → rear cross →
           // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
-          const heavy = def.twoHanded ? 1 : 0;
+          const heavy = twoHandedPoseFor(def, this.poseVariants.twoHandAuthority) ? 1 : 0;
           const reach = TARGET_BODY_H * (pose?.motion === "jab" ? 0.48 : 0.55 + 0.25 * heavy);
           const wind = pose?.timing.activeStart ?? 0.1;
           const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
@@ -7517,12 +7614,161 @@ export class SpriteRig {
           this.attackBackGripBlend *= poseBlend;
           this.attackFrontFootBlend *= poseBlend;
           this.attackBackFootBlend *= poseBlend;
-          this.attackHandSpacing =
-            TARGET_BODY_H * 0.42 + (this.attackHandSpacing - TARGET_BODY_H * 0.42) * poseBlend;
+          const restSpacing = TARGET_BODY_H * (this.poseLeadSpec?.gripSpacing ?? 0.42);
+          this.attackHandSpacing = restSpacing + (this.attackHandSpacing - restSpacing) * poseBlend;
           if (poseBlend < 0.5) this.attackWeaponDepth = 0;
         }
       }
     }
+    // Family pose proposes the equilibrium underneath every authored action owner. Its phase is sampled
+    // from the accepted swing/recoil/page clocks; no parallel attack timer exists.
+    let posePhase: PoseActionPhase = "idle";
+    let posePhaseT = 0;
+    const poseSwingDurationMs = Math.max(0, (this.swing?.poseSeconds ?? 0) * 1000);
+    const poseSwingElapsedMs = sceneNow - this.swingStart;
+    if (this.swing && poseSwingDurationMs > 0 && poseSwingElapsedMs >= 0) {
+      const swingT = clamp01(poseSwingElapsedMs / poseSwingDurationMs);
+      const activeStart = clamp01(
+        this.swing.activeStartSeconds / Math.max(1e-6, this.swing.poseSeconds),
+      );
+      const activeEnd = clamp01(
+        this.swing.activeEndSeconds / Math.max(1e-6, this.swing.poseSeconds),
+      );
+      if (swingT < activeStart) {
+        posePhase = "anticipation";
+        posePhaseT = activeStart > 0 ? swingT / activeStart : 1;
+      } else if (swingT <= activeEnd) {
+        posePhase = "active";
+        posePhaseT = (swingT - activeStart) / Math.max(1e-6, activeEnd - activeStart);
+      } else if (swingT < 1) {
+        posePhase = "recovery";
+        posePhaseT = (swingT - activeEnd) / Math.max(1e-6, 1 - activeEnd);
+      }
+    }
+
+    const poseRecoilElapsedMs = sceneNow - this.gunRecoilAtMs;
+    if (poseRecoilElapsedMs >= 0 && poseRecoilElapsedMs < 140) {
+      posePhase = "active";
+      posePhaseT = poseRecoilElapsedMs / 140;
+    } else if (poseRecoilElapsedMs >= 140 && poseRecoilElapsedMs < 140 + RANGED_AIM_SETTLE_MS) {
+      posePhase = "recovery";
+      posePhaseT = (poseRecoilElapsedMs - 140) / RANGED_AIM_SETTLE_MS;
+    }
+
+    // Tome trace/tap follows the accepted page scheduler rather than a free-running decorative timer.
+    if (this.poseLeadSpec?.family === "tome" && this.tome) {
+      const untilPageMs = this.tome.pendingPageAtMs - sceneNow;
+      const pageAgeMs = sceneNow - this.tome.lastFlipAtMs;
+      if (this.tome.pendingPage && untilPageMs >= 0 && untilPageMs <= TOME_PAGE_INTERVAL_MS) {
+        posePhase = "anticipation";
+        posePhaseT = 1 - untilPageMs / TOME_PAGE_INTERVAL_MS;
+      } else if (pageAgeMs >= 0 && pageAgeMs < TOME_PAGE_DURATION_MS * 0.62) {
+        posePhase = "active";
+        posePhaseT = pageAgeMs / (TOME_PAGE_DURATION_MS * 0.62);
+      } else if (pageAgeMs >= 0 && pageAgeMs < TOME_PAGE_DURATION_MS) {
+        posePhase = "recovery";
+        posePhaseT = (pageAgeMs - TOME_PAGE_DURATION_MS * 0.62) / (TOME_PAGE_DURATION_MS * 0.38);
+      }
+    }
+
+    let poseBeamPhase: PoseBeamPhase | undefined;
+    if (this.weaponDef?.beam) {
+      if (anim.fireHeld) {
+        poseBeamPhase = rangedAimBlend < 0.94 ? "charging" : "active";
+        if (posePhase === "idle") {
+          posePhase = rangedAimBlend < 0.94 ? "anticipation" : "active";
+          posePhaseT = rangedAimBlend;
+        }
+      } else if (rangedAimBlend > 0) {
+        poseBeamPhase = "cooling";
+        posePhase = "recovery";
+        posePhaseT = 1 - rangedAimBlend;
+      }
+    }
+
+    const strikingHand: 0 | 1 =
+      poseRecoilElapsedMs >= 0 && poseRecoilElapsedMs < 140
+        ? this.gunRecoilHand
+        : this.swingHand === 1
+          ? 1
+          : 0;
+    const pairedAimed =
+      !!this.weapons[0] &&
+      !!this.weapons[1] &&
+      usesAimedFiringStance(this.weapons[0].def) &&
+      usesAimedFiringStance(this.weapons[1].def);
+    const poseSupportHand = poseSupportHandFor(
+      strikingHand,
+      posePhase !== "idle",
+      this.poseTwoHanded,
+      this.crossfallActive || this.swingHand === "both",
+      pairedAimed,
+    );
+
+    const poseCloseBladeSuppressed =
+      this.closeBladePoseActive ||
+      (!!this.poseLeadSpec && this.poseLeadSpec.family === "close-blade" && posePhase !== "idle");
+    const poseWholeRigSuppressed =
+      poseCloseBladeSuppressed || this.crossfallActive || meleePoseActive || brace > 0;
+    let poseHandSample: PoseLanguageSample | undefined;
+    if (this.poseLeadSpec) {
+      const poseMotionSuppressed = anim.reducedMotion === true || outsidePaperView;
+      this.sampleWeaponPose(
+        this.poseLeadInput,
+        this.poseLeadSample,
+        this.poseLeadSpec,
+        t,
+        posePhase,
+        posePhaseT,
+        strikingHand,
+        poseSupportHand,
+        poseMotionSuppressed,
+        poseBeamPhase,
+      );
+      const supportSpec =
+        poseSupportHand === 0
+          ? this.poseLeadSpec
+          : poseSupportHand === 1
+            ? (this.poseOffSpec ?? this.poseLeadSpec)
+            : this.poseLeadSpec;
+      this.sampleWeaponPose(
+        this.poseSupportInput,
+        this.poseSupportSample,
+        supportSpec,
+        t,
+        posePhase,
+        posePhaseT,
+        strikingHand,
+        poseSupportHand,
+        poseMotionSuppressed,
+        poseBeamPhase,
+      );
+      poseHandSample = this.poseSupportSample;
+
+      if (!poseWholeRigSuppressed) {
+        aimRelativePoint(
+          this.poseLeadSample.bodyForward,
+          this.poseLeadSample.bodyLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        this.body.x += this.posePoint.x * TARGET_BODY_H;
+        this.body.y += this.posePoint.y * TARGET_BODY_H;
+        this.body.rotation += this.facing * this.poseLeadSample.bodyTurn;
+      }
+      if (this.poseTwoHanded) {
+        const spacingMicro =
+          (this.poseLeadSample.gripSpacing - this.poseLeadSpec.gripSpacing) * TARGET_BODY_H;
+        this.attackHandSpacing += spacingMicro * (1 - Math.max(ownFront, ownBack));
+      }
+    }
+    const poseRecoilImpulse =
+      poseSupportHand >= 0 &&
+      !!poseHandSample &&
+      poseHandSample.offOwn < 0.999 &&
+      poseImpulsePending(sceneNow, this.gunRecoilAtMs, this.poseRecoilConsumedAtMs);
+    if (poseRecoilImpulse) this.poseRecoilConsumedAtMs = this.gunRecoilAtMs;
+
     // Brace overrides the swing with the same aim-relative forward guard used by neutral/held poses.
     if (brace > 0) {
       ownFront = 1;
@@ -7566,7 +7812,7 @@ export class SpriteRig {
       this.body.scaleX *= 1 + ceremony.ruffle * 0.045;
       this.body.scaleY *= 1 - ceremony.ruffle * 0.035;
     }
-    if (this.weaponDef?.twoHanded) {
+    if (this.poseTwoHanded) {
       // The rear grip is a hard geometric child of the lead/haft, never an independently wobbling oscillator.
       ownBack = Math.max(ownBack, ownFront);
     }
@@ -7591,7 +7837,10 @@ export class SpriteRig {
       const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
       const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
       const bobY = Math.abs(Math.sin(legPh)) * s * 2 * gait; // a little vertical with each footfall
-      const idleY = Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
+      const idleY =
+        anim.reducedMotion === true || outsidePaperView
+          ? 0
+          : Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
       // §MADNESS loose, dangly arms — a big inertia trail so the hands swing behind + overshoot the body on
       // every speed/direction change (the flash-animation follow-through), then settle.
       const trailX = -lagX * this.facing * s * 36;
@@ -7607,6 +7856,23 @@ export class SpriteRig {
       const heldFiringDef = this.weapons[handIndex]?.def;
       const castsFromFreeHand = !hnd.front && !heldFiringDef && tomeCastingHandActive;
       const posedFiringDef = heldFiringDef ?? (castsFromFreeHand ? this.weaponDef : undefined);
+      if (
+        handIndex === poseSupportHand &&
+        poseHandSample &&
+        !poseCloseBladeSuppressed &&
+        !this.crossfallActive
+      ) {
+        aimRelativePoint(
+          poseHandSample.offForward,
+          poseHandSample.offLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        const targetX = this.body.x + this.posePoint.x * TARGET_BODY_H;
+        const targetY = this.body.y + this.posePoint.y * TARGET_BODY_H;
+        hx += (targetX - hx) * poseHandSample.offBlend;
+        hy += (targetY - hy) * poseHandSample.offBlend;
+      }
       if (
         rangedAimBlend > 0 &&
         posedFiringDef &&
@@ -7663,15 +7929,19 @@ export class SpriteRig {
         }
       }
       if (PROCEDURAL_JIGGLE) {
-        const own = hnd.front ? ownFront : ownBack;
+        const authoredOwn = hnd.front ? ownFront : ownBack;
+        const own =
+          handIndex === poseSupportHand && poseHandSample && !poseCloseBladeSuppressed
+            ? Math.max(authoredOwn, poseHandSample.offOwn)
+            : authoredOwn;
         // Orbit and the rear 2H grip have authoritative late writers; synchronize at those final seams below.
         const deferToConstraint =
-          this.orbitT >= 0 || (!hnd.front && !!this.weaponDef?.twoHanded && !tomeCastingHandActive);
+          this.orbitT >= 0 || (!hnd.front && this.poseTwoHanded && !tomeCastingHandActive);
         if (!deferToConstraint) {
           const holdsWeapon = hnd.front ? this.weapons.length > 0 : this.weapons.length > 1;
           const inertia = holdsWeapon ? JIGGLE_WEAPON_HAND_INERTIA : JIGGLE_FREE_HAND_INERTIA;
           const rolePhase = this.phase * Math.PI * 2 + (hnd.front ? 0.7 : 2.9);
-          const idleMix = 1 - gait;
+          const idleMix = anim.reducedMotion === true || outsidePaperView ? 0 : 1 - gait;
           const equilibriumX =
             Math.sin(t * Math.PI * 2 * 0.57 + rolePhase) * JIGGLE_HAND_IDLE_X * idleMix;
           const equilibriumY =
@@ -7681,6 +7951,11 @@ export class SpriteRig {
           if (turnTriggered) {
             impulseX += this.turnDirX * this.facing * JIGGLE_TURN_HAND_KICK;
             impulseY += this.turnDirY * JIGGLE_TURN_HAND_KICK;
+          }
+          if (poseRecoilImpulse && handIndex === poseSupportHand) {
+            const catchImpulse = this.poseLeadSpec?.offHandVerb === "recoil-catch" ? 18 : 10;
+            impulseX += Math.cos(heldAimLocal) * catchImpulse;
+            impulseY += Math.sin(heldAimLocal) * catchImpulse;
           }
           if (landed) impulseY += JIGGLE_LAND_HAND_KICK * this.landingKickScale;
           if (slideRecovered) impulseY += JIGGLE_LAND_HAND_KICK * 1.4;
@@ -7712,7 +7987,7 @@ export class SpriteRig {
 
     // Two-handed grip: place the back hand UP the haft from the front grip (along the weapon).
     // §40: skipped while an ORBIT slash is live — the orbit pass below owns both hands.
-    if (this.weaponDef?.twoHanded && this.orbitT < 0 && !tomeCastingHandActive) {
+    if (this.poseTwoHanded && this.orbitT < 0 && !tomeCastingHandActive) {
       const front = this.hands.find((h) => h.front);
       const back = this.hands.find((h) => !h.front);
       if (front && back) {
@@ -7743,7 +8018,10 @@ export class SpriteRig {
       if (!ft) continue;
       const ph = legPh + i * Math.PI; // legs out of phase
       const planted = Math.sin(ph) <= 0;
-      const idle = Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
+      const idle =
+        anim.reducedMotion === true || outsidePaperView
+          ? 0
+          : Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
       const trailX = -lagX * this.facing * s * 20; // §MADNESS looser foot drag on a speed/direction change
       const trailY = -lagY * s * 12;
       let fy = ft.oy - Math.max(0, Math.sin(ph)) * s * 19 * gait;
@@ -7752,6 +8030,16 @@ export class SpriteRig {
         fy += idle;
         fy += trailY;
         fx += trailX;
+      }
+      if (this.poseLeadSpec && !poseCloseBladeSuppressed && !this.crossfallActive) {
+        aimRelativePoint(
+          ft.front ? this.poseLeadSample.frontFootForward : this.poseLeadSample.backFootForward,
+          ft.front ? this.poseLeadSample.frontFootLateral : this.poseLeadSample.backFootLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        fx += this.posePoint.x * TARGET_BODY_H * this.poseLeadSample.footBlend;
+        fy += this.posePoint.y * TARGET_BODY_H * this.poseLeadSample.footBlend;
       }
       const footBlend = ft.front
         ? clamp01(this.attackFrontFootBlend)
@@ -7774,7 +8062,7 @@ export class SpriteRig {
       if (PROCEDURAL_JIGGLE) {
         const inertia = planted ? JIGGLE_FOOT_PLANT_INERTIA : JIGGLE_FOOT_AIR_INERTIA;
         const rolePhase = this.phase * Math.PI * 2 + i * 2.1 + 4.3;
-        const idleMix = 1 - gait;
+        const idleMix = anim.reducedMotion === true || outsidePaperView ? 0 : 1 - gait;
         const equilibriumX =
           Math.sin(t * Math.PI * 2 * 0.73 + rolePhase) * JIGGLE_FOOT_IDLE_X * idleMix;
         const equilibriumY =
