@@ -80,6 +80,11 @@ import {
   type WeaponDef,
 } from "@dd/shared";
 import Phaser from "phaser";
+import {
+  type WeaponArtGeometry,
+  type WeaponArtStateGeometry,
+  weaponArtGeometryFor,
+} from "../sprites/art-geometry.generated.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 
@@ -109,10 +114,14 @@ const TARGET_BODY_H = 76; // §37 slightly smaller characters (was 84) — reads
 /** §7 v0.112 procedural gait — px travelled per full stride cycle (2 steps). Distance-based, so the step
  *  cadence MATCHES actual speed (no jog-in-place, no fixed loop that runs after you stop). (tuning) */
 const STRIDE_LEN = 150;
-/** Vertical "look" toward the cursor (local player): how far the torso leans + the held weapon tilts
- *  with the aim's up/down. Subtle by design — "to some degree". (tuning) */
+/** Vertical "look" toward the cursor (local player): how far the torso leans with the aim's up/down. */
 const BODY_LOOK_LEAN = 0.14;
-const WEAPON_LOOK_TILT = 0.6;
+/** Pointed weapons obey semantic +X. The one neutral exception to laser-flat aim is this small ready cant. */
+export const MELEE_FORWARD_READY_CANT = -Math.PI / 15;
+
+export function forwardMeleeReadyAngle(aimLocal: number): number {
+  return aimLocal + MELEE_FORWARD_READY_CANT;
+}
 /** §45 rollback switch for Stage-1 presentation, including empty-hand fist dispatch. No gameplay reads it. */
 const CLIENT_VISUAL_COMBOS = true;
 /** The authored guard eases to neutral only after accepted-cadence grace lapses. */
@@ -648,6 +657,7 @@ interface TomeVisualState {
   readonly closedTextureKey: string;
   readonly closedFrame?: string;
   readonly displayLength: number;
+  readonly openGeometry?: WeaponArtStateGeometry;
   readonly pages: readonly [TomePageQuad, TomePageQuad];
   readonly scraps: readonly [TomeScrap, TomeScrap];
   openBaseScale: number;
@@ -1062,6 +1072,11 @@ export class SpriteRig {
     /** The weapon's own display scale (displayLength/part.w). Applied each frame ÷ baseScale so the weapon
      *  is a FIXED on-screen size regardless of which (larger/smaller) character holds it. */
     baseScale: number;
+    /** Geometry is resolved once from the equipped sprite identity; semantic rotation remains uncorrected. */
+    artGeometry?: WeaponArtGeometry;
+    closedOriginX: number;
+    closedOriginY: number;
+    semanticRotation: number;
     /** Lazily-created full-tell separation/echo layers. Lite horde tells never allocate them. */
     tellRim?: Phaser.GameObjects.Image;
     tellEcho?: Phaser.GameObjects.Image;
@@ -1894,8 +1909,8 @@ export class SpriteRig {
     }
     const q = clamp01(elapsedMs / REMOTE_SOURCE_FLASH_MS);
     const tip = weapon.img.width * Math.abs(weapon.img.scaleX) * (1 - weapon.img.originX);
-    const x = weapon.img.x + Math.cos(weapon.img.rotation) * tip;
-    const y = weapon.img.y + Math.sin(weapon.img.rotation) * tip;
+    const x = weapon.img.x + Math.cos(weapon.semanticRotation) * tip;
+    const y = weapon.img.y + Math.sin(weapon.semanticRotation) * tip;
     this.observedSourceFlash
       .setPosition(x, y)
       .setScale(0.72 + q * 0.9, 0.72 + q * 0.42)
@@ -1903,7 +1918,7 @@ export class SpriteRig {
       .setVisible(true);
     this.observedSourceRing
       .setPosition(x, y)
-      .setRotation(weapon.img.rotation)
+      .setRotation(weapon.semanticRotation)
       .setScale(0.5 + q * 1.15, 0.5 + q * 0.72)
       .setAlpha((1 - q) * 0.78)
       .setVisible(true);
@@ -1956,6 +1971,7 @@ export class SpriteRig {
       closedTextureKey: closedTexture.key,
       closedFrame: closedTexture.frame,
       displayLength: def.displayLength,
+      openGeometry: heldWeapon.artGeometry?.open,
       pages: [makePage(0xf1d09a), makePage(0xe5bd80)],
       scraps: [makeScrap(0xe9c88f), makeScrap(0xdab276)],
       openBaseScale: 0,
@@ -2076,7 +2092,8 @@ export class SpriteRig {
       const frame = this.scene.textures.get(tome.openTextureKey).get();
       const width = frame.realWidth || frame.width;
       if (width > 0) {
-        tome.openBaseScale = tome.displayLength / width;
+        tome.openBaseScale =
+          (tome.displayLength * (tome.openGeometry?.displayLengthMul ?? 1)) / width;
         tome.openTextureReady = true;
       }
     }
@@ -2179,8 +2196,24 @@ export class SpriteRig {
     }
   }
 
+  /** Apply client-only painted geometry exactly once, after every semantic/presentation pose writer. */
+  private applyWeaponArtGeometry(): void {
+    for (let i = 0; i < this.weapons.length; i++) {
+      const weapon = this.weapons[i];
+      if (!weapon) continue;
+      const state =
+        i === 0 && this.tome?.openVisible ? weapon.artGeometry?.open : weapon.artGeometry?.closed;
+      weapon.img.setOrigin(
+        state?.originX ?? weapon.closedOriginX,
+        state?.originY ?? weapon.closedOriginY,
+      );
+      weapon.semanticRotation = weapon.img.rotation;
+      weapon.img.rotation += state?.artAngle ?? 0;
+    }
+  }
+
   /** Equip (or swap) a weapon — one piece per hand (dual-wield uses both hands + both sprite
-   *  parts). Each piece is held UPRIGHT in its hand, pivoting at the grip, and is inserted just
+   *  parts). Each piece points along semantic +X in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
   equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
     this.destroyMeleeTellLayers();
@@ -2196,6 +2229,7 @@ export class SpriteRig {
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
+    const spriteGeometry = weaponArtGeometryFor(spriteId);
     // §42 WORN gear pivots where the hand sits INSIDE the glove (~40% in from the cuff) instead of at the
     // authored gripFrac (the cuff) — gripFrac-mounting a gauntlet read as holding it by the opening and
     // smacking people with it, duel-challenge style.
@@ -2203,18 +2237,31 @@ export class SpriteRig {
     const attach = (
       part: SpriteManifest["parts"][number] | undefined,
       hand: typeof frontHand,
+      artGeometry?: WeaponArtGeometry,
     ): Phaser.GameObjects.Image | undefined => {
       if (!part || !hand) return undefined;
       const tx = partTexture(this.scene, spriteId, part.role);
       const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
-      const wScale = def.displayLength / part.w;
-      img.setOrigin(worn ? 0.4 : def.gripFrac, 0.5).setScale(wScale);
+      const closed = artGeometry?.closed;
+      const originX = closed?.originX ?? (worn ? 0.4 : def.gripFrac);
+      const originY = closed?.originY ?? 0.5;
+      const wScale = (def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
+      img.setOrigin(originX, originY).setScale(wScale);
       this.root.add(img);
-      this.weapons.push({ img, hand, baseScale: wScale });
+      this.weapons.push({
+        img,
+        hand,
+        baseScale: wScale,
+        artGeometry,
+        closedOriginX: originX,
+        closedOriginY: originY,
+        semanticRotation: 0,
+      });
       return img;
     };
-    const frontWpn = attach(manifest.parts[0], frontHand);
+    const frontWpn = attach(manifest.parts[0], frontHand, spriteGeometry);
     const backWpn =
+      // The committed audit measured part-1. Keep dual part-2 on the canonical +X contract until measured.
       def.dual && manifest.parts.length >= 2 ? attach(manifest.parts[1], backHand) : undefined;
 
     // Explicit z-stack (bottom→top): each weapon overlays the BODY but tucks UNDER its hand.
@@ -2451,8 +2498,8 @@ export class SpriteRig {
     let hasImplement = false;
     if (weapon) {
       const tip = weapon.img.width * Math.abs(weapon.img.scaleX) * (1 - weapon.img.originX) * 0.78;
-      localX = weapon.img.x + Math.cos(weapon.img.rotation) * tip;
-      localY = weapon.img.y + Math.sin(weapon.img.rotation) * tip;
+      localX = weapon.img.x + Math.cos(weapon.semanticRotation) * tip;
+      localY = weapon.img.y + Math.sin(weapon.semanticRotation) * tip;
       hasImplement = true;
     } else if (front) {
       localX = front.img.x;
@@ -2836,7 +2883,7 @@ export class SpriteRig {
     if (motion === "falling-gate") {
       const coil = aimLocal - 1.15;
       const contact = aimLocal + 0.8;
-      const guard = aimLocal + 0.96;
+      const guard = forwardMeleeReadyAngle(aimLocal);
       if (tt < 0.22) {
         const p = clamp01(tt / 0.22);
         const e = p * (2 - p);
@@ -2992,7 +3039,7 @@ export class SpriteRig {
     if (motion === "highland-gate") {
       const open = aimLocal - 1.42;
       const contact = aimLocal + 1.05;
-      const guard = aimLocal + 1.2;
+      const guard = forwardMeleeReadyAngle(aimLocal);
       if (tt < 0.18) {
         const p = smoothstep01(tt / 0.18);
         angle = aimLocal - 1.58 + 0.16 * p;
@@ -3033,6 +3080,7 @@ export class SpriteRig {
     if (motion === "rising-ward") {
       const hip = aimLocal + 1.2;
       const roof = aimLocal - 1.28;
+      const ready = forwardMeleeReadyAngle(aimLocal);
       if (tt < 0.12) {
         const p = smoothstep01(tt / 0.12);
         angle = hip + 0.12 * p;
@@ -3051,14 +3099,14 @@ export class SpriteRig {
         this.body.scaleY *= 1 + 0.05 * e;
       } else if (tt < 0.78) {
         const p = smoothstep01((tt - 0.46) / 0.32);
-        angle = roof - 0.08 * Math.sin(Math.PI * p);
+        angle = mixAngle(roof, ready, p);
         this.attackArtOffX = nx * H * (0.08 - 0.02 * p);
         this.attackArtOffY = ny * H * (0.08 - 0.02 * p);
         this.attackHandSpacing = H * 0.46;
         this.body.rotation -= 0.24 * Math.cos(aimLocal);
         this.body.scaleY *= 1.05;
       } else {
-        angle = roof;
+        angle = ready;
         this.attackArtOffX = nx * H * 0.06;
         this.attackArtOffY = ny * H * 0.06;
         this.attackHandSpacing = H * 0.46;
@@ -3881,7 +3929,7 @@ export class SpriteRig {
       this.attackShadowScaleY = 0.86 + 0.18 * Math.sin(Math.PI * p);
     } else {
       const p = smoothstep01((tt - 0.44) / 0.56);
-      const loadAngle = aimLocal - Math.PI / 2 - 0.62;
+      const loadAngle = forwardMeleeReadyAngle(aimLocal);
       angle = aimLocal + Math.PI + 0.18 + (loadAngle - (aimLocal + Math.PI + 0.18)) * p;
       this.attackArtOffX = fx * H * 0.03 * (1 - p);
       this.attackArtOffY = fy * H * 0.03 * (1 - p);
@@ -4094,6 +4142,7 @@ export class SpriteRig {
       // jab down aim. NOT a pommel bash — the blade never reverses, the body stays tall (no crunch),
       // and the exit travels UPWARD into the two-hand raise rather than into a rear load.
       const overhead = -Math.PI / 2 - 0.42;
+      const ready = forwardMeleeReadyAngle(aimLocal);
       if (tt < 0.14) {
         const p = smoothstep01(tt / 0.14);
         angle = aimLocal + 0.14 * (1 - p);
@@ -4125,12 +4174,13 @@ export class SpriteRig {
         this.body.rotation -= 0.08 * p * Math.cos(aimLocal);
         this.body.scaleY *= 1 + 0.03 * p;
       } else {
-        angle = overhead;
+        const p = smoothstep01((tt - 0.46) / 0.2);
+        angle = mixAngle(overhead, ready, p);
         this.attackHandSpacing = H * 0.36;
-        this.swingOffY = -H * 0.08;
-        this.attackLiftPx = H * 0.04;
-        this.body.rotation -= 0.08 * Math.cos(aimLocal);
-        this.body.scaleY *= 1.03;
+        this.swingOffY = -H * 0.08 * (1 - p);
+        this.attackLiftPx = H * 0.04 * (1 - p);
+        this.body.rotation -= 0.08 * Math.cos(aimLocal) * (1 - p);
+        this.body.scaleY *= 1 + 0.03 * (1 - p);
       }
       this.setComboFootwork(tt, 0.14, 0.3, 0.46, aimLocal, 0.06, 0, -0.02, 0);
       return angle;
@@ -4349,7 +4399,7 @@ export class SpriteRig {
     } else if (tt < 0.82) {
       // Exhale settle into a light high guard — no plant, no crunch.
       const p = smoothstep01((tt - 0.62) / 0.2);
-      const guard = aimLocal - 0.9;
+      const guard = forwardMeleeReadyAngle(aimLocal);
       angle = through + (guard - through) * p;
       this.weaponLengthScale = 0.99 + 0.01 * p;
       this.attackArtOffX = fx * H * 0.06 * (1 - p);
@@ -4362,7 +4412,7 @@ export class SpriteRig {
       // One visible breath: a light spring settle in the high guard.
       const p = clamp01((tt - 0.82) / 0.18);
       const breath = Math.sin(Math.PI * p) * 0.02;
-      angle = aimLocal - 0.9 + breath;
+      angle = forwardMeleeReadyAngle(aimLocal) + breath;
       this.swingOffY = -H * (0.05 + breath);
       this.body.scaleY *= 1.01 + breath;
     }
@@ -4531,7 +4581,11 @@ export class SpriteRig {
       }
       for (const weapon of this.weapons) {
         weapon.img.setPosition(weapon.hand.img.x, weapon.hand.img.y);
-        weapon.img.rotation = mixAngle(weapon.img.rotation, aimLocal + Math.PI / 2, offer);
+        weapon.img.rotation = mixAngle(
+          weapon.img.rotation,
+          forwardMeleeReadyAngle(aimLocal),
+          offer,
+        );
       }
     }
 
@@ -4548,7 +4602,11 @@ export class SpriteRig {
       for (const foot of this.feet)
         foot.img.y += (foot.front ? 1 : 0.45) * TARGET_BODY_H * 0.06 * dip;
       for (const weapon of this.weapons) {
-        weapon.img.rotation = mixAngle(weapon.img.rotation, -Math.PI / 2 + 0.16, guard);
+        weapon.img.rotation = mixAngle(
+          weapon.img.rotation,
+          forwardMeleeReadyAngle(aimLocal),
+          guard,
+        );
       }
     }
 
@@ -5111,8 +5169,8 @@ export class SpriteRig {
       this.body.scaleY = s * (1 - bob * 0.06 - brace * 0.05); // slight squash
     }
 
-    // Weapon angle — guns AIM along the cursor; melee weapons sit upright at rest then wind-up + chop on
-    // swing. Computed BEFORE the hands so a two-handed grip can place the back hand on the haft.
+    // Weapon angle — guns and melee both honor semantic +X/aim. Swing choreography may travel through
+    // vertical, but neutral and held guards return to a small forward cant.
     let weaponAngle = 0;
     let backWeaponAngle = Number.NaN;
     let ownFront = 0;
@@ -5177,6 +5235,8 @@ export class SpriteRig {
       (this.meleeTellMode === "windup" && this.meleeTellFull) ||
       ((this.meleeTellMode === "resolve" || this.meleeTellMode === "cancel") &&
         this.meleeTellReleasePose);
+    const heldAimWorld = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
+    const heldAimLocal = Math.atan2(Math.sin(heldAimWorld), Math.cos(heldAimWorld) * this.facing);
     if (meleePoseActive) {
       // Enemy attack archetype owns the pose before the randomly-assigned held weapon. This also suppresses
       // a gun's ordinary muzzle-aim branch while a zoner chambers the stock for its parryable contact lunge.
@@ -5184,7 +5244,7 @@ export class SpriteRig {
         Math.sin(this.meleeTellAimWorld),
         Math.cos(this.meleeTellAimWorld) * this.facing,
       );
-      const restA = -Math.PI / 2 + 0.16;
+      const restA = forwardMeleeReadyAngle(aimLocal);
       const resolveT =
         this.meleeTellMode === "resolve"
           ? clamp01((sceneNow - this.meleeTellReleaseAtMs) / 150)
@@ -5291,16 +5351,15 @@ export class SpriteRig {
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
-      const aimAng = anim.isSelf ? Math.atan2(anim.aimY, anim.aimX) : anim.aimDir;
-      weaponAngle = Math.atan2(Math.sin(aimAng), Math.cos(aimAng) * this.facing);
+      weaponAngle = heldAimLocal;
     } else if (
       this.weaponDef &&
       (this.weapons.length > 0 || (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
     ) {
       const def = this.weaponDef;
-      // Rest tilt follows the cursor's vertical: blade raises looking up, lowers looking down.
-      const restA = -Math.PI / 2 + 0.16 + lookY * WEAPON_LOOK_TILT;
-      weaponAngle = restA + Math.sin(t * 2.6) * 0.04; // gentle idle sway
+      // Rest is aim-relative and constant: no family can silently reintroduce an upright idle policy.
+      const restA = forwardMeleeReadyAngle(heldAimLocal);
+      weaponAngle = restA;
       // The accepted wall epoch was mapped once; retained combo/tome/source art resumes from the held
       // presentation phase instead of spending hit-stop wall time.
       const el = sceneNow - this.swingStart;
@@ -5468,11 +5527,11 @@ export class SpriteRig {
               this.body.scaleY *= 0.95 + 0.1 * e;
             } else {
               const carry = Math.min(1, (tt - b) / (pose.timing.followEnd - b));
-              weaponAngle = raiseA - 0.08 * Math.sin(Math.PI * carry);
-              this.swingOffY = -lift;
-              this.body.rotation -= 0.19;
-              this.body.y -= 3 * s;
-              this.body.scaleY *= 1.05;
+              weaponAngle = mixAngle(raiseA, forwardMeleeReadyAngle(aimLocal), carry);
+              this.swingOffY = -lift * (1 - carry);
+              this.body.rotation -= 0.19 * (1 - carry);
+              this.body.y -= 3 * s * (1 - carry);
+              this.body.scaleY *= 1 + 0.05 * (1 - carry);
             }
           } else {
             const execution = pose?.motion === "execution-slam";
@@ -5508,7 +5567,7 @@ export class SpriteRig {
             } else {
               const p = (tt - follow) / (1 - follow);
               const e = p * (2 - p);
-              weaponAngle = slamA + (lowGuardA - slamA) * e; // settle to a chained low guard, not neutral
+              weaponAngle = mixAngle(slamA, forwardMeleeReadyAngle(aimLocal), e);
               this.swingOffY = TARGET_BODY_H * 0.06 * (1 - 0.35 * e);
               this.body.rotation += (execution ? 0.28 : 0.2) - (execution ? 0.16 : 0.08) * e;
               this.body.y += ((execution ? 8 : 6) - (execution ? 3 : 1) * e) * s;
@@ -5855,7 +5914,7 @@ export class SpriteRig {
             } else {
               const p = (tt - follow) / (1 - follow);
               const e = p * (2 - p);
-              weaponAngle = plantA - 0.08 * e;
+              weaponAngle = mixAngle(plantA, forwardMeleeReadyAngle(aimLocal), e);
               this.swingOffY = TARGET_BODY_H * 0.05 * (1 - 0.25 * e);
               this.body.rotation += 0.22 - 0.04 * e;
               this.body.y += (6.5 - 1.5 * e) * s;
@@ -5890,6 +5949,19 @@ export class SpriteRig {
               this.body.rotation += direction * 0.08;
             }
           }
+        }
+
+        // A combo may travel through any authored angle, but its cadence guard must present the business
+        // end down aim. Blend only after authored follow-through so contact timing and sweep behavior stay
+        // untouched; a retained tt=1 hold lands exactly on the shared forward-ready law.
+        if (comboPose && tt >= comboPose.timing.followEnd) {
+          const holdT = smoothstep01(
+            (tt - comboPose.timing.followEnd) / Math.max(0.01, 1 - comboPose.timing.followEnd),
+          );
+          const ready = forwardMeleeReadyAngle(aimLocal);
+          weaponAngle = mixAngle(weaponAngle, ready, holdT);
+          if (!Number.isNaN(backWeaponAngle))
+            backWeaponAngle = mixAngle(backWeaponAngle, ready, holdT);
         }
 
         // Once grace lapses, blend every additive fake-3D contribution back to the exact resting frame.
@@ -5929,12 +6001,18 @@ export class SpriteRig {
         }
       }
     }
-    // Brace overrides the swing: raise the weapon toward a near-horizontal block (business end up).
+    // Brace overrides the swing with the same aim-relative forward guard used by neutral/held poses.
     if (brace > 0) {
       ownFront = 1;
       ownBack = 1;
       ownFeet = 1;
-      const guard = -0.2; // near-horizontal, tipped slightly up = a raised guard
+      const guardAim = meleePoseActive
+        ? Math.atan2(
+            Math.sin(this.meleeTellAimWorld),
+            Math.cos(this.meleeTellAimWorld) * this.facing,
+          )
+        : heldAimLocal;
+      const guard = forwardMeleeReadyAngle(guardAim);
       weaponAngle += (guard - weaponAngle) * brace;
     }
     if (this.weaponDef?.twoHanded) {
@@ -6409,6 +6487,7 @@ export class SpriteRig {
       }
     }
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
+    this.applyWeaponArtGeometry();
     this.syncTomeVisual(sceneNow, outsidePaperView);
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);
