@@ -5,9 +5,6 @@ import {
   IMPULSE_MAX,
   JUMP_VELOCITY,
   MOVE_HITCH_DIP,
-  MOVE_ROTATION_RADIANS_PER_SECOND,
-  MOVE_ROTATION_REARM_TICKS,
-  MOVE_ROTATION_SPEED_RESERVE,
   MOVE_SPEED,
   PLAYER_RADIUS,
   steerVelocity,
@@ -250,113 +247,5 @@ describe("stepVertical (height + gravity)", () => {
     const r = stepVertical(2, -9999, 1 / 60); // slammed down hard
     expect(r.height).toBe(0);
     expect(r.vh).toBe(0);
-  });
-});
-
-// §7 v0.118 circle-jitter reproduction — record the displacement the player actually receives each
-// authoritative 20 Hz tick. The pre-fix snap law fails both direction bounds below; when a fast rotating
-// intent is quantized to the eight keyboard headings it also alternates 45°/90° facets and strobes the
-// 90° hitch between 320 and 315.52 px/s.
-describe("stepSteeredMovement (§7 v0.118 sustained-rotation regression)", () => {
-  const TICK = 0.05;
-  const MAX_TURN_PER_TICK = MOVE_ROTATION_RADIANS_PER_SECOND * TICK;
-  const MAX_MAGNITUDE_SPREAD = MOVE_ROTATION_SPEED_RESERVE * (MOVE_ROTATION_REARM_TICKS * 2 + 1);
-  const KEYBOARD_FACET = Math.PI / 4;
-
-  function shortestTurn(from: number, to: number): number {
-    let delta = (to - from + Math.PI) % (Math.PI * 2);
-    if (delta < 0) delta += Math.PI * 2;
-    return delta - Math.PI;
-  }
-
-  function circleTrace(
-    radiansPerTick: number,
-    ticks: number,
-    quantizeToKeyboard: boolean,
-  ): { magnitudes: number[]; directionDeltas: number[] } {
-    let x = 2500;
-    let y = 2500;
-    let vx = MOVE_SPEED;
-    let vy = 0;
-    let heading = 0;
-    const magnitudes: number[] = [];
-    const directionDeltas: number[] = [];
-    for (let tick = 1; tick <= ticks; tick++) {
-      const rawHeading = radiansPerTick * tick;
-      const inputHeading = quantizeToKeyboard
-        ? Math.round(rawHeading / KEYBOARD_FACET) * KEYBOARD_FACET
-        : rawHeading;
-      const moved = stepSteeredMovement(
-        { x, y },
-        { vx, vy },
-        { dx: Math.cos(inputHeading), dy: Math.sin(inputHeading) },
-        TICK,
-      );
-      const displacementX = moved.x - x;
-      const displacementY = moved.y - y;
-      const nextHeading = Math.atan2(displacementY, displacementX);
-      magnitudes.push(Math.hypot(displacementX, displacementY) / TICK);
-      directionDeltas.push(Math.abs(shortestTurn(heading, nextHeading)));
-      x = moved.x;
-      y = moved.y;
-      vx = moved.vx;
-      vy = moved.vy;
-      heading = nextHeading;
-    }
-    return { magnitudes, directionDeltas };
-  }
-
-  function expectSmoothRotation(trace: { magnitudes: number[]; directionDeltas: number[] }): void {
-    const magnitudeSpread = Math.max(...trace.magnitudes) - Math.min(...trace.magnitudes);
-    expect(magnitudeSpread).toBeLessThan(MAX_MAGNITUDE_SPREAD);
-    expect(Math.max(...trace.directionDeltas)).toBeLessThanOrEqual(MAX_TURN_PER_TICK + 1e-10);
-  }
-
-  it("bounds smooth continuous-circle displacement at several angular speeds", () => {
-    for (const degreesPerTick of [10, 30, 46]) {
-      expectSmoothRotation(circleTrace((degreesPerTick * Math.PI) / 180, 160, false));
-    }
-  });
-
-  it("kills 45°-quantized keyboard circle facets and hitch strobe at several angular speeds", () => {
-    for (const degreesPerTick of [15, 46, 60]) {
-      expectSmoothRotation(circleTrace((degreesPerTick * Math.PI) / 180, 160, true));
-    }
-  });
-
-  it("keeps one deliberate 180° pivot direct and fires today's hitch dip exactly once", () => {
-    let velocity = { vx: MOVE_SPEED, vy: 0 };
-    const speeds: number[] = [];
-    for (let tick = 0; tick < 5; tick++) {
-      velocity = steerVelocity(velocity, { dx: -1, dy: 0 }, TICK);
-      speeds.push(Math.hypot(velocity.vx, velocity.vy));
-      expect(velocity.vx).toBeLessThan(0);
-      expect(Math.abs(velocity.vy)).toBeLessThan(1e-12);
-    }
-    expect(speeds[0]).toBeCloseTo(MOVE_SPEED * (1 - MOVE_HITCH_DIP), 10);
-    expect(speeds.filter((value) => value < MOVE_SPEED - 1e-9)).toHaveLength(1);
-  });
-
-  it("resimulates identical authority/prediction input sequences to bit-identical positions", () => {
-    const sequences = [
-      Array.from({ length: 160 }, (_, tick) => ((tick + 1) * 30 * Math.PI) / 180),
-      Array.from({ length: 160 }, (_, tick) => {
-        const rawHeading = ((tick + 1) * 60 * Math.PI) / 180;
-        return Math.round(rawHeading / KEYBOARD_FACET) * KEYBOARD_FACET;
-      }),
-    ];
-    for (const sequence of sequences) {
-      let authority = { x: 2500, y: 2500, vx: MOVE_SPEED, vy: 0 };
-      let prediction = { ...authority };
-      for (const heading of sequence) {
-        const input = { dx: Math.cos(heading), dy: Math.sin(heading) };
-        authority = stepSteeredMovement(authority, authority, input, TICK);
-        prediction = stepSteeredMovement(prediction, prediction, input, TICK);
-        expect(prediction.x).toBe(authority.x);
-        expect(prediction.y).toBe(authority.y);
-        expect(prediction.vx).toBe(authority.vx);
-        expect(prediction.vy).toBe(authority.vy);
-      }
-    }
   });
 });

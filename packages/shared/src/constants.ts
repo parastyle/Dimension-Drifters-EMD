@@ -120,29 +120,22 @@ export function applyCastGradeFloor(
 }
 
 /**
- * §7 v0.111 PIVOT movement ("pull the reins"), with the v0.118 sustained-rotation carve. A deliberate
- * sharp pivot is still DIRECT — the body faces input instantly — and keeps the discrete, ONE-TIME
+ * §7 v0.111 PIVOT movement ("pull the reins"). Superseded the v0.105 continuous velocity-steer (which
+ * curved the PATH on every turn = mushy). The heading is now DIRECT — the body faces input instantly
+ * (responsive, essential for a dodge game) — and the directional WEIGHT is a discrete, ONE-TIME
  * TURN-HITCH: a SHARP direction change (> MOVE_HITCH_MIN_ANGLE) briefly dips the speed (the "stop"),
- * scaled by sharpness (a full reversal retains 95.8%; a 45° nudge is free), then recovers over
- * MOVE_RECOVER_ACCEL (the "go"). A continuing turn is different: heading advances at
- * MOVE_ROTATION_RADIANS_PER_SECOND and carries a sub-pixel speed reserve as hysteresis, so eight-way
- * input cannot re-arm the hitch on every polygon facet. All state remains in the synced velocity; server
- * and prediction still run the same pure law. (tuning)
+ * scaled by how sharp the turn is (a full reversal now retains 95.8%; a 45° nudge is free), then speed
+ * recovers over MOVE_RECOVER_ACCEL (the "go"). A slow arc keeps each tick's turn angle small → never
+ * hitches. The dip fires ONCE because the heading snaps to input each tick (next tick already aligned
+ * → no re-dip). All state lives in the (synced) velocity, so client prediction is unchanged. (tuning)
  */
-/** Direct-pivot hitch-curve threshold (rad). A carve facet uses it as the free-turn floor. ~45°. */
+/** Sharp-turn threshold (rad). Below this the turn is smooth/free; above it dips the speed. ~45°. */
 export const MOVE_HITCH_MIN_ANGLE = Math.PI / 4;
 /** Max fraction the speed dips on the sharpest (180°) turn. Server-tuning wave: 0.42→0.042 cuts the
  *  direction-switch gate's INTENSITY by 90%, so a full reversal retains 95.8% speed. */
 export const MOVE_HITCH_DIP = 0.042;
 /** Below this speed (px/s) a turn can't hitch — starting from ~rest just accelerates, never "pivots". */
 export const MOVE_HITCH_MIN_SPEED = 40;
-/** Sustained-turn heading cap (rad/s). 4π = 720°/s = 36° per authoritative 20 Hz tick. */
-export const MOVE_ROTATION_RADIANS_PER_SECOND = Math.PI * 4;
-/** Aligned ticks before a completed carve can arm a fresh pivot hitch. Four ticks = 200ms at 20 Hz. */
-export const MOVE_ROTATION_REARM_TICKS = 4;
-/** Tiny speed-reserve quantum (px/s) encoding carve direction + rearm ticks inside synced velocity. The
- *  largest marker is 8 quanta = 0.008 px/s (0.0025% of MOVE_SPEED), physically negligible. */
-export const MOVE_ROTATION_SPEED_RESERVE = 0.001;
 /** Speed recovery after a hitch / spin-up from rest (px/s²). v0.117 EASE 1800→2600 (~0.12s to top, was
  *  ~0.18s) so the "go" snaps back fast after a swap — responsiveness is king in a dodge game. */
 export const MOVE_RECOVER_ACCEL = 2600;
