@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 29 as const; // weapon-bank protocol epoch; account/instance ids remain private
+export const SCHEMA_VERSION = 30 as const; // global Drive bar; account/instance ids remain private
 
 /** §ULT authoritative allocation, meter, action, and five-family tuning (20Hz tick epochs). */
 export const ULT_UNLOCK_ALLOCS = 15 as const;
@@ -79,6 +79,28 @@ export const ULT_DOOR_DETONATE_DAMAGE = 34 as const;
 export const TICK_RATE = 20;
 /** Milliseconds per server tick. */
 export const TICK_MS = 1000 / TICK_RATE;
+
+/**
+ * Schema-30 weapon-resource economy. Drive is one player-global authority; Ultimate Charge remains a
+ * completely separate earned meter. Costs are expressed in points and quantized down to quarters.
+ */
+export const DRIVE_CAPACITY = 100 as const;
+export const DRIVE_FLOOR_REGEN_PER_SECOND = 20 as const;
+export const DRIVE_ENGAGED_BONUS_PER_SECOND = 15 as const;
+export const DRIVE_MAX_GENERIC_RECOVERY_MULT = 1.18 as const;
+export const DRIVE_PRESSURE_MEMORY_SECONDS = 2 as const;
+export const DRIVE_THREAT_RADIUS = 640 as const;
+export const DRIVE_COST_QUANTUM = 0.25 as const;
+export const DRIVE_LOAD_MAX = 2.5 as const;
+export const DRIVE_GUN_BURST_RETENTION = 0.35 as const;
+export const DRIVE_THROWN_BURST_RETENTION = 0.45 as const;
+
+/** Ruling #2: the bar is beam heat. These values mechanically translate the retired normalized curve. */
+export const DRIVE_BEAM_IGNITION_COST = 25 as const;
+export const DRIVE_BEAM_NET_DRAIN_PER_SECOND = 60 as const;
+export const DRIVE_BEAM_GROSS_DRAIN_PER_SECOND = 80 as const;
+export const DRIVE_BEAM_CANCEL_COST = 20 as const;
+export const DRIVE_BEAM_RESTART_THRESHOLD = 68 as const;
 
 /** Flat player move speed in px/sec. §7 [LOCKED]: flat move speed, no sprint layer. (tuning) */
 export const MOVE_SPEED = 320;

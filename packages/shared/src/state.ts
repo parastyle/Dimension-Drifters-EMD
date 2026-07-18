@@ -43,6 +43,16 @@ export class UltimateState extends Schema {
   @type("float32") targetY = 0;
 }
 
+/** Schema-30 public projection of the server-private Drive float and beam lock epoch. */
+export class WeaponResourceState extends Schema {
+  /** Hundredths of one Drive point. Floored so presentation never overstates authority. */
+  @type("uint16") valueQ = 10_000;
+  /** 0 paused · 1 guaranteed floor · 2 pressure-earned engaged recovery. */
+  @type("uint8") regenMode = 1;
+  /** Absolute 20 Hz tick at which the current empty-beam minimum lock expires. */
+  @type("uint32") beamLockEndTick = 0;
+}
+
 /** Player tail wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
 export class DualWieldState extends Schema {
   @type("uint8") offhandSlot = 255;
@@ -53,6 +63,8 @@ export class DualWieldState extends Schema {
   @type("string") gearUpper = "";
   /** Schema v28; order: gloves,pants,boots. */
   @type("string") gearLower = "";
+  /** Schema v30. Nested here because PlayerState's 64 direct field indexes are all occupied. */
+  @type(WeaponResourceState) weaponResource = new WeaponResourceState();
 }
 
 /**
@@ -218,6 +230,8 @@ export class PlayerState extends Schema {
   @type("uint8") petLevelBand = 0;
   // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
   @type(DualWieldState) dualWield = new DualWieldState();
+  /** Direct accessor keeps the resource contract independent of the packed tail envelope. */
+  get weaponResource(): WeaponResourceState { return this.dualWield.weaponResource; }
   /** Schema v28 accessors append two frozen wardrobe strings to the existing final wire envelope. */
   get gearUpper(): string { return this.dualWield.gearUpper; }
   set gearUpper(value: string) { this.dualWield.gearUpper = value; }

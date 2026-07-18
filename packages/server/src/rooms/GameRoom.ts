@@ -12,6 +12,10 @@ import {
   BeamPhase,
   type BeamDescriptor,
   BeamState,
+  DriveRegenMode,
+  type DriveRegenModeValue,
+  driveRegenModeFor,
+  driveRegenPerSecond,
   clampBeltFloorY,
   resolveBeltObstacles,
   type ArenaMap,
@@ -41,7 +45,8 @@ import {
   BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
   BEAM_CRIT_QUANTUM_SECONDS,
-  BEAM_EARLY_CANCEL_HEAT,
+  BEAM_COOL_PER_SECOND,
+  BEAM_OVERHEAT_LOCK_SECONDS,
   BEAM_RECOVERY_SECONDS,
   BEAM_RESTART_HEAT,
   BEAM_STALE_INPUT_TICKS,
@@ -104,6 +109,15 @@ import {
   DROP_CHANCE_TOUGH,
   DROP_CHANCE_TRASH,
   DROP_GRACE_SECONDS,
+  DRIVE_BEAM_CANCEL_COST,
+  DRIVE_BEAM_IGNITION_COST,
+  DRIVE_BEAM_NET_DRAIN_PER_SECOND,
+  DRIVE_BEAM_RESTART_THRESHOLD,
+  DRIVE_CAPACITY,
+  DRIVE_FLOOR_REGEN_PER_SECOND,
+  DRIVE_MAX_GENERIC_RECOVERY_MULT,
+  DRIVE_PRESSURE_MEMORY_SECONDS,
+  DRIVE_THREAT_RADIUS,
   DUMMY_HP,
   DUMMY_RADIUS,
   depthDamageScale,
@@ -352,6 +366,9 @@ import {
   type WeaponDef,
   weaponMuzzleReach,
   weaponAttackCooldown,
+  effectiveAcceptedWeaponInterval,
+  driveCostForProfile,
+  weaponResourceProfile,
   weaponSetBonus,
   xpToNextLevel,
   ZONE_DPS,
@@ -586,17 +603,34 @@ interface InputState {
   mvy: number;
 }
 
-interface BeamResourceLedger {
-  heat: number;
-  recoveryT: number;
-  lockT: number;
-  requireRelease: boolean;
-}
-
 interface WeaponResourceLedger {
   cooldown: number;
-  reload: number;
-  charges: number;
+}
+
+type WeaponSpendReason = "tap" | "beam-ignite" | "beam-active" | "beam-cancel";
+
+interface WeaponSpendResult {
+  accepted: boolean;
+  debit: number;
+  beamEmpty: boolean;
+}
+
+/** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
+interface DriveRuntime {
+  valueF: number;
+  recoveryDebtF: number;
+  pressureUntilTick: number;
+  regenMode: DriveRegenModeValue;
+  beamLockEndTick: number;
+  beamRecoveryEndTick: number;
+  beamRequireRelease: boolean;
+  tickCreditF: number;
+  tickDebitF: number;
+  tickOpen: boolean;
+  forceEngaged: boolean;
+  simulationPaused: boolean;
+  engagedRecoveryMult: number;
+  spendResult: WeaponSpendResult;
 }
 
 interface RunWeaponLedger {
@@ -693,9 +727,9 @@ interface CombatState {
   invuln: number;
   /** Remaining parry cooldown, sec. */
   parryCd: number;
-  /** Thrown-weapon refill cooldown once charges deplete, sec (§10). */
+  /** Schema tombstone for the retired reload/refill clock. Always zero in schema-30 rooms. */
   reloadCd: number;
-  /** Last equipped weapon id — detect a swap to (re)initialise charges. */
+  /** Last equipped weapon id — detects identity changes for cadence-ledger restore. */
   lastWeapon: string;
   /** G-01 shared responsive draw gate. Per-weapon debt is restored underneath this short lock. */
   drawLock: number;
@@ -712,6 +746,8 @@ interface CombatState {
   pairComboExpiresAtMs: number;
   /** Arena carousel has no ArsenalSlot rows, so its resource debt is keyed by weapon identity. */
   weaponLedger: Map<string, WeaponResourceLedger>;
+  /** Schema-30 one global bar/debt/beam gate. Never copied through slot or topology ledgers. */
+  drive: DriveRuntime;
   /** §5 jump cooldown, sec (so the hop isn't spammable). */
   jumpCd: number;
   /** §5/§20 vertical velocity (px/s) for the real height axis — the jump seeds it, gravity decays it. */
@@ -789,7 +825,7 @@ interface CombatState {
   augmentSnapshot: string;
   beamVentStacks: number;
   beamFocusStacks: number;
-  /** Beam channel runtime. The resource ledger survives swaps so heat debt cannot be bypassed. */
+  /** Beam channel runtime. Affordability and lock truth live only in the player-global Drive row. */
   beamDescriptor?: BeamDescriptor;
   beamPhase: 0 | 1 | 2;
   beamPhaseT: number;
@@ -806,7 +842,6 @@ interface CombatState {
   beamCrit: number;
   beamHitIds: Set<string>;
   beamPendingDamage: Map<string, number>;
-  beamLedger: Map<string, BeamResourceLedger>;
   /** §ULT precise meter + buffered action + accepted immutable runtime. */
   ultChargeF: number;
   ultBuffer: number;
@@ -1694,8 +1729,8 @@ export class GameRoom extends Room<ArenaState> {
       player.scrip -= fee;
       player.offhandSlot = offIndex;
       player.pairBaseSeq = player.attackSeq;
-      player.offMaxCharges = this.effectiveMaxWeaponCharges(offSlot.weapon, player.id);
-      player.offCharges = clamp(offSlot.resourceCharges, 0, player.offMaxCharges);
+      player.offMaxCharges = 0;
+      player.offCharges = 0;
       c.offLastWeapon = offSlot.weapon;
       c.pairComboSeq = undefined;
       c.pairComboAcceptedAtMs = 0;
@@ -2086,7 +2121,6 @@ export class GameRoom extends Room<ArenaState> {
       c.beamQuantumT = 0;
       c.beamPendingDamage.clear();
       c.beamHitIds.clear();
-      c.beamLedger.clear();
       c.beamInputWasHeld = false;
       c.juggleArmed = false;
       c.juggleMercy = 0;
@@ -2210,7 +2244,7 @@ export class GameRoom extends Room<ArenaState> {
     slot.resourceReady = true;
     slot.cooldown = 0;
     slot.reload = 0;
-    slot.resourceCharges = this.effectiveMaxWeaponCharges(slot.weapon, player.id);
+    slot.resourceCharges = 0;
   }
 
   /** Return the authoritative paired-off row only while the slot link and eligibility still agree. */
@@ -2251,15 +2285,10 @@ export class GameRoom extends Room<ArenaState> {
   /** Paired off-hand debt ages live exactly once. The stowed loop excludes this same row. */
   private stepPairedOffWeaponResources(player: PlayerState, slot: ArsenalSlot, dt: number): void {
     slot.cooldown = Math.max(-dt, slot.cooldown - dt);
-    if (slot.reload > 0) {
-      slot.reload = Math.max(0, slot.reload - dt);
-      if (slot.reload <= 0) {
-        slot.resourceCharges = this.effectiveMaxWeaponCharges(slot.resourceWeapon, player.id);
-      }
-    }
-    const max = this.effectiveMaxWeaponCharges(slot.weapon, player.id);
-    player.offMaxCharges = max;
-    player.offCharges = clamp(slot.resourceCharges, 0, max);
+    slot.reload = 0;
+    slot.resourceCharges = 0;
+    player.offMaxCharges = 0;
+    player.offCharges = 0;
   }
 
   private copySlot(dst: ArsenalSlot, src: ArsenalSlot | null): void {
@@ -2270,8 +2299,8 @@ export class GameRoom extends Room<ArenaState> {
     dst.resourceWeapon = src?.resourceWeapon ?? "";
     dst.resourceReady = src?.resourceReady ?? false;
     dst.cooldown = src?.cooldown ?? 0;
-    dst.reload = src?.reload ?? 0;
-    dst.resourceCharges = src?.resourceCharges ?? 0;
+    dst.reload = 0;
+    dst.resourceCharges = 0;
     dst.instanceId = src?.instanceId ?? "";
     dst.bankEntryId = src?.bankEntryId ?? "";
     dst.bankEntryKind = src?.bankEntryKind ?? "";
@@ -2387,12 +2416,12 @@ export class GameRoom extends Room<ArenaState> {
     player.weapon = active?.weapon || FISTS_WEAPON;
     player.weaponRarity = active?.rarity ?? RARITY_COMMON;
     player.weaponAffix = active?.affix ?? "";
-    player.maxCharges = this.effectiveMaxWeaponCharges(player.weapon, player.id);
-    player.charges = player.maxCharges;
+    player.maxCharges = 0;
+    player.charges = 0;
     if (active) {
       active.resourceWeapon = active.weapon;
       active.resourceReady = true;
-      active.resourceCharges = player.charges;
+      active.resourceCharges = 0;
     }
   }
 
@@ -2612,8 +2641,8 @@ export class GameRoom extends Room<ArenaState> {
     this.initializeStoredWeaponResource(player, off);
     player.offhandSlot = offIndex;
     player.pairBaseSeq = player.attackSeq;
-    player.offMaxCharges = this.effectiveMaxWeaponCharges(off.weapon, player.id);
-    player.offCharges = clamp(off.resourceCharges, 0, player.offMaxCharges);
+    player.offMaxCharges = 0;
+    player.offCharges = 0;
     c.offLastWeapon = off.weapon;
     c.pairComboId = `${leadSlot.weapon}|${off.weapon}`;
     c.pairComboFamily = meleeComboSelectionFor(WEAPONS[leadSlot.weapon]!)?.family ?? "arc";
@@ -2644,15 +2673,6 @@ export class GameRoom extends Room<ArenaState> {
     this.sendOwnerMessage(player.id, "weaponManifest", { runId: run.runId, entries });
   }
 
-  /** G-01 single source of truth: authored base -> character rule -> pet adjustment -> integer clamp. */
-  private effectiveMaxWeaponCharges(weaponId: string, playerId: string): number {
-    const weapon = WEAPONS[weaponId];
-    const authored = weapon?.gun?.magazine ?? weapon?.thrown?.charges ?? 0;
-    // Character capacity is currently declarative/inert; this seam is the one place it will compose.
-    const petAdd = this.petRuns.get(playerId)?.mods.weaponChargeCapacityAdd ?? 0;
-    return Math.max(0, Math.floor(authored + (authored > 0 ? petAdd : 0)));
-  }
-
   private bagCapacity(player: PlayerState): number {
     return BAG_CAP + (this.petRuns.get(player.id)?.mods.bagCapacityAdd ?? 0);
   }
@@ -2673,7 +2693,7 @@ export class GameRoom extends Room<ArenaState> {
     return base + minted;
   }
 
-  /** Persist the active weapon's cooldown/ammo before identity changes. */
+  /** Persist only the active weapon instance's cadence debt before identity changes. */
   private saveWeaponResource(player: PlayerState, c: CombatState): void {
     if (!c.lastWeapon) return;
     if (this.belt) {
@@ -2682,18 +2702,16 @@ export class GameRoom extends Room<ArenaState> {
       slot.resourceWeapon = c.lastWeapon;
       slot.resourceReady = true;
       slot.cooldown = Math.max(0, c.cd);
-      slot.reload = Math.max(0, c.reloadCd);
-      slot.resourceCharges = Math.max(0, player.charges);
+      slot.reload = 0;
+      slot.resourceCharges = 0;
       return;
     }
     let ledger = c.weaponLedger.get(c.lastWeapon);
     if (!ledger) {
-      ledger = { cooldown: 0, reload: 0, charges: 0 };
+      ledger = { cooldown: 0 };
       c.weaponLedger.set(c.lastWeapon, ledger);
     }
     ledger.cooldown = Math.max(0, c.cd);
-    ledger.reload = Math.max(0, c.reloadCd);
-    ledger.charges = Math.max(0, player.charges);
   }
 
   /** Restore a weapon's own debt. Only a genuinely new pickup may initialize a fresh resource row. */
@@ -2704,10 +2722,7 @@ export class GameRoom extends Room<ArenaState> {
     applyDrawLock = true,
   ): void {
     const weaponId = player.weapon;
-    const max = this.effectiveMaxWeaponCharges(weaponId, player.id);
     let cooldown = 0;
-    let reload = 0;
-    let charges = max;
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (
@@ -2716,35 +2731,31 @@ export class GameRoom extends Room<ArenaState> {
         slot.resourceWeapon === weaponId
       ) {
         cooldown = slot.cooldown;
-        reload = slot.reload;
-        charges = slot.resourceCharges;
       } else if (slot) {
         slot.resourceWeapon = weaponId;
         slot.resourceReady = true;
         slot.cooldown = 0;
         slot.reload = 0;
-        slot.resourceCharges = max;
+        slot.resourceCharges = 0;
       }
     } else {
       let ledger = c.weaponLedger.get(weaponId);
       if (!ledger || genuinelyNewPickup) {
-        ledger = { cooldown: 0, reload: 0, charges: max };
+        ledger = { cooldown: 0 };
         c.weaponLedger.set(weaponId, ledger);
       }
       cooldown = ledger.cooldown;
-      reload = ledger.reload;
-      charges = ledger.charges;
     }
     c.lastWeapon = weaponId;
     c.cd = Math.max(0, cooldown);
-    c.reloadCd = Math.max(0, reload);
+    c.reloadCd = 0;
     c.attackBuffer = 0;
     if (applyDrawLock) {
       const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
     }
-    player.maxCharges = max;
-    player.charges = clamp(charges, 0, max);
+    player.maxCharges = 0;
+    player.charges = 0;
   }
 
   private transitionWeapon(
@@ -2784,32 +2795,16 @@ export class GameRoom extends Room<ArenaState> {
       for (const slot of player.bag) if (slot.resourceReady) this.stepStoredSlot(player, slot, dt);
       return;
     }
-    const reloadRate = player.alive
-      ? (this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1)
-      : 1;
     for (const [weaponId, ledger] of c.weaponLedger) {
       if (weaponId === player.weapon) continue;
       ledger.cooldown = Math.max(0, ledger.cooldown - dt);
-      if (ledger.reload > 0) {
-        ledger.reload = Math.max(0, ledger.reload - dt * reloadRate);
-        if (ledger.reload <= 0) {
-          ledger.charges = this.effectiveMaxWeaponCharges(weaponId, player.id);
-        }
-      }
     }
   }
 
   private stepStoredSlot(player: PlayerState, slot: ArsenalSlot, dt: number): void {
     slot.cooldown = Math.max(0, slot.cooldown - dt);
-    if (slot.reload > 0) {
-      const reloadRate = player.alive
-        ? (this.petRuns.get(player.id)?.mods.stowedReloadRate ?? 1)
-        : 1;
-      slot.reload = Math.max(0, slot.reload - dt * reloadRate);
-      if (slot.reload <= 0) {
-        slot.resourceCharges = this.effectiveMaxWeaponCharges(slot.resourceWeapon, player.id);
-      }
-    }
+    slot.reload = 0;
+    slot.resourceCharges = 0;
   }
 
   /** Write the live held weapon (+ loot identity + earned provenance) INTO the active slot, so the slots
@@ -3673,16 +3668,29 @@ export class GameRoom extends Room<ArenaState> {
         c.handGate = 0;
         c.offLastWeapon = "";
         c.weaponLedger.clear();
-        player.maxCharges = this.effectiveMaxWeaponCharges(player.weapon, player.id);
-        player.charges = player.maxCharges;
+        player.maxCharges = 0;
+        player.charges = 0;
         const active = player.slots[player.activeSlot];
         if (active) {
           active.resourceWeapon = player.weapon;
           active.resourceReady = true;
           active.cooldown = 0;
           active.reload = 0;
-          active.resourceCharges = player.charges;
+          active.resourceCharges = 0;
         }
+        c.drive.valueF = DRIVE_CAPACITY;
+        c.drive.recoveryDebtF = 0;
+        c.drive.pressureUntilTick = 0;
+        c.drive.regenMode = DriveRegenMode.Floor;
+        c.drive.beamLockEndTick = 0;
+        c.drive.beamRecoveryEndTick = 0;
+        c.drive.beamRequireRelease = false;
+        c.drive.tickCreditF = 0;
+        c.drive.tickDebitF = 0;
+        c.drive.tickOpen = false;
+        player.weaponResource.valueQ = DRIVE_CAPACITY * 100;
+        player.weaponResource.regenMode = DriveRegenMode.Floor;
+        player.weaponResource.beamLockEndTick = 0;
         c.bulwarkShield = 0;
         c.hairStreak = 0;
         c.lastParryAt = -999;
@@ -4024,6 +4032,22 @@ export class GameRoom extends Room<ArenaState> {
       pairComboStep: 0,
       pairComboExpiresAtMs: 0,
       weaponLedger: new Map<string, WeaponResourceLedger>(),
+      drive: {
+        valueF: DRIVE_CAPACITY,
+        recoveryDebtF: 0,
+        pressureUntilTick: 0,
+        regenMode: DriveRegenMode.Floor,
+        beamLockEndTick: 0,
+        beamRecoveryEndTick: 0,
+        beamRequireRelease: false,
+        tickCreditF: 0,
+        tickDebitF: 0,
+        tickOpen: false,
+        forceEngaged: false,
+        simulationPaused: false,
+        engagedRecoveryMult: 1,
+        spendResult: { accepted: false, debit: 0, beamEmpty: false },
+      },
       jumpCd: 0,
       stance: STANCE_NONE,
       crouchT: 0,
@@ -4091,7 +4115,6 @@ export class GameRoom extends Room<ArenaState> {
       beamCrit: 0,
       beamHitIds: new Set<string>(),
       beamPendingDamage: new Map<string, number>(),
-      beamLedger: new Map<string, BeamResourceLedger>(),
       ultChargeF: 0,
       ultBuffer: 0,
       ultAccrualThisTick: 0,
@@ -4135,6 +4158,179 @@ export class GameRoom extends Room<ArenaState> {
     return player.flexPending > 0 || player.sigPending > 0;
   }
 
+  /** Explicit encounter/modal hook. Auto remains the default; callers never write Drive or regenMode. */
+  setWeaponResourceRegenOverride(
+    playerId: string,
+    mode: "auto" | "paused" | "forceEngaged",
+  ): void {
+    const drive = this.combat.get(playerId)?.drive;
+    if (!drive) return;
+    drive.simulationPaused = mode === "paused";
+    drive.forceEngaged = mode === "forceEngaged";
+  }
+
+  private drivePendingValue(c: CombatState): number {
+    return Math.max(
+      0,
+      Math.min(DRIVE_CAPACITY, c.drive.valueF + c.drive.tickCreditF - c.drive.tickDebitF),
+    );
+  }
+
+  private markWeaponResourcePressure(c: CombatState): void {
+    c.drive.pressureUntilTick = (
+      this.state.tick + Math.ceil(DRIVE_PRESSURE_MEMORY_SECONDS * 1000 / TICK_MS)
+    ) >>> 0;
+  }
+
+  /** Cover-agnostic pressure evidence. Dummy rows are training fixtures, not living hostiles. */
+  private hostileWithinDriveThreat(player: PlayerState): boolean {
+    const radiusSq = DRIVE_THREAT_RADIUS * DRIVE_THREAT_RADIUS;
+    this.enemyGrid.queryRadius(player.x, player.y, DRIVE_THREAT_RADIUS, this.enemyCandidates);
+    for (let i = 0; i < this.enemyCandidates.length; i++) {
+      const enemy = this.state.enemies.get(this.enemyCandidates[i]!);
+      if (!enemy || enemy.hp <= 0 || enemy.kind === "dummy") continue;
+      const dx = enemy.x - player.x;
+      const dy = enemy.y - player.y;
+      if (dx * dx + dy * dy <= radiusSq) return true;
+    }
+    return false;
+  }
+
+  /** Preserve the old discrete lock+cool tick count for approved beam-only vent/lock modifiers. */
+  private beamEmptyRecoveryTicks(c: CombatState): number {
+    const lockTicks = Math.ceil(
+      BEAM_OVERHEAT_LOCK_SECONDS * c.mods.beamOverheatLockMult * 1000 / TICK_MS - 1e-9,
+    );
+    const ventMultiplier =
+      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
+    const coolTicks = Math.ceil(
+      (1 - BEAM_RESTART_HEAT) /
+        Math.max(1e-9, BEAM_COOL_PER_SECOND * ventMultiplier) *
+        1000 /
+        TICK_MS -
+        1e-9,
+    );
+    return Math.max(1, lockTicks + coolTicks);
+  }
+
+  /** Compute one fixed-step credit before any fire path. Recovery debt is sampled before it ages. */
+  private beginWeaponResourceTick(player: PlayerState, c: CombatState, dt: number): void {
+    const drive = c.drive;
+    drive.tickCreditF = 0;
+    drive.tickDebitF = 0;
+    drive.tickOpen = true;
+    const debtLive = drive.recoveryDebtF > 1e-9;
+    const recentReceipt =
+      drive.pressureUntilTick !== 0 && !tickReached(this.state.tick, drive.pressureUntilTick);
+    const pressure = drive.forceEngaged || recentReceipt || this.hostileWithinDriveThreat(player);
+    drive.regenMode = driveRegenModeFor(
+      player.alive,
+      drive.simulationPaused || this.inLevelWindow(player),
+      debtLive,
+      pressure,
+      player.ultPhase !== UltimatePhase.Idle,
+    );
+    const genericRecovery = Math.max(
+      1,
+      Math.min(DRIVE_MAX_GENERIC_RECOVERY_MULT, drive.engagedRecoveryMult),
+    );
+    const rebuildingEmptyBeam =
+      drive.beamLockEndTick !== 0 && this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+    if (drive.regenMode !== DriveRegenMode.Paused && rebuildingEmptyBeam) {
+      // This is the old beam-only vent row translated into the shared bar, not generic/hiding recovery.
+      drive.regenMode = DriveRegenMode.Floor;
+      drive.tickCreditF =
+        DRIVE_BEAM_RESTART_THRESHOLD /
+        (this.beamEmptyRecoveryTicks(c) * TICK_MS / 1000) *
+        dt;
+    } else {
+      drive.tickCreditF = driveRegenPerSecond(drive.regenMode, genericRecovery) * dt;
+    }
+    drive.recoveryDebtF = Math.max(0, drive.recoveryDebtF - dt);
+  }
+
+  /** Commit once after all same-tick fire paths, then floor the public hundredths mirror. */
+  private commitWeaponResourceTick(player: PlayerState, c: CombatState): void {
+    const drive = c.drive;
+    drive.valueF = Math.max(
+      0,
+      Math.min(DRIVE_CAPACITY, drive.valueF + drive.tickCreditF - drive.tickDebitF),
+    );
+    player.weaponResource.valueQ = Math.max(0, Math.floor(drive.valueF * 100 + 1e-7));
+    player.weaponResource.regenMode = drive.regenMode;
+    player.weaponResource.beamLockEndTick = drive.beamLockEndTick >>> 0;
+    drive.tickCreditF = 0;
+    drive.tickDebitF = 0;
+    drive.tickOpen = false;
+  }
+
+  /** Credits are a separate authority seam and cannot clear release or minimum-lock gates. */
+  private creditWeaponResource(player: PlayerState, c: CombatState, amount: number): number {
+    const credit = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    c.drive.valueF = Math.min(DRIVE_CAPACITY, c.drive.valueF + credit);
+    player.weaponResource.valueQ = Math.floor(c.drive.valueF * 100 + 1e-7);
+    return credit;
+  }
+
+  /**
+   * The one weapon spend seam. It resolves canonical formula data and live cadence; callers never supply a
+   * price. The reused result row avoids a per-action allocation in the fixed 20 Hz loop.
+   */
+  private trySpendWeaponResource(
+    player: PlayerState,
+    c: CombatState,
+    weapon: WeaponDef,
+    _weaponInstanceId: string,
+    _delivery: number,
+    _hand: DualWieldHand,
+    effectiveInterval: number,
+    pairContribution: number,
+    continuousDt: number,
+    reason: WeaponSpendReason,
+  ): WeaponSpendResult {
+    const result = c.drive.spendResult;
+    result.accepted = false;
+    result.debit = 0;
+    result.beamEmpty = false;
+    const profile = weaponResourceProfile(weapon.id);
+    if (!profile) return result;
+
+    let requested = 0;
+    if (reason === "tap") {
+      requested = driveCostForProfile(profile, effectiveInterval) * Math.max(0, pairContribution);
+    } else if (reason === "beam-ignite") {
+      requested = DRIVE_BEAM_IGNITION_COST;
+    } else if (reason === "beam-active") {
+      const dt = Math.max(0, continuousDt);
+      const concurrentRegen = dt > 0 ? c.drive.tickCreditF / dt : DRIVE_FLOOR_REGEN_PER_SECOND;
+      requested = (DRIVE_BEAM_NET_DRAIN_PER_SECOND + concurrentRegen) * dt;
+    } else {
+      requested = DRIVE_BEAM_CANCEL_COST;
+    }
+    if (!Number.isFinite(requested) || requested < 0) return result;
+
+    const available = this.drivePendingValue(c);
+    const partial = reason === "beam-active" || reason === "beam-cancel";
+    if (!partial && available + 1e-9 < requested) return result;
+    const debit = partial ? Math.min(available, requested) : requested;
+    if (reason === "beam-active" && debit <= 1e-9) return result;
+    if (c.drive.tickOpen) {
+      c.drive.tickDebitF += debit;
+    } else {
+      c.drive.valueF = Math.max(0, c.drive.valueF - debit);
+      player.weaponResource.valueQ = Math.floor(c.drive.valueF * 100 + 1e-7);
+    }
+    c.drive.recoveryDebtF = Math.max(
+      c.drive.recoveryDebtF,
+      Math.max(0, effectiveInterval),
+      debit / DRIVE_FLOOR_REGEN_PER_SECOND,
+    );
+    result.accepted = true;
+    result.debit = debit;
+    result.beamEmpty = reason === "beam-active" && available - debit <= 1e-9;
+    return result;
+  }
+
   /** Direct-contact slide predicate. Separate from parry `invuln`; ticks 1..5 are the inherited budget. */
   private slideInvulnerable(c: CombatState): boolean {
     return slideContactInvulnerable(c.stance, c.slidePhase, c.slidePhaseTick);
@@ -4166,6 +4362,7 @@ export class GameRoom extends Room<ArenaState> {
     // Failed-jump mercy is its own null-immunity channel. It never writes/consults parry `invuln`, so a
     // snap-back cannot mint parry flashes, augments, chain economy, or worm accepts from a later quake.
     if (c && c.pitGrace > 0 && left > 0) return;
+    if (c && kind === "enemy" && left > 0) this.markWeaponResourcePressure(c);
     if (c && left > 0 && (c.stance === STANCE_CROUCH || c.stance === STANCE_DASH)) {
       this.cancelMoveStance(player, c, true);
     }
@@ -4822,6 +5019,12 @@ export class GameRoom extends Room<ArenaState> {
     crit: boolean,
     finalBlow: boolean,
   ): void {
+    const target = this.state.enemies.get(targetId);
+    const sourceCombat = this.combat.get(sourcePlayerId);
+    if (
+      sourceCombat &&
+      ((target !== undefined && target.kind !== "dummy") || targetId.startsWith("worm:"))
+    ) this.markWeaponResourcePressure(sourceCombat);
     if (!sourcePlayerId || this.state.combatReceipts.length === 0) return;
     const row = this.state.combatReceipts[this.combatReceiptCursor];
     if (!row) return;
@@ -5335,7 +5538,14 @@ export class GameRoom extends Room<ArenaState> {
       else this.pickupGrace.set(pid, left);
     }
 
-    // 4. Resolve attacks (cooldown-gated). Melee weapons swing; thrown weapons hurl a charge.
+    // 4. Compute one simultaneous Drive credit, then let every accepted fire path accumulate through the
+    // single spend seam. A second pass commits the private float and its floored schema mirror.
+    this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      if (c) this.beginWeaponResourceTick(player, c, dt);
+    });
+
+    // Resolve attacks (cooldown-gated). All deliveries spend the shared bar before creating effects.
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
       if (!c) return;
@@ -5430,8 +5640,8 @@ export class GameRoom extends Room<ArenaState> {
       }
       const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
 
-      // (Re)initialise the ammo/charge readout when the equipped weapon changes (§9/§10). Guns use the
-      // magazine as ammo; thrown weapons use charges; both share charges/maxCharges + the reload timer.
+      // Restore the identity-local cadence row when the equipped weapon changes. Drive stays player-global;
+      // legacy ammo, charge, and reload schema slots remain zeroed tombstones.
       if (c.lastWeapon !== player.weapon) {
         // Direct server-side identity edits (tests/dev setup) restore debt but are not a player quick-swap.
         // Network-reachable swap handlers apply the shared draw gate at the transition edge above.
@@ -5450,8 +5660,9 @@ export class GameRoom extends Room<ArenaState> {
         this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
         return;
       }
-      this.stepBeamResources(c, player.weapon, false, dt);
-      c.beamInputWasHeld = false;
+      const nonBeamHeld = this.beamHeld(id);
+      if (!nonBeamHeld) c.drive.beamRequireRelease = false;
+      c.beamInputWasHeld = nonBeamHeld;
       this.state.beams.delete(id);
 
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
@@ -5460,12 +5671,6 @@ export class GameRoom extends Room<ArenaState> {
       if (offSlot) {
         const leadWeapon = weapon!;
         const offWeapon = WEAPONS[offSlot.weapon]!;
-
-        // The lead magazine remains the live mirror; the off magazine already aged in its slot row above.
-        if (leadWeapon.gun && player.charges <= 0 && c.reloadCd > 0) {
-          c.reloadCd = Math.max(0, c.reloadCd - dt);
-          if (c.reloadCd <= 0) player.charges = player.maxCharges;
-        }
 
         let pairStep = -1;
         let hand: DualWieldHand;
@@ -5476,37 +5681,15 @@ export class GameRoom extends Room<ArenaState> {
           hand = dualHandForSeq((player.attackSeq + 1) >>> 0, player.pairBaseSeq);
         }
 
-        let soloCover = false;
-        if (leadWeapon.gun && offWeapon.gun && this.handCharges(player, offSlot, hand) <= 0) {
-          const other = (1 - hand) as DualWieldHand;
-          if (
-            this.handCharges(player, offSlot, other) > 0 &&
-            this.handCooldown(c, offSlot, other) <= 0
-          ) {
-            hand = other;
-            soloCover = true;
-          }
-        }
-
-        const firingWeapon = hand === 0 ? leadWeapon : offWeapon;
-        const resourceReady = !firingWeapon.gun && !firingWeapon.thrown ||
-          this.handCharges(player, offSlot, hand) > 0;
         const pairCanAct =
           acting &&
           c.stance !== STANCE_SLIDE &&
           c.attackBuffer > 0 &&
           c.drawLock <= 0 &&
           c.handGate <= 0 &&
-          this.handCooldown(c, offSlot, hand) <= 0 &&
-          resourceReady;
+          this.handCooldown(c, offSlot, hand) <= 0;
         if (pairCanAct) {
-          if (soloCover) {
-            // Rebase the parity epoch so the accepted seq still derives the hand that actually fired.
-            player.pairBaseSeq = hand === 0
-              ? player.attackSeq
-              : (player.attackSeq - 1) >>> 0;
-          }
-          this.resolveHandAttack(player, c, hand, offSlot, pairStep, soloCover);
+          this.resolveHandAttack(player, c, hand, offSlot, pairStep, false);
         }
         return;
       }
@@ -5520,48 +5703,48 @@ export class GameRoom extends Room<ArenaState> {
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
-        // §9 GUN: fire-rate-gated bullets that spend ammo; on empty, RELOAD (refill the magazine).
-        if (player.charges <= 0 && c.reloadCd > 0) {
-          c.reloadCd -= dt;
-          if (c.reloadCd <= 0) player.charges = player.maxCharges;
-        }
-        if (canAct && player.charges > 0) {
+        // Schema-30 gun cadence survives; magazines/reload are authoring-only inputs to the Drive formula.
+        if (canAct) {
           c.attackBuffer = 0;
-          this.stampAttackBeat(player);
-          this.fireGun(player, c, weapon);
-          player.charges -= 1;
-          c.cd += weapon.gun.fireRate * cdMul * this.weaponRecoveryMult(player, weapon); // carry remainder
-          if (player.charges <= 0) {
-            c.reloadCd =
-              weapon.gun.reloadSeconds *
-              (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1);
+          const cooldown = weapon.gun.fireRate * cdMul * this.weaponRecoveryMult(player, weapon);
+          const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
+          const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+          if (this.trySpendWeaponResource(
+            player, c, weapon, instanceId, CombatDelivery.Gun, 0, interval, 1, 0, "tap",
+          ).accepted) {
+            this.stampAttackBeat(player);
+            this.fireGun(player, c, weapon);
+            c.cd += cooldown; // accumulating cadence carries its sub-tick remainder
           }
         }
       } else if (weapon?.thrown) {
-        // Refill all charges once a depleted weapon's cooldown elapses (§10 three-layer model).
-        if (player.charges <= 0 && c.reloadCd > 0) {
-          c.reloadCd -= dt;
-          if (c.reloadCd <= 0) player.charges = player.maxCharges;
-        }
-        if (canAct && player.charges > 0) {
+        if (canAct) {
           c.attackBuffer = 0;
-          this.stampAttackBeat(player);
-          this.throwWeapon(player, c, weapon);
-          player.charges -= 1;
-          c.cd = weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
-          if (player.charges <= 0) {
-            c.reloadCd =
-              weapon.thrown.refillSeconds *
-              (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1);
+          const cooldown = weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
+          const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
+          const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+          if (this.trySpendWeaponResource(
+            player, c, weapon, instanceId, CombatDelivery.Thrown, 0, interval, 1, 0, "tap",
+          ).accepted) {
+            this.stampAttackBeat(player);
+            this.throwWeapon(player, c, weapon);
+            c.cd = cooldown;
           }
         }
       } else if (weapon?.cast) {
         // §38 CASTER: conjure a piercing arcane bolt on a flat cooldown (no ammo/reload) — INT-scaled.
         if (canAct) {
           c.attackBuffer = 0;
-          this.stampAttackBeat(player);
-          this.fireCast(player, c, weapon);
-          c.cd = weapon.cast.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
+          const cooldown = weapon.cast.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
+          const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
+          const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+          if (this.trySpendWeaponResource(
+            player, c, weapon, instanceId, CombatDelivery.Cast, 0, interval, 1, 0, "tap",
+          ).accepted) {
+            this.stampAttackBeat(player);
+            this.fireCast(player, c, weapon);
+            c.cd = cooldown;
+          }
         }
       } else if (weapon && canAct) {
         c.attackBuffer = 0;
@@ -5571,9 +5754,15 @@ export class GameRoom extends Room<ArenaState> {
           weapon,
           weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon),
         );
-        this.stampAttackBeat(player);
-        this.resolveSwing(player, c, weapon, swing);
-        c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; the loot affix owns speed
+        const interval = effectiveAcceptedWeaponInterval(weapon, swing.effectiveCooldown);
+        const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+        if (this.trySpendWeaponResource(
+          player, c, weapon, instanceId, CombatDelivery.Melee, 0, interval, 1, 0, "tap",
+        ).accepted) {
+          this.stampAttackBeat(player);
+          this.resolveSwing(player, c, weapon, swing);
+          c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; loot affix owns speed
+        }
       }
     });
     // §6 a synchronous player hit can clear the last boss-rush round from inside resolveSwing.
@@ -6667,6 +6856,10 @@ export class GameRoom extends Room<ArenaState> {
         if (!this.tryDimensionDoorReturn(player, c)) this.acceptUltimate(player, c);
       }
     });
+    this.state.players.forEach((player, id) => {
+      const c = this.combat.get(id);
+      if (c) this.commitWeaponResourceTick(player, c);
+    });
   }
 
   /** Publish one authoritative player-attack acceptance edge. Damage/cooldown behavior remains elsewhere. */
@@ -6713,10 +6906,6 @@ export class GameRoom extends Room<ArenaState> {
     return hand === 0 ? c.cd : offSlot.cooldown;
   }
 
-  private handCharges(player: PlayerState, offSlot: ArsenalSlot, hand: DualWieldHand): number {
-    return hand === 0 ? player.charges : offSlot.resourceCharges;
-  }
-
   private setHandCooldown(
     c: CombatState,
     offSlot: ArsenalSlot | undefined,
@@ -6726,28 +6915,6 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     if (hand === 0) c.cd = accumulate ? c.cd + cooldown : cooldown;
     else if (offSlot) offSlot.cooldown = accumulate ? offSlot.cooldown + cooldown : cooldown;
-  }
-
-  private setHandReload(
-    c: CombatState,
-    offSlot: ArsenalSlot | undefined,
-    hand: DualWieldHand,
-    reload: number,
-  ): void {
-    if (hand === 0) c.reloadCd = reload;
-    else if (offSlot) offSlot.reload = reload;
-  }
-
-  private spendHandCharge(
-    player: PlayerState,
-    offSlot: ArsenalSlot | undefined,
-    hand: DualWieldHand,
-  ): number {
-    if (hand === 0) return --player.charges;
-    if (!offSlot) return 0;
-    offSlot.resourceCharges--;
-    player.offCharges = Math.max(0, offSlot.resourceCharges);
-    return offSlot.resourceCharges;
   }
 
   private recordPairMeleeBeat(
@@ -6777,43 +6944,49 @@ export class GameRoom extends Room<ArenaState> {
     hand: DualWieldHand,
     offSlot?: ArsenalSlot,
     pairStep = -1,
-    soloCover = false,
-  ): void {
+    _soloCover = false,
+  ): boolean {
     const paired = !!offSlot;
     const weapon = hand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot?.weapon ?? ""];
-    if (!weapon) return;
+    if (!weapon) return false;
     const cadenceMult =
       lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon);
     const soloCooldown = weaponAttackCooldown(weapon) * cadenceMult;
     c.attackBuffer = 0;
+    const interval = effectiveAcceptedWeaponInterval(weapon, soloCooldown);
+    const pairContribution = hand === 1 && offSlot
+      ? this.pairOffhandDamageMultiplier(player, offSlot)
+      : 1;
+    const delivery = weapon.gun
+      ? CombatDelivery.Gun
+      : weapon.thrown
+        ? CombatDelivery.Thrown
+        : weapon.cast
+          ? CombatDelivery.Cast
+          : CombatDelivery.Melee;
+    const instanceId = hand === 1
+      ? offSlot?.instanceId || weapon.id
+      : player.slots[player.activeSlot]?.instanceId || weapon.id;
+    if (!this.trySpendWeaponResource(
+      player,
+      c,
+      weapon,
+      instanceId,
+      delivery,
+      hand,
+      interval,
+      pairContribution,
+      0,
+      "tap",
+    ).accepted) return false;
     this.stampAttackBeat(player);
 
     if (weapon.gun) {
       this.fireGun(player, c, weapon, hand);
-      const left = this.spendHandCharge(player, offSlot, hand);
       this.setHandCooldown(c, offSlot, hand, soloCooldown, true);
-      if (left <= 0) {
-        this.setHandReload(
-          c,
-          offSlot,
-          hand,
-          weapon.gun.reloadSeconds *
-            (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1),
-        );
-      }
     } else if (weapon.thrown) {
       this.throwWeapon(player, c, weapon, hand);
-      const left = this.spendHandCharge(player, offSlot, hand);
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
-      if (left <= 0) {
-        this.setHandReload(
-          c,
-          offSlot,
-          hand,
-          weapon.thrown.refillSeconds *
-            (this.petRuns.get(player.id)?.mods.reloadDurationMultiplier ?? 1),
-        );
-      }
     } else if (weapon.cast) {
       this.fireCast(player, c, weapon, hand);
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
@@ -6824,12 +6997,10 @@ export class GameRoom extends Room<ArenaState> {
       this.setHandCooldown(c, offSlot, hand, soloCooldown, false);
     }
 
-    if (!offSlot) return;
+    if (!offSlot) return true;
     if (pairStep >= 0) this.recordPairMeleeBeat(player, c, offSlot, pairStep, cadenceMult);
     let gap: number;
-    if (soloCover) {
-      gap = soloCooldown;
-    } else if (pairStep >= 0) {
+    if (pairStep >= 0) {
       const nextStep = (pairStep + 1) % DUAL_MELEE_SEQUENCE_LENGTH;
       const incomingHand = this.pairMeleeCadenceHand(nextStep);
       const incoming = incomingHand === 0 ? WEAPONS[player.weapon] : WEAPONS[offSlot.weapon];
@@ -6839,7 +7010,9 @@ export class GameRoom extends Room<ArenaState> {
       gap = PAIR_TEMPO * weaponAttackCooldown(incoming!) * cadenceMult;
     }
     c.handGate += gap;
-    player.offCharges = clamp(offSlot.resourceCharges, 0, player.offMaxCharges);
+    player.offCharges = 0;
+    player.offMaxCharges = 0;
+    return true;
   }
 
   private resolveSwing(
@@ -7064,45 +7237,6 @@ export class GameRoom extends Room<ArenaState> {
     return ((this.state.tick - input.lastFreshFireTick) >>> 0) < BEAM_STALE_INPUT_TICKS;
   }
 
-  private beamResource(c: CombatState, weaponId: string): BeamResourceLedger {
-    let resource = c.beamLedger.get(weaponId);
-    if (!resource) {
-      resource = { heat: 0, recoveryT: 0, lockT: 0, requireRelease: false };
-      c.beamLedger.set(weaponId, resource);
-    }
-    return resource;
-  }
-
-  /** Cool every inactive ledger after recovery/lock. Stowed beams cool too, but their debt is never erased. */
-  private stepBeamResources(
-    c: CombatState,
-    currentWeaponId: string,
-    currentHeld: boolean,
-    dt: number,
-  ): void {
-    const coolMultiplier =
-      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
-    for (const [weaponId, resource] of c.beamLedger) {
-      const activelyChanneling =
-        c.beamPhase !== 0 && c.beamDescriptor?.weaponId === weaponId;
-      if (activelyChanneling) continue;
-      if (resource.lockT > 0) {
-        resource.lockT = Math.max(0, resource.lockT - dt);
-        continue;
-      }
-      if (resource.recoveryT > 0) {
-        resource.recoveryT = Math.max(0, resource.recoveryT - dt);
-        continue;
-      }
-      const isCurrent = weaponId === currentWeaponId;
-      if (!isCurrent || !currentHeld) {
-        const cool = Math.min(0.35, WEAPONS[weaponId]?.beam?.overheat.coolPerSecond ?? 0.35);
-        resource.heat = Math.max(0, resource.heat - cool * coolMultiplier * dt);
-        resource.requireRelease = false;
-      }
-    }
-  }
-
   /** Charge → authoritative ignition → sustained swept damage → recovery/overheat. */
   private stepPlayerBeam(
     player: PlayerState,
@@ -7116,8 +7250,7 @@ export class GameRoom extends Room<ArenaState> {
     if (!input || !weapon.beam) return;
     const held = this.beamHeld(id);
     const rising = held && !c.beamInputWasHeld;
-    const resource = this.beamResource(c, weapon.id);
-    this.stepBeamResources(c, weapon.id, held, dt);
+    if (!held) c.drive.beamRequireRelease = false;
 
     if (!acting || c.beamTeleportSeq !== player.teleportSeq) {
       if (c.beamPhase !== 0) this.cancelBeam(player, id, c, true, true);
@@ -7131,10 +7264,10 @@ export class GameRoom extends Room<ArenaState> {
       c.beamPhase === 0 &&
       rising &&
       c.drawLock <= 0 &&
-      resource.lockT <= 0 &&
-      resource.recoveryT <= 0 &&
-      !resource.requireRelease &&
-      resource.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat)
+      (c.drive.beamLockEndTick === 0 || tickReached(this.state.tick, c.drive.beamLockEndTick)) &&
+      (c.drive.beamRecoveryEndTick === 0 || tickReached(this.state.tick, c.drive.beamRecoveryEndTick)) &&
+      !c.drive.beamRequireRelease &&
+      this.drivePendingValue(c) + 1e-9 >= DRIVE_BEAM_RESTART_THRESHOLD
     ) {
       const classDamage =
         weapon.tags.classPool === "caster"
@@ -7149,7 +7282,6 @@ export class GameRoom extends Room<ArenaState> {
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
       c.beamPhase = 1;
-      this.recordPetAcceptedAction(player.id);
       c.beamPhaseT = 0;
       c.beamChannelT = 0;
       c.beamPulseT = 0;
@@ -7191,7 +7323,6 @@ export class GameRoom extends Room<ArenaState> {
           BeamPhase.Charging,
           0,
           Math.min(0.95, c.beamPhaseT / descriptor.chargeSeconds),
-          resource.heat,
         );
         // Charge steers/moves the implement but is non-damaging; ignition begins from the latest accepted
         // pose, never sweeps the whole anticipation path as a retroactive hit.
@@ -7206,23 +7337,42 @@ export class GameRoom extends Room<ArenaState> {
           descriptor.width / 2,
         );
         if (c.beamPhaseT + 1e-9 >= descriptor.chargeSeconds) {
-          resource.heat = Math.min(1, resource.heat + descriptor.ignitionHeat);
-          c.beamPhase = 2;
-          c.beamPhaseT = 0;
-          c.beamChannelT = 0;
-          c.beamPulseT = 0;
-          c.beamQuantumT = 0;
-          c.beamCrit = this.weaponCritChance(player, c);
-          const row = this.state.beams.get(id);
-          if (row) row.phaseStartTick = this.state.tick;
-          this.stepActiveBeam(player, id, c, descriptor, resource, dt);
+          const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+          const ignition = this.trySpendWeaponResource(
+            player,
+            c,
+            weapon,
+            instanceId,
+            CombatDelivery.Beam,
+            0,
+            BEAM_RECOVERY_SECONDS,
+            1,
+            0,
+            "beam-ignite",
+          );
+          if (!ignition.accepted) {
+            this.cancelBeam(player, id, c, false, false);
+          } else {
+            c.drive.beamLockEndTick = 0;
+            c.drive.beamRecoveryEndTick = 0;
+            this.stampAttackBeat(player);
+            c.beamPhase = 2;
+            c.beamPhaseT = 0;
+            c.beamChannelT = 0;
+            c.beamPulseT = 0;
+            c.beamQuantumT = 0;
+            c.beamCrit = this.weaponCritChance(player, c);
+            const row = this.state.beams.get(id);
+            if (row) row.phaseStartTick = this.state.tick;
+            this.stepActiveBeam(player, id, c, descriptor, dt);
+          }
         }
       }
     } else if (c.beamPhase === 2 && descriptor) {
-      if (!held) this.finishBeam(player, id, c, resource, false);
-      else this.stepActiveBeam(player, id, c, descriptor, resource, dt);
+      if (!held) this.finishBeam(player, id, c, false);
+      else this.stepActiveBeam(player, id, c, descriptor, dt);
     } else if (c.beamPhase === 0) {
-      this.syncRestingBeamRow(player, id, c, weapon, resource);
+      this.syncRestingBeamRow(player, id, c, weapon);
     }
 
     c.beamInputWasHeld = held;
@@ -7233,9 +7383,27 @@ export class GameRoom extends Room<ArenaState> {
     id: string,
     c: CombatState,
     descriptor: BeamDescriptor,
-    resource: BeamResourceLedger,
     dt: number,
   ): void {
+    const weapon = WEAPONS[descriptor.weaponId];
+    if (!weapon) return;
+    const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+    const spend = this.trySpendWeaponResource(
+      player,
+      c,
+      weapon,
+      instanceId,
+      CombatDelivery.Beam,
+      0,
+      dt,
+      1,
+      dt,
+      "beam-active",
+    );
+    if (!spend.accepted) {
+      this.finishBeam(player, id, c, true);
+      return;
+    }
     c.beamAngle = stepBeamAngle(
       c.beamAngle,
       Math.atan2(c.aimY, c.aimX),
@@ -7245,7 +7413,6 @@ export class GameRoom extends Room<ArenaState> {
     );
     const length = this.damageBeamSweep(player, c, descriptor, dt);
     c.beamChannelT += dt;
-    resource.heat = Math.min(1, resource.heat + descriptor.heatPerSecond * dt);
     this.syncBeamRow(
       player,
       id,
@@ -7254,25 +7421,18 @@ export class GameRoom extends Room<ArenaState> {
       BeamPhase.Active,
       length,
       1,
-      resource.heat,
     );
     c.beamPreviousX = this.beamCurrentX;
     c.beamPreviousY = this.beamCurrentY;
     c.beamPreviousAngle = c.beamAngle;
     c.beamPreviousLength = this.beamCurrentLength;
-    if (
-      resource.heat >= 1 - 1e-9 ||
-      c.beamChannelT + 1e-9 >= descriptor.maxChannelSeconds
-    ) {
-      this.finishBeam(player, id, c, resource, true);
-    }
+    if (spend.beamEmpty) this.finishBeam(player, id, c, true);
   }
 
   private finishBeam(
     player: PlayerState,
     id: string,
     c: CombatState,
-    resource: BeamResourceLedger,
     overheated: boolean,
   ): void {
     this.flushBeamDamage(c, false, id);
@@ -7282,19 +7442,29 @@ export class GameRoom extends Room<ArenaState> {
     c.beamPulseT = 0;
     c.beamQuantumT = 0;
     if (overheated) {
-      resource.heat = 1;
-      resource.lockT = Math.max(
-        resource.lockT,
-        (c.beamDescriptor?.lockSeconds ?? 1.5) * c.mods.beamOverheatLockMult,
+      const lockSeconds =
+        (c.beamDescriptor?.lockSeconds ?? 1.5) * c.mods.beamOverheatLockMult;
+      c.drive.beamLockEndTick = (
+        this.state.tick + Math.ceil(lockSeconds * 1000 / TICK_MS - 1e-9)
+      ) >>> 0;
+      // Keep the whole old 30-lock + 38-cool rhythm on floor recovery. Otherwise a recent pressure receipt
+      // would add the engaged bonus after the minimum lock and restart earlier than the learned 68th tick.
+      c.drive.recoveryDebtF = Math.max(
+        c.drive.recoveryDebtF,
+        lockSeconds,
+        this.beamEmptyRecoveryTicks(c) * TICK_MS / 1000,
       );
-      resource.requireRelease = true;
+      c.drive.beamRequireRelease = true;
     } else {
       const recoveryMultiplier =
         (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
-      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
+      c.drive.beamRecoveryEndTick = (
+        this.state.tick +
+        Math.ceil(BEAM_RECOVERY_SECONDS / recoveryMultiplier * 1000 / TICK_MS - 1e-9)
+      ) >>> 0;
     }
     const weapon = WEAPONS[player.weapon];
-    if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon, resource);
+    if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon);
     else this.state.beams.delete(id);
   }
 
@@ -7308,12 +7478,31 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     this.flushBeamDamage(c, false, id);
     const descriptor = c.beamDescriptor;
-    if (descriptor && addCancelCost) {
-      const resource = this.beamResource(c, descriptor.weaponId);
-      resource.heat = Math.min(1, resource.heat + BEAM_EARLY_CANCEL_HEAT);
+    const committedPhase = c.beamPhase !== 0;
+    if (descriptor && addCancelCost && committedPhase) {
+      const weapon = WEAPONS[descriptor.weaponId];
+      if (weapon) {
+        const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+        this.trySpendWeaponResource(
+          player,
+          c,
+          weapon,
+          instanceId,
+          CombatDelivery.Beam,
+          0,
+          BEAM_RECOVERY_SECONDS,
+          1,
+          0,
+          "beam-cancel",
+        );
+      }
       const recoveryMultiplier =
         (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
-      resource.recoveryT = Math.max(resource.recoveryT, BEAM_RECOVERY_SECONDS / recoveryMultiplier);
+      c.drive.beamRecoveryEndTick = (
+        this.state.tick +
+        Math.ceil(BEAM_RECOVERY_SECONDS / recoveryMultiplier * 1000 / TICK_MS - 1e-9)
+      ) >>> 0;
+      c.drive.beamRequireRelease = this.inputs.get(id)?.held.fireHeld === true;
     }
     c.beamPhase = 0;
     c.beamPhaseT = 0;
@@ -7330,7 +7519,6 @@ export class GameRoom extends Room<ArenaState> {
         id,
         c,
         WEAPONS[player.weapon]!,
-        this.beamResource(c, descriptor.weaponId),
       );
     }
   }
@@ -7340,14 +7528,14 @@ export class GameRoom extends Room<ArenaState> {
     id: string,
     c: CombatState,
     weapon: WeaponDef,
-    resource: BeamResourceLedger,
   ): void {
-    if (
-      resource.heat <= 0 &&
-      resource.recoveryT <= 0 &&
-      resource.lockT <= 0 &&
-      !resource.requireRelease
-    ) {
+    const lockActive =
+      c.drive.beamLockEndTick !== 0 && !tickReached(this.state.tick, c.drive.beamLockEndTick);
+    const recoveryActive =
+      c.drive.beamRecoveryEndTick !== 0 && !tickReached(this.state.tick, c.drive.beamRecoveryEndTick);
+    const awaitingThreshold =
+      c.drive.beamLockEndTick !== 0 && this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+    if (!lockActive && !recoveryActive && !awaitingThreshold && !c.drive.beamRequireRelease) {
       this.state.beams.delete(id);
       if (c.beamPhase === 0) c.beamDescriptor = undefined;
       return;
@@ -7356,7 +7544,8 @@ export class GameRoom extends Room<ArenaState> {
       c.beamDescriptor?.weaponId === weapon.id
         ? c.beamDescriptor
         : beamDescriptorFor(weapon, this.state.tick, 0, 1, 1);
-    const overheated = resource.lockT > 0 || resource.requireRelease;
+    const overheated = lockActive || c.drive.beamRequireRelease;
+    const spentFraction = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
     this.syncBeamRow(
       player,
       id,
@@ -7364,8 +7553,7 @@ export class GameRoom extends Room<ArenaState> {
       descriptor,
       overheated ? BeamPhase.Overheated : BeamPhase.Cooling,
       c.beamPreviousLength,
-      overheated ? 1 : resource.heat,
-      resource.heat,
+      overheated ? 1 : spentFraction,
     );
   }
 
@@ -7377,7 +7565,6 @@ export class GameRoom extends Room<ArenaState> {
     phase: number,
     length: number,
     intensity: number,
-    heat: number,
   ): BeamState {
     let row = this.state.beams.get(id);
     if (!row) {
@@ -7401,7 +7588,8 @@ export class GameRoom extends Room<ArenaState> {
     row.length = length;
     row.width = descriptor.width;
     row.halfWidth = descriptor.width / 2;
-    row.heat = Math.max(0, Math.min(1, heat));
+    // Schema-30 compatibility alias only. Gameplay never reads this field; the shared bar is the heat.
+    row.heat = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
     row.intensity = Math.max(0, Math.min(1, intensity));
     row.element = WEAPONS[descriptor.weaponId]?.tags.element ?? "physical";
     row.previousOriginX = c.beamPreviousX;
@@ -10036,6 +10224,7 @@ export class GameRoom extends Room<ArenaState> {
    *  site since it scales the base i-frames/knockback). Each augment is small + stacks; the pool builds a
    *  custom parry per run. Offense here is server-authoritative (the client renders off the synced effects). */
   private applyParryAugments(player: PlayerState, c: CombatState): void {
+    this.markWeaponResourcePressure(c);
     const owned = player.augments;
     if (!owned) return;
     const now = this.state.elapsed;

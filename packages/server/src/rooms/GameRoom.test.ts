@@ -753,28 +753,23 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(p.level).toBe(levelBefore);
   });
 
-  it("a gun empties to a reload, then refills the magazine after reloadSeconds (§9)", () => {
+  it("a gun fires past its authored magazine through Drive with reload fields retired", () => {
     const h = training();
     const p = h.state().players.get("p1");
-    const gunId = "x-gun-revolver-cannon";
+    const gunId = "x-gun-coffin-shotgun";
     const gun = WEAPONS[gunId]?.gun;
     if (!gun) throw new Error("fixture weapon is not a gun");
     p.weapon = gunId;
-    h.tick(1); // equip → ammo readout initialises to the magazine
-    expect(p.maxCharges).toBe(gun.magazine);
-    expect(p.charges).toBe(gun.magazine);
+    h.tick(1);
+    expect([p.maxCharges, p.charges]).toEqual([0, 0]);
     const c = h.room.combat.get("p1");
-    let emptied = false;
-    for (let i = 0; i < 240 && !emptied; i++) {
+    for (let i = 0; i < 240 && p.attackSeq < gun.magazine + 2; i++) {
       h.send("p1", "attack", { aimX: 1, aimY: 0 }); // hold the trigger: the attack buffer re-arms each tick
       h.tick(1);
-      if (p.charges === 0) emptied = true;
     }
-    expect(emptied).toBe(true); // spent the whole magazine
-    expect(c.reloadCd).toBeGreaterThan(0); // reload armed on empty
-    // Release the trigger (stop sending attack) and let the reload timer run out.
-    h.tick(Math.ceil(gun.reloadSeconds / 0.05) + 2);
-    expect(p.charges).toBe(p.maxCharges); // magazine refilled
+    expect(p.attackSeq).toBeGreaterThan(gun.magazine);
+    expect([p.maxCharges, p.charges, c.reloadCd]).toEqual([0, 0, 0]);
+    expect(c.drive.valueF).toBeLessThan(100);
   });
 
   it("§38 a CASTER weapon conjures a piercing arcane orb on a cooldown (no ammo)", () => {
@@ -2139,7 +2134,7 @@ describe("GameRoom — §44 safety gates", () => {
 });
 
 describe("improve2 integrity regressions", () => {
-  it("G-01 restores per-weapon cooldown/ammo debt and keeps an immediate quick-swap press buffered", () => {
+  it("G-01 restores identity cooldown/global Drive debt and keeps an immediate quick-swap press buffered", () => {
     const h = makeRoom();
     h.join("swap-ledger");
     const player = h.state().players.get("swap-ledger");
@@ -2149,8 +2144,9 @@ describe("improve2 integrity regressions", () => {
     player.weapon = gunId;
     h.tick(1);
     combat.cd = 0.6;
-    combat.reloadCd = 0.5;
-    player.charges = 1;
+    combat.drive.valueF = 80;
+    combat.drive.recoveryDebtF = 0.8;
+    player.weaponResource.valueQ = 8000;
 
     h.send("swap-ledger", "cycleWeapon", { dir: 1 });
     const swappedId = player.weapon;
@@ -2164,8 +2160,9 @@ describe("improve2 integrity regressions", () => {
     player.weapon = gunId; // server-side setup return; the carousel ledger still owns the old debt
     h.tick(1);
     expect(combat.cd).toBeGreaterThan(0.4);
-    expect(combat.reloadCd).toBeGreaterThan(0.3);
-    expect(player.charges).toBe(1);
+    expect([combat.reloadCd, player.maxCharges, player.charges]).toEqual([0, 0, 0]);
+    expect(combat.drive.valueF).toBeLessThanOrEqual(80);
+    expect(combat.drive.recoveryDebtF).toBeGreaterThan(0);
   });
 
   it("G-02 grants parry augments only after a resolved success receipt", () => {
@@ -2259,7 +2256,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(29);
+    expect(h.state().schemaVersion).toBe(30);
   });
 });
 
@@ -2835,7 +2832,7 @@ describe("GameRoom — synced authoritative attack beat", () => {
 const {
   BEAM_MIN_CHARGE_SECONDS: BEAM_CHARGE_SECONDS,
   BEAM_OVERHEAT_LOCK_SECONDS: BEAM_LOCK_SECONDS,
-  BEAM_RESTART_HEAT: BEAM_RESTART_THRESHOLD,
+  DRIVE_BEAM_RESTART_THRESHOLD: BEAM_RESTART_DRIVE,
   BeamPhase: SyncedBeamPhase,
 } = await import("@dd/shared");
 
@@ -2940,27 +2937,38 @@ describe("GameRoom — beam channel authority", () => {
     }
   });
 
-  it("overheats at the bounded channel cap, cannot queue while held, then cools to restart", () => {
+  it("empties Drive after the old channel cap and restarts on the same 68-tick cycle", () => {
     const { h, player, combat } = makeBeamRoom("beam-heat");
     const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
     for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
     for (let i = 0; i < 25; i++) sendBeamFrame(h, player.id, chargeTicks + i, true);
 
-    const resource = combat.beamLedger.get(TEST_BEAM_WEAPON);
     expect(combat.beamPhase).toBe(0);
-    expect(resource.heat).toBe(1);
-    expect(resource.lockT).toBeCloseTo(BEAM_LOCK_SECONDS, 8);
-    expect(resource.requireRelease).toBe(true);
+    expect(combat.drive.valueF).toBe(0);
+    expect(player.weaponResource.valueQ).toBe(0);
+    expect(combat.drive.beamLockEndTick - h.state().tick).toBe(
+      Math.round(BEAM_LOCK_SECONDS / 0.05),
+    );
+    expect(combat.drive.beamRequireRelease).toBe(true);
     expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Overheated);
 
+    let recoveryTicks = 0;
     let seq = chargeTicks + 25;
-    for (let i = 0; i < 40; i++) sendBeamFrame(h, player.id, seq++, true);
+    for (let i = 0; i < 35; i++) {
+      sendBeamFrame(h, player.id, seq++, true);
+      recoveryTicks++;
+    }
     expect(combat.beamPhase).toBe(0);
-    expect(resource.heat).toBe(1); // no cooling and no queued restart while the trigger remains held
+    expect(combat.drive.valueF).toBeCloseTo(35, 8);
+    expect(combat.drive.beamRequireRelease).toBe(true); // recovery cannot queue a held restart
 
-    while (resource.heat > BEAM_RESTART_THRESHOLD) sendBeamFrame(h, player.id, seq++, false);
+    while (combat.drive.valueF + 1e-9 < BEAM_RESTART_DRIVE) {
+      sendBeamFrame(h, player.id, seq++, false);
+      recoveryTicks++;
+    }
+    expect(recoveryTicks).toBe(68); // old heat: 30 lock + 38 cool; Drive: 68 / (20/s @ 20Hz)
     sendBeamFrame(h, player.id, seq, true);
-    expect(resource.requireRelease).toBe(false);
+    expect(combat.drive.beamRequireRelease).toBe(false);
     expect(combat.beamPhase).toBe(1);
     expect(h.state().beams.get(player.id)?.phase).toBe(SyncedBeamPhase.Charging);
   });
@@ -3310,7 +3318,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3680,7 +3688,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3812,7 +3820,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4270,7 +4278,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4537,8 +4545,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(29);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(fixture.h.state().schemaVersion).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5060,8 +5068,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(29);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(h.state().schemaVersion).toBe(30);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5111,7 +5119,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([29, 29]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([30, 30]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5125,7 +5133,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
 });
 
 describe("pet v1 approved roster bonus enforcement", () => {
-  it("Verdant Wing multiplies only passive regen and its capstone honors the G-01 ledger matrix", () => {
+  it("Verdant Wing multiplies only HP regen while its retired charge capstone cannot fork Drive", () => {
     const h = makeRoom();
     const { player, combat } = joinPet(h, "verdant-max", "verdant-wing", 3600);
     h.state().mode = "training";
@@ -5135,35 +5143,39 @@ describe("pet v1 approved roster bonus enforcement", () => {
     h.room.stepSim(0.05);
     expect(player.hp).toBeCloseTo(50 + baseRegen * 1.5 * 0.05, 6);
 
-    expect(h.room.effectiveMaxWeaponCharges("x-gun-coffin-shotgun", player.id)).toBe(3);
-    expect(h.room.effectiveMaxWeaponCharges("x-sword-railspike", player.id)).toBe(3);
-    expect(h.room.effectiveMaxWeaponCharges("x-gun-gatling", player.id)).toBe(
-      WEAPONS["x-gun-gatling"]!.gun!.magazine + 1,
-    );
-    expect(h.room.effectiveMaxWeaponCharges("x-staff-arcane-lance", player.id)).toBe(0);
-
     player.weapon = "x-gun-coffin-shotgun";
     h.room.restoreWeaponResource(player, combat, true, false);
-    player.charges = 1;
+    combat.drive.valueF = 42.25;
+    combat.drive.recoveryDebtF = 0.7;
+    player.weaponResource.valueQ = 4225;
     combat.cd = 0.4;
-    combat.reloadCd = 0.7;
     h.room.saveWeaponResource(player, combat);
     player.weapon = "rusty-cleaver";
     h.room.restoreWeaponResource(player, combat, true, false);
     player.weapon = "x-gun-coffin-shotgun";
     h.room.restoreWeaponResource(player, combat, false, false);
-    expect({ charges: player.charges, cooldown: combat.cd, reload: combat.reloadCd }).toEqual({
-      charges: 1,
+    expect({
+      charges: player.charges,
+      maxCharges: player.maxCharges,
+      cooldown: combat.cd,
+      reload: combat.reloadCd,
+      drive: combat.drive.valueF,
+      debt: combat.drive.recoveryDebtF,
+    }).toEqual({
+      charges: 0,
+      maxCharges: 0,
       cooldown: 0.4,
-      reload: 0.7,
+      reload: 0,
+      drive: 42.25,
+      debt: 0.7,
     });
     const shotgun = combat.weaponLedger.get("x-gun-coffin-shotgun");
-    shotgun.charges = 0;
-    shotgun.reload = 0.05;
+    shotgun.cooldown = 0.05;
     player.weapon = "rusty-cleaver";
     h.room.restoreWeaponResource(player, combat, false, false);
     h.room.stepStowedWeaponResources(player, combat, 0.05);
-    expect(shotgun).toMatchObject({ reload: 0, charges: 3 });
+    expect(shotgun).toEqual({ cooldown: 0 });
+    expect(combat.drive.valueF).toBe(42.25);
   });
 
   it("Hearth Newt scales received event heals once and keeps its descent capstone exactly 15%", () => {
@@ -5231,25 +5243,23 @@ describe("pet v1 approved roster bonus enforcement", () => {
     expect(pet.geckoFraction).toBeCloseTo(6, 8);
   });
 
-  it("Brass Crab shortens assignment once and accelerates only living stowed reload debt", () => {
+  it("Brass Crab cannot accelerate retired reload debt; stowed cadence still ages once", () => {
     const h = makeRoom();
     const { player, combat } = joinPet(h, "brass-max", "brass-crab", 3600);
     h.state().mode = "training";
     player.weapon = "x-gun-coffin-shotgun";
     h.room.restoreWeaponResource(player, combat, true, false);
-    player.charges = 1;
-    combat.attackBuffer = 1;
-    h.room.stepSim(0.05);
-    expect(combat.reloadCd).toBeCloseTo(1.6 * 0.9, 8);
+    combat.cd = 0.5;
     h.room.saveWeaponResource(player, combat);
     player.weapon = "rusty-cleaver";
     h.room.restoreWeaponResource(player, combat, true, false);
     const shotgun = combat.weaponLedger.get("x-gun-coffin-shotgun");
     h.room.stepStowedWeaponResources(player, combat, 0.2);
-    expect(shotgun.reload).toBeCloseTo(1.44 - 0.25, 8);
+    expect(shotgun.cooldown).toBeCloseTo(0.3, 8);
     player.alive = false;
     h.room.stepStowedWeaponResources(player, combat, 0.2);
-    expect(shotgun.reload).toBeCloseTo(1.44 - 0.25 - 0.2, 8);
+    expect(shotgun.cooldown).toBeCloseTo(0.1, 8);
+    expect([player.charges, player.maxCharges, combat.reloadCd]).toEqual([0, 0, 0]);
   });
 
   it("Pale Firefly uses the owner's level for 156px reach and exactly 40% revive HP", () => {
@@ -5352,20 +5362,23 @@ describe("pet v1 Bond XP qualification, terminal banking, and lifecycle", () => 
     ]).toEqual([120, 120, 120]);
   });
 
-  it("preserves the exact pet snapshot, counters, capacity, charges, and debt through down/revive", () => {
+  it("preserves the exact pet snapshot, counters, Drive, and debt through down/revive", () => {
     const h = makeRoom();
     const owner = joinPet(h, "pet-downed", "verdant-wing", 3600);
     const ally = joinPet(h, "pet-rezzer", "hearth-newt", 0);
     owner.player.weapon = "x-gun-coffin-shotgun";
     h.room.restoreWeaponResource(owner.player, owner.combat, true, false);
-    owner.player.charges = 1;
-    owner.combat.reloadCd = 0.7;
+    owner.combat.drive.valueF = 42.25;
+    owner.combat.drive.recoveryDebtF = 0.7;
+    owner.player.weaponResource.valueQ = 4225;
     owner.pet.pendingBondXp = 240;
     owner.pet.acceptedActionsThisDimension = 7;
     const sameRuntime = owner.pet;
     owner.player.hp = 0;
     h.tick();
     expect(owner.player.alive).toBe(false);
+    const downedDrive = owner.combat.drive.valueF;
+    const downedDebt = owner.combat.drive.recoveryDebtF;
     h.room.tryRez(ally.player, 10000);
     expect(owner.player.alive).toBe(true);
     expect(h.room.petRuns.get(owner.player.id)).toBe(sameRuntime);
@@ -5374,17 +5387,19 @@ describe("pet v1 Bond XP qualification, terminal banking, and lifecycle", () => 
       band: owner.player.petLevelBand,
       pending: owner.pet.pendingBondXp,
       actions: owner.pet.acceptedActionsThisDimension,
-      maxCharges: owner.player.maxCharges,
-      charges: owner.player.charges,
-      reload: owner.combat.reloadCd,
+      drive: owner.combat.drive.valueF,
+      debt: owner.combat.drive.recoveryDebtF,
+      mirror: owner.player.weaponResource.valueQ,
+      tombstones: [owner.player.maxCharges, owner.player.charges, owner.combat.reloadCd],
     }).toEqual({
       petId: "verdant-wing",
       band: 3,
       pending: 240,
       actions: 7,
-      maxCharges: 3,
-      charges: 1,
-      reload: 0.7,
+      drive: downedDrive,
+      debt: downedDebt,
+      mirror: Math.floor(downedDrive * 100),
+      tombstones: [0, 0, 0],
     });
   });
 
@@ -5518,13 +5533,13 @@ function makeDualWieldFixture(
   lead.earned = combat.heldEarned;
   lead.resourceWeapon = leadId;
   lead.resourceReady = true;
-  player.maxCharges = h.room.effectiveMaxWeaponCharges(leadId, player.id);
-  player.charges = options.leadCharges ?? player.maxCharges;
+  player.maxCharges = 0;
+  player.charges = 0;
   combat.cd = options.leadCooldown ?? 0;
-  combat.reloadCd = options.leadReload ?? 0;
+  combat.reloadCd = 0;
   lead.cooldown = combat.cd;
-  lead.reload = combat.reloadCd;
-  lead.resourceCharges = player.charges;
+  lead.reload = 0;
+  lead.resourceCharges = 0;
 
   const off = player.slots[1];
   off.weapon = offId;
@@ -5534,9 +5549,8 @@ function makeDualWieldFixture(
   off.resourceWeapon = offId;
   off.resourceReady = true;
   off.cooldown = options.offCooldown ?? 0;
-  off.reload = options.offReload ?? 0;
-  const offMax = h.room.effectiveMaxWeaponCharges(offId, player.id);
-  off.resourceCharges = options.offCharges ?? offMax;
+  off.reload = 0;
+  off.resourceCharges = 0;
 
   h.send(player.id, "bindPair", { off: 1 });
   return { h, player, combat, lead, off };
@@ -5655,32 +5669,49 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
       .toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
   });
 
-  it("keeps gun magazines separate and lets the living hand cover the other's reload", () => {
-    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun", {
-      leadCharges: 1,
-      offCharges: 3,
-    });
+  it("bills one Drive debit per accepted gun hand using the post-cap contribution", () => {
+    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun");
     f.combat.drawLock = 0;
     f.combat.handGate = 0;
     f.combat.cd = 0;
     f.off.cooldown = 0;
+    const full = f.combat.drive.valueF;
     f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off);
-    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 3]);
-    expect(f.combat.reloadCd).toBeGreaterThan(0);
+    const afterLead = f.combat.drive.valueF;
+    expect(full - afterLead).toBe(10);
+    expect([f.player.charges, f.off.resourceCharges, f.combat.reloadCd]).toEqual([0, 0, 0]);
 
     f.combat.handGate = 0;
     f.off.cooldown = 0;
+    const offWeapon = WEAPONS["x-gun-nailgun"]!;
+    const offProfile = enemyComboShared.weaponResourceProfile(offWeapon.id)!;
+    const offInterval = enemyComboShared.effectiveAcceptedWeaponInterval(
+      offWeapon,
+      enemyComboShared.weaponAttackCooldown(offWeapon),
+    );
+    const contribution = f.h.room.pairOffhandDamageMultiplier(f.player, f.off);
     f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off);
-    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 2]);
+    expect(afterLead - f.combat.drive.valueF).toBeCloseTo(
+      enemyComboShared.driveCostForProfile(offProfile, offInterval) * contribution,
+      8,
+    );
+    expect(f.player.attackSeq).toBe(2);
 
+    const dryHand = enemyComboShared.dualHandForSeq(
+      (f.player.attackSeq + 1) >>> 0,
+      f.player.pairBaseSeq,
+    );
+    f.combat.drive.valueF = 0;
     f.combat.handGate = 0;
     f.combat.cd = 0;
     f.off.cooldown = 0;
     f.combat.attackBuffer = 1;
     f.h.room.stepSim(0.05);
-    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 1]);
-    expect(f.combat.reloadCd).toBeGreaterThan(0);
-    expect(enemyComboShared.dualHandForSeq(f.player.attackSeq, f.player.pairBaseSeq)).toBe(1);
+    expect(f.player.attackSeq).toBe(2);
+    expect(enemyComboShared.dualHandForSeq(
+      (f.player.attackSeq + 1) >>> 0,
+      f.player.pairBaseSeq,
+    )).toBe(dryHand);
   });
 
   it("counts a linked pair as one set entry and applies the union of requirements to both hands", () => {
@@ -5785,8 +5816,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(30);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6311,5 +6342,322 @@ describe("GameRoom - weapon-bank explicit abandon boundary", () => {
     expect(host.account.weaponBank.stash).toEqual([]);
     expect(ally.account.weaponBank.expedition).toBe(allyReservation);
     expect(ally.account.weaponBank.expedition?.entries[0]?.entry).toEqual(allyStake);
+  });
+});
+
+// METAGAME WAVE 3 — append-only Drive authority, economy, and equivalence coverage.
+describe("GameRoom — schema-30 Drive authority", () => {
+  it("ships the nested quantized mirror while affordability remains on the private float", () => {
+    const h = makeRoom();
+    h.join("drive-float");
+    const player = h.state().players.get("drive-float");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x-gun-revolver-cannon"]!;
+    const profile = enemyComboShared.weaponResourceProfile(weapon.id)!;
+    const interval = enemyComboShared.effectiveAcceptedWeaponInterval(
+      weapon,
+      enemyComboShared.weaponAttackCooldown(weapon),
+    );
+    const cost = enemyComboShared.driveCostForProfile(profile, interval);
+
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(30);
+    expect(h.state().schemaVersion).toBe(30);
+    expect(player.weaponResource).toBe(player.dualWield.weaponResource);
+    expect(player.weaponResource).toMatchObject({ valueQ: 10_000, regenMode: 1, beamLockEndTick: 0 });
+
+    combat.drive.valueF = cost - 0.001;
+    player.weaponResource.valueQ = Math.floor(cost * 100); // deliberately optimistic mirror
+    expect(h.room.trySpendWeaponResource(
+      player,
+      combat,
+      weapon,
+      weapon.id,
+      enemyComboShared.CombatDelivery.Gun,
+      0,
+      interval,
+      1,
+      0,
+      "tap",
+    ).accepted).toBe(false);
+
+    combat.drive.valueF = cost;
+    expect(h.room.trySpendWeaponResource(
+      player,
+      combat,
+      weapon,
+      weapon.id,
+      enemyComboShared.CombatDelivery.Gun,
+      0,
+      interval,
+      1,
+      0,
+      "tap",
+    ).accepted).toBe(true);
+    expect(combat.drive.valueF).toBe(0);
+    expect(player.weaponResource.valueQ).toBe(0);
+
+    combat.drive.valueF = 42.259;
+    h.room.commitWeaponResourceTick(player, combat);
+    expect(player.weaponResource.valueQ).toBe(4225);
+  });
+
+  it("implements the anti-turtle modes, debt edge, 640px threat boundary, and pause law", () => {
+    const h = makeRoom();
+    h.join("drive-regen");
+    const player = h.state().players.get("drive-regen");
+    const combat = h.room.combat.get(player.id);
+    const step = () => {
+      h.room.beginWeaponResourceTick(player, combat, 0.05);
+      h.room.commitWeaponResourceTick(player, combat);
+    };
+
+    combat.drive.valueF = 0;
+    combat.drive.recoveryDebtF = 0;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      1,
+      enemyComboShared.DriveRegenMode.Floor,
+    ]);
+
+    const threat = new EnemyState();
+    threat.id = "drive-threat";
+    threat.kind = "critter";
+    threat.hp = 999;
+    threat.x = player.x + enemyComboShared.DRIVE_THREAT_RADIUS;
+    threat.y = player.y;
+    h.state().enemies.set(threat.id, threat);
+    h.room.enemyGrid.insert(threat.id, threat.x, threat.y);
+    combat.drive.valueF = 0;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      1.75,
+      enemyComboShared.DriveRegenMode.Engaged,
+    ]);
+
+    threat.x = player.x + enemyComboShared.DRIVE_THREAT_RADIUS + 0.01;
+    h.room.enemyGrid.update(threat.id, threat.x, threat.y);
+    combat.drive.valueF = 0;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      1,
+      enemyComboShared.DriveRegenMode.Floor,
+    ]);
+
+    h.room.setWeaponResourceRegenOverride(player.id, "forceEngaged");
+    combat.drive.valueF = 0;
+    combat.drive.recoveryDebtF = 0.1;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      1,
+      enemyComboShared.DriveRegenMode.Floor,
+    ]);
+    step(); // debt is sampled before aging: its final tick is still floor-only
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      2,
+      enemyComboShared.DriveRegenMode.Floor,
+    ]);
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      3.75,
+      enemyComboShared.DriveRegenMode.Engaged,
+    ]);
+
+    combat.drive.engagedRecoveryMult = 99;
+    combat.drive.valueF = 0;
+    step();
+    expect(combat.drive.valueF).toBeCloseTo(2.065, 8); // 35/s × the one +18% generic cap
+    combat.drive.engagedRecoveryMult = 1;
+
+    player.ultPhase = enemyComboShared.UltimatePhase.Active;
+    combat.drive.valueF = 0;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      1,
+      enemyComboShared.DriveRegenMode.Floor,
+    ]);
+    player.ultPhase = enemyComboShared.UltimatePhase.Idle;
+
+    h.room.setWeaponResourceRegenOverride(player.id, "paused");
+    combat.drive.valueF = 0;
+    step();
+    expect([combat.drive.valueF, combat.drive.regenMode]).toEqual([
+      0,
+      enemyComboShared.DriveRegenMode.Paused,
+    ]);
+  });
+
+  it("sustains baseline fists for 60 seconds without leaking engaged bonus through debt", () => {
+    const h = makeRoom();
+    h.join("drive-melee-baseline");
+    h.state().mode = "training";
+    const player = h.state().players.get("drive-melee-baseline");
+    const combat = h.room.combat.get(player.id);
+    player.weapon = FISTS_WEAPON;
+    h.tick(1);
+    combat.drive.valueF = 100;
+    combat.drive.recoveryDebtF = 0;
+    player.weaponResource.valueQ = 10_000;
+    h.room.setWeaponResourceRegenOverride(player.id, "forceEngaged");
+
+    const postAttackValues: number[] = [];
+    let lastSeq = player.attackSeq;
+    for (let tick = 0; tick < 1_200; tick++) {
+      h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+      h.tick(1);
+      if (player.attackSeq !== lastSeq) {
+        postAttackValues.push(combat.drive.valueF);
+        lastSeq = player.attackSeq;
+      }
+    }
+
+    expect(postAttackValues.length).toBeGreaterThan(160);
+    // The first accepted tick legitimately receives the already-cleared engaged credit. Once its debit
+    // stamps recovery debt, every later accepted baseline beat is flat on the guaranteed floor.
+    const plateau = postAttackValues[1]!;
+    for (const value of postAttackValues.slice(2)) {
+      expect(Math.abs(value - plateau)).toBeLessThanOrEqual(enemyComboShared.DRIVE_COST_QUANTUM);
+    }
+    expect(combat.drive.regenMode).toBe(enemyComboShared.DriveRegenMode.Floor);
+    expect(combat.drive.recoveryDebtF).toBeGreaterThan(0);
+  });
+
+  it("routes every solo tap delivery through the one spend seam before its attack beat", () => {
+    const cases = [
+      [FISTS_WEAPON, enemyComboShared.CombatDelivery.Melee],
+      ["twin-bowie-fangs", enemyComboShared.CombatDelivery.Melee],
+      ["rusty-cleaver", enemyComboShared.CombatDelivery.Thrown],
+      ["x-gun-revolver-cannon", enemyComboShared.CombatDelivery.Gun],
+      ["x-staff-arcane-lance", enemyComboShared.CombatDelivery.Cast],
+    ] as const;
+
+    for (const [weaponId, delivery] of cases) {
+      const h = makeRoom();
+      h.join(`drive-seam-${weaponId}`);
+      h.state().mode = "training";
+      const player = h.state().players.values().next().value;
+      player.weapon = weaponId;
+      h.tick(1);
+      const spend = vi.spyOn(h.room, "trySpendWeaponResource");
+      h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+      h.tick(1);
+
+      expect(player.attackSeq).toBe(1);
+      expect(spend).toHaveBeenCalledTimes(1);
+      expect(spend.mock.calls[0]?.[4]).toBe(delivery);
+      expect(spend.mock.calls[0]?.[9]).toBe("tap");
+      spend.mockRestore();
+    }
+  });
+
+  it("keeps Drive and global debt outside the carousel identity ledger", () => {
+    const h = makeRoom();
+    h.join("drive-carousel");
+    const player = h.state().players.get("drive-carousel");
+    const combat = h.room.combat.get(player.id);
+    player.weapon = "x-sword-bone";
+    h.tick(1);
+    h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+    h.tick(1);
+    const value = combat.drive.valueF;
+    const debt = combat.drive.recoveryDebtF;
+    const firstWeapon = player.weapon;
+
+    for (let i = 0; i < ACTION_MSGS_PER_TICK; i++) {
+      h.send(player.id, "cycleWeapon", { dir: i % 2 === 0 ? 1 : -1 });
+    }
+    expect(player.weapon).toBe(firstWeapon);
+    expect(combat.drive.valueF).toBe(value);
+    expect(combat.drive.recoveryDebtF).toBe(debt);
+
+    h.tick(1);
+    expect(combat.drive.valueF).toBeCloseTo(value + 1, 8);
+    expect(combat.drive.recoveryDebtF).toBeCloseTo(debt - 0.05, 8);
+  });
+});
+
+describe("GameRoom — Drive beam equivalence and seam", () => {
+  it("spends 25 ignition plus exactly 25 net-three active ticks even under engaged recovery", () => {
+    const { h, player, combat } = makeBeamRoom("drive-beam-equivalence");
+    h.room.setWeaponResourceRegenOverride(player.id, "forceEngaged");
+    const spend = vi.spyOn(h.room, "trySpendWeaponResource");
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+    for (let seq = 1; seq <= chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+
+    expect(combat.beamPhase).toBe(2);
+    expect(combat.drive.valueF).toBeCloseTo(72, 8);
+    expect(player.weaponResource.valueQ).toBe(7200);
+    for (let i = 1; i < 24; i++) {
+      sendBeamFrame(h, player.id, chargeTicks + i, true);
+    }
+    expect(combat.beamPhase).toBe(2);
+    expect(combat.drive.valueF).toBeCloseTo(3, 8);
+    expect(player.weaponResource.valueQ).toBe(300);
+    sendBeamFrame(h, player.id, chargeTicks + 24, true);
+    expect(combat.beamPhase).toBe(0);
+    expect(combat.drive.valueF).toBe(0);
+
+    const reasons = spend.mock.calls.map((call) => call[9]);
+    expect(reasons.filter((reason) => reason === "beam-ignite")).toHaveLength(1);
+    expect(reasons.filter((reason) => reason === "beam-active")).toHaveLength(25);
+    expect(combat.drive.recoveryDebtF).toBeCloseTo(3.4, 8);
+    spend.mockRestore();
+  });
+
+  it("bills pre-ignition cancel once and never invents an empty lock", () => {
+    const { h, player, combat } = makeBeamRoom("drive-beam-cancel");
+    const spend = vi.spyOn(h.room, "trySpendWeaponResource");
+    sendBeamFrame(h, player.id, 1, true);
+    sendBeamFrame(h, player.id, 2, false);
+
+    expect(combat.beamPhase).toBe(0);
+    expect(combat.drive.valueF).toBeCloseTo(81, 8); // first full-bar credit caps; release tick adds one
+    expect(combat.drive.beamLockEndTick).toBe(0);
+    expect(spend.mock.calls.map((call) => call[9])).toEqual(["beam-cancel"]);
+    spend.mockRestore();
+  });
+
+  it("maps Pressurized's approved vent and half-lock to its old 45-tick restart row", () => {
+    const { h, player, combat } = makeBeamRoom("drive-beam-pressurized");
+    combat.mods = {
+      ...combat.mods,
+      beamVentMult: 1.25,
+      beamOverheatLockMult: 0.5,
+    };
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+    for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+    for (let i = 0; i < 25; i++) sendBeamFrame(h, player.id, chargeTicks + i, true);
+
+    expect(combat.drive.valueF).toBe(0);
+    expect(combat.drive.beamLockEndTick - h.state().tick).toBe(15);
+    let seq = chargeTicks + 25;
+    let recoveryTicks = 0;
+    while (combat.drive.valueF + 1e-9 < BEAM_RESTART_DRIVE) {
+      sendBeamFrame(h, player.id, seq++, false);
+      recoveryTicks++;
+    }
+    expect(recoveryTicks).toBe(45); // old: 15 lock + ceil(0.65 / (0.35 × 1.25) × 20) = 30
+    sendBeamFrame(h, player.id, seq, true);
+    expect(combat.beamPhase).toBe(1);
+  });
+
+  it("makes beam empty global: baseline fists can resume but cannot rebuild the 68-point reactor", () => {
+    const { h, player, combat } = makeBeamRoom("drive-beam-global-empty");
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+    for (let seq = 1; seq < chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+    for (let i = 0; i < 25; i++) sendBeamFrame(h, player.id, chargeTicks + i, true);
+    expect(combat.drive.valueF).toBe(0);
+
+    sendBeamFrame(h, player.id, chargeTicks + 25, false); // required release edge
+    player.weapon = FISTS_WEAPON;
+    h.tick(1);
+    const beforeFists = player.attackSeq;
+    for (let tick = 0; tick < 100; tick++) {
+      h.send(player.id, "attack", { aimX: 1, aimY: 0 });
+      h.tick(1);
+    }
+
+    expect(player.attackSeq).toBeGreaterThan(beforeFists);
+    expect(combat.drive.valueF).toBeLessThan(7);
+    expect(combat.drive.valueF).toBeLessThan(BEAM_RESTART_DRIVE);
   });
 });

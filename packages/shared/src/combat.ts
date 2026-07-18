@@ -19,6 +19,9 @@ import {
   BEAM_MIN_CHARGE_SECONDS,
   BEAM_OVERHEAT_LOCK_SECONDS,
   BEAM_RESTART_HEAT,
+  DRIVE_ENGAGED_BONUS_PER_SECOND,
+  DRIVE_FLOOR_REGEN_PER_SECOND,
+  TICK_RATE,
   SLIDE_IFRAME_TICKS,
   SLIDE_PHASE_AIR,
   SLIDE_PHASE_GROUND,
@@ -67,6 +70,60 @@ export const CombatDelivery = {
   Ultimate: 10,
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
+
+export type WeaponDelivery = "melee" | "thrown" | "gun" | "cast" | "beam";
+
+/** Live delivery is behavioral; authored tag prose is not an affordability authority. */
+export function weaponDeliveryFor(weapon: WeaponDef): WeaponDelivery {
+  if (weapon.beam) return "beam";
+  if (weapon.thrown) return "thrown";
+  if (weapon.gun) return "gun";
+  if (weapon.cast) return "cast";
+  return "melee";
+}
+
+/**
+ * Neutral/live accepted solo interval under the fixed 20 Hz room clock. Accumulating gun cadence keeps
+ * its sub-tick remainder; resetting melee, thrown, and cast cadence advances on the next legal tick.
+ */
+export function effectiveAcceptedWeaponInterval(
+  weapon: WeaponDef,
+  effectiveCooldown: number,
+): number {
+  const cooldown = Math.max(1 / TICK_RATE, Number.isFinite(effectiveCooldown) ? effectiveCooldown : 0);
+  if (weapon.gun && !weapon.beam) return cooldown;
+  const ticks = Math.max(1, Math.ceil(cooldown * TICK_RATE - 1e-9));
+  return ticks / TICK_RATE;
+}
+
+export const DriveRegenMode = {
+  Paused: 0,
+  Floor: 1,
+  Engaged: 2,
+} as const;
+export type DriveRegenModeValue = (typeof DriveRegenMode)[keyof typeof DriveRegenMode];
+
+/** Pure anti-turtle reducer. Ultimate time is floor-only even when pressure is otherwise present. */
+export function driveRegenModeFor(
+  alive: boolean,
+  simulationPaused: boolean,
+  recoveryDebtLive: boolean,
+  pressure: boolean,
+  ultimateActive: boolean,
+): DriveRegenModeValue {
+  if (!alive || simulationPaused) return DriveRegenMode.Paused;
+  if (recoveryDebtLive || !pressure || ultimateActive) return DriveRegenMode.Floor;
+  return DriveRegenMode.Engaged;
+}
+
+export function driveRegenPerSecond(mode: DriveRegenModeValue, engagedMultiplier = 1): number {
+  if (mode === DriveRegenMode.Paused) return 0;
+  if (mode === DriveRegenMode.Floor) return DRIVE_FLOOR_REGEN_PER_SECOND;
+  return (
+    (DRIVE_FLOOR_REGEN_PER_SECOND + DRIVE_ENGAGED_BONUS_PER_SECOND) *
+    Math.max(0, engagedMultiplier)
+  );
+}
 
 export type DualWieldHand = 0 | 1;
 
