@@ -47,6 +47,32 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { configureCodex, runCodexExec } from "./lib/codex.mjs";
 import { readGearCatalog } from "./lib/gear-catalog.mjs";
+import {
+  COMPOSITION_ORDERS,
+  FACE_ENVELOPES,
+  MIGRATION_EXPECTED,
+  PART_FRAMES,
+  REPLACEMENT_CONTRACT_ID,
+  REPLACEMENT_HEAD_IDS,
+  VALIDATION_THRESHOLDS,
+  assertMigrationPlan,
+  buildCanonicalBodyMasks,
+  buildMigrationPlan,
+  describeMask,
+  erodeMask,
+  hashJson,
+  hashRgbaCrop,
+  maskFromAlpha,
+  renderRoleForItem,
+  renderVariantsForItem,
+  rgbaAlpha,
+  validateFullReplacement,
+  validateHatReadability,
+  validateHeadAccessory,
+  validatePairedReplacements,
+  validateReplacementHeadSockets,
+  validateTorsoPatch,
+} from "./lib/gear-replacement-contract.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -189,23 +215,14 @@ function receiver(id) {
 const Z_ORDER = [
   { plane: -60, id: "shadowEchoes", law: "existing shadow and slide echoes" },
   { plane: -50, id: "cloakFar", law: "cloak far cloth" },
-  { plane: -40, id: "baseFeet", law: "base feet" },
-  { plane: -39, id: "boots", law: "each boot directly over its foot" },
+  { plane: -40, id: "bakedFeet", law: "two retained baked foot sprites" },
   { plane: -30, id: "behindBody", law: "far held weapon sentinel" },
-  { plane: -20, id: "backHand", law: "back hand" },
-  { plane: -19, id: "backGlove", law: "back glove" },
-  { plane: -18, id: "wornBackWeapon", law: "worn back-hand weapon" },
-  { plane: 0, id: "body", law: "boilerplate body" },
-  { plane: 10, id: "pants", law: "pants" },
-  { plane: 20, id: "shirt", law: "shirt" },
-  { plane: 25, id: "cloakClasp", law: "optional near cloak clasp" },
-  { plane: 30, id: "facialHair", law: "facial hair" },
-  { plane: 31, id: "glasses", law: "glasses" },
-  { plane: 32, id: "hat", law: "hat and prestige spring-chain segments" },
-  { plane: 40, id: "frontWeapon", law: "normal held weapon below its owning front hand" },
-  { plane: 50, id: "frontHand", law: "front hand" },
-  { plane: 51, id: "frontGlove", law: "front glove" },
-  { plane: 52, id: "wornFrontWeapon", law: "worn front-hand weapon" },
+  { plane: -20, id: "bakedBackHand", law: "retained baked back hand with existing weapon ordering" },
+  { plane: 0, id: "bakedBody", law: "base + pants + shirt RenderTexture" },
+  { plane: 10, id: "bakedHead", law: "winning head + facialHair + glasses RenderTexture" },
+  { plane: 20, id: "hat", law: "legal overlay-hat/prestige-cap spring-chain segments" },
+  { plane: 30, id: "frontWeapon", law: "normal held weapon below its owning front hand" },
+  { plane: 40, id: "bakedFrontHand", law: "retained baked front hand with existing weapon ordering" },
   { plane: 60, id: "protectedVfx", law: "source tells, pair glint, gameplay VFX anchors, and label" },
 ];
 
@@ -223,25 +240,25 @@ const HAT_STACK_BAND = Object.freeze({
 const SLOT_SPECS = [
   {
     id: "boots", directory: "boots", docHeader: "Boots", receivers: ["foot-l", "foot-r"], componentIds: ["boot-l", "boot-r"],
-    sourcePivots: [{ x: 340, y: 700 }, { x: 684, y: 700 }], maxPartBox: { width: 190, height: 190 }, planeIds: ["boots", "boots"],
+    sourcePivots: [PART_FRAMES["foot-l"].pivotSource, PART_FRAMES["foot-r"].pivotSource], maxPartBox: { width: 190, height: 190 }, planeIds: ["bakedFeet", "bakedFeet"],
     artDirection: "a matched far/near rig pair of boots or footwear, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached foot, with no toes, heel, sole perspective, or frontal shoe construction",
     profileLaw: "BOOTS: each piece is a single screen-right profile cover for one soft foot-blob. Preserve the foot's rounded lump silhouette; no toes, heel block, frontal pair view, or anatomical foot. The two islands are the far/near rig pieces, not opposite-facing shoes.",
   },
   {
     id: "gloves", directory: "gloves", docHeader: "Gloves", receivers: ["hand-l", "hand-r"], componentIds: ["glove-l", "glove-r"],
-    sourcePivots: [{ x: 300, y: 512 }, { x: 724, y: 512 }], maxPartBox: { width: 180, height: 180 }, planeIds: ["backGlove", "frontGlove"],
+    sourcePivots: [PART_FRAMES["hand-l"].pivotSource, PART_FRAMES["hand-r"].pivotSource], maxPartBox: { width: 180, height: 180 }, planeIds: ["bakedBackHand", "bakedFrontHand"],
     artDirection: "a matched far/near rig pair of gloves, gauntlets, or wraps, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached hand, with no fingers, thumb, palm, or frontal glove construction",
     profileLaw: "GLOVES: each piece is a single screen-right profile cover for one soft hand-blob. Preserve the rounded lump silhouette; no fingers, thumb, palm anatomy, or frontal glove display. The two islands are the far/near rig pieces, not opposite-facing gloves.",
   },
   {
     id: "shirt", directory: "shirt", docHeader: "Shirt", receivers: ["torso"], componentIds: ["torso-panel"],
-    sourcePivots: [{ x: 512, y: 492 }], desiredAnchor: [0.5, 0.34], maxPartBox: { width: 340, height: 350 }, planeIds: ["shirt"],
+    sourcePivots: [{ x: 512, y: 492 }], desiredAnchor: [0.5, 0.62], maxPartBox: { width: 320, height: 272 }, planeIds: ["bakedBody"],
     artDirection: "one isolated visible-side profile torso panel with a modest hidden neck/shoulder overlap; shirts, jackets, vests, coats, and robes show only the single side worn in profile, never a complete front or back",
     profileLaw: "SHIRT/TORSO GARMENT: render ONLY the one visible-side profile panel as worn. Collar, lapel/closure, sleeve root, and hem must read from the side. No open-front interior, paired lapels, symmetric front, second side panel, or back-of-garment; no head, arms, hands, pants, or cloak.",
   },
   {
     id: "pants", directory: "pants", docHeader: "Pants", receivers: ["legs"], componentIds: ["legs-panel"],
-    sourcePivots: [{ x: 512, y: 660 }], desiredAnchor: [0.5, 0.30], maxPartBox: { width: 330, height: 280 }, planeIds: ["pants"],
+    sourcePivots: [{ x: 512, y: 660 }], desiredAnchor: [0.5, 0.78], maxPartBox: { width: 320, height: 181 }, planeIds: ["bakedBody"],
     artDirection: "one isolated screen-right profile lower-bean wrap with a modest hidden waistband overlap; it wraps the lower torso zone and never splits into two frontal trouser legs",
     profileLaw: "PANTS: one profile silhouette wrapping the lower torso/bean zone. The body has no legs: use a waistband plus one continuous lower-bean cover, with side-view folds/hem only. No two-leg frontal split, crotch, separate leg tubes, torso, boots, feet, or cloak.",
   },
@@ -253,13 +270,13 @@ const SLOT_SPECS = [
   },
   {
     id: "glasses", directory: "glasses", docHeader: "Glasses", receivers: ["face.eyes"], componentIds: ["eyes"],
-    sourcePivots: [{ x: 553, y: 364 }], desiredAnchor: [0.5, 0.5], maxPartBox: { width: 300, height: 150 }, planeIds: ["glasses"],
+    sourcePivots: [{ x: 553, y: 364 }], desiredAnchor: [0.5, 0.5], maxPartBox: { width: 248, height: 128 }, planeIds: ["bakedHead"],
     artDirection: "one isolated screen-right profile eyewear cutout consisting of the temple arm plus exactly one visible lens/frame; never two frontal lenses",
     profileLaw: "GLASSES: strict screen-right profile: one visible lens/frame plus its temple arm following the side of the head. Never two lenses, a frontal bridge, goggles seen head-on, or a symmetric eyewear display; no face, head, emitted glow, reticle, telegraph, or text.",
   },
   {
     id: "facialHair", directory: "facial-hair", docHeader: "Facial hair", receivers: ["face.mouth"], componentIds: ["mouth"],
-    sourcePivots: [{ x: 568, y: 410 }], desiredAnchor: [0.5, 0.38], maxPartBox: { width: 290, height: 210 }, planeIds: ["facialHair"],
+    sourcePivots: [{ x: 568, y: 410 }], desiredAnchor: [0.5, 0.38], maxPartBox: { width: 248, height: 198 }, planeIds: ["bakedHead"],
     artDirection: "one isolated screen-right profile lower-face attachment fitted to the floating head's visible cheek/jaw zone (hair, cord, tusks, mask detail, or digital stubble as named)",
     profileLaw: "FACIAL HAIR: one screen-right profile attachment following the floating head's visible cheek and jaw. Show only the near-side silhouette/tuft/tusk/cord; no mirrored second cheek, frontal moustache spread, face, head, text, particles, or glow.",
   },
@@ -429,6 +446,37 @@ function catalogItems() {
 }
 
 const ITEMS = catalogItems();
+const MIGRATION_PLAN = assertMigrationPlan(buildMigrationPlan(ITEMS));
+
+const REPLACEMENT_HEAD_SPEC = Object.freeze({
+  id: "replacementHead",
+  directory: "heads",
+  receivers: ["head"],
+  componentIds: ["head"],
+  sourcePivots: [PART_FRAMES.head.pivotSource],
+  desiredAnchor: [PART_FRAMES.head.outputOrigin.x, PART_FRAMES.head.outputOrigin.y],
+  maxPartBox: { width: PART_FRAMES.head.crop[2] - 16, height: PART_FRAMES.head.crop[3] - 16 },
+  planeIds: ["bakedHead"],
+  artDirection: "one complete final alternative-head card replacing the blank floating head, with the Demon Mask or Unbending Greathelm identity built into the head silhouette rather than layered over a hidden base head",
+  profileLaw: "REPLACEMENT HEAD: one complete screen-right floating head replacement with one final exterior contour. It must cover the default head core, remain neckless, preserve the canonical eyes/mouth accessory stocks and hat mount, and contain no separate boilerplate head, body, shoulders, tower topper, or mask-over-head double silhouette.",
+});
+
+function specForVariant(item, variant) {
+  if (variant.renderRole === "replace-head") return REPLACEMENT_HEAD_SPEC;
+  return SLOT_SPECS.find((candidate) => candidate.id === item.slot);
+}
+
+function renderJobsForItem(item) {
+  return renderVariantsForItem(item).map((variant) => ({
+    item,
+    ...variant,
+    spec: specForVariant(item, variant),
+    key: `${variant.directory}/${item.id}`,
+  }));
+}
+
+const RENDER_JOBS = ITEMS.flatMap(renderJobsForItem);
+const CREATIVE_RENDER_JOBS = RENDER_JOBS.filter((job) => job.creativeRender);
 
 const BOILERPLATE_PARTS = [
   {
@@ -436,32 +484,32 @@ const BOILERPLATE_PARTS = [
     // a fully floating neckless part (Madness bob law; enables helmet alternative-heads); hands and
     // feet are the SAME near-featureless soft blob language (no thumb, no wedge/heel/toe).
     id: "body", parent: null, receiver: "body", pivot: BODY_ROOT_SOURCE, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 320, height: 500 }, planeId: "body",
+    maxPartBox: { width: 320, height: 500 }, planeId: "bakedBody",
     description: `ONLY the oatmeal-canvas stitch-seam TORSO: a compact SQUAT capsule, nearly as wide as tall, alpha-bounds width:height ${PROPORTION_LAW.torsoWidthHeight}, with flat-to-gently-curved sides, shoulder:hip width ${PROPORTION_LAW.shoulderHipWidth}, and only a subtle lower taper. Absolutely NO pear shape, pot belly, belly/hip flare, waist bulge, legs, pelvis taper into limbs, head, or neck. Carry one vertical charcoal stitch seam up the midline and one small darker-weave shoulder patch; no hands, feet, clothing, hair, gear, or shadow`,
   },
   {
     id: "head", parent: "body", receiver: "head", pivot: { x: 512, y: 300 }, desiredAnchor: [0.5, 0.55],
-    maxPartBox: { width: 285, height: 260 }, planeId: "body",
+    maxPartBox: { width: 285, height: 260 }, planeId: "bakedHead",
     description: `ONLY the LARGE FLOATING blank egg head with NO neck, connector tab, or shoulder hint and a clean closed oval bottom edge. Match head width to ${PROPORTION_LAW.headTorsoWidth} of the approved slim torso width and preserve a ${PROPORTION_LAW.headZoneShare} head-zone share in the assembled head+torso silhouette. Carry one small charcoal cross-stitch X where a face would be; no torso, hair, hat, ears, eyewear, facial hair, or shadow`,
   },
   {
     id: "hand-l", parent: "hand-l", receiver: "hand-l", pivot: { x: 384, y: 522 }, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 120, height: 100 }, planeId: "backHand",
+    maxPartBox: { width: 120, height: 100 }, planeId: "bakedBackHand",
     description: "ONLY the back/left detached soft blob hand — a near-featureless rounded canvas lump with NO thumb lobe or finger reads; no arm, glove, weapon, or shadow",
   },
   {
     id: "hand-r", parent: "hand-r", receiver: "hand-r", pivot: { x: 640, y: 522 }, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 120, height: 100 }, planeId: "frontHand",
+    maxPartBox: { width: 120, height: 100 }, planeId: "bakedFrontHand",
     description: "ONLY the front/right detached soft blob hand — a near-featureless rounded canvas lump with NO thumb lobe or finger reads; no arm, glove, weapon, or shadow",
   },
   {
     id: "foot-l", parent: "foot-l", receiver: "foot-l", pivot: { x: 448, y: 736 }, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 145, height: 105 }, planeId: "baseFeet",
+    maxPartBox: { width: 145, height: 105 }, planeId: "bakedFeet",
     description: "ONLY the back/left detached soft blob foot — the SAME near-featureless rounded canvas lump language as the hands, NO wedge, heel, or toe shape; no leg, boot, ground, or shadow",
   },
   {
     id: "foot-r", parent: "foot-r", receiver: "foot-r", pivot: { x: 576, y: 736 }, desiredAnchor: [0.5, 0.5],
-    maxPartBox: { width: 145, height: 105 }, planeId: "baseFeet",
+    maxPartBox: { width: 145, height: 105 }, planeId: "bakedFeet",
     description: "ONLY the front/right detached soft blob foot — the SAME near-featureless rounded canvas lump language as the hands, NO wedge, heel, or toe shape; no leg, boot, ground, or shadow",
   },
 ];
@@ -523,6 +571,14 @@ function installedItemPath(item) {
   return resolve(GEAR_DST, item.slotDirectory, `${item.id}.png`);
 }
 
+function rawRenderJobPath(job) {
+  return resolve(MASTERS, job.directory, `${job.item.id}.png`);
+}
+
+function installedRenderJobPath(job) {
+  return resolve(GEAR_DST, job.directory, `${job.item.id}.png`);
+}
+
 function codexLogPath(_kind, directory, id) {
   return resolve(LOGS, directory, `${id}.codex.log`);
 }
@@ -531,7 +587,15 @@ function statusLogPath(_kind, directory, id) {
   return resolve(LOGS, directory, `${id}.install.json`);
 }
 
-function referencesForItem(item) {
+function renderJobLogPath(job) {
+  return codexLogPath("gear", job.directory, job.item.id);
+}
+
+function renderJobStatusPath(job) {
+  return statusLogPath("gear", job.directory, job.item.id);
+}
+
+function legacyReferencesForItem(item) {
   const refs = item.sourceCharacterId
     ? [
         resolve(PORTRAITS, `${item.sourceCharacterId}.jpg`),
@@ -542,7 +606,7 @@ function referencesForItem(item) {
   return refs.every(existsSync) ? refs : [];
 }
 
-function itemReferenceBlock(item) {
+function legacyItemReferenceBlock(item) {
   if (!item.sourceCharacterId) {
     return `REFERENCE IMAGE
 - Image 1: approved blank boilerplate identity master. This is the BINDING invisible mannequin: use only its body/head scale, screen-right profile, and socket placement; do not paint any boilerplate pixels.`;
@@ -553,10 +617,48 @@ function itemReferenceBlock(item) {
 - Image 3: approved blank boilerplate identity master. This is the BINDING invisible mannequin: a compact squat capsule torso (${PROPORTION_LAW.torsoWidthHeight} W:H, shoulders and hips nearly equal, no belly flare) plus a large floating head (${PROPORTION_LAW.headTorsoWidth} of torso width). Use ONLY its new body/head scale, screen-right profile, and socket placement; do not paint any boilerplate pixels.`;
 }
 
+function baseReferenceIdsForRole(renderRole) {
+  if (renderRole === "body-patch") return ["body"];
+  if (renderRole === "replace-hand") return ["hand-l", "hand-r"];
+  if (renderRole === "replace-foot") return ["foot-l", "foot-r"];
+  if (["head-accessory", "replace-head", "prestige-cap", "overlay-hat"].includes(renderRole)) return ["head"];
+  return [];
+}
+
+function referenceBundleForJob(job) {
+  const entries = [];
+  if (job.item.sourceCharacterId) {
+    entries.push({
+      path: resolve(PORTRAITS, `${job.item.sourceCharacterId}.jpg`),
+      description: `canonical portrait identity reference for ${job.item.sourceCharacterName}; preserve its item-specific materials, palette, motifs, and construction`,
+    });
+    entries.push({
+      path: resolve(SPRITES, job.item.sourceCharacterId, "body.png"),
+      description: "canonical shipped body-sprite identity reference; translate its item identity into the new rig without copying its whole-body anatomy",
+    });
+  }
+  entries.push({
+    path: installedBoilerplatePath("identity-master"),
+    description: `approved blank identity master; preserve its ${PROPORTION_LAW.torsoWidthHeight} squat torso, large floating head, semantic-right profile, and socket placement without painting its pixels`,
+  });
+  for (const id of baseReferenceIdsForRole(job.renderRole)) {
+    entries.push({
+      path: installedBoilerplatePath(id),
+      description: `canonical untrimmed ${id}.png target card in ${FRAME_ID}; render on this exact source placement, scale, silhouette, and pivot while omitting its bare pixels from the output`,
+    });
+  }
+  return { entries, paths: entries.every((entry) => existsSync(entry.path)) ? entries.map((entry) => entry.path) : [] };
+}
+
+function itemReferenceBlock(job, bundle) {
+  return `REFERENCE IMAGES — IDENTITY AND EXACT-FRAME FIT
+${bundle.entries.map((entry, index) => `- Image ${index + 1}: ${entry.description}.`).join("\n")}`;
+}
+
 function executionBlock() {
   return `EXECUTION PATH — BINDING
 - Use the built-in image_gen tool for this raster render.
-- The three/local input images are already attached by the outer generator. Do not inspect the repository, list files, open paths, read more instructions beyond the required imagegen skill, or search for destinations.
+- The identity and exact-frame input images named below are already attached by the outer generator. Do not inspect the repository, list files, open paths, read more instructions beyond the required imagegen skill, or search for destinations.
 - Call image_gen for the requested image and then END THE TURN IMMEDIATELY. The outer generator alone harvests, chroma-keys, registers, outlines, validates, and installs the PNG.
 - Do not run shell commands, write or modify workspace files, copy images, crop, resize, reframe, post-process, validate pixels, or use Sharp, System.Drawing, Pillow/PIL, Python, JavaScript, SVG, or canvas.
 - If image_gen is blocked, fails, or is unavailable, STOP WITHOUT CREATING A FILE. Do not substitute PowerShell/System.Drawing, Python/Pillow, SVG, HTML/canvas, procedural drawing code, a placeholder, or any other synthetic fallback. The outer generator must receive no PNG so it can record a clean resumable failure.`;
@@ -642,7 +744,7 @@ ${chromaOutputBlock()}
 Before returning verify: ONLY ${part.id}; exact blank identity; authored pivot covered by stock; one paper island; clean green field; no other anatomy, gear, shadow, text, or VFX.`;
 }
 
-function promptForItem(item, spec) {
+function legacyPromptForItem(item, spec) {
   const paired = spec.sourcePivots.length === 2;
   const pivotText = spec.sourcePivots.map((pivot, index) => `${spec.componentIds[index]}=(${pivot.x},${pivot.y})`).join(", ");
   const hatBlock = item.slot === "hat"
@@ -658,7 +760,7 @@ Generate ONE standalone raster source image for Dimension Drifters. This ticket 
 
 ${executionBlock()}
 
-${itemReferenceBlock(item)}
+${legacyItemReferenceBlock(item)}
 
 Use case: identity-preserve
 Asset type: game-ready isolated wearable sprite part
@@ -695,6 +797,82 @@ ${hatBlock}
 ${chromaOutputBlock()}
 
 Before returning verify: exactly ${paired ? "two matched wearable islands" : "one wearable island"}; ${item.name} unmistakably belongs to ${item.sourceCharacterName}; strict screen-right profile; slot-specific visible-side law obeyed; new slim-capsule/large-head fit with no belly room; every source pivot covered; stack law obeyed if a hat; no boilerplate pixels, anatomy, shadow, prop, text, or VFX.`;
+}
+
+function replacementAuthoringBlock(job) {
+  const bodyCrop = JSON.stringify(PART_FRAMES.body.crop);
+  const headCrop = JSON.stringify(PART_FRAMES.head.crop);
+  switch (job.renderRole) {
+    case "body-patch":
+      return job.item.slot === "shirt"
+        ? `SHIRT / body-patch: Render the garment ON canonical body.png at its exact source placement and fixed bake frame ${bodyCrop}. Output garment pixels only—upper-torso material, collars, lapels, closures, sleeve roots, and hem; no oatmeal/body pixels. Alpha 0 outside shirtAllowed; alpha >=240 across at least 99.5% of shirtRequired; optional pixels only in the lower hem allowance; no generated exterior rim.`
+        : `PANTS / body-patch: Render the garment ON canonical body.png at its exact source placement and fixed bake frame ${bodyCrop}. Output garment pixels only—one continuous lower-bean garment and waistband; no oatmeal/body pixels, legs, crotch, or tubes. Alpha 0 outside pantsAllowed; alpha >=240 across at least 99.5% of pantsRequired; optional pixels only in the upper waistband allowance; no generated exterior rim.`;
+    case "replace-hand":
+      return `GLOVES / replace-hand: Render TWO complete final dressed blob replacements ON the exact canonical hand frames: hand-l ${JSON.stringify(PART_FRAMES["hand-l"].crop)} at (384,522), hand-r ${JSON.stringify(PART_FRAMES["hand-r"].crop)} at (640,522). No bare hand pixels, fingers, thumb, or palm. Each covers >=98% of its base core, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
+    case "replace-foot":
+      return `BOOTS / replace-foot: Render TWO complete final dressed foot-blob replacements ON the exact canonical foot frames: foot-l ${JSON.stringify(PART_FRAMES["foot-l"].crop)} at (448,736), foot-r ${JSON.stringify(PART_FRAMES["foot-r"].crop)} at (576,736). No bare foot pixels, toes, heel block, sole perspective, or leg. Each covers >=98% of its base core, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
+    case "head-accessory":
+      return job.item.slot === "glasses"
+        ? `GLASSES / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside face-eyes envelope ${JSON.stringify(FACE_ENVELOPES.eyes)}, cover face.eyes (553,364) with solid material, and show exactly one semantic-right lens/frame plus temple arm—no head pixels or second frontal lens.`
+        : `FACIAL HAIR / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside mouth/jaw envelope ${JSON.stringify(FACE_ENVELOPES.mouthJaw)}, cover face.mouth (568,410) with solid material, and show one near-side cheek/jaw attachment—no head pixels or mirrored far cheek.`;
+    case "replace-head":
+      return `REPLACEMENT HEAD: Render one COMPLETE final alternative-head card ON canonical head.png at its exact source placement and fixed frame ${headCrop}. ${job.item.name} IS the head; never draw it over copied boilerplate-head pixels and do not include its prestige cap. Cover >=98% of the default head core, remain neckless and one connected island, preserve opaque support beneath face.eyes (553,364) and face.mouth (568,410), preserve hat mount (512,317) within 4px, and own one final outer contour.`;
+    case "prestige-cap":
+      return `PRESTIGE CAP: Render one SMALL hat-like topper derived from ${job.item.name}'s crest/horn/helm language on the canonical head mount. This is a legal ${STACK_BAND_ID} segment, never a second head, mask, helmet shell, face, or replacement-head card. It independently passes pivot stock, mount band, stack envelope, central crown path, semantic-right profile, and readability at scales 1.0, 0.82, and 0.24.`;
+    default:
+      throw new Error(`No creative replacement prompt contract for ${job.renderRole}`);
+  }
+}
+
+function promptForRenderJob(job, bundle) {
+  const { item, spec } = job;
+  const paired = spec.sourcePivots.length === 2;
+  const hatBlock = job.renderRole === "prestige-cap"
+    ? `HAT PRESTIGE STACK LAW — ${STACK_BAND_ID}
+- Pivot (${HAT_STACK_BAND.sourcePivot.x},${HAT_STACK_BAND.sourcePivot.y}) is solid ordinary base stock.
+- Solid stock crosses mount band ${JSON.stringify(HAT_STACK_BAND.mountStockBand)}; the complete outlined silhouette stays inside ${JSON.stringify(HAT_STACK_BAND.silhouetteEnvelope)}; a central crown path stays within x=${HAT_STACK_BAND.crownCenterBand.left}..${HAT_STACK_BAND.crownCenterBand.right}.`
+    : "";
+  return `# CHAT ISOLATION — GEAR REPLACEMENT ${job.key}
+Generate ONE standalone raster source image for Dimension Drifters. This ticket targets only ${item.name}, render role ${job.renderRole}, from ${item.setName}.
+
+${executionBlock()}
+
+${itemReferenceBlock(job, bundle)}
+
+Use case: identity-preserve
+Asset type: game-ready untrimmed replacement-contract source
+Primary request: ${spec.artDirection}.
+Item identity: ${item.artDescription}.
+Legacy provenance: ${item.identityBrief}
+Systems flavor only: ${item.effect}
+
+REPLACEMENT AUTHORING CONTRACT — BINDING
+${replacementAuthoringBlock(job)}
+
+PROFILE LAW — BINDING
+- ${spec.profileLaw}
+- Strict semantic-right side profile with the house-style slight high top-down pitch. Do not complete a hidden far side, front, or back merely because a legacy reference shows it.
+
+INVISIBLE MANNEQUIN FIT LAW
+- Exact canonical base-part placement wins over the legacy anatomy. Torso fit remains ${PROPORTION_LAW.torsoWidthHeight} W:H with shoulder:hip ${PROPORTION_LAW.shoulderHipWidth}; head fit remains ${PROPORTION_LAW.headTorsoWidth} of torso width; hands and feet remain near-featureless blobs.
+- ${paired ? "Exactly TWO separated matched components, one around each named pivot." : "Exactly ONE connected primary island."}
+
+${houseStyleBlock()}
+
+IDENTITY LOCK
+- Preserve ${item.sourceCharacterName}'s exact visual grammar and ${item.name}'s distinctive construction; do not substitute a generic item.
+- No extra gear, held prop, shadow, portrait, label, text, environment, aura, particles, VFX, or baked glow.
+
+FUSION REGISTRATION — ${FRAME_ID}
+- Source canvas ${CANVAS.width}x${CANVAS.height}; body root (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}); semantic facing right; runtime owns mirroring; output remains untrimmed.
+- Receivers: ${JSON.stringify(spec.receivers.map((id) => receiver(id)))}.
+- Authored pivots: ${JSON.stringify(spec.sourcePivots)}; every named pivot must lie in ordinary opaque stock before installation.
+
+${hatBlock}
+
+${chromaOutputBlock()}
+
+Before returning verify: exact-frame replacement contract obeyed; ${paired ? "two separated matched islands" : "one primary island"}; strict semantic-right profile; every pivot covered where the role requires stock; no undersized base-revealing garment; no unrelated anatomy, shadow, prop, text, or VFX.`;
 }
 
 function alphaBounds(data, width, height, threshold = 8, region = null) {
@@ -957,12 +1135,187 @@ function verifyHatStackBand(data, bounds) {
   };
 }
 
-async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, pairedSpec = null, hat = false }) {
+let replacementContextPromise = null;
+
+async function loadReplacementContext() {
+  if (replacementContextPromise) return replacementContextPromise;
+  replacementContextPromise = (async () => {
+    const bodyMaster = rawBoilerplatePath("body");
+    if (!existsSync(bodyMaster)) throw new Error(`Replacement contract requires preserved pre-outline source ${repoPath(bodyMaster)}`);
+    const decodedBody = await decodeAndKey(bodyMaster);
+    const bodyPart = BOILERPLATE_PARTS.find((part) => part.id === "body");
+    const registeredBody = await registerSingle(decodedBody.data, bodyPart.pivot, bodyPart.desiredAnchor, bodyPart.maxPartBox);
+    const preOutlineBodyAlpha = rgbaAlpha(registeredBody);
+    const masks = buildCanonicalBodyMasks(preOutlineBodyAlpha, CANVAS.width, CANVAS.height);
+    const baseRgba = {};
+    const baseAlpha = {};
+    const baseSilhouettes = {};
+    const cores = {};
+    const baseSources = {};
+    for (const partId of Object.keys(PART_FRAMES)) {
+      const path = installedBoilerplatePath(partId);
+      if (!existsSync(path)) throw new Error(`Replacement contract requires preserved boilerplate part ${repoPath(path)}`);
+      const { data, info } = await sharp(path).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      if (info.width !== CANVAS.width || info.height !== CANVAS.height || info.channels !== 4) {
+        throw new Error(`Replacement contract base ${partId} must be 1024x1024 RGBA`);
+      }
+      baseRgba[partId] = data;
+      baseAlpha[partId] = rgbaAlpha(data);
+      baseSilhouettes[partId] = maskFromAlpha(baseAlpha[partId], VALIDATION_THRESHOLDS.visibleAlpha + 1);
+      cores[partId] = erodeMask(maskFromAlpha(baseAlpha[partId], VALIDATION_THRESHOLDS.stockAlpha), CANVAS.width, CANVAS.height);
+      baseSources[partId] = {
+        installedFile: repoPath(path),
+        sha256: sha256(path),
+        fixedCropSha256: hashRgbaCrop(data, CANVAS.width, CANVAS.height, PART_FRAMES[partId].crop),
+      };
+    }
+    const canonicalMasks = {
+      source: "registered pre-outline boilerplate body alpha >=64",
+      sourceMasterFile: repoPath(bodyMaster),
+      sourceMasterSha256: sha256(bodyMaster),
+      verticalNormalization: "v=(sourceY-324)/375",
+      bodyFill: describeMask(masks.bodyFill),
+      shirtRequired: { ...describeMask(masks.shirtRequired), rule: "bodyFill && v<=0.62" },
+      shirtAllowed: { ...describeMask(masks.shirtAllowed), rule: "bodyFill && v<=0.72" },
+      pantsRequired: { ...describeMask(masks.pantsRequired), rule: "bodyFill && v>=0.60" },
+      pantsAllowed: { ...describeMask(masks.pantsAllowed), rule: "bodyFill && v>=0.52" },
+      replacementCores: Object.fromEntries(
+        ["head", "hand-l", "hand-r", "foot-l", "foot-r"].map((partId) => [
+          partId,
+          { ...describeMask(cores[partId]), rule: "boilerplate alpha>=64 eroded by circular radius 4px" },
+        ]),
+      ),
+    };
+    const revision = hashJson({
+      id: REPLACEMENT_CONTRACT_ID,
+      partFrames: PART_FRAMES,
+      canonicalMasks,
+      compositionOrders: COMPOSITION_ORDERS,
+      thresholds: VALIDATION_THRESHOLDS,
+      baseSources,
+    });
+    return {
+      masks,
+      baseRgba,
+      baseAlpha,
+      baseSilhouettes,
+      cores,
+      baseSources,
+      revision,
+      manifest: {
+        id: REPLACEMENT_CONTRACT_ID,
+        revision,
+        socketFrame: FRAME_ID,
+        sourceCanvas: CANVAS,
+        partFrames: PART_FRAMES,
+        canonicalMasks,
+        baseSources,
+        compositionOrders: COMPOSITION_ORDERS,
+        thresholds: VALIDATION_THRESHOLDS,
+        torsoOverlapLaw: "pants optional from v=0.52; pants required from v=0.60; shirt required through v=0.62; shirt optional through v=0.72; body,pants,shirt order makes shirt win v=0.60..0.62",
+      },
+    };
+  })();
+  return replacementContextPromise;
+}
+
+function roleUsesGeneratedOutline(renderRole) {
+  return ["replace-hand", "replace-foot", "replace-head", "prestige-cap", "overlay-hat", "cloak-far"].includes(renderRole);
+}
+
+async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
+  const context = await loadReplacementContext();
+  const alpha = rgbaAlpha(rgba);
+  const expectedOutlineRadius = roleUsesGeneratedOutline(job.renderRole) ? 8 : 0;
+  if (generatedOutlineRadius !== expectedOutlineRadius) {
+    throw new Error(`Outline: role ${job.renderRole} requires generated radius ${expectedOutlineRadius}, got ${generatedOutlineRadius}`);
+  }
+  let gateReport;
+  if (job.renderRole === "body-patch") {
+    gateReport = validateTorsoPatch({
+      alpha,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      slot: job.item.slot,
+      masks: context.masks,
+      baseSilhouette: context.baseSilhouettes.body,
+      generatedOutlineRadius,
+    });
+  } else if (job.renderRole === "replace-hand" || job.renderRole === "replace-foot") {
+    const ids = job.renderRole === "replace-hand" ? ["hand-l", "hand-r"] : ["foot-l", "foot-r"];
+    const splitX = Math.floor((PART_FRAMES[ids[0]].pivotSource.x + PART_FRAMES[ids[1]].pivotSource.x) / 2);
+    gateReport = validatePairedReplacements({
+      alpha,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      splitX,
+      parts: ids.map((id) => ({ id, frame: PART_FRAMES[id].crop, pivot: PART_FRAMES[id].pivotSource, coreMask: context.cores[id] })),
+    });
+  } else if (job.renderRole === "head-accessory") {
+    const glasses = job.item.slot === "glasses";
+    gateReport = validateHeadAccessory({
+      alpha,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      envelope: glasses ? FACE_ENVELOPES.eyes : FACE_ENVELOPES.mouthJaw,
+      pivot: job.spec.sourcePivots[0],
+      label: glasses ? "glasses" : "facial hair",
+    });
+  } else if (job.renderRole === "replace-head") {
+    gateReport = validateFullReplacement({
+      alpha,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      frame: PART_FRAMES.head.crop,
+      coreMask: context.cores.head,
+      pivot: PART_FRAMES.head.pivotSource,
+    });
+    gateReport.faceCompatibility = validateReplacementHeadSockets({
+      alpha,
+      width: CANVAS.width,
+      height: CANVAS.height,
+      eyesPivot: receiver("face.eyes").raw,
+      mouthPivot: receiver("face.mouth").raw,
+      hatMount: HAT_STACK_BAND.sourcePivot,
+    });
+  } else if (job.renderRole === "prestige-cap" || job.renderRole === "overlay-hat") {
+    const bounds = alphaBounds(rgba, CANVAS.width, CANVAS.height);
+    if (!bounds) throw new Error("File/frame: hat contains no visible alpha");
+    const stackBandVerification = verifyHatStackBand(rgba, bounds);
+    if (!stackBandVerification.verified) throw new Error(`Hat/readability: stack-band verification failed ${JSON.stringify(stackBandVerification)}`);
+    gateReport = {
+      stackBandVerification,
+      readability: validateHatReadability({ alpha, width: CANVAS.width, height: CANVAS.height }),
+    };
+  } else if (job.renderRole === "cloak-far") {
+    const bounds = alphaBounds(rgba, CANVAS.width, CANVAS.height);
+    if (!bounds) throw new Error("File/frame: cloak contains no visible alpha");
+    gateReport = { bounds: boundsManifest(bounds), profile: "preserved cloak-far; manual no-body-pixels contact-sheet review required" };
+  } else {
+    throw new Error(`Role: unsupported replacement validation role ${job.renderRole}`);
+  }
+  return {
+    verified: true,
+    contractId: REPLACEMENT_CONTRACT_ID,
+    contractRevision: context.revision,
+    renderRole: job.renderRole,
+    generatedOutlineRadius,
+    gates: gateReport,
+  };
+}
+
+async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, pairedSpec = null, hat = false, replacementJob = null }) {
+  const rawMetadata = await sharp(raw).metadata();
+  if (rawMetadata.format !== "png" || rawMetadata.width !== CANVAS.width || rawMetadata.height !== CANVAS.height) {
+    throw new Error(`File/frame: raw source must be exact 1024x1024 PNG, got ${rawMetadata.width}x${rawMetadata.height} ${rawMetadata.format}`);
+  }
   const decoded = await decodeAndKey(raw);
   const registered = pairedSpec
     ? await registerPaired(decoded.data, pairedSpec)
     : await registerSingle(decoded.data, pivots[0], desiredAnchor, maxPartBox);
-  const outlined = await bakeOutline(registered);
+  const outlined = replacementJob && !roleUsesGeneratedOutline(replacementJob.renderRole)
+    ? { data: registered, radius: 0, rimPixels: 0 }
+    : await bakeOutline(registered);
   const bounds = alphaBounds(outlined.data, CANVAS.width, CANVAS.height);
   if (!bounds) throw new Error("registered art contains no visible pixels");
   if (bounds.left < 24 || bounds.top < 24 || bounds.right >= CANVAS.width - 24 || bounds.bottom >= CANVAS.height - 24) {
@@ -979,6 +1332,9 @@ async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, 
     const stack = verifyHatStackBand(outlined.data, bounds);
     if (!stack.verified) throw new Error(`hat stack-band verification failed: ${JSON.stringify(stack)}`);
   }
+  const replacementValidation = replacementJob
+    ? await validateReplacementData(replacementJob, outlined.data, outlined.radius)
+    : null;
   const png = await sharp(outlined.data, { raw: { width: CANVAS.width, height: CANVAS.height, channels: 4 } }).png().toBuffer();
   const metadata = await sharp(png).metadata();
   if (metadata.width !== CANVAS.width || metadata.height !== CANVAS.height || metadata.channels !== 4 || metadata.hasAlpha !== true) {
@@ -988,7 +1344,12 @@ async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, 
   const temp = `${dst}.${process.pid}.tmp.png`;
   writeFileSync(temp, png);
   try { renameSync(temp, dst); } catch { rmSync(dst, { force: true }); renameSync(temp, dst); }
-  return { bounds, outline: { ...OUTLINE, radius: outlined.radius, rimPixels: outlined.rimPixels } };
+  return {
+    bounds,
+    outline: { ...OUTLINE, radius: outlined.radius, rimPixels: outlined.rimPixels },
+    replacementValidation,
+    installedSha256: sha256(dst),
+  };
 }
 
 function componentRegionsForSpec(spec) {
@@ -1000,7 +1361,7 @@ function componentRegionsForSpec(spec) {
   ];
 }
 
-async function inspectInstalled(path, pivots, regions = [null], hat = false) {
+async function inspectInstalled(path, pivots, regions = [null], hat = false, replacementJob = null) {
   const metadata = await sharp(path).metadata();
   if (metadata.width !== CANVAS.width || metadata.height !== CANVAS.height || metadata.channels !== 4 || metadata.hasAlpha !== true || metadata.format !== "png") {
     throw new Error(`expected 1024x1024 RGBA PNG, got ${metadata.width}x${metadata.height} channels=${metadata.channels} alpha=${metadata.hasAlpha} format=${metadata.format}`);
@@ -1008,6 +1369,12 @@ async function inspectInstalled(path, pivots, regions = [null], hat = false) {
   const { data } = await sharp(path).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const bounds = alphaBounds(data, CANVAS.width, CANVAS.height);
   if (!bounds) throw new Error("no visible alpha pixels");
+  if (bounds.left < VALIDATION_THRESHOLDS.emergencyCanvasInsetPx
+    || bounds.top < VALIDATION_THRESHOLDS.emergencyCanvasInsetPx
+    || bounds.right >= CANVAS.width - VALIDATION_THRESHOLDS.emergencyCanvasInsetPx
+    || bounds.bottom >= CANVAS.height - VALIDATION_THRESHOLDS.emergencyCanvasInsetPx) {
+    throw new Error(`alpha bounds violate ${VALIDATION_THRESHOLDS.emergencyCanvasInsetPx}px emergency canvas inset: ${JSON.stringify(bounds)}`);
+  }
   const parts = [];
   for (let index = 0; index < pivots.length; index++) {
     const pivot = pivots[index];
@@ -1019,10 +1386,13 @@ async function inspectInstalled(path, pivots, regions = [null], hat = false) {
   }
   const stackBandVerification = hat ? verifyHatStackBand(data, bounds) : null;
   if (hat && !stackBandVerification.verified) throw new Error(`hat stack-band invalid: ${JSON.stringify(stackBandVerification)}`);
+  const replacementValidation = replacementJob ? await validateReplacementData(replacementJob, data, roleUsesGeneratedOutline(replacementJob.renderRole) ? 8 : 0) : null;
   return {
+    data,
     bounds,
     parts,
     stackBandVerification,
+    replacementValidation,
     image: {
       width: metadata.width,
       height: metadata.height,
@@ -1042,14 +1412,35 @@ function disallowedRenderLog(path) {
   return /moderation_blocked|codex_core::tools::router: error=image generation failed|System\.Drawing\.Bitmap|PIL unavailable|raster script failed/i.test(log);
 }
 
-async function renderIfNeeded({ key, raw, dst, refs, prompt, logPath, force }) {
+function currentRenderInstall(job, context) {
+  const dst = installedRenderJobPath(job);
+  const statusPath = renderJobStatusPath(job);
+  if (!existsSync(dst) || !existsSync(statusPath)) return false;
+  try {
+    const status = JSON.parse(readFileSync(statusPath, "utf8"));
+    return status.schemaVersion === 2
+      && status.replacementContract?.id === REPLACEMENT_CONTRACT_ID
+      && status.replacementContract?.revision === context.revision
+      && status.renderRole === job.renderRole
+      && status.installedFile === repoPath(dst)
+      && status.installedSha256 === sha256(dst)
+      && status.validation?.verified === true;
+  } catch {
+    return false;
+  }
+}
+
+async function renderIfNeeded({ key, raw, dst, refs, prompt, logPath, force, resumeCurrent = null }) {
   mkdirSync(dirname(raw), { recursive: true });
   mkdirSync(dirname(logPath), { recursive: true });
-  if (!force && (existsSync(raw) || existsSync(dst))) {
-    console.log(`RESUME ${key}: source/install already exists`);
+  const resumable = resumeCurrent == null ? (existsSync(raw) || existsSync(dst)) : resumeCurrent;
+  if (!force && resumable) {
+    console.log(`RESUME ${key}: ${resumeCurrent == null ? "source/install already exists" : `${REPLACEMENT_CONTRACT_ID} install and hashes are current`}`);
     return { rendered: false, code: 0 };
   }
-  const harvestTo = force && existsSync(raw) ? resolve(dirname(raw), `${key.replaceAll("/", "-")}.force-${Date.now()}.png`) : raw;
+  const harvestTo = (force || existsSync(raw) || existsSync(dst))
+    ? resolve(dirname(raw), `${key.replaceAll("/", "-")}.replacement-${Date.now()}.png`)
+    : raw;
   console.log(`RENDER ${key} refs=${refs.length}`);
   const code = await runCodexExec({
     label: `gear-${key.replace(/[^a-z0-9-]/gi, "-")}`,
@@ -1156,7 +1547,7 @@ async function runBoilerplate(options) {
       catch (error) { console.log(`VALIDATE FAIL boilerplate/${part.id}: ${error.message}`); failures++; }
     }
   }
-  if (BOILERPLATE_PARTS.every((part) => existsSync(installedBoilerplatePath(part.id)))) {
+  if (!options.validateOnly && BOILERPLATE_PARTS.every((part) => existsSync(installedBoilerplatePath(part.id)))) {
     try {
       await emitSocketReferenceSheet();
       console.log(`SOCKET SHEET ${repoPath(installedBoilerplatePath("socket-reference"))}`);
@@ -1168,7 +1559,7 @@ async function runBoilerplate(options) {
   return failures;
 }
 
-async function runSlot(options, spec) {
+async function legacyRunSlot(options, spec) {
   if (!existsSync(installedBoilerplatePath("identity-master"))) {
     if (options.validateOnly) return 0;
     console.log(`SLOT BLOCKED ${spec.directory}: run --stage=boilerplate first; approved boilerplate identity master is missing`);
@@ -1184,7 +1575,7 @@ async function runSlot(options, spec) {
     const key = `${spec.directory}/${item.id}`;
     const raw = rawItemPath(item);
     const dst = installedItemPath(item);
-    const refs = referencesForItem(item);
+    const refs = legacyReferencesForItem(item);
     const logPath = codexLogPath("gear", spec.directory, item.id);
     if (!options.validateOnly) {
       if (refs.length !== item.expectedReferenceCount) {
@@ -1194,7 +1585,7 @@ async function runSlot(options, spec) {
       }
       const render = await renderIfNeeded({
         key, raw, dst, refs,
-        prompt: promptForItem(item, spec),
+        prompt: legacyPromptForItem(item, spec),
         logPath,
         force: options.force,
       });
@@ -1233,6 +1624,130 @@ async function runSlot(options, spec) {
         console.log(`VALIDATE FAIL ${key}: ${error.message}`);
         failures++;
       }
+    }
+  }
+  return failures;
+}
+
+async function runSlot(options, slotSpec) {
+  if (!existsSync(installedBoilerplatePath("identity-master"))) {
+    if (options.validateOnly) return 0;
+    console.log(`SLOT BLOCKED ${slotSpec.directory}: preserved boilerplate identity master is missing`);
+    return 1;
+  }
+  const context = await loadReplacementContext();
+  const itemMatches = (job) => !options.only
+    || options.only === job.item.id
+    || options.only === job.key
+    || options.only === `${job.directory}/${job.item.id}`;
+  const jobs = RENDER_JOBS.filter((job) => job.item.slot === slotSpec.id && itemMatches(job));
+  if (!options.validateOnly && jobs.length === 0) throw new Error(`No ${slotSpec.directory} replacement job matched --only=${options.only}`);
+  let failures = 0;
+  let creativeCallsStarted = 0;
+  for (const job of jobs) {
+    const raw = rawRenderJobPath(job);
+    const dst = installedRenderJobPath(job);
+    const current = job.creativeRender && currentRenderInstall(job, context);
+    if (!job.creativeRender) {
+      if (!existsSync(dst)) {
+        console.log(`VALIDATE FAIL ${job.key}: preserved ${job.renderRole} is missing`);
+        failures++;
+        continue;
+      }
+      try {
+        const inspected = await inspectInstalled(
+          dst,
+          job.spec.sourcePivots,
+          componentRegionsForSpec(job.spec),
+          job.renderRole === "overlay-hat",
+          job,
+        );
+        console.log(`VALID PRESERVED ${job.key} role=${job.renderRole} opaque=${inspected.image.opaquePixelCount}${inspected.stackBandVerification ? ` stack=${inspected.stackBandVerification.verified}` : ""}`);
+      } catch (error) {
+        console.log(`VALIDATE FAIL ${job.key}: ${error.message}`);
+        failures++;
+      }
+      continue;
+    }
+    if (options.validateOnly && !current) {
+      console.log(`MIGRATION PENDING ${job.key} role=${job.renderRole}`);
+      continue;
+    }
+    if (!options.validateOnly && !current && creativeCallsStarted >= options.maxJobs) continue;
+    if (!options.validateOnly) {
+      const bundle = referenceBundleForJob(job);
+      if (bundle.paths.length !== bundle.entries.length) {
+        console.log(`RENDER FAIL ${job.key}: exact-frame identity reference missing`);
+        failures++;
+        continue;
+      }
+      const shouldRender = options.force || !current;
+      if (shouldRender) creativeCallsStarted++;
+      const render = await renderIfNeeded({
+        key: job.key,
+        raw,
+        dst,
+        refs: bundle.paths,
+        prompt: promptForRenderJob(job, bundle),
+        logPath: renderJobLogPath(job),
+        force: options.force,
+        resumeCurrent: current,
+      });
+      if (render.code !== 0 || render.rejected || (render.rendered && !existsSync(raw))) {
+        console.log(`RENDER FAIL ${job.key} exit=${render.code}`);
+        failures++;
+        continue;
+      }
+      if (render.rendered) {
+        try {
+          const installed = await processAndInstall({
+            raw,
+            dst,
+            pivots: job.spec.sourcePivots,
+            desiredAnchor: job.spec.desiredAnchor ?? [0.5, 0.5],
+            maxPartBox: job.spec.maxPartBox,
+            pairedSpec: job.spec.sourcePivots.length === 2 ? job.spec : null,
+            hat: job.renderRole === "prestige-cap",
+            replacementJob: job,
+          });
+          const bundleForLog = referenceBundleForJob(job);
+          atomicJson(renderJobStatusPath(job), {
+            schemaVersion: 2,
+            id: job.item.id,
+            name: job.item.name,
+            setId: job.item.setId,
+            sourceCharacterId: job.item.sourceCharacterId,
+            renderRole: job.renderRole,
+            replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+            installedAt: new Date().toISOString(),
+            installedFile: repoPath(dst),
+            installedSha256: installed.installedSha256,
+            sourcePivots: job.spec.sourcePivots,
+            identityReferences: bundleForLog.paths.map(repoPath),
+            alphaBounds: installed.bounds,
+            outline: installed.outline,
+            validation: installed.replacementValidation,
+          });
+          console.log(`INSTALLED ${repoPath(dst)} role=${job.renderRole} bounds=${installed.bounds.width}x${installed.bounds.height}@${installed.bounds.left},${installed.bounds.top}`);
+        } catch (error) {
+          console.log(`INSTALL FAIL ${job.key}: ${error.message}`);
+          failures++;
+          continue;
+        }
+      }
+    }
+    try {
+      const inspected = await inspectInstalled(
+        dst,
+        job.spec.sourcePivots,
+        componentRegionsForSpec(job.spec),
+        job.renderRole === "prestige-cap",
+        job,
+      );
+      console.log(`VALID ${job.key} role=${job.renderRole} opaque=${inspected.image.opaquePixelCount} pivotAlpha=${inspected.parts.map((part) => part.pivotAlpha).join(",")}${inspected.stackBandVerification ? ` stack=${inspected.stackBandVerification.verified}` : ""}`);
+    } catch (error) {
+      console.log(`VALIDATE FAIL ${job.key}: ${error.message}`);
+      failures++;
     }
   }
   return failures;
@@ -1306,21 +1821,174 @@ async function emitHatContactSheet() {
     const top = Math.max(0, inspected.bounds.top - pad);
     const width = Math.min(CANVAS.width - left, inspected.bounds.width + pad * 2);
     const height = Math.min(CANVAS.height - top, inspected.bounds.height + pad * 2);
-    const art = await sharp(installedItemPath(item)).extract({ left, top, width, height }).resize({
-      width: 226,
-      height: 190,
-      fit: "contain",
-      background: { r: 0x25, g: 0x21, b: 0x2c, alpha: 1 },
-    }).png().toBuffer();
+    const baseScale = Math.min(1, 104 / width, 146 / height);
+    const scaled = async (stackScale) => sharp(installedItemPath(item))
+      .extract({ left, top, width, height })
+      .resize(Math.max(1, Math.round(width * baseScale * stackScale)), Math.max(1, Math.round(height * baseScale * stackScale)), { fit: "fill" })
+      .png()
+      .toBuffer();
+    const art100 = await scaled(1);
+    const art082 = await scaled(0.82);
+    const art024 = await scaled(0.24);
     const x = (index % columns) * tileWidth;
     const y = Math.floor(index / columns) * tileHeight;
-    const label = Buffer.from(`<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="252" height="252" rx="12" fill="none" stroke="${inspected.stackBandVerification.verified ? "#72d39b" : "#ff6f91"}" stroke-width="3"/><text x="128" y="226" text-anchor="middle" fill="#f2eee2" font-family="sans-serif" font-size="14" font-weight="700">${escapeXml(item.name)}</text><text x="128" y="246" text-anchor="middle" fill="#72d39b" font-family="monospace" font-size="12">STACK ${inspected.stackBandVerification.verified ? "PASS" : "FAIL"}</text></svg>`);
-    layers.push({ input: art, left: x + 15, top: y + 12 });
+    const label = Buffer.from(`<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="252" height="252" rx="12" fill="none" stroke="${inspected.stackBandVerification.verified ? "#72d39b" : "#ff6f91"}" stroke-width="3"/><text x="128" y="226" text-anchor="middle" fill="#f2eee2" font-family="sans-serif" font-size="14" font-weight="700">${escapeXml(item.name)}</text><text x="128" y="246" text-anchor="middle" fill="#72d39b" font-family="monospace" font-size="12">1.0/.82/.24 ${inspected.stackBandVerification.verified ? "PASS" : "FAIL"}</text></svg>`);
+    layers.push({ input: art100, left: x + 12, top: y + 22 });
+    layers.push({ input: art082, left: x + 150, top: y + 35 });
+    layers.push({ input: art024, left: x + 181, top: y + 142 });
     layers.push({ input: label, left: x, top: y });
   }
   const out = resolve(OUT, "hat-contact-sheet.png");
   await sheet.composite(layers).png().toFile(out);
   return out;
+}
+
+function compositeProofState(manifest) {
+  const shirts = manifest.slots.find((slot) => slot.id === "shirt")?.items ?? [];
+  const pants = manifest.slots.find((slot) => slot.id === "pants")?.items ?? [];
+  const glasses = manifest.slots.find((slot) => slot.id === "glasses")?.items ?? [];
+  const facialHair = manifest.slots.find((slot) => slot.id === "facialHair")?.items ?? [];
+  const replacementHeads = manifest.slots.find((slot) => slot.id === "hat")?.items.filter((item) => item.renderRole === "replace-head") ?? [];
+  const ready = shirts.length === 15 && pants.length === 12 && glasses.length === 15 && facialHair.length === 12 && replacementHeads.length === 2;
+  return {
+    ready,
+    body: { blank: 1, everyShirtWithRepresentativePants: shirts.length * 3, expectedEveryShirtWithRepresentativePants: 45 },
+    head: { replacementHeadAccessoryCartesian: replacementHeads.length * 9, expectedReplacementHeadAccessoryCartesian: 18 },
+    towers: { replacementHeadPrestigeCases: replacementHeads.length * 4, expectedReplacementHeadPrestigeCases: 8, prestigeValues: [0, 1, 11, 30] },
+    laws: {
+      representativePants: ["blank", "set-matched-or-blank", "widest"],
+      glasses: ["blank", "set-matched", "widest"],
+      facialHair: ["blank", "set-matched", "tallest"],
+    },
+  };
+}
+
+async function compositeFullCanvas(paths) {
+  const existing = paths.filter(Boolean);
+  if (existing.length === 0) throw new Error("Composite proof has no source layers");
+  return sharp(existing[0]).composite(existing.slice(1).map((input) => ({ input, blend: "over" }))).png().toBuffer();
+}
+
+async function contactTile(canvas, crop, label, detail, border = "#72d39b") {
+  const [left, top, width, height] = crop;
+  const art = await sharp(canvas).extract({ left, top, width, height }).resize({
+    width: 208,
+    height: 166,
+    fit: "contain",
+    background: { r: 0x25, g: 0x21, b: 0x2c, alpha: 1 },
+  }).png().toBuffer();
+  const overlay = Buffer.from(`<svg width="240" height="220" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="236" height="216" rx="10" fill="none" stroke="${border}" stroke-width="3"/><text x="120" y="191" text-anchor="middle" fill="#f2eee2" font-family="sans-serif" font-size="12" font-weight="700">${escapeXml(label)}</text><text x="120" y="209" text-anchor="middle" fill="#a9a2b5" font-family="monospace" font-size="10">${escapeXml(detail)}</text></svg>`);
+  return sharp({ create: { width: 240, height: 220, channels: 4, background: "#25212c" } })
+    .composite([{ input: art, left: 16, top: 10 }, { input: overlay, left: 0, top: 0 }])
+    .png()
+    .toBuffer();
+}
+
+async function assertBodyCompositeSilhouette(canvas, context, label) {
+  const { data } = await sharp(canvas).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alpha = rgbaAlpha(data);
+  let xor = 0;
+  for (let index = 0; index < alpha.length; index++) {
+    if ((alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha ? 1 : 0) !== context.baseSilhouettes.body[index]) xor++;
+  }
+  if (xor !== 0) throw new Error(`Composite proof ${label} changes canonical body alpha support by ${xor} pixels`);
+}
+
+async function towerProofTile(head, prestige) {
+  const headArt = await sharp(resolve(REPO, head.replacementInstalledFile))
+    .extract({ left: PART_FRAMES.head.crop[0], top: PART_FRAMES.head.crop[1], width: PART_FRAMES.head.crop[2], height: PART_FRAMES.head.crop[3] })
+    .resize({ width: 192, height: 228, fit: "contain" })
+    .png()
+    .toBuffer();
+  const capBounds = head.alphaBounds;
+  const topperTotal = Math.min(prestige, 29);
+  const visibleCaps = Math.min(topperTotal, 11);
+  const capScale = visibleCaps <= 1 ? 0.48 : Math.max(0.16, 0.38 - (visibleCaps - 2) * 0.022);
+  const capWidth = Math.max(8, Math.round(capBounds.width * capScale));
+  const capHeight = Math.max(8, Math.round(capBounds.height * capScale));
+  const capArt = visibleCaps > 0
+    ? await sharp(resolve(REPO, head.installedFile))
+      .extract({ left: capBounds.left, top: capBounds.top, width: capBounds.width, height: capBounds.height })
+      .resize(capWidth, capHeight, { fit: "fill" })
+      .png()
+      .toBuffer()
+    : null;
+  const layers = [{ input: headArt, left: 160, top: 760 }];
+  let capBottom = 825;
+  for (let index = 0; index < visibleCaps; index++) {
+    const top = Math.max(0, Math.round(capBottom - capHeight));
+    layers.push({ input: capArt, left: Math.round(256 - capWidth / 2), top });
+    capBottom = top + Math.max(3, Math.round(capHeight * 0.10));
+  }
+  const tower = await sharp({ create: { width: 512, height: 1024, channels: 4, background: { r: 0x25, g: 0x21, b: 0x2c, alpha: 1 } } })
+    .composite(layers)
+    .png()
+    .toBuffer();
+  const art = await sharp(tower).resize({ width: 208, height: 166, fit: "contain", background: "#25212c" }).png().toBuffer();
+  const overlay = Buffer.from(`<svg width="240" height="220" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="236" height="216" rx="10" fill="none" stroke="#ffcf4a" stroke-width="3"/><text x="120" y="191" text-anchor="middle" fill="#f2eee2" font-family="sans-serif" font-size="12" font-weight="700">${escapeXml(`${head.id} P${prestige}`)}</text><text x="120" y="209" text-anchor="middle" fill="#a9a2b5" font-family="monospace" font-size="10">${visibleCaps} visible caps · ${topperTotal - visibleCaps} hidden</text></svg>`);
+  return sharp({ create: { width: 240, height: 220, channels: 4, background: "#25212c" } })
+    .composite([{ input: art, left: 16, top: 10 }, { input: overlay, left: 0, top: 0 }])
+    .png()
+    .toBuffer();
+}
+
+async function emitGearReplacementContactSheet(manifest) {
+  const proof = compositeProofState(manifest);
+  if (!proof.ready) throw new Error(`Composite proof is incomplete: ${JSON.stringify(proof)}`);
+  const context = await loadReplacementContext();
+  const bodyPath = installedBoilerplatePath("body");
+  const shirts = manifest.slots.find((slot) => slot.id === "shirt").items;
+  const pants = manifest.slots.find((slot) => slot.id === "pants").items;
+  const glasses = manifest.slots.find((slot) => slot.id === "glasses").items;
+  const facialHair = manifest.slots.find((slot) => slot.id === "facialHair").items;
+  const replacementHeads = manifest.slots.find((slot) => slot.id === "hat").items.filter((item) => item.renderRole === "replace-head");
+  const widestPants = [...pants].sort((a, b) => b.alphaBounds.width - a.alphaBounds.width)[0];
+  const widestGlasses = [...glasses].sort((a, b) => b.alphaBounds.width - a.alphaBounds.width)[0];
+  const tallestFacialHair = [...facialHair].sort((a, b) => b.alphaBounds.height - a.alphaBounds.height)[0];
+  const tiles = [];
+  const blankBody = await compositeFullCanvas([bodyPath]);
+  tiles.push(await contactTile(blankBody, PART_FRAMES.body.crop, "BLANK BODY", "base silhouette"));
+  for (const shirt of shirts) {
+    const matchedPants = pants.find((pantsItem) => pantsItem.setId === shirt.setId) ?? null;
+    for (const [label, pantsItem] of [["blank", null], ["matched", matchedPants], ["widest", widestPants]]) {
+      const canvas = await compositeFullCanvas([
+        bodyPath,
+        pantsItem ? resolve(REPO, pantsItem.installedFile) : null,
+        resolve(REPO, shirt.installedFile),
+      ]);
+      await assertBodyCompositeSilhouette(canvas, context, `${shirt.id}/${label}`);
+      tiles.push(await contactTile(canvas, PART_FRAMES.body.crop, shirt.id, `pants:${pantsItem?.id ?? "blank"}`));
+    }
+  }
+  for (const head of replacementHeads) {
+    const matchedGlasses = glasses.find((item) => item.setId === head.setId) ?? widestGlasses;
+    const matchedFacialHair = facialHair.find((item) => item.setId === head.setId) ?? tallestFacialHair;
+    const glassesCases = [null, matchedGlasses, widestGlasses];
+    const hairCases = [null, matchedFacialHair, tallestFacialHair];
+    for (const glassesItem of glassesCases) {
+      for (const hairItem of hairCases) {
+        const canvas = await compositeFullCanvas([
+          resolve(REPO, head.replacementInstalledFile),
+          hairItem ? resolve(REPO, hairItem.installedFile) : null,
+          glassesItem ? resolve(REPO, glassesItem.installedFile) : null,
+        ]);
+        tiles.push(await contactTile(canvas, PART_FRAMES.head.crop, head.id, `hair:${hairItem?.id ?? "blank"} glasses:${glassesItem?.id ?? "blank"}`));
+      }
+    }
+  }
+  for (const head of replacementHeads) {
+    for (const prestige of [0, 1, 11, 30]) {
+      tiles.push(await towerProofTile(head, prestige));
+    }
+  }
+  const columns = 8;
+  const rows = Math.ceil(tiles.length / columns);
+  const out = resolve(OUT, "gear-replacement-contact-sheet.png");
+  await sharp({ create: { width: columns * 240, height: rows * 220, channels: 4, background: "#1d1a23" } })
+    .composite(tiles.map((input, index) => ({ input, left: (index % columns) * 240, top: Math.floor(index / columns) * 220 })))
+    .png()
+    .toFile(out);
+  return { path: out, proof, tileCount: tiles.length };
 }
 
 async function buildManifest() {
@@ -1378,7 +2046,7 @@ async function buildManifest() {
         installedPaths.add(repoPath(path));
         installedItemCount++;
         installedPartCount += spec.componentIds.length;
-        const identityReferences = referencesForItem(item).map(repoPath);
+        const identityReferences = legacyReferencesForItem(item).map(repoPath);
         rows.push({
           id: item.id,
           name: item.name,
@@ -1485,12 +2153,282 @@ async function buildManifest() {
   return manifest;
 }
 
-async function emitManifest() {
-  const release = acquireLock("manifest");
+function fixedFrameIdForJobPart(job, index) {
+  if (job.renderRole === "body-patch") return "body";
+  if (job.renderRole === "head-accessory" || job.renderRole === "replace-head") return "head";
+  if (job.renderRole === "replace-hand") return index === 0 ? "hand-l" : "hand-r";
+  if (job.renderRole === "replace-foot") return index === 0 ? "foot-l" : "foot-r";
+  return null;
+}
+
+function hashComponentFixedCrop(data, job, index, crop) {
+  if (job.spec.sourcePivots.length !== 2) return hashRgbaCrop(data, CANVAS.width, CANVAS.height, crop);
+  const split = Math.floor((job.spec.sourcePivots[0].x + job.spec.sourcePivots[1].x) / 2);
+  const isolated = Buffer.from(data);
+  for (let y = 0; y < CANVAS.height; y++) {
+    for (let x = 0; x < CANVAS.width; x++) {
+      if ((index === 0 && x >= split) || (index === 1 && x < split)) isolated.fill(0, (y * CANVAS.width + x) * 4, (y * CANVAS.width + x) * 4 + 4);
+    }
+  }
+  return hashRgbaCrop(isolated, CANVAS.width, CANVAS.height, crop);
+}
+
+function manifestPartsForJob(result) {
+  const { job, inspected } = result;
+  return job.spec.componentIds.map((id, index) => {
+    const frameId = fixedFrameIdForJobPart(job, index);
+    const frame = frameId ? PART_FRAMES[frameId] : null;
+    return {
+      id: job.renderRole === "prestige-cap" ? "prestige-cap" : id,
+      renderRole: job.renderRole,
+      parent: receiver(job.spec.receivers[index]).parent,
+      receiver: job.spec.receivers[index],
+      pivotSource: frame?.pivotSource ?? job.spec.sourcePivots[index],
+      pivotTrimmed: frame?.pivotSource ?? job.spec.sourcePivots[index],
+      authoringPivotSource: job.spec.sourcePivots[index],
+      receiverAnchor: receiver(job.spec.receivers[index]),
+      restAngle: 0,
+      mountScale: 1,
+      plane: Z_ORDER.find((plane) => plane.id === job.spec.planeIds[index])?.plane ?? 0,
+      spring: ["overlay-hat", "prestige-cap"].includes(job.renderRole)
+        ? { preset: "hat-jiggle", hz: 5.2, dampingRatio: 0.58, maxDeg: 9, dragGain: 0.70 }
+        : null,
+      fixedFrame: frameId,
+      fixedCrop: frame?.crop ?? null,
+      outputOrigin: frame?.outputOrigin ?? null,
+      sourceHash: frame
+        ? hashComponentFixedCrop(inspected.data, job, index, frame.crop)
+        : inspected.image.sha256,
+      alphaBounds: boundsManifest(inspected.parts[index].bounds),
+      pivotAlpha: inspected.parts[index].pivotAlpha,
+    };
+  });
+}
+
+async function buildManifestV2() {
+  const context = await loadReplacementContext();
+  const invalid = [];
+  const installedPaths = new Set();
+  const resultByKey = new Map();
+
+  for (const job of RENDER_JOBS) {
+    const path = installedRenderJobPath(job);
+    const eligible = job.creativeRender ? currentRenderInstall(job, context) : existsSync(path);
+    if (!eligible) continue;
+    try {
+      const inspected = await inspectInstalled(
+        path,
+        job.spec.sourcePivots,
+        componentRegionsForSpec(job.spec),
+        ["overlay-hat", "prestige-cap"].includes(job.renderRole),
+        job,
+      );
+      const result = { job, path, inspected };
+      resultByKey.set(job.key, result);
+      installedPaths.add(repoPath(path));
+    } catch (error) {
+      invalid.push({ file: repoPath(path), id: job.item.id, renderRole: job.renderRole, error: error.message });
+    }
+  }
+
+  const boilerplateParts = [];
+  let boilerplateMaster = null;
+  const masterPath = installedBoilerplatePath("identity-master");
+  if (existsSync(masterPath)) {
+    try {
+      const inspected = await inspectInstalled(masterPath, [BOILERPLATE_MASTER.pivot]);
+      boilerplateMaster = {
+        id: "identity-master",
+        installedFile: repoPath(masterPath),
+        pivotSource: BOILERPLATE_MASTER.pivot,
+        pivotTrimmed: BOILERPLATE_MASTER.pivot,
+        alphaBounds: boundsManifest(inspected.bounds),
+        image: inspected.image,
+      };
+    } catch (error) {
+      invalid.push({ file: repoPath(masterPath), error: error.message });
+    }
+  }
+  for (const part of BOILERPLATE_PARTS) {
+    const path = installedBoilerplatePath(part.id);
+    if (!existsSync(path)) continue;
+    try {
+      const inspected = await inspectInstalled(path, [part.pivot]);
+      const frame = PART_FRAMES[part.id];
+      boilerplateParts.push({
+        id: part.id,
+        texture: `${part.id}.png`,
+        installedFile: repoPath(path),
+        parent: part.parent,
+        receiver: part.receiver,
+        pivotSource: part.pivot,
+        pivotTrimmed: part.pivot,
+        receiverAnchor: part.receiver === "body"
+          ? { frame: FRAME_ID, socket: "body", xL: 0, yL: 0, raw: BODY_ROOT_SOURCE }
+          : receiver(part.receiver),
+        restAngle: 0,
+        mountScale: 1,
+        plane: Z_ORDER.find((plane) => plane.id === part.planeId)?.plane ?? 0,
+        fixedCrop: frame.crop,
+        outputOrigin: frame.outputOrigin,
+        sourceHash: context.baseSources[part.id].fixedCropSha256,
+        alphaBounds: boundsManifest(inspected.bounds),
+        image: inspected.image,
+      });
+    } catch (error) {
+      invalid.push({ file: repoPath(path), error: error.message });
+    }
+  }
+
+  const slotRows = [];
+  let installedItemCount = 0;
+  let installedPartCount = 0;
+  let installedRoleTextureCount = 0;
+  for (const slotSpec of SLOT_SPECS) {
+    const rows = [];
+    const slotItems = ITEMS.filter((item) => item.slot === slotSpec.id);
+    const slotJobs = RENDER_JOBS.filter((job) => job.item.slot === slotSpec.id);
+    for (const item of slotItems) {
+      const jobs = renderJobsForItem(item);
+      const results = jobs.map((job) => resultByKey.get(job.key));
+      if (results.some((result) => !result)) continue;
+      const primary = renderRoleForItem(item) === "replace-head"
+        ? results.find((result) => result.job.renderRole === "prestige-cap")
+        : results[0];
+      const replacement = results.find((result) => result.job.renderRole === "replace-head") ?? null;
+      const parts = results.flatMap(manifestPartsForJob);
+      installedItemCount++;
+      installedPartCount += parts.length;
+      const identityReferences = referenceBundleForJob(primary.job).paths.map(repoPath);
+      rows.push({
+        id: item.id,
+        name: item.name,
+        setId: item.setId,
+        setName: item.setName,
+        rarity: item.rarity,
+        slot: item.slot,
+        slotDirectory: item.slotDirectory,
+        sourceCharacterId: item.sourceCharacterId,
+        sourceCharacterName: item.sourceCharacterName,
+        identityReferences,
+        renderRole: renderRoleForItem(item),
+        texture: `${item.id}.png`,
+        installedFile: repoPath(primary.path),
+        renderLog: repoPath(renderJobLogPath(primary.job)),
+        sourceRevision: primary.inspected.image.sha256,
+        alphaBounds: boundsManifest(primary.inspected.bounds),
+        image: primary.inspected.image,
+        ...(replacement ? {
+          replacementTexture: `heads/${item.id}.png`,
+          replacementInstalledFile: repoPath(replacement.path),
+          replacementRenderLog: repoPath(renderJobLogPath(replacement.job)),
+          replacementSourceRevision: replacement.inspected.image.sha256,
+          replacementAlphaBounds: boundsManifest(replacement.inspected.bounds),
+          replacementImage: replacement.inspected.image,
+        } : {}),
+        parts,
+        validation: Object.fromEntries(results.map((result) => [result.job.renderRole, result.inspected.replacementValidation])),
+        stackBandVerification: primary.inspected.stackBandVerification,
+      });
+    }
+    const validSlotResults = slotJobs.map((job) => resultByKey.get(job.key)).filter(Boolean);
+    installedRoleTextureCount += validSlotResults.length;
+    slotRows.push({
+      id: slotSpec.id,
+      directory: slotSpec.directory,
+      shardCommand: `node tools/artkit/gen-gear.mjs --slot=${slotSpec.directory}`,
+      receivers: slotSpec.receivers,
+      componentIds: slotSpec.componentIds,
+      expectedItemCount: slotItems.length,
+      installedItemCount: rows.length,
+      expectedRoleTextureCount: slotJobs.length,
+      installedRoleTextureCount: validSlotResults.length,
+      expectedPartCount: slotJobs.reduce((sum, job) => sum + job.componentParts, 0),
+      installedPartCount: validSlotResults.reduce((sum, result) => sum + result.job.componentParts, 0),
+      items: rows,
+    });
+  }
+
+  const expectedGear = new Set(RENDER_JOBS.map((job) => repoPath(installedRenderJobPath(job))));
+  const actualGear = new Set(listPngs(GEAR_DST).map(repoPath));
+  const missing = [...expectedGear].filter((path) => !installedPaths.has(path)).sort();
+  const extras = [...actualGear].filter((path) => !expectedGear.has(path)).sort();
+  const socketReference = installedBoilerplatePath("socket-reference");
+  const completedCreative = CREATIVE_RENDER_JOBS.filter((job) => resultByKey.has(job.key));
+  const completedCreativeIds = new Set(
+    [...new Set(CREATIVE_RENDER_JOBS.map((job) => job.item.id))].filter((id) => (
+      CREATIVE_RENDER_JOBS.filter((job) => job.item.id === id).every((job) => resultByKey.has(job.key))
+    )),
+  );
+  return {
+    schemaVersion: 2,
+    generator: "tools/artkit/gen-gear.mjs",
+    contentSource: "packages/shared/src/gear.ts#GEAR_CATALOG",
+    blankArtRule: "blank-drifter-* catalog rows mean wearing nothing and intentionally have no wearable PNG or manifest item",
+    renderContractSource: "docs/gear-replacement-panel/blueprint.md#2-art-authoring-contract-for-bot-2",
+    replacementContract: context.manifest,
+    migration: {
+      plan: MIGRATION_PLAN.counts,
+      rerenderIds: [...new Set(MIGRATION_PLAN.creative.map((job) => job.item.id))],
+      preservedOverlayHatIds: MIGRATION_PLAN.preserved.filter((job) => job.renderRole === "overlay-hat").map((job) => job.item.id),
+      preservedCloakIds: MIGRATION_PLAN.preserved.filter((job) => job.renderRole === "cloak-far").map((job) => job.item.id),
+      completedRerenderItems: completedCreativeIds.size,
+      completedRenderCalls: completedCreative.length,
+      pendingRenderCalls: MIGRATION_EXPECTED.renderCalls - completedCreative.length,
+      completedComponentParts: completedCreative.reduce((sum, job) => sum + job.componentParts, 0),
+    },
+    compositeProof: compositeProofState({ slots: slotRows }),
+    socketFrame: {
+      id: FRAME_ID,
+      canvas: CANVAS,
+      bodyRootSource: BODY_ROOT_SOURCE,
+      bodyHeightL: BODY_HEIGHT_L,
+      coordinateUnits: { source: "untrimmed 1024x1024 pixels", receiver: "boilerplate body heights L" },
+      origin: "boilerplate body centroid",
+      facing: "semantic right; SpriteRig owns mirroring",
+      receivers: RECEIVERS,
+      connectorTolerance: CONNECTOR_TOLERANCE,
+      hiddenConnectorOverlapPercent: [8, 12],
+      hatStackBand: HAT_STACK_BAND,
+    },
+    outlinePass: {
+      ...OUTLINE,
+      radiusRule: "radiusPx=max(1,round(baseWidth*max(canvasWidth,canvasHeight)/referenceCanvas))",
+      installedRadius: 8,
+      completeCardRoles: ["replace-head", "replace-hand", "replace-foot", "overlay-hat", "prestige-cap", "cloak-far"],
+      zeroGeneratedRimRoles: ["body-patch", "head-accessory"],
+      law: "complete cards receive one generated #101014 exterior rim; torso patches receive none; head accessories retain authored local contours",
+    },
+    zOrder: Z_ORDER,
+    boilerplate: {
+      expectedPartCount: BOILERPLATE_PARTS.length,
+      installedPartCount: boilerplateParts.length,
+      master: boilerplateMaster,
+      parts: boilerplateParts,
+      socketReference: existsSync(socketReference) ? { installedFile: repoPath(socketReference), sha256: sha256(socketReference) } : null,
+      missing: BOILERPLATE_PARTS.map((part) => installedBoilerplatePath(part.id)).filter((path) => !existsSync(path)).map(repoPath),
+    },
+    expectedItemCount: MIGRATION_EXPECTED.finalNonblankItems,
+    installedItemCount,
+    expectedRoleTextureCount: MIGRATION_EXPECTED.finalRoleTextures,
+    installedRoleTextureCount,
+    expectedPartCount: MIGRATION_EXPECTED.finalManifestParts,
+    installedPartCount,
+    slots: slotRows,
+    missing,
+    extras,
+    invalid,
+  };
+}
+
+async function emitManifest({ write = true } = {}) {
+  const release = write ? acquireLock("manifest") : () => {};
   try {
-    const manifest = await buildManifest();
-    atomicJson(MANIFEST_PATH, manifest);
-    console.log(`MANIFEST ${repoPath(MANIFEST_PATH)} items=${manifest.installedItemCount}/${manifest.expectedItemCount} parts=${manifest.installedPartCount}/${manifest.expectedPartCount} missing=${manifest.missing.length} extras=${manifest.extras.length} invalid=${manifest.invalid.length}`);
+    const manifest = await buildManifestV2();
+    if (write) atomicJson(MANIFEST_PATH, manifest);
+    console.log(`${write ? "MANIFEST" : "MANIFEST V2 PREVIEW (not written)"} ${repoPath(MANIFEST_PATH)} items=${manifest.installedItemCount}/${manifest.expectedItemCount} roleTextures=${manifest.installedRoleTextureCount}/${manifest.expectedRoleTextureCount} parts=${manifest.installedPartCount}/${manifest.expectedPartCount} missing=${manifest.missing.length} extras=${manifest.extras.length} invalid=${manifest.invalid.length}`);
+    console.log(`MIGRATION PLAN rerenderItems=${MIGRATION_EXPECTED.rerenderItems} calls=${MIGRATION_EXPECTED.renderCalls} componentParts=${MIGRATION_EXPECTED.rerenderComponentParts} preservedHats=${MIGRATION_EXPECTED.preservedOverlayHats} preservedCloaks=${MIGRATION_EXPECTED.preservedCloaks} finalItems=${MIGRATION_EXPECTED.finalNonblankItems} finalRoleTextures=${MIGRATION_EXPECTED.finalRoleTextures} finalManifestParts=${MIGRATION_EXPECTED.finalManifestParts}`);
+    console.log(`MIGRATION STATE completedItems=${manifest.migration.completedRerenderItems}/${MIGRATION_EXPECTED.rerenderItems} completedCalls=${manifest.migration.completedRenderCalls}/${MIGRATION_EXPECTED.renderCalls} pendingCalls=${manifest.migration.pendingRenderCalls} completedComponents=${manifest.migration.completedComponentParts}/${MIGRATION_EXPECTED.rerenderComponentParts}`);
     return manifest;
   } finally {
     release();
@@ -1512,14 +2450,27 @@ try {
   console.log(`GEAR ART RUN stage=${options.stage} slots=${requestedSpecs.map((spec) => spec.directory).join(",") || "none"} force=${options.force} validateOnly=${options.validateOnly}`);
   if (options.stage === "boilerplate" || options.stage === "all") failures += await runBoilerplate(options);
   for (const spec of requestedSpecs) failures += await runSlot(options, spec);
-  const manifest = await emitManifest();
+  const manifest = await emitManifest({ write: !options.validateOnly });
   if (manifest.extras.length > 0 || manifest.invalid.length > 0) failures++;
-  if (manifest.slots.find((slot) => slot.id === "hat")?.installedItemCount === 12) {
+  if (!options.validateOnly && manifest.slots.find((slot) => slot.id === "hat")?.installedItemCount === 12) {
     try {
       const sheet = await emitHatContactSheet();
       if (sheet) console.log(`HAT CONTACT SHEET ${repoPath(sheet)}`);
     } catch (error) {
       console.log(`HAT CONTACT SHEET FAIL: ${error.message}`);
+      failures++;
+    }
+  }
+  if (!options.validateOnly
+    && manifest.installedItemCount === MIGRATION_EXPECTED.finalNonblankItems
+    && manifest.installedRoleTextureCount === MIGRATION_EXPECTED.finalRoleTextures
+    && manifest.invalid.length === 0
+    && manifest.extras.length === 0) {
+    try {
+      const sheet = await emitGearReplacementContactSheet(manifest);
+      console.log(`REPLACEMENT CONTACT SHEET ${repoPath(sheet.path)} tiles=${sheet.tileCount} bodyCases=${sheet.proof.body.everyShirtWithRepresentativePants + sheet.proof.body.blank} headCases=${sheet.proof.head.replacementHeadAccessoryCartesian} towerCases=${sheet.proof.towers.replacementHeadPrestigeCases}`);
+    } catch (error) {
+      console.log(`REPLACEMENT CONTACT SHEET FAIL: ${error.message}`);
       failures++;
     }
   }
