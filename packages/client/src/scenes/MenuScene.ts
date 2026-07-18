@@ -4,6 +4,7 @@ import {
   DEFAULT_DIMENSION,
   DIMENSION_IDS,
   GEAR_CATALOG,
+  GEAR_IDS,
   GEAR_SLOTS,
   type GearId,
   type GearSlot,
@@ -272,6 +273,12 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
+    // DEV CLOSET — `?closet=1`, dev builds only: own the ENTIRE gear catalog locally so any outfit
+    // can be dressed without farming. Purely a local-trust cosmetic grant (the server sanitizes the
+    // account at join either way); it persists, so one visit unlocks the wardrobe from then on.
+    if (import.meta.env.DEV && new URLSearchParams(location.search).get("closet")) {
+      this.metaAccount = savePetMetaAccount({ ...this.metaAccount, ownedGear: [...GEAR_IDS] });
+    }
     this.wardrobePresetState = loadWardrobePresetState(this.metaAccount);
     const petXp = this.metaAccount.selectedPetId
       ? (this.metaAccount.pets[this.metaAccount.selectedPetId]?.bondXp ?? 0)
