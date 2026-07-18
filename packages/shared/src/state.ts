@@ -19,6 +19,15 @@ export class ArsenalSlot extends Schema {
   cooldown = 0;
   reload = 0;
   resourceCharges = 0;
+  // Weapon-bank identity is owner-private account/run state. It deliberately has no `@type`, so duplicate
+  // definitions remain distinct without broadcasting account ids or adding steady 20 Hz patch bytes.
+  instanceId = "";
+  bankEntryId = "";
+  bankEntryKind: "" | "single" | "pair" = "";
+  bankPairRole: "" | "lead" | "offhand" = "";
+  bankProvenance = "";
+  sourceWorldTier = 0;
+  homeIssue = false;
 }
 
 /** Ultimate's nine-field wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */

@@ -143,7 +143,7 @@ import {
   META_POWER_STR,
   META_VITALITY_HP,
   META_ACCOUNT_REVISION_MAX,
-  type MetaAccountV3,
+  type MetaAccountV4,
   GEAR_IDS,
   LEGACY_UPGRADE_GRANTS,
   nextUpgradeCost,
@@ -158,6 +158,7 @@ import {
   petStageBandForLevel,
   sanitizeMetaAccountV2,
   sanitizeMetaAccountV3,
+  sanitizeMetaAccountV4WithDiagnostics,
   sanitizeMetaLevels,
   encodeGearCosmetics,
   resolveGearLoadout,
@@ -254,6 +255,7 @@ import {
   type QuirkDef,
   type QuirkEffect,
   quirkForCharacter,
+  RARITIES,
   RARITY_COMMON,
   RESPAWN_CLEAR_RADIUS,
   requirementPenalty,
@@ -455,8 +457,26 @@ import {
   ultimateFamilyAttr,
   ultimateFamilyForCode,
   ultimateVariantForCode,
+  countWeaponCopies,
+  encodedJsonByteLength,
+  META_JOIN_MAX_BYTES,
+  rollBankAwareDropWeapon,
+  weaponEntryInstances,
+  weaponEntryPhysicalSize,
+  weaponRarityId,
+  WEAPON_CARRY_MAX_PHYSICAL,
+  WEAPON_PACK_MAX_CAPACITY,
+  type CarrySelectionV1,
+  type ExpeditionEntryV1,
+  type PairedWeaponEntryV1,
+  type SingleWeaponEntryV1,
+  type WeaponBankCuratorInputV1,
+  type WeaponBankEntryV1,
+  type WeaponInstanceV1,
+  type WeaponProvenance,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
+import { randomBytes } from "node:crypto";
 import {
   BossController,
   conserveVastagharVictoryXp,
@@ -464,7 +484,18 @@ import {
   type VastagharEmitSink,
   type VastagharTarget,
 } from "./BossController.js";
-import { applyAllocationChoice, bankPetBondXp, consumeFlex, levelUpPlayer } from "./progression.js";
+import {
+  applyAllocationChoice,
+  bankPetBondXp,
+  commitWeaponCarry,
+  consumeFlex,
+  levelUpPlayer,
+  sellWeaponBankEntry,
+  settleWeaponExpedition,
+  wipeWeaponBankForPrestige,
+  type StashSaleResult,
+  type WeaponSettlementResult,
+} from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 
 /** Horde-melee rows reuse the existing telegraph schema; the id carries cosmetic ownership client-side. */
@@ -566,6 +597,25 @@ interface WeaponResourceLedger {
   cooldown: number;
   reload: number;
   charges: number;
+}
+
+interface RunWeaponLedger {
+  runId: string;
+  entries: Map<string, ExpeditionEntryV1>;
+  byInstanceId: Map<string, string>;
+  curator: WeaponBankCuratorInputV1;
+}
+
+interface PickupWeaponBankMeta {
+  provenance: WeaponProvenance;
+  entry?: WeaponBankEntryV1;
+  ownerId: string;
+  ownerLockUntil: number;
+}
+
+interface DisconnectedPlayerReservation {
+  player: PlayerState;
+  combat: CombatState;
 }
 
 type PlayerDamageKind = "pit" | "ground-hazard" | "enemy" | "self";
@@ -890,7 +940,16 @@ export class GameRoom extends Room<ArenaState> {
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
-  private readonly metaAccounts = new Map<string, MetaAccountV3>();
+  private readonly metaAccounts = new Map<string, MetaAccountV4>();
+  /** Account-private move-not-copy escrow. Nothing here is synchronized at 20 Hz. */
+  private readonly weaponRuns = new Map<string, RunWeaponLedger>();
+  private readonly weaponCuratorOrder: string[] = [];
+  private weaponCuratorRecipient = 0;
+  private worldTier = 0;
+  private readonly disconnectedPlayers = new Map<string, DisconnectedPlayerReservation>();
+  private readonly weaponSettlementReceipts = new Map<string, WeaponSettlementResult>();
+  private readonly stashSaleReceipts = new Map<string, StashSaleResult>();
+  private readonly prestigeReceipts = new Map<string, unknown>();
   /** Present only when a validated v3 loadout, rather than the compatibility character kit, owns identity. */
   private readonly gearRuns = new Map<string, GearRunRuntime>();
   /** Exact pet level/modifiers and all hot counters are server-private and snapshotted once per run. */
@@ -1055,6 +1114,8 @@ export class GameRoom extends Room<ArenaState> {
     string,
     { weapon: string; rarity: number; affix: string }
   >();
+  /** Mint/provenance/owner rail for bankable loot and exact player-owned field stakes. */
+  private readonly pickupWeaponBankMeta = new Map<string, PickupWeaponBankMeta>();
   /** Audit #14: precise Brand durations are gameplay-only. EnemyState.branded is a transition-only 0/1 flag. */
   private readonly brandedTimers = new Map<string, number>();
   /** §8 Conflagration: pending deferred Emberguard re-pulses (the "burning zone" POC). Each fires one more
@@ -1473,6 +1534,8 @@ export class GameRoom extends Room<ArenaState> {
       player.bag.push(b);
       this.copySlot(s, null);
       if (i === player.activeSlot) this.loadSlot(player, c, i); // now empty → fists in hand
+      this.syncWeaponRunFromArsenal(player);
+      this.sendWeaponManifest(player);
     });
 
     // §29 ARSENAL bag EQUIP: pull bag[index] into slot[slot], swapping whatever was there back into the bag
@@ -1498,6 +1561,8 @@ export class GameRoom extends Room<ArenaState> {
         player.bag.splice(bi, 1); // slot was empty → the bag entry is consumed
       }
       if (si === player.activeSlot) this.loadSlot(player, c, si);
+      this.syncWeaponRunFromArsenal(player);
+      this.sendWeaponManifest(player);
     });
 
     // §29 ARSENAL SELL: trade a bag or slot weapon to the shopkeeper for SCRIP. Gated on proximity to the
@@ -1516,6 +1581,7 @@ export class GameRoom extends Room<ArenaState> {
         if (idx === player.activeSlot) this.syncActiveSlot(player, c);
         const s = player.slots[idx]!;
         if (!s.weapon) return;
+        if (s.bankEntryId) return;
         player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, s.rarity, s.earned));
         this.copySlot(s, null);
         if (idx === player.activeSlot) this.loadSlot(player, c, idx);
@@ -1523,11 +1589,72 @@ export class GameRoom extends Room<ArenaState> {
       } else {
         if (idx < 0 || idx >= player.bag.length) return;
         const b = player.bag[idx]!;
+        if (b.bankEntryId) return;
         player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, b.rarity, b.earned));
         player.bag.splice(idx, 1);
         this.publishAccountMutation(player);
       }
     });
+
+    // Safe account-side shop conversion. The client supplies identity + revision, never price or rarity.
+    this.onMessage(
+      "sellStashEntry",
+      (client, message: {
+        requestId?: string;
+        expectedRevision?: number;
+        entryId?: string;
+        from?: "stash" | "intake";
+      }) => {
+        if (!this.takeAction(client)) return;
+        const account = this.metaAccounts.get(client.sessionId);
+        const player = this.state.players.get(client.sessionId) ??
+          this.disconnectedPlayers.get(client.sessionId)?.player;
+        if (!account || !player) return;
+        const requestId = typeof message?.requestId === "string" ? message.requestId : "";
+        const receiptKey = `${client.sessionId}:${requestId}`;
+        const replay = this.stashSaleReceipts.get(receiptKey);
+        if (replay) {
+          this.sendOwnerMessage(client.sessionId, "stashSaleReceipt", replay);
+          this.sendOwnerMessage(client.sessionId, "metaAccount", account);
+          return;
+        }
+        const result = sellWeaponBankEntry(account, {
+          requestId,
+          expectedRevision: message?.expectedRevision as number,
+          entryId: typeof message?.entryId === "string" ? message.entryId : "",
+          from: message?.from === "intake" ? "intake" : "stash",
+        });
+        if (!result.ok) return;
+        this.stashSaleReceipts.set(receiptKey, result);
+        player.scrip = account.scrip;
+        this.sendOwnerMessage(client.sessionId, "stashSaleReceipt", result);
+        this.sendOwnerMessage(client.sessionId, "metaAccount", account);
+      },
+    );
+
+    // Prestige tower visuals arrive later; this is the revisioned account int + all-weapon wipe hook.
+    this.onMessage(
+      "prestigeReset",
+      (client, message: { requestId?: string; expectedRevision?: number }) => {
+        if (!this.takeAction(client)) return;
+        const account = this.metaAccounts.get(client.sessionId);
+        if (!account || message?.expectedRevision !== account.revision) return;
+        const requestId = typeof message.requestId === "string" ? message.requestId : "";
+        if (!requestId || requestId.length > 64) return;
+        const receiptKey = `${client.sessionId}:${requestId}`;
+        const replay = this.prestigeReceipts.get(receiptKey);
+        if (replay) {
+          this.sendOwnerMessage(client.sessionId, "prestigeReceipt", replay);
+          return;
+        }
+        const result = wipeWeaponBankForPrestige(account);
+        if (!result.ok) return;
+        const receipt = { ...result, prestige: account.prestige, scripPaid: 0, revision: account.revision };
+        this.prestigeReceipts.set(receiptKey, receipt);
+        this.sendOwnerMessage(client.sessionId, "prestigeReceipt", receipt);
+        this.sendOwnerMessage(client.sessionId, "metaAccount", account);
+      },
+    );
 
     // §31 META BUY: spend scrip at the shopkeeper on a PERMANENT upgrade level (persists across runs). Gated
     // on proximity + alive; server-authoritative cost check + stat application (the client can't grant itself
@@ -1576,12 +1703,14 @@ export class GameRoom extends Room<ArenaState> {
       c.pairComboFamily = meleeComboSelectionFor(lead)?.family ?? "arc";
       c.pairComboStep = 0;
       c.pairComboExpiresAtMs = 0;
+      this.bindRunWeaponPair(player, leadSlot, offSlot);
       const quirkMult = c.mods.drawLockMult;
       c.drawLock = Math.max(c.drawLock, WEAPON_DRAW_LOCK_SECONDS * quirkMult);
       if (c.beamPhase !== 0 || c.beamDescriptor) {
         this.cancelBeam(player, player.id, c, true, true);
       }
       if (fee > 0) this.publishAccountMutation(player);
+      this.sendWeaponManifest(player);
     });
 
     // UNBIND is free but remains a shop service. No refund and no ledger writes: the off row is already live.
@@ -1592,7 +1721,15 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive || !c || !this.belt) return;
       const shopX = this.state.beltShopX;
       if (shopX <= 0 || Math.abs(player.x - shopX) > SHOP_RADIUS) return;
-      if (player.offhandSlot !== 255) this.dissolvePair(player, c, true);
+      if (player.offhandSlot !== 255) {
+        const durable = this.unbindRunWeaponPair(player);
+        this.dissolvePair(player, c, true);
+        if (durable) {
+          this.syncWeaponRunFromArsenal(player);
+          this.publishAccountMutation(player);
+          this.sendWeaponManifest(player);
+        }
+      }
     });
 
     this.onMessage("buyUpgrade", (client, message: { id?: string }) => {
@@ -1677,9 +1814,12 @@ export class GameRoom extends Room<ArenaState> {
       if (!player?.alive || player.weapon === FISTS_WEAPON) return;
       const c = this.combat.get(client.sessionId);
       if (c?.stance === STANCE_SLIDE) return;
+      const bankEntryId = player.slots[player.activeSlot]?.bankEntryId ?? "";
       if (c) this.dissolvePair(player, c);
       if (c) this.saveWeaponResource(player, c);
-      if (c?.heldEarned) {
+      if (bankEntryId) {
+        this.consumeRunWeaponEntry(player, bankEntryId);
+      } else if (c?.heldEarned) {
         player.salvaged += salvageValue(player.weaponRarity); // §13 v0.104: rarity drives the parts value
         c.heldEarned = false;
       }
@@ -1688,6 +1828,8 @@ export class GameRoom extends Room<ArenaState> {
       player.weaponAffix = "";
       if (this.belt) this.copySlot(player.slots[player.activeSlot]!, null);
       if (c) this.restoreWeaponResource(player, c);
+      this.syncWeaponRunFromArsenal(player);
+      this.sendWeaponManifest(player);
     });
 
     // §13 R-TAP near a ground weapon = GRAB it (the client only sends this when a pickup is in reach).
@@ -1702,6 +1844,9 @@ export class GameRoom extends Room<ArenaState> {
       let bestD = Number.POSITIVE_INFINITY;
       this.state.pickups.forEach((pk, pid) => {
         if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
+        const bankMeta = this.pickupWeaponBankMeta.get(pid);
+        if (bankMeta?.entry && bankMeta.ownerId && bankMeta.ownerId !== player.id) return;
+        if (bankMeta?.ownerId && bankMeta.ownerId !== player.id && this.state.elapsed < bankMeta.ownerLockUntil) return;
         const d = (pk.x - player.x) ** 2 + (pk.y - player.y) ** 2;
         const petReach = this.petRuns.get(player.id)?.mods.earnedPickupRadius ?? 0;
         const radius = this.earnedPickups.has(pid) && petReach > 0 ? petReach : PICKUP_RADIUS;
@@ -1724,12 +1869,33 @@ export class GameRoom extends Room<ArenaState> {
         grabbed.known = true;
         this.hiddenPickupIdentities.delete(grabbed.id);
       }
+      const pickupBankMeta = this.pickupWeaponBankMeta.get(grabbed.id);
+      let bankEntry = pickupBankMeta?.entry;
+      if (!bankEntry && pickupBankMeta && this.weaponRuns.has(player.id)) {
+        const weapon = this.mintWeaponInstance(
+          grabbed.weapon,
+          grabbed.rarity,
+          grabbed.affix,
+          pickupBankMeta.provenance,
+        );
+        bankEntry = { kind: "single", entryId: weapon.instanceId, weapon };
+        pickupBankMeta.entry = bankEntry;
+        pickupBankMeta.ownerId = player.id;
+      }
+      const weaponRun = this.weaponRuns.get(player.id);
+      if (
+        bankEntry &&
+        weaponRun &&
+        !weaponRun.entries.has(bankEntry.entryId) &&
+        weaponRun.entries.size >= WEAPON_CARRY_MAX_PHYSICAL
+      ) return;
       const c = this.combat.get(client.sessionId);
       if (this.belt) {
         // §29 belt: grabs ACCUMULATE into the 3-slot arsenal (the carousel is gone) — fill an empty slot,
         // overflow to the bag, only drop when everything is full.
-        this.grabIntoArsenal(player, c, grabbed);
+        if (!this.grabIntoArsenal(player, c, grabbed, bankEntry)) return;
       } else {
+        if (bankEntry?.kind === "pair") return;
         // §13 v0.106 (A11 de-clunk): grabbing is a SWAP, not a replace. If we're already holding a weapon,
         // DROP it on the floor first (as a grabbable pickup carrying its loot identity + earned provenance +
         // a re-grab grace) — otherwise grabbing a Common off the ground while holding a Legendary silently
@@ -1746,13 +1912,19 @@ export class GameRoom extends Room<ArenaState> {
           c.heldEarned = this.earnedPickups.has(grabbed.id);
           this.restoreWeaponResource(player, c, true);
         }
+        if (bankEntry?.kind === "single") {
+          this.installWeaponMember(player.slots[player.activeSlot]!, bankEntry, bankEntry.weapon);
+          this.registerFoundWeaponEntry(player, bankEntry);
+        }
       }
       if (grabbed.id.startsWith("drop")) {
         this.state.pickups.delete(grabbed.id);
         this.pickupGrace.delete(grabbed.id);
         if (this.earnedPickups.delete(grabbed.id)) this.publishPetPickupEligibility();
         this.hiddenPickupIdentities.delete(grabbed.id);
+        this.pickupWeaponBankMeta.delete(grabbed.id);
       }
+      this.sendWeaponManifest(player);
     });
 
     // §5 JUMP (Spacebar) — a low all-class traversal HOP, then a cooldown so it isn't spammable. PURE
@@ -1774,7 +1946,10 @@ export class GameRoom extends Room<ArenaState> {
     // equip, the showroom) does not exist; "host" is just the first joiner, not a trust level.
     this.onMessage("toggleTraining", (client) => {
       if (!this.devToolsEnabled() || !this.takeAction(client)) return;
-      if (this.isHost(client)) this.toggleTraining();
+      if (!this.isHost(client)) return;
+      // Entering the workshop abandons the initiating host's live expedition. The shared dev scene may
+      // move the squad, but a host action never settles or destroys a teammate's escrow.
+      this.toggleTraining(client.sessionId);
     });
 
     // §31 SHOWROOM paging: cycle the Testing-Grounds weapon gallery to the next/prev page. Host-only +
@@ -1789,7 +1964,9 @@ export class GameRoom extends Room<ArenaState> {
     // Restart the run (playtest QoL): wipe the horde, reset the clock, revive everyone fresh.
     // Host-only — co-op shares one run, so one client must not be able to reset everyone's progress.
     this.onMessage("restart", (client) => {
-      if (this.isHost(client)) this.restartRun();
+      if (!this.isHost(client)) return;
+      if (this.state.outcome === "active" && this.state.players.size > 1) return;
+      this.restartRun();
     });
 
     // Debug/playtest: summon the boss now instead of waiting for the timed spawn (B key). Host-only,
@@ -1896,6 +2073,7 @@ export class GameRoom extends Room<ArenaState> {
       this.publishPetPickupEligibility();
     }
     this.hiddenPickupIdentities.clear();
+    this.pickupWeaponBankMeta.clear();
     this.brandedTimers.clear();
     this.burnPulses.length = 0;
     this.state.beams.clear();
@@ -1957,7 +2135,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §6 enter a terminal result exactly once through the full combat teardown path. */
   private enterTerminalOutcome(outcome: "defeat" | "victory"): void {
-    this.settlePetAccounts(outcome);
+    this.settleMetaAccounts(outcome);
     // A wipe has no eligible collector and explicitly forfeits unclaimed field XP with the failed run.
     // Victory routes reach here only after `beginXpBoundary` has visibly caught every paid packet.
     if (outcome === "defeat") this.clearXpEchoes();
@@ -1971,6 +2149,10 @@ export class GameRoom extends Room<ArenaState> {
    *  SWAP, so a grab can never silently DESTROY a held (possibly Legendary) weapon. */
   private dropHeldWeapon(player: PlayerState, c: CombatState | undefined): void {
     if (player.weapon === FISTS_WEAPON) return;
+    const activeSlot = player.slots[player.activeSlot];
+    const bankEntryId = activeSlot?.bankEntryId ?? "";
+    const bankEntry = bankEntryId ? this.weaponRuns.get(player.id)?.entries.get(bankEntryId)?.entry : undefined;
+    const pairedOffIndex = bankEntry?.kind === "pair" ? player.offhandSlot : 255;
     if (c) this.dissolvePair(player, c);
     if (c) this.saveWeaponResource(player, c);
     const ax = c?.aimX ?? 1;
@@ -1990,6 +2172,14 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
+    if (bankEntry) {
+      this.pickupWeaponBankMeta.set(pk.id, {
+        provenance: bankEntry.kind === "pair" ? bankEntry.lead.provenance : bankEntry.weapon.provenance,
+        entry: bankEntry,
+        ownerId: player.id,
+        ownerLockUntil: Number.POSITIVE_INFINITY,
+      });
+    }
     if (c?.heldEarned) {
       this.earnedPickups.add(pk.id);
       this.publishPetPickupEligibility();
@@ -2001,8 +2191,13 @@ export class GameRoom extends Room<ArenaState> {
     player.weapon = FISTS_WEAPON;
     player.weaponRarity = RARITY_COMMON;
     player.weaponAffix = "";
-    if (this.belt) this.copySlot(player.slots[player.activeSlot]!, null);
+    if (this.belt || bankEntry) this.copySlot(player.slots[player.activeSlot]!, null);
+    if (pairedOffIndex !== 255 && player.slots[pairedOffIndex]?.bankEntryId === bankEntryId) {
+      this.copySlot(player.slots[pairedOffIndex]!, null);
+    }
     if (c) this.restoreWeaponResource(player, c);
+    this.syncWeaponRunFromArsenal(player);
+    this.sendWeaponManifest(player);
   }
 
   // ── §29 v0.118 ARSENAL helpers: the held weapon is the ACTIVE slot's live mirror; these keep the slots
@@ -2077,6 +2272,376 @@ export class GameRoom extends Room<ArenaState> {
     dst.cooldown = src?.cooldown ?? 0;
     dst.reload = src?.reload ?? 0;
     dst.resourceCharges = src?.resourceCharges ?? 0;
+    dst.instanceId = src?.instanceId ?? "";
+    dst.bankEntryId = src?.bankEntryId ?? "";
+    dst.bankEntryKind = src?.bankEntryKind ?? "";
+    dst.bankPairRole = src?.bankPairRole ?? "";
+    dst.bankProvenance = src?.bankProvenance ?? "";
+    dst.sourceWorldTier = src?.sourceWorldTier ?? 0;
+    dst.homeIssue = src?.homeIssue ?? false;
+  }
+
+  private mintWeaponOpaqueId(prefix: "wi" | "wp"): string {
+    return `${prefix}_${randomBytes(16).toString("base64url")}`;
+  }
+
+  private mintWeaponInstance(
+    weaponId: string,
+    rarity: number,
+    affix: string,
+    provenance: WeaponProvenance,
+  ): WeaponInstanceV1 {
+    return {
+      instanceId: this.mintWeaponOpaqueId("wi"),
+      weaponId,
+      rarity: weaponRarityId(rarity),
+      affix: affix as WeaponInstanceV1["affix"],
+      provenance,
+      sourceWorldTier: this.worldTier,
+    };
+  }
+
+  private installWeaponMember(
+    slot: ArsenalSlot,
+    entry: WeaponBankEntryV1,
+    member: WeaponInstanceV1,
+    role: "" | "lead" | "offhand" = "",
+  ): void {
+    this.copySlot(slot, null);
+    slot.weapon = member.weaponId;
+    slot.rarity = RARITIES.findIndex((rarity) => rarity.id === member.rarity);
+    slot.affix = member.affix;
+    slot.earned = true;
+    slot.instanceId = member.instanceId;
+    slot.bankEntryId = entry.entryId;
+    slot.bankEntryKind = entry.kind;
+    slot.bankPairRole = role;
+    slot.bankProvenance = member.provenance;
+    slot.sourceWorldTier = member.sourceWorldTier;
+    slot.resourceWeapon = member.weaponId;
+    slot.resourceReady = false;
+  }
+
+  private installHomeIssue(slot: ArsenalSlot): void {
+    this.copySlot(slot, null);
+    slot.weapon = DEFAULT_WEAPON;
+    slot.rarity = RARITY_COMMON;
+    slot.affix = "";
+    slot.earned = false;
+    slot.homeIssue = true;
+    slot.resourceWeapon = DEFAULT_WEAPON;
+    slot.resourceReady = false;
+  }
+
+  /** Project account-private escrow into the existing three slots + dense Pack rows at a join/rejoin edge. */
+  private materializeWeaponRun(player: PlayerState, account: MetaAccountV4): void {
+    while (player.slots.length < ARSENAL_SLOTS) player.slots.push(new ArsenalSlot());
+    for (const slot of player.slots) this.copySlot(slot, null);
+    player.bag.splice(0, player.bag.length);
+    const expedition = account.weaponBank.expedition;
+    let activeEntryId = account.weaponBank.lastCarry.activeEntryId;
+    let firstStarterSlot = -1;
+    let maxPackCell = -1;
+    if (expedition) {
+      for (const row of expedition.entries) {
+        if (row.location === "pack") {
+          maxPackCell = Math.max(maxPackCell, row.start + weaponEntryPhysicalSize(row.entry) - 1);
+        }
+      }
+      for (let index = 0; index <= maxPackCell; index++) player.bag.push(new ArsenalSlot());
+      for (const row of expedition.entries) {
+        if (row.location === "field") continue;
+        const target = row.location === "active" ? player.slots : player.bag;
+        if (row.entry.kind === "single") {
+          const slot = target[row.start];
+          if (slot) this.installWeaponMember(slot, row.entry, row.entry.weapon);
+        } else {
+          const lead = target[row.start];
+          const offhand = target[row.start + 1];
+          if (lead) this.installWeaponMember(lead, row.entry, row.entry.lead, "lead");
+          if (offhand) this.installWeaponMember(offhand, row.entry, row.entry.offhand, "offhand");
+        }
+      }
+    }
+    // The reusable floor is not an instance, never enters escrow, and consumes the first genuinely empty
+    // Active cell. A fully selected three-entry Active manifest has deliberately replaced it for this run.
+    for (let index = 0; index < ARSENAL_SLOTS; index++) {
+      if (!player.slots[index]?.weapon) {
+        this.installHomeIssue(player.slots[index]!);
+        firstStarterSlot = index;
+        break;
+      }
+    }
+    let activeSlot = firstStarterSlot >= 0 ? firstStarterSlot : 0;
+    if (activeEntryId) {
+      const requested = player.slots.findIndex((slot) => slot.bankEntryId === activeEntryId && slot.bankPairRole !== "offhand");
+      if (requested >= 0) activeSlot = requested;
+      else activeEntryId = "";
+    }
+    if (!player.slots[activeSlot]?.weapon) {
+      const first = player.slots.findIndex((slot) => !!slot.weapon);
+      activeSlot = first >= 0 ? first : 0;
+    }
+    player.activeSlot = activeSlot;
+    const active = player.slots[activeSlot];
+    player.weapon = active?.weapon || FISTS_WEAPON;
+    player.weaponRarity = active?.rarity ?? RARITY_COMMON;
+    player.weaponAffix = active?.affix ?? "";
+    player.maxCharges = this.effectiveMaxWeaponCharges(player.weapon, player.id);
+    player.charges = player.maxCharges;
+    if (active) {
+      active.resourceWeapon = active.weapon;
+      active.resourceReady = true;
+      active.resourceCharges = player.charges;
+    }
+  }
+
+  private createWeaponRun(playerId: string, account: MetaAccountV4): RunWeaponLedger | undefined {
+    const expedition = account.weaponBank.expedition;
+    if (!expedition) return undefined;
+    const entries = new Map<string, ExpeditionEntryV1>();
+    const byInstanceId = new Map<string, string>();
+    for (const row of expedition.entries) {
+      entries.set(row.entry.entryId, row);
+      for (const instance of weaponEntryInstances(row.entry)) {
+        byInstanceId.set(instance.instanceId, row.entry.entryId);
+      }
+    }
+    const curator: WeaponBankCuratorInputV1 = {
+      accountId: playerId,
+      worldTier: this.worldTier,
+      copiesByWeaponId: countWeaponCopies(account.weaponBank, true),
+      runIssuedByWeaponId: new Map<string, number>(),
+    };
+    const run = { runId: expedition.runId, entries, byInstanceId, curator };
+    this.weaponRuns.set(playerId, run);
+    if (!this.weaponCuratorOrder.includes(playerId)) this.weaponCuratorOrder.push(playerId);
+    return run;
+  }
+
+  /** Slot/Pack topology is a view; this records it back onto the exact escrow entries after explicit moves. */
+  private syncWeaponRunFromArsenal(player: PlayerState): void {
+    const run = this.weaponRuns.get(player.id);
+    if (!run) return;
+    for (const row of run.entries.values()) {
+      row.location = "field";
+      row.start = 255;
+    }
+    for (let index = 0; index < player.slots.length; index++) {
+      const slot = player.slots[index];
+      if (!slot?.bankEntryId || slot.bankPairRole === "offhand") continue;
+      const row = run.entries.get(slot.bankEntryId);
+      if (row) {
+        row.location = "active";
+        row.start = index;
+      }
+    }
+    for (let index = 0; index < player.bag.length; index++) {
+      const slot = player.bag[index];
+      if (!slot?.bankEntryId || slot.bankPairRole === "offhand") continue;
+      const row = run.entries.get(slot.bankEntryId);
+      if (row) {
+        row.location = "pack";
+        row.start = index;
+      }
+    }
+  }
+
+  private registerFoundWeaponEntry(player: PlayerState, entry: WeaponBankEntryV1): void {
+    const run = this.weaponRuns.get(player.id);
+    const account = this.metaAccounts.get(player.id);
+    const expedition = account?.weaponBank.expedition;
+    if (!run || !expedition || run.entries.has(entry.entryId)) return;
+    const row: ExpeditionEntryV1 = {
+      entry,
+      stakeOrigin: "found",
+      location: "field",
+      start: 255,
+    };
+    expedition.entries.push(row);
+    run.entries.set(entry.entryId, row);
+    for (const instance of weaponEntryInstances(entry)) {
+      run.byInstanceId.set(instance.instanceId, entry.entryId);
+    }
+    this.syncWeaponRunFromArsenal(player);
+  }
+
+  private consumeRunWeaponEntry(player: PlayerState, entryId: string): void {
+    if (!entryId) return;
+    const run = this.weaponRuns.get(player.id);
+    const account = this.metaAccounts.get(player.id);
+    const row = run?.entries.get(entryId);
+    if (!run || !account?.weaponBank.expedition || !row) return;
+    for (const instance of weaponEntryInstances(row.entry)) run.byInstanceId.delete(instance.instanceId);
+    run.entries.delete(entryId);
+    const index = account.weaponBank.expedition.entries.indexOf(row);
+    if (index >= 0) account.weaponBank.expedition.entries.splice(index, 1);
+    for (const slot of player.slots) if (slot.bankEntryId === entryId) this.copySlot(slot, null);
+    for (let index = player.bag.length - 1; index >= 0; index--) {
+      if (player.bag[index]?.bankEntryId === entryId) player.bag.splice(index, 1);
+    }
+    for (const [pickupId, meta] of this.pickupWeaponBankMeta) {
+      if (meta.entry?.entryId === entryId) this.pickupWeaponBankMeta.delete(pickupId);
+    }
+  }
+
+  private bindRunWeaponPair(
+    player: PlayerState,
+    leadSlot: ArsenalSlot,
+    offSlot: ArsenalSlot,
+  ): PairedWeaponEntryV1 | undefined {
+    const run = this.weaponRuns.get(player.id);
+    const account = this.metaAccounts.get(player.id);
+    const expedition = account?.weaponBank.expedition;
+    const leadRow = run?.entries.get(leadSlot.bankEntryId);
+    const offRow = run?.entries.get(offSlot.bankEntryId);
+    if (
+      !run ||
+      !expedition ||
+      !leadRow ||
+      !offRow ||
+      leadRow === offRow ||
+      leadRow.entry.kind !== "single" ||
+      offRow.entry.kind !== "single"
+    ) return undefined;
+    const pair: PairedWeaponEntryV1 = {
+      kind: "pair",
+      entryId: this.mintWeaponOpaqueId("wp"),
+      lead: leadRow.entry.weapon,
+      offhand: offRow.entry.weapon,
+    };
+    const row: ExpeditionEntryV1 = {
+      entry: pair,
+      stakeOrigin: leadRow.stakeOrigin === "found" || offRow.stakeOrigin === "found" ? "found" : "committed",
+      location: "active",
+      start: player.activeSlot,
+    };
+    const leadIndex = expedition.entries.indexOf(leadRow);
+    const offIndex = expedition.entries.indexOf(offRow);
+    if (leadIndex >= 0) expedition.entries.splice(leadIndex, 1);
+    const adjustedOffIndex = expedition.entries.indexOf(offRow);
+    if (adjustedOffIndex >= 0) expedition.entries.splice(adjustedOffIndex, 1);
+    expedition.entries.push(row);
+    run.entries.delete(leadRow.entry.entryId);
+    run.entries.delete(offRow.entry.entryId);
+    run.entries.set(pair.entryId, row);
+    run.byInstanceId.set(pair.lead.instanceId, pair.entryId);
+    run.byInstanceId.set(pair.offhand.instanceId, pair.entryId);
+    leadSlot.bankEntryId = pair.entryId;
+    leadSlot.bankEntryKind = "pair";
+    leadSlot.bankPairRole = "lead";
+    offSlot.bankEntryId = pair.entryId;
+    offSlot.bankEntryKind = "pair";
+    offSlot.bankPairRole = "offhand";
+    this.syncWeaponRunFromArsenal(player);
+    return pair;
+  }
+
+  private unbindRunWeaponPair(player: PlayerState): boolean {
+    const leadSlot = player.slots[player.activeSlot];
+    const run = this.weaponRuns.get(player.id);
+    const account = this.metaAccounts.get(player.id);
+    const expedition = account?.weaponBank.expedition;
+    const pairRow = leadSlot?.bankEntryId ? run?.entries.get(leadSlot.bankEntryId) : undefined;
+    if (!leadSlot || !run || !expedition || pairRow?.entry.kind !== "pair") return false;
+    const offIndex = player.offhandSlot;
+    const offSlot = offIndex === 255 ? undefined : player.slots[offIndex];
+    if (!offSlot || offSlot.bankEntryId !== pairRow.entry.entryId) return false;
+    const lead: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: pairRow.entry.lead.instanceId,
+      weapon: pairRow.entry.lead,
+    };
+    const offhand: SingleWeaponEntryV1 = {
+      kind: "single",
+      entryId: pairRow.entry.offhand.instanceId,
+      weapon: pairRow.entry.offhand,
+    };
+    const index = expedition.entries.indexOf(pairRow);
+    if (index >= 0) expedition.entries.splice(index, 1);
+    const leadRow: ExpeditionEntryV1 = {
+      entry: lead,
+      stakeOrigin: pairRow.stakeOrigin,
+      location: "active",
+      start: player.activeSlot,
+    };
+    const offRow: ExpeditionEntryV1 = {
+      entry: offhand,
+      stakeOrigin: pairRow.stakeOrigin,
+      location: "active",
+      start: offIndex,
+    };
+    expedition.entries.push(leadRow, offRow);
+    run.entries.delete(pairRow.entry.entryId);
+    run.entries.set(lead.entryId, leadRow);
+    run.entries.set(offhand.entryId, offRow);
+    run.byInstanceId.set(lead.weapon.instanceId, lead.entryId);
+    run.byInstanceId.set(offhand.weapon.instanceId, offhand.entryId);
+    leadSlot.bankEntryId = lead.entryId;
+    leadSlot.bankEntryKind = "single";
+    leadSlot.bankPairRole = "";
+    offSlot.bankEntryId = offhand.entryId;
+    offSlot.bankEntryKind = "single";
+    offSlot.bankPairRole = "";
+    return true;
+  }
+
+  private nextWeaponCurator(): WeaponBankCuratorInputV1 | undefined {
+    if (this.weaponCuratorOrder.length === 0) return undefined;
+    for (let tries = 0; tries < this.weaponCuratorOrder.length; tries++) {
+      const index = this.weaponCuratorRecipient++ % this.weaponCuratorOrder.length;
+      const input = this.weaponRuns.get(this.weaponCuratorOrder[index]!)?.curator;
+      if (input) return input;
+    }
+    return undefined;
+  }
+
+  private activateMaterializedPair(player: PlayerState, c: CombatState): void {
+    const leadSlot = player.slots[player.activeSlot];
+    if (!leadSlot || leadSlot.bankEntryKind !== "pair" || leadSlot.bankPairRole !== "lead") return;
+    let offIndex = -1;
+    for (let index = 0; index < player.slots.length; index++) {
+      const slot = player.slots[index];
+      if (slot?.bankEntryId === leadSlot.bankEntryId && slot.bankPairRole === "offhand") {
+        offIndex = index;
+        break;
+      }
+    }
+    if (offIndex < 0 || !pairEligible(WEAPONS[leadSlot.weapon], WEAPONS[player.slots[offIndex]!.weapon])) return;
+    const off = player.slots[offIndex]!;
+    this.initializeStoredWeaponResource(player, off);
+    player.offhandSlot = offIndex;
+    player.pairBaseSeq = player.attackSeq;
+    player.offMaxCharges = this.effectiveMaxWeaponCharges(off.weapon, player.id);
+    player.offCharges = clamp(off.resourceCharges, 0, player.offMaxCharges);
+    c.offLastWeapon = off.weapon;
+    c.pairComboId = `${leadSlot.weapon}|${off.weapon}`;
+    c.pairComboFamily = meleeComboSelectionFor(WEAPONS[leadSlot.weapon]!)?.family ?? "arc";
+  }
+
+  private sendWeaponManifest(player: PlayerState): void {
+    const run = this.weaponRuns.get(player.id);
+    if (!run) return;
+    this.syncWeaponRunFromArsenal(player);
+    const entries = [] as Array<{
+      entryId: string;
+      kind: "single" | "pair";
+      origin: "committed" | "found";
+      location: "active" | "pack" | "field";
+      start: number;
+      instanceIds: string[];
+    }>;
+    for (const row of run.entries.values()) {
+      entries.push({
+        entryId: row.entry.entryId,
+        kind: row.entry.kind,
+        origin: row.stakeOrigin,
+        location: row.location,
+        start: row.start,
+        instanceIds: weaponEntryInstances(row.entry).map((instance) => instance.instanceId),
+      });
+    }
+    this.sendOwnerMessage(player.id, "weaponManifest", { runId: run.runId, entries });
   }
 
   /** G-01 single source of truth: authored base -> character rule -> pet adjustment -> integer clamp. */
@@ -2196,6 +2761,7 @@ export class GameRoom extends Room<ArenaState> {
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (slot && slot.weapon !== player.weapon) {
+        this.copySlot(slot, null);
         slot.weapon = player.weapon === FISTS_WEAPON ? "" : player.weapon;
         slot.rarity = player.weaponRarity;
         slot.affix = player.weaponAffix;
@@ -2255,6 +2821,15 @@ export class GameRoom extends Room<ArenaState> {
     if (!player.weapon || player.weapon === FISTS_WEAPON) {
       this.copySlot(s, null);
     } else {
+      if (s.weapon !== player.weapon) {
+        s.instanceId = "";
+        s.bankEntryId = "";
+        s.bankEntryKind = "";
+        s.bankPairRole = "";
+        s.bankProvenance = "";
+        s.sourceWorldTier = 0;
+        s.homeIssue = false;
+      }
       s.weapon = player.weapon;
       s.rarity = player.weaponRarity;
       s.affix = player.weaponAffix;
@@ -2289,10 +2864,32 @@ export class GameRoom extends Room<ArenaState> {
   /** §29 BELT grab: ADD the grabbed weapon to the arsenal instead of the arena swap-drop. Fills the first
    *  empty slot (and equips it); if all 3 are full, the current active weapon overflows to the bag (or drops
    *  to the floor when the bag is full too — still never destroyed) and the grab takes the active slot. */
-  private grabIntoArsenal(player: PlayerState, c: CombatState | undefined, grabbed: PickupState): void {
+  private grabIntoArsenal(
+    player: PlayerState,
+    c: CombatState | undefined,
+    grabbed: PickupState,
+    bankEntry?: WeaponBankEntryV1,
+  ): boolean {
     if (c) this.dissolvePair(player, c);
     this.syncActiveSlot(player, c);
     const earned = this.earnedPickups.has(grabbed.id);
+    if (bankEntry?.kind === "pair") {
+      let start = -1;
+      for (let index = 0; index < ARSENAL_SLOTS - 1; index++) {
+        if (!player.slots[index]?.weapon && !player.slots[index + 1]?.weapon) {
+          start = index;
+          break;
+        }
+      }
+      if (start < 0) return false;
+      this.installWeaponMember(player.slots[start]!, bankEntry, bankEntry.lead, "lead");
+      this.installWeaponMember(player.slots[start + 1]!, bankEntry, bankEntry.offhand, "offhand");
+      this.loadSlot(player, c, start);
+      this.registerFoundWeaponEntry(player, bankEntry);
+      this.syncWeaponRunFromArsenal(player);
+      if (c) this.activateMaterializedPair(player, c);
+      return true;
+    }
     let target = -1;
     for (let i = 0; i < ARSENAL_SLOTS; i++) {
       if (!player.slots[i]?.weapon) {
@@ -2312,13 +2909,20 @@ export class GameRoom extends Room<ArenaState> {
       target = player.activeSlot;
     }
     const s = player.slots[target]!;
-    s.weapon = grabbed.weapon;
-    s.rarity = grabbed.rarity;
-    s.affix = grabbed.affix;
-    s.earned = earned;
-    s.resourceWeapon = grabbed.weapon;
-    s.resourceReady = false;
+    if (bankEntry?.kind === "single") this.installWeaponMember(s, bankEntry, bankEntry.weapon);
+    else {
+      this.copySlot(s, null);
+      s.weapon = grabbed.weapon;
+      s.rarity = grabbed.rarity;
+      s.affix = grabbed.affix;
+      s.earned = earned;
+      s.resourceWeapon = grabbed.weapon;
+      s.resourceReady = false;
+    }
     this.loadSlot(player, c, target);
+    if (bankEntry) this.registerFoundWeaponEntry(player, bankEntry);
+    this.syncWeaponRunFromArsenal(player);
+    return true;
   }
 
   /** §10 v0.104 per-source damage multiplier INCLUDING the held weapon's loot identity: attribute grades ×
@@ -2590,11 +3194,11 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private bumpAccountRevision(account: MetaAccountV3): void {
+  private bumpAccountRevision(account: MetaAccountV4): void {
     account.revision = Math.min(META_ACCOUNT_REVISION_MAX, account.revision + 1);
   }
 
-  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV3): void {
+  private syncAccountFromPlayer(player: PlayerState, account: MetaAccountV4): void {
     account.scrip = Math.max(0, Math.min(65535, Math.floor(player.scrip)));
   }
 
@@ -2705,7 +3309,7 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
-  private rollSlateTortoise(account: MetaAccountV3, outcome: "defeat" | "victory"): boolean {
+  private rollSlateTortoise(account: MetaAccountV4, outcome: "defeat" | "victory"): boolean {
     if (outcome !== "victory" || account.pets["slate-tortoise"]) return false;
     const misses = Math.max(0, Math.min(7, Math.floor(account.slateTortoisePityMisses)));
     const success = misses >= 7 || Math.random() < 0.08 * (misses + 1);
@@ -2718,14 +3322,16 @@ export class GameRoom extends Room<ArenaState> {
     return false;
   }
 
-  /** One idempotent terminal path for defeat and every victory/extraction route. */
-  private settlePetAccounts(outcome: "defeat" | "victory"): void {
-    this.state.players.forEach((player, playerId) => {
+  /** One idempotent account commit for pets, Scrip, and exact weapon escrow on every terminal route. */
+  private settleMetaAccounts(outcome: "defeat" | "victory"): void {
+    this.metaAccounts.forEach((account, playerId) => {
       if (this.petSettledAccounts.has(playerId)) return;
-      const account = this.metaAccounts.get(playerId);
-      if (!account) return;
       this.petSettledAccounts.add(playerId);
-      this.syncAccountFromPlayer(player, account);
+      const player = this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
+      if (player) {
+        this.syncWeaponRunFromArsenal(player);
+        this.syncAccountFromPlayer(player, account);
+      }
       const pet = this.petRuns.get(playerId);
       let receipt: PetProgressReceipt | undefined;
       if (pet) {
@@ -2744,9 +3350,21 @@ export class GameRoom extends Room<ArenaState> {
       }
       const slateTortoiseAwarded = this.rollSlateTortoise(account, outcome);
       if (receipt) receipt.slateTortoiseAwarded = slateTortoiseAwarded;
+      const runId = account.weaponBank.expedition?.runId;
+      if (runId) {
+        const settlementKey = `${playerId}:${runId}:${outcome}:1`;
+        let weaponReceipt = this.weaponSettlementReceipts.get(settlementKey);
+        if (!weaponReceipt) {
+          weaponReceipt = settleWeaponExpedition(account, outcome, false);
+          this.weaponSettlementReceipts.set(settlementKey, weaponReceipt);
+        }
+        this.sendOwnerMessage(playerId, "weaponSettlementReceipt", weaponReceipt);
+      }
       this.bumpAccountRevision(account);
       if (receipt) this.sendOwnerMessage(playerId, "petProgressReceipt", receipt);
       this.sendOwnerMessage(playerId, "metaAccount", account);
+      this.weaponRuns.delete(playerId);
+      this.disconnectedPlayers.delete(playerId);
     });
   }
 
@@ -2764,7 +3382,8 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Switch between survival ("arena") and Testing Grounds ("training", §21). */
-  private toggleTraining(): void {
+  private toggleTraining(abandoningPlayerId = this.hostId ?? ""): void {
+    if (this.state.mode === "arena") this.forfeitWeaponRunForWorkshop(abandoningPlayerId);
     // Entering/leaving the workshop aborts the expedition; unclaimed run XP is explicitly forfeited.
     this.state.players.forEach((player, id) => {
       const c = this.combat.get(id);
@@ -2849,6 +3468,38 @@ export class GameRoom extends Room<ArenaState> {
     console.log(`[room ${this.roomId}] mode → ${this.state.mode}`);
   }
 
+  /** The dev workshop is an explicit abandon, followed by an empty non-bank training reservation. */
+  private forfeitWeaponRunForWorkshop(playerId: string): void {
+    const account = this.metaAccounts.get(playerId);
+    const expedition = account?.weaponBank.expedition;
+    const player = this.state.players.get(playerId);
+    if (!account || !expedition || !player) return;
+    this.syncWeaponRunFromArsenal(player);
+    const settlementKey = `${playerId}:${expedition.runId}:defeat:1`;
+    const receipt = settleWeaponExpedition(account, "defeat");
+    this.weaponSettlementReceipts.set(settlementKey, receipt);
+    this.weaponRuns.delete(playerId);
+    const committed = commitWeaponCarry(
+      account,
+      {
+        requestId: `workshop_${randomBytes(10).toString("base64url")}`,
+        expectedRevision: account.revision,
+        placements: [],
+        activeEntryId: "",
+        requestedWorldTier: Math.max(account.prestige, this.worldTier),
+      },
+      `run_${randomBytes(12).toString("base64url")}`,
+      this.bagCapacity(player),
+      this.worldTier,
+    );
+    if (!committed.ok) throw new Error(`workshop weapon reset rejected: ${committed.error}`);
+    this.materializeWeaponRun(player, account);
+    this.createWeaponRun(playerId, account);
+    this.sendOwnerMessage(playerId, "weaponSettlementReceipt", receipt);
+    this.sendOwnerMessage(playerId, "metaAccount", account);
+    this.sendWeaponManifest(player);
+  }
+
   /** §31 the full browsable weapon roster for the Testing-Grounds SHOWROOM: the active arsenal + every
    *  arted expansion weapon. Shown one page at a time (perf: a full dump is ~2fps). */
   /** §41 the showroom roster, ORGANIZED: class → family → name, so every page reads as a coherent shelf
@@ -2911,6 +3562,7 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private restartRun(): void {
+    if (this.state.outcome === "active") this.settleMetaAccounts("defeat");
     // A restart is a fresh expedition (progression resets below), so no old field packet crosses it.
     this.clearXpEchoes();
     this.state.enemies.clear();
@@ -2943,6 +3595,26 @@ export class GameRoom extends Room<ArenaState> {
       if (c) this.dissolvePair(player, c, false);
       player.pairBaseSeq = 0;
       this.snapshotPetRun(player, this.metaAccounts.get(id)?.selectedPetId ?? "");
+      const account = this.metaAccounts.get(id);
+      if (account && !account.weaponBank.expedition) {
+        const committed = commitWeaponCarry(
+          account,
+          {
+            requestId: `restart_${randomBytes(10).toString("base64url")}`,
+            expectedRevision: account.revision,
+            placements: [],
+            activeEntryId: "",
+            requestedWorldTier: Math.max(account.prestige, this.worldTier),
+          },
+          `run_${randomBytes(12).toString("base64url")}`,
+          this.bagCapacity(player),
+          this.worldTier,
+        );
+        if (committed.ok) {
+          this.materializeWeaponRun(player, account);
+          this.createWeaponRun(id, account);
+        }
+      }
       // Fresh run → reset progression and snapshot the worn character's sum-10 spread; carried salvage
       // starts empty too (§6 bank-or-lose — a restart is a NEW expedition, not a continue), and the
       // held weapon sheds its rolled loot identity (drops are per-run).
@@ -3211,10 +3883,26 @@ export class GameRoom extends Room<ArenaState> {
       scrip?: number;
       up?: unknown;
       metaAccount?: unknown;
+      carry?: CarrySelectionV1;
       selectedPetId?: unknown;
       petId?: unknown;
     },
   ): void {
+    const disconnected = this.disconnectedPlayers.get(client.sessionId);
+    const reservedAccount = this.metaAccounts.get(client.sessionId);
+    if (disconnected && reservedAccount?.weaponBank.expedition && this.weaponRuns.has(client.sessionId)) {
+      this.disconnectedPlayers.delete(client.sessionId);
+      this.state.players.set(client.sessionId, disconnected.player);
+      this.combat.set(client.sessionId, disconnected.combat);
+      this.inputs.set(client.sessionId, this.freshInputState());
+      if (this.hostId === null) this.hostId = client.sessionId;
+      this.sendOwnerMessage(client.sessionId, "metaAccount", reservedAccount);
+      this.sendWeaponManifest(disconnected.player);
+      return;
+    }
+    if (encodedJsonByteLength(options) > META_JOIN_MAX_BYTES) {
+      throw new Error("meta/carry payload exceeds 256 KiB");
+    }
     const player = new PlayerState();
     player.id = client.sessionId;
     player.hp = PLAYER_MAX_HP;
@@ -3228,11 +3916,14 @@ export class GameRoom extends Room<ArenaState> {
     // deploy any client could join claiming 65,535 scrip + max upgrades. INTERIM until an authenticated
     // account store owns progression; production joins start at the defaults.
     const trustLegacyMeta = this.belt && this.devToolsEnabled();
-    const suppliedV3Gear =
+    const suppliedGearAccount =
       typeof options?.metaAccount === "object" &&
       options.metaAccount !== null &&
       !Array.isArray(options.metaAccount) &&
-      (options.metaAccount as { version?: unknown }).version === 3;
+      ((options.metaAccount as { version?: unknown }).version === 3 ||
+        (options.metaAccount as { version?: unknown }).version === 4);
+    const suppliedV4 = suppliedGearAccount &&
+      (options?.metaAccount as { version?: unknown }).version === 4;
     const legacyAccount = sanitizeMetaAccountV2(options?.metaAccount);
     // Legacy local keys remain a bounded migration input only when no v2 blob was supplied.
     if (options?.metaAccount === undefined && trustLegacyMeta) {
@@ -3241,9 +3932,13 @@ export class GameRoom extends Room<ArenaState> {
       }
       legacyAccount.upgrades = sanitizeMetaLevels(options?.up);
     }
-    const account = suppliedV3Gear
-      ? sanitizeMetaAccountV3(options?.metaAccount)
-      : sanitizeMetaAccountV3(legacyAccount);
+    const accountResult = sanitizeMetaAccountV4WithDiagnostics(
+      suppliedGearAccount ? options?.metaAccount : legacyAccount,
+    );
+    if (suppliedV4 && !accountResult.ok) {
+      throw new Error(`invalid weapon bank: ${accountResult.bank.errors.join(",")}`);
+    }
+    const account = accountResult.account;
     const requestedPetId = options?.selectedPetId ?? options?.petId;
     if (requestedPetId === "") account.selectedPetId = "";
     else if (isPetId(requestedPetId) && account.pets[requestedPetId]) {
@@ -3251,7 +3946,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.metaAccounts.set(client.sessionId, account);
     player.scrip = account.scrip;
-    if (suppliedV3Gear) {
+    if (suppliedGearAccount) {
       const gear = resolveGearLoadout(account.equippedGear);
       this.gearRuns.set(client.sessionId, gear);
       this.snapshotGearRun(player, undefined, gear, false);
@@ -3266,16 +3961,27 @@ export class GameRoom extends Room<ArenaState> {
       player.hp = player.maxHp;
     }
     this.snapshotPetRun(player, account.selectedPetId);
-    // §29 seed the 3-slot arsenal: slot 0 = the starting weapon (Common, conjured → not earned), 1 & 2
-    // empty. The active slot mirrors the held weapon; grabs (belt) fill the empties before dropping anything.
     for (let i = 0; i < ARSENAL_SLOTS; i++) player.slots.push(new ArsenalSlot());
-    player.slots[0]!.weapon = DEFAULT_WEAPON;
-    player.slots[0]!.resourceWeapon = DEFAULT_WEAPON;
-    player.slots[0]!.resourceReady = true;
-    player.maxCharges = this.effectiveMaxWeaponCharges(DEFAULT_WEAPON, player.id);
-    player.charges = player.maxCharges;
-    player.slots[0]!.resourceCharges = player.charges;
-    player.activeSlot = 0;
+    const runId = `run_${randomBytes(12).toString("base64url")}`;
+    const requestedTier = Math.max(account.prestige, this.worldTier);
+    const carry: CarrySelectionV1 = options?.carry ?? {
+      requestId: `auto_${randomBytes(12).toString("base64url")}`,
+      expectedRevision: account.revision,
+      placements: [],
+      activeEntryId: "",
+      requestedWorldTier: requestedTier,
+    };
+    const committed = commitWeaponCarry(
+      account,
+      carry,
+      runId,
+      this.bagCapacity(player),
+      this.worldTier,
+    );
+    if (!committed.ok) throw new Error(`weapon carry rejected: ${committed.error}`);
+    this.worldTier = Math.max(this.worldTier, committed.runTier);
+    this.materializeWeaponRun(player, account);
+    this.createWeaponRun(client.sessionId, account);
     // Spawn on the map's guaranteed-clear spawn disc (§17), with a little scatter so blobs don't overlap
     // (±100px stays inside the cleared centre, never over a pit). §29 belt spawns at the START of the belt
     // (the mouth of room 0), mid-depth, so the room progression flows left→right.
@@ -3288,31 +3994,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.state.players.set(client.sessionId, player);
     if (this.hostId === null) this.hostId = client.sessionId; // first joiner is the co-op host
-    this.inputs.set(client.sessionId, {
-      queue: [],
-      held: {
-        seq: 0,
-        dx: 0,
-        dy: 0,
-        jump: false,
-        crouchHeld: false,
-        pound: false,
-        slide: false,
-        slideHeld: false,
-        fireHeld: false,
-        fireStartSeq: 0,
-        aimX: 1,
-        aimY: 0,
-        targetX: 0,
-        targetY: 0,
-      },
-      lastSeq: 0,
-      msgBudget: INPUT_MSGS_PER_TICK,
-      lastFreshFireTick: 0,
-      actionBudget: ACTION_MSGS_PER_TICK,
-      mvx: 0,
-      mvy: 0,
-    });
+    this.inputs.set(client.sessionId, this.freshInputState());
     const joinedGear = this.gearRuns.get(client.sessionId);
     const joinedQuirk = joinedGear?.quirk ?? quirkForCharacter(player.runCharacter);
     this.combat.set(client.sessionId, {
@@ -3387,7 +4069,7 @@ export class GameRoom extends Room<ArenaState> {
       killHealWindowStart: -999,
       killHealWindowAmount: 0,
       vh: 0,
-      heldEarned: false,
+      heldEarned: player.slots[player.activeSlot]?.earned ?? false,
       bulwarkShield: 0,
       juggleMercy: 0,
       juggleArmed: false,
@@ -3417,6 +4099,9 @@ export class GameRoom extends Room<ArenaState> {
       ultCritCharges: 0,
       ultCritEndTick: 0,
     });
+    const joinedCombat = this.combat.get(client.sessionId);
+    if (joinedCombat) this.activateMaterializedPair(player, joinedCombat);
+    this.sendWeaponManifest(player);
     this.publishPetPickupEligibility();
     if (typeof client.send === "function") client.send("metaAccount", account);
     console.log(`[room ${this.roomId}] +join ${client.sessionId} (${this.clients.length} online)`);
@@ -3426,15 +4111,16 @@ export class GameRoom extends Room<ArenaState> {
     const leaving = this.state.players.get(client.sessionId);
     const leavingCombat = this.combat.get(client.sessionId);
     if (leaving && leavingCombat) this.cancelBeam(leaving, client.sessionId, leavingCombat, false, true);
+    if (leaving && leavingCombat && this.metaAccounts.get(client.sessionId)?.weaponBank.expedition) {
+      this.syncWeaponRunFromArsenal(leaving);
+      this.disconnectedPlayers.set(client.sessionId, { player: leaving, combat: leavingCombat });
+    }
     this.state.beams.delete(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
-    // No reservation machinery in local/offline v1: an unsettled abandoned connection forfeits pending XP.
-    this.petRuns.delete(client.sessionId);
-    this.gearRuns.delete(client.sessionId);
-    this.metaAccounts.delete(client.sessionId);
-    this.petSettledAccounts.delete(client.sessionId);
+    // Transport loss is not a terminal weapon result. Account, pet accrual, exact escrow, and the private
+    // body/debt snapshot remain reserved; accepted extraction/wipe settles them even while disconnected.
     // Host left → hand off to whoever's still here (or null if the room's now empty).
     if (client.sessionId === this.hostId) {
       const next = this.state.players.keys().next();
@@ -3761,6 +4447,34 @@ export class GameRoom extends Room<ArenaState> {
     player.mvx = input.mvx;
     player.mvy = input.mvy;
     return true;
+  }
+
+  private freshInputState(): InputState {
+    return {
+      queue: [],
+      held: {
+        seq: 0,
+        dx: 0,
+        dy: 0,
+        jump: false,
+        crouchHeld: false,
+        pound: false,
+        slide: false,
+        slideHeld: false,
+        fireHeld: false,
+        fireStartSeq: 0,
+        aimX: 1,
+        aimY: 0,
+        targetX: 0,
+        targetY: 0,
+      },
+      lastSeq: 0,
+      msgBudget: INPUT_MSGS_PER_TICK,
+      lastFreshFireTick: 0,
+      actionBudget: ACTION_MSGS_PER_TICK,
+      mvx: 0,
+      mvy: 0,
+    };
   }
 
   /** Tick-only slide transitions that remain after horizontal/vertical integration. Slide-hop launch is
@@ -9136,7 +9850,11 @@ export class GameRoom extends Room<ArenaState> {
     if (chance < 1 && Math.random() > chance) return;
     const pk = new PickupState();
     pk.id = `drop${this.pickupSeq++}`;
-    const weapon = rollDropWeapon(Math.random());
+    const curator = this.nextWeaponCurator();
+    const weapon = rollBankAwareDropWeapon(curator, Math.random());
+    if (curator) {
+      curator.runIssuedByWeaponId.set(weapon, (curator.runIssuedByWeaponId.get(weapon) ?? 0) + 1);
+    }
     const rarity = rollRarity(Math.random(), this.bestLuk() + tierLukBonus);
     const affix = rollAffix(Math.random(), rarity).id;
     this.hiddenPickupIdentities.set(pk.id, { weapon, rarity, affix });
@@ -9154,6 +9872,11 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // a loot drop is EARNED — it carries §13 salvage value
+    this.pickupWeaponBankMeta.set(pk.id, {
+      provenance: tierLukBonus >= LOOT_TIER_LUK_BOSS ? "boss-drop" : "enemy-drop",
+      ownerId: curator?.accountId ?? "",
+      ownerLockUntil: curator ? this.state.elapsed + 2 : 0,
+    });
     this.publishPetPickupEligibility();
   }
 
@@ -10618,6 +11341,11 @@ export class GameRoom extends Room<ArenaState> {
     pk.y = sp.y;
     this.state.pickups.set(pk.id, pk);
     this.earnedPickups.add(pk.id); // §13 v0.103: an ENEMY drop is EARNED — it carries salvage value
+    this.pickupWeaponBankMeta.set(pk.id, {
+      provenance: "enemy-drop",
+      ownerId: "",
+      ownerLockUntil: 0,
+    });
     this.publishPetPickupEligibility();
   }
 

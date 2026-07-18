@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 28 as const; // compact upper/lower equipped-gear cosmetics appended
+export const SCHEMA_VERSION = 29 as const; // weapon-bank protocol epoch; account/instance ids remain private
 
 /** §ULT authoritative allocation, meter, action, and five-family tuning (20Hz tick epochs). */
 export const ULT_UNLOCK_ALLOCS = 15 as const;

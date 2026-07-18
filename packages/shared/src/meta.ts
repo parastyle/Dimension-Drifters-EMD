@@ -76,6 +76,12 @@ import {
   type PetStageBand,
   sanitizeBondXp,
 } from "./pets.js";
+import {
+  createWeaponBankV1,
+  sanitizeWeaponBankV1,
+  type WeaponBankV1,
+  type WeaponBankSanitizeResult,
+} from "./bank.js";
 
 export interface PersistedPet {
   /** Lifetime total. Presence of the canonical id in `pets` is the ownership bit. */
@@ -104,7 +110,21 @@ export interface MetaAccountV3 {
   equippedGear: Record<GearSlot, GearId>;
 }
 
-export type MetaAccount = MetaAccountV2 | MetaAccountV3;
+export interface MetaAccountV4 {
+  version: 4;
+  revision: number;
+  scrip: number;
+  pets: Partial<Record<PetId, PersistedPet>>;
+  selectedPetId: PetId | "";
+  slateTortoisePityMisses: number;
+  ownedGear: GearId[];
+  equippedGear: Record<GearSlot, GearId>;
+  /** Prestige count is also progression World Tier. Hat-tower composition arrives in a later wave. */
+  prestige: number;
+  weaponBank: WeaponBankV1;
+}
+
+export type MetaAccount = MetaAccountV2 | MetaAccountV3 | MetaAccountV4;
 
 export type PetTerminalOutcome = "victory" | "defeat";
 
@@ -124,7 +144,8 @@ export interface PetProgressReceipt {
 }
 
 export const META_ACCOUNT_V2_VERSION = 2 as const;
-export const META_ACCOUNT_VERSION = 3 as const;
+export const META_ACCOUNT_V3_VERSION = 3 as const;
+export const META_ACCOUNT_VERSION = 4 as const;
 export const META_ACCOUNT_SCRIP_MAX = 65535 as const;
 export const META_ACCOUNT_REVISION_MAX = 0xffffffff as const;
 export const STARTER_PET_ID: PetId = "verdant-wing";
@@ -143,7 +164,7 @@ export function createMetaAccountV2(): MetaAccountV2 {
 
 export function createMetaAccountV3(): MetaAccountV3 {
   return {
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V3_VERSION,
     revision: 0,
     scrip: 0,
     pets: { [STARTER_PET_ID]: { bondXp: 0 } },
@@ -151,6 +172,16 @@ export function createMetaAccountV3(): MetaAccountV3 {
     slateTortoisePityMisses: 0,
     ownedGear: [...STARTER_GEAR_IDS],
     equippedGear: { ...STARTER_GEAR_LOADOUT },
+  };
+}
+
+export function createMetaAccountV4(): MetaAccountV4 {
+  const gear = createMetaAccountV3();
+  return {
+    ...gear,
+    version: META_ACCOUNT_VERSION,
+    prestige: 0,
+    weaponBank: createWeaponBankV1(),
   };
 }
 
@@ -217,7 +248,7 @@ export function migrateMetaAccountV2(input: MetaAccountV2): MetaAccountV3 {
     equippedGear[slot] = grant;
   }
   return {
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V3_VERSION,
     revision: source.revision,
     scrip: source.scrip,
     pets: source.pets,
@@ -237,7 +268,7 @@ export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
   if (input.version === META_ACCOUNT_V2_VERSION) {
     return migrateMetaAccountV2(sanitizeMetaAccountV2(input));
   }
-  if (input.version !== META_ACCOUNT_VERSION) return createMetaAccountV3();
+  if (input.version !== META_ACCOUNT_V3_VERSION) return createMetaAccountV3();
 
   const pets: Partial<Record<PetId, PersistedPet>> = {};
   const rawPets = isRecord(input.pets) ? input.pets : {};
@@ -261,7 +292,7 @@ export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
   const equippedGear = sanitizeEquippedGear(input.equippedGear, owned);
 
   return {
-    version: META_ACCOUNT_VERSION,
+    version: META_ACCOUNT_V3_VERSION,
     revision: sanitizedInt(input.revision, META_ACCOUNT_REVISION_MAX),
     scrip: sanitizedInt(input.scrip, META_ACCOUNT_SCRIP_MAX),
     pets,
@@ -270,4 +301,57 @@ export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
     ownedGear,
     equippedGear,
   };
+}
+
+export function migrateMetaAccountV3(input: MetaAccountV3): MetaAccountV4 {
+  const source = sanitizeMetaAccountV3(input);
+  return {
+    ...source,
+    version: META_ACCOUNT_VERSION,
+    prestige: 0,
+    weaponBank: createWeaponBankV1(),
+  };
+}
+
+export interface MetaAccountV4SanitizeResult {
+  ok: boolean;
+  account: MetaAccountV4;
+  bank: WeaponBankSanitizeResult;
+}
+
+/**
+ * Coordinated Wave-2 account boundary. V2/V3 migrate with an empty bank; a malformed V4 bank is reported
+ * as invalid as a unit so the server can reject ready/commit instead of silently erasing selected value.
+ */
+export function sanitizeMetaAccountV4WithDiagnostics(input: unknown): MetaAccountV4SanitizeResult {
+  if (!isRecord(input)) {
+    const account = createMetaAccountV4();
+    return { ok: false, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version === META_ACCOUNT_V2_VERSION) {
+    const account = migrateMetaAccountV3(migrateMetaAccountV2(sanitizeMetaAccountV2(input)));
+    return { ok: true, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version === META_ACCOUNT_V3_VERSION) {
+    const account = migrateMetaAccountV3(sanitizeMetaAccountV3(input));
+    return { ok: true, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+  if (input.version !== META_ACCOUNT_VERSION) {
+    const account = createMetaAccountV4();
+    return { ok: false, account, bank: { ok: true, bank: account.weaponBank, errors: [] } };
+  }
+
+  const gear = sanitizeMetaAccountV3({ ...input, version: META_ACCOUNT_V3_VERSION });
+  const bank = sanitizeWeaponBankV1(input.weaponBank);
+  const account: MetaAccountV4 = {
+    ...gear,
+    version: META_ACCOUNT_VERSION,
+    prestige: sanitizedInt(input.prestige, 30),
+    weaponBank: bank.bank,
+  };
+  return { ok: bank.ok, account, bank };
+}
+
+export function sanitizeMetaAccountV4(input: unknown): MetaAccountV4 {
+  return sanitizeMetaAccountV4WithDiagnostics(input).account;
 }

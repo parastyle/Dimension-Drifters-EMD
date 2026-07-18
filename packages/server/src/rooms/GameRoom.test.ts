@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(28);
+    expect(h.state().schemaVersion).toBe(29);
   });
 });
 
@@ -3310,7 +3310,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3680,7 +3680,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3812,7 +3812,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4270,7 +4270,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4537,8 +4537,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(28);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(fixture.h.state().schemaVersion).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5060,8 +5060,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(28);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
+    expect(h.state().schemaVersion).toBe(29);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5111,7 +5111,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([28, 28]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([29, 29]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5785,8 +5785,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(28);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(28);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(29);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(29);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6009,5 +6009,307 @@ describe("gear G2 join authority and frozen runtime", () => {
     expect(player.hp).toBe(player.maxHp);
     expect([player.upVitality, player.upFortune, player.upPower]).toEqual([0, 0, 0]);
     expect(enemyComboShared.ATTRS.map((attr) => player.allocRun[attr])).toEqual([0, 0, 0, 0, 0]);
+  });
+});
+
+// METAGAME WAVE 2 — append-only server escrow/materialization/outcome coverage.
+const roomBankId = (n: number) => `wi_${n.toString(36).padStart(22, "0")}`;
+const roomPairId = (n: number) => `wp_${n.toString(36).padStart(22, "0")}`;
+const roomBankInstance = (
+  n: number,
+  weaponId: string,
+  rarity: import("@dd/shared").WeaponRarityId = "common",
+  affix: import("@dd/shared").WeaponAffixId = "",
+): import("@dd/shared").WeaponInstanceV1 => ({
+  instanceId: roomBankId(n),
+  weaponId,
+  rarity,
+  affix,
+  provenance: "enemy-drop",
+  sourceWorldTier: 0,
+});
+const roomBankSingle = (
+  n: number,
+  weaponId = "rusty-cleaver",
+): import("@dd/shared").SingleWeaponEntryV1 => {
+  const weapon = roomBankInstance(n, weaponId);
+  return { kind: "single", entryId: weapon.instanceId, weapon };
+};
+function joinWeaponAccount(
+  h: ReturnType<typeof makeRoom>,
+  id: string,
+  entries: import("@dd/shared").WeaponBankEntryV1[],
+  placements: import("@dd/shared").CarryPlacementV1[],
+  activeEntryId = "",
+) {
+  const messages: Array<{ type: string; payload: unknown }> = [];
+  const client = {
+    sessionId: id,
+    send: (type: string, payload: unknown) => messages.push({ type, payload }),
+  };
+  const account = enemyComboShared.createMetaAccountV4();
+  account.weaponBank.stash.push(...entries);
+  h.room.clients.push(client);
+  h.room.onJoin(client, {
+    metaAccount: account,
+    carry: {
+      requestId: `carry-${id}`,
+      expectedRevision: account.revision,
+      placements,
+      activeEntryId,
+      requestedWorldTier: 0,
+    },
+  });
+  return {
+    client,
+    messages,
+    player: h.state().players.get(id),
+    account: h.room.metaAccounts.get(id) as import("@dd/shared").MetaAccountV4,
+  };
+}
+
+describe("GameRoom — weapon bank carry and exact pair projection", () => {
+  it("materializes exact ids into Active/Pack, keeps one zero-value starter floor, and projects a pair once", () => {
+    const h = makeRoom({ belt: true });
+    const pair: import("@dd/shared").PairedWeaponEntryV1 = {
+      kind: "pair",
+      entryId: roomPairId(1),
+      lead: roomBankInstance(1, "rattler-sabre", "legendary", "brutal"),
+      offhand: roomBankInstance(2, "x2-gallows-splitter", "rare", "keen"),
+    };
+    const safe = roomBankSingle(3);
+    const joined = joinWeaponAccount(
+      h,
+      "bank-pair-carry",
+      [pair, safe],
+      [{ entryId: pair.entryId, zone: "active", start: 1 }],
+      pair.entryId,
+    );
+    expect(joined.player.slots[0]).toMatchObject({
+      weapon: DEFAULT_WEAPON,
+      homeIssue: true,
+      earned: false,
+      bankEntryId: "",
+    });
+    expect(joined.player.slots.slice(1, 3).map((slot: import("@dd/shared").ArsenalSlot) => ({
+      weapon: slot.weapon,
+      instanceId: slot.instanceId,
+      entryId: slot.bankEntryId,
+      role: slot.bankPairRole,
+    }))).toEqual([
+      { weapon: pair.lead.weaponId, instanceId: pair.lead.instanceId, entryId: pair.entryId, role: "lead" },
+      { weapon: pair.offhand.weaponId, instanceId: pair.offhand.instanceId, entryId: pair.entryId, role: "offhand" },
+    ]);
+    expect([joined.player.activeSlot, joined.player.offhandSlot]).toEqual([1, 2]);
+    expect(joined.account.weaponBank.stash).toEqual([safe]);
+    expect(joined.account.weaponBank.expedition?.entries).toHaveLength(1);
+    expect(joined.messages.some((message) => message.type === "weaponManifest")).toBe(true);
+
+    h.room.completeExtraction();
+    expect(joined.account.weaponBank.expedition).toBeNull();
+    expect(joined.account.weaponBank.stash).toEqual([safe, pair]);
+  });
+
+  it("mints a found instance only on accepted grab and settles carried+found through extraction", () => {
+    const h = makeRoom({ belt: true });
+    const joined = joinWeaponAccount(h, "bank-found", [], [], "");
+    const pickup = new PickupState();
+    pickup.id = "drop-bank-found";
+    pickup.weapon = "rusty-cleaver";
+    pickup.weaponPublic = "rusty-cleaver";
+    pickup.rarity = 4;
+    pickup.affix = "brutal";
+    pickup.affixPublic = "brutal";
+    pickup.x = joined.player.x;
+    pickup.y = joined.player.y;
+    h.state().pickups.set(pickup.id, pickup);
+    h.room.earnedPickups.add(pickup.id);
+    h.room.pickupWeaponBankMeta.set(pickup.id, {
+      provenance: "enemy-drop",
+      ownerId: "",
+      ownerLockUntil: 0,
+    });
+    expect(joined.account.weaponBank.expedition?.entries).toHaveLength(0);
+
+    h.send(joined.player.id, "grabWeapon");
+    const found = joined.account.weaponBank.expedition?.entries[0];
+    expect(found).toMatchObject({ stakeOrigin: "found", location: "active" });
+    expect(found?.entry.kind).toBe("single");
+    if (found?.entry.kind !== "single") return;
+    expect(found.entry.weapon).toMatchObject({
+      weaponId: "rusty-cleaver",
+      rarity: "legendary",
+      affix: "brutal",
+      provenance: "enemy-drop",
+      sourceWorldTier: 0,
+    });
+    expect(enemyComboShared.WEAPON_INSTANCE_ID_RE.test(found.entry.weapon.instanceId)).toBe(true);
+    expect(joined.player.slots[joined.player.activeSlot].instanceId).toBe(found.entry.weapon.instanceId);
+
+    h.room.completeExtraction();
+    expect(joined.account.weaponBank.stash).toEqual([found.entry]);
+  });
+});
+
+describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and shop settlement", () => {
+  it("down and revive preserve exact escrow; a downed owner still banks with squad extraction", () => {
+    const h = makeRoom({ belt: true });
+    const carried = roomBankSingle(10);
+    const owner = joinWeaponAccount(
+      h,
+      "bank-downed-owner",
+      [carried],
+      [{ entryId: carried.entryId, zone: "active", start: 1 }],
+      carried.entryId,
+    );
+    const ally = joinWeaponAccount(h, "bank-downed-ally", [], [], "");
+    const exactExpedition = owner.account.weaponBank.expedition;
+    owner.player.hp = 0;
+    h.tick();
+    expect(owner.player.alive).toBe(false);
+    expect(owner.account.weaponBank.expedition).toBe(exactExpedition);
+    expect(owner.player.slots[1].instanceId).toBe(carried.weapon.instanceId);
+    h.room.tryRez(ally.player, 10000);
+    expect(owner.player.alive).toBe(true);
+    expect(owner.account.weaponBank.expedition).toBe(exactExpedition);
+
+    owner.player.alive = false;
+    h.room.completeExtraction();
+    expect(owner.account.weaponBank.stash).toEqual([carried]);
+  });
+
+  it("a terminal wipe deletes the whole active/pack/found stake and never touches safe Stash", () => {
+    const h = makeRoom({ belt: true });
+    const doomed = roomBankSingle(20);
+    const safe = roomBankSingle(21);
+    const joined = joinWeaponAccount(
+      h,
+      "bank-wipe",
+      [doomed, safe],
+      [{ entryId: doomed.entryId, zone: "active", start: 1 }],
+      doomed.entryId,
+    );
+    const found = roomBankSingle(22);
+    const row = {
+      entry: found,
+      stakeOrigin: "found" as const,
+      location: "field" as const,
+      start: 255,
+    };
+    joined.account.weaponBank.expedition?.entries.push(row);
+    h.room.weaponRuns.get(joined.player.id).entries.set(found.entryId, row);
+    joined.player.hp = 0;
+    h.tick();
+    expect(h.state().outcome).toBe("defeat");
+    expect(joined.account.weaponBank.expedition).toBeNull();
+    expect(joined.account.weaponBank.stash).toEqual([safe]);
+    expect(joined.account.weaponBank.lastCarry.activeEntryId).toBe(doomed.entryId);
+  });
+
+  it("transport leave neither saves nor loses escrow; rejoin restores debt and the later result decides", () => {
+    const h = makeRoom({ belt: true });
+    const carried = roomBankSingle(30);
+    const joined = joinWeaponAccount(
+      h,
+      "bank-disconnect",
+      [carried],
+      [{ entryId: carried.entryId, zone: "active", start: 1 }],
+      carried.entryId,
+    );
+    const samePlayer = joined.player;
+    samePlayer.slots[1].cooldown = 0.73;
+    samePlayer.slots[1].resourceReady = true;
+    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== joined.player.id);
+    h.room.onLeave(joined.client);
+    expect(joined.account.weaponBank.expedition?.entries[0]?.entry).toEqual(carried);
+    expect(joined.account.weaponBank.stash).toEqual([]);
+
+    h.room.clients.push(joined.client);
+    h.room.onJoin(joined.client, {});
+    expect(h.state().players.get(joined.player.id)).toBe(samePlayer);
+    expect(samePlayer.slots[1].cooldown).toBe(0.73);
+    expect(joined.account.weaponBank.expedition?.entries).toHaveLength(1);
+
+    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== joined.player.id);
+    h.room.onLeave(joined.client);
+    h.room.enterTerminalOutcome("victory");
+    expect(joined.account.weaponBank.expedition).toBeNull();
+    expect(joined.account.weaponBank.stash).toEqual([carried]);
+  });
+
+  it("home sale consumes one exact id once and a replay returns the receipt without printing Scrip", () => {
+    const h = makeRoom({ belt: true });
+    const sold = roomBankSingle(40);
+    const joined = joinWeaponAccount(
+      h,
+      "bank-home-sale",
+      [sold],
+      [{ entryId: sold.entryId, zone: "active", start: 1 }],
+      sold.entryId,
+    );
+    h.room.completeExtraction();
+    const revision = joined.account.revision;
+    h.send(joined.player.id, "sellStashEntry", {
+      requestId: "sale-once",
+      expectedRevision: revision,
+      entryId: sold.entryId,
+      from: "stash",
+    });
+    expect(joined.account.scrip).toBe(4);
+    expect(joined.account.weaponBank.stash).toEqual([]);
+    h.send(joined.player.id, "sellStashEntry", {
+      requestId: "sale-once",
+      expectedRevision: revision,
+      entryId: sold.entryId,
+      from: "stash",
+    });
+    expect(joined.account.scrip).toBe(4);
+    expect(joined.messages.filter((message) => message.type === "stashSaleReceipt")).toHaveLength(2);
+  });
+});
+
+describe("GameRoom - weapon-bank explicit abandon boundary", () => {
+  it("forfeits the workshop initiator's stake without letting a host destroy an ally's manifest", () => {
+    const solo = makeRoom({ belt: true });
+    const doomed = roomBankSingle(50);
+    const safe = roomBankSingle(51);
+    const joined = joinWeaponAccount(
+      solo,
+      "bank-workshop-solo",
+      [doomed, safe],
+      [{ entryId: doomed.entryId, zone: "active", start: 1 }],
+      doomed.entryId,
+    );
+    solo.send(joined.player.id, "toggleTraining");
+    expect(solo.state().mode).toBe("training");
+    expect(joined.account.weaponBank.stash).toEqual([safe]);
+    expect(joined.account.weaponBank.expedition?.entries).toEqual([]);
+    expect(joined.player.slots.some((slot: import("@dd/shared").ArsenalSlot) =>
+      slot.weapon === DEFAULT_WEAPON && slot.homeIssue)).toBe(true);
+
+    const coop = makeRoom({ belt: true });
+    const hostStake = roomBankSingle(52);
+    const host = joinWeaponAccount(
+      coop,
+      "bank-workshop-host",
+      [hostStake],
+      [{ entryId: hostStake.entryId, zone: "active", start: 1 }],
+      hostStake.entryId,
+    );
+    const allyStake = roomBankSingle(53);
+    const ally = joinWeaponAccount(
+      coop,
+      "bank-workshop-ally",
+      [allyStake],
+      [{ entryId: allyStake.entryId, zone: "active", start: 1 }],
+      allyStake.entryId,
+    );
+    const allyReservation = ally.account.weaponBank.expedition;
+    coop.send(host.player.id, "toggleTraining");
+    expect(coop.state().mode).toBe("training");
+    expect(host.account.weaponBank.expedition?.entries).toEqual([]);
+    expect(host.account.weaponBank.stash).toEqual([]);
+    expect(ally.account.weaponBank.expedition).toBe(allyReservation);
+    expect(ally.account.weaponBank.expedition?.entries[0]?.entry).toEqual(allyStake);
   });
 });
