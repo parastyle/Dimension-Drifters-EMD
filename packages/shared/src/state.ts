@@ -34,6 +34,14 @@ export class UltimateState extends Schema {
   @type("float32") targetY = 0;
 }
 
+/** Dual-wield's four-field wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
+export class DualWieldState extends Schema {
+  @type("uint8") offhandSlot = 255;
+  @type("uint32") pairBaseSeq = 0;
+  @type("uint8") offCharges = 0;
+  @type("uint8") offMaxCharges = 0;
+}
+
 /**
  * Authoritative networked state (Colyseus Schema). Lives in `shared` so client and
  * server bind to the SAME class instance (§27.1 single source of truth).
@@ -195,6 +203,16 @@ export class PlayerState extends Schema {
   @type("string") petId = "";
   /** 0 none Â· 1 Hatchling (L1-3) Â· 2 Awakened (L4-7) Â· 3 Ascendant (L8-10). */
   @type("uint8") petLevelBand = 0;
+  // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
+  @type(DualWieldState) dualWield = new DualWieldState();
+  get offhandSlot(): number { return this.dualWield.offhandSlot; }
+  set offhandSlot(value: number) { this.dualWield.offhandSlot = value; }
+  get pairBaseSeq(): number { return this.dualWield.pairBaseSeq; }
+  set pairBaseSeq(value: number) { this.dualWield.pairBaseSeq = value; }
+  get offCharges(): number { return this.dualWield.offCharges; }
+  set offCharges(value: number) { this.dualWield.offCharges = value; }
+  get offMaxCharges(): number { return this.dualWield.offMaxCharges; }
+  set offMaxCharges(value: number) { this.dualWield.offMaxCharges = value; }
   /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
   get ultArchetype(): number { return this.ultimate.archetype; }
   set ultArchetype(value: number) { this.ultimate.archetype = value; }

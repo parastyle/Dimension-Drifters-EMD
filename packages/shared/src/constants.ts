@@ -10,7 +10,7 @@
  *  decodes new patches with corrupted offsets (HP reads as aim, etc.). The server stamps it on
  *  `ArenaState.schemaVersion`; the client compares on join and tells the player to hard-reload on a
  *  mismatch instead of rendering silently-corrupt state. */
-export const SCHEMA_VERSION = 26 as const; // Vastaghar nested action/mutation/reward surface appended
+export const SCHEMA_VERSION = 27 as const; // dual-wield slot-link fields appended
 
 /** §ULT authoritative allocation, meter, action, and five-family tuning (20Hz tick epochs). */
 export const ULT_UNLOCK_ALLOCS = 15 as const;
@@ -430,6 +430,15 @@ export const ARSENAL_SLOTS = 3;
 /** G-01 one responsive, shared draw gate after any held-weapon transition. Kept separate from each
  * weapon's restored cooldown so swapping never erases debt and the gate never overwrites a longer debt. */
 export const WEAPON_DRAW_LOCK_SECONDS = 0.15;
+/** Dual-wield metronome: after one hand fires, the next beat waits on 72% of the incoming hand's
+ * effective cooldown. The lead hand's cooldown affix is the pair's only cadence affix. */
+export const PAIR_TEMPO = 0.72;
+/** Pair throughput ceilings relative to the lead weapon's honest solo stream. */
+export const DUAL_THROUGHPUT_CAP = 1.37;
+export const DUAL_MATCHED_THROUGHPUT_CAP = 1.45;
+/** Off-hand damage starts honest; a matched family gets a small chase bonus, then the cap trims it. */
+export const DUAL_OFFHAND_BASE_MULT = 1;
+export const DUAL_MATCHED_OFFHAND_BASE_MULT = 1.1;
 /** v18 fixed-size authoritative hit/final-blow receipt ring. Allocated once when the room is created. */
 export const COMBAT_RECEIPT_CAP = 32;
 export const BAG_CAP = 12;

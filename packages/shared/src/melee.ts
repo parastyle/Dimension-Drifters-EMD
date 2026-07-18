@@ -101,6 +101,17 @@ export type MeleeComboMotion =
   | "thunder-fall"
   | "splinter-fall";
 export type MeleeComboHand = "lead" | "off" | "both";
+/** Dual-wield's six-beat presentation bar. Crossfall stays presentation-only server-side: its accepted
+ * damage event remains one lead-hand sweep, while clients render the authored `both` pose. */
+export const DUAL_MELEE_PAIR_BAR = Object.freeze([
+  "lead",
+  "off",
+  "lead",
+  "off",
+  "lead",
+  "both",
+] as const satisfies readonly MeleeComboHand[]);
+export const DUAL_MELEE_SEQUENCE_LENGTH = DUAL_MELEE_PAIR_BAR.length;
 export type MeleeComboPath = "sweep" | "fan" | "dual-sweep" | "capsule";
 export type MeleeComboRibbonProfile =
   | "massed-wedge"

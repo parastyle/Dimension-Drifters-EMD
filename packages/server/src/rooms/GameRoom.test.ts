@@ -2259,7 +2259,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(26);
+    expect(h.state().schemaVersion).toBe(27);
   });
 });
 
@@ -3310,7 +3310,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3680,7 +3680,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3812,7 +3812,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4270,7 +4270,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4537,8 +4537,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(26);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(fixture.h.state().schemaVersion).toBe(27);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5060,8 +5060,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(26);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(26);
+    expect(h.state().schemaVersion).toBe(27);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5111,7 +5111,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([26, 26]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([27, 27]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5473,5 +5473,327 @@ describe("GameRoom — immediate input arrivals between 20Hz steps", () => {
     expect(player.height).toBeGreaterThan(0); // older one-shot jump survives the drain
     expect(h.state().beams.get(player.id)?.startSeq).toBe(1); // first fire edge owns the epoch
     expect(h.room.inputs.get(player.id).queue).toHaveLength(0);
+  });
+});
+
+// Dual-wield server core — append-only coverage for schema 27 and the reconciled panel laws.
+function makeDualWieldFixture(
+  leadId: string,
+  offId: string,
+  options: {
+    leadRarity?: number;
+    offRarity?: number;
+    leadAffix?: string;
+    offAffix?: string;
+    leadEarned?: boolean;
+    offEarned?: boolean;
+    scrip?: number;
+    leadCharges?: number;
+    offCharges?: number;
+    leadCooldown?: number;
+    offCooldown?: number;
+    leadReload?: number;
+    offReload?: number;
+  } = {},
+) {
+  const h = makeRoom({ belt: true });
+  h.join(`dual-${leadId}-${offId}`);
+  h.state().mode = "training";
+  const player = h.state().players.values().next().value;
+  const combat = h.room.combat.get(player.id);
+  player.x = h.state().beltShopX;
+  player.y = BELT_Y0 + DEPTH_MAX * 0.5;
+  player.activeSlot = 0;
+  player.weapon = leadId;
+  player.weaponRarity = options.leadRarity ?? 0;
+  player.weaponAffix = options.leadAffix ?? "";
+  player.scrip = options.scrip ?? 100;
+  combat.lastWeapon = leadId;
+  combat.heldEarned = options.leadEarned ?? false;
+
+  const lead = player.slots[0];
+  lead.weapon = leadId;
+  lead.rarity = player.weaponRarity;
+  lead.affix = player.weaponAffix;
+  lead.earned = combat.heldEarned;
+  lead.resourceWeapon = leadId;
+  lead.resourceReady = true;
+  player.maxCharges = h.room.effectiveMaxWeaponCharges(leadId, player.id);
+  player.charges = options.leadCharges ?? player.maxCharges;
+  combat.cd = options.leadCooldown ?? 0;
+  combat.reloadCd = options.leadReload ?? 0;
+  lead.cooldown = combat.cd;
+  lead.reload = combat.reloadCd;
+  lead.resourceCharges = player.charges;
+
+  const off = player.slots[1];
+  off.weapon = offId;
+  off.rarity = options.offRarity ?? 0;
+  off.affix = options.offAffix ?? "";
+  off.earned = options.offEarned ?? false;
+  off.resourceWeapon = offId;
+  off.resourceReady = true;
+  off.cooldown = options.offCooldown ?? 0;
+  off.reload = options.offReload ?? 0;
+  const offMax = h.room.effectiveMaxWeaponCharges(offId, player.id);
+  off.resourceCharges = options.offCharges ?? offMax;
+
+  h.send(player.id, "bindPair", { off: 1 });
+  return { h, player, combat, lead, off };
+}
+
+describe("GameRoom — dual-wield schema 27 server core", () => {
+  it("shares one eligibility census across class, grip, delivery, authored-dual, beam, and thrown exclusions", () => {
+    const sabre = WEAPONS["rattler-sabre"]!;
+    const katana = WEAPONS["x-sword-neon-katana"]!;
+    const revolver = WEAPONS["x-gun-revolver-cannon"]!;
+    const nailgun = WEAPONS["x-gun-nailgun"]!;
+    expect(enemyComboShared.pairEligible(sabre, katana)).toBe(true);
+    expect(enemyComboShared.pairEligible(revolver, nailgun)).toBe(true);
+    expect(enemyComboShared.pairEligible(sabre, revolver)).toBe(false);
+    expect(enemyComboShared.pairEligible(sabre, { ...katana, id: "two-hand", tags: { ...katana.tags, grip: "2H" } })).toBe(false);
+    expect(enemyComboShared.pairEligible(sabre, WEAPONS["twin-bowie-fangs"])).toBe(false);
+    expect(enemyComboShared.pairEligible(sabre, WEAPONS["rusty-cleaver"])).toBe(false);
+    expect(enemyComboShared.pairEligible(sabre, sabre)).toBe(false);
+
+    const cast = {
+      ...sabre,
+      id: "test-wand-a",
+      cast: { damage: 4, speed: 500, range: 500, cooldown: 0.4, bulletKind: "orb" },
+      tags: { ...sabre.tags, classPool: "caster", delivery: "projectile" },
+    };
+    const castOff = { ...cast, id: "test-wand-b", tags: { ...cast.tags, family: "orb" } };
+    expect(enemyComboShared.pairEligible(cast as never, castOff as never)).toBe(true);
+    expect(enemyComboShared.pairEligible(
+      cast as never,
+      { ...castOff, beam: WEAPONS["x2-voltcaster-machine-pistol"]!.beam } as never,
+    )).toBe(false);
+  });
+
+  it("charges the better half's real sell value, unbinds free, and preserves anti-launder identity", () => {
+    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", {
+      leadRarity: 1,
+      offRarity: 3,
+      leadAffix: "keen",
+      offAffix: "swift",
+      leadEarned: true,
+      offEarned: true,
+      scrip: 100,
+    });
+    expect(f.player.offhandSlot).toBe(1);
+    expect(f.player.scrip).toBe(100 - scripValue(3, true));
+    const identities = [
+      [f.lead.weapon, f.lead.rarity, f.lead.affix, f.lead.earned],
+      [f.off.weapon, f.off.rarity, f.off.affix, f.off.earned],
+    ];
+    f.h.send(f.player.id, "unbindPair");
+    expect(f.player.offhandSlot).toBe(255);
+    expect(f.player.scrip).toBe(100 - scripValue(3, true));
+    expect([
+      [f.lead.weapon, f.lead.rarity, f.lead.affix, f.lead.earned],
+      [f.off.weapon, f.off.rarity, f.off.affix, f.off.earned],
+    ]).toEqual(identities);
+
+    const noLaunder = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", {
+      leadRarity: 2,
+      offRarity: 4,
+      leadEarned: true,
+      offEarned: false,
+      scrip: 100,
+    });
+    expect(noLaunder.player.scrip).toBe(100 - scripValue(2, true));
+    noLaunder.h.send(noLaunder.player.id, "unbindPair");
+    noLaunder.h.send(noLaunder.player.id, "sellWeapon", { from: "slot", index: 1 });
+    expect(noLaunder.player.scrip).toBe(100 - scripValue(2, true));
+  });
+
+  it("moves zero cooldown, reload, or ammo state across bind and unbind", () => {
+    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun", {
+      leadCharges: 2,
+      offCharges: 7,
+      leadCooldown: 0.31,
+      offCooldown: 0.47,
+      leadReload: 0.83,
+      offReload: 1.07,
+    });
+    const paired = {
+      lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
+      off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
+    };
+    f.h.send(f.player.id, "unbindPair");
+    expect({
+      lead: [f.combat.cd, f.combat.reloadCd, f.player.charges],
+      off: [f.off.cooldown, f.off.reload, f.off.resourceCharges],
+    }).toEqual(paired);
+  });
+
+  it("THE DRAIN-RATE TEST: the paired-off cooldown advances exactly once per 20Hz tick", () => {
+    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", { offCooldown: 1 });
+    f.h.tick(10);
+    expect(f.off.cooldown).toBeCloseTo(0.5, 8);
+    f.h.send(f.player.id, "unbindPair");
+    f.h.tick(10);
+    expect(f.off.cooldown).toBeCloseTo(0, 8);
+  });
+
+  it("loads 0.72x the incoming weapon cooldown and builds per-hand SwingDescriptors", () => {
+    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", { offAffix: "swift" });
+    f.combat.drawLock = 0;
+    f.combat.handGate = 0;
+    f.combat.cd = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
+    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
+    expect(f.h.room.meleeSwings.get(`${f.player.id}:0`).swing.effectiveCooldown)
+      .toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.3, 8);
+
+    f.combat.handGate = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
+    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.3, 8);
+    expect(f.h.room.meleeSwings.get(`${f.player.id}:1`).swing.effectiveCooldown)
+      .toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
+  });
+
+  it("keeps gun magazines separate and lets the living hand cover the other's reload", () => {
+    const f = makeDualWieldFixture("x-gun-revolver-cannon", "x-gun-nailgun", {
+      leadCharges: 1,
+      offCharges: 3,
+    });
+    f.combat.drawLock = 0;
+    f.combat.handGate = 0;
+    f.combat.cd = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off);
+    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 3]);
+    expect(f.combat.reloadCd).toBeGreaterThan(0);
+
+    f.combat.handGate = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off);
+    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 2]);
+
+    f.combat.handGate = 0;
+    f.combat.cd = 0;
+    f.off.cooldown = 0;
+    f.combat.attackBuffer = 1;
+    f.h.room.stepSim(0.05);
+    expect([f.player.charges, f.off.resourceCharges]).toEqual([0, 1]);
+    expect(f.combat.reloadCd).toBeGreaterThan(0);
+    expect(enemyComboShared.dualHandForSeq(f.player.attackSeq, f.player.pairBaseSeq)).toBe(1);
+  });
+
+  it("counts a linked pair as one set entry and applies the union of requirements to both hands", () => {
+    const f = makeDualWieldFixture("rattler-sabre", "x-sword-neon-katana");
+    expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(1);
+    f.player.dex = 1;
+    const union = enemyComboShared.pairRequirementPenalty(
+      WEAPONS["rattler-sabre"]!,
+      WEAPONS["x-sword-neon-katana"]!,
+      f.player,
+    );
+    const pairedLead = f.h.room.heldDamageMult(
+      WEAPONS["rattler-sabre"],
+      WEAPONS["rattler-sabre"]!.scalingGrades,
+      f.player,
+      0,
+    );
+    expect(union).toBe(enemyComboShared.REQ_PENALTY_FLOOR);
+    f.h.send(f.player.id, "unbindPair");
+    expect(enemyComboShared.classCount(f.h.room.loadoutIds(f.player), "melee")).toBe(2);
+    const soloLead = f.h.room.heldDamageMult(
+      WEAPONS["rattler-sabre"],
+      WEAPONS["rattler-sabre"]!.scalingGrades,
+      f.player,
+      0,
+    );
+    expect(pairedLead).toBeLessThan(soloLead * 0.3);
+  });
+
+  it("enforces the 1.37x throughput cap and the 1.45x matched-family cap", () => {
+    const assertCap = (leadId: string, offId: string, cap: number) => {
+      const lead = WEAPONS[leadId]!;
+      const off = WEAPONS[offId]!;
+      const leadDamage = enemyComboShared.pairDamagePerUse(lead);
+      const offDamage = enemyComboShared.pairDamagePerUse(off);
+      const mult = enemyComboShared.dualOffhandDamageMultiplier(lead, off);
+      const ratio =
+        lead.cooldown * (leadDamage + offDamage * mult) /
+        (leadDamage * enemyComboShared.PAIR_TEMPO * (lead.cooldown + off.cooldown));
+      expect(ratio).toBeLessThanOrEqual(cap + 1e-9);
+    };
+    assertCap("rattler-sabre", "x2-gallows-splitter", enemyComboShared.DUAL_THROUGHPUT_CAP);
+    assertCap("rattler-sabre", "x-sword-neon-katana", enemyComboShared.DUAL_MATCHED_THROUGHPUT_CAP);
+  });
+
+  it("derives gun/caster parity through uint32 wrap and advances melee through the six-beat chain", () => {
+    expect([1, 2, 3, 4].map((seq) => enemyComboShared.dualHandForSeq(seq, 0))).toEqual([0, 1, 0, 1]);
+    expect(enemyComboShared.dualHandForSeq(0, 0xffffffff)).toBe(0);
+    expect(enemyComboShared.dualHandForSeq(1, 0xffffffff)).toBe(1);
+    expect(enemyComboShared.DUAL_MELEE_PAIR_BAR).toEqual(["lead", "off", "lead", "off", "lead", "both"]);
+
+    let previousSeq: number | undefined;
+    let previousAt = 0;
+    let previousStep = 0;
+    let expires = 0;
+    const steps: number[] = [];
+    for (let seq = 1; seq <= 6; seq++) {
+      const at = seq * 100;
+      const step = enemyComboShared.comboStepForChain(
+        seq,
+        at,
+        "pair",
+        "arc",
+        6,
+        previousSeq,
+        previousAt,
+        "pair",
+        previousSeq === undefined ? undefined : "arc",
+        previousStep,
+        expires,
+      );
+      steps.push(step);
+      previousSeq = seq;
+      previousAt = at;
+      previousStep = step;
+      expires = at + 200;
+    }
+    expect(steps).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("attributes overlapping paired melee receipts to each firing hand's weapon id and ships schema 27", () => {
+    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter");
+    const enemy = new EnemyState();
+    enemy.id = "dual-receipt-target";
+    enemy.kind = "critter";
+    enemy.hp = 1000;
+    enemy.x = f.player.x + 60;
+    enemy.y = f.player.y;
+    f.h.state().enemies.set(enemy.id, enemy);
+    f.h.room.insertEnemyGrid(enemy.id, enemy);
+    f.combat.drawLock = 0;
+    f.combat.cd = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
+    f.combat.handGate = 0;
+    f.off.cooldown = 0;
+    f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
+    for (let i = 0; i < 10; i++) f.h.room.stepMeleeSwings(0.05);
+    const weaponIds = [...f.h.state().combatReceipts]
+      .filter((receipt) => receipt.seq > 0 && receipt.sourcePlayerId === f.player.id)
+      .map((receipt) => receipt.weaponId);
+    expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
+
+    const fresh = new enemyComboShared.PlayerState();
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(27);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(27);
+    expect(fresh.dualWield).toMatchObject({
+      offhandSlot: 255,
+      pairBaseSeq: 0,
+      offCharges: 0,
+      offMaxCharges: 0,
+    });
+    expect([fresh.offhandSlot, fresh.pairBaseSeq, fresh.offCharges, fresh.offMaxCharges])
+      .toEqual([255, 0, 0, 0]);
   });
 });

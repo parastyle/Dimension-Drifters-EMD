@@ -5,10 +5,15 @@
  * the hardcoded "fists" placeholder; fists remain as the empty-handed fallback.
  */
 import {
+  DUAL_MATCHED_OFFHAND_BASE_MULT,
+  DUAL_MATCHED_THROUGHPUT_CAP,
+  DUAL_OFFHAND_BASE_MULT,
+  DUAL_THROUGHPUT_CAP,
   FISTS_COOLDOWN,
   FISTS_DAMAGE,
   FISTS_HALF_ARC,
   FISTS_RANGE,
+  PAIR_TEMPO,
   REZ_RADIUS,
 } from "./constants.js";
 import type { Attr } from "./leveling.js";
@@ -335,6 +340,80 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
   return renderScale * Math.max(weapon.range, spriteTip);
 }
 
+/** One attack-beat cooldown before loot speed. Pair cadence applies the lead affix to both hands. */
+export function weaponAttackCooldown(weapon: WeaponDef): number {
+  return Math.max(0.001, weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown);
+}
+
+/** Compatible live delivery lane for runtime pairing. Beams, thrown weapons, authored duals, and fists
+ * deliberately produce no lane. Delivery is behavioral (gun/cast blocks), not a brittle tag string. */
+export function pairDelivery(weapon: WeaponDef): "melee" | "gun" | "cast" | "" {
+  if (
+    weapon.id === "fists" ||
+    weapon.tags.grip !== "1H" ||
+    weapon.dual === true ||
+    weapon.beam ||
+    weapon.thrown
+  ) return "";
+  if (weapon.tags.classPool === "ranged") return weapon.gun ? "gun" : "";
+  if (weapon.tags.classPool === "caster") return weapon.cast ? "cast" : "";
+  return !weapon.gun && !weapon.cast ? "melee" : "";
+}
+
+/** Shared bind census: two different, genuine one-handers of one class and one compatible live delivery. */
+export function pairEligible(lead: WeaponDef | undefined, off: WeaponDef | undefined): boolean {
+  if (!lead || !off || lead.id === off.id) return false;
+  if (lead.tags.grip !== "1H" || off.tags.grip !== "1H") return false;
+  if (lead.tags.classPool !== off.tags.classPool) return false;
+  const delivery = pairDelivery(lead);
+  return delivery !== "" && delivery === pairDelivery(off);
+}
+
+/** Approximate single-target damage authored into one accepted beat. Used only by the pair ceiling; each
+ * actual source still resolves its own grades/rarity/affix and receipt independently. */
+export function pairDamagePerUse(weapon: WeaponDef): number {
+  if (weapon.gun) {
+    return Math.max(
+      0,
+      weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) +
+        (weapon.gun.explode?.damage ?? 0),
+    );
+  }
+  if (weapon.cast) return Math.max(0, weapon.cast.damage);
+  let damage = Math.max(0, weapon.damage);
+  if (weapon.quake) damage += Math.max(0, weapon.quake.damage);
+  if (weapon.chainLightning) {
+    damage +=
+      Math.max(0, weapon.chainLightning.damage) *
+      Math.max(0, weapon.chainLightning.jumps) *
+      0.6;
+  }
+  if (weapon.scatter) {
+    damage += Math.max(0, weapon.scatter.damage) * Math.max(0, weapon.scatter.count) * 0.7;
+    damage += Math.max(0, weapon.scatter.explode?.damage ?? 0);
+  }
+  return damage;
+}
+
+/** Off-hand tuning multiplier after enforcing the 1.37x/1.45x pair ceiling. Inputs may include the live
+ * hands' rarity/affix/grade scaling; omitted inputs fall back to authored per-use damage. Weak off hands
+ * are never inflated to hit the ceiling, while outliers are trimmed instead of becoming mandatory. */
+export function dualOffhandDamageMultiplier(
+  lead: WeaponDef,
+  off: WeaponDef,
+  leadDamage = pairDamagePerUse(lead),
+  offDamage = pairDamagePerUse(off),
+): number {
+  if (leadDamage <= 0 || offDamage <= 0) return 0;
+  const matched = lead.tags.family === off.tags.family;
+  const cap = matched ? DUAL_MATCHED_THROUGHPUT_CAP : DUAL_THROUGHPUT_CAP;
+  const raw = matched ? DUAL_MATCHED_OFFHAND_BASE_MULT : DUAL_OFFHAND_BASE_MULT;
+  const leadCd = weaponAttackCooldown(lead);
+  const cycle = PAIR_TEMPO * (leadCd + weaponAttackCooldown(off));
+  const allowed = (cap * leadDamage * cycle / leadCd - leadDamage) / offDamage;
+  return Math.max(0, Math.min(raw, allowed));
+}
+
 /** §30 v0.118 WEAPON CLASS SET-BONUS (Brotato parity #2): carrying multiple weapons of the same class
  *  (melee/ranged/caster) in your loadout escalates that class's damage — turning a 3-slot loadout into a
  *  build. Scaled to DD's small arsenal: 2-of-a-class and 3-of-a-class thresholds (vs Brotato's 2–6). */
@@ -410,6 +489,7 @@ export const REQ_PENALTY_PER_POINT = 0.12;
 /** §11 floor on the requirement penalty — a badly under-statted weapon still hits this fraction (it's
  *  WIELDABLE, just weak), so a freshly-grabbed drop is never a dead stick. */
 export const REQ_PENALTY_FLOOR = 0.25;
+const REQUIREMENT_ATTRS = ["str", "dex", "int", "con", "luk"] as const;
 
 /** Total attribute shortfall vs a weapon's §11 requirements — Σ max(0, need − have) across attrs. PURE.
  *  0 = every requirement met (or the weapon has none). */
@@ -427,6 +507,21 @@ export function requirementShortfall(def: WeaponDef, attrs: Record<Attr, number>
  *  Applies to EVERY damage source of the weapon (the whole thing is too heavy/complex for you). PURE. */
 export function requirementPenalty(def: WeaponDef, attrs: Record<Attr, number>): number {
   const short = requirementShortfall(def, attrs);
+  if (short <= 0) return 1;
+  return Math.max(REQ_PENALTY_FLOOR, 1 - REQ_PENALTY_PER_POINT * short);
+}
+
+/** Pair requirement law: every hit pays the union (per-attribute maximum) of both halves. */
+export function pairRequirementPenalty(
+  lead: WeaponDef,
+  off: WeaponDef,
+  attrs: Record<Attr, number>,
+): number {
+  let short = 0;
+  for (const key of REQUIREMENT_ATTRS) {
+    const need = Math.max(lead.requirements?.[key] ?? 0, off.requirements?.[key] ?? 0);
+    short += Math.max(0, need - (attrs[key] ?? 1));
+  }
   if (short <= 0) return 1;
   return Math.max(REQ_PENALTY_FLOOR, 1 - REQ_PENALTY_PER_POINT * short);
 }
@@ -1298,6 +1393,14 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
 export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...EXPANSION_WEAPONS };
+
+// Off-hand charge presentation is uint8. Fail authoring loudly instead of wrapping a future magazine.
+for (const weapon of Object.values(WEAPONS)) {
+  const charges = weapon.gun?.magazine ?? weapon.thrown?.charges ?? 0;
+  if (!Number.isInteger(charges) || charges < 0 || charges > 255) {
+    throw new Error(`Weapon ${weapon.id} has invalid uint8 magazine/charges: ${charges}`);
+  }
+}
 
 /** The §9 unarmed-fallback weapon id (empty hands). Not part of the arsenal cycle/gallery. */
 export const FISTS_WEAPON = "fists";

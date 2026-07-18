@@ -68,6 +68,15 @@ export const CombatDelivery = {
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
 
+export type DualWieldHand = 0 | 1;
+
+/** Firing hand for an already-accepted paired gun/caster beat. The first seq after the bind epoch is lead;
+ * uint32 subtraction keeps the answer deterministic through wrap. Hand identity is derived, never synced. */
+export function dualHandForSeq(attackSeq: number, pairBaseSeq: number): DualWieldHand {
+  const delta = ((attackSeq >>> 0) - (pairBaseSeq >>> 0)) >>> 0;
+  return (((delta - 1) >>> 0) & 1) as DualWieldHand;
+}
+
 /** §ULT family ids follow ATTRS order: STR, DEX, INT, CON, LUK. */
 export const UltimateFamily = {
   Locked: 0,
