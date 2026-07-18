@@ -3883,13 +3883,16 @@ export class ArenaScene extends Phaser.Scene {
     const gearUpper = player.dualWield?.gearUpper ?? "";
     const gearLower = player.dualWield?.gearLower ?? "";
     const gearSynced = !!manifest && gearUpper.length > 0 && gearLower.length > 0;
+    // Synced wardrobe players always start from the one complete Drifter skeleton. The selected legacy kit
+    // remains only as a compatibility scaffold for rooms whose appended gear tail is genuinely absent.
+    const rigSpriteId = gearSynced ? PLAYER_SPRITE : charId;
     const rig = new SpriteRig(
       this,
       player.x,
       player.y,
       isSelf,
       id,
-      charId,
+      rigSpriteId,
       gearSynced ? manifest : undefined,
     );
     if (gearSynced && manifest)
@@ -3899,7 +3902,8 @@ export class ArenaScene extends Phaser.Scene {
         manifest,
         isSelf ? this.petMetaAccount.prestige : (player.dualWield?.prestige ?? 0),
       );
-    else rig.setRigScale(characterScale(charId)); // W1 compatibility: no cosmetics means legacy kit.
+    // Boilerplate and compatibility kits obey the identical per-character silhouette law.
+    rig.setRigScale(characterScale(charId));
     this.blobs.set(id, rig);
     this.charOf.set(id, player.character);
     if (isSelf) this.centerCam(player.x, player.y);

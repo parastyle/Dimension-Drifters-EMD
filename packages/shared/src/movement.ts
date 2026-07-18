@@ -20,6 +20,9 @@ import {
   MOVE_HITCH_MIN_ANGLE,
   MOVE_HITCH_MIN_SPEED,
   MOVE_RECOVER_ACCEL,
+  MOVE_ROTATION_RADIANS_PER_SECOND,
+  MOVE_ROTATION_REARM_TICKS,
+  MOVE_ROTATION_SPEED_RESERVE,
   MOVE_SPEED,
   MOVE_STOP_DECEL,
   PLAYER_RADIUS,
@@ -95,16 +98,15 @@ export interface Impulse {
 }
 
 /**
- * §7 v0.111 PIVOT the movement velocity toward the input — the directional WEIGHT is a discrete turn-hitch,
- * NOT a continuous path-curve (v0.105's steer, which felt mushy). The heading is DIRECT: the velocity snaps
- * to the input direction every tick (responsive — vital for dodging). The WEIGHT is a one-time speed dip on
- * a SHARP turn: if the angle between the current heading and the new input heading exceeds
- * MOVE_HITCH_MIN_ANGLE (~45°), the speed dips to `1 − t·MOVE_HITCH_DIP` (t = 0 at the threshold → 1 at a
- * 180° reversal). The tuned dip is deliberately light (95.8% retention on a reversal), then RECOVERS
- * toward top speed at MOVE_RECOVER_ACCEL. It fires ONCE per turn: after the
- * dip the heading already matches input, so the next tick's angle is ~0 and the speed just recovers. A slow
- * arc keeps each tick's angle small → never hitches. Released input decelerates to 0 (MOVE_STOP_DECEL, no
- * ice-skating). PURE + deterministic; all state is the returned velocity, so client prediction is unchanged.
+ * §7 v0.118 PIVOT or CARVE the movement velocity toward input. A deliberate sharp pivot stays DIRECT:
+ * heading snaps on that tick and the v0.111 hitch dips `1 − t·MOVE_HITCH_DIP` exactly as before (t = 0 at
+ * MOVE_HITCH_MIN_ANGLE → 1 at a 180° reversal). A continuing turn is not another pivot. Its heading advances
+ * at MOVE_ROTATION_RADIANS_PER_SECOND and cannot strobe the hitch as eight-way input walks around its 45°
+ * facets. Hysteresis lives inside the already-synced velocity magnitude: 0.001 px/s reserve quanta remember
+ * carve direction and require four aligned ticks before re-arming, below any visible/gameplay-significant
+ * speed change. A fresh 90°/180° attack-the-other-way still takes the direct hitch branch; the entry band only
+ * catches a small turn plus one bounded carve step. Released input still stops under MOVE_STOP_DECEL. PURE +
+ * deterministic, zero added state/allocation; authority and prediction share it.
  */
 export function steerVelocity(
   vel: Impulse,
@@ -124,10 +126,74 @@ export function steerVelocity(
     return { vx: (vel.vx / curSpeed) * ns, vy: (vel.vy / curSpeed) * ns };
   }
 
-  // Desired heading (unit) — the body faces input INSTANTLY (direct). Input magnitude is clamped ≤1 for
-  // the flat-speed / anti-cheat posture, but the DIRECTION is always taken as a unit vector.
+  // Desired heading (unit). Input magnitude is clamped ≤1 for the flat-speed / anti-cheat posture; a
+  // deliberate pivot takes this direction immediately, while an active carve approaches it at the cap.
   const inx = dx / inLen;
   const iny = dy / inLen;
+
+  if (curSpeed > MOVE_HITCH_MIN_SPEED) {
+    const currentHeading = Math.atan2(vel.vy, vel.vx);
+    const inputHeading = Math.atan2(iny, inx);
+    let shortest = (inputHeading - currentHeading + Math.PI) % (Math.PI * 2);
+    if (shortest < 0) shortest += Math.PI * 2;
+    shortest -= Math.PI;
+    const angle = Math.abs(shortest);
+    const maxTurn = MOVE_ROTATION_RADIANS_PER_SECOND * Math.max(0, dtSeconds);
+    const reserve = MOVE_ROTATION_SPEED_RESERVE;
+    const markerTolerance = reserve * 0.2;
+    const markerUnits = Math.round((speed - curSpeed) / reserve);
+    const markerMatches =
+      markerUnits >= 1 &&
+      markerUnits <= MOVE_ROTATION_REARM_TICKS * 2 &&
+      Math.abs(curSpeed - (speed - markerUnits * reserve)) <= markerTolerance;
+    let rotationDirection = 0;
+    let rearmTicks = 0;
+    if (markerMatches) {
+      if (markerUnits <= MOVE_ROTATION_REARM_TICKS) {
+        rotationDirection = 1;
+        rearmTicks = markerUnits;
+      } else {
+        rotationDirection = -1;
+        rearmTicks = markerUnits - MOVE_ROTATION_REARM_TICKS;
+      }
+    }
+
+    // A just-fired hitch is the cooldown half of the hysteresis. If input keeps rotating before recovery,
+    // carve from the dipped heading instead of treating the next facet as another independent pivot.
+    const hitchCooldown =
+      curSpeed >= speed * (1 - MOVE_HITCH_DIP) - markerTolerance && curSpeed < speed - 1e-9;
+    const rotationEntryAngle = Math.min(Math.PI / 2 - 1e-9, MOVE_HITCH_MIN_ANGLE + maxTurn);
+    const enteringRotation = angle > 1e-9 && angle <= rotationEntryAngle;
+
+    if (rotationDirection !== 0 || hitchCooldown || enteringRotation) {
+      if (angle <= 1e-9) {
+        if (rotationDirection !== 0 && rearmTicks > 1) {
+          const nextRearmTicks = rearmTicks - 1;
+          const markerOffset =
+            rotationDirection > 0 ? nextRearmTicks : MOVE_ROTATION_REARM_TICKS + nextRearmTicks;
+          const ns = speed - markerOffset * reserve;
+          return { vx: inx * ns, vy: iny * ns };
+        }
+        const ns = Math.min(speed, curSpeed + MOVE_RECOVER_ACCEL * dtSeconds);
+        return { vx: inx * ns, vy: iny * ns };
+      }
+      if (rotationDirection === 0) rotationDirection = shortest >= 0 ? 1 : -1;
+
+      // Follow the remembered rotation direction even when very fast input laps the bounded heading. Using
+      // the ordinary shortest arc there would flip sign past 180° and make the supposedly smooth circle jerk.
+      let directedRemaining =
+        rotationDirection > 0 ? inputHeading - currentHeading : currentHeading - inputHeading;
+      directedRemaining %= Math.PI * 2;
+      if (directedRemaining < 0) directedRemaining += Math.PI * 2;
+      const turn = Math.min(directedRemaining, maxTurn);
+      const nextHeading = currentHeading + rotationDirection * turn;
+      const markerOffset =
+        rotationDirection > 0 ? MOVE_ROTATION_REARM_TICKS : MOVE_ROTATION_REARM_TICKS * 2;
+      const markerSpeed = speed - markerOffset * reserve;
+      const ns = Math.min(markerSpeed, curSpeed + MOVE_RECOVER_ACCEL * dtSeconds);
+      return { vx: Math.cos(nextHeading) * ns, vy: Math.sin(nextHeading) * ns };
+    }
+  }
 
   // TURN-HITCH: a sharp change vs the current heading dips the speed once (the "stop"). Skipped from ~rest
   // (nothing to pivot from) — that just spins up via the recover path below.
@@ -145,7 +211,7 @@ export function steerVelocity(
     }
   }
 
-  // Aligned / gentle turn / spin-up-from-rest → recover toward top speed (the "go"), heading = input.
+  // Aligned / spin-up-from-rest → recover toward top speed (the "go"), heading = input.
   const ns = Math.min(speed, curSpeed + MOVE_RECOVER_ACCEL * dtSeconds);
   return { vx: inx * ns, vy: iny * ns };
 }
@@ -332,7 +398,9 @@ export function slideHopSpeed(speed: number): number {
 
 /** One-use landing retention plus scrape kick; this is the only renewable chain injection. */
 export function slideLandingSpeed(landingSpeed: number): number {
-  return clampSlideSpeed(clampSlideSpeed(landingSpeed) * SLIDE_LANDING_RETENTION + SLIDE_LANDING_KICK);
+  return clampSlideSpeed(
+    clampSlideSpeed(landingSpeed) * SLIDE_LANDING_RETENTION + SLIDE_LANDING_KICK,
+  );
 }
 
 /** Allocation-free bounded carve shared by authority and predictor. Aim never participates. */
@@ -352,8 +420,7 @@ export function slideSteeredAngle(
   if (delta < 0) delta += Math.PI * 2;
   delta -= Math.PI;
   const maxStep =
-    (airborne
-      ? SLIDE_AIR_STEER_RADIANS_PER_SECOND
-      : SLIDE_GROUND_STEER_RADIANS_PER_SECOND) * Math.max(0, dtSeconds);
+    (airborne ? SLIDE_AIR_STEER_RADIANS_PER_SECOND : SLIDE_GROUND_STEER_RADIANS_PER_SECOND) *
+    Math.max(0, dtSeconds);
   return current + clamp(delta, -maxStep, maxStep);
 }
