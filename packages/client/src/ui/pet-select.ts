@@ -1,7 +1,8 @@
 import {
   createMetaAccountV2,
+  createMetaAccountV4,
   EMPTY_META,
-  type MetaAccountV2,
+  type MetaAccountV4,
   PET_BOND_XP_THRESHOLDS,
   PET_CATALOG,
   PET_STAGE_DEFS,
@@ -10,11 +11,12 @@ import {
   petLevelForXp,
   petModsForLevel,
   petStageBandForLevel,
-  sanitizeMetaAccountV2,
+  sanitizeMetaAccountV4,
   sanitizeMetaLevels,
 } from "@dd/shared";
 
-export const PET_META_STORAGE_KEY = "dd.metaAccount.v2";
+export const PET_META_STORAGE_KEY = "dd.metaAccount.v4";
+const LEGACY_PET_META_STORAGE_KEY = "dd.metaAccount.v2";
 
 export interface PetSelectionView {
   id: PetId;
@@ -29,7 +31,7 @@ export interface PetSelectionView {
   capstone: string;
 }
 
-function legacyMetaAccount(): MetaAccountV2 {
+function legacyMetaAccount(): MetaAccountV4 {
   const account = createMetaAccountV2();
   try {
     const rawScrip = Number.parseInt(localStorage.getItem("dd.beltScrip") ?? "0", 10);
@@ -40,37 +42,37 @@ function legacyMetaAccount(): MetaAccountV2 {
   } catch {
     account.upgrades = { ...EMPTY_META };
   }
-  return account;
+  return sanitizeMetaAccountV4(account);
 }
 
 /** Local/offline account cache. A corrupt or blocked store always falls back to the starter companion. */
-export function loadPetMetaAccount(): MetaAccountV2 {
+export function loadPetMetaAccount(): MetaAccountV4 {
   try {
     const raw = localStorage.getItem(PET_META_STORAGE_KEY);
-    if (raw) return sanitizeMetaAccountV2(JSON.parse(raw));
-    const migrated = legacyMetaAccount();
+    if (raw) return sanitizeMetaAccountV4(JSON.parse(raw));
+    const legacy = localStorage.getItem(LEGACY_PET_META_STORAGE_KEY);
+    const migrated = legacy ? sanitizeMetaAccountV4(JSON.parse(legacy)) : legacyMetaAccount();
     savePetMetaAccount(migrated);
     return migrated;
   } catch {
-    return createMetaAccountV2();
+    return createMetaAccountV4();
   }
 }
 
 /** Persist a complete replacement response and keep the legacy belt cache coherent during rollout. */
-export function savePetMetaAccount(value: unknown): MetaAccountV2 {
-  const account = sanitizeMetaAccountV2(value);
+export function savePetMetaAccount(value: unknown): MetaAccountV4 {
+  const account = sanitizeMetaAccountV4(value);
   try {
     localStorage.setItem(PET_META_STORAGE_KEY, JSON.stringify(account));
     localStorage.setItem("dd.beltScrip", String(account.scrip));
-    localStorage.setItem("dd.beltUpgrades", JSON.stringify(account.upgrades));
   } catch {
     // Local/offline trust is still allowed to run when storage is blocked; it just cannot persist.
   }
   return account;
 }
 
-export function selectPet(account: MetaAccountV2, petId: PetId | ""): MetaAccountV2 {
-  const next = sanitizeMetaAccountV2(account);
+export function selectPet(account: MetaAccountV4, petId: PetId | ""): MetaAccountV4 {
+  const next = sanitizeMetaAccountV4(account);
   if (petId === "" || next.pets[petId]) next.selectedPetId = petId;
   return savePetMetaAccount(next);
 }
@@ -137,7 +139,7 @@ function petBonusCopy(id: PetId, level: number): readonly [string, string] {
   }
 }
 
-export function petSelectionView(account: MetaAccountV2, id: PetId): PetSelectionView {
+export function petSelectionView(account: MetaAccountV4, id: PetId): PetSelectionView {
   const persisted = account.pets[id];
   const bondXp = persisted?.bondXp ?? 0;
   const level = petLevelForXp(bondXp);

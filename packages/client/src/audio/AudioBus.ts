@@ -1659,6 +1659,29 @@ export class AudioBus {
       case "extract":
         this.blip([392, 523, 659, 880], 0.1, "triangle", 0.3);
         break;
+      case "wardrobe:equip":
+        if (this.throttled("wardrobeEquip", 70)) return;
+        this.tone(740, 0.055, { type: "triangle", gain: 0.11, sweepTo: 920 });
+        this.tone(1180, 0.065, { type: "sine", gain: 0.08, delay: 0.035 });
+        break;
+      case "armory:stage":
+        if (this.throttled("armoryStage", 70)) return;
+        this.noise(0.035, { gain: 0.08, type: "bandpass", freq: 1800, q: 4 });
+        this.tone(310, 0.08, { type: "triangle", gain: 0.1, sweepTo: 260 });
+        break;
+      case "drive:empty":
+        if (this.throttled("driveEmpty", 220)) return;
+        this.tone(190, 0.12, { type: "square", gain: 0.14, sweepTo: 115 });
+        this.noise(0.08, { gain: 0.09, type: "bandpass", freq: 720, q: 5 });
+        break;
+      case "settlement:kept":
+        this.blip([330, 440, 554, 659], 0.12, "triangle", 0.24);
+        this.tone(988, 0.28, { type: "sine", gain: 0.14, delay: 0.4 });
+        break;
+      case "settlement:lost":
+        this.tone(196, 0.24, { type: "triangle", gain: 0.18, sweepTo: 110 });
+        this.tone(146, 0.38, { type: "sine", gain: 0.15, sweepTo: 73, delay: 0.12 });
+        break;
       case "hurt":
         if (this.throttled("hurt", 120)) return;
         if (

@@ -23,7 +23,7 @@ const dock: WeaponDockLayout = {
 };
 
 describe("ultimateHudLayout", () => {
-  it("mirrors the heat arc onto the junction's upper-left shoulder", () => {
+  it("keeps Ultimate Charge on the junction shoulder opposite the horizontal Drive bar", () => {
     const result = ultimateHudLayout({
       screenWidth: 1600,
       screenHeight: 900,
@@ -39,7 +39,7 @@ describe("ultimateHudLayout", () => {
     expect(result.radius).toBe(10.5);
   });
 
-  it("uses the belt rail slot 36 pixels left of beam heat", () => {
+  it("keeps Ultimate Charge in its distinct belt-rail slot beside Drive", () => {
     const result = ultimateHudLayout({
       screenWidth: 1600,
       screenHeight: 900,

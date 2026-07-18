@@ -2,10 +2,17 @@ import {
   beltLevelFor,
   DEFAULT_DIMENSION,
   DIMENSION_IDS,
+  GEAR_CATALOG,
+  GEAR_SLOTS,
+  type GearId,
+  type GearSlot,
   getDimension,
-  type MetaAccountV2,
+  type MetaAccountV4,
   PET_IDS,
   type PetId,
+  petLevelForXp,
+  petModsForLevel,
+  STARTER_GEAR_LOADOUT,
 } from "@dd/shared";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
@@ -13,7 +20,33 @@ import { AudioBus } from "../audio/AudioBus.js";
 // lazily inside launch(), alongside the lazy ArenaScene import).
 import type { LaunchIntent } from "../net/matchmaking.js";
 import { RENDER_DPR } from "../render-dpr.js";
-import { loadPetMetaAccount, petSelectionView, selectPet } from "../ui/pet-select.js";
+import {
+  type ArmoryDraft,
+  armoryCarrySelection,
+  armoryEntryViews,
+  armorySummary,
+  createArmoryDraft,
+  toggleArmoryEntry,
+} from "../ui/armory/model.js";
+import {
+  loadPetMetaAccount,
+  petSelectionView,
+  savePetMetaAccount,
+  selectPet,
+} from "../ui/pet-select.js";
+import {
+  applyWardrobePreset,
+  equipWardrobeItem,
+  gearRarityPips,
+  loadWardrobePresetState,
+  overwriteWardrobePreset,
+  saveWardrobePresetState,
+  type WardrobePresetState,
+  wardrobePresetViews,
+  wardrobePreview,
+  wardrobeSetViews,
+  wardrobeSlotItems,
+} from "../ui/wardrobe/model.js";
 
 /**
  * §17 title / dimension-select screen — the first scene. Lists every dimension as a themed card (its own
@@ -61,6 +94,8 @@ interface CompanionChip {
   lock: Phaser.GameObjects.Text;
 }
 
+type MenuTab = "wardrobe" | "armory" | "run";
+
 export class MenuScene extends Phaser.Scene {
   private title!: Phaser.GameObjects.Text;
   private subtitle!: Phaser.GameObjects.Text;
@@ -79,11 +114,34 @@ export class MenuScene extends Phaser.Scene {
   private launchIntent: LaunchIntent = "quick";
   private intentRow?: Phaser.GameObjects.Container;
   private intentCaption?: Phaser.GameObjects.Text;
-  private metaAccount!: MetaAccountV2;
+  private metaAccount!: MetaAccountV4;
   private companionRow?: Phaser.GameObjects.Container;
   private companionName?: Phaser.GameObjects.Text;
   private companionDetail?: Phaser.GameObjects.Text;
   private companionChips: CompanionChip[] = [];
+  private menuTab: MenuTab = "wardrobe";
+  private tabRow?: Phaser.GameObjects.Container;
+  private readonly tabButtons = new Map<MenuTab, Phaser.GameObjects.Container>();
+  private wardrobeRoot?: Phaser.GameObjects.Container;
+  private wardrobePresetState!: WardrobePresetState;
+  private selectedGearSlot: GearSlot = "hat";
+  private wardrobeItemPage = 0;
+  private wardrobeTitle?: Phaser.GameObjects.Text;
+  private wardrobeInspector?: Phaser.GameObjects.Text;
+  private wardrobeStats?: Phaser.GameObjects.Text;
+  private wardrobeCollections?: Phaser.GameObjects.Text;
+  private wardrobeFooter?: Phaser.GameObjects.Text;
+  private wardrobeItemRows: Phaser.GameObjects.Container[] = [];
+  private wardrobeSlotRows: Phaser.GameObjects.Container[] = [];
+  private wardrobePresetRows: Phaser.GameObjects.Container[] = [];
+  private armoryRoot?: Phaser.GameObjects.Container;
+  private armoryDraft!: ArmoryDraft;
+  private armoryPage = 0;
+  private armoryTitle?: Phaser.GameObjects.Text;
+  private armorySummaryText?: Phaser.GameObjects.Text;
+  private armoryCarryText?: Phaser.GameObjects.Text;
+  private armoryFooter?: Phaser.GameObjects.Text;
+  private armoryRows: Phaser.GameObjects.Container[] = [];
 
   constructor() {
     super("menu");
@@ -135,6 +193,15 @@ export class MenuScene extends Phaser.Scene {
     this.companionName = undefined;
     this.companionDetail = undefined;
     this.companionChips = [];
+    this.menuTab = "wardrobe";
+    this.tabRow = undefined;
+    this.tabButtons.clear();
+    this.wardrobeRoot = undefined;
+    this.wardrobeItemRows = [];
+    this.wardrobeSlotRows = [];
+    this.wardrobePresetRows = [];
+    this.armoryRoot = undefined;
+    this.armoryRows = [];
     this.launchIntent = "quick";
     this.launching = false;
     // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
@@ -160,6 +227,16 @@ export class MenuScene extends Phaser.Scene {
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
     this.metaAccount = loadPetMetaAccount();
+    this.wardrobePresetState = loadWardrobePresetState(this.metaAccount);
+    const petXp = this.metaAccount.selectedPetId
+      ? (this.metaAccount.pets[this.metaAccount.selectedPetId]?.bondXp ?? 0)
+      : 0;
+    const packCapacity =
+      12 +
+      (this.metaAccount.selectedPetId
+        ? petModsForLevel(this.metaAccount.selectedPetId, petLevelForXp(petXp)).bagCapacityAdd
+        : 0);
+    this.armoryDraft = createArmoryDraft(this.metaAccount, packCapacity);
     this.input.on("pointerdown", () => this.audio.resume());
     // Mirror ArenaScene's hi-DPI camera: zoom by RENDER_DPR + origin (0,0) so screen-space UI maps 1:1 to
     // CSS px and we lay everything out in `screenW()/screenH()` (the visible CSS size).
@@ -180,7 +257,7 @@ export class MenuScene extends Phaser.Scene {
       .text(0, 0, "DIMENSION DRIFTERS", { fontSize: "52px", color: TITLE_COLOR, fontStyle: "bold" })
       .setOrigin(0.5, 0.5);
     this.subtitle = this.add
-      .text(0, 0, "Pick your dimension · 1–10 player co-op bullet-heaven", {
+      .text(0, 0, "GEAR IS WHO YOU ARE · WEAPONS ARE WHAT YOU RISK", {
         fontSize: "18px",
         color: ACCENT,
       })
@@ -203,9 +280,28 @@ export class MenuScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
 
-    // Number-key shortcuts (1–5 → the nth DIMENSION, a top-down run); B → the boss-rush gauntlet;
-    // H → toggle the QUICK JOIN / HOST NEW RUN launch intent (§50 finding #1).
+    // Each tab owns its key grammar: presets in Wardrobe, carry review in Armory, destinations in Run.
     this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+      if (this.menuTab === "wardrobe") {
+        const preset = Number.parseInt(e.key, 10);
+        if (Number.isFinite(preset) && preset >= 1 && preset <= 6) {
+          this.applyWardrobePresetIndex(preset - 1);
+          return;
+        }
+        if (e.key === "r" || e.key === "R") {
+          this.equipWardrobe(STARTER_GEAR_LOADOUT[this.selectedGearSlot]);
+          return;
+        }
+        if (e.key === "Enter") {
+          this.setMenuTab("run");
+          return;
+        }
+      }
+      if (this.menuTab === "armory" && e.key === "Enter") {
+        this.setMenuTab("run");
+        return;
+      }
+      if (this.menuTab !== "run") return;
       if (e.key === "b" || e.key === "B") {
         this.launch(DEFAULT_DIMENSION, true);
         return;
@@ -230,10 +326,443 @@ export class MenuScene extends Phaser.Scene {
       ease: "Sine.inOut",
     });
 
+    this.buildTabRow();
     this.buildIntentRow();
+    this.buildWardrobePanel();
+    this.buildArmoryPanel();
     this.buildCompanionRow();
     this.buildAudioRow();
+    this.setMenuTab("wardrobe");
     this.layout();
+  }
+
+  private makeMenuChip(
+    label: string,
+    width: number,
+    onClick: () => void,
+  ): Phaser.GameObjects.Container {
+    const bg = this.add.rectangle(0, 0, width, 30, 0x1b1822, 0.96).setStrokeStyle(1.5, 0x3a3550);
+    const labelText = this.add
+      .text(0, 0, label, {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#b8b1c4",
+        fontStyle: "bold",
+        align: "center",
+      })
+      .setOrigin(0.5);
+    const root = this.add.container(0, 0, [bg, labelText]);
+    bg.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+      this.audio.resume();
+      onClick();
+    });
+    root.setData("bg", bg).setData("text", labelText);
+    return root;
+  }
+
+  private buildTabRow(): void {
+    const rows: Array<{ tab: MenuTab; label: string; width: number }> = [
+      { tab: "wardrobe", label: "WARDROBE", width: 142 },
+      { tab: "armory", label: "ARMORY / CARRY", width: 176 },
+      { tab: "run", label: "DESTINATIONS", width: 142 },
+    ];
+    this.tabRow = this.add.container(0, 0);
+    rows.forEach(({ tab, label, width }, index) => {
+      const chip = this.makeMenuChip(label, width, () => this.setMenuTab(tab));
+      chip.setPosition((index - 1) * 166, 0).setData("tab", tab);
+      this.tabRow?.add(chip);
+      this.tabButtons.set(tab, chip);
+    });
+  }
+
+  private setMenuTab(tab: MenuTab): void {
+    this.menuTab = tab;
+    for (const [id, chip] of this.tabButtons) {
+      const selected = id === tab;
+      (chip.getData("bg") as Phaser.GameObjects.Rectangle)
+        .setFillStyle(selected ? 0x14232a : 0x1b1822, 0.98)
+        .setStrokeStyle(selected ? 2.5 : 1.5, selected ? 0x33e6ff : 0x3a3550);
+      (chip.getData("text") as Phaser.GameObjects.Text).setColor(
+        selected ? TITLE_COLOR : "#8d8794",
+      );
+    }
+    this.wardrobeRoot?.setVisible(tab === "wardrobe");
+    this.companionRow?.setVisible(tab === "wardrobe");
+    this.armoryRoot?.setVisible(tab === "armory");
+    this.intentRow?.setVisible(tab === "run");
+    this.hint?.setVisible(tab === "run");
+    for (const card of this.cards) card.root.setVisible(tab === "run");
+    if (tab === "wardrobe") this.refreshWardrobePanel();
+    if (tab === "armory") this.refreshArmoryPanel();
+  }
+
+  private buildWardrobePanel(): void {
+    const root = this.add.container(0, 0);
+    const panel = this.add.rectangle(0, 0, 1160, 440, 0x0b0a0f, 0.98).setStrokeStyle(2, 0x3a3550);
+    const heading = this.add
+      .text(-560, -204, "THE WARDROBE", {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: ACCENT,
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.wardrobeTitle = this.add
+      .text(-560, -180, "", { fontSize: "19px", color: TITLE_COLOR, fontStyle: "bold" })
+      .setOrigin(0, 0.5);
+
+    // Wave 4 owns the boilerplate preview; Wave 5 will replace this silhouette with layered rig parts.
+    const mannequin = this.add.container(-250, -25);
+    const shadow = this.add.ellipse(0, 140, 150, 30, 0x000000, 0.45);
+    const cloak = this.add.triangle(0, 40, 0, -20, -62, 132, 62, 132, 0x22202a, 1);
+    const body = this.add.rectangle(0, 48, 74, 138, 0xc7c1b7, 1).setStrokeStyle(3, 0x16141a);
+    const head = this.add.circle(0, -57, 39, 0xd4cec3, 1).setStrokeStyle(3, 0x16141a);
+    const face = this.add.rectangle(10, -53, 34, 5, 0x202027, 1);
+    const hatLine = this.add.rectangle(0, -101, 88, 9, 0x33e6ff, 0.75);
+    const boilerplate = this.add
+      .text(0, 168, "THE DRIFTER · COMPOSITE PREVIEW", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#8d8794",
+      })
+      .setOrigin(0.5);
+    mannequin.add([shadow, cloak, body, head, face, hatLine, boilerplate]);
+
+    this.wardrobeInspector = this.add
+      .text(-365, 105, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#d8cfb8",
+        lineSpacing: 4,
+        wordWrap: { width: 260 },
+      })
+      .setOrigin(0, 0);
+    this.wardrobeStats = this.add
+      .text(-250, 168, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#bfefff",
+        align: "center",
+      })
+      .setOrigin(0.5, 0);
+    this.wardrobeCollections = this.add
+      .text(270, -164, "", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#8d8794",
+        lineSpacing: 2,
+        wordWrap: { width: 280 },
+      })
+      .setOrigin(0, 0);
+    this.wardrobeFooter = this.add
+      .text(0, 205, "[Click] Equip · [R] Clear slot · [1-6] Preset · [Enter] Ready", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#9fb0c2",
+      })
+      .setOrigin(0.5);
+    root.add([
+      panel,
+      heading,
+      this.wardrobeTitle,
+      mannequin,
+      this.wardrobeInspector,
+      this.wardrobeStats,
+      this.wardrobeCollections,
+      this.wardrobeFooter,
+    ]);
+
+    for (const [index, slot] of GEAR_SLOTS.entries()) {
+      const prominent = slot === "hat";
+      const chip = this.makeMenuChip(
+        slot === "facialHair" ? "FACIAL HAIR" : slot.toUpperCase(),
+        prominent ? 190 : 150,
+        () => {
+          this.selectedGearSlot = slot;
+          this.wardrobeItemPage = 0;
+          this.refreshWardrobePanel();
+        },
+      );
+      chip.setPosition(-490, -135 + index * 38);
+      if (prominent) {
+        (chip.getData("bg") as Phaser.GameObjects.Rectangle)
+          .setSize(190, 42)
+          .setStrokeStyle(2.5, 0xffd479);
+        (chip.getData("text") as Phaser.GameObjects.Text)
+          .setText("HAT GALLERY")
+          .setColor("#ffd479");
+      }
+      root.add(chip);
+      this.wardrobeSlotRows.push(chip);
+    }
+    for (let index = 0; index < 6; index++) {
+      const row = this.makeMenuChip("", 330, () => {
+        const id = row.getData("gearId") as GearId | undefined;
+        if (id) this.equipWardrobe(id);
+      });
+      row.setPosition(85, -127 + index * 47);
+      root.add(row);
+      this.wardrobeItemRows.push(row);
+    }
+    for (let index = 0; index < 6; index++) {
+      const chip = this.makeMenuChip(String(index + 1), 44, () =>
+        this.applyWardrobePresetIndex(index),
+      );
+      chip.setPosition(-365 + index * 54, -188);
+      root.add(chip);
+      this.wardrobePresetRows.push(chip);
+    }
+    const previous = this.makeMenuChip("‹", 38, () => {
+      this.wardrobeItemPage = Math.max(0, this.wardrobeItemPage - 1);
+      this.refreshWardrobePanel();
+    }).setPosition(205, -188);
+    const next = this.makeMenuChip("›", 38, () => {
+      this.wardrobeItemPage++;
+      this.refreshWardrobePanel();
+    }).setPosition(245, -188);
+    root.add([previous, next]);
+    this.wardrobeRoot = root;
+    this.refreshWardrobePanel();
+  }
+
+  private equipWardrobe(id: GearId): void {
+    const next = equipWardrobeItem(this.metaAccount, id);
+    if (next.equippedGear[GEAR_CATALOG[id].slot] !== id) return;
+    this.metaAccount = savePetMetaAccount(next);
+    const selected = Math.max(1, this.wardrobePresetState.selected);
+    this.wardrobePresetState = overwriteWardrobePreset(
+      this.wardrobePresetState,
+      this.metaAccount,
+      selected,
+    );
+    this.wardrobePresetState = saveWardrobePresetState(this.wardrobePresetState, this.metaAccount);
+    this.audio.play("wardrobe:equip");
+    this.refreshWardrobePanel();
+  }
+
+  private applyWardrobePresetIndex(index: number): void {
+    const result = applyWardrobePreset(this.metaAccount, this.wardrobePresetState, index);
+    this.metaAccount = savePetMetaAccount(result.account);
+    this.wardrobePresetState = saveWardrobePresetState(result.state, this.metaAccount);
+    this.audio.play("wardrobe:equip");
+    this.refreshWardrobePanel();
+  }
+
+  private refreshWardrobePanel(): void {
+    if (
+      !this.wardrobeRoot ||
+      !this.wardrobeTitle ||
+      !this.wardrobeInspector ||
+      !this.wardrobeStats ||
+      !this.wardrobeCollections
+    )
+      return;
+    const items = wardrobeSlotItems(this.metaAccount, this.selectedGearSlot);
+    const pageSize = 6;
+    const maxPage = Math.max(0, Math.ceil(items.length / pageSize) - 1);
+    this.wardrobeItemPage = Math.min(this.wardrobeItemPage, maxPage);
+    const page = items.slice(
+      this.wardrobeItemPage * pageSize,
+      (this.wardrobeItemPage + 1) * pageSize,
+    );
+    const equipped = GEAR_CATALOG[this.metaAccount.equippedGear[this.selectedGearSlot]];
+    this.wardrobeTitle.setText(
+      this.selectedGearSlot === "hat"
+        ? `HAT GALLERY · ${items.filter((row) => row.owned).length}/${items.length} launch signatures · 27 legacy pedestals archived`
+        : `${this.selectedGearSlot.toUpperCase()} · OWNED FIRST · LOCKED SILHOUETTES AFTER`,
+    );
+    this.wardrobeInspector.setText(
+      `${equipped.name}\n${equipped.rarity} · ${gearRarityPips(equipped)} · ${equipped.gearClass}\n${equipped.effectText}\n${"effectAvailability" in equipped && equipped.effectAvailability === "inert" ? "Dependency pending · preview only" : "Equipped for the next run"}`,
+    );
+    const preview = wardrobePreview(this.metaAccount);
+    this.wardrobeStats.setText(
+      `STR ${preview.baseStats.str} · DEX ${preview.baseStats.dex} · INT ${preview.baseStats.int} · CON ${preview.baseStats.con} · LUK ${preview.baseStats.luk}\nSIGNATURE · ${preview.quirk.name}`,
+    );
+    const sets = wardrobeSetViews(this.metaAccount);
+    this.wardrobeCollections.setText(
+      `LEGACY SET COLLECTIONS\n${sets
+        .map(
+          (set) =>
+            `${set.name} ${set.owned}/${set.total}${set.equipped > 0 ? ` · worn ${set.equipped}` : ""}`,
+        )
+        .join("\n")}`,
+    );
+    this.wardrobeSlotRows.forEach((row, index) => {
+      const selected = GEAR_SLOTS[index] === this.selectedGearSlot;
+      (row.getData("bg") as Phaser.GameObjects.Rectangle).setFillStyle(
+        selected ? 0x14232a : 0x1b1822,
+        1,
+      );
+    });
+    this.wardrobeItemRows.forEach((row, index) => {
+      const item = page[index];
+      row.setVisible(!!item).setData("gearId", item?.owned ? item.id : undefined);
+      if (!item) return;
+      const text = row.getData("text") as Phaser.GameObjects.Text;
+      const bg = row.getData("bg") as Phaser.GameObjects.Rectangle;
+      text
+        .setText(
+          `${item.equipped ? "EQUIPPED · " : ""}${item.def.name}\n${item.def.rarity} · ${item.owned ? item.def.effectText : item.lockedCopy}`,
+        )
+        .setFontSize(this.selectedGearSlot === "hat" ? 11 : 10)
+        .setColor(item.owned ? (item.equipped ? "#9cff6a" : TITLE_COLOR) : "#686472");
+      bg.setFillStyle(
+        item.equipped ? 0x173021 : item.owned ? 0x1b1822 : 0x111016,
+        1,
+      ).setStrokeStyle(
+        item.equipped ? 2.5 : 1.5,
+        item.equipped ? 0x9cff6a : item.owned ? 0x3a3550 : 0x28252e,
+      );
+    });
+    const presets = wardrobePresetViews(this.wardrobePresetState);
+    this.wardrobePresetRows.forEach((row, index) => {
+      const preset = presets[index];
+      (row.getData("text") as Phaser.GameObjects.Text).setText(
+        index === 0 ? "[1] RESET" : `[${index + 1}]`,
+      );
+      (row.getData("bg") as Phaser.GameObjects.Rectangle)
+        .setFillStyle(preset?.selected ? 0x14232a : 0x1b1822, 1)
+        .setStrokeStyle(preset?.selected ? 2 : 1.5, preset?.selected ? 0x33e6ff : 0x3a3550);
+    });
+  }
+
+  private buildArmoryPanel(): void {
+    const root = this.add.container(0, 0);
+    const panel = this.add.rectangle(0, 0, 1160, 440, 0x090a0d, 0.99).setStrokeStyle(2, 0x5d4932);
+    const heading = this.add
+      .text(-560, -204, "THE ARMORY", {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: "#ffd479",
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.armoryTitle = this.add
+      .text(-560, -178, "STASH · CLICK TO STAGE THE CARRY", {
+        fontSize: "18px",
+        color: TITLE_COLOR,
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+    this.armorySummaryText = this.add
+      .text(40, -160, "", {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#ffb24a",
+        fontStyle: "bold",
+        lineSpacing: 6,
+      })
+      .setOrigin(0, 0);
+    this.armoryCarryText = this.add
+      .text(40, -60, "", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#cfc6ae",
+        lineSpacing: 5,
+        wordWrap: { width: 420 },
+      })
+      .setOrigin(0, 0);
+    this.armoryFooter = this.add
+      .text(0, 202, "Click a Stash card to stage/remove · [Enter] Review destinations", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#9fb0c2",
+      })
+      .setOrigin(0.5);
+    root.add([
+      panel,
+      heading,
+      this.armoryTitle,
+      this.armorySummaryText,
+      this.armoryCarryText,
+      this.armoryFooter,
+    ]);
+    for (let index = 0; index < 8; index++) {
+      const row = this.makeMenuChip("", 500, () => {
+        const entryId = row.getData("entryId") as string | undefined;
+        if (!entryId) return;
+        const result = toggleArmoryEntry(this.metaAccount, this.armoryDraft, entryId);
+        this.armoryDraft = result.draft;
+        this.audio.play(result.error === "carry-full" ? "drive:empty" : "armory:stage");
+        this.refreshArmoryPanel();
+      });
+      row.setPosition(-285, -138 + index * 42);
+      root.add(row);
+      this.armoryRows.push(row);
+    }
+    const previous = this.makeMenuChip("‹", 38, () => {
+      this.armoryPage = Math.max(0, this.armoryPage - 1);
+      this.refreshArmoryPanel();
+    }).setPosition(-40, -178);
+    const next = this.makeMenuChip("›", 38, () => {
+      this.armoryPage++;
+      this.refreshArmoryPanel();
+    }).setPosition(0, -178);
+    root.add([previous, next]);
+    this.armoryRoot = root;
+    this.refreshArmoryPanel();
+  }
+
+  private refreshArmoryPanel(): void {
+    if (
+      !this.armoryRoot ||
+      !this.armorySummaryText ||
+      !this.armoryCarryText ||
+      !this.armoryTitle ||
+      !this.armoryFooter
+    )
+      return;
+    const rows = armoryEntryViews(this.metaAccount, this.armoryDraft);
+    const pageSize = 8;
+    const maxPage = Math.max(0, Math.ceil(rows.length / pageSize) - 1);
+    this.armoryPage = Math.min(this.armoryPage, maxPage);
+    const page = rows.slice(this.armoryPage * pageSize, (this.armoryPage + 1) * pageSize);
+    this.armoryRows.forEach((row, index) => {
+      const item = page[index];
+      row.setVisible(!!item).setData("entryId", item?.entry.entryId);
+      if (!item) return;
+      const staged = !!item.placement;
+      (row.getData("text") as Phaser.GameObjects.Text)
+        .setText(
+          `${staged ? "AT RISK · " : "SAFE · "}${item.name}\n${item.detail} · ◈${item.atRiskValue}`,
+        )
+        .setFontSize(10)
+        .setColor(staged ? "#ffb24a" : TITLE_COLOR);
+      (row.getData("bg") as Phaser.GameObjects.Rectangle)
+        .setFillStyle(staged ? 0x2a1710 : 0x15151b, 1)
+        .setStrokeStyle(staged ? 2.5 : 1.5, staged ? 0xff8a2b : 0x3a3550);
+    });
+    const summary = armorySummary(this.metaAccount, this.armoryDraft);
+    this.armoryTitle.setText(
+      `STASH ${this.metaAccount.weaponBank.stash.length}/72 · SAFE HOME STORAGE`,
+    );
+    this.armorySummaryText.setText(
+      `AT STAKE · ${summary.atRiskPhysical} weapons · ◈${summary.atRiskValue}\nSAFE · ${summary.safeEntries} entries · WORLD TIER ${summary.requiredWorldTier}`,
+    );
+    const active = this.armoryDraft.placements.filter((row) => row.zone === "active");
+    const pack = this.armoryDraft.placements.filter((row) => row.zone === "pack");
+    const byId = new Map(rows.map((row) => [row.entry.entryId, row]));
+    const labels = (placements: typeof active) =>
+      placements
+        .sort((a, b) => a.start - b.start)
+        .map(
+          (row) => `${row.start + 1}. ${byId.get(row.entryId)?.name ?? "Missing Last Carry item"}`,
+        )
+        .join("\n") || "Empty";
+    this.armoryCarryText.setText(
+      `ACTIVE ${summary.activePhysical}/3\n${labels(active)}\n\nPACK ${summary.packPhysical}/${this.armoryDraft.packCapacity}\n${labels(pack)}\n\nHOME ISSUE · Rusty Cleaver · ◈0 · RETURNS\nNot a bank instance. Not counted at stake.`,
+    );
+    if (summary.intakeBlocked) {
+      this.armoryFooter
+        .setText(
+          `INTAKE ${this.metaAccount.weaponBank.intake.length} · Make Stash room before embark`,
+        )
+        .setColor("#ff5d5d");
+    } else {
+      this.armoryFooter
+        .setText("Click a Stash card to stage/remove · [Enter] Review destinations")
+        .setColor("#9fb0c2");
+    }
   }
 
   /** §50 finding #1 — the QUICK JOIN / HOST NEW RUN selector (between the subtitle and the cards), so the
@@ -356,7 +885,11 @@ export class MenuScene extends Phaser.Scene {
           if (this.launching || !this.metaAccount.pets[id]) return;
           this.audio.resume();
           this.metaAccount = selectPet(this.metaAccount, id);
+          const level = petLevelForXp(this.metaAccount.pets[id]?.bondXp ?? 0);
+          const mods = petModsForLevel(id, level);
+          this.armoryDraft = createArmoryDraft(this.metaAccount, 12 + mods.bagCapacityAdd);
           this.refreshCompanionRow();
+          this.refreshArmoryPanel();
         });
       this.companionRow.add(root);
       this.companionChips.push({ id, root, frame, portrait, lock });
@@ -570,13 +1103,19 @@ export class MenuScene extends Phaser.Scene {
   private layout(): void {
     const w = this.screenW();
     const h = this.screenH();
-    this.title.setPosition(w / 2, Math.max(70, h * 0.13)).setFontSize(Math.min(56, w / 13));
-    this.subtitle.setPosition(w / 2, Math.max(70, h * 0.13) + 44);
+    const titleY = Math.max(52, Math.min(86, h * 0.09));
+    this.title.setPosition(w / 2, titleY).setFontSize(Math.min(52, w / 13));
+    this.subtitle.setPosition(w / 2, titleY + 40);
+    this.tabRow?.setPosition(w / 2, titleY + 76);
+    const loadoutScale = Math.min(1, (w - 24) / 1160, Math.max(0.72, (h - 300) / 440));
+    const loadoutY = titleY + 76 + 36 + 220 * loadoutScale;
+    this.wardrobeRoot?.setPosition(w / 2, loadoutY).setScale(loadoutScale);
+    this.armoryRoot?.setPosition(w / 2, loadoutY).setScale(loadoutScale);
     // §50 finding #1 — the launch-intent selector sits between the subtitle and the card grid.
-    this.intentRow?.setPosition(w / 2, Math.max(70, h * 0.13) + 88);
+    this.intentRow?.setPosition(w / 2, titleY + 126);
     this.companionRow
-      ?.setPosition(w / 2, Math.max(70, h * 0.13) + 168)
-      .setScale(Math.min(1, (w - 24) / 930));
+      ?.setPosition(w / 2, Math.min(h - 82, loadoutY + 220 * loadoutScale + 70))
+      .setScale(Math.min(0.88, (w - 24) / 930, Math.max(0.65, h / 1020)));
 
     const n = this.cards.length;
     const gapX = 26;
@@ -585,7 +1124,7 @@ export class MenuScene extends Phaser.Scene {
     const rows = Math.ceil(n / cols);
     const gridW = cols * CARD_W + (cols - 1) * gapX;
     const startX = (w - gridW) / 2 + CARD_W / 2;
-    const startY = Math.max(370, h * 0.43) + CARD_H / 2;
+    const startY = Math.max(220, h * 0.25) + CARD_H / 2;
 
     this.cards.forEach((card, i) => {
       const col = i % cols;
@@ -601,6 +1140,16 @@ export class MenuScene extends Phaser.Scene {
 
   private launch(id: string, bossRush = false, belt = false, beltLevel?: string): void {
     if (this.launching) return; // guard the key+click double-fire
+    const account = this.metaAccount ?? loadPetMetaAccount();
+    const draft = this.armoryDraft ?? createArmoryDraft(account);
+    const stake = armorySummary(account, draft);
+    if (stake.intakeBlocked) {
+      this.setMenuTab("armory");
+      this.audio.play("drive:empty");
+      return;
+    }
+    const requestId = `menu_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const carry = armoryCarrySelection(account, draft, requestId);
     this.launching = true;
     const intent = this.launchIntent;
     const ready = Promise.all([
@@ -625,7 +1174,8 @@ export class MenuScene extends Phaser.Scene {
             bossRush,
             belt,
             beltLevel,
-            selectedPetId: this.metaAccount.selectedPetId,
+            selectedPetId: account.selectedPetId,
+            carry,
           }),
         ),
     );

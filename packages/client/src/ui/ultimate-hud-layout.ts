@@ -23,7 +23,7 @@ function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value));
 }
 
-/** Mirror of the beam-heat dial: the ultimate owns the dock junction's upper-left shoulder. */
+/** Ultimate Charge stays distinct on the shoulder opposite the dock's horizontal Drive truth layer. */
 export function ultimateHudLayout(input: UltimateHudLayoutInput): UltimateHudLayout {
   const scale = Math.max(0.5, input.uiScale);
   let x = input.barX + 230 * scale;

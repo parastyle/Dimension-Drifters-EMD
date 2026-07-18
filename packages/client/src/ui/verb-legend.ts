@@ -14,7 +14,7 @@ interface ContextHintDefinition {
 }
 
 export const CONTEXT_HINTS: Readonly<Record<ContextHintId, ContextHintDefinition>> = {
-  beamOverheat: { copy: "[RMB] Release to vent", color: "#ffb26b" },
+  beamOverheat: { copy: "DRIVE empty · [RMB] Release", color: "#ffb26b" },
   juggle: { copy: "[LMB] Air parry", color: "#e8f5ff" },
   ultimateReady: { copy: "[F] Ultimate", color: "#a8f1e8" },
   pitFall: { copy: "[Space] Hold to leap gaps", color: "#ff9a78" },

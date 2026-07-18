@@ -8,8 +8,6 @@ import {
   affixById,
   BAG_CAP,
   BEAM_MIN_CHARGE_SECONDS,
-  BEAM_OVERHEAT_LOCK_SECONDS,
-  BEAM_RESTART_HEAT,
   BELT_Y0,
   BeamPhase,
   type BeltLevel,
@@ -20,6 +18,7 @@ import {
   bossSpawnAt,
   CAM_FOLLOW_TAU,
   CAM_SNAP_DIST,
+  type CarrySelectionV1,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   COMBO_FLAG_AIRBORNE,
@@ -65,7 +64,7 @@ import {
   lootCooldownMult,
   lootDamageMult,
   META_UPGRADES,
-  type MetaAccountV2,
+  type MetaAccountV4,
   type MetaLevels,
   type MoveStance,
   meleeReach,
@@ -142,6 +141,7 @@ import {
 } from "../combat-feedback.js";
 import { PetRig, playPetEvolutionCeremony } from "../entities/PetRig.js";
 import {
+  GEAR_PARTS_MANIFEST,
   type PaperDeathTreatment,
   partTexture,
   type RigAnim,
@@ -170,6 +170,7 @@ import { SPRITES } from "../sprites/manifest.js";
 import { loadPetPartsManifest, type PetPartsManifest } from "../sprites/pet-parts.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { DamageNumberRenderer } from "../ui/damage-numbers.js";
+import { driveCostView, driveHudView } from "../ui/drive-hud.js";
 import { spawnLevelConfirmEffect } from "../ui/level-up-effects.js";
 import { type LevelUpMode, levelUpLayout, levelUpLayoutKey } from "../ui/level-up-layout.js";
 import {
@@ -190,6 +191,12 @@ import {
   petEvolutionLabel,
   savePetMetaAccount,
 } from "../ui/pet-select.js";
+import { type RemoteGearLoadout, syncRemoteGearLoadouts } from "../ui/remote-gear.js";
+import {
+  type SettlementPresentation,
+  settlementPresentation,
+  type WeaponSettlementReceiptView,
+} from "../ui/settlement.js";
 import { ultimateHudLayout } from "../ui/ultimate-hud-layout.js";
 import {
   canReleaseUltimateReveal,
@@ -532,6 +539,16 @@ interface BeamFeedbackState {
   seq: number;
   phase: number;
   x: number;
+}
+
+interface OwnerWeaponManifestEntry {
+  entryId: string;
+  kind: "single" | "pair";
+  origin: "committed" | "found";
+  location: "active" | "pack" | "field";
+  start: number;
+  instanceIds: string[];
+  weaponIds: string[];
 }
 
 interface DamageRecapEntry {
@@ -1038,11 +1055,19 @@ export class ArenaScene extends Phaser.Scene {
   private readonly petRigs = new Map<string, PetRig>();
   private readonly petOwnerHp = new Map<string, number>();
   private petManifest: PetPartsManifest | null | undefined;
-  private petMetaAccount!: MetaAccountV2;
-  private selectedPetId: MetaAccountV2["selectedPetId"] = "verdant-wing";
+  private petMetaAccount!: MetaAccountV4;
+  private selectedPetId: MetaAccountV4["selectedPetId"] = "verdant-wing";
+  private pendingCarry?: CarrySelectionV1;
   private readonly petPickupEligibility = new Set<string>();
   private petResultLine = "";
   private lastPetReceiptKey = "";
+  /** Owner-private at-stake topology; identities never enter PlayerState's public schema. */
+  private readonly weaponManifest = new Map<string, OwnerWeaponManifestEntry>();
+  private weaponManifestRunId = "";
+  private settlementResult?: SettlementPresentation;
+  private lastSettlementKey = "";
+  /** Wave 4 data-only seam. Wave 5 may consume this map from the rig attachment pass. */
+  private readonly syncedGearLoadouts = new Map<string, RemoteGearLoadout>();
   private readonly petAvoidanceScratch = { x: 0, y: 0, alpha: 1 };
   private readonly enemies = new Map<string, SpriteRig>();
   /** Serraketh is one owner, one batch timeline, and one pooled renderer—not twelve ordinary enemy rigs. */
@@ -1488,7 +1513,9 @@ export class ArenaScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private xpBarBg!: Phaser.GameObjects.Rectangle;
   private xpBarFill!: Phaser.GameObjects.Rectangle;
-  private beamHudGfx?: Phaser.GameObjects.Graphics;
+  private driveHudGfx?: Phaser.GameObjects.Graphics;
+  private driveHudText?: Phaser.GameObjects.Text;
+  private driveLocked = false;
   private ultimateHudGfx?: Phaser.GameObjects.Graphics;
   private ultimateHudText?: Phaser.GameObjects.Text;
   private levelText!: Phaser.GameObjects.Text;
@@ -1619,7 +1646,8 @@ export class ArenaScene extends Phaser.Scene {
     belt?: boolean;
     beltLevel?: string;
     dev?: string;
-    selectedPetId?: MetaAccountV2["selectedPetId"];
+    selectedPetId?: MetaAccountV4["selectedPetId"];
+    carry?: CarrySelectionV1;
   }): void {
     // §4 Phaser reuses this Scene instance: launch options must be derived afresh, never inherited from the
     // previous run (notably a belt launch followed by a normal top-down launch).
@@ -1633,6 +1661,7 @@ export class ArenaScene extends Phaser.Scene {
       data?.beltLevel ?? (urlLevel && urlLevel !== "1" ? urlLevel : "sky-carrier");
     this.petMetaAccount = loadPetMetaAccount();
     this.selectedPetId = data?.selectedPetId ?? this.petMetaAccount.selectedPetId;
+    this.pendingCarry = data?.carry;
     // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
@@ -1934,7 +1963,8 @@ export class ArenaScene extends Phaser.Scene {
     this.hpText = undefined!;
     this.xpBarBg = undefined!;
     this.xpBarFill = undefined!;
-    this.beamHudGfx = undefined;
+    this.driveHudGfx = undefined;
+    this.driveHudText = undefined;
     this.ultimateHudGfx = undefined;
     this.ultimateHudText = undefined;
     this.levelText = undefined!;
@@ -2089,6 +2119,12 @@ export class ArenaScene extends Phaser.Scene {
     this.petManifest = undefined;
     this.petResultLine = "";
     this.lastPetReceiptKey = "";
+    this.weaponManifest.clear();
+    this.weaponManifestRunId = "";
+    this.settlementResult = undefined;
+    this.lastSettlementKey = "";
+    this.syncedGearLoadouts.clear();
+    this.driveLocked = false;
     this.ultimateCastPendingUntil = -1e9;
     this.ultimateHudPulseUntil = -1e9;
     this.queuedUltimateReveal = undefined;
@@ -2417,6 +2453,7 @@ export class ArenaScene extends Phaser.Scene {
     this.objectiveLocationText.setFontSize(Math.max(10, 11 * s));
     this.objectiveEconomyText.setFontSize(Math.max(10, 11 * s));
     this.objectiveNoticeText.setFontSize(Math.max(10, 11 * s));
+    this.driveHudText?.setFontSize(Math.max(9, 10 * s));
     this.ultimateHudText?.setFontSize(9 * s);
     this.bossText.setFontSize(14 * s);
     this.restartBtn.setFontSize(14 * s);
@@ -2455,7 +2492,19 @@ export class ArenaScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0, 0.5)
       .setDepth(100001);
-    this.beamHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
+    this.driveHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
+    this.driveHudText = this.add
+      .text(0, 0, "", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        color: "#d9fbff",
+        fontStyle: "bold",
+        align: "center",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100006)
+      .setVisible(false);
     this.ultimateHudGfx = this.add.graphics().setScrollFactor(0).setDepth(100005);
     this.ultimateHudText = this.add
       .text(0, 0, "", {
@@ -3690,6 +3739,7 @@ export class ArenaScene extends Phaser.Scene {
         // joiner inherits the host's synced dimension — `getDimension` server-side rejects an unknown id).
         const joinOpts = {
           metaAccount: this.petMetaAccount,
+          carry: this.pendingCarry,
           selectedPetId: this.selectedPetId,
           dimensionId: this.selectedDimension,
           bossRush: this.bossRush, // §16 v0.116 the room creator's BOSS RUSH pick scopes the run's mode
@@ -3735,7 +3785,24 @@ export class ArenaScene extends Phaser.Scene {
             }
           },
         ) as () => void;
-        this.roomStateDisposers.push(disposeMetaAccount, disposePetProgress, disposePetPickup);
+        const disposeWeaponManifest = room.onMessage<unknown>("weaponManifest", (payload) => {
+          if (generation !== this.connectionGeneration || this.room !== room) return;
+          this.onWeaponManifest(payload);
+        }) as () => void;
+        const disposeWeaponSettlement = room.onMessage<unknown>(
+          "weaponSettlementReceipt",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            this.onWeaponSettlementReceipt(payload);
+          },
+        ) as () => void;
+        this.roomStateDisposers.push(
+          disposeMetaAccount,
+          disposePetProgress,
+          disposePetPickup,
+          disposeWeaponManifest,
+          disposeWeaponSettlement,
+        );
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
         // tell the player to hard-reload instead of silently rendering garbage.
@@ -3796,8 +3863,25 @@ export class ArenaScene extends Phaser.Scene {
       player.character && SPRITES[player.character as keyof typeof SPRITES]
         ? player.character
         : PLAYER_SPRITE;
-    const rig = new SpriteRig(this, player.x, player.y, isSelf, id, charId);
-    rig.setRigScale(characterScale(charId)); // §7 bump small-footprint skins so none read as tiny
+    const manifest = GEAR_PARTS_MANIFEST;
+    const gearSynced = !!manifest && player.gearUpper.length > 0 && player.gearLower.length > 0;
+    const rig = new SpriteRig(
+      this,
+      player.x,
+      player.y,
+      isSelf,
+      id,
+      charId,
+      gearSynced ? manifest : undefined,
+    );
+    if (gearSynced && manifest)
+      rig.equipSyncedGear(
+        player.gearUpper,
+        player.gearLower,
+        manifest,
+        isSelf ? this.petMetaAccount.prestige : 0,
+      );
+    else rig.setRigScale(characterScale(charId)); // W1 compatibility: no cosmetics means legacy kit.
     this.blobs.set(id, rig);
     this.charOf.set(id, player.character);
     if (isSelf) this.centerCam(player.x, player.y);
@@ -6443,6 +6527,99 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  private onWeaponManifest(payload: unknown): void {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return;
+    const row = payload as { runId?: unknown; entries?: unknown };
+    if (typeof row.runId !== "string" || !Array.isArray(row.entries) || row.entries.length > 32)
+      return;
+    const next = new Map<string, OwnerWeaponManifestEntry>();
+    for (const raw of row.entries) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+      const entry = raw as Partial<OwnerWeaponManifestEntry>;
+      if (
+        typeof entry.entryId !== "string" ||
+        (entry.kind !== "single" && entry.kind !== "pair") ||
+        (entry.origin !== "committed" && entry.origin !== "found") ||
+        (entry.location !== "active" && entry.location !== "pack" && entry.location !== "field") ||
+        !Number.isInteger(entry.start) ||
+        !Array.isArray(entry.instanceIds)
+      )
+        continue;
+      next.set(entry.entryId, {
+        entryId: entry.entryId,
+        kind: entry.kind,
+        origin: entry.origin,
+        location: entry.location,
+        start: Number(entry.start),
+        instanceIds: entry.instanceIds
+          .filter((id): id is string => typeof id === "string")
+          .slice(0, 2),
+        weaponIds: this.weaponManifest.get(entry.entryId)?.weaponIds ?? [],
+      });
+    }
+    this.weaponManifest.clear();
+    for (const [id, entry] of next) this.weaponManifest.set(id, entry);
+    this.weaponManifestRunId = row.runId;
+    const self = this.room?.state.players.get(this.room.sessionId);
+    if (self) this.hydrateWeaponManifest(self);
+  }
+
+  private hydrateWeaponManifest(self: PlayerState): void {
+    for (const entry of this.weaponManifest.values()) {
+      if (entry.location === "field") continue;
+      const source = entry.location === "active" ? self.slots : self.bag;
+      const physical = entry.kind === "pair" ? 2 : 1;
+      const ids: string[] = [];
+      for (let offset = 0; offset < physical; offset++) {
+        const id = source[entry.start + offset]?.weapon;
+        if (id) ids.push(id);
+      }
+      if (ids.length > 0) entry.weaponIds = ids;
+    }
+  }
+
+  private manifestEntryAt(
+    location: "active" | "pack",
+    index: number,
+  ): OwnerWeaponManifestEntry | undefined {
+    for (const entry of this.weaponManifest.values()) {
+      if (entry.location !== location) continue;
+      const span = entry.kind === "pair" ? 2 : 1;
+      if (index >= entry.start && index < entry.start + span) return entry;
+    }
+    return undefined;
+  }
+
+  private onWeaponSettlementReceipt(payload: unknown): void {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return;
+    const row = payload as Partial<WeaponSettlementReceiptView>;
+    if (
+      row.ok !== true ||
+      (row.outcome !== "victory" && row.outcome !== "defeat") ||
+      !Number.isFinite(row.returnedEntries) ||
+      !Number.isFinite(row.returnedPhysical) ||
+      !Number.isFinite(row.intakeEntries) ||
+      !Number.isFinite(row.lostEntries) ||
+      !Number.isFinite(row.lostPhysical)
+    )
+      return;
+    const key = `${this.weaponManifestRunId}:${row.outcome}:${row.returnedPhysical}:${row.lostPhysical}`;
+    if (key === this.lastSettlementKey) return;
+    this.lastSettlementKey = key;
+    this.settlementResult = settlementPresentation(
+      payload as WeaponSettlementReceiptView,
+      this.petMetaAccount.weaponBank.expedition,
+      [...this.weaponManifest.values()].map((entry) => ({
+        entryId: entry.entryId,
+        origin: entry.origin,
+        location: entry.location,
+        physical: entry.kind === "pair" ? 2 : 1,
+        weaponNames: entry.weaponIds.map((id) => WEAPONS[id]?.name ?? "Unknown weapon"),
+      })),
+    );
+    this.audio.play(row.outcome === "victory" ? "settlement:kept" : "settlement:lost");
+  }
+
   /** Boss health bar + approach banner + victory screen (§16). */
   private onPetProgressReceipt(payload: unknown): void {
     if (!payload || typeof payload !== "object") return;
@@ -6630,13 +6807,15 @@ export class ArenaScene extends Phaser.Scene {
     this.prevWon = won;
     this.victoryText.setVisible(won);
     if (won) {
-      // §16 v0.116 Polish B — a distinct end-card for the BOSS RUSH gauntlet vs a normal extraction.
-      const bankedNow = this.room.state.bankedSalvage;
+      const ceremony = this.settlementResult;
+      const outcome = ceremony
+        ? `${ceremony.heading}\n${ceremony.primary}\n${ceremony.detail}`
+        : "BANKING CARRY · awaiting settlement receipt";
       this.victoryText
         .setText(
           this.room.state.mode === "bossrush"
-            ? `☠  GAUNTLET CLEARED  ☠\nall 10 bosses down ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`
-            : `EXTRACTED at depth ${this.room.state.depth} ✦ ${bankedNow} salvage banked\n(Restart Run — top-right)`,
+            ? `☠  GAUNTLET CLEARED  ☠\n${outcome}\n(Restart Run — top-right)`
+            : `EXTRACTED · DEPTH ${this.room.state.depth}\n${outcome}\n(Restart Run — top-right)`,
         )
         .setText(`${this.victoryText.text}${this.petResultLine ? `\n${this.petResultLine}` : ""}`)
         .setPosition(this.screenW() / 2, this.screenH() / 2);
@@ -7642,10 +7821,22 @@ export class ArenaScene extends Phaser.Scene {
     const players = this.room.state.players;
     players.forEach((player, id) => {
       if (!this.blobs.has(id)) this.addBlob(player, id);
-      // §7 character swap (C key) — rebuild the rig with the new skin (re-equips next frame).
-      else if (this.charOf.get(id) !== player.character) {
-        this.removeBlob(id);
-        this.addBlob(player, id);
+      else {
+        const rig = this.blobs.get(id);
+        const gearSynced =
+          !!rig &&
+          !!GEAR_PARTS_MANIFEST &&
+          rig.equipSyncedGear(
+            player.gearUpper,
+            player.gearLower,
+            GEAR_PARTS_MANIFEST,
+            id === this.room?.sessionId ? this.petMetaAccount.prestige : 0,
+          );
+        // The 40-kit swap remains only for compatibility rooms whose gear tail is genuinely absent.
+        if (!gearSynced && this.charOf.get(id) !== player.character) {
+          this.removeBlob(id);
+          this.addBlob(player, id);
+        }
       }
     });
     for (const id of this.blobs.keys()) {
@@ -8772,8 +8963,12 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.beam) return;
-    // Thrown weapons + guns need ammo — don't animate/fire when empty/reloading (server gates it too).
-    if ((weapon?.thrown || weapon?.gun) && self.charges <= 0) return;
+    // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
+    // unaffordable (the server's spend seam rejects it too). Replaces the retired `charges` gate.
+    if (weapon?.thrown || weapon?.gun) {
+      const drive = Math.floor(Number(self.weaponResource?.valueQ) || 0) / 100;
+      if (drive + 1e-9 < driveCostView(weapon.id).cost) return;
+    }
     // §10 v0.104 de-clunk: fold in the held weapon's affix cooldown multiplier — the SERVER gates fire on
     // `cooldown × lootCooldownMult`, so if the client's send cadence ignores it, a Heavy/slow weapon sends
     // faster than the server accepts (half the swings become ghosts) and a Swift/fast one can never send at
@@ -10205,7 +10400,7 @@ export class ArenaScene extends Phaser.Scene {
       if (!this.beamHelpShown && WEAPONS[self.weapon]?.beam) {
         this.beamHelpShown = true;
         this.flashBanner(
-          "[RMB] Hold to charge and channel\nRelease before overheat · Cool below the marker to restart",
+          "[RMB] Hold to charge and channel\nRelease before Drive empties · Refill to restart",
           "#8fe9ff",
         );
       }
@@ -10461,110 +10656,81 @@ export class ArenaScene extends Phaser.Scene {
     });
   }
 
-  private beamStatusText(
-    row: BeamRenderState | undefined,
-    weapon: WeaponDef,
-    tick: number,
-  ): string {
-    // dockux-panel §2.2 beam vocabulary: verdicts and plain language — Ready / Charging / Heat /
-    // OVERHEAT (the one earned caps alarm) / Cooling / Locked. A ready weapon shows no engineer-brain %.
-    if (!weapon.beam || !row || row.weaponId !== weapon.id) return "Ready";
-    if (row.phase === BeamPhase.Charging) return `Charging ${Math.round(row.intensity * 100)}%`;
-    if (row.phase === BeamPhase.Active)
-      return `${row.heat >= 0.8 ? "OVERHEAT" : "Heat"} ${Math.round(row.heat * 100)}%`;
-    if (row.phase === BeamPhase.Cooling)
-      return row.heat <= Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat)
-        ? "Ready"
-        : `Cooling ${Math.round(row.heat * 100)}%`;
-    if (row.phase === BeamPhase.Overheated) {
-      const elapsed = ((tick - row.phaseStartTick) >>> 0) * (TICK_MS / 1000);
-      const remaining = Math.max(
-        0,
-        Math.max(BEAM_OVERHEAT_LOCK_SECONDS, weapon.beam.overheat.lockSeconds) - elapsed,
-      );
-      return remaining > 0 ? `Locked ${remaining.toFixed(1)}s` : "Ready";
-    }
-    return "Ready";
-  }
-
-  private beamStatusColor(row: BeamRenderState | undefined): number {
-    if (!row) return 0x8fe9ff;
-    if (row.phase === BeamPhase.Overheated) return 0xff5d5d;
-    if (row.phase === BeamPhase.Charging) return 0x6fd6ff;
-    if (row.phase === BeamPhase.Cooling || row.heat >= 0.8) return 0xff9a45;
-    return 0x8fe9ff;
-  }
-
-  /** Compact authoritative heat arc with restart marker; dock corner in arena, weapon rail in belt mode. */
-  private renderBeamHud(
+  /** One authoritative horizontal Drive bar. Ammo rows, reload copy, and the beam heat arc retire here. */
+  private renderDriveHud(
     self: PlayerState | undefined,
     weapon: WeaponDef | undefined,
-    row: BeamRenderState | undefined,
     barX: number,
     xpY: number,
     scale: number,
   ): void {
-    const g = this.beamHudGfx;
-    if (!g) return;
+    const g = this.driveHudGfx;
+    const label = this.driveHudText;
+    if (!g || !label) return;
     g.clear();
-    if (!self || !weapon?.beam) return;
-    let x = barX + 266 * scale;
-    let y = xpY - 25 * scale;
-    let radius = 10 * scale;
+    label.setVisible(false);
+    if (!self || !weapon) return;
+    const tick = this.room?.state.tick ?? 0;
+    const beamRow = this.room?.state.beams.get(self.id);
+    const view = driveHudView({
+      valueQ: self.weaponResource.valueQ,
+      regenMode: self.weaponResource.regenMode,
+      beamLockEndTick: self.weaponResource.beamLockEndTick,
+      tick,
+      weaponId: weapon.id,
+      beamRequireRelease:
+        !!weapon.beam &&
+        (beamRow?.phase === BeamPhase.Overheated ||
+          (beamRow?.phase === BeamPhase.Cooling && self.weaponResource.valueQ <= 0)),
+    });
+    let width = 240 * scale;
+    let x = barX;
+    let y = xpY - 58 * scale;
     const layout = !this.belt ? this.carouselDock?.layout : undefined;
     if (layout) {
-      // Follow the dock body's idle scale (dockux-panel §1.2) so the heat arc stays glued to the
-      // junction corner while the dock rides between 0.72 and 1.
-      const k = this.carouselDock?.body.scaleX ?? 1;
-      const anchorX = layout.cornerLeft + layout.junctionSize;
-      const anchorY = layout.cornerTop + layout.junctionSize;
-      x = anchorX + (layout.junction.x + layout.junctionSize * 0.36 - anchorX) * k;
-      y = anchorY + (layout.junction.y - layout.junctionSize * 0.35 - anchorY) * k;
-      radius = Math.max(8, layout.junctionSize * 0.105) * k;
+      const dockScale = this.carouselDock?.body.scaleX ?? 1;
+      width = Math.max(150 * layout.scale, 188 * layout.scale * dockScale);
+      x = layout.cornerLeft - width - 12 * layout.scale;
+      y = layout.cornerTop + 7 * layout.scale;
+    } else if (this.belt) {
+      width = Math.min(320 * scale, this.screenW() - 48 * scale);
+      x = this.screenW() / 2 - width / 2;
+      y = this.screenH() - 126 * scale;
     }
-    const start = Math.PI * 0.72;
-    const span = Math.PI * 1.56;
-    const value = row?.phase === BeamPhase.Charging ? row.intensity : (row?.heat ?? 0);
-    const color = this.beamStatusColor(row);
-    const line = Math.max(2, 2.4 * scale);
-    g.lineStyle(line + 2, 0x080a0d, 0.82);
-    g.beginPath();
-    g.arc(x, y, radius, start, start + span, false);
-    g.strokePath();
-    g.lineStyle(line, 0x52616c, 0.65);
-    g.beginPath();
-    g.arc(x, y, radius, start, start + span, false);
-    g.strokePath();
-    if (value > 0) {
-      g.lineStyle(
-        line,
-        color,
-        row?.phase === BeamPhase.Overheated ? 0.72 + Math.sin(this.time.now / 70) * 0.2 : 0.96,
-      );
-      g.beginPath();
-      g.arc(x, y, radius, start, start + span * Math.max(0, Math.min(1, value)), false);
-      g.strokePath();
+    const height = 12 * scale;
+    const fill = Math.max(0, width * view.fraction);
+    const preview = Math.max(0, Math.min(fill, width * view.debitFraction));
+    const color = view.locked ? 0xff5d5d : view.low ? 0xff9a45 : 0x6fd6ff;
+    g.fillStyle(0x06080b, 0.96).fillRoundedRect(
+      x - 2 * scale,
+      y - 2 * scale,
+      width + 4 * scale,
+      height + 4 * scale,
+      4 * scale,
+    );
+    g.fillStyle(0x26313a, 0.95).fillRoundedRect(x, y, width, height, 3 * scale);
+    if (fill > 0) g.fillStyle(color, 0.96).fillRoundedRect(x, y, fill, height, 3 * scale);
+    if (preview > 0) {
+      g.fillStyle(0xffffff, 0.24).fillRect(x + fill - preview, y, preview, height);
     }
-    const restart = Math.min(BEAM_RESTART_HEAT, weapon.beam.overheat.restartHeat);
-    const markerAngle = start + span * restart;
-    const mx = Math.cos(markerAngle);
-    const my = Math.sin(markerAngle);
-    g.lineStyle(Math.max(1.5, 1.7 * scale), 0xffffff, 0.92);
-    g.lineBetween(
-      x + mx * (radius - 4 * scale),
-      y + my * (radius - 4 * scale),
-      x + mx * (radius + 4 * scale),
-      y + my * (radius + 4 * scale),
-    );
-    const endX = Math.cos(start + span);
-    const endY = Math.sin(start + span);
-    g.lineStyle(Math.max(1.5, 1.8 * scale), 0xff5d5d, 0.95);
-    g.lineBetween(
-      x + endX * (radius - 4 * scale),
-      y + endY * (radius - 4 * scale),
-      x + endX * (radius + 4 * scale),
-      y + endY * (radius + 4 * scale),
-    );
+    g.lineStyle(Math.max(1, scale), color, 0.9).strokeRoundedRect(x, y, width, height, 3 * scale);
+    for (let index = 0; index < view.chevrons; index++) {
+      const cx = x + width + (8 + index * 7) * scale;
+      g.lineStyle(2 * scale, view.chevrons === 2 ? 0x9cff6a : 0x6fd6ff, 0.95)
+        .lineBetween(cx - 3 * scale, y + 2 * scale, cx + 1 * scale, y + height / 2)
+        .lineBetween(cx + 1 * scale, y + height / 2, cx - 3 * scale, y + height - 2 * scale);
+    }
+    const copy = view.overlay || `DRIVE ${Math.floor(view.value)} · COST ${view.cost.copy}`;
+    label
+      .setPosition(x + width / 2, y - 7 * scale)
+      .setText(copy)
+      .setColor(view.locked ? "#ff5d5d" : view.low ? "#ffb24a" : "#d9fbff")
+      .setVisible(true);
+    if (view.locked && !this.driveLocked) {
+      this.flashBanner("DRIVE EMPTY · RELEASE", "#ff5d5d");
+      this.audio.play("drive:empty");
+    }
+    this.driveLocked = view.locked;
   }
 
   /** Authoritative-only charge arc, mirrored onto the dock junction's opposite (upper-left) shoulder. */
@@ -10876,48 +11042,28 @@ export class ArenaScene extends Phaser.Scene {
 
     this.restartBtn.setPosition(this.screenW() - 14 * s, 14 * s);
     const heldWeapon = self ? WEAPONS[self.weapon] : undefined;
-    const beamRow = self ? this.room?.state.beams.get(self.id) : undefined;
-    const beamResource =
-      self && heldWeapon?.beam
-        ? `   ◔ ${this.beamStatusText(beamRow, heldWeapon, this.room?.state.tick ?? 0)}`
-        : "";
-    // Weapon name + an ammo readout: filled/empty pips for small mags (thrown/revolver), a numeric
-    // "loaded/mag" for big-magazine guns (gatling/nailgun), or "reloading…" while empty.
-    let charges = "";
-    if (self && self.maxCharges > 0) {
-      if (self.charges <= 0) charges = "   ⟳ Reloading…";
-      else if (self.maxCharges > 10) charges = `   ▮ ${self.charges}/${self.maxCharges}`;
-      else
-        charges = `   ${"◆".repeat(self.charges)}${"◇".repeat(Math.max(0, self.maxCharges - self.charges))}`;
-    }
-    // §10 v0.104 the held weapon's LOOT identity rides the readout: "Rare Keen Neon Katana", tinted by
-    // its rarity tier (loot-less holds stay plain).
+    const driveCost = heldWeapon ? driveCostView(heldWeapon.id) : undefined;
+    // Loot identity and the generated neutral Drive debit share one line; no per-weapon ammo clock remains.
     const heldRar = self && self.weaponRarity > 0 ? RARITIES[self.weaponRarity] : undefined;
     const heldAffix = self?.weaponAffix ? affixById(self.weaponAffix).name : "";
     const lootPrefix = [heldRar?.name ?? "", heldAffix].filter(Boolean).join(" ");
+    const heldManifest = self ? this.manifestEntryAt("active", self.activeSlot) : undefined;
+    const atRisk = heldManifest?.origin === "found" ? " · FOUND · AT RISK" : "";
     this.weaponText
       .setPosition(barX, xpY - 24 * s)
       .setText(
         self
-          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${charges}${beamResource}`
+          ? `⚔ ${lootPrefix ? `${lootPrefix} ` : ""}${heldWeapon?.name ?? "Unknown weapon"}${driveCost ? ` · DRIVE ${driveCost.pipText} ${driveCost.copy}` : ""}${atRisk}`
           : "",
       );
-    // Ammo-state colour so you reload proactively: red while reloading, amber on the last ~25%, else
-    // green — with a rarity tint when the weapon carries one and ammo is healthy.
-    if (heldWeapon?.beam) {
-      this.weaponText.setColor(`#${this.beamStatusColor(beamRow).toString(16).padStart(6, "0")}`);
-    } else if (
-      self &&
-      self.maxCharges > 0 &&
-      self.charges <= Math.max(1, Math.ceil(self.maxCharges * 0.25))
-    ) {
-      this.weaponText.setColor(self.charges <= 0 ? "#ff5d5d" : "#ff8a2b");
+    if (heldManifest?.origin === "found") {
+      this.weaponText.setColor("#ffb24a");
     } else if (heldRar) {
       this.weaponText.setColor(`#${heldRar.color.toString(16).padStart(6, "0")}`);
     } else {
       this.weaponText.setColor("#9cff3b");
     }
-    this.renderBeamHud(self, heldWeapon, beamRow, barX, xpY, s);
+    this.renderDriveHud(self, heldWeapon, barX, xpY, s);
     this.renderUltimateHud(self, barX, xpY, s);
 
     // §8 owned parry augments — a compact "name ×count" summary above the weapon readout.
@@ -10962,9 +11108,15 @@ export class ArenaScene extends Phaser.Scene {
       const recovery = wiped
         ? "(click Restart Run, top-right)"
         : "A squadmate with Gravedigger's Spade can revive you.";
+      const stakes =
+        wiped && this.settlementResult
+          ? `\n${this.settlementResult.heading}\n${this.settlementResult.primary}\n${this.settlementResult.detail}`
+          : wiped
+            ? "\nCLOSING THE CARRY · awaiting settlement receipt"
+            : "";
       this.deathText
         .setText(
-          `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}`,
+          `${wiped ? "DEFEATED — THE SQUAD IS DOWN" : "DOWNED"}\n${cause}${prior}\n${recovery}${stakes}`,
         )
         .setText(
           `${this.deathText.text}${wiped && this.petResultLine ? `\n${this.petResultLine}` : ""}`,
@@ -11317,9 +11469,9 @@ export class ArenaScene extends Phaser.Scene {
         ? `${dock.selectedIndex + 1}/${WEAPON_IDS.length}`
         : `—/${WEAPON_IDS.length}`,
     );
-    // dockux-panel §2.2: sentence-case state, no id leaks, tier · affix with the interpunct, and
-    // RELOADING as a state in progress rather than a command. Pair names keep the dock's 17-char
-    // ellipsis contract so the second hand never pushes combat truth off the junction.
+    // dockux-panel §2.2: sentence-case state, no id leaks, tier · affix with the interpunct. Pair
+    // names keep the dock's 17-char ellipsis contract so the second hand never pushes Drive truth
+    // off the junction.
     const leadName = unarmed ? "Unarmed" : (def?.name ?? "Unknown weapon");
     const offName = offDef?.name ?? (entry.offId ? "Unknown weapon" : "");
     const rawName = offName ? `${leadName} × ${offName}` : leadName;
@@ -11334,47 +11486,26 @@ export class ArenaScene extends Phaser.Scene {
           .join(" / "),
       )
       .setColor(rarity ? `#${rarity.color.toString(16).padStart(6, "0")}` : "#d8cfb8");
-    if (def?.beam) {
-      const row = this.room?.state.beams.get(self.id);
-      dock.junction.resource
-        .setText(this.beamStatusText(row, def, this.room?.state.tick ?? 0))
-        .setColor(`#${this.beamStatusColor(row).toString(16).padStart(6, "0")}`)
+    const leadCost = driveCostView(entry.leadId);
+    dock.junction.resource
+      .setText(`DRIVE ${leadCost.pipText} ${leadCost.copy}`)
+      .setColor("#d9fbff")
+      .setAlpha(entry.nextHand === 0 ? 1 : 0.78)
+      .setData("fraction", 0);
+    if (entry.offId) {
+      const offCost = driveCostView(entry.offId);
+      dock.junction.resource2
+        .setText(`OFF ${offCost.pipText} ${offCost.copy}`)
+        .setColor("#a9cbd1")
+        .setAlpha(entry.nextHand === 1 ? 1 : 0.72)
+        .setData("fraction", 0);
+    } else if (this.manifestEntryAt("active", entry.leadSlot)?.origin === "found") {
+      dock.junction.resource2
+        .setText("FOUND · AT RISK")
+        .setColor("#ffb24a")
         .setAlpha(1)
         .setData("fraction", 0);
-      dock.junction.resource2.setText("").setData("fraction", 0);
-    } else if (entry.maxCharges > 0) {
-      const resource = (charges: number, maxCharges: number) => ({
-        text: charges <= 0 ? "RELOADING" : `▮ ${charges}/${maxCharges}`,
-        color:
-          charges <= 0
-            ? "#ff5d5d"
-            : charges <= Math.max(1, Math.ceil(maxCharges * 0.25))
-              ? "#ff8a2b"
-              : "#f1e8cf",
-      });
-      const leadResource = resource(entry.charges, entry.maxCharges);
-      dock.junction.resource
-        .setText(leadResource.text)
-        .setColor(leadResource.color)
-        .setAlpha(entry.nextHand === 0 ? 1 : 0.7)
-        .setData("fraction", entry.maxCharges > 0 ? entry.charges / entry.maxCharges : 0);
-      if ((entry.offMaxCharges ?? 0) > 0) {
-        const offResource = resource(entry.offCharges ?? 0, entry.offMaxCharges ?? 0);
-        dock.junction.resource2
-          .setText(offResource.text)
-          .setColor(offResource.color)
-          .setAlpha(entry.nextHand === 1 ? 1 : 0.7)
-          .setData(
-            "fraction",
-            (entry.offMaxCharges ?? 0) > 0
-              ? (entry.offCharges ?? 0) / (entry.offMaxCharges ?? 1)
-              : 0,
-          );
-      } else {
-        dock.junction.resource2.setText("").setData("fraction", 0);
-      }
     } else {
-      dock.junction.resource.setText("").setData("fraction", 0);
       dock.junction.resource2.setText("").setData("fraction", 0);
     }
     if (dock.layout) {
@@ -11542,14 +11673,8 @@ export class ArenaScene extends Phaser.Scene {
       token.text.setText(`${met ? "✓" : "✗"} ${token.need}`);
       token.text.setColor(met ? "#9cff3b" : "#ff5a4a");
     }
-    if (def?.thrown) {
-      const current = card.id === self.weapon ? self.charges : def.thrown.charges;
-      card.resource.setText(`${current} / ${def.thrown.charges}`);
-    } else if (def?.durability) {
-      card.resource.setText(String(def.durability));
-    } else {
-      card.resource.setText("");
-    }
+    const cost = driveCostView(card.id);
+    card.resource.setText(`DRIVE ${cost.pipText} · ${cost.copy}`);
     if (activePairCard && offDef && entry.offId) {
       const preview = pairPreview({
         lead: {
@@ -11708,6 +11833,7 @@ export class ArenaScene extends Phaser.Scene {
       entry.offCharges,
       entry.offMaxCharges,
       entry.nextHand,
+      this.manifestEntryAt("active", entry.leadSlot)?.origin ?? "",
     ].join(":");
     if (activeSig !== dock.activeSig) {
       dock.activeSig = activeSig;
@@ -11990,46 +12116,15 @@ export class ArenaScene extends Phaser.Scene {
         .setPosition(x + chipW - 7 * s, y + chipH - 3 * s)
         .setVisible(paired);
       pairGlyph.setFontSize(13 * s).setOrigin(1, 1);
-      const ammo = this.hudText(this.arsenalTexts, 13 + i, 100049).setVisible(
-        active && !!entry.offId && entry.maxCharges > 0,
-      );
-      if (active && entry.offId && entry.maxCharges > 0) {
-        ammo
-          .setText(
-            `${entry.charges}/${entry.maxCharges} · ${entry.offCharges ?? 0}/${entry.offMaxCharges ?? 0}`,
-          )
-          .setColor("#cfc6ae")
-          .setPosition(x + chipW / 2, y + chipH - 3 * s)
-          .setFontSize(9 * s)
-          .setOrigin(0.5, 1);
-        const barW = 46 * s;
-        const barX = x + chipW - barW - 8 * s;
-        const drawHandBar = (
-          rowY: number,
-          charges: number,
-          maxCharges: number,
-          emphasized: boolean,
-        ) => {
-          const fraction = maxCharges > 0 ? Math.max(0, Math.min(1, charges / maxCharges)) : 0;
-          const color =
-            charges <= 0
-              ? 0xff5d5d
-              : charges <= Math.max(1, Math.ceil(maxCharges * 0.25))
-                ? 0xff8a2b
-                : 0xf1e8cf;
-          g.fillStyle(0x24201a, 0.95)
-            .fillRect(barX, rowY, barW, 2 * s)
-            .fillStyle(color, emphasized ? 1 : 0.7)
-            .fillRect(barX, rowY, Math.max(fraction > 0 ? 1 : 0, barW * fraction), 2 * s);
-        };
-        drawHandBar(y + chipH - 7 * s, entry.charges, entry.maxCharges, entry.nextHand === 0);
-        drawHandBar(
-          y + chipH - 3 * s,
-          entry.offCharges ?? 0,
-          entry.offMaxCharges ?? 0,
-          entry.nextHand === 1,
-        );
-      }
+      const cost = empty ? undefined : driveCostView(wid);
+      const found = this.manifestEntryAt("active", i)?.origin === "found";
+      this.hudText(this.arsenalTexts, 13 + i, 100049)
+        .setText(cost ? `${cost.pipText} ${cost.copy}${found ? " · FOUND · AT RISK" : ""}` : "")
+        .setColor(found ? "#ffb24a" : "#a9cbd1")
+        .setPosition(x + chipW / 2, y + chipH - 3 * s)
+        .setFontSize(8 * s)
+        .setOrigin(0.5, 1)
+        .setVisible(!!cost);
       // dockux-panel §3.4: while the panel is open, the slot chip itself says what a click does.
       const panelUp = this.bagOpen || this.shopOpen;
       const tag = this.hudText(this.arsenalTexts, 7 + i, 100049)
@@ -12798,7 +12893,9 @@ export class ArenaScene extends Phaser.Scene {
       line1.setText(`${leadName} × ${offName}`).setColor("#f1e8cf");
       line2.setText("One atomic loadout entry · alternating hands").setColor("#cfd6de");
       line3.setText("Unbind fee ◈ 0").setColor("#9cff6a");
-      truth.setText("Both halves keep their exact tier, affix, ammo, and reload debt.");
+      truth.setText(
+        "Both halves keep their exact tier, affix, cadence debt, and one shared Drive bar.",
+      );
     } else if (candidate && preview?.eligible) {
       const leadName = WEAPONS[lead.weaponId]?.name ?? "Unknown weapon";
       const offName = WEAPONS[candidate.weaponId]?.name ?? "Unknown weapon";
@@ -13254,6 +13351,11 @@ export class ArenaScene extends Phaser.Scene {
   private onPatch(state: ArenaState): void {
     const now = this.time.now;
     if (state.tick <= 0) return; // pre-sim state (menu/handshake)
+    const gearRows: Array<[string, { gearUpper: unknown; gearLower: unknown }]> = [];
+    state.players.forEach((player, id) => {
+      gearRows.push([id, { gearUpper: player.gearUpper, gearLower: player.gearLower }]);
+    });
+    syncRemoteGearLoadouts(this.syncedGearLoadouts, gearRows);
     this.timeline.onPatch(state.tick, now);
     const t = state.tick * TICK_MS;
     const selfId = this.room?.sessionId;
@@ -13285,6 +13387,7 @@ export class ArenaScene extends Phaser.Scene {
     if (selfId) {
       const self = state.players.get(selfId);
       if (self) {
+        this.hydrateWeaponManifest(self);
         const view = ArenaScene.serverView(self);
         if (this.predictor) {
           this.predictor.reconcile(view);

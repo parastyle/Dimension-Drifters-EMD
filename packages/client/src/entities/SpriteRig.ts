@@ -4,7 +4,10 @@ import {
   comboStepForChain,
   DUAL_MELEE_PAIR_BAR,
   DUAL_MELEE_SEQUENCE_LENGTH,
+  decodeGearCosmetics,
   dualHandForSeq,
+  type GearId,
+  type GearSlot,
   GRAVITY_APEX_BAND,
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
@@ -93,9 +96,29 @@ import {
   firingStanceFor,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
+import {
+  assembleBoilerplate,
+  assembleGearLoadout,
+  type BoilerplateAssembly,
+  type BoilerplateAssemblyPart,
+  boilerplateTextureKey,
+  ensureBoilerplateTextures,
+  ensureGearAssemblyTextures,
+  ensureGearPartFrame,
+  type GearAssemblyPart,
+  type GearLoadoutAssembly,
+  type GearPartsManifest,
+  gearTextureKey,
+  type HatChainInput,
+  type HatSpringState,
+  stepGearAngularSpring,
+  stepHatSpringChain,
+} from "../sprites/gear-parts.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
+
+export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
 
 /** §28 the packed sprite MULTIATLAS key (tools/artkit/pack-atlas.mjs → public/sprites/dd-sprites.json). When
  *  loaded, every non-expansion part lives here as the frame "<id>/<role>", so the WebGL batcher binds ONE
@@ -855,6 +878,11 @@ interface RigFoot extends JigglePartState {
   front: boolean;
 }
 
+interface GearAttachment extends HatSpringState {
+  image: Phaser.GameObjects.Image;
+  spec: GearAssemblyPart;
+}
+
 /** Rebase on construction/cuts/swaps/LOD sleep. A cut is not acceleration and must add zero energy. */
 function resetJigglePart(p: JigglePartState, ax: number, ay: number, own: number): void {
   p.jx = 0;
@@ -1145,7 +1173,7 @@ export class SpriteRig {
   renderPrevY: number;
   private readonly scene: Phaser.Scene;
   private readonly isSelf: boolean;
-  private readonly scale: number;
+  private scale: number;
   /** Rig-level UNIFORM scale multiplier (tough/boss size-up). Applied to BOTH axes every frame so
    *  the facing flip never stretches the sprite — art keeps its painted aspect ratio (§28.4). */
   private baseScale = 1;
@@ -1156,6 +1184,32 @@ export class SpriteRig {
   private readonly hands: RigHand[] = [];
   private readonly feet: RigFoot[] = [];
   private readonly parts: Phaser.GameObjects.Image[] = [];
+  /** The blank kit keeps its head detached so body squash/turns remain the one authored parent transform. */
+  private boilerplateHead?: Phaser.GameObjects.Image;
+  private boilerplateManifest?: GearPartsManifest;
+  private boilerplateAssembly?: BoilerplateAssembly;
+  private boilerplateBodyAssembly?: BoilerplateAssemblyPart;
+  private boilerplateHeadAssembly?: BoilerplateAssemblyPart;
+  private boilerplateReady = false;
+  private gearAssembly?: GearLoadoutAssembly;
+  private gearArtComplete = false;
+  private gearLoadoutKey = "";
+  private syncedGearUpper = "";
+  private syncedGearLower = "";
+  private syncedGearPrestige = -1;
+  private readonly gearAttachments: GearAttachment[] = [];
+  private readonly hatAttachments: GearAttachment[] = [];
+  private readonly gearSocketScratch = { x: 0, y: 0 };
+  private readonly hatChainInput: HatChainInput = {
+    excitation: 0,
+    dashLean: 0,
+    bodyAngle: 0,
+    landingImpulse: 0,
+    reducedMotion: false,
+    reset: true,
+  };
+  private hatOverflowLabel?: Phaser.GameObjects.Text;
+  private gearLodSleeping = false;
   private readonly label?: Phaser.GameObjects.Text;
   private readonly phase: number;
   /** The flagship owns one idempotent semantic pose sampled from server epochs each rendered frame. */
@@ -1464,6 +1518,7 @@ export class SpriteRig {
     isSelf: boolean,
     id: string,
     spriteId: string,
+    gearManifest?: GearPartsManifest,
   ) {
     const manifest = SPRITES[spriteId as keyof typeof SPRITES] as SpriteManifest | undefined;
     if (!manifest) throw new Error(`SpriteRig: no sprite manifest for "${spriteId}"`);
@@ -1601,6 +1656,309 @@ export class SpriteRig {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000;
     this.phase = h / 1000;
+    if (gearManifest) this.requestBoilerplate(gearManifest);
+  }
+
+  /** Select the fixed blank kit without ever exposing an unresolved texture key. */
+  private requestBoilerplate(manifest: GearPartsManifest): void {
+    if (this.boilerplateManifest === manifest) return;
+    this.boilerplateManifest = manifest;
+    this.boilerplateAssembly = assembleBoilerplate(manifest, TARGET_BODY_H);
+    this.boilerplateBodyAssembly = undefined;
+    this.boilerplateHeadAssembly = undefined;
+    for (const part of this.boilerplateAssembly.parts) {
+      if (part.source.id === "body") this.boilerplateBodyAssembly = part;
+      else if (part.source.id === "head") this.boilerplateHeadAssembly = part;
+    }
+    this.baseScale = 1;
+    if (!this.boilerplateHead) {
+      this.boilerplateHead = this.scene.add.image(0, 0, "__WHITE").setVisible(false);
+      this.root.add(this.boilerplateHead);
+    }
+    ensureBoilerplateTextures(this.scene, manifest);
+    this.installBoilerplateIfReady();
+  }
+
+  /** Retarget the five legacy retained nodes plus the detached head once all six loose textures exist. */
+  private installBoilerplateIfReady(): void {
+    if (this.boilerplateReady || !this.boilerplateAssembly) return;
+    for (const part of this.boilerplateAssembly.parts)
+      if (!this.scene.textures.exists(boilerplateTextureKey(part.source.id))) return;
+
+    const assembly = this.boilerplateAssembly;
+    const body = this.boilerplateBodyAssembly;
+    const head = this.boilerplateHeadAssembly;
+    if (!body || !head || !this.boilerplateHead) return;
+    this.scale = assembly.scale;
+    this.body
+      .setTexture(boilerplateTextureKey("body"))
+      .setOrigin(body.originX, body.originY)
+      .setScale(body.scale);
+    this.boilerplateHead
+      .setTexture(boilerplateTextureKey("head"))
+      .setOrigin(head.originX, head.originY)
+      .setScale(head.scale)
+      .setVisible(true);
+
+    for (const part of assembly.parts) {
+      const right = part.source.id.endsWith("-r");
+      if (part.source.id.startsWith("hand-")) {
+        const hand = this.hands.find((candidate) => candidate.front === right);
+        if (!hand) continue;
+        hand.ox = part.x;
+        hand.oy = part.y;
+        hand.img
+          .setTexture(boilerplateTextureKey(part.source.id))
+          .setOrigin(part.originX, part.originY)
+          .setPosition(part.x, part.y)
+          .setScale(part.scale);
+      } else if (part.source.id.startsWith("foot-")) {
+        const foot = this.feet.find((candidate) => candidate.front === right);
+        if (!foot) continue;
+        foot.ox = part.x;
+        foot.oy = part.y;
+        foot.img
+          .setTexture(boilerplateTextureKey(part.source.id))
+          .setOrigin(part.originX, part.originY)
+          .setPosition(part.x, part.y)
+          .setScale(part.scale);
+      }
+    }
+    this.slideAfterimageA
+      .setTexture(boilerplateTextureKey("body"))
+      .setOrigin(body.originX, body.originY)
+      .setScale(body.scale);
+    this.slideAfterimageB
+      .setTexture(boilerplateTextureKey("body"))
+      .setOrigin(body.originX, body.originY)
+      .setScale(body.scale);
+    this.boilerplateReady = true;
+    this.resetSecondaryMotion();
+    this.rebuildRenderStack();
+    this.restTint();
+  }
+
+  /**
+   * Diff a validated account loadout onto retained gear images. The optional composition is already bounded
+   * account data; absent composition repeats the equipped signature hat through unlocked prestige slots.
+   */
+  equipSyncedGear(
+    gearUpper: string,
+    gearLower: string,
+    manifest: GearPartsManifest,
+    prestige = 0,
+  ): boolean {
+    if (gearUpper.length === 0 || gearLower.length === 0) return false;
+    const boundedPrestige = Number.isFinite(prestige) ? Math.max(0, Math.floor(prestige)) : 0;
+    if (
+      gearUpper === this.syncedGearUpper &&
+      gearLower === this.syncedGearLower &&
+      boundedPrestige === this.syncedGearPrestige &&
+      manifest === this.boilerplateManifest
+    ) {
+      return true;
+    }
+    this.syncedGearUpper = gearUpper;
+    this.syncedGearLower = gearLower;
+    this.syncedGearPrestige = boundedPrestige;
+    this.equipGearLoadout(decodeGearCosmetics(gearUpper, gearLower), manifest, boundedPrestige);
+    return true;
+  }
+
+  equipGearLoadout(
+    loadout: Readonly<Record<GearSlot, GearId>>,
+    manifest: GearPartsManifest,
+    prestige = 0,
+    towerComposition: readonly GearId[] = [],
+  ): void {
+    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}`;
+    if (key === this.gearLoadoutKey && this.boilerplateManifest === manifest) return;
+    this.requestBoilerplate(manifest);
+    this.gearLoadoutKey = key;
+    const next = assembleGearLoadout(manifest, loadout, prestige, towerComposition);
+    this.gearAssembly = next;
+    this.gearArtComplete = false;
+    ensureGearAssemblyTextures(this.scene, next);
+
+    for (let index = this.gearAttachments.length - 1; index >= 0; index--) {
+      const attachment = this.gearAttachments[index];
+      if (!attachment) continue;
+      let retained: GearAssemblyPart | undefined;
+      for (const spec of next.parts) {
+        if (spec.key === attachment.spec.key) {
+          retained = spec;
+          break;
+        }
+      }
+      if (retained) {
+        attachment.spec = retained;
+        attachment.angle = 0;
+        attachment.velocity = 0;
+        continue;
+      }
+      attachment.image.destroy();
+      this.gearAttachments.splice(index, 1);
+    }
+    this.hatAttachments.length = 0;
+    this.syncGearArt();
+
+    if (next.towerOverflow > 0) {
+      this.hatOverflowLabel ??= this.scene.add
+        .text(0, 0, `+${next.towerOverflow}`, {
+          fontFamily: "monospace",
+          fontSize: "9px",
+          color: "#f3df9d",
+          fontStyle: "bold",
+          stroke: "#101014",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, 1)
+        .setVisible(false);
+      this.hatOverflowLabel.setText(`+${next.towerOverflow}`);
+      if (!this.hatOverflowLabel.parentContainer) this.root.add(this.hatOverflowLabel);
+    } else if (this.hatOverflowLabel) {
+      this.hatOverflowLabel.destroy();
+      this.hatOverflowLabel = undefined;
+    }
+    this.gearLodSleeping = true;
+    this.rebuildRenderStack();
+  }
+
+  /** Build only newly-ready descriptors; failed loose files leave that slot transparently absent. */
+  private syncGearArt(): void {
+    const assembly = this.gearAssembly;
+    if (!assembly || !this.boilerplateReady || this.gearArtComplete) return;
+    let changed = false;
+    let allReady = true;
+    for (const spec of assembly.parts) {
+      let found: GearAttachment | undefined;
+      for (const attachment of this.gearAttachments) {
+        if (attachment.spec.key === spec.key) {
+          found = attachment;
+          break;
+        }
+      }
+      if (found) continue;
+      const frame = ensureGearPartFrame(this.scene, spec);
+      if (!frame) {
+        allReady = false;
+        continue;
+      }
+      const image = this.scene.add
+        .image(0, 0, gearTextureKey(spec.item), frame)
+        .setOrigin(spec.originX, spec.originY)
+        .setVisible(false);
+      this.root.add(image);
+      this.gearAttachments.push({ image, spec, angle: 0, velocity: 0 });
+      changed = true;
+    }
+    this.gearArtComplete = allReady;
+    if (!changed && this.hatAttachments.length > 0) return;
+    this.hatAttachments.length = 0;
+    for (const attachment of this.gearAttachments)
+      if (attachment.spec.stackIndex >= 0) this.hatAttachments.push(attachment);
+    this.hatAttachments.sort((a, b) => a.spec.stackIndex - b.spec.stackIndex);
+    if (changed) {
+      this.rebuildRenderStack();
+      this.restTint();
+    }
+  }
+
+  private pushGearPlane(
+    stack: Phaser.GameObjects.GameObject[],
+    minPlane: number,
+    maxPlane = minPlane,
+  ): void {
+    for (const attachment of this.gearAttachments) {
+      const plane = attachment.spec.depth;
+      if (plane >= minPlane && plane <= maxPlane) stack.push(attachment.image);
+    }
+    if (minPlane <= 32 && maxPlane >= 32 && this.hatOverflowLabel)
+      stack.push(this.hatOverflowLabel);
+  }
+
+  private pushWeaponLayers(
+    stack: Phaser.GameObjects.GameObject[],
+    weapon: (typeof this.weapons)[number] | undefined,
+  ): void {
+    if (!weapon) return;
+    if (weapon.tellRim) stack.push(weapon.tellRim);
+    stack.push(weapon.img);
+    if (weapon.tellEcho) stack.push(weapon.tellEcho);
+  }
+
+  /** One retained back-to-front law shared by weapon and wardrobe descriptor edges. */
+  private rebuildRenderStack(): void {
+    if (!this.root) return;
+    const stack: Phaser.GameObjects.GameObject[] = [
+      this.shadowHalo,
+      this.shadow,
+      this.slideAfterimageB,
+      this.slideAfterimageA,
+    ];
+    this.pushGearPlane(stack, -50, -41);
+    for (const foot of this.feet) {
+      stack.push(foot.img);
+      const receiver = foot.front ? "foot-r" : "foot-l";
+      for (const attachment of this.gearAttachments)
+        if (attachment.spec.source.receiver === receiver) stack.push(attachment.image);
+    }
+
+    const frontHand = this.hands.find((hand) => hand.front);
+    const backHand = this.hands.find((hand) => !hand.front);
+    const frontWeapon = this.weapons[0];
+    const backWeapon = this.weapons[1];
+    if (this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
+    if (!backWeapon && !this.weaponDef?.twoHanded && backHand) {
+      stack.push(backHand.img);
+      for (const attachment of this.gearAttachments)
+        if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
+    }
+    stack.push(this.body);
+    if (this.boilerplateHead) stack.push(this.boilerplateHead);
+    this.pushGearPlane(stack, 10, 32);
+
+    if (this.weaponDef?.twoHanded) {
+      if (!this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
+      if (backHand) {
+        stack.push(backHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
+      }
+    } else if (backWeapon && backHand) {
+      if (backWeapon.worn) {
+        stack.push(backHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
+        this.pushWeaponLayers(stack, backWeapon);
+      } else {
+        this.pushWeaponLayers(stack, backWeapon);
+        stack.push(backHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-l") stack.push(attachment.image);
+      }
+    }
+
+    if (frontHand) {
+      if (!frontWeapon?.worn) {
+        if (frontWeapon && !this.orbitBehind) this.pushWeaponLayers(stack, frontWeapon);
+        stack.push(frontHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-r") stack.push(attachment.image);
+      } else {
+        stack.push(frontHand.img);
+        for (const attachment of this.gearAttachments)
+          if (attachment.spec.source.receiver === "hand-r") stack.push(attachment.image);
+        this.pushWeaponLayers(stack, frontWeapon);
+      }
+    }
+    if (this.tome) {
+      for (const page of this.tome.pages) stack.push(page.quad);
+      for (const scrap of this.tome.scraps) stack.push(scrap.piece);
+    }
+    stack.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
+    if (this.label) stack.push(this.label);
+    for (const object of stack) if (object.active) this.root.bringToTop(object);
   }
 
   setPosition(x: number, y: number): void {
@@ -1668,6 +2026,11 @@ export class SpriteRig {
       f.jvy = 0;
       f.springReady = false;
     }
+    for (const attachment of this.gearAttachments) {
+      attachment.angle = 0;
+      attachment.velocity = 0;
+    }
+    this.gearLodSleeping = true;
   }
 
   /** Top-down draw order: lower on screen renders in front. */
@@ -1749,6 +2112,10 @@ export class SpriteRig {
     this.spawnStartMs = -1;
     this.foldStartMs = timeMs;
     this.foldDurationMs = Math.max(1, durationMs);
+    for (const attachment of this.gearAttachments) {
+      attachment.angle = 0;
+      attachment.velocity = 0;
+    }
     // A rejected cast cannot strand the card invisible while the pending-input latch expires.
     this.foldHiddenUntilMs = timeMs + this.foldDurationMs + 360;
   }
@@ -1827,6 +2194,18 @@ export class SpriteRig {
       ]) {
         tearParts.push({ img, x: img.x, y: img.y });
       }
+      if (this.boilerplateHead)
+        tearParts.push({
+          img: this.boilerplateHead,
+          x: this.boilerplateHead.x,
+          y: this.boilerplateHead.y,
+        });
+      for (const attachment of this.gearAttachments)
+        tearParts.push({
+          img: attachment.image,
+          x: attachment.image.x,
+          y: attachment.image.y,
+        });
     }
 
     this.paperDeath = {
@@ -2650,6 +3029,7 @@ export class SpriteRig {
     stack.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
+    this.rebuildRenderStack();
     const firstPart = manifest.parts[lead.partIndex ?? 0];
     if (firstPart) {
       this.setupTomeVisual(spriteId, def, partTexture(this.scene, spriteId, firstPart.role));
@@ -3018,21 +3398,24 @@ export class SpriteRig {
 
   /** Re-apply the resting tint (downed grey > phase-walk ink > Brand ember-orange > none). */
   private restTint(): void {
-    for (const p of this.parts) {
-      if (this.downed) p.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
+    const apply = (part: Phaser.GameObjects.Image): void => {
+      if (this.downed) part.setTint(0x556070).setTintMode(Phaser.TintModes.MULTIPLY);
       else if (
         this.ultimatePhase === UltimatePhase.Active &&
         this.ultimateFamily === UltimateFamily.EventHorizon
       )
-        p.setTint(0x7c6cff).setTintMode(Phaser.TintModes.MULTIPLY);
+        part.setTint(0x7c6cff).setTintMode(Phaser.TintModes.MULTIPLY);
       else if (
         this.ultimatePhase === UltimatePhase.Active &&
         this.ultimateFamily === UltimateFamily.AlphaStrike
       )
-        p.setTint(0xbfefff).setTintMode(Phaser.TintModes.MULTIPLY);
-      else if (this.branded) p.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
-      else p.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
-    }
+        part.setTint(0xbfefff).setTintMode(Phaser.TintModes.MULTIPLY);
+      else if (this.branded) part.setTint(0xff7a4a).setTintMode(Phaser.TintModes.MULTIPLY);
+      else part.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    };
+    for (const part of this.parts) apply(part);
+    if (this.boilerplateHead) apply(this.boilerplateHead);
+    for (const attachment of this.gearAttachments) apply(attachment.image);
   }
 
   /** The pale unprinted face remains the slide opening's exact tell; it never borrows parry white. */
@@ -3041,6 +3424,9 @@ export class SpriteRig {
     this.slideReverseFace = on;
     if (on) {
       for (const part of this.parts) part.setTint(0xeee8dc).setTintMode(Phaser.TintModes.FILL);
+      this.boilerplateHead?.setTint(0xeee8dc).setTintMode(Phaser.TintModes.FILL);
+      for (const attachment of this.gearAttachments)
+        attachment.image.setTint(0xeee8dc).setTintMode(Phaser.TintModes.FILL);
       for (const weapon of this.weapons)
         weapon.img.setTint(0xd8d0c1).setTintMode(Phaser.TintModes.FILL);
       return;
@@ -3239,6 +3625,9 @@ export class SpriteRig {
     this.juggleFlashActive = active;
     if (active) {
       for (const part of this.parts) part.setTint(0xe8f5ff).setTintMode(Phaser.TintModes.FILL);
+      this.boilerplateHead?.setTint(0xe8f5ff).setTintMode(Phaser.TintModes.FILL);
+      for (const attachment of this.gearAttachments)
+        attachment.image.setTint(0xe8f5ff).setTintMode(Phaser.TintModes.FILL);
     } else {
       this.restTint();
     }
@@ -3247,6 +3636,9 @@ export class SpriteRig {
   /** Brief impact flash on every part (§20 hit feedback / §6 revive pop), then back to the resting tint. */
   flash(ms = 80, color = 0xffffff): void {
     for (const p of this.parts) p.setTint(color).setTintMode(Phaser.TintModes.FILL);
+    this.boilerplateHead?.setTint(color).setTintMode(Phaser.TintModes.FILL);
+    for (const attachment of this.gearAttachments)
+      attachment.image.setTint(color).setTintMode(Phaser.TintModes.FILL);
     // §20 a newer hit owns the flash window: cancel the prior expiry so it cannot clear this tint early.
     this.flashTimer?.remove(false);
     this.flashTimer = this.scene.time.delayedCall(ms, () => {
@@ -3281,6 +3673,7 @@ export class SpriteRig {
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
+    this.rebuildRenderStack();
   }
 
   destroy(): void {
@@ -3290,6 +3683,11 @@ export class SpriteRig {
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
+    this.hatOverflowLabel?.destroy();
+    this.hatOverflowLabel = undefined;
+    for (const attachment of this.gearAttachments) attachment.image.destroy();
+    this.gearAttachments.length = 0;
+    this.hatAttachments.length = 0;
     this.root.destroy();
   }
 
@@ -5379,7 +5777,185 @@ export class SpriteRig {
     }
   }
 
+  private syncBoilerplateHeadPose(): void {
+    const head = this.boilerplateHead;
+    const source = this.boilerplateHeadAssembly;
+    if (!head || !source || !this.boilerplateReady) return;
+    const localX =
+      source.source.receiverAnchor.xL * (this.boilerplateManifest?.socketFrame.bodyHeightL ?? 512);
+    const localY =
+      source.source.receiverAnchor.yL * (this.boilerplateManifest?.socketFrame.bodyHeightL ?? 512);
+    const dx = localX * this.body.scaleX;
+    const dy = localY * this.body.scaleY;
+    const cosine = Math.cos(this.body.rotation);
+    const sine = Math.sin(this.body.rotation);
+    head
+      .setPosition(this.body.x + cosine * dx - sine * dy, this.body.y + sine * dx + cosine * dy)
+      .setRotation(this.body.rotation + source.rotation)
+      .setScale(
+        this.body.scaleX * source.source.mountScale,
+        this.body.scaleY * source.source.mountScale,
+      )
+      .setVisible(true);
+  }
+
+  private placeBodyGear(attachment: GearAttachment): void {
+    const manifest = this.boilerplateManifest;
+    if (!manifest) return;
+    const spec = attachment.spec;
+    const localX = spec.source.receiverAnchor.xL * manifest.socketFrame.bodyHeightL;
+    const localY = spec.source.receiverAnchor.yL * manifest.socketFrame.bodyHeightL;
+    const dx = localX * this.body.scaleX;
+    const dy = localY * this.body.scaleY;
+    const cosine = Math.cos(this.body.rotation);
+    const sine = Math.sin(this.body.rotation);
+    const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
+    attachment.image
+      .setPosition(this.body.x + cosine * dx - sine * dy, this.body.y + sine * dx + cosine * dy)
+      .setRotation(this.body.rotation + determinantSign * (spec.rotation + attachment.angle))
+      .setScale(
+        this.body.scaleX * spec.source.mountScale * spec.stackScale,
+        this.body.scaleY * spec.source.mountScale * spec.stackScale,
+      )
+      .setVisible(true);
+  }
+
+  private placeNodeGear(attachment: GearAttachment): void {
+    const receiver = attachment.spec.source.receiver;
+    let node: Phaser.GameObjects.Image | undefined;
+    if (receiver === "hand-l" || receiver === "hand-r") {
+      const front = receiver === "hand-r";
+      for (const hand of this.hands) {
+        if (hand.front !== front) continue;
+        node = hand.img;
+        break;
+      }
+    } else if (receiver === "foot-l" || receiver === "foot-r") {
+      const front = receiver === "foot-r";
+      for (const foot of this.feet) {
+        if (foot.front !== front) continue;
+        node = foot.img;
+        break;
+      }
+    }
+    if (!node) return;
+    const determinantSign = node.scaleX * node.scaleY < 0 ? -1 : 1;
+    attachment.image
+      .setPosition(node.x, node.y)
+      .setRotation(node.rotation + determinantSign * (attachment.spec.rotation + attachment.angle))
+      .setScale(
+        node.scaleX * attachment.spec.source.mountScale,
+        node.scaleY * attachment.spec.source.mountScale,
+      )
+      .setVisible(true);
+  }
+
+  private topSocketPosition(attachment: GearAttachment, out: { x: number; y: number }): void {
+    const top = attachment.spec.topSocketSource;
+    if (!top) {
+      out.x = attachment.image.x;
+      out.y = attachment.image.y - TARGET_BODY_H * attachment.spec.stackScale * 0.5;
+      return;
+    }
+    const localX = (top.x - attachment.spec.source.pivotSource.x) * attachment.image.scaleX;
+    const localY = (top.y - attachment.spec.source.pivotSource.y) * attachment.image.scaleY;
+    const cosine = Math.cos(attachment.image.rotation);
+    const sine = Math.sin(attachment.image.rotation);
+    out.x = attachment.image.x + cosine * localX - sine * localY;
+    out.y = attachment.image.y + sine * localX + cosine * localY;
+  }
+
+  /** Final-pose wardrobe pass. Offscreen rigs retain their last transforms and rebase springs on wake. */
+  private syncGearPose(
+    elapsedSeconds: number,
+    outsidePaperView: boolean,
+    rebase: boolean,
+    reducedMotion: boolean,
+    excitation: number,
+    dashLean: number,
+    landed: boolean,
+  ): void {
+    if (!this.boilerplateReady) return;
+    this.syncGearArt();
+    if (outsidePaperView) {
+      this.gearLodSleeping = true;
+      return;
+    }
+    const waking = this.gearLodSleeping;
+    this.gearLodSleeping = false;
+    this.syncBoilerplateHeadPose();
+
+    for (const attachment of this.gearAttachments) {
+      if (attachment.spec.stackIndex >= 0) continue;
+      const spring = attachment.spec.source.spring;
+      if (spring) {
+        const limit = (spring.maxDeg * Math.PI) / 180;
+        const target = reducedMotion
+          ? 0
+          : Math.max(-limit, Math.min(limit, excitation * limit * spring.dragGain));
+        if (rebase || waking) {
+          attachment.angle = 0;
+          attachment.velocity = 0;
+        } else {
+          stepGearAngularSpring(attachment, target, elapsedSeconds, spring.hz, spring.dampingRatio);
+        }
+      }
+      const receiver = attachment.spec.source.receiver;
+      if (
+        receiver === "hand-l" ||
+        receiver === "hand-r" ||
+        receiver === "foot-l" ||
+        receiver === "foot-r"
+      )
+        this.placeNodeGear(attachment);
+      else this.placeBodyGear(attachment);
+    }
+
+    const chainInput = this.hatChainInput;
+    chainInput.excitation = excitation;
+    chainInput.dashLean = dashLean;
+    chainInput.bodyAngle = this.body.rotation;
+    chainInput.landingImpulse = landed ? -0.42 : 0;
+    chainInput.reducedMotion = reducedMotion;
+    chainInput.reset = rebase || waking;
+    stepHatSpringChain(this.hatAttachments, elapsedSeconds, chainInput);
+    const socket = this.gearSocketScratch;
+    for (let index = 0; index < this.hatAttachments.length; index++) {
+      const attachment = this.hatAttachments[index];
+      if (!attachment) continue;
+      if (index === 0) this.placeBodyGear(attachment);
+      else {
+        const below = this.hatAttachments[index - 1];
+        if (!below) continue;
+        this.topSocketPosition(below, socket);
+        const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
+        attachment.image
+          .setPosition(socket.x, socket.y)
+          .setRotation(
+            this.body.rotation + determinantSign * (attachment.spec.rotation + attachment.angle),
+          )
+          .setScale(
+            this.body.scaleX * attachment.spec.source.mountScale * attachment.spec.stackScale,
+            this.body.scaleY * attachment.spec.source.mountScale * attachment.spec.stackScale,
+          )
+          .setVisible(true);
+      }
+    }
+    const cap = this.hatOverflowLabel;
+    const topHat = this.hatAttachments[this.hatAttachments.length - 1];
+    if (cap && topHat) {
+      this.topSocketPosition(topHat, socket);
+      const inv = 1 / (this.baseScale || 1);
+      cap
+        .setPosition(socket.x, socket.y - 2)
+        .setRotation(-this.root.rotation)
+        .setScale(screenTrueScaleX(this.root.scaleX, this.root.scaleY, inv), inv)
+        .setVisible(true);
+    } else cap?.setVisible(false);
+  }
+
   animate(timeMs: number, anim: RigAnim): void {
+    this.installBoilerplateIfReady();
     const t = timeMs / 1000 + this.phase;
     // §7 v0.105 de-clunk: derive a frame dt from the (freeze-paused) animation clock for the eased blends,
     // clamped so a hit-stop gap or first frame can't produce a jump.
@@ -6890,8 +7466,7 @@ export class SpriteRig {
         const behind = this.attackWeaponDepth < 0;
         if (behind !== this.orbitBehind) {
           this.orbitBehind = behind;
-          if (behind) this.root.moveBelow(w.img, this.body);
-          else this.root.moveAbove(w.img, this.body);
+          this.rebuildRenderStack();
         }
         continue;
       }
@@ -7008,15 +7583,14 @@ export class SpriteRig {
         const behind = Math.sin(th) < 0;
         if (behind !== this.orbitBehind) {
           this.orbitBehind = behind;
-          if (behind) this.root.moveBelow(w.img, this.body);
-          else this.root.moveAbove(w.img, this.body);
+          this.rebuildRenderStack();
         }
         continue;
       }
       // Orbit just ended → restore the weapon above the body once.
       if (this.orbitBehind && this.orbitT < 0) {
         this.orbitBehind = false;
-        this.root.moveAbove(w.img, this.body);
+        this.rebuildRenderStack();
       }
       const off = i === 1 ? this.offWeaponLean() : 0;
       // §40.1 the FRONT HAND already carries swingOff (it grips the weapon through the motion) — the weapon
@@ -7034,8 +7608,7 @@ export class SpriteRig {
         const behind = this.attackWeaponDepth < 0;
         if (behind !== this.orbitBehind) {
           this.orbitBehind = behind;
-          if (behind) this.root.moveBelow(w.img, this.body);
-          else this.root.moveAbove(w.img, this.body);
+          this.rebuildRenderStack();
         }
       }
     }
@@ -7092,6 +7665,20 @@ export class SpriteRig {
     }
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
+    const localMoveX = anim.moveX * this.facing;
+    const dashLean =
+      this.moveStance === STANCE_DASH
+        ? -Math.sign(Math.abs(localMoveX) > 0.05 ? localMoveX : 1) * (0.72 + commit * 0.28)
+        : 0;
+    this.syncGearPose(
+      springDtS,
+      outsidePaperView,
+      jiggleRebase,
+      anim.reducedMotion === true,
+      -springSignalX * this.facing + (turnTriggered ? -this.turnDirX * this.facing * 0.7 : 0),
+      dashLean,
+      landed,
+    );
     const leadWeapon = this.weapons[0];
     const offWeapon = this.weapons[1];
     if (this.pairGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {
