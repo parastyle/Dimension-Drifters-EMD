@@ -148,7 +148,12 @@ import {
 } from "../net/prediction.js";
 import { SnapshotBuffer, TimelineSync } from "../net/snapshots.js";
 import { RENDER_DPR } from "../render-dpr.js";
-import { type FeedbackSettings, loadSettings, onSettingsChange } from "../settings.js";
+import {
+  type FeedbackSettings,
+  loadSettings,
+  onSettingsChange,
+  updateSettings,
+} from "../settings.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
@@ -171,6 +176,7 @@ import {
   ultimateRevealDescriptor,
   ultimateSeqEdge,
 } from "../ui/ultimate-reveal.js";
+import { type ContextHintId, VerbLegendManager } from "../ui/verb-legend.js";
 import {
   IDLE_DOCK_SCALE,
   type WeaponDockLayout,
@@ -1111,6 +1117,7 @@ export class ArenaScene extends Phaser.Scene {
     | "Q"
     | "E"
     | "F"
+    | "H"
     | "T"
     | "B"
     | "C"
@@ -1200,9 +1207,8 @@ export class ArenaScene extends Phaser.Scene {
    *  hurt punch that spikes on a hit and decays, so both danger and impact read at the screen edges. */
   private dangerVignette!: Phaser.GameObjects.Graphics;
   private juggleVignette!: Phaser.GameObjects.Graphics;
-  private juggleHint!: Phaser.GameObjects.Text;
+  private verbUi?: VerbLegendManager;
   private jugglePulseUntil = -1e9;
-  private juggleHintUntil = -1e9;
   private hurtFlash = 0;
   /** §19 v0.108 polish — smoothed bar fills (lerp toward the true ratio), so hits/heals/XP read as
    *  motion, not a per-patch jump. -1 = uninitialised (snap on the first frame). */
@@ -1659,6 +1665,7 @@ export class ArenaScene extends Phaser.Scene {
     this.damageNumberRenderer?.destroy();
     this.hitEffectRenderer?.destroy();
     this.combatFeedback?.reset();
+    this.verbUi?.destroy();
     this.removeFeedbackSettingsListener?.();
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
@@ -1757,7 +1764,7 @@ export class ArenaScene extends Phaser.Scene {
     this.beltClouds = null;
     this.dangerVignette = undefined!;
     this.juggleVignette = undefined!;
-    this.juggleHint = undefined!;
+    this.verbUi = undefined;
     this.weaponText = undefined!;
     this.augmentText = undefined!;
     this.modeText = undefined!;
@@ -1841,7 +1848,6 @@ export class ArenaScene extends Phaser.Scene {
     this.recentResolvedDangerAt = -9999;
     this.hurtFlash = 0;
     this.jugglePulseUntil = -1e9;
-    this.juggleHintUntil = -1e9;
     this.hpShown = -1;
     this.xpShown = -1;
     this.xpPulse = 0;
@@ -1941,6 +1947,8 @@ export class ArenaScene extends Phaser.Scene {
     this.hitEffectRenderer = undefined!;
     this.combatFeedback?.reset();
     this.combatFeedback = undefined!;
+    this.verbUi?.destroy();
+    this.verbUi = undefined;
     this.removeFeedbackSettingsListener?.();
     this.removeFeedbackSettingsListener = undefined;
     this.wormRig?.destroy();
@@ -1994,20 +2002,9 @@ export class ArenaScene extends Phaser.Scene {
     this.grabGfx = this.add.graphics().setDepth(99988);
     // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
     this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
-    // §51 victim-side juggle read: one retained cool-white edge and one retained affordance label. Their
-    // alphas are edge-driven; no hit allocates a new HUD object or tween.
+    // §51 victim-side juggle read: one retained cool-white edge. The shared verb manager owns the pooled
+    // contextual label, so no hit allocates a HUD object or tween.
     this.juggleVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
-    this.juggleHint = this.add
-      .text(0, 0, "AIR PARRY · LMB", {
-        fontSize: "14px",
-        color: "#e8f5ff",
-        stroke: "#15191d",
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(99999)
-      .setAlpha(0);
     this.hurtFlash = 0;
     this.hpShown = -1;
     this.xpShown = -1;
@@ -2018,7 +2015,16 @@ export class ArenaScene extends Phaser.Scene {
     // gesture below (autoplay policy).
     this.audio = (this.game.registry.get("audio") as AudioBus | undefined) ?? new AudioBus();
     this.game.registry.set("audio", this.audio);
-    this.feedbackSettings = loadSettings().feedback;
+    const settings = loadSettings();
+    this.feedbackSettings = settings.feedback;
+    this.verbUi = new VerbLegendManager({
+      scene: this,
+      onboarding: settings.onboarding,
+      persist: (onboarding) => updateSettings({ onboarding }),
+      reducedMotion: prefersReducedPaperMotion(),
+    });
+    this.verbs.update(this.time.now, this.screenW(), this.screenH());
+    this.verbs.showFirstRun(this.time.now);
     this.audio.setConfirmVolume(this.feedbackSettings.confirmVolume ?? 1, false);
     this.combatFeedback = new CombatFeedback();
     this.hitEffectRenderer = new HitEffectRenderer(this, (targetId, out) =>
@@ -2054,7 +2060,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,Q,E,F,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,Q,E,F,H,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -2064,6 +2070,7 @@ export class ArenaScene extends Phaser.Scene {
       | "Q"
       | "E"
       | "F"
+      | "H"
       | "T"
       | "B"
       | "C"
@@ -2879,7 +2886,10 @@ export class ArenaScene extends Phaser.Scene {
         return;
       }
       if (edge === "ready") {
-        if (id === selfId) this.audio.play("ult:ready");
+        if (id === selfId) {
+          this.audio.play("ult:ready");
+          this.offerContextHint("ultimateReady");
+        }
         return;
       }
       if (edge !== "cast") return;
@@ -2914,7 +2924,7 @@ export class ArenaScene extends Phaser.Scene {
       !canReleaseUltimateReveal(
         pending,
         this.inLevelWindow(self),
-        this.levelWinInputReleaseLatch,
+        this.levelWinInputReleaseLatch || this.verbs.isModalBlocking(),
         !!self?.alive,
       ) ||
       this.time.now < this.ultimateRevealBusyUntil
@@ -3415,6 +3425,7 @@ export class ArenaScene extends Phaser.Scene {
         this.cameras.main.flash(170, 90, 16, 16);
         this.shakeCam(150, 0.006);
         this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
+        this.offerContextHint("pitFall");
       }
     });
   }
@@ -3545,6 +3556,24 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   override update(_time: number, deltaMs: number): void {
+    const preSelf = this.room?.state.players?.get(this.room.sessionId);
+    const competingLevelModal = this.inLevelWindow(preSelf) || this.levelWinInputReleaseLatch;
+    if (competingLevelModal) {
+      this.verbs.closeForCompetingModal(this.time.now);
+      this.verbs.retireHint();
+    } else if (Phaser.Input.Keyboard.JustDown(this.keys.H)) {
+      if (!this.verbs.isLegendOpen()) {
+        this.bagOpen = false;
+        this.shopOpen = false;
+        if (this.summonOpen) this.closeSummonMenu();
+      }
+      this.verbs.toggleLegend(this.time.now);
+    }
+    if (this.verbs.hasInputReleaseLatch()) {
+      this.verbs.releaseInputLatchIf(this.legendInputsReleased());
+    }
+    this.verbs.update(this.time.now, this.screenW(), this.screenH());
+
     // §39 the room resolves BEFORE its first state patch — in that window state.players is still undefined,
     // and an unguarded read threw every frame (killing the scene's step = permanent black screen; hit on real
     // machines where the first patch lands a frame late, never in the fast local preview). Wait for the sync.
@@ -3570,7 +3599,8 @@ export class ArenaScene extends Phaser.Scene {
       this.levelWinInputReleaseLatch = false;
     }
     if (levelWindowOpen) this.handleLevelWindowInput();
-    const levelWindowInputBlocked = levelWindowOpen || this.levelWinInputReleaseLatch;
+    const levelWindowInputBlocked =
+      levelWindowOpen || this.levelWinInputReleaseLatch || this.verbs.isModalBlocking();
     const predictedAirborne = this.predictor
       ? this.selfPredHeight > GROUND_EPSILON
       : (selfP?.height ?? 0) > GROUND_EPSILON;
@@ -4463,6 +4493,7 @@ export class ArenaScene extends Phaser.Scene {
             projectionYScale,
           );
         this.audio.play("enemy-combo:return-tell", { x: rig.x, amt: visible ? 0.78 : 0.24 });
+        if (visible) this.offerContextHint("empoweredReturn");
       }
       if (empowermentEnded && presentation.pendingStagger) {
         rig.triggerEnemyComboStagger(this.animClock);
@@ -6071,6 +6102,38 @@ export class ArenaScene extends Phaser.Scene {
     return !!self && (self.flexPending > 0 || self.sigPending > 0);
   }
 
+  private get verbs(): VerbLegendManager {
+    if (!this.verbUi) throw new Error("Verb UI unavailable");
+    return this.verbUi;
+  }
+
+  private inputModalBlocked(self: PlayerState | undefined): boolean {
+    return (
+      this.inLevelWindow(self) || this.levelWinInputReleaseLatch || this.verbs.isModalBlocking()
+    );
+  }
+
+  private legendInputsReleased(): boolean {
+    return (
+      this.levelWindowInputsReleased() &&
+      !this.keys.H.isDown &&
+      !this.keys.R.isDown &&
+      !this.keys.Q.isDown &&
+      !this.keys.E.isDown &&
+      !this.keys.C.isDown &&
+      !this.keys.TAB.isDown &&
+      !this.keys.CTRL.isDown
+    );
+  }
+
+  private offerContextHint(id: ContextHintId): void {
+    const self = this.room?.state.players.get(this.room.sessionId);
+    if (this.inputModalBlocked(self) || this.summonOpen || this.bagOpen || this.shopOpen) {
+      return;
+    }
+    this.verbs.offerHint(id, this.time.now);
+  }
+
   private retireLevelWindow(animateClose: boolean): void {
     this.clearLevelPaperCounters();
     const objects = this.levelWinObjects.splice(0);
@@ -7523,7 +7586,7 @@ export class ArenaScene extends Phaser.Scene {
           });
         if (id === selfId) {
           this.jugglePulseUntil = this.time.now + 420;
-          this.juggleHintUntil = Math.max(this.juggleHintUntil, this.time.now + 760);
+          this.offerContextHint("juggle");
         }
       }
       blob.setHop(jumpHeight);
@@ -7780,7 +7843,7 @@ export class ArenaScene extends Phaser.Scene {
       this.ultimateVfx.hasDoorTicket(selfId, this.room.state.tick);
     const affordance = ultimateInputAffordance({
       alive: self.alive,
-      modal: this.inLevelWindow(self) || this.levelWinInputReleaseLatch,
+      modal: this.inputModalBlocked(self),
       nearShop: false,
       unlocked: family !== UltimateFamily.Locked,
       charge: row.charge,
@@ -7849,7 +7912,7 @@ export class ArenaScene extends Phaser.Scene {
     this.localAtkCd = Math.max(0, this.localAtkCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (!self?.alive || this.inputModalBlocked(self)) return;
     if (this.predictor?.slideAttackLocked) return;
     if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
@@ -8118,7 +8181,7 @@ export class ArenaScene extends Phaser.Scene {
     this.localParryCd = Math.max(0, this.localParryCd - this.deltaSec);
     const selfId = this.room.sessionId;
     const self = this.room.state.players.get(selfId);
-    if (!self?.alive || this.inLevelWindow(self) || this.levelWinInputReleaseLatch) return;
+    if (!self?.alive || this.inputModalBlocked(self)) return;
     if (this.predictor?.slideParryLocked) return;
     if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
     this.localParryCd = PARRY_COOLDOWN;
@@ -8152,7 +8215,7 @@ export class ArenaScene extends Phaser.Scene {
     const selfId = this.room?.sessionId;
     const self = selfId ? this.room?.state.players.get(selfId) : undefined;
     const rig = selfId ? this.blobs.get(selfId) : undefined;
-    if (!self?.alive || !rig || this.inLevelWindow(self)) return; // hide mid-pick
+    if (!self?.alive || !rig || this.inputModalBlocked(self)) return; // hide behind a modal
     const x = rig.x;
     const y = rig.y;
     const R = 30;
@@ -9789,11 +9852,6 @@ export class ArenaScene extends Phaser.Scene {
     this.juggleVignette.setAlpha(
       Phaser.Math.Linear(this.juggleVignette.alpha, juggleFade * juggleBeat * 0.24, 0.24),
     );
-    const hintLeft = Math.max(0, this.juggleHintUntil - this.time.now);
-    const hintAlpha = aliveSelf ? Math.min(0.78, hintLeft / 220) : 0;
-    this.juggleHint
-      .setPosition(this.screenW() * 0.5, this.screenH() * 0.72)
-      .setAlpha(Phaser.Math.Linear(this.juggleHint.alpha, hintAlpha, 0.28));
 
     // XP bar + level badge (§12).
     this.xpBarBg.setPosition(barX, xpY);
@@ -10517,8 +10575,7 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room.state.players.get(this.room.sessionId);
     if (!self) return;
     const blocked =
-      this.inLevelWindow(self) ||
-      this.levelWinInputReleaseLatch ||
+      this.inputModalBlocked(self) ||
       this.summonOpen ||
       !self.alive ||
       this.room.state.outcome !== "active";
@@ -11792,8 +11849,7 @@ export class ArenaScene extends Phaser.Scene {
     const weapon = self ? WEAPONS[self.weapon] : undefined;
     const held =
       !!self?.alive &&
-      !this.inLevelWindow(self) &&
-      !this.levelWinInputReleaseLatch &&
+      !this.inputModalBlocked(self) &&
       !!weapon?.beam &&
       this.input.activePointer.rightButtonDown();
     const rising = held && !this.beamPredictionHeld;
@@ -11886,7 +11942,10 @@ export class ArenaScene extends Phaser.Scene {
             amt: local ? 1 : 0.38,
             ownerId,
           });
-          if (local) this.shakeCam(120, 0.006);
+          if (local) {
+            this.shakeCam(120, 0.006);
+            this.offerContextHint("beamOverheat");
+          }
         } else if (
           row.phase === BeamPhase.Cooling &&
           previous &&
