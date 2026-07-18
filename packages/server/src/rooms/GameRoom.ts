@@ -37,6 +37,7 @@ import {
   ATTRS,
   type Attr,
   BOSS_DEF_IDS,
+  type BossCounterSummary,
   BOSS_PROJECTILE_BUDGET,
   BOSS_SALVAGE_PER_DEPTH,
   BEAM_CRIT_QUANTUM_SECONDS,
@@ -57,6 +58,7 @@ import {
   bladeHitsCircle,
   bossDefFor,
   bossSpawnAt,
+  VASTAGHAR_ENCOUNTER,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   COMBO_DAMAGE_CAP_FRAC,
@@ -223,6 +225,7 @@ import {
   poiCollisionCircles,
   pointInAnnulusGap,
   pointInOrientedRect,
+  pointInSweptAnnularArc,
   prevWeapon,
   QUAKE_REACH,
   type QuirkDef,
@@ -314,6 +317,8 @@ import {
   type Vec2,
   validateArena,
   validateArenaGatePair,
+  VastagharArenaMutationKind,
+  VastagharMode,
   verticalTimeToGround,
   EXPANSION_WEAPON_IDS,
   WEAPON_IDS,
@@ -427,7 +432,13 @@ import {
   ultimateVariantForCode,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
-import { BossController, type BossEmitSink } from "./BossController.js";
+import {
+  BossController,
+  conserveVastagharVictoryXp,
+  VastagharEncounterRuntime,
+  type VastagharEmitSink,
+  type VastagharTarget,
+} from "./BossController.js";
 import { applyAllocationChoice, bankPetBondXp, consumeFlex, levelUpPlayer } from "./progression.js";
 import { SpatialGrid } from "./SpatialGrid.js";
 
@@ -664,6 +675,8 @@ interface CombatState {
    *  attacker. `parryChainT` = seconds left before the chain lapses. */
   parryChain: number;
   parryChainT: number;
+  /** Exact accepted parry epoch; boss counters never mistake slide/ultimate i-frames for a white answer. */
+  parryOpenedTick: number;
   /** Graveside Manner's bounded event receipt; no per-tick allocation or synced counter. */
   killHealWindowStart: number;
   killHealWindowAmount: number;
@@ -789,7 +802,7 @@ interface XpFlightMeta {
   c1y: number;
 }
 
-type XpBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory";
+type XpBoundary = "extract" | "descent" | "belt-victory" | "bossrush-victory" | "boss-clear";
 
 /**
  * Authoritative PvE room (§4 RoR2-style host-authoritative sync via Colyseus).
@@ -837,6 +850,18 @@ export class GameRoom extends Room<ArenaState> {
    *  Constructed in `spawnBoss` from the boss kind's `BossDef`; nulled on boss death. Runs the phase machine
    *  + telegraph windups deterministically. `null` while no boss is up. */
   private bossController: BossController | null = null;
+  /** Top-down flagship director and fixed scratch. Belt finales deliberately keep the legacy World-Titan. */
+  private vastagharEncounter: VastagharEncounterRuntime | null = null;
+  private readonly vastagharTargets: VastagharTarget[] = [];
+  private readonly vastagharDownTicks = new Map<string, number>();
+  private readonly vastagharSweepEpoch = new Map<string, number>();
+  private readonly vastagharKillScratch: string[] = [];
+  private vastagharVictoryX = 0;
+  private vastagharVictoryY = 0;
+  private vastagharVictoryReadyTick = 0;
+  private vastagharCoreArmTick = 0;
+  private vastagharVictoryMode: "" | "arena" | "bossrush" = "";
+  private vastagharCoreId = "";
   /** Number of tick-locked patches that have completed. Catch-up substeps share this value so a boss
    *  telegraph settled during the batch cannot be removed before its t=1 state is broadcast. */
   private broadcastGeneration = 0;
@@ -845,8 +870,9 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 v0.109 ids of adds the boss summoned — so the add-cap counts only boss adds, not the horde. Pruned
    *  lazily as adds die. */
   private readonly bossAddIds = new Set<string>();
+  private readonly bossAddExpireTick = new Map<string, number>();
   /** §16 v0.109 the injected boss emit-surface, built lazily (see `bossSink`). */
-  private _bossSink: BossEmitSink | null = null;
+  private _bossSink: VastagharEmitSink | null = null;
   /** Segment trophies are real Echo rows, but cannot merge/latch/collect before terminal core death. */
   private readonly lockedWormEchoIds = new Set<string>();
   /** Server-side projectile metadata not worth syncing. Keyed by projectile id. `explode` (baked at
@@ -2977,6 +3003,7 @@ export class GameRoom extends Room<ArenaState> {
       lastParryAt: -999,
       parryChain: 0,
       parryChainT: 0,
+      parryOpenedTick: 0xffffffff,
       killHealWindowStart: -999,
       killHealWindowAmount: 0,
       vh: 0,
@@ -3841,6 +3868,7 @@ export class GameRoom extends Room<ArenaState> {
       this.clearCombatEntities();
       return;
     }
+    this.stepVastagharAddBudget();
     this.rebuildEnemyGrid(); // §45 exactly once/ACTIVE sub-step; later enemy motion updates cell membership
     // QOL-02: accepted standard/slide-hop launches own the tick before horizontal displacement or the pit
     // sample. This phase also advances their cooldown/buffer clocks exactly once for the fixed step.
@@ -4124,6 +4152,7 @@ export class GameRoom extends Room<ArenaState> {
 
     // 2.7 XP Echoes: movement establishes Reach first; arrival grants before level-window ticking. Fresh
     // kills later in this sub-step begin their mandatory pop/read window and are considered next tick.
+    this.stepVastagharVictory();
     this.stepXpEchoes();
     if (this.xpBoundary) return; // committed cleanup freezes new pressure until the visible squad receipt
 
@@ -4142,11 +4171,11 @@ export class GameRoom extends Room<ArenaState> {
             this.spawnBoss();
           // The horde keeps coming until the boss falls; once the portal opens it eases off so the
           // greed decision (bank vs descend) can be made cleanly.
-          if (!this.state.portalOpen) this.runSpawnDirector(dt, bodies);
+          if (!this.state.portalOpen && !this.vastagharEncounter) this.runSpawnDirector(dt, bodies);
           // §17 cross-dimensional SHIFTER incursions (roaming invaders) — phase one in on a timer, phase it
           // out if it survives its window. Combat is the generic archetype AI (spitter/duelist), so this just
           // owns lifecycle.
-          this.stepShifters(dt, bodies);
+          if (!this.vastagharEncounter) this.stepShifters(dt, bodies);
           this.checkExtraction(bodies, dt);
           this.checkDescend(dt, bodies); // §6 chain (v0.103): the rift channel — the other half of the choice
         }
@@ -4535,6 +4564,11 @@ export class GameRoom extends Room<ArenaState> {
     // 6. Enemy contact damage (continuous DPS while touching a living player).
     this.state.enemies.forEach((enemy) => {
       if (enemy.id === this.bossId && this.bossController?.wormRuntime) return;
+      if (
+        enemy.id === this.bossId &&
+        this.vastagharEncounter &&
+        !this.vastagharEncounter.contactDamageEnabled(this.state.tick)
+      ) return;
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
       this.state.players.forEach((player) => {
@@ -4588,6 +4622,7 @@ export class GameRoom extends Room<ArenaState> {
         const c = this.combat.get(player.id);
         if (c) this.cancelMoveStance(player, c, true);
         player.alive = false; // DOWNED
+        if (this.vastagharEncounter) this.vastagharDownTicks.set(player.id, this.state.tick);
         return;
       }
       anyAlive = true;
@@ -5648,6 +5683,7 @@ export class GameRoom extends Room<ArenaState> {
     const reviveHpFraction = petMods?.reviveHpFraction || REVIVE_HP_FRAC;
     ally.hp = Math.max(1, Math.round(ally.maxHp * reviveHpFraction));
     ally.revivedSeq = (ally.revivedSeq + 1) % 100000;
+    this.vastagharDownTicks.delete(ally.id);
     this.clearEnemiesNear(ally.x, ally.y, RESPAWN_CLEAR_RADIUS);
     this.recordPetAcceptedAction(rezzer.id);
   }
@@ -6431,6 +6467,131 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §12: XP is SQUAD-SHARED — every kill levels the whole squad in lockstep (not just the killer). */
+  /** End every threat before the first celebration patch; player clocks/position remain untouched. */
+  private beginVastagharClear(x: number, y: number): void {
+    const encounter = this.vastagharEncounter;
+    if (!encounter || encounter.state.mode === VastagharMode.Victory) return;
+    encounter.beginVictory(this.state.tick, this.bossSink);
+    this.vastagharVictoryX = x;
+    this.vastagharVictoryY = y;
+    this.vastagharVictoryReadyTick = (this.state.tick + 40) >>> 0;
+    this.vastagharCoreArmTick = 0;
+    this.vastagharVictoryMode = this.state.mode === "bossrush" ? "bossrush" : "arena";
+    this.vastagharCoreId = "";
+    this.bossController?.dispose(this.bossSink, this.state.tick);
+    this.bossController = null;
+    this.bossId = null;
+    this.bossPetAwardEligible = false;
+    this.state.bossPhase = 0;
+    this.state.enemies.clear();
+    this.enemyGrid.clear();
+    this.wormSegmentGrid.clear();
+    this.state.projectiles.clear();
+    this.projectileMeta.clear();
+    this.hostileProjectileCount = 0;
+    this.state.zones.clear();
+    this.zoneMeta.clear();
+    this.enemyFireCd.clear();
+    this.zonerDropCd.clear();
+    this.comboState.clear();
+    this.duelTokens.clear();
+    this.dodgeState.clear();
+    this.poundEnemyEffects.clear();
+    this.ultimateStunUntil.clear();
+    this.ultimateBrands.clear();
+    this.bossAddIds.clear();
+    this.bossAddExpireTick.clear();
+    this.state.telegraphs.clear();
+  }
+
+  /** Advances the authoritative 0.9s collapse, then respects the crown's arm/read before cleanup flight. */
+  private stepVastagharVictory(): void {
+    const encounter = this.vastagharEncounter;
+    if (!encounter || encounter.state.mode !== VastagharMode.Victory) return;
+    if (encounter.advanceVictory(this.state.tick)) this.mintVastagharVictoryCore();
+    if (
+      this.vastagharCoreId &&
+      !this.xpBoundary &&
+      ((this.state.tick - this.vastagharCoreArmTick) | 0) >= 0
+    ) this.beginXpBoundary("boss-clear");
+  }
+
+  /** Fold every unpaid field packet into one reserved, unmergeable crown; exact value is conserved. */
+  private mintVastagharVictoryCore(): void {
+    const encounter = this.vastagharEncounter;
+    if (!encounter || this.vastagharCoreId) return;
+    let fieldValue = 0;
+    this.state.xpEchoes.forEach((echo) => {
+      if (!echo.delivered) fieldValue += echo.value;
+    });
+    this.state.xpEchoes.clear();
+    this.xpFlights.clear();
+    this.lockedWormEchoIds.clear();
+    const bossXp = bossDefFor("world-titan").vastaghar?.bossXp ?? 110;
+    const total = conserveVastagharVictoryXp(fieldValue, bossXp);
+    const core = new XpEchoState();
+    core.id = `vastaghar-core:${this.xpEchoSeq++}`;
+    core.x = this.vastagharVictoryX;
+    core.y = this.vastagharVictoryY;
+    core.value = total;
+    core.seed = (Math.imul(this.xpEchoSeq, 40503) + Math.imul(this.state.tick, 7919)) & 0xffff;
+    core.bornTick = this.state.tick;
+    this.state.xpEchoes.set(core.id, core);
+    this.vastagharCoreId = core.id;
+    this.vastagharCoreArmTick = (this.state.tick + this.xpEchoArmTicks(core.value)) >>> 0;
+    encounter.setVictoryEcho(core.id, core.value);
+  }
+
+  private completeVastagharClear(): void {
+    const encounter = this.vastagharEncounter;
+    if (!encounter) return;
+    this.state.players.forEach((player) => {
+      if (player.alive) return;
+      player.alive = true;
+      player.hp = Math.max(1, Math.round(player.maxHp * REVIVE_HP_FRAC));
+      player.revivedSeq = (player.revivedSeq + 1) % 100000;
+      this.zeroMoveVel(player.id);
+      this.vastagharDownTicks.delete(player.id);
+    });
+    encounter.markRewardsOpen(this.state.tick);
+    this.state.bossKind = "";
+    if (this.vastagharVictoryMode === "bossrush") {
+      this.advanceBossRush(this.vastagharVictoryX, this.vastagharVictoryY);
+    } else {
+      this.openPortal(this.vastagharVictoryX, this.vastagharVictoryY);
+      if (this.state.mode === "arena") {
+        const loot = this.vastagharLootPoint();
+        this.dropLoot(loot.x, loot.y, 1, LOOT_TIER_LUK_BOSS);
+      }
+    }
+    this.vastagharVictoryMode = "";
+  }
+
+  private vastagharLootPoint(): Vec2 {
+    const separation = EXTRACT_RADIUS + PICKUP_RADIUS + 32;
+    const separation2 = separation * separation;
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const candidate = safeSpawnPos(
+        this.map,
+        this.vastagharVictoryX + Math.cos(angle) * 240,
+        this.vastagharVictoryY + Math.sin(angle) * 240,
+        PICKUP_RADIUS,
+      );
+      const ex = candidate.x - this.state.portalX;
+      const ey = candidate.y - this.state.portalY;
+      const rx = candidate.x - this.state.riftX;
+      const ry = candidate.y - this.state.riftY;
+      if (ex * ex + ey * ey >= separation2 && rx * rx + ry * ry >= separation2) return candidate;
+    }
+    return safeSpawnPos(
+      this.map,
+      this.vastagharVictoryX + 320,
+      this.vastagharVictoryY,
+      PICKUP_RADIUS,
+    );
+  }
+
   private grantXp(amount: number): void {
     this.state.players.forEach((player) => {
       levelUpPlayer(player, amount);
@@ -6813,6 +6974,9 @@ export class GameRoom extends Room<ArenaState> {
       case "bossrush-victory":
         this.completeBossRushVictory();
         break;
+      case "boss-clear":
+        this.completeVastagharClear();
+        break;
     }
   }
 
@@ -6890,6 +7054,10 @@ export class GameRoom extends Room<ArenaState> {
    * full patch and are deleted on the following simulation tick. Downing never cancels a guaranteed flight.
    */
   private stepXpEchoes(): void {
+    if (
+      this.vastagharEncounter?.state.mode === VastagharMode.Victory &&
+      !this.vastagharCoreId
+    ) return;
     // Retire the previous patch's receipts first.
     for (const [id, echo] of this.state.xpEchoes) {
       if (this.lockedWormEchoIds.has(id)) continue;
@@ -6898,6 +7066,11 @@ export class GameRoom extends Room<ArenaState> {
       this.xpFlights.delete(id);
     }
 
+    if (
+      this.xpBoundary === "boss-clear" &&
+      this.state.xpEchoes.size === 0 &&
+      ((this.state.tick - this.vastagharVictoryReadyTick) | 0) < 0
+    ) return;
     if (this.xpBoundary && this.state.xpEchoes.size === 0) {
       this.completeXpBoundary(this.xpBoundary);
       return;
@@ -6918,6 +7091,12 @@ export class GameRoom extends Room<ArenaState> {
         meta.targetY = collector.y;
       }
       if (this.state.tick < echo.collectTick) return;
+      // The flagship never converts add XP into a modal/invulnerability exploit mid-attack. Flights may
+      // arrive, but their unpaid values remain authoritative and fold into the reserved death crown.
+      if (
+        this.vastagharEncounter &&
+        this.vastagharEncounter.state.mode !== VastagharMode.Victory
+      ) return;
       this.grantXp(echo.value);
       echo.delivered = true;
       this.xpFlights.delete(echo.id);
@@ -7022,6 +7201,37 @@ export class GameRoom extends Room<ArenaState> {
       this.clearBoss();
       return;
     }
+    if (this.vastagharEncounter) {
+      this.buildVastagharTargets();
+      this.state.bossPhase = this.vastagharEncounter.step(
+        dt,
+        boss,
+        this.vastagharTargets,
+        this.state.depth,
+        this.state.tick,
+        this.bossSink as VastagharEmitSink,
+        this.broadcastGeneration,
+      );
+      this.updateEnemyGrid(this.bossId, boss);
+      if (boss.hp <= 0 && this.bossId) {
+        const attribution = this.vastagharEncounter.deferredAttribution;
+        this.vastagharKillScratch.length = 0;
+        this.damageEnemy(
+          boss,
+          this.bossId,
+          0,
+          this.vastagharKillScratch,
+          0,
+          attribution.sourcePlayerId,
+          attribution.sourceWeaponId,
+          attribution.delivery,
+          attribution.sourceX,
+          attribution.sourceY,
+        );
+        for (const id of this.vastagharKillScratch) this.state.enemies.delete(id);
+      }
+      return;
+    }
     this.state.bossPhase = this.bossController.step(
       dt,
       boss,
@@ -7043,6 +7253,13 @@ export class GameRoom extends Room<ArenaState> {
   /** Tear down the active boss: dispose the controller (removes its in-flight telegraphs), reset the synced
    *  boss fields. Called when the boss dies/vanishes or the run restarts. */
   private clearBoss(): void {
+    this.vastagharEncounter?.dispose(this.bossSink as VastagharEmitSink);
+    this.vastagharEncounter = null;
+    this.vastagharTargets.length = 0;
+    this.vastagharDownTicks.clear();
+    this.vastagharSweepEpoch.clear();
+    this.vastagharVictoryMode = "";
+    this.vastagharCoreId = "";
     this.bossController?.dispose(this.bossSink, this.state.tick);
     this.bossController = null;
     this.wormSegmentGrid.clear();
@@ -7051,6 +7268,7 @@ export class GameRoom extends Room<ArenaState> {
     this.bossId = null;
     this.bossPetAwardEligible = false;
     this.bossAddIds.clear();
+    this.bossAddExpireTick.clear();
     this.state.bossPhase = 0;
     this.state.bossKind = "";
     this.state.bossSlamT = 0; // §16 deprecated slam scalars stay at 0
@@ -7062,7 +7280,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §16 v0.109 the emit surface handed to the BossController — turns a boss def's abstract "casts" into real
    *  sim: hostile projectiles, telegraph rows, corrosive zones, adds, and unparryable AoE. Built once, lazily. */
-  private get bossSink(): BossEmitSink {
+  private get bossSink(): VastagharEmitSink {
     if (!this._bossSink) {
       this._bossSink = {
         fireProjectile: (x, y, aimX, aimY, speed, damage) =>
@@ -7079,6 +7297,8 @@ export class GameRoom extends Room<ArenaState> {
           t.t = 0;
           t.danger = spec.danger ?? 1;
           t.kindTag = spec.kindTag ?? 0;
+          t.ownerId = spec.ownerId ?? "";
+          t.castSeq = spec.castSeq ?? 0;
           this.state.telegraphs.set(t.id, t);
           return t.id;
         },
@@ -7109,6 +7329,39 @@ export class GameRoom extends Room<ArenaState> {
           this.applyBossAoE(x, y, radius, damage, knockback),
         applyQuake: (x, y, radius, damage, knockback) =>
           this.applyBossQuake(x, y, radius, damage, knockback),
+        applyVastagharQuake: (x, y, radius, damage, knockback, epoch, out) =>
+          this.applyVastagharQuake(x, y, radius, damage, knockback, epoch, out),
+        applyVastagharSweep: (
+          x,
+          y,
+          innerRange,
+          outerRange,
+          halfWidth,
+          fromAngle,
+          toAngle,
+          damage,
+          knockback,
+          actionSeq,
+          revolution,
+          airborneAnswers,
+          out,
+        ) =>
+          this.applyVastagharSweep(
+            x,
+            y,
+            innerRange,
+            outerRange,
+            halfWidth,
+            fromAngle,
+            toAngle,
+            damage,
+            knockback,
+            actionSeq,
+            revolution,
+            airborneAnswers,
+            out,
+          ),
+        mutateVastagharArena: (kind, poiIndex) => this.mutateVastagharArena(kind, poiIndex),
         applyMelee: (x, y, aimX, aimY, range, halfArc, damage, knockback) =>
           this.applyBossMelee(x, y, aimX, aimY, range, halfArc, damage, knockback),
         moveBoss: (x, y) => {
@@ -7131,7 +7384,7 @@ export class GameRoom extends Room<ArenaState> {
           return this.hostileProjectileCount;
         },
         aliveAdds: () => {
-          for (const id of [...this.bossAddIds]) {
+          for (const id of this.bossAddIds) {
             if (!this.state.enemies.has(id)) this.bossAddIds.delete(id);
           }
           return this.bossAddIds.size;
@@ -7277,6 +7530,196 @@ export class GameRoom extends Room<ArenaState> {
     });
   }
 
+  /** One-foot-one-epoch flagship quake. Only authoritative jump/parry answers buy Stride/punish credit. */
+  private applyVastagharQuake(
+    x: number,
+    y: number,
+    radius: number,
+    damage: number,
+    knockback: number,
+    _epoch: number,
+    out: BossCounterSummary,
+  ): void {
+    out.threatened = 0;
+    out.answered = 0;
+    out.parried = 0;
+    out.airborne = 0;
+    out.hit = 0;
+    out.lastParrierId = "";
+    const r2 = radius * radius;
+    this.state.players.forEach((player) => {
+      if (!player.alive || this.inLevelWindow(player)) return;
+      const dx = player.x - x;
+      const dy = player.y - y;
+      if (dx * dx + dy * dy > r2) return;
+      out.threatened++;
+      if (player.height > GROUND_EPSILON) {
+        out.airborne++;
+        out.answered++;
+        return;
+      }
+      const combat = this.combat.get(player.id);
+      if (combat && this.vastagharParryActive(player, combat)) {
+        out.parried++;
+        out.answered++;
+        out.lastParrierId = player.id;
+        this.resolveVastagharParry(player, combat, x, y, false);
+        return;
+      }
+      if (
+        combat &&
+        (combat.pitGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)
+      ) {
+        if (this.slideInvulnerable(combat)) this.noteSlideDodge(player);
+        return;
+      }
+      out.hit++;
+      this.damagePlayer(player, damage, "enemy");
+      const distance = Math.hypot(dx, dy) || 1;
+      const impulse = addImpulse(
+        player,
+        (dx / distance) * knockback,
+        (dy / distance) * knockback,
+      );
+      player.vx = impulse.vx;
+      player.vy = impulse.vy;
+    });
+  }
+
+  /** Swept-angular truth with a per-player/per-revolution receipt. A two-turn Worldwheel can hit twice. */
+  private applyVastagharSweep(
+    x: number,
+    y: number,
+    innerRange: number,
+    outerRange: number,
+    halfWidth: number,
+    fromAngle: number,
+    toAngle: number,
+    damage: number,
+    knockback: number,
+    actionSeq: number,
+    revolution: number,
+    airborneAnswers: boolean,
+    out: BossCounterSummary,
+  ): void {
+    out.threatened = 0;
+    out.answered = 0;
+    out.parried = 0;
+    out.airborne = 0;
+    out.hit = 0;
+    out.lastParrierId = "";
+    const epoch = (actionSeq << 2) + revolution + 1;
+    this.state.players.forEach((player) => {
+      if (!player.alive || this.inLevelWindow(player)) return;
+      if (this.vastagharSweepEpoch.get(player.id) === epoch) return;
+      if (
+        !pointInSweptAnnularArc(
+          player.x,
+          player.y,
+          x,
+          y,
+          innerRange,
+          outerRange,
+          halfWidth,
+          fromAngle,
+          toAngle,
+          PLAYER_RADIUS,
+        )
+      ) return;
+      this.vastagharSweepEpoch.set(player.id, epoch);
+      out.threatened++;
+      if (airborneAnswers && player.height > GROUND_EPSILON) {
+        out.airborne++;
+        out.answered++;
+        return;
+      }
+      const combat = this.combat.get(player.id);
+      if (combat && this.vastagharParryActive(player, combat)) {
+        out.parried++;
+        out.answered++;
+        out.lastParrierId = player.id;
+        this.resolveVastagharParry(player, combat, x, y, true);
+        return;
+      }
+      if (combat && (this.slideInvulnerable(combat) || combat.invuln > 0)) {
+        if (this.slideInvulnerable(combat)) this.noteSlideDodge(player);
+        return;
+      }
+      out.hit++;
+      this.damagePlayer(player, damage, "enemy");
+      const dx = player.x - x;
+      const dy = player.y - y;
+      const distance = Math.hypot(dx, dy) || 1;
+      const impulse = addImpulse(
+        player,
+        (dx / distance) * knockback,
+        (dy / distance) * knockback,
+      );
+      player.vx = impulse.vx;
+      player.vy = impulse.vy;
+    });
+  }
+
+  private vastagharParryActive(player: PlayerState, combat: CombatState): boolean {
+    if (combat.invuln <= 0 || combat.parryOpenedTick === 0xffffffff) return false;
+    const windowSeconds = Math.max(
+      PARRY_IFRAMES * (combat.quirk.mods?.parryIFrameMult ?? 1),
+      PARRY_IFRAMES *
+        (1 + IRON_STANCE_IFRAME_PER * countAugment(player.augments, "iron-stance")),
+    );
+    const windowTicks = Math.ceil((windowSeconds * 1000) / TICK_MS);
+    return ((this.state.tick - combat.parryOpenedTick) >>> 0) <= windowTicks;
+  }
+
+  /** Same personal chain/cooldown/heal/augment ledger as melee parry, without moving the 230px titan root. */
+  private resolveVastagharParry(
+    player: PlayerState,
+    combat: CombatState,
+    sourceX: number,
+    sourceY: number,
+    launch: boolean,
+  ): void {
+    this.recordPetAcceptedAction(player.id);
+    player.parriedSeq = (player.parriedSeq + 1) % 100000;
+    combat.parryCd = Math.min(combat.parryCd, PARRY_CHAIN_CD);
+    combat.parryChain = combat.parryChainT > 0 ? combat.parryChain + 1 : 1;
+    combat.parryChainT = PARRY_CHAIN_WINDOW;
+    const heal = PARRY_CHAIN_HEAL * Math.min(combat.parryChain, PARRY_CHAIN_HEAL_MAX_STACKS);
+    this.applyHeal(player, heal);
+    this.addUltimateFlatCharge(player, combat, ULT_CHARGE_PARRY_BONUS);
+    if (launch) {
+      const dx = sourceX - player.x;
+      const dy = sourceY - player.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      if (combat.stance !== STANCE_POUND) {
+        combat.vh = Math.min(combat.vh + PARRY_LAUNCH, PARRY_LAUNCH_MAX);
+        player.vh = combat.vh;
+      }
+      const impulse = addImpulse(
+        player,
+        (-dx / distance) * PARRY_PUSH,
+        (-dy / distance) * PARRY_PUSH,
+      );
+      player.vx = impulse.vx;
+      player.vy = impulse.vy;
+    }
+    this.applyParryAugments(player, combat);
+    this.applyParryQuirk(player, combat, heal);
+  }
+
+  /** POI identity stays at its deterministic seed index; moving the server copy off-map removes collision
+   * on the exact synchronized mutation edge while the client consumes `destroyedPoiMask`. */
+  private mutateVastagharArena(
+    _kind: VastagharArenaMutationKind,
+    poiIndex: number,
+  ): void {
+    if (poiIndex < 0 || poiIndex >= this.map.pois.length || poiIndex === 255) return;
+    const poi = this.map.pois[poiIndex];
+    if (!poi) return;
+    poi.x = -100_000;
+    poi.y = -100_000;
+  }
+
   /** §16 v0.109 Slice 2 — damage every living player inside an oriented rect (a beam / dash lane). `damage`
    *  is ALREADY the per-tick depth-scaled amount. `knockback` (dash) shoves them PERPENDICULAR out of the lane. */
   private damageBeamRect(
@@ -7336,6 +7779,7 @@ export class GameRoom extends Room<ArenaState> {
    *  add-cap counts only boss-summoned adds. Lands on solid ground clear of POIs. */
   private spawnBossAddAt(kindId: string, x: number, y: number): void {
     if (this.bossController?.wormRuntime || this.effectiveEnemyBodies() >= MAX_ENEMIES) return;
+    if (this.vastagharEncounter && this.bossAddIds.size >= VASTAGHAR_ENCOUNTER.addCap) return;
     const kind = ENEMY_KINDS[kindId];
     if (!kind) return;
     const players = this.livingCount(); // §6 scale adds to who can fight, not who's connected
@@ -7361,6 +7805,45 @@ export class GameRoom extends Room<ArenaState> {
     this.state.enemies.set(e.id, e);
     this.insertEnemyGrid(e.id, e);
     this.bossAddIds.add(e.id);
+    if (this.vastagharEncounter)
+      this.bossAddExpireTick.set(
+        e.id,
+        (this.state.tick + VASTAGHAR_ENCOUNTER.addLifetimeTicks) >>> 0,
+      );
+  }
+
+  /** Hard encounter budget: seven-second add life, and no residual add pressure during the solo rez beat. */
+  private stepVastagharAddBudget(): void {
+    if (!this.vastagharEncounter) return;
+    const clearForSoloRez = this.livingCount() <= 1;
+    for (const id of this.bossAddIds) {
+      const enemy = this.state.enemies.get(id);
+      if (!enemy) {
+        this.bossAddIds.delete(id);
+        this.bossAddExpireTick.delete(id);
+        continue;
+      }
+      const expireTick = this.bossAddExpireTick.get(id);
+      if (
+        !clearForSoloRez &&
+        (expireTick === undefined || ((this.state.tick - expireTick) | 0) < 0)
+      ) continue;
+      const combo = this.comboState.get(id);
+      if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
+      if (combo?.tg) this.removeTelegraphRow(combo.tg);
+      if (combo?.targetId && this.duelTokens.get(combo.targetId) === id)
+        this.duelTokens.delete(combo.targetId);
+      this.state.enemies.delete(id);
+      this.enemyFireCd.delete(id);
+      this.zonerDropCd.delete(id);
+      this.comboState.delete(id);
+      this.dodgeState.delete(id);
+      this.poundEnemyEffects.delete(id);
+      this.ultimateStunUntil.delete(id);
+      this.ultimateBrands.delete(id);
+      this.bossAddIds.delete(id);
+      this.bossAddExpireTick.delete(id);
+    }
   }
 
   /** Spitters fire a projectile at the nearest living player on a cooldown (§15 ranged threat). */
@@ -7783,12 +8266,25 @@ export class GameRoom extends Room<ArenaState> {
     const hpBefore = enemy.hp;
     const signatureBrand = this.brandedTimers.has(eid) ? BRAND_DAMAGE_MULT - 1 : 0;
     const ultimateBrand = this.ultimateBrands.get(eid)?.multiplier ?? 0;
-    const applied = dmg * (1 + signatureBrand + ultimateBrand);
+    const flagship = eid === this.bossId ? this.vastagharEncounter : null;
+    const creditedApplied =
+      dmg * (1 + signatureBrand + ultimateBrand) * (flagship?.damageMultiplier() ?? 1);
+    const applied = flagship
+      ? flagship.capIncomingDamage(
+          enemy.hp,
+          creditedApplied,
+          sourcePlayerId,
+          sourceWeaponId,
+          delivery,
+          sourceX,
+          sourceY,
+        )
+      : creditedApplied;
     const finalBlow = enemy.kind !== "dummy" && enemy.hp - applied <= 0;
     enemy.hp -= applied;
     this.accrueUltimateCharge(
       sourcePlayerId,
-      Math.min(Math.max(0, hpBefore), Math.max(0, applied)),
+      Math.min(Math.max(0, hpBefore), Math.max(0, creditedApplied)),
       finalBlow,
       enemy.kind,
       delivery,
@@ -7802,7 +8298,7 @@ export class GameRoom extends Room<ArenaState> {
       delivery,
       sourceX,
       sourceY,
-      applied,
+      creditedApplied,
       didCrit,
       finalBlow,
     );
@@ -7836,14 +8332,17 @@ export class GameRoom extends Room<ArenaState> {
     if (combo) combo.strike = undefined;
     const kind = ENEMY_KINDS[enemy.kind];
     if (wormRoot) this.releaseWormXp(enemy.x, enemy.y);
-    else {
+    else if (!flagship) {
       this.dropXp(
         enemy.x,
         enemy.y,
         (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1),
       );
     }
-    if (kind?.archetype === "boss") {
+    if (kind?.archetype === "boss" && flagship) {
+      if (this.bossPetAwardEligible) this.awardPetDimensionClear();
+      this.beginVastagharClear(enemy.x, enemy.y);
+    } else if (kind?.archetype === "boss") {
       if (enemy.id === this.bossId && this.bossPetAwardEligible) this.awardPetDimensionClear();
       // §16 v0.109 tear the boss down HERE (the death path): dispose the controller + clear any in-flight
       // telegraph rows before opening the portal. Otherwise a boss killed mid-windup leaves orphaned
@@ -8111,10 +8610,11 @@ export class GameRoom extends Room<ArenaState> {
     // G-02: the press opens only the base defensive window. Augment rewards are success-gated below.
     c.invuln = Math.max(c.invuln, PARRY_IFRAMES * (c.quirk.mods?.parryIFrameMult ?? 1));
     c.parryCd = PARRY_COOLDOWN;
+    c.parryOpenedTick = this.state.tick;
     const knockback = PARRY_KNOCKBACK * (c.quirk.mods?.parryKnockbackMult ?? 1);
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
-      if (id === this.bossId && this.bossController?.wormRuntime) return;
+      if (id === this.bossId && (this.bossController?.wormRuntime || this.vastagharEncounter)) return;
       const dx = enemy.x - player.x;
       const dy = enemy.y - player.y;
       const d2 = dx * dx + dy * dy;
@@ -9878,6 +10378,45 @@ export class GameRoom extends Room<ArenaState> {
     }
   }
 
+  /** Reuses stable target rows and scans the fixed receipt ring for the authored four-second threat share. */
+  private buildVastagharTargets(): void {
+    let count = 0;
+    this.state.players.forEach((player, id) => {
+      let target = this.vastagharTargets[count];
+      if (!target) {
+        target = { id: "", x: 0, y: 0, alive: false, downTick: 0, recentBossDamage: 0 };
+        this.vastagharTargets[count] = target;
+      }
+      target.id = id;
+      target.x = player.x;
+      target.y = player.y;
+      target.alive = player.alive;
+      if (!player.alive && !this.vastagharDownTicks.has(id))
+        this.vastagharDownTicks.set(id, this.state.tick);
+      if (player.alive) this.vastagharDownTicks.delete(id);
+      target.downTick = this.vastagharDownTicks.get(id) ?? this.state.tick;
+      target.recentBossDamage = 0;
+      count++;
+    });
+    this.vastagharTargets.length = count;
+    if (!this.bossId) return;
+    for (const receipt of this.state.combatReceipts) {
+      if (
+        receipt.seq === 0 ||
+        receipt.targetId !== this.bossId ||
+        !receipt.sourcePlayerId ||
+        ((this.state.tick - receipt.tick) >>> 0) > 80
+      ) continue;
+      for (let i = 0; i < count; i++) {
+        const target = this.vastagharTargets[i];
+        if (target?.id === receipt.sourcePlayerId) {
+          target.recentBossDamage += Math.max(0, receipt.damage);
+          break;
+        }
+      }
+    }
+  }
+
   /** Beam-heat-style ultimate truth: private float, quantized mirror, one ready sequence edge. */
   private syncUltimateCharge(player: PlayerState, c: CombatState): void {
     const quantized = Math.max(
@@ -10090,6 +10629,27 @@ export class GameRoom extends Room<ArenaState> {
   /** Spawn a BOSS on a ring around a player (§16) — the run's capstone threat. `overrideKind` (the debug
    *  picker) spawns a specific boss BODY; otherwise the active dimension's boss. The body kind supplies the
    *  sprite/hp/radius; its `BossDef` (or CLASSIC_BOSS fallback) drives the attacks via the BossController. */
+  private retireStageForVastaghar(): void {
+    this.state.enemies.clear();
+    this.enemyGrid.clear();
+    this.state.projectiles.clear();
+    this.projectileMeta.clear();
+    this.hostileProjectileCount = 0;
+    this.state.zones.clear();
+    this.zoneMeta.clear();
+    this.state.telegraphs.clear();
+    this.enemyFireCd.clear();
+    this.zonerDropCd.clear();
+    this.comboState.clear();
+    this.duelTokens.clear();
+    this.dodgeState.clear();
+    this.poundEnemyEffects.clear();
+    this.bossAddIds.clear();
+    this.bossAddExpireTick.clear();
+    this.shifterId = null;
+    this.shifterTimer = 0;
+  }
+
   private spawnBoss(overrideKind?: string, petAwardEligible = true): void {
     const bossKind =
       overrideKind &&
@@ -10100,6 +10660,10 @@ export class GameRoom extends Room<ArenaState> {
     const bodyKind = ENEMY_KINDS[bossKind] ? bossKind : def.worm?.rootKind;
     const kind = bodyKind ? ENEMY_KINDS[bodyKind] : undefined;
     if (!kind) return;
+    if (this.vastagharEncounter && !this.bossId) {
+      this.vastagharEncounter.dispose(this.bossSink);
+      this.vastagharEncounter = null;
+    }
     // A picker re-spawn while a boss is up: retire the old one, its adds, and its telegraphs first. Evicting
     // the tracked adds (not just clearing the Set) stops them lingering off-cap under the new boss.
     if (this.bossId) {
@@ -10107,6 +10671,8 @@ export class GameRoom extends Room<ArenaState> {
       for (const addId of this.bossAddIds) this.state.enemies.delete(addId);
       this.clearBoss();
     }
+    if (def.encounter === "vastaghar" && !(this.belt && this.beltLevel))
+      this.retireStageForVastaghar();
     // The custom collection is not free capacity: reserve every authored starting hurt body before admission.
     if (def.encounter === "worm" && this.state.enemies.size + WORM_MAX_SEGMENTS + 3 > MAX_ENEMIES) return;
     const anchors: Vec2[] = [];
@@ -10152,9 +10718,61 @@ export class GameRoom extends Room<ArenaState> {
     this.bossPetAwardEligible = petAwardEligible && this.state.mode !== "training";
     // §16 v0.109 the data-driven controller runs this boss's def (CLASSIC_BOSS = OLD RUST for any kind
     // without a bespoke def, so every dimension boss keeps its behaviour). maxHp frozen for phase thresholds.
-    this.bossController = new BossController(def, boss.hp, randomSeed());
+    const controllerSeed = randomSeed();
+    this.bossController = new BossController(def, boss.hp, controllerSeed);
     if (def.encounter === "worm") {
       this.bossController.attachWorm(this.state.wormBoss, boss, this.state.tick, angle + Math.PI);
+    }
+    if (def.encounter === "vastaghar" && def.vastaghar && !(this.belt && this.beltLevel)) {
+      let poi0 = 255;
+      let poi1 = 255;
+      let score0 = Number.POSITIVE_INFINITY;
+      let score1 = Number.POSITIVE_INFINITY;
+      let quadrant0 = -1;
+      for (let i = 0; i < this.map.pois.length; i++) {
+        const poi = this.map.pois[i];
+        if (!poi) continue;
+        const dx = poi.x - boss.x;
+        const dy = poi.y - boss.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 320 || distance > 760 || distance > 1100) continue;
+        const score = Math.abs(distance - 540) * 100 + i;
+        if (score < score0) {
+          poi0 = i;
+          score0 = score;
+          quadrant0 = (dx >= 0 ? 1 : 0) | (dy >= 0 ? 2 : 0);
+        }
+      }
+      for (let i = 0; i < this.map.pois.length; i++) {
+        if (i === poi0) continue;
+        const poi = this.map.pois[i];
+        if (!poi) continue;
+        const dx = poi.x - boss.x;
+        const dy = poi.y - boss.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < 320 || distance > 760 || distance > 1100) continue;
+        const quadrant = (dx >= 0 ? 1 : 0) | (dy >= 0 ? 2 : 0);
+        const score = Math.abs(distance - 540) * 100 + i + (quadrant === quadrant0 ? 100_000 : 0);
+        if (score < score1) {
+          poi1 = i;
+          score1 = score;
+        }
+      }
+      const firstPoi = poi0 === 255 ? undefined : this.map.pois[poi0];
+      const secondPoi = poi1 === 255 ? undefined : this.map.pois[poi1];
+      this.vastagharEncounter = new VastagharEncounterRuntime(
+        def.vastaghar,
+        this.state.vastaghar,
+        boss.hp,
+        boss.id,
+        this.state.tick,
+        poi0,
+        firstPoi?.x ?? 0,
+        firstPoi?.y ?? 0,
+        poi1,
+        secondPoi?.x ?? 0,
+        secondPoi?.y ?? 0,
+      );
     }
     this.insertEnemyGrid(boss.id, boss);
     this.rebuildWormSegmentGrid();

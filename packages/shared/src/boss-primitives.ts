@@ -35,6 +35,30 @@ export enum TgShape {
   PointWarn = 5, // bullet-origin / summon-spot marker
 }
 
+/** Existing active-hazard values are locked; TitanSweep is the append-only flagship kind. */
+export enum ActiveKind {
+  Beam = 0,
+  Ring = 1,
+  Dash = 2,
+  TitanSweep = 3,
+}
+
+/** Stable renderer tags. Flagship tags append after the Serraketh vocabulary. */
+export enum BossTelegraphKindTag {
+  Slam = 0,
+  Hazard = 1,
+  Summon = 2,
+  ProjectileFlash = 3,
+  Lane = 4,
+  Ring = 5,
+  Melee = 6,
+  Quake = 7,
+  Eruption = 8,
+  WormSweep = 9,
+  TitanSweep = 10,
+  TitanLandmark = 11,
+}
+
 /** One projectile the boss launches. `damage` is BASE (the controller applies the depth scale). `aimX/aimY`
  *  is a direction (need not be unit length). `kind` is the projectile visual — enemy shots are "spit"
  *  (parryable per §8; the client already draws the white parry-tell on incoming spit). */
@@ -58,6 +82,8 @@ export interface TgSpec {
   rot?: number;
   danger?: number; // TELEGRAPH_PARRYABLE | TELEGRAPH_DODGE; default DODGE (AoE/zones are dodge-only, §8)
   kindTag?: number;
+  ownerId?: string;
+  castSeq?: number;
 }
 
 /** A corrosive DoT puddle to drop (reuses ZoneState). */
@@ -112,6 +138,34 @@ export interface ActiveSpec {
  *  to `range`, ±`halfArc`. Routed through the SAME §8 parry path as the horde duelists: i-frames NEGATE it
  *  (bump parriedSeq, feed the v0.114 parry-chain), else it deals `damage` (BASE, depth-scaled) + a shove.
  *  This is the one boss attack you PARRY rather than dodge — the marquee of the melee trio. */
+/** Frozen sampled limb descriptor used by Heel Reap and the two-revolution Worldwheel. */
+export interface TitanSweepSpec {
+  startTick: number;
+  activeStartTick: number;
+  activeEndTick: number;
+  endTick: number;
+  originX: number;
+  originY: number;
+  startAngle: number;
+  deltaAngle: number;
+  innerRange: number;
+  outerRange: number;
+  halfWidth: number;
+  damage: number;
+  knockback: number;
+  revolutions: number;
+}
+
+/** Mutable caller-owned result slot; server sinks fill it without allocating in the 20 Hz loop. */
+export interface BossCounterSummary {
+  threatened: number;
+  answered: number;
+  parried: number;
+  airborne: number;
+  hit: number;
+  lastParrierId: string;
+}
+
 export interface MeleeArcSpec {
   x: number;
   y: number;
@@ -417,6 +471,40 @@ export function pointInAnnulusGap(
 /** §16 a hitscan BEAM that charges (windup) then SWEEPS across the arena. A rect lane telegraphs at the
  *  start angle; during the live window the beam rotates from rot0→rot0+sweepArc (0 = a static lane),
  *  damaging anyone inside each tick. Params: length, halfWidth, sweepArc, duration, dps. Dodge (unparryable). */
+const POSITIVE_TAU = Math.PI * 2;
+
+/** Exact swept annular-capsule contact used by the titan heel. The angular pad accounts for both the
+ * authored heel half-width and the target body radius, preventing 20 Hz angular tunneling. */
+export function pointInSweptAnnularArc(
+  px: number,
+  py: number,
+  cx: number,
+  cy: number,
+  innerRange: number,
+  outerRange: number,
+  halfWidth: number,
+  fromAngle: number,
+  toAngle: number,
+  targetRadius = 0,
+): boolean {
+  const dx = px - cx;
+  const dy = py - cy;
+  const distance = Math.hypot(dx, dy);
+  const pad = Math.max(0, halfWidth + targetRadius);
+  if (distance < Math.max(0, innerRange - pad) || distance > outerRange + pad) return false;
+  if (distance <= 1e-9) return innerRange <= pad;
+  const span = toAngle - fromAngle;
+  if (Math.abs(span) >= POSITIVE_TAU - 1e-9) return true;
+  const angularPad = Math.asin(clamp(pad / distance, 0, 1));
+  const angle = Math.atan2(dy, dx);
+  if (span >= 0) {
+    const delta = ((angle - fromAngle) % POSITIVE_TAU + POSITIVE_TAU) % POSITIVE_TAU;
+    return delta <= span + angularPad || delta >= POSITIVE_TAU - angularPad;
+  }
+  const delta = ((fromAngle - angle) % POSITIVE_TAU + POSITIVE_TAU) % POSITIVE_TAU;
+  return delta <= -span + angularPad || delta >= POSITIVE_TAU - angularPad;
+}
+
 export const beamSweep: BossPrimitive = (ctx) => {
   const t = aimTarget(ctx);
   const aim = Math.atan2(t.y - ctx.boss.y, t.x - ctx.boss.x);

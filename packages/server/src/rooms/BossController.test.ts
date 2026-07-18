@@ -612,3 +612,256 @@ describe("Serraketh wave 1 — authoritative chain", () => {
     expect(controller.acceptWormContact("p1", wormShared.WormChain.Main, 28)).toBe(true);
   });
 });
+
+// VASTAGHAR bot 1 append-only coverage: the flagship's server-owned action/phase/mutation/reward clock.
+const vastShared = await import("@dd/shared");
+const vastServer = await import("./BossController.js");
+
+type VastAnswer = "miss" | "jump" | "parry";
+
+function makeVastagharHarness(answer: VastAnswer = "miss", liveAdds = 0) {
+  const base = mockSink({ adds: liveAdds });
+  const mutations: { kind: number; poiIndex: number }[] = [];
+  const addCounts: number[] = [];
+  const answerMode = { value: answer };
+  const fill = (out: import("@dd/shared").BossCounterSummary) => {
+    out.threatened = 1;
+    out.answered = answerMode.value === "miss" ? 0 : 1;
+    out.parried = answerMode.value === "parry" ? 1 : 0;
+    out.airborne = answerMode.value === "jump" ? 1 : 0;
+    out.hit = answerMode.value === "miss" ? 1 : 0;
+    out.lastParrierId = answerMode.value === "parry" ? "p1" : "";
+  };
+  const sink = Object.assign(base.sink, {
+    applyVastagharQuake: (
+      _x: number,
+      _y: number,
+      _radius: number,
+      _damage: number,
+      _knockback: number,
+      _epoch: number,
+      out: import("@dd/shared").BossCounterSummary,
+    ) => fill(out),
+    applyVastagharSweep: (
+      _x: number,
+      _y: number,
+      _inner: number,
+      _outer: number,
+      _halfWidth: number,
+      _from: number,
+      _to: number,
+      _damage: number,
+      _knockback: number,
+      _actionSeq: number,
+      _revolution: number,
+      _airborne: boolean,
+      out: import("@dd/shared").BossCounterSummary,
+    ) => fill(out),
+    mutateVastagharArena: (kind: number, poiIndex: number) => mutations.push({ kind, poiIndex }),
+    spawnAdds: (_kind: string, spots: readonly Vec2[]) => addCounts.push(spots.length),
+  }) as import("./BossController.js").VastagharEmitSink;
+  const state = new vastShared.VastagharBossState();
+  const root = new EnemyState();
+  root.id = "vastaghar-root";
+  root.kind = "world-titan";
+  root.hp = 1900;
+  root.x = 1200;
+  root.y = 1200;
+  const runtime = new vastServer.VastagharEncounterRuntime(
+    vastShared.VASTAGHAR_ENCOUNTER,
+    state,
+    root.hp,
+    root.id,
+    0,
+    5,
+    1500,
+    1200,
+    6,
+    1200,
+    1500,
+  );
+  const targets: import("./BossController.js").VastagharTarget[] = [
+    { id: "p1", x: 1300, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
+    { id: "p2", x: 1000, y: 1200, alive: true, downTick: 0, recentBossDamage: 0 },
+  ];
+  return { runtime, state, root, sink, targets, mutations, addCounts, answerMode };
+}
+
+function stepVastaghar(
+  h: ReturnType<typeof makeVastagharHarness>,
+  fromTick: number,
+  toTick: number,
+): void {
+  for (let tick = fromTick; tick <= toTick; tick++)
+    h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+}
+
+function reachVastagharPhase(
+  h: ReturnType<typeof makeVastagharHarness>,
+  phase: import("@dd/shared").VastagharPhase,
+  startTick: number,
+): number {
+  for (let tick = startTick; tick < startTick + 1000; tick++) {
+    h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    if (h.state.phase === phase && h.state.mode !== vastShared.VastagharMode.Transition) return tick;
+  }
+  throw new Error(`phase ${phase} was not reached`);
+}
+
+describe("Vastaghar flagship — authored 20 Hz authority", () => {
+  it("admits one 70/35/8 threshold at a time and publishes each visible transition sequence", () => {
+    const h = makeVastagharHarness("miss");
+    stepVastaghar(h, 0, 88);
+    const p1Damage = h.runtime.capIncomingDamage(h.root.hp, 1900 * 0.3, "p1", "pound", 1, 0, 0);
+    h.root.hp -= p1Damage;
+    const p2Tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    expect(h.state.maxHp).toBe(1900);
+    expect(h.mutations[0]).toEqual({
+      kind: vastShared.VastagharArenaMutationKind.StuckStep,
+      poiIndex: 5,
+    });
+
+    const p2Damage = h.runtime.capIncomingDamage(h.root.hp, 1900 * 0.35, "p1", "ultimate", 6, 0, 0);
+    h.root.hp -= p2Damage;
+    const p3Tick = reachVastagharPhase(h, vastShared.VastagharPhase.UnderHeel, p2Tick + 1);
+    expect(h.mutations.some((m) => m.kind === vastShared.VastagharArenaMutationKind.WorldTurn)).toBe(true);
+
+    const p3Damage = h.runtime.capIncomingDamage(h.root.hp, 1900 * 0.27, "p2", "pound", 1, 0, 0);
+    h.root.hp -= p3Damage;
+    const finalTick = reachVastagharPhase(h, vastShared.VastagharPhase.FinalTread, p3Tick + 1);
+    expect(finalTick).toBeGreaterThan(p3Tick);
+    expect(h.state.mode).toBe(vastShared.VastagharMode.Desperation);
+    expect(h.state.storedDamage).toBe(0);
+  });
+
+  it("keeps each rhythmic footfall on a separate epoch with 15-tick cadence and a five-tick answer window", () => {
+    const h = makeVastagharHarness("miss");
+    stepVastaghar(h, 0, 88);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "hammer", 1, 0, 0);
+    let tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    while (h.state.actionKind !== vastShared.VastagharActionKind.ThreefoldMarch) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    }
+    const start = h.state.actionStartTick;
+    expect(h.state.stepResolveTick - start).toBe(19);
+    expect(h.state.stepResolveTick - h.state.responseOpenTick).toBe(5);
+    while (h.state.stepIndex < 1) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    }
+    expect(h.state.stepResolveTick - (start + 19)).toBe(15);
+    while (h.state.stepIndex < 2) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    }
+    expect(h.state.stepResolveTick - (start + 34)).toBe(15);
+  });
+
+  it("opens punish state only from a correct jump/parry answer, never from recovery time alone", () => {
+    const missed = makeVastagharHarness("miss");
+    stepVastaghar(missed, 0, 64);
+    expect(missed.state.mode).not.toBe(vastShared.VastagharMode.Punish);
+    expect(missed.state.punishEndTick).toBe(0);
+
+    const jumped = makeVastagharHarness("jump");
+    stepVastaghar(jumped, 0, 64);
+    expect(jumped.state.mode).toBe(vastShared.VastagharMode.Punish);
+    expect(jumped.state.punishEndTick - 64).toBeGreaterThanOrEqual(20);
+    expect(jumped.state.stridePips).toBe(1);
+  });
+
+  it("destroys no more than the two authored POIs and publishes mutation/collision edges together", () => {
+    const h = makeVastagharHarness("miss");
+    stepVastaghar(h, 0, 88);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "hammer", 1, 0, 0);
+    let tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    while (!h.mutations.some((m) => m.kind === vastShared.VastagharArenaMutationKind.LandmarkBreak)) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+      if (tick > 700) throw new Error("Landmark Break did not resolve");
+    }
+    expect(h.state.destroyedPoiMask).toBe((1 << 5) | (1 << 6));
+    expect(h.mutations.filter((m) => m.poiIndex !== 255).map((m) => m.poiIndex)).toEqual([5, 6]);
+  });
+
+  it("enforces the four-add encounter budget even when the authored wave requests more", () => {
+    const h = makeVastagharHarness("miss", 1);
+    stepVastaghar(h, 0, 88);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "hammer", 1, 0, 0);
+    const tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 665, "p2", "ultimate", 6, 0, 0);
+    reachVastagharPhase(h, vastShared.VastagharPhase.UnderHeel, tick + 1);
+    expect(h.addCounts).toEqual([3]);
+  });
+
+  it("conserves field XP into the reserved crown and exposes the ordered death receipt", () => {
+    expect(vastServer.conserveVastagharVictoryXp(37, vastShared.VASTAGHAR_ENCOUNTER.bossXp)).toBe(147);
+    const h = makeVastagharHarness("miss");
+    h.runtime.beginVictory(100, h.sink);
+    expect(h.state.mode).toBe(vastShared.VastagharMode.Victory);
+    expect(h.state.victoryStage).toBe(vastShared.VastagharVictoryStage.ThreatEnded);
+    expect(h.runtime.advanceVictory(109)).toBe(false);
+    expect(h.runtime.advanceVictory(110)).toBe(true);
+    h.runtime.setVictoryEcho("vastaghar-core:1", 147);
+    expect([h.state.victoryStage, h.state.victoryEchoId, h.state.victoryXp]).toEqual([
+      vastShared.VastagharVictoryStage.XpCrown,
+      "vastaghar-core:1",
+      147,
+    ]);
+  });
+
+  it("sanctions schema 26 for the appended nested flagship state", () => {
+    expect(vastShared.SCHEMA_VERSION).toBe(26);
+    expect(new vastShared.ArenaState().schemaVersion).toBe(26);
+    expect(new vastShared.ArenaState().vastaghar).toBeInstanceOf(vastShared.VastagharBossState);
+  });
+});
+
+describe("Vastaghar flagship - Worldwheel revolution receipts", () => {
+  it("publishes two independently hittable 2pi melee revolutions from one frozen action epoch", () => {
+    const h = makeVastagharHarness("miss");
+    const revolutions: number[] = [];
+    h.sink.applyVastagharSweep = (
+      _x,
+      _y,
+      _inner,
+      _outer,
+      _halfWidth,
+      _from,
+      _to,
+      _damage,
+      _knockback,
+      _actionSeq,
+      revolution,
+      _airborne,
+      out,
+    ) => {
+      if (h.state.actionKind === vastShared.VastagharActionKind.Worldwheel)
+        revolutions.push(revolution);
+      out.threatened = 1;
+      out.answered = 0;
+      out.parried = 0;
+      out.airborne = 0;
+      out.hit = 1;
+      out.lastParrierId = "";
+    };
+    stepVastaghar(h, 0, 88);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 570, "p1", "pound", 1, 0, 0);
+    let tick = reachVastagharPhase(h, vastShared.VastagharPhase.BreakStride, 89);
+    h.root.hp -= h.runtime.capIncomingDamage(h.root.hp, 665, "p2", "ultimate", 6, 0, 0);
+    tick = reachVastagharPhase(h, vastShared.VastagharPhase.UnderHeel, tick + 1);
+    while (h.state.actionKind !== vastShared.VastagharActionKind.Worldwheel) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+      if (tick > 1400) throw new Error("Worldwheel did not start");
+    }
+    const endTick = h.state.actionEndTick;
+    while (tick <= endTick) {
+      tick++;
+      h.runtime.step(0.05, h.root, h.targets, 1, tick, h.sink, tick);
+    }
+    expect(h.state.revolutions).toBe(2);
+    expect([...new Set(revolutions)]).toEqual([0, 1]);
+  });
+});

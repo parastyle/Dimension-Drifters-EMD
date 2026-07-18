@@ -300,6 +300,9 @@ export class TelegraphState extends Schema {
   @type("uint8") danger = 0;
   /** Cosmetic sub-style for the renderer (slam vs beam vs summon-marker) — art differs without new shapes. */
   @type("uint8") kindTag = 0;
+  /** Flagship semantic ownership. Empty/zero preserves every legacy and horde row. APPENDED at schema v26. */
+  @type("string") ownerId = "";
+  @type("uint32") castSeq = 0;
 }
 
 /** A weapon lying on the ground — the Testing-Grounds gallery, a player drop, or (v0.104 §13) an in-run
@@ -457,6 +460,54 @@ export class WormBossState extends Schema {
   @type([WormSegmentState]) segments = new ArraySchema<WormSegmentState>();
 }
 
+/** Always allocated compact flagship surface. Tick epochs let late joiners sample the current foot/action
+ * without replaying entrance, phase, mutation, or death one-shots. APPENDED as one nested field at v26. */
+export class VastagharBossState extends Schema {
+  @type("boolean") active = false;
+  @type("string") ownerId = "";
+  @type("uint16") encounterSeq = 0;
+  @type("uint8") mode = 0;
+  @type("uint8") phase = 0;
+  @type("uint32") phaseStartTick = 0;
+  @type("float32") maxHp = 0;
+  @type("float32") storedDamage = 0;
+  @type("uint16") actionSeq = 0;
+  @type("uint8") actionKind = 0;
+  @type("uint8") actionResult = 0;
+  @type("uint32") actionStartTick = 0;
+  @type("uint32") actionResolveTick = 0;
+  @type("uint32") actionActiveEndTick = 0;
+  @type("uint32") actionEndTick = 0;
+  @type("string") focusPlayerId = "";
+  @type("uint8") sourceFoot = 0;
+  @type("float32") aim = 0;
+  @type("float32") impactX = 0;
+  @type("float32") impactY = 0;
+  @type("uint8") revolutions = 0;
+  @type("uint16") stepSeq = 0;
+  @type("uint8") stepIndex = 0;
+  @type("uint8") stepCount = 0;
+  @type("uint32") stepStartTick = 0;
+  @type("uint32") stepResolveTick = 0;
+  @type("uint32") responseOpenTick = 0;
+  @type("uint8") stridePips = 0;
+  @type("uint32") punishEndTick = 0;
+  @type("uint16") arenaMutationSeq = 0;
+  @type("uint8") arenaMutationKind = 0;
+  @type("uint32") arenaMutationTick = 0;
+  @type("uint8") arenaMutationPoiIndex = 255;
+  @type("uint32") destroyedPoiMask = 0;
+  @type("uint8") arenaPaintStep = 0;
+  @type("float32") arenaPaintRotation = 0;
+  @type("uint16") cueSeq = 0;
+  @type("uint8") cueKind = 0;
+  @type("uint32") cueTick = 0;
+  @type("uint8") victoryStage = 0;
+  @type("uint32") victoryTick = 0;
+  @type("uint32") victoryXp = 0;
+  @type("string") victoryEchoId = "";
+}
+
 export class ArenaState extends Schema {
   /** §4 schema handshake (audit) — FIRST field (index 0) so it stays decodable even if later fields get
    *  reordered; the client compares it to its own SCHEMA_VERSION on join and prompts a reload on mismatch
@@ -545,4 +596,6 @@ export class ArenaState extends Schema {
   @type(WormBossState) wormBoss = new WormBossState();
   /** G-polish-07 fixed authoritative hit/kill event ring. APPENDED at schema v18 after every v17 field. */
   @type([CombatReceiptState]) combatReceipts = new ArraySchema<CombatReceiptState>();
+  /** Vastaghar action/mutation/reward surface. APPENDED at schema v26; never inserted into older rows. */
+  @type(VastagharBossState) vastaghar = new VastagharBossState();
 }

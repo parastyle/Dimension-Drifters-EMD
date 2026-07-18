@@ -12,8 +12,11 @@ import {
   HIT_KNOCKBACK_IMPULSE,
 } from "./constants.js";
 import {
+  VastagharActionKind,
+  VastagharFoot,
   WormActionKind,
   WormSegmentRole,
+  type VastagharEncounterDef,
   type WormEncounterDef,
 } from "./boss.js";
 
@@ -64,8 +67,9 @@ export interface BossDef {
   move: "chase" | "kite" | "stationary" | "strafe";
   phases: BossPhase[];
   /** Dedicated encounter directors opt in explicitly; absent keeps the legacy module scheduler untouched. */
-  encounter?: "worm";
+  encounter?: "worm" | "vastaghar";
   worm?: WormEncounterDef;
+  vastaghar?: VastagharEncounterDef;
 }
 
 /** OLD RUST reproduced as data — the fallback for any boss kind without a bespoke def. P1 bullet-walls, P2
@@ -861,10 +865,190 @@ const COLOSSUS: BossDef = {
  *  quake (`footfallQuake`) you must JUMP over (airborne = immune) or PARRY (white cue, negates + feeds the
  *  chain). Stay grounded and flat-footed and the quake flattens you. The steps quicken + multiply as he
  *  falls; supporting fire (crater slams / bullet fan / voidspawn) forces you to move between stomps. */
+/** The Last Crossing: immutable tick-authored data shared by server authority and the client director. */
+export const VASTAGHAR_ENCOUNTER = {
+  thresholds: [0.7, 0.35, 0.08],
+  entranceDelayTicks: 40,
+  transitionTicks: 16,
+  transitionClaimDelayTicks: 20,
+  strideBreakPips: 3,
+  strideBreakTicks: 64,
+  strideBreakDamageMultiplier: 1.2,
+  responseWindowTicks: 5,
+  addCap: 4,
+  addLifetimeTicks: 140,
+  maxDestroyedPois: 2,
+  bossXp: 110,
+  actions: {
+    [VastagharActionKind.Crownstep]: {
+      kind: VastagharActionKind.Crownstep,
+      windupTicks: 21,
+      activeTicks: 0,
+      recoveryTicks: 20,
+      stepOffsets: [21],
+      stepFeet: [VastagharFoot.InnerLeft],
+      stepRadii: [360],
+      stepDamage: [24],
+      stepKnockback: [900],
+      innerRange: 0,
+      outerRange: 0,
+      halfWidth: 0,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.HeelReap]: {
+      kind: VastagharActionKind.HeelReap,
+      windupTicks: 16,
+      activeTicks: 9,
+      recoveryTicks: 20,
+      stepOffsets: [],
+      stepFeet: [VastagharFoot.OuterRight],
+      stepRadii: [],
+      stepDamage: [20],
+      stepKnockback: [520],
+      innerRange: 220,
+      outerRange: 520,
+      halfWidth: 34,
+      sweepRadians: 2.2,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.ShedMountain]: {
+      kind: VastagharActionKind.ShedMountain,
+      windupTicks: 20,
+      activeTicks: 0,
+      recoveryTicks: 20,
+      stepOffsets: [20],
+      stepFeet: [VastagharFoot.Body],
+      stepRadii: [155],
+      stepDamage: [20],
+      stepKnockback: [650],
+      innerRange: 0,
+      outerRange: 0,
+      halfWidth: 0,
+      sweepRadians: 0,
+      maxTargets: 2,
+    },
+    [VastagharActionKind.ThreefoldMarch]: {
+      kind: VastagharActionKind.ThreefoldMarch,
+      windupTicks: 19,
+      activeTicks: 30,
+      recoveryTicks: 23,
+      stepOffsets: [19, 34, 49],
+      stepFeet: [VastagharFoot.OuterLeft, VastagharFoot.OuterRight, VastagharFoot.InnerLeft],
+      stepRadii: [340, 340, 340],
+      stepDamage: [22, 22, 22],
+      stepKnockback: [850, 850, 850],
+      innerRange: 0,
+      outerRange: 0,
+      halfWidth: 0,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.LandmarkBreak]: {
+      kind: VastagharActionKind.LandmarkBreak,
+      windupTicks: 23,
+      activeTicks: 10,
+      recoveryTicks: 25,
+      stepOffsets: [],
+      stepFeet: [VastagharFoot.Body],
+      stepRadii: [],
+      stepDamage: [24],
+      stepKnockback: [720],
+      innerRange: 0,
+      outerRange: 620,
+      halfWidth: 135,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.TwinTread]: {
+      kind: VastagharActionKind.TwinTread,
+      windupTicks: 20,
+      activeTicks: 15,
+      recoveryTicks: 20,
+      stepOffsets: [20, 35],
+      stepFeet: [VastagharFoot.InnerLeft, VastagharFoot.InnerRight],
+      stepRadii: [350, 350],
+      stepDamage: [24, 24],
+      stepKnockback: [900, 900],
+      innerRange: 0,
+      outerRange: 0,
+      halfWidth: 0,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.Worldwheel]: {
+      kind: VastagharActionKind.Worldwheel,
+      windupTicks: 21,
+      activeTicks: 30,
+      recoveryTicks: 20,
+      stepOffsets: [],
+      stepFeet: [VastagharFoot.OuterLeft],
+      stepRadii: [],
+      stepDamage: [16, 16],
+      stepKnockback: [380, 380],
+      innerRange: 230,
+      outerRange: 590,
+      halfWidth: 38,
+      sweepRadians: Math.PI * 4,
+      maxTargets: 1,
+    },
+    [VastagharActionKind.FinalTread]: {
+      kind: VastagharActionKind.FinalTread,
+      windupTicks: 22,
+      activeTicks: 67,
+      recoveryTicks: 28,
+      stepOffsets: [22, 37, 52, 67, 89],
+      stepFeet: [
+        VastagharFoot.OuterLeft,
+        VastagharFoot.OuterRight,
+        VastagharFoot.InnerLeft,
+        VastagharFoot.InnerRight,
+        VastagharFoot.Body,
+      ],
+      stepRadii: [350, 350, 350, 350, 960],
+      stepDamage: [22, 22, 22, 22, 26],
+      stepKnockback: [850, 850, 850, 850, 1000],
+      innerRange: 0,
+      outerRange: 0,
+      halfWidth: 0,
+      sweepRadians: 0,
+      maxTargets: 1,
+    },
+  },
+  phaseOneDeck: [
+    VastagharActionKind.Crownstep,
+    VastagharActionKind.HeelReap,
+    VastagharActionKind.ShedMountain,
+  ],
+  phaseTwoDeck: [
+    VastagharActionKind.ThreefoldMarch,
+    VastagharActionKind.LandmarkBreak,
+    VastagharActionKind.ShedMountain,
+  ],
+  phaseThreeDeck: [
+    VastagharActionKind.TwinTread,
+    VastagharActionKind.Worldwheel,
+    VastagharActionKind.ShedMountain,
+  ],
+  desperationDeck: [VastagharActionKind.TwinTread, VastagharActionKind.Worldwheel],
+  neutralTicks: {
+    [VastagharActionKind.Crownstep]: 11,
+    [VastagharActionKind.HeelReap]: 11,
+    [VastagharActionKind.ShedMountain]: 14,
+    [VastagharActionKind.ThreefoldMarch]: 15,
+    [VastagharActionKind.LandmarkBreak]: 13,
+    [VastagharActionKind.TwinTread]: 12,
+    [VastagharActionKind.Worldwheel]: 18,
+    [VastagharActionKind.FinalTread]: 20,
+  },
+} as const satisfies VastagharEncounterDef;
+
 const WORLD_TITAN: BossDef = {
   kind: "world-titan",
   name: "Vastaghar, the World-Tread",
   move: "chase",
+  encounter: "vastaghar",
+  vastaghar: VASTAGHAR_ENCOUNTER,
   phases: [
     // P1 (>60%) — the slow, thunderous march: one quake per footfall, the odd crater to make you move.
     {

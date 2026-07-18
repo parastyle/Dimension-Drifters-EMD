@@ -142,3 +142,112 @@ export function bulletWallAngles(
   }
   return out;
 }
+
+/** Flagship World-Tread presentation/authority modes. These are stable wire values. */
+export enum VastagharMode {
+  Inactive = 0,
+  Entrance = 1,
+  Combat = 2,
+  Punish = 3,
+  Transition = 4,
+  StrideBreak = 5,
+  Desperation = 6,
+  Victory = 7,
+}
+
+/** Authored health lanes. Phase changes alter the required verb, never attack speed or base damage. */
+export enum VastagharPhase {
+  None = 0,
+  LearnWeight = 1,
+  BreakStride = 2,
+  UnderHeel = 3,
+  FinalTread = 4,
+  Defeated = 5,
+}
+
+/** One semantic owner for every body pose, telegraph group, and client spectacle beat. */
+export enum VastagharActionKind {
+  None = 0,
+  Crownstep = 1,
+  HeelReap = 2,
+  ShedMountain = 3,
+  ThreefoldMarch = 4,
+  LandmarkBreak = 5,
+  TwinTread = 6,
+  Worldwheel = 7,
+  FinalTread = 8,
+  PhaseStuckStep = 9,
+  PhaseWorldTurn = 10,
+  StrideBreak = 11,
+  Death = 12,
+}
+
+export enum VastagharFoot {
+  OuterLeft = 0,
+  OuterRight = 1,
+  InnerLeft = 2,
+  InnerRight = 3,
+  Body = 4,
+}
+
+export enum VastagharActionResult {
+  Pending = 0,
+  Resolved = 1,
+  Countered = 2,
+  Cancelled = 3,
+}
+
+export enum VastagharArenaMutationKind {
+  None = 0,
+  StuckStep = 1,
+  LandmarkBreak = 2,
+  WorldTurn = 3,
+}
+
+export enum VastagharVictoryStage {
+  None = 0,
+  ThreatEnded = 1,
+  Collapse = 2,
+  XpCrown = 3,
+  ReceiptHeld = 4,
+  RewardsOpen = 5,
+}
+
+export interface VastagharActionDef {
+  kind: VastagharActionKind;
+  windupTicks: number;
+  activeTicks: number;
+  recoveryTicks: number;
+  stepOffsets: readonly number[];
+  stepFeet: readonly VastagharFoot[];
+  stepRadii: readonly number[];
+  stepDamage: readonly number[];
+  stepKnockback: readonly number[];
+  innerRange: number;
+  outerRange: number;
+  halfWidth: number;
+  sweepRadians: number;
+  maxTargets: number;
+}
+
+/** Narrow data contract for the flagship timeline. All gameplay clocks are integer 20 Hz ticks. */
+export interface VastagharEncounterDef {
+  thresholds: readonly [number, number, number];
+  entranceDelayTicks: number;
+  transitionTicks: number;
+  transitionClaimDelayTicks: number;
+  strideBreakPips: number;
+  strideBreakTicks: number;
+  strideBreakDamageMultiplier: number;
+  responseWindowTicks: number;
+  addCap: number;
+  addLifetimeTicks: number;
+  maxDestroyedPois: number;
+  bossXp: number;
+  actions: Readonly<Partial<Record<VastagharActionKind, VastagharActionDef>>>;
+  phaseOneDeck: readonly VastagharActionKind[];
+  phaseTwoDeck: readonly VastagharActionKind[];
+  phaseThreeDeck: readonly VastagharActionKind[];
+  desperationDeck: readonly VastagharActionKind[];
+  neutralTicks: Readonly<Partial<Record<VastagharActionKind, number>>>;
+}
