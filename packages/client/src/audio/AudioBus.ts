@@ -833,6 +833,32 @@ export class AudioBus {
           x,
         });
         break;
+      case "melee:crossfall":
+        if (this.throttled(amt >= 0.75 ? "crossfallSelf" : "crossfall", 90)) return;
+        if (
+          this.sampleFirst("melee:crossfall", {
+            volume: 0.5 + 0.35 * amt,
+            pan: this.panOf(x),
+            rate: 0.96 + Math.random() * 0.05,
+            minIntervalMs: 90,
+          })
+        )
+          return;
+        this.noise(0.19, {
+          gain: 0.2 + 0.18 * amt,
+          type: "bandpass",
+          freq: 1_250,
+          q: 1.1,
+          sweepTo: 310,
+          x,
+        });
+        this.tone(94, 0.2, {
+          type: "triangle",
+          gain: 0.12 + 0.14 * amt,
+          sweepTo: 48,
+          x,
+        });
+        break;
       case "melee:blunt":
         if (this.throttled(amt >= 0.75 ? "meleeBluntSelf" : "meleeBlunt", 55)) return;
         if (
@@ -1588,6 +1614,18 @@ export class AudioBus {
       case "grab":
         this.tone(880, 0.06, { type: "sine", gain: 0.2 });
         this.tone(1320, 0.07, { type: "sine", gain: 0.2, delay: 0.06 });
+        break;
+      case "pair":
+        if (this.sampleFirst("pair", { volume: 0.48 + 0.32 * amt, pan: this.panOf(x) })) return;
+        this.noise(0.045, { gain: 0.055 + 0.04 * amt, type: "highpass", freq: 2_700, x });
+        this.tone(740, 0.09, { type: "triangle", gain: 0.13 + 0.06 * amt, sweepTo: 980, x });
+        this.tone(1_320, 0.11, {
+          type: "sine",
+          gain: 0.12 + 0.06 * amt,
+          sweepTo: 1_760,
+          delay: 0.065,
+          x,
+        });
         break;
       // Big low-frequency moments (the shake wants a boom under it).
       case "bossslam":

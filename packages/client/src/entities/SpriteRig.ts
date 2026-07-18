@@ -2,6 +2,9 @@ import {
   ATTACK_HELD_WINDOW,
   CHOP_IMPACT_FRAC,
   comboStepForChain,
+  DUAL_MELEE_PAIR_BAR,
+  DUAL_MELEE_SEQUENCE_LENGTH,
+  dualHandForSeq,
   GRAVITY_APEX_BAND,
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
@@ -145,6 +148,107 @@ const CLOSE_BLADE_RELEASE_T = 0.92;
 
 type RigComboFamily = MeleeComboFamily | "none";
 
+export type RigSwingHand = 0 | 1 | "both";
+
+export interface RigLoadoutPiece {
+  readonly spriteId: string;
+  readonly def: WeaponDef;
+  readonly manifest: SpriteManifest;
+  /** Authored twin sprites are the only loadout allowed to select part 1. Arbitrary pairs use part 0. */
+  readonly partIndex?: 0 | 1;
+}
+
+/** Optional rig-only routing metadata. Shared combat truth remains the immutable SwingDescriptor payload. */
+export interface RigSwingDescriptor extends SwingDescriptor {
+  readonly hand?: RigSwingHand;
+  readonly pairStep?: number;
+}
+
+interface ComboChainState {
+  family: RigComboFamily;
+  step: number;
+  expiresAtMs: number;
+  chainExpiresAtMs: number;
+  weaponId: string;
+  hasAttackSeq: boolean;
+  attackSeq: number;
+  acceptedAtMs: number;
+}
+
+function createComboChainState(): ComboChainState {
+  return {
+    family: "none",
+    step: 0,
+    expiresAtMs: -1e9,
+    chainExpiresAtMs: -1e9,
+    weaponId: "",
+    hasAttackSeq: false,
+    attackSeq: 0,
+    acceptedAtMs: -1e9,
+  };
+}
+
+const CROSSFALL_STEP = Object.freeze({
+  name: "crossfall",
+  motion: "scissor" as const,
+  direction: 0 as const,
+  hand: "both" as const,
+  timing: {
+    activeStart: 0.2,
+    activeEnd: 0.52,
+    secondaryActiveStart: 0.26,
+    secondaryActiveEnd: 0.58,
+    impact: 0.47,
+    followEnd: 0.8,
+  },
+  path: {
+    kind: "dual-sweep" as const,
+    arcMultiplier: 0.9,
+    rangeMultiplier: 1.05,
+    damageMultiplier: 1.3,
+    knockback: 84,
+  },
+  ribbon: {
+    profile: "broken-cross" as const,
+    radialStart: 0.3,
+    radialEnd: 1,
+    widthMultiplier: 1.3,
+    end: "open" as const,
+    setupEcho: "neutral-dim" as const,
+  },
+} satisfies Readonly<MeleeComboStep>);
+
+export interface SwingChannelSample {
+  readonly weaponAngle: number;
+  readonly backWeaponAngle: number;
+  readonly swingOffX: number;
+  readonly swingOffY: number;
+  readonly swingBackOffX: number;
+  readonly swingBackOffY: number;
+  readonly ownFront: number;
+  readonly ownBack: number;
+}
+
+/** Pure post-dispatch channel router: an off beat moves only the rear implement/hand. */
+export function routeSwingChannels(
+  sample: SwingChannelSample,
+  hand: RigSwingHand,
+  restAngle: number,
+  offLean: number,
+): SwingChannelSample {
+  if (hand !== 1) return sample;
+  return {
+    weaponAngle: restAngle,
+    backWeaponAngle: sample.weaponAngle - offLean,
+    swingOffX: 0,
+    swingOffY: 0,
+    swingBackOffX: sample.swingOffX,
+    swingBackOffY: sample.swingOffY,
+    ownFront: 0,
+    ownBack: Math.max(sample.ownFront, sample.ownBack),
+  };
+}
+
 /** ArenaScene owns these presentation services. The rig consumes them structurally so the accepted remote
  * beat can share the existing authored dispatcher without widening the scene API or duplicating VFX data. */
 interface RigAttackPresentationScene extends Phaser.Scene {
@@ -216,6 +320,59 @@ function paperPopRotation(elapsedMs: number, durationMs: number): number {
 /** Preserve the sign while preventing one invisible edge-on frame. Zero chooses the positive face. */
 function signedClamp(value: number, floor: number): number {
   return (value < 0 ? -1 : 1) * Math.max(Math.abs(value), floor);
+}
+
+export interface PairCeremonySample {
+  readonly active: boolean;
+  /** 0 at the ordinary ready pose, 1 at the held chest-height X. */
+  readonly crossBlend: number;
+  readonly leadScaleX: number;
+  readonly offScaleX: number;
+  readonly glintAlpha: number;
+  readonly ruffle: number;
+}
+
+/** The accepted bind's 460 ms paper flip, expressed without Phaser so its timing remains testable. */
+export function samplePairCeremony(elapsedMs: number): PairCeremonySample {
+  if (elapsedMs < 0 || elapsedMs >= 460) {
+    return {
+      active: false,
+      crossBlend: 0,
+      leadScaleX: 1,
+      offScaleX: 1,
+      glintAlpha: 0,
+      ruffle: 0,
+    };
+  }
+  const crossBlend =
+    elapsedMs < 90
+      ? smoothstep01(elapsedMs / 90) * 0.24
+      : elapsedMs < 230
+        ? 0.24 + smoothstep01((elapsedMs - 90) / 140) * 0.76
+        : elapsedMs < 360
+          ? 1
+          : 1 - smoothstep01((elapsedMs - 360) / 100);
+  const flipScale = (startMs: number, endMs: number): number => {
+    if (elapsedMs < startMs) return 1;
+    if (elapsedMs < endMs) {
+      return signedClamp(Math.cos(Math.PI * ((elapsedMs - startMs) / (endMs - startMs))), 0.055);
+    }
+    if (elapsedMs < 360) return -1;
+    return signedClamp(-Math.cos(Math.PI * ((elapsedMs - 360) / 100)), 0.055);
+  };
+  const glintAlpha =
+    elapsedMs < 220 || elapsedMs >= 360
+      ? 0
+      : Math.min(1, (elapsedMs - 220) / 18, (360 - elapsedMs) / 26);
+  const ruffle = elapsedMs < 360 ? 0 : Math.sin(Math.PI * ((elapsedMs - 360) / 100));
+  return {
+    active: true,
+    crossBlend,
+    leadScaleX: flipScale(90, 190),
+    offScaleX: flipScale(130, 230),
+    glintAlpha,
+    ruffle,
+  };
 }
 
 function attackSignatureColor(element: WeaponDef["tags"]["element"]): number {
@@ -1072,6 +1229,9 @@ export class SpriteRig {
     /** The weapon's own display scale (displayLength/part.w). Applied each frame ÷ baseScale so the weapon
      *  is a FIXED on-screen size regardless of which (larger/smaller) character holds it. */
     baseScale: number;
+    def: WeaponDef;
+    worn: boolean;
+    spriteId: string;
     /** Geometry is resolved once from the equipped sprite identity; semantic rotation remains uncorrected. */
     artGeometry?: WeaponArtGeometry;
     closedOriginX: number;
@@ -1082,17 +1242,34 @@ export class SpriteRig {
     tellEcho?: Phaser.GameObjects.Image;
   }[] = [];
   private weaponDef?: WeaponDef;
+  private loadoutKey = "";
+  private pairBaseSeq = 0;
+  private pairBaseSeqReady = false;
+  private pairBarStep = -1;
+  private pairBarExpiresAtMs = -1e9;
+  private pairCeremonyStartMs = -1e9;
+  private pairWeaponScaleX: [number, number] = [1, 1];
+  private pairGlintAlpha = 0;
   /** Optional retained open-book treatment. Shapes are allocated once per equip and reused for every beat. */
   private tome?: TomeVisualState;
   private swingStart = -1e9;
   /** §44 immutable predicted/accepted swing clock. The normalized pose branches below are untouched; only
    *  their `tt` time base comes from this effective-cooldown descriptor. */
-  private swing?: SwingDescriptor;
+  private swing?: RigSwingDescriptor;
+  private swingHand: RigSwingHand = 0;
+  private swingWeaponDef?: WeaponDef;
+  private crossfallActive = false;
   /** §50 Driftblade-model panel: the latest triggered descriptor, ENRICHED with the accepted/predicted
    *  combo step by `triggerSwing`. ArenaScene's owner-side `spawnSlash` reads it so the per-step ribbon
    *  reaches the wielder's own VFX exactly like the remote observed-signature path. */
-  get activeSwing(): SwingDescriptor | undefined {
+  get activeSwing(): RigSwingDescriptor | undefined {
     return this.swing;
+  }
+  get activeSwingHand(): RigSwingHand {
+    return this.swingHand;
+  }
+  get isCrossfallActive(): boolean {
+    return this.crossfallActive;
   }
   /** §40 fake-3D ORBIT slash (two-handed melee): 0..1 progress while active, −1 otherwise. Set by the
    *  weapon-angle pass, consumed by the weapon render pass (which overrides position/rotation/scale/depth). */
@@ -1110,17 +1287,15 @@ export class SpriteRig {
   private comboFamily: RigComboFamily = "none";
   private comboStep = 0;
   private comboExpiresAtMs = -1e9;
-  private comboChainExpiresAtMs = -1e9;
-  private comboWeaponId = "";
   /** Latest forward uint32 beat seen through `setAttackBeat`. It orders/deduplicates presentation only. */
   private hasAttackBeatSeq = false;
   private attackBeatSeq = 0;
   private attackBeatWallEpochMs = -1e9;
-  /** Last step's accepted synced snapshot. The global sequence only proves adjacency; weapon/family/time own
-   * combo identity, so unrelated attacks can never index a big-sword sentence. */
-  private comboHasAttackSeq = false;
-  private comboAttackSeq = 0;
-  private comboAcceptedAtMs = -1e9;
+  /** Per-hand accepted snapshots prevent unrelated interleaved beats from advancing the other weapon. */
+  private readonly comboChains: [ComboChainState, ComboChainState] = [
+    createComboChainState(),
+    createComboChainState(),
+  ];
   private swingStep = 0;
   private swingDirection: -1 | 0 | 1 = 1;
   private swingFamily: RigComboFamily = "none";
@@ -1197,11 +1372,18 @@ export class SpriteRig {
   private observedSignaturePending = false;
   private observedSignatureWeapon?: WeaponDef;
   private observedSignatureSwing?: SwingDescriptor;
+  private observedSignatureHand: 0 | 1 = 0;
   private observedSignatureAtMs = -1e9;
+  private crossfallRibbonPending = false;
+  private crossfallRibbonAtMs = -1e9;
   /** Retained remote cast/tome source punctuation; transforms are rewritten in the rig's final pose pass. */
   private readonly observedSourceFlash: Phaser.GameObjects.Ellipse;
   private readonly observedSourceRing: Phaser.GameObjects.Ellipse;
   private observedSourceFlashAtMs = -1e9;
+  private observedSourceHand: 0 | 1 = 0;
+  /** Alternating gun recoil is retained here; Arena routes muzzle/camera data through the same hand. */
+  private gunRecoilAtMs = -1e9;
+  private gunRecoilHand: 0 | 1 = 0;
   /** §20 world-space aim (radians) captured at swing-start, so the blade sweeps the server's swept arc. */
   private swingAimWorld = Number.NaN;
   private braceStart = -1e9;
@@ -1248,6 +1430,7 @@ export class SpriteRig {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   /** Two-ellipse blur fake: a soft halo appears only as altitude separates the core from the card. */
   private readonly shadowHalo: Phaser.GameObjects.Ellipse;
+  private readonly pairGlint: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -1375,7 +1558,12 @@ export class SpriteRig {
       .ellipse(0, 0, 11, 7, 0xffffff, 0.88)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    order.push(this.observedSourceRing, this.observedSourceFlash);
+    this.pairGlint = scene.add
+      .rectangle(0, 0, 2, 28, 0xffffff, 1)
+      .setOrigin(0.5)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    order.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
     if (this.label) order.push(this.label);
 
     this.root = scene.add.container(x, y, order);
@@ -1392,6 +1580,40 @@ export class SpriteRig {
 
   setPosition(x: number, y: number): void {
     this.root.setPosition(x, y);
+  }
+
+  /** Keep parity derivation synced when gun starvation causes the server to rebase the pair epoch. */
+  setDualWieldBaseSeq(pairBaseSeq: number): void {
+    this.pairBaseSeq = pairBaseSeq >>> 0;
+    this.pairBaseSeqReady = true;
+  }
+
+  heldWeaponDef(hand: 0 | 1): WeaponDef | undefined {
+    return this.weapons[hand]?.def;
+  }
+
+  /** World-space grip anchor after jiggle, lift, and the container's facing transform. */
+  handWorldAnchor(hand: 0 | 1): { x: number; y: number } {
+    const held = this.weapons[hand];
+    const rigHand = held?.hand ?? this.hands.find((entry) => entry.front === (hand === 0));
+    if (!rigHand) return { x: this.root.x, y: this.root.y };
+    const point = this.root.getWorldTransformMatrix().transformPoint(rigHand.img.x, rigHand.img.y);
+    return { x: point.x, y: point.y };
+  }
+
+  /** Retained per-barrel kick. Camera shake and muzzle styling stay at Arena's hand-aware cue site. */
+  triggerGunRecoil(timeMs: number, hand: 0 | 1): void {
+    if (!this.weapons[hand]?.def.gun) return;
+    this.gunRecoilAtMs = this.presentationEpochForWallEpoch(timeMs);
+    this.gunRecoilHand = hand;
+  }
+
+  private offWeaponLean(): number {
+    const lead = this.weapons[0]?.def;
+    const off = this.weapons[1]?.def;
+    if (!lead || !off || lead.displayLength <= 0) return DUAL_BACK_WEAPON_LEAN;
+    const lengthRatio = Math.max(0.7, Math.min(1.3, off.displayLength / lead.displayLength));
+    return DUAL_BACK_WEAPON_LEAN * lengthRatio;
   }
 
   /** Allocation-free lifetime reset; the next authored anchors rebase before any excitation is accepted. */
@@ -1712,12 +1934,18 @@ export class SpriteRig {
     this.releaseAttackVisuals();
     this.swingStart = -1e9;
     this.swing = undefined;
+    this.swingHand = 0;
+    this.swingWeaponDef = undefined;
+    this.crossfallActive = false;
     this.swingAimWorld = Number.NaN;
     this.swingChained = false;
     this.observedSignaturePending = false;
     this.observedSignatureWeapon = undefined;
     this.observedSignatureSwing = undefined;
+    this.observedSignatureHand = 0;
     this.observedSignatureAtMs = -1e9;
+    this.crossfallRibbonPending = false;
+    this.crossfallRibbonAtMs = -1e9;
     this.observedSourceFlashAtMs = -1e9;
     this.observedSourceFlash.setVisible(false);
     this.observedSourceRing.setVisible(false);
@@ -1732,11 +1960,16 @@ export class SpriteRig {
       part.y -= attackDy;
       part.scaleY /= Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
     }
-    for (const weapon of this.weapons) {
+    for (let i = 0; i < this.weapons.length; i++) {
+      const weapon = this.weapons[i];
+      if (!weapon) continue;
       weapon.img.x -= this.attackArtOffX;
       weapon.img.y -= attackDy;
-      weapon.img.scaleX /= Math.abs(this.weaponLengthScale) > 1e-5 ? this.weaponLengthScale : 1;
-      weapon.img.scaleY /= Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
+      const ownsScale = this.swingHand === "both" || this.swingHand === i;
+      if (ownsScale) {
+        weapon.img.scaleX /= Math.abs(this.weaponLengthScale) > 1e-5 ? this.weaponLengthScale : 1;
+        weapon.img.scaleY /= Math.abs(this.attackScaleY) > 1e-5 ? this.attackScaleY : 1;
+      }
     }
     if (this.closeBladePoseActive) {
       const frontHand = this.hands.find((hand) => hand.front);
@@ -1824,16 +2057,23 @@ export class SpriteRig {
     this.comboFamily = "none";
     this.comboStep = 0;
     this.comboExpiresAtMs = -1e9;
-    this.comboChainExpiresAtMs = -1e9;
-    this.comboWeaponId = "";
-    this.comboHasAttackSeq = false;
-    this.comboAttackSeq = 0;
-    this.comboAcceptedAtMs = -1e9;
     this.swingStep = 0;
     this.swingDirection = 1;
     this.swingFamily = "none";
     this.swingVariant = "default";
-    if (clearHold) this.comboHoldPose = undefined;
+    if (clearHold) {
+      this.comboHoldPose = undefined;
+      for (const chain of this.comboChains) {
+        chain.family = "none";
+        chain.step = 0;
+        chain.expiresAtMs = -1e9;
+        chain.chainExpiresAtMs = -1e9;
+        chain.weaponId = "";
+        chain.hasAttackSeq = false;
+        chain.attackSeq = 0;
+        chain.acceptedAtMs = -1e9;
+      }
+    }
   }
 
   /** Arena's `animClock` advances only on unfrozen frames. Accepted beats arrive in Phaser wall time, so
@@ -1884,18 +2124,49 @@ export class SpriteRig {
     const scene = this.scene as RigAttackPresentationScene;
     const exact = scene.vfxPlayer?.spawnsAtCursor(weapon.id) ?? false;
     const reach = exact ? meleeReach(weapon) : 0;
-    const x = this.root.x + this.observedSignatureAim.x * reach;
-    const y = this.root.y + this.observedSignatureAim.y * reach;
+    const anchor = this.handWorldAnchor(this.observedSignatureHand);
+    const x = anchor.x + this.observedSignatureAim.x * reach;
+    const y = anchor.y + this.observedSignatureAim.y * reach;
     scene.spawnSlash?.(x, y, this.observedSignatureAim, weapon, swing, exact);
     if (weapon.chainLightning)
       scene.spawnChain?.(this.root.x, this.root.y, this.observedSignatureAim, weapon);
+  }
+
+  /** Crossfall's rear edge is the sanctioned second ribbon, staggered by 0.06 of the pose window. */
+  private flushCrossfallRibbon(sceneNow: number, outsidePaperView: boolean): void {
+    if (!this.crossfallRibbonPending || sceneNow < this.crossfallRibbonAtMs) return;
+    this.crossfallRibbonPending = false;
+    if (outsidePaperView) return;
+    const weapon = this.weapons[1]?.def;
+    const swing = this.swing;
+    if (!weapon || !swing || !this.crossfallActive) return;
+    const view = this.scene.cameras.main.worldView;
+    if (
+      this.root.x < view.left - REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.x > view.right + REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.y < view.top - REMOTE_SIGNATURE_LOD_MARGIN_PX ||
+      this.root.y > view.bottom + REMOTE_SIGNATURE_LOD_MARGIN_PX
+    )
+      return;
+    const scene = this.scene as RigAttackPresentationScene;
+    const exact = scene.vfxPlayer?.spawnsAtCursor(weapon.id) ?? false;
+    const reach = exact ? meleeReach(weapon) : 0;
+    const anchor = this.handWorldAnchor(1);
+    scene.spawnSlash?.(
+      anchor.x + this.observedSignatureAim.x * reach,
+      anchor.y + this.observedSignatureAim.y * reach,
+      this.observedSignatureAim,
+      weapon,
+      swing,
+      exact,
+    );
   }
 
   /** Copy the final held-weapon transform into retained source shapes. This is the remote cast/tome LOD;
    * it never allocates from the render loop and never competes with exact danger geometry. */
   private syncObservedSourceFlash(sceneNow: number, outsidePaperView: boolean): void {
     const elapsedMs = sceneNow - this.observedSourceFlashAtMs;
-    const weapon = this.weapons[0];
+    const weapon = this.weapons[this.observedSourceHand];
     if (
       this.isSelf ||
       outsidePaperView ||
@@ -2216,42 +2487,78 @@ export class SpriteRig {
    *  parts). Each piece points along semantic +X in its hand, pivoting at the grip, and is inserted just
    *  BELOW that hand in the container so the hand overlays the hilt. */
   equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
+    const lead: RigLoadoutPiece = { spriteId, def, manifest, partIndex: 0 };
+    const off: RigLoadoutPiece | undefined =
+      def.dual && manifest.parts.length >= 2
+        ? { spriteId, def, manifest, partIndex: 1 }
+        : undefined;
+    this.equipLoadout(lead, off);
+  }
+
+  /** Equip one independently-authored part per hand through the final art-geometry correction seam. */
+  equipLoadout(lead: RigLoadoutPiece, off?: RigLoadoutPiece, pairBaseSeq?: number): void {
+    const spriteId = lead.spriteId;
+    const def = lead.def;
+    const manifest = lead.manifest;
+    const previousKey = this.loadoutKey;
+    const previousPaired = this.weapons.length > 1;
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    this.loadoutKey = `${lead.spriteId}:${lead.def.id}|${off ? `${off.spriteId}:${off.def.id}` : ""}`;
     // §7 v0.105 de-clunk: reset the swing clock on a swap — otherwise elapsed time from the OLD weapon's
     // swing carries into the NEW weapon's timeline. §45 the combo/hold shares that exact lifetime boundary.
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
+    this.pairBarStep = -1;
+    this.pairBarExpiresAtMs = -1e9;
+    this.gunRecoilAtMs = -1e9;
+    if (off) {
+      if (pairBaseSeq !== undefined) this.setDualWieldBaseSeq(pairBaseSeq);
+      else if (!previousPaired) {
+        this.pairBaseSeq = this.hasAttackBeatSeq ? this.attackBeatSeq : 0;
+        this.pairBaseSeqReady = true;
+      }
+    } else {
+      this.pairBaseSeq = 0;
+      this.pairBaseSeqReady = false;
+      this.pairCeremonyStartMs = -1e9;
+      this.pairGlint.setVisible(false);
+    }
 
     const frontHand = this.hands.find((h) => h.front);
     const backHand = this.hands.find((h) => !h.front);
-    const spriteGeometry = weaponArtGeometryFor(spriteId);
     // §42 WORN gear pivots where the hand sits INSIDE the glove (~40% in from the cuff) instead of at the
     // authored gripFrac (the cuff) — gripFrac-mounting a gauntlet read as holding it by the opening and
     // smacking people with it, duel-challenge style.
-    const worn = isWornWeapon(def);
     const attach = (
-      part: SpriteManifest["parts"][number] | undefined,
+      piece: RigLoadoutPiece | undefined,
       hand: typeof frontHand,
-      artGeometry?: WeaponArtGeometry,
     ): Phaser.GameObjects.Image | undefined => {
+      if (!piece) return undefined;
+      const partIndex = piece.partIndex ?? 0;
+      const part = piece.manifest.parts[partIndex];
       if (!part || !hand) return undefined;
-      const tx = partTexture(this.scene, spriteId, part.role);
+      const tx = partTexture(this.scene, piece.spriteId, part.role);
       const img = this.scene.add.image(hand.img.x, hand.img.y, tx.key, tx.frame);
+      const artGeometry = partIndex === 0 ? weaponArtGeometryFor(piece.spriteId) : undefined;
       const closed = artGeometry?.closed;
-      const originX = closed?.originX ?? (worn ? 0.4 : def.gripFrac);
+      const pieceWorn = isWornWeapon(piece.def);
+      const originX = closed?.originX ?? (pieceWorn ? 0.4 : piece.def.gripFrac);
       const originY = closed?.originY ?? 0.5;
-      const wScale = (def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
+      const wScale = (piece.def.displayLength * (closed?.displayLengthMul ?? 1)) / part.w;
       img.setOrigin(originX, originY).setScale(wScale);
       this.root.add(img);
       this.weapons.push({
         img,
         hand,
         baseScale: wScale,
+        def: piece.def,
+        worn: pieceWorn,
+        spriteId: piece.spriteId,
         artGeometry,
         closedOriginX: originX,
         closedOriginY: originY,
@@ -2259,64 +2566,128 @@ export class SpriteRig {
       });
       return img;
     };
-    const frontWpn = attach(manifest.parts[0], frontHand, spriteGeometry);
-    const backWpn =
-      // The committed audit measured part-1. Keep dual part-2 on the canonical +X contract until measured.
-      def.dual && manifest.parts.length >= 2 ? attach(manifest.parts[1], backHand) : undefined;
+    const frontWpn = attach(lead, frontHand);
+    const backWpn = attach(off, backHand);
+    const frontPiece = this.weapons[0];
+    const backPiece = this.weapons[1];
 
     // Explicit z-stack (bottom→top): each weapon overlays the BODY but tucks UNDER its hand.
     // Single-wield keeps the back hand behind the body; dual brings it forward so both read.
     const stack: Phaser.GameObjects.GameObject[] = [];
     for (const f of this.feet) stack.push(f.img);
+    const pushHandMount = (
+      piece: (typeof this.weapons)[number] | undefined,
+      hand: typeof frontHand,
+    ): void => {
+      if (!hand) return;
+      if (piece?.worn) stack.push(hand.img, piece.img);
+      else {
+        if (piece) stack.push(piece.img);
+        stack.push(hand.img);
+      }
+    };
     if (def.twoHanded) {
       // 2H: one weapon, BOTH hands gripping it above the body.
       stack.push(this.body);
       if (frontWpn) stack.push(frontWpn);
       if (backHand) stack.push(backHand.img);
       if (frontHand) stack.push(frontHand.img);
-    } else if (def.dual) {
+    } else if (backWpn) {
       stack.push(this.body);
       // §42 worn dual (twin claws): each glove renders OVER its hand — the hand is inside it.
-      if (worn) {
-        if (backHand) stack.push(backHand.img);
-        if (backWpn) stack.push(backWpn);
-        if (frontHand) stack.push(frontHand.img);
-        if (frontWpn) stack.push(frontWpn);
-      } else {
-        if (backWpn) stack.push(backWpn);
-        if (backHand) stack.push(backHand.img);
-        if (frontWpn) stack.push(frontWpn);
-        if (frontHand) stack.push(frontHand.img);
-      }
+      pushHandMount(backPiece, backHand);
+      pushHandMount(frontPiece, frontHand);
     } else {
       if (backHand) stack.push(backHand.img);
       stack.push(this.body);
       // §42 worn single: the glove covers the hand (hand under, weapon on top); held: hand grips the hilt.
-      if (worn) {
-        if (frontHand) stack.push(frontHand.img);
-        if (frontWpn) stack.push(frontWpn);
-      } else {
-        if (frontWpn) stack.push(frontWpn);
-        if (frontHand) stack.push(frontHand.img);
-      }
+      pushHandMount(frontPiece, frontHand);
     }
-    stack.push(this.observedSourceRing, this.observedSourceFlash);
+    stack.push(this.observedSourceRing, this.observedSourceFlash, this.pairGlint);
     if (this.label) stack.push(this.label);
     for (const obj of stack) this.root.bringToTop(obj);
-    const firstPart = manifest.parts[0];
+    const firstPart = manifest.parts[lead.partIndex ?? 0];
     if (firstPart) {
       this.setupTomeVisual(spriteId, def, partTexture(this.scene, spriteId, firstPart.role));
+    }
+    if (backWpn && previousKey.length > 0 && previousKey !== this.loadoutKey) {
+      this.pairCeremonyStartMs = this.presentationClockNow();
+      this.flash(90);
+      const audio = this.scene.game.registry.get("audio") as
+        | { play?: (event: string, opts?: { x?: number; amt?: number }) => void }
+        | undefined;
+      audio?.play?.("pair", { x: this.root.x, amt: this.isSelf ? 1 : 0.65 });
     }
   }
 
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the accepted/predicted Phaser
    * wall epoch and is mapped once onto Arena's freeze-aware presentation clock; `aimWorld` freezes aim. */
-  triggerSwing(timeMs: number, aimWorld?: number, swing?: SwingDescriptor): void {
+  triggerSwing(
+    timeMs: number,
+    aimWorld?: number,
+    swing?: RigSwingDescriptor,
+    handOverride?: RigSwingHand,
+    pairStepOverride?: number,
+  ): void {
     const acceptedAtMs = this.hasAttackBeatSeq ? this.attackBeatWallEpochMs : timeMs;
     timeMs = this.presentationEpochForWallEpoch(timeMs);
-    let nextSwing =
+    const requestedSwing =
       swing ??
       (this.weaponDef ? swingDescriptorFor(this.weaponDef, this.weaponDef.cooldown) : undefined);
+    const paired = this.weapons.length > 1;
+    const pairedMelee =
+      paired &&
+      !!this.weaponDef &&
+      !this.weaponDef.gun &&
+      !this.weaponDef.cast &&
+      !this.weaponDef.beam;
+    const explicitPairStep = pairStepOverride ?? swing?.pairStep;
+    let pairStep = -1;
+    if (pairedMelee) {
+      if (explicitPairStep !== undefined) {
+        pairStep =
+          ((Math.trunc(explicitPairStep) % DUAL_MELEE_SEQUENCE_LENGTH) +
+            DUAL_MELEE_SEQUENCE_LENGTH) %
+          DUAL_MELEE_SEQUENCE_LENGTH;
+      } else {
+        pairStep =
+          timeMs <= this.pairBarExpiresAtMs
+            ? (this.pairBarStep + 1) % DUAL_MELEE_SEQUENCE_LENGTH
+            : 0;
+      }
+      this.pairBarStep = pairStep;
+      const cadence = requestedSwing?.effectiveCooldown ?? this.weaponDef?.cooldown ?? 0.3;
+      this.pairBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
+    }
+    const barHand = pairStep >= 0 ? DUAL_MELEE_PAIR_BAR[pairStep] : undefined;
+    let swingHand: RigSwingHand = handOverride ?? swing?.hand ?? 0;
+    if (barHand === "both") swingHand = "both";
+    else if (barHand === "off") swingHand = 1;
+    else if (barHand === "lead") swingHand = 0;
+    else if (
+      paired &&
+      handOverride === undefined &&
+      swing?.hand === undefined &&
+      this.hasAttackBeatSeq &&
+      this.pairBaseSeqReady
+    ) {
+      swingHand = dualHandForSeq(this.attackBeatSeq, this.pairBaseSeq);
+    }
+    const handIndex: 0 | 1 = swingHand === 1 ? 1 : 0;
+    const activeDef = this.weapons[handIndex]?.def ?? this.weaponDef;
+    let nextSwing: RigSwingDescriptor | undefined;
+    if (activeDef) {
+      const effectiveCooldown = requestedSwing?.effectiveCooldown ?? activeDef.cooldown;
+      nextSwing = {
+        ...requestedSwing,
+        ...swingDescriptorFor(activeDef, effectiveCooldown),
+        hand: swingHand,
+        ...(pairStep >= 0 ? { pairStep } : {}),
+      };
+    }
+    this.swingHand = swingHand;
+    this.swingWeaponDef = activeDef;
+    this.crossfallActive = swingHand === "both" && paired;
     // §41 SPIN CHAIN remains byte-for-byte the old pose-window+150ms test. Ordinary styles no longer infer
     // continuity from their short 0.64× visual: they advance below from effective accepted cadence+grace.
     if (nextSwing?.style === "spin" && this.swing) {
@@ -2326,37 +2697,66 @@ export class SpriteRig {
       this.swingChained = false;
     }
 
+    if (this.crossfallActive && nextSwing) {
+      nextSwing = {
+        ...nextSwing,
+        comboFamily: "rake",
+        comboVariant: "default",
+        comboStep: 2,
+        motion: CROSSFALL_STEP.motion,
+        comboDirection: 0,
+        comboHand: "both",
+        comboTiming: CROSSFALL_STEP.timing,
+        comboPath: CROSSFALL_STEP.path,
+        comboRibbon: CROSSFALL_STEP.ribbon,
+      };
+      this.comboFamily = "rake";
+      this.comboStep = 2;
+      this.comboExpiresAtMs = this.pairBarExpiresAtMs;
+      this.swingStep = 2;
+      this.swingDirection = 0;
+      this.swingFamily = "rake";
+      this.swingVariant = "default";
+      this.comboHoldPose = {
+        family: "rake",
+        variant: "default",
+        step: 2,
+        direction: 0,
+        expiresAtMs: this.pairBarExpiresAtMs,
+      };
+    }
     const selection =
-      CLIENT_VISUAL_COMBOS && nextSwing && this.weaponDef
-        ? meleeComboSelectionFor(this.weaponDef, nextSwing.style)
+      !this.crossfallActive && CLIENT_VISUAL_COMBOS && nextSwing && activeDef
+        ? meleeComboSelectionFor(activeDef, nextSwing.style)
         : undefined;
-    if (nextSwing && selection && this.weaponDef) {
+    if (nextSwing && selection && activeDef) {
       const { family, variant, sequence } = selection;
+      const chain = this.comboChains[handIndex];
       const continues =
-        this.comboFamily === family &&
-        this.comboWeaponId === this.weaponDef.id &&
-        timeMs <= this.comboExpiresAtMs;
+        chain.family === family && chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
       const step =
-        nextSwing.comboStep !== undefined
-          ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
-            sequence.length
-          : this.hasAttackBeatSeq
-            ? comboStepForChain(
-                this.attackBeatSeq,
-                acceptedAtMs,
-                this.weaponDef.id,
-                family,
-                sequence.length,
-                this.comboHasAttackSeq ? this.comboAttackSeq : undefined,
-                this.comboAcceptedAtMs,
-                this.comboWeaponId,
-                this.comboFamily === "none" ? undefined : this.comboFamily,
-                this.comboStep,
-                this.comboChainExpiresAtMs,
-              )
-            : continues
-              ? (this.comboStep + 1) % sequence.length
-              : 0;
+        pairStep >= 0
+          ? Math.min(sequence.length - 1, Math.floor(pairStep / 2))
+          : nextSwing.comboStep !== undefined
+            ? ((Math.trunc(nextSwing.comboStep) % sequence.length) + sequence.length) %
+              sequence.length
+            : this.hasAttackBeatSeq
+              ? comboStepForChain(
+                  this.attackBeatSeq,
+                  acceptedAtMs,
+                  activeDef.id,
+                  family,
+                  sequence.length,
+                  chain.hasAttackSeq ? chain.attackSeq : undefined,
+                  chain.acceptedAtMs,
+                  chain.weaponId,
+                  chain.family === "none" ? undefined : chain.family,
+                  chain.step,
+                  chain.chainExpiresAtMs,
+                )
+              : continues
+                ? (chain.step + 1) % sequence.length
+                : 0;
       // Compatibility note: the retired global branch was
       // comboStepForAttackSeq(this.attackBeatSeq, sequence.length); weapon/family/time now own the chain.
       const authored = sequence[step];
@@ -2373,11 +2773,14 @@ export class SpriteRig {
         this.comboFamily = family;
         this.comboStep = step;
         this.comboExpiresAtMs = expiresAtMs;
-        this.comboChainExpiresAtMs = chainExpiresAtMs;
-        this.comboWeaponId = this.weaponDef.id;
-        this.comboHasAttackSeq = this.hasAttackBeatSeq;
-        this.comboAttackSeq = this.attackBeatSeq;
-        this.comboAcceptedAtMs = acceptedAtMs;
+        chain.family = family;
+        chain.step = step;
+        chain.expiresAtMs = expiresAtMs;
+        chain.chainExpiresAtMs = chainExpiresAtMs;
+        chain.weaponId = activeDef.id;
+        chain.hasAttackSeq = this.hasAttackBeatSeq;
+        chain.attackSeq = this.attackBeatSeq;
+        chain.acceptedAtMs = acceptedAtMs;
         this.swingStep = step;
         this.swingDirection = authored.direction;
         this.swingFamily = family;
@@ -2390,24 +2793,32 @@ export class SpriteRig {
           expiresAtMs,
         };
         // Enrich the immutable presentation clock only. Geometry/damage remain the legacy centered sweep.
-        nextSwing = swingDescriptorWithComboStep(nextSwing, this.weaponDef, step);
+        nextSwing = swingDescriptorWithComboStep(nextSwing, activeDef, step);
       }
-    } else {
+    } else if (!this.crossfallActive) {
       this.resetComboChain(true);
     }
     this.swingStart = timeMs;
     this.swing = nextSwing;
     this.swingAimWorld = aimWorld ?? Number.NaN;
-    if (!this.isSelf && nextSwing && Number.isFinite(this.swingAimWorld) && this.weaponDef) {
+    if (nextSwing && Number.isFinite(this.swingAimWorld) && activeDef) {
       this.observedSignatureAim.x = Math.cos(this.swingAimWorld);
       this.observedSignatureAim.y = Math.sin(this.swingAimWorld);
+      if (this.crossfallActive) {
+        this.crossfallRibbonPending = true;
+        this.crossfallRibbonAtMs = timeMs + nextSwing.poseSeconds * 1000 * 0.06;
+      }
+    }
+    if (!this.isSelf && nextSwing && Number.isFinite(this.swingAimWorld) && activeDef) {
       this.observedSignaturePending = true;
-      this.observedSignatureWeapon = this.weaponDef;
+      this.observedSignatureWeapon = activeDef;
       this.observedSignatureSwing = nextSwing;
+      this.observedSignatureHand = handIndex;
       this.observedSignatureAtMs = timeMs;
-      if (this.weaponDef.cast) {
-        const color = attackSignatureColor(this.weaponDef.tags.element);
+      if (activeDef.cast) {
+        const color = attackSignatureColor(activeDef.tags.element);
         this.observedSourceFlashAtMs = timeMs;
+        this.observedSourceHand = handIndex;
         this.observedSourceFlash.setFillStyle(color, 0.88);
         this.observedSourceRing.setStrokeStyle(2, color, 0.9);
       }
@@ -2732,11 +3143,19 @@ export class SpriteRig {
           sceneNow - this.meleeTellFirstGlintAtMs >= 0 &&
           sceneNow - this.meleeTellFirstGlintAtMs <= MELEE_GLINT_CREST_MS));
     const glintColor = this.meleeTellGold ? 0xffd66e : 0xffffff;
-    for (const weapon of this.weapons) {
+    for (let i = 0; i < this.weapons.length; i++) {
+      const weapon = this.weapons[i];
+      if (!weapon) continue;
+      const ownsTell = this.swingHand === "both" || this.swingHand === i;
       if (!show) {
         if (this.enemyComboEmpowered)
           weapon.img.setTint(0xffd66e).setTintMode(Phaser.TintModes.MULTIPLY);
         else weapon.img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+        weapon.tellRim?.setVisible(false);
+        weapon.tellEcho?.setVisible(false);
+        continue;
+      }
+      if (!ownsTell) {
         weapon.tellRim?.setVisible(false);
         weapon.tellEcho?.setVisible(false);
         continue;
@@ -2808,6 +3227,13 @@ export class SpriteRig {
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
     this.weaponDef = def;
+    this.loadoutKey = def.id;
+    this.pairBaseSeq = 0;
+    this.pairBaseSeqReady = false;
+    this.pairBarStep = -1;
+    this.pairBarExpiresAtMs = -1e9;
+    this.pairCeremonyStartMs = -1e9;
+    this.pairGlint.setVisible(false);
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
@@ -5182,6 +5608,9 @@ export class SpriteRig {
     this.swingOffY = 0;
     this.swingBackOffX = 0;
     this.swingBackOffY = 0;
+    this.pairWeaponScaleX[0] = 1;
+    this.pairWeaponScaleX[1] = 1;
+    this.pairGlintAlpha = 0;
     this.attackArtOffX = 0;
     this.attackArtOffY = 0;
     this.attackLiftPx = 0;
@@ -5347,16 +5776,35 @@ export class SpriteRig {
       }
     } else if (this.weaponDef?.gun && this.weapons.length > 0) {
       ownFront = 1; // gun grip/barrel truth is load-bearing; the aim hand never receives spring residual
-      if (this.weaponDef.twoHanded) ownBack = 1;
+      if (this.weaponDef.twoHanded || this.weapons.length > 1) ownBack = 1;
       // GUN: point the BARREL along the aim (live cursor for self, synced `aimDir` for others). No swing —
       // the shot is the muzzle flash. Into the rig's LOCAL space (the container mirror flips x), so the
       // barrel tracks the cursor whichever way the body faces.
       weaponAngle = heldAimLocal;
+      const recoilElapsed = sceneNow - this.gunRecoilAtMs;
+      if (recoilElapsed >= 0 && recoilElapsed < 140) {
+        const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
+        const recoilStrength = Math.min(1.35, (recoilDef.gun?.recoil ?? 0.0017) / 0.004);
+        const recoil = Math.sin(Math.PI * (recoilElapsed / 140)) * recoilStrength;
+        const kick = TARGET_BODY_H * 0.045 * recoil;
+        const kickX = -Math.cos(heldAimLocal) * kick;
+        const kickY = -Math.sin(heldAimLocal) * kick;
+        if (this.gunRecoilHand === 1 && this.weapons.length > 1) {
+          this.swingBackOffX = kickX;
+          this.swingBackOffY = kickY;
+          ownFront = 0.78;
+        } else {
+          this.swingOffX = kickX;
+          this.swingOffY = kickY;
+          ownBack = this.weapons.length > 1 ? 0.78 : ownBack;
+        }
+        this.body.rotation += (this.gunRecoilHand === 1 ? -1 : 1) * 0.018 * recoil;
+      }
     } else if (
       this.weaponDef &&
       (this.weapons.length > 0 || (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
     ) {
-      const def = this.weaponDef;
+      const def = this.swingWeaponDef ?? this.weaponDef;
       // Rest is aim-relative and constant: no family can silently reintroduce an upright idle policy.
       const restA = forwardMeleeReadyAngle(heldAimLocal);
       weaponAngle = restA;
@@ -5373,7 +5821,17 @@ export class SpriteRig {
       const hold = this.comboHoldPose;
       const family: RigComboFamily =
         this.swingFamily !== "none" ? this.swingFamily : (hold?.family ?? "none");
-      if (CLIENT_VISUAL_COMBOS && family !== "none" && hold?.family === family && el >= 0) {
+      if (this.crossfallActive && hold && el >= 0) {
+        comboPose = CROSSFALL_STEP;
+        poseVariant = "default";
+        poseDirection = 0;
+        if (dur > 0 && el < dur) tt = el / dur;
+        else if (sceneNow <= hold.expiresAtMs) tt = 1;
+        else if (sceneNow < hold.expiresAtMs + COMBO_HOLD_RELEASE_MS) {
+          tt = 1;
+          poseBlend = 1 - (sceneNow - hold.expiresAtMs) / COMBO_HOLD_RELEASE_MS;
+        }
+      } else if (CLIENT_VISUAL_COMBOS && family !== "none" && hold?.family === family && el >= 0) {
         const live = this.comboFamily === family;
         const snapshotStep = live ? this.swingStep : hold.step;
         const snapshotVariant = live ? this.swingVariant : hold.variant;
@@ -5443,6 +5901,7 @@ export class SpriteRig {
         const bodyBaseY = this.body.y;
         const bodyBaseScaleX = this.body.scaleX;
         const bodyBaseScaleY = this.body.scaleY;
+        let swingChannelsRouted = false;
         const poseStyle = comboPose ? (family === "rake" ? "pivot" : family) : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
@@ -5600,15 +6059,14 @@ export class SpriteRig {
             poseInput.businessLength = (1 - mountOrigin) * def.displayLength;
             poseInput.rigScale = this.baseScale;
             poseInput.direction = poseDirection;
-            poseInput.hand = pose.hand;
+            poseInput.hand = this.swingHand === 1 ? "off" : pose.hand;
             poseInput.hasRearWeapon = this.weapons.length > 1;
             poseInput.variant = poseVariant;
             sampleCloseBladePose(poseInput, this.closeBladePose);
             const sampled = this.closeBladePose;
             const interruptBlend = 1 - brace;
             weaponAngle = sampled.frontAngle;
-            if (this.weapons.length > 1)
-              backWeaponAngle = sampled.backAngle - DUAL_BACK_WEAPON_LEAN;
+            if (this.weapons.length > 1) backWeaponAngle = sampled.backAngle - this.offWeaponLean();
             this.attackFrontGripX = sampled.frontGripX;
             this.attackFrontGripY = sampled.frontGripY;
             this.attackFrontGripBlend = sampled.frontGripBlend * interruptBlend;
@@ -5623,6 +6081,7 @@ export class SpriteRig {
             this.attackBackFootBlend = sampled.backFootBlend * interruptBlend;
             ownFront = sampled.frontOwn * interruptBlend;
             ownBack = sampled.backOwn * interruptBlend;
+            swingChannelsRouted = true;
             ownFeet = sampled.feetOwn * interruptBlend;
             this.attackArtOffX = sampled.artX * interruptBlend;
             this.attackArtOffY = sampled.artY * interruptBlend;
@@ -5951,6 +6410,32 @@ export class SpriteRig {
           }
         }
 
+        if (this.swingHand === 1 && !swingChannelsRouted && !this.crossfallActive) {
+          const routed = routeSwingChannels(
+            {
+              weaponAngle,
+              backWeaponAngle,
+              swingOffX: this.swingOffX,
+              swingOffY: this.swingOffY,
+              swingBackOffX: this.swingBackOffX,
+              swingBackOffY: this.swingBackOffY,
+              ownFront,
+              ownBack,
+            },
+            1,
+            restA,
+            this.offWeaponLean(),
+          );
+          weaponAngle = routed.weaponAngle;
+          backWeaponAngle = routed.backWeaponAngle;
+          this.swingOffX = routed.swingOffX;
+          this.swingOffY = routed.swingOffY;
+          this.swingBackOffX = routed.swingBackOffX;
+          this.swingBackOffY = routed.swingBackOffY;
+          ownFront = routed.ownFront;
+          ownBack = routed.ownBack;
+        }
+
         // A combo may travel through any authored angle, but its cadence guard must present the business
         // end down aim. Blend only after authored follow-through so contact timing and sweep behavior stay
         // untouched; a retained tt=1 hold lands exactly on the shared forward-ready law.
@@ -6014,6 +6499,35 @@ export class SpriteRig {
         : heldAimLocal;
       const guard = forwardMeleeReadyAngle(guardAim);
       weaponAngle += (guard - weaponAngle) * brace;
+    }
+    const ceremony = samplePairCeremony(sceneNow - this.pairCeremonyStartMs);
+    if (ceremony.active && this.weapons.length > 1 && !outsidePaperView) {
+      const frontHand = this.hands.find((hand) => hand.front);
+      const backHand = this.hands.find((hand) => !hand.front);
+      const crossLead = heldAimLocal - 0.72;
+      const crossOff = heldAimLocal + 0.72 - this.offWeaponLean();
+      weaponAngle = mixAngle(weaponAngle, crossLead, ceremony.crossBlend);
+      backWeaponAngle = mixAngle(
+        Number.isNaN(backWeaponAngle) ? weaponAngle - this.offWeaponLean() : backWeaponAngle,
+        crossOff,
+        ceremony.crossBlend,
+      );
+      if (frontHand) {
+        this.swingOffX += (TARGET_BODY_H * 0.09 - frontHand.ox) * ceremony.crossBlend;
+        this.swingOffY += (-TARGET_BODY_H * 0.03 - frontHand.oy) * ceremony.crossBlend;
+      }
+      if (backHand) {
+        this.swingBackOffX += (-TARGET_BODY_H * 0.09 - backHand.ox) * ceremony.crossBlend;
+        this.swingBackOffY += (-TARGET_BODY_H * 0.03 - backHand.oy) * ceremony.crossBlend;
+      }
+      this.pairWeaponScaleX[0] = ceremony.leadScaleX;
+      this.pairWeaponScaleX[1] = ceremony.offScaleX;
+      this.pairGlintAlpha = ceremony.glintAlpha;
+      ownFront = 1;
+      ownBack = 1;
+      this.body.rotation += Math.sin(ceremony.ruffle * Math.PI * 2) * 0.025;
+      this.body.scaleX *= 1 + ceremony.ruffle * 0.045;
+      this.body.scaleY *= 1 - ceremony.ruffle * 0.035;
     }
     if (this.weaponDef?.twoHanded) {
       // The rear grip is a hard geometric child of the lead/haft, never an independently wobbling oscillator.
@@ -6417,7 +6931,7 @@ export class SpriteRig {
         this.orbitBehind = false;
         this.root.moveAbove(w.img, this.body);
       }
-      const off = i === 1 ? 0.32 : 0; // dual back-knife leans a touch differently
+      const off = i === 1 ? this.offWeaponLean() : 0;
       // §40.1 the FRONT HAND already carries swingOff (it grips the weapon through the motion) — the weapon
       // just rides its hand, so blade + both hands travel together.
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
@@ -6425,7 +6939,10 @@ export class SpriteRig {
         (i === 1 && !Number.isNaN(backWeaponAngle) ? backWeaponAngle : weaponAngle) + off;
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
-      w.img.setScale(base * this.weaponLengthScale, base * this.attackScaleY);
+      const ownsSwingScale = this.swingHand === "both" || this.swingHand === i;
+      const lengthScale = ownsSwingScale ? this.weaponLengthScale : 1;
+      const thicknessScale = ownsSwingScale ? this.attackScaleY : 1;
+      w.img.setScale(base * lengthScale * (this.pairWeaponScaleX[i] ?? 1), base * thicknessScale);
       if (i === 0 && this.attackWeaponDepth !== 0) {
         const behind = this.attackWeaponDepth < 0;
         if (behind !== this.orbitBehind) {
@@ -6488,8 +7005,24 @@ export class SpriteRig {
     }
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
+    const leadWeapon = this.weapons[0];
+    const offWeapon = this.weapons[1];
+    if (this.pairGlintAlpha > 0 && leadWeapon && offWeapon && !outsidePaperView) {
+      this.pairGlint
+        .setPosition(
+          (leadWeapon.img.x + offWeapon.img.x) * 0.5,
+          (leadWeapon.img.y + offWeapon.img.y) * 0.5,
+        )
+        .setRotation((leadWeapon.semanticRotation + offWeapon.semanticRotation) * 0.5 + Math.PI / 2)
+        .setScale(0.72 + this.pairGlintAlpha * 0.5, 0.7 + this.pairGlintAlpha * 0.3)
+        .setAlpha(this.pairGlintAlpha)
+        .setVisible(true);
+    } else {
+      this.pairGlint.setVisible(false);
+    }
     this.syncTomeVisual(sceneNow, outsidePaperView);
     this.syncObservedSourceFlash(sceneNow, outsidePaperView);
+    this.flushCrossfallRibbon(sceneNow, outsidePaperView);
     this.updateMeleeTellWeaponVisuals(sceneNow);
     this.applySlideInkTell(
       this.moveStance === STANCE_SLIDE &&
