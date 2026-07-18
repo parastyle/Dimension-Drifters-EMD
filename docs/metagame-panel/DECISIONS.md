@@ -51,3 +51,16 @@ Recorded 2026-07-18. The confirmed direction, overriding conflicting panel outpu
   head-replacement gear class alongside stack-on-top hats.
 - Rig kit: six fully detached parts — torso bean (no legs), floating head, 2 blob hands,
   2 blob feet — all riding the SpriteRig jiggle skeleton.
+
+## Gear rendering — REPLACEMENT, not layering (user ruling, 2026-07-18 afternoon)
+
+- The layered-sticker approach is retired: "when selecting clothes, we should completely replace
+  the default body with the shirt, default head with the mask, etc." Garments REPLACE the base
+  part's texture; they do not float on top of it. Undersized-jacket artifacts are the proof.
+- **Hats are the ONLY stack-on-top exception** (the prestige tower depends on it).
+- Practical law: per-part texture replacement/compositing — the worn torso IS one torso-shaped
+  card (shirt+pants baked/zoned onto the full torso silhouette), gloves/boots ARE dressed blob
+  replacements, head items (masks/helmets) REPLACE the head via the existing helmet seam, with
+  small accessories (glasses/facial hair) baked into the composed head texture. Cloaks remain a
+  separate behind-body drape card. Garment ART must be authored at the base part's exact frame
+  and silhouette coverage so fit is correct by construction.
