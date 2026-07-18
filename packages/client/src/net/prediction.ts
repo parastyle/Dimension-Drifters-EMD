@@ -17,6 +17,7 @@ import {
   DIST_JUMP_VERTICAL_VELOCITY,
   GROUND_EPSILON,
   INTERP_SNAP_PLAYER,
+  INPUT_MSGS_PER_TICK,
   JUMP_BUFFER_SECONDS,
   JUMP_COOLDOWN,
   JUMP_VELOCITY,
@@ -361,6 +362,71 @@ export function writeDistanceJumpIndicator(
 }
 
 const DT = TICK_MS / 1000;
+
+/** One heartbeat plus these change/edge commands fits the server's four-message input budget. */
+export const IMMEDIATE_INPUT_SEND_CAP = Math.max(0, INPUT_MSGS_PER_TICK - 1);
+
+/** Retained, allocation-free transport gate. It changes command timing only; predictor steps stay commands. */
+class ImmediateInputSendGate {
+  private lastDx = 0;
+  private lastDy = 0;
+  private lastCrouchHeld = false;
+  private lastSlideHeld = false;
+  private lastFireHeld = false;
+  private extrasSinceHeartbeat = 0;
+
+  shouldMint(
+    dx: number,
+    dy: number,
+    jump: boolean,
+    crouchHeld: boolean,
+    pound: boolean,
+    slide: boolean,
+    slideHeld: boolean,
+    fireHeld: boolean,
+    ultimatePressed: boolean,
+  ): boolean {
+    const changed =
+      dx !== this.lastDx ||
+      dy !== this.lastDy ||
+      crouchHeld !== this.lastCrouchHeld ||
+      slideHeld !== this.lastSlideHeld ||
+      fireHeld !== this.lastFireHeld ||
+      jump ||
+      pound ||
+      slide ||
+      ultimatePressed;
+    if (!changed || this.extrasSinceHeartbeat >= IMMEDIATE_INPUT_SEND_CAP) return false;
+    this.extrasSinceHeartbeat++;
+    this.recordHeld(dx, dy, crouchHeld, slideHeld, fireHeld);
+    return true;
+  }
+
+  noteHeartbeat(
+    dx: number,
+    dy: number,
+    crouchHeld: boolean,
+    slideHeld: boolean,
+    fireHeld: boolean,
+  ): void {
+    this.extrasSinceHeartbeat = 0;
+    this.recordHeld(dx, dy, crouchHeld, slideHeld, fireHeld);
+  }
+
+  private recordHeld(
+    dx: number,
+    dy: number,
+    crouchHeld: boolean,
+    slideHeld: boolean,
+    fireHeld: boolean,
+  ): void {
+    this.lastDx = dx;
+    this.lastDy = dy;
+    this.lastCrouchHeld = crouchHeld;
+    this.lastSlideHeld = slideHeld;
+    this.lastFireHeld = fireHeld;
+  }
+}
 
 /** Height divergence (px) beyond which the local vertical prediction adopts the server's arc. */
 const HEIGHT_ADOPT_PX = 12;
@@ -896,6 +962,7 @@ export class SelfPredictor {
     momentumY: 0,
   };
   private readonly pending: PendingPredCmd[] = [];
+  private readonly immediateInputGate = new ImmediateInputSendGate();
   private map?: ArenaMap;
   /** §29 belt level (floor profile + obstacles) — when set, prediction uses belt collision, not POI. */
   private belt?: BeltLevel;
@@ -1038,6 +1105,42 @@ export class SelfPredictor {
   /** §29 set the belt level so prediction uses the authored floor/obstacle collision (not POI). */
   setBeltLevel(level: BeltLevel | undefined): void {
     this.belt = level;
+  }
+
+  /** True when a held-state change or one-shot edge should mint before the next 20Hz heartbeat. */
+  shouldMintImmediateInput(
+    dx: number,
+    dy: number,
+    jump: boolean,
+    crouchHeld: boolean,
+    pound: boolean,
+    slide: boolean,
+    slideHeld: boolean,
+    fireHeld: boolean,
+    ultimatePressed: boolean,
+  ): boolean {
+    return this.immediateInputGate.shouldMint(
+      dx,
+      dy,
+      jump,
+      crouchHeld,
+      pound,
+      slide,
+      slideHeld,
+      fireHeld,
+      ultimatePressed,
+    );
+  }
+
+  /** Re-open the bounded extra-send allowance without changing predictor state or sequence numbering. */
+  noteInputHeartbeat(
+    dx: number,
+    dy: number,
+    crouchHeld: boolean,
+    slideHeld: boolean,
+    fireHeld: boolean,
+  ): void {
+    this.immediateInputGate.noteHeartbeat(dx, dy, crouchHeld, slideHeld, fireHeld);
   }
 
   /** Mint the next sequence-numbered command from this frame's sampled input. */

@@ -5436,3 +5436,42 @@ describe("pet v1 owner-private protocol seams", () => {
     expect(otherMessages).toEqual([]);
   });
 });
+
+// Server-latency wave — append-only proof that callback-time arrivals feed the next fixed step.
+describe("GameRoom — immediate input arrivals between 20Hz steps", () => {
+  it("accepts mid-interval commands, drains to newest held state, and preserves skipped edges", () => {
+    const { h, player } = makeBeamRoom("latency-mid-interval");
+    h.tick(1, 20); // accumulator is partway to the next fixed 50ms step
+    h.send(player.id, "input", {
+      seq: 1,
+      dx: 1,
+      dy: 0,
+      jump: true,
+      fireHeld: true,
+      aimX: 1,
+      aimY: 0,
+      targetX: player.x + 500,
+      targetY: player.y,
+    });
+    h.tick(1, 20); // still no authoritative step; a normal heartbeat arrives after the edge
+    h.send(player.id, "input", {
+      seq: 2,
+      dx: -1,
+      dy: 0,
+      jump: false,
+      fireHeld: true,
+      aimX: 1,
+      aimY: 0,
+      targetX: player.x + 500,
+      targetY: player.y,
+    });
+    expect(h.room.inputs.get(player.id).queue).toHaveLength(2);
+
+    h.tick(1, 10);
+    expect(player.ackSeq).toBe(2); // fixed-step consumption remains drain-to-newest
+    expect(player.mvx).toBeLessThan(0); // newest held movement owns the step
+    expect(player.height).toBeGreaterThan(0); // older one-shot jump survives the drain
+    expect(h.state().beams.get(player.id)?.startSeq).toBe(1); // first fire edge owns the epoch
+    expect(h.room.inputs.get(player.id).queue).toHaveLength(0);
+  });
+});

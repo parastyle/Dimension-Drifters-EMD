@@ -96,6 +96,8 @@ export type ArenaMap = {
   spawnY: number;
   /** §17 collidable landmark structures (cover + orientation), placed deterministically on ground. */
   pois: PoiInstance[];
+  /** Immutable flattened POI geometry plus retained allocation-free query scratch. Built once with the map. */
+  poiCollisionIndex: PoiCollisionIndex;
   /** Authoritative macro-cluster anchors used by shared POI placement. */
   poiClusters: PoiCluster[];
   /** The seeds this map was built from (so consumers can confirm they reproduced the right one). */
@@ -617,16 +619,177 @@ export function poiCollisionCircles(poi: PoiInstance): readonly PoiCollisionCirc
 
 export type PoiCollisionHit = Readonly<{ poi: PoiInstance; circle: PoiCollisionCircle }>;
 
-/** Exact compound-circle containing test, including the child circle needed for a correct carom normal. */
-export function poiCollisionAt(map: ArenaMap, x: number, y: number): PoiCollisionHit | undefined {
-  for (const poi of map.pois) {
-    for (const circle of poiCollisionCircles(poi)) {
-      const dx = x - circle.x;
-      const dy = y - circle.y;
-      if (dx * dx + dy * dy < circle.radius * circle.radius) return { poi, circle };
+/**
+ * Immutable flattened POI-circle geometry with a retained uniform-grid query workspace. Geometry arrays,
+ * circle records, and hit records are created once with the map; `queryAabb` mutates only the retained
+ * stamps/candidate buffer, so steady collision queries allocate nothing. Candidate ids are emitted in the
+ * original POI/child order, preserving the old brute-force solver's deterministic projection order.
+ */
+export class PoiCollisionIndex {
+  readonly sourcePoiCount: number;
+  readonly cellSize: number;
+  readonly cols: number;
+  readonly rows: number;
+  readonly circleCount: number;
+  readonly circles: readonly PoiCollisionCircle[];
+  readonly hits: readonly PoiCollisionHit[];
+  readonly candidates: Uint32Array;
+  readonly circleX: Float64Array;
+  readonly circleY: Float64Array;
+  readonly circleRadius: Float64Array;
+  readonly circlePoiIndex: Uint32Array;
+  readonly cellStarts: Uint32Array;
+  readonly cellCircleIds: Uint32Array;
+  lastCandidateCount = 0;
+  lastCellEntryVisits = 0;
+
+  private readonly marks: Uint32Array;
+  private stamp = 0;
+
+  constructor(
+    pois: readonly PoiInstance[],
+    worldWidth: number,
+    worldHeight: number,
+    cellSize = MAP_TILE * 2,
+  ) {
+    this.sourcePoiCount = pois.length;
+    this.cellSize = Math.max(1, cellSize);
+    this.cols = Math.max(1, Math.ceil(worldWidth / this.cellSize));
+    this.rows = Math.max(1, Math.ceil(worldHeight / this.cellSize));
+
+    const circles: PoiCollisionCircle[] = [];
+    const hits: PoiCollisionHit[] = [];
+    const poiIndices: number[] = [];
+    for (let poiIndex = 0; poiIndex < pois.length; poiIndex++) {
+      const poi = pois[poiIndex];
+      if (!poi) continue;
+      for (const circle of poiCollisionCircles(poi)) {
+        circles.push(circle);
+        hits.push({ poi, circle });
+        poiIndices.push(poiIndex);
+      }
+    }
+    this.circles = circles;
+    this.hits = hits;
+    this.circleCount = circles.length;
+    this.candidates = new Uint32Array(this.circleCount);
+    this.circleX = new Float64Array(this.circleCount);
+    this.circleY = new Float64Array(this.circleCount);
+    this.circleRadius = new Float64Array(this.circleCount);
+    this.circlePoiIndex = new Uint32Array(this.circleCount);
+    this.marks = new Uint32Array(this.circleCount);
+
+    const cellCount = this.cols * this.rows;
+    const cellCounts = new Uint32Array(cellCount);
+    for (let circleIndex = 0; circleIndex < circles.length; circleIndex++) {
+      const circle = circles[circleIndex];
+      if (!circle) continue;
+      this.circleX[circleIndex] = circle.x;
+      this.circleY[circleIndex] = circle.y;
+      this.circleRadius[circleIndex] = circle.radius;
+      this.circlePoiIndex[circleIndex] = poiIndices[circleIndex] ?? 0;
+      const minCol = Math.max(0, Math.floor((circle.x - circle.radius) / this.cellSize));
+      const maxCol = Math.min(this.cols - 1, Math.floor((circle.x + circle.radius) / this.cellSize));
+      const minRow = Math.max(0, Math.floor((circle.y - circle.radius) / this.cellSize));
+      const maxRow = Math.min(this.rows - 1, Math.floor((circle.y + circle.radius) / this.cellSize));
+      for (let row = minRow; row <= maxRow; row++)
+        for (let col = minCol; col <= maxCol; col++) {
+          const cell = row * this.cols + col;
+          cellCounts[cell] = (cellCounts[cell] ?? 0) + 1;
+        }
+    }
+
+    this.cellStarts = new Uint32Array(cellCount + 1);
+    for (let cell = 0; cell < cellCount; cell++)
+      this.cellStarts[cell + 1] = (this.cellStarts[cell] ?? 0) + (cellCounts[cell] ?? 0);
+    this.cellCircleIds = new Uint32Array(this.cellStarts[cellCount] ?? 0);
+    const cursors = this.cellStarts.slice(0, cellCount);
+    for (let circleIndex = 0; circleIndex < circles.length; circleIndex++) {
+      const circle = circles[circleIndex];
+      if (!circle) continue;
+      const minCol = Math.max(0, Math.floor((circle.x - circle.radius) / this.cellSize));
+      const maxCol = Math.min(this.cols - 1, Math.floor((circle.x + circle.radius) / this.cellSize));
+      const minRow = Math.max(0, Math.floor((circle.y - circle.radius) / this.cellSize));
+      const maxRow = Math.min(this.rows - 1, Math.floor((circle.y + circle.radius) / this.cellSize));
+      for (let row = minRow; row <= maxRow; row++)
+        for (let col = minCol; col <= maxCol; col++) {
+          const cell = row * this.cols + col;
+          const cursor = cursors[cell] ?? 0;
+          this.cellCircleIds[cursor] = circleIndex;
+          cursors[cell] = cursor + 1;
+        }
     }
   }
-  return undefined;
+
+  /** Fill the retained candidate buffer with ascending flattened-circle ids; returns its active length. */
+  queryAabb(minX: number, minY: number, maxX: number, maxY: number): number {
+    const left = Math.min(minX, maxX);
+    const right = Math.max(minX, maxX);
+    const top = Math.min(minY, maxY);
+    const bottom = Math.max(minY, maxY);
+    const worldWidth = this.cols * this.cellSize;
+    const worldHeight = this.rows * this.cellSize;
+    if (right < 0 || bottom < 0 || left >= worldWidth || top >= worldHeight) {
+      this.lastCandidateCount = 0;
+      this.lastCellEntryVisits = 0;
+      return 0;
+    }
+
+    this.stamp = (this.stamp + 1) >>> 0;
+    if (this.stamp === 0) {
+      this.marks.fill(0);
+      this.stamp = 1;
+    }
+    const minCol = Math.max(0, Math.min(this.cols - 1, Math.floor(left / this.cellSize)));
+    const maxCol = Math.max(0, Math.min(this.cols - 1, Math.floor(right / this.cellSize)));
+    const minRow = Math.max(0, Math.min(this.rows - 1, Math.floor(top / this.cellSize)));
+    const maxRow = Math.max(0, Math.min(this.rows - 1, Math.floor(bottom / this.cellSize)));
+    let count = 0;
+    let visits = 0;
+    for (let row = minRow; row <= maxRow; row++)
+      for (let col = minCol; col <= maxCol; col++) {
+        const cell = row * this.cols + col;
+        const end = this.cellStarts[cell + 1] ?? 0;
+        for (let cursor = this.cellStarts[cell] ?? 0; cursor < end; cursor++) {
+          const circleIndex = this.cellCircleIds[cursor] ?? 0;
+          visits++;
+          if (this.marks[circleIndex] === this.stamp) continue;
+          this.marks[circleIndex] = this.stamp;
+          // Grid cells overlap, so deduplicate with stamps and retain legacy order via an in-place
+          // insertion into the caller-visible scratch buffer. This keeps the query O(local candidates),
+          // rather than scanning every circle merely to recover deterministic order.
+          let insertAt = count;
+          while (insertAt > 0 && (this.candidates[insertAt - 1] ?? 0) > circleIndex) {
+            this.candidates[insertAt] = this.candidates[insertAt - 1] ?? 0;
+            insertAt--;
+          }
+          this.candidates[insertAt] = circleIndex;
+          count++;
+        }
+      }
+    this.lastCandidateCount = count;
+    this.lastCellEntryVisits = visits;
+    return count;
+  }
+}
+
+/** Allocation-free exact point query. Returns the first containing flattened circle in legacy order. */
+export function poiCollisionCircleIndexAt(index: PoiCollisionIndex, x: number, y: number): number {
+  const count = index.queryAabb(x, y, x, y);
+  for (let candidate = 0; candidate < count; candidate++) {
+    const circleIndex = index.candidates[candidate] ?? 0;
+    const dx = x - (index.circleX[circleIndex] ?? 0);
+    const dy = y - (index.circleY[circleIndex] ?? 0);
+    const radius = index.circleRadius[circleIndex] ?? 0;
+    if (dx * dx + dy * dy < radius * radius) return circleIndex;
+  }
+  return -1;
+}
+
+/** Exact compound-circle containing test, including the child circle needed for a correct carom normal. */
+export function poiCollisionAt(map: ArenaMap, x: number, y: number): PoiCollisionHit | undefined {
+  const circleIndex = poiCollisionCircleIndexAt(map.poiCollisionIndex, x, y);
+  return circleIndex >= 0 ? map.poiCollisionIndex.hits[circleIndex] : undefined;
 }
 
 function pointOverlapsPoi(
@@ -1072,6 +1235,7 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
     spawnRow,
     poiRng,
   );
+  const poiCollisionIndex = new PoiCollisionIndex(pois, cols * MAP_TILE, rows * MAP_TILE);
 
   return {
     cols,
@@ -1083,6 +1247,7 @@ export function generateArena(seeds: ArenaMapSeeds): ArenaMap {
     spawnX: (spawnCol + 0.5) * MAP_TILE,
     spawnY: (spawnRow + 0.5) * MAP_TILE,
     pois,
+    poiCollisionIndex,
     poiClusters,
     seeds: { ...seeds },
   };
@@ -1155,33 +1320,97 @@ export function resolvePoiCollision(
   y: number,
   radius: number,
 ): { x: number; y: number } {
+  return resolvePoiCollisionInto(map, x, y, radius, { x, y });
+}
+
+/**
+ * Allocation-free compound-circle projection into caller-owned storage. A hit restarts the spatial query
+ * at the updated point but resumes after that flattened id, exactly matching a brute-force ordered pass.
+ */
+export function resolvePoiCollisionInto<T extends { x: number; y: number }>(
+  map: ArenaMap,
+  x: number,
+  y: number,
+  radius: number,
+  out: T,
+): T {
   let nx = x;
   let ny = y;
-  // Overlapping child circles need more than the old two-circle passes, but the set is tiny (at most 84).
-  // Sequential projection converges outward because every child stays inside the conservative placement disc.
+  const index = map.poiCollisionIndex;
   for (let pass = 0; pass < 10; pass++) {
     let touched = false;
-    for (const poi of map.pois) {
-      for (const circle of poiCollisionCircles(poi)) {
-        const reach = circle.radius + radius;
-        const dx = nx - circle.x;
-        const dy = ny - circle.y;
+    let nextCircle = 0;
+    while (nextCircle < index.circleCount) {
+      const count = index.queryAabb(nx - radius, ny - radius, nx + radius, ny + radius);
+      let projected = false;
+      for (let candidate = 0; candidate < count; candidate++) {
+        const circleIndex = index.candidates[candidate] ?? 0;
+        if (circleIndex < nextCircle) continue;
+        nextCircle = circleIndex + 1;
+        const circleX = index.circleX[circleIndex] ?? 0;
+        const circleY = index.circleY[circleIndex] ?? 0;
+        const reach = (index.circleRadius[circleIndex] ?? 0) + radius;
+        const dx = nx - circleX;
+        const dy = ny - circleY;
         const distance2 = dx * dx + dy * dy;
         if (distance2 >= reach * reach) continue;
         touched = true;
+        projected = true;
         const distance = Math.sqrt(distance2);
         if (distance < 1e-4) {
-          nx = circle.x;
-          ny = circle.y - reach;
+          nx = circleX;
+          ny = circleY - reach;
         } else {
-          nx = circle.x + (dx / distance) * reach;
-          ny = circle.y + (dy / distance) * reach;
+          nx = circleX + (dx / distance) * reach;
+          ny = circleY + (dy / distance) * reach;
         }
+        break;
       }
+      if (!projected) break;
     }
     if (!touched) break;
   }
-  return { x: nx, y: ny };
+  out.x = nx;
+  out.y = ny;
+  return out;
+}
+
+/** Exact allocation-free ray truncation against indexed POI circles, retaining legacy circle order. */
+export function clipPoiRayLength(
+  index: PoiCollisionIndex,
+  ox: number,
+  oy: number,
+  dx: number,
+  dy: number,
+  inflateRadius: number,
+  currentLength: number,
+): number {
+  let length = currentLength;
+  const ex = ox + dx * length;
+  const ey = oy + dy * length;
+  const count = index.queryAabb(
+    Math.min(ox, ex) - inflateRadius,
+    Math.min(oy, ey) - inflateRadius,
+    Math.max(ox, ex) + inflateRadius,
+    Math.max(oy, ey) + inflateRadius,
+  );
+  for (let candidate = 0; candidate < count; candidate++) {
+    const circleIndex = index.candidates[candidate] ?? 0;
+    const radius = (index.circleRadius[circleIndex] ?? 0) + inflateRadius;
+    const rx = ox - (index.circleX[circleIndex] ?? 0);
+    const ry = oy - (index.circleY[circleIndex] ?? 0);
+    const c = rx * rx + ry * ry - radius * radius;
+    if (c <= 0) {
+      length = 0;
+      continue;
+    }
+    const b = rx * dx + ry * dy;
+    const discriminant = b * b - c;
+    if (discriminant < 0) continue;
+    const t = -b - Math.sqrt(discriminant);
+    if (t >= 0 && t < length) length = t;
+  }
+  return length;
 }
 
 export function pitFraction(map: ArenaMap): number {

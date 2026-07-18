@@ -2,6 +2,30 @@ import { ARENA_HEIGHT, ARENA_WIDTH, PLAYER_RADIUS } from "./constants.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 
+/** Allocation-free scalar segment-vs-circle test used by beam sweep hot paths. */
+export function bladeHitsCircleXY(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  targetX: number,
+  targetY: number,
+  targetRadius: number,
+  halfWidth: number,
+): boolean {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const length2 = dx * dx + dy * dy;
+  const t =
+    length2 > 0
+      ? Math.max(0, Math.min(1, ((targetX - ax) * dx + (targetY - ay) * dy) / length2))
+      : 0;
+  const ex = targetX - (ax + t * dx);
+  const ey = targetY - (ay + t * dy);
+  const reach = targetRadius + halfWidth;
+  return ex * ex + ey * ey <= reach * reach;
+}
+
 /**
  * Resolve body-to-body overlap between circular bodies (§5: "body collision respected by
  * all objects — players block each other"). Pure + deterministic: the server runs it each

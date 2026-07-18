@@ -558,3 +558,149 @@ describe("gate locator — complete-circle HUD-safe visibility", () => {
     ).toBe(false);
   });
 });
+
+// Server tick-time wave — append-only indexed-vs-brute POI collision property proof.
+const latencyMapgen = await import("@dd/shared");
+
+function brutePoiHit(map: ReturnType<typeof generateArena>, x: number, y: number) {
+  for (const poi of map.pois)
+    for (const circle of poiCollisionCircles(poi)) {
+      const dx = x - circle.x;
+      const dy = y - circle.y;
+      if (dx * dx + dy * dy < circle.radius * circle.radius) return { poi, circle };
+    }
+  return undefined;
+}
+
+function brutePoiResolve(
+  map: ReturnType<typeof generateArena>,
+  x: number,
+  y: number,
+  radius: number,
+) {
+  let nx = x;
+  let ny = y;
+  for (let pass = 0; pass < 10; pass++) {
+    let touched = false;
+    for (const poi of map.pois)
+      for (const circle of poiCollisionCircles(poi)) {
+        const reach = circle.radius + radius;
+        const dx = nx - circle.x;
+        const dy = ny - circle.y;
+        const distance2 = dx * dx + dy * dy;
+        if (distance2 >= reach * reach) continue;
+        touched = true;
+        const distance = Math.sqrt(distance2);
+        if (distance < 1e-4) {
+          nx = circle.x;
+          ny = circle.y - reach;
+        } else {
+          nx = circle.x + (dx / distance) * reach;
+          ny = circle.y + (dy / distance) * reach;
+        }
+      }
+    if (!touched) break;
+  }
+  return { x: nx, y: ny };
+}
+
+function brutePoiRay(
+  map: ReturnType<typeof generateArena>,
+  ox: number,
+  oy: number,
+  dx: number,
+  dy: number,
+  inflate: number,
+  initialLength: number,
+): number {
+  let length = initialLength;
+  for (const poi of map.pois)
+    for (const circle of poiCollisionCircles(poi)) {
+      const radius = circle.radius + inflate;
+      const rx = ox - circle.x;
+      const ry = oy - circle.y;
+      const c = rx * rx + ry * ry - radius * radius;
+      if (c <= 0) {
+        length = 0;
+        continue;
+      }
+      const b = rx * dx + ry * dy;
+      const discriminant = b * b - c;
+      if (discriminant < 0) continue;
+      const t = -b - Math.sqrt(discriminant);
+      if (t >= 0 && t < length) length = t;
+    }
+  return length;
+}
+
+describe("mapgen — immutable indexed POI collision parity", () => {
+  it("matches brute-force point, ordered body projection, and ray results across seeds", () => {
+    for (let sampleIndex = 0; sampleIndex < 32; sampleIndex++) {
+      const sample = seeds(
+        Math.imul(sampleIndex + 1, 0x9e3779b1) >>> 0,
+        Math.imul(sampleIndex + 3, 0x85ebca6b) >>> 0,
+        Math.imul(sampleIndex + 5, 0xc2b2ae35) >>> 0,
+        Math.imul(sampleIndex + 7, 0x27d4eb2f) >>> 0,
+      );
+      const map = generateArena(sample);
+      let word = (sample.seedTerrain ^ sample.seedHazard ^ sample.seedDecor) >>> 0;
+      const nextUnit = () => {
+        word = (Math.imul(word ^ (word >>> 15), 0x2c1b3c6d) + 0x9e3779b9) >>> 0;
+        return word / 0x100000000;
+      };
+      for (let probe = 0; probe < 96; probe++) {
+        const x = nextUnit() * latencyMapgen.ARENA_WIDTH;
+        const y = nextUnit() * latencyMapgen.ARENA_HEIGHT;
+        const bruteHit = brutePoiHit(map, x, y);
+        const indexedHit = poiCollisionAt(map, x, y);
+        expect(indexedHit?.poi).toBe(bruteHit?.poi);
+        expect(indexedHit?.circle).toEqual(bruteHit?.circle);
+
+        const radius = [0, PLAYER_RADIUS, 52][probe % 3] ?? PLAYER_RADIUS;
+        const bruteResolved = brutePoiResolve(map, x, y, radius);
+        const out = { x: Number.NaN, y: Number.NaN };
+        expect(latencyMapgen.resolvePoiCollisionInto(map, x, y, radius, out)).toBe(out);
+        expect(out.x).toBe(bruteResolved.x);
+        expect(out.y).toBe(bruteResolved.y);
+
+        const angle = nextUnit() * Math.PI * 2;
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        const inflate = (probe % 4) * 6;
+        const range = 200 + nextUnit() * 1_200;
+        expect(
+          latencyMapgen.clipPoiRayLength(
+            map.poiCollisionIndex,
+            x,
+            y,
+            dx,
+            dy,
+            inflate,
+            range,
+          ),
+        ).toBe(brutePoiRay(map, x, y, dx, dy, inflate, range));
+      }
+    }
+  });
+
+  it("reuses query/result storage and visits a strict subset for a local hot-path probe", () => {
+    const map = generateArena(seeds(0x1234, 0x5678, 0x9abc, 0xdef0));
+    const index = map.poiCollisionIndex;
+    const circle = index.circles[0];
+    expect(circle).toBeDefined();
+    if (!circle) return;
+    const candidates = index.candidates;
+    const firstHit = poiCollisionAt(map, circle.x, circle.y);
+    const secondHit = poiCollisionAt(map, circle.x, circle.y);
+    expect(index.candidates).toBe(candidates);
+    expect(secondHit).toBe(firstHit); // precomputed hit record, not a per-query object
+    expect(index.lastCandidateCount).toBeLessThan(index.circleCount);
+
+    const out = { x: 0, y: 0 };
+    for (let iteration = 0; iteration < 1_000; iteration++)
+      expect(
+        latencyMapgen.resolvePoiCollisionInto(map, circle.x, circle.y, PLAYER_RADIUS, out),
+      ).toBe(out);
+    expect(index.candidates).toBe(candidates);
+  });
+});

@@ -56,6 +56,7 @@ import {
   COMBAT_RECEIPT_CAP,
   bladeAngleAt,
   bladeHitsCircle,
+  bladeHitsCircleXY,
   bossDefFor,
   bossSpawnAt,
   VASTAGHAR_ENCOUNTER,
@@ -75,6 +76,7 @@ import {
   CONFLAG_DELAY,
   characterScale,
   clamp,
+  clipPoiRayLength,
   clampQuakeEpicenter,
   isPlayableCharacter,
   coneAngles,
@@ -221,8 +223,8 @@ import {
   PROJECTILE_TTL,
   ProjectileState,
   pickEnemyKind,
+  PoiCollisionIndex,
   poiCollisionAt,
-  poiCollisionCircles,
   pointInAnnulusGap,
   pointInOrientedRect,
   pointInSweptAnnularArc,
@@ -241,7 +243,7 @@ import {
   RIFT_CHANNEL_SECONDS,
   randomSeed,
   resolveBodyCollisions,
-  resolvePoiCollision,
+  resolvePoiCollisionInto,
   rollAffix,
   rollDropWeapon,
   rollRarity,
@@ -501,6 +503,8 @@ interface InputCmd {
   slide: boolean;
   slideHeld: boolean;
   fireHeld: boolean;
+  /** First false→true fire command folded into this fixed-step sample; ack still uses `seq`. */
+  fireStartSeq: number;
   aimX: number;
   aimY: number;
   targetX: number;
@@ -829,8 +833,11 @@ export class GameRoom extends Room<ArenaState> {
   /** Reused swept-capsule samples (16 intervals + both endpoints); no per-beam/tick arrays. */
   private readonly beamSampleX = new Float64Array(17);
   private readonly beamSampleY = new Float64Array(17);
-  private readonly beamSampleAngle = new Float64Array(17);
+  private readonly beamSampleEndX = new Float64Array(17);
+  private readonly beamSampleEndY = new Float64Array(17);
   private readonly beamSampleLength = new Float64Array(17);
+  /** Shared caller-owned POI projection slot; every use consumes it before the next query. */
+  private readonly poiResolveScratch = { x: 0, y: 0 };
   /** Scratch endpoint for the active beam currently being stepped. Kept off CombatState so the
    * previous pose remains intact until it has been published for remote swept-ribbon interpolation. */
   private beamCurrentX = 0;
@@ -1182,6 +1189,7 @@ export class GameRoom extends Room<ArenaState> {
           slide: message?.slide === true,
           slideHeld: message?.slideHeld === true,
           fireHeld: message?.fireHeld === true,
+          fireStartSeq: message?.fireHeld === true ? seq : 0,
           aimX: Number.isFinite(message?.aimX) ? (message.aimX as number) : rec.held.aimX,
           aimY: Number.isFinite(message?.aimY) ? (message.aimY as number) : rec.held.aimY,
           targetX: Number.isFinite(message?.targetX)
@@ -2932,6 +2940,7 @@ export class GameRoom extends Room<ArenaState> {
         slide: false,
         slideHeld: false,
         fireHeld: false,
+        fireStartSeq: 0,
         aimX: 1,
         aimY: 0,
         targetX: 0,
@@ -3801,6 +3810,14 @@ export class GameRoom extends Room<ArenaState> {
 
   /** One EXACT 50ms authoritative sub-step. The hand-numbered phase order is a CONTRACT (golden test). */
   private stepSim(dt: number): void {
+    // Production maps keep immutable POIs. Authored test/dev maps may replace that geometry after mapgen;
+    // refresh once at the mutation boundary, never in the steady collision hot path.
+    if (this.map.poiCollisionIndex.sourcePoiCount !== this.map.pois.length)
+      this.map.poiCollisionIndex = new PoiCollisionIndex(
+        this.map.pois,
+        this.map.cols * this.map.tileSize,
+        this.map.rows * this.map.tileSize,
+      );
     // 0. §4 v0.107 the sim-tick counter (the snapshot timeline) + per-tick input plumbing: refill each
     //    player's message budget, then consume toward ONE command per sub-step for EVERY player — alive,
     //    downed, or frozen (review #3: consumption must never stall, or queues pin at cap during a level
@@ -3823,8 +3840,30 @@ export class GameRoom extends Room<ArenaState> {
       if (tickCombat) tickCombat.ultAccrualThisTick = 0;
       input.msgBudget = INPUT_MSGS_PER_TICK;
       input.actionBudget = ACTION_MSGS_PER_TICK; // §44 refill the action budget alongside input's
-      if (input.queue.length > 1) input.queue.splice(0, input.queue.length - 1);
-      const cmd = input.queue.shift();
+      let cmd: InputCmd | undefined;
+      const queuedCount = input.queue.length;
+      if (queuedCount > 0) {
+        cmd = input.queue[queuedCount - 1];
+        if (cmd) {
+          let fireWasHeld = input.held.fireHeld;
+          let fireStartSeq = 0;
+          for (let queuedIndex = 0; queuedIndex < queuedCount; queuedIndex++) {
+            const queued = input.queue[queuedIndex];
+            if (!queued) continue;
+            if (queued.fireHeld && !fireWasHeld && fireStartSeq === 0)
+              fireStartSeq = queued.seq;
+            fireWasHeld = queued.fireHeld;
+            if (queuedIndex === queuedCount - 1) continue;
+            // Drain-to-newest still consumes one fixed-step sample, but transport-only extras cannot erase
+            // one-shot edges merely because a heartbeat arrived later in the same server interval.
+            cmd.jump ||= queued.jump;
+            cmd.pound ||= queued.pound;
+            cmd.slide ||= queued.slide;
+          }
+          cmd.fireStartSeq = cmd.fireHeld ? fireStartSeq || cmd.fireStartSeq || cmd.seq : 0;
+        }
+        input.queue.length = 0;
+      }
       if (cmd) {
         input.held = cmd;
         input.lastFreshFireTick = this.state.tick;
@@ -4056,7 +4095,13 @@ export class GameRoom extends Room<ArenaState> {
     } else if (!this.belt) {
       this.state.players.forEach((player) => {
         if (!player.alive) return;
-        const r = resolvePoiCollision(this.map, player.x, player.y, PLAYER_RADIUS);
+        const r = resolvePoiCollisionInto(
+          this.map,
+          player.x,
+          player.y,
+          PLAYER_RADIUS,
+          this.poiResolveScratch,
+        );
         player.x = r.x;
         player.y = r.y;
       });
@@ -4526,11 +4571,12 @@ export class GameRoom extends Room<ArenaState> {
     } else if (!this.belt) {
       this.state.enemies.forEach((enemy, eid) => {
         if (eid === this.bossId) return;
-        const r = resolvePoiCollision(
+        const r = resolvePoiCollisionInto(
           this.map,
           enemy.x,
           enemy.y,
           ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS,
+          this.poiResolveScratch,
         );
         enemy.x = r.x;
         enemy.y = r.y;
@@ -4750,7 +4796,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     let x = clamp(ranged.x, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
     let y = clamp(ranged.y, PLAYER_RADIUS, ARENA_HEIGHT - PLAYER_RADIUS);
-    const poi = resolvePoiCollision(this.map, x, y, PLAYER_RADIUS);
+    const poi = resolvePoiCollisionInto(this.map, x, y, PLAYER_RADIUS, this.poiResolveScratch);
     x = poi.x;
     y = poi.y;
     if (isPitAtPx(this.map, x, y)) {
@@ -5777,7 +5823,7 @@ export class GameRoom extends Room<ArenaState> {
       c.beamDescriptor = beamDescriptorFor(
         weapon,
         this.state.tick,
-        input.held.seq,
+        input.held.fireStartSeq || input.held.seq,
         this.heldDamageMult(weapon, weapon.beam.scalingGrades, player) * classDamage,
         lootCooldownMult(player.weaponAffix),
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
@@ -6078,20 +6124,15 @@ export class GameRoom extends Room<ArenaState> {
         );
       }
     } else {
-      for (const poi of this.map.pois) {
-        for (const circle of poiCollisionCircles(poi)) {
-          length = this.rayCircleLength(
-            ox,
-            oy,
-            dx,
-            dy,
-            circle.x,
-            circle.y,
-            circle.radius + halfWidth,
-            length,
-          );
-        }
-      }
+      length = clipPoiRayLength(
+        this.map.poiCollisionIndex,
+        ox,
+        oy,
+        dx,
+        dy,
+        halfWidth,
+        length,
+      );
     }
     return Math.max(0, Math.min(authoredRange, length));
   }
@@ -6147,10 +6188,11 @@ export class GameRoom extends Room<ArenaState> {
       const length = this.clipBeamLength(sx, sy, angle, descriptor.range, descriptor.width / 2);
       this.beamSampleX[sample] = sx;
       this.beamSampleY[sample] = sy;
-      this.beamSampleAngle[sample] = angle;
       this.beamSampleLength[sample] = length;
       const ex = sx + Math.cos(angle) * length;
       const ey = sy + Math.sin(angle) * length;
+      this.beamSampleEndX[sample] = ex;
+      this.beamSampleEndY[sample] = ey;
       minX = Math.min(minX, sx, ex);
       minY = Math.min(minY, sy, ey);
       maxX = Math.max(maxX, sx, ex);
@@ -6171,11 +6213,13 @@ export class GameRoom extends Room<ArenaState> {
       const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
       for (let sample = 0; sample <= samples; sample++) {
         if (
-          bladeHitsCircle(
-            { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
-            this.beamSampleAngle[sample]!,
-            this.beamSampleLength[sample]!,
-            enemy,
+          bladeHitsCircleXY(
+            this.beamSampleX[sample]!,
+            this.beamSampleY[sample]!,
+            this.beamSampleEndX[sample]!,
+            this.beamSampleEndY[sample]!,
+            enemy.x,
+            enemy.y,
             radius,
             descriptor.width / 2,
           )
@@ -6199,11 +6243,13 @@ export class GameRoom extends Room<ArenaState> {
         if (wormHitCount >= 2) break;
         for (let sample = 0; sample <= samples; sample++) {
           if (
-            bladeHitsCircle(
-              { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
-              this.beamSampleAngle[sample]!,
-              this.beamSampleLength[sample]!,
-              { x: runtime.x[slot]!, y: runtime.y[slot]! },
+            bladeHitsCircleXY(
+              this.beamSampleX[sample]!,
+              this.beamSampleY[sample]!,
+              this.beamSampleEndX[sample]!,
+              this.beamSampleEndY[sample]!,
+              runtime.x[slot]!,
+              runtime.y[slot]!,
               runtime.segmentRadius(slot),
               descriptor.width / 2,
             )

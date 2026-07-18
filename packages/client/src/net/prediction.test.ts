@@ -613,3 +613,77 @@ describe("schema-23 slide input treaties", () => {
     expect(pred.momentumSpeed).toBe(0);
   });
 });
+
+// Server-latency wave — append-only transport timing proof. Predictor math above remains unchanged.
+const latencyPrediction = await import("./prediction.js");
+
+describe("input transport — immediate changes retain the 20Hz heartbeat", () => {
+  it("mints a movement change immediately, continues the heartbeat, and caps jitter extras", () => {
+    const predictor = new SelfPredictor(new MockServer().view());
+    const sendTimes: number[] = [];
+
+    expect(
+      predictor.shouldMintImmediateInput(0, 0, false, false, false, false, false, false, false),
+    ).toBe(false);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, false, false, false, false, false, false),
+    ).toBe(true);
+    const movement = predictor.mintCmd(1, 0, false);
+    predictor.tick(movement);
+    sendTimes.push(1);
+
+    // An edge send does not consume ArenaScene's cadence: the regular 50ms command follows.
+    predictor.noteInputHeartbeat(1, 0, false, false, false);
+    const heartbeat = predictor.mintCmd(1, 0, false);
+    predictor.tick(heartbeat);
+    sendTimes.push(50);
+    expect(sendTimes).toEqual([1, 50]);
+    expect([movement.seq, heartbeat.seq]).toEqual([1, 2]);
+
+    // A noisy held edge can spend only the three tokens beside the next heartbeat's fourth token.
+    let fireHeld = false;
+    let extras = 0;
+    for (let edge = 0; edge < latencyPrediction.IMMEDIATE_INPUT_SEND_CAP + 4; edge++) {
+      fireHeld = !fireHeld;
+      if (
+        predictor.shouldMintImmediateInput(
+          1,
+          0,
+          false,
+          false,
+          false,
+          false,
+          false,
+          fireHeld,
+          false,
+        )
+      )
+        extras++;
+    }
+    expect(extras).toBe(latencyPrediction.IMMEDIATE_INPUT_SEND_CAP);
+    expect(latencyPrediction.IMMEDIATE_INPUT_SEND_CAP).toBe(3);
+
+    // A heartbeat re-opens the allowance; one-shots and held transitions use it too.
+    predictor.noteInputHeartbeat(1, 0, false, false, fireHeld);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, true, false, false, false, false, fireHeld, false),
+    ).toBe(true);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, true, false, false, false, fireHeld, false),
+    ).toBe(true);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, true, false, false, false, fireHeld, true),
+    ).toBe(true);
+
+    predictor.noteInputHeartbeat(1, 0, false, false, fireHeld);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, false, true, false, false, fireHeld, false),
+    ).toBe(true);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, false, false, true, false, fireHeld, false),
+    ).toBe(true);
+    expect(
+      predictor.shouldMintImmediateInput(1, 0, false, false, false, false, true, fireHeld, false),
+    ).toBe(true);
+  });
+});
