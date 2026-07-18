@@ -6731,3 +6731,52 @@ describe("GameRoom — Drive beam equivalence and seam", () => {
     expect(combat.drive.valueF).toBeLessThan(BEAM_RESTART_DRIVE);
   });
 });
+
+describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
+  // The account blob lives in localStorage while settlement lives in room memory: kill the client
+  // mid-run and the next join arrives with the old expedition still open. The law (bank-systems
+  // §2.3, no reservation machinery) settles it as DEFEAT before the new carry — the stake is lost,
+  // the bank un-bricks, and the fresh carry commits at the revision the client actually built
+  // against (the abandonment settlement must not advance it).
+  it("settles an open expedition as defeat, then commits the new carry at the client's revision", () => {
+    const h = makeRoom({ belt: true });
+    const doomed = roomBankSingle(41, "rattler-sabre");
+    const kept = roomBankSingle(42);
+    const messages: Array<{ type: string; payload: unknown }> = [];
+    const client = {
+      sessionId: "bank-stale-expedition",
+      send: (type: string, payload: unknown) => messages.push({ type, payload }),
+    };
+    const account = enemyComboShared.createMetaAccountV4();
+    account.weaponBank.stash.push(kept);
+    account.weaponBank.expedition = {
+      runId: "run_dead-room",
+      commitRevision: account.revision,
+      status: "committed",
+      entries: [{ entry: doomed, stakeOrigin: "committed", location: "active", start: 0 }],
+    };
+    h.room.clients.push(client);
+    h.room.onJoin(client, {
+      metaAccount: account,
+      carry: {
+        requestId: "carry-after-abandon",
+        expectedRevision: account.revision,
+        placements: [{ entryId: kept.entryId, zone: "active", start: 0 }],
+        activeEntryId: kept.entryId,
+        requestedWorldTier: 0,
+      },
+    });
+    const joined = h.room.metaAccounts.get("bank-stale-expedition") as import("@dd/shared").MetaAccountV4;
+    // The stale stake is gone forever — never banked, never carried forward.
+    expect(joined.weaponBank.stash).toEqual([]);
+    expect(
+      joined.weaponBank.expedition?.entries.map((row) => row.entry.entryId),
+    ).toEqual([kept.entryId]);
+    expect(joined.weaponBank.expedition?.runId).not.toBe("run_dead-room");
+    // The player is in the room with the NEW carry materialized — the join was not rejected.
+    expect(h.state().players.get("bank-stale-expedition")).toBeTruthy();
+    // The honest ledger: the owner is told exactly what abandoning cost.
+    const receipt = messages.find((m) => m.type === "expeditionAbandonReceipt");
+    expect(receipt?.payload).toMatchObject({ ok: true, outcome: "defeat", lostEntries: 1 });
+  });
+});

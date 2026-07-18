@@ -98,9 +98,12 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
       if (holder.__ddWaveTimer) window.clearInterval(holder.__ddWaveTimer);
     });
 
-    // The window auto-resolves after 5s, so grab a card fast: prefer LUK (never the auto-pick class
-    // attribute, so a click landing is unambiguous), fall back to whatever card is last. Also verify
-    // the P0 contract this UI relies on: an interactive scene-level hit rect at depth 100013.
+    // The window auto-resolves after 5s, so grab a card fast. Since class dissolution the auto-pick
+    // is the WEAPON's best scaling grade (defaultFlexAttr), which can be any attribute — including
+    // LUK — and an in-flight echo-paid second level auto-resolving on the same attribute would make
+    // a +1 assertion ambiguous. The scene marks the auto card via `levelWinFocus`, so pick any card
+    // that is NOT the auto attribute (prefer LUK when it isn't). Also verify the P0 contract this UI
+    // relies on: an interactive scene-level hit rect at depth 100013.
     const pick: CardPick | null = await page
       .waitForFunction(
         (depth) => {
@@ -121,8 +124,12 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
           const hitRectAtDepth = (scene?.children?.list ?? []).some(
             (child) => child.depth === depth && child.input?.enabled === true,
           );
+          const focusIndex = (scene as unknown as { levelWinFocus?: number }).levelWinFocus ?? -1;
+          const autoId = choices[focusIndex]?.view.id;
           const chosen =
-            choices.find((choice) => choice.view.id === "luk") ?? choices[choices.length - 1];
+            choices.find((choice) => choice.view.id === "luk" && choice.view.id !== autoId) ??
+            [...choices].reverse().find((choice) => choice.view.id !== autoId) ??
+            choices[choices.length - 1];
           if (!chosen) return null;
           const id = chosen.view.id as AttrId;
           const baseline = (self as Record<AttrId, number | undefined>)[id];
@@ -163,15 +170,18 @@ test("level-up window: earned XP opens the flex window; clicking a card's scene-
             return (self as Record<string, unknown>)[attr] as number;
           }, pick.id),
         {
-          message: `clicking the ${pick.id.toUpperCase()} card should allocate the flex point`,
+          message: `clicking the ${pick.id.toUpperCase()} card should allocate the flex choice`,
           timeout: 10_000,
         },
       )
-      .toBe(pick.baseline + 1);
+      // The allocation economy is +2 to the CHOSEN attribute, then +1 ballast to the post-choice
+      // lowest (applyAllocationChoice's law). The clicked attr just rose by 2, so ballast lands on a
+      // different attribute in the flat dev spread — the chosen stat moves by exactly +2.
+      .toBe(pick.baseline + 2);
 
     // NOTE deliberately NOT asserted: a flexPending decrement. In-flight echoes can pay another level
-    // between the click and the re-read (+1 pending racing our −1), while the LUK increment above is
-    // unambiguous — the server's timeout auto-resolve only ever allocates the CLASS attribute (str for
-    // the drifter), so only our chooseAttribute click can have produced it.
+    // between the click and the re-read (+1 pending racing our −1), while the chosen-attr increment
+    // above is unambiguous — the picked card is never the weapon's defaultFlexAttr, so the server's
+    // timeout auto-resolve cannot have produced it.
   });
 });

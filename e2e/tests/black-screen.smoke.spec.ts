@@ -57,7 +57,10 @@ test("boots the real stack, launches a dimension, connects, and enters training"
       )
       .toBe(true);
 
-    // Exercise MenuScene's real number-key launch handler, including its fade and lazy ArenaScene import.
+    // Exercise MenuScene's real launch grammar (§63 metagame tabs): the menu opens on the Wardrobe
+    // tab where digits apply gear presets; Enter advances to the Run tab, whose number keys launch a
+    // dimension — including its fade and lazy ArenaScene import.
+    await page.keyboard.press("Enter");
     await page.keyboard.press("1");
 
     await expect
@@ -84,6 +87,12 @@ test("boots the real stack, launches a dimension, connects, and enters training"
         { message: "ArenaScene room state should contain the connected browser session" },
       )
       .toBe(true);
+
+    // A fresh profile auto-opens the first-run verb legend as a BLOCKING modal on arena entry (§62
+    // onboarding) — dismiss it exactly as a player would (H), then wait out the input-release latch
+    // before the next keystroke can land.
+    await page.keyboard.press("h");
+    await page.waitForTimeout(250);
 
     // Hold T across multiple frames so Phaser observes the physical key edge in its normal update loop.
     await page.keyboard.down("t");

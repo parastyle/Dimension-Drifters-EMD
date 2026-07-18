@@ -53,6 +53,11 @@ export class WeaponResourceState extends Schema {
   @type("uint32") beamLockEndTick = 0;
 }
 
+/** Read-only stand-in returned by the decode-window accessor below while the nested tail row is
+ *  still undecoded on a fresh client join. Holds initializer values (a full bar); never mutated —
+ *  the server always constructs real rows, so no write path can reach this instance. */
+const DECODE_WINDOW_RESOURCE = new WeaponResourceState();
+
 /** Player tail wire row. Nested because PlayerState is at Colyseus's 64-field ceiling. */
 export class DualWieldState extends Schema {
   @type("uint8") offhandSlot = 255;
@@ -232,23 +237,28 @@ export class PlayerState extends Schema {
   @type("uint8") petLevelBand = 0;
   // Dual-wield schema v27. A pair is a link between two occupied arsenal rows, never a fourth row.
   @type(DualWieldState) dualWield = new DualWieldState();
-  /** Direct accessor keeps the resource contract independent of the packed tail envelope. */
-  get weaponResource(): WeaponResourceState { return this.dualWield.weaponResource; }
+  /** Direct accessor keeps the resource contract independent of the packed tail envelope.
+   *  REFLECTION LAW (client): the room joins WITHOUT a root-schema constructor, so decoded client
+   *  rows carry only wire fields — these compatibility getters exist ONLY on server-constructed
+   *  instances. Client code must never call them on room state; it reads `player.dualWield?.…`
+   *  directly (see ArenaScene.addBlob / loadout-entry-view). The `?.`/`??` guards below are
+   *  server-side hygiene so a partially-built row can never throw mid-tick. */
+  get weaponResource(): WeaponResourceState { return this.dualWield?.weaponResource ?? DECODE_WINDOW_RESOURCE; }
   /** Schema v28 accessors append two frozen wardrobe strings to the existing final wire envelope. */
-  get gearUpper(): string { return this.dualWield.gearUpper; }
+  get gearUpper(): string { return this.dualWield?.gearUpper ?? ""; }
   set gearUpper(value: string) { this.dualWield.gearUpper = value; }
-  get gearLower(): string { return this.dualWield.gearLower; }
+  get gearLower(): string { return this.dualWield?.gearLower ?? ""; }
   set gearLower(value: string) { this.dualWield.gearLower = value; }
   /** Schema v31 public tower count, packed beside the cosmetic gear strings. */
-  get prestige(): number { return this.dualWield.prestige; }
+  get prestige(): number { return this.dualWield?.prestige ?? 0; }
   set prestige(value: number) { this.dualWield.prestige = value; }
-  get offhandSlot(): number { return this.dualWield.offhandSlot; }
+  get offhandSlot(): number { return this.dualWield?.offhandSlot ?? 255; }
   set offhandSlot(value: number) { this.dualWield.offhandSlot = value; }
-  get pairBaseSeq(): number { return this.dualWield.pairBaseSeq; }
+  get pairBaseSeq(): number { return this.dualWield?.pairBaseSeq ?? 0; }
   set pairBaseSeq(value: number) { this.dualWield.pairBaseSeq = value; }
-  get offCharges(): number { return this.dualWield.offCharges; }
+  get offCharges(): number { return this.dualWield?.offCharges ?? 0; }
   set offCharges(value: number) { this.dualWield.offCharges = value; }
-  get offMaxCharges(): number { return this.dualWield.offMaxCharges; }
+  get offMaxCharges(): number { return this.dualWield?.offMaxCharges ?? 0; }
   set offMaxCharges(value: number) { this.dualWield.offMaxCharges = value; }
   /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
   get ultArchetype(): number { return this.ultimate.archetype; }

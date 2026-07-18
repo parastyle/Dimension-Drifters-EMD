@@ -3996,6 +3996,16 @@ export class GameRoom extends Room<ArenaState> {
       activeEntryId: "",
       requestedWorldTier: requestedTier,
     };
+    // Bank §2.3 — disconnect is never extraction, and there is no reservation machinery yet: an
+    // account arriving at a NEW join with an OPEN expedition abandoned the old one (client killed,
+    // Wi-Fi lost — the settlement only ever lived in that room's memory while the blob lives in
+    // localStorage). Settle it as the defeat outcome BEFORE this carry: the stake is lost, the bank
+    // un-bricks, and no kill-the-client replay can turn a carried instance into a safe copy plus a
+    // live copy. Revision must NOT advance here — the client built this join's carry against the
+    // account exactly as it last saw it, so a bump would falsely stale-reject the fresh carry.
+    const abandoned = account.weaponBank.expedition
+      ? settleWeaponExpedition(account, "defeat", false)
+      : undefined;
     const committed = commitWeaponCarry(
       account,
       carry,
@@ -4004,6 +4014,10 @@ export class GameRoom extends Room<ArenaState> {
       this.worldTier,
     );
     if (!committed.ok) throw new Error(`weapon carry rejected: ${committed.error}`);
+    if (abandoned?.ok) {
+      // Honest ledger: the owner learns what the abandoned run cost the moment they are back.
+      this.sendOwnerMessage(client.sessionId, "expeditionAbandonReceipt", abandoned);
+    }
     this.worldTier = Math.max(this.worldTier, committed.runTier);
     this.materializeWeaponRun(player, account);
     this.createWeaponRun(client.sessionId, account);

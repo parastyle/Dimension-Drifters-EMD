@@ -3876,7 +3876,13 @@ export class ArenaScene extends Phaser.Scene {
         ? player.character
         : PLAYER_SPRITE;
     const manifest = GEAR_PARTS_MANIFEST;
-    const gearSynced = !!manifest && player.gearUpper.length > 0 && player.gearLower.length > 0;
+    // REFLECTION LAW: the room joins without a root-schema constructor, so decoded rows carry ONLY
+    // wire fields — PlayerState's server-side compatibility getters (gearUpper/prestige/…) do not
+    // exist here. Client code must read the nested dualWield row (see loadout-entry-view's idiom);
+    // an unguarded `player.gearUpper.length` black-screened every e2e join.
+    const gearUpper = player.dualWield?.gearUpper ?? "";
+    const gearLower = player.dualWield?.gearLower ?? "";
+    const gearSynced = !!manifest && gearUpper.length > 0 && gearLower.length > 0;
     const rig = new SpriteRig(
       this,
       player.x,
@@ -3888,10 +3894,10 @@ export class ArenaScene extends Phaser.Scene {
     );
     if (gearSynced && manifest)
       rig.equipSyncedGear(
-        player.gearUpper,
-        player.gearLower,
+        gearUpper,
+        gearLower,
         manifest,
-        isSelf ? this.petMetaAccount.prestige : player.prestige,
+        isSelf ? this.petMetaAccount.prestige : (player.dualWield?.prestige ?? 0),
       );
     else rig.setRigScale(characterScale(charId)); // W1 compatibility: no cosmetics means legacy kit.
     this.blobs.set(id, rig);
@@ -7835,14 +7841,17 @@ export class ArenaScene extends Phaser.Scene {
       if (!this.blobs.has(id)) this.addBlob(player, id);
       else {
         const rig = this.blobs.get(id);
+        // Reflection law (see addBlob): only the nested dualWield row exists on decoded client rows.
         const gearSynced =
           !!rig &&
           !!GEAR_PARTS_MANIFEST &&
           rig.equipSyncedGear(
-            player.gearUpper,
-            player.gearLower,
+            player.dualWield?.gearUpper ?? "",
+            player.dualWield?.gearLower ?? "",
             GEAR_PARTS_MANIFEST,
-            id === this.room?.sessionId ? this.petMetaAccount.prestige : player.prestige,
+            id === this.room?.sessionId
+              ? this.petMetaAccount.prestige
+              : (player.dualWield?.prestige ?? 0),
           );
         // The 40-kit swap remains only for compatibility rooms whose gear tail is genuinely absent.
         if (!gearSynced && this.charOf.get(id) !== player.character) {
@@ -8978,7 +8987,7 @@ export class ArenaScene extends Phaser.Scene {
     // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
     // unaffordable (the server's spend seam rejects it too). Replaces the retired `charges` gate.
     if (weapon?.thrown || weapon?.gun) {
-      const drive = Math.floor(Number(self.weaponResource?.valueQ) || 0) / 100;
+      const drive = Math.floor(Number(self.dualWield?.weaponResource?.valueQ) || 0) / 100;
       if (drive + 1e-9 < driveCostView(weapon.id).cost) return;
     }
     // §10 v0.104 de-clunk: fold in the held weapon's affix cooldown multiplier — the SERVER gates fire on
@@ -10682,18 +10691,21 @@ export class ArenaScene extends Phaser.Scene {
     g.clear();
     label.setVisible(false);
     if (!self || !weapon) return;
+    // Reflection law (see addBlob): decoded rows expose only wire fields — read the nested tail row.
+    const resource = self.dualWield?.weaponResource;
+    if (!resource) return;
     const tick = this.room?.state.tick ?? 0;
     const beamRow = this.room?.state.beams.get(self.id);
     const view = driveHudView({
-      valueQ: self.weaponResource.valueQ,
-      regenMode: self.weaponResource.regenMode,
-      beamLockEndTick: self.weaponResource.beamLockEndTick,
+      valueQ: resource.valueQ,
+      regenMode: resource.regenMode,
+      beamLockEndTick: resource.beamLockEndTick,
       tick,
       weaponId: weapon.id,
       beamRequireRelease:
         !!weapon.beam &&
         (beamRow?.phase === BeamPhase.Overheated ||
-          (beamRow?.phase === BeamPhase.Cooling && self.weaponResource.valueQ <= 0)),
+          (beamRow?.phase === BeamPhase.Cooling && resource.valueQ <= 0)),
     });
     let width = 240 * scale;
     let x = barX;
@@ -13371,7 +13383,12 @@ export class ArenaScene extends Phaser.Scene {
     state.players.forEach((player, id) => {
       gearRows.push([
         id,
-        { gearUpper: player.gearUpper, gearLower: player.gearLower, prestige: player.prestige },
+        {
+          // Reflection law (see addBlob): only the nested dualWield row exists on decoded rows.
+          gearUpper: player.dualWield?.gearUpper ?? "",
+          gearLower: player.dualWield?.gearLower ?? "",
+          prestige: player.dualWield?.prestige ?? 0,
+        },
       ]);
     });
     syncRemoteGearLoadouts(this.syncedGearLoadouts, gearRows);

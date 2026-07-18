@@ -51,7 +51,8 @@ export function loadoutEntryView(self: LoadoutPlayer): LoadoutEntryView {
     offSlot !== leadSlot &&
     !!storedOff?.weapon &&
     storedOff.weapon !== leadId;
-  const delta = (self.attackSeq - self.pairBaseSeq) >>> 0;
+  // Reflection law: decoded rows carry only wire fields — pairBaseSeq lives on the nested row.
+  const delta = (self.attackSeq - (self.dualWield?.pairBaseSeq ?? 0)) >>> 0;
 
   return {
     leadId,
