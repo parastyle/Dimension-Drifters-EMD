@@ -355,11 +355,11 @@
       },
       "alphaBounds": {
         "left": 269,
-        "top": 181,
+        "top": 210,
         "width": 486,
-        "height": 663,
+        "height": 605,
         "right": 754,
-        "bottom": 843
+        "bottom": 814
       },
       "image": {
         "width": 1024,
@@ -367,10 +367,10 @@
         "channels": 4,
         "hasAlpha": true,
         "format": "png",
-        "sha256": "176366759bba357d878a48cb148c671cab984b5887f95ac9cb408e9fd7a5016b",
-        "opaquePixelCount": 164997,
-        "visiblePixelCount": 168243,
-        "transparentPixelCount": 880333
+        "sha256": "c7274ed4fd4734fd18204a230eb262e0d1894fde2751687a213af25667d0b076",
+        "opaquePixelCount": 133717,
+        "visiblePixelCount": 136513,
+        "transparentPixelCount": 912063
       }
     },
     "parts": [
@@ -402,11 +402,11 @@
         "mountScale": 1,
         "plane": 0,
         "alphaBounds": {
-          "left": 353,
+          "left": 331,
           "top": 254,
-          "width": 319,
+          "width": 362,
           "height": 516,
-          "right": 671,
+          "right": 692,
           "bottom": 769
         },
         "image": {
@@ -415,10 +415,10 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "b3fcab28cbe327b52f8f267d3f042793bd8d70bdf3d0cd82aff6931f4a01715d",
-          "opaquePixelCount": 130555,
-          "visiblePixelCount": 132109,
-          "transparentPixelCount": 916467
+          "sha256": "951a659c63e5a3a932055be90f0208457ea29c3b32758f7826f186d6307302ac",
+          "opaquePixelCount": 152695,
+          "visiblePixelCount": 153979,
+          "transparentPixelCount": 894597
         }
       },
       {
@@ -429,11 +429,11 @@
         "receiver": "head",
         "pivotSource": {
           "x": 512,
-          "y": 330
+          "y": 300
         },
         "pivotTrimmed": {
           "x": 512,
-          "y": 330
+          "y": 300
         },
         "receiverAnchor": {
           "id": "head",
@@ -456,11 +456,11 @@
         "plane": 0,
         "alphaBounds": {
           "left": 412,
-          "top": 164,
-          "width": 201,
-          "height": 256,
-          "right": 612,
-          "bottom": 419
+          "top": 171,
+          "width": 200,
+          "height": 236,
+          "right": 611,
+          "bottom": 406
         },
         "image": {
           "width": 1024,
@@ -468,10 +468,10 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "ad40ecc3b318e9e8af42926f54b0c31f57d3f0ed5286f74e51b76361a6fe1a02",
-          "opaquePixelCount": 40327,
-          "visiblePixelCount": 40996,
-          "transparentPixelCount": 1007580
+          "sha256": "ebfb0845299bacfd9e80fbf5a63148b05036e2fb5026c653276457ee2f8c81ad",
+          "opaquePixelCount": 37296,
+          "visiblePixelCount": 37918,
+          "transparentPixelCount": 1010658
         }
       },
       {
@@ -508,11 +508,11 @@
         "mountScale": 1,
         "plane": -20,
         "alphaBounds": {
-          "left": 340,
+          "left": 330,
           "top": 464,
-          "width": 89,
+          "width": 108,
           "height": 116,
-          "right": 428,
+          "right": 437,
           "bottom": 579
         },
         "image": {
@@ -521,10 +521,10 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "d57f1516420ea69e0dda5d16004841b34b43e5398f343780e5edd397f92939fc",
-          "opaquePixelCount": 7907,
-          "visiblePixelCount": 8177,
-          "transparentPixelCount": 1040399
+          "sha256": "9cfa2915ddd05d11845e94fed36618f9104a6088cf348ad637b3923fb3fca6f9",
+          "opaquePixelCount": 9646,
+          "visiblePixelCount": 9927,
+          "transparentPixelCount": 1038649
         }
       },
       {
@@ -561,11 +561,11 @@
         "mountScale": 1,
         "plane": 50,
         "alphaBounds": {
-          "left": 598,
+          "left": 592,
           "top": 464,
-          "width": 84,
+          "width": 97,
           "height": 116,
-          "right": 681,
+          "right": 688,
           "bottom": 579
         },
         "image": {
@@ -574,10 +574,10 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "8104b73badadd7db897d4063a14b5eae1cb34ab3951f0d51a1a9a239375d8284",
-          "opaquePixelCount": 7535,
-          "visiblePixelCount": 7803,
-          "transparentPixelCount": 1040773
+          "sha256": "af7114bef5b8117d02f2da91a925482a41c2eaf177c0acf642fc087345f25c84",
+          "opaquePixelCount": 8844,
+          "visiblePixelCount": 9117,
+          "transparentPixelCount": 1039459
         }
       },
       {
@@ -614,11 +614,11 @@
         "mountScale": 1,
         "plane": -40,
         "alphaBounds": {
-          "left": 393,
+          "left": 389,
           "top": 676,
-          "width": 110,
+          "width": 119,
           "height": 121,
-          "right": 502,
+          "right": 507,
           "bottom": 796
         },
         "image": {
@@ -627,10 +627,10 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "5611cc7de38cc14c3ddd1ac5c5d3fa293a59b20b46ceb6ffdf830175d020382d",
-          "opaquePixelCount": 9682,
-          "visiblePixelCount": 9994,
-          "transparentPixelCount": 1038582
+          "sha256": "9aea61065ced460dee515806a302fea4864e9fcf19c648b58e441e0f65d6db47",
+          "opaquePixelCount": 11220,
+          "visiblePixelCount": 11533,
+          "transparentPixelCount": 1037043
         }
       },
       {
@@ -667,11 +667,11 @@
         "mountScale": 1,
         "plane": -40,
         "alphaBounds": {
-          "left": 511,
+          "left": 503,
           "top": 676,
-          "width": 131,
+          "width": 146,
           "height": 121,
-          "right": 641,
+          "right": 648,
           "bottom": 796
         },
         "image": {
@@ -680,16 +680,16 @@
           "channels": 4,
           "hasAlpha": true,
           "format": "png",
-          "sha256": "c1a1355b80e82aae2c1a4694a32e525587dd163e7e00a2bc2495d460759a878a",
-          "opaquePixelCount": 11274,
-          "visiblePixelCount": 11628,
-          "transparentPixelCount": 1036948
+          "sha256": "5caf3d5640182bca14a21ee2c14cd9d303276b8531cf887cfb9573cff0796c4d",
+          "opaquePixelCount": 13582,
+          "visiblePixelCount": 13934,
+          "transparentPixelCount": 1034642
         }
       }
     ],
     "socketReference": {
       "installedFile": "packages/client/public/sprites/boilerplate/socket-reference.png",
-      "sha256": "0c9c1d7b208317af540a4b9011914228b0d24faaa60075722e0a04b5023124c9"
+      "sha256": "0b0f9c7eb36b5a518c39c53f3181339c23ca7db58f5ec7bdfaabe71aae7afc74"
     },
     "missing": []
   },

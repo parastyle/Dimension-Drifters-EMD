@@ -151,6 +151,19 @@ export interface GearLoadoutAssembly {
   towerOverflow: number;
 }
 
+/** Plumbed replacement-head seam. Alternative heads remain texture-only until their gear class ships. */
+export interface AlternativeHeadTextureSelection {
+  readonly gearId: string;
+  readonly textureKey: string;
+  readonly frame?: string;
+}
+
+export interface ResolvedLoadoutHeadTexture {
+  readonly gearId: string | null;
+  readonly textureKey: string;
+  readonly frame?: string;
+}
+
 export interface HatSpringState {
   angle: number;
   velocity: number;
@@ -409,6 +422,31 @@ export function boilerplateTextureKey(partId: string): string {
 
 export function boilerplateTextureUrl(texture: string): string {
   return `sprites/boilerplate/${texture}`;
+}
+
+export const DEFAULT_LOADOUT_HEAD_TEXTURE: Readonly<ResolvedLoadoutHeadTexture> = Object.freeze({
+  gearId: null,
+  textureKey: boilerplateTextureKey("head"),
+});
+
+/**
+ * One texture-only loadout seam for future alternative-head gear. No catalog knowledge lives here: until a
+ * caller supplies both a stable gear id and a ready texture key, the six-part boilerplate head remains truth.
+ */
+export function resolveLoadoutHeadTexture(
+  selection?: Readonly<AlternativeHeadTextureSelection> | null,
+): Readonly<ResolvedLoadoutHeadTexture> {
+  if (
+    !selection ||
+    selection.gearId.trim().length === 0 ||
+    selection.textureKey.trim().length === 0
+  )
+    return DEFAULT_LOADOUT_HEAD_TEXTURE;
+  return {
+    gearId: selection.gearId,
+    textureKey: selection.textureKey,
+    ...(selection.frame === undefined ? {} : { frame: selection.frame }),
+  };
 }
 
 export function gearTextureKey(item: Pick<GearManifestItem, "slot" | "id">): string {

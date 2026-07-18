@@ -97,11 +97,13 @@ import {
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
 import {
+  type AlternativeHeadTextureSelection,
   assembleBoilerplate,
   assembleGearLoadout,
   type BoilerplateAssembly,
   type BoilerplateAssemblyPart,
   boilerplateTextureKey,
+  DEFAULT_LOADOUT_HEAD_TEXTURE,
   ensureBoilerplateTextures,
   ensureGearAssemblyTextures,
   ensureGearPartFrame,
@@ -112,6 +114,8 @@ import {
   type HatChainInput,
   type HatSpringState,
   MAX_HAT_SLOTS,
+  type ResolvedLoadoutHeadTexture,
+  resolveLoadoutHeadTexture,
   stepGearAngularSpring,
   stepHatSpringChain,
 } from "../sprites/gear-parts.js";
@@ -827,6 +831,178 @@ interface JigglePartState {
   springReady: boolean;
 }
 
+export interface FloatingHeadSpringState {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  ready: boolean;
+}
+
+export interface FloatingHeadSpringInput {
+  targetX: number;
+  targetY: number;
+  authoredOffsetX: number;
+  authoredOffsetY: number;
+  impulseX: number;
+  impulseY: number;
+  elapsedSeconds: number;
+  reducedMotion: boolean;
+  reset: boolean;
+}
+
+export interface FloatingHeadSpringTuning {
+  angularFrequency: number;
+  dampingRatio: number;
+  maxOffsetX: number;
+  maxOffsetY: number;
+  maxVelocity: number;
+  reducedAngularFrequency: number;
+  reducedMaxOffset: number;
+  walkBobPx: number;
+  dashLagPx: number;
+  slideLagPx: number;
+  airHangPx: number;
+  landingDipPx: number;
+  bigAttackLeadPx: number;
+}
+
+/** Slightly slower and more damped than the 10rad/s, 0.32 hand channel: compact mass, not a loose limb. */
+export const FLOATING_HEAD_SPRING_TUNING: Readonly<FloatingHeadSpringTuning> = Object.freeze({
+  angularFrequency: 8.4,
+  dampingRatio: 0.48,
+  maxOffsetX: 4,
+  maxOffsetY: 4,
+  maxVelocity: 72,
+  reducedAngularFrequency: 30,
+  reducedMaxOffset: 0.35,
+  walkBobPx: 1.15,
+  dashLagPx: 2.2,
+  slideLagPx: 2.6,
+  airHangPx: 1.35,
+  landingDipPx: 1.55,
+  bigAttackLeadPx: 2.4,
+});
+
+/** One counter-phase step beat. The authored body socket remains the zero/rest geometry. */
+export function sampleFloatingHeadWalkBob(
+  stridePhase: number,
+  gait: number,
+  reducedMotion: boolean,
+  tuning: Readonly<FloatingHeadSpringTuning> = FLOATING_HEAD_SPRING_TUNING,
+): number {
+  if (reducedMotion) return 0;
+  return -Math.sin(stridePhase * 2) * clamp01(gait) * tuning.walkBobPx;
+}
+
+function clampFloatingHeadOffset(
+  state: FloatingHeadSpringState,
+  targetX: number,
+  targetY: number,
+  maxX: number,
+  maxY: number,
+): void {
+  const dx = state.x - targetX;
+  const dy = state.y - targetY;
+  const ellipse = (dx * dx) / (maxX * maxX) + (dy * dy) / (maxY * maxY);
+  if (ellipse <= 1) return;
+  const scale = 1 / Math.sqrt(ellipse);
+  state.x = targetX + dx * scale;
+  state.y = targetY + dy * scale;
+  const nx = dx / (maxX * maxX);
+  const ny = dy / (maxY * maxY);
+  const outward = state.vx * nx + state.vy * ny;
+  const lengthSq = nx * nx + ny * ny;
+  if (outward > 0 && lengthSq > 1e-8) {
+    state.vx -= (outward / lengthSq) * nx;
+    state.vy -= (outward / lengthSq) * ny;
+  }
+}
+
+/** Exact bounded follower around the final animated body socket; stable through 50ms render gaps. */
+export function stepFloatingHeadSpring(
+  state: FloatingHeadSpringState,
+  input: Readonly<FloatingHeadSpringInput>,
+  tuning: Readonly<FloatingHeadSpringTuning> = FLOATING_HEAD_SPRING_TUNING,
+): void {
+  const reduced = input.reducedMotion;
+  const desiredX = input.targetX + (reduced ? 0 : input.authoredOffsetX);
+  const desiredY = input.targetY + (reduced ? 0 : input.authoredOffsetY);
+  const maxX = reduced ? tuning.reducedMaxOffset : tuning.maxOffsetX;
+  const maxY = reduced ? tuning.reducedMaxOffset : tuning.maxOffsetY;
+  if (!state.ready || input.reset) {
+    state.x = desiredX;
+    state.y = desiredY;
+    state.vx = 0;
+    state.vy = 0;
+    state.ready = true;
+    clampFloatingHeadOffset(state, input.targetX, input.targetY, maxX, maxY);
+    return;
+  }
+
+  const dt = Math.max(0, Math.min(0.05, input.elapsedSeconds));
+  if (dt <= 0) return;
+  if (!reduced) {
+    state.vx += input.impulseX;
+    state.vy += input.impulseY;
+  }
+  const w = reduced ? tuning.reducedAngularFrequency : tuning.angularFrequency;
+  const z = reduced ? 1 : tuning.dampingRatio;
+  const rx = state.x - desiredX;
+  const ry = state.y - desiredY;
+  let a00: number;
+  let a01: number;
+  let a10: number;
+  let a11: number;
+  if (Math.abs(z - 1) < 1e-4) {
+    const decay = Math.exp(-w * dt);
+    a00 = decay * (1 + w * dt);
+    a01 = decay * dt;
+    a10 = decay * (-w * w * dt);
+    a11 = decay * (1 - w * dt);
+  } else if (z < 1) {
+    const damped = w * Math.sqrt(1 - z * z);
+    const decay = Math.exp(-z * w * dt);
+    const cosine = Math.cos(damped * dt);
+    const sine = Math.sin(damped * dt);
+    const ratio = (z * w) / damped;
+    a00 = decay * (cosine + ratio * sine);
+    a01 = decay * (sine / damped);
+    a10 = decay * ((-(w * w) * sine) / damped);
+    a11 = decay * (cosine - ratio * sine);
+  } else {
+    const damped = w * Math.sqrt(z * z - 1);
+    const decay = Math.exp(-z * w * dt);
+    const cosine = Math.cosh(damped * dt);
+    const sine = Math.sinh(damped * dt);
+    const ratio = (z * w) / damped;
+    a00 = decay * (cosine + ratio * sine);
+    a01 = decay * (sine / damped);
+    a10 = decay * ((-(w * w) * sine) / damped);
+    a11 = decay * (cosine - ratio * sine);
+  }
+  state.x = desiredX + a00 * rx + a01 * state.vx;
+  state.y = desiredY + a00 * ry + a01 * state.vy;
+  const nextVx = a10 * rx + a11 * state.vx;
+  const nextVy = a10 * ry + a11 * state.vy;
+  state.vx = nextVx;
+  state.vy = nextVy;
+
+  clampFloatingHeadOffset(state, input.targetX, input.targetY, maxX, maxY);
+  const velocity = Math.hypot(state.vx, state.vy);
+  if (velocity > tuning.maxVelocity) {
+    const scale = tuning.maxVelocity / velocity;
+    state.vx *= scale;
+    state.vy *= scale;
+  }
+  if (!Number.isFinite(state.x + state.y + state.vx + state.vy)) {
+    state.x = input.targetX;
+    state.y = input.targetY;
+    state.vx = 0;
+    state.vy = 0;
+  }
+}
+
 interface TomePageQuad {
   readonly quad: Phaser.GameObjects.Rectangle;
   startMs: number;
@@ -1185,12 +1361,33 @@ export class SpriteRig {
   private readonly hands: RigHand[] = [];
   private readonly feet: RigFoot[] = [];
   private readonly parts: Phaser.GameObjects.Image[] = [];
-  /** The blank kit keeps its head detached so body squash/turns remain the one authored parent transform. */
+  /** The blank kit head owns a bounded follower around the manifest socket; no neck/overlap geometry exists. */
   private boilerplateHead?: Phaser.GameObjects.Image;
   private boilerplateManifest?: GearPartsManifest;
   private boilerplateAssembly?: BoilerplateAssembly;
   private boilerplateBodyAssembly?: BoilerplateAssemblyPart;
   private boilerplateHeadAssembly?: BoilerplateAssemblyPart;
+  private readonly floatingHeadSpring: FloatingHeadSpringState = {
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    ready: false,
+  };
+  private readonly floatingHeadSpringInput: FloatingHeadSpringInput = {
+    targetX: 0,
+    targetY: 0,
+    authoredOffsetX: 0,
+    authoredOffsetY: 0,
+    impulseX: 0,
+    impulseY: 0,
+    elapsedSeconds: 0,
+    reducedMotion: false,
+    reset: true,
+  };
+  private readonly floatingHeadAttackLead = { x: 0, y: 0 };
+  private floatingHeadLodSleeping = true;
+  private loadoutHeadTexture: Readonly<ResolvedLoadoutHeadTexture> = DEFAULT_LOADOUT_HEAD_TEXTURE;
   private boilerplateReady = false;
   private gearAssembly?: GearLoadoutAssembly;
   private gearArtComplete = false;
@@ -1679,6 +1876,17 @@ export class SpriteRig {
     this.installBoilerplateIfReady();
   }
 
+  /** Texture-only helmet seam: unresolved future head art safely leaves the boilerplate head installed. */
+  private applyLoadoutHeadTexture(): void {
+    const head = this.boilerplateHead;
+    if (!head) return;
+    const requested = this.loadoutHeadTexture;
+    const selected = this.scene.textures.exists(requested.textureKey)
+      ? requested
+      : DEFAULT_LOADOUT_HEAD_TEXTURE;
+    head.setTexture(selected.textureKey, selected.frame);
+  }
+
   /** A compatibility scaffold may omit a limb; promote the authored boilerplate part into the normal
    * hand/foot arrays so every pose and jiggle writer sees the same complete five-node base skeleton. */
   private createBoilerplateLimb(part: BoilerplateAssemblyPart): RigHand {
@@ -1728,12 +1936,12 @@ export class SpriteRig {
       .setScale(body.scale)
       .setRotation(body.rotation);
     this.boilerplateHead
-      .setTexture(boilerplateTextureKey("head"))
       .setOrigin(head.originX, head.originY)
       .setPosition(head.x, head.y)
       .setScale(head.scale)
       .setRotation(head.rotation)
       .setVisible(true);
+    this.applyLoadoutHeadTexture();
 
     const boilerplateNodes = new Set<Phaser.GameObjects.Image>([this.body]);
     for (const part of assembly.parts) {
@@ -1831,10 +2039,14 @@ export class SpriteRig {
     manifest: GearPartsManifest,
     prestige = 0,
     towerComposition: readonly GearId[] = [],
+    alternativeHead?: Readonly<AlternativeHeadTextureSelection> | null,
   ): void {
-    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}`;
+    const nextHeadTexture = resolveLoadoutHeadTexture(alternativeHead);
+    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}|head:${nextHeadTexture.gearId ?? "boilerplate"}:${nextHeadTexture.textureKey}:${nextHeadTexture.frame ?? ""}`;
     if (key === this.gearLoadoutKey && this.boilerplateManifest === manifest) return;
+    this.loadoutHeadTexture = nextHeadTexture;
     this.requestBoilerplate(manifest);
+    if (this.boilerplateReady) this.applyLoadoutHeadTexture();
     this.gearLoadoutKey = key;
     const next = assembleGearLoadout(manifest, loadout, prestige, towerComposition);
     this.gearAssembly = next;
@@ -2073,6 +2285,12 @@ export class SpriteRig {
     this.jiggleSignalX = 0;
     this.jiggleSignalY = 0;
     this.jiggleRootReady = false;
+    this.floatingHeadSpring.x = 0;
+    this.floatingHeadSpring.y = 0;
+    this.floatingHeadSpring.vx = 0;
+    this.floatingHeadSpring.vy = 0;
+    this.floatingHeadSpring.ready = false;
+    this.floatingHeadLodSleeping = true;
     for (const h of this.hands) {
       h.jx = 0;
       h.jy = 0;
@@ -5838,23 +6056,135 @@ export class SpriteRig {
     }
   }
 
-  private syncBoilerplateHeadPose(): void {
+  private sampleFloatingHeadAttackLead(
+    sceneNow: number,
+    anim: RigAnim,
+    reducedMotion: boolean,
+  ): void {
+    const out = this.floatingHeadAttackLead;
+    out.x = 0;
+    out.y = 0;
+    const swing = this.swing;
+    if (reducedMotion || !swing) return;
+    const elapsed = (sceneNow - this.swingStart) / 1000;
+    const crest = Math.max(0.04, swing.activeStartSeconds);
+    const release = Math.max(crest + 0.04, Math.min(swing.impactSeconds, swing.poseSeconds));
+    if (elapsed < 0 || elapsed >= release) return;
+    const def = this.swingWeaponDef ?? this.weaponDef;
+    const majorStyle = swing.style === "chop" || swing.style === "orbit" || swing.style === "spin";
+    const combo = swing.comboStep !== undefined;
+    if (!majorStyle && !def?.twoHanded && !combo) return;
+    const anticipation =
+      elapsed <= crest
+        ? smoothstep01(elapsed / crest)
+        : 1 - smoothstep01((elapsed - crest) / (release - crest));
+    const worldAim = Number.isNaN(this.swingAimWorld)
+      ? anim.isSelf
+        ? Math.atan2(anim.aimY, anim.aimX)
+        : anim.aimDir
+      : this.swingAimWorld;
+    const localAim = Math.atan2(Math.sin(worldAim), Math.cos(worldAim) * this.facing);
+    const distance =
+      FLOATING_HEAD_SPRING_TUNING.bigAttackLeadPx * (combo && !majorStyle ? 0.72 : 1);
+    out.x = Math.cos(localAim) * distance * anticipation;
+    out.y = Math.sin(localAim) * distance * anticipation * 0.72;
+  }
+
+  private syncBoilerplateHeadPose(
+    elapsedSeconds: number,
+    outsidePaperView: boolean,
+    rebase: boolean,
+    reducedMotion: boolean,
+    stridePhase: number,
+    gait: number,
+    localMoveX: number,
+    moveY: number,
+    localSpringSignalX: number,
+    springSignalY: number,
+    landed: boolean,
+  ): void {
     const head = this.boilerplateHead;
     const source = this.boilerplateHeadAssembly;
     if (!head || !source || !this.boilerplateReady) return;
+    if (outsidePaperView) {
+      this.floatingHeadLodSleeping = true;
+      return;
+    }
     const assemblyScale = this.boilerplateAssembly?.scale ?? 1;
+    // The identity master owns the complete neckless rest geometry. Alpha bounds and silhouette overlap never
+    // enter placement, so the current texture and the incoming closed-oval texture share this exact socket.
     const localX = source.x / assemblyScale;
     const localY = source.y / assemblyScale;
     const dx = localX * this.body.scaleX;
     const dy = localY * this.body.scaleY;
     const cosine = Math.cos(this.body.rotation);
     const sine = Math.sin(this.body.rotation);
+    const targetX = this.body.x + cosine * dx - sine * dy;
+    const targetY = this.body.y + sine * dx + cosine * dy;
+    const movementLength = Math.hypot(localMoveX, moveY);
+    const stanceLag =
+      this.moveStance === STANCE_SLIDE
+        ? FLOATING_HEAD_SPRING_TUNING.slideLagPx
+        : this.moveStance === STANCE_DASH
+          ? FLOATING_HEAD_SPRING_TUNING.dashLagPx
+          : 0;
+    const directionX = movementLength > 0.05 ? localMoveX / movementLength : 1;
+    const directionY = movementLength > 0.05 ? moveY / movementLength : 0;
+    const airMix = smoothstep01(this.hopPx / 14);
+    const input = this.floatingHeadSpringInput;
+    input.targetX = targetX;
+    input.targetY = targetY;
+    input.authoredOffsetX = this.floatingHeadAttackLead.x - directionX * stanceLag;
+    input.authoredOffsetY =
+      sampleFloatingHeadWalkBob(stridePhase, gait, reducedMotion) +
+      this.floatingHeadAttackLead.y -
+      directionY * stanceLag * 0.7 -
+      FLOATING_HEAD_SPRING_TUNING.airHangPx * airMix +
+      FLOATING_HEAD_SPRING_TUNING.landingDipPx * this.landSquash;
+    input.impulseX = -localSpringSignalX * 72 * elapsedSeconds;
+    input.impulseY =
+      -springSignalY * 64 * elapsedSeconds +
+      (landed ? 7 * Math.min(1.5, this.landingKickScale) : 0);
+    input.elapsedSeconds = elapsedSeconds;
+    input.reducedMotion = reducedMotion;
+    input.reset = rebase || this.floatingHeadLodSleeping;
+    stepFloatingHeadSpring(this.floatingHeadSpring, input);
+    this.floatingHeadLodSleeping = false;
+    const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
     head
-      .setPosition(this.body.x + cosine * dx - sine * dy, this.body.y + sine * dx + cosine * dy)
-      .setRotation(this.body.rotation + source.rotation)
+      .setPosition(this.floatingHeadSpring.x, this.floatingHeadSpring.y)
+      .setRotation(this.body.rotation + determinantSign * source.rotation)
       .setScale(
         this.body.scaleX * source.source.mountScale,
         this.body.scaleY * source.source.mountScale,
+      )
+      .setVisible(true);
+  }
+
+  /** Head/face receivers layer their own angular springs over the final sprung head transform. */
+  private placeHeadGear(attachment: GearAttachment): void {
+    const manifest = this.boilerplateManifest;
+    const head = this.boilerplateHead;
+    const headSource = this.boilerplateHeadAssembly;
+    if (!manifest || !head || !headSource) return;
+    const spec = attachment.spec;
+    const anchor = headSource.source.receiverAnchor;
+    const localX = (spec.source.receiverAnchor.xL - anchor.xL) * manifest.socketFrame.bodyHeightL;
+    const localY = (spec.source.receiverAnchor.yL - anchor.yL) * manifest.socketFrame.bodyHeightL;
+    const headMountScale = headSource.source.mountScale || 1;
+    const basisScaleX = head.scaleX / headMountScale;
+    const basisScaleY = head.scaleY / headMountScale;
+    const dx = localX * basisScaleX;
+    const dy = localY * basisScaleY;
+    const cosine = Math.cos(head.rotation);
+    const sine = Math.sin(head.rotation);
+    const determinantSign = basisScaleX * basisScaleY < 0 ? -1 : 1;
+    attachment.image
+      .setPosition(head.x + cosine * dx - sine * dy, head.y + sine * dx + cosine * dy)
+      .setRotation(head.rotation + determinantSign * (spec.rotation + attachment.angle))
+      .setScale(
+        basisScaleX * spec.source.mountScale * spec.stackScale,
+        basisScaleY * spec.source.mountScale * spec.stackScale,
       )
       .setVisible(true);
   }
@@ -5943,7 +6273,6 @@ export class SpriteRig {
     }
     const waking = this.gearLodSleeping;
     this.gearLodSleeping = false;
-    this.syncBoilerplateHeadPose();
 
     for (const attachment of this.gearAttachments) {
       if (attachment.spec.stackIndex >= 0) continue;
@@ -5968,13 +6297,17 @@ export class SpriteRig {
         receiver === "foot-r"
       )
         this.placeNodeGear(attachment);
+      else if (receiver === "head" || receiver === "face.eyes" || receiver === "face.mouth")
+        this.placeHeadGear(attachment);
       else this.placeBodyGear(attachment);
     }
 
+    const head = this.boilerplateHead;
+    const headSource = this.boilerplateHeadAssembly;
     const chainInput = this.hatChainInput;
     chainInput.excitation = excitation;
     chainInput.dashLean = dashLean;
-    chainInput.bodyAngle = this.body.rotation;
+    chainInput.bodyAngle = head?.rotation ?? this.body.rotation;
     chainInput.landingImpulse = landed ? -0.42 : 0;
     chainInput.reducedMotion = reducedMotion;
     chainInput.reset = rebase || waking;
@@ -5983,20 +6316,23 @@ export class SpriteRig {
     for (let index = 0; index < this.hatAttachments.length; index++) {
       const attachment = this.hatAttachments[index];
       if (!attachment) continue;
-      if (index === 0) this.placeBodyGear(attachment);
+      if (index === 0) this.placeHeadGear(attachment);
       else {
         const below = this.hatAttachments[index - 1];
-        if (!below) continue;
+        if (!below || !head || !headSource) continue;
         this.topSocketPosition(below, socket);
-        const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
+        const headMountScale = headSource.source.mountScale || 1;
+        const basisScaleX = head.scaleX / headMountScale;
+        const basisScaleY = head.scaleY / headMountScale;
+        const determinantSign = basisScaleX * basisScaleY < 0 ? -1 : 1;
         attachment.image
           .setPosition(socket.x, socket.y)
           .setRotation(
-            this.body.rotation + determinantSign * (attachment.spec.rotation + attachment.angle),
+            head.rotation + determinantSign * (attachment.spec.rotation + attachment.angle),
           )
           .setScale(
-            this.body.scaleX * attachment.spec.source.mountScale * attachment.spec.stackScale,
-            this.body.scaleY * attachment.spec.source.mountScale * attachment.spec.stackScale,
+            basisScaleX * attachment.spec.source.mountScale * attachment.spec.stackScale,
+            basisScaleY * attachment.spec.source.mountScale * attachment.spec.stackScale,
           )
           .setVisible(true);
       }
@@ -7726,6 +8062,20 @@ export class SpriteRig {
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
     const localMoveX = anim.moveX * this.facing;
+    this.sampleFloatingHeadAttackLead(sceneNow, anim, anim.reducedMotion === true);
+    this.syncBoilerplateHeadPose(
+      springDtS,
+      outsidePaperView,
+      jiggleRebase,
+      anim.reducedMotion === true,
+      legPh,
+      gait,
+      localMoveX,
+      anim.moveY,
+      springSignalX * this.facing,
+      springSignalY,
+      landed,
+    );
     const dashLean =
       this.moveStance === STANCE_DASH
         ? -Math.sign(Math.abs(localMoveX) > 0.05 ? localMoveX : 1) * (0.72 + commit * 0.28)

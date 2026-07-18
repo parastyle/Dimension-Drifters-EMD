@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   assembleBoilerplate,
   assembleGearLoadout,
+  DEFAULT_LOADOUT_HEAD_TEXTURE,
   type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
+  resolveLoadoutHeadTexture,
   stepHatSpringChain,
   validateGearPartsManifest,
 } from "./gear-parts.js";
@@ -193,5 +195,30 @@ describe("public prestige tower composition", () => {
       owner.parts.map((part) => [part.gearId, part.stackIndex]),
     );
     expect(remote.parts.every((part) => part.gearId === "ash-walker-hat")).toBe(true);
+  });
+});
+
+// METAGAME WAVE 7B — append-only alternative-head texture seam coverage.
+describe("loadout head texture seam", () => {
+  it("defaults to the boilerplate head and accepts a future alternative without catalog coupling", () => {
+    expect(resolveLoadoutHeadTexture()).toBe(DEFAULT_LOADOUT_HEAD_TEXTURE);
+    expect(resolveLoadoutHeadTexture({ gearId: "", textureKey: "gear:head:empty" })).toBe(
+      DEFAULT_LOADOUT_HEAD_TEXTURE,
+    );
+    expect(DEFAULT_LOADOUT_HEAD_TEXTURE).toEqual({
+      gearId: null,
+      textureKey: "boilerplate:head",
+    });
+    expect(
+      resolveLoadoutHeadTexture({
+        gearId: "future-knight-head",
+        textureKey: "gear:alternative-head:future-knight-head",
+        frame: "closed-oval",
+      }),
+    ).toEqual({
+      gearId: "future-knight-head",
+      textureKey: "gear:alternative-head:future-knight-head",
+      frame: "closed-oval",
+    });
   });
 });
