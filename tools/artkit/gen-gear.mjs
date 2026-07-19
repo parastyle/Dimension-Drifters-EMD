@@ -58,6 +58,7 @@ import {
   assertMigrationPlan,
   buildCanonicalBodyMasks,
   buildMigrationPlan,
+  connectedAlphaComponents,
   describeMask,
   erodeMask,
   hashJson,
@@ -1024,7 +1025,36 @@ async function bakeOutline(registered) {
   return { data: output, radius, rimPixels };
 }
 
+/** AI renders routinely leave sub-speck stray islands after chroma keying (1-5px dust), which the
+ *  strict component gates then count as extra parts — this failed honest paired renders ("found 5",
+ *  fleet 2026-07-18). Erase every island smaller than this before registration; real parts at this
+ *  canvas are thousands of pixels, so 64px only ever removes dust. The gates stay strict. */
+const MIN_COMPONENT_PIXELS = 64;
+
+function scrubAlphaSpecks(keyed, width, height) {
+  const alpha = rgbaAlpha(keyed, width, height);
+  const { components, labels } = connectedAlphaComponents(alpha, width, height);
+  let scrubbed = 0;
+  for (const component of components) {
+    if (component.pixels >= MIN_COMPONENT_PIXELS) continue;
+    for (let y = component.top; y <= component.bottom; y++) {
+      for (let x = component.left; x <= component.right; x++) {
+        const index = y * width + x;
+        if (labels[index] !== component.label) continue;
+        keyed[index * 4] = 0;
+        keyed[index * 4 + 1] = 0;
+        keyed[index * 4 + 2] = 0;
+        keyed[index * 4 + 3] = 0;
+      }
+    }
+    scrubbed++;
+  }
+  if (scrubbed > 0) console.log(`SCRUB ${scrubbed} speck island(s) < ${MIN_COMPONENT_PIXELS}px`);
+  return keyed;
+}
+
 async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox) {
+  scrubAlphaSpecks(keyed, CANVAS.width, CANVAS.height);
   const bounds = alphaBounds(keyed, CANVAS.width, CANVAS.height);
   if (!bounds) throw new Error("chroma key removed the entire render");
   const approximate = {
@@ -1053,6 +1083,7 @@ async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox) {
 }
 
 async function registerPaired(keyed, spec) {
+  scrubAlphaSpecks(keyed, CANVAS.width, CANVAS.height);
   const overall = alphaBounds(keyed, CANVAS.width, CANVAS.height);
   if (!overall) throw new Error("chroma key removed the entire paired render");
   const middle = Math.floor(overall.left + overall.width / 2);
@@ -1305,7 +1336,24 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
 }
 
 async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, pairedSpec = null, hat = false, replacementJob = null }) {
-  const rawMetadata = await sharp(raw).metadata();
+  let rawMetadata = await sharp(raw).metadata();
+  // The image model frequently returns oversized SQUARE canvases (e.g. 1254x1254) for a 1024
+  // request — this failed EVERY fleet render at the exact-size gate (0/83, 2026-07-18). A square
+  // oversize carries the same composition, so normalize it to the contract canvas with lanczos
+  // BEFORE validation; only non-square or non-PNG sources remain hard failures.
+  if (
+    rawMetadata.format === "png" &&
+    rawMetadata.width === rawMetadata.height &&
+    rawMetadata.width !== CANVAS.width
+  ) {
+    const normalized = await sharp(raw)
+      .resize(CANVAS.width, CANVAS.height, { kernel: "lanczos3" })
+      .png()
+      .toBuffer();
+    writeFileSync(raw, normalized);
+    console.log(`NORMALIZE ${raw.split(/[\\/]/).pop()}: ${rawMetadata.width}x${rawMetadata.height} -> ${CANVAS.width}x${CANVAS.height}`);
+    rawMetadata = await sharp(raw).metadata();
+  }
   if (rawMetadata.format !== "png" || rawMetadata.width !== CANVAS.width || rawMetadata.height !== CANVAS.height) {
     throw new Error(`File/frame: raw source must be exact 1024x1024 PNG, got ${rawMetadata.width}x${rawMetadata.height} ${rawMetadata.format}`);
   }
