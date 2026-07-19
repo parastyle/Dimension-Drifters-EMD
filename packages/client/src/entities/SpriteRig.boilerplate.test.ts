@@ -10,8 +10,11 @@ vi.mock("phaser", () => ({
 }));
 
 import {
+  replacementPairManifest,
+  replacementPairManifestInput,
+} from "../sprites/gear-pairs.test-fixture.js";
+import {
   assembleBoilerplate,
-  GEAR_PARTS_MANIFEST,
   type GearAssemblyPart,
   type GearBakeSourceDependency,
   type GearPartBakeRecipe,
@@ -201,10 +204,18 @@ interface RigTruth {
   placeNodeGear(attachment: RigTruth["gearAttachments"][number]): void;
 }
 
+function compatibilityPairManifest(): GearPartsManifest {
+  const candidate = replacementPairManifestInput("rig-compatibility-r1") as GearPartsManifest;
+  candidate.schemaVersion = 1;
+  delete candidate.replacementContract;
+  const manifest = validateGearPartsManifest(candidate);
+  if (!manifest) throw new Error("synthetic pair compatibility manifest failed validation");
+  return manifest;
+}
+
 describe("SpriteRig boilerplate assembly truth", () => {
   it("atomically removes the legacy kit, fills absent limbs, and preserves rig scale", () => {
-    const manifest = GEAR_PARTS_MANIFEST;
-    if (!manifest) throw new Error("real gear manifest failed validation");
+    const manifest = compatibilityPairManifest();
     const rig = new SpriteRig(
       fakeScene(),
       0,
@@ -245,8 +256,7 @@ describe("SpriteRig boilerplate assembly truth", () => {
   });
 
   it("copies final animated limb transforms into cropped gear receivers", () => {
-    const manifest = GEAR_PARTS_MANIFEST;
-    if (!manifest) throw new Error("real gear manifest failed validation");
+    const manifest = compatibilityPairManifest();
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
       gloves: "ash-walker-gloves" as GearId,
@@ -363,8 +373,7 @@ describe("SpriteRig floating head spring", () => {
 // METAGAME WAVE 7B — append-only sprung-head wardrobe parenting coverage.
 describe("SpriteRig sprung-head gear truth", () => {
   it("moves face gear and the prestige seed with the final sprung head transform", () => {
-    const manifest = GEAR_PARTS_MANIFEST;
-    if (!manifest) throw new Error("real gear manifest failed validation");
+    const manifest = compatibilityPairManifest();
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
       hat: "ash-walker-hat" as GearId,
@@ -412,8 +421,7 @@ describe("SpriteRig sprung-head gear truth", () => {
 // METAGAME WAVE 7B — append-only runtime head-texture swap coverage.
 describe("SpriteRig alternative-head texture seam", () => {
   it("installs a ready per-loadout head texture and returns to the boilerplate default", () => {
-    const manifest = GEAR_PARTS_MANIFEST;
-    if (!manifest) throw new Error("real gear manifest failed validation");
+    const manifest = compatibilityPairManifest();
     const rig = new SpriteRig(fakeScene(), 0, 0, false, "head-texture-seam", "drifter", manifest);
     const truth = rig as unknown as RigTruth;
 
@@ -431,15 +439,14 @@ describe("SpriteRig alternative-head texture seam", () => {
 // v0.118 gear-layer live reproduction — append-only four-group runtime coverage.
 describe("SpriteRig mixed-set gear attachment groups", () => {
   it("retains and places every part from the exact eight-slot loadout through the synced wire path", () => {
-    const manifest = GEAR_PARTS_MANIFEST;
-    if (!manifest) throw new Error("real gear manifest failed validation");
+    const manifest = compatibilityPairManifest();
     const loadout = {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     } as Record<GearSlot, GearId>;
@@ -474,7 +481,7 @@ describe("SpriteRig mixed-set gear attachment groups", () => {
       expect(attachment.image.visible).toBe(true);
       expect((rig.root as unknown as FakeContainer).list).toContain(attachment.image);
     }
-    expect(groups).toEqual({ body: 3, hands: 2, feet: 2, head: 3 });
+    expect(groups).toEqual({ body: 2, hands: 2, feet: 2, head: 4 });
     expect(truth.gearAttachments).toHaveLength(10);
     expect(new Set(truth.gearAttachments.map((attachment) => attachment.spec.gearId)).size).toBe(8);
     expect(truth.gearAttachments.map((attachment) => attachment.spec.depth)).toEqual(
@@ -484,64 +491,6 @@ describe("SpriteRig mixed-set gear attachment groups", () => {
     );
   });
 });
-
-function replacementManifest(): GearPartsManifest {
-  if (!GEAR_PARTS_MANIFEST) throw new Error("real gear manifest failed validation");
-  const candidate = structuredClone(GEAR_PARTS_MANIFEST);
-  candidate.schemaVersion = 2;
-  candidate.replacementContract = {
-    id: "GEAR_REPLACEMENT_V1",
-    revision: "rig-test-r1",
-    partFrames: {
-      body: [344, 324, 336, 376],
-      head: [352, 112, 384, 456],
-      "hand-l": [294, 432, 180, 180],
-      "hand-r": [550, 432, 180, 180],
-      "foot-l": [353, 641, 190, 190],
-      "foot-r": [481, 641, 190, 190],
-    },
-    maskHashes: {
-      bodyFill: "body-fill",
-      shirtRequired: "shirt-required",
-      shirtAllowed: "shirt-allowed",
-      pantsRequired: "pants-required",
-      pantsAllowed: "pants-allowed",
-    },
-    compositionOrders: {
-      body: ["body", "pants", "shirt"],
-      head: ["head", "facialHair", "glasses"],
-    },
-  };
-  const roleForSlot = {
-    boots: "replace-foot",
-    cloak: "cloak-far",
-    facialHair: "head-accessory",
-    glasses: "head-accessory",
-    gloves: "replace-hand",
-    hat: "overlay-hat",
-    pants: "body-patch",
-    shirt: "body-patch",
-  } as const;
-  for (const slot of candidate.slots) {
-    for (const item of slot.items) {
-      item.renderRole =
-        item.id === "demon-mask-hat" || item.id === "unbending-hat"
-          ? "replace-head"
-          : roleForSlot[slot.id];
-      item.sourceRevision = `source:${item.id}`;
-      for (const part of item.parts) part.sourceRevision = `source:${item.id}:${part.id}`;
-      if (item.renderRole === "replace-head") {
-        item.replacementTexture = {
-          texture: `${item.id}.png`,
-          sourceRevision: `head:${item.id}`,
-        };
-      }
-    }
-  }
-  const validated = validateGearPartsManifest(candidate);
-  if (!validated) throw new Error("synthetic replacement manifest failed validation");
-  return validated;
-}
 
 class RigBakeBackend implements GearTextureBakeBackend {
   readonly createCalls: GearPartBakeRecipe[] = [];
@@ -628,7 +577,7 @@ interface ReplacementRigTruth extends RigTruth {
 // GEAR REPLACEMENT BOT 3 — append-only retained-node and atomic-commit coverage.
 describe("SpriteRig replacement bake integration", () => {
   it("commits six baked textures atomically and creates only cloak/hat extras", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("rig-test-r1");
     const { scene, backend } = replacementScene();
     backend.delaySources();
     const rig = new SpriteRig(scene, 0, 0, false, "replacement-rig", "drifter", manifest);
@@ -637,9 +586,9 @@ describe("SpriteRig replacement bake integration", () => {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     } as Record<GearSlot, GearId>;
@@ -702,25 +651,26 @@ describe("SpriteRig replacement bake integration", () => {
     expect(backend.createCalls).toHaveLength(6);
   });
 
-  it("bakes replacement heads with accessories and stacks only eleven prestige caps", async () => {
-    const manifest = replacementManifest();
+  it("bakes the independent head with accessories and retains all twelve visible hats", async () => {
+    const manifest = replacementPairManifest("rig-test-r1");
     const { scene, backend } = replacementScene();
     const rig = new SpriteRig(scene, 0, 0, false, "replacement-head-rig", "drifter", manifest);
     const truth = rig as unknown as ReplacementRigTruth;
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
+      head: "demon-mask-head" as GearId,
       hat: "demon-mask-hat" as GearId,
       glasses: "pressurized-glasses" as GearId,
       facialHair: "pressurized-facial-hair" as GearId,
     } as Record<GearSlot, GearId>;
     rig.equipGearLoadout(loadout, manifest, 30);
-    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(11));
+    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(12));
 
-    expect(truth.boilerplateHead?.texture.key).toContain("demon-mask-hat");
+    expect(truth.boilerplateHead?.texture.key).toContain("demon-mask-head");
     expect(
-      truth.hatAttachments.every((attachment) => attachment.spec.extraRole === "prestige-cap"),
+      truth.hatAttachments.every((attachment) => attachment.spec.extraRole === "overlay-hat"),
     ).toBe(true);
-    expect(truth.gearAttachments).toHaveLength(11);
+    expect(truth.gearAttachments).toHaveLength(12);
     expect(truth.gearAssembly).toMatchObject({
       towerTotal: 30,
       towerVisible: 12,
@@ -736,7 +686,7 @@ describe("SpriteRig replacement bake integration", () => {
 
     const createdBeforePrestigeOnlyChange = backend.createCalls.length;
     rig.equipGearLoadout(loadout, manifest, 0);
-    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(0));
+    await vi.waitFor(() => expect(truth.hatAttachments).toHaveLength(1));
     expect(truth.gearAssembly).toMatchObject({
       towerTotal: 1,
       towerVisible: 1,

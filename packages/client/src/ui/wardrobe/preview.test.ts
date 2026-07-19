@@ -1,7 +1,10 @@
-import { readFileSync } from "node:fs";
 import { GEAR_SLOTS, type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
 import type Phaser from "phaser";
 import { describe, expect, it } from "vitest";
+import {
+  replacementPairManifest,
+  replacementPairManifestInput,
+} from "../../sprites/gear-pairs.test-fixture.js";
 import {
   assembleBoilerplate,
   GEAR_BAKE_FRAMES,
@@ -24,69 +27,7 @@ import {
   wardrobeFixedPartBounds,
 } from "./preview.js";
 
-const rawManifest: unknown = JSON.parse(
-  readFileSync(
-    new URL("../../../../../tools/artkit/out/gear/gear-parts-manifest.json", import.meta.url),
-    "utf8",
-  ),
-);
-
-function replacementManifest(): GearPartsManifest {
-  const candidate = structuredClone(rawManifest) as GearPartsManifest;
-  candidate.schemaVersion = 2;
-  candidate.replacementContract = {
-    id: "GEAR_REPLACEMENT_V1",
-    revision: "wardrobe-preview-test-r1",
-    partFrames: {
-      body: [344, 324, 336, 376],
-      head: [352, 112, 384, 456],
-      "hand-l": [294, 432, 180, 180],
-      "hand-r": [550, 432, 180, 180],
-      "foot-l": [353, 641, 190, 190],
-      "foot-r": [481, 641, 190, 190],
-    },
-    maskHashes: {
-      bodyFill: "body-fill",
-      shirtRequired: "shirt-required",
-      shirtAllowed: "shirt-allowed",
-      pantsRequired: "pants-required",
-      pantsAllowed: "pants-allowed",
-    },
-    compositionOrders: {
-      body: ["body", "pants", "shirt"],
-      head: ["head", "facialHair", "glasses"],
-    },
-  };
-  const roleForSlot = {
-    boots: "replace-foot",
-    cloak: "cloak-far",
-    facialHair: "head-accessory",
-    glasses: "head-accessory",
-    gloves: "replace-hand",
-    hat: "overlay-hat",
-    pants: "body-patch",
-    shirt: "body-patch",
-  } as const;
-  for (const slot of candidate.slots) {
-    for (const item of slot.items) {
-      item.renderRole =
-        item.id === "demon-mask-hat" || item.id === "unbending-hat"
-          ? "replace-head"
-          : roleForSlot[slot.id];
-      item.sourceRevision = `source:${item.id}`;
-      for (const part of item.parts) part.sourceRevision = `source:${item.id}:${part.id}`;
-      if (item.renderRole === "replace-head") {
-        item.replacementTexture = {
-          texture: `${item.id}.png`,
-          sourceRevision: `head:${item.id}`,
-        };
-      }
-    }
-  }
-  const validated = validateGearPartsManifest(candidate);
-  if (!validated) throw new Error("synthetic replacement manifest failed validation");
-  return validated;
-}
+const rawManifest = replacementPairManifestInput("wardrobe-preview-test-r1");
 
 class FakeDisplayObject {
   active = true;
@@ -391,9 +332,9 @@ const mixedLoadout = {
   hat: "coldsnap-hat",
   glasses: "pressurized-glasses",
   facialHair: "pressurized-facial-hair",
-  shirt: "pressurized-shirt",
+  head: "pressurized-head",
+  torso: "pressurized-shirt",
   gloves: "house-edge-gloves",
-  pants: "pressurized-pants",
   boots: "house-edge-boots",
   cloak: "thornwatch-cloak",
 } as Record<GearSlot, GearId>;
@@ -401,7 +342,7 @@ const mixedLoadout = {
 // GEAR REPLACEMENT BOT 4 — append-only shared-baker wardrobe parity coverage.
 describe("WardrobeCharacterPreview shared bake parity", () => {
   it("requests the exact equipped and hover-draft recipe keys used by an in-game rig", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const baker = new FakeSharedBaker();
     const scene = fakeScene();
     const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
@@ -418,7 +359,7 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
     await settlePreview();
     const hoverCall = baker.calls[1];
     if (!hoverCall) throw new Error("hover bake call missing");
-    const rigDraft = { ...mixedLoadout, shirt: "ash-walker-shirt" as GearId };
+    const rigDraft = { ...mixedLoadout, torso: "ash-walker-shirt" as GearId };
     const rigKeys = recipeKeys(resolveGearBakeLoadout(manifest, rigDraft, 7));
     const hoverKeys = recipeKeys(hoverCall.resolution);
     expect(hoverKeys).toEqual(rigKeys);
@@ -433,7 +374,7 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
   });
 
   it("drafts only the browsed slot, including locked catalog rows, without mutating account truth", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const baker = new FakeSharedBaker();
     const scene = fakeScene();
     const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
@@ -443,9 +384,9 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     };
@@ -453,9 +394,9 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
       hat: [],
       glasses: ["head"],
       facialHair: ["head"],
-      shirt: ["body"],
+      head: ["head"],
+      torso: ["body"],
       gloves: ["hand-l", "hand-r"],
-      pants: ["body"],
       boots: ["foot-l", "foot-r"],
       cloak: [],
     };
@@ -482,7 +423,7 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
   });
 
   it("rejects late A after newer B and releases hover leases on exit and shutdown", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const deferred = new DeferredSharedBaker();
     const deferredScene = fakeScene();
     const deferredPreview = new WardrobeCharacterPreview(deferredScene.scene, {
@@ -522,7 +463,7 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
   });
 
   it("renders the baker's bare fallback on six retained nodes and creates no garment attachments", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const missingShirt: GearTextureStateResolver = (dependency) =>
       dependency.gearId === "pressurized-shirt" ? "missing" : "ready";
     const baker = new FakeSharedBaker(missingShirt);
@@ -535,10 +476,7 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
     if (!call) throw new Error("fallback bake call missing");
     const gameResolution = resolveGearBakeLoadout(manifest, mixedLoadout, 0, [], missingShirt);
     expect(recipeKeys(call.resolution)).toEqual(recipeKeys(gameResolution));
-    expect(call.resolution.recipe.parts.body.layers.map((layer) => layer.role)).toEqual([
-      "base",
-      "pants",
-    ]);
+    expect(call.resolution.recipe.parts.body.layers.map((layer) => layer.role)).toEqual(["base"]);
     expect(previewTruth(preview).partNodes.size).toBe(6);
     for (const partId of GEAR_BAKED_PART_IDS) {
       const node = previewTruth(preview).partNodes.get(partId)?.image;
@@ -553,8 +491,8 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
 });
 
 describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
-  it("uses shared normal/replacement tower counts and bakes replacement-head accessories into one node", async () => {
-    const manifest = replacementManifest();
+  it("keeps normal tower counts while baking the independent head and accessories into one node", async () => {
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const baker = new FakeSharedBaker();
     const scene = fakeScene();
     const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
@@ -577,6 +515,7 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
 
     const replacement = {
       ...STARTER_GEAR_LOADOUT,
+      head: "demon-mask-head" as GearId,
       hat: "demon-mask-hat" as GearId,
       glasses: "pressurized-glasses" as GearId,
       facialHair: "pressurized-facial-hair" as GearId,
@@ -585,13 +524,13 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
     await settlePreview();
     const bareReplacementLease = baker.calls[1]?.lease;
     expect(bareReplacementLease?.extras).toMatchObject({
-      replacementHeadPosition: true,
+      replacementHeadPosition: false,
       towerTotal: 1,
       towerVisible: 1,
       towerOverflow: 0,
     });
-    expect(bareReplacementLease?.extras.hats).toHaveLength(0);
-    expect(previewTruth(preview).extraNodes).toHaveLength(0);
+    expect(bareReplacementLease?.extras.hats).toHaveLength(1);
+    expect(previewTruth(preview).extraNodes).toHaveLength(1);
     expect(
       bareReplacementLease?.resolution.recipe.parts.head.layers.map((layer) => layer.role),
     ).toEqual(["replacement-head", "facialHair", "glasses"]);
@@ -603,21 +542,21 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
     await settlePreview();
     const towerLease = baker.calls[2]?.lease;
     expect(towerLease?.extras).toMatchObject({
-      replacementHeadPosition: true,
+      replacementHeadPosition: false,
       towerTotal: 30,
       towerVisible: 12,
       towerOverflow: 18,
     });
-    expect(towerLease?.extras.hats).toHaveLength(11);
-    expect(previewTruth(preview).extraNodes).toHaveLength(11);
+    expect(towerLease?.extras.hats).toHaveLength(12);
+    expect(previewTruth(preview).extraNodes).toHaveLength(12);
     expect(
-      previewTruth(preview).extraNodes.every((node) => node.gear?.extraRole === "prestige-cap"),
+      previewTruth(preview).extraNodes.every((node) => node.gear?.extraRole === "overlay-hat"),
     ).toBe(true);
-    expect(scene.images.filter((image) => image.active)).toHaveLength(17);
+    expect(scene.images.filter((image) => image.active)).toHaveLength(18);
   });
 
   it("derives its six-part envelope from fixed frames, never loose garment alpha bounds", () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const bounds = wardrobeFixedPartBounds(manifest);
     const altered = structuredClone(manifest);
     for (const slot of altered.slots) {
@@ -709,7 +648,7 @@ describe("WardrobeCharacterPreview manifest-version fallback", () => {
   });
 
   it("keeps schema v2 on the existing shared bake-lease path", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("wardrobe-preview-test-r1");
     const baker = new FakeSharedBaker();
     const scene = fakeScene();
     const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });

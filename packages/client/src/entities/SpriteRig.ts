@@ -2416,7 +2416,7 @@ export class SpriteRig {
     const headSignature = replacement
       ? "manifest"
       : `${nextHeadTexture.gearId ?? "boilerplate"}:${nextHeadTexture.textureKey}:${nextHeadTexture.frame ?? ""}`;
-    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.shirt}|${loadout.gloves}|${loadout.pants}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}|head:${headSignature}`;
+    const key = `${loadout.hat}|${loadout.glasses}|${loadout.facialHair}|${loadout.head}|${loadout.torso}|${loadout.gloves}|${loadout.boots}|${loadout.cloak}|${prestige}|${towerComposition.join(",")}|head:${headSignature}`;
     if (key === this.gearLoadoutKey && this.boilerplateManifest === manifest) return;
     const generation = ++this.gearBakeGeneration;
     this.gearUsesReplacement = replacement;

@@ -1,13 +1,11 @@
-import { readFileSync } from "node:fs";
 import { type GearId, type GearSlot, isGearId, STARTER_GEAR_LOADOUT } from "@dd/shared";
 import type Phaser from "phaser";
 import { describe, expect, it, vi } from "vitest";
-import {
-  type GearBakeSourceDependency,
-  type GearPartBakeRecipe,
-  type GearPartsManifest,
-  type GearTextureState,
-  validateGearPartsManifest,
+import { replacementPairManifest } from "./gear-pairs.test-fixture.js";
+import type {
+  GearBakeSourceDependency,
+  GearPartBakeRecipe,
+  GearTextureState,
 } from "./gear-parts.js";
 import {
   GEAR_TEXTURE_CACHE_BUDGET_BYTES,
@@ -16,70 +14,6 @@ import {
   type GearTextureResource,
   gearTextureBakeCacheForScene,
 } from "./gear-texture-baker.js";
-
-const rawManifest: unknown = JSON.parse(
-  readFileSync(
-    new URL("../../../../tools/artkit/out/gear/gear-parts-manifest.json", import.meta.url),
-    "utf8",
-  ),
-);
-
-function replacementManifest(): GearPartsManifest {
-  const candidate = structuredClone(rawManifest) as GearPartsManifest;
-  candidate.schemaVersion = 2;
-  candidate.replacementContract = {
-    id: "GEAR_REPLACEMENT_V1",
-    revision: "cache-test-r1",
-    partFrames: {
-      body: [344, 324, 336, 376],
-      head: [352, 112, 384, 456],
-      "hand-l": [294, 432, 180, 180],
-      "hand-r": [550, 432, 180, 180],
-      "foot-l": [353, 641, 190, 190],
-      "foot-r": [481, 641, 190, 190],
-    },
-    maskHashes: {
-      bodyFill: "body-fill",
-      shirtRequired: "shirt-required",
-      shirtAllowed: "shirt-allowed",
-      pantsRequired: "pants-required",
-      pantsAllowed: "pants-allowed",
-    },
-    compositionOrders: {
-      body: ["body", "pants", "shirt"],
-      head: ["head", "facialHair", "glasses"],
-    },
-  };
-  const roleForSlot = {
-    boots: "replace-foot",
-    cloak: "cloak-far",
-    facialHair: "head-accessory",
-    glasses: "head-accessory",
-    gloves: "replace-hand",
-    hat: "overlay-hat",
-    pants: "body-patch",
-    shirt: "body-patch",
-  } as const;
-  for (const slot of candidate.slots) {
-    for (const item of slot.items) {
-      item.renderRole =
-        item.id === "demon-mask-hat" || item.id === "unbending-hat"
-          ? "replace-head"
-          : roleForSlot[slot.id];
-      item.sourceRevision = `source:${item.id}`;
-      for (const part of item.parts) part.sourceRevision = `source:${item.id}:${part.id}`;
-      if (item.renderRole === "replace-head") {
-        item.replacementTexture = {
-          texture: `${item.id}.png`,
-          sourceRevision: `head:${item.id}`,
-        };
-      }
-    }
-  }
-  const validated = validateGearPartsManifest(candidate);
-  if (!validated) throw new Error("synthetic replacement manifest failed validation");
-  return validated;
-}
 
 interface FakeResource extends GearTextureResource {
   destroyed: boolean;
@@ -149,16 +83,16 @@ const mixedLoadout = {
   hat: "coldsnap-hat",
   glasses: "pressurized-glasses",
   facialHair: "pressurized-facial-hair",
-  shirt: "pressurized-shirt",
+  head: "pressurized-head",
+  torso: "pressurized-shirt",
   gloves: "house-edge-gloves",
-  pants: "pressurized-pants",
   boots: "house-edge-boots",
   cloak: "thornwatch-cloak",
 } as Record<GearSlot, GearId>;
 
 describe("GearTextureBakeCache part recipes", () => {
   it("reuses unaffected part keys and never keys on prestige, facing, player, or locality", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("cache-test-r1");
     const backend = new FakeBakeBackend();
     const cache = new GearTextureBakeCache(fakeScene(), backend);
     const first = await cache.acquire({
@@ -183,16 +117,16 @@ describe("GearTextureBakeCache part recipes", () => {
     }
     expect(
       backend.createCalls.find((call) => call.key === first.handles.body.textureKey)?.roles,
-    ).toEqual(["base", "pants", "shirt"]);
+    ).toEqual(["replacement-torso"]);
     expect(
       backend.createCalls.find((call) => call.key === first.handles.head.textureKey)?.roles,
-    ).toEqual(["base", "facialHair", "glasses"]);
+    ).toEqual(["replacement-head", "facialHair", "glasses"]);
     first.release();
     second.release();
   });
 
   it("settles missing nonblank art to six live base handles and named diagnostics", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("cache-test-r1");
     const backend = new FakeBakeBackend((dependency) => dependency.gearId !== null);
     const cache = new GearTextureBakeCache(fakeScene(), backend);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -221,24 +155,24 @@ describe("GearTextureBakeCache part recipes", () => {
 
 describe("GearTextureBakeCache budget and leases", () => {
   it("evicts oldest zero-ref recipes under the 48 MiB budget during high-diversity churn", async () => {
-    const manifest = replacementManifest();
+    const manifest = replacementPairManifest("cache-test-r1");
     const backend = new FakeBakeBackend();
     const cache = new GearTextureBakeCache(fakeScene(), backend);
-    const shirtIds =
+    const headIds =
       manifest.slots
-        .find((slot) => slot.id === "shirt")
+        .find((slot) => slot.id === "head")
         ?.items.map((item) => item.id)
         .filter(isGearId) ?? [];
-    const pantsIds =
+    const glassesIds =
       manifest.slots
-        .find((slot) => slot.id === "pants")
+        .find((slot) => slot.id === "glasses")
         ?.items.map((item) => item.id)
         .filter(isGearId) ?? [];
-    for (const shirt of shirtIds) {
-      for (const pants of pantsIds) {
+    for (const head of headIds) {
+      for (const glasses of glassesIds) {
         const lease = await cache.acquire({
           manifest,
-          loadout: { ...STARTER_GEAR_LOADOUT, shirt, pants },
+          loadout: { ...STARTER_GEAR_LOADOUT, head, glasses },
         });
         lease.release();
       }
@@ -255,7 +189,7 @@ describe("GearTextureBakeCache budget and leases", () => {
     const cache = new GearTextureBakeCache(fakeScene(), backend, 1);
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const primary = await cache.acquire({
-      manifest: replacementManifest(),
+      manifest: replacementPairManifest("cache-test-r1"),
       loadout: STARTER_GEAR_LOADOUT,
     });
     const secondary = primary.retain();
@@ -284,7 +218,7 @@ describe("GearTextureBakeCache budget and leases", () => {
     const backend = new FakeBakeBackend();
     const cache = gearTextureBakeCacheForScene(scene, backend);
     const lease = await cache.acquire({
-      manifest: replacementManifest(),
+      manifest: replacementPairManifest("cache-test-r1"),
       loadout: STARTER_GEAR_LOADOUT,
     });
     shutdown?.();
@@ -302,7 +236,7 @@ describe("GearTextureBakeCache budget and leases", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     let currentGeneration = 1;
     const pending = cache.acquireForGeneration(
-      { manifest: replacementManifest(), loadout: mixedLoadout },
+      { manifest: replacementPairManifest("cache-test-r1"), loadout: mixedLoadout },
       1,
       (generation) => generation === currentGeneration,
     );

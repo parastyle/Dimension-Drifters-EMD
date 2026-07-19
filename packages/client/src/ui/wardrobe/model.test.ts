@@ -66,6 +66,35 @@ describe("wardrobe model", () => {
     expect(overwritten.presets[0]?.loadout.hat).toBe("ash-walker-hat");
   });
 
+  it("preserves legacy preset shirt choices as torsos and drops pants without inventing a head", () => {
+    const account = createMetaAccountV4();
+    account.ownedGear.push("ash-walker-shirt");
+    const state = sanitizeWardrobePresetState(
+      {
+        version: 1,
+        selected: 1,
+        presets: [
+          {
+            name: "Legacy pair",
+            loadout: {
+              ...STARTER_GEAR_LOADOUT,
+              torso: undefined,
+              head: undefined,
+              shirt: "ash-walker-shirt",
+              pants: "ash-walker-pants",
+            },
+          },
+        ],
+      },
+      account,
+    );
+    expect(state.presets[0]?.loadout).toMatchObject({
+      torso: "ash-walker-shirt",
+      head: "blank-drifter-head",
+    });
+    expect("pants" in (state.presets[0]?.loadout ?? {})).toBe(false);
+  });
+
   it("previews the flat Drifter and reports all twelve legacy collections", () => {
     const account = createMetaAccountV4();
     expect(wardrobePreview(account).baseStats).toEqual({ str: 2, dex: 2, int: 2, con: 2, luk: 2 });

@@ -282,7 +282,9 @@ function canonicalPresetLoadout(value: unknown, account: MetaAccountV4): Record<
   const owned = new Set(account.ownedGear);
   const output = copyLoadout(STARTER_GEAR_LOADOUT);
   for (const slot of GEAR_SLOTS) {
-    const id = source[slot];
+    // Preset v1 survives the pair migration: its old shirt selection becomes the complete torso and its
+    // pants selection is intentionally ignored, matching account equipment sanitization.
+    const id = slot === "torso" ? (source.torso ?? source.shirt) : source[slot];
     if (
       typeof id === "string" &&
       id in GEAR_CATALOG &&

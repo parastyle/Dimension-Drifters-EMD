@@ -64,9 +64,9 @@ export class DualWieldState extends Schema {
   @type("uint32") pairBaseSeq = 0;
   @type("uint8") offCharges = 0;
   @type("uint8") offMaxCharges = 0;
-  /** Schema v28; order: hat,glasses,facialHair,shirt,cloak. */
+  /** Schema v28 wire, current order: hat,glasses,facialHair,torso,cloak. */
   @type("string") gearUpper = "";
-  /** Schema v28; order: gloves,pants,boots. */
+  /** Schema v28 wire, current order: gloves,head,boots. */
   @type("string") gearLower = "";
   /** Schema v30. Nested here because PlayerState's 64 direct field indexes are all occupied. */
   @type(WeaponResourceState) weaponResource = new WeaponResourceState();
@@ -243,42 +243,108 @@ export class PlayerState extends Schema {
    *  instances. Client code must never call them on room state; it reads `player.dualWield?.…`
    *  directly (see ArenaScene.addBlob / loadout-entry-view). The `?.`/`??` guards below are
    *  server-side hygiene so a partially-built row can never throw mid-tick. */
-  get weaponResource(): WeaponResourceState { return this.dualWield?.weaponResource ?? DECODE_WINDOW_RESOURCE; }
+  get weaponResource(): WeaponResourceState {
+    return this.dualWield?.weaponResource ?? DECODE_WINDOW_RESOURCE;
+  }
   /** Schema v28 accessors append two frozen wardrobe strings to the existing final wire envelope. */
-  get gearUpper(): string { return this.dualWield?.gearUpper ?? ""; }
-  set gearUpper(value: string) { this.dualWield.gearUpper = value; }
-  get gearLower(): string { return this.dualWield?.gearLower ?? ""; }
-  set gearLower(value: string) { this.dualWield.gearLower = value; }
+  get gearUpper(): string {
+    return this.dualWield?.gearUpper ?? "";
+  }
+  set gearUpper(value: string) {
+    this.dualWield.gearUpper = value;
+  }
+  get gearLower(): string {
+    return this.dualWield?.gearLower ?? "";
+  }
+  set gearLower(value: string) {
+    this.dualWield.gearLower = value;
+  }
   /** Schema v31 public tower count, packed beside the cosmetic gear strings. */
-  get prestige(): number { return this.dualWield?.prestige ?? 0; }
-  set prestige(value: number) { this.dualWield.prestige = value; }
-  get offhandSlot(): number { return this.dualWield?.offhandSlot ?? 255; }
-  set offhandSlot(value: number) { this.dualWield.offhandSlot = value; }
-  get pairBaseSeq(): number { return this.dualWield?.pairBaseSeq ?? 0; }
-  set pairBaseSeq(value: number) { this.dualWield.pairBaseSeq = value; }
-  get offCharges(): number { return this.dualWield?.offCharges ?? 0; }
-  set offCharges(value: number) { this.dualWield.offCharges = value; }
-  get offMaxCharges(): number { return this.dualWield?.offMaxCharges ?? 0; }
-  set offMaxCharges(value: number) { this.dualWield.offMaxCharges = value; }
+  get prestige(): number {
+    return this.dualWield?.prestige ?? 0;
+  }
+  set prestige(value: number) {
+    this.dualWield.prestige = value;
+  }
+  get offhandSlot(): number {
+    return this.dualWield?.offhandSlot ?? 255;
+  }
+  set offhandSlot(value: number) {
+    this.dualWield.offhandSlot = value;
+  }
+  get pairBaseSeq(): number {
+    return this.dualWield?.pairBaseSeq ?? 0;
+  }
+  set pairBaseSeq(value: number) {
+    this.dualWield.pairBaseSeq = value;
+  }
+  get offCharges(): number {
+    return this.dualWield?.offCharges ?? 0;
+  }
+  set offCharges(value: number) {
+    this.dualWield.offCharges = value;
+  }
+  get offMaxCharges(): number {
+    return this.dualWield?.offMaxCharges ?? 0;
+  }
+  set offMaxCharges(value: number) {
+    this.dualWield.offMaxCharges = value;
+  }
   /** Direct accessors preserve the panel/U2 contract while the nine fields serialize in `ultimate`. */
-  get ultArchetype(): number { return this.ultimate.archetype; }
-  set ultArchetype(value: number) { this.ultimate.archetype = value; }
-  get ultCharge(): number { return this.ultimate.charge; }
-  set ultCharge(value: number) { this.ultimate.charge = value; }
-  get ultPhase(): number { return this.ultimate.phase; }
-  set ultPhase(value: number) { this.ultimate.phase = value; }
-  get ultSeq(): number { return this.ultimate.seq; }
-  set ultSeq(value: number) { this.ultimate.seq = value; }
-  get ultStartTick(): number { return this.ultimate.startTick; }
-  set ultStartTick(value: number) { this.ultimate.startTick = value; }
-  get ultResolveTick(): number { return this.ultimate.resolveTick; }
-  set ultResolveTick(value: number) { this.ultimate.resolveTick = value; }
-  get ultEndTick(): number { return this.ultimate.endTick; }
-  set ultEndTick(value: number) { this.ultimate.endTick = value; }
-  get ultTargetX(): number { return this.ultimate.targetX; }
-  set ultTargetX(value: number) { this.ultimate.targetX = value; }
-  get ultTargetY(): number { return this.ultimate.targetY; }
-  set ultTargetY(value: number) { this.ultimate.targetY = value; }
+  get ultArchetype(): number {
+    return this.ultimate.archetype;
+  }
+  set ultArchetype(value: number) {
+    this.ultimate.archetype = value;
+  }
+  get ultCharge(): number {
+    return this.ultimate.charge;
+  }
+  set ultCharge(value: number) {
+    this.ultimate.charge = value;
+  }
+  get ultPhase(): number {
+    return this.ultimate.phase;
+  }
+  set ultPhase(value: number) {
+    this.ultimate.phase = value;
+  }
+  get ultSeq(): number {
+    return this.ultimate.seq;
+  }
+  set ultSeq(value: number) {
+    this.ultimate.seq = value;
+  }
+  get ultStartTick(): number {
+    return this.ultimate.startTick;
+  }
+  set ultStartTick(value: number) {
+    this.ultimate.startTick = value;
+  }
+  get ultResolveTick(): number {
+    return this.ultimate.resolveTick;
+  }
+  set ultResolveTick(value: number) {
+    this.ultimate.resolveTick = value;
+  }
+  get ultEndTick(): number {
+    return this.ultimate.endTick;
+  }
+  set ultEndTick(value: number) {
+    this.ultimate.endTick = value;
+  }
+  get ultTargetX(): number {
+    return this.ultimate.targetX;
+  }
+  set ultTargetX(value: number) {
+    this.ultimate.targetX = value;
+  }
+  get ultTargetY(): number {
+    return this.ultimate.targetY;
+  }
+  set ultTargetY(value: number) {
+    this.ultimate.targetY = value;
+  }
 
   /** Server-only §ULT allocation truth. Base spreads/meta bonuses never enter this tally. */
   allocRun: Record<Attr, number> = { str: 0, dex: 0, int: 0, con: 0, luk: 0 };

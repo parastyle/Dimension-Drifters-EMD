@@ -2,44 +2,44 @@ import {
   ACTION_MSGS_PER_TICK,
   AUGMENTS,
   BELT_LEVEL_IDS,
+  BELT_Y0,
   beltLevelFor,
   beltPitAtX,
-  draftAugments,
-  BELT_Y0,
-  clampBeltFloorY,
   CRIT_MULT,
+  clampBeltFloorY,
   critChanceFor,
   DEFAULT_WEAPON,
   DEPTH_MAX,
   DIMENSIONS,
   DROP_POOL,
   DUMMY_HP,
+  draftAugments,
   ENEMY_KINDS,
   EnemyState,
   FISTS_WEAPON,
   getDimension,
   isPitAtPx,
-  makeRng,
   MAX_ENEMIES,
   META_FORTUNE_LUK,
   META_POWER_STR,
   META_VITALITY_HP,
+  makeRng,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_IFRAMES,
   PIT_FALL_DAMAGE_FRAC,
   PickupState,
   PLAYER_MAX_HP,
   REVIVE_HP_FRAC,
+  SET_BONUS_2,
+  SET_BONUS_3,
   SHIFTER_KIND_IDS,
   salvageValue,
   scripValue,
-  SET_BONUS_2,
-  SET_BONUS_3,
   TILE_GROUND,
   TILE_PIT,
-  weaponSetBonus,
   WEAPON_IDS,
   WEAPONS,
+  weaponSetBonus,
   ZONE_RADIUS,
   ZONE_TTL,
   ZoneState,
@@ -1585,7 +1585,14 @@ describe("GameRoom — §M14 golden tick snapshot (the hand-numbered phase order
 // weapons between hand, slots, and bag; loot identity + earned provenance ride along. ──
 describe("GameRoom — §29 belt arsenal (3 slots + bag)", () => {
   // Drop a fully-identified, earned pickup at the player's feet and grab it.
-  function grabAt(h: AnyRoom, pid: string, weapon: string, rarity = 2, affix = "keen", earned = true) {
+  function grabAt(
+    h: AnyRoom,
+    pid: string,
+    weapon: string,
+    rarity = 2,
+    affix = "keen",
+    earned = true,
+  ) {
     const p = h.state().players.get("p1");
     const pk = new PickupState();
     pk.id = pid;
@@ -2003,9 +2010,10 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
       const level = beltLevelFor(id);
       expect(level.id).toBe(id);
       const dim = getDimension(level.dimensionId);
-      expect(dim.id, `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`).toBe(
-        level.dimensionId,
-      );
+      expect(
+        dim.id,
+        `${id} dimensionId "${level.dimensionId}" resolves (not the wild-west fallback)`,
+      ).toBe(level.dimensionId);
       expect(ENEMY_KINDS[dim.boss]?.archetype, `${dim.boss} is a registered boss`).toBe("boss");
       expect(level.rooms.some((r) => r.boss)).toBe(true); // has a boss finale room
       expect(level.rooms.length).toBeGreaterThanOrEqual(2);
@@ -2016,12 +2024,17 @@ describe("GameRoom — §36 belt levels are well-formed", () => {
 // §38 the signature draft is WEAPON-GATED: parry augments are universal, gun/cast augments only offered to
 // the matching delivery (so ranged/caster get a signature, and melee never draws a dead gun/cast pick).
 describe("GameRoom — §38 weapon-gated signature draft", () => {
-  const GUN_AUGS = Object.values(AUGMENTS).filter((a) => a.weapon === "gun").map((a) => a.id);
-  const CAST_AUGS = Object.values(AUGMENTS).filter((a) => a.weapon === "cast").map((a) => a.id);
+  const GUN_AUGS = Object.values(AUGMENTS)
+    .filter((a) => a.weapon === "gun")
+    .map((a) => a.id);
+  const CAST_AUGS = Object.values(AUGMENTS)
+    .filter((a) => a.weapon === "cast")
+    .map((a) => a.id);
   /** All ids that can EVER appear across many draws for a given weapon kind. */
   const seen = (weaponKind?: "gun" | "cast") => {
     const s = new Set<string>();
-    for (let i = 0; i < 400; i++) for (const id of draftAugments(Math.random, weaponKind)) s.add(id);
+    for (let i = 0; i < 400; i++)
+      for (const id of draftAugments(Math.random, weaponKind)) s.add(id);
     return s;
   };
   it("melee (no weapon kind) never offers gun OR cast augments", () => {
@@ -2110,7 +2123,11 @@ describe("GameRoom — §44 safety gates", () => {
       h.send("p1", "toggleTraining");
       expect(h.state().mode).toBe("arena"); // the Testing Grounds do not exist on a public deploy
       h.send("p1", "spawnBossDef", { kind: "moss-stone-golem" });
-      expect([...h.state().enemies.values()].some((e: { kind: string }) => e.kind === "moss-stone-golem")).toBe(false);
+      expect(
+        [...h.state().enemies.values()].some(
+          (e: { kind: string }) => e.kind === "moss-stone-golem",
+        ),
+      ).toBe(false);
       const before = h.state().players.get("p1").weapon;
       h.send("p1", "devEquip", { weapon: "x-sword-bone" });
       expect(h.state().players.get("p1").weapon).toBe(before);
@@ -2124,7 +2141,10 @@ describe("GameRoom — §44 safety gates", () => {
     const h = makeRoom({ belt: true });
     asProd(() => {
       h.room.clients.push({ sessionId: "rich" });
-      h.room.onJoin({ sessionId: "rich" }, { scrip: 65535, up: { vitality: 9, fortune: 9, power: 9 } });
+      h.room.onJoin(
+        { sessionId: "rich" },
+        { scrip: 65535, up: { vitality: 9, fortune: 9, power: 9 } },
+      );
     });
     const p = h.state().players.get("rich");
     expect(p.scrip).toBe(0);
@@ -2193,7 +2213,8 @@ describe("improve2 integrity regressions", () => {
     const h = makeRoom();
     h.join("drop-law");
     const row = Object.entries(ENEMY_KINDS).find(
-      ([, kind]) => !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
+      ([, kind]) =>
+        !!kind.wieldsWeapon && !!kind.dropWeapon && !kind.shifter && kind.archetype !== "boss",
     );
     if (!row) throw new Error("expected a weapon-wielding enemy fixture");
     const enemy = new EnemyState();
@@ -2674,7 +2695,9 @@ describe("GameRoom — server-authoritative XP Echoes", () => {
     for (let i = 0; i < 10 && !echo.collectorId; i++) h.tick(1);
     expect(echo.collectorId).toBe("p1");
 
-    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== "p1");
+    h.room.clients = h.room.clients.filter(
+      (client: { sessionId: string }) => client.sessionId !== "p1",
+    );
     h.room.onLeave({ sessionId: "p1" });
     h.tick(1);
 
@@ -3023,7 +3046,9 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     expect(runtime.localHp[3]).toBe(neighborHp);
     expect(root.hp).toBe(rootHp - 80);
     expect(h.state().enemies.has(root.id)).toBe(true);
-    expect([...h.state().xpEchoes.values()].map((echo: { value: number }) => echo.value)).toEqual([3]);
+    expect([...h.state().xpEchoes.values()].map((echo: { value: number }) => echo.value)).toEqual([
+      3,
+    ]);
   });
 
   it("holds twelve live parts in twelve fixed wire rows without spending twelve enemy rows", () => {
@@ -3053,10 +3078,12 @@ describe("GameRoom - Serraketh authoritative integration", () => {
     for (const id of kills) h.state().enemies.delete(id);
 
     expect(h.room.lockedWormEchoIds.size).toBe(0);
-    expect([...h.state().xpEchoes.values()].reduce(
-      (sum: number, echo: { value: number }) => sum + echo.value,
-      0,
-    )).toBe(wormRoomShared.WORM_TOTAL_XP);
+    expect(
+      [...h.state().xpEchoes.values()].reduce(
+        (sum: number, echo: { value: number }) => sum + echo.value,
+        0,
+      ),
+    ).toBe(wormRoomShared.WORM_TOTAL_XP);
     expect(h.state().wormBoss.active).toBe(false);
     expect(h.state().portalOpen).toBe(true);
   });
@@ -3218,7 +3245,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.x).toBeCloseTo(displaced, 6);
     expect(h.state().telegraphs.has(`melee:${enemy.id}`)).toBe(false);
     h.tick(1);
-    expect(((h.state().tick - returnStart) >>> 0)).toBeGreaterThanOrEqual(8);
+    expect((h.state().tick - returnStart) >>> 0).toBeGreaterThanOrEqual(8);
     expect(enemy.x).toBeCloseTo(displaced, 6);
 
     let row: AnyRoom;
@@ -3271,7 +3298,9 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(enemy.comboSeq).toBe(3); // each of the three strike Locks, no extra churn
     expect(st.phase).toBe("recover");
     expect(enemy.comboFlags).toBe(0);
-    expect(hp - player.hp).toBeLessThanOrEqual(player.maxHp * enemyComboShared.COMBO_DAMAGE_CAP_FRAC);
+    expect(hp - player.hp).toBeLessThanOrEqual(
+      player.maxHp * enemyComboShared.COMBO_DAMAGE_CAP_FRAC,
+    );
 
     for (let i = 0; i < 40 && player.height > 0; i++) h.tick(1);
     expect(player.height).toBe(0);
@@ -3323,7 +3352,10 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
     expect(ENEMY_KINDS.ronin?.combos).toContainEqual({ combo: "k3-gale-cross", minDepth: 3 });
-    expect(ENEMY_KINDS["vault-ronin"]?.combos).toContainEqual({ combo: "k4-sky-hook", minDepth: 5 });
+    expect(ENEMY_KINDS["vault-ronin"]?.combos).toContainEqual({
+      combo: "k4-sky-hook",
+      minDepth: 5,
+    });
     expect(ENEMY_KINDS["shifter-cinder-marshal"]?.combos).toEqual([
       { combo: "k1-sanren", minDepth: 1 },
     ]);
@@ -3433,8 +3465,10 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     expect(enemyComboShared.verticalPhase(10, 100)).toBe("rising");
     expect(enemyComboShared.verticalPhase(10, 0)).toBe("apex");
     expect(enemyComboShared.verticalPhase(10, -100)).toBe("falling");
-    expect(enemyComboShared.verticalTimeToGround(0, enemyComboShared.JUMP_VELOCITY) * enemyComboShared.MOVE_SPEED)
-      .toBeGreaterThan(160);
+    expect(
+      enemyComboShared.verticalTimeToGround(0, enemyComboShared.JUMP_VELOCITY) *
+        enemyComboShared.MOVE_SPEED,
+    ).toBeGreaterThan(160);
 
     const { h, player } = makeJumpFeelRoom("hop-gap");
     const { cols, tileSize } = h.room.map;
@@ -3508,7 +3542,8 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
       sendJumpFeelInput(reach.h, reach.player.id, seq, { crouchHeld: true, dx: 1 });
     }
     expect(reach.combat.stance).toBe(enemyComboShared.STANCE_DASH);
-    for (let i = 0; i < 20 && reach.combat.stance === enemyComboShared.STANCE_DASH; i++) reach.h.tick(1);
+    for (let i = 0; i < 20 && reach.combat.stance === enemyComboShared.STANCE_DASH; i++)
+      reach.h.tick(1);
     expect(reach.player.x - startX).toBeCloseTo(enemyComboShared.DIST_JUMP_REACH, 5);
     expect(reach.player.x - startX).toBeGreaterThan(320);
     expect(reach.combat.lastLandingTier).toBe(enemyComboShared.LANDING_TIER_HEAVY);
@@ -3542,7 +3577,12 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
     const tx = Math.floor(rawX / h.room.map.tileSize);
     const ty = Math.floor(rawY / h.room.map.tileSize);
     h.room.map.tiles[ty * h.room.map.cols + tx] = TILE_PIT;
-    const expected = enemyComboShared.safeSpawnPos(h.room.map, rawX, rawY, enemyComboShared.PLAYER_RADIUS);
+    const expected = enemyComboShared.safeSpawnPos(
+      h.room.map,
+      rawX,
+      rawY,
+      enemyComboShared.PLAYER_RADIUS,
+    );
     const dx = expected.x - player.x;
     const dy = expected.y - player.y;
     const d = Math.hypot(dx, dy);
@@ -3695,13 +3735,8 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
 // Wave 21a — appended class-dissolution economy, identity-snapshot, quirk-seam, and schema fixtures.
 describe("GameRoom — classmerge 21a", () => {
-  const attrTotal = (player: {
-    str: number;
-    dex: number;
-    int: number;
-    con: number;
-    luk: number;
-  }) => player.str + player.dex + player.int + player.con + player.luk;
+  const attrTotal = (player: { str: number; dex: number; int: number; con: number; luk: number }) =>
+    player.str + player.dex + player.int + player.con + player.luk;
 
   it("drains every timed-out decision in one pass through weapon default + normal ballast", () => {
     const h = makeRoom();
@@ -3874,18 +3909,8 @@ function beginSlide(fixture: ReturnType<typeof makeSlideRoom>, seq = 1, dx = 1, 
   expect(fixture.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
 }
 
-function addSlideMeleeEnemy(
-  fixture: ReturnType<typeof makeSlideRoom>,
-  id: string,
-  offsetX = -40,
-) {
-  const enemy = addJumpDummy(
-    fixture.h,
-    id,
-    fixture.player.x + offsetX,
-    fixture.player.y,
-    1_000,
-  );
+function addSlideMeleeEnemy(fixture: ReturnType<typeof makeSlideRoom>, id: string, offsetX = -40) {
+  const enemy = addJumpDummy(fixture.h, id, fixture.player.x + offsetX, fixture.player.y, 1_000);
   enemy.kind = "vault-ronin";
   return enemy;
 }
@@ -3919,16 +3944,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     const hp = fixture.player.hp;
     const dodged = fixture.player.dodgedSeq;
     for (let tick = 0; tick < 5; tick++) {
-      fixture.h.room.applyBossMelee(
-        fixture.player.x - 20,
-        fixture.player.y,
-        1,
-        0,
-        80,
-        1,
-        7,
-        0,
-      );
+      fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
       expect(fixture.player.hp).toBe(hp);
       if (tick < 4) fixture.h.tick(1);
     }
@@ -3936,16 +3952,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     expect(fixture.player.dodgedSeq).toBe((dodged + 5) & 0xff);
 
     fixture.h.tick(1);
-    fixture.h.room.applyBossMelee(
-      fixture.player.x - 20,
-      fixture.player.y,
-      1,
-      0,
-      80,
-      1,
-      7,
-      0,
-    );
+    fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 7, 0);
     expect(fixture.player.hp).toBe(hp - 7);
   });
 
@@ -4028,16 +4035,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     fixture.h.room.bossController = { acceptWormParry };
     const hp = fixture.player.hp;
     const parried = fixture.player.parriedSeq;
-    fixture.h.room.applyBossMelee(
-      fixture.player.x - 20,
-      fixture.player.y,
-      1,
-      0,
-      80,
-      1,
-      15,
-      200,
-    );
+    fixture.h.room.applyBossMelee(fixture.player.x - 20, fixture.player.y, 1, 0, 80, 1, 15, 200);
     expect(fixture.player.hp).toBe(hp);
     expect(fixture.player.parriedSeq).toBe(parried);
     expect(acceptWormParry).not.toHaveBeenCalled();
@@ -4083,15 +4081,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     const fixture = makeSlideRoom("slide-beam");
     beginSlide(fixture);
     const hp = fixture.player.hp;
-    fixture.h.room.damageBeamRect(
-      fixture.player.x - 20,
-      fixture.player.y,
-      40,
-      20,
-      0,
-      9,
-      0,
-    );
+    fixture.h.room.damageBeamRect(fixture.player.x - 20, fixture.player.y, 40, 20, 0, 9, 0);
     expect(fixture.player.hp).toBe(hp - 9);
   });
 
@@ -4099,15 +4089,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     const fixture = makeSlideRoom("slide-ring");
     beginSlide(fixture);
     const hp = fixture.player.hp;
-    fixture.h.room.damageRingBand(
-      fixture.player.x - 50,
-      fixture.player.y,
-      50,
-      2,
-      0,
-      0,
-      9,
-    );
+    fixture.h.room.damageRingBand(fixture.player.x - 50, fixture.player.y, 50, 2, 0, 0, 9);
     expect(fixture.player.hp).toBe(hp - 9);
   });
 
@@ -4178,14 +4160,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
     let momentumY = 0;
     for (let tick = 0; tick < enemyComboShared.SLIDE_GROUND_TICKS; tick++) {
       if (tick > 0) {
-        const angle = enemyComboShared.slideSteeredAngle(
-          momentumX,
-          momentumY,
-          0,
-          1,
-          0.05,
-          false,
-        );
+        const angle = enemyComboShared.slideSteeredAngle(momentumX, momentumY, 0, 1, 0.05, false);
         momentumX = Math.cos(angle) * speed;
         momentumY = Math.sin(angle) * speed;
       }
@@ -4367,12 +4342,7 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
     miss.combat.momentumX = 400;
     miss.combat.momentumY = 0;
     miss.player.moveStance = enemyComboShared.STANCE_SLIDE;
-    miss.h.room.finishPlayerLanding(
-      miss.player,
-      miss.combat,
-      enemyComboShared.STANCE_SLIDE,
-      -300,
-    );
+    miss.h.room.finishPlayerLanding(miss.player, miss.combat, enemyComboShared.STANCE_SLIDE, -300);
     for (let age = 1; age <= enemyComboShared.SLIDE_LAND_WINDOW_TICKS; age++)
       miss.h.room.stepSlideStance(miss.player, miss.combat);
     expect(miss.combat.stance).toBe(enemyComboShared.STANCE_SLIDE);
@@ -4437,21 +4407,18 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
   it("converges perfect chains below the ceiling and makes sloppy chains decay", () => {
     let takeoff: number = enemyComboShared.SLIDE_SPEED_CAP;
     for (let chain = 0; chain < 128; chain++) {
-      const nextStart = enemyComboShared.slideLandingSpeed(
-        enemyComboShared.slideHopSpeed(takeoff),
-      );
+      const nextStart = enemyComboShared.slideLandingSpeed(enemyComboShared.slideHopSpeed(takeoff));
       expect(nextStart).toBeLessThanOrEqual(enemyComboShared.SLIDE_SPEED_CAP);
       takeoff = enemyComboShared.slideGroundNextSpeed(
         enemyComboShared.slideGroundNextSpeed(nextStart),
       );
     }
     expect(takeoff).toBeCloseTo(477.4, 1);
-    expect(
-      enemyComboShared.slideLandingSpeed(enemyComboShared.slideHopSpeed(takeoff)),
-    ).toBeCloseTo(507.4, 1);
-    expect(enemyComboShared.slideLandingSpeed(100_000)).toBe(
-      enemyComboShared.SLIDE_SPEED_CAP,
+    expect(enemyComboShared.slideLandingSpeed(enemyComboShared.slideHopSpeed(takeoff))).toBeCloseTo(
+      507.4,
+      1,
     );
+    expect(enemyComboShared.slideLandingSpeed(100_000)).toBe(enemyComboShared.SLIDE_SPEED_CAP);
 
     const sloppyFixedPoint = (groundTicks: number) => {
       const decay = enemyComboShared.SLIDE_GROUND_DECAY ** groundTicks;
@@ -4899,7 +4866,9 @@ describe("ULT U1 five authoritative family executions", () => {
     const enemy = addUltimateEnemy(h, "seis-dummy", 1200, 1000, DUMMY_HP, "dummy");
     const teleportSeq = player.teleportSeq;
     h.send(id, "ultimate", { tx: 1200, ty: 1000 });
-    h.tick(1 + enemyComboShared.ULT_SEISMARCH_WINDUP_TICKS + enemyComboShared.ULT_SEISMARCH_AIR_TICKS);
+    h.tick(
+      1 + enemyComboShared.ULT_SEISMARCH_WINDUP_TICKS + enemyComboShared.ULT_SEISMARCH_AIR_TICKS,
+    );
     expect(player.x).toBeCloseTo(1200, 4);
     expect(player.teleportSeq).toBe(teleportSeq + 2); // scripted-motion start and landing
     expect(enemy.hp).toBeLessThan(DUMMY_HP);
@@ -4922,7 +4891,9 @@ describe("ULT U1 five authoritative family executions", () => {
     h.send(id, "ultimate", { tx: 1500, ty: 1000 });
     h.tick();
     const captured = h.room.combat.get(id).ult.targets.map((target: { id: string }) => target.id);
-    expect(captured).toEqual(enemies.slice(0, enemyComboShared.ULT_ALPHA_MAX_TARGETS).map((e) => e.id));
+    expect(captured).toEqual(
+      enemies.slice(0, enemyComboShared.ULT_ALPHA_MAX_TARGETS).map((e) => e.id),
+    );
     h.tick(16);
     expect(enemies.slice(0, 5).every((enemy) => enemy.hp < 1000)).toBe(true);
     expect(enemies.slice(5).every((enemy) => enemy.hp === 1000)).toBe(true);
@@ -5004,9 +4975,9 @@ describe("ULT U1 five authoritative family executions", () => {
     const teleportSeq = player.teleportSeq;
     h.send(id, "ultimate", { tx: 9000, ty: 1000 });
     h.tick();
-    expect(Math.hypot(player.ultTargetX - origin.x, player.ultTargetY - origin.y)).toBeLessThanOrEqual(
-      enemyComboShared.ULT_BLINK_RANGE + 1e-6,
-    );
+    expect(
+      Math.hypot(player.ultTargetX - origin.x, player.ultTargetY - origin.y),
+    ).toBeLessThanOrEqual(enemyComboShared.ULT_BLINK_RANGE + 1e-6);
     h.tick(enemyComboShared.ULT_BLINK_WINDUP_TICKS);
     expect(player.teleportSeq).toBe(teleportSeq + 1);
     expect(h.room.ultimateDecoys.has(id)).toBe(true);
@@ -5319,7 +5290,10 @@ describe("pet v1 Bond XP qualification, terminal banking, and lifecycle", () => 
     pet.acceptedActionsThisDimension = 3;
     h.room.awardPetDimensionClear();
     h.room.awardPetDimensionClear();
-    expect({ pending: pet.pendingBondXp, clears: pet.clearReceipts }).toEqual({ pending: 100, clears: 1 });
+    expect({ pending: pet.pendingBondXp, clears: pet.clearReceipts }).toEqual({
+      pending: 100,
+      clears: 1,
+    });
   });
 
   it("training/dummy attacks never qualify a Bond action or clear receipt", () => {
@@ -5565,7 +5539,13 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(enemyComboShared.pairEligible(sabre, katana)).toBe(true);
     expect(enemyComboShared.pairEligible(revolver, nailgun)).toBe(true);
     expect(enemyComboShared.pairEligible(sabre, revolver)).toBe(false);
-    expect(enemyComboShared.pairEligible(sabre, { ...katana, id: "two-hand", tags: { ...katana.tags, grip: "2H" } })).toBe(false);
+    expect(
+      enemyComboShared.pairEligible(sabre, {
+        ...katana,
+        id: "two-hand",
+        tags: { ...katana.tags, grip: "2H" },
+      }),
+    ).toBe(false);
     expect(enemyComboShared.pairEligible(sabre, WEAPONS["twin-bowie-fangs"])).toBe(false);
     expect(enemyComboShared.pairEligible(sabre, WEAPONS["rusty-cleaver"])).toBe(false);
     expect(enemyComboShared.pairEligible(sabre, sabre)).toBe(false);
@@ -5578,10 +5558,12 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     };
     const castOff = { ...cast, id: "test-wand-b", tags: { ...cast.tags, family: "orb" } };
     expect(enemyComboShared.pairEligible(cast as never, castOff as never)).toBe(true);
-    expect(enemyComboShared.pairEligible(
-      cast as never,
-      { ...castOff, beam: WEAPONS["x2-voltcaster-machine-pistol"]!.beam } as never,
-    )).toBe(false);
+    expect(
+      enemyComboShared.pairEligible(
+        cast as never,
+        { ...castOff, beam: WEAPONS["x2-voltcaster-machine-pistol"]!.beam } as never,
+      ),
+    ).toBe(false);
   });
 
   it("charges the better half's real sell value, unbinds free, and preserves anti-launder identity", () => {
@@ -5658,15 +5640,19 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     f.off.cooldown = 0;
     f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
     expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
-    expect(f.h.room.meleeSwings.get(`${f.player.id}:0`).swing.effectiveCooldown)
-      .toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.3, 8);
+    expect(f.h.room.meleeSwings.get(`${f.player.id}:0`).swing.effectiveCooldown).toBeCloseTo(
+      enemyComboShared.PAIR_TEMPO * 0.3,
+      8,
+    );
 
     f.combat.handGate = 0;
     f.off.cooldown = 0;
     f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
     expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.3, 8);
-    expect(f.h.room.meleeSwings.get(`${f.player.id}:1`).swing.effectiveCooldown)
-      .toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
+    expect(f.h.room.meleeSwings.get(`${f.player.id}:1`).swing.effectiveCooldown).toBeCloseTo(
+      enemyComboShared.PAIR_TEMPO * 0.52,
+      8,
+    );
   });
 
   it("bills one Drive debit per accepted gun hand using the post-cap contribution", () => {
@@ -5708,10 +5694,9 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     f.combat.attackBuffer = 1;
     f.h.room.stepSim(0.05);
     expect(f.player.attackSeq).toBe(2);
-    expect(enemyComboShared.dualHandForSeq(
-      (f.player.attackSeq + 1) >>> 0,
-      f.player.pairBaseSeq,
-    )).toBe(dryHand);
+    expect(
+      enemyComboShared.dualHandForSeq((f.player.attackSeq + 1) >>> 0, f.player.pairBaseSeq),
+    ).toBe(dryHand);
   });
 
   it("counts a linked pair as one set entry and applies the union of requirements to both hands", () => {
@@ -5749,7 +5734,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
       const offDamage = enemyComboShared.pairDamagePerUse(off);
       const mult = enemyComboShared.dualOffhandDamageMultiplier(lead, off);
       const ratio =
-        lead.cooldown * (leadDamage + offDamage * mult) /
+        (lead.cooldown * (leadDamage + offDamage * mult)) /
         (leadDamage * enemyComboShared.PAIR_TEMPO * (lead.cooldown + off.cooldown));
       expect(ratio).toBeLessThanOrEqual(cap + 1e-9);
     };
@@ -5758,10 +5743,19 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
   });
 
   it("derives gun/caster parity through uint32 wrap and advances melee through the six-beat chain", () => {
-    expect([1, 2, 3, 4].map((seq) => enemyComboShared.dualHandForSeq(seq, 0))).toEqual([0, 1, 0, 1]);
+    expect([1, 2, 3, 4].map((seq) => enemyComboShared.dualHandForSeq(seq, 0))).toEqual([
+      0, 1, 0, 1,
+    ]);
     expect(enemyComboShared.dualHandForSeq(0, 0xffffffff)).toBe(0);
     expect(enemyComboShared.dualHandForSeq(1, 0xffffffff)).toBe(1);
-    expect(enemyComboShared.DUAL_MELEE_PAIR_BAR).toEqual(["lead", "off", "lead", "off", "lead", "both"]);
+    expect(enemyComboShared.DUAL_MELEE_PAIR_BAR).toEqual([
+      "lead",
+      "off",
+      "lead",
+      "off",
+      "lead",
+      "both",
+    ]);
 
     let previousSeq: number | undefined;
     let previousAt = 0;
@@ -5824,8 +5818,9 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
       offCharges: 0,
       offMaxCharges: 0,
     });
-    expect([fresh.offhandSlot, fresh.pairBaseSeq, fresh.offCharges, fresh.offMaxCharges])
-      .toEqual([255, 0, 0, 0]);
+    expect([fresh.offhandSlot, fresh.pairBaseSeq, fresh.offCharges, fresh.offMaxCharges]).toEqual([
+      255, 0, 0, 0,
+    ]);
   });
 });
 
@@ -5869,8 +5864,10 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
     expect(sanren.steps[0]?.range).toBeCloseTo(179.4, 10);
     expect(sanren.steps[0]?.halfArc).toBeCloseTo(1.17, 10);
     expect(sanren.steps.map((step) => step.windupTicks)).toEqual([8, 6, 15]);
-    expect(enemyComboShared.TOUGH_COMBOS["h1-sweep-overhead"]?.steps[0]?.halfArc)
-      .toBeCloseTo(2.951, 10); // 2.27 → 2.951
+    expect(enemyComboShared.TOUGH_COMBOS["h1-sweep-overhead"]?.steps[0]?.halfArc).toBeCloseTo(
+      2.951,
+      10,
+    ); // 2.27 → 2.951
   });
 
   function addStackedEnemy(
@@ -5914,10 +5911,7 @@ describe("server-tuning wave — momentum, melee pressure, and enemy separation"
         const a = crowd[i];
         const b = crowd[j];
         if (!a || !b) throw new Error("crowd fixture index escaped its fixed bounds");
-        minimumGap = Math.min(
-          minimumGap,
-          Math.hypot(a.x - b.x, a.y - b.y),
-        );
+        minimumGap = Math.min(minimumGap, Math.hypot(a.x - b.x, a.y - b.y));
       }
     }
     expect(minimumGap).toBeGreaterThanOrEqual(35.5);
@@ -5959,7 +5953,7 @@ function equipGearSet(
   setId: string,
 ) {
   for (const slot of enemyComboShared.GEAR_SLOTS) {
-    const suffix = slot === "facialHair" ? "facial-hair" : slot;
+    const suffix = slot === "facialHair" ? "facial-hair" : slot === "torso" ? "shirt" : slot;
     const id = `${setId}-${suffix}`;
     if (!enemyComboShared.isGearId(id)) throw new Error(`missing gear fixture ${id}`);
     account.ownedGear.push(id);
@@ -5970,18 +5964,23 @@ function equipGearSet(
 describe("gear G2 join authority and frozen runtime", () => {
   it("gives validated v3 gear precedence while leaving legacy character kits as the no-loadout fallback", () => {
     const h = makeRoom();
-    const geared = joinGearAccount(h, "gear-neon", (account) => equipGearSet(account, "neon-mirage"));
+    const geared = joinGearAccount(h, "gear-neon", (account) =>
+      equipGearSet(account, "neon-mirage"),
+    );
     expect(enemyComboShared.ATTRS.map((attr) => geared.player[attr])).toEqual([1, 4, 1, 2, 2]);
     expect(geared.player.gearSeeded).toBe(true);
     expect(geared.combat.quirk.id).toBe("package-deal");
     expect(geared.combat.mods.drawLockMult).toBe(0);
     expect(geared.player.runCharacter).toBe("drifter");
-    expect([geared.player.upVitality, geared.player.upFortune, geared.player.upPower]).toEqual([0, 0, 0]);
-    expect(enemyComboShared.decodeGearCosmetics(
-      geared.player.gearUpper,
-      geared.player.gearLower,
-    )).toEqual(geared.account.equippedGear);
-    expect(enemyComboShared.ATTRS.map((attr) => geared.player.allocRun[attr])).toEqual([0, 0, 0, 0, 0]);
+    expect([geared.player.upVitality, geared.player.upFortune, geared.player.upPower]).toEqual([
+      0, 0, 0,
+    ]);
+    expect(
+      enemyComboShared.decodeGearCosmetics(geared.player.gearUpper, geared.player.gearLower),
+    ).toEqual(geared.account.equippedGear);
+    expect(enemyComboShared.ATTRS.map((attr) => geared.player.allocRun[attr])).toEqual([
+      0, 0, 0, 0, 0,
+    ]);
 
     h.state().mode = "training";
     h.send("gear-neon", "cycleCharacter");
@@ -6122,14 +6121,26 @@ describe("GameRoom — weapon bank carry and exact pair projection", () => {
       earned: false,
       bankEntryId: "",
     });
-    expect(joined.player.slots.slice(1, 3).map((slot: import("@dd/shared").ArsenalSlot) => ({
-      weapon: slot.weapon,
-      instanceId: slot.instanceId,
-      entryId: slot.bankEntryId,
-      role: slot.bankPairRole,
-    }))).toEqual([
-      { weapon: pair.lead.weaponId, instanceId: pair.lead.instanceId, entryId: pair.entryId, role: "lead" },
-      { weapon: pair.offhand.weaponId, instanceId: pair.offhand.instanceId, entryId: pair.entryId, role: "offhand" },
+    expect(
+      joined.player.slots.slice(1, 3).map((slot: import("@dd/shared").ArsenalSlot) => ({
+        weapon: slot.weapon,
+        instanceId: slot.instanceId,
+        entryId: slot.bankEntryId,
+        role: slot.bankPairRole,
+      })),
+    ).toEqual([
+      {
+        weapon: pair.lead.weaponId,
+        instanceId: pair.lead.instanceId,
+        entryId: pair.entryId,
+        role: "lead",
+      },
+      {
+        weapon: pair.offhand.weaponId,
+        instanceId: pair.offhand.instanceId,
+        entryId: pair.entryId,
+        role: "offhand",
+      },
     ]);
     expect([joined.player.activeSlot, joined.player.offhandSlot]).toEqual([1, 2]);
     expect(joined.account.weaponBank.stash).toEqual([safe]);
@@ -6175,7 +6186,9 @@ describe("GameRoom — weapon bank carry and exact pair projection", () => {
       sourceWorldTier: 0,
     });
     expect(enemyComboShared.WEAPON_INSTANCE_ID_RE.test(found.entry.weapon.instanceId)).toBe(true);
-    expect(joined.player.slots[joined.player.activeSlot].instanceId).toBe(found.entry.weapon.instanceId);
+    expect(joined.player.slots[joined.player.activeSlot].instanceId).toBe(
+      found.entry.weapon.instanceId,
+    );
 
     h.room.completeExtraction();
     expect(joined.account.weaponBank.stash).toEqual([found.entry]);
@@ -6250,7 +6263,9 @@ describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and sh
     const samePlayer = joined.player;
     samePlayer.slots[1].cooldown = 0.73;
     samePlayer.slots[1].resourceReady = true;
-    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== joined.player.id);
+    h.room.clients = h.room.clients.filter(
+      (client: { sessionId: string }) => client.sessionId !== joined.player.id,
+    );
     h.room.onLeave(joined.client);
     expect(joined.account.weaponBank.expedition?.entries[0]?.entry).toEqual(carried);
     expect(joined.account.weaponBank.stash).toEqual([]);
@@ -6261,7 +6276,9 @@ describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and sh
     expect(samePlayer.slots[1].cooldown).toBe(0.73);
     expect(joined.account.weaponBank.expedition?.entries).toHaveLength(1);
 
-    h.room.clients = h.room.clients.filter((client: { sessionId: string }) => client.sessionId !== joined.player.id);
+    h.room.clients = h.room.clients.filter(
+      (client: { sessionId: string }) => client.sessionId !== joined.player.id,
+    );
     h.room.onLeave(joined.client);
     h.room.enterTerminalOutcome("victory");
     expect(joined.account.weaponBank.expedition).toBeNull();
@@ -6295,7 +6312,9 @@ describe("GameRoom — at-stake ledger across down/rez, wipe, disconnect, and sh
       from: "stash",
     });
     expect(joined.account.scrip).toBe(4);
-    expect(joined.messages.filter((message) => message.type === "stashSaleReceipt")).toHaveLength(2);
+    expect(joined.messages.filter((message) => message.type === "stashSaleReceipt")).toHaveLength(
+      2,
+    );
   });
 });
 
@@ -6315,8 +6334,12 @@ describe("GameRoom - weapon-bank explicit abandon boundary", () => {
     expect(solo.state().mode).toBe("training");
     expect(joined.account.weaponBank.stash).toEqual([safe]);
     expect(joined.account.weaponBank.expedition?.entries).toEqual([]);
-    expect(joined.player.slots.some((slot: import("@dd/shared").ArsenalSlot) =>
-      slot.weapon === DEFAULT_WEAPON && slot.homeIssue)).toBe(true);
+    expect(
+      joined.player.slots.some(
+        (slot: import("@dd/shared").ArsenalSlot) =>
+          slot.weapon === DEFAULT_WEAPON && slot.homeIssue,
+      ),
+    ).toBe(true);
 
     const coop = makeRoom({ belt: true });
     const hostStake = roomBankSingle(52);
@@ -6363,36 +6386,44 @@ describe("GameRoom — schema-31 Drive authority", () => {
     expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
     expect(h.state().schemaVersion).toBe(31);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
-    expect(player.weaponResource).toMatchObject({ valueQ: 10_000, regenMode: 1, beamLockEndTick: 0 });
+    expect(player.weaponResource).toMatchObject({
+      valueQ: 10_000,
+      regenMode: 1,
+      beamLockEndTick: 0,
+    });
 
     combat.drive.valueF = cost - 0.001;
     player.weaponResource.valueQ = Math.floor(cost * 100); // deliberately optimistic mirror
-    expect(h.room.trySpendWeaponResource(
-      player,
-      combat,
-      weapon,
-      weapon.id,
-      enemyComboShared.CombatDelivery.Gun,
-      0,
-      interval,
-      1,
-      0,
-      "tap",
-    ).accepted).toBe(false);
+    expect(
+      h.room.trySpendWeaponResource(
+        player,
+        combat,
+        weapon,
+        weapon.id,
+        enemyComboShared.CombatDelivery.Gun,
+        0,
+        interval,
+        1,
+        0,
+        "tap",
+      ).accepted,
+    ).toBe(false);
 
     combat.drive.valueF = cost;
-    expect(h.room.trySpendWeaponResource(
-      player,
-      combat,
-      weapon,
-      weapon.id,
-      enemyComboShared.CombatDelivery.Gun,
-      0,
-      interval,
-      1,
-      0,
-      "tap",
-    ).accepted).toBe(true);
+    expect(
+      h.room.trySpendWeaponResource(
+        player,
+        combat,
+        weapon,
+        weapon.id,
+        enemyComboShared.CombatDelivery.Gun,
+        0,
+        interval,
+        1,
+        0,
+        "tap",
+      ).accepted,
+    ).toBe(true);
     expect(combat.drive.valueF).toBe(0);
     expect(player.weaponResource.valueQ).toBe(0);
 
@@ -6766,12 +6797,14 @@ describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
         requestedWorldTier: 0,
       },
     });
-    const joined = h.room.metaAccounts.get("bank-stale-expedition") as import("@dd/shared").MetaAccountV4;
+    const joined = h.room.metaAccounts.get(
+      "bank-stale-expedition",
+    ) as import("@dd/shared").MetaAccountV4;
     // The stale stake is gone forever — never banked, never carried forward.
     expect(joined.weaponBank.stash).toEqual([]);
-    expect(
-      joined.weaponBank.expedition?.entries.map((row) => row.entry.entryId),
-    ).toEqual([kept.entryId]);
+    expect(joined.weaponBank.expedition?.entries.map((row) => row.entry.entryId)).toEqual([
+      kept.entryId,
+    ]);
     expect(joined.weaponBank.expedition?.runId).not.toBe("run_dead-room");
     // The player is in the room with the NEW carry materialized — the join was not rejected.
     expect(h.state().players.get("bank-stale-expedition")).toBeTruthy();

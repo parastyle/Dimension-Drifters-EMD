@@ -1,6 +1,6 @@
 import {
-  applyCastGradeFloor,
   ATTRS,
+  applyCastGradeFloor,
   augmentGateForWeapon,
   CAST_GRADE_FLOOR,
   CAST_GRADE_FLOOR_ENABLED,
@@ -10,13 +10,13 @@ import {
   LEVEL_CAP,
   LEVELUP_WINDOW_SECONDS,
   PLAYABLE_CHARACTERS,
-  POINTS_PER_LEVEL,
   PlayerState,
+  POINTS_PER_LEVEL,
   quirkForCharacter,
   SIGNATURE_INTERVAL,
   spreadForCharacter,
-  type WeaponDef,
   WEAPONS,
+  type WeaponDef,
   xpToNextLevel,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
@@ -212,9 +212,7 @@ describe("§classmerge allocation and migration invariants", () => {
 
   it("chooses timeout defaults by source grade, ATTRS tie order, and CON fallback", () => {
     expect(defaultFlexAttr(WEAPONS["x-staff-arcane-lance"])).toBe("int");
-    expect(
-      defaultFlexAttr({ scalingGrades: { str: "S", dex: "S" } } as WeaponDef),
-    ).toBe("str");
+    expect(defaultFlexAttr({ scalingGrades: { str: "S", dex: "S" } } as WeaponDef)).toBe("str");
     expect(defaultFlexAttr(undefined)).toBe("con");
   });
 
@@ -242,9 +240,7 @@ describe("§classmerge allocation and migration invariants", () => {
     expect(CAST_GRADE_FLOOR_ENABLED).toBe(false);
     expect(applyCastGradeFloor(1.05)).toBe(1.05);
     expect(applyCastGradeFloor(1.05, true)).toBe(CAST_GRADE_FLOOR);
-    expect(applyCastGradeFloor(CAST_GRADE_FLOOR + 0.2, true)).toBeCloseTo(
-      CAST_GRADE_FLOOR + 0.2,
-    );
+    expect(applyCastGradeFloor(CAST_GRADE_FLOOR + 0.2, true)).toBeCloseTo(CAST_GRADE_FLOOR + 0.2);
   });
 
   it("declares roll-dependent descriptors inert until wave 21b owns their seam", () => {
@@ -348,18 +344,21 @@ describe("pet v1 account sanitization and deterministic progression", () => {
   });
 
   it("rejects unsupported/malformed account versions as a safe starter record", () => {
-    expect(petShared.sanitizeMetaAccountV2({ version: 3, pets: { "brass-crab": { bondXp: 3600 } } }))
-      .toEqual(petShared.createMetaAccountV2());
-    expect(petShared.sanitizeMetaAccountV2(["not", "an", "account"]))
-      .toEqual(petShared.createMetaAccountV2());
+    expect(
+      petShared.sanitizeMetaAccountV2({ version: 3, pets: { "brass-crab": { bondXp: 3600 } } }),
+    ).toEqual(petShared.createMetaAccountV2());
+    expect(petShared.sanitizeMetaAccountV2(["not", "an", "account"])).toEqual(
+      petShared.createMetaAccountV2(),
+    );
   });
 
   it("pins every lifetime threshold and derives stage/capstone goldens at levels 1, 9, and 10", () => {
     expect(petShared.PET_BOND_XP_THRESHOLDS).toEqual([
       0, 120, 300, 540, 840, 1200, 1620, 2100, 2700, 3600,
     ]);
-    expect(petShared.PET_BOND_XP_THRESHOLDS.map((xp) => petShared.petLevelForXp(xp)))
-      .toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(petShared.PET_BOND_XP_THRESHOLDS.map((xp) => petShared.petLevelForXp(xp))).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    ]);
     expect(petShared.petLevelForXp(3599)).toBe(9);
     expect([1, 9, 10].map(petShared.petStageBandForLevel)).toEqual([1, 3, 3]);
     expect([1, 9, 10].map(petShared.petHasCapstone)).toEqual([false, false, true]);
@@ -368,29 +367,68 @@ describe("pet v1 account sanitization and deterministic progression", () => {
   it("resolves all eight approved roster formulas at levels 1/9/10", () => {
     const mods = (id: (typeof petShared.PET_IDS)[number]) =>
       [1, 9, 10].map((level) => petShared.petModsForLevel(id, level));
-    expect(mods("verdant-wing").map((m) => [m.passiveRegenMultiplier, m.weaponChargeCapacityAdd]))
-      .toEqual([[1.05, 0], [1.45, 0], [1.5, 1]]);
-    expect(mods("hearth-newt").map((m) => [m.healingReceivedMultiplier, m.descentHealMaxHpFraction]))
-      .toEqual([[1.02, 0], [1.18, 0], [1.2, 0.15]]);
-    expect(mods("lodestar-moth").map((m) => [180 + m.xpMoteReachAdd, m.boundaryEchoReach]))
-      .toEqual([[198, 0], [342, 0], [360, 600]]);
-    expect(mods("copper-snail").map((m) => [m.earnedPickupRadius, m.bagCapacityAdd]))
-      .toEqual([[50, 0], [82, 0], [86, 1]]);
-    expect(mods("gilded-gecko").map((m) => [m.saleBonusRate, m.saleBonusCap]))
-      .toEqual([[0.02, 2], [0.18, 18], [0.2, 30]]);
-    expect(mods("brass-crab").map((m) => [m.reloadDurationMultiplier, m.stowedReloadRate]))
-      .toEqual([[0.99, 1], [0.91, 1], [0.9, 1.25]]);
-    expect(mods("pale-firefly").map((m) => [96 + m.reviveReachAdd, m.reviveHpFraction]))
-      .toEqual([[102, 0], [150, 0], [156, 0.4]]);
-    expect(mods("slate-tortoise").map((m) => [m.groundHazardDamageMultiplier, m.pitRegenMultiplier]))
-      .toEqual([[0.985, 1], [0.865, 1], [0.85, 1.5]]);
+    expect(
+      mods("verdant-wing").map((m) => [m.passiveRegenMultiplier, m.weaponChargeCapacityAdd]),
+    ).toEqual([
+      [1.05, 0],
+      [1.45, 0],
+      [1.5, 1],
+    ]);
+    expect(
+      mods("hearth-newt").map((m) => [m.healingReceivedMultiplier, m.descentHealMaxHpFraction]),
+    ).toEqual([
+      [1.02, 0],
+      [1.18, 0],
+      [1.2, 0.15],
+    ]);
+    expect(mods("lodestar-moth").map((m) => [180 + m.xpMoteReachAdd, m.boundaryEchoReach])).toEqual(
+      [
+        [198, 0],
+        [342, 0],
+        [360, 600],
+      ],
+    );
+    expect(mods("copper-snail").map((m) => [m.earnedPickupRadius, m.bagCapacityAdd])).toEqual([
+      [50, 0],
+      [82, 0],
+      [86, 1],
+    ]);
+    expect(mods("gilded-gecko").map((m) => [m.saleBonusRate, m.saleBonusCap])).toEqual([
+      [0.02, 2],
+      [0.18, 18],
+      [0.2, 30],
+    ]);
+    expect(mods("brass-crab").map((m) => [m.reloadDurationMultiplier, m.stowedReloadRate])).toEqual(
+      [
+        [0.99, 1],
+        [0.91, 1],
+        [0.9, 1.25],
+      ],
+    );
+    expect(mods("pale-firefly").map((m) => [96 + m.reviveReachAdd, m.reviveHpFraction])).toEqual([
+      [102, 0],
+      [150, 0],
+      [156, 0.4],
+    ]);
+    expect(
+      mods("slate-tortoise").map((m) => [m.groundHazardDamageMultiplier, m.pitRegenMultiplier]),
+    ).toEqual([
+      [0.985, 1],
+      [0.865, 1],
+      [0.85, 1.5],
+    ]);
   });
 
   it("banks only bounded XP into an owned row and discards overflow at level 10", () => {
     const account = petShared.createMetaAccountV2();
     account.pets["verdant-wing"]!.bondXp = 3500;
     const first = ultimateProgression.bankPetBondXp(account, "verdant-wing", 999999);
-    expect(first).toMatchObject({ earnedBondXp: 500, awardedBondXp: 100, newBondXp: 3600, newLevel: 10 });
+    expect(first).toMatchObject({
+      earnedBondXp: 500,
+      awardedBondXp: 100,
+      newBondXp: 3600,
+      newLevel: 10,
+    });
     const maxed = ultimateProgression.bankPetBondXp(account, "verdant-wing", 500);
     expect(maxed).toMatchObject({ awardedBondXp: 0, oldLevel: 10, newLevel: 10 });
   });
@@ -399,7 +437,14 @@ describe("pet v1 account sanitization and deterministic progression", () => {
 describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   it("ships the 96 authored launch rows with closed slots/codes and enforces every slot budget", () => {
     expect(petShared.GEAR_SLOTS).toEqual([
-      "hat", "glasses", "facialHair", "shirt", "gloves", "pants", "boots", "cloak",
+      "hat",
+      "glasses",
+      "facialHair",
+      "head",
+      "torso",
+      "gloves",
+      "boots",
+      "cloak",
     ]);
     expect(petShared.LAUNCH_GEAR_IDS).toHaveLength(96);
     expect(petShared.GEAR_IDS).toHaveLength(113);
@@ -437,12 +482,11 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
       pressurized: [1, 2, 4, 2, 1],
     } as const;
     for (const [setId, spread] of Object.entries(expected)) {
-      const loadout: Record<
-        import("@dd/shared").GearSlot,
-        import("@dd/shared").GearId
-      > = { ...petShared.STARTER_GEAR_LOADOUT };
+      const loadout: Record<import("@dd/shared").GearSlot, import("@dd/shared").GearId> = {
+        ...petShared.STARTER_GEAR_LOADOUT,
+      };
       for (const slot of petShared.GEAR_SLOTS) {
-        const suffix = slot === "facialHair" ? "facial-hair" : slot;
+        const suffix = slot === "facialHair" ? "facial-hair" : slot === "torso" ? "shirt" : slot;
         const id = `${setId}-${suffix}`;
         expect(petShared.isGearId(id)).toBe(true);
         if (petShared.isGearId(id)) loadout[slot] = id;
@@ -489,22 +533,27 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     });
     expect(account.selectedPetId).toBe("verdant-wing");
     expect(account.slateTortoisePityMisses).toBe(7);
-    expect(account.ownedGear).toEqual([
-      ...petShared.STARTER_GEAR_IDS,
-      "neon-mirage-hat",
-    ]);
+    expect(account.ownedGear).toEqual([...petShared.STARTER_GEAR_IDS, "neon-mirage-hat"]);
     expect(account.equippedGear).toEqual({
       ...petShared.STARTER_GEAR_LOADOUT,
       hat: "neon-mirage-hat",
     });
     expect(Object.keys(account).sort()).toEqual([
-      "equippedGear", "ownedGear", "pets", "revision", "scrip", "selectedPetId",
-      "slateTortoisePityMisses", "version",
+      "equippedGear",
+      "ownedGear",
+      "pets",
+      "revision",
+      "scrip",
+      "selectedPetId",
+      "slateTortoisePityMisses",
+      "version",
     ]);
-    expect(petShared.sanitizeMetaAccountV3({ version: 3, ownedGear: {} }).ownedGear)
-      .toEqual([...petShared.STARTER_GEAR_IDS]);
-    expect(petShared.sanitizeMetaAccountV3({ version: 99, ownedGear: ["neon-mirage-hat"] }))
-      .toEqual(petShared.createMetaAccountV3());
+    expect(petShared.sanitizeMetaAccountV3({ version: 3, ownedGear: {} }).ownedGear).toEqual([
+      ...petShared.STARTER_GEAR_IDS,
+    ]);
+    expect(
+      petShared.sanitizeMetaAccountV3({ version: 99, ownedGear: ["neon-mirage-hat"] }),
+    ).toEqual(petShared.createMetaAccountV3());
   });
 
   it("migrates META_UPGRADES once into visible highest-rank gear and never stores invisible levels", () => {
@@ -524,7 +573,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
       slateTortoisePityMisses: 6,
       equippedGear: {
         ...petShared.STARTER_GEAR_LOADOUT,
-        shirt: "reinforced-workshirt",
+        torso: "reinforced-workshirt",
         glasses: "loaded-readers",
         gloves: "work-gloves",
       },
@@ -539,21 +588,46 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     expect(petShared.sanitizeMetaAccountV3(migrated)).toEqual(migrated);
   });
 
+  it("migrates every retired pants ownership row to its torso and silently drops equipped pants", () => {
+    for (const [pantsId, torsoId] of Object.entries(petShared.LEGACY_PANTS_TO_TORSO)) {
+      const account = petShared.sanitizeMetaAccountV4({
+        ...petShared.createMetaAccountV4(),
+        revision: 17,
+        ownedGear: [pantsId],
+        equippedGear: {
+          hat: "blank-drifter-hat",
+          glasses: "blank-drifter-glasses",
+          facialHair: "blank-drifter-facial-hair",
+          shirt: torsoId,
+          gloves: "blank-drifter-gloves",
+          pants: pantsId,
+          boots: "blank-drifter-boots",
+          cloak: "blank-drifter-cloak",
+        },
+      });
+      expect(account.revision).toBe(17);
+      expect(account.ownedGear).toContain(torsoId);
+      expect(account.ownedGear).not.toContain(pantsId);
+      expect(account.equippedGear.torso).toBe(torsoId);
+      expect(account.equippedGear.head).toBe("blank-drifter-head");
+      expect("pants" in account.equippedGear).toBe(false);
+    }
+  });
+
   it("uses the identical old quirk object/modifier seam when a hat carries that quirk", () => {
     const loadout = { ...petShared.STARTER_GEAR_LOADOUT, hat: "ash-walker-hat" } as const;
     const gear = petShared.resolveGearLoadout(loadout);
     const legacy = petShared.quirkForCharacter("cc-asha-the-ash-walker");
     expect(gear.quirk).toBe(legacy);
-    expect(gear.quirk.hooks?.onParrySuccess?.({ parryHeal: 9 }))
-      .toEqual(legacy.hooks?.onParrySuccess?.({ parryHeal: 9 }));
+    expect(gear.quirk.hooks?.onParrySuccess?.({ parryHeal: 9 })).toEqual(
+      legacy.hooks?.onParrySuccess?.({ parryHeal: 9 }),
+    );
     const neon = petShared.resolveGearLoadout({
       ...petShared.STARTER_GEAR_LOADOUT,
       hat: "neon-mirage-hat",
     });
     expect(neon.mods.drawLockMult).toBe(
-      petShared.runtimeModsForQuirk(
-        petShared.quirkForCharacter("cc-neon-mirage"),
-      ).drawLockMult,
+      petShared.runtimeModsForQuirk(petShared.quirkForCharacter("cc-neon-mirage")).drawLockMult,
     );
   });
 
@@ -579,12 +653,16 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   it("pins schema 31 while retaining the nested final wire envelope", () => {
     expect(petShared.SCHEMA_VERSION).toBe(31);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
-    const playerMetadata = (petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>)[playerSymbols[0]!];
+    const playerMetadata = (
+      petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>
+    )[playerSymbols[0]!];
     if (!playerMetadata) throw new Error("PlayerState schema metadata is required");
     expect(playerMetadata[63]?.name).toBe("dualWield");
     expect(playerMetadata[64]).toBeUndefined();
     const tailSymbols = Object.getOwnPropertySymbols(petShared.DualWieldState);
-    const tailMetadata = (petShared.DualWieldState as unknown as Record<symbol, Record<number, { name: string }>>)[tailSymbols[0]!];
+    const tailMetadata = (
+      petShared.DualWieldState as unknown as Record<symbol, Record<number, { name: string }>>
+    )[tailSymbols[0]!];
     if (!tailMetadata) throw new Error("DualWieldState schema metadata is required");
     expect([tailMetadata[4]?.name, tailMetadata[5]?.name]).toEqual(["gearUpper", "gearLower"]);
     const player = new petShared.PlayerState();
@@ -640,7 +718,10 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
       ["unknown definition", { ...legal, weapon: { ...legal.weapon, weaponId: "unknown-id" } }],
       ["fists", { ...legal, weapon: { ...legal.weapon, weaponId: "fists" } }],
       ["legendary cursed affix", { ...legal, weapon: { ...legal.weapon, affix: "blessed" } }],
-      ["cursed normal affix", { ...legal, weapon: { ...legal.weapon, rarity: "cursed", affix: "keen" } }],
+      [
+        "cursed normal affix",
+        { ...legal, weapon: { ...legal.weapon, rarity: "cursed", affix: "keen" } },
+      ],
       ["cursed plain", { ...legal, weapon: { ...legal.weapon, rarity: "cursed", affix: "" } }],
       ["unknown affix", { ...legal, weapon: { ...legal.weapon, affix: "godmode" } }],
       ["numeric rarity", { ...legal, weapon: { ...legal.weapon, rarity: 4 } }],
@@ -654,10 +735,15 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
     );
     expect(nonCurated).toBeDefined();
     if (nonCurated) {
-      cases.push(["non-curated enemy drop", { ...legal, weapon: { ...legal.weapon, weaponId: nonCurated } }]);
+      cases.push([
+        "non-curated enemy drop",
+        { ...legal, weapon: { ...legal.weapon, weaponId: nonCurated } },
+      ]);
     }
     for (const [name, entry] of cases) {
-      expect(petShared.sanitizeWeaponBankV1(bankWith(entry as never)), name).toMatchObject({ ok: false });
+      expect(petShared.sanitizeWeaponBankV1(bankWith(entry as never)), name).toMatchObject({
+        ok: false,
+      });
     }
 
     const extra = {
@@ -667,20 +753,27 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
     const accepted = petShared.sanitizeWeaponBankV1(bankWith(extra as never));
     expect(accepted.ok).toBe(true);
     expect(accepted.bank.stash[0]).toEqual(legal);
-    expect(Object.keys((accepted.bank.stash[0] as import("@dd/shared").SingleWeaponEntryV1).weapon).sort())
-      .toEqual(["affix", "instanceId", "provenance", "rarity", "sourceWorldTier", "weaponId"]);
+    expect(
+      Object.keys(
+        (accepted.bank.stash[0] as import("@dd/shared").SingleWeaponEntryV1).weapon,
+      ).sort(),
+    ).toEqual(["affix", "instanceId", "provenance", "rarity", "sourceWorldTier", "weaponId"]);
   });
 
   it("rejects aliases, self/ineligible pairs, future versions, and encoded/cardinality abuse as a unit", () => {
     const duplicate = bankSingle(2);
     expect(petShared.sanitizeWeaponBankV1(bankWith(duplicate, duplicate)).ok).toBe(false);
     const self = bankWeapon(3, "rattler-sabre");
-    expect(petShared.sanitizeWeaponBankV1(bankWith({
-      kind: "pair",
-      entryId: bankPairId(1),
-      lead: self,
-      offhand: self,
-    })).ok).toBe(false);
+    expect(
+      petShared.sanitizeWeaponBankV1(
+        bankWith({
+          kind: "pair",
+          entryId: bankPairId(1),
+          lead: self,
+          offhand: self,
+        }),
+      ).ok,
+    ).toBe(false);
     const ineligible = {
       kind: "pair" as const,
       entryId: bankPairId(2),
@@ -689,10 +782,12 @@ describe("weapon bank B1 — strict forged-payload boundary", () => {
     };
     expect(petShared.sanitizeWeaponBankV1(bankWith(ineligible)).ok).toBe(false);
     expect(petShared.sanitizeWeaponBankV1({ ...bankWith(), version: 2 }).ok).toBe(false);
-    expect(petShared.sanitizeWeaponBankV1({ ...bankWith(), padding: "x".repeat(193 * 1024) }).errors)
-      .toContain("bank:encoded-size");
-    expect(petShared.sanitizeWeaponBankV1({ ...bankWith(), stash: new Array(145).fill(duplicate) }).ok)
-      .toBe(false);
+    expect(
+      petShared.sanitizeWeaponBankV1({ ...bankWith(), padding: "x".repeat(193 * 1024) }).errors,
+    ).toContain("bank:encoded-size");
+    expect(
+      petShared.sanitizeWeaponBankV1({ ...bankWith(), stash: new Array(145).fill(duplicate) }).ok,
+    ).toBe(false);
   });
 });
 
@@ -702,7 +797,9 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     const single = bankSingle(10, "rusty-cleaver", "rare", "keen", 2);
     const pairCandidates = petShared.DROP_POOL.flatMap((lead) =>
       petShared.DROP_POOL.map((offhand) => [lead, offhand] as const),
-    ).find(([lead, offhand]) => petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]));
+    ).find(([lead, offhand]) =>
+      petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]),
+    );
     expect(pairCandidates).toBeDefined();
     if (!pairCandidates) return;
     const pair: import("@dd/shared").PairedWeaponEntryV1 = {
@@ -713,31 +810,51 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     };
     const safe = bankSingle(13);
     account.weaponBank.stash.push(single, pair, safe);
-    const result = ultimateProgression.commitWeaponCarry(account, {
-      requestId: "carry-1",
-      expectedRevision: account.revision,
-      placements: [
-        { entryId: pair.entryId, zone: "active", start: 0 },
-        { entryId: single.entryId, zone: "pack", start: 4 },
-      ],
-      activeEntryId: pair.entryId,
-      requestedWorldTier: 4,
-    }, "run-carry", 12);
+    const result = ultimateProgression.commitWeaponCarry(
+      account,
+      {
+        requestId: "carry-1",
+        expectedRevision: account.revision,
+        placements: [
+          { entryId: pair.entryId, zone: "active", start: 0 },
+          { entryId: single.entryId, zone: "pack", start: 4 },
+        ],
+        activeEntryId: pair.entryId,
+        requestedWorldTier: 4,
+      },
+      "run-carry",
+      12,
+    );
     expect(result).toMatchObject({ ok: true, runTier: 4, movedEntries: 2, movedPhysical: 3 });
     expect(account.weaponBank.stash).toEqual([safe]);
-    expect(account.weaponBank.expedition?.entries.map((row) => [row.entry.entryId, row.location, row.start]))
-      .toEqual([[pair.entryId, "active", 0], [single.entryId, "pack", 4]]);
+    expect(
+      account.weaponBank.expedition?.entries.map((row) => [
+        row.entry.entryId,
+        row.location,
+        row.start,
+      ]),
+    ).toEqual([
+      [pair.entryId, "active", 0],
+      [single.entryId, "pack", 4],
+    ]);
     expect(account.weaponBank.expedition?.entries[0]?.entry).toEqual(pair);
 
     const lowTier = petShared.createMetaAccountV4();
     lowTier.weaponBank.stash.push(bankSingle(14, "rusty-cleaver", "common", "", 5));
-    expect(ultimateProgression.commitWeaponCarry(lowTier, {
-      requestId: "carry-low",
-      expectedRevision: 0,
-      placements: [{ entryId: bankInstanceId(14), zone: "active", start: 0 }],
-      activeEntryId: bankInstanceId(14),
-      requestedWorldTier: 4,
-    }, "run-low", 12)).toMatchObject({ ok: false, error: "world-tier" });
+    expect(
+      ultimateProgression.commitWeaponCarry(
+        lowTier,
+        {
+          requestId: "carry-low",
+          expectedRevision: 0,
+          placements: [{ entryId: bankInstanceId(14), zone: "active", start: 0 }],
+          activeEntryId: bankInstanceId(14),
+          requestedWorldTier: 4,
+        },
+        "run-low",
+        12,
+      ),
+    ).toMatchObject({ ok: false, error: "world-tier" });
   });
 
   it("settles carried+found once, excludes field stakes on victory, and deletes every origin on defeat", () => {
@@ -745,13 +862,20 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     const safe = bankSingle(20);
     const carried = bankSingle(21, "rusty-cleaver", "rare", "keen");
     victory.weaponBank.stash.push(safe, carried);
-    expect(ultimateProgression.commitWeaponCarry(victory, {
-      requestId: "stake-victory",
-      expectedRevision: 0,
-      placements: [{ entryId: carried.entryId, zone: "active", start: 0 }],
-      activeEntryId: carried.entryId,
-      requestedWorldTier: 0,
-    }, "run-victory", 12).ok).toBe(true);
+    expect(
+      ultimateProgression.commitWeaponCarry(
+        victory,
+        {
+          requestId: "stake-victory",
+          expectedRevision: 0,
+          placements: [{ entryId: carried.entryId, zone: "active", start: 0 }],
+          activeEntryId: carried.entryId,
+          requestedWorldTier: 0,
+        },
+        "run-victory",
+        12,
+      ).ok,
+    ).toBe(true);
     const foundKept = bankSingle(22, "rusty-cleaver", "legendary", "brutal");
     const foundField = bankSingle(23, "rusty-cleaver", "ultimate", "swift");
     victory.weaponBank.expedition?.entries.push(
@@ -771,32 +895,48 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
       carried.entryId,
       foundKept.entryId,
     ]);
-    expect(ultimateProgression.settleWeaponExpedition(victory, "victory"))
-      .toMatchObject({ ok: false, error: "no-expedition" });
+    expect(ultimateProgression.settleWeaponExpedition(victory, "victory")).toMatchObject({
+      ok: false,
+      error: "no-expedition",
+    });
 
     const defeat = petShared.createMetaAccountV4();
     const safeDefeat = bankSingle(24);
     const doomed = bankSingle(25);
     defeat.weaponBank.stash.push(safeDefeat, doomed);
-    ultimateProgression.commitWeaponCarry(defeat, {
-      requestId: "stake-defeat",
-      expectedRevision: 0,
-      placements: [{ entryId: doomed.entryId, zone: "active", start: 0 }],
-      activeEntryId: doomed.entryId,
-      requestedWorldTier: 0,
-    }, "run-defeat", 12);
+    ultimateProgression.commitWeaponCarry(
+      defeat,
+      {
+        requestId: "stake-defeat",
+        expectedRevision: 0,
+        placements: [{ entryId: doomed.entryId, zone: "active", start: 0 }],
+        activeEntryId: doomed.entryId,
+        requestedWorldTier: 0,
+      },
+      "run-defeat",
+      12,
+    );
     defeat.weaponBank.expedition?.entries.push({
-      entry: bankSingle(26), stakeOrigin: "found", location: "field", start: 255,
+      entry: bankSingle(26),
+      stakeOrigin: "found",
+      location: "field",
+      start: 255,
     });
-    expect(ultimateProgression.settleWeaponExpedition(defeat, "defeat"))
-      .toMatchObject({ ok: true, returnedEntries: 0, lostEntries: 2, lostPhysical: 2 });
+    expect(ultimateProgression.settleWeaponExpedition(defeat, "defeat")).toMatchObject({
+      ok: true,
+      returnedEntries: 0,
+      lostEntries: 2,
+      lostPhysical: 2,
+    });
     expect(defeat.weaponBank.stash).toEqual([safeDefeat]);
   });
 
   it("persists a pair as one stash entry, sells both components once, and never resurrects on retry", () => {
     const candidates = petShared.DROP_POOL.flatMap((lead) =>
       petShared.DROP_POOL.map((offhand) => [lead, offhand] as const),
-    ).find(([lead, offhand]) => petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]));
+    ).find(([lead, offhand]) =>
+      petShared.pairEligible(petShared.WEAPONS[lead], petShared.WEAPONS[offhand]),
+    );
     expect(candidates).toBeDefined();
     if (!candidates) return;
     const account = petShared.createMetaAccountV4();
@@ -817,12 +957,14 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     expect(sale).toMatchObject({ ok: true, payout: 78 });
     expect(account.weaponBank.stash).toEqual([]);
     const scrip = account.scrip;
-    expect(ultimateProgression.sellWeaponBankEntry(account, {
-      requestId: "pair-sale",
-      expectedRevision: revision,
-      entryId: pair.entryId,
-      from: "stash",
-    }).ok).toBe(false);
+    expect(
+      ultimateProgression.sellWeaponBankEntry(account, {
+        requestId: "pair-sale",
+        expectedRevision: revision,
+        entryId: pair.entryId,
+        from: "stash",
+      }).ok,
+    ).toBe(false);
     expect(account.scrip).toBe(scrip);
   });
 
@@ -840,8 +982,11 @@ describe("weapon bank B2 — carry, settlement, pair, sale, and prestige conserv
     };
     const ownedGear = [...account.ownedGear];
     const pets = structuredClone(account.pets);
-    expect(ultimateProgression.wipeWeaponBankForPrestige(account))
-      .toMatchObject({ ok: true, removedEntries: 2, removedPhysical: 2 });
+    expect(ultimateProgression.wipeWeaponBankForPrestige(account)).toMatchObject({
+      ok: true,
+      removedEntries: 2,
+      removedPhysical: 2,
+    });
     expect(account).toMatchObject({ prestige: 1, scrip: 444 });
     expect(account.weaponBank).toMatchObject({
       shelfUpgrades: 3,
@@ -884,28 +1029,42 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
       zone: index < 3 ? "active" : "pack",
       start: index < 3 ? index : index - 3,
     }));
-    expect(ultimateProgression.commitWeaponCarry(account, {
-      requestId: "copper-cap",
-      expectedRevision: 0,
-      placements,
-      activeEntryId: entries[0]?.entryId ?? "",
-      requestedWorldTier: 0,
-    }, "run-copper-cap", 13)).toMatchObject({ ok: true, movedPhysical: 16 });
+    expect(
+      ultimateProgression.commitWeaponCarry(
+        account,
+        {
+          requestId: "copper-cap",
+          expectedRevision: 0,
+          placements,
+          activeEntryId: entries[0]?.entryId ?? "",
+          requestedWorldTier: 0,
+        },
+        "run-copper-cap",
+        13,
+      ),
+    ).toMatchObject({ ok: true, movedPhysical: 16 });
 
     const overflow = petShared.createMetaAccountV4();
     const overflowEntries = Array.from({ length: 14 }, (_, index) => bankSingle(130 + index));
     overflow.weaponBank.stash.push(...overflowEntries);
-    expect(ultimateProgression.commitWeaponCarry(overflow, {
-      requestId: "pack-overflow",
-      expectedRevision: 0,
-      placements: overflowEntries.map((entry, index) => ({
-        entryId: entry.entryId,
-        zone: "pack" as const,
-        start: index,
-      })),
-      activeEntryId: "",
-      requestedWorldTier: 0,
-    }, "run-pack-overflow", 13)).toMatchObject({ ok: false, error: "placement-bounds" });
+    expect(
+      ultimateProgression.commitWeaponCarry(
+        overflow,
+        {
+          requestId: "pack-overflow",
+          expectedRevision: 0,
+          placements: overflowEntries.map((entry, index) => ({
+            entryId: entry.entryId,
+            zone: "pack" as const,
+            start: index,
+          })),
+          activeEntryId: "",
+          requestedWorldTier: 0,
+        },
+        "run-pack-overflow",
+        13,
+      ),
+    ).toMatchObject({ ok: false, error: "placement-bounds" });
   });
 
   it("routes victory overflow to Intake without losing or duplicating an instance", () => {
@@ -913,25 +1072,37 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
     const carried = bankSingle(160);
     const safe = Array.from({ length: 71 }, (_, index) => bankSingle(161 + index));
     account.weaponBank.stash.push(carried, ...safe);
-    expect(ultimateProgression.commitWeaponCarry(account, {
-      requestId: "intake-overflow",
-      expectedRevision: 0,
-      placements: [{ entryId: carried.entryId, zone: "active", start: 0 }],
-      activeEntryId: carried.entryId,
-      requestedWorldTier: 0,
-    }, "run-intake-overflow", 12).ok).toBe(true);
+    expect(
+      ultimateProgression.commitWeaponCarry(
+        account,
+        {
+          requestId: "intake-overflow",
+          expectedRevision: 0,
+          placements: [{ entryId: carried.entryId, zone: "active", start: 0 }],
+          activeEntryId: carried.entryId,
+          requestedWorldTier: 0,
+        },
+        "run-intake-overflow",
+        12,
+      ).ok,
+    ).toBe(true);
     const filledDuringRun = bankSingle(240);
     account.weaponBank.stash.push(filledDuringRun);
     expect(account.weaponBank.stash).toHaveLength(72);
 
-    expect(ultimateProgression.settleWeaponExpedition(account, "victory"))
-      .toMatchObject({ ok: true, returnedEntries: 1, returnedPhysical: 1 });
+    expect(ultimateProgression.settleWeaponExpedition(account, "victory")).toMatchObject({
+      ok: true,
+      returnedEntries: 1,
+      returnedPhysical: 1,
+    });
     expect(account.weaponBank.stash).toHaveLength(72);
     expect(account.weaponBank.intake).toEqual([carried]);
-    expect(new Set([
-      ...account.weaponBank.stash.map((entry) => entry.entryId),
-      ...account.weaponBank.intake.map((entry) => entry.entryId),
-    ]).size).toBe(73);
+    expect(
+      new Set([
+        ...account.weaponBank.stash.map((entry) => entry.entryId),
+        ...account.weaponBank.intake.map((entry) => entry.entryId),
+      ]).size,
+    ).toBe(73);
   });
 
   it("builds curator copy counts from safe and at-stake holdings, including the starter floor", () => {
@@ -942,12 +1113,14 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
       runId: "curator-run",
       commitRevision: 0,
       status: "committed",
-      entries: [{
-        entry: bankSingle(262, "x2-gallows-splitter"),
-        stakeOrigin: "found",
-        location: "pack",
-        start: 0,
-      }],
+      entries: [
+        {
+          entry: bankSingle(262, "x2-gallows-splitter"),
+          stakeOrigin: "found",
+          location: "pack",
+          start: 0,
+        },
+      ],
     };
     const copies = petShared.countWeaponCopies(bank);
     expect(copies.get("rattler-sabre")).toBe(2);

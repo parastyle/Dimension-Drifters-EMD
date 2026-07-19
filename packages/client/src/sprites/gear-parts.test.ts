@@ -1,11 +1,13 @@
-import { readFileSync } from "node:fs";
 import { type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import {
+  replacementPairManifest,
+  replacementPairManifestInput,
+} from "./gear-pairs.test-fixture.js";
 import {
   assembleBoilerplate,
   assembleGearLoadout,
   DEFAULT_LOADOUT_HEAD_TEXTURE,
-  ensureGearPartFrame,
   type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
@@ -16,12 +18,7 @@ import {
   validateGearPartsManifest,
 } from "./gear-parts.js";
 
-const rawManifest: unknown = JSON.parse(
-  readFileSync(
-    new URL("../../../../tools/artkit/out/gear/gear-parts-manifest.json", import.meta.url),
-    "utf8",
-  ),
-);
+const rawManifest = replacementPairManifestInput("gear-parts-test-r1");
 const manifest = validateGearPartsManifest(rawManifest);
 
 function requireManifest(): GearPartsManifest {
@@ -100,34 +97,27 @@ describe("gear part manifest assembly", () => {
       expect(part?.source.receiver).toBe("head");
       expect(part?.x).toBeCloseTo(0, 10);
       expect(part?.y).toBeCloseTo(-0.38 * 76, 10);
-      expect(part?.depth).toBe(32);
+      expect(part?.depth).toBe(part?.source.plane);
       expect(part?.stackIndex).toBe(index);
       expect(part?.topSocketSource).not.toBeNull();
     }
   });
 
-  it("crops multi-part masters around each source pivot instead of duplicating sibling pixels", () => {
-    const loadout = {
-      ...STARTER_GEAR_LOADOUT,
-      gloves: "ash-walker-gloves" as GearId,
-      boots: "ash-walker-boots" as GearId,
-    } as Record<GearSlot, GearId>;
-    const assembly = assembleGearLoadout(requireManifest(), loadout);
-    const movingParts = assembly.parts.filter(
-      (part) => part.slot === "gloves" || part.slot === "boots",
-    );
-    expect(movingParts).toHaveLength(4);
-    for (const part of movingParts) {
-      const bounds = part.source.alphaBounds;
-      expect(part.originX).toBeCloseTo(
-        (part.source.pivotSource.x - bounds.left) / bounds.width,
-        10,
+  it("keeps paired hand/foot replacement components independently addressable", () => {
+    const value = requireManifest();
+    for (const [slotId, expectedReceivers] of [
+      ["gloves", ["hand-l", "hand-r"]],
+      ["boots", ["foot-l", "foot-r"]],
+    ] as const) {
+      const item = value.slots.find((slot) => slot.id === slotId)?.items[0];
+      expect(item?.parts.map((part) => part.receiver).sort()).toEqual(
+        [...expectedReceivers].sort(),
       );
-      expect(part.originY).toBeCloseTo(
-        (part.source.pivotSource.y - bounds.top) / bounds.height,
-        10,
-      );
-      expect(bounds.width).toBeLessThan(part.item.image.width);
+      expect(new Set(item?.parts.map((part) => part.sourceRevision)).size).toBe(2);
+      for (const part of item?.parts ?? []) {
+        expect(part.alphaBounds.width).toBeLessThan(item?.image.width ?? 0);
+        expect(part.alphaBounds.height).toBeLessThan(item?.image.height ?? 0);
+      }
     }
   });
 });
@@ -228,188 +218,77 @@ describe("loadout head texture seam", () => {
 
 // v0.118 gear-layer live reproduction — append-only exact mixed-set loadout coverage.
 describe("mixed-set eight-slot gear assembly", () => {
-  it("places all eight equipped items into the body, hands, feet, and sprung-head groups", () => {
+  it("routes all eight equipped items into six bakes plus cloak and hat extras", () => {
     const loadout = {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     } as Record<GearSlot, GearId>;
-    const assembly = assembleGearLoadout(requireManifest(), loadout);
-    const groupForReceiver = (receiver: string): "body" | "hands" | "feet" | "head" => {
-      if (receiver.startsWith("hand-")) return "hands";
-      if (receiver.startsWith("foot-")) return "feet";
-      if (receiver === "head" || receiver.startsWith("face.")) return "head";
-      return "body";
-    };
-    const placedItems = new Map<GearId, Set<string>>();
-    for (const part of assembly.parts) {
-      const groups = placedItems.get(part.gearId) ?? new Set<string>();
-      groups.add(groupForReceiver(part.source.receiver));
-      placedItems.set(part.gearId, groups);
-    }
-
-    expect(placedItems.size).toBe(8);
-    expect(
-      Object.fromEntries([...placedItems].map(([gearId, groups]) => [gearId, [...groups].sort()])),
-    ).toEqual({
-      "thornwatch-cloak": ["body"],
-      "house-edge-boots": ["feet"],
-      "house-edge-gloves": ["hands"],
-      "pressurized-pants": ["body"],
-      "pressurized-shirt": ["body"],
-      "pressurized-facial-hair": ["head"],
-      "pressurized-glasses": ["head"],
-      "coldsnap-hat": ["head"],
-    });
-    // Paired gloves and boots expand the eight equipped items into ten retained render parts.
-    expect(assembly.parts).toHaveLength(10);
-    expect(new Set(assembly.parts.map((part) => groupForReceiver(part.source.receiver)))).toEqual(
-      new Set(["body", "hands", "feet", "head"]),
-    );
+    const resolved = resolveGearBakeLoadout(requireManifest(), loadout);
+    const routedIds = new Set([
+      ...resolved.dependencies.flatMap((dependency) =>
+        dependency.gearId ? [dependency.gearId] : [],
+      ),
+      ...resolved.extras.parts.map((part) => part.gearId),
+    ]);
+    expect(routedIds).toEqual(new Set(Object.values(loadout)));
+    expect(resolved.recipe.parts.body.layers.map((layer) => layer.role)).toEqual([
+      "replacement-torso",
+    ]);
+    expect(resolved.recipe.parts.head.layers.map((layer) => layer.role)).toEqual([
+      "replacement-head",
+      "facialHair",
+      "glasses",
+    ]);
+    expect(resolved.extras.parts.map((part) => part.slot)).toEqual(["cloak", "hat"]);
   });
 });
 
 // v0.118 gear-layer bounds diagnostics — append-only loaded-texture mismatch coverage.
 describe("retained gear frame diagnostics", () => {
-  it("names a loaded mismatched item, clips its frame, and preserves its manifest pivot", () => {
+  it("names a missing full-torso render and keeps the bare torso as the visible fallback", () => {
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
-      shirt: "pressurized-shirt" as GearId,
+      torso: "pressurized-shirt" as GearId,
     } as Record<GearSlot, GearId>;
-    const part = assembleGearLoadout(requireManifest(), loadout).parts.find(
-      (candidate) => candidate.gearId === "pressurized-shirt",
+    const resolved = resolveGearBakeLoadout(requireManifest(), loadout, 0, [], (dependency) =>
+      dependency.gearId === "pressurized-shirt" ? "missing" : "ready",
     );
-    if (!part) throw new Error("Boiler Shirt did not assemble");
-
-    const frames = new Map<
-      string,
-      { cutX: number; cutY: number; cutWidth: number; cutHeight: number }
-    >();
-    const texture = {
-      source: [{ width: 500, height: 500 }],
-      has: (name: string) => frames.has(name),
-      add: (
-        name: string,
-        _sourceIndex: number,
-        x: number,
-        y: number,
-        width: number,
-        height: number,
-      ) => {
-        const frame = { cutX: x, cutY: y, cutWidth: width, cutHeight: height };
-        frames.set(name, frame);
-        return frame;
-      },
-      get: (name: string) => frames.get(name),
-    };
-    const scene = {
-      textures: {
-        exists: () => true,
-        get: () => texture,
-      },
-    } as unknown as Parameters<typeof ensureGearPartFrame>[0];
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-
-    expect(ensureGearPartFrame(scene, part)).toBe("part:torso-panel");
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"pressurized-shirt"'));
-    expect(frames.get("part:torso-panel")).toEqual({
-      cutX: 401,
-      cutY: 365,
-      cutWidth: 99,
-      cutHeight: 135,
-    });
-    expect(part.originX).toBeCloseTo((part.source.pivotSource.x - 401) / 99, 10);
-    expect(part.originY).toBeCloseTo((part.source.pivotSource.y - 365) / 135, 10);
-    warn.mockRestore();
+    expect(resolved.recipe.parts.body.layers.map((layer) => layer.role)).toEqual(["base"]);
+    expect(resolved.recipe.diagnostics).toContainEqual(
+      expect.objectContaining({ slot: "torso", gearId: "pressurized-shirt" }),
+    );
+    expect(resolved.recipe.diagnostics[0]?.message).toContain('"pressurized-shirt"');
   });
 });
-
-function replacementManifest(): GearPartsManifest {
-  const candidate = structuredClone(rawManifest) as GearPartsManifest;
-  candidate.schemaVersion = 2;
-  candidate.replacementContract = {
-    id: "GEAR_REPLACEMENT_V1",
-    revision: "test-art-r1",
-    partFrames: {
-      body: [344, 324, 336, 376],
-      head: [352, 112, 384, 456],
-      "hand-l": [294, 432, 180, 180],
-      "hand-r": [550, 432, 180, 180],
-      "foot-l": [353, 641, 190, 190],
-      "foot-r": [481, 641, 190, 190],
-    },
-    maskHashes: {
-      bodyFill: "body-fill",
-      shirtRequired: "shirt-required",
-      shirtAllowed: "shirt-allowed",
-      pantsRequired: "pants-required",
-      pantsAllowed: "pants-allowed",
-    },
-    compositionOrders: {
-      body: ["body", "pants", "shirt"],
-      head: ["head", "facialHair", "glasses"],
-    },
-  };
-  const roleForSlot = {
-    boots: "replace-foot",
-    cloak: "cloak-far",
-    facialHair: "head-accessory",
-    glasses: "head-accessory",
-    gloves: "replace-hand",
-    hat: "overlay-hat",
-    pants: "body-patch",
-    shirt: "body-patch",
-  } as const;
-  for (const slot of candidate.slots) {
-    for (const item of slot.items) {
-      item.renderRole =
-        item.id === "demon-mask-hat" || item.id === "unbending-hat"
-          ? "replace-head"
-          : roleForSlot[slot.id];
-      item.sourceRevision = `source:${item.id}`;
-      for (const part of item.parts) part.sourceRevision = `source:${item.id}:${part.id}`;
-      if (item.renderRole === "replace-head") {
-        item.replacementTexture = {
-          texture: `${item.id}.png`,
-          sourceRevision: `head:${item.id}`,
-        };
-      }
-    }
-  }
-  const validated = validateGearPartsManifest(candidate);
-  if (!validated) throw new Error("synthetic replacement manifest failed validation");
-  return validated;
-}
 
 // GEAR REPLACEMENT BOT 3 — append-only recipe, fallback, and dual-role routing coverage.
 describe("replacement-contract recipe routing", () => {
   it("routes garments into six ordered recipes and leaves only cloak/hats in visible extras", () => {
-    const v2 = replacementManifest();
+    const v2 = replacementPairManifest("test-art-r1");
     expect(isGearReplacementManifest(v2)).toBe(true);
     const loadout = {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     } as Record<GearSlot, GearId>;
     const resolved = resolveGearBakeLoadout(v2, loadout, 2);
 
     expect(resolved.recipe.parts.body.layers.map((layer) => layer.role)).toEqual([
-      "base",
-      "pants",
-      "shirt",
+      "replacement-torso",
     ]);
     expect(resolved.recipe.parts.head.layers.map((layer) => layer.role)).toEqual([
-      "base",
+      "replacement-head",
       "facialHair",
       "glasses",
     ]);
@@ -418,7 +297,7 @@ describe("replacement-contract recipe routing", () => {
     expect(resolved.extras.parts.map((part) => part.slot)).toEqual(["cloak", "hat", "hat", "hat"]);
     expect(
       resolved.extras.parts.some((part) =>
-        ["shirt", "pants", "gloves", "boots", "glasses", "facialHair"].includes(part.slot),
+        ["torso", "head", "gloves", "boots", "glasses", "facialHair"].includes(part.slot),
       ),
     ).toBe(false);
     expect(resolved.extras).toMatchObject({
@@ -430,14 +309,14 @@ describe("replacement-contract recipe routing", () => {
   });
 
   it("falls back every missing nonblank role to six nonempty base-backed recipes", () => {
-    const v2 = replacementManifest();
+    const v2 = replacementPairManifest("test-art-r1");
     const loadout = {
       hat: "coldsnap-hat",
       glasses: "pressurized-glasses",
       facialHair: "pressurized-facial-hair",
-      shirt: "pressurized-shirt",
+      head: "pressurized-head",
+      torso: "pressurized-shirt",
       gloves: "house-edge-gloves",
-      pants: "pressurized-pants",
       boots: "house-edge-boots",
       cloak: "thornwatch-cloak",
     } as Record<GearSlot, GearId>;
@@ -456,15 +335,15 @@ describe("replacement-contract recipe routing", () => {
     expect(resolved.extras.parts).toHaveLength(0);
     expect(resolved.extras).toMatchObject({ towerTotal: 0, towerVisible: 0, towerOverflow: 0 });
     expect(new Set(resolved.recipe.diagnostics.map((row) => row.slot))).toEqual(
-      new Set(["shirt", "pants", "gloves", "boots", "glasses", "facialHair", "cloak", "hat"]),
+      new Set(["torso", "head", "gloves", "boots", "glasses", "facialHair", "cloak", "hat"]),
     );
   });
 
   it("falls back one paired component independently and composes accessories onto a missing head fallback", () => {
-    const v2 = replacementManifest();
+    const v2 = replacementPairManifest("test-art-r1");
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
-      hat: "demon-mask-hat" as GearId,
+      head: "demon-mask-head" as GearId,
       glasses: "pressurized-glasses" as GearId,
       facialHair: "pressurized-facial-hair" as GearId,
       gloves: "house-edge-gloves" as GearId,
@@ -489,11 +368,12 @@ describe("replacement-contract recipe routing", () => {
   });
 });
 
-describe("replacement-head tower contract", () => {
-  it("uses the existing head seam, reserves position zero, and stacks at most eleven legal caps", () => {
-    const v2 = replacementManifest();
+describe("independent replacement-head and hat-tower contract", () => {
+  it("bakes the head slot without consuming any of the twelve visible hat positions", () => {
+    const v2 = replacementPairManifest("test-art-r1");
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
+      head: "demon-mask-head" as GearId,
       hat: "demon-mask-hat" as GearId,
       glasses: "pressurized-glasses" as GearId,
       facialHair: "pressurized-facial-hair" as GearId,
@@ -505,8 +385,8 @@ describe("replacement-head tower contract", () => {
     ]);
 
     expect(resolveLoadoutHeadTexture(v2, loadout, () => true)).toEqual({
-      gearId: "demon-mask-hat",
-      textureKey: "gear:replacement-head:demon-mask-hat",
+      gearId: "demon-mask-head",
+      textureKey: "gear:head:demon-mask-head",
     });
     expect(resolveLoadoutHeadTexture(v2, loadout)).toBe(DEFAULT_LOADOUT_HEAD_TEXTURE);
     expect(zero.recipe.parts.head.layers.map((layer) => layer.role)).toEqual([
@@ -518,31 +398,35 @@ describe("replacement-head tower contract", () => {
       towerTotal: 1,
       towerVisible: 1,
       towerOverflow: 0,
-      replacementHeadPosition: true,
+      replacementHeadPosition: false,
     });
-    expect(zero.extras.hats).toHaveLength(0);
+    expect(zero.extras.hats).toHaveLength(1);
     expect(max.extras).toMatchObject({ towerTotal: 30, towerVisible: 12, towerOverflow: 18 });
-    expect(max.extras.hats).toHaveLength(11);
+    expect(max.extras.hats).toHaveLength(12);
     expect(max.extras.hats[0]?.gearId).toBe("demon-mask-hat");
     expect(max.extras.hats[1]?.gearId).toBe("coldsnap-hat");
-    expect(max.extras.hats.map((part) => part.extraRole)).toContain("prestige-cap");
+    expect(max.extras.hats.every((part) => part.extraRole === "overlay-hat")).toBe(true);
     expect(max.extras.parts.every((part) => part.extraRole !== undefined)).toBe(true);
   });
 
-  it("pins both replacement ids at prestige 0, 1, 11, and 30", () => {
-    const v2 = replacementManifest();
-    for (const hat of ["demon-mask-hat", "unbending-hat"] as const) {
-      const loadout = { ...STARTER_GEAR_LOADOUT, hat } as Record<GearSlot, GearId>;
+  it("pins both former helmet identities as heads while their hats use normal tower math", () => {
+    const v2 = replacementPairManifest("test-art-r1");
+    for (const setId of ["demon-mask", "unbending"] as const) {
+      const loadout = {
+        ...STARTER_GEAR_LOADOUT,
+        head: `${setId}-head`,
+        hat: `${setId}-hat`,
+      } as Record<GearSlot, GearId>;
       const samples = [0, 1, 11, 30].map((prestige) =>
         resolveGearBakeLoadout(v2, loadout, prestige),
       );
       expect(samples.map((sample) => sample.extras.towerTotal)).toEqual([1, 2, 12, 30]);
       expect(samples.map((sample) => sample.extras.towerVisible)).toEqual([1, 2, 12, 12]);
       expect(samples.map((sample) => sample.extras.towerOverflow)).toEqual([0, 0, 0, 18]);
-      expect(samples.map((sample) => sample.extras.hats.length)).toEqual([0, 1, 11, 11]);
+      expect(samples.map((sample) => sample.extras.hats.length)).toEqual([1, 2, 12, 12]);
       expect(
         samples.every((sample) =>
-          sample.extras.hats.every((part) => part.extraRole === "prestige-cap"),
+          sample.extras.hats.every((part) => part.extraRole === "overlay-hat"),
         ),
       ).toBe(true);
     }

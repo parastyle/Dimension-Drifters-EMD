@@ -20,7 +20,13 @@ export interface MetaUpgrade {
 
 export const META_UPGRADES: readonly MetaUpgrade[] = [
   { id: "vitality", name: "Vitality", desc: "+20 max HP", maxLevel: 3, costs: [30, 70, 140] },
-  { id: "fortune", name: "Fortune", desc: "+1 LUK — better loot & crits", maxLevel: 3, costs: [40, 90, 180] },
+  {
+    id: "fortune",
+    name: "Fortune",
+    desc: "+1 LUK — better loot & crits",
+    maxLevel: 3,
+    costs: [40, 90, 180],
+  },
   { id: "power", name: "Power", desc: "+1 STR — melee damage", maxLevel: 3, costs: [45, 100, 200] },
 ];
 
@@ -60,28 +66,23 @@ export function nextUpgradeCost(id: MetaUpgradeId, currentLevel: number): number
 export * from "./pets.js";
 
 import {
-  GEAR_CATALOG,
-  GEAR_IDS,
-  isGearId,
-  sanitizeEquippedGear,
-  STARTER_GEAR_IDS,
-  STARTER_GEAR_LOADOUT,
-  type GearId,
-  type GearSlot,
-} from "./gear.js";
-import {
-  isPetId,
-  PET_IDS,
-  type PetId,
-  type PetStageBand,
-  sanitizeBondXp,
-} from "./pets.js";
-import {
   createWeaponBankV1,
   sanitizeWeaponBankV1,
-  type WeaponBankV1,
   type WeaponBankSanitizeResult,
+  type WeaponBankV1,
 } from "./bank.js";
+import {
+  GEAR_CATALOG,
+  GEAR_IDS,
+  type GearId,
+  type GearSlot,
+  isGearId,
+  STARTER_GEAR_IDS,
+  STARTER_GEAR_LOADOUT,
+  sanitizeEquippedGear,
+  torsoForLegacyPants,
+} from "./gear.js";
+import { isPetId, PET_IDS, type PetId, type PetStageBand, sanitizeBondXp } from "./pets.js";
 
 export interface PersistedPet {
   /** Lifetime total. Presence of the canonical id in `pets` is the ownership bit. */
@@ -280,11 +281,18 @@ export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
 
   let selectedPetId: PetId | "" = STARTER_PET_ID;
   if (input.selectedPetId === "") selectedPetId = "";
-  else if (isPetId(input.selectedPetId) && pets[input.selectedPetId]) selectedPetId = input.selectedPetId;
+  else if (isPetId(input.selectedPetId) && pets[input.selectedPetId])
+    selectedPetId = input.selectedPetId;
 
   const requested = new Set<GearId>();
   if (Array.isArray(input.ownedGear)) {
-    for (const value of input.ownedGear) if (isGearId(value)) requested.add(value);
+    for (const value of input.ownedGear) {
+      if (isGearId(value)) requested.add(value);
+      else {
+        const torso = torsoForLegacyPants(value);
+        if (torso) requested.add(torso);
+      }
+    }
   }
   for (const id of STARTER_GEAR_IDS) requested.add(id);
   const ownedGear = GEAR_IDS.filter((id) => requested.has(id));
