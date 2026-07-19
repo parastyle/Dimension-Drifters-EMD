@@ -168,3 +168,105 @@ describe("SpriteRig flourish cancellation edge", () => {
     expect(rig.idleFlourishEligibleAtMs).toBe(2_720);
   });
 });
+
+// BAR-4 FIX — append-only raw-intent boundaries. The action at 1_000ms must clear the authored state
+// between the 999ms and 1_001ms observations, even when gameplay never resolves displacement/action.
+describe("SpriteRig BAR-4 raw Arena intent boundaries", () => {
+  const quietIntent = () => ({
+    attack: false,
+    parryOrBrace: false,
+    jumpOrDodge: false,
+    interaction: false,
+    weaponSelection: false,
+    desiredMoveX: 0,
+    desiredMoveY: 0,
+  });
+
+  async function expectCancelledAcrossOneMillisecondBoundary(
+    intent: ReturnType<typeof quietIntent>,
+    previousMoveX = 0,
+    previousMoveY = 0,
+  ): Promise<void> {
+    const { rawFlourishIntentCancels, SpriteRig } = await import("./SpriteRig.js");
+    let nowMs = 999;
+    const rig = Object.create(SpriteRig.prototype) as {
+      flourishChannels: Array<{ active: boolean; startMs: number }>;
+      flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+      stowProxies: Array<{ img?: { destroy(): void }; startMs: number; destroyAtMs: number }>;
+      flourishHeadX: number;
+      flourishHeadY: number;
+      flourishCancelGeneration: number;
+      idleFlourishEligibleAtMs: number;
+      idleFlourishOffsetMs: number;
+      presentationClockNow(): number;
+      cancelFlourish(reason?: string): void;
+      readonly flourishCancelEdge: number;
+    };
+    rig.flourishChannels = [
+      { active: true, startMs: 900 },
+      { active: false, startMs: -1e9 },
+    ];
+    rig.flourishArms = [
+      { armed: false, earliestStartMs: -1e9, weaponId: "" },
+      { armed: false, earliestStartMs: -1e9, weaponId: "" },
+    ];
+    rig.stowProxies = [
+      { startMs: -1e9, destroyAtMs: -1e9 },
+      { startMs: -1e9, destroyAtMs: -1e9 },
+    ];
+    rig.flourishHeadX = 2;
+    rig.flourishHeadY = -1;
+    rig.flourishCancelGeneration = 0;
+    rig.idleFlourishEligibleAtMs = 0;
+    rig.idleFlourishOffsetMs = 0;
+    rig.presentationClockNow = () => nowMs;
+
+    expect(rig.flourishChannels[0]?.active, "1ms before").toBe(true);
+    nowMs = 1_000;
+    expect(rawFlourishIntentCancels(intent, previousMoveX, previousMoveY), "at edge").toBe(true);
+    rig.cancelFlourish("raw-arena-input");
+    expect(rig.flourishChannels[0]?.active, "at edge").toBe(false);
+    nowMs = 1_001;
+    rig.cancelFlourish("raw-arena-input");
+    expect(rig.flourishChannels[0]?.active, "1ms after").toBe(false);
+    expect(rig.flourishCancelEdge).toBe(1);
+  }
+
+  it("cancels at the 1ms edge for desired movement blocked to zero displacement", async () => {
+    const intent = quietIntent();
+    intent.desiredMoveX = 1;
+    await expectCancelledAcrossOneMillisecondBoundary(intent);
+  });
+
+  it("cancels at the 1ms edge for cooldown-rejected parry/brace", async () => {
+    const intent = quietIntent();
+    intent.parryOrBrace = true;
+    await expectCancelledAcrossOneMillisecondBoundary(intent);
+  });
+
+  it("cancels at the 1ms edge for jump", async () => {
+    const intent = quietIntent();
+    intent.jumpOrDodge = true;
+    await expectCancelledAcrossOneMillisecondBoundary(intent);
+  });
+
+  it("cancels at the 1ms edge for interaction", async () => {
+    const intent = quietIntent();
+    intent.interaction = true;
+    await expectCancelledAcrossOneMillisecondBoundary(intent);
+  });
+
+  it.each(["Q", "E"])("cancels at the 1ms edge for %s weapon selection", async () => {
+    const intent = quietIntent();
+    intent.weaponSelection = true;
+    await expectCancelledAcrossOneMillisecondBoundary(intent);
+  });
+
+  it("uses the shared hitch threshold for hard desired-axis changes but permits steady gait", async () => {
+    const { flourishMovementIntent } = await import("./SpriteRig.js");
+    expect(flourishMovementIntent(1, 0, 1, 0)).toBe(false);
+    expect(flourishMovementIntent(1, 0, 1, -1)).toBe(false);
+    expect(flourishMovementIntent(1, 0, 0, -1)).toBe(true);
+    expect(flourishMovementIntent(1, 0, -1, 0)).toBe(true);
+  });
+});

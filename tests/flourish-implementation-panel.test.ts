@@ -117,3 +117,61 @@ describe("flourish implementation ownership panel", () => {
     expect(animate).toContain("this.tome && !tomeFlourishOwnsPage");
   });
 });
+
+// BAR-4 FIX — append-only inspector coverage for the Arena-to-rig frame-zero seam.
+describe("flourish raw Arena cancellation panel", () => {
+  it("captures every named raw action, including rejected requests, in one retained frame sample", () => {
+    expect(arenaSource).toContain("private readonly rawFlourishIntent: RawFlourishIntent");
+    expect(arenaSource).toContain("rawFlourishIntent.attack =");
+    expect(arenaSource).toContain("rightButtonDown()");
+    expect(arenaSource).toContain("rawFlourishIntent.parryOrBrace =");
+    expect(arenaSource).toContain("leftButtonDown()");
+    expect(arenaSource).toContain("rawFlourishIntent.jumpOrDodge =");
+    expect(arenaSource).toContain("shiftSlidePressed");
+    expect(arenaSource).toContain("ctrlSlidePressed");
+    expect(arenaSource).toContain(
+      "rawFlourishIntent.interaction = alive && (rDown || (eDown && nearPickup))",
+    );
+    expect(arenaSource).toContain(
+      "rawFlourishIntent.weaponSelection = !!selfP && (qDown || eFree)",
+    );
+  });
+
+  it("derives cancellation movement from desired WASD axes and shares those exact axes with net input", () => {
+    const update = arenaSource.slice(arenaSource.indexOf("override update("));
+    expect(update).toContain("rawFlourishIntent.desiredMoveX = levelWindowInputBlocked");
+    expect(update).toContain("rawFlourishIntent.desiredMoveY = levelWindowInputBlocked");
+    expect(update).toContain("rawFlourishIntentCancels(");
+    expect(update).toContain(
+      "rawFlourishIntent.desiredMoveX,\n      rawFlourishIntent.desiredMoveY,",
+    );
+    const movementIntent = methodBody(
+      rigSource,
+      "export function flourishMovementIntent(",
+      "/** One per-frame Arena capture",
+    );
+    expect(movementIntent).toContain("MOVE_HITCH_MIN_ANGLE");
+    expect(movementIntent).not.toMatch(/render|displacement|anim\.move|speed/);
+  });
+
+  it("cancels the self rig before hit-stop gating and before animateBlobs samples a pose", () => {
+    const update = arenaSource.slice(arenaSource.indexOf("override update("));
+    const captureAt = update.indexOf("const cancelFlourishThisFrame =");
+    const cancelAt = update.indexOf('cancelFlourish("raw-arena-input")');
+    const freezeGateAt = update.indexOf("if (this.time.now >= this.frozenUntil)");
+    const animateAt = update.indexOf("this.animateBlobs(deltaMs)");
+    expect(captureAt).toBeGreaterThanOrEqual(0);
+    expect(cancelAt).toBeGreaterThan(captureAt);
+    expect(cancelAt).toBeLessThan(freezeGateAt);
+    expect(freezeGateAt).toBeLessThan(animateAt);
+  });
+
+  it("does not add bag, shop, or menu keys to the raw cancellation grammar", () => {
+    const decision = methodBody(
+      rigSource,
+      "export function rawFlourishIntentCancels(",
+      "export function nextFlourishStreakCount(",
+    );
+    expect(decision).not.toMatch(/bag|shop|menu|TAB|ESC|ultimate/);
+  });
+});

@@ -144,7 +144,9 @@ import {
   GEAR_PARTS_MANIFEST,
   type PaperDeathTreatment,
   partTexture,
+  type RawFlourishIntent,
   type RigAnim,
+  rawFlourishIntentCancels,
   SPRITE_ATLAS,
   SpriteRig,
 } from "../entities/SpriteRig.js";
@@ -1383,6 +1385,16 @@ export class ArenaScene extends Phaser.Scene {
   /** This frame's sampled WASD direction (drives the command mint AND the predictor's frame preview). */
   private curDx = 0;
   private curDy = 0;
+  /** Retained raw Arena sample; one decision per frame, with no hot-loop allocation. */
+  private readonly rawFlourishIntent: RawFlourishIntent = {
+    attack: false,
+    parryOrBrace: false,
+    jumpOrDodge: false,
+    interaction: false,
+    weaponSelection: false,
+    desiredMoveX: 0,
+    desiredMoveY: 0,
+  };
   /** Self height from the predictor this frame (the rig hop for SELF; remotes use synced height). */
   private selfPredHeight = 0;
   private selfPredVh = 0;
@@ -4089,11 +4101,13 @@ export class ArenaScene extends Phaser.Scene {
     const predictedAirborne = this.predictor
       ? this.selfPredHeight > GROUND_EPSILON
       : (selfP?.height ?? 0) > GROUND_EPSILON;
+    const spacePressed = Phaser.Input.Keyboard.JustDown(this.keys.SPACE);
+    const spaceReleased = Phaser.Input.Keyboard.JustUp(this.keys.SPACE);
     const space = this.spaceGesture.sample(
       this.time.now,
       this.keys.SPACE.isDown,
-      Phaser.Input.Keyboard.JustDown(this.keys.SPACE),
-      Phaser.Input.Keyboard.JustUp(this.keys.SPACE),
+      spacePressed,
+      spaceReleased,
       predictedAirborne,
       alive && !levelWindowInputBlocked,
       this.predictor?.isGroundSliding ?? false,
@@ -4103,6 +4117,21 @@ export class ArenaScene extends Phaser.Scene {
     this.crouchHeld = space.crouchHeld;
     const shiftSlidePressed = Phaser.Input.Keyboard.JustDown(this.keys.SHIFT);
     const ctrlSlidePressed = Phaser.Input.Keyboard.JustDown(this.keys.CTRL);
+    const rawFlourishIntent = this.rawFlourishIntent;
+    rawFlourishIntent.attack =
+      alive && !levelWindowInputBlocked && this.input.activePointer.rightButtonDown();
+    rawFlourishIntent.parryOrBrace =
+      alive && !levelWindowInputBlocked && this.input.activePointer.leftButtonDown();
+    rawFlourishIntent.jumpOrDodge =
+      alive &&
+      !levelWindowInputBlocked &&
+      (this.keys.SPACE.isDown ||
+        space.jump ||
+        space.pound ||
+        shiftSlidePressed ||
+        ctrlSlidePressed);
+    rawFlourishIntent.interaction = false;
+    rawFlourishIntent.weaponSelection = false;
     if (
       slidePressedFromBindings(shiftSlidePressed, ctrlSlidePressed) &&
       alive &&
@@ -4166,7 +4195,8 @@ export class ArenaScene extends Phaser.Scene {
       canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
       // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
       // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
-      if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && grabPickupId) {
+      const rDown = Phaser.Input.Keyboard.JustDown(this.keys.R);
+      if (rDown && alive && grabPickupId) {
         this.room.send("grabWeapon", { pickupId: grabPickupId });
         this.wakeCarouselDock();
         this.rGrabbed = true;
@@ -4210,15 +4240,20 @@ export class ArenaScene extends Phaser.Scene {
       }
       const eFree = eDown && !(alive && nearPickup);
       const qDown = Phaser.Input.Keyboard.JustDown(this.keys.Q);
+      rawFlourishIntent.interaction = alive && (rDown || (eDown && nearPickup));
+      rawFlourishIntent.weaponSelection = !!selfP && (qDown || eFree);
       // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
       // keeps the roster carousel.
       if (this.belt) {
+        const oneDown = Phaser.Input.Keyboard.JustDown(this.keys.ONE);
+        const twoDown = Phaser.Input.Keyboard.JustDown(this.keys.TWO);
+        const threeDown = Phaser.Input.Keyboard.JustDown(this.keys.THREE);
+        rawFlourishIntent.weaponSelection ||= !!selfP && (oneDown || twoDown || threeDown);
         if (qDown && selfP) this.cycleBeltLoadout(selfP, 1);
         if (eFree && selfP) this.cycleBeltLoadout(selfP, -1);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.ONE) && selfP) this.selectBeltSlot(selfP, 0);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.TWO) && selfP) this.selectBeltSlot(selfP, 1);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.THREE))
-          if (selfP) this.selectBeltSlot(selfP, 2);
+        if (oneDown && selfP) this.selectBeltSlot(selfP, 0);
+        if (twoDown && selfP) this.selectBeltSlot(selfP, 1);
+        if (threeDown && selfP) this.selectBeltSlot(selfP, 2);
       } else if (this.room?.state.mode === "training") {
         // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
         if (qDown) this.room?.send("galleryPage", { dir: 1 });
@@ -4269,11 +4304,25 @@ export class ArenaScene extends Phaser.Scene {
     this.updateDropBar(canSalvage);
     this.renderGrabHighlight();
 
+    rawFlourishIntent.desiredMoveX = levelWindowInputBlocked
+      ? 0
+      : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
+    rawFlourishIntent.desiredMoveY = levelWindowInputBlocked
+      ? 0
+      : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+    const cancelFlourishThisFrame = rawFlourishIntentCancels(
+      rawFlourishIntent,
+      this.curDx,
+      this.curDy,
+    );
+
     this.maybeBuildFloor(); // §17 bake the procgen floor once the seeds arrive
     this.stepNetInput(
       deltaMs,
       levelWindowInputBlocked,
       ultimatePressed && !nearBeltShop && !levelWindowInputBlocked,
+      rawFlourishIntent.desiredMoveX,
+      rawFlourishIntent.desiredMoveY,
     ); // §4 v0.107 mint/send/predict this frame's input commands
     this.syncBlobs();
     this.syncPetRigs();
@@ -4293,6 +4342,9 @@ export class ArenaScene extends Phaser.Scene {
     this.syncZones();
     this.syncPortal();
     this.jumpEffectRenderer.beginFrame();
+    if (cancelFlourishThisFrame) {
+      this.blobs.get(this.room.sessionId)?.cancelFlourish("raw-arena-input");
+    }
     // Hit-stop (§20): briefly freeze the visuals on impactful events for weight. Input/sync keep
     // running so it doesn't feel laggy; positions/poses catch up when the freeze lifts.
     if (this.time.now >= this.frozenUntil) {
@@ -8764,6 +8816,8 @@ export class ArenaScene extends Phaser.Scene {
       const anim = this.playerAnimInput;
       anim.moveX = mx;
       anim.moveY = my;
+      anim.desiredMoveX = isSelf ? this.curDx : undefined;
+      anim.desiredMoveY = isSelf ? this.curDy : undefined;
       anim.speed = speed;
       anim.aimX = isSelf ? aimX : 0;
       anim.aimY = isSelf ? aimY : 0;
@@ -14009,13 +14063,13 @@ export class ArenaScene extends Phaser.Scene {
     if (predictTick) this.predictor.tick(cmd);
   }
 
-  private stepNetInput(deltaMs: number, levelWindowOpen = false, ultimatePressed = false): void {
-    const nextDx = levelWindowOpen
-      ? 0
-      : (this.keys.D.isDown ? 1 : 0) - (this.keys.A.isDown ? 1 : 0);
-    const nextDy = levelWindowOpen
-      ? 0
-      : (this.keys.S.isDown ? 1 : 0) - (this.keys.W.isDown ? 1 : 0);
+  private stepNetInput(
+    deltaMs: number,
+    levelWindowOpen: boolean,
+    ultimatePressed: boolean,
+    nextDx: number,
+    nextDy: number,
+  ): void {
     if (levelWindowOpen) {
       this.jumpQueued = false;
       this.poundQueued = false;

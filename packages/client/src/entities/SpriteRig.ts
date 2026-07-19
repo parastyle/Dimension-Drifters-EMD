@@ -53,6 +53,7 @@ import {
   type MeleeComboMotion,
   type MeleeComboStep,
   type MeleeComboVariant,
+  MOVE_HITCH_MIN_ANGLE,
   MOVE_SPEED,
   type MoveStance,
   meleeComboSelectionFor,
@@ -337,6 +338,49 @@ export function isTerminalFlourishStep(step: number, sequenceLength: number): bo
 
 export function flourishStreakWindowMs(effectiveCooldown: number): number {
   return Math.max(320, Math.min(850, effectiveCooldown * 2.2 * 1000));
+}
+
+export interface RawFlourishIntent {
+  attack: boolean;
+  parryOrBrace: boolean;
+  jumpOrDodge: boolean;
+  interaction: boolean;
+  weaponSelection: boolean;
+  desiredMoveX: number;
+  desiredMoveY: number;
+}
+
+/** Raw desired axes own flourish cancellation; collision/resolved displacement never enters this decision. */
+export function flourishMovementIntent(
+  previousX: number,
+  previousY: number,
+  desiredX: number,
+  desiredY: number,
+): boolean {
+  const previousLength = Math.hypot(previousX, previousY);
+  const desiredLength = Math.hypot(desiredX, desiredY);
+  if (desiredLength <= 0.001) return false;
+  if (previousLength <= 0.001) return true;
+  const directionDot =
+    (previousX * desiredX + previousY * desiredY) / (previousLength * desiredLength);
+  const directionChange = Math.acos(Math.max(-1, Math.min(1, directionDot)));
+  return directionChange > MOVE_HITCH_MIN_ANGLE + 1e-10;
+}
+
+/** One per-frame Arena capture, including requests rejected by gameplay cooldowns or collision. */
+export function rawFlourishIntentCancels(
+  input: Readonly<RawFlourishIntent>,
+  previousMoveX: number,
+  previousMoveY: number,
+): boolean {
+  return (
+    input.attack ||
+    input.parryOrBrace ||
+    input.jumpOrDodge ||
+    input.interaction ||
+    input.weaponSelection ||
+    flourishMovementIntent(previousMoveX, previousMoveY, input.desiredMoveX, input.desiredMoveY)
+  );
 }
 
 export function nextFlourishStreakCount(
@@ -1375,6 +1419,9 @@ export interface RigAnim {
   /** Movement direction this frame (≈0 length when idle). */
   moveX: number;
   moveY: number;
+  /** Local raw input axes. Flourish cancellation reads these before collision/prediction resolution. */
+  desiredMoveX?: number;
+  desiredMoveY?: number;
   /** §7 v0.105 RAW render speed (px/s) — drives the gait blend so the walk cycle ramps with actual speed
    *  and fully stops when you do (not a binary flag that runs full-stride for ~1.3s after key-release). */
   speed?: number;
@@ -1709,7 +1756,6 @@ export class SpriteRig {
   private flourishCancelGeneration = 0;
   private flourishHeadX = 0;
   private flourishHeadY = 0;
-  private flourishMoveWasActive = false;
   private flourishMoveX = 0;
   private flourishMoveY = 0;
   private flourishReducedMotion = false;
@@ -2777,9 +2823,6 @@ export class SpriteRig {
     channel.hand = hand;
     channel.rotationSign = hand === 0 ? 1 : -1;
     channel.spec = spec;
-    this.flourishMoveWasActive = this.gait > 0.12;
-    this.flourishMoveX = this.headingX;
-    this.flourishMoveY = this.headingY;
   }
 
   private startIncomingDraw(epochMs: number): void {
@@ -7209,19 +7252,30 @@ export class SpriteRig {
     const jiggleLodSkip = PROCEDURAL_JIGGLE && outsidePaperView;
     const currentMoveLength = Math.hypot(anim.moveX, anim.moveY);
     const currentMoveActive = currentMoveLength > 0.15 || (anim.speed ?? 0) > MOVE_SPEED * 0.12;
-    const currentMoveX = currentMoveLength > 0.001 ? anim.moveX / currentMoveLength : 0;
-    const currentMoveY = currentMoveLength > 0.001 ? anim.moveY / currentMoveLength : 0;
+    const cancellationMoveX = anim.isSelf ? (anim.desiredMoveX ?? 0) : anim.moveX;
+    const cancellationMoveY = anim.isSelf ? (anim.desiredMoveY ?? 0) : anim.moveY;
+    const cancellationMoveLength = Math.hypot(cancellationMoveX, cancellationMoveY);
+    const cancellationMoveActive = cancellationMoveLength > 0.001;
+    const cancellationMoveUnitX = cancellationMoveActive
+      ? cancellationMoveX / cancellationMoveLength
+      : 0;
+    const cancellationMoveUnitY = cancellationMoveActive
+      ? cancellationMoveY / cancellationMoveLength
+      : 0;
     const localAttackIntent =
       anim.isSelf && this.scene.input?.activePointer?.rightButtonDown?.() === true;
     const flourishAttackIntent = anim.fireHeld === true || localAttackIntent;
     const flourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
     const flourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
-    const movementOnset = flourishActive && !this.flourishMoveWasActive && currentMoveActive;
-    const hardDirectionChange =
+    const movementOnsetOrHardChange =
+      !anim.isSelf &&
       flourishActive &&
-      this.flourishMoveWasActive &&
-      currentMoveActive &&
-      currentMoveX * this.flourishMoveX + currentMoveY * this.flourishMoveY < 0.45;
+      flourishMovementIntent(
+        this.flourishMoveX,
+        this.flourishMoveY,
+        cancellationMoveUnitX,
+        cancellationMoveUnitY,
+      );
     const reducedMotion = anim.reducedMotion === true;
     if (!this.flourishReducedReady) {
       this.flourishReducedMotion = reducedMotion;
@@ -7235,7 +7289,7 @@ export class SpriteRig {
     }
     const beamEnded = this.flourishFireHeld && !anim.fireHeld && !!this.weaponDef?.beam;
     this.flourishFireHeld = anim.fireHeld === true;
-    if (currentMoveActive || flourishAttackIntent) {
+    if (cancellationMoveActive || flourishAttackIntent) {
       this.idleFlourishEligibleAtMs = sceneNow + 1600 + this.idleFlourishOffsetMs;
     }
     if (
@@ -7249,13 +7303,14 @@ export class SpriteRig {
       this.resetFlourishState(false);
     } else if (
       flourishAttackIntent ||
-      movementOnset ||
-      hardDirectionChange ||
-      (flourishArmed && currentMoveActive) ||
+      movementOnsetOrHardChange ||
+      (flourishArmed && cancellationMoveActive) ||
       (anim.moveStance ?? STANCE_NONE) !== STANCE_NONE
     ) {
       this.cancelFlourish("anim-input");
     }
+    this.flourishMoveX = cancellationMoveUnitX;
+    this.flourishMoveY = cancellationMoveUnitY;
     if (beamEnded && !outsidePaperView && this.weaponDef) {
       this.armAfterAttack(0, sceneNow + 90, this.weaponDef);
     }
@@ -8584,7 +8639,7 @@ export class SpriteRig {
     }
     const quietForEarnedFlourish =
       !strongerFlourishOwner &&
-      !currentMoveActive &&
+      !cancellationMoveActive &&
       !flourishAttackIntent &&
       this.moveStance === STANCE_NONE &&
       !outsidePaperView &&
@@ -8602,7 +8657,7 @@ export class SpriteRig {
       !anyFlourishArmed &&
       !anyStowActive &&
       gait < 0.12 &&
-      !currentMoveActive &&
+      !cancellationMoveActive &&
       !flourishAttackIntent &&
       !this.comboHoldPose &&
       sceneNow >= this.idleFlourishEligibleAtMs &&
