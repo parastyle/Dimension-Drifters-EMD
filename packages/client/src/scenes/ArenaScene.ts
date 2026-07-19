@@ -320,6 +320,63 @@ const PAPER_PICKUP_EXIT_BUDGET = 8;
 const PAPER_SNAPSHOT_MAX_W = 1600;
 const PAPER_SNAPSHOT_MAX_H = 900;
 
+export interface SummonMenuLayout {
+  panel: { x: number; y: number; width: number; height: number };
+  columns: number;
+  gap: number;
+  buttonWidth: number;
+  buttonHeight: number;
+  rowGap: number;
+  titleY: number;
+  hintY: number;
+  controlsY: number;
+  enemyLabelY: number;
+  enemyStartY: number;
+  bossLabelY: number;
+  bossStartY: number;
+  bossPageSize: number;
+  pagerY: number;
+  footerY: number;
+}
+
+/** §21 pure CSS-pixel geometry for the Testing-Grounds summon sheet. At 1280×720 the fixed header,
+ *  two enemy rows, two paged boss rows, pager, and footer all stay inside a 650px safe panel. */
+export function summonMenuLayout(screenWidth: number, screenHeight: number): SummonMenuLayout {
+  const width = Math.max(1, screenWidth);
+  const height = Math.max(1, screenHeight);
+  const panelWidth = Math.min(960, Math.max(640, width - 48));
+  const panelHeight = Math.min(650, Math.max(620, height - 40));
+  const panel = {
+    x: (width - panelWidth) / 2,
+    y: (height - panelHeight) / 2,
+    width: panelWidth,
+    height: panelHeight,
+  };
+  const columns = 4;
+  const gap = 12;
+  const buttonWidth = (panelWidth - 48 - gap * (columns - 1)) / columns;
+  const buttonHeight = 48;
+  const rowGap = 58;
+  return {
+    panel,
+    columns,
+    gap,
+    buttonWidth,
+    buttonHeight,
+    rowGap,
+    titleY: panel.y + 30,
+    hintY: panel.y + 61,
+    controlsY: panel.y + 102,
+    enemyLabelY: panel.y + 143,
+    enemyStartY: panel.y + 184,
+    bossLabelY: panel.y + 301,
+    bossStartY: panel.y + 342,
+    bossPageSize: columns * 2,
+    pagerY: panel.y + 474,
+    footerY: panel.y + 616,
+  };
+}
+
 function paperClamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
@@ -1274,6 +1331,7 @@ export class ArenaScene extends Phaser.Scene {
     | "C"
     | "M"
     | "TAB"
+    | "ESC"
     | "SPACE"
     | "SHIFT"
     | "CTRL"
@@ -1578,13 +1636,14 @@ export class ArenaScene extends Phaser.Scene {
   private summonOpen = false;
   private summonCount = 1; // the multiplier (× this many per spawn click)
   private summonTough = false;
+  private summonBossPage = 0;
   // §9/§13 drop & salvage (R): tap = drop the held weapon, HOLD = salvage it. `rHold` = seconds R has
   // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
   private rHold = 0;
   private rSalvaged = false;
   /** §13 v0.106 (A11): latch so a JustDown grab suppresses the release-time drop (one press = one grab). */
   private rGrabbed = false;
-  /** §13 v0.106 (A11): the nearest grabbable pickup this frame (world px), for the highlight ring. */
+  /** §13 v0.106 (A11): nearest grabbable pickup this frame (world px), for the highlight ring. */
   private grabTarget: { x: number; y: number } | null = null;
   private grabRadius = PICKUP_RADIUS;
   /** §13 v0.106 (A11): the pulsing amber ring drawn on the pickup R will take. */
@@ -1810,6 +1869,7 @@ export class ArenaScene extends Phaser.Scene {
       this.resumeAudioKeyHandler = null;
     }
     this.input.keyboard?.removeCapture("TAB");
+    this.input.keyboard?.removeCapture("ESC");
   }
 
   /** §4 leave the installed room after detaching callbacks, so no leave-time patch can touch this Scene. */
@@ -2114,6 +2174,7 @@ export class ArenaScene extends Phaser.Scene {
     this.summonOpen = false;
     this.summonCount = 1;
     this.summonTough = false;
+    this.summonBossPage = 0;
     this.rHold = 0;
     this.rSalvaged = false;
     this.rGrabbed = false;
@@ -2288,7 +2349,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,P,Q,E,F,H,T,B,C,M,TAB,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,P,Q,E,F,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -2305,6 +2366,7 @@ export class ArenaScene extends Phaser.Scene {
       | "C"
       | "M"
       | "TAB"
+      | "ESC"
       | "SPACE"
       | "SHIFT"
       | "CTRL"
@@ -2322,6 +2384,7 @@ export class ArenaScene extends Phaser.Scene {
     >;
     // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
     keyboard.addCapture("TAB");
+    keyboard.addCapture("ESC");
     this.input.setDefaultCursor("crosshair");
     // Create/resume the AudioContext on the first real gesture (click or key) — the browser autoplay
     // policy blocks it otherwise. Idempotent + cheap, so wiring it to both is harmless.
@@ -2725,21 +2788,28 @@ export class ArenaScene extends Phaser.Scene {
     state.forEach((pk, id) => {
       const existing0 = this.pickups.get(id);
       if (existing0) {
-        // §41 lazy-art RETRO-UPGRADE: a pickup built while its weapon art was still loading rendered the
-        // tier-bundle fallback FOREVER (a fresh showroom page of 42 expansion weapons showed all blobs —
-        // "assets missing"). Once the texture lands, rebuild the pickup with its real art.
-        const wantArt = existing0.getData("pendingArt") as string | undefined;
-        const wantRole = SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
-        if (
-          !wantArt ||
-          !wantRole ||
-          !this.textures.exists(partTexture(this, wantArt, wantRole).key)
-        ) {
-          return;
+        const renderedWeapon = existing0.getData("pickupWeapon") as string | undefined;
+        if (id.startsWith("pk:") && renderedWeapon !== pk.weaponPublic) {
+          this.destroyPickup(existing0);
+          this.pickups.delete(id);
+        } else {
+          // §41 lazy-art RETRO-UPGRADE: a pickup built while its weapon art was still loading rendered the
+          // tier-bundle fallback FOREVER (a fresh showroom page of 42 expansion weapons showed all blobs —
+          // "assets missing"). Once the texture lands, rebuild the pickup with its real art.
+          const wantArt = existing0.getData("pendingArt") as string | undefined;
+          const wantRole = SPRITES[wantArt as keyof typeof SPRITES]?.parts[0]?.role;
+          if (
+            !wantArt ||
+            !wantRole ||
+            !this.textures.exists(partTexture(this, wantArt, wantRole).key)
+          ) {
+            return;
+          }
+          this.destroyPickup(existing0);
+          this.pickups.delete(id); // fall through — recreated below with the loaded art
         }
-        this.destroyPickup(existing0);
-        this.pickups.delete(id); // fall through — recreated below with the loaded art
       }
+      const isGallery = id.startsWith("pk:");
       const isMystery = !pk.known;
       const weapon = pk.weaponPublic;
       const manifest = SPRITES[weapon as keyof typeof SPRITES];
@@ -2803,9 +2873,13 @@ export class ArenaScene extends Phaser.Scene {
         : `${def?.name ?? weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
       const label = this.add
         .text(0, 42, labelText, {
-          fontSize: "11px",
+          fontSize: isGallery ? "10px" : "11px",
           color: accentHex,
           fontStyle: "bold",
+          align: "center",
+          backgroundColor: isGallery ? "#090805" : undefined,
+          padding: isGallery ? { x: 4, y: 2 } : undefined,
+          wordWrap: isGallery ? { width: 132, useAdvancedWrap: true } : undefined,
         })
         .setOrigin(0.5);
       const spinnerKids: Phaser.GameObjects.GameObject[] = [glow, img, edge];
@@ -2821,6 +2895,7 @@ export class ArenaScene extends Phaser.Scene {
         spinEdge: edge,
         mysteryMark,
         pickupLabel: label,
+        pickupWeapon: pk.weaponPublic,
         baseScale,
         spinTheta: 0,
       });
@@ -3984,8 +4059,18 @@ export class ArenaScene extends Phaser.Scene {
       this.levelWinInputReleaseLatch = false;
     }
     if (levelWindowOpen) this.handleLevelWindowInput();
+    if (this.summonOpen && this.room.state.mode !== "training") this.closeSummonMenu();
+    const summonClosePressed =
+      this.summonOpen &&
+      (Phaser.Input.Keyboard.JustDown(this.keys.TAB) ||
+        Phaser.Input.Keyboard.JustDown(this.keys.ESC));
+    if (summonClosePressed) this.closeSummonMenu();
     const levelWindowInputBlocked =
-      levelWindowOpen || this.levelWinInputReleaseLatch || this.verbs.isModalBlocking();
+      levelWindowOpen ||
+      this.levelWinInputReleaseLatch ||
+      this.verbs.isModalBlocking() ||
+      this.summonOpen ||
+      summonClosePressed;
     const predictedAirborne = this.predictor
       ? this.selfPredHeight > GROUND_EPSILON
       : (selfP?.height ?? 0) > GROUND_EPSILON;
@@ -4044,6 +4129,7 @@ export class ArenaScene extends Phaser.Scene {
       // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
       // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
       let nearPickup = false;
+      let grabPickupId = "";
       if (selfP && alive) {
         let bestD = Number.POSITIVE_INFINITY;
         this.room.state.pickups.forEach((pk, id) => {
@@ -4056,6 +4142,7 @@ export class ArenaScene extends Phaser.Scene {
           if (d <= radius * radius && d <= bestD) {
             bestD = d;
             nearPickup = true;
+            grabPickupId = id;
             this.grabTarget = { x: pk.x, y: pk.y };
             this.grabRadius = radius;
           }
@@ -4064,8 +4151,8 @@ export class ArenaScene extends Phaser.Scene {
       canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
       // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
       // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
-      if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && nearPickup) {
-        this.room.send("grabWeapon");
+      if (Phaser.Input.Keyboard.JustDown(this.keys.R) && alive && grabPickupId) {
+        this.room.send("grabWeapon", { pickupId: grabPickupId });
         this.wakeCarouselDock();
         this.rGrabbed = true;
         this.audio.play("grab"); // §19 a soft two-note pickup blip
@@ -4101,8 +4188,8 @@ export class ArenaScene extends Phaser.Scene {
       // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
       // up with E" handed you a seemingly random weapon. Cycle/browse stays on E only when clear of pickups.
       const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
-      if (eDown && alive && nearPickup) {
-        this.room.send("grabWeapon");
+      if (eDown && alive && grabPickupId) {
+        this.room.send("grabWeapon", { pickupId: grabPickupId });
         this.wakeCarouselDock();
         this.audio.play("grab");
       }
@@ -4162,7 +4249,6 @@ export class ArenaScene extends Phaser.Scene {
         if (!nearBeltShop) this.shopOpen = false;
       }
       if (ultimatePressed && !nearBeltShop) this.sendUltimate();
-      if (this.summonOpen && this.room?.state.mode !== "training") this.closeSummonMenu();
       if (Phaser.Input.Keyboard.JustDown(this.keys.C)) this.room?.send("cycleCharacter"); // §7 swap skin
     }
     this.updateDropBar(canSalvage);
@@ -7003,7 +7089,10 @@ export class ArenaScene extends Phaser.Scene {
 
   private inputModalBlocked(self: PlayerState | undefined): boolean {
     return (
-      this.inLevelWindow(self) || this.levelWinInputReleaseLatch || this.verbs.isModalBlocking()
+      this.inLevelWindow(self) ||
+      this.levelWinInputReleaseLatch ||
+      this.verbs.isModalBlocking() ||
+      this.summonOpen
     );
   }
 
@@ -7671,7 +7760,6 @@ export class ArenaScene extends Phaser.Scene {
     { id: "ronin", label: "Ronin (duelist)" },
     { id: "vault-ronin", label: "Vault-Ronin (leaper)" },
     { id: "dust-ranger", label: "Dust-Ranger (dodge)" },
-    { id: "old-rust", label: "OLD RUST (boss)" },
   ];
 
   /** Tear down the summon overlay. */
@@ -7681,21 +7769,31 @@ export class ArenaScene extends Phaser.Scene {
     this.summonOpen = false;
   }
 
-  /** Open (or rebuild) the dev summon menu: a multiplier row + a Tough toggle + one button per kind.
-   *  Clicking a kind sends `debugSpawn` and leaves the menu up so you can keep conjuring. */
+  /** Open (or rebuild) the dev summon menu. Enemies stay on one compact grid; bosses page eight at a time,
+   *  so the final-size hit areas and labels remain disjoint at the 1280×720 support floor. */
   private openSummonMenu(): void {
     this.closeSummonMenu();
     this.summonOpen = true;
-    const cx = this.screenW() / 2;
-    const cy = this.screenH() / 2;
+    const screenWidth = this.screenW();
+    const screenHeight = this.screenH();
+    const layout = summonMenuLayout(screenWidth, screenHeight);
+    const cx = screenWidth / 2;
+    const panelCx = layout.panel.x + layout.panel.width / 2;
+    const panelCy = layout.panel.y + layout.panel.height / 2;
     const dim = this.add
-      .rectangle(cx, cy, this.screenW(), this.screenH(), 0x05040a, 0.55)
+      .rectangle(cx, screenHeight / 2, screenWidth, screenHeight, 0x05040a, 0.72)
       .setScrollFactor(0)
       .setDepth(100020)
       .setInteractive();
+    const panel = this.add
+      .rectangle(panelCx, panelCy, layout.panel.width, layout.panel.height, 0x100e0b, 0.98)
+      .setScrollFactor(0)
+      .setStrokeStyle(2, 0x33e6ff, 0.85)
+      .setDepth(100021)
+      .setInteractive();
     const title = this.add
-      .text(cx, cy - 196, "SUMMON — Testing Grounds", {
-        fontSize: "26px",
+      .text(cx, layout.titleY, "SUMMON — Testing Grounds", {
+        fontSize: "24px",
         color: "#33e6ff",
         fontStyle: "bold",
       })
@@ -7703,29 +7801,32 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(100021);
     const hint = this.add
-      .text(cx, cy - 166, "click a monster to spawn · Tab to close", {
+      .text(cx, layout.hintY, "Click to summon · Tab / Esc to close", {
         fontSize: "13px",
         color: "#cfc8b6",
       })
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setDepth(100021);
-    this.summonObjects.push(dim, title, hint);
+    this.summonObjects.push(dim, panel, title, hint);
 
-    // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle on the right.
+    // Multiplier row (×1 … ×DEBUG_SPAWN_MAX) + a Tough toggle. Both rebuild only after their full-size
+    // pointer target fires, so the displayed and interactive geometry always agree.
     const mults = [1, 5, 10, DEBUG_SPAWN_MAX].filter((n, i, a) => a.indexOf(n) === i);
-    const chipW = 58;
-    const chipGap = 10;
-    const rowW = mults.length * (chipW + chipGap) - chipGap;
-    const mStartX = cx - rowW / 2 + chipW / 2 - 70;
-    const my = cy - 122;
+    const chipW = 54;
+    const chipGap = 8;
+    const controlsWidth = 34 + mults.length * chipW + (mults.length - 1) * chipGap + 18 + 104;
+    const controlsLeft = cx - controlsWidth / 2;
+    const mStartX = controlsLeft + 34 + chipW / 2;
+    const my = layout.controlsY;
     const mLabel = this.add
-      .text(mStartX - chipW / 2 - 14, my, "×", {
-        fontSize: "18px",
+      .text(controlsLeft, my, "COUNT", {
+        fontSize: "11px",
         color: "#9a9486",
+        fontStyle: "bold",
       })
       .setScrollFactor(0)
-      .setOrigin(1, 0.5)
+      .setOrigin(0, 0.5)
       .setDepth(100021);
     this.summonObjects.push(mLabel);
     mults.forEach((n, i) => {
@@ -7752,10 +7853,9 @@ export class ArenaScene extends Phaser.Scene {
       });
       this.summonObjects.push(chip, t);
     });
-    // Tough toggle.
-    const tx = mStartX + mults.length * (chipW + chipGap) + 40;
+    const tx = mStartX + (mults.length - 1) * (chipW + chipGap) + chipW / 2 + 18 + 52;
     const tough = this.add
-      .rectangle(tx, my, 96, 30, this.summonTough ? 0x6b4a1f : 0x1b1812, 0.98)
+      .rectangle(tx, my, 104, 30, this.summonTough ? 0x6b4a1f : 0x1b1812, 0.98)
       .setScrollFactor(0)
       .setStrokeStyle(2, this.summonTough ? 0xffb24a : 0x4a443a)
       .setDepth(100021)
@@ -7775,19 +7875,30 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.summonObjects.push(tough, toughT);
 
-    // Monster buttons — a centered grid (4 per row).
+    const sectionX = layout.panel.x + 24;
+    const enemyLabel = this.add
+      .text(sectionX, layout.enemyLabelY, "ENEMIES — count and Tough apply", {
+        fontSize: "12px",
+        color: "#9eefff",
+        fontStyle: "bold",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0, 0.5)
+      .setDepth(100022);
+    this.summonObjects.push(enemyLabel);
+
+    // Eight enemies occupy exactly two rows. Character identities are deliberately absent: wardrobe gear
+    // owns the boilerplate player rig; this dev surface is only for field actors.
     const kinds = ArenaScene.SUMMON_KINDS;
-    const W = 196;
-    const H = 52;
-    const gap = 14;
-    const perRow = 4;
+    const W = layout.buttonWidth;
+    const H = layout.buttonHeight;
+    const gap = layout.gap;
+    const perRow = layout.columns;
     kinds.forEach((k, i) => {
       const col = i % perRow;
       const row = Math.floor(i / perRow);
-      const rowCount = Math.min(perRow, kinds.length - row * perRow);
-      const rowWidth = rowCount * (W + gap) - gap;
-      const x = cx - rowWidth / 2 + W / 2 + col * (W + gap);
-      const y = cy - 56 + row * (H + gap);
+      const x = sectionX + W / 2 + col * (W + gap);
+      const y = layout.enemyStartY + row * layout.rowGap;
       const btn = this.add
         .rectangle(x, y, W, H, 0x1b1812, 0.98)
         .setScrollFactor(0)
@@ -7799,6 +7910,7 @@ export class ArenaScene extends Phaser.Scene {
           fontSize: "14px",
           color: "#e6f8ff",
           align: "center",
+          wordWrap: { width: W - 16, useAdvancedWrap: true },
         })
         .setScrollFactor(0)
         .setOrigin(0.5)
@@ -7815,40 +7927,44 @@ export class ArenaScene extends Phaser.Scene {
       this.summonObjects.push(btn, t);
     });
 
-    // §16 v0.109 BOSS PICKER row — spawn any bespoke boss def to playtest its style (host-gated server-side).
-    const gridRows = Math.ceil(kinds.length / perRow);
-    const bossRowY = cy - 56 + gridRows * (H + gap) + 18;
+    // §16 v0.109 BOSS PICKER — Old Rust plus every bespoke definition, paged so no row escapes the panel.
+    const bossIds = ["old-rust", ...BOSS_DEF_IDS.filter((id) => id !== "old-rust")];
+    const bossPages = Math.max(1, Math.ceil(bossIds.length / layout.bossPageSize));
+    this.summonBossPage = ((this.summonBossPage % bossPages) + bossPages) % bossPages;
+    const bossStart = this.summonBossPage * layout.bossPageSize;
+    const shownBosses = bossIds.slice(bossStart, bossStart + layout.bossPageSize);
     const bossLabel = this.add
-      .text(cx, bossRowY - 4, "BOSS PICKER — click to summon (swaps any live boss)", {
-        fontSize: "13px",
-        color: "#ffb24a",
-        fontStyle: "bold",
-      })
+      .text(
+        sectionX,
+        layout.bossLabelY,
+        `BOSSES — page ${this.summonBossPage + 1}/${bossPages} · replaces the live boss`,
+        {
+          fontSize: "12px",
+          color: "#ffb24a",
+          fontStyle: "bold",
+        },
+      )
       .setScrollFactor(0)
-      .setOrigin(0.5)
+      .setOrigin(0, 0.5)
       .setDepth(100022);
     this.summonObjects.push(bossLabel);
-    const bossIds = BOSS_DEF_IDS;
-    const BW = 208;
-    bossIds.forEach((id, i) => {
+    shownBosses.forEach((id, i) => {
       const col = i % perRow;
       const row = Math.floor(i / perRow);
-      const rowCount = Math.min(perRow, bossIds.length - row * perRow);
-      const rowWidth = rowCount * (BW + gap) - gap;
-      const x = cx - rowWidth / 2 + BW / 2 + col * (BW + gap);
-      const y = bossRowY + 24 + row * (H + gap);
+      const x = sectionX + W / 2 + col * (W + gap);
+      const y = layout.bossStartY + row * layout.rowGap;
       const btn = this.add
-        .rectangle(x, y, BW, H, 0x241a10, 0.98)
+        .rectangle(x, y, W, H, 0x241a10, 0.98)
         .setScrollFactor(0)
         .setStrokeStyle(2, 0xffb24a)
         .setDepth(100021)
         .setInteractive({ useHandCursor: true });
       const t = this.add
-        .text(x, y, BOSSES[id]?.name ?? id, {
+        .text(x, y, id === "old-rust" ? "Old Rust" : (BOSSES[id]?.name ?? id), {
           fontSize: "13px",
           color: "#ffe0b0",
           align: "center",
-          wordWrap: { width: BW - 16 },
+          wordWrap: { width: W - 16, useAdvancedWrap: true },
         })
         .setScrollFactor(0)
         .setOrigin(0.5)
@@ -7858,6 +7974,55 @@ export class ArenaScene extends Phaser.Scene {
       btn.on("pointerdown", () => this.room?.send("spawnBossDef", { kind: id }));
       this.summonObjects.push(btn, t);
     });
+
+    if (bossPages > 1) {
+      const makePager = (x: number, label: string, dir: number): void => {
+        const btn = this.add
+          .rectangle(x, layout.pagerY, 72, 32, 0x1b1812, 0.98)
+          .setScrollFactor(0)
+          .setStrokeStyle(2, 0xffb24a)
+          .setDepth(100021)
+          .setInteractive({ useHandCursor: true });
+        const text = this.add
+          .text(x, layout.pagerY, label, {
+            fontSize: "14px",
+            color: "#ffe0b0",
+            fontStyle: "bold",
+          })
+          .setScrollFactor(0)
+          .setOrigin(0.5)
+          .setDepth(100022);
+        btn.on("pointerdown", () => {
+          this.summonBossPage += dir;
+          this.openSummonMenu();
+        });
+        this.summonObjects.push(btn, text);
+      };
+      makePager(cx - 104, "‹ Prev", -1);
+      makePager(cx + 104, "Next ›", 1);
+      const pageText = this.add
+        .text(cx, layout.pagerY, `${this.summonBossPage + 1} / ${bossPages}`, {
+          fontSize: "13px",
+          color: "#cfc8b6",
+          fontStyle: "bold",
+        })
+        .setScrollFactor(0)
+        .setOrigin(0.5)
+        .setDepth(100022);
+      this.summonObjects.push(pageText);
+    }
+
+    const footer = this.add
+      .text(
+        cx,
+        layout.footerY,
+        "Player identities are wardrobe-only · boilerplate rig · enemy and boss summons only",
+        { fontSize: "11px", color: "#7f796d", align: "center" },
+      )
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setDepth(100022);
+    this.summonObjects.push(footer);
   }
 
   /**
@@ -10980,6 +11145,26 @@ export class ArenaScene extends Phaser.Scene {
       beltLocked: (state?.beltLockX ?? 0) > 0,
       lagging,
     });
+    if (mode === "training") {
+      let galleryPage = 0;
+      let galleryPages = 0;
+      let galleryWeapons = 0;
+      state?.pickups.forEach((_pickup, id) => {
+        if (!id.startsWith("pk:")) return;
+        galleryWeapons++;
+        if (galleryPage > 0) return;
+        const [, rawPage, rawPages] = id.split(":", 4);
+        const page = Number(rawPage);
+        const pages = Number(rawPages);
+        if (Number.isInteger(page) && page > 0 && Number.isInteger(pages) && pages >= page) {
+          galleryPage = page;
+          galleryPages = pages;
+        }
+      });
+      if (galleryPage > 0) {
+        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons`;
+      }
+    }
     const layout = objectiveHudLayout({
       screenWidth: this.screenW(),
       uiScale: scale,

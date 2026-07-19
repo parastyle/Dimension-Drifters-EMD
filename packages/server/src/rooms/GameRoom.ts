@@ -527,7 +527,8 @@ const COMBO_RIPOSTE_STAGGER_TICKS = 20;
 const ZERO_MOVE_INPUT = { dx: 0, dy: 0 } as const;
 const ZERO_IMPULSE = { vx: 0, vy: 0 } as const;
 const tickReached = (now: number, target: number): boolean => ((now - target) | 0) >= 0;
-const ticksFromSeconds = (seconds: number): number => Math.max(1, Math.round(seconds * 1000 / TICK_MS));
+const ticksFromSeconds = (seconds: number): number =>
+  Math.max(1, Math.round((seconds * 1000) / TICK_MS));
 
 function pointSegmentDistanceSq(
   px: number,
@@ -1295,21 +1296,24 @@ export class GameRoom extends Room<ArenaState> {
     // synthetic next-seq so held-input semantics keep working.
     this.onMessage(
       "input",
-      (client, message: {
-        seq?: number;
-        dx?: number;
-        dy?: number;
-        jump?: boolean;
-        crouchHeld?: boolean;
-        pound?: boolean;
-        slide?: boolean;
-        slideHeld?: boolean;
-        fireHeld?: boolean;
-        aimX?: number;
-        aimY?: number;
-        targetX?: number;
-        targetY?: number;
-      }) => {
+      (
+        client,
+        message: {
+          seq?: number;
+          dx?: number;
+          dy?: number;
+          jump?: boolean;
+          crouchHeld?: boolean;
+          pound?: boolean;
+          slide?: boolean;
+          slideHeld?: boolean;
+          fireHeld?: boolean;
+          aimX?: number;
+          aimY?: number;
+          targetX?: number;
+          targetY?: number;
+        },
+      ) => {
         const rec = this.inputs.get(client.sessionId);
         if (!rec) return;
         if (rec.msgBudget <= 0) return; // over the per-tick budget — ignore (flood guard)
@@ -1546,7 +1550,8 @@ export class GameRoom extends Room<ArenaState> {
       this.syncActiveSlot(player, c);
       const dir = (message?.dir ?? 1) < 0 ? -1 : 1;
       for (let step = 1; step < ARSENAL_SLOTS; step++) {
-        const i = (((player.activeSlot + dir * step) % ARSENAL_SLOTS) + ARSENAL_SLOTS) % ARSENAL_SLOTS;
+        const i =
+          (((player.activeSlot + dir * step) % ARSENAL_SLOTS) + ARSENAL_SLOTS) % ARSENAL_SLOTS;
         if (player.slots[i]?.weapon) {
           this.loadSlot(player, c, i);
           return;
@@ -1619,7 +1624,10 @@ export class GameRoom extends Room<ArenaState> {
         const s = player.slots[idx]!;
         if (!s.weapon) return;
         if (s.bankEntryId) return;
-        player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, s.rarity, s.earned));
+        player.scrip = Math.min(
+          65535,
+          player.scrip + this.petSalePayout(player, s.rarity, s.earned),
+        );
         this.copySlot(s, null);
         if (idx === player.activeSlot) this.loadSlot(player, c, idx);
         this.publishAccountMutation(player);
@@ -1627,7 +1635,10 @@ export class GameRoom extends Room<ArenaState> {
         if (idx < 0 || idx >= player.bag.length) return;
         const b = player.bag[idx]!;
         if (b.bankEntryId) return;
-        player.scrip = Math.min(65535, player.scrip + this.petSalePayout(player, b.rarity, b.earned));
+        player.scrip = Math.min(
+          65535,
+          player.scrip + this.petSalePayout(player, b.rarity, b.earned),
+        );
         player.bag.splice(idx, 1);
         this.publishAccountMutation(player);
       }
@@ -1636,15 +1647,19 @@ export class GameRoom extends Room<ArenaState> {
     // Safe account-side shop conversion. The client supplies identity + revision, never price or rarity.
     this.onMessage(
       "sellStashEntry",
-      (client, message: {
-        requestId?: string;
-        expectedRevision?: number;
-        entryId?: string;
-        from?: "stash" | "intake";
-      }) => {
+      (
+        client,
+        message: {
+          requestId?: string;
+          expectedRevision?: number;
+          entryId?: string;
+          from?: "stash" | "intake";
+        },
+      ) => {
         if (!this.takeAction(client)) return;
         const account = this.metaAccounts.get(client.sessionId);
-        const player = this.state.players.get(client.sessionId) ??
+        const player =
+          this.state.players.get(client.sessionId) ??
           this.disconnectedPlayers.get(client.sessionId)?.player;
         if (!account || !player) return;
         const requestId = typeof message?.requestId === "string" ? message.requestId : "";
@@ -1698,7 +1713,12 @@ export class GameRoom extends Room<ArenaState> {
           this.state.players.get(client.sessionId) ??
           this.disconnectedPlayers.get(client.sessionId)?.player;
         if (player) player.prestige = account.prestige;
-        const receipt = { ...result, prestige: account.prestige, scripPaid: 0, revision: account.revision };
+        const receipt = {
+          ...result,
+          prestige: account.prestige,
+          scripPaid: 0,
+          revision: account.revision,
+        };
         this.prestigeReceipts.set(receiptKey, receipt);
         this.sendOwnerMessage(client.sessionId, "prestigeReceipt", receipt);
         this.sendOwnerMessage(client.sessionId, "metaAccount", account);
@@ -1724,7 +1744,8 @@ export class GameRoom extends Room<ArenaState> {
         offIndex >= ARSENAL_SLOTS ||
         offIndex === player.activeSlot ||
         player.offhandSlot === offIndex
-      ) return;
+      )
+        return;
 
       this.syncActiveSlot(player, c);
       const leadSlot = player.slots[player.activeSlot];
@@ -1797,11 +1818,12 @@ export class GameRoom extends Room<ArenaState> {
         const gearId = grants[rank];
         if (gearId && account.ownedGear.includes(gearId)) ownedRank = rank;
       }
-      const legacyRank = id === "vitality"
-        ? player.upVitality
-        : id === "fortune"
-          ? player.upFortune
-          : player.upPower;
+      const legacyRank =
+        id === "vitality"
+          ? player.upVitality
+          : id === "fortune"
+            ? player.upFortune
+            : player.upPower;
       const cur = Math.max(ownedRank, legacyRank);
       const cost = nextUpgradeCost(id, cur);
       if (cost === null || player.scrip < cost) return; // maxed or can't afford
@@ -1881,21 +1903,35 @@ export class GameRoom extends Room<ArenaState> {
       this.sendWeaponManifest(player);
     });
 
-    // §13 R-TAP near a ground weapon = GRAB it (the client only sends this when a pickup is in reach).
-    // Equips the nearest pickup; player drops (`drop*`) are consumed on grab, the Testing-Grounds gallery
-    // (`pk*`) persists so you can keep swapping.
-    this.onMessage("grabWeapon", (client) => {
+    // §13 R-TAP near a ground weapon = GRAB it. Current clients name the exact synced pickup highlighted at
+    // press time; that identity is authoritative. A gallery page can be rebuilt between send and receipt, so
+    // a missing id is rejected instead of silently substituting the new weapon occupying the old cell.
+    // Legacy id-less grabs remain available for ordinary `drop*` pickups only — never the mutable gallery.
+    this.onMessage("grabWeapon", (client, message?: { pickupId?: unknown }) => {
       if (!this.takeAction(client)) return; // §44 action budget (O(pickups) scan per call)
       const player = this.state.players.get(client.sessionId);
       if (!player?.alive) return;
       if (this.combat.get(client.sessionId)?.stance === STANCE_SLIDE) return;
+      const suppliedPickupId = message?.pickupId;
+      const requestedPickupId =
+        typeof suppliedPickupId === "string" &&
+        suppliedPickupId.length > 0 &&
+        suppliedPickupId.length <= 160
+          ? suppliedPickupId
+          : null;
+      if (suppliedPickupId !== undefined && requestedPickupId === null) return;
       let best: PickupState | null = null;
       let bestD = Number.POSITIVE_INFINITY;
-      this.state.pickups.forEach((pk, pid) => {
+      const consider = (pk: PickupState, pid: string): void => {
         if ((this.pickupGrace.get(pid) ?? 0) > 0) return;
         const bankMeta = this.pickupWeaponBankMeta.get(pid);
         if (bankMeta?.entry && bankMeta.ownerId && bankMeta.ownerId !== player.id) return;
-        if (bankMeta?.ownerId && bankMeta.ownerId !== player.id && this.state.elapsed < bankMeta.ownerLockUntil) return;
+        if (
+          bankMeta?.ownerId &&
+          bankMeta.ownerId !== player.id &&
+          this.state.elapsed < bankMeta.ownerLockUntil
+        )
+          return;
         const d = (pk.x - player.x) ** 2 + (pk.y - player.y) ** 2;
         const petReach = this.petRuns.get(player.id)?.mods.earnedPickupRadius ?? 0;
         const radius = this.earnedPickups.has(pid) && petReach > 0 ? petReach : PICKUP_RADIUS;
@@ -1903,7 +1939,17 @@ export class GameRoom extends Room<ArenaState> {
           bestD = d;
           best = pk;
         }
-      });
+      };
+      if (requestedPickupId !== null) {
+        const requested = this.state.pickups.get(requestedPickupId);
+        if (!requested) return;
+        consider(requested, requestedPickupId);
+      } else {
+        this.state.pickups.forEach((pk, pid) => {
+          if (pid.startsWith("pk:")) return;
+          consider(pk, pid);
+        });
+      }
       if (!best) return;
       const grabbed = best as PickupState;
       // Audit #15: reveal from the server-only identity rail only after the authoritative grab succeeds.
@@ -1937,7 +1983,8 @@ export class GameRoom extends Room<ArenaState> {
         weaponRun &&
         !weaponRun.entries.has(bankEntry.entryId) &&
         weaponRun.entries.size >= WEAPON_CARRY_MAX_PHYSICAL
-      ) return;
+      )
+        return;
       const c = this.combat.get(client.sessionId);
       if (this.belt) {
         // §29 belt: grabs ACCUMULATE into the 3-slot arsenal (the carousel is gone) — fill an empty slot,
@@ -2036,7 +2083,8 @@ export class GameRoom extends Room<ArenaState> {
       if (
         typeof kindId !== "string" ||
         (ENEMY_KINDS[kindId]?.archetype !== "boss" && !BOSS_DEF_IDS.includes(kindId))
-      ) return;
+      )
+        return;
       this.spawnBoss(kindId, false);
     });
 
@@ -2199,7 +2247,9 @@ export class GameRoom extends Room<ArenaState> {
     if (player.weapon === FISTS_WEAPON) return;
     const activeSlot = player.slots[player.activeSlot];
     const bankEntryId = activeSlot?.bankEntryId ?? "";
-    const bankEntry = bankEntryId ? this.weaponRuns.get(player.id)?.entries.get(bankEntryId)?.entry : undefined;
+    const bankEntry = bankEntryId
+      ? this.weaponRuns.get(player.id)?.entries.get(bankEntryId)?.entry
+      : undefined;
     const pairedOffIndex = bankEntry?.kind === "pair" ? player.offhandSlot : 255;
     if (c) this.dissolvePair(player, c);
     if (c) this.saveWeaponResource(player, c);
@@ -2213,8 +2263,16 @@ export class GameRoom extends Room<ArenaState> {
     pk.rarity = player.weaponRarity;
     pk.affix = player.weaponAffix;
     pk.affixPublic = player.weaponAffix;
-    const dropX = clamp(player.x + ax * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_WIDTH - PICKUP_RADIUS);
-    const dropY = clamp(player.y + ay * PICKUP_RADIUS * 1.6, PICKUP_RADIUS, ARENA_HEIGHT - PICKUP_RADIUS);
+    const dropX = clamp(
+      player.x + ax * PICKUP_RADIUS * 1.6,
+      PICKUP_RADIUS,
+      ARENA_WIDTH - PICKUP_RADIUS,
+    );
+    const dropY = clamp(
+      player.y + ay * PICKUP_RADIUS * 1.6,
+      PICKUP_RADIUS,
+      ARENA_HEIGHT - PICKUP_RADIUS,
+    );
     const sp = this.placePickupPos(dropX, dropY); // §29 belt: keep the drop on the deck (band + off pits)
     pk.x = sp.x;
     pk.y = sp.y;
@@ -2222,7 +2280,8 @@ export class GameRoom extends Room<ArenaState> {
     this.pickupGrace.set(pk.id, DROP_GRACE_SECONDS);
     if (bankEntry) {
       this.pickupWeaponBankMeta.set(pk.id, {
-        provenance: bankEntry.kind === "pair" ? bankEntry.lead.provenance : bankEntry.weapon.provenance,
+        provenance:
+          bankEntry.kind === "pair" ? bankEntry.lead.provenance : bankEntry.weapon.provenance,
         entry: bankEntry,
         ownerId: player.id,
         ownerLockUntil: Number.POSITIVE_INFINITY,
@@ -2264,7 +2323,8 @@ export class GameRoom extends Room<ArenaState> {
   /** Return the authoritative paired-off row only while the slot link and eligibility still agree. */
   private pairedOffSlot(player: PlayerState, c: CombatState): ArsenalSlot | undefined {
     const index = player.offhandSlot;
-    if (index === 255 || index === player.activeSlot || index >= player.slots.length) return undefined;
+    if (index === 255 || index === player.activeSlot || index >= player.slots.length)
+      return undefined;
     const slot = player.slots[index];
     if (!slot || slot.weapon !== c.offLastWeapon) return undefined;
     if (!pairEligible(WEAPONS[player.weapon], WEAPONS[slot.weapon])) return undefined;
@@ -2292,8 +2352,9 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private slotTouchesPair(player: PlayerState, slot: number): boolean {
-    return player.offhandSlot !== 255 &&
-      (slot === player.activeSlot || slot === player.offhandSlot);
+    return (
+      player.offhandSlot !== 255 && (slot === player.activeSlot || slot === player.offhandSlot)
+    );
   }
 
   /** Paired off-hand debt ages live exactly once. The stowed loop excludes this same row. */
@@ -2417,7 +2478,9 @@ export class GameRoom extends Room<ArenaState> {
     }
     let activeSlot = firstStarterSlot >= 0 ? firstStarterSlot : 0;
     if (activeEntryId) {
-      const requested = player.slots.findIndex((slot) => slot.bankEntryId === activeEntryId && slot.bankPairRole !== "offhand");
+      const requested = player.slots.findIndex(
+        (slot) => slot.bankEntryId === activeEntryId && slot.bankPairRole !== "offhand",
+      );
       if (requested >= 0) activeSlot = requested;
       else activeEntryId = "";
     }
@@ -2515,7 +2578,8 @@ export class GameRoom extends Room<ArenaState> {
     const account = this.metaAccounts.get(player.id);
     const row = run?.entries.get(entryId);
     if (!run || !account?.weaponBank.expedition || !row) return;
-    for (const instance of weaponEntryInstances(row.entry)) run.byInstanceId.delete(instance.instanceId);
+    for (const instance of weaponEntryInstances(row.entry))
+      run.byInstanceId.delete(instance.instanceId);
     run.entries.delete(entryId);
     const index = account.weaponBank.expedition.entries.indexOf(row);
     if (index >= 0) account.weaponBank.expedition.entries.splice(index, 1);
@@ -2546,7 +2610,8 @@ export class GameRoom extends Room<ArenaState> {
       leadRow === offRow ||
       leadRow.entry.kind !== "single" ||
       offRow.entry.kind !== "single"
-    ) return undefined;
+    )
+      return undefined;
     const pair: PairedWeaponEntryV1 = {
       kind: "pair",
       entryId: this.mintWeaponOpaqueId("wp"),
@@ -2555,7 +2620,8 @@ export class GameRoom extends Room<ArenaState> {
     };
     const row: ExpeditionEntryV1 = {
       entry: pair,
-      stakeOrigin: leadRow.stakeOrigin === "found" || offRow.stakeOrigin === "found" ? "found" : "committed",
+      stakeOrigin:
+        leadRow.stakeOrigin === "found" || offRow.stakeOrigin === "found" ? "found" : "committed",
       location: "active",
       start: player.activeSlot,
     };
@@ -2650,7 +2716,11 @@ export class GameRoom extends Room<ArenaState> {
         break;
       }
     }
-    if (offIndex < 0 || !pairEligible(WEAPONS[leadSlot.weapon], WEAPONS[player.slots[offIndex]!.weapon])) return;
+    if (
+      offIndex < 0 ||
+      !pairEligible(WEAPONS[leadSlot.weapon], WEAPONS[player.slots[offIndex]!.weapon])
+    )
+      return;
     const off = player.slots[offIndex]!;
     this.initializeStoredWeaponResource(player, off);
     player.offhandSlot = offIndex;
@@ -2696,7 +2766,8 @@ export class GameRoom extends Room<ArenaState> {
     const base = scripValue(rarity, earned);
     if (base <= 0 || !player.alive) return base;
     const pet = this.petRuns.get(player.id);
-    if (!pet || pet.mods.saleBonusRate <= 0 || pet.geckoMinted >= pet.mods.saleBonusCap) return base;
+    if (!pet || pet.mods.saleBonusRate <= 0 || pet.geckoMinted >= pet.mods.saleBonusCap)
+      return base;
     pet.geckoFraction += base * pet.mods.saleBonusRate;
     const available = Math.max(0, Math.floor(pet.mods.saleBonusCap - pet.geckoMinted));
     const minted = Math.min(available, Math.floor(pet.geckoFraction));
@@ -2739,11 +2810,7 @@ export class GameRoom extends Room<ArenaState> {
     let cooldown = 0;
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
-      if (
-        !genuinelyNewPickup &&
-        slot?.resourceReady &&
-        slot.resourceWeapon === weaponId
-      ) {
+      if (!genuinelyNewPickup && slot?.resourceReady && slot.resourceWeapon === weaponId) {
         cooldown = slot.cooldown;
       } else if (slot) {
         slot.resourceWeapon = weaponId;
@@ -2950,7 +3017,8 @@ export class GameRoom extends Room<ArenaState> {
     const baseRequirement = offSlot
       ? pairRequirementPenalty(WEAPONS[player.weapon]!, WEAPONS[offSlot.weapon]!, player)
       : requirementPenalty(weapon, player);
-    const requirement = baseRequirement *
+    const requirement =
+      baseRequirement *
       (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1);
     return (
       sourceDamageMult(weapon, grades, player) *
@@ -3006,9 +3074,10 @@ export class GameRoom extends Room<ArenaState> {
     const offSlot = c ? this.pairedOffSlot(player, c) : undefined;
     const rarity = hand === 1 && offSlot ? offSlot.rarity : player.weaponRarity;
     const affix = hand === 1 && offSlot ? offSlot.affix : player.weaponAffix;
-    const requirement = (offSlot
-      ? pairRequirementPenalty(WEAPONS[player.weapon]!, WEAPONS[offSlot.weapon]!, player)
-      : requirementPenalty(weapon, player)) *
+    const requirement =
+      (offSlot
+        ? pairRequirementPenalty(WEAPONS[player.weapon]!, WEAPONS[offSlot.weapon]!, player)
+        : requirementPenalty(weapon, player)) *
       (hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1);
     return (
       gradeMult *
@@ -3108,7 +3177,11 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Interpret pure quirk descriptors at event seams through existing authoritative state machinery. */
-  private applyQuirkEffects(player: PlayerState, combat: CombatState, effects: readonly QuirkEffect[]): void {
+  private applyQuirkEffects(
+    player: PlayerState,
+    combat: CombatState,
+    effects: readonly QuirkEffect[],
+  ): void {
     for (const effect of effects) {
       if (effect.kind === "heal-nearest-ally") {
         if (effect.amount <= 0) continue;
@@ -3272,7 +3345,8 @@ export class GameRoom extends Room<ArenaState> {
     if (
       this.state.outcome !== "active" ||
       (this.state.mode !== "arena" && this.state.mode !== "bossrush")
-    ) return;
+    )
+      return;
     this.petRuns.forEach((pet, playerId) => {
       if (!this.state.players.has(playerId) || pet.settled) return;
       pet.dimensionPresenceSeconds += dt;
@@ -3284,7 +3358,8 @@ export class GameRoom extends Room<ArenaState> {
     if (
       this.state.outcome !== "active" ||
       (this.state.mode !== "arena" && this.state.mode !== "bossrush")
-    ) return;
+    )
+      return;
     const player = this.state.players.get(playerId);
     const pet = this.petRuns.get(playerId);
     if (!player?.alive || !pet || pet.settled) return;
@@ -3304,7 +3379,8 @@ export class GameRoom extends Room<ArenaState> {
         pet.clearReceipts >= awards.length ||
         pet.dimensionPresenceSeconds + 1e-9 < 60 ||
         pet.acceptedActionsThisDimension < 3
-      ) return;
+      )
+        return;
       pet.pendingBondXp = Math.min(500, pet.pendingBondXp + awards[pet.clearReceipts]!);
       pet.clearReceipts++;
     });
@@ -3338,7 +3414,8 @@ export class GameRoom extends Room<ArenaState> {
       this.petSettledAccounts.add(playerId);
       if (outcome === "victory") this.prestigeGameClearReceipts.add(playerId);
       else this.prestigeGameClearReceipts.delete(playerId);
-      const player = this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
+      const player =
+        this.state.players.get(playerId) ?? this.disconnectedPlayers.get(playerId)?.player;
       if (player) {
         this.syncWeaponRunFromArsenal(player);
         this.syncAccountFromPlayer(player, account);
@@ -3381,7 +3458,11 @@ export class GameRoom extends Room<ArenaState> {
 
   /** Explicit event/intermission heal; passive regen, revive HP, meta headroom and Hearth's own 15% use
    * their dedicated paths. The receiver's selected pet owns the multiplier. */
-  private applyHeal(target: PlayerState, rawAmount: number, applyReceivedMultiplier = true): number {
+  private applyHeal(
+    target: PlayerState,
+    rawAmount: number,
+    applyReceivedMultiplier = true,
+  ): number {
     if (!target.alive || rawAmount <= 0) return 0;
     const multiplier = applyReceivedMultiplier
       ? (this.petRuns.get(target.id)?.mods.healingReceivedMultiplier ?? 1) *
@@ -3563,7 +3644,9 @@ export class GameRoom extends Room<ArenaState> {
       const cell = cells[i];
       if (!cell) return;
       const pk = new PickupState();
-      pk.id = `pk${i}`;
+      // Page-scoped ids make both the renderer and grab RPC identity-stable. Reusing `pk0…pk41` caused the
+      // client to retain the previous page's art while these same ids changed weapon underneath it.
+      pk.id = `pk:${this.galleryPage + 1}:${pages}:${i}:${weaponId}`;
       pk.weapon = weaponId;
       pk.weaponPublic = weaponId;
       pk.x = cell.x;
@@ -3914,7 +3997,11 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const disconnected = this.disconnectedPlayers.get(client.sessionId);
     const reservedAccount = this.metaAccounts.get(client.sessionId);
-    if (disconnected && reservedAccount?.weaponBank.expedition && this.weaponRuns.has(client.sessionId)) {
+    if (
+      disconnected &&
+      reservedAccount?.weaponBank.expedition &&
+      this.weaponRuns.has(client.sessionId)
+    ) {
       this.disconnectedPlayers.delete(client.sessionId);
       this.state.players.set(client.sessionId, disconnected.player);
       this.combat.set(client.sessionId, disconnected.combat);
@@ -3946,8 +4033,8 @@ export class GameRoom extends Room<ArenaState> {
       !Array.isArray(options.metaAccount) &&
       ((options.metaAccount as { version?: unknown }).version === 3 ||
         (options.metaAccount as { version?: unknown }).version === 4);
-    const suppliedV4 = suppliedGearAccount &&
-      (options?.metaAccount as { version?: unknown }).version === 4;
+    const suppliedV4 =
+      suppliedGearAccount && (options?.metaAccount as { version?: unknown }).version === 4;
     const legacyAccount = sanitizeMetaAccountV2(options?.metaAccount);
     // Legacy local keys remain a bounded migration input only when no v2 blob was supplied.
     if (options?.metaAccount === undefined && trustLegacyMeta) {
@@ -4164,8 +4251,13 @@ export class GameRoom extends Room<ArenaState> {
   override onLeave(client: Client): void {
     const leaving = this.state.players.get(client.sessionId);
     const leavingCombat = this.combat.get(client.sessionId);
-    if (leaving && leavingCombat) this.cancelBeam(leaving, client.sessionId, leavingCombat, false, true);
-    if (leaving && leavingCombat && this.metaAccounts.get(client.sessionId)?.weaponBank.expedition) {
+    if (leaving && leavingCombat)
+      this.cancelBeam(leaving, client.sessionId, leavingCombat, false, true);
+    if (
+      leaving &&
+      leavingCombat &&
+      this.metaAccounts.get(client.sessionId)?.weaponBank.expedition
+    ) {
       this.syncWeaponRunFromArsenal(leaving);
       this.disconnectedPlayers.set(client.sessionId, { player: leaving, combat: leavingCombat });
     }
@@ -4190,10 +4282,7 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Explicit encounter/modal hook. Auto remains the default; callers never write Drive or regenMode. */
-  setWeaponResourceRegenOverride(
-    playerId: string,
-    mode: "auto" | "paused" | "forceEngaged",
-  ): void {
+  setWeaponResourceRegenOverride(playerId: string, mode: "auto" | "paused" | "forceEngaged"): void {
     const drive = this.combat.get(playerId)?.drive;
     if (!drive) return;
     drive.simulationPaused = mode === "paused";
@@ -4208,9 +4297,8 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private markWeaponResourcePressure(c: CombatState): void {
-    c.drive.pressureUntilTick = (
-      this.state.tick + Math.ceil(DRIVE_PRESSURE_MEMORY_SECONDS * 1000 / TICK_MS)
-    ) >>> 0;
+    c.drive.pressureUntilTick =
+      (this.state.tick + Math.ceil((DRIVE_PRESSURE_MEMORY_SECONDS * 1000) / TICK_MS)) >>> 0;
   }
 
   /** Cover-agnostic pressure evidence. Dummy rows are training fixtures, not living hostiles. */
@@ -4230,14 +4318,11 @@ export class GameRoom extends Room<ArenaState> {
   /** Preserve the old discrete lock+cool tick count for approved beam-only vent/lock modifiers. */
   private beamEmptyRecoveryTicks(c: CombatState): number {
     const lockTicks = Math.ceil(
-      BEAM_OVERHEAT_LOCK_SECONDS * c.mods.beamOverheatLockMult * 1000 / TICK_MS - 1e-9,
+      (BEAM_OVERHEAT_LOCK_SECONDS * c.mods.beamOverheatLockMult * 1000) / TICK_MS - 1e-9,
     );
-    const ventMultiplier =
-      (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
+    const ventMultiplier = (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
     const coolTicks = Math.ceil(
-      (1 - BEAM_RESTART_HEAT) /
-        Math.max(1e-9, BEAM_COOL_PER_SECOND * ventMultiplier) *
-        1000 /
+      (((1 - BEAM_RESTART_HEAT) / Math.max(1e-9, BEAM_COOL_PER_SECOND * ventMultiplier)) * 1000) /
         TICK_MS -
         1e-9,
     );
@@ -4266,14 +4351,13 @@ export class GameRoom extends Room<ArenaState> {
       Math.min(DRIVE_MAX_GENERIC_RECOVERY_MULT, drive.engagedRecoveryMult),
     );
     const rebuildingEmptyBeam =
-      drive.beamLockEndTick !== 0 && this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+      drive.beamLockEndTick !== 0 &&
+      this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
     if (drive.regenMode !== DriveRegenMode.Paused && rebuildingEmptyBeam) {
       // This is the old beam-only vent row translated into the shared bar, not generic/hiding recovery.
       drive.regenMode = DriveRegenMode.Floor;
       drive.tickCreditF =
-        DRIVE_BEAM_RESTART_THRESHOLD /
-        (this.beamEmptyRecoveryTicks(c) * TICK_MS / 1000) *
-        dt;
+        (DRIVE_BEAM_RESTART_THRESHOLD / ((this.beamEmptyRecoveryTicks(c) * TICK_MS) / 1000)) * dt;
     } else {
       drive.tickCreditF = driveRegenPerSecond(drive.regenMode, genericRecovery) * dt;
     }
@@ -4382,7 +4466,8 @@ export class GameRoom extends Room<ArenaState> {
     if (
       player.ultPhase === UltimatePhase.Windup &&
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
-    ) left *= 0.4;
+    )
+      left *= 0.4;
     if (player.alive && (kind === "pit" || kind === "ground-hazard")) {
       left *=
         (this.petRuns.get(player.id)?.mods.groundHazardDamageMultiplier ?? 1) *
@@ -4470,7 +4555,8 @@ export class GameRoom extends Room<ArenaState> {
         this.acceptSlideLandingChain(player, c, input);
       } else if (
         c.slidePhase === SLIDE_PHASE_AIR &&
-        verticalTimeToGround(player.height, c.vh) <= SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
+        verticalTimeToGround(player.height, c.vh) <=
+          SLIDE_PRELAND_BUFFER_TICKS * (TICK_MS / 1000) + 1e-9
       ) {
         c.slidePrelandTicks = SLIDE_PRELAND_BUFFER_TICKS;
       }
@@ -4643,18 +4729,15 @@ export class GameRoom extends Room<ArenaState> {
     player.vh = c.vh;
   }
 
-  private acceptSlideLandingChain(
-    player: PlayerState,
-    c: CombatState,
-    input: InputState,
-  ): boolean {
+  private acceptSlideLandingChain(player: PlayerState, c: CombatState, input: InputState): boolean {
     if (
       c.stance !== STANCE_SLIDE ||
       c.slidePhase !== SLIDE_PHASE_LAND_WINDOW ||
       c.slidePhaseTick > SLIDE_LAND_WINDOW_TICKS ||
       c.lastSlideLandingTick < 0 ||
       c.pitGrace > 0
-    ) return false;
+    )
+      return false;
     const landingSpeed = Math.hypot(c.slideLandMomentumX, c.slideLandMomentumY);
     if (landingSpeed <= 1e-4) return false;
     const nextSpeed = slideLandingSpeed(landingSpeed);
@@ -4666,10 +4749,7 @@ export class GameRoom extends Room<ArenaState> {
     c.slidePhase = SLIDE_PHASE_GROUND;
     c.slidePhaseTick = 0;
     c.slidePrelandTicks = 0;
-    c.slideParryLockT = Math.max(
-      c.slideParryLockT,
-      SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000,
-    );
+    c.slideParryLockT = Math.max(c.slideParryLockT, SLIDE_PARRY_LOCK_SECONDS + TICK_MS / 1000);
     input.mvx = c.momentumX;
     input.mvy = c.momentumY;
     player.mvx = input.mvx;
@@ -4739,8 +4819,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!c) return;
       c.jumpCd = Math.max(0, c.jumpCd - dt);
       c.jumpBuffer = Math.max(0, c.jumpBuffer - dt);
-      const acting =
-        this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
+      const acting = this.state.outcome === "active" && player.alive && !this.inLevelWindow(player);
       if (!acting) return;
 
       if (
@@ -4821,11 +4900,7 @@ export class GameRoom extends Room<ArenaState> {
     dx /= len;
     dy /= len;
 
-    const rawX = clamp(
-      player.x + dx * DIST_JUMP_REACH,
-      PLAYER_RADIUS,
-      ARENA_WIDTH - PLAYER_RADIUS,
-    );
+    const rawX = clamp(player.x + dx * DIST_JUMP_REACH, PLAYER_RADIUS, ARENA_WIDTH - PLAYER_RADIUS);
     const rawY = clamp(
       player.y + dy * DIST_JUMP_REACH,
       PLAYER_RADIUS,
@@ -4913,9 +4988,10 @@ export class GameRoom extends Room<ArenaState> {
         player.mvy = input.mvy;
       }
     } else if (landingStance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR) {
-      const unsafe = this.belt && this.beltLevel
-        ? beltPitAtX(this.beltLevel, player.x)
-        : !this.belt && isPitAtPx(this.map, player.x, player.y);
+      const unsafe =
+        this.belt && this.beltLevel
+          ? beltPitAtX(this.beltLevel, player.x)
+          : !this.belt && isPitAtPx(this.map, player.x, player.y);
       if (unsafe) {
         this.cancelMoveStance(player, c, true);
       } else {
@@ -5055,7 +5131,8 @@ export class GameRoom extends Room<ArenaState> {
     if (
       sourceCombat &&
       ((target !== undefined && target.kind !== "dummy") || targetId.startsWith("worm:"))
-    ) this.markWeaponResourcePressure(sourceCombat);
+    )
+      this.markWeaponResourcePressure(sourceCombat);
     if (!sourcePlayerId || this.state.combatReceipts.length === 0) return;
     const row = this.state.combatReceipts[this.combatReceiptCursor];
     if (!row) return;
@@ -5150,10 +5227,7 @@ export class GameRoom extends Room<ArenaState> {
     this.state.players.forEach((player, id) => {
       // The wire latch derives only from accepted attack epochs. Wrap-safe uint32 subtraction keeps the
       // short window correct across ArenaState.tick rollover; write only on the true→false lapse edge.
-      if (
-        player.attackHeld &&
-        ((this.state.tick - player.attackTick) >>> 0) >= ATTACK_HELD_WINDOW
-      ) {
+      if (player.attackHeld && (this.state.tick - player.attackTick) >>> 0 >= ATTACK_HELD_WINDOW) {
         player.attackHeld = false;
       }
       const input = this.inputs.get(id);
@@ -5172,8 +5246,7 @@ export class GameRoom extends Room<ArenaState> {
           for (let queuedIndex = 0; queuedIndex < queuedCount; queuedIndex++) {
             const queued = input.queue[queuedIndex];
             if (!queued) continue;
-            if (queued.fireHeld && !fireWasHeld && fireStartSeq === 0)
-              fireStartSeq = queued.seq;
+            if (queued.fireHeld && !fireWasHeld && fireStartSeq === 0) fireStartSeq = queued.seq;
             fireWasHeld = queued.fireHeld;
             if (queuedIndex === queuedCount - 1) continue;
             // Drain-to-newest still consumes one fixed-step sample, but transport-only extras cannot erase
@@ -5197,12 +5270,8 @@ export class GameRoom extends Room<ArenaState> {
             beamAim.aimX = cmd.aimX / aimLength;
             beamAim.aimY = cmd.aimY / aimLength;
           }
-          beamAim.targetX = Number.isFinite(cmd.targetX)
-            ? cmd.targetX
-            : player.x + beamAim.aimX;
-          beamAim.targetY = Number.isFinite(cmd.targetY)
-            ? cmd.targetY
-            : player.y + beamAim.aimY;
+          beamAim.targetX = Number.isFinite(cmd.targetX) ? cmd.targetX : player.x + beamAim.aimX;
+          beamAim.targetY = Number.isFinite(cmd.targetY) ? cmd.targetY : player.y + beamAim.aimY;
           player.aimDir = Math.atan2(beamAim.aimY, beamAim.aimX);
         }
         // The jump intent rides the command (review #5) — same buffered-jump semantics as the SPACE
@@ -5386,7 +5455,8 @@ export class GameRoom extends Room<ArenaState> {
       if (
         player.ultPhase === UltimatePhase.Active &&
         ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.AlphaStrike
-      ) return;
+      )
+        return;
       ids.push(id);
       bodies.push({ x: player.x, y: player.y });
     });
@@ -5407,7 +5477,8 @@ export class GameRoom extends Room<ArenaState> {
       const level = this.beltLevel;
       // §29 room GATE — a closed gate (beltLockX>0) caps how far right the squad can advance until the
       // room's wave is cleared; else the whole belt is open.
-      const rightBound = (this.state.beltLockX > 0 ? this.state.beltLockX : level.length) - PLAYER_RADIUS;
+      const rightBound =
+        (this.state.beltLockX > 0 ? this.state.beltLockX : level.length) - PLAYER_RADIUS;
       this.state.players.forEach((player) => {
         if (!player.alive) return;
         const o = resolveBeltObstacles(level, player.x, player.y, PLAYER_RADIUS);
@@ -5437,12 +5508,11 @@ export class GameRoom extends Room<ArenaState> {
         !c ||
         c.stance !== STANCE_SLIDE ||
         (c.slidePhase !== SLIDE_PHASE_GROUND && c.slidePhase !== SLIDE_PHASE_AIR)
-      ) return;
+      )
+        return;
       const authoredSpeed = Math.hypot(c.momentumX, c.momentumY);
-      const actualSpeed = Math.hypot(
-        player.x - c.slideStepStartX,
-        player.y - c.slideStepStartY,
-      ) / dt;
+      const actualSpeed =
+        Math.hypot(player.x - c.slideStepStartX, player.y - c.slideStepStartY) / dt;
       if (actualSpeed + 1 < authoredSpeed) {
         const retained = Math.min(authoredSpeed, actualSpeed);
         if (retained < SLIDE_ENTRY_SPEED) {
@@ -5479,7 +5549,8 @@ export class GameRoom extends Room<ArenaState> {
         player.height > GROUND_EPSILON ||
         c.vh > 0 ||
         (c.stance === STANCE_SLIDE && c.slidePhase === SLIDE_PHASE_AIR && c.vh > 0)
-      ) return; // airborne (including the exact slide-hop launch tick) — the hop carries you over
+      )
+        return; // airborne (including the exact slide-hop launch tick) — the hop carries you over
       // §29 belt PITS — gaps in the deck; grounded-over-a-gap falls (chip + snap back to the edge you came
       // from), a jump clears it. Enemies (which can't jump) get kited in for free kills (5.6 below).
       if (this.belt && this.beltLevel) {
@@ -5726,11 +5797,7 @@ export class GameRoom extends Room<ArenaState> {
       }
 
       const canAct =
-        acting &&
-        c.stance !== STANCE_SLIDE &&
-        c.attackBuffer > 0 &&
-        c.cd <= 0 &&
-        c.drawLock <= 0;
+        acting && c.stance !== STANCE_SLIDE && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
       if (weapon?.gun) {
@@ -5740,9 +5807,20 @@ export class GameRoom extends Room<ArenaState> {
           const cooldown = weapon.gun.fireRate * cdMul * this.weaponRecoveryMult(player, weapon);
           const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
           const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
-          if (this.trySpendWeaponResource(
-            player, c, weapon, instanceId, CombatDelivery.Gun, 0, interval, 1, 0, "tap",
-          ).accepted) {
+          if (
+            this.trySpendWeaponResource(
+              player,
+              c,
+              weapon,
+              instanceId,
+              CombatDelivery.Gun,
+              0,
+              interval,
+              1,
+              0,
+              "tap",
+            ).accepted
+          ) {
             this.stampAttackBeat(player);
             this.fireGun(player, c, weapon);
             c.cd += cooldown; // accumulating cadence carries its sub-tick remainder
@@ -5754,9 +5832,20 @@ export class GameRoom extends Room<ArenaState> {
           const cooldown = weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
           const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
           const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
-          if (this.trySpendWeaponResource(
-            player, c, weapon, instanceId, CombatDelivery.Thrown, 0, interval, 1, 0, "tap",
-          ).accepted) {
+          if (
+            this.trySpendWeaponResource(
+              player,
+              c,
+              weapon,
+              instanceId,
+              CombatDelivery.Thrown,
+              0,
+              interval,
+              1,
+              0,
+              "tap",
+            ).accepted
+          ) {
             this.stampAttackBeat(player);
             this.throwWeapon(player, c, weapon);
             c.cd = cooldown;
@@ -5769,9 +5858,20 @@ export class GameRoom extends Room<ArenaState> {
           const cooldown = weapon.cast.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
           const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
           const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
-          if (this.trySpendWeaponResource(
-            player, c, weapon, instanceId, CombatDelivery.Cast, 0, interval, 1, 0, "tap",
-          ).accepted) {
+          if (
+            this.trySpendWeaponResource(
+              player,
+              c,
+              weapon,
+              instanceId,
+              CombatDelivery.Cast,
+              0,
+              interval,
+              1,
+              0,
+              "tap",
+            ).accepted
+          ) {
             this.stampAttackBeat(player);
             this.fireCast(player, c, weapon);
             c.cd = cooldown;
@@ -5787,9 +5887,20 @@ export class GameRoom extends Room<ArenaState> {
         );
         const interval = effectiveAcceptedWeaponInterval(weapon, swing.effectiveCooldown);
         const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
-        if (this.trySpendWeaponResource(
-          player, c, weapon, instanceId, CombatDelivery.Melee, 0, interval, 1, 0, "tap",
-        ).accepted) {
+        if (
+          this.trySpendWeaponResource(
+            player,
+            c,
+            weapon,
+            instanceId,
+            CombatDelivery.Melee,
+            0,
+            interval,
+            1,
+            0,
+            "tap",
+          ).accepted
+        ) {
           this.stampAttackBeat(player);
           this.resolveSwing(player, c, weapon, swing);
           c.cd = swing.effectiveCooldown; // flat cooldown — DEX scales DAMAGE; loot affix owns speed
@@ -5987,7 +6098,8 @@ export class GameRoom extends Room<ArenaState> {
         enemy.id === this.bossId &&
         this.vastagharEncounter &&
         !this.vastagharEncounter.contactDamageEnabled(this.state.tick)
-      ) return;
+      )
+        return;
       const kind = ENEMY_KINDS[enemy.kind];
       if (!kind) return;
       this.state.players.forEach((player) => {
@@ -6005,8 +6117,7 @@ export class GameRoom extends Room<ArenaState> {
         // SoR4 fairness lever: generous for the player's own swing, tight for what lands on them.)
         const contact = this.belt
           ? Math.abs(dx) <= reach &&
-            Math.abs(dy) <=
-              DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
+            Math.abs(dy) <= DEPTH_TOL_ENEMY * (Math.abs(player.vy) > 40 ? DEPTH_DODGE_MULT : 1)
           : dx * dx + dy * dy <= reach * reach;
         if (contact) {
           if (pcc && this.slideInvulnerable(pcc)) {
@@ -6087,16 +6198,7 @@ export class GameRoom extends Room<ArenaState> {
     for (let i = this.burnPulses.length - 1; i >= 0; i--) {
       const p = this.burnPulses[i];
       if (p && this.state.elapsed >= p.at) {
-        this.emberguardWave(
-          p.x,
-          p.y,
-          p.aimX,
-          p.aimY,
-          p.dmg,
-          0,
-          p.sourcePlayerId,
-          p.sourceWeaponId,
-        );
+        this.emberguardWave(p.x, p.y, p.aimX, p.aimY, p.dmg, 0, p.sourcePlayerId, p.sourceWeaponId);
         this.burnPulses.splice(i, 1);
       }
     }
@@ -6155,7 +6257,8 @@ export class GameRoom extends Room<ArenaState> {
       ? clampQuakeEpicenter(player, { x: targetX, y: targetY }, Math.max(0, maxRange))
       : { x: targetX, y: targetY };
     if (this.belt && this.beltLevel) {
-      const right = (this.state.beltLockX > 0 ? this.state.beltLockX : this.beltLevel.length) - PLAYER_RADIUS;
+      const right =
+        (this.state.beltLockX > 0 ? this.state.beltLockX : this.beltLevel.length) - PLAYER_RADIUS;
       let x = clamp(ranged.x, PLAYER_RADIUS, right);
       x = beltSafeX(this.beltLevel, x, player.x);
       const obstacle = resolveBeltObstacles(
@@ -6190,14 +6293,17 @@ export class GameRoom extends Room<ArenaState> {
     return { x, y };
   }
 
-  private ultimateTargetPosition(target: UltimateTarget): { x: number; y: number; radius: number } | null {
+  private ultimateTargetPosition(
+    target: UltimateTarget,
+  ): { x: number; y: number; radius: number } | null {
     if (target.slot >= 0) {
       const runtime = this.bossController?.wormRuntime;
       if (
         !runtime ||
         !runtime.isTargetable(target.slot) ||
         runtime.segmentGeneration(target.slot) !== target.generation
-      ) return null;
+      )
+        return null;
       return {
         x: runtime.x[target.slot]!,
         y: runtime.y[target.slot]!,
@@ -6205,7 +6311,11 @@ export class GameRoom extends Room<ArenaState> {
       };
     }
     const enemy = this.state.enemies.get(target.id);
-    if (!enemy || enemy.hp <= 0 || (target.id === this.bossId && !!this.bossController?.wormRuntime))
+    if (
+      !enemy ||
+      enemy.hp <= 0 ||
+      (target.id === this.bossId && !!this.bossController?.wormRuntime)
+    )
       return null;
     return {
       x: enemy.x,
@@ -6265,7 +6375,8 @@ export class GameRoom extends Room<ArenaState> {
       player.ultPhase !== UltimatePhase.Idle ||
       c.ult ||
       c.ultChargeF < 1 - 1e-9
-    ) return false;
+    )
+      return false;
     const family = ultimateFamilyForCode(player.ultArchetype);
     const variant = player.ultVariant || ultimateVariantForCode(player.ultArchetype);
     if (family === UltimateFamily.Locked || !variant) return false;
@@ -6378,7 +6489,8 @@ export class GameRoom extends Room<ArenaState> {
       this.inLevelWindow(player) ||
       c.juggleArmed ||
       player.ultPhase !== UltimatePhase.Idle
-    ) return false;
+    )
+      return false;
     const dest = this.navValidDest(player, c, ticket.x, ticket.y, Number.POSITIVE_INFINITY);
     this.ultimateDecoys.delete(player.id);
     player.ultStartTick = this.state.tick;
@@ -6429,8 +6541,8 @@ export class GameRoom extends Room<ArenaState> {
         detonateTick: (this.state.tick + ticksFromSeconds(ULT_DOOR_DECOY_SECONDS)) >>> 0,
         returnEndTick: (this.state.tick + ticksFromSeconds(ULT_DOOR_RETURN_SECONDS)) >>> 0,
         detonated: false,
-        damage: (ult.variant === "int" ? 50 : ULT_DOOR_DETONATE_DAMAGE) *
-          this.ultimateScale(player, ult),
+        damage:
+          (ult.variant === "int" ? 50 : ULT_DOOR_DETONATE_DAMAGE) * this.ultimateScale(player, ult),
       });
       player.x = player.ultTargetX;
       player.y = player.ultTargetY;
@@ -6468,7 +6580,7 @@ export class GameRoom extends Room<ArenaState> {
     this.zeroMoveVel(player.id);
     ult.teleportSeqAtAccept = player.teleportSeq;
     const activeTicks = Math.max(1, (ult.activeEndTick - this.state.tick) >>> 0);
-    c.invuln = Math.max(c.invuln, activeTicks * TICK_MS / 1000 + TICK_MS / 1000);
+    c.invuln = Math.max(c.invuln, (activeTicks * TICK_MS) / 1000 + TICK_MS / 1000);
   }
 
   private ultimateScale(player: PlayerState, ult: UltimateRuntime): number {
@@ -6476,7 +6588,8 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   private weaponCritChance(player: PlayerState, c: CombatState): number {
-    if (c.ultCritCharges > 0 && tickReached(this.state.tick, c.ultCritEndTick)) c.ultCritCharges = 0;
+    if (c.ultCritCharges > 0 && tickReached(this.state.tick, c.ultCritEndTick))
+      c.ultCritCharges = 0;
     if (c.ultCritCharges > 0) {
       c.ultCritCharges--;
       return 1;
@@ -6490,7 +6603,8 @@ export class GameRoom extends Room<ArenaState> {
   private launchSunspiteComet(player: PlayerState, c: CombatState, ult: UltimateRuntime): void {
     const aim = this.aimDir(player, c);
     const speed = ult.variant === "dex" ? 680 : ULT_FIREBALL_SPEED;
-    const direct = (ult.variant === "str" ? 70 : ULT_FIREBALL_DAMAGE) * this.ultimateScale(player, ult);
+    const direct =
+      (ult.variant === "str" ? 70 : ULT_FIREBALL_DAMAGE) * this.ultimateScale(player, ult);
     const blast = (ult.variant === "con" ? 20 : ULT_NUKE_DAMAGE) * this.ultimateScale(player, ult);
     const muzzle = gunMuzzleReach(WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON]!);
     const mx = player.x + aim.x * muzzle;
@@ -6532,7 +6646,10 @@ export class GameRoom extends Room<ArenaState> {
     const mid = ULT_SEISMARCH_MID_RADIUS * shrink;
     const outer = ULT_SEISMARCH_OUTER_RADIUS * shrink;
     const scale = this.ultimateScale(player, ult);
-    const crit = Math.min(1, critChanceFor(player.luk, player.dex) * (ult.variant === "luk" ? 1.5 : 1));
+    const crit = Math.min(
+      1,
+      critChanceFor(player.luk, player.dex) * (ult.variant === "luk" ? 1.5 : 1),
+    );
     this.ultimateKills.length = 0;
     this.enemyGrid.queryRadius(player.x, player.y, outer, this.enemyCandidates);
     for (const id of this.enemyCandidates) {
@@ -6544,7 +6661,9 @@ export class GameRoom extends Room<ArenaState> {
       if (distance > outer) continue;
       const damage =
         distance <= inner
-          ? (ult.variant === "con" ? 48 : ULT_SEISMARCH_INNER_DAMAGE)
+          ? ult.variant === "con"
+            ? 48
+            : ULT_SEISMARCH_INNER_DAMAGE
           : distance <= mid
             ? ULT_SEISMARCH_MID_DAMAGE
             : ULT_SEISMARCH_OUTER_DAMAGE;
@@ -6585,7 +6704,8 @@ export class GameRoom extends Room<ArenaState> {
     if (ult.variant === "dex") c.jumpCd = 0;
     if (ult.variant === "con") {
       this.state.players.forEach((ally) => {
-        if (!ally.alive || (ally.x - player.x) ** 2 + (ally.y - player.y) ** 2 > outer * outer) return;
+        if (!ally.alive || (ally.x - player.x) ** 2 + (ally.y - player.y) ** 2 > outer * outer)
+          return;
         const allyCombat = this.combat.get(ally.id);
         if (allyCombat) allyCombat.bulwarkShield = Math.max(allyCombat.bulwarkShield, 20);
       });
@@ -6596,7 +6716,10 @@ export class GameRoom extends Room<ArenaState> {
       ownerId: player.id,
       damage: (ult.variant === "int" ? 12 : ULT_SEISMARCH_FISSURE_DAMAGE) * scale,
       nextTick: (this.state.tick + ticksFromSeconds(1)) >>> 0,
-      endTick: (this.state.tick + ticksFromSeconds(ult.variant === "int" ? 5 : ULT_SEISMARCH_FISSURE_SECONDS)) >>> 0,
+      endTick:
+        (this.state.tick +
+          ticksFromSeconds(ult.variant === "int" ? 5 : ULT_SEISMARCH_FISSURE_SECONDS)) >>>
+        0,
     });
   }
 
@@ -6653,7 +6776,8 @@ export class GameRoom extends Room<ArenaState> {
       if (!enemy) continue;
       const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
       const reach = halfWidth + radius;
-      if (pointSegmentDistanceSq(enemy.x, enemy.y, fromX, fromY, toX, toY) > reach * reach) continue;
+      if (pointSegmentDistanceSq(enemy.x, enemy.y, fromX, fromY, toX, toY) > reach * reach)
+        continue;
       ult.hit.add(id);
       this.damageEnemy(
         enemy,
@@ -6756,7 +6880,9 @@ export class GameRoom extends Room<ArenaState> {
           const enemy = this.state.enemies.get(target.id);
           if (enemy) {
             const kind = ENEMY_KINDS[enemy.kind];
-            const maxHp = (kind?.hp ?? enemy.hp) * enemyHpScale(this.state.depth) *
+            const maxHp =
+              (kind?.hp ?? enemy.hp) *
+              enemyHpScale(this.state.depth) *
               (enemy.tough ? TOUGH_HP_MULT : 1);
             const executeAt = ult.variant === "luk" ? 0.25 : ULT_ALPHA_EXECUTE_FRAC;
             if (maxHp > 0 && enemy.hp / maxHp < executeAt) base *= ULT_ALPHA_EXECUTE_MULT;
@@ -6772,7 +6898,8 @@ export class GameRoom extends Room<ArenaState> {
               player.x,
               player.y,
             );
-            if (ult.variant === "str" && enemy.hp > 0) this.applyUltimateStun(enemy, target.id, 0.5);
+            if (ult.variant === "str" && enemy.hp > 0)
+              this.applyUltimateStun(enemy, target.id, 0.5);
           }
         }
         for (const id of this.ultimateKills) this.state.enemies.delete(id);
@@ -6780,7 +6907,8 @@ export class GameRoom extends Room<ArenaState> {
     }
     if (!tickReached(this.state.tick, ult.activeEndTick)) return;
     c.invuln = Math.max(c.invuln, ult.variant === "con" ? 0.6 : 0.25);
-    if (ult.variant === "con") c.bulwarkShield = Math.max(c.bulwarkShield, 15 * Math.floor(ult.hitIndex / 2));
+    if (ult.variant === "con")
+      c.bulwarkShield = Math.max(c.bulwarkShield, 15 * Math.floor(ult.hitIndex / 2));
     player.ultPhase = UltimatePhase.Recovery;
   }
 
@@ -6866,11 +6994,14 @@ export class GameRoom extends Room<ArenaState> {
           if (
             player.ultPhase === UltimatePhase.Windup &&
             tickReached(this.state.tick, player.ultResolveTick)
-          ) this.beginUltimate(player, c, ult);
+          )
+            this.beginUltimate(player, c, ult);
           if (player.ultPhase === UltimatePhase.Active) {
             if (ult.family === UltimateFamily.Seismarch) this.stepSeismarch(player, c, ult);
-            else if (ult.family === UltimateFamily.AlphaStrike) this.stepAlphaStrike(player, c, ult);
-            else if (ult.family === UltimateFamily.EventHorizon) this.stepEventHorizon(player, c, ult);
+            else if (ult.family === UltimateFamily.AlphaStrike)
+              this.stepAlphaStrike(player, c, ult);
+            else if (ult.family === UltimateFamily.EventHorizon)
+              this.stepEventHorizon(player, c, ult);
             else if (tickReached(this.state.tick, ult.activeEndTick))
               player.ultPhase = UltimatePhase.Recovery;
           }
@@ -6985,9 +7116,8 @@ export class GameRoom extends Room<ArenaState> {
     const soloCooldown = weaponAttackCooldown(weapon) * cadenceMult;
     c.attackBuffer = 0;
     const interval = effectiveAcceptedWeaponInterval(weapon, soloCooldown);
-    const pairContribution = hand === 1 && offSlot
-      ? this.pairOffhandDamageMultiplier(player, offSlot)
-      : 1;
+    const pairContribution =
+      hand === 1 && offSlot ? this.pairOffhandDamageMultiplier(player, offSlot) : 1;
     const delivery = weapon.gun
       ? CombatDelivery.Gun
       : weapon.thrown
@@ -6995,21 +7125,25 @@ export class GameRoom extends Room<ArenaState> {
         : weapon.cast
           ? CombatDelivery.Cast
           : CombatDelivery.Melee;
-    const instanceId = hand === 1
-      ? offSlot?.instanceId || weapon.id
-      : player.slots[player.activeSlot]?.instanceId || weapon.id;
-    if (!this.trySpendWeaponResource(
-      player,
-      c,
-      weapon,
-      instanceId,
-      delivery,
-      hand,
-      interval,
-      pairContribution,
-      0,
-      "tap",
-    ).accepted) return false;
+    const instanceId =
+      hand === 1
+        ? offSlot?.instanceId || weapon.id
+        : player.slots[player.activeSlot]?.instanceId || weapon.id;
+    if (
+      !this.trySpendWeaponResource(
+        player,
+        c,
+        weapon,
+        instanceId,
+        delivery,
+        hand,
+        interval,
+        pairContribution,
+        0,
+        "tap",
+      ).accepted
+    )
+      return false;
     this.stampAttackBeat(player);
 
     if (weapon.gun) {
@@ -7109,7 +7243,12 @@ export class GameRoom extends Room<ArenaState> {
       });
       const wormRuntime = this.bossController?.wormRuntime;
       if (wormRuntime) {
-        this.wormSegmentGrid.queryRadius(player.x, player.y, reach + 52, this.wormSegmentCandidates);
+        this.wormSegmentGrid.queryRadius(
+          player.x,
+          player.y,
+          reach + 52,
+          this.wormSegmentCandidates,
+        );
         for (const slot of this.wormSegmentCandidates) {
           const dx = wormRuntime.x[slot]! - player.x;
           const dy = wormRuntime.y[slot]! - player.y;
@@ -7265,7 +7404,7 @@ export class GameRoom extends Room<ArenaState> {
   private beamHeld(id: string): boolean {
     const input = this.inputs.get(id);
     if (!input?.held.fireHeld) return false;
-    return ((this.state.tick - input.lastFreshFireTick) >>> 0) < BEAM_STALE_INPUT_TICKS;
+    return (this.state.tick - input.lastFreshFireTick) >>> 0 < BEAM_STALE_INPUT_TICKS;
   }
 
   /** Charge → authoritative ignition → sustained swept damage → recovery/overheat. */
@@ -7296,7 +7435,8 @@ export class GameRoom extends Room<ArenaState> {
       rising &&
       c.drawLock <= 0 &&
       (c.drive.beamLockEndTick === 0 || tickReached(this.state.tick, c.drive.beamLockEndTick)) &&
-      (c.drive.beamRecoveryEndTick === 0 || tickReached(this.state.tick, c.drive.beamRecoveryEndTick)) &&
+      (c.drive.beamRecoveryEndTick === 0 ||
+        tickReached(this.state.tick, c.drive.beamRecoveryEndTick)) &&
       !c.drive.beamRequireRelease &&
       this.drivePendingValue(c) + 1e-9 >= DRIVE_BEAM_RESTART_THRESHOLD
     ) {
@@ -7444,15 +7584,7 @@ export class GameRoom extends Room<ArenaState> {
     );
     const length = this.damageBeamSweep(player, c, descriptor, dt);
     c.beamChannelT += dt;
-    this.syncBeamRow(
-      player,
-      id,
-      c,
-      descriptor,
-      BeamPhase.Active,
-      length,
-      1,
-    );
+    this.syncBeamRow(player, id, c, descriptor, BeamPhase.Active, length, 1);
     c.beamPreviousX = this.beamCurrentX;
     c.beamPreviousY = this.beamCurrentY;
     c.beamPreviousAngle = c.beamAngle;
@@ -7460,12 +7592,7 @@ export class GameRoom extends Room<ArenaState> {
     if (spend.beamEmpty) this.finishBeam(player, id, c, true);
   }
 
-  private finishBeam(
-    player: PlayerState,
-    id: string,
-    c: CombatState,
-    overheated: boolean,
-  ): void {
+  private finishBeam(player: PlayerState, id: string, c: CombatState, overheated: boolean): void {
     this.flushBeamDamage(c, false, id);
     c.beamPhase = 0;
     c.beamPhaseT = 0;
@@ -7473,26 +7600,23 @@ export class GameRoom extends Room<ArenaState> {
     c.beamPulseT = 0;
     c.beamQuantumT = 0;
     if (overheated) {
-      const lockSeconds =
-        (c.beamDescriptor?.lockSeconds ?? 1.5) * c.mods.beamOverheatLockMult;
-      c.drive.beamLockEndTick = (
-        this.state.tick + Math.ceil(lockSeconds * 1000 / TICK_MS - 1e-9)
-      ) >>> 0;
+      const lockSeconds = (c.beamDescriptor?.lockSeconds ?? 1.5) * c.mods.beamOverheatLockMult;
+      c.drive.beamLockEndTick =
+        (this.state.tick + Math.ceil((lockSeconds * 1000) / TICK_MS - 1e-9)) >>> 0;
       // Keep the whole old 30-lock + 38-cool rhythm on floor recovery. Otherwise a recent pressure receipt
       // would add the engaged bonus after the minimum lock and restart earlier than the learned 68th tick.
       c.drive.recoveryDebtF = Math.max(
         c.drive.recoveryDebtF,
         lockSeconds,
-        this.beamEmptyRecoveryTicks(c) * TICK_MS / 1000,
+        (this.beamEmptyRecoveryTicks(c) * TICK_MS) / 1000,
       );
       c.drive.beamRequireRelease = true;
     } else {
-      const recoveryMultiplier =
-        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
-      c.drive.beamRecoveryEndTick = (
-        this.state.tick +
-        Math.ceil(BEAM_RECOVERY_SECONDS / recoveryMultiplier * 1000 / TICK_MS - 1e-9)
-      ) >>> 0;
+      const recoveryMultiplier = (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
+      c.drive.beamRecoveryEndTick =
+        (this.state.tick +
+          Math.ceil(((BEAM_RECOVERY_SECONDS / recoveryMultiplier) * 1000) / TICK_MS - 1e-9)) >>>
+        0;
     }
     const weapon = WEAPONS[player.weapon];
     if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon);
@@ -7527,12 +7651,11 @@ export class GameRoom extends Room<ArenaState> {
           "beam-cancel",
         );
       }
-      const recoveryMultiplier =
-        (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
-      c.drive.beamRecoveryEndTick = (
-        this.state.tick +
-        Math.ceil(BEAM_RECOVERY_SECONDS / recoveryMultiplier * 1000 / TICK_MS - 1e-9)
-      ) >>> 0;
+      const recoveryMultiplier = (1 + AUG_BEAM_COOL_PER * c.beamVentStacks) * c.mods.beamVentMult;
+      c.drive.beamRecoveryEndTick =
+        (this.state.tick +
+          Math.ceil(((BEAM_RECOVERY_SECONDS / recoveryMultiplier) * 1000) / TICK_MS - 1e-9)) >>>
+        0;
       c.drive.beamRequireRelease = this.inputs.get(id)?.held.fireHeld === true;
     }
     c.beamPhase = 0;
@@ -7545,12 +7668,7 @@ export class GameRoom extends Room<ArenaState> {
       c.beamDescriptor = undefined;
       this.state.beams.delete(id);
     } else if (descriptor && WEAPONS[player.weapon]?.beam) {
-      this.syncRestingBeamRow(
-        player,
-        id,
-        c,
-        WEAPONS[player.weapon]!,
-      );
+      this.syncRestingBeamRow(player, id, c, WEAPONS[player.weapon]!);
     }
   }
 
@@ -7563,9 +7681,11 @@ export class GameRoom extends Room<ArenaState> {
     const lockActive =
       c.drive.beamLockEndTick !== 0 && !tickReached(this.state.tick, c.drive.beamLockEndTick);
     const recoveryActive =
-      c.drive.beamRecoveryEndTick !== 0 && !tickReached(this.state.tick, c.drive.beamRecoveryEndTick);
+      c.drive.beamRecoveryEndTick !== 0 &&
+      !tickReached(this.state.tick, c.drive.beamRecoveryEndTick);
     const awaitingThreshold =
-      c.drive.beamLockEndTick !== 0 && this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
+      c.drive.beamLockEndTick !== 0 &&
+      this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
     if (!lockActive && !recoveryActive && !awaitingThreshold && !c.drive.beamRequireRelease) {
       this.state.beams.delete(id);
       if (c.beamPhase === 0) c.beamDescriptor = undefined;
@@ -7663,15 +7783,7 @@ export class GameRoom extends Room<ArenaState> {
         );
       }
     } else {
-      length = clipPoiRayLength(
-        this.map.poiCollisionIndex,
-        ox,
-        oy,
-        dx,
-        dy,
-        halfWidth,
-        length,
-      );
+      length = clipPoiRayLength(this.map.poiCollisionIndex, ox, oy, dx, dy, halfWidth, length);
     }
     return Math.max(0, Math.min(authoredRange, length));
   }
@@ -7803,10 +7915,7 @@ export class GameRoom extends Room<ArenaState> {
     const targetCount = c.beamHitIds.size - wormHitCount + (wormHitCount > 0 ? 1 : 0);
     const stepDamage = beamStepDamage(descriptor.damagePerSecond, dt, targetCount);
     for (const enemyId of c.beamHitIds) {
-      c.beamPendingDamage.set(
-        enemyId,
-        (c.beamPendingDamage.get(enemyId) ?? 0) + stepDamage,
-      );
+      c.beamPendingDamage.set(enemyId, (c.beamPendingDamage.get(enemyId) ?? 0) + stepDamage);
     }
     c.beamPulseT += dt;
     c.beamQuantumT += dt;
@@ -7944,7 +8053,12 @@ export class GameRoom extends Room<ArenaState> {
             if (sw.hit.has(hitKey)) continue;
             const r = runtime.segmentRadius(slot);
             const fx = (runtime.x[slot]! - player.x) * facing;
-            if (fx < -r * 0.5 || fx > sw.range || Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r) continue;
+            if (
+              fx < -r * 0.5 ||
+              fx > sw.range ||
+              Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r
+            )
+              continue;
             sw.hit.add(hitKey);
             this.wormHitSlots.push(slot);
           }
@@ -8099,7 +8213,8 @@ export class GameRoom extends Room<ArenaState> {
       this.vastagharCoreId &&
       !this.xpBoundary &&
       ((this.state.tick - this.vastagharCoreArmTick) | 0) >= 0
-    ) this.beginXpBoundary("boss-clear");
+    )
+      this.beginXpBoundary("boss-clear");
   }
 
   /** Fold every unpaid field packet into one reserved, unmergeable crown; exact value is conserved. */
@@ -8233,9 +8348,8 @@ export class GameRoom extends Room<ArenaState> {
     if (amount <= 0 || !this.hasXpRecipient()) return;
     const count = this.state.xpEchoes.size;
     const recentTicks = Math.ceil(XP_ECHO_RECENT_MERGE_MS / TICK_MS);
-    const mergeRadius = count < XP_ECHO_DENSE_AT
-      ? XP_ECHO_RECENT_MERGE_RADIUS
-      : XP_ECHO_DENSE_MERGE_RADIUS;
+    const mergeRadius =
+      count < XP_ECHO_DENSE_AT ? XP_ECHO_RECENT_MERGE_RADIUS : XP_ECHO_DENSE_MERGE_RADIUS;
     const mergeR2 = mergeRadius * mergeRadius;
     let merge: XpEchoState | null = null;
     let mergeD2 = Number.POSITIVE_INFINITY;
@@ -8250,7 +8364,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = echo.x - x;
       const dy = echo.y - y;
       const d2 = dx * dx + dy * dy;
-      const recent = ((this.state.tick - echo.bornTick) >>> 0) <= recentTicks;
+      const recent = (this.state.tick - echo.bornTick) >>> 0 <= recentTicks;
       const localMerge = count < XP_ECHO_DENSE_AT ? recent && d2 <= mergeR2 : d2 <= mergeR2;
       if (localMerge && d2 < mergeD2) {
         merge = echo;
@@ -8452,11 +8566,15 @@ export class GameRoom extends Room<ArenaState> {
     const nx = -fy;
     const ny = fx;
     const sign = (echo.seed & 1) === 0 ? -1 : 1;
-    const c2x = meta.targetX - fx * Math.min(84, distance * 0.3) - nx * sign * Math.min(28, distance * 0.08);
-    const c2y = meta.targetY - fy * Math.min(84, distance * 0.3) - ny * sign * Math.min(28, distance * 0.08);
+    const c2x =
+      meta.targetX - fx * Math.min(84, distance * 0.3) - nx * sign * Math.min(28, distance * 0.08);
+    const c2y =
+      meta.targetY - fy * Math.min(84, distance * 0.3) - ny * sign * Math.min(28, distance * 0.08);
     const a = 1 - q;
-    const bx = a ** 3 * echo.x + 3 * a * a * q * meta.c1x + 3 * a * q * q * c2x + q ** 3 * meta.targetX;
-    const by = a ** 3 * echo.y + 3 * a * a * q * meta.c1y + 3 * a * q * q * c2y + q ** 3 * meta.targetY;
+    const bx =
+      a ** 3 * echo.x + 3 * a * a * q * meta.c1x + 3 * a * q * q * c2x + q ** 3 * meta.targetX;
+    const by =
+      a ** 3 * echo.y + 3 * a * a * q * meta.c1y + 3 * a * q * q * c2y + q ** 3 * meta.targetY;
     const sw = clamp((t - 0.68) / 0.32, 0, 1);
     const w = sw * sw * (3 - 2 * sw);
     const angle = sign * Math.PI * 0.7 * w;
@@ -8644,10 +8762,8 @@ export class GameRoom extends Room<ArenaState> {
    * full patch and are deleted on the following simulation tick. Downing never cancels a guaranteed flight.
    */
   private stepXpEchoes(): void {
-    if (
-      this.vastagharEncounter?.state.mode === VastagharMode.Victory &&
-      !this.vastagharCoreId
-    ) return;
+    if (this.vastagharEncounter?.state.mode === VastagharMode.Victory && !this.vastagharCoreId)
+      return;
     // Retire the previous patch's receipts first.
     for (const [id, echo] of this.state.xpEchoes) {
       if (this.lockedWormEchoIds.has(id)) continue;
@@ -8660,7 +8776,8 @@ export class GameRoom extends Room<ArenaState> {
       this.xpBoundary === "boss-clear" &&
       this.state.xpEchoes.size === 0 &&
       ((this.state.tick - this.vastagharVictoryReadyTick) | 0) < 0
-    ) return;
+    )
+      return;
     if (this.xpBoundary && this.state.xpEchoes.size === 0) {
       this.completeXpBoundary(this.xpBoundary);
       return;
@@ -8683,10 +8800,8 @@ export class GameRoom extends Room<ArenaState> {
       if (this.state.tick < echo.collectTick) return;
       // The flagship never converts add XP into a modal/invulnerability exploit mid-attack. Flights may
       // arrive, but their unpaid values remain authoritative and fold into the reserved death crown.
-      if (
-        this.vastagharEncounter &&
-        this.vastagharEncounter.state.mode !== VastagharMode.Victory
-      ) return;
+      if (this.vastagharEncounter && this.vastagharEncounter.state.mode !== VastagharMode.Victory)
+        return;
       this.grantXp(echo.value);
       echo.delivered = true;
       this.xpFlights.delete(echo.id);
@@ -8717,8 +8832,9 @@ export class GameRoom extends Room<ArenaState> {
     const perCollector = new Map<string, number>();
     this.state.xpEchoes.forEach((echo) => {
       if (this.lockedWormEchoIds.has(echo.id)) return;
-      if (roomLaunches >= XP_ECHO_LAUNCHES_PER_ROOM_TICK || echo.collectorId || echo.delivered) return;
-      if (((this.state.tick - echo.bornTick) >>> 0) < this.xpEchoArmTicks(echo.value)) return;
+      if (roomLaunches >= XP_ECHO_LAUNCHES_PER_ROOM_TICK || echo.collectorId || echo.delivered)
+        return;
+      if ((this.state.tick - echo.bornTick) >>> 0 < this.xpEchoArmTicks(echo.value)) return;
       const collector = this.nearestXpCollector(echo.x, echo.y, true);
       if (!collector) return;
       const launched = perCollector.get(collector.id) ?? 0;
@@ -8982,7 +9098,10 @@ export class GameRoom extends Room<ArenaState> {
         validateWormPoint: (x, y, radius) => {
           if (this.belt && this.beltLevel) {
             const bx = clamp(x, radius, this.beltLevel.length - radius);
-            return { x: beltSafeX(this.beltLevel, bx, bx), y: clampBeltFloorY(this.beltLevel, bx, y, radius) };
+            return {
+              x: beltSafeX(this.beltLevel, bx, bx),
+              y: clampBeltFloorY(this.beltLevel, bx, y, radius),
+            };
           }
           return safeSpawnPos(
             this.map,
@@ -9156,21 +9275,14 @@ export class GameRoom extends Room<ArenaState> {
         this.resolveVastagharParry(player, combat, x, y, false);
         return;
       }
-      if (
-        combat &&
-        (combat.pitGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)
-      ) {
+      if (combat && (combat.pitGrace > 0 || this.slideInvulnerable(combat) || combat.invuln > 0)) {
         if (this.slideInvulnerable(combat)) this.noteSlideDodge(player);
         return;
       }
       out.hit++;
       this.damagePlayer(player, damage, "enemy");
       const distance = Math.hypot(dx, dy) || 1;
-      const impulse = addImpulse(
-        player,
-        (dx / distance) * knockback,
-        (dy / distance) * knockback,
-      );
+      const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
     });
@@ -9215,7 +9327,8 @@ export class GameRoom extends Room<ArenaState> {
           toAngle,
           PLAYER_RADIUS,
         )
-      ) return;
+      )
+        return;
       this.vastagharSweepEpoch.set(player.id, epoch);
       out.threatened++;
       if (airborneAnswers && player.height > GROUND_EPSILON) {
@@ -9240,11 +9353,7 @@ export class GameRoom extends Room<ArenaState> {
       const dx = player.x - x;
       const dy = player.y - y;
       const distance = Math.hypot(dx, dy) || 1;
-      const impulse = addImpulse(
-        player,
-        (dx / distance) * knockback,
-        (dy / distance) * knockback,
-      );
+      const impulse = addImpulse(player, (dx / distance) * knockback, (dy / distance) * knockback);
       player.vx = impulse.vx;
       player.vy = impulse.vy;
     });
@@ -9254,11 +9363,10 @@ export class GameRoom extends Room<ArenaState> {
     if (combat.invuln <= 0 || combat.parryOpenedTick === 0xffffffff) return false;
     const windowSeconds = Math.max(
       PARRY_IFRAMES * combat.mods.parryIFrameMult,
-      PARRY_IFRAMES *
-        (1 + IRON_STANCE_IFRAME_PER * countAugment(player.augments, "iron-stance")),
+      PARRY_IFRAMES * (1 + IRON_STANCE_IFRAME_PER * countAugment(player.augments, "iron-stance")),
     );
     const windowTicks = Math.ceil((windowSeconds * 1000) / TICK_MS);
-    return ((this.state.tick - combat.parryOpenedTick) >>> 0) <= windowTicks;
+    return (this.state.tick - combat.parryOpenedTick) >>> 0 <= windowTicks;
   }
 
   /** Same personal chain/cooldown/heal/augment ledger as melee parry, without moving the 230px titan root. */
@@ -9299,10 +9407,7 @@ export class GameRoom extends Room<ArenaState> {
 
   /** POI identity stays at its deterministic seed index; moving the server copy off-map removes collision
    * on the exact synchronized mutation edge while the client consumes `destroyedPoiMask`. */
-  private mutateVastagharArena(
-    _kind: VastagharArenaMutationKind,
-    poiIndex: number,
-  ): void {
+  private mutateVastagharArena(_kind: VastagharArenaMutationKind, poiIndex: number): void {
     if (poiIndex < 0 || poiIndex >= this.map.pois.length || poiIndex === 255) return;
     const poi = this.map.pois[poiIndex];
     if (!poi) return;
@@ -9417,7 +9522,8 @@ export class GameRoom extends Room<ArenaState> {
       if (
         !clearForSoloRez &&
         (expireTick === undefined || ((this.state.tick - expireTick) | 0) < 0)
-      ) continue;
+      )
+        continue;
       const combo = this.comboState.get(id);
       if (combo?.strike) this.removeTelegraphRow(combo.strike.tg);
       if (combo?.tg) this.removeTelegraphRow(combo.tg);
@@ -9544,8 +9650,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §16 remove one live projectile while keeping the O(1) hostile admission count exact. */
   private removeProjectile(id: string): void {
     const meta = this.projectileMeta.get(id);
-    if (meta?.hostile)
-      this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
+    if (meta?.hostile) this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
     this.state.projectiles.delete(id);
     this.projectileMeta.delete(id);
   }
@@ -9587,8 +9692,10 @@ export class GameRoom extends Room<ArenaState> {
     const baseAng = Math.atan2(aim.y, aim.x);
     const ttl = g.range / g.projectileSpeed;
     // §38 GUNSLINGER signature augments: Hollow-Points add pierce, Ricochet Rounds add bounces (per stack).
-    const pierce = (g.pierce ?? 1) + AUG_GUN_PIERCE_PER * countAugment(player.augments, "hollowpoints");
-    const bounces = (g.bounces ?? 0) + AUG_GUN_BOUNCE_PER * countAugment(player.augments, "ricochet-rounds");
+    const pierce =
+      (g.pierce ?? 1) + AUG_GUN_PIERCE_PER * countAugment(player.augments, "hollowpoints");
+    const bounces =
+      (g.bounces ?? 0) + AUG_GUN_BOUNCE_PER * countAugment(player.augments, "ricochet-rounds");
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
@@ -9643,8 +9750,12 @@ export class GameRoom extends Room<ArenaState> {
     if (!cast) return;
     // §38 CASTER signature augments: Overcharge boosts bolt damage, Arc Split adds forked bolts (per stack).
     const dmgMul = 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge");
-    const dmg = cast.damage * this.heldCastDamageMult(weapon, cast.scalingGrades, player, hand) * dmgMul;
-    const forks = Math.min(AUG_CAST_SPLIT_MAX, AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"));
+    const dmg =
+      cast.damage * this.heldCastDamageMult(weapon, cast.scalingGrades, player, hand) * dmgMul;
+    const forks = Math.min(
+      AUG_CAST_SPLIT_MAX,
+      AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"),
+    );
     const ttl = cast.range / cast.speed;
     const reach = gunMuzzleReach(weapon);
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT
@@ -9657,7 +9768,8 @@ export class GameRoom extends Room<ArenaState> {
     const baseAng = Math.atan2(aim.y, aim.x);
     // The main bolt + `forks` extra bolts fanned symmetrically around aim (Arc Split).
     for (let i = 0; i <= forks; i++) {
-      const ang = baseAng + (i === 0 ? 0 : (i % 2 === 1 ? 1 : -1) * Math.ceil(i / 2) * AUG_CAST_SPLIT_SPREAD);
+      const ang =
+        baseAng + (i === 0 ? 0 : (i % 2 === 1 ? 1 : -1) * Math.ceil(i / 2) * AUG_CAST_SPLIT_SPREAD);
       this.fireProjectile(
         { x: mx, y: my },
         { x: mx + Math.cos(ang), y: my + Math.sin(ang) },
@@ -9726,12 +9838,7 @@ export class GameRoom extends Room<ArenaState> {
           radius: sc.explode.radius,
           damage:
             sc.explode.damage *
-            this.heldDamageMult(
-              weapon,
-              sc.explode.scalingGrades ?? sc.scalingGrades,
-              player,
-              hand,
-            ),
+            this.heldDamageMult(weapon, sc.explode.scalingGrades ?? sc.scalingGrades, player, hand),
         }
       : undefined;
     const aim = this.aimDir(player, c); // §37 aim the cone at the cursor POINT
@@ -9948,11 +10055,7 @@ export class GameRoom extends Room<ArenaState> {
     const kind = ENEMY_KINDS[enemy.kind];
     if (wormRoot) this.releaseWormXp(enemy.x, enemy.y);
     else if (!flagship) {
-      this.dropXp(
-        enemy.x,
-        enemy.y,
-        (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1),
-      );
+      this.dropXp(enemy.x, enemy.y, (kind?.xpValue ?? 0) * (enemy.tough ? TOUGH_XP_MULT : 1));
     }
     if (kind?.archetype === "boss" && flagship) {
       if (this.bossPetAwardEligible) this.awardPetDimensionClear();
@@ -10204,7 +10307,8 @@ export class GameRoom extends Room<ArenaState> {
             EMBERGUARD_RANGE + runtime.segmentRadius(slot),
             EMBERGUARD_HALF_ARC,
           )
-        ) this.wormHitSlots.push(slot);
+        )
+          this.wormHitSlots.push(slot);
       }
       this.damageWormSlots(
         this.wormHitSlots,
@@ -10238,7 +10342,8 @@ export class GameRoom extends Room<ArenaState> {
     const knockback = PARRY_KNOCKBACK * c.mods.parryKnockbackMult;
     const r2 = PARRY_RADIUS * PARRY_RADIUS;
     this.state.enemies.forEach((enemy, id) => {
-      if (id === this.bossId && (this.bossController?.wormRuntime || this.vastagharEncounter)) return;
+      if (id === this.bossId && (this.bossController?.wormRuntime || this.vastagharEncounter))
+        return;
       const dx = enemy.x - player.x;
       const dy = enemy.y - player.y;
       const d2 = dx * dx + dy * dy;
@@ -10393,12 +10498,7 @@ export class GameRoom extends Room<ArenaState> {
         enemy.y = next.y;
       }
       // §20 Sekiro lean-in: creep slowly forward DURING a windup so the wind-up reads as "stepping into it".
-      if (
-        st.phase === "windup" &&
-        !st.strike &&
-        target &&
-        dist > m.range * 0.45
-      ) {
+      if (st.phase === "windup" && !st.strike && target && dist > m.range * 0.45) {
         const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed * 0.28, dt);
         enemy.x = next.x;
         enemy.y = next.y;
@@ -10485,8 +10585,7 @@ export class GameRoom extends Room<ArenaState> {
           }
           st.strike = undefined;
           // A riposte may have changed the combo to its one-second stagger inside `duelistSwing`.
-          const staggered =
-            this.comboState.get(id)?.phase === "recover" && st.t === 1;
+          const staggered = this.comboState.get(id)?.phase === "recover" && st.t === 1;
           if (!staggered) {
             st.hits -= 1;
             if (st.hits > 0) {
@@ -10641,8 +10740,7 @@ export class GameRoom extends Room<ArenaState> {
       ) {
         // G12: the victim is already claimed (or 4 performances run arena-wide) — stalk the ring-out
         // orbit, visibly waiting a turn instead of stacking an unreadable committed crossfire.
-        if (dist > COMBO_RINGOUT_ORBIT + 40)
-          this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+        if (dist > COMBO_RINGOUT_ORBIT + 40) this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
         return;
       }
       if (kind.comboLeap) {
@@ -10699,9 +10797,11 @@ export class GameRoom extends Room<ArenaState> {
         enemy.comboFlags &= ~COMBO_FLAG_AIRBORNE;
         const landingRadius = kind.radius + 10;
         const whiffDx =
-          (live?.x ?? Number.POSITIVE_INFINITY) - (st.negotiatedTargetX ?? Number.NEGATIVE_INFINITY);
+          (live?.x ?? Number.POSITIVE_INFINITY) -
+          (st.negotiatedTargetX ?? Number.NEGATIVE_INFINITY);
         const whiffDy =
-          (live?.y ?? Number.POSITIVE_INFINITY) - (st.negotiatedTargetY ?? Number.NEGATIVE_INFINITY);
+          (live?.y ?? Number.POSITIVE_INFINITY) -
+          (st.negotiatedTargetY ?? Number.NEGATIVE_INFINITY);
         if (!live || whiffDx * whiffDx + whiffDy * whiffDy > landingRadius * landingRadius) {
           // G4: walking out of the white offer ring is a COMPLETE answer. No settle/re-acquire slide;
           // the tough owns an authored whiff punish of at least 0.85s and spends its cooldown.
@@ -10897,8 +10997,7 @@ export class GameRoom extends Room<ArenaState> {
     st.lastComboId = comboId;
     st.targetId = prey.id;
     st.stepIndex = 0;
-    st.stepLimit =
-      this.state.depth <= 2 ? Math.min(2, def.steps.length) : def.steps.length;
+    st.stepLimit = this.state.depth <= 2 ? Math.min(2, def.steps.length) : def.steps.length;
     st.settleTicks = COMBO_LEAP_SETTLE_TICKS;
     st.empowered = false;
     st.returnsLeft = def.maxReturns;
@@ -11172,12 +11271,7 @@ export class GameRoom extends Room<ArenaState> {
   /** §51 allocation-free steady-state chase used only by authored combos. The shared chase helper returns
    *  fresh vectors (fine for legacy); active elites mutate in place so their richer per-tick machine adds
    *  zero garbage-collector pressure. */
-  private moveComboEnemyToward(
-    enemy: EnemyState,
-    target: Vec2,
-    speed: number,
-    dt: number,
-  ): void {
+  private moveComboEnemyToward(enemy: EnemyState, target: Vec2, speed: number, dt: number): void {
     const dx = target.x - enemy.x;
     const dy = target.y - enemy.y;
     const d = Math.hypot(dx, dy);
@@ -11220,12 +11314,12 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §51 advance one scheduled recoil slice; completion captures the ACTUAL post-knockback position from
    *  which a bait return later path-plans. Returns true on every tick that recoil owns movement. */
-  private stepComboKnockback(
-    enemy: EnemyState,
-    st: DuelistComboState,
-    tick: number,
-  ): boolean {
-    if (st.knockbackEndTick === undefined || st.knockbackX === undefined || st.knockbackY === undefined)
+  private stepComboKnockback(enemy: EnemyState, st: DuelistComboState, tick: number): boolean {
+    if (
+      st.knockbackEndTick === undefined ||
+      st.knockbackX === undefined ||
+      st.knockbackY === undefined
+    )
       return false;
     const left = (st.knockbackEndTick - tick) | 0;
     if (left < 0) {
@@ -11302,9 +11396,7 @@ export class GameRoom extends Room<ArenaState> {
       if (
         displacementHit &&
         pc &&
-        (pc.stance === STANCE_CROUCH ||
-          pc.stance === STANCE_DASH ||
-          pc.stance === STANCE_SLIDE)
+        (pc.stance === STANCE_CROUCH || pc.stance === STANCE_DASH || pc.stance === STANCE_SLIDE)
       ) {
         this.cancelMoveStance(player, pc, true);
       }
@@ -11329,7 +11421,11 @@ export class GameRoom extends Room<ArenaState> {
           player.vh = pc.vh;
         }
         if (step.airkeep.push > 0) {
-          const k = addImpulse(player, (hx / hd) * step.airkeep.push, (hy / hd) * step.airkeep.push);
+          const k = addImpulse(
+            player,
+            (hx / hd) * step.airkeep.push,
+            (hy / hd) * step.airkeep.push,
+          );
           player.vx = k.vx;
           player.vy = k.vy;
         }
@@ -11419,11 +11515,7 @@ export class GameRoom extends Room<ArenaState> {
         baseKnockback + (riposte ? PARRY_KNOCKBACK : 0),
       );
     } else {
-      attacker.x = clamp(
-        attacker.x + nx * baseKnockback,
-        ENEMY_RADIUS,
-        ARENA_WIDTH - ENEMY_RADIUS,
-      );
+      attacker.x = clamp(attacker.x + nx * baseKnockback, ENEMY_RADIUS, ARENA_WIDTH - ENEMY_RADIUS);
       attacker.y = clamp(
         attacker.y + ny * baseKnockback,
         ENEMY_RADIUS,
@@ -11478,9 +11570,12 @@ export class GameRoom extends Room<ArenaState> {
         est.phase = "return";
         est.stepStartTick = (this.state.tick + knockbackTicks) >>> 0;
         est.stepEndTick =
-          (est.stepStartTick + RETURN_STAGGER_TICKS + def.return.windupTicks + RETURN_DASH_TICKS) >>> 0;
-        attacker.comboFlags =
-          (attacker.comboFlags & ~COMBO_FLAG_JUGGLE) | COMBO_FLAG_EMPOWERED;
+          (est.stepStartTick +
+            RETURN_STAGGER_TICKS +
+            def.return.windupTicks +
+            RETURN_DASH_TICKS) >>>
+          0;
+        attacker.comboFlags = (attacker.comboFlags & ~COMBO_FLAG_JUGGLE) | COMBO_FLAG_EMPOWERED;
         this.bumpComboSeq(attacker); // documented edge: empowered return STEP START
       }
     } else if (riposte && est) {
@@ -11721,14 +11816,17 @@ export class GameRoom extends Room<ArenaState> {
             if (meta.pierce <= 0 || wormContacts >= 2) break;
             const hitKey = `worm:${slot}:${runtime.segmentGeneration(slot)}`;
             if (meta.hit.has(hitKey)) continue;
-            if (!runtime.segmentIntersectsSweptCapsule(
-              slot,
-              projectileFromX,
-              projectileFromY,
-              pr.x,
-              pr.y,
-              PROJECTILE_RADIUS,
-            )) continue;
+            if (
+              !runtime.segmentIntersectsSweptCapsule(
+                slot,
+                projectileFromX,
+                projectileFromY,
+                pr.x,
+                pr.y,
+                PROJECTILE_RADIUS,
+              )
+            )
+              continue;
             meta.hit.add(hitKey);
             meta.pierce--;
             wormContacts++;
@@ -11797,8 +11895,7 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     pc: CombatState,
   ): void {
-    if (meta.hostile)
-      this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
+    if (meta.hostile) this.hostileProjectileCount = Math.max(0, this.hostileProjectileCount - 1);
     pr.hostile = false;
     meta.hostile = false;
     meta.sourcePlayerId = player.id;
@@ -12051,8 +12148,9 @@ export class GameRoom extends Room<ArenaState> {
         receipt.seq === 0 ||
         receipt.targetId !== this.bossId ||
         !receipt.sourcePlayerId ||
-        ((this.state.tick - receipt.tick) >>> 0) > 80
-      ) continue;
+        (this.state.tick - receipt.tick) >>> 0 > 80
+      )
+        continue;
       for (let i = 0; i < count; i++) {
         const target = this.vastagharTargets[i];
         if (target?.id === receipt.sourcePlayerId) {
@@ -12094,7 +12192,8 @@ export class GameRoom extends Room<ArenaState> {
       delivery === CombatDelivery.Ultimate ||
       c.ultChargeF >= 1 ||
       c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
-    ) return;
+    )
+      return;
     const family = ultimateFamilyForCode(player.ultArchetype);
     let gain = Math.max(0, applied) * ULT_CHARGE_PER_DAMAGE;
     if (family === UltimateFamily.SunspiteComet) gain *= 1.25;
@@ -12118,7 +12217,8 @@ export class GameRoom extends Room<ArenaState> {
       player.ultPhase !== UltimatePhase.Idle ||
       c.ultChargeF >= 1 ||
       c.ultAccrualThisTick >= ULT_CHARGE_TICK_CAP
-    ) return;
+    )
+      return;
     const scaled = amount * (player.ultTempered ? ULT_TEMPER_CHARGE_MULT : 1);
     const admitted = Math.min(scaled, ULT_CHARGE_TICK_CAP - c.ultAccrualThisTick, 1 - c.ultChargeF);
     if (admitted <= 0) return;
@@ -12135,16 +12235,8 @@ export class GameRoom extends Room<ArenaState> {
     const margin = radius + 4;
     for (let attempt = 0; attempt < SPAWN_CANDIDATE_COUNT; attempt++) {
       const angle = baseAngle + (attempt / SPAWN_CANDIDATE_COUNT) * Math.PI * 2;
-      const rawX = clamp(
-        anchor.x + Math.cos(angle) * SPAWN_RING,
-        margin,
-        ARENA_WIDTH - margin,
-      );
-      const rawY = clamp(
-        anchor.y + Math.sin(angle) * SPAWN_RING,
-        margin,
-        ARENA_HEIGHT - margin,
-      );
+      const rawX = clamp(anchor.x + Math.cos(angle) * SPAWN_RING, margin, ARENA_WIDTH - margin);
+      const rawY = clamp(anchor.y + Math.sin(angle) * SPAWN_RING, margin, ARENA_HEIGHT - margin);
       const corrected = safeSpawnPos(this.map, rawX, rawY, radius);
       let fair = true;
       this.state.players.forEach((player) => {
@@ -12153,8 +12245,7 @@ export class GameRoom extends Room<ArenaState> {
         const dy = corrected.y - player.y;
         if (
           dx * dx + dy * dy + 1e-6 < minDistance2 ||
-          (Math.abs(dx) <= SPAWN_CAMERA_HALF_WIDTH &&
-            Math.abs(dy) <= SPAWN_CAMERA_HALF_HEIGHT)
+          (Math.abs(dx) <= SPAWN_CAMERA_HALF_WIDTH && Math.abs(dy) <= SPAWN_CAMERA_HALF_HEIGHT)
         )
           fair = false;
       });
@@ -12320,7 +12411,8 @@ export class GameRoom extends Room<ArenaState> {
     if (def.encounter === "vastaghar" && !(this.belt && this.beltLevel))
       this.retireStageForVastaghar();
     // The custom collection is not free capacity: reserve every authored starting hurt body before admission.
-    if (def.encounter === "worm" && this.state.enemies.size + WORM_MAX_SEGMENTS + 3 > MAX_ENEMIES) return;
+    if (def.encounter === "worm" && this.state.enemies.size + WORM_MAX_SEGMENTS + 3 > MAX_ENEMIES)
+      return;
     const anchors: Vec2[] = [];
     this.state.players.forEach((pl) => {
       if (pl.alive) anchors.push({ x: pl.x, y: pl.y });
@@ -12351,7 +12443,11 @@ export class GameRoom extends Room<ArenaState> {
     // §17 land the boss on solid ground + clear of POIs so its grand entrance doesn't teleport-out next tick.
     // §33 belt: place it ON the deck — just ahead of the room gate, mid-depth — instead of the procgen map.
     if (this.belt && this.beltLevel) {
-      boss.x = clamp((this.state.beltLockX || bx) - 260, kind.radius, this.beltLevel.length - kind.radius);
+      boss.x = clamp(
+        (this.state.beltLockX || bx) - 260,
+        kind.radius,
+        this.beltLevel.length - kind.radius,
+      );
       boss.y = clampBeltFloorY(this.beltLevel, boss.x, BELT_Y0 + DEPTH_MAX * 0.5, kind.radius);
     } else {
       const sp = safeSpawnPos(this.map, bx, by, kind.radius);
@@ -12670,8 +12766,7 @@ export class GameRoom extends Room<ArenaState> {
       if (!this.extractBlocked.has(id)) holding = true;
     });
     this.extractHoldTimer = holding ? this.extractHoldTimer + dt : 0;
-    if (this.extractHoldTimer + 1e-9 >= EXTRACT_HOLD_SECONDS)
-      this.beginXpBoundary("extract");
+    if (this.extractHoldTimer + 1e-9 >= EXTRACT_HOLD_SECONDS) this.beginXpBoundary("extract");
   }
 
   /** §6 the other half of the greed decision (v0.103): the DEEPER rift is a CHANNEL — a living player
