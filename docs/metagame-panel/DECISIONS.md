@@ -64,3 +64,17 @@ Recorded 2026-07-18. The confirmed direction, overriding conflicting panel outpu
   small accessories (glasses/facial hair) baked into the composed head texture. Cloaks remain a
   separate behind-body drape card. Garment ART must be authored at the base part's exact frame
   and silhouette coverage so fit is correct by construction.
+
+## Torso+Head pairs — pants removed (user ruling, 2026-07-18 evening)
+
+- The shirt/pants zone-baking model is RETIRED. Each gear set now ships a matched
+  PAIR: one complete TORSO piece (the full dressed torso card — absorbs the old
+  shirt AND pants identity and their stats) and one complete HEAD piece (a full
+  replacement head in the set's identity; the blank stitch head is the default).
+- The slot roster stays 8: head (replacement), torso, gloves, boots, cloak,
+  glasses, facialHair, hat. Pants ceases to exist as a concept; glasses/facial
+  hair/hats overlay whichever head is worn; mix-and-match across sets remains
+  legal (the pair is how sets are DESIGNED, not a lock).
+- Art consequence: torso and head renders are single complete objects on the base
+  silhouettes — the render category the pipeline passes at ~90%+ — ending the
+  zone-panel/coverage-mask failure class for good.
