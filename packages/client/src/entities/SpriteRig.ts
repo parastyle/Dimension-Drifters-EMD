@@ -127,9 +127,21 @@ import {
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
   aimRelativePoint,
+  BLADE_SIZE_STANCES,
+  type BladeSizeClass,
+  type BladeSizeStance,
+  bladeSizeClassFor,
+  createFlourishInput,
+  createFlourishSample,
   createPoseLanguageInput,
   createPoseLanguageSample,
   createPoseVariantSelection,
+  FLOURISH_DUAL_AFTER_ECHO_MS,
+  FLOURISH_DUAL_DRAW_ECHO_MS,
+  FLOURISH_DUAL_STOW_ECHO_MS,
+  type FlourishInput,
+  type FlourishMoment,
+  type FlourishSample,
   oneHandBladePoseVariantFrom,
   POSE_ONE_HAND_BLADE_VARIANT_REGISTRY_KEY,
   POSE_PISTOL_VARIANT_REGISTRY_KEY,
@@ -141,10 +153,14 @@ import {
   pistolPoseVariantFrom,
   poseImpulsePending,
   poseSupportHandFor,
+  sampleFlourish,
   samplePoseLanguage,
   twoHandedPoseFor,
   twoHandPoseAuthorityFrom,
+  WEAPON_FLOURISH_SPECS,
+  type WeaponFlourishSpec,
   type WeaponPoseSpec,
+  weaponFlourishSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
@@ -314,6 +330,25 @@ export function routeSwingChannels(
   };
 }
 
+/** Live sequence truth only; timeout and familiar historical bar lengths never earn punctuation. */
+export function isTerminalFlourishStep(step: number, sequenceLength: number): boolean {
+  return sequenceLength > 0 && step === sequenceLength - 1;
+}
+
+export function flourishStreakWindowMs(effectiveCooldown: number): number {
+  return Math.max(320, Math.min(850, effectiveCooldown * 2.2 * 1000));
+}
+
+export function nextFlourishStreakCount(
+  previousCount: number,
+  previousAcceptedMs: number,
+  sameWeapon: boolean,
+  acceptedMs: number,
+  streakWindowMs: number,
+): number {
+  return sameWeapon && acceptedMs - previousAcceptedMs <= streakWindowMs ? previousCount + 1 : 1;
+}
+
 /** ArenaScene owns these presentation services. The rig consumes them structurally so the accepted remote
  * beat can share the existing authored dispatcher without widening the scene API or duplicating VFX data. */
 interface RigAttackPresentationScene extends Phaser.Scene {
@@ -361,6 +396,11 @@ function backOut01(value: number): number {
 function mixAngle(from: number, to: number, t: number): number {
   const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
   return from + delta * clamp01(t);
+}
+
+function stepAngleBounded(from: number, to: number, maxDelta: number): number {
+  const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + Math.max(-maxDelta, Math.min(maxDelta, delta));
 }
 
 function paperPopScaleX(elapsedMs: number, durationMs: number): number {
@@ -1082,6 +1122,77 @@ interface RigFoot extends JigglePartState {
   front: boolean;
 }
 
+interface FlourishChannelState {
+  active: boolean;
+  moment: FlourishMoment;
+  startMs: number;
+  hand: 0 | 1;
+  rotationSign: -1 | 1;
+  spec: WeaponFlourishSpec;
+}
+
+function createFlourishChannel(hand: 0 | 1): FlourishChannelState {
+  return {
+    active: false,
+    moment: "draw",
+    startMs: -1e9,
+    hand,
+    rotationSign: hand === 0 ? 1 : -1,
+    spec: WEAPON_FLOURISH_SPECS["one-hand-blade"],
+  };
+}
+
+interface FlourishArmState {
+  armed: boolean;
+  earliestStartMs: number;
+  weaponId: string;
+}
+
+function createFlourishArmState(): FlourishArmState {
+  return { armed: false, earliestStartMs: -1e9, weaponId: "" };
+}
+
+interface FlourishStreakState {
+  count: number;
+  lastAcceptedMs: number;
+  weaponId: string;
+}
+
+function createFlourishStreakState(): FlourishStreakState {
+  return { count: 0, lastAcceptedMs: -1e9, weaponId: "" };
+}
+
+interface OutgoingStowProxy {
+  img?: Phaser.GameObjects.Image;
+  startMs: number;
+  destroyAtMs: number;
+  hand: 0 | 1;
+  rotationSign: -1 | 1;
+  spec: WeaponFlourishSpec;
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  aimLocal: number;
+}
+
+function createOutgoingStowProxy(hand: 0 | 1): OutgoingStowProxy {
+  return {
+    startMs: -1e9,
+    destroyAtMs: -1e9,
+    hand,
+    rotationSign: hand === 0 ? -1 : 1,
+    spec: WEAPON_FLOURISH_SPECS["one-hand-blade"],
+    x: 0,
+    y: 0,
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    aimLocal: 0,
+  };
+}
+
 interface GearAttachment extends HatSpringState {
   image: Phaser.GameObjects.Image;
   spec: GearAssemblyPart;
@@ -1553,6 +1664,60 @@ export class SpriteRig {
   private poseLeadSpec?: WeaponPoseSpec;
   private poseOffSpec?: WeaponPoseSpec;
   private poseTwoHanded = false;
+  private flourishLeadSpec?: WeaponFlourishSpec;
+  private flourishOffSpec?: WeaponFlourishSpec;
+  private poseLeadBladeSize: BladeSizeClass = "standard";
+  private bladeNeutralAngle = 0;
+  private bladeNeutralReady = false;
+  private readonly flourishChannels: [FlourishChannelState, FlourishChannelState] = [
+    createFlourishChannel(0),
+    createFlourishChannel(1),
+  ];
+  private readonly flourishInputs: [FlourishInput, FlourishInput] = [
+    createFlourishInput(),
+    createFlourishInput(),
+  ];
+  private readonly flourishSamples: [FlourishSample, FlourishSample] = [
+    createFlourishSample(),
+    createFlourishSample(),
+  ];
+  private readonly flourishArms: [FlourishArmState, FlourishArmState] = [
+    createFlourishArmState(),
+    createFlourishArmState(),
+  ];
+  private readonly flourishStreaks: [FlourishStreakState, FlourishStreakState] = [
+    createFlourishStreakState(),
+    createFlourishStreakState(),
+  ];
+  private readonly stowProxies: [OutgoingStowProxy, OutgoingStowProxy] = [
+    createOutgoingStowProxy(0),
+    createOutgoingStowProxy(1),
+  ];
+  private readonly stowInputs: [FlourishInput, FlourishInput] = [
+    createFlourishInput(),
+    createFlourishInput(),
+  ];
+  private readonly stowSamples: [FlourishSample, FlourishSample] = [
+    createFlourishSample(),
+    createFlourishSample(),
+  ];
+  private pendingSwapKey = "";
+  private pendingSwapObservedKey = "";
+  private pendingSwapEpochMs = -1e9;
+  private lastSwapKey = "";
+  private lastSwapObservedKey = "";
+  private flourishCancelGeneration = 0;
+  private flourishHeadX = 0;
+  private flourishHeadY = 0;
+  private flourishMoveWasActive = false;
+  private flourishMoveX = 0;
+  private flourishMoveY = 0;
+  private flourishReducedMotion = false;
+  private flourishReducedReady = false;
+  private flourishFireHeld = false;
+  private idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
+  private idleFlourishLastPlayedMs = -1e9;
+  private idleFlourishOffsetMs = 0;
   private readonly poseLeadInput = createPoseLanguageInput();
   private readonly poseLeadSample = createPoseLanguageSample();
   private readonly poseSupportInput = createPoseLanguageInput();
@@ -1896,6 +2061,7 @@ export class SpriteRig {
     let h = 0;
     for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000;
     this.phase = h / 1000;
+    this.idleFlourishOffsetMs = Math.floor(this.phase * 701);
     if (gearManifest) this.requestBoilerplate(gearManifest);
   }
 
@@ -2451,6 +2617,9 @@ export class SpriteRig {
     const offDef = this.weapons[1]?.def;
     this.poseLeadSpec = leadDef ? weaponPoseSpecFor(leadDef, this.poseVariants) : undefined;
     this.poseOffSpec = offDef ? weaponPoseSpecFor(offDef, this.poseVariants) : undefined;
+    this.flourishLeadSpec = leadDef ? weaponFlourishSpecFor(leadDef) : undefined;
+    this.flourishOffSpec = offDef ? weaponFlourishSpecFor(offDef) : undefined;
+    this.poseLeadBladeSize = leadDef ? bladeSizeClassFor(leadDef) : "standard";
     this.poseTwoHanded = !!leadDef && twoHandedPoseFor(leadDef, twoHandAuthority);
     if (rebuildGeometry && priorTwoHanded !== this.poseTwoHanded) {
       const backHand = this.hands.find((hand) => !hand.front);
@@ -2514,6 +2683,339 @@ export class SpriteRig {
     if (!lead || !off || lead.displayLength <= 0) return DUAL_BACK_WEAPON_LEAN;
     const lengthRatio = Math.max(0.7, Math.min(1.3, off.displayLength / lead.displayLength));
     return DUAL_BACK_WEAPON_LEAN * lengthRatio;
+  }
+
+  private destroyStowProxy(proxy: OutgoingStowProxy): void {
+    proxy.img?.destroy();
+    proxy.img = undefined;
+    proxy.startMs = -1e9;
+    proxy.destroyAtMs = -1e9;
+  }
+
+  private clearFlourishActivity(clearArms: boolean, clearProxies: boolean): void {
+    for (const channel of this.flourishChannels) {
+      channel.active = false;
+      channel.startMs = -1e9;
+    }
+    if (clearArms) {
+      for (const arm of this.flourishArms) {
+        arm.armed = false;
+        arm.earliestStartMs = -1e9;
+        arm.weaponId = "";
+      }
+    }
+    if (clearProxies) {
+      for (const proxy of this.stowProxies) this.destroyStowProxy(proxy);
+    }
+    this.flourishHeadX = 0;
+    this.flourishHeadY = 0;
+  }
+
+  /** Actionable presentation input wins immediately; combat clocks and the broader jiggle system are intact. */
+  cancelFlourish(_reason = "input"): void {
+    const hadState =
+      this.flourishChannels[0].active ||
+      this.flourishChannels[1].active ||
+      this.flourishArms[0].armed ||
+      this.flourishArms[1].armed ||
+      !!this.stowProxies[0].img ||
+      !!this.stowProxies[1].img;
+    this.clearFlourishActivity(true, true);
+    if (hadState) this.flourishCancelGeneration++;
+    this.idleFlourishEligibleAtMs = this.presentationClockNow() + 1600 + this.idleFlourishOffsetMs;
+  }
+
+  /** Test/debug seam: one increment per real cancellation edge, never per polling frame. */
+  get flourishCancelEdge(): number {
+    return this.flourishCancelGeneration;
+  }
+
+  private resetFlourishState(clearCounters: boolean): void {
+    this.clearFlourishActivity(true, true);
+    this.pendingSwapKey = "";
+    this.pendingSwapObservedKey = "";
+    this.pendingSwapEpochMs = -1e9;
+    this.bladeNeutralReady = false;
+    this.idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
+    if (clearCounters) {
+      for (const streak of this.flourishStreaks) {
+        streak.count = 0;
+        streak.lastAcceptedMs = -1e9;
+        streak.weaponId = "";
+      }
+    }
+  }
+
+  private beatFor(spec: WeaponFlourishSpec, moment: FlourishMoment) {
+    switch (moment) {
+      case "draw":
+        return spec.draw;
+      case "stow":
+        return spec.stow;
+      case "after-attack":
+        return spec.afterAttack;
+      default:
+        return spec.idleSettle ?? spec.afterAttack;
+    }
+  }
+
+  private startFlourishChannel(
+    hand: 0 | 1,
+    moment: FlourishMoment,
+    startMs: number,
+    spec: WeaponFlourishSpec,
+  ): void {
+    const channel = this.flourishChannels[hand];
+    channel.active = true;
+    channel.moment = moment;
+    channel.startMs = startMs;
+    channel.hand = hand;
+    channel.rotationSign = hand === 0 ? 1 : -1;
+    channel.spec = spec;
+    this.flourishMoveWasActive = this.gait > 0.12;
+    this.flourishMoveX = this.headingX;
+    this.flourishMoveY = this.headingY;
+  }
+
+  private startIncomingDraw(epochMs: number): void {
+    const lead = this.flourishLeadSpec;
+    if (!lead) return;
+    this.clearFlourishActivity(true, false);
+    this.startFlourishChannel(0, "draw", epochMs, lead);
+    if (this.weapons[1] && this.flourishOffSpec) {
+      this.startFlourishChannel(
+        1,
+        "draw",
+        epochMs + FLOURISH_DUAL_DRAW_ECHO_MS,
+        this.flourishOffSpec,
+      );
+    }
+    this.pairCeremonyStartMs = -1e9;
+    this.idleFlourishEligibleAtMs = epochMs + 1600 + this.idleFlourishOffsetMs;
+  }
+
+  /** Snapshot the old visual before the equip path destroys it. Repeated lazy-art polling is idempotent. */
+  beginWeaponSwap(oldWeaponId: string, newWeaponId: string, epochMs: number): void {
+    if (!oldWeaponId || oldWeaponId === newWeaponId) return;
+    const transitionKey = `${this.loadoutKey || oldWeaponId}->${newWeaponId}`;
+    const observedKey = `${oldWeaponId}->${newWeaponId}`;
+    if (
+      transitionKey === this.pendingSwapKey ||
+      transitionKey === this.lastSwapKey ||
+      observedKey === this.pendingSwapObservedKey ||
+      observedKey === this.lastSwapObservedKey
+    )
+      return;
+    this.cancelFlourish("weapon-swap");
+    this.pendingSwapKey = transitionKey;
+    this.pendingSwapObservedKey = observedKey;
+    this.lastSwapKey = transitionKey;
+    this.lastSwapObservedKey = observedKey;
+    this.pendingSwapEpochMs = epochMs;
+
+    for (let index = 0; index < this.stowProxies.length; index++) {
+      const hand = index as 0 | 1;
+      const held = this.weapons[hand];
+      const proxy = this.stowProxies[hand];
+      this.destroyStowProxy(proxy);
+      if (!held) continue;
+      const img = this.scene.add
+        .image(held.img.x, held.img.y, held.img.texture.key, held.img.frame.name)
+        .setOrigin(held.img.originX, held.img.originY)
+        .setScale(held.img.scaleX, held.img.scaleY)
+        .setRotation(held.img.rotation)
+        .setAlpha(held.img.alpha);
+      this.root.add(img);
+      this.root.moveBelow(img, this.body);
+      proxy.img = img;
+      proxy.startMs =
+        epochMs + (hand === 0 && this.weapons.length > 1 ? FLOURISH_DUAL_STOW_ECHO_MS : 0);
+      proxy.destroyAtMs = epochMs + 200;
+      proxy.hand = hand;
+      proxy.rotationSign = hand === 0 ? -1 : 1;
+      proxy.spec = weaponFlourishSpecFor(held.def);
+      proxy.x = held.img.x;
+      proxy.y = held.img.y;
+      proxy.rotation = held.img.rotation;
+      proxy.scaleX = held.img.scaleX;
+      proxy.scaleY = held.img.scaleY;
+      proxy.aimLocal = held.semanticRotation;
+    }
+  }
+
+  /** Missing art is the only allowed draw delay. A permanent failure closes the retained transition. */
+  finishWeaponSwapWithoutArt(): void {
+    this.pendingSwapKey = "";
+    this.pendingSwapObservedKey = "";
+    this.pendingSwapEpochMs = -1e9;
+    this.lastSwapKey = "";
+    this.lastSwapObservedKey = "";
+  }
+
+  private completePendingWeaponSwap(): void {
+    if (!this.pendingSwapKey) return;
+    const epochMs = Number.isFinite(this.pendingSwapEpochMs)
+      ? this.pendingSwapEpochMs
+      : this.presentationClockNow();
+    this.pendingSwapKey = "";
+    this.pendingSwapObservedKey = "";
+    this.pendingSwapEpochMs = -1e9;
+    this.lastSwapKey = "";
+    this.lastSwapObservedKey = "";
+    this.startIncomingDraw(epochMs);
+  }
+
+  private armAfterAttack(hand: 0 | 1, earliestStartMs: number, def: WeaponDef): void {
+    const arm = this.flourishArms[hand];
+    arm.armed = true;
+    arm.earliestStartMs = earliestStartMs;
+    arm.weaponId = def.id;
+  }
+
+  private recordAcceptedRangedBeat(hand: 0 | 1, epochMs: number): void {
+    const def = this.weapons[hand]?.def ?? (hand === 0 ? this.weaponDef : undefined);
+    if (!def) return;
+    const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
+    if (!spec || spec.streakThreshold <= 0 || def.beam) return;
+    const streak = this.flourishStreaks[hand];
+    const cadence = def.gun?.fireRate ?? def.cooldown;
+    const gapMs = flourishStreakWindowMs(cadence);
+    streak.count = nextFlourishStreakCount(
+      streak.count,
+      streak.lastAcceptedMs,
+      streak.weaponId === def.id,
+      epochMs,
+      gapMs,
+    );
+    streak.weaponId = def.id;
+    streak.lastAcceptedMs = epochMs;
+    if (streak.count >= spec.streakThreshold) {
+      streak.count = spec.streakThreshold;
+      this.armAfterAttack(hand, epochMs + 140 + 90, def);
+    }
+  }
+
+  private cancelForAcceptedRangedBeat(hand: 0 | 1): void {
+    const preserveOtherArm =
+      this.weapons.length > 1 &&
+      this.weapons[0]?.def.id === this.weapons[1]?.def.id &&
+      this.flourishArms[hand === 0 ? 1 : 0].armed;
+    const other = hand === 0 ? 1 : 0;
+    const savedOtherArm = preserveOtherArm ? { ...this.flourishArms[other] } : undefined;
+    const currentWasArmed = this.flourishArms[hand].armed;
+    this.cancelFlourish("accepted-attack");
+    if (savedOtherArm) Object.assign(this.flourishArms[other], savedOtherArm);
+    if (currentWasArmed) this.flourishStreaks[hand].count = 0;
+  }
+
+  private tryStartArmedFlourish(sceneNow: number): void {
+    const leadReady =
+      this.flourishArms[0].armed && sceneNow >= this.flourishArms[0].earliestStartMs;
+    const offReady = this.flourishArms[1].armed && sceneNow >= this.flourishArms[1].earliestStartMs;
+    if (!leadReady && !offReady) return;
+    const both = leadReady && offReady;
+    const nextLead: 0 | 1 =
+      both && this.pairBaseSeqReady
+        ? dualHandForSeq((this.attackBeatSeq + 1) >>> 0, this.pairBaseSeq)
+        : 0;
+    const first: 0 | 1 = both ? nextLead : leadReady ? 0 : 1;
+    const second: 0 | 1 = first === 0 ? 1 : 0;
+    const start = (hand: 0 | 1, atMs: number): void => {
+      const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
+      if (!spec) return;
+      this.startFlourishChannel(hand, "after-attack", atMs, spec);
+      this.flourishArms[hand].armed = false;
+      this.flourishStreaks[hand].count = 0;
+      if (spec.family === "tome" && this.tome) {
+        this.tome.pendingPage = true;
+        this.tome.pendingPageAtMs = atMs + 55;
+        this.tome.pendingPageSeq = this.attackBeatSeq;
+        this.tome.openAtMs = Math.min(this.tome.openAtMs, atMs);
+        this.tome.openUntilMs = Math.max(
+          this.tome.openUntilMs,
+          atMs + spec.afterAttack.timing.durationMs,
+        );
+      }
+    };
+    start(first, sceneNow);
+    if (both) start(second, sceneNow + FLOURISH_DUAL_AFTER_ECHO_MS);
+  }
+
+  private sampleFlourishChannel(
+    hand: 0 | 1,
+    sceneNow: number,
+    aimLocal: number,
+    reducedMotion: boolean,
+  ): FlourishSample {
+    const channel = this.flourishChannels[hand];
+    const input = this.flourishInputs[hand];
+    const out = this.flourishSamples[hand];
+    input.spec = this.beatFor(channel.spec, channel.moment);
+    input.moment = channel.moment;
+    input.elapsedMs = channel.active ? sceneNow - channel.startMs : -1;
+    input.aimLocal = aimLocal;
+    input.hand = hand;
+    input.reducedMotion = reducedMotion;
+    input.rotationSign = channel.rotationSign;
+    sampleFlourish(input, out);
+    if (channel.active && !out.active && input.elapsedMs >= 0) {
+      channel.active = false;
+      if (channel.moment === "idle-settle") this.idleFlourishLastPlayedMs = sceneNow;
+    }
+    return out;
+  }
+
+  private updateStowProxies(sceneNow: number, reducedMotion: boolean): void {
+    for (let index = 0; index < this.stowProxies.length; index++) {
+      const hand = index as 0 | 1;
+      const proxy = this.stowProxies[hand];
+      const img = proxy.img;
+      if (!img) continue;
+      if (sceneNow >= proxy.destroyAtMs) {
+        this.destroyStowProxy(proxy);
+        continue;
+      }
+      const input = this.stowInputs[hand];
+      const out = this.stowSamples[hand];
+      input.spec = proxy.spec.stow;
+      input.moment = "stow";
+      input.elapsedMs = sceneNow - proxy.startMs;
+      input.aimLocal = proxy.aimLocal;
+      input.hand = hand;
+      input.reducedMotion = reducedMotion;
+      input.rotationSign = proxy.rotationSign;
+      sampleFlourish(input, out);
+      if (!out.active && input.elapsedMs >= 0) {
+        this.destroyStowProxy(proxy);
+        continue;
+      }
+      if (!out.active) continue;
+      const c = Math.cos(proxy.aimLocal);
+      const s = Math.sin(proxy.aimLocal);
+      const dx = (c * out.proxyForward - s * out.proxyLateral) * TARGET_BODY_H;
+      const dy = (s * out.proxyForward + c * out.proxyLateral) * TARGET_BODY_H;
+      img
+        .setPosition(proxy.x + dx, proxy.y + dy)
+        .setRotation(proxy.rotation + out.proxyRotationRad)
+        .setScale(proxy.scaleX, proxy.scaleY)
+        .setAlpha(out.proxyAlpha);
+      if (!this.flourishChannels[0].active && !this.flourishChannels[1].active) {
+        const bodyDx = (c * out.bodyForward - s * out.bodyLateral) * TARGET_BODY_H;
+        const bodyDy = (s * out.bodyForward + c * out.bodyLateral) * TARGET_BODY_H;
+        this.body.x += bodyDx;
+        this.body.y += bodyDy;
+        this.body.rotation += this.facing * out.bodyTurn;
+        const footDx = (c * out.footForward - s * out.footLateral) * TARGET_BODY_H;
+        const footDy = (s * out.footForward + c * out.footLateral) * TARGET_BODY_H;
+        for (const foot of this.feet) {
+          const footSide = foot.front ? 1 : -0.72;
+          foot.img.x += footDx * footSide;
+          foot.img.y += footDy * footSide;
+        }
+        this.flourishHeadX = c * out.headForwardPx - s * out.headLateralPx;
+        this.flourishHeadY = s * out.headForwardPx + c * out.headLateralPx;
+      }
+    }
   }
 
   /** Allocation-free lifetime reset; the next authored anchors rebase before any excitation is accepted. */
@@ -2614,6 +3116,7 @@ export class SpriteRig {
 
   /** Arrival envelope is evaluated by `animate()` so facing, combo poses, and jiggle keep transform ownership. */
   playSpawnUnfold(timeMs: number, durationMs = 220): void {
+    this.resetFlourishState(false);
     this.foldStartMs = -1;
     this.foldHiddenUntilMs = -1;
     this.spawnDurationMs = Math.max(1, durationMs);
@@ -2625,6 +3128,7 @@ export class SpriteRig {
 
   /** Cosmetic-only departure twin of `playSpawnUnfold`; teleport ownership stays entirely server-side. */
   playFoldUp(timeMs: number, durationMs = 120): void {
+    this.cancelFlourish("scene-fold");
     this.spawnStartMs = -1;
     this.foldStartMs = timeMs;
     this.foldDurationMs = Math.max(1, durationMs);
@@ -2663,6 +3167,7 @@ export class SpriteRig {
 
   /** Immediate key response only: authoritative phase replaces this as soon as the row advances. */
   triggerUltimateWindup(timeMs: number, family: UltimateFamilyValue): void {
+    this.cancelFlourish("ultimate-input");
     this.ultimateInputAtMs = timeMs;
     this.ultimateInputFamily = family;
   }
@@ -2675,6 +3180,7 @@ export class SpriteRig {
     reducedMotion: boolean,
   ): void {
     const changed = family !== this.ultimateFamily || phase !== this.ultimatePhase;
+    if (phase !== UltimatePhase.Idle) this.cancelFlourish("ultimate");
     this.ultimateFamily = family;
     this.ultimatePhase = phase;
     this.ultimateProgress = clamp01(progress);
@@ -2685,6 +3191,7 @@ export class SpriteRig {
 
   /** §20 detached death: crumple, through-plane flutter, tear, or the cheap overflow/pit fold. */
   deathPop(vx: number, vy: number, treatment: PaperDeathTreatment = "flutter"): void {
+    this.resetFlourishState(true);
     this.resetSwingCombo();
     this.resetSecondaryMotion();
     this.clearMeleeTellState();
@@ -2837,7 +3344,10 @@ export class SpriteRig {
   /** Scale the whole rig UNIFORMLY (bosses/toughs are BIGGER, not more detailed — §28.6). Stored so
    *  `animate()` re-applies it to both axes (the facing flip only touches scaleX). */
   setRigScale(mult: number): void {
-    if (mult !== this.baseScale) this.resetSecondaryMotion();
+    if (mult !== this.baseScale) {
+      this.resetFlourishState(false);
+      this.resetSecondaryMotion();
+    }
     this.baseScale = mult;
     this.root.setScale(mult);
   }
@@ -3012,11 +3522,11 @@ export class SpriteRig {
   private presentationClockNow(): number {
     const sceneClock = (this.scene as RigAttackPresentationScene).animClock;
     if (typeof sceneClock === "number" && Number.isFinite(sceneClock)) return sceneClock;
-    return this.prevAnimMs >= 0 ? this.prevAnimMs : this.scene.time.now;
+    return this.prevAnimMs >= 0 ? this.prevAnimMs : (this.scene.time?.now ?? 0);
   }
 
   private presentationEpochForWallEpoch(epochMs: number): number {
-    const wallNow = this.scene.time.now;
+    const wallNow = this.scene.time?.now ?? 0;
     const arena = this.scene as RigAttackPresentationScene;
     const freezeHolding = (arena.frozenUntil ?? -Infinity) > wallNow || arena.wasFrozen === true;
     // A beat accepted while presentation is held begins at the held phase. Authoritative simulation still
@@ -3203,6 +3713,7 @@ export class SpriteRig {
     const acceptedWallEpochMs = epochMs;
     epochMs = this.presentationEpochForWallEpoch(epochMs);
     const beat = seq >>> 0;
+    let advanced = false;
     if (held) {
       this.holdRangedAim(epochMs, ATTACK_HELD_WINDOW * TICK_MS + RANGED_AIM_LINGER_MS);
     }
@@ -3213,9 +3724,23 @@ export class SpriteRig {
     } else {
       const advance = (beat - this.attackBeatSeq) >>> 0;
       if (advance > 0 && advance < 0x80000000) {
+        advanced = true;
         this.attackBeatSeq = beat;
         this.attackBeatWallEpochMs = acceptedWallEpochMs;
       }
+    }
+
+    if (
+      advanced &&
+      this.weaponDef &&
+      (this.weaponDef.gun || this.weaponDef.cast || this.weaponDef.beam)
+    ) {
+      const hand: 0 | 1 =
+        this.weapons.length > 1 && this.pairBaseSeqReady
+          ? dualHandForSeq(beat, this.pairBaseSeq)
+          : 0;
+      this.cancelForAcceptedRangedBeat(hand);
+      this.recordAcceptedRangedBeat(hand, epochMs);
     }
 
     const tome = this.tome;
@@ -3442,6 +3967,18 @@ export class SpriteRig {
     const manifest = lead.manifest;
     const previousKey = this.loadoutKey;
     const previousPaired = this.weapons.length > 1;
+    const flourishSwapPending = this.pendingSwapKey.length > 0;
+    if (!flourishSwapPending) {
+      this.resetFlourishState(true);
+      this.lastSwapKey = "";
+      this.lastSwapObservedKey = "";
+    } else {
+      for (const streak of this.flourishStreaks) {
+        streak.count = 0;
+        streak.lastAcceptedMs = -1e9;
+        streak.weaponId = "";
+      }
+    }
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
@@ -3555,7 +4092,12 @@ export class SpriteRig {
       this.setupTomeVisual(spriteId, def, partTexture(this.scene, spriteId, firstPart.role));
     }
     this.refreshPoseLanguageSelection(false, true);
-    if (backWpn && previousKey.length > 0 && previousKey !== this.loadoutKey) {
+    if (
+      backWpn &&
+      previousKey.length > 0 &&
+      previousKey !== this.loadoutKey &&
+      !flourishSwapPending
+    ) {
       this.pairCeremonyStartMs = this.presentationClockNow();
       this.flash(90);
       const audio = this.scene.game.registry.get("audio") as
@@ -3563,6 +4105,10 @@ export class SpriteRig {
         | undefined;
       audio?.play?.("pair", { x: this.root.x, amt: this.isSelf ? 1 : 0.65 });
     }
+    if (flourishSwapPending) this.completePendingWeaponSwap();
+    else
+      this.idleFlourishEligibleAtMs =
+        this.presentationClockNow() + 1600 + this.idleFlourishOffsetMs;
   }
 
   /** Start a swing animation (damage is server-authoritative). `timeMs` is the accepted/predicted Phaser
@@ -3574,6 +4120,8 @@ export class SpriteRig {
     handOverride?: RigSwingHand,
     pairStepOverride?: number,
   ): void {
+    this.cancelFlourish("attack-input");
+    for (const streak of this.flourishStreaks) streak.count = 0;
     const acceptedAtMs = this.hasAttackBeatSeq ? this.attackBeatWallEpochMs : timeMs;
     timeMs = this.presentationEpochForWallEpoch(timeMs);
     const requestedSwing =
@@ -3620,6 +4168,9 @@ export class SpriteRig {
     }
     const handIndex: 0 | 1 = swingHand === 1 ? 1 : 0;
     const activeDef = this.weapons[handIndex]?.def ?? this.weaponDef;
+    let terminalFlourishHand: 0 | 1 | undefined;
+    const terminalPairBar =
+      pairedMelee && isTerminalFlourishStep(pairStep, DUAL_MELEE_PAIR_BAR.length);
     let nextSwing: RigSwingDescriptor | undefined;
     if (activeDef) {
       const effectiveCooldown = requestedSwing?.effectiveCooldown ?? activeDef.cooldown;
@@ -3706,6 +4257,7 @@ export class SpriteRig {
       // comboStepForAttackSeq(this.attackBeatSeq, sequence.length); weapon/family/time now own the chain.
       const authored = sequence[step];
       if (authored) {
+        if (isTerminalFlourishStep(step, sequence.length)) terminalFlourishHand = handIndex;
         // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
         // grace. Early buffered requests only reach this method when locally fired; Stage 2 will reconcile
         // this same `(weapon,family,step)` snapshot from authoritative swingSeq/comboStep.
@@ -3766,6 +4318,20 @@ export class SpriteRig {
         this.observedSourceHand = handIndex;
         this.observedSourceFlash.setFillStyle(color, 0.88);
         this.observedSourceRing.setStrokeStyle(2, color, 0.9);
+      }
+    }
+    if (nextSwing && activeDef) {
+      const earliestStartMs = timeMs + nextSwing.poseSeconds * 1000 + 90;
+      if (terminalPairBar) {
+        const leadDef = this.weapons[0]?.def;
+        const offDef = this.weapons[1]?.def;
+        if (leadDef) this.armAfterAttack(0, earliestStartMs, leadDef);
+        if (offDef) this.armAfterAttack(1, earliestStartMs, offDef);
+      } else if (
+        terminalFlourishHand !== undefined ||
+        weaponPoseSpecFor(activeDef, this.poseVariants).family === "thrown"
+      ) {
+        this.armAfterAttack(terminalFlourishHand ?? handIndex, earliestStartMs, activeDef);
       }
     }
   }
@@ -3879,6 +4445,7 @@ export class SpriteRig {
    *  a guard, and dip into a brace, held ~the i-frame window. Purely a STANCE (no VFX yet; on-parry
    *  effects arrive with the level-up parry augments). */
   triggerBrace(timeMs: number): void {
+    this.cancelFlourish("brace");
     // §7 v0.105 de-clunk: on a CHAIN parry (a press landing while the guard is still up), don't restart the
     // envelope from 0 — that re-ramps the raise over ~81ms and flickers the guard OFF for a frame right in
     // the Sekiro rhythm. Restart at the PLATEAU time instead so the guard holds continuously.
@@ -3904,6 +4471,7 @@ export class SpriteRig {
   setDowned(on: boolean): void {
     if (on === this.downed) return;
     this.downed = on;
+    this.resetFlourishState(true);
     this.resetSecondaryMotion();
     if (on) {
       this.resetSwingCombo(); // §45 a down/death boundary cannot bank a held finisher for revival
@@ -4178,7 +4746,13 @@ export class SpriteRig {
 
   /** Drop to EMPTY HANDS (the §9 fists fallback) — clears any held weapon sprite but keeps `def` so the
    *  unarmed swing still animates with the fists range/arc. Used when a weapon is dropped/salvaged. */
-  unequip(def: WeaponDef): void {
+  unequip(def: WeaponDef, preservePendingSwap = false): void {
+    if (!preservePendingSwap) this.resetFlourishState(true);
+    else {
+      if (this.pendingSwapKey) this.pendingSwapEpochMs = Number.NaN;
+      for (const channel of this.flourishChannels) channel.active = false;
+      for (const arm of this.flourishArms) arm.armed = false;
+    }
     this.destroyMeleeTellLayers();
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
@@ -4199,6 +4773,7 @@ export class SpriteRig {
   }
 
   destroy(): void {
+    this.resetFlourishState(true);
     this.gearBakeGeneration++;
     // §20 the delayed callback closes over this rig; detach it before destroying the visible hierarchy.
     this.flashTimer?.remove(false);
@@ -6380,13 +6955,15 @@ export class SpriteRig {
     const input = this.floatingHeadSpringInput;
     input.targetX = targetX;
     input.targetY = targetY;
-    input.authoredOffsetX = this.floatingHeadAttackLead.x - directionX * stanceLag;
+    input.authoredOffsetX =
+      this.floatingHeadAttackLead.x - directionX * stanceLag + this.flourishHeadX;
     input.authoredOffsetY =
       sampleFloatingHeadWalkBob(stridePhase, gait, reducedMotion) +
       this.floatingHeadAttackLead.y -
       directionY * stanceLag * 0.7 -
       FLOATING_HEAD_SPRING_TUNING.airHangPx * airMix +
-      FLOATING_HEAD_SPRING_TUNING.landingDipPx * this.landSquash;
+      FLOATING_HEAD_SPRING_TUNING.landingDipPx * this.landSquash +
+      this.flourishHeadY;
     input.impulseX = -localSpringSignalX * 72 * elapsedSeconds;
     input.impulseY =
       -springSignalY * 64 * elapsedSeconds +
@@ -6625,6 +7202,55 @@ export class SpriteRig {
         this.root.y < view.top - JIGGLE_LOD_MARGIN_PX ||
         this.root.y > view.bottom + JIGGLE_LOD_MARGIN_PX);
     const jiggleLodSkip = PROCEDURAL_JIGGLE && outsidePaperView;
+    const currentMoveLength = Math.hypot(anim.moveX, anim.moveY);
+    const currentMoveActive = currentMoveLength > 0.15 || (anim.speed ?? 0) > MOVE_SPEED * 0.12;
+    const currentMoveX = currentMoveLength > 0.001 ? anim.moveX / currentMoveLength : 0;
+    const currentMoveY = currentMoveLength > 0.001 ? anim.moveY / currentMoveLength : 0;
+    const flourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
+    const flourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
+    const movementOnset = flourishActive && !this.flourishMoveWasActive && currentMoveActive;
+    const hardDirectionChange =
+      flourishActive &&
+      this.flourishMoveWasActive &&
+      currentMoveActive &&
+      currentMoveX * this.flourishMoveX + currentMoveY * this.flourishMoveY < 0.45;
+    const reducedMotion = anim.reducedMotion === true;
+    if (!this.flourishReducedReady) {
+      this.flourishReducedMotion = reducedMotion;
+      this.flourishReducedReady = true;
+    } else if (this.flourishReducedMotion !== reducedMotion) {
+      this.flourishReducedMotion = reducedMotion;
+      if (flourishActive) {
+        for (const channel of this.flourishChannels) if (channel.active) channel.startMs = sceneNow;
+      }
+      for (const proxy of this.stowProxies) if (proxy.img) proxy.startMs = sceneNow;
+    }
+    const beamEnded = this.flourishFireHeld && !anim.fireHeld && !!this.weaponDef?.beam;
+    this.flourishFireHeld = anim.fireHeld === true;
+    if (currentMoveActive || anim.fireHeld) {
+      this.idleFlourishEligibleAtMs = sceneNow + 1600 + this.idleFlourishOffsetMs;
+    }
+    if (
+      outsidePaperView ||
+      rootCut ||
+      rawDtMs <= 0 ||
+      rawDtMs > JIGGLE_MAX_DT_S * 1000 ||
+      this.downed ||
+      this.ultimatePhase !== UltimatePhase.Idle
+    ) {
+      this.resetFlourishState(false);
+    } else if (
+      anim.fireHeld ||
+      movementOnset ||
+      hardDirectionChange ||
+      (flourishArmed && currentMoveActive) ||
+      (anim.moveStance ?? STANCE_NONE) !== STANCE_NONE
+    ) {
+      this.cancelFlourish("anim-input");
+    }
+    if (beamEnded && !outsidePaperView && this.weaponDef) {
+      this.armAfterAttack(0, sceneNow + 90, this.weaponDef);
+    }
     this.flushObservedAttackSignature(sceneNow, outsidePaperView);
     this.prepareTomeVisual(sceneNow, outsidePaperView);
 
@@ -6866,6 +7492,7 @@ export class SpriteRig {
     let ownBack = 0;
     let ownFeet = 0;
     let rangedAimBlend = 0;
+    let activeBladeStance: BladeSizeStance | undefined;
     const leadFiringStance = this.weaponDef ? firingStanceFor(this.weaponDef) : undefined;
     const hasAimedFiringWeapon = this.weapons.some((weapon) => usesAimedFiringStance(weapon.def));
     this.orbitT = -1; // §40 re-armed below only while an orbit-style swing window is live
@@ -7921,6 +8548,183 @@ export class SpriteRig {
       poseImpulsePending(sceneNow, this.gunRecoilAtMs, this.poseRecoilConsumedAtMs);
     if (poseRecoilImpulse) this.poseRecoilConsumedAtMs = this.gunRecoilAtMs;
 
+    const crossfallOwnsFlourish =
+      this.crossfallActive &&
+      (posePhase !== "idle" || ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01);
+    const strongerFlourishOwner =
+      meleePoseActive ||
+      this.closeBladePoseActive ||
+      crossfallOwnsFlourish ||
+      brace > 0 ||
+      posePhase !== "idle" ||
+      rangedAimBlend > 0 ||
+      (!hasAimedFiringWeapon && (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
+    if (
+      strongerFlourishOwner &&
+      (this.flourishChannels[0].active || this.flourishChannels[1].active)
+    ) {
+      this.cancelFlourish("stronger-owner");
+    }
+    const quietForEarnedFlourish =
+      !strongerFlourishOwner &&
+      !currentMoveActive &&
+      !anim.fireHeld &&
+      this.moveStance === STANCE_NONE &&
+      !outsidePaperView &&
+      !this.downed;
+    if (quietForEarnedFlourish) this.tryStartArmedFlourish(sceneNow);
+
+    const anyFlourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
+    const anyFlourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
+    const anyStowActive = !!this.stowProxies[0].img || !!this.stowProxies[1].img;
+    if (
+      !reducedMotion &&
+      !outsidePaperView &&
+      !strongerFlourishOwner &&
+      !anyFlourishActive &&
+      !anyFlourishArmed &&
+      !anyStowActive &&
+      gait < 0.12 &&
+      !currentMoveActive &&
+      !anim.fireHeld &&
+      !this.comboHoldPose &&
+      sceneNow >= this.idleFlourishEligibleAtMs &&
+      sceneNow - this.idleFlourishLastPlayedMs >= 6500 &&
+      this.flourishLeadSpec?.idleSettle
+    ) {
+      this.startFlourishChannel(0, "idle-settle", sceneNow, this.flourishLeadSpec);
+      this.idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
+    }
+
+    const bladeFamily = this.poseLeadSpec?.family;
+    const bladeStanceEligible =
+      !strongerFlourishOwner &&
+      (bladeFamily === "one-hand-blade" || bladeFamily === "two-hand-sword");
+    if (bladeStanceEligible) {
+      activeBladeStance = BLADE_SIZE_STANCES[this.poseLeadBladeSize];
+      let bladeTarget = heldAimLocal + activeBladeStance.restAngleRad;
+      if (
+        (this.poseLeadBladeSize === "great" || this.poseLeadBladeSize === "colossal") &&
+        gait > 0.2 &&
+        currentMoveActive
+      ) {
+        const reverseMoveLocal = Math.atan2(anim.moveY, anim.moveX * this.facing) + Math.PI;
+        const movementBias = clamp01((gait - 0.2) / 0.8) * 0.68;
+        bladeTarget = mixAngle(bladeTarget, reverseMoveLocal, movementBias);
+        const trailDirection = Math.sign(
+          Math.atan2(
+            Math.sin(reverseMoveLocal - bladeTarget),
+            Math.cos(reverseMoveLocal - bladeTarget),
+          ),
+        );
+        bladeTarget -= trailDirection * activeBladeStance.movementTrailRad * gait * 0.45;
+      }
+      if (!this.bladeNeutralReady) {
+        this.bladeNeutralAngle = bladeTarget;
+        this.bladeNeutralReady = true;
+      } else {
+        this.bladeNeutralAngle = stepAngleBounded(
+          this.bladeNeutralAngle,
+          bladeTarget,
+          Math.max(0.035, dtS * (gait > 0.2 ? 5.5 : 3.8)),
+        );
+      }
+      weaponAngle = this.bladeNeutralAngle;
+      if (this.poseTwoHanded)
+        this.attackHandSpacing = activeBladeStance.gripSpacing * TARGET_BODY_H;
+      aimRelativePoint(activeBladeStance.bodyForward, 0, heldAimLocal, this.posePoint);
+      this.body.x += this.posePoint.x * TARGET_BODY_H;
+      this.body.y += this.posePoint.y * TARGET_BODY_H;
+      this.body.rotation +=
+        this.facing * (activeBladeStance.bodyTurn - (this.poseLeadSample.bodyTurn || 0));
+      if (this.poseLeadBladeSize === "great" || this.poseLeadBladeSize === "colossal") {
+        this.body.y += gait * TARGET_BODY_H * 0.018;
+      }
+    }
+
+    this.flourishHeadX = 0;
+    this.flourishHeadY = 0;
+    if (!strongerFlourishOwner) {
+      const leadBaseAngle = weaponAngle;
+      const offBaseAngle = Number.isNaN(backWeaponAngle)
+        ? weaponAngle - this.offWeaponLean()
+        : backWeaponAngle;
+      let leadRotation = 0;
+      let offRotation = 0;
+      let leadRotates = false;
+      let offRotates = false;
+      const bothChannelsActive = this.flourishChannels[0].active && this.flourishChannels[1].active;
+      for (let index = 0; index < this.flourishChannels.length; index++) {
+        const hand = index as 0 | 1;
+        const sample = this.sampleFlourishChannel(hand, sceneNow, heldAimLocal, reducedMotion);
+        if (!sample.active) continue;
+        if (hand === 0) {
+          leadRotation = sample.weaponRotationRad;
+          leadRotates = true;
+        } else {
+          offRotation = sample.weaponRotationRad;
+          offRotates = true;
+        }
+        aimRelativePoint(sample.handForward, sample.handLateral, heldAimLocal, this.posePoint);
+        if (hand === 0) {
+          this.swingOffX += this.posePoint.x * TARGET_BODY_H;
+          this.swingOffY += this.posePoint.y * TARGET_BODY_H;
+          ownFront = Math.max(ownFront, sample.ownership);
+        } else {
+          this.swingBackOffX += this.posePoint.x * TARGET_BODY_H;
+          this.swingBackOffY += this.posePoint.y * TARGET_BODY_H;
+          ownBack = Math.max(ownBack, sample.ownership);
+        }
+        if (!bothChannelsActive) {
+          aimRelativePoint(
+            sample.supportHandForward,
+            sample.supportHandLateral,
+            heldAimLocal,
+            this.posePoint,
+          );
+          if (hand === 0) {
+            this.swingBackOffX += this.posePoint.x * TARGET_BODY_H;
+            this.swingBackOffY += this.posePoint.y * TARGET_BODY_H;
+            ownBack = Math.max(ownBack, sample.ownership * 0.86);
+          } else {
+            this.swingOffX += this.posePoint.x * TARGET_BODY_H;
+            this.swingOffY += this.posePoint.y * TARGET_BODY_H;
+            ownFront = Math.max(ownFront, sample.ownership * 0.86);
+          }
+        }
+        const bodyShare = bothChannelsActive ? 0.58 : 1;
+        aimRelativePoint(sample.bodyForward, sample.bodyLateral, heldAimLocal, this.posePoint);
+        this.body.x += this.posePoint.x * TARGET_BODY_H * bodyShare;
+        this.body.y += this.posePoint.y * TARGET_BODY_H * bodyShare;
+        this.body.rotation += this.facing * sample.bodyTurn * bodyShare;
+        aimRelativePoint(sample.footForward, sample.footLateral, heldAimLocal, this.posePoint);
+        this.attackFrontFootX += this.posePoint.x * TARGET_BODY_H * bodyShare;
+        this.attackFrontFootY += this.posePoint.y * TARGET_BODY_H * bodyShare;
+        this.attackBackFootX -= this.posePoint.x * TARGET_BODY_H * 0.72 * bodyShare;
+        this.attackBackFootY -= this.posePoint.y * TARGET_BODY_H * 0.72 * bodyShare;
+        this.attackFrontFootBlend = Math.max(this.attackFrontFootBlend, sample.ownership);
+        this.attackBackFootBlend = Math.max(this.attackBackFootBlend, sample.ownership * 0.9);
+        ownFeet = Math.max(ownFeet, sample.ownership * 0.9);
+        this.attackLiftPx += sample.paperHop * TARGET_BODY_H * bodyShare;
+        aimRelativePoint(
+          sample.headForwardPx / TARGET_BODY_H,
+          sample.headLateralPx / TARGET_BODY_H,
+          heldAimLocal,
+          this.posePoint,
+        );
+        this.flourishHeadX += this.posePoint.x * TARGET_BODY_H * bodyShare;
+        this.flourishHeadY += this.posePoint.y * TARGET_BODY_H * bodyShare;
+      }
+      if (leadRotates) weaponAngle = leadBaseAngle + leadRotation;
+      if (offRotates) backWeaponAngle = offBaseAngle + offRotation;
+      const headMagnitude = Math.hypot(this.flourishHeadX, this.flourishHeadY);
+      if (headMagnitude > 3.5) {
+        const headScale = 3.5 / headMagnitude;
+        this.flourishHeadX *= headScale;
+        this.flourishHeadY *= headScale;
+      }
+    }
+
     // Brace overrides the swing with the same aim-relative forward guard used by neutral/held poses.
     if (brace > 0) {
       ownFront = 1;
@@ -8040,6 +8844,16 @@ export class SpriteRig {
       if (hnd.front && anim.isSelf && Math.abs(anim.aimX) + Math.abs(anim.aimY) > 0.01) {
         hx += anim.aimX * this.facing * reach; // aim reach is DIRECT (no spring) so the barrel tracks true
         hy += anim.aimY * reach;
+      }
+      if (activeBladeStance && hnd.front) {
+        aimRelativePoint(
+          activeBladeStance.handForward,
+          activeBladeStance.handLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        hx = this.body.x + this.posePoint.x * TARGET_BODY_H;
+        hy = this.body.y + this.posePoint.y * TARGET_BODY_H;
       }
       // §40.1/§45 each hand carries its authored style offset. Most attacks drive the front; alternating rake/
       // cross/scissor steps populate the rear channel. The 2H block below still chains the haft after this.
@@ -8192,6 +9006,16 @@ export class SpriteRig {
         );
         fx += this.posePoint.x * TARGET_BODY_H * this.poseLeadSample.footBlend;
         fy += this.posePoint.y * TARGET_BODY_H * this.poseLeadSample.footBlend;
+      }
+      if (activeBladeStance) {
+        aimRelativePoint(
+          ft.front ? activeBladeStance.frontFootForward : activeBladeStance.backFootForward,
+          ft.front ? activeBladeStance.frontFootLateral : activeBladeStance.backFootLateral,
+          heldAimLocal,
+          this.posePoint,
+        );
+        fx = ft.ox + this.posePoint.x * TARGET_BODY_H;
+        fy = ft.oy + this.posePoint.y * TARGET_BODY_H;
       }
       const footBlend = ft.front
         ? clamp01(this.attackFrontFootBlend)
@@ -8499,6 +9323,7 @@ export class SpriteRig {
         weapon.img.rotation += weaponRotation;
       }
     }
+    this.updateStowProxies(sceneNow, reducedMotion);
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
     const localMoveX = anim.moveX * this.facing;

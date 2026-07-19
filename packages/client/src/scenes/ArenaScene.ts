@@ -3137,7 +3137,11 @@ export class ArenaScene extends Phaser.Scene {
     this.room.state.players.forEach((player, id) => {
       const rig = this.blobs.get(id);
       if (!rig) return;
-      if (this.equipped.get(id) === player.weapon) return;
+      const previousWeaponId = this.equipped.get(id);
+      if (previousWeaponId === player.weapon) return;
+      if (previousWeaponId) {
+        rig.beginWeaponSwap(previousWeaponId, player.weapon, this.animClock);
+      }
       const def = WEAPONS[player.weapon];
       // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
       const spriteId = def?.sprite ?? player.weapon;
@@ -3149,7 +3153,7 @@ export class ArenaScene extends Phaser.Scene {
           // §7 v0.105 de-clunk: don't keep drawing + SWINGING the OLD weapon while the new art loads (the rig
           // was mid-swap running the stale weapon's timing during the loot celebration). Drop to the new
           // weapon's empty-hands pose now; the sprite pops in a beat later once its art lands.
-          rig.unequip(def);
+          rig.unequip(def, true);
           return;
         }
         rig.equipWeapon(spriteId, def, manifest);
@@ -3160,7 +3164,8 @@ export class ArenaScene extends Phaser.Scene {
         );
         this.equipped.set(id, player.weapon);
       } else if (def) {
-        rig.unequip(def); // §9 fists / missing-art fallback / no held sprite → empty hands
+        rig.unequip(def, !!previousWeaponId); // §9 fists / missing-art fallback / no held sprite → empty hands
+        rig.finishWeaponSwapWithoutArt();
         this.equipped.set(id, player.weapon);
       }
     });

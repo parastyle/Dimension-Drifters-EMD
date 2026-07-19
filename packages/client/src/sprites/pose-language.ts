@@ -615,6 +615,704 @@ export function weaponPoseSpecFor(
   return WEAPON_POSE_SPECS[family];
 }
 
+export type FlourishMoment = "draw" | "stow" | "after-attack" | "idle-settle";
+export type FlourishPhase = "anticipation" | "statement" | "catch";
+export type BladeSizeClass = "short" | "standard" | "great" | "colossal";
+export const FLOURISH_DUAL_DRAW_ECHO_MS = 50;
+export const FLOURISH_DUAL_STOW_ECHO_MS = 45;
+export const FLOURISH_DUAL_AFTER_ECHO_MS = 55;
+
+export interface FlourishTiming {
+  readonly durationMs: number;
+  readonly statementAtMs: number;
+  readonly catchAtMs: number;
+}
+
+export interface FlourishBeatSpec {
+  readonly timing: FlourishTiming;
+  /** Signed semantic arc. The sampler deliberately leaves it unwrapped. */
+  readonly rotationRad: number;
+  readonly overshootRad: number;
+  readonly handForward: number;
+  readonly handLateral: number;
+  readonly bodyForward: number;
+  readonly bodyLateral: number;
+  readonly bodyTurn: number;
+  readonly footForward: number;
+  readonly footLateral: number;
+  readonly paperHop: number;
+  readonly headForwardPx: number;
+  readonly headLateralPx: number;
+}
+
+export interface WeaponFlourishSpec {
+  readonly family: WeaponPoseFamily;
+  readonly draw: FlourishBeatSpec;
+  readonly stow: FlourishBeatSpec;
+  readonly afterAttack: FlourishBeatSpec;
+  readonly idleSettle?: FlourishBeatSpec;
+  readonly streakThreshold: number;
+}
+
+export interface BladeSizeStance {
+  readonly sizeClass: BladeSizeClass;
+  /** Semantic angle added to aim. Positive great/colossal values put the tip behind the body. */
+  readonly restAngleRad: number;
+  readonly handForward: number;
+  readonly handLateral: number;
+  readonly gripSpacing: number;
+  readonly bodyForward: number;
+  readonly bodyTurn: number;
+  readonly frontFootForward: number;
+  readonly frontFootLateral: number;
+  readonly backFootForward: number;
+  readonly backFootLateral: number;
+  readonly movementTrailRad: number;
+}
+
+function frozenTiming(
+  durationMs: number,
+  statementAtMs = Math.max(40, Math.round(durationMs * 0.15)),
+  catchAtMs = Math.round(durationMs * 0.74),
+): FlourishTiming {
+  return Object.freeze({ durationMs, statementAtMs, catchAtMs });
+}
+
+type BeatAccents = Omit<FlourishBeatSpec, "timing" | "rotationRad" | "overshootRad">;
+
+function flourishBeat(
+  durationMs: number,
+  rotationRad: number,
+  overshootDeg: number,
+  accents: BeatAccents,
+  statementAtMs?: number,
+  catchAtMs?: number,
+): FlourishBeatSpec {
+  return Object.freeze({
+    timing: frozenTiming(durationMs, statementAtMs, catchAtMs),
+    rotationRad,
+    overshootRad: rotationRad === 0 ? 0 : (overshootDeg * Math.PI) / 180,
+    ...accents,
+  });
+}
+
+const LIGHT_ACCENTS: BeatAccents = Object.freeze({
+  handForward: 0.12,
+  handLateral: 0.16,
+  bodyForward: 0.012,
+  bodyLateral: 0.014,
+  bodyTurn: 0.055,
+  footForward: 0.035,
+  footLateral: 0.035,
+  paperHop: 0.008,
+  headForwardPx: 1.7,
+  headLateralPx: 2.1,
+});
+const CLOSE_ACCENTS: BeatAccents = Object.freeze({
+  handForward: 0.1,
+  handLateral: 0.1,
+  bodyForward: 0.018,
+  bodyLateral: 0.01,
+  bodyTurn: 0.045,
+  footForward: 0.04,
+  footLateral: 0.03,
+  paperHop: 0,
+  headForwardPx: 1.2,
+  headLateralPx: 1.6,
+});
+const HEAVY_ACCENTS: BeatAccents = Object.freeze({
+  handForward: 0.18,
+  handLateral: 0.12,
+  bodyForward: 0.034,
+  bodyLateral: 0.018,
+  bodyTurn: 0.09,
+  footForward: 0.06,
+  footLateral: 0.055,
+  paperHop: 0.034,
+  headForwardPx: 2.4,
+  headLateralPx: 2.5,
+});
+const RANGED_ACCENTS: BeatAccents = Object.freeze({
+  handForward: 0.1,
+  handLateral: 0.13,
+  bodyForward: 0.01,
+  bodyLateral: 0.012,
+  bodyTurn: 0.05,
+  footForward: 0.035,
+  footLateral: 0.03,
+  paperHop: 0,
+  headForwardPx: 1.4,
+  headLateralPx: 1.8,
+});
+const MAGIC_ACCENTS: BeatAccents = Object.freeze({
+  handForward: 0.13,
+  handLateral: 0.14,
+  bodyForward: 0.016,
+  bodyLateral: 0.01,
+  bodyTurn: 0.04,
+  footForward: 0.025,
+  footLateral: 0.035,
+  paperHop: 0.012,
+  headForwardPx: 1.8,
+  headLateralPx: 1.7,
+});
+
+function flourishSpec(
+  family: WeaponPoseFamily,
+  durations: readonly [number, number, number, number],
+  arcs: readonly [number, number, number],
+  accents: BeatAccents,
+  threshold = 0,
+): WeaponFlourishSpec {
+  const drawCuts = family === "tome" ? ([70, 250] as const) : undefined;
+  const afterCuts =
+    family === "tome"
+      ? ([55, 235] as const)
+      : family === "pistol"
+        ? ([50, 255] as const)
+        : undefined;
+  return Object.freeze({
+    family,
+    draw: flourishBeat(
+      durations[0],
+      arcs[0],
+      family === "two-hand-sword" ? 14 : 10,
+      accents,
+      drawCuts?.[0],
+      drawCuts?.[1],
+    ),
+    stow: flourishBeat(durations[1], arcs[1], 9, accents),
+    afterAttack: flourishBeat(
+      durations[2],
+      arcs[2],
+      family === "two-hand-sword" ? 14 : family === "pistol" ? 12 : 11,
+      accents,
+      afterCuts?.[0],
+      afterCuts?.[1],
+    ),
+    idleSettle: flourishBeat(durations[3], 0, 0, accents),
+    streakThreshold: threshold,
+  });
+}
+
+/** Frozen family punctuation. Radians describe semantic prop travel; hand/body/foot/head accents sell it. */
+export const WEAPON_FLOURISH_SPECS: Readonly<Record<WeaponPoseFamily, WeaponFlourishSpec>> =
+  Object.freeze({
+    "one-hand-blade": flourishSpec(
+      "one-hand-blade",
+      [300, 155, 360, 220],
+      [Math.PI * 1.5, Math.PI * 0.65, Math.PI * 2],
+      LIGHT_ACCENTS,
+    ),
+    "close-blade": flourishSpec(
+      "close-blade",
+      [235, 135, 290, 190],
+      [Math.PI * 0.8, Math.PI * 0.42, Math.PI],
+      CLOSE_ACCENTS,
+    ),
+    "one-hand-blunt": flourishSpec(
+      "one-hand-blunt",
+      [325, 170, 330, 230],
+      [Math.PI * 1.25, Math.PI * 0.45, Math.PI * 1.5],
+      HEAVY_ACCENTS,
+    ),
+    fists: flourishSpec("fists", [210, 120, 250, 180], [0, 0, 0], CLOSE_ACCENTS),
+    pistol: flourishSpec(
+      "pistol",
+      [270, 145, 340, 210],
+      [Math.PI * 1.5, Math.PI * 0.45, Math.PI * 2],
+      RANGED_ACCENTS,
+      3,
+    ),
+    "fist-gun": flourishSpec("fist-gun", [240, 135, 290, 200], [0, 0, 0], CLOSE_ACCENTS, 4),
+    "long-gun": flourishSpec(
+      "long-gun",
+      [335, 180, 315, 250],
+      [Math.PI * 0.52, Math.PI * 0.32, 0],
+      RANGED_ACCENTS,
+      2,
+    ),
+    thrown: flourishSpec(
+      "thrown",
+      [255, 140, 350, 220],
+      [Math.PI * 0.65, Math.PI * 0.3, Math.PI],
+      LIGHT_ACCENTS,
+      1,
+    ),
+    focus: flourishSpec(
+      "focus",
+      [280, 150, 320, 240],
+      [Math.PI * 0.65, Math.PI * 0.4, 0],
+      MAGIC_ACCENTS,
+      3,
+    ),
+    tome: flourishSpec(
+      "tome",
+      [350, 175, 320, 250],
+      [Math.PI, Math.PI * 0.5, Math.PI * 0.55],
+      MAGIC_ACCENTS,
+      3,
+    ),
+    "two-hand-sword": flourishSpec(
+      "two-hand-sword",
+      [360, 190, 440, 290],
+      [Math.PI * 1.5, Math.PI * 0.7, Math.PI * 2],
+      HEAVY_ACCENTS,
+    ),
+    "two-hand-heavy": flourishSpec(
+      "two-hand-heavy",
+      [395, 195, 420, 280],
+      [Math.PI * 0.7, Math.PI * 0.42, Math.PI * 1.5],
+      HEAVY_ACCENTS,
+    ),
+    polearm: flourishSpec(
+      "polearm",
+      [350, 180, 395, 250],
+      [Math.PI * 1.35, Math.PI * 0.55, Math.PI * 1.5],
+      HEAVY_ACCENTS,
+    ),
+  });
+
+function retimeBeat(
+  beat: FlourishBeatSpec,
+  durationMs: number,
+  largeAfter = false,
+): FlourishBeatSpec {
+  return Object.freeze({
+    ...beat,
+    timing: frozenTiming(
+      durationMs,
+      largeAfter ? 70 : undefined,
+      largeAfter ? Math.round(durationMs * 0.76) : undefined,
+    ),
+  });
+}
+
+function sizedSwordSpec(sizeClass: BladeSizeClass): WeaponFlourishSpec {
+  const source = WEAPON_FLOURISH_SPECS["two-hand-sword"];
+  const drawDuration = { short: 320, standard: 350, great: 390, colossal: 420 }[sizeClass];
+  const afterDuration = { short: 380, standard: 420, great: 460, colossal: 480 }[sizeClass];
+  return Object.freeze({
+    ...source,
+    draw: retimeBeat(source.draw, drawDuration),
+    afterAttack: retimeBeat(
+      source.afterAttack,
+      afterDuration,
+      sizeClass === "great" || sizeClass === "colossal",
+    ),
+  });
+}
+
+const SIZED_SWORD_FLOURISH_SPECS: Readonly<Record<BladeSizeClass, WeaponFlourishSpec>> =
+  Object.freeze({
+    short: sizedSwordSpec("short"),
+    standard: sizedSwordSpec("standard"),
+    great: sizedSwordSpec("great"),
+    colossal: sizedSwordSpec("colossal"),
+  });
+
+function thresholdVariant(source: WeaponFlourishSpec, threshold: number): WeaponFlourishSpec {
+  return Object.freeze({ ...source, streakThreshold: threshold });
+}
+
+const LONG_GUN_FLOURISH_SPECS = Object.freeze({
+  "long-gun": thresholdVariant(WEAPON_FLOURISH_SPECS["long-gun"], 2),
+  "rapid-gun": thresholdVariant(WEAPON_FLOURISH_SPECS["long-gun"], 5),
+  scattergun: thresholdVariant(WEAPON_FLOURISH_SPECS["long-gun"], 1),
+  launcher: thresholdVariant(WEAPON_FLOURISH_SPECS["long-gun"], 1),
+});
+
+function beamFlourishSpec(source: WeaponFlourishSpec): WeaponFlourishSpec {
+  return Object.freeze({
+    ...source,
+    afterAttack: Object.freeze({
+      ...source.afterAttack,
+      rotationRad: 0,
+      overshootRad: 0,
+    }),
+    streakThreshold: 0,
+  });
+}
+
+const BEAM_FLOURISH_SPECS: Readonly<Record<WeaponPoseFamily, WeaponFlourishSpec>> = Object.freeze({
+  "one-hand-blade": beamFlourishSpec(WEAPON_FLOURISH_SPECS["one-hand-blade"]),
+  "close-blade": beamFlourishSpec(WEAPON_FLOURISH_SPECS["close-blade"]),
+  "one-hand-blunt": beamFlourishSpec(WEAPON_FLOURISH_SPECS["one-hand-blunt"]),
+  fists: beamFlourishSpec(WEAPON_FLOURISH_SPECS.fists),
+  pistol: beamFlourishSpec(WEAPON_FLOURISH_SPECS.pistol),
+  "fist-gun": beamFlourishSpec(WEAPON_FLOURISH_SPECS["fist-gun"]),
+  "long-gun": beamFlourishSpec(WEAPON_FLOURISH_SPECS["long-gun"]),
+  thrown: beamFlourishSpec(WEAPON_FLOURISH_SPECS.thrown),
+  focus: beamFlourishSpec(WEAPON_FLOURISH_SPECS.focus),
+  tome: beamFlourishSpec(WEAPON_FLOURISH_SPECS.tome),
+  "two-hand-sword": beamFlourishSpec(WEAPON_FLOURISH_SPECS["two-hand-sword"]),
+  "two-hand-heavy": beamFlourishSpec(WEAPON_FLOURISH_SPECS["two-hand-heavy"]),
+  polearm: beamFlourishSpec(WEAPON_FLOURISH_SPECS.polearm),
+});
+
+export const BLADE_SIZE_STANCES: Readonly<Record<BladeSizeClass, BladeSizeStance>> = Object.freeze({
+  short: Object.freeze({
+    sizeClass: "short",
+    restAngleRad: -0.56,
+    handForward: -0.015,
+    handLateral: 0.15,
+    gripSpacing: 0.34,
+    bodyForward: 0,
+    bodyTurn: 0.03,
+    frontFootForward: 0.045,
+    frontFootLateral: 0.035,
+    backFootForward: -0.045,
+    backFootLateral: -0.04,
+    movementTrailRad: (7 * Math.PI) / 180,
+  }),
+  standard: Object.freeze({
+    sizeClass: "standard",
+    restAngleRad: -0.26,
+    handForward: -0.035,
+    handLateral: 0.135,
+    gripSpacing: 0.38,
+    bodyForward: 0.008,
+    bodyTurn: 0.05,
+    frontFootForward: 0.055,
+    frontFootLateral: 0.05,
+    backFootForward: -0.065,
+    backFootLateral: -0.055,
+    movementTrailRad: (10 * Math.PI) / 180,
+  }),
+  great: Object.freeze({
+    sizeClass: "great",
+    restAngleRad: 2.75,
+    handForward: -0.075,
+    handLateral: 0.105,
+    gripSpacing: 0.42,
+    bodyForward: 0.018,
+    bodyTurn: 0.075,
+    frontFootForward: 0.04,
+    frontFootLateral: 0.065,
+    backFootForward: -0.1,
+    backFootLateral: -0.08,
+    movementTrailRad: (12 * Math.PI) / 180,
+  }),
+  colossal: Object.freeze({
+    sizeClass: "colossal",
+    restAngleRad: 3.02,
+    handForward: -0.11,
+    handLateral: 0.085,
+    gripSpacing: 0.48,
+    bodyForward: 0.04,
+    bodyTurn: 0.1,
+    frontFootForward: 0.025,
+    frontFootLateral: 0.075,
+    backFootForward: -0.12,
+    backFootLateral: -0.09,
+    movementTrailRad: (17 * Math.PI) / 180,
+  }),
+});
+
+/** Canonical migration order: richer tag, explicit Driftblade truth, then the current S/M/L/XL field. */
+export function bladeSizeClassFor(def: WeaponDef): BladeSizeClass {
+  const tags = def.tags as typeof def.tags & { readonly sizeClass?: BladeSizeClass };
+  const explicit = tags.sizeClass;
+  if (
+    explicit === "short" ||
+    explicit === "standard" ||
+    explicit === "great" ||
+    explicit === "colossal"
+  )
+    return explicit;
+  // The parallel catalog generator currently stages this field at WeaponDef root. Accept that emitted
+  // shape without weakening the documented tags-first contract; its temporary `long` lane stays forward.
+  const emitted = (def as WeaponDef & { readonly sizeClass?: BladeSizeClass | "long" }).sizeClass;
+  if (emitted === "long") return "standard";
+  if (
+    emitted === "short" ||
+    emitted === "standard" ||
+    emitted === "great" ||
+    emitted === "colossal"
+  )
+    return emitted;
+  if (def.id === "driftblade") return "great";
+  switch (tags.size) {
+    case "S":
+      return "short";
+    case "L":
+      return "great";
+    case "XL":
+      return "colossal";
+    default:
+      return "standard";
+  }
+}
+
+export function weaponFlourishSpecFor(def: WeaponDef): WeaponFlourishSpec {
+  const family = weaponPoseFamilyFor(def);
+  let spec = WEAPON_FLOURISH_SPECS[family];
+  if (family === "two-hand-sword") spec = SIZED_SWORD_FLOURISH_SPECS[bladeSizeClassFor(def)];
+  if (family === "long-gun") {
+    const firingFamily = firingStanceFamilyFor(def);
+    if (firingFamily in LONG_GUN_FLOURISH_SPECS) {
+      spec = LONG_GUN_FLOURISH_SPECS[firingFamily as keyof typeof LONG_GUN_FLOURISH_SPECS];
+    }
+  }
+  return def.beam ? BEAM_FLOURISH_SPECS[spec.family] : spec;
+}
+
+export interface FlourishInput {
+  spec: FlourishBeatSpec;
+  moment: FlourishMoment;
+  elapsedMs: number;
+  aimLocal: number;
+  hand: 0 | 1;
+  reducedMotion: boolean;
+  rotationSign: -1 | 1;
+}
+
+export interface FlourishSample {
+  active: boolean;
+  phase: FlourishPhase;
+  phaseT: number;
+  ownership: number;
+  settleOnly: boolean;
+  /** Unwrapped semantic rotation, including one separately exposed catch overshoot. */
+  weaponRotationRad: number;
+  catchOvershootRad: number;
+  handForward: number;
+  handLateral: number;
+  supportHandForward: number;
+  supportHandLateral: number;
+  bodyForward: number;
+  bodyLateral: number;
+  bodyTurn: number;
+  footForward: number;
+  footLateral: number;
+  paperHop: number;
+  headForwardPx: number;
+  headLateralPx: number;
+  proxyForward: number;
+  proxyLateral: number;
+  proxyRotationRad: number;
+  proxyAlpha: number;
+}
+
+export function createFlourishInput(): FlourishInput {
+  return {
+    spec: WEAPON_FLOURISH_SPECS["one-hand-blade"].draw,
+    moment: "draw",
+    elapsedMs: -1,
+    aimLocal: 0,
+    hand: 0,
+    reducedMotion: false,
+    rotationSign: 1,
+  };
+}
+
+export function createFlourishSample(): FlourishSample {
+  return {
+    active: false,
+    phase: "anticipation",
+    phaseT: 0,
+    ownership: 0,
+    settleOnly: false,
+    weaponRotationRad: 0,
+    catchOvershootRad: 0,
+    handForward: 0,
+    handLateral: 0,
+    supportHandForward: 0,
+    supportHandLateral: 0,
+    bodyForward: 0,
+    bodyLateral: 0,
+    bodyTurn: 0,
+    footForward: 0,
+    footLateral: 0,
+    paperHop: 0,
+    headForwardPx: 0,
+    headLateralPx: 0,
+    proxyForward: 0,
+    proxyLateral: 0,
+    proxyRotationRad: 0,
+    proxyAlpha: 0,
+  };
+}
+
+function clearFlourishSample(out: FlourishSample): FlourishSample {
+  out.active = false;
+  out.phase = "anticipation";
+  out.phaseT = 0;
+  out.ownership = 0;
+  out.settleOnly = false;
+  out.weaponRotationRad = 0;
+  out.catchOvershootRad = 0;
+  out.handForward = 0;
+  out.handLateral = 0;
+  out.supportHandForward = 0;
+  out.supportHandLateral = 0;
+  out.bodyForward = 0;
+  out.bodyLateral = 0;
+  out.bodyTurn = 0;
+  out.footForward = 0;
+  out.footLateral = 0;
+  out.paperHop = 0;
+  out.headForwardPx = 0;
+  out.headLateralPx = 0;
+  out.proxyForward = 0;
+  out.proxyLateral = 0;
+  out.proxyRotationRad = 0;
+  out.proxyAlpha = 0;
+  return out;
+}
+
+function flourishStatementEase(value: number): number {
+  const q = clamp01(value);
+  // Strictly increasing: derivative is 1 + .08*pi*cos(pi*q), whose minimum remains positive.
+  return q + 0.08 * Math.sin(Math.PI * q);
+}
+
+function flourishGestureAt(elapsedMs: number, timing: FlourishTiming): number {
+  if (elapsedMs <= 0) return 0;
+  if (elapsedMs < timing.statementAtMs) {
+    return -0.35 * smootherstepFlourish(elapsedMs / timing.statementAtMs);
+  }
+  if (elapsedMs < timing.catchAtMs) {
+    const q = (elapsedMs - timing.statementAtMs) / (timing.catchAtMs - timing.statementAtMs);
+    return -0.35 + 1.35 * flourishStatementEase(q);
+  }
+  const fadeAtMs = Math.round(timing.durationMs * 0.82);
+  return 1 - smootherstepFlourish((elapsedMs - timing.catchAtMs) / (fadeAtMs - timing.catchAtMs));
+}
+
+function smootherstepFlourish(value: number): number {
+  const q = clamp01(value);
+  return q * q * q * (q * (q * 6 - 15) + 10);
+}
+
+function reducedFlourishDuration(moment: FlourishMoment): number {
+  switch (moment) {
+    case "draw":
+      return 120;
+    case "stow":
+      return 100;
+    case "after-attack":
+      return 150;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Allocation-free flourish sampler. The statement angle is a single unwrapped monotonic arc; catch adds
+ * one overshoot and returns before ownership fades. Reduced motion takes a separate direct-settle path.
+ */
+export function sampleFlourish(input: FlourishInput, out: FlourishSample): FlourishSample {
+  clearFlourishSample(out);
+  const { elapsedMs, moment, spec } = input;
+  if (elapsedMs < 0) return out;
+
+  if (input.reducedMotion) {
+    const durationMs = reducedFlourishDuration(moment);
+    if (durationMs === 0 || elapsedMs >= durationMs) return out;
+    const q = clamp01(elapsedMs / durationMs);
+    const settle = 1 - smootherstepFlourish(q);
+    const side = input.hand === 0 ? 1 : -1;
+    out.active = true;
+    out.phase = "catch";
+    out.phaseT = q;
+    out.ownership = moment === "stow" ? 0 : q < 0.82 ? 1 : settle;
+    out.settleOnly = true;
+    out.handForward = -spec.handForward * 0.22 * settle;
+    out.handLateral = -spec.handLateral * side * 0.22 * settle;
+    out.supportHandForward = spec.handForward * 0.1 * settle;
+    out.supportHandLateral = spec.handLateral * side * 0.12 * settle;
+    out.bodyForward = -spec.bodyForward * 0.35 * settle;
+    out.bodyLateral = -spec.bodyLateral * side * 0.35 * settle;
+    out.bodyTurn = -spec.bodyTurn * input.rotationSign * 0.35 * settle;
+    out.footForward = spec.footForward * 0.2 * settle;
+    out.footLateral = spec.footLateral * side * 0.2 * settle;
+    out.proxyForward = -spec.handForward * 0.65 * q;
+    out.proxyLateral = -spec.handLateral * side * 0.65 * q;
+    out.proxyAlpha = moment === "stow" ? 1 - smootherstepFlourish(q) : 0;
+    return out;
+  }
+
+  const { timing } = spec;
+  if (elapsedMs >= timing.durationMs) return out;
+  const fadeAtMs = Math.round(timing.durationMs * 0.82);
+  const side = input.hand === 0 ? 1 : -1;
+  const sign = input.rotationSign;
+  let gesture: number;
+  let angle: number;
+  let overshoot = 0;
+
+  out.active = true;
+  out.proxyAlpha = 1;
+  if (elapsedMs < timing.statementAtMs) {
+    out.phase = "anticipation";
+    out.phaseT = elapsedMs / timing.statementAtMs;
+    const q = smootherstepFlourish(out.phaseT);
+    gesture = -0.35 * q;
+    angle = -spec.rotationRad * 0.06 * q;
+  } else if (elapsedMs < timing.catchAtMs) {
+    out.phase = "statement";
+    out.phaseT = (elapsedMs - timing.statementAtMs) / (timing.catchAtMs - timing.statementAtMs);
+    const q = flourishStatementEase(out.phaseT);
+    gesture = -0.35 + 1.35 * q;
+    angle = -spec.rotationRad * 0.06 + spec.rotationRad * 1.06 * q;
+  } else {
+    out.phase = "catch";
+    out.phaseT = (elapsedMs - timing.catchAtMs) / (timing.durationMs - timing.catchAtMs);
+    const exactCatchMs = Math.max(1, fadeAtMs - timing.catchAtMs);
+    const catchQ = clamp01((elapsedMs - timing.catchAtMs) / exactCatchMs);
+    const overshootQ =
+      catchQ < 0.5
+        ? smootherstepFlourish(catchQ * 2)
+        : 1 - smootherstepFlourish((catchQ - 0.5) * 2);
+    overshoot = spec.overshootRad * overshootQ;
+    angle = spec.rotationRad + overshoot;
+    gesture = 1 - smootherstepFlourish(catchQ);
+  }
+
+  const ownershipFade =
+    elapsedMs < fadeAtMs
+      ? 1
+      : 1 - smootherstepFlourish((elapsedMs - fadeAtMs) / (timing.durationMs - fadeAtMs));
+  out.ownership = moment === "stow" ? 0 : ownershipFade;
+  out.weaponRotationRad = (angle + (moment === "idle-settle" ? -angle : 0)) * sign;
+  out.catchOvershootRad = overshoot * sign;
+  out.handForward = spec.handForward * gesture;
+  out.handLateral = spec.handLateral * gesture * side;
+  out.supportHandForward = -spec.handForward * gesture * 0.48;
+  out.supportHandLateral = spec.handLateral * gesture * side * -0.62;
+
+  const bodyGesture = flourishGestureAt(elapsedMs - 28, timing);
+  out.bodyForward = spec.bodyForward * bodyGesture;
+  out.bodyLateral = spec.bodyLateral * bodyGesture * side;
+  out.bodyTurn = spec.bodyTurn * bodyGesture * sign;
+  out.footForward = spec.footForward * bodyGesture;
+  out.footLateral = spec.footLateral * bodyGesture * side;
+  out.paperHop = spec.paperHop * Math.max(0, bodyGesture);
+
+  const headGesture = flourishGestureAt(elapsedMs - 35, timing);
+  let headForward = spec.headForwardPx * headGesture;
+  let headLateral =
+    spec.headLateralPx *
+    side *
+    (out.phase === "statement" ? Math.sin(Math.PI * out.phaseT) : headGesture * 0.55);
+  const headMagnitude = Math.hypot(headForward, headLateral);
+  if (headMagnitude > 3.5) {
+    const headScale = 3.5 / headMagnitude;
+    headForward *= headScale;
+    headLateral *= headScale;
+  }
+  out.headForwardPx = headForward;
+  out.headLateralPx = headLateral;
+  out.proxyForward = spec.handForward * gesture;
+  out.proxyLateral = spec.handLateral * gesture * side;
+  out.proxyRotationRad = out.weaponRotationRad;
+  if (moment === "stow") {
+    out.proxyAlpha = 1 - smootherstepFlourish(elapsedMs / timing.durationMs);
+  }
+  return out;
+}
+
 export type PoseActionPhase = "idle" | "anticipation" | "active" | "recovery";
 export type PoseBeamPhase = "charging" | "active" | "overheated" | "cooling";
 

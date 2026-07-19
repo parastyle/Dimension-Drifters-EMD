@@ -89,3 +89,82 @@ describe("SpriteRig ranged pose-language handoff", () => {
     expect(Math.abs(released.offLateral)).toBeGreaterThan(Math.abs(braced.offLateral));
   });
 });
+
+// FLOURISH IMPLEMENTATION WAVE — append-only earned-edge and live-terminal coverage.
+describe("SpriteRig flourish eligibility math", () => {
+  it("arms a pistol hand on its third accepted edge and resets outside the cadence window", async () => {
+    const { flourishStreakWindowMs, nextFlourishStreakCount } = await import("./SpriteRig.js");
+    const windowMs = flourishStreakWindowMs(0.24);
+    expect(windowMs).toBeCloseTo(528, 10);
+    let count = 0;
+    let last = -1e9;
+    for (const acceptedAt of [1_000, 1_220, 1_440]) {
+      count = nextFlourishStreakCount(count, last, true, acceptedAt, windowMs);
+      last = acceptedAt;
+    }
+    expect(count).toBe(3);
+    expect(nextFlourishStreakCount(count, last, true, last + windowMs + 1, windowMs)).toBe(1);
+    expect(nextFlourishStreakCount(count, last, false, last + 1, windowMs)).toBe(1);
+  });
+
+  it("uses live three-step and six-step sequence lengths without a familiar hard-coded index", async () => {
+    const { isTerminalFlourishStep } = await import("./SpriteRig.js");
+    expect(isTerminalFlourishStep(0, 3)).toBe(false);
+    expect(isTerminalFlourishStep(1, 3)).toBe(false);
+    expect(isTerminalFlourishStep(2, 3)).toBe(true);
+    expect(isTerminalFlourishStep(4, 6)).toBe(false);
+    expect(isTerminalFlourishStep(5, 6)).toBe(true);
+  });
+});
+
+describe("SpriteRig flourish cancellation edge", () => {
+  it("drops every authored transform and outgoing proxy synchronously on input", async () => {
+    const { SpriteRig } = await import("./SpriteRig.js");
+    const destroyLeadProxy = vi.fn();
+    const rig = Object.create(SpriteRig.prototype) as {
+      flourishChannels: Array<{ active: boolean; startMs: number }>;
+      flourishArms: Array<{ armed: boolean; earliestStartMs: number; weaponId: string }>;
+      stowProxies: Array<{
+        img?: { destroy(): void };
+        startMs: number;
+        destroyAtMs: number;
+      }>;
+      flourishHeadX: number;
+      flourishHeadY: number;
+      flourishCancelGeneration: number;
+      idleFlourishEligibleAtMs: number;
+      idleFlourishOffsetMs: number;
+      presentationClockNow(): number;
+      cancelFlourish(reason?: string): void;
+      readonly flourishCancelEdge: number;
+    };
+    rig.flourishChannels = [
+      { active: true, startMs: 100 },
+      { active: true, startMs: 155 },
+    ];
+    rig.flourishArms = [
+      { armed: true, earliestStartMs: 220, weaponId: "lead" },
+      { armed: true, earliestStartMs: 275, weaponId: "off" },
+    ];
+    rig.stowProxies = [
+      { img: { destroy: destroyLeadProxy }, startMs: 100, destroyAtMs: 300 },
+      { startMs: -1e9, destroyAtMs: -1e9 },
+    ];
+    rig.flourishHeadX = 3;
+    rig.flourishHeadY = -2;
+    rig.flourishCancelGeneration = 0;
+    rig.idleFlourishEligibleAtMs = 0;
+    rig.idleFlourishOffsetMs = 120;
+    rig.presentationClockNow = () => 1_000;
+
+    rig.cancelFlourish("attack-input");
+
+    expect(rig.flourishChannels.every((channel) => !channel.active)).toBe(true);
+    expect(rig.flourishArms.every((arm) => !arm.armed && arm.weaponId === "")).toBe(true);
+    expect(rig.stowProxies.every((proxy) => proxy.img === undefined)).toBe(true);
+    expect(destroyLeadProxy).toHaveBeenCalledOnce();
+    expect([rig.flourishHeadX, rig.flourishHeadY]).toEqual([0, 0]);
+    expect(rig.flourishCancelEdge).toBe(1);
+    expect(rig.idleFlourishEligibleAtMs).toBe(2_720);
+  });
+});

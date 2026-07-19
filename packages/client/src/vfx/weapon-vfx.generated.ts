@@ -3,10 +3,7 @@
 // that survive re-bakes — §14 AUDIT-4) for the live game (§14 CODE-8). To change output, edit those
 // SOURCES then re-run `node tools/artkit/build-weapon-vfx.mjs` — never hand-edit this file.
 
-export interface WeaponVfxLayer {
-  on: boolean;
-  params: Record<string, number>;
-}
+export interface WeaponVfxLayer { on: boolean; params: Record<string, number>; }
 export interface WeaponVfx {
   suite: Record<string, WeaponVfxLayer>;
   rot: number;
@@ -23,146 +20,433 @@ export interface WeaponVfx {
 
 export const WEAPON_VFX: Record<string, WeaponVfx> = {
   "x-sword-buzzsaw": {
-    suite: {
+    "suite": {
       "cleave-flash": {
-        on: true,
-        params: {
-          intensity: 0.5,
-        },
+        "on": true,
+        "params": {
+          "intensity": 0.5
+        }
       },
       "saw-sparks": {
-        on: true,
-        params: {
-          count: 26,
-          color: 0.48,
-        },
+        "on": true,
+        "params": {
+          "count": 26,
+          "color": 0.48
+        }
       },
       "hit-spark": {
-        on: true,
-        params: {
-          count: 20,
-          color: 0.05,
-        },
-      },
-      "hero-skin": {
-        on: true,
-        params: {
-          size: 1,
-          rise: 0,
-        },
-      },
+        "on": true,
+        "params": {
+          "count": 20,
+          "color": 0.05
+        }
+      }
     },
-    rot: 0,
-    vfxRadius: 134,
-    hero: "vfx/x-sword-buzzsaw.png",
+    "rot": 0,
+    "vfxRadius": 134
   },
-  driftblade: {
-    suite: {
-      "hero-skin": {
-        on: true,
-        params: {
-          size: 1,
-          rise: 0,
-        },
-      },
-    },
-    rot: 180,
-    vfxRadius: 162,
-    hero: "vfx/driftblade.png",
-  },
-  "rattler-sabre": {
-    suite: {
-      "hero-skin": {
-        on: true,
-        params: {
-          size: 1,
-          rise: 0,
-        },
-      },
-    },
-    rot: 0,
-    hero: "vfx/rattler-sabre.png",
+  "driftblade": {
+    "suite": {},
+    "rot": 180,
+    "vfxRadius": 162
   },
   "x-sword-coffin": {
-    suite: {
-      "hero-skin": {
-        on: true,
-        params: {
-          size: 1,
-          rise: 0,
-        },
-      },
-    },
-    rot: 0,
-    vfxRadius: 114,
-    hero: "vfx/x-sword-coffin.png",
+    "suite": {},
+    "rot": 0,
+    "vfxRadius": 114
   },
   "x-sword-neon-katana": {
-    suite: {
+    "suite": {
       "edge-trail": {
-        on: true,
-        params: {
-          reach: 0.6,
-          color: 0.46,
-          len: 1.4,
-        },
+        "on": true,
+        "params": {
+          "reach": 0.6,
+          "color": 0.46,
+          "len": 1.4
+        }
       },
       "blade-trail": {
-        on: true,
-        params: {
-          reach: 1.1,
-          color: 0.6,
-          sweep: 1.7,
-          thick: 0.22,
-          lines: 6,
-        },
+        "on": true,
+        "params": {
+          "reach": 1.1,
+          "paint": 0,
+          "history": 1,
+          "bodyAlpha": 0.72,
+          "lipAlpha": 0.54,
+          "color": 0.6,
+          "sweep": 1.7,
+          "thick": 0.22,
+          "lines": 6
+        }
       },
       "hit-spark": {
-        on: true,
-        params: {
-          count: 19,
-          color: 0.46,
-        },
+        "on": true,
+        "params": {
+          "count": 19,
+          "color": 0.46
+        }
       },
       "arc-bolt": {
-        on: true,
-        params: {
-          color: 0.45,
-          jag: 0.465,
-        },
-      },
+        "on": true,
+        "params": {
+          "color": 0.45,
+          "jag": 0.465
+        }
+      }
     },
-    rot: 0,
-    vfxRadius: 142,
+    "rot": 0,
+    "vfxRadius": 142
   },
   "x-sword-bone": {
-    suite: {
+    "suite": {
       "hit-spark": {
-        on: true,
-        params: {
-          count: 10,
-          color: 0.05,
-        },
+        "on": true,
+        "params": {
+          "count": 10,
+          "color": 0.05
+        }
       },
       "impact-flash": {
-        on: true,
-        params: {
-          intensity: 0.45,
-        },
-      },
+        "on": true,
+        "params": {
+          "intensity": 0.45
+        }
+      }
     },
-    rot: 0,
-    vfxRadius: 104,
-    scatter: {
-      url: "vfx/x-sword-bone-scatter.png",
-      frameWidth: 249,
-      frameHeight: 249,
-      count: 8,
-    },
+    "rot": 0,
+    "vfxRadius": 104
   },
   "x-sword-railspike": {
-    suite: {},
-    rot: 0,
-    vfxRadius: 116,
+    "suite": {},
+    "rot": 0,
+    "vfxRadius": 116
   },
+  "drift-colossal-world-seam": {
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 1.4,
+          "width": 10,
+          "color": 0.5
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.6,
+          "color": 0.5,
+          "len": 1.4
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 1
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.5
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 1
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 240
+  },
+  "drift-greatkatana-moonwake": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 4,
+          "history": 0.94,
+          "bodyAlpha": 0.46,
+          "lipAlpha": 0.68,
+          "color": 0.55
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 14,
+          "color": 0.55
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.55
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.82
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 190
+  },
+  "drift-greatkatana-tempest-regent": {
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.46,
+          "color": 0.15,
+          "len": 1.22
+        }
+      },
+      "arc-bolt": {
+        "on": true,
+        "params": {
+          "color": 0.15,
+          "jag": 0.34
+        }
+      },
+      "aura-pulse": {
+        "on": true,
+        "params": {
+          "color": 0.15,
+          "rings": 2
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.15
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 210
+  },
+  "drift-katana-riftstep": {
+    "suite": {
+      "twin-slash": {
+        "on": true,
+        "params": {
+          "reach": 0.96,
+          "paint": 6,
+          "history": 0.72,
+          "bodyAlpha": 0.3,
+          "lipAlpha": 0.7,
+          "color": 0.77
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 7,
+          "color": 0.77
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.66
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 112
+  },
+  "drift-katana-stillwater-edict": {
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 0.92,
+          "width": 3,
+          "color": 0.52
+        }
+      },
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.9,
+          "paint": 2,
+          "history": 0.58,
+          "bodyAlpha": 0.34,
+          "lipAlpha": 0.64,
+          "color": 0.52
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.38
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 98
+  },
+  "drift-katana-stormthread": {
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.02,
+          "color": 0.56,
+          "len": 1.2
+        }
+      },
+      "arc-bolt": {
+        "on": true,
+        "params": {
+          "color": 0.56,
+          "jag": 0.48
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 21,
+          "color": 0.56
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 104
+  },
+  "drift-nodachi-gatebreaker": {
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 1.16,
+          "width": 8,
+          "color": 0.1
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.28,
+          "color": 0.1,
+          "len": 0.62
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.9
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 34,
+          "color": 0.1
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 170
+  },
+  "drift-nodachi-pale-horizon": {
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.4,
+          "color": 0.54,
+          "len": 1.3
+        }
+      },
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 3,
+          "history": 0.68,
+          "bodyAlpha": 0.3,
+          "lipAlpha": 0.62,
+          "color": 0.54
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 9,
+          "color": 0.54
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 150
+  },
+  "drift-wakizashi-hushglass": {
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.68,
+          "paint": 5,
+          "history": 0.82,
+          "bodyAlpha": 0.22,
+          "lipAlpha": 0.48,
+          "color": 0.58
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 4,
+          "color": 0.58
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.28
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 72
+  },
+  "drift-wakizashi-kagewake": {
+    "suite": {
+      "twin-slash": {
+        "on": true,
+        "params": {
+          "reach": 0.64,
+          "paint": 1,
+          "history": 0.48,
+          "bodyAlpha": 0.44,
+          "lipAlpha": 0.68,
+          "color": 0.53
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.7,
+          "color": 0.53,
+          "len": 0.55
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 9,
+          "color": 0.53
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 68
+  }
 };

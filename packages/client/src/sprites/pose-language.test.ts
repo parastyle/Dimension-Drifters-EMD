@@ -254,3 +254,30 @@ describe("pose-language sampler and transition law", () => {
     expect(poseImpulsePending(1_001, 1_000, 1_000)).toBe(false);
   });
 });
+
+// FLOURISH IMPLEMENTATION WAVE — append-only live-catalog and forward-compatible size truth.
+describe("flourish live-catalog coverage", () => {
+  it("resolves every current weapon to the same frozen family grammar as pose language", async () => {
+    const { weaponFlourishSpecFor } = await import("./pose-language.js");
+    for (const def of Object.values(WEAPONS)) {
+      const family = weaponPoseFamilyFor(def);
+      const spec = weaponFlourishSpecFor(def);
+      expect(spec.family, def.id).toBe(family);
+      expect(Object.isFrozen(spec), def.id).toBe(true);
+      expect(Object.isFrozen(spec.draw), `${def.id}:draw`).toBe(true);
+      expect(Object.isFrozen(spec.draw.timing), `${def.id}:timing`).toBe(true);
+    }
+  });
+
+  it("accepts the parallel sizeClass emission and keeps Driftblade great", async () => {
+    const { bladeSizeClassFor } = await import("./pose-language.js");
+    const staged = Object.values(WEAPONS).filter(
+      (def) => (def as WeaponDef & { sizeClass?: string }).sizeClass !== undefined,
+    );
+    expect(staged.length).toBeGreaterThanOrEqual(10);
+    for (const def of staged) {
+      expect(["short", "standard", "great", "colossal"]).toContain(bladeSizeClassFor(def));
+    }
+    expect(bladeSizeClassFor(weapon("driftblade"))).toBe("great");
+  });
+});
