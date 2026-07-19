@@ -11,6 +11,8 @@
  * finally scales something. §13: drops telegraph type+rarity but hide identity until grab (mystery);
  * bosses guarantee a drop; loot is squad-shared.
  */
+
+import { beamDescriptorFor } from "./combat.js";
 import {
   BEAM_AGGREGATE_TARGET_CAP,
   BEAM_MAX_RANGE,
@@ -19,8 +21,8 @@ import {
   LUK_RARITY_PER,
   SCRIP_BY_RARITY,
 } from "./constants.js";
-import { beamDescriptorFor } from "./combat.js";
 import { clamp } from "./math.js";
+import { katanaExpectedMechanic } from "./melee.js";
 import type { WeaponDef } from "./weapons.js";
 import { WEAPONS } from "./weapons.js";
 
@@ -176,7 +178,8 @@ export function beamCyclePower(def: WeaponDef, cycle: BeamPowerCycleValue): numb
     ? Math.min(heatLimit, beam.ignitionHeat + activeSeconds * beam.heatPerSecond)
     : 1;
   const coolDebt = Math.max(0, endingHeat - beam.restartHeat);
-  const coolingSeconds = beam.coolPerSecond > 0 ? coolDebt / beam.coolPerSecond : Number.POSITIVE_INFINITY;
+  const coolingSeconds =
+    beam.coolPerSecond > 0 ? coolDebt / beam.coolPerSecond : Number.POSITIVE_INFINITY;
   const ventSeconds = (early ? BEAM_RECOVERY_SECONDS : beam.lockSeconds) + coolingSeconds;
   const widthNorm = Math.min(1, beam.width / BEAM_MAX_WIDTH);
   const rangeNorm = Math.min(1, beam.range / BEAM_MAX_RANGE);
@@ -188,10 +191,7 @@ export function beamCyclePower(def: WeaponDef, cycle: BeamPowerCycleValue): numb
     0.45 * clamp(beam.maxTurnRate / 8, 0.65, 1);
   const coverage = Math.min(
     BEAM_AGGREGATE_TARGET_CAP,
-    1 +
-      (BEAM_AGGREGATE_TARGET_CAP - 1) *
-        (0.55 * widthNorm + 0.45 * rangeNorm) *
-        0.65,
+    1 + (BEAM_AGGREGATE_TARGET_CAP - 1) * (0.55 * widthNorm + 0.45 * rangeNorm) * 0.65,
   );
   const cycleSeconds = beam.chargeSeconds + activeSeconds + ventSeconds;
   return Number.isFinite(cycleSeconds)
@@ -209,7 +209,8 @@ export function effectivePower(def: WeaponDef): number {
       beamCyclePower(def, BeamPowerCycle.FullOverheat),
     );
   }
-  let perUse = def.damage; // the edge/primary hit
+  const katana = katanaExpectedMechanic(def);
+  let perUse = def.damage * katana.averageDamageMultiplier + katana.averageBurstDamage;
   if (def.thrown) perUse = def.thrown.damage * pierceTargets(def.thrown.pierce);
   if (def.quake) perUse += def.quake.damage;
   if (def.chainLightning) perUse += def.chainLightning.damage * def.chainLightning.jumps * 0.6;
@@ -232,7 +233,7 @@ export function effectivePower(def: WeaponDef): number {
     const mag = Math.max(1, def.gun.magazine);
     cadence += def.gun.reloadSeconds / mag;
   }
-  const reach = def.gun?.range ?? def.thrown?.range ?? def.range;
+  const reach = def.gun?.range ?? def.thrown?.range ?? def.range * katana.maxReachMultiplier;
   const reachCredit = 1 + Math.min(0.4, reach / 2500);
   return (perUse / cadence) * reachCredit;
 }

@@ -6,6 +6,7 @@ import {
   EXPANSION_WEAPON_IDS,
   MAP_POI_GAP,
   MAP_POI_GROUND_CLEARANCE,
+  MELEE_COMBO_VARIANT_SEQUENCES,
   PLAYER_RADIUS,
   SHIFTER_KIND_IDS,
   WEAPONS,
@@ -55,17 +56,34 @@ describe("weapon-data cross-references (codegen SoT)", () => {
   const realKeys = (o: Record<string, unknown>) =>
     Object.keys(o).filter((k) => !k.startsWith("//"));
 
+  it("keeps the concept source census header honest", () => {
+    const source = readJson("../data/weapon-concepts-300.json") as {
+      count: number;
+      byType: Record<string, number>;
+      weapons: { type: string }[];
+    };
+    expect(source.count).toBe(source.weapons.length);
+    expect(source.byType).toEqual(
+      source.weapons.reduce<Record<string, number>>((counts, weapon) => {
+        counts[weapon.type] = (counts[weapon.type] ?? 0) + 1;
+        return counts;
+      }, {}),
+    );
+  });
+
   it("every Weaponsmith assignment id is a real weapon (no ghost/typo VFX targets)", () => {
     for (const id of realKeys(assignments)) expect(WEAPONS[id], `assignment "${id}"`).toBeDefined();
   });
 
   it("the expansion roster is a 1:1 bijection with its concepts source (codegen is in sync)", () => {
     const concepts = readJson("../data/weapon-concepts-300.json") as {
-      weapons: { id: string; banned?: boolean }[];
+      weapons: { id: string; banned?: boolean; expansion?: boolean }[];
     };
     // §41 `banned: true` concepts are CUT from the game by design ruling (the generator skips them) but
     // stay in the data file as the record — the bijection holds over the non-banned set.
-    const conceptIds = new Set(concepts.weapons.filter((w) => !w.banned).map((w) => w.id));
+    const conceptIds = new Set(
+      concepts.weapons.filter((w) => !w.banned && w.expansion !== false).map((w) => w.id),
+    );
     const expansionIds = new Set(EXPANSION_WEAPON_IDS);
     for (const id of conceptIds)
       expect(
@@ -77,6 +95,16 @@ describe("weapon-data cross-references (codegen SoT)", () => {
         conceptIds.has(id),
         `generated "${id}" has no concept — re-run gen-weapon-expansion.mjs`,
       ).toBe(true);
+  });
+
+  it("every curated codegen concept resolves in the combined live roster", () => {
+    const concepts = readJson("../data/weapon-concepts-300.json") as {
+      weapons: { id: string; banned?: boolean; expansion?: boolean }[];
+    };
+    for (const row of concepts.weapons.filter((w) => !w.banned && w.expansion === false)) {
+      expect(WEAPONS[row.id], `curated codegen concept "${row.id}"`).toBeDefined();
+      expect(WEAPONS[row.id]?.expansion).toBe(false);
+    }
   });
 
   it("every VFX override (weapon-vfx-overrides.json) targets a real weapon", () => {
@@ -102,8 +130,17 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
   type Concept = {
     id: string;
     banned?: boolean;
+    expansion?: boolean;
     type: string;
     size?: string;
+    description?: string;
+    sprite?: string;
+    sizeClass?: string;
+    comboFamily?: string;
+    comboVariant?: string;
+    comboBar?: unknown[];
+    katanaHook?: Record<string, unknown>;
+    bespokeVfxSheet?: boolean;
     behavior?: Behavior;
     stats?: Record<string, number>;
     scalingGrades?: Grades;
@@ -125,20 +162,25 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
       if (rule.grades) expect(got?.[field], path).toEqual(upGrades(a as Grades));
       else if (rule.eq) expect(got?.[field], path).toBe(a);
       else if (rule.int)
-        expect(got?.[field] ?? rule.absentAs, path).toBe(iclamp(a as number, rule.int[0], rule.int[1]));
-      else expect(got?.[field] ?? rule.absentAs, path).toBe(clamp(a as number, rule.num[0], rule.num[1]));
+        expect(got?.[field] ?? rule.absentAs, path).toBe(
+          iclamp(a as number, rule.int[0], rule.int[1]),
+        );
+      else
+        expect(got?.[field] ?? rule.absentAs, path).toBe(
+          clamp(a as number, rule.num[0], rule.num[1]),
+        );
     }
   };
 
   const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
-  const BEAM_GUN_IDS = new Set([
-    "x2-voltcaster-machine-pistol",
-    "x2-stormcaller-tesla-gatling",
-  ]);
+  const BEAM_GUN_IDS = new Set(["x2-voltcaster-machine-pistol", "x2-stormcaller-tesla-gatling"]);
   it("no concept authors a mechanic block as a SIBLING of behavior (the 11-weapon data-loss bug)", () => {
     for (const w of concepts)
       for (const k of MECH_SIBLINGS)
-        expect((w as Record<string, unknown>)[k], `${w.id}.${k} must live INSIDE behavior`).toBeUndefined();
+        expect(
+          (w as Record<string, unknown>)[k],
+          `${w.id}.${k} must live INSIDE behavior`,
+        ).toBeUndefined();
   });
 
   for (const w of concepts.filter((w) => !w.banned)) {
@@ -151,6 +193,27 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
       const s = w.stats ?? {};
       const ranged = w.type === "ranged";
 
+      if (w.expansion !== undefined) expect(def.expansion, `${w.id}.expansion`).toBe(w.expansion);
+      if (w.description !== undefined)
+        expect(def.description, `${w.id}.description`).toBe(w.description);
+      if (w.sprite !== undefined) expect(def.sprite, `${w.id}.sprite`).toBe(w.sprite);
+      if (w.sizeClass !== undefined) expect(def.sizeClass, `${w.id}.sizeClass`).toBe(w.sizeClass);
+      if (w.comboFamily !== undefined)
+        expect(def.comboFamily, `${w.id}.comboFamily`).toBe(w.comboFamily);
+      if (w.comboVariant !== undefined) {
+        expect(def.comboVariant, `${w.id}.comboVariant`).toBe(w.comboVariant);
+        expect(
+          MELEE_COMBO_VARIANT_SEQUENCES[
+            w.comboVariant as keyof typeof MELEE_COMBO_VARIANT_SEQUENCES
+          ],
+          `${w.id}.comboBar`,
+        ).toEqual(w.comboBar);
+      }
+      if (w.katanaHook !== undefined)
+        expect(def.katanaHook, `${w.id}.katanaHook`).toEqual(w.katanaHook);
+      if (w.bespokeVfxSheet !== undefined)
+        expect(def.bespokeVfxSheet, `${w.id}.bespokeVfxSheet`).toBe(w.bespokeVfxSheet);
+
       // Held-swing baseline (stats.*)
       checkFields(w.id, def, s as Behavior, {
         damage: { num: [1, 40] },
@@ -161,16 +224,22 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         swingArc: { num: [1.8, 3.4] },
         gripFrac: { num: [0.04, 0.5] },
       });
-      if (w.scalingGrades) expect(def.scalingGrades, `${w.id}.scalingGrades`).toEqual(upGrades(w.scalingGrades));
+      if (w.scalingGrades)
+        expect(def.scalingGrades, `${w.id}.scalingGrades`).toEqual(upGrades(w.scalingGrades));
       if (w.requirements)
         for (const [a, v] of Object.entries(w.requirements))
-          expect(def.requirements?.[a as never], `${w.id}.requirements.${a}`).toBe(iclamp(v, 2, 20));
+          expect(def.requirements?.[a as never], `${w.id}.requirements.${a}`).toBe(
+            iclamp(v, 2, 20),
+          );
 
       // Mechanic block
       const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
       if (isBeam) {
         expect(def.beam, `${w.id}.beam`).toBeDefined();
-        expect(def.gun, `${w.id}.gun (beam concepts are never projectile placeholders)`).toBeUndefined();
+        expect(
+          def.gun,
+          `${w.id}.gun (beam concepts are never projectile placeholders)`,
+        ).toBeUndefined();
 
         const sourceTick = clamp((b.tickRate ?? b.fireRate ?? 0.1) as number, 0.05, 0.25);
         const normalizedTick = Number((Math.round(sourceTick / 0.05) * 0.05).toFixed(2));

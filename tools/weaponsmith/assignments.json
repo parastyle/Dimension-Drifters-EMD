@@ -1608,5 +1608,373 @@
     "displayLength": 65,
     "notes": "",
     "vfxRadius": 116
+  },
+  "drift-colossal-world-seam": {
+    "vfxSubject": "vfx-drift-colossal-world-seam",
+    "image": null,
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 1.4,
+          "width": 10,
+          "color": 0.5
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.6,
+          "color": 0.5,
+          "len": 1.4
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 1
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.5
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 1
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Maximum-length white seam, black afteredge and room-scale release ring. Void packs reuse high-contrast seam motes. Flagged for a bespoke colossal release sheet.",
+    "vfxRadius": 240,
+    "displayLength": 400
+  },
+  "drift-greatkatana-moonwake": {
+    "vfxSubject": "vfx-drift-greatkatana-moonwake",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 4,
+          "history": 0.94,
+          "bodyAlpha": 0.46,
+          "lipAlpha": 0.68,
+          "color": 0.55
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 14,
+          "color": 0.55
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.55
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.82
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Broad persistent lunar wake with a cold finisher ring. Frost particle packs supply crystalline wake motes. Flagged for a bespoke finisher sheet.",
+    "vfxRadius": 190,
+    "displayLength": 335
+  },
+  "drift-greatkatana-tempest-regent": {
+    "vfxSubject": "vfx-drift-greatkatana-tempest-regent",
+    "image": null,
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.46,
+          "color": 0.15,
+          "len": 1.22
+        }
+      },
+      "arc-bolt": {
+        "on": true,
+        "params": {
+          "color": 0.15,
+          "jag": 0.34
+        }
+      },
+      "aura-pulse": {
+        "on": true,
+        "params": {
+          "color": 0.15,
+          "rings": 2
+        }
+      },
+      "shockwave-ring": {
+        "on": true,
+        "params": {
+          "color": 0.15
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Gold storm edge and a restrained eye-of-storm guard pulse. Shock packs reuse gold-white sparks. Flagged for a bespoke perfect-guard sheet.",
+    "vfxRadius": 210,
+    "displayLength": 360
+  },
+  "drift-katana-riftstep": {
+    "vfxSubject": "vfx-drift-katana-riftstep",
+    "image": null,
+    "suite": {
+      "twin-slash": {
+        "on": true,
+        "params": {
+          "reach": 0.96,
+          "paint": 6,
+          "history": 0.72,
+          "bodyAlpha": 0.3,
+          "lipAlpha": 0.7,
+          "color": 0.77
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 7,
+          "color": 0.77
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.66
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Separated violet parallel ribbons sell the spatial skip; arcane mote pack colors the rift debris. Flagged for a bespoke finisher sheet.",
+    "vfxRadius": 112,
+    "displayLength": 144
+  },
+  "drift-katana-stillwater-edict": {
+    "vfxSubject": "vfx-drift-katana-stillwater-edict",
+    "image": null,
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 0.92,
+          "width": 3,
+          "color": 0.52
+        }
+      },
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.9,
+          "paint": 2,
+          "history": 0.58,
+          "bodyAlpha": 0.34,
+          "lipAlpha": 0.64,
+          "color": 0.52
+        }
+      },
+      "impact-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.38
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Thin judicial arcs with a punctual white-blue impact. Arcane spark pack supplies the timed edge motes.",
+    "vfxRadius": 98,
+    "displayLength": 130
+  },
+  "drift-katana-stormthread": {
+    "vfxSubject": "vfx-drift-katana-stormthread",
+    "image": null,
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.02,
+          "color": 0.56,
+          "len": 1.2
+        }
+      },
+      "arc-bolt": {
+        "on": true,
+        "params": {
+          "color": 0.56,
+          "jag": 0.48
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 21,
+          "color": 0.56
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "A persistent blue thread gains electrical noise across the bar. Shock spark and mote packs provide impact variation.",
+    "vfxRadius": 104,
+    "displayLength": 136
+  },
+  "drift-nodachi-gatebreaker": {
+    "vfxSubject": "vfx-drift-nodachi-gatebreaker",
+    "image": null,
+    "suite": {
+      "slash-arc": {
+        "on": true,
+        "params": {
+          "reach": 1.16,
+          "width": 8,
+          "color": 0.1
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.28,
+          "color": 0.1,
+          "len": 0.62
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.9
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 34,
+          "color": 0.1
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Short-lived hot breaker arcs and dense sparks emphasize speed against guard. Physical spark pack is reused with an amber recolor.",
+    "vfxRadius": 170,
+    "displayLength": 255
+  },
+  "drift-nodachi-pale-horizon": {
+    "vfxSubject": "vfx-drift-nodachi-pale-horizon",
+    "image": null,
+    "suite": {
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 1.4,
+          "color": 0.54,
+          "len": 1.3
+        }
+      },
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 1,
+          "paint": 3,
+          "history": 0.68,
+          "bodyAlpha": 0.3,
+          "lipAlpha": 0.62,
+          "color": 0.54
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 9,
+          "color": 0.54
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Long frost horizon whose afterimage outgrows the blade. Frost spark and mote packs create pale rime fallout.",
+    "vfxRadius": 150,
+    "displayLength": 225
+  },
+  "drift-wakizashi-hushglass": {
+    "vfxSubject": "vfx-drift-wakizashi-hushglass",
+    "image": null,
+    "suite": {
+      "blade-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.68,
+          "paint": 5,
+          "history": 0.82,
+          "bodyAlpha": 0.22,
+          "lipAlpha": 0.48,
+          "color": 0.58
+        }
+      },
+      "drift-petals": {
+        "on": true,
+        "params": {
+          "count": 4,
+          "color": 0.58
+        }
+      },
+      "cleave-flash": {
+        "on": true,
+        "params": {
+          "intensity": 0.28
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Low-opacity smoke ribbon and four quiet glass motes. Void mote particle pack is recolored cyan-black on impact.",
+    "vfxRadius": 72,
+    "displayLength": 76
+  },
+  "drift-wakizashi-kagewake": {
+    "vfxSubject": "vfx-drift-wakizashi-kagewake",
+    "image": null,
+    "suite": {
+      "twin-slash": {
+        "on": true,
+        "params": {
+          "reach": 0.64,
+          "paint": 1,
+          "history": 0.48,
+          "bodyAlpha": 0.44,
+          "lipAlpha": 0.68,
+          "color": 0.53
+        }
+      },
+      "edge-trail": {
+        "on": true,
+        "params": {
+          "reach": 0.7,
+          "color": 0.53,
+          "len": 0.55
+        }
+      },
+      "hit-spark": {
+        "on": true,
+        "params": {
+          "count": 9,
+          "color": 0.53
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Two clipped cyan iaijutsu ribbons. Physical spark particle pack is reused on impact.",
+    "vfxRadius": 68,
+    "displayLength": 72
   }
 }

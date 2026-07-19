@@ -1,0 +1,13 @@
+{
+  "vfxSubject": "vfx-drift-katana-stormthread",
+  "image": null,
+  "suite": {
+    "edge-trail": { "on": true, "params": { "reach": 1.02, "color": 0.56, "len": 1.2 } },
+    "arc-bolt": { "on": true, "params": { "color": 0.56, "jag": 0.48 } },
+    "hit-spark": { "on": true, "params": { "count": 21, "color": 0.56 } }
+  },
+  "rot": 0,
+  "notes": "A persistent blue thread gains electrical noise across the bar. Shock spark and mote packs provide impact variation.",
+  "vfxRadius": 104,
+  "displayLength": 136
+}

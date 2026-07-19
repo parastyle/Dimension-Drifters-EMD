@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-drift-wakizashi-kagewake",
+  "image": null,
+  "suite": {
+    "twin-slash": {
+      "on": true,
+      "params": {
+        "reach": 0.64,
+        "paint": 1,
+        "history": 0.48,
+        "bodyAlpha": 0.44,
+        "lipAlpha": 0.68,
+        "color": 0.53
+      }
+    },
+    "edge-trail": { "on": true, "params": { "reach": 0.7, "color": 0.53, "len": 0.55 } },
+    "hit-spark": { "on": true, "params": { "count": 9, "color": 0.53 } }
+  },
+  "rot": 0,
+  "notes": "Two clipped cyan iaijutsu ribbons. Physical spark particle pack is reused on impact.",
+  "vfxRadius": 68,
+  "displayLength": 72
+}

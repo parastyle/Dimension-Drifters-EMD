@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-drift-katana-riftstep",
+  "image": null,
+  "suite": {
+    "twin-slash": {
+      "on": true,
+      "params": {
+        "reach": 0.96,
+        "paint": 6,
+        "history": 0.72,
+        "bodyAlpha": 0.3,
+        "lipAlpha": 0.7,
+        "color": 0.77
+      }
+    },
+    "drift-petals": { "on": true, "params": { "count": 7, "color": 0.77 } },
+    "cleave-flash": { "on": true, "params": { "intensity": 0.66 } }
+  },
+  "rot": 0,
+  "notes": "Separated violet parallel ribbons sell the spatial skip; arcane mote pack colors the rift debris. Flagged for a bespoke finisher sheet.",
+  "vfxRadius": 112,
+  "displayLength": 144
+}

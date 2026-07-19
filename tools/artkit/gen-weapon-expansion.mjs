@@ -48,7 +48,9 @@ const BEAM_GUN_IDS = new Set([
 const TOP_KEYS = new Set([
   "id", "name", "type", "family", "theme", "element", "finish", "finishNote", "grip", "size",
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
-  "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned",
+  "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
+  "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
+  "bespokeVfxSheet",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -67,6 +69,45 @@ const BEHAVIOR_KEYS = {
     "scalingGrades"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
+const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
+const COMBO_MOTIONS = new Set([
+  "slash", "overhead", "shoulder-chop", "rising-chop", "execution-slam", "rake", "scissor",
+  "jab", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
+  "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
+  "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
+  "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
+  "guard-check", "sentence-fall", "choked-turn", "petalfall", "coil-drag", "thunder-fall",
+  "splinter-fall",
+]);
+const COMBO_HANDS = new Set(["lead", "off", "both"]);
+const COMBO_PATHS = new Set(["sweep", "fan", "dual-sweep", "capsule"]);
+const RIBBON_PROFILES = new Set([
+  "massed-wedge", "hooked-comma", "open-c", "guard-plane", "rising-plane", "broken-cross",
+  "outer-crescent", "reverse-hairpin", "open-annulus", "head-wedge", "inward-hook", "heavy-sickle",
+]);
+const RIBBON_ENDS = new Set(["clean", "squared", "torn", "hooked", "open"]);
+const COMBO_STEP_KEYS = new Set(["name", "motion", "direction", "hand", "timing", "path", "ribbon"]);
+const COMBO_TIMING_KEYS = new Set([
+  "activeStart", "activeEnd", "impact", "followEnd", "secondaryActiveStart", "secondaryActiveEnd",
+]);
+const COMBO_PATH_KEYS = new Set([
+  "kind", "arcMultiplier", "deltaAngle", "rangeMultiplier", "damageMultiplier", "knockback",
+]);
+const COMBO_RIBBON_KEYS = new Set([
+  "profile", "radialStart", "radialEnd", "widthMultiplier", "end", "setupEcho",
+]);
+const KATANA_HOOK_KINDS = new Set([
+  "pair-half", "draw-opener", "perfect-tempo", "storm-tempo", "finisher-dash",
+  "reach-crescendo", "haste-break", "finisher-burst", "perfect-guard", "colossal-release",
+]);
+const KATANA_HOOK_KEYS = new Set([
+  "kind", "summary", "openerDamageMultiplier", "perfectWindowFraction", "perfectDamageMultiplier",
+  "stackDamagePerBeat", "maxStacks", "finisherDamageMultiplier", "finisherDashImpulse",
+  "reachPerBeat", "recoveryMultiplier", "nonFinisherDamageMultiplier", "toughFinisherMultiplier",
+  "finisherBurst", "perfectInvulnerabilitySeconds",
+]);
+const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 
 const checkKeys = (obj, allowed, path) => {
   for (const k of Object.keys(obj)) if (!allowed.has(k)) fail(`unknown key ${path}.${k}`);
@@ -155,6 +196,132 @@ function explodeOf(e, path, rMax) {
   return out;
 }
 
+function comboBarOf(w) {
+  if (w.comboBar === undefined) return undefined;
+  if (!Array.isArray(w.comboBar)) {
+    fail("comboBar is not an array");
+    return undefined;
+  }
+  if (w.comboBar.length < 4 || w.comboBar.length > 7)
+    fail(`comboBar has ${w.comboBar.length} beats; katana bars require 4..7`);
+  const out = [];
+  for (let i = 0; i < w.comboBar.length; i++) {
+    const step = w.comboBar[i];
+    const path = `comboBar[${i}]`;
+    if (!step || typeof step !== "object" || Array.isArray(step)) {
+      fail(`${path} is not an object`);
+      continue;
+    }
+    checkKeys(step, COMBO_STEP_KEYS, path);
+    const timing = step.timing;
+    const movePath = step.path;
+    if (!timing || typeof timing !== "object" || Array.isArray(timing)) {
+      fail(`${path}.timing is not an object`);
+      continue;
+    }
+    if (!movePath || typeof movePath !== "object" || Array.isArray(movePath)) {
+      fail(`${path}.path is not an object`);
+      continue;
+    }
+    checkKeys(timing, COMBO_TIMING_KEYS, `${path}.timing`);
+    checkKeys(movePath, COMBO_PATH_KEYS, `${path}.path`);
+    const activeStart = num(timing.activeStart, 0, 1, 0.2, `${path}.timing.activeStart`);
+    const activeEnd = num(timing.activeEnd, 0, 1, 0.55, `${path}.timing.activeEnd`);
+    const impact = num(timing.impact, 0, 1, activeEnd, `${path}.timing.impact`);
+    const followEnd = num(timing.followEnd, 0, 1, 0.8, `${path}.timing.followEnd`);
+    if (!(activeStart < activeEnd && impact >= activeStart && impact <= activeEnd && activeEnd <= followEnd))
+      fail(`${path}.timing must satisfy activeStart < activeEnd, impact inside active, activeEnd <= followEnd`);
+    const mapped = {
+      name: typeof step.name === "string" ? step.name : `${path} unnamed beat`,
+      motion: enumOf(step.motion, COMBO_MOTIONS, `${path}.motion`),
+      direction: int(step.direction, -1, 1, 1, `${path}.direction`),
+      hand: enumOf(step.hand, COMBO_HANDS, `${path}.hand`),
+      timing: { activeStart, activeEnd, impact, followEnd },
+      path: {
+        kind: enumOf(movePath.kind, COMBO_PATHS, `${path}.path.kind`),
+        arcMultiplier: num(movePath.arcMultiplier, -2, 2, 1, `${path}.path.arcMultiplier`),
+        rangeMultiplier: num(movePath.rangeMultiplier, 0.5, 1.5, 1, `${path}.path.rangeMultiplier`),
+        damageMultiplier: num(movePath.damageMultiplier, 0.5, 2, 1, `${path}.path.damageMultiplier`),
+        knockback: num(movePath.knockback, 0, 160, 0, `${path}.path.knockback`),
+      },
+    };
+    if (timing.secondaryActiveStart !== undefined)
+      mapped.timing.secondaryActiveStart = num(
+        timing.secondaryActiveStart, 0, 1, activeStart, `${path}.timing.secondaryActiveStart`,
+      );
+    if (timing.secondaryActiveEnd !== undefined)
+      mapped.timing.secondaryActiveEnd = num(
+        timing.secondaryActiveEnd, 0, 1, activeEnd, `${path}.timing.secondaryActiveEnd`,
+      );
+    if (movePath.deltaAngle !== undefined)
+      mapped.path.deltaAngle = num(movePath.deltaAngle, -Math.PI * 4, Math.PI * 4, 0, `${path}.path.deltaAngle`);
+    if (step.ribbon !== undefined) {
+      const ribbon = step.ribbon;
+      if (!ribbon || typeof ribbon !== "object" || Array.isArray(ribbon)) {
+        fail(`${path}.ribbon is not an object`);
+      } else {
+        checkKeys(ribbon, COMBO_RIBBON_KEYS, `${path}.ribbon`);
+        mapped.ribbon = {
+          profile: enumOf(ribbon.profile, RIBBON_PROFILES, `${path}.ribbon.profile`),
+          radialStart: num(ribbon.radialStart, 0, 0.95, 0.3, `${path}.ribbon.radialStart`),
+          radialEnd: num(ribbon.radialEnd, 0.05, 1, 1, `${path}.ribbon.radialEnd`),
+          widthMultiplier: num(ribbon.widthMultiplier, 0, 2, 1, `${path}.ribbon.widthMultiplier`),
+          end: enumOf(ribbon.end, RIBBON_ENDS, `${path}.ribbon.end`),
+        };
+        if (ribbon.setupEcho !== undefined) {
+          if (ribbon.setupEcho !== "neutral-dim") fail(`${path}.ribbon.setupEcho must be neutral-dim`);
+          mapped.ribbon.setupEcho = ribbon.setupEcho;
+        }
+      }
+    }
+    out.push(mapped);
+  }
+  return out;
+}
+
+function katanaHookOf(h) {
+  if (h === undefined) return undefined;
+  if (!h || typeof h !== "object" || Array.isArray(h)) {
+    fail("katanaHook is not an object");
+    return undefined;
+  }
+  checkKeys(h, KATANA_HOOK_KEYS, "katanaHook");
+  const out = {
+    kind: enumOf(h.kind, KATANA_HOOK_KINDS, "katanaHook.kind"),
+    summary: typeof h.summary === "string" ? h.summary : "",
+  };
+  if (!out.summary) fail("katanaHook.summary must be a non-empty string");
+  const nums = {
+    openerDamageMultiplier: [0.5, 2],
+    perfectWindowFraction: [0.02, 0.5],
+    perfectDamageMultiplier: [0.5, 2],
+    stackDamagePerBeat: [0, 0.25],
+    finisherDamageMultiplier: [0.5, 2.5],
+    finisherDashImpulse: [0, 500],
+    reachPerBeat: [0, 0.2],
+    recoveryMultiplier: [0.7, 1.3],
+    nonFinisherDamageMultiplier: [0.5, 1.5],
+    toughFinisherMultiplier: [1, 3],
+    perfectInvulnerabilitySeconds: [0, 0.2],
+  };
+  for (const [key, [lo, hi]] of Object.entries(nums))
+    if (h[key] !== undefined) out[key] = num(h[key], lo, hi, 1, `katanaHook.${key}`);
+  if (h.maxStacks !== undefined) out.maxStacks = int(h.maxStacks, 1, 7, 1, "katanaHook.maxStacks");
+  if (h.finisherBurst !== undefined) {
+    const burst = h.finisherBurst;
+    if (!burst || typeof burst !== "object" || Array.isArray(burst)) {
+      fail("katanaHook.finisherBurst is not an object");
+    } else {
+      checkKeys(burst, KATANA_BURST_KEYS, "katanaHook.finisherBurst");
+      out.finisherBurst = {
+        radius: num(burst.radius, 40, 240, 100, "katanaHook.finisherBurst.radius"),
+        damage: num(burst.damage, 1, 30, 6, "katanaHook.finisherBurst.damage"),
+      };
+    }
+  }
+  return out;
+}
+
 function mapWeapon(w) {
   checkKeys(w, TOP_KEYS, "");
   for (const k of MECH_SIBLINGS)
@@ -178,7 +345,7 @@ function mapWeapon(w) {
   const def = {
     id: w.id,
     name: w.name,
-    expansion: true,
+    expansion: w.expansion !== false,
     scalingGrades: grades(w.scalingGrades, "scalingGrades", { str: "B" }),
     damage,
     range: type === "ranged"
@@ -201,6 +368,28 @@ function mapWeapon(w) {
       scaling: Array.isArray(w.scaling) && w.scaling.length ? w.scaling : ["STR"],
     },
   };
+  if (w.description !== undefined) {
+    if (typeof w.description !== "string") fail("description is not a string");
+    else def.description = w.description;
+  }
+  if (w.sprite !== undefined) {
+    if (typeof w.sprite !== "string" || !w.sprite) fail("sprite is not a non-empty string");
+    else def.sprite = w.sprite;
+  }
+  if (w.sizeClass !== undefined) def.sizeClass = enumOf(w.sizeClass, SIZE_CLASSES, "sizeClass");
+  if (w.comboFamily !== undefined)
+    def.comboFamily = enumOf(w.comboFamily, COMBO_FAMILIES, "comboFamily");
+  if (w.comboVariant !== undefined) {
+    if (typeof w.comboVariant !== "string" || !/^katana-[a-z0-9-]+$/.test(w.comboVariant))
+      fail(`comboVariant = ${JSON.stringify(w.comboVariant)} must match katana-[a-z0-9-]+`);
+    else def.comboVariant = w.comboVariant;
+  }
+  const hook = katanaHookOf(w.katanaHook);
+  if (hook) def.katanaHook = hook;
+  if (w.bespokeVfxSheet !== undefined) {
+    if (typeof w.bespokeVfxSheet !== "boolean") fail("bespokeVfxSheet is not a boolean");
+    else def.bespokeVfxSheet = w.bespokeVfxSheet;
+  }
   const rq = reqs(w.requirements, "requirements");
   if (rq) def.requirements = rq;
   if (grip === "2H") def.twoHanded = true;
@@ -318,6 +507,7 @@ function mapWeapon(w) {
 
 const data = JSON.parse(readFileSync(SRC, "utf8"));
 const out = {};
+const comboBars = {};
 for (const w of data.weapons) {
   CUR = w.id ?? w.name ?? "<missing id>";
   if (!w.id || !w.name) {
@@ -331,7 +521,18 @@ for (const w of data.weapons) {
     fail("duplicate id");
     continue;
   }
+  if (w.expansion !== undefined && typeof w.expansion !== "boolean")
+    fail("expansion is not a boolean");
   out[w.id] = mapWeapon(w);
+  const comboBar = comboBarOf(w);
+  if (comboBar) {
+    if (!w.comboFamily || !w.comboVariant)
+      fail("comboBar requires comboFamily + comboVariant");
+    else if (comboBars[w.comboVariant]) fail(`duplicate comboVariant ${w.comboVariant}`);
+    else comboBars[w.comboVariant] = comboBar;
+  } else if (w.comboFamily !== undefined || w.comboVariant !== undefined) {
+    fail("comboFamily/comboVariant require comboBar");
+  }
 }
 
 if (errors.length) {
@@ -342,19 +543,21 @@ if (errors.length) {
 
 const banner =
   "// AUTO-GENERATED by tools/artkit/gen-weapon-expansion.mjs — DO NOT EDIT.\n" +
-  "// The +300 §13 expansion roster, codegen'd from data/weapon-concepts-300.json. Each WeaponDef is\n" +
-  "// flagged `expansion:true` so weapons.ts merges them into WEAPONS but KEEPS them out of WEAPON_IDS\n" +
-  "// (the active gallery/cycle/drop pool) until curated in. Re-run the script after editing the concepts.\n";
+  "// Designed weapons codegen'd from data/weapon-concepts-300.json. Legacy rows default to expansion;\n" +
+  "// explicit `expansion:false` rows are curated live. Generated combo bars feed shared melee presentation.\n" +
+  "// Re-run the generator after editing concepts; never hand-edit the emitted TypeScript.\n";
 const body =
   `import type { WeaponDef } from "./weapons.js";\n\n` +
-  `export const EXPANSION_WEAPONS: Record<string, WeaponDef> = ${JSON.stringify(out, null, 2)};\n`;
+  `export const GENERATED_WEAPONS: Record<string, WeaponDef> = ${JSON.stringify(out, null, 2)};\n\n` +
+  `export const GENERATED_MELEE_COMBO_BARS = ${JSON.stringify(comboBars, null, 2)} as const;\n`;
 emit(OUT, `${banner}\n${body}`, "weapons-expansion.generated.ts");
 
 if (!isCheck) {
   const byType = { melee: 0, ranged: 0, caster: 0 };
   for (const id of Object.keys(out)) byType[out[id].tags.classPool]++;
   console.log(
-    `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons ` +
+    `wrote weapons-expansion.generated.ts — ${Object.keys(out).length} weapons / ` +
+      `${Object.keys(comboBars).length} generated combo bars ` +
       `(melee ${byType.melee} / ranged ${byType.ranged} / caster ${byType.caster}); ` +
       `${clampCount} value(s) clamped to design bands` +
       (clampSamples.length ? ` (e.g. ${clampSamples.slice(0, 3).join("; ")})` : ""),

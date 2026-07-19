@@ -17,7 +17,42 @@ import {
   REZ_RADIUS,
 } from "./constants.js";
 import type { Attr } from "./leveling.js";
-import { EXPANSION_WEAPONS } from "./weapons-expansion.generated.js";
+import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
+
+/** Driftblade-line silhouette lane consumed by the stance-by-size flourish wave. This is intentionally
+ * more expressive than the legacy S/M/L/XL packing tag: two XL blades can now distinguish a great katana
+ * from the deliberately absurd colossal outlier without teaching the rig weapon ids. */
+export type WeaponSizeClass = "short" | "standard" | "long" | "great" | "colossal";
+
+/** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
+ * combo beat; the Drive/loot estimators price the same authored multipliers and finisher burst. */
+export interface KatanaHookDef {
+  kind:
+    | "pair-half"
+    | "draw-opener"
+    | "perfect-tempo"
+    | "storm-tempo"
+    | "finisher-dash"
+    | "reach-crescendo"
+    | "haste-break"
+    | "finisher-burst"
+    | "perfect-guard"
+    | "colossal-release";
+  summary: string;
+  openerDamageMultiplier?: number;
+  perfectWindowFraction?: number;
+  perfectDamageMultiplier?: number;
+  stackDamagePerBeat?: number;
+  maxStacks?: number;
+  finisherDamageMultiplier?: number;
+  finisherDashImpulse?: number;
+  reachPerBeat?: number;
+  recoveryMultiplier?: number;
+  nonFinisherDamageMultiplier?: number;
+  toughFinisherMultiplier?: number;
+  finisherBurst?: { radius: number; damage: number };
+  perfectInvulnerabilitySeconds?: number;
+}
 
 /** First-class held beam delivery. Width is the complete damaging diameter; damage is authored per second
  * so simulation and feedback cadence cannot change throughput. V1 uses heat for staves and guns alike. */
@@ -49,6 +84,14 @@ export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
   name: string;
+  /** Optional authored catalog lore; generated concepts retain it instead of marooning it in JSON. */
+  description?: string;
+  /** Driftblade-line silhouette class for stance-by-size consumers. */
+  sizeClass?: WeaponSizeClass;
+  /** Server-consumed accepted-beat identity hook for the katana line. */
+  katanaHook?: KatanaHookDef;
+  /** Follow-up render-fleet marker; metadata only and never a substitute for an installed sheet. */
+  bespokeVfxSheet?: boolean;
   /** Damage per swing (hp). */
   damage: number;
   /** Reach of the swing arc (px). */
@@ -342,7 +385,8 @@ export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
 
 /** One attack-beat cooldown before loot speed. Pair cadence applies the lead affix to both hands. */
 export function weaponAttackCooldown(weapon: WeaponDef): number {
-  return Math.max(0.001, weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown);
+  const base = weapon.gun?.fireRate ?? weapon.cast?.cooldown ?? weapon.cooldown;
+  return Math.max(0.001, base * (weapon.katanaHook?.recoveryMultiplier ?? 1));
 }
 
 /** Compatible live delivery lane for runtime pairing. Beams, thrown weapons, authored duals, and fists
@@ -354,7 +398,8 @@ export function pairDelivery(weapon: WeaponDef): "melee" | "gun" | "cast" | "" {
     weapon.dual === true ||
     weapon.beam ||
     weapon.thrown
-  ) return "";
+  )
+    return "";
   if (weapon.tags.classPool === "ranged") return weapon.gun ? "gun" : "";
   if (weapon.tags.classPool === "caster") return weapon.cast ? "cast" : "";
   return !weapon.gun && !weapon.cast ? "melee" : "";
@@ -375,8 +420,7 @@ export function pairDamagePerUse(weapon: WeaponDef): number {
   if (weapon.gun) {
     return Math.max(
       0,
-      weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) +
-        (weapon.gun.explode?.damage ?? 0),
+      weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) + (weapon.gun.explode?.damage ?? 0),
     );
   }
   if (weapon.cast) return Math.max(0, weapon.cast.damage);
@@ -384,9 +428,7 @@ export function pairDamagePerUse(weapon: WeaponDef): number {
   if (weapon.quake) damage += Math.max(0, weapon.quake.damage);
   if (weapon.chainLightning) {
     damage +=
-      Math.max(0, weapon.chainLightning.damage) *
-      Math.max(0, weapon.chainLightning.jumps) *
-      0.6;
+      Math.max(0, weapon.chainLightning.damage) * Math.max(0, weapon.chainLightning.jumps) * 0.6;
   }
   if (weapon.scatter) {
     damage += Math.max(0, weapon.scatter.damage) * Math.max(0, weapon.scatter.count) * 0.7;
@@ -410,7 +452,7 @@ export function dualOffhandDamageMultiplier(
   const raw = matched ? DUAL_MATCHED_OFFHAND_BASE_MULT : DUAL_OFFHAND_BASE_MULT;
   const leadCd = weaponAttackCooldown(lead);
   const cycle = PAIR_TEMPO * (leadCd + weaponAttackCooldown(off));
-  const allowed = (cap * leadDamage * cycle / leadCd - leadDamage) / offDamage;
+  const allowed = ((cap * leadDamage * cycle) / leadCd - leadDamage) / offDamage;
   return Math.max(0, Math.min(raw, allowed));
 }
 
@@ -421,7 +463,10 @@ export const SET_BONUS_2 = 0.08; // +8% class damage at 2 of a class
 export const SET_BONUS_3 = 0.18; // +18% at 3 of a class
 
 /** How many equipped weapons share `cls`. Empty/unknown ids are ignored. PURE. */
-export function classCount(loadout: readonly string[], cls: WeaponDef["tags"]["classPool"]): number {
+export function classCount(
+  loadout: readonly string[],
+  cls: WeaponDef["tags"]["classPool"],
+): number {
   let n = 0;
   for (const id of loadout) if (id && WEAPONS[id]?.tags.classPool === cls) n++;
   return n;
@@ -1392,7 +1437,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
 /** Every weapon: the hand-authored BASE roster + the codegen'd §13 EXPANSION batch (the +300, art-backed
  *  but held out of the active roster via `expansion`). Both are `WeaponDef`s, so anything keyed by id
  *  (held sprite, card art, VFX) resolves for either. */
-export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...EXPANSION_WEAPONS };
+export const WEAPONS: Record<string, WeaponDef> = { ...BASE_WEAPONS, ...GENERATED_WEAPONS };
 
 // Off-hand charge presentation is uint8. Fail authoring loudly instead of wrapping a future magazine.
 for (const weapon of Object.values(WEAPONS)) {

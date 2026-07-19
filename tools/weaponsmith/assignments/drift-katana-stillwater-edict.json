@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-drift-katana-stillwater-edict",
+  "image": null,
+  "suite": {
+    "slash-arc": { "on": true, "params": { "reach": 0.92, "width": 3, "color": 0.52 } },
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 0.9,
+        "paint": 2,
+        "history": 0.58,
+        "bodyAlpha": 0.34,
+        "lipAlpha": 0.64,
+        "color": 0.52
+      }
+    },
+    "impact-flash": { "on": true, "params": { "intensity": 0.38 } }
+  },
+  "rot": 0,
+  "notes": "Thin judicial arcs with a punctual white-blue impact. Arcane spark pack supplies the timed edge motes.",
+  "vfxRadius": 98,
+  "displayLength": 130
+}

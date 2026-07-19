@@ -1,4 +1,9 @@
 import {
+  effectiveAcceptedWeaponInterval,
+  type WeaponDelivery,
+  weaponDeliveryFor,
+} from "./combat.js";
+import {
   DRIVE_BEAM_GROSS_DRAIN_PER_SECOND,
   DRIVE_BEAM_IGNITION_COST,
   DRIVE_BEAM_NET_DRAIN_PER_SECOND,
@@ -10,11 +15,7 @@ import {
   DRIVE_LOAD_MAX,
   DRIVE_THROWN_BURST_RETENTION,
 } from "./constants.js";
-import {
-  effectiveAcceptedWeaponInterval,
-  type WeaponDelivery,
-  weaponDeliveryFor,
-} from "./combat.js";
+import { katanaExpectedMechanic } from "./melee.js";
 import { WEAPONS, type WeaponDef, weaponAttackCooldown } from "./weapons.js";
 
 export const WEAPON_RESOURCE_FORMULA_VERSION = 1 as const;
@@ -45,13 +46,22 @@ export interface WeaponResourceOverride {
   readonly reason: string;
 }
 
-/** The only formula-v1 utility exception. More than fifteen entries is a formula review failure. */
-export const WEAPON_RESOURCE_OVERRIDES: Readonly<Record<string, WeaponResourceOverride>> = Object.freeze({
-  "gravediggers-spade": Object.freeze({
-    multiplier: 1.15,
-    reason: "A successful swing can revive; that utility has no damage statistic.",
-  }),
-});
+/** Bounded formula-v1 utility exceptions. More than fifteen entries is a formula review failure. */
+export const WEAPON_RESOURCE_OVERRIDES: Readonly<Record<string, WeaponResourceOverride>> =
+  Object.freeze({
+    "gravediggers-spade": Object.freeze({
+      multiplier: 1.15,
+      reason: "A successful swing can revive; that utility has no damage statistic.",
+    }),
+    "drift-katana-riftstep": Object.freeze({
+      multiplier: 1.08,
+      reason: "The finisher dash adds mobility that the damage-and-reach formula cannot value.",
+    }),
+    "drift-greatkatana-tempest-regent": Object.freeze({
+      multiplier: 1.1,
+      reason: "Perfect continuations grant brief invulnerability outside the damage formula.",
+    }),
+  });
 
 export interface WeaponResourceProfile {
   readonly formulaVersion: typeof WEAPON_RESOURCE_FORMULA_VERSION;
@@ -98,7 +108,7 @@ function effectiveRange(weapon: WeaponDef, delivery: WeaponDelivery): number {
   if (delivery === "gun") return weapon.gun?.range ?? weapon.range;
   if (delivery === "cast") return weapon.cast?.range ?? weapon.range;
   if (delivery === "thrown") return weapon.thrown?.range ?? weapon.range;
-  return weapon.range;
+  return weapon.range * katanaExpectedMechanic(weapon).maxReachMultiplier;
 }
 
 function reachCredit(range: number): number {
@@ -106,8 +116,10 @@ function reachCredit(range: number): number {
 }
 
 function meleeDamageBudget(weapon: WeaponDef): number {
+  const katana = katanaExpectedMechanic(weapon);
   return (
-    Math.max(0, weapon.damage) +
+    Math.max(0, weapon.damage) * katana.averageDamageMultiplier +
+    katana.averageBurstDamage +
     Math.max(0, weapon.quake?.damage ?? 0) +
     0.6 *
       Math.max(0, weapon.chainLightning?.damage ?? 0) *
@@ -131,18 +143,19 @@ export function resourceEffectivePower(
     // aggregate coverage are bounded like the existing curation grammar; beam price itself is mechanical.
     const coverage = 1 + Math.min(0.4, Math.max(0, beam.width) / 160);
     const active = Math.min(1.25, Math.max(0.05, beam.overheat.maxChannelSeconds));
-    const recovery = Math.max(1.5, beam.overheat.lockSeconds) + 0.35 / Math.max(0.001, beam.overheat.coolPerSecond);
-    return beam.damagePerSecond * coverage * reachCredit(beam.range) * active / (active + recovery);
+    const recovery =
+      Math.max(1.5, beam.overheat.lockSeconds) +
+      0.35 / Math.max(0.001, beam.overheat.coolPerSecond);
+    return (
+      (beam.damagePerSecond * coverage * reachCredit(beam.range) * active) / (active + recovery)
+    );
   }
   if (delivery === "thrown") {
     budget = Math.max(0, weapon.thrown!.damage) * pierceTargets(weapon.thrown!.pierce);
   } else if (delivery === "gun") {
     const gun = weapon.gun!;
     budget =
-      (0.85 *
-          Math.max(0, gun.damage) *
-          Math.max(1, gun.pellets ?? 1) *
-          pierceTargets(gun.pierce) +
+      (0.85 * Math.max(0, gun.damage) * Math.max(1, gun.pellets ?? 1) * pierceTargets(gun.pierce) +
         Math.max(0, gun.explode?.damage ?? 0)) *
       (1 + 0.5 * Math.max(0, gun.bounces ?? 0));
   } else if (delivery === "cast") {
@@ -150,7 +163,7 @@ export function resourceEffectivePower(
   } else {
     budget = meleeDamageBudget(weapon);
   }
-  return budget / interval * reachCredit(effectiveRange(weapon, delivery));
+  return (budget / interval) * reachCredit(effectiveRange(weapon, delivery));
 }
 
 function bucketFor(weapon: WeaponDef, delivery: WeaponDelivery): WeaponResourceBucket {
@@ -161,11 +174,14 @@ function bucketFor(weapon: WeaponDef, delivery: WeaponDelivery): WeaponResourceB
   return key as WeaponResourceBucket;
 }
 
-export function driveCostForProfile(profile: WeaponResourceProfile, effectiveInterval: number): number {
+export function driveCostForProfile(
+  profile: WeaponResourceProfile,
+  effectiveInterval: number,
+): number {
   if (profile.branch === "beam") return 0;
   const interval = Math.max(0.001, effectiveInterval);
   const powerCost = DRIVE_FLOOR_REGEN_PER_SECOND * interval * profile.load;
-  const legacyCost = profile.legacyNeutralCost * interval / profile.neutralAcceptedInterval;
+  const legacyCost = (profile.legacyNeutralCost * interval) / profile.neutralAcceptedInterval;
   return floorDriveCost(Math.max(powerCost, legacyCost) * profile.override);
 }
 
@@ -196,7 +212,8 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
       netSpendPerSecond: DRIVE_BEAM_NET_DRAIN_PER_SECOND,
       actionsFromFull: 1,
       zeroToNextActionSeconds: DRIVE_BEAM_RESTART_THRESHOLD / DRIVE_FLOOR_REGEN_PER_SECOND,
-      holdToEmptySeconds: (DRIVE_CAPACITY - DRIVE_BEAM_IGNITION_COST) / DRIVE_BEAM_NET_DRAIN_PER_SECOND,
+      holdToEmptySeconds:
+        (DRIVE_CAPACITY - DRIVE_BEAM_IGNITION_COST) / DRIVE_BEAM_NET_DRAIN_PER_SECOND,
       repeatedCyclePower: power,
       branch: "beam",
       ignitionCost: DRIVE_BEAM_IGNITION_COST,
@@ -207,11 +224,12 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
   }
   const size = WEAPON_RESOURCE_SIZE_FACTORS[weapon.tags.size];
   const load = clamp(1, DRIVE_LOAD_MAX, (power / median) ** 0.75 * size);
-  const legacyNeutralCost = delivery === "gun"
-    ? DRIVE_CAPACITY / Math.max(1, weapon.gun!.magazine) * DRIVE_GUN_BURST_RETENTION
-    : delivery === "thrown"
-      ? DRIVE_CAPACITY / Math.max(1, weapon.thrown!.charges) * DRIVE_THROWN_BURST_RETENTION
-      : 0;
+  const legacyNeutralCost =
+    delivery === "gun"
+      ? (DRIVE_CAPACITY / Math.max(1, weapon.gun!.magazine)) * DRIVE_GUN_BURST_RETENTION
+      : delivery === "thrown"
+        ? (DRIVE_CAPACITY / Math.max(1, weapon.thrown!.charges)) * DRIVE_THROWN_BURST_RETENTION
+        : 0;
   const shell = {
     formulaVersion: WEAPON_RESOURCE_FORMULA_VERSION,
     weaponId: weapon.id,
@@ -236,9 +254,10 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
     netSpendPerSecond: Math.max(0, grossSpendPerSecond - DRIVE_FLOOR_REGEN_PER_SECOND),
     actionsFromFull: Math.floor(DRIVE_CAPACITY / neutralCost),
     zeroToNextActionSeconds: neutralCost / DRIVE_FLOOR_REGEN_PER_SECOND,
-    holdToEmptySeconds: grossSpendPerSecond > DRIVE_FLOOR_REGEN_PER_SECOND
-      ? DRIVE_CAPACITY / (grossSpendPerSecond - DRIVE_FLOOR_REGEN_PER_SECOND)
-      : Number.POSITIVE_INFINITY,
+    holdToEmptySeconds:
+      grossSpendPerSecond > DRIVE_FLOOR_REGEN_PER_SECOND
+        ? DRIVE_CAPACITY / (grossSpendPerSecond - DRIVE_FLOOR_REGEN_PER_SECOND)
+        : Number.POSITIVE_INFINITY,
     repeatedCyclePower: power,
     ignitionCost: 0,
     grossDrainPerSecond: 0,
@@ -247,9 +266,11 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
   });
 }
 
-/** Deterministic, reviewable formula output for all 316 catalog weapons (fists are runtime-only). */
+/** Deterministic, reviewable formula output for all 326 catalog weapons (fists are runtime-only). */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
-  Object.keys(WEAPONS).filter((id) => id !== "fists").sort(),
+  Object.keys(WEAPONS)
+    .filter((id) => id !== "fists")
+    .sort(),
 );
 
 const generatedProfiles: Record<string, WeaponResourceProfile> = {};
@@ -267,11 +288,15 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-if (WEAPON_RESOURCE_IDS.length !== 316) {
-  throw new Error(`Drive formula expected 316 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`);
+if (WEAPON_RESOURCE_IDS.length !== 326) {
+  throw new Error(
+    `Drive formula expected 326 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+  );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {
-  throw new Error("Drive formula override cap exceeded; revise the formula instead of adding hand tunes");
+  throw new Error(
+    "Drive formula override cap exceeded; revise the formula instead of adding hand tunes",
+  );
 }
 for (const [id, entry] of Object.entries(WEAPON_RESOURCE_OVERRIDES)) {
   if (entry.multiplier < 0.85 || entry.multiplier > 1.15 || !WEAPONS[id]) {

@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-drift-wakizashi-hushglass",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 0.68,
+        "paint": 5,
+        "history": 0.82,
+        "bodyAlpha": 0.22,
+        "lipAlpha": 0.48,
+        "color": 0.58
+      }
+    },
+    "drift-petals": { "on": true, "params": { "count": 4, "color": 0.58 } },
+    "cleave-flash": { "on": true, "params": { "intensity": 0.28 } }
+  },
+  "rot": 0,
+  "notes": "Low-opacity smoke ribbon and four quiet glass motes. Void mote particle pack is recolored cyan-black on impact.",
+  "vfxRadius": 72,
+  "displayLength": 76
+}

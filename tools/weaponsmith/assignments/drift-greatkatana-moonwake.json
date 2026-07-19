@@ -1,0 +1,24 @@
+{
+  "vfxSubject": "vfx-drift-greatkatana-moonwake",
+  "image": null,
+  "suite": {
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 4,
+        "history": 0.94,
+        "bodyAlpha": 0.46,
+        "lipAlpha": 0.68,
+        "color": 0.55
+      }
+    },
+    "drift-petals": { "on": true, "params": { "count": 14, "color": 0.55 } },
+    "shockwave-ring": { "on": true, "params": { "color": 0.55 } },
+    "impact-flash": { "on": true, "params": { "intensity": 0.82 } }
+  },
+  "rot": 0,
+  "notes": "Broad persistent lunar wake with a cold finisher ring. Frost particle packs supply crystalline wake motes. Flagged for a bespoke finisher sheet.",
+  "vfxRadius": 190,
+  "displayLength": 335
+}

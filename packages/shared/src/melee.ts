@@ -2,6 +2,7 @@ import { CHOP_IMPACT_FRAC, SWING_WINDOW_FRAC } from "./constants.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
 import type { WeaponDef } from "./weapons.js";
+import { GENERATED_MELEE_COMBO_BARS } from "./weapons-expansion.generated.js";
 
 /**
  * §20 WYSIWYG melee (playtest #2/#5/#6). A melee swing is not an instant cone — it's a swept BLADE: a line
@@ -34,6 +35,7 @@ export type SwingStyle = NonNullable<WeaponDef["swingStyle"]>;
  *  while the server keeps resolving its one legacy centered sweep. `path` is deliberately carried now so a
  *  later accepted descriptor can reuse the exact step table without trusting a client-authored finisher. */
 export type MeleeComboFamily = "arc" | "chop" | "rake" | "punch" | "thrust";
+export type GeneratedMeleeComboVariant = keyof typeof GENERATED_MELEE_COMBO_BARS;
 export type MeleeComboVariant =
   | "default"
   | "dagger"
@@ -50,7 +52,8 @@ export type MeleeComboVariant =
   | "nodachi-coldcourt"
   | "nodachi-petalfall"
   | "katana-threehails"
-  | "katana-thunderlag";
+  | "katana-thunderlag"
+  | GeneratedMeleeComboVariant;
 
 /** Weapon-authored combo seam. Optional fields let current data use shared shape defaults while future
  * weapon entries opt into an exact family/variant without teaching the renderer weapon ids or names. */
@@ -1084,6 +1087,17 @@ export const THUNDER_FALL_COMBO_STEP = Object.freeze({
 type CloseBladeComboVariant = Extract<MeleeComboVariant, "dagger" | "claw">;
 type SignatureMeleeComboVariant = Exclude<MeleeComboVariant, "default" | CloseBladeComboVariant>;
 
+/** Generated katana bars are frozen at module load to keep the same immutable-data contract as the
+ * hand-authored panel sequences. Nested timing/path objects remain readonly through the generated literal. */
+const GENERATED_VARIANT_SEQUENCES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(GENERATED_MELEE_COMBO_BARS).map(([variant, sequence]) => [
+      variant,
+      Object.freeze(sequence.map((step) => Object.freeze(step))),
+    ]),
+  ),
+) as Readonly<Record<GeneratedMeleeComboVariant, readonly Readonly<MeleeComboStep>[]>>;
+
 function requiredBaseComboStep(family: MeleeComboFamily, index: number): Readonly<MeleeComboStep> {
   const step = MELEE_COMBO_SEQUENCES[family][index];
   if (!step) throw new RangeError(`Missing ${family} combo step ${index}`);
@@ -1159,6 +1173,7 @@ export const MELEE_COMBO_VARIANT_SEQUENCES: Readonly<
     COIL_DRAG_COMBO_STEP,
     THUNDER_FALL_COMBO_STEP,
   ]),
+  ...GENERATED_VARIANT_SEQUENCES,
 });
 
 /** Driftblade-model rollout table (panel §50+). Non-generated ids only, same law as
@@ -1341,6 +1356,101 @@ export function meleeComboSelectionFor(
   return family
     ? { family, variant: "default", sequence: MELEE_COMBO_SEQUENCES[family] }
     : undefined;
+}
+
+/** Server-authoritative effect of one accepted Driftblade-line beat. Presentation and mechanics share the
+ * same generated sequence length/step, while the legacy swing path remains the one damage carrier. */
+export interface KatanaBeatEffect {
+  readonly step: number;
+  readonly sequenceLength: number;
+  readonly finisher: boolean;
+  readonly perfect: boolean;
+  readonly damageMultiplier: number;
+  readonly reachMultiplier: number;
+  readonly toughDamageMultiplier: number;
+  readonly dashImpulse: number;
+  readonly burstRadius: number;
+  readonly burstDamage: number;
+  readonly invulnerabilitySeconds: number;
+}
+
+export function katanaBeatEffectFor(
+  def: WeaponDef,
+  stepIndex: number,
+  sequenceLength: number,
+  continued: boolean,
+  acceptedGapRatio = Number.POSITIVE_INFINITY,
+): KatanaBeatEffect {
+  const length = Math.max(1, Math.trunc(sequenceLength));
+  const step = ((Math.trunc(stepIndex) % length) + length) % length;
+  const finisher = step === length - 1;
+  const hook = def.katanaHook;
+  if (!hook) {
+    return Object.freeze({
+      step,
+      sequenceLength: length,
+      finisher,
+      perfect: false,
+      damageMultiplier: 1,
+      reachMultiplier: 1,
+      toughDamageMultiplier: 1,
+      dashImpulse: 0,
+      burstRadius: 0,
+      burstDamage: 0,
+      invulnerabilitySeconds: 0,
+    });
+  }
+  const perfect =
+    continued &&
+    step > 0 &&
+    hook.perfectWindowFraction !== undefined &&
+    acceptedGapRatio <= 1 + hook.perfectWindowFraction;
+  let damageMultiplier = step === 0 ? (hook.openerDamageMultiplier ?? 1) : 1;
+  if (hook.stackDamagePerBeat) {
+    const stacks = Math.min(hook.maxStacks ?? length, step + 1);
+    damageMultiplier *= 1 + hook.stackDamagePerBeat * stacks;
+  }
+  if (!finisher) damageMultiplier *= hook.nonFinisherDamageMultiplier ?? 1;
+  if (finisher) damageMultiplier *= hook.finisherDamageMultiplier ?? 1;
+  if (perfect) damageMultiplier *= hook.perfectDamageMultiplier ?? 1;
+  return Object.freeze({
+    step,
+    sequenceLength: length,
+    finisher,
+    perfect,
+    damageMultiplier,
+    reachMultiplier: 1 + (hook.reachPerBeat ?? 0) * step,
+    toughDamageMultiplier: finisher ? (hook.toughFinisherMultiplier ?? 1) : 1,
+    dashImpulse: finisher ? (hook.finisherDashImpulse ?? 0) : 0,
+    burstRadius: finisher ? (hook.finisherBurst?.radius ?? 0) : 0,
+    burstDamage: finisher ? (hook.finisherBurst?.damage ?? 0) : 0,
+    invulnerabilitySeconds: perfect ? (hook.perfectInvulnerabilitySeconds ?? 0) : 0,
+  });
+}
+
+/** Formula-v1 review inputs for a complete ideal-cadence sentence. Perfect-timing rewards are priced at
+ * full mastery; the tough-only premium uses the loot estimator's 25% encounter share instead of pretending
+ * every target is armoured. */
+export function katanaExpectedMechanic(def: WeaponDef): {
+  readonly averageDamageMultiplier: number;
+  readonly averageBurstDamage: number;
+  readonly maxReachMultiplier: number;
+} {
+  const sequenceLength = meleeComboSelectionFor(def)?.sequence.length ?? 1;
+  let damage = 0;
+  let burst = 0;
+  let maxReachMultiplier = 1;
+  for (let step = 0; step < sequenceLength; step++) {
+    const effect = katanaBeatEffectFor(def, step, sequenceLength, step > 0, 1);
+    damage += effect.damageMultiplier * (1 + (effect.toughDamageMultiplier - 1) * 0.25);
+    burst += effect.burstDamage;
+    maxReachMultiplier = Math.max(maxReachMultiplier, effect.reachMultiplier);
+  }
+  return Object.freeze({
+    averageDamageMultiplier: damage / sequenceLength,
+    averageBurstDamage: burst / sequenceLength,
+    maxReachMultiplier,
+  });
 }
 
 export interface SwingDescriptor {

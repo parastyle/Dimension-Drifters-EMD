@@ -1,0 +1,23 @@
+{
+  "vfxSubject": "vfx-drift-nodachi-pale-horizon",
+  "image": null,
+  "suite": {
+    "edge-trail": { "on": true, "params": { "reach": 1.4, "color": 0.54, "len": 1.3 } },
+    "blade-trail": {
+      "on": true,
+      "params": {
+        "reach": 1,
+        "paint": 3,
+        "history": 0.68,
+        "bodyAlpha": 0.3,
+        "lipAlpha": 0.62,
+        "color": 0.54
+      }
+    },
+    "drift-petals": { "on": true, "params": { "count": 9, "color": 0.54 } }
+  },
+  "rot": 0,
+  "notes": "Long frost horizon whose afterimage outgrows the blade. Frost spark and mote packs create pale rime fallout.",
+  "vfxRadius": 150,
+  "displayLength": 225
+}

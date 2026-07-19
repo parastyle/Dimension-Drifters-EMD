@@ -9,18 +9,18 @@ import {
   DRIVE_GUN_BURST_RETENTION,
   DRIVE_LOAD_MAX,
   DRIVE_THROWN_BURST_RETENTION,
+  driveCostForProfile,
   FISTS_RESOURCE_PROFILE,
   WEAPON_RESOURCE_FROZEN_MEDIANS,
   WEAPON_RESOURCE_IDS,
   WEAPON_RESOURCE_OVERRIDES,
   WEAPON_RESOURCE_PROFILES,
-  driveCostForProfile,
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 
 describe("Drive formula v1", () => {
-  it("covers the frozen 316-weapon catalog in deterministic id order", () => {
-    expect(WEAPON_RESOURCE_IDS).toHaveLength(316);
+  it("covers the frozen 326-weapon catalog in deterministic id order", () => {
+    expect(WEAPON_RESOURCE_IDS).toHaveLength(326);
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
@@ -36,10 +36,10 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 167, thrown: 10, gun: 114, cast: 2, beam: 23 });
+    expect(census).toEqual({ melee: 177, thrown: 10, gun: 114, cast: 2, beam: 23 });
   });
 
-  it("pins every coefficient, frozen median, and the one bounded utility override", () => {
+  it("pins every coefficient, frozen median, and the bounded utility overrides", () => {
     expect({
       capacity: DRIVE_CAPACITY,
       floor: DRIVE_FLOOR_REGEN_PER_SECOND,
@@ -69,6 +69,14 @@ describe("Drive formula v1", () => {
       "gravediggers-spade": {
         multiplier: 1.15,
         reason: "A successful swing can revive; that utility has no damage statistic.",
+      },
+      "drift-katana-riftstep": {
+        multiplier: 1.08,
+        reason: "The finisher dash adds mobility that the damage-and-reach formula cannot value.",
+      },
+      "drift-greatkatana-tempest-regent": {
+        multiplier: 1.1,
+        reason: "Perfect continuations grant brief invulnerability outside the damage formula.",
       },
     });
     expect(WEAPON_RESOURCE_PROFILES["gravediggers-spade"]?.override).toBe(1.15);
@@ -113,6 +121,32 @@ describe("Drive formula v1", () => {
     });
   });
 
+  it("goldens every Driftblade-line Drive profile", () => {
+    expect({
+      kagewake: WEAPON_RESOURCE_PROFILES["drift-wakizashi-kagewake"]?.neutralCost,
+      hushglass: WEAPON_RESOURCE_PROFILES["drift-wakizashi-hushglass"]?.neutralCost,
+      stillwater: WEAPON_RESOURCE_PROFILES["drift-katana-stillwater-edict"]?.neutralCost,
+      stormthread: WEAPON_RESOURCE_PROFILES["drift-katana-stormthread"]?.neutralCost,
+      riftstep: WEAPON_RESOURCE_PROFILES["drift-katana-riftstep"]?.neutralCost,
+      paleHorizon: WEAPON_RESOURCE_PROFILES["drift-nodachi-pale-horizon"]?.neutralCost,
+      gatebreaker: WEAPON_RESOURCE_PROFILES["drift-nodachi-gatebreaker"]?.neutralCost,
+      moonwake: WEAPON_RESOURCE_PROFILES["drift-greatkatana-moonwake"]?.neutralCost,
+      tempestRegent: WEAPON_RESOURCE_PROFILES["drift-greatkatana-tempest-regent"]?.neutralCost,
+      worldSeam: WEAPON_RESOURCE_PROFILES["drift-colossal-world-seam"]?.neutralCost,
+    }).toEqual({
+      kagewake: 4,
+      hushglass: 4,
+      stillwater: 7.25,
+      stormthread: 6,
+      riftstep: 7.5,
+      paleHorizon: 10,
+      gatebreaker: 9,
+      moonwake: 16,
+      tempestRegent: 16.75,
+      worldSeam: 22.5,
+    });
+  });
+
   it("pins the documented delivery distributions", () => {
     const bands = (delivery: "melee" | "thrown" | "gun" | "cast") => {
       const values = Object.values(WEAPON_RESOURCE_PROFILES)
@@ -125,19 +159,17 @@ describe("Drive formula v1", () => {
         max: values.at(-1),
       };
     };
-    expect(bands("melee")).toEqual({ min: 4, median: 13.75, max: 35 });
+    expect(bands("melee")).toEqual({ min: 4, median: 13.25, max: 35 });
     expect(bands("thrown")).toEqual({ min: 11.25, median: 15, max: 22.5 });
     expect(bands("gun")).toEqual({ min: 1.25, median: 10.75, max: 35 });
     expect(bands("cast")).toEqual({ min: 7, median: 14.75, max: 14.75 });
   });
 
   it("guarantees fists and every load-1 melee can sustain the 20/s floor", () => {
-    const baseline = [FISTS_RESOURCE_PROFILE, ...Object.values(WEAPON_RESOURCE_PROFILES)]
-      .filter((profile) =>
-        profile.delivery === "melee" &&
-        Math.abs(profile.load - 1) < 1e-9 &&
-        profile.override === 1,
-      );
+    const baseline = [FISTS_RESOURCE_PROFILE, ...Object.values(WEAPON_RESOURCE_PROFILES)].filter(
+      (profile) =>
+        profile.delivery === "melee" && Math.abs(profile.load - 1) < 1e-9 && profile.override === 1,
+    );
     expect(baseline.length).toBeGreaterThan(0);
     for (const profile of baseline) {
       const cost = driveCostForProfile(profile, profile.neutralAcceptedInterval);
@@ -148,7 +180,7 @@ describe("Drive formula v1", () => {
         profile.neutralAcceptedInterval,
       );
     }
-    // The revive-capable Spade is the sole audited utility exception, not a naked baseline row.
+    // The revive-capable Spade remains an audited utility exception, not a naked baseline row.
     expect(WEAPON_RESOURCE_PROFILES["gravediggers-spade"]?.override).toBe(1.15);
   });
 });
