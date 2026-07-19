@@ -58,7 +58,6 @@ import {
   assertMigrationPlan,
   buildCanonicalBodyMasks,
   buildMigrationPlan,
-  connectedAlphaComponents,
   describeMask,
   erodeMask,
   hashJson,
@@ -67,6 +66,7 @@ import {
   renderRoleForItem,
   renderVariantsForItem,
   rgbaAlpha,
+  scrubSmallAlphaComponents,
   validateFullReplacement,
   validateHatReadability,
   validateHeadAccessory,
@@ -1003,10 +1003,10 @@ function circularKernel(radius) {
 }
 
 async function bakeOutline(registered) {
-  const radius = Math.max(1, Math.round(OUTLINE.baseWidth * Math.max(CANVAS.width, CANVAS.height) / OUTLINE.referenceCanvas));
+  const radius = generatedOutlineRadius();
   const { data: dilated } = await sharp(registered, { raw: { width: CANVAS.width, height: CANVAS.height, channels: 4 } })
     .extractChannel(3)
-    .threshold(1)
+    .threshold(VALIDATION_THRESHOLDS.visibleAlpha + 1)
     .convolve(circularKernel(radius))
     .threshold(1)
     .raw()
@@ -1014,7 +1014,7 @@ async function bakeOutline(registered) {
   const output = Buffer.from(registered);
   let rimPixels = 0;
   for (let pixel = 0, offset = 0; pixel < CANVAS.width * CANVAS.height; pixel++, offset += 4) {
-    if (registered[offset + 3] === 0 && dilated[pixel] > 0) {
+    if (registered[offset + 3] <= VALIDATION_THRESHOLDS.visibleAlpha && dilated[pixel] > 0) {
       output[offset] = OUTLINE.rgba[0];
       output[offset + 1] = OUTLINE.rgba[1];
       output[offset + 2] = OUTLINE.rgba[2];
@@ -1025,35 +1025,30 @@ async function bakeOutline(registered) {
   return { data: output, radius, rimPixels };
 }
 
-/** AI renders routinely leave sub-speck stray islands after chroma keying (1-5px dust), which the
- *  strict component gates then count as extra parts — this failed honest paired renders ("found 5",
- *  fleet 2026-07-18). Erase every island smaller than this before registration; real parts at this
- *  canvas are thousands of pixels, so 64px only ever removes dust. The gates stay strict. */
-const MIN_COMPONENT_PIXELS = 64;
-
-function scrubAlphaSpecks(keyed, width, height) {
-  const alpha = rgbaAlpha(keyed, width, height);
-  const { components, labels } = connectedAlphaComponents(alpha, width, height);
-  let scrubbed = 0;
-  for (const component of components) {
-    if (component.pixels >= MIN_COMPONENT_PIXELS) continue;
-    for (let y = component.top; y <= component.bottom; y++) {
-      for (let x = component.left; x <= component.right; x++) {
-        const index = y * width + x;
-        if (labels[index] !== component.label) continue;
-        keyed[index * 4] = 0;
-        keyed[index * 4 + 1] = 0;
-        keyed[index * 4 + 2] = 0;
-        keyed[index * 4 + 3] = 0;
-      }
-    }
-    scrubbed++;
-  }
-  if (scrubbed > 0) console.log(`SCRUB ${scrubbed} speck island(s) < ${MIN_COMPONENT_PIXELS}px`);
-  return keyed;
+function generatedOutlineRadius() {
+  return Math.max(1, Math.round(OUTLINE.baseWidth * Math.max(CANVAS.width, CANVAS.height) / OUTLINE.referenceCanvas));
 }
 
-async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox) {
+/** AI renders routinely leave sub-speck stray islands after chroma keying, and Lanczos registration
+ *  strict component gates then count as extra parts — this failed honest paired renders ("found 5",
+ *  fleet 2026-07-18). Scrub both stages; real parts are thousands of pixels, so the 64px boundary
+ *  only removes dust and leaves genuine extra parts for the gates to reject. */
+const MIN_COMPONENT_PIXELS = 64;
+
+function scrubAlphaSpecks(rgba, width, height, stage = "keyed", threshold = VALIDATION_THRESHOLDS.visibleAlpha) {
+  const before = rgbaAlpha(rgba);
+  const alpha = new Uint8Array(before);
+  const report = scrubSmallAlphaComponents(alpha, width, height, MIN_COMPONENT_PIXELS, threshold);
+  if (report.removedComponentCount === 0) return rgba;
+  for (let index = 0; index < alpha.length; index++) {
+    if (before[index] === alpha[index]) continue;
+    rgba.fill(0, index * 4, index * 4 + 4);
+  }
+  console.log(`SCRUB ${stage}: ${report.removedComponentCount} speck island(s), ${report.removedPixels}px < ${MIN_COMPONENT_PIXELS}px`);
+  return rgba;
+}
+
+async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox, contentFrame = null) {
   scrubAlphaSpecks(keyed, CANVAS.width, CANVAS.height);
   const bounds = alphaBounds(keyed, CANVAS.width, CANVAS.height);
   if (!bounds) throw new Error("chroma key removed the entire render");
@@ -1064,7 +1059,13 @@ async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox) {
   // Register to deep painted stock so Lanczos downscaling cannot leave the exact pivot on a weak AA fringe.
   const authoredPixel = nearestVisible(keyed, CANVAS.width, bounds, approximate, 192);
   if (!authoredPixel) throw new Error("could not locate opaque stock for authored pivot");
-  const scale = Math.min(1, maxPartBox.width / bounds.width, maxPartBox.height / bounds.height);
+  const scale = Math.min(
+    1,
+    maxPartBox.width / bounds.width,
+    maxPartBox.height / bounds.height,
+    contentFrame ? contentFrame.width / bounds.width : 1,
+    contentFrame ? contentFrame.height / bounds.height : 1,
+  );
   const registeredWidth = Math.max(1, Math.round(bounds.width * scale));
   const registeredHeight = Math.max(1, Math.round(bounds.height * scale));
   const cutout = await sharp(keyed, { raw: { width: CANVAS.width, height: CANVAS.height, channels: 4 } })
@@ -1074,11 +1075,29 @@ async function registerSingle(keyed, pivot, desiredAnchor, maxPartBox) {
     .toBuffer();
   const anchorX = (authoredPixel.x - bounds.left) * registeredWidth / bounds.width;
   const anchorY = (authoredPixel.y - bounds.top) * registeredHeight / bounds.height;
-  const left = Math.round(pivot.x - anchorX);
-  const top = Math.round(pivot.y - anchorY);
+  const proposedLeft = Math.round(pivot.x - anchorX);
+  const proposedTop = Math.round(pivot.y - anchorY);
+  const left = contentFrame
+    ? Math.max(contentFrame.left, Math.min(contentFrame.left + contentFrame.width - registeredWidth, proposedLeft))
+    : proposedLeft;
+  const top = contentFrame
+    ? Math.max(contentFrame.top, Math.min(contentFrame.top + contentFrame.height - registeredHeight, proposedTop))
+    : proposedTop;
   let registered = Buffer.alloc(CANVAS.width * CANVAS.height * 4);
   copyRgbaInto(registered, cutout, registeredWidth, registeredHeight, left, top);
   registered = nudgeRegionPivotIntoStock(registered, pivot);
+  if (contentFrame) {
+    const registeredBounds = alphaBounds(registered, CANVAS.width, CANVAS.height);
+    const frameRight = contentFrame.left + contentFrame.width - 1;
+    const frameBottom = contentFrame.top + contentFrame.height - 1;
+    if (!registeredBounds
+      || registeredBounds.left < contentFrame.left
+      || registeredBounds.top < contentFrame.top
+      || registeredBounds.right > frameRight
+      || registeredBounds.bottom > frameBottom) {
+      throw new Error(`registered stock cannot cover pivot (${pivot.x},${pivot.y}) inside fixed content frame`);
+    }
+  }
   return registered;
 }
 
@@ -1092,13 +1111,37 @@ async function registerPaired(keyed, spec) {
     { left: middle + 1, top: overall.top, width: Math.max(1, overall.right - middle), height: overall.height },
   ];
   const registered = Buffer.alloc(CANVAS.width * CANVAS.height * 4);
+  const split = Math.floor((spec.sourcePivots[0].x + spec.sourcePivots[1].x) / 2);
   for (let index = 0; index < 2; index++) {
     const bounds = alphaBounds(keyed, CANVAS.width, CANVAS.height, 8, regions[index]);
     if (!bounds || bounds.opaquePixelCount < 100) throw new Error(`paired component ${spec.componentIds[index]} missing or too small`);
     const desired = bounds.alphaCentroid;
     const authoredPixel = nearestVisible(keyed, CANVAS.width, bounds, desired, 192);
     if (!authoredPixel) throw new Error(`could not locate opaque stock for ${spec.componentIds[index]}`);
-    const scale = Math.min(1, spec.maxPartBox.width / bounds.width, spec.maxPartBox.height / bounds.height);
+    const frame = PART_FRAMES[spec.receivers[index]];
+    if (!frame) throw new Error(`paired component ${spec.componentIds[index]} has no fixed receiver frame`);
+    const [frameLeft, frameTop, frameWidth, frameHeight] = frame.crop;
+    const inset = spec.generatedOutlineRadius ?? 0;
+    const contentFrame = {
+      left: frameLeft + inset,
+      top: frameTop + inset,
+      right: frameLeft + frameWidth - inset - 1,
+      bottom: frameTop + frameHeight - inset - 1,
+    };
+    // Keep at least one transparent column between the generated rims. Merely stopping the left
+    // rim at split-1 and starting the right rim at split makes them 4-neighbor adjacent (one island).
+    if (index === 0) contentFrame.right = Math.min(contentFrame.right, split - inset - 2);
+    else contentFrame.left = Math.max(contentFrame.left, split + inset + 1);
+    contentFrame.width = contentFrame.right - contentFrame.left + 1;
+    contentFrame.height = contentFrame.bottom - contentFrame.top + 1;
+    if (contentFrame.width < 1 || contentFrame.height < 1) throw new Error(`paired component ${spec.componentIds[index]} has no legal content frame`);
+    const scale = Math.min(
+      1,
+      spec.maxPartBox.width / bounds.width,
+      spec.maxPartBox.height / bounds.height,
+      contentFrame.width / bounds.width,
+      contentFrame.height / bounds.height,
+    );
     const width = Math.max(1, Math.round(bounds.width * scale));
     const height = Math.max(1, Math.round(bounds.height * scale));
     const cutout = await sharp(keyed, { raw: { width: CANVAS.width, height: CANVAS.height, channels: 4 } })
@@ -1108,11 +1151,12 @@ async function registerPaired(keyed, spec) {
       .toBuffer();
     const anchorX = (authoredPixel.x - bounds.left) * width / bounds.width;
     const anchorY = (authoredPixel.y - bounds.top) * height / bounds.height;
-    const left = Math.round(spec.sourcePivots[index].x - anchorX);
-    const top = Math.round(spec.sourcePivots[index].y - anchorY);
+    const proposedLeft = Math.round(spec.sourcePivots[index].x - anchorX);
+    const proposedTop = Math.round(spec.sourcePivots[index].y - anchorY);
+    const left = Math.max(contentFrame.left, Math.min(contentFrame.right - width + 1, proposedLeft));
+    const top = Math.max(contentFrame.top, Math.min(contentFrame.bottom - height + 1, proposedTop));
     copyRgbaInto(registered, cutout, width, height, left, top);
   }
-  const split = Math.floor((spec.sourcePivots[0].x + spec.sourcePivots[1].x) / 2);
   let nudged = nudgeRegionPivotIntoStock(registered, spec.sourcePivots[0], { left: 0, top: 0, width: split + 1, height: CANVAS.height });
   nudged = nudgeRegionPivotIntoStock(nudged, spec.sourcePivots[1], { left: split + 1, top: 0, width: CANVAS.width - split - 1, height: CANVAS.height });
   return nudged;
@@ -1126,6 +1170,17 @@ function countOpaqueInRect(data, rect, threshold = 64) {
     }
   }
   return count;
+}
+
+function clipRgbaToMask(rgba, mask) {
+  if (rgba.length !== mask.length * 4) throw new Error("body-patch clip mask dimensions do not match RGBA data");
+  let clippedPixels = 0;
+  for (let index = 0; index < mask.length; index++) {
+    if (mask[index] || rgba[index * 4 + 3] === 0) continue;
+    rgba.fill(0, index * 4, index * 4 + 4);
+    clippedPixels++;
+  }
+  return clippedPixels;
 }
 
 function verifyHatStackBand(data, bounds) {
@@ -1254,6 +1309,19 @@ function roleUsesGeneratedOutline(renderRole) {
   return ["replace-hand", "replace-foot", "replace-head", "prestige-cap", "overlay-hat", "cloak-far"].includes(renderRole);
 }
 
+function singleContentFrameForJob(job) {
+  if (!job) return null;
+  if (job.renderRole === "head-accessory") {
+    return job.item.slot === "glasses" ? FACE_ENVELOPES.eyes : FACE_ENVELOPES.mouthJaw;
+  }
+  if (job.renderRole === "replace-head") {
+    const [left, top, width, height] = PART_FRAMES.head.crop;
+    const inset = generatedOutlineRadius();
+    return { left: left + inset, top: top + inset, width: width - inset * 2, height: height - inset * 2 };
+  }
+  return null;
+}
+
 async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
   const context = await loadReplacementContext();
   const alpha = rgbaAlpha(rgba);
@@ -1358,9 +1426,29 @@ async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, 
     throw new Error(`File/frame: raw source must be exact 1024x1024 PNG, got ${rawMetadata.width}x${rawMetadata.height} ${rawMetadata.format}`);
   }
   const decoded = await decodeAndKey(raw);
+  const registrationPartBox = maxPartBox;
   const registered = pairedSpec
-    ? await registerPaired(decoded.data, pairedSpec)
-    : await registerSingle(decoded.data, pivots[0], desiredAnchor, maxPartBox);
+    ? await registerPaired(decoded.data, {
+        ...pairedSpec,
+        maxPartBox: registrationPartBox,
+        generatedOutlineRadius: replacementJob && roleUsesGeneratedOutline(replacementJob.renderRole)
+          ? generatedOutlineRadius()
+          : 0,
+      })
+    : await registerSingle(
+        decoded.data,
+        pivots[0],
+        desiredAnchor,
+        registrationPartBox,
+        singleContentFrameForJob(replacementJob),
+      );
+  if (replacementJob?.renderRole === "body-patch") {
+    const context = await loadReplacementContext();
+    const allowed = replacementJob.item.slot === "shirt" ? context.masks.shirtAllowed : context.masks.pantsAllowed;
+    const clippedPixels = clipRgbaToMask(registered, allowed);
+    if (clippedPixels > 0) console.log(`CLIP body-patch: ${clippedPixels}px outside ${replacementJob.item.slot}Allowed`);
+  }
+  scrubAlphaSpecks(registered, CANVAS.width, CANVAS.height, "post-registration", 0);
   const outlined = replacementJob && !roleUsesGeneratedOutline(replacementJob.renderRole)
     ? { data: registered, radius: 0, rimPixels: 0 }
     : await bakeOutline(registered);

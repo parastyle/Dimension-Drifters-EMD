@@ -11,7 +11,9 @@ import {
   buildCanonicalBodyMasks,
   buildMigrationPlan,
   renderRoleForItem,
+  scrubSmallAlphaComponents,
   validateFullReplacement,
+  validatePairedReplacements,
   validateTorsoPatch,
 } from "./gear-replacement-contract.mjs";
 
@@ -119,6 +121,46 @@ test("full replacements reject 97.9% coverage, frame escape, extra island, and w
   assert.throws(
     () => validateFullReplacement({ ...fixture, pivot: { x: 48, y: 10 } }),
     /pivot \(48,10\) lacks opaque stock/,
+  );
+});
+
+test("post-resize speck scrub removes only sub-64px ringing before strict paired validation", () => {
+  const width = 40;
+  const height = 20;
+  const alpha = new Uint8Array(width * height);
+  const leftCore = new Uint8Array(alpha.length);
+  const rightCore = new Uint8Array(alpha.length);
+  for (let y = 4; y < 14; y++) {
+    for (let x = 2; x < 10; x++) {
+      alpha[y * width + x] = 255;
+      leftCore[y * width + x] = 1;
+    }
+    for (let x = 30; x < 38; x++) {
+      alpha[y * width + x] = 255;
+      rightCore[y * width + x] = 1;
+    }
+  }
+  for (const [x, y, value] of [[0, 0, 1], [19, 0, 9], [39, 19, 9]]) alpha[y * width + x] = value;
+  const parts = [
+    { id: "left", frame: [0, 0, 20, 20], coreMask: leftCore, pivot: { x: 5, y: 8 } },
+    { id: "right", frame: [20, 0, 20, 20], coreMask: rightCore, pivot: { x: 34, y: 8 } },
+  ];
+
+  assert.throws(
+    () => validatePairedReplacements({ alpha, width, height, parts, splitX: 20 }),
+    /expected exactly two separated components, found 4/,
+  );
+  const report = scrubSmallAlphaComponents(alpha, width, height, 64, 0);
+  assert.equal(report.removedComponentCount, 3);
+  assert.equal(report.removedPixels, 3);
+  assert.equal(validatePairedReplacements({ alpha, width, height, parts, splitX: 20 }).componentCount, 2);
+
+  const honestThirdPart = new Uint8Array(alpha);
+  for (let y = 0; y < 8; y++) for (let x = 16; x < 24; x++) honestThirdPart[y * width + x] = 255;
+  assert.equal(scrubSmallAlphaComponents(honestThirdPart, width, height).removedComponentCount, 0);
+  assert.throws(
+    () => validatePairedReplacements({ alpha: honestThirdPart, width, height, parts, splitX: 20 }),
+    /expected exactly two separated components, found 3/,
   );
 });
 

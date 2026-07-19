@@ -388,6 +388,32 @@ export function connectedAlphaComponents(alpha, width, height, threshold = VALID
   return { labels, components };
 }
 
+export function scrubSmallAlphaComponents(
+  alpha,
+  width,
+  height,
+  minimumPixels = 64,
+  threshold = VALIDATION_THRESHOLDS.visibleAlpha,
+) {
+  assertDimensions(alpha, width, height, "alpha speck scrub input");
+  const { labels, components } = connectedAlphaComponents(alpha, width, height, threshold);
+  const removedComponents = components.filter((component) => component.pixels < minimumPixels);
+  const removedLabels = new Set(removedComponents.map((component) => component.label));
+  let removedPixels = 0;
+  if (removedLabels.size > 0) {
+    for (let index = 0; index < alpha.length; index++) {
+      if (!removedLabels.has(labels[index])) continue;
+      alpha[index] = 0;
+      removedPixels++;
+    }
+  }
+  return {
+    removedComponentCount: removedComponents.length,
+    removedPixels,
+    removedComponents,
+  };
+}
+
 function maskPixelCount(mask) {
   let count = 0;
   for (const value of mask) count += value ? 1 : 0;
@@ -399,11 +425,38 @@ export function validateFullReplacement({ alpha, width, height, frame, coreMask,
   const corePixels = maskPixelCount(coreMask);
   gate(corePixels > 0, section, "base core mask is empty");
   let coveredCorePixels = 0;
+  let uncoveredLeft = width;
+  let uncoveredTop = height;
+  let uncoveredRight = -1;
+  let uncoveredBottom = -1;
   for (let index = 0; index < coreMask.length; index++) {
-    if (coreMask[index] && alpha[index] >= VALIDATION_THRESHOLDS.stockAlpha) coveredCorePixels++;
+    if (!coreMask[index]) continue;
+    if (alpha[index] >= VALIDATION_THRESHOLDS.stockAlpha) {
+      coveredCorePixels++;
+      continue;
+    }
+    const x = index % width;
+    const y = Math.floor(index / width);
+    uncoveredLeft = Math.min(uncoveredLeft, x);
+    uncoveredTop = Math.min(uncoveredTop, y);
+    uncoveredRight = Math.max(uncoveredRight, x);
+    uncoveredBottom = Math.max(uncoveredBottom, y);
   }
   const coreCoverage = coveredCorePixels / corePixels;
-  gate(coreCoverage >= VALIDATION_THRESHOLDS.replacementCoreCoverage, section, `base-core coverage ${(coreCoverage * 100).toFixed(3)}% is below 98%`);
+  const uncoveredCorePixels = corePixels - coveredCorePixels;
+  const uncoveredCoreBounds = uncoveredRight < uncoveredLeft ? null : {
+    left: uncoveredLeft,
+    top: uncoveredTop,
+    right: uncoveredRight,
+    bottom: uncoveredBottom,
+    width: uncoveredRight - uncoveredLeft + 1,
+    height: uncoveredBottom - uncoveredTop + 1,
+  };
+  gate(
+    coreCoverage >= VALIDATION_THRESHOLDS.replacementCoreCoverage,
+    section,
+    `base-core coverage ${(coreCoverage * 100).toFixed(3)}% is below 98%; uncovered=${uncoveredCorePixels}px bounds=${JSON.stringify(uncoveredCoreBounds)}`,
+  );
   const { components } = connectedAlphaComponents(alpha, width, height);
   gate(components.length === 1, section, `expected one connected primary island, found ${components.length}`);
   const pivotIndex = Math.round(pivot.y) * width + Math.round(pivot.x);
@@ -412,7 +465,7 @@ export function validateFullReplacement({ alpha, width, height, frame, coreMask,
   const envelope = rectBounds(frame);
   gate(bounds.width <= envelope.width && bounds.height <= envelope.height, section, `replacement bounds ${bounds.width}x${bounds.height} exceed role envelope ${envelope.width}x${envelope.height}`);
   gate(contains(frame, bounds.centroid.x, bounds.centroid.y), section, "replacement centroid escapes role envelope");
-  return { corePixels, coveredCorePixels, coreCoverage, primaryIslandCount: components.length, bounds };
+  return { corePixels, coveredCorePixels, uncoveredCorePixels, uncoveredCoreBounds, coreCoverage, primaryIslandCount: components.length, bounds };
 }
 
 export function validatePairedReplacements({ alpha, width, height, parts, splitX }) {
