@@ -285,6 +285,7 @@ describe("allocation-free flourish sampler", () => {
         expect(Math.abs(out.bodyTurn)).toBeLessThanOrEqual(0.12);
         expect(Math.abs(out.footForward)).toBeLessThanOrEqual(0.07);
         expect(Math.abs(out.footLateral)).toBeLessThanOrEqual(0.07);
+        expect(Math.hypot(out.footForward, out.footLateral)).toBeLessThanOrEqual(0.07);
         expect(out.paperHop).toBeLessThanOrEqual(0.05);
         expect(Math.hypot(out.headForwardPx, out.headLateralPx)).toBeLessThanOrEqual(3.5);
       }
@@ -316,5 +317,80 @@ describe("allocation-free flourish sampler", () => {
     input.moment = "idle-settle";
     input.elapsedMs = 0;
     expect(sampleFlourish(input, out).active).toBe(false);
+  });
+
+  it("reaches cyclic weapon home and holds exact full-body home before ownership fades", () => {
+    for (const spec of Object.values(WEAPON_FLOURISH_SPECS)) {
+      for (const [moment, beat] of [
+        ["draw", spec.draw],
+        ["after-attack", spec.afterAttack],
+      ] as const) {
+        const input = createFlourishInput();
+        input.spec = beat;
+        input.moment = moment;
+        const out = createFlourishSample();
+        let firstFadeMs = -1;
+        for (let elapsed = beat.timing.catchAtMs; elapsed < beat.timing.durationMs; elapsed++) {
+          input.elapsedMs = elapsed;
+          sampleFlourish(input, out);
+          if (out.ownership < 0.999) {
+            firstFadeMs = elapsed;
+            break;
+          }
+        }
+        expect(firstFadeMs, `${spec.family}:${moment}:fade`).toBeGreaterThan(0);
+        input.elapsedMs = firstFadeMs;
+        sampleFlourish(input, out);
+        const cyclicAngleError = Math.abs(
+          Math.atan2(Math.sin(out.weaponRotationRad), Math.cos(out.weaponRotationRad)),
+        );
+        expect(
+          Math.hypot(out.handForward, out.handLateral),
+          `${spec.family}:${moment}:grip-home`,
+        ).toBeLessThanOrEqual(0.03);
+        expect(cyclicAngleError, `${spec.family}:${moment}:weapon-home`).toBeLessThanOrEqual(0.18);
+
+        const priorX = out.handForward;
+        const priorY = out.handLateral;
+        input.elapsedMs = Math.min(beat.timing.durationMs - 0.001, firstFadeMs + 16.7);
+        sampleFlourish(input, out);
+        expect(
+          Math.hypot(out.handForward - priorX, out.handLateral - priorY) / 0.0167,
+          `${spec.family}:${moment}:terminal-velocity-Hps`,
+        ).toBeLessThanOrEqual(120 / 76);
+      }
+    }
+  });
+
+  it("takes every family through the complete reduced-motion grammar", () => {
+    for (const spec of Object.values(WEAPON_FLOURISH_SPECS)) {
+      for (const [moment, beat, elapsed] of [
+        ["draw", spec.draw, 50],
+        ["stow", spec.stow, 50],
+        ["after-attack", spec.afterAttack, 50],
+      ] as const) {
+        const input = createFlourishInput();
+        input.spec = beat;
+        input.moment = moment;
+        input.elapsedMs = elapsed;
+        input.reducedMotion = true;
+        const out = sampleFlourish(input, createFlourishSample());
+        expect(out.active, `${spec.family}:${moment}:active`).toBe(true);
+        expect(out.settleOnly, `${spec.family}:${moment}:settle`).toBe(true);
+        expect(out.weaponRotationRad, `${spec.family}:${moment}:rotation`).toBe(0);
+        expect(out.catchOvershootRad, `${spec.family}:${moment}:overshoot`).toBe(0);
+        expect(out.paperHop, `${spec.family}:${moment}:hop`).toBe(0);
+        expect(out.headForwardPx, `${spec.family}:${moment}:head-x`).toBe(0);
+        expect(out.headLateralPx, `${spec.family}:${moment}:head-y`).toBe(0);
+      }
+      const input = createFlourishInput();
+      input.spec = spec.idleSettle ?? spec.afterAttack;
+      input.moment = "idle-settle";
+      input.elapsedMs = 1;
+      input.reducedMotion = true;
+      expect(sampleFlourish(input, createFlourishSample()).active, `${spec.family}:idle`).toBe(
+        false,
+      );
+    }
   });
 });

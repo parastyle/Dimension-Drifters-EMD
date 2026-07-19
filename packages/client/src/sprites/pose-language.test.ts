@@ -276,7 +276,7 @@ describe("flourish live-catalog coverage", () => {
     );
     expect(staged.length).toBeGreaterThanOrEqual(10);
     for (const def of staged) {
-      expect(["short", "standard", "great", "colossal"]).toContain(bladeSizeClassFor(def));
+      expect(["short", "standard", "long", "great", "colossal"]).toContain(bladeSizeClassFor(def));
     }
     expect(bladeSizeClassFor(weapon("driftblade"))).toBe("great");
   });

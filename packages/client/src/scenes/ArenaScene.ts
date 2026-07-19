@@ -3138,14 +3138,26 @@ export class ArenaScene extends Phaser.Scene {
       const rig = this.blobs.get(id);
       if (!rig) return;
       const previousWeaponId = this.equipped.get(id);
-      if (previousWeaponId === player.weapon) return;
-      if (previousWeaponId) {
-        rig.beginWeaponSwap(previousWeaponId, player.weapon, this.animClock);
-      }
       const def = WEAPONS[player.weapon];
       // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
       const spriteId = def?.sprite ?? player.weapon;
       const manifest = SPRITES[spriteId as keyof typeof SPRITES];
+      const retryingLazyArt =
+        previousWeaponId === player.weapon &&
+        !!def &&
+        !!manifest &&
+        !this.failedArt.has(spriteId) &&
+        rig.heldWeaponDef(0)?.id !== player.weapon &&
+        (rig.weaponSwapPending || this.pendingArt.has(spriteId));
+      if (previousWeaponId === player.weapon && !retryingLazyArt) return;
+      if (previousWeaponId !== player.weapon) {
+        if (previousWeaponId) {
+          rig.beginWeaponSwap(previousWeaponId, player.weapon, this.animClock);
+        }
+        // Identity truth advances before lazy-art retries. A -> B(lazy) -> A must replace B's pending
+        // transition instead of comparing A with A forever while the rig remains empty-handed.
+        this.equipped.set(id, player.weapon);
+      }
       if (def && manifest && !this.failedArt.has(spriteId)) {
         // §13 v0.104 an expansion drop's art loads on demand — hold off equipping until it lands
         // (this runs per frame, so the weapon appears in hand a beat after the grab).
@@ -3162,11 +3174,9 @@ export class ArenaScene extends Phaser.Scene {
           player.attackHeld,
           this.attackClientEpoch(player.attackTick, id !== this.room?.sessionId),
         );
-        this.equipped.set(id, player.weapon);
       } else if (def) {
         rig.unequip(def, !!previousWeaponId); // §9 fists / missing-art fallback / no held sprite → empty hands
         rig.finishWeaponSwapWithoutArt();
-        this.equipped.set(id, player.weapon);
       }
     });
   }

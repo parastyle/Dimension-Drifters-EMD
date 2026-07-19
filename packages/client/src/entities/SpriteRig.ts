@@ -2730,6 +2730,11 @@ export class SpriteRig {
     return this.flourishCancelGeneration;
   }
 
+  /** Scene retry seam: the observed identity changed, but the incoming art has not attached yet. */
+  get weaponSwapPending(): boolean {
+    return this.pendingSwapKey.length > 0;
+  }
+
   private resetFlourishState(clearCounters: boolean): void {
     this.clearFlourishActivity(true, true);
     this.pendingSwapKey = "";
@@ -7206,6 +7211,9 @@ export class SpriteRig {
     const currentMoveActive = currentMoveLength > 0.15 || (anim.speed ?? 0) > MOVE_SPEED * 0.12;
     const currentMoveX = currentMoveLength > 0.001 ? anim.moveX / currentMoveLength : 0;
     const currentMoveY = currentMoveLength > 0.001 ? anim.moveY / currentMoveLength : 0;
+    const localAttackIntent =
+      anim.isSelf && this.scene.input?.activePointer?.rightButtonDown?.() === true;
+    const flourishAttackIntent = anim.fireHeld === true || localAttackIntent;
     const flourishActive = this.flourishChannels[0].active || this.flourishChannels[1].active;
     const flourishArmed = this.flourishArms[0].armed || this.flourishArms[1].armed;
     const movementOnset = flourishActive && !this.flourishMoveWasActive && currentMoveActive;
@@ -7227,7 +7235,7 @@ export class SpriteRig {
     }
     const beamEnded = this.flourishFireHeld && !anim.fireHeld && !!this.weaponDef?.beam;
     this.flourishFireHeld = anim.fireHeld === true;
-    if (currentMoveActive || anim.fireHeld) {
+    if (currentMoveActive || flourishAttackIntent) {
       this.idleFlourishEligibleAtMs = sceneNow + 1600 + this.idleFlourishOffsetMs;
     }
     if (
@@ -7240,7 +7248,7 @@ export class SpriteRig {
     ) {
       this.resetFlourishState(false);
     } else if (
-      anim.fireHeld ||
+      flourishAttackIntent ||
       movementOnset ||
       hardDirectionChange ||
       (flourishArmed && currentMoveActive) ||
@@ -8434,8 +8442,17 @@ export class SpriteRig {
       posePhaseT = (poseRecoilElapsedMs - 140) / RANGED_AIM_SETTLE_MS;
     }
 
-    // Tome trace/tap follows the accepted page scheduler rather than a free-running decorative timer.
-    if (this.poseLeadSpec?.family === "tome" && this.tome) {
+    // Tome trace/tap follows the accepted page scheduler rather than a free-running decorative timer. Last
+    // Word owns that same scheduler while active, so its own pending page must not become a stronger owner
+    // and cancel the flourish on the following frame.
+    const tomeFlourishOwnsPage =
+      (this.flourishChannels[0].active &&
+        this.flourishChannels[0].moment === "after-attack" &&
+        this.flourishChannels[0].spec.family === "tome") ||
+      (this.flourishChannels[1].active &&
+        this.flourishChannels[1].moment === "after-attack" &&
+        this.flourishChannels[1].spec.family === "tome");
+    if (this.poseLeadSpec?.family === "tome" && this.tome && !tomeFlourishOwnsPage) {
       const untilPageMs = this.tome.pendingPageAtMs - sceneNow;
       const pageAgeMs = sceneNow - this.tome.lastFlipAtMs;
       if (this.tome.pendingPage && untilPageMs >= 0 && untilPageMs <= TOME_PAGE_INTERVAL_MS) {
@@ -8568,7 +8585,7 @@ export class SpriteRig {
     const quietForEarnedFlourish =
       !strongerFlourishOwner &&
       !currentMoveActive &&
-      !anim.fireHeld &&
+      !flourishAttackIntent &&
       this.moveStance === STANCE_NONE &&
       !outsidePaperView &&
       !this.downed;
@@ -8586,7 +8603,7 @@ export class SpriteRig {
       !anyStowActive &&
       gait < 0.12 &&
       !currentMoveActive &&
-      !anim.fireHeld &&
+      !flourishAttackIntent &&
       !this.comboHoldPose &&
       sceneNow >= this.idleFlourishEligibleAtMs &&
       sceneNow - this.idleFlourishLastPlayedMs >= 6500 &&

@@ -617,7 +617,7 @@ export function weaponPoseSpecFor(
 
 export type FlourishMoment = "draw" | "stow" | "after-attack" | "idle-settle";
 export type FlourishPhase = "anticipation" | "statement" | "catch";
-export type BladeSizeClass = "short" | "standard" | "great" | "colossal";
+export type BladeSizeClass = "short" | "standard" | "long" | "great" | "colossal";
 export const FLOURISH_DUAL_DRAW_ECHO_MS = 50;
 export const FLOURISH_DUAL_STOW_ECHO_MS = 45;
 export const FLOURISH_DUAL_AFTER_ECHO_MS = 55;
@@ -726,8 +726,8 @@ const HEAVY_ACCENTS: BeatAccents = Object.freeze({
   bodyForward: 0.034,
   bodyLateral: 0.018,
   bodyTurn: 0.09,
-  footForward: 0.06,
-  footLateral: 0.055,
+  footForward: 0.05,
+  footLateral: 0.045,
   paperHop: 0.034,
   headForwardPx: 2.4,
   headLateralPx: 2.5,
@@ -890,8 +890,12 @@ function retimeBeat(
 
 function sizedSwordSpec(sizeClass: BladeSizeClass): WeaponFlourishSpec {
   const source = WEAPON_FLOURISH_SPECS["two-hand-sword"];
-  const drawDuration = { short: 320, standard: 350, great: 390, colossal: 420 }[sizeClass];
-  const afterDuration = { short: 380, standard: 420, great: 460, colossal: 480 }[sizeClass];
+  const drawDuration = { short: 320, standard: 350, long: 370, great: 390, colossal: 420 }[
+    sizeClass
+  ];
+  const afterDuration = { short: 380, standard: 420, long: 440, great: 460, colossal: 480 }[
+    sizeClass
+  ];
   return Object.freeze({
     ...source,
     draw: retimeBeat(source.draw, drawDuration),
@@ -907,6 +911,7 @@ const SIZED_SWORD_FLOURISH_SPECS: Readonly<Record<BladeSizeClass, WeaponFlourish
   Object.freeze({
     short: sizedSwordSpec("short"),
     standard: sizedSwordSpec("standard"),
+    long: sizedSwordSpec("long"),
     great: sizedSwordSpec("great"),
     colossal: sizedSwordSpec("colossal"),
   });
@@ -979,6 +984,20 @@ export const BLADE_SIZE_STANCES: Readonly<Record<BladeSizeClass, BladeSizeStance
     backFootLateral: -0.055,
     movementTrailRad: (10 * Math.PI) / 180,
   }),
+  long: Object.freeze({
+    sizeClass: "long",
+    restAngleRad: -0.1,
+    handForward: -0.05,
+    handLateral: 0.12,
+    gripSpacing: 0.4,
+    bodyForward: 0.012,
+    bodyTurn: 0.06,
+    frontFootForward: 0.05,
+    frontFootLateral: 0.058,
+    backFootForward: -0.08,
+    backFootLateral: -0.065,
+    movementTrailRad: (11 * Math.PI) / 180,
+  }),
   great: Object.freeze({
     sizeClass: "great",
     restAngleRad: 2.75,
@@ -1016,17 +1035,18 @@ export function bladeSizeClassFor(def: WeaponDef): BladeSizeClass {
   if (
     explicit === "short" ||
     explicit === "standard" ||
+    explicit === "long" ||
     explicit === "great" ||
     explicit === "colossal"
   )
     return explicit;
   // The parallel catalog generator currently stages this field at WeaponDef root. Accept that emitted
-  // shape without weakening the documented tags-first contract; its temporary `long` lane stays forward.
-  const emitted = (def as WeaponDef & { readonly sizeClass?: BladeSizeClass | "long" }).sizeClass;
-  if (emitted === "long") return "standard";
+  // shape without weakening the documented tags-first contract.
+  const emitted = (def as WeaponDef & { readonly sizeClass?: BladeSizeClass }).sizeClass;
   if (
     emitted === "short" ||
     emitted === "standard" ||
+    emitted === "long" ||
     emitted === "great" ||
     emitted === "colossal"
   )
@@ -1198,6 +1218,13 @@ function reducedFlourishDuration(moment: FlourishMoment): number {
   }
 }
 
+/** Keep one 30 fps frame of exact home placement before spring ownership starts to fade. */
+const FLOURISH_HANDOFF_HOME_DWELL_MS = 35;
+
+function nearestFlourishHomeAngle(rotationRad: number): number {
+  return Math.round(rotationRad / (Math.PI * 2)) * Math.PI * 2;
+}
+
 /**
  * Allocation-free flourish sampler. The statement angle is a single unwrapped monotonic arc; catch adds
  * one overshoot and returns before ownership fades. Reduced motion takes a separate direct-settle path.
@@ -1261,19 +1288,33 @@ export function sampleFlourish(input: FlourishInput, out: FlourishSample): Flour
     out.phaseT = (elapsedMs - timing.catchAtMs) / (timing.durationMs - timing.catchAtMs);
     const exactCatchMs = Math.max(1, fadeAtMs - timing.catchAtMs);
     const catchQ = clamp01((elapsedMs - timing.catchAtMs) / exactCatchMs);
-    const overshootQ =
-      catchQ < 0.5
-        ? smootherstepFlourish(catchQ * 2)
-        : 1 - smootherstepFlourish((catchQ - 0.5) * 2);
-    overshoot = spec.overshootRad * overshootQ;
-    angle = spec.rotationRad + overshoot;
+    const homeAngle = nearestFlourishHomeAngle(spec.rotationRad);
+    const catchDirection =
+      Math.sign(homeAngle - spec.rotationRad) || Math.sign(spec.rotationRad) || 1;
+    const signedOvershoot = spec.overshootRad * catchDirection;
+    if (catchQ < 0.5) {
+      const q = smootherstepFlourish(catchQ * 2);
+      angle = spec.rotationRad + (homeAngle + signedOvershoot - spec.rotationRad) * q;
+      overshoot = signedOvershoot * q;
+    } else {
+      const q = 1 - smootherstepFlourish((catchQ - 0.5) * 2);
+      angle = homeAngle + signedOvershoot * q;
+      overshoot = signedOvershoot * q;
+    }
     gesture = 1 - smootherstepFlourish(catchQ);
   }
 
+  const ownershipFadeAtMs = Math.min(
+    timing.durationMs - 1,
+    fadeAtMs + FLOURISH_HANDOFF_HOME_DWELL_MS,
+  );
   const ownershipFade =
-    elapsedMs < fadeAtMs
+    elapsedMs < ownershipFadeAtMs
       ? 1
-      : 1 - smootherstepFlourish((elapsedMs - fadeAtMs) / (timing.durationMs - fadeAtMs));
+      : 1 -
+        smootherstepFlourish(
+          (elapsedMs - ownershipFadeAtMs) / (timing.durationMs - ownershipFadeAtMs),
+        );
   out.ownership = moment === "stow" ? 0 : ownershipFade;
   out.weaponRotationRad = (angle + (moment === "idle-settle" ? -angle : 0)) * sign;
   out.catchOvershootRad = overshoot * sign;
