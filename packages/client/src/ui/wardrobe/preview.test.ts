@@ -649,3 +649,85 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
     );
   });
 });
+
+function compatibilityManifest(): GearPartsManifest {
+  const candidate = structuredClone(rawManifest) as GearPartsManifest;
+  candidate.schemaVersion = 1;
+  delete candidate.replacementContract;
+  const validated = validateGearPartsManifest(candidate);
+  if (!validated) throw new Error("synthetic compatibility manifest failed validation");
+  return validated;
+}
+
+describe("WardrobeCharacterPreview manifest-version fallback", () => {
+  it("renders the shared v1 six-part boilerplate plus legacy loose-garment assembly", async () => {
+    const { assembleGearLoadout } = await import("../../sprites/gear-parts.js");
+    const manifest = compatibilityManifest();
+    const baker = new FakeSharedBaker();
+    const scene = fakeScene();
+    const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
+    const rigAssembly = assembleGearLoadout(manifest, mixedLoadout, 7);
+    expect(rigAssembly.parts.filter((part) => part.stackIndex < 0).length).toBeGreaterThan(0);
+
+    preview.refresh(mixedLoadout, 7);
+    await settlePreview();
+
+    const truth = previewTruth(preview);
+    expect(baker.calls).toHaveLength(0);
+    expect(truth.partNodes.size).toBe(6);
+    for (const partId of GEAR_BAKED_PART_IDS) {
+      expect(truth.partNodes.get(partId)?.image).toMatchObject({
+        active: true,
+        visible: true,
+        texture: { key: `boilerplate:${partId}` },
+      });
+    }
+    const legacyNodes = preview as unknown as {
+      extraNodes: Array<{ gear?: { key: string; stackIndex: number } }>;
+    };
+    expect(legacyNodes.extraNodes.map((node) => node.gear?.key)).toEqual(
+      rigAssembly.parts.map((part) => part.key),
+    );
+    expect(legacyNodes.extraNodes.some((node) => (node.gear?.stackIndex ?? 0) < 0)).toBe(true);
+    expect(truth.status.text).toContain("REPLACEMENT CONTRACT UNAVAILABLE");
+
+    const hoverDraft = { ...mixedLoadout, hat: "ash-walker-hat" as GearId };
+    const rigHoverAssembly = assembleGearLoadout(manifest, hoverDraft, 7);
+    preview.refresh(mixedLoadout, 7, "ash-walker-hat");
+    await settlePreview();
+    expect(legacyNodes.extraNodes.map((node) => node.gear?.key)).toEqual(
+      rigHoverAssembly.parts.map((part) => part.key),
+    );
+    expect(truth.caption.text).toContain("VISUAL DRAFT");
+
+    preview.refresh(mixedLoadout, 7);
+    await settlePreview();
+    expect(legacyNodes.extraNodes.map((node) => node.gear?.key)).toEqual(
+      rigAssembly.parts.map((part) => part.key),
+    );
+    expect(baker.calls).toHaveLength(0);
+  });
+
+  it("keeps schema v2 on the existing shared bake-lease path", async () => {
+    const manifest = replacementManifest();
+    const baker = new FakeSharedBaker();
+    const scene = fakeScene();
+    const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
+
+    preview.refresh(mixedLoadout, 7);
+    await settlePreview();
+
+    const call = baker.calls[0];
+    if (!call) throw new Error("replacement bake call missing");
+    const truth = previewTruth(preview);
+    expect(baker.calls).toHaveLength(1);
+    expect(truth.partNodes.size).toBe(6);
+    for (const partId of GEAR_BAKED_PART_IDS) {
+      expect(truth.partNodes.get(partId)?.image.texture.key).toBe(
+        call.lease.handles[partId].textureKey,
+      );
+    }
+    expect(truth.extraNodes).toHaveLength(call.lease.extras.parts.length);
+    expect(truth.extraNodes.every((node) => node.gear?.extraRole !== undefined)).toBe(true);
+  });
+});

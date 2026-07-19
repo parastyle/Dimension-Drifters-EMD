@@ -2,8 +2,10 @@ import { GEAR_CATALOG, GEAR_SLOTS, type GearId, type GearSlot, isGearId } from "
 import type Phaser from "phaser";
 import {
   assembleBoilerplate,
+  assembleGearLoadout,
   type BoilerplateAssemblyPart,
   boilerplateTextureKey,
+  ensureGearAssemblyTextures,
   ensureGearPartFrame,
   GEAR_BAKE_FRAMES,
   GEAR_BAKED_PART_IDS,
@@ -11,8 +13,10 @@ import {
   type GearAssemblyPart,
   type GearBakedPartId,
   type GearExtraAssembly,
+  type GearLoadoutAssembly,
   type GearPartsManifest,
   gearTextureKey,
+  isGearReplacementManifest,
   MAX_HAT_SLOTS,
 } from "../../sprites/gear-parts.js";
 import {
@@ -207,6 +211,7 @@ export class WardrobeCharacterPreview {
   private readonly caption: Phaser.GameObjects.Text;
   private readonly status: Phaser.GameObjects.Text;
   private readonly manifest: GearPartsManifest | null;
+  private readonly replacementContract: boolean;
   private readonly bakeCache?: WardrobePreviewBakeCache;
   private readonly partNodes = new Map<GearBakedPartId, PreviewNode>();
   private extraNodes: PreviewNode[] = [];
@@ -222,8 +227,10 @@ export class WardrobeCharacterPreview {
   ) {
     this.manifest =
       dependencies.manifest === undefined ? GEAR_PARTS_MANIFEST : dependencies.manifest;
-    this.bakeCache =
-      dependencies.bakeCache ?? (this.manifest ? gearTextureBakeCacheForScene(scene) : undefined);
+    this.replacementContract = isGearReplacementManifest(this.manifest);
+    this.bakeCache = this.replacementContract
+      ? (dependencies.bakeCache ?? gearTextureBakeCacheForScene(scene))
+      : undefined;
     const art = WARDROBE_LAYOUT.previewArt;
     const caption = WARDROBE_LAYOUT.previewCaption;
     const status = WARDROBE_LAYOUT.previewStatus;
@@ -254,8 +261,14 @@ export class WardrobeCharacterPreview {
       .setOrigin(0.5);
     this.root = scene.add.container(0, 0, [this.shadow, this.artRoot, this.caption, this.status]);
 
-    if (this.manifest) this.installBoilerplatePose(this.manifest);
-    else {
+    if (this.manifest) {
+      this.installBoilerplatePose(this.manifest);
+      if (!this.replacementContract) {
+        this.status
+          .setText("V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE")
+          .setColor("#ff9a6a");
+      }
+    } else {
       this.status.setText("PREVIEW ART CONTRACT UNAVAILABLE").setColor("#ff9a6a");
       this.shadow.setVisible(false);
     }
@@ -268,8 +281,7 @@ export class WardrobeCharacterPreview {
     previewId?: GearId,
   ): void {
     const manifest = this.manifest;
-    const bakeCache = this.bakeCache;
-    if (!manifest || !bakeCache || !this.alive) return;
+    if (!manifest || !this.alive) return;
 
     const draft = { ...equippedLoadout };
     const previewCandidate = previewId !== undefined && isGearId(previewId) ? previewId : undefined;
@@ -285,6 +297,13 @@ export class WardrobeCharacterPreview {
     if (key === this.currentKey) return;
     this.currentKey = key;
     const generation = ++this.requestGeneration;
+    if (!this.replacementContract) {
+      this.refreshCompatibility(draft, boundedPrestige, generation, validPreviewId);
+      return;
+    }
+
+    const bakeCache = this.bakeCache;
+    if (!bakeCache) return;
     if (this.currentLease) {
       this.status
         .setText(
@@ -311,6 +330,42 @@ export class WardrobeCharacterPreview {
         if (!this.alive || generation !== this.requestGeneration) return;
         this.status.setText("PREVIEW BAKE DELAYED · LAST COMPLETE HELD").setColor("#ffb24a");
       });
+  }
+
+  private refreshCompatibility(
+    loadout: Readonly<Record<GearSlot, GearId>>,
+    prestige: number,
+    generation: number,
+    previewId?: GearId,
+  ): void {
+    const manifest = this.manifest;
+    if (!manifest) return;
+    const assembly = assembleGearLoadout(manifest, loadout, prestige);
+    const textureState = ensureGearAssemblyTextures(this.scene, assembly);
+    this.rebuildCompatibilityAssembly(assembly);
+    this.caption.setText(
+      previewId
+        ? `DRIFTER · ${GEAR_CATALOG[previewId].slot.toUpperCase()} VISUAL DRAFT`
+        : "DRIFTER · EQUIPPED V1 COMPATIBILITY",
+    );
+    if (textureState === "pending") {
+      this.status.setText("V1 GARMENTS LOADING · BOILERPLATE HELD").setColor("#6f8994");
+      this.scene.load.once("complete", () => {
+        if (!this.alive || generation !== this.requestGeneration) return;
+        this.rebuildCompatibilityAssembly(assembly);
+        this.status
+          .setText("V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE")
+          .setColor("#ff9a6a");
+      });
+      return;
+    }
+    this.status
+      .setText(
+        textureState === "missing"
+          ? "V1 COMPATIBILITY · SOME ART UNAVAILABLE"
+          : "V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE",
+      )
+      .setColor(textureState === "missing" ? "#ffb24a" : "#ff9a6a");
   }
 
   private installBoilerplatePose(manifest: GearPartsManifest): void {
@@ -425,6 +480,56 @@ export class WardrobeCharacterPreview {
     this.layoutComposite(finiteBounds(bounds));
   }
 
+  private rebuildCompatibilityAssembly(assembly: GearLoadoutAssembly): void {
+    for (const node of this.extraNodes) node.image.destroy();
+    this.extraNodes = [];
+    this.overflowLabel?.destroy();
+    this.overflowLabel = undefined;
+
+    const body = this.partNodes.get("body");
+    const head = this.partNodes.get("head");
+    if (!body || !head) return;
+    let order = GEAR_BAKED_PART_IDS.length;
+    let belowHat: PreviewNode | undefined;
+    for (const spec of assembly.parts) {
+      const node = this.createExtraNode(
+        spec,
+        body,
+        head,
+        order++,
+        spec.stackIndex >= 0 ? belowHat : undefined,
+      );
+      if (!node) continue;
+      this.extraNodes.push(node);
+      if (spec.stackIndex >= 0) belowHat = node;
+    }
+
+    const allNodes = [...this.partNodes.values(), ...this.extraNodes].sort(
+      (a, b) => a.depth - b.depth || a.order - b.order,
+    );
+    this.artRoot.removeAll(false);
+    this.artRoot.add(allNodes.map((node) => node.image));
+
+    const bounds = wardrobeFixedPartBounds(this.manifest as GearPartsManifest);
+    for (const node of this.extraNodes) expandExtraBounds(bounds, node);
+    if (assembly.towerOverflow > 0 && belowHat) {
+      const socket = topSocketPosition(belowHat);
+      this.overflowLabel = this.scene.add
+        .text(socket.x, socket.y - 2, `+${assembly.towerOverflow}`, {
+          fontFamily: "monospace",
+          fontSize: "9px",
+          color: "#f3df9d",
+          fontStyle: "bold",
+          stroke: "#101014",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5, 1);
+      this.artRoot.add(this.overflowLabel);
+      expandRotatedBounds(bounds, socket.x, socket.y - 2, 1, 1, 0, -18, -14, 18, 2);
+    }
+    this.layoutComposite(finiteBounds(bounds));
+  }
+
   private createExtraNode(
     spec: GearAssemblyPart,
     body: PreviewNode,
@@ -467,6 +572,14 @@ export class WardrobeCharacterPreview {
       scaleX = basisScaleX * spec.source.mountScale * spec.stackScale;
       scaleY = basisScaleY * spec.source.mountScale * spec.stackScale;
       rotation = head.rotation + spec.rotation;
+    } else if (isBakedPartId(spec.source.receiver)) {
+      const receiver = this.partNodes.get(spec.source.receiver);
+      if (!receiver) return undefined;
+      x = receiver.x;
+      y = receiver.y;
+      scaleX = receiver.scaleX * spec.source.mountScale * spec.stackScale;
+      scaleY = receiver.scaleY * spec.source.mountScale * spec.stackScale;
+      rotation = receiver.rotation + spec.rotation;
     } else {
       if (!this.manifest) return undefined;
       const localX = spec.source.receiverAnchor.xL * this.manifest.socketFrame.bodyHeightL;
