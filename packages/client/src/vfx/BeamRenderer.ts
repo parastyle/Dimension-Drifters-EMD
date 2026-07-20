@@ -1,6 +1,8 @@
-import { BeamPhase, MAX_PLAYERS, shortestAngleDelta } from "@dd/shared";
+import { BeamPhase, MAX_PLAYERS, shortestAngleDelta, WEAPONS } from "@dd/shared";
 import Phaser from "phaser";
 import type { ColorblindAssistMode } from "../settings.js";
+import { drawCasterGlyph } from "./caster-vfx.js";
+import { type CasterVfxRecipe, resolveCasterVfxRecipe } from "./caster-vfx-recipes.js";
 import {
   colorblindShapesEnabled,
   type ElementAssistPattern,
@@ -193,6 +195,7 @@ export class BeamRenderer {
     beltY0: number,
     beltYScale: number,
     predicted?: PredictedBeamCharge,
+    reducedMotion = false,
   ): void {
     this.groundLight.clear();
     this.graphics.clear();
@@ -207,7 +210,7 @@ export class BeamRenderer {
       if (!entry) return;
       entry.seen = true;
       this.observePhase(entry, row.phase);
-      this.drawRow(entry, row, ownerId === selfId, nowMs, dt, beltY0, beltYScale);
+      this.drawRow(entry, row, ownerId === selfId, nowMs, dt, beltY0, beltYScale, reducedMotion);
     });
     if (predicted && !hasAuthoritativeSelf) {
       const entry = this.acquire(`${predicted.ownerId}:predicted`, predicted.ownerId, 0);
@@ -225,6 +228,8 @@ export class BeamRenderer {
           nowMs,
           entry.seed,
           predicted.opacity,
+          resolveCasterVfxRecipe(WEAPONS[predicted.weaponId]),
+          reducedMotion,
         );
       }
     }
@@ -267,6 +272,7 @@ export class BeamRenderer {
     dt: number,
     beltY0: number,
     beltYScale: number,
+    reducedMotion: boolean,
   ): void {
     entry.ignitionT = Math.max(0, entry.ignitionT - dt);
     entry.releaseT = Math.max(0, entry.releaseT - dt);
@@ -286,6 +292,9 @@ export class BeamRenderer {
         row.element,
         nowMs,
         entry.seed,
+        1,
+        resolveCasterVfxRecipe(WEAPONS[row.weaponId]),
+        reducedMotion,
       );
       return;
     }
@@ -302,6 +311,19 @@ export class BeamRenderer {
         this.graphics
           .fillStyle(0xffffff, q * 0.9)
           .fillCircle(row.originX, oy, Math.min(row.width * 0.5, 8 + 24 * q));
+        const recipe = resolveCasterVfxRecipe(WEAPONS[row.weaponId]);
+        if (recipe)
+          drawCasterGlyph(
+            this.graphics,
+            row.originX,
+            oy,
+            row.angle,
+            recipe,
+            q,
+            1,
+            nowMs,
+            reducedMotion,
+          );
       }
       return;
     }
@@ -363,6 +385,8 @@ export class BeamRenderer {
     nowMs: number,
     seed: number,
     opacity = 1,
+    recipe?: CasterVfxRecipe,
+    reducedMotion = false,
   ): void {
     const p = Math.max(0, Math.min(0.95, progress));
     const alpha = Math.max(0, Math.min(1, opacity));
@@ -372,12 +396,15 @@ export class BeamRenderer {
     this.graphics.lineStyle(1, color, (0.12 + p * 0.18) * alpha);
     this.graphics.lineBetween(x, y, x + Math.cos(angle) * 92, y + Math.sin(angle) * 92);
     for (let i = 0; i < 3; i++) {
-      const a = nowMs * (0.003 + i * 0.0007) + seed * 6.28 + (i * Math.PI * 2) / 3;
+      const a =
+        (reducedMotion ? seed * 6.28 : nowMs * (0.003 + i * 0.0007) + seed * 6.28) +
+        (i * Math.PI * 2) / 3;
       const r = radius + 8 - p * 5;
       this.graphics
         .fillStyle(color, 0.45 * alpha)
         .fillCircle(x + Math.cos(a) * r, y + Math.sin(a) * r, 2);
     }
+    if (recipe) drawCasterGlyph(this.graphics, x, y, angle, recipe, alpha, p, nowMs, reducedMotion);
     if (this.colorblindShapes) {
       const markerX = x + Math.cos(angle) * (radius + 7);
       const markerY = y + Math.sin(angle) * (radius + 7);

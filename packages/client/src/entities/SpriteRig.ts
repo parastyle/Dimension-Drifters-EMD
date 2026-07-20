@@ -2930,7 +2930,15 @@ export class SpriteRig {
     const def = this.weapons[hand]?.def ?? (hand === 0 ? this.weaponDef : undefined);
     if (!def) return;
     const spec = hand === 0 ? this.flourishLeadSpec : this.flourishOffSpec;
-    if (!spec || spec.streakThreshold <= 0 || def.beam) return;
+    if (!spec) return;
+    // Caster recovery is body language, not another free-running spell effect. Arm the existing family
+    // flourish on each accepted discrete cast; rapid fire keeps cancelling/rearming it until the actor is
+    // quiet, so the final staff catch/page turn punctuates the phrase without obscuring its active cadence.
+    if (def.tags.classPool === "caster" && !def.beam) {
+      this.armAfterAttack(hand, epochMs + 230, def);
+      return;
+    }
+    if (spec.streakThreshold <= 0 || def.beam) return;
     const streak = this.flourishStreaks[hand];
     const cadence = def.gun?.fireRate ?? def.cooldown;
     const gapMs = flourishStreakWindowMs(cadence);
@@ -4383,6 +4391,7 @@ export class SpriteRig {
         if (offDef) this.armAfterAttack(1, earliestStartMs, offDef);
       } else if (
         terminalFlourishHand !== undefined ||
+        activeDef.tags.classPool === "caster" ||
         weaponPoseSpecFor(activeDef, this.poseVariants).family === "thrown"
       ) {
         this.armAfterAttack(terminalFlourishHand ?? handIndex, earliestStartMs, activeDef);

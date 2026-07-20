@@ -230,6 +230,8 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
+import { makeCasterProjectile, spawnCasterCast, spawnCasterImpact } from "../vfx/caster-vfx.js";
+import { type CasterVfxRecipe, resolveCasterVfxRecipe } from "../vfx/caster-vfx-recipes.js";
 import {
   colorblindShapesEnabled,
   MELEE_FINAL_GLINT_LEAD_MS,
@@ -3491,6 +3493,8 @@ export class ArenaScene extends Phaser.Scene {
 
   private triggerAcceptedRigAttack(rig: SpriteRig, player: PlayerState, epoch: number): void {
     const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+    if (weapon?.tags.classPool === "caster")
+      this.spawnCasterSource(weapon, rig.x, rig.y, player.aimDir);
     // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (!weapon || weapon.gun) return;
@@ -3500,6 +3504,26 @@ export class ArenaScene extends Phaser.Scene {
     );
     rig.triggerSwing(epoch, player.aimDir, swing);
     this.playWeaponSourceAudio(weapon, rig.x, player.id === this.room?.sessionId);
+  }
+
+  /** One presentation-only recipe cue at the held implement tip. */
+  private spawnCasterSource(
+    weapon: WeaponDef,
+    actorX: number,
+    actorY: number,
+    angle: number,
+  ): void {
+    const recipe = resolveCasterVfxRecipe(weapon);
+    if (!recipe) return;
+    const reach = weaponMuzzleReach(weapon);
+    spawnCasterCast(
+      this,
+      actorX + Math.cos(angle) * reach,
+      actorY + Math.sin(angle) * reach,
+      angle,
+      recipe,
+      prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+    );
   }
 
   /** Accepted source/whiff sound; impact remains independently driven by authoritative HP loss. */
@@ -6351,17 +6375,47 @@ export class ArenaScene extends Phaser.Scene {
         existing.destroy();
         this.projectiles.delete(id);
       }
-      const comet = baseKind(pr.kind) === "fireball";
-      const fx = comet ? gunFx("orb:fire") : GUN_FX[baseKind(pr.kind)];
-      const container = fx
-        ? makeBullet(this, pr)
-        : pr.kind === "cleaver"
-          ? makeThrownCleaver(this, pr)
-          : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
-            ? makeMagma(this, pr)
-            : pr.kind === "counter" || pr.kind === "deflect"
-              ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
-              : makeSpit(this, pr);
+      // Projectile rows intentionally omit ownership. Resolve the existing nearest-shooter attribution before
+      // choosing art so a caster-owned row can use its weapon recipe without adding schema/message fields.
+      let shooter: string | null = null;
+      if (!pr.hostile) {
+        let best = 220;
+        room.state.players.forEach((p, pid) => {
+          const d = Math.hypot(p.x - pr.x, p.y - pr.y);
+          if (d < best) {
+            best = d;
+            shooter = pid;
+          }
+        });
+      }
+      const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
+      const sourceWeapon = sourcePlayer ? WEAPONS[sourcePlayer.weapon] : undefined;
+      const projectileKind = baseKind(pr.kind);
+      const comet = projectileKind === "fireball";
+      const casterOwnsKind =
+        sourceWeapon?.tags.classPool === "caster" &&
+        !comet &&
+        ((!!sourceWeapon.cast && projectileKind === "orb") ||
+          (!!sourceWeapon.scatter && projectileKind === "magma") ||
+          (!!sourceWeapon.gun && projectileKind === baseKind(sourceWeapon.gun.bulletKind)));
+      const casterRecipe = casterOwnsKind ? resolveCasterVfxRecipe(sourceWeapon) : undefined;
+      const fx = comet ? gunFx("orb:fire") : GUN_FX[projectileKind];
+      const container = casterRecipe
+        ? makeCasterProjectile(
+            this,
+            pr,
+            casterRecipe,
+            prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+          )
+        : fx
+          ? makeBullet(this, pr)
+          : pr.kind === "cleaver"
+            ? makeThrownCleaver(this, pr)
+            : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
+              ? makeMagma(this, pr)
+              : pr.kind === "counter" || pr.kind === "deflect"
+                ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
+                : makeSpit(this, pr);
       container.setData("kind", pr.kind);
       container.setData("ultimateProjectile", comet);
       // §8 v0.117 a BASE-parry "deflect" spark glances off + FADES OUT (bullet-off-Superman): tween its
@@ -6378,20 +6432,6 @@ export class ArenaScene extends Phaser.Scene {
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
       this.projectiles.set(id, container);
-      // §49 projectile rows do not sync an owner. Capture the nearest friendly shooter while the row is
-      // fresh so its WeaponDef.tags.element still exists when the projectile later dies and dispatches a pack.
-      let shooter: string | null = null;
-      if (!pr.hostile) {
-        let best = 220;
-        room.state.players.forEach((p, pid) => {
-          const d = Math.hypot(p.x - pr.x, p.y - pr.y);
-          if (d < best) {
-            best = d;
-            shooter = pid;
-          }
-        });
-      }
-      const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
       if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
       if (shooter) container.setData("sourcePlayer", shooter);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
@@ -6409,15 +6449,16 @@ export class ArenaScene extends Phaser.Scene {
             // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
             const srig = this.blobs.get(shooter);
             const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]); // §29 fixed-size weapon
-            spawnMuzzleFlash(
-              this,
-              (srig?.x ?? p.x) + Math.cos(ang) * reach,
-              (srig?.y ?? p.y) + Math.sin(ang) * reach,
-              ang,
-              fx.size,
-              fx.color,
-              fx.style,
-            );
+            if (!casterRecipe)
+              spawnMuzzleFlash(
+                this,
+                (srig?.x ?? p.x) + Math.cos(ang) * reach,
+                (srig?.y ?? p.y) + Math.sin(ang) * reach,
+                ang,
+                fx.size,
+                fx.color,
+                fx.style,
+              );
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
             if (!comet) this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
@@ -6433,6 +6474,8 @@ export class ArenaScene extends Phaser.Scene {
           const k = c.getData("kind") as string;
           const bk = baseKind(k); // §35 element-tint suffix stripped for the impact dispatch
           const er = (c.getData("explodeR") as number) ?? 0;
+          const casterRecipe = c.getData("casterRecipe") as CasterVfxRecipe | undefined;
+          const impactAngle = (c.getData("ang") as number) ?? 0;
           if (er > 0) {
             // §41 ANY exploding projectile erupts (was magma-only — explosive gun rounds got a plain
             // bullet ping). Prefer its observed shooter's live WeaponDef tag; the wire suffix remains the
@@ -6465,9 +6508,30 @@ export class ArenaScene extends Phaser.Scene {
             if (ultimateProjectile) {
               this.audio.play("ult:fire:impact", { x: c.x, amt: local ? 1 : 0.35 });
             }
-          } else if (GUN_FX[bk])
-            spawnBulletImpact(this, c.x, c.y, k, (c.getData("ang") as number) ?? 0); // pass k → element tint
-          else spawnSplat(this, c.x, c.y, k);
+            if (casterRecipe) {
+              spawnCasterImpact(
+                this,
+                c.x,
+                c.y,
+                impactAngle,
+                casterRecipe,
+                prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+              );
+            }
+          } else if (casterRecipe) {
+            spawnCasterImpact(
+              this,
+              c.x,
+              c.y,
+              impactAngle,
+              casterRecipe,
+              prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+            );
+          } else if (GUN_FX[bk]) {
+            spawnBulletImpact(this, c.x, c.y, k, impactAngle); // pass k to element tint
+          } else {
+            spawnSplat(this, c.x, c.y, k);
+          }
         }
         c?.destroy();
         this.projectiles.delete(id);
@@ -9389,6 +9453,10 @@ export class ArenaScene extends Phaser.Scene {
       cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
+    if (weapon?.tags.classPool === "caster" && rig) {
+      this.spawnCasterSource(weapon, rig.x, rig.y, Math.atan2(this.selfAim.y, this.selfAim.x));
+      this.lastSelfMuzzleAt = this.time.now;
+    }
     if (weapon?.quake && swing) {
       // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp (in WORLD
       // space) the server's damage uses. §37: the VFX renders on the PROJECTED plane, so belt-project the
@@ -9462,25 +9530,27 @@ export class ArenaScene extends Phaser.Scene {
       // flash for self for a beat. Cosmetic only — damage is server-side.
       if (rig) {
         const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
-        const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
-        // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
-        const el = weapon.tags?.element;
-        const fx = gunFx(
-          el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind,
-        );
-        spawnMuzzleFlash(
-          this,
-          rig.x + Math.cos(ang) * reach,
-          rig.y + Math.sin(ang) * reach,
-          ang,
-          fx.size,
-          fx.color,
-          fx.style,
-        );
+        if (weapon.tags.classPool !== "caster") {
+          const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
+          // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
+          const el = weapon.tags?.element;
+          const fx = gunFx(
+            el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind,
+          );
+          spawnMuzzleFlash(
+            this,
+            rig.x + Math.cos(ang) * reach,
+            rig.y + Math.sin(ang) * reach,
+            ang,
+            fx.size,
+            fx.color,
+            fx.style,
+          );
+        }
         this.audio.play(`shot:${weapon.gun.bulletKind}`, { x: rig.x }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;
       }
-    } else if (weapon?.cast) {
+    } else if (weapon?.cast && weapon.tags.classPool !== "caster") {
       // §38 predicted CAST feedback: a small arcane flash at the staff tip on the click (the real piercing
       // orb renders from state a round-trip later). Tinted to the weapon's element — no gunpowder look.
       if (rig) {
@@ -14015,6 +14085,7 @@ export class ArenaScene extends Phaser.Scene {
       BELT_Y0,
       this.belt ? BELT_FORESHORTEN : 1,
       predicted,
+      prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
     );
     this.beamPredictionHeld = held;
   }
