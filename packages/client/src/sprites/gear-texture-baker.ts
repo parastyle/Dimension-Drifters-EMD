@@ -183,10 +183,16 @@ export class PhaserGearTextureBakeBackend implements GearTextureBakeBackend {
     );
     renderTexture.clear();
     for (const layer of recipe.layers)
-      renderTexture.stamp(layer.textureKey, undefined, -recipe.frame.left, -recipe.frame.top, {
-        originX: 0,
-        originY: 0,
-      });
+      renderTexture.stamp(
+        layer.textureKey,
+        undefined,
+        -recipe.frame.left + (layer.offsetX ?? 0),
+        -recipe.frame.top + (layer.offsetY ?? 0),
+        {
+          originX: 0,
+          originY: 0,
+        },
+      );
     renderTexture.render();
     renderTexture.saveTexture(recipe.key);
 

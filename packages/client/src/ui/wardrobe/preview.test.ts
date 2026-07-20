@@ -627,9 +627,9 @@ describe("WardrobeCharacterPreview manifest-version fallback", () => {
     expect(legacyNodes.extraNodes.some((node) => (node.gear?.stackIndex ?? 0) < 0)).toBe(true);
     expect(truth.status.text).toContain("REPLACEMENT CONTRACT UNAVAILABLE");
 
-    const hoverDraft = { ...mixedLoadout, hat: "ash-walker-hat" as GearId };
+    const hoverDraft = { ...mixedLoadout, hat: "molten-core-hat" as GearId };
     const rigHoverAssembly = assembleGearLoadout(manifest, hoverDraft, 7);
-    preview.refresh(mixedLoadout, 7, "ash-walker-hat");
+    preview.refresh(mixedLoadout, 7, "molten-core-hat");
     await settlePreview();
     expect(legacyNodes.extraNodes.map((node) => node.gear?.key)).toEqual(
       rigHoverAssembly.parts.map((part) => part.key),

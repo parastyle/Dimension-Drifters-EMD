@@ -55,20 +55,28 @@ export const VALIDATION_THRESHOLDS = Object.freeze({
   faceSocketRadiusPx: 4,
 });
 
-// This migration is deliberately scoped to the twelve launch-set pairs. All other proven gear
-// roles remain catalog entries and manifest rows, but are not part of this art squad's render tally.
+/** Stable IDs whose original hat art is a complete head and must be rendered into the head frame. */
+export const FULL_HEAD_REPLACEMENT_IDS = Object.freeze([
+  "ash-walker-hat",
+  "ashen-crusader-hat",
+  "thornwatch-hat",
+  "neon-mirage-hat",
+  "pressurized-hat",
+]);
+
+// Twelve normal torso/head pairs plus five former full-head hats queued after the current fleet.
 export const MIGRATION_EXPECTED = Object.freeze({
   setPairs: 12,
   torsoItems: 12,
-  headItems: 12,
-  rerenderItems: 24,
-  renderCalls: 24,
-  rerenderComponentParts: 24,
+  headItems: 17,
+  rerenderItems: 29,
+  renderCalls: 29,
+  rerenderComponentParts: 29,
   reusableHeadRenders: 2,
-  newHeadRenders: 10,
+  newHeadRenders: 15,
   byBatch: Object.freeze({
     torso: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
-    head: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
+    head: Object.freeze({ items: 17, calls: 17, componentParts: 17 }),
   }),
 });
 

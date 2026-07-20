@@ -13,11 +13,11 @@ import { syncRemoteGearLoadouts } from "./remote-gear.js";
 
 describe("remote gear data plumb", () => {
   it("decodes synced ids without constructing or mutating a rig", () => {
-    const loadout = { ...STARTER_GEAR_LOADOUT, hat: "ash-walker-hat" as const };
+    const loadout = { ...STARTER_GEAR_LOADOUT, head: "ash-walker-hat" as const };
     const encoded = encodeGearCosmetics(loadout);
     const cache = new Map();
     syncRemoteGearLoadouts(cache, [["remote", { ...encoded, prestige: 0 }]]);
-    expect(cache.get("remote")).toMatchObject({ hat: "ash-walker-hat" });
+    expect(cache.get("remote")).toMatchObject({ head: "ash-walker-hat" });
     syncRemoteGearLoadouts(cache, []);
     expect(cache.size).toBe(0);
   });

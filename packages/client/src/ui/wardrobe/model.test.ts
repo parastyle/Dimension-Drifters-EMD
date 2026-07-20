@@ -29,16 +29,18 @@ describe("wardrobe model", () => {
     const account = createMetaAccountV4();
     const hats = wardrobeSlotItems(account, "hat");
     expect(hats[0]).toMatchObject({ id: "blank-drifter-hat", owned: true, equipped: true });
-    expect(hats.find((row) => row.id === "ash-walker-hat")).toMatchObject({
+    expect(hats.find((row) => row.id === "molten-core-hat")).toMatchObject({
       owned: false,
       lockedCopy: "Found in Ashlands",
     });
-    expect(equipWardrobeItem(account, "ash-walker-hat").equippedGear.hat).toBe("blank-drifter-hat");
+    expect(equipWardrobeItem(account, "molten-core-hat").equippedGear.hat).toBe(
+      "blank-drifter-hat",
+    );
   });
 
   it("provides immutable Starter plus five writable presets and applies only owned slot-correct ids", () => {
     const account = createMetaAccountV4();
-    account.ownedGear.push("ash-walker-hat", "ash-walker-shirt");
+    account.ownedGear.push("molten-core-hat", "ash-walker-shirt");
     const state = sanitizeWardrobePresetState(
       {
         version: 1,
@@ -46,7 +48,7 @@ describe("wardrobe model", () => {
         presets: [
           {
             name: "  Ash road  ",
-            loadout: { ...STARTER_GEAR_LOADOUT, hat: "ash-walker-hat", boots: "ash-walker-shirt" },
+            loadout: { ...STARTER_GEAR_LOADOUT, hat: "molten-core-hat", boots: "ash-walker-shirt" },
           },
         ],
       },
@@ -57,13 +59,13 @@ describe("wardrobe model", () => {
     expect(views[0]).toMatchObject({ name: "Starter / Reset", writable: false });
     expect(views[1]?.name).toBe("Ash road");
     expect(views[1]?.loadout).toMatchObject({
-      hat: "ash-walker-hat",
+      hat: "molten-core-hat",
       boots: "blank-drifter-boots",
     });
     const applied = applyWardrobePreset(account, state, 1);
-    expect(applied.account.equippedGear.hat).toBe("ash-walker-hat");
+    expect(applied.account.equippedGear.hat).toBe("molten-core-hat");
     const overwritten = overwriteWardrobePreset(state, applied.account, 1);
-    expect(overwritten.presets[0]?.loadout.hat).toBe("ash-walker-hat");
+    expect(overwritten.presets[0]?.loadout.hat).toBe("molten-core-hat");
   });
 
   it("preserves legacy preset shirt choices as torsos and drops pants without inventing a head", () => {

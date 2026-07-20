@@ -461,7 +461,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
           exception: "legacy-upgrade-rank-3",
         });
       }
-      if (item.quirkRef) expect(item.slot).toBe("hat");
+      if (item.quirkRef) expect(["hat", "head"]).toContain(item.slot);
       expect(petShared.gearForNetCode(item.netCode)?.id).toBe(id);
     }
   });
@@ -536,7 +536,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     expect(account.ownedGear).toEqual([...petShared.STARTER_GEAR_IDS, "neon-mirage-hat"]);
     expect(account.equippedGear).toEqual({
       ...petShared.STARTER_GEAR_LOADOUT,
-      hat: "neon-mirage-hat",
+      head: "neon-mirage-hat",
     });
     expect(Object.keys(account).sort()).toEqual([
       "equippedGear",
@@ -614,8 +614,8 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     }
   });
 
-  it("uses the identical old quirk object/modifier seam when a hat carries that quirk", () => {
-    const loadout = { ...petShared.STARTER_GEAR_LOADOUT, hat: "ash-walker-hat" } as const;
+  it("uses the identical old quirk object/modifier seam when a signature head carries that quirk", () => {
+    const loadout = { ...petShared.STARTER_GEAR_LOADOUT, head: "ash-walker-hat" } as const;
     const gear = petShared.resolveGearLoadout(loadout);
     const legacy = petShared.quirkForCharacter("cc-asha-the-ash-walker");
     expect(gear.quirk).toBe(legacy);
@@ -624,7 +624,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
     );
     const neon = petShared.resolveGearLoadout({
       ...petShared.STARTER_GEAR_LOADOUT,
-      hat: "neon-mirage-hat",
+      head: "neon-mirage-hat",
     });
     expect(neon.mods.drawLockMult).toBe(
       petShared.runtimeModsForQuirk(petShared.quirkForCharacter("cc-neon-mirage")).drawLockMult,
@@ -1014,7 +1014,8 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
       prestige: 0,
       weaponBank: petShared.createWeaponBankV1(),
     });
-    expect(migrated.equippedGear.hat).toBe("neon-mirage-hat");
+    expect(migrated.equippedGear.head).toBe("neon-mirage-hat");
+    expect(migrated.equippedGear.hat).toBe("blank-drifter-hat");
 
     const forged = { ...migrated, prestige: 999 };
     expect(petShared.sanitizeMetaAccountV4(forged).prestige).toBe(30);
@@ -1132,5 +1133,41 @@ describe("weapon bank B3 - account migration, carry bounds, intake, and curator 
       petShared.weaponCuratorIdentityWeight(2),
       petShared.weaponCuratorIdentityWeight(3),
     ]).toEqual([3, 1, 0.55, 0.25]);
+  });
+});
+
+// HEAD-FIT PANEL — append-only persistence law for former full-head hats.
+describe("full-head cowl slot invariant", () => {
+  it("migrates every legacy cowl into head while preserving only genuine overlays in hat", () => {
+    const genuineOverlay = "molten-core-hat" as const;
+    for (const cowlId of Object.keys(petShared.LEGACY_FULL_HEAD_HAT_TO_HEAD) as Array<
+      keyof typeof petShared.LEGACY_FULL_HEAD_HAT_TO_HEAD
+    >) {
+      expect(petShared.GEAR_CATALOG[cowlId].slot).toBe("head");
+      const migrated = petShared.sanitizeMetaAccountV4({
+        ...petShared.createMetaAccountV4(),
+        ownedGear: [...petShared.STARTER_GEAR_IDS, cowlId, genuineOverlay],
+        equippedGear: {
+          ...petShared.STARTER_GEAR_LOADOUT,
+          hat: cowlId,
+        },
+      });
+      expect(migrated.equippedGear.head).toBe(cowlId);
+      expect(migrated.equippedGear.hat).toBe("blank-drifter-hat");
+
+      const legalPair = petShared.sanitizeMetaAccountV4({
+        ...migrated,
+        equippedGear: {
+          ...migrated.equippedGear,
+          head: cowlId,
+          hat: genuineOverlay,
+        },
+      });
+      expect(legalPair.equippedGear).toMatchObject({ head: cowlId, hat: genuineOverlay });
+    }
+    for (const id of petShared.GEAR_IDS) {
+      if (petShared.GEAR_CATALOG[id].slot === "hat")
+        expect(petShared.LEGACY_FULL_HEAD_HAT_TO_HEAD).not.toHaveProperty(id);
+    }
   });
 });

@@ -28,6 +28,12 @@ export interface SpreadMove {
   readonly to: Attr;
 }
 
+export interface GearFaceReceivers {
+  /** Untrimmed 1024px authoring-canvas coordinates for semantic-right riders. */
+  readonly eyes: Readonly<{ x: number; y: number }>;
+  readonly mouth: Readonly<{ x: number; y: number }>;
+}
+
 /** Source-neutral values cached once at a run boundary. Computation sites clamp/round once. */
 export interface GearScalarMods {
   readonly maxHpAdd?: number;
@@ -64,6 +70,8 @@ export interface GearDef {
   readonly effectText: string;
   readonly effectAvailability?: "active" | "partial" | "inert";
   readonly artKey: string;
+  /** Head-specific semantic sockets; absent means the canonical boilerplate face receivers. */
+  readonly faceReceivers?: GearFaceReceivers;
   readonly legacySetId?: string;
   readonly originPool?: string;
 }
@@ -72,7 +80,7 @@ export const GEAR_SLOT_BUDGETS = {
   hat: 4,
   glasses: 3,
   facialHair: 1,
-  head: 0,
+  head: 4,
   torso: 5,
   gloves: 2,
   boots: 2,
@@ -139,6 +147,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "No combat effect",
     artKey: "blank-drifter-head",
+    faceReceivers: { eyes: { x: 552.96, y: 363.52 }, mouth: { x: 568.32, y: 409.6 } },
     legacySetId: "blank-drifter",
   },
   "blank-drifter-shirt": {
@@ -202,7 +211,7 @@ export const GEAR_CATALOG = {
     id: "ash-walker-hat",
     netCode: 9,
     name: "Ash-Walker's Cowl",
-    slot: "hat",
+    slot: "head",
     gearClass: "bruiser",
     rarity: "Ultimate",
     budgetUnits: 4,
@@ -212,6 +221,7 @@ export const GEAR_CATALOG = {
     effectText:
       "A successful parry heal also heals the nearest ally within 220 px for the same amount",
     artKey: "ash-walker-hat",
+    faceReceivers: { eyes: { x: 680.05, y: 237.83 }, mouth: { x: 681, y: 342 } },
     legacySetId: "ash-walker",
     originPool: "Ashlands",
   },
@@ -258,6 +268,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "ash-walker-head",
+    faceReceivers: { eyes: { x: 680.05, y: 237.83 }, mouth: { x: 681, y: 342 } },
     legacySetId: "ash-walker",
     originPool: "Ashlands",
   },
@@ -331,7 +342,7 @@ export const GEAR_CATALOG = {
     id: "ashen-crusader-hat",
     netCode: 17,
     name: "Crusader's Cowl",
-    slot: "hat",
+    slot: "head",
     gearClass: "warden",
     rarity: "Ultimate",
     budgetUnits: 4,
@@ -340,6 +351,7 @@ export const GEAR_CATALOG = {
     quirkRef: "habit-and-prayer",
     effectText: "The parry chain never expires; taking damage resets it",
     artKey: "ashen-crusader-hat",
+    faceReceivers: { eyes: { x: 670, y: 250 }, mouth: { x: 640, y: 365 } },
     legacySetId: "ashen-crusader",
     originPool: "Ashlands",
   },
@@ -386,6 +398,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "ashen-crusader-head",
+    faceReceivers: { eyes: { x: 670, y: 250 }, mouth: { x: 640, y: 365 } },
     legacySetId: "ashen-crusader",
     originPool: "Ashlands",
   },
@@ -517,6 +530,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "molten-core-head",
+    faceReceivers: { eyes: { x: 684, y: 235 }, mouth: { x: 678, y: 337 } },
     legacySetId: "molten-core",
     originPool: "Ashlands",
   },
@@ -648,6 +662,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "coldsnap-head",
+    faceReceivers: { eyes: { x: 573, y: 311 }, mouth: { x: 585, y: 385 } },
     legacySetId: "coldsnap",
     originPool: "Frostfell",
   },
@@ -778,6 +793,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "graveside-head",
+    faceReceivers: { eyes: { x: 620, y: 301 }, mouth: { x: 630, y: 386 } },
     legacySetId: "graveside",
     originPool: "Wild West",
   },
@@ -908,6 +924,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "nine-veils-head",
+    faceReceivers: { eyes: { x: 668, y: 244 }, mouth: { x: 674, y: 318 } },
     legacySetId: "nine-veils",
     originPool: "Frostfell",
   },
@@ -1039,6 +1056,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Full replacement head; no combat effect",
     artKey: "demon-mask-head",
+    faceReceivers: { eyes: { x: 688, y: 287 }, mouth: { x: 700, y: 385 } },
     legacySetId: "demon-mask",
     originPool: "Verdant Ruins",
   },
@@ -1114,7 +1132,7 @@ export const GEAR_CATALOG = {
     id: "thornwatch-hat",
     netCode: 65,
     name: "Thornwatch Plume",
-    slot: "hat",
+    slot: "head",
     gearClass: "duelist",
     rarity: "Ultimate",
     budgetUnits: 4,
@@ -1124,6 +1142,7 @@ export const GEAR_CATALOG = {
     effectText: "A whiffed parry refunds its cooldown under the counter-only safety rule",
     effectAvailability: "inert",
     artKey: "thornwatch-hat",
+    faceReceivers: { eyes: { x: 665, y: 259 }, mouth: { x: 670, y: 340 } },
     legacySetId: "thornwatch",
     originPool: "Verdant Ruins",
   },
@@ -1170,6 +1189,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "thornwatch-head",
+    faceReceivers: { eyes: { x: 665, y: 259 }, mouth: { x: 670, y: 340 } },
     legacySetId: "thornwatch",
     originPool: "Verdant Ruins",
   },
@@ -1245,7 +1265,7 @@ export const GEAR_CATALOG = {
     id: "neon-mirage-hat",
     netCode: 73,
     name: "Zero-Latency Cap",
-    slot: "hat",
+    slot: "head",
     gearClass: "duelist",
     rarity: "Ultimate",
     budgetUnits: 4,
@@ -1254,6 +1274,7 @@ export const GEAR_CATALOG = {
     quirkRef: "package-deal",
     effectText: "Weapon swaps have no draw-lock",
     artKey: "neon-mirage-hat",
+    faceReceivers: { eyes: { x: 655, y: 289 }, mouth: { x: 660, y: 388 } },
     legacySetId: "neon-mirage",
     originPool: "Neon-Cyber",
   },
@@ -1300,6 +1321,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "neon-mirage-head",
+    faceReceivers: { eyes: { x: 655, y: 289 }, mouth: { x: 660, y: 388 } },
     legacySetId: "neon-mirage",
     originPool: "Neon-Cyber",
   },
@@ -1431,6 +1453,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "house-edge-head",
+    faceReceivers: { eyes: { x: 625, y: 333 }, mouth: { x: 620, y: 393 } },
     legacySetId: "house-edge",
     originPool: "Wild West",
   },
@@ -1561,6 +1584,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Full replacement head; no combat effect",
     artKey: "unbending-head",
+    faceReceivers: { eyes: { x: 623, y: 375 }, mouth: { x: 635, y: 430 } },
     legacySetId: "unbending",
     originPool: "Frostfell",
   },
@@ -1636,7 +1660,7 @@ export const GEAR_CATALOG = {
     id: "pressurized-hat",
     netCode: 97,
     name: "Magnus Pressure Hat",
-    slot: "hat",
+    slot: "head",
     gearClass: "caster",
     rarity: "Ultimate",
     budgetUnits: 4,
@@ -1645,6 +1669,7 @@ export const GEAR_CATALOG = {
     quirkRef: "pressurized",
     effectText: "Beam heat vents 25% faster and overheat lock duration x0.5",
     artKey: "pressurized-hat",
+    faceReceivers: { eyes: { x: 669, y: 347 }, mouth: { x: 670, y: 420 } },
     legacySetId: "pressurized",
     originPool: "Neon-Cyber",
   },
@@ -1691,6 +1716,7 @@ export const GEAR_CATALOG = {
     stats: {},
     effectText: "Set identity; no combat effect",
     artKey: "pressurized-head",
+    faceReceivers: { eyes: { x: 669, y: 347 }, mouth: { x: 670, y: 420 } },
     legacySetId: "pressurized",
     originPool: "Neon-Cyber",
   },
@@ -1918,6 +1944,26 @@ export type LegacyPantsGearId = keyof typeof LEGACY_PANTS_TO_TORSO;
 export function torsoForLegacyPants(value: unknown): GearId | undefined {
   return typeof value === "string" && Object.hasOwn(LEGACY_PANTS_TO_TORSO, value)
     ? LEGACY_PANTS_TO_TORSO[value as LegacyPantsGearId]
+    : undefined;
+}
+
+/**
+ * One-way slot migration for complete cowls/helmets formerly persisted through `equippedGear.hat`.
+ * IDs stay stable so ownership and net codes survive; only their canonical slot changes.
+ */
+export const LEGACY_FULL_HEAD_HAT_TO_HEAD = {
+  "ash-walker-hat": "ash-walker-hat",
+  "ashen-crusader-hat": "ashen-crusader-hat",
+  "thornwatch-hat": "thornwatch-hat",
+  "neon-mirage-hat": "neon-mirage-hat",
+  "pressurized-hat": "pressurized-hat",
+} as const satisfies Readonly<Record<string, GearId>>;
+
+export type LegacyFullHeadHatGearId = keyof typeof LEGACY_FULL_HEAD_HAT_TO_HEAD;
+
+export function headForLegacyFullHeadHat(value: unknown): GearId | undefined {
+  return typeof value === "string" && Object.hasOwn(LEGACY_FULL_HEAD_HAT_TO_HEAD, value)
+    ? LEGACY_FULL_HEAD_HAT_TO_HEAD[value as LegacyFullHeadHatGearId]
     : undefined;
 }
 
@@ -2187,12 +2233,20 @@ export function sanitizeEquippedGear(
     typeof input === "object" && input !== null && !Array.isArray(input)
       ? (input as Record<string, unknown>)
       : undefined;
+  const migratedLegacyHead = headForLegacyFullHeadHat(source?.hat);
   const output = { ...STARTER_GEAR_LOADOUT } as Record<GearSlot, GearId>;
   const used = new Set<GearId>();
   for (const slot of GEAR_SLOTS) {
     // V3/V4 records used `shirt`; preserve that choice as the new complete torso. Retired pants never
     // equip a head or torso implicitly: their ownership migrates separately and the slot is dropped.
-    const candidate = slot === "torso" ? (source?.torso ?? source?.shirt) : source?.[slot];
+    const candidate =
+      slot === "torso"
+        ? (source?.torso ?? source?.shirt)
+        : slot === "head"
+          ? migratedLegacyHead && owned.has(migratedLegacyHead)
+            ? migratedLegacyHead
+            : source?.head
+          : source?.[slot];
     const id =
       isGearId(candidate) && owned.has(candidate) && GEAR_CATALOG[candidate].slot === slot
         ? candidate
@@ -2220,7 +2274,11 @@ export function resolveGearLoadout(idsBySlot: Readonly<Record<GearSlot, GearId>>
     scoundrel: 0,
   };
   const hat: GearDef = GEAR_CATALOG[idsBySlot.hat];
-  const quirk: QuirkDef = hat.quirkRef ? QUIRKS[hat.quirkRef] : QUIRKS.none;
+  const head: GearDef = GEAR_CATALOG[idsBySlot.head];
+  // A migrated full-head keystone keeps its legacy signature. Genuine topper hats remain legal visual
+  // overlays, but the replacement-head keystone wins the singular legacy hook seam when both are present.
+  const signature = head.quirkRef ? head : hat;
+  const quirk: QuirkDef = signature.quirkRef ? QUIRKS[signature.quirkRef] : QUIRKS.none;
   const mods = { ...DEFAULT_RUNTIME_MODS } as Record<string, number | boolean>;
   composeMods(mods, quirk.mods);
   for (const slot of GEAR_SLOTS) {

@@ -74,6 +74,9 @@ export interface GearBakeSourceDependency {
   readonly textureKey: string;
   readonly textureUrl: string | null;
   readonly sourceRevision: string;
+  /** Source-canvas translation applied before the shared replacement frame is cropped. */
+  readonly offsetX?: number;
+  readonly offsetY?: number;
   readonly state: GearTextureState;
   readonly blank: boolean;
 }
@@ -137,6 +140,8 @@ export interface GearManifestPart {
   parent: string | null;
   receiver: GearReceiverId;
   pivotSource: { x: number; y: number };
+  /** Face riders retain their pre-fixed-frame authoring pivot for per-head socket alignment. */
+  authoringPivotSource?: { x: number; y: number };
   receiverAnchor: GearReceiverAnchor;
   restAngle: number;
   mountScale: number;
@@ -155,6 +160,10 @@ export interface GearManifestItem {
   slotDirectory: string;
   texture: string;
   image: { width: number; height: number; sha256?: string };
+  faceReceivers?: {
+    readonly eyes: Readonly<{ x: number; y: number }>;
+    readonly mouth: Readonly<{ x: number; y: number }>;
+  } | null;
   parts: GearManifestPart[];
   renderRole?: GearRenderRole;
   sourceRevision?: string;
@@ -493,6 +502,7 @@ function partShape(value: unknown): value is GearManifestPart {
     typeof value.id === "string" &&
     (typeof value.parent === "string" || value.parent === null) &&
     pointShape(value.pivotSource) &&
+    (value.authoringPivotSource === undefined || pointShape(value.authoringPivotSource)) &&
     receiverAnchorShape(value.receiverAnchor) &&
     finite(value.restAngle) &&
     finite(value.mountScale) &&
@@ -870,15 +880,53 @@ export function gearManifestItem(
 ): GearManifestItem | undefined {
   const def = GEAR_CATALOG[gearId];
   const expectedId = slug(def.name);
+  const setFallbackIsAmbiguous =
+    Boolean(def.legacySetId) &&
+    Object.values(GEAR_CATALOG).filter(
+      (candidate) => candidate.slot === def.slot && candidate.legacySetId === def.legacySetId,
+    ).length > 1;
   for (const slot of manifest.slots) {
     if (slot.id !== def.slot) continue;
+    const exact = slot.items.find((item) => item.id === gearId);
+    if (exact) return exact;
     for (const item of slot.items) {
       if (item.id === expectedId) return item;
-      if (def.legacySetId && item.setId === def.legacySetId) return item;
+      if (!setFallbackIsAmbiguous && def.legacySetId && item.setId === def.legacySetId) return item;
     }
     return undefined;
   }
   return undefined;
+}
+
+export type HeadRiderReceiver = "face.eyes" | "face.mouth";
+
+export interface HeadRiderSourcePlacement {
+  readonly authoringSource: Readonly<{ x: number; y: number }>;
+  readonly targetSource: Readonly<{ x: number; y: number }>;
+  readonly offset: Readonly<{ x: number; y: number }>;
+}
+
+/**
+ * Resolve a face rider entirely in the untrimmed 1024px authoring canvas. The baked card is then
+ * mounted/scaled/mirrored once with its winning head, so the same source offset serves both facings.
+ */
+export function headRiderSourcePlacement(
+  headGearId: GearId,
+  receiver: HeadRiderReceiver,
+  authoringSource: Readonly<{ x: number; y: number }>,
+): HeadRiderSourcePlacement {
+  const head = GEAR_CATALOG[headGearId];
+  const fallback = GEAR_CATALOG["blank-drifter-head"].faceReceivers;
+  const receivers = head.slot === "head" ? (head.faceReceivers ?? fallback) : fallback;
+  const targetSource = receiver === "face.eyes" ? receivers.eyes : receivers.mouth;
+  return {
+    authoringSource,
+    targetSource,
+    offset: {
+      x: targetSource.x - authoringSource.x,
+      y: targetSource.y - authoringSource.y,
+    },
+  };
 }
 
 function blankGearId(gearId: GearId): boolean {
@@ -928,14 +976,23 @@ function selectedItemDependency(
   role: GearBakeLayerRole,
   resolveState: GearTextureStateResolver,
   receiver?: GearReceiverId,
+  riderHeadId?: GearId,
 ): GearBakeSourceDependency | null {
   const gearId = loadout[slot];
   if (!isGearId(gearId) || GEAR_CATALOG[gearId].slot !== slot || blankGearId(gearId)) return null;
   const item = gearManifestItem(manifest, gearId);
   const part = receiver
     ? item?.parts.find((candidate) => candidate.receiver === receiver)
-    : undefined;
+    : item?.parts[0];
   const hasRequiredPart = !receiver || part !== undefined;
+  const riderPlacement =
+    part && riderHeadId && (part.receiver === "face.eyes" || part.receiver === "face.mouth")
+      ? headRiderSourcePlacement(
+          riderHeadId,
+          part.receiver,
+          part.authoringPivotSource ?? part.receiverAnchor.raw ?? part.pivotSource,
+        )
+      : null;
   return dependencyWithState(
     {
       role,
@@ -944,6 +1001,8 @@ function selectedItemDependency(
       textureKey: item ? gearTextureKey(item) : `gear:${slot}:${gearId}`,
       textureUrl: item && hasRequiredPart ? gearTextureUrl(item) : null,
       sourceRevision: item ? sourceRevisionOf(item, part) : "missing",
+      offsetX: riderPlacement?.offset.x,
+      offsetY: riderPlacement?.offset.y,
       blank: false,
     },
     resolveState,
@@ -995,9 +1054,10 @@ function fallbackDiagnostic(
 function dependencyToken(dependency: GearBakeSourceDependency | null): string {
   if (!dependency) return "blank";
   const identity = dependency.gearId ?? "boilerplate";
-  if (dependency.state === "missing") return `${identity}@fallback`;
-  if (dependency.state === "pending") return `${identity}@pending`;
-  return `${identity}@${dependency.sourceRevision}`;
+  const placement = `:${dependency.offsetX ?? 0},${dependency.offsetY ?? 0}`;
+  if (dependency.state === "missing") return `${identity}@fallback${placement}`;
+  if (dependency.state === "pending") return `${identity}@pending${placement}`;
+  return `${identity}@${dependency.sourceRevision}${placement}`;
 }
 
 export function gearPartRecipeKey(
@@ -1106,14 +1166,28 @@ export function resolveGearBakeLoadout(
     "replacement-head",
     resolveState,
   );
+  const riderHeadId =
+    headReplacement?.state === "ready" && headReplacement.gearId
+      ? headReplacement.gearId
+      : "blank-drifter-head";
   const facialHair = selectedItemDependency(
     manifest,
     loadout,
     "facialHair",
     "facialHair",
     resolveState,
+    "face.mouth",
+    riderHeadId,
   );
-  const glasses = selectedItemDependency(manifest, loadout, "glasses", "glasses", resolveState);
+  const glasses = selectedItemDependency(
+    manifest,
+    loadout,
+    "glasses",
+    "glasses",
+    resolveState,
+    "face.eyes",
+    riderHeadId,
+  );
   const handLeftBase = baseDependency(manifest, "hand-l", resolveState);
   const handRightBase = baseDependency(manifest, "hand-r", resolveState);
   const gloveLeft = selectedItemDependency(

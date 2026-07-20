@@ -155,22 +155,31 @@ test("post-resize speck scrub removes only sub-64px ringing before strict paired
   );
 });
 
-test("migration plan is exactly twelve catalog-derived torso/head pairs", () => {
+test("migration plan is twelve catalog pairs plus five queued full-head cowls", () => {
   const pairItems = [];
   for (let index = 1; index <= 12; index++) {
     pairItems.push({ id: `set-${index}-shirt`, slot: "torso", slotDirectory: "torso" });
     pairItems.push({ id: `set-${index}-head`, slot: "head", slotDirectory: "heads" });
     pairItems.push({ id: `set-${index}-hat`, slot: "hat", slotDirectory: "hats" });
   }
+  for (let index = 1; index <= 5; index++) {
+    const hatIndex = pairItems.findIndex((item) => item.id === `set-${index}-hat`);
+    pairItems[hatIndex] = {
+      id: `set-${index}-cowl`,
+      slot: "head",
+      slotDirectory: "heads",
+    };
+  }
   const plan = assertMigrationPlan(buildMigrationPlan(pairItems));
-  assert.equal(plan.counts.rerenderItems, 24);
-  assert.equal(plan.counts.renderCalls, 24);
-  assert.equal(plan.counts.rerenderComponentParts, 24);
+  assert.equal(plan.counts.rerenderItems, 29);
+  assert.equal(plan.counts.renderCalls, 29);
+  assert.equal(plan.counts.rerenderComponentParts, 29);
   assert.deepEqual(plan.counts.byBatch, MIGRATION_EXPECTED.byBatch);
-  assert.equal(plan.preserved.filter((job) => job.renderRole === "overlay-hat").length, 12);
+  assert.equal(plan.preserved.filter((job) => job.renderRole === "overlay-hat").length, 7);
   assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-shirt")), "replace-torso");
   assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-head")), "replace-head");
-  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-hat")), "overlay-hat");
+  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-cowl")), "replace-head");
+  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-6-hat")), "overlay-hat");
   assert.throws(() => renderRoleForItem({ id: "retired-pants", slot: "pants" }), /retired pants catalog row/);
   assert.deepEqual(Object.fromEntries(Object.entries(PART_FRAMES).map(([id, frame]) => [id, frame.crop])), {
     // Widened 2026-07-18 per the silhouette-character law (owner ruling, then "widen the

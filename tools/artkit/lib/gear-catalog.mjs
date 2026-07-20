@@ -31,6 +31,50 @@ function stringProperty(object, name, { optional = false } = {}) {
   return value.text;
 }
 
+function assignedProperty(object, name, { optional = false } = {}) {
+  const property = object.properties.find(
+    (candidate) => ts.isPropertyAssignment(candidate) && propertyName(candidate) === name,
+  );
+  if (!property) {
+    if (optional) return undefined;
+    throw new Error(`GEAR_CATALOG row is missing ${name}`);
+  }
+  return unwrapExpression(property.initializer);
+}
+
+function numericLiteral(expression, label) {
+  if (ts.isNumericLiteral(expression)) return Number(expression.text);
+  if (
+    ts.isPrefixUnaryExpression(expression) &&
+    expression.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(expression.operand)
+  ) {
+    return -Number(expression.operand.text);
+  }
+  throw new Error(`GEAR_CATALOG ${label} must be a numeric literal`);
+}
+
+function pointLiteral(object, name) {
+  const expression = assignedProperty(object, name);
+  if (!ts.isObjectLiteralExpression(expression))
+    throw new Error(`GEAR_CATALOG ${name} must be an object literal`);
+  return Object.freeze({
+    x: numericLiteral(assignedProperty(expression, "x"), `${name}.x`),
+    y: numericLiteral(assignedProperty(expression, "y"), `${name}.y`),
+  });
+}
+
+function faceReceiversProperty(object) {
+  const expression = assignedProperty(object, "faceReceivers", { optional: true });
+  if (expression === undefined) return undefined;
+  if (!ts.isObjectLiteralExpression(expression))
+    throw new Error(`GEAR_CATALOG faceReceivers must be an object literal`);
+  return Object.freeze({
+    eyes: pointLiteral(expression, "eyes"),
+    mouth: pointLiteral(expression, "mouth"),
+  });
+}
+
 /**
  * Reads the checked-in TypeScript catalog directly so art generation cannot invent a second ID space.
  * Only fields needed by the art pipeline are projected; gameplay remains authoritative in gear.ts.
@@ -75,6 +119,7 @@ export function readGearCatalog(catalogPath) {
       effect: stringProperty(value, "effectText"),
       setId: stringProperty(value, "legacySetId", { optional: true }),
       originPool: stringProperty(value, "originPool", { optional: true }),
+      faceReceivers: faceReceiversProperty(value),
     });
   });
 

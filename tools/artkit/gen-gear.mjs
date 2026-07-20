@@ -17,6 +17,7 @@ import { readGearCatalog } from "./lib/gear-catalog.mjs";
 import {
   COMPOSITION_ORDERS,
   FACE_ENVELOPES,
+  FULL_HEAD_REPLACEMENT_IDS,
   MIGRATION_EXPECTED,
   PART_FRAMES,
   REPLACEMENT_CONTRACT_ID,
@@ -487,6 +488,7 @@ function parseLaunchPairDescriptions() {
 }
 
 let CATALOG_STATE = null;
+const FULL_HEAD_REPLACEMENT_ID_SET = new Set(FULL_HEAD_REPLACEMENT_IDS);
 
 function pairCatalogItems() {
   const catalog = readGearCatalog(GEAR_CATALOG_SOURCE);
@@ -533,7 +535,9 @@ function pairCatalogItems() {
     const launch = catalogItem.slot === "torso"
       ? set?.torso
       : catalogItem.slot === "head"
-        ? set?.head
+        ? FULL_HEAD_REPLACEMENT_ID_SET.has(catalogItem.id)
+          ? set?.slots.hat
+          : set?.head
         : set?.slots[catalogItem.slot];
     if (launch) {
       items.push({
@@ -983,6 +987,10 @@ Before returning verify: exactly ${paired ? "two matched wearable islands" : "on
 
 function replacementAuthoringBlock(job, bundle) {
   const headCrop = JSON.stringify(PART_FRAMES.head.crop);
+  const faceReceivers = job.item.faceReceivers ?? {
+    eyes: receiver("face.eyes").raw,
+    mouth: receiver("face.mouth").raw,
+  };
   const replacementLayoutImage = bundle.entries.findIndex((entry) => entry.description.includes("APPROVED PASSING REPLACE-FOOT")) + 1;
   switch (job.renderRole) {
     case "replace-torso":
@@ -996,7 +1004,7 @@ function replacementAuthoringBlock(job, bundle) {
         ? `GLASSES / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside face-eyes envelope ${JSON.stringify(FACE_ENVELOPES.eyes)}, cover face.eyes (553,364) with solid material, and show exactly one semantic-right lens/frame plus temple arm—no head pixels or second frontal lens.`
         : `FACIAL HAIR / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside mouth/jaw envelope ${JSON.stringify(FACE_ENVELOPES.mouthJaw)}, cover face.mouth (568,410) with solid material, and show one near-side cheek/jaw attachment—no head pixels or mirrored far cheek.`;
     case "replace-head":
-      return `REPLACEMENT HEAD: Render ONE complete final head card ON Image 1, canonical head.png, at exact fixed frame ${headCrop}. ${job.item.name} IS the head; never draw it over copied boilerplate-head pixels. Cover >=98% of the default head core, remain neckless and one connected island, preserve opaque support beneath face.eyes (553,364) and face.mouth (568,410), preserve hat mount (512,317) within 4px, and own one final outer contour. No body, shoulders, topper, separate mask layer, or double silhouette.`;
+      return `REPLACEMENT HEAD: Render ONE complete final head card ON Image 1, canonical head.png, at exact fixed frame ${headCrop}. ${job.item.name} IS the head; never draw it over copied boilerplate-head pixels. Cover >=98% of the default head core, remain neckless and one connected island, preserve opaque support beneath this head's calibrated face.eyes (${faceReceivers.eyes.x},${faceReceivers.eyes.y}) and face.mouth (${faceReceivers.mouth.x},${faceReceivers.mouth.y}), preserve hat mount (512,317) within 4px, and own one final outer contour. No body, shoulders, topper, separate mask layer, or double silhouette.`;
     default:
       throw new Error(`No creative replacement prompt contract for ${job.renderRole}`);
   }
@@ -1525,6 +1533,10 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
       label: glasses ? "glasses" : "facial hair",
     });
   } else if (job.renderRole === "replace-head") {
+    const faceReceivers = job.item.faceReceivers ?? {
+      eyes: receiver("face.eyes").raw,
+      mouth: receiver("face.mouth").raw,
+    };
     gateReport = validateFullReplacement({
       alpha,
       width: CANVAS.width,
@@ -1537,8 +1549,8 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
       alpha,
       width: CANVAS.width,
       height: CANVAS.height,
-      eyesPivot: receiver("face.eyes").raw,
-      mouthPivot: receiver("face.mouth").raw,
+      eyesPivot: faceReceivers.eyes,
+      mouthPivot: faceReceivers.mouth,
       hatMount: HAT_STACK_BAND.sourcePivot,
     });
   } else if (job.renderRole === "overlay-hat") {
@@ -2483,6 +2495,7 @@ async function buildManifest() {
           setId: item.setId,
           setName: item.setName,
           rarity: item.rarity,
+          faceReceivers: item.faceReceivers ?? null,
           slot: item.slot,
           slotDirectory: item.slotDirectory,
           sourceCharacterId: item.sourceCharacterId,
@@ -2738,6 +2751,7 @@ async function buildManifestV2({ includeValidatedPairInstalls = false } = {}) {
         setId: item.setId,
         setName: item.setName,
         rarity: item.rarity,
+        faceReceivers: item.faceReceivers ?? null,
         slot: item.slot,
         slotDirectory: item.slotDirectory,
         sourceCharacterId: item.sourceCharacterId,

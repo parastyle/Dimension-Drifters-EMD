@@ -11,6 +11,7 @@ import {
   type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
+  headRiderSourcePlacement,
   isGearReplacementManifest,
   resolveGearBakeLoadout,
   resolveLoadoutHeadTexture,
@@ -87,7 +88,7 @@ describe("gear part manifest assembly", () => {
   it("maps validated ids onto normalized sockets and expands prestige hats only", () => {
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
-      hat: "ash-walker-hat" as GearId,
+      hat: "molten-core-hat" as GearId,
     } as Record<GearSlot, GearId>;
     const assembly = assembleGearLoadout(requireManifest(), loadout, 2);
     expect(assembly).toMatchObject({ towerTotal: 3, towerVisible: 3, towerOverflow: 0 });
@@ -178,7 +179,7 @@ describe("public prestige tower composition", () => {
   it("treats the synced remote count exactly like owner-private prestige", () => {
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
-      hat: "ash-walker-hat" as GearId,
+      hat: "molten-core-hat" as GearId,
     } as Record<GearSlot, GearId>;
     const syncedRemotePrestige = 12;
     const remote = assembleGearLoadout(requireManifest(), loadout, syncedRemotePrestige);
@@ -187,7 +188,7 @@ describe("public prestige tower composition", () => {
     expect(remote.parts.map((part) => [part.gearId, part.stackIndex])).toEqual(
       owner.parts.map((part) => [part.gearId, part.stackIndex]),
     );
-    expect(remote.parts.every((part) => part.gearId === "ash-walker-hat")).toBe(true);
+    expect(remote.parts.every((part) => part.gearId === "molten-core-hat")).toBe(true);
   });
 });
 
@@ -429,6 +430,52 @@ describe("independent replacement-head and hat-tower contract", () => {
           sample.extras.hats.every((part) => part.extraRole === "overlay-hat"),
         ),
       ).toBe(true);
+    }
+  });
+});
+
+// HEAD-FIT PANEL — append-only proof that source-space socket correction survives the signed head scale.
+describe("per-head face-rider source placement", () => {
+  it("lands Ash Walker eyes and mouth within tolerance at 0.85 scale in both facings", () => {
+    const v2 = replacementPairManifest("head-fit-panel-r1");
+    const loadout = {
+      ...STARTER_GEAR_LOADOUT,
+      head: "ash-walker-head" as GearId,
+      glasses: "ash-walker-glasses" as GearId,
+      facialHair: "ash-walker-facial-hair" as GearId,
+    } as Record<GearSlot, GearId>;
+    const headLayers = resolveGearBakeLoadout(v2, loadout).recipe.parts.head.layers;
+    const glasses = headLayers.find((layer) => layer.role === "glasses");
+    const facialHair = headLayers.find((layer) => layer.role === "facialHair");
+    expect(glasses?.offsetX).toBeCloseTo(127.05, 8);
+    expect(glasses?.offsetY).toBeCloseTo(-126.17, 8);
+    expect(facialHair?.offsetX).toBeCloseTo(113, 8);
+    expect(facialHair?.offsetY).toBeCloseTo(-68, 8);
+
+    const cases = [
+      {
+        layer: glasses,
+        placement: headRiderSourcePlacement("ash-walker-head", "face.eyes", { x: 553, y: 364 }),
+      },
+      {
+        layer: facialHair,
+        placement: headRiderSourcePlacement("ash-walker-head", "face.mouth", { x: 568, y: 410 }),
+      },
+    ];
+    const mountedScale = (76 / 512) * 0.85;
+    for (const facing of [1, -1] as const) {
+      for (const { layer, placement } of cases) {
+        if (!layer) throw new Error("face rider layer did not resolve");
+        const actual = {
+          x: (placement.authoringSource.x + (layer.offsetX ?? 0) - 512) * mountedScale * facing,
+          y: (placement.authoringSource.y + (layer.offsetY ?? 0) - 300) * mountedScale,
+        };
+        const expected = {
+          x: (placement.targetSource.x - 512) * mountedScale * facing,
+          y: (placement.targetSource.y - 300) * mountedScale,
+        };
+        expect(Math.hypot(actual.x - expected.x, actual.y - expected.y)).toBeLessThanOrEqual(0.01);
+      }
     }
   });
 });

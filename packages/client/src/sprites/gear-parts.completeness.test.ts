@@ -12,14 +12,21 @@ import { GEAR_PARTS_MANIFEST } from "./gear-parts.js";
 // Burn-down list: remove an id as soon as its full-object/current-slot manifest row lands. A stale entry
 // fails because `missingArt` is compared exactly, so completed renders cannot hide in the allowlist.
 const PENDING_RENDER_ALLOWLIST = [
+  "ash-walker-hat",
+  "ash-walker-shirt",
+  "ashen-crusader-hat",
   "ashen-crusader-shirt",
-  "coldsnap-head",
-  "graveside-shirt",
+  "molten-core-shirt",
   "nine-veils-shirt",
+  "demon-mask-shirt",
+  "thornwatch-hat",
   "thornwatch-shirt",
   "thornwatch-boots",
+  "neon-mirage-hat",
   "neon-mirage-shirt",
+  "house-edge-shirt",
   "unbending-boots",
+  "pressurized-hat",
   "pressurized-shirt",
   "mended-workshirt",
   "reinforced-workshirt",

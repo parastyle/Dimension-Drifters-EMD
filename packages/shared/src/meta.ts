@@ -76,6 +76,7 @@ import {
   GEAR_IDS,
   type GearId,
   type GearSlot,
+  headForLegacyFullHeadHat,
   isGearId,
   STARTER_GEAR_IDS,
   STARTER_GEAR_LOADOUT,
@@ -287,7 +288,9 @@ export function sanitizeMetaAccountV3(input: unknown): MetaAccountV3 {
   const requested = new Set<GearId>();
   if (Array.isArray(input.ownedGear)) {
     for (const value of input.ownedGear) {
-      if (isGearId(value)) requested.add(value);
+      const migratedHead = headForLegacyFullHeadHat(value);
+      if (migratedHead) requested.add(migratedHead);
+      else if (isGearId(value)) requested.add(value);
       else {
         const torso = torsoForLegacyPants(value);
         if (torso) requested.add(torso);

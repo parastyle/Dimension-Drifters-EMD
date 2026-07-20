@@ -376,7 +376,7 @@ describe("SpriteRig sprung-head gear truth", () => {
     const manifest = compatibilityPairManifest();
     const loadout = {
       ...STARTER_GEAR_LOADOUT,
-      hat: "ash-walker-hat" as GearId,
+      hat: "molten-core-hat" as GearId,
       glasses: "ash-walker-glasses" as GearId,
       facialHair: "ash-walker-facial-hair" as GearId,
     } as Record<GearSlot, GearId>;
