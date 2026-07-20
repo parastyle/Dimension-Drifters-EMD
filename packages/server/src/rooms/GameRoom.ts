@@ -1554,7 +1554,7 @@ export class GameRoom extends Room<ArenaState> {
       this.loadSlot(player, c, i);
     });
 
-    // §29 ARSENAL cycle: Q/E through the NON-EMPTY slots (dir < 0 = back). No-op if nothing else is filled.
+    // §29 ARSENAL cycle: Q advances through NON-EMPTY slots. The wire direction stays bidirectional.
     this.onMessage("cycleSlot", (client, message: { dir?: number }) => {
       if (!this.takeAction(client)) return; // §44 action budget
       const player = this.state.players.get(client.sessionId);
@@ -1917,7 +1917,7 @@ export class GameRoom extends Room<ArenaState> {
       this.sendWeaponManifest(player);
     });
 
-    // §13 R-TAP near a ground weapon = GRAB it. Current clients name the exact synced pickup highlighted at
+    // §13 E near a ground weapon = GRAB it. Current clients name the exact synced pickup highlighted at
     // press time; that identity is authoritative. A gallery page can be rebuilt between send and receipt, so
     // a missing id is rejected instead of silently substituting the new weapon occupying the old cell.
     // Legacy id-less grabs remain available for ordinary `drop*` pickups only — never the mutable gallery.
@@ -3542,7 +3542,7 @@ export class GameRoom extends Room<ArenaState> {
       this.resetElapsed();
       this.spawnAccum = 0;
       // §31 SHOWROOM: browse EVERY arted weapon (active roster + the whole +300 expansion arsenal), one
-      // PAGE at a time (Q/E cycles pages). A full 314-pickup dump tanked the client to ~2fps (314 rigs +
+      // PAGE at a time (Z/X cycles pages). A full 314-pickup dump tanked the client to ~2fps (314 rigs +
       // 297 lazy art loads at once), so it's paged — GALLERY_PAGE weapons per page, laid out in a grid.
       this.galleryPage = 0;
       this.spawnGalleryPage();
@@ -3629,7 +3629,7 @@ export class GameRoom extends Room<ArenaState> {
    *  slice of GALLERY_ROSTER in a grid above the player. Wraps the page index. Training mode only.
    *  §41 cells keep their EXACT grid position — a cell over a pit/POI is SKIPPED (the shelf shows a gap)
    *  instead of safeSpawnPos NUDGING it: the old nudge scattered the neat grid and piled pickups onto their
-   *  neighbours, so R grabbed "the wrong thing" and pages read as disorganized. */
+   *  neighbours, so E grabbed "the wrong thing" and pages read as disorganized. */
   private spawnGalleryPage(): void {
     for (const id of [...this.state.pickups.keys()]) {
       if (id.startsWith("pk")) this.state.pickups.delete(id);
@@ -5652,7 +5652,7 @@ export class GameRoom extends Room<ArenaState> {
     // §6 belt-final/extraction victories can resolve inside phase 3; do not fall through into combat phases.
     if (this.state.outcome !== "active") return;
 
-    // 3b. Pickups are grabbed with the R key now (§13 `grabWeapon`), not walk-over — here we just age the
+    // 3b. Pickups are grabbed with E (§13 `grabWeapon`), not walk-over — here we just age the
     // per-DROP grace window (a just-dropped weapon can't be re-grabbed until it expires).
     for (const [pid, t] of this.pickupGrace) {
       const left = t - dt;

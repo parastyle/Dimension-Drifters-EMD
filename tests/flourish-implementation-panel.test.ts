@@ -129,11 +129,9 @@ describe("flourish raw Arena cancellation panel", () => {
     expect(arenaSource).toContain("rawFlourishIntent.jumpOrDodge =");
     expect(arenaSource).toContain("shiftSlidePressed");
     expect(arenaSource).toContain("ctrlSlidePressed");
+    expect(arenaSource).toContain("rawFlourishIntent.interaction = weaponInput.pickup");
     expect(arenaSource).toContain(
-      "rawFlourishIntent.interaction = alive && (rDown || (eDown && nearPickup))",
-    );
-    expect(arenaSource).toContain(
-      "rawFlourishIntent.weaponSelection = !!selfP && (qDown || eFree)",
+      "rawFlourishIntent.weaponSelection = !!selfP && weaponInput.cycle",
     );
   });
 

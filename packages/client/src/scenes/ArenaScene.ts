@@ -151,6 +151,7 @@ import {
   SpriteRig,
 } from "../entities/SpriteRig.js";
 import { WormRig } from "../entities/WormRig.js";
+import { routeWeaponInput, type WeaponInputMode } from "../input-routing.js";
 import {
   type DistanceJumpIndicator,
   type PredCmd,
@@ -575,7 +576,7 @@ interface CarouselDock {
   fadeEvent?: Phaser.Time.TimerEvent;
   fadeTween?: Phaser.Tweens.Tween;
   focusTween?: Phaser.Tweens.Tween;
-  inspectKey?: "Q" | "E";
+  inspectKey?: "Q";
   inspectStartedAt: number;
   blocked: boolean;
 }
@@ -1328,6 +1329,8 @@ export class ArenaScene extends Phaser.Scene {
     | "P"
     | "Q"
     | "E"
+    | "Z"
+    | "X"
     | "F"
     | "H"
     | "T"
@@ -1460,6 +1463,8 @@ export class ArenaScene extends Phaser.Scene {
    *  which was dropping mouse movement that began while a key was held). */
   private readonly pointerScreen = { x: 0, y: 0, set: false };
   private pointerMoves = 0;
+  /** Suppresses LMB/RMB combat while the pointer is over a clickable HUD or modal control. */
+  private pointerOverInteractiveUi = false;
   private prevSelfHp = -1;
   private lastHurt = 0;
   private observedSelfFellSeq = 0;
@@ -1657,13 +1662,12 @@ export class ArenaScene extends Phaser.Scene {
   // been down; `rSalvaged` guards the one-shot salvage so a long hold doesn't fire it every frame.
   private rHold = 0;
   private rSalvaged = false;
-  /** §13 v0.106 (A11): latch so a JustDown grab suppresses the release-time drop (one press = one grab). */
-  private rGrabbed = false;
-  /** §13 v0.106 (A11): nearest grabbable pickup this frame (world px), for the highlight ring. */
+  /** Nearest grabbable pickup this frame (world px), for the E prompt and highlight ring. */
   private grabTarget: { x: number; y: number } | null = null;
   private grabRadius = PICKUP_RADIUS;
-  /** §13 v0.106 (A11): the pulsing amber ring drawn on the pickup R will take. */
+  /** The pulsing amber ring drawn on the pickup E will take. */
   private grabGfx!: Phaser.GameObjects.Graphics;
+  private grabPromptText!: Phaser.GameObjects.Text;
   private dropBar?: Phaser.GameObjects.Graphics;
   private dropBarLabel?: Phaser.GameObjects.Text;
   // §9 non-belt navigator: a fixed mirrored-L dock, virtualized passive chips, and one lazy keyboard
@@ -2068,6 +2072,7 @@ export class ArenaScene extends Phaser.Scene {
     this.deathText = undefined!;
     this.restartBtn = undefined!;
     this.grabGfx = undefined!;
+    this.grabPromptText = undefined!;
     this.dropBar = undefined;
     this.dropBarLabel = undefined;
     this.arsenalG = null;
@@ -2140,6 +2145,7 @@ export class ArenaScene extends Phaser.Scene {
     this.pointerScreen.y = 0;
     this.pointerScreen.set = false;
     this.pointerMoves = 0;
+    this.pointerOverInteractiveUi = false;
     this.prevSelfHp = -1;
     this.lastHurt = 0;
     this.localAtkCd = 0;
@@ -2194,7 +2200,6 @@ export class ArenaScene extends Phaser.Scene {
     this.summonBossPage = 0;
     this.rHold = 0;
     this.rSalvaged = false;
-    this.rGrabbed = false;
     this.grabTarget = null;
     this.grabRadius = PICKUP_RADIUS;
     this.bagOpen = false;
@@ -2293,8 +2298,20 @@ export class ArenaScene extends Phaser.Scene {
     // H10: the local player's parry-state ring. Just under the white-tell layer + above the bodies, so the
     // "ready vs recovering vs i-frames-up" read sits right on your own drifter.
     this.parryGfx = this.add.graphics().setDepth(99989);
-    // §13 v0.106 (A11): the grab-highlight ring on the pickup R will take (just under the parry ring).
+    // The grab-highlight ring and prompt mark the pickup E will take (just under the parry ring).
     this.grabGfx = this.add.graphics().setDepth(99988);
+    this.grabPromptText = this.add
+      .text(0, 0, "[E] Pick up", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#fff0b0",
+        fontStyle: "bold",
+        backgroundColor: "#090805",
+        padding: { x: 5, y: 3 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(99989)
+      .setVisible(false);
     // §19 v0.108 low-HP danger vignette — a screen-space red edge glow (under HUD text), alpha 0 at rest.
     this.dangerVignette = this.add.graphics().setScrollFactor(0).setDepth(99998).setAlpha(0);
     // §51 victim-side juggle read: one retained cool-white edge. The shared verb manager owns the pooled
@@ -2366,7 +2383,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,P,Q,E,F,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,P,Q,E,Z,X,F,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -2376,6 +2393,8 @@ export class ArenaScene extends Phaser.Scene {
       | "P"
       | "Q"
       | "E"
+      | "Z"
+      | "X"
       | "F"
       | "H"
       | "T"
@@ -4166,9 +4185,8 @@ export class ArenaScene extends Phaser.Scene {
     // against the prior frame + origin-0 on frame one — adversarial-verify finding).
     const cam = this.cameras.main;
     this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
-    // §9/§13 R — context-sensitive: if a dropped weapon is within reach, TAP = GRAB it (equip). Otherwise,
-    // with a weapon held, TAP = drop it on the floor and HOLD = salvage it into the bag. Spacebar = jump.
-    // (Restart the run is now the on-screen button, top-right.)
+    // Weapon verbs stay physically distinct: E interacts, Q cycles, Z/X page the training gallery, and
+    // R owns only the held-weapon drop/salvage gesture. Restart remains the on-screen button, top-right.
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
     const ultimatePressed = Phaser.Input.Keyboard.JustDown(this.keys.F);
@@ -4192,6 +4210,7 @@ export class ArenaScene extends Phaser.Scene {
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       summonClosePressed;
+    this.pointerOverInteractiveUi = this.input.hitTestPointer(this.input.activePointer).length > 0;
     const predictedAirborne = this.predictor
       ? this.selfPredHeight > GROUND_EPSILON
       : (selfP?.height ?? 0) > GROUND_EPSILON;
@@ -4213,9 +4232,15 @@ export class ArenaScene extends Phaser.Scene {
     const ctrlSlidePressed = Phaser.Input.Keyboard.JustDown(this.keys.CTRL);
     const rawFlourishIntent = this.rawFlourishIntent;
     rawFlourishIntent.attack =
-      alive && !levelWindowInputBlocked && this.input.activePointer.rightButtonDown();
+      alive &&
+      !levelWindowInputBlocked &&
+      !this.pointerOverInteractiveUi &&
+      this.input.activePointer.rightButtonDown();
     rawFlourishIntent.parryOrBrace =
-      alive && !levelWindowInputBlocked && this.input.activePointer.leftButtonDown();
+      alive &&
+      !levelWindowInputBlocked &&
+      !this.pointerOverInteractiveUi &&
+      this.input.activePointer.leftButtonDown();
     rawFlourishIntent.jumpOrDodge =
       alive &&
       !levelWindowInputBlocked &&
@@ -4264,8 +4289,7 @@ export class ArenaScene extends Phaser.Scene {
     this.grabRadius = PICKUP_RADIUS;
     if (!levelWindowInputBlocked) {
       const holdingWeapon = !!selfP && selfP.weapon !== FISTS_WEAPON;
-      // The NEAREST grabbable pickup within arm's reach (then R means "grab", not "drop/salvage"), tracked so
-      // the §13 v0.106 (A11) highlight ring can show WHICH one R will take.
+      // The nearest grabbable pickup within arm's reach drives one visible E prompt and one exact target id.
       let nearPickup = false;
       let grabPickupId = "";
       if (selfP && alive) {
@@ -4286,20 +4310,8 @@ export class ArenaScene extends Phaser.Scene {
           }
         });
       }
-      canSalvage = alive && holdingWeapon && !nearPickup; // hold-to-salvage only when not grabbing
-      // §13 v0.106 (A11): grab on JustDOWN, not release — grabbing on JustUp added your whole hold time as
-      // pickup latency. The `rGrabbed` latch suppresses the release-time drop so one press = one grab.
-      const rDown = Phaser.Input.Keyboard.JustDown(this.keys.R);
-      if (rDown && alive && grabPickupId) {
-        this.room.send("grabWeapon", { pickupId: grabPickupId });
-        this.wakeCarouselDock();
-        this.rGrabbed = true;
-        this.audio.play("grab"); // §19 a soft two-note pickup blip
-      }
-      // `!rGrabbed`: if this R-press already fired a grab (JustDown), it does nothing else for the rest of the
-      // hold — one press = one grab, so walking off a pickup mid-hold can't then accidentally salvage the
-      // weapon you just picked up.
-      if (this.keys.R.isDown && canSalvage && !this.rGrabbed) {
+      canSalvage = alive && holdingWeapon && !nearPickup;
+      if (this.keys.R.isDown && canSalvage) {
         this.rHold += this.deltaSec;
         if (this.rHold >= SALVAGE_HOLD_SECONDS && !this.rSalvaged) {
           this.room.send("salvageWeapon");
@@ -4308,8 +4320,8 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (Phaser.Input.Keyboard.JustUp(this.keys.R)) {
         if (
-          !this.rGrabbed &&
           !this.rSalvaged &&
+          !nearPickup &&
           this.rHold > 0.02 &&
           this.rHold < SALVAGE_HOLD_SECONDS &&
           holdingWeapon
@@ -4318,52 +4330,57 @@ export class ArenaScene extends Phaser.Scene {
         }
         this.rHold = 0;
         this.rSalvaged = false;
-        this.rGrabbed = false;
       }
       // Jump-feel Space routing is sampled above the context block so a level-window edge also clears the
       // hold latch. Tap emits on release; held state and airborne pound ride the next numbered command.
-      // §42 E is the INTERACT key players instinctively press on a ground weapon — if one is in reach, E
-      // GRABS it (same as R). Before this, E near a pickup flipped the showroom PAGE (respawning every
-      // pickup in the grid as a DIFFERENT weapon at the same spot) or cycled the held roster — so "pick
-      // up with E" handed you a seemingly random weapon. Cycle/browse stays on E only when clear of pickups.
-      const eDown = Phaser.Input.Keyboard.JustDown(this.keys.E);
-      if (eDown && alive && grabPickupId) {
+      const interactPressed = Phaser.Input.Keyboard.JustDown(this.keys.E);
+      const cyclePressed = Phaser.Input.Keyboard.JustDown(this.keys.Q);
+      const previousPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.Z);
+      const nextPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.X);
+      const weaponInputMode: WeaponInputMode = this.belt
+        ? "belt"
+        : this.room.state.mode === "training"
+          ? "training"
+          : "arena";
+      const weaponInput = routeWeaponInput({
+        mode: weaponInputMode,
+        alive,
+        pickupPromptVisible: nearPickup,
+        interactPressed,
+        cyclePressed,
+        previousPagePressed,
+        nextPagePressed,
+      });
+      if (weaponInput.pickup && grabPickupId) {
         this.room.send("grabWeapon", { pickupId: grabPickupId });
         this.wakeCarouselDock();
         this.audio.play("grab");
       }
-      const eFree = eDown && !(alive && nearPickup);
-      const qDown = Phaser.Input.Keyboard.JustDown(this.keys.Q);
-      rawFlourishIntent.interaction = alive && (rDown || (eDown && nearPickup));
-      rawFlourishIntent.weaponSelection = !!selfP && (qDown || eFree);
-      // §29 belt: Q/E cycle the 3-slot ARSENAL (not the whole roster) + 1/2/3 jump straight to a slot; arena
-      // keeps the roster carousel.
+      rawFlourishIntent.interaction = weaponInput.pickup;
+      rawFlourishIntent.weaponSelection = !!selfP && weaponInput.cycle;
+      // Belt: Q advances through occupied arsenal entries; 1/2/3 jump straight to a slot.
       if (this.belt) {
         const oneDown = Phaser.Input.Keyboard.JustDown(this.keys.ONE);
         const twoDown = Phaser.Input.Keyboard.JustDown(this.keys.TWO);
         const threeDown = Phaser.Input.Keyboard.JustDown(this.keys.THREE);
         rawFlourishIntent.weaponSelection ||= !!selfP && (oneDown || twoDown || threeDown);
-        if (qDown && selfP) this.cycleBeltLoadout(selfP, 1);
-        if (eFree && selfP) this.cycleBeltLoadout(selfP, -1);
+        if (weaponInput.cycle && selfP) this.cycleBeltLoadout(selfP, 1);
         if (oneDown && selfP) this.selectBeltSlot(selfP, 0);
         if (twoDown && selfP) this.selectBeltSlot(selfP, 1);
         if (threeDown && selfP) this.selectBeltSlot(selfP, 2);
-      } else if (this.room?.state.mode === "training") {
-        // §31 Testing-Grounds SHOWROOM: Q/E browse the weapon-gallery PAGES (all 300+ arted weapons).
-        if (qDown) this.room?.send("galleryPage", { dir: 1 });
-        if (eFree) this.room?.send("galleryPage", { dir: -1 });
+      } else {
+        if (weaponInput.cycle) {
+          this.room.send("cycleWeapon", { dir: 1 });
+          this.wakeCarouselDock("Q");
+        }
+      }
+      if (weaponInput.galleryPage !== 0) {
+        this.room.send("galleryPage", { dir: weaponInput.galleryPage });
+      }
+      if (weaponInputMode === "training") {
         if (import.meta.env.DEV && Phaser.Input.Keyboard.JustDown(this.keys.P) && selfP) {
           const def = WEAPONS[selfP.weapon];
           if (def) this.cyclePoseShowroom(def);
-        }
-      } else {
-        if (qDown) {
-          this.room?.send("cycleWeapon", { dir: 1 });
-          this.wakeCarouselDock("Q");
-        }
-        if (eFree) {
-          this.room?.send("cycleWeapon", { dir: -1 });
-          this.wakeCarouselDock("E");
         }
       }
       if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
@@ -7304,6 +7321,8 @@ export class ArenaScene extends Phaser.Scene {
       !this.keys.R.isDown &&
       !this.keys.Q.isDown &&
       !this.keys.E.isDown &&
+      !this.keys.Z.isDown &&
+      !this.keys.X.isDown &&
       !this.keys.C.isDown &&
       !this.keys.TAB.isDown &&
       !this.keys.CTRL.isDown
@@ -8969,7 +8988,11 @@ export class ArenaScene extends Phaser.Scene {
       const beamChannelLive =
         beam?.phase === BeamPhase.Charging || beam?.phase === BeamPhase.Active;
       const localBeamHeld =
-        isSelf && !!pl?.alive && !!(pl && WEAPONS[pl.weapon]?.beam) && pointer.rightButtonDown();
+        isSelf &&
+        !!pl?.alive &&
+        !this.pointerOverInteractiveUi &&
+        !!(pl && WEAPONS[pl.weapon]?.beam) &&
+        pointer.rightButtonDown();
       anim.fireHeld = pl?.attackHeld === true || beamChannelLive || localBeamHeld;
       if (pl) {
         const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
@@ -9389,7 +9412,12 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inputModalBlocked(self)) return;
     if (this.predictor?.slideAttackLocked) return;
-    if (!this.input.activePointer.rightButtonDown() || this.localAtkCd > 0) return;
+    if (
+      this.pointerOverInteractiveUi ||
+      !this.input.activePointer.rightButtonDown() ||
+      this.localAtkCd > 0
+    )
+      return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
     if (weapon?.beam) return;
     // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
@@ -9671,7 +9699,12 @@ export class ArenaScene extends Phaser.Scene {
     const self = this.room.state.players.get(selfId);
     if (!self?.alive || this.inputModalBlocked(self)) return;
     if (this.predictor?.slideParryLocked) return;
-    if (!this.input.activePointer.leftButtonDown() || this.localParryCd > 0) return;
+    if (
+      this.pointerOverInteractiveUi ||
+      !this.input.activePointer.leftButtonDown() ||
+      this.localParryCd > 0
+    )
+      return;
     this.localParryCd = PARRY_COOLDOWN;
     this.lastParryPress = this.time.now; // H10: open the i-frame-window flash on the parry ring
     this.room.send("parry");
@@ -9681,16 +9714,19 @@ export class ArenaScene extends Phaser.Scene {
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
   }
 
-  /** §13 v0.106 (A11) grab highlight: a pulsing amber ring on the nearest reachable pickup — the one an R
-   *  tap will GRAB — so the swap is a deliberate choice, not a blind one. Hidden when nothing's in reach. */
+  /** E pickup affordance: one pulsing ring plus one prompt on the exact nearest reachable weapon. */
   private renderGrabHighlight(): void {
     const g = this.grabGfx;
     g.clear();
     const t = this.grabTarget;
-    if (!t) return;
+    if (!t) {
+      this.grabPromptText.setVisible(false);
+      return;
+    }
     const pulse = 0.5 + 0.5 * Math.sin(this.time.now * 0.008);
     g.lineStyle(2.5 + pulse, 0xffd479, 0.55 + 0.35 * pulse);
     g.strokeCircle(t.x, t.y, this.grabRadius * (0.7 + 0.06 * pulse));
+    this.grabPromptText.setPosition(t.x, t.y - 45).setVisible(true);
   }
 
   private copperPickupPromptRadius(): number {
@@ -11371,7 +11407,7 @@ export class ArenaScene extends Phaser.Scene {
         }
       });
       if (galleryPage > 0) {
-        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons`;
+        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons · [Z/X] Prev/Next`;
       }
     }
     const layout = objectiveHudLayout({
@@ -11614,12 +11650,12 @@ export class ArenaScene extends Phaser.Scene {
     };
     const textResolution = Math.max(2, Math.ceil(RENDER_DPR));
     const bottomTab = this.add
-      .text(0, 0, "[E] ‹", tabStyle)
+      .text(0, 0, "PREV", tabStyle)
       .setOrigin(1, 0.5)
       .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(textResolution);
     const rightTab = this.add
-      .text(0, 0, "[Q] ›", tabStyle)
+      .text(0, 0, "[Q] NEXT", tabStyle)
       .setOrigin(0.5, 1)
       .setShadow(0, 1, "#000000", 2, true, true)
       .setResolution(textResolution);
@@ -11746,8 +11782,8 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Explicit non-aim activity wakes the compact rails; only ordinary-arena Q/E arms inspection. */
-  private wakeCarouselDock(inspectKey?: "Q" | "E"): void {
+  /** Explicit non-aim activity wakes the compact rails; Q arms the weapon inspector. */
+  private wakeCarouselDock(inspectKey?: "Q"): void {
     const dock = this.carouselDock;
     if (!dock || this.belt || dock.blocked) return;
     if (inspectKey) {
@@ -11844,7 +11880,7 @@ export class ArenaScene extends Phaser.Scene {
       layoutDockChip(chip, width, height, order, layout.scale);
       chip.container.setPosition(point.x, point.y).setRotation(0).setVisible(true);
     };
-    // Key badges (dockux-panel §2.2): the nearest chip is "what E/Q does next" — its 1 is noise.
+    // Previous chips are history only; Q is the sole active cycle binding on the next arm.
     layout.bottom.forEach((point, index) => {
       const id = bottomIds[index];
       if (id)
@@ -11854,7 +11890,7 @@ export class ArenaScene extends Phaser.Scene {
           point,
           layout.bottomChipWidth,
           layout.bottomChipHeight,
-          index === 0 ? "E" : `E${index + 1}`,
+          `−${index + 1}`,
         );
     });
     layout.right.forEach((point, index) => {
@@ -11873,11 +11909,11 @@ export class ArenaScene extends Phaser.Scene {
     const bottomCulled = Math.max(0, bottomIds.length - layout.bottom.length);
     const rightCulled = Math.max(0, rightIds.length - layout.right.length);
     dock.bottomTab
-      .setText(bottomCulled > 0 ? `[E] ‹ +${bottomCulled}` : "[E] ‹")
+      .setText(bottomCulled > 0 ? `PREV +${bottomCulled}` : "PREV")
       .setPosition(layout.bottomTab.x, layout.bottomTab.y)
       .setFontSize(Math.max(9, 11 * layout.scale));
     dock.rightTab
-      .setText(rightCulled > 0 ? `[Q] › +${rightCulled}` : "[Q] ›")
+      .setText(rightCulled > 0 ? `[Q] NEXT +${rightCulled}` : "[Q] NEXT")
       .setPosition(layout.rightTab.x, layout.rightTab.y)
       .setFontSize(Math.max(9, 11 * layout.scale));
 
@@ -12409,7 +12445,7 @@ export class ArenaScene extends Phaser.Scene {
     if (slot !== entry.leadSlot) this.room?.send("swapSlot", { slot });
   }
 
-  /** Q/E sees a bound pair as one entry and never lands on its linked off-hand slot. */
+  /** Q sees a bound pair as one entry and never lands on its linked off-hand slot. */
   private cycleBeltLoadout(self: PlayerState, dir: -1 | 1): void {
     const entry = loadoutEntryView(self);
     for (let step = 1; step < 3; step++) {
@@ -12700,7 +12736,7 @@ export class ArenaScene extends Phaser.Scene {
     const setB = weaponSetBonus(loadout, entry.leadId);
     // scrip + pack + set-bonus readout above the chips (dockux-panel §2.2 vocabulary). While the panel
     // is open the capacity lives in the panel title instead (§3.2) — no duplicate Pack readout.
-    const parts = [`◈ ${self.scrip} Scrip`];
+    const parts = ["[Q] Next slot", `◈ ${self.scrip} Scrip`];
     if (!(this.bagOpen || this.shopOpen))
       parts.push(`Pack ${self.bag.length}/${BAG_CAP}`, "[Tab] Backpack");
     if (setB > 1) parts.push(`⚔ Set bonus +${Math.round((setB - 1) * 100)}%`);
@@ -14027,6 +14063,7 @@ export class ArenaScene extends Phaser.Scene {
     const held =
       !!self?.alive &&
       !this.inputModalBlocked(self) &&
+      !this.pointerOverInteractiveUi &&
       !!weapon?.beam &&
       this.input.activePointer.rightButtonDown();
     const rising = held && !this.beamPredictionHeld;
@@ -14236,6 +14273,7 @@ export class ArenaScene extends Phaser.Scene {
       !!self?.alive &&
       !levelWindowOpen &&
       !this.levelWinInputReleaseLatch &&
+      !this.pointerOverInteractiveUi &&
       !!weapon?.beam &&
       this.input.activePointer.rightButtonDown();
     const aim = this.currentBeamAim();
