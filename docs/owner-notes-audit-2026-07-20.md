@@ -74,12 +74,12 @@ weapon waves.
 | Hangman's Greatcleaver | blood-spatter VFX (no gore) |
 | Dustreaper Zweihander | smooth the combo (no warp — G3 covers the mechanism) |
 
-## OPEN QUESTIONS (owner)
+## QUESTIONS — ANSWERED (owner, 2026-07-20)
 
-- **Q1 (Tesla-Rod):** warp-to-cursor — does the warp REPLACE its attack (pure mobility tool), or
-  warp AND damage (e.g. lightning burst at departure/arrival)? Range cap or uncapped-to-cursor?
-- **Q2 (Storm-Sphere):** "cost per second" — drain the weapon-resource bar, or something else
-  (HP/scrip)? Defaulting to weapon-resource drain unless told otherwise.
-- **Q3 (Hex-Wand):** how big? Defaulting to caster-family median size unless told otherwise.
+- **Q1 (Tesla-Rod):** FULL CURSOR DISTANCE, no range cap. The note said "new function," so the warp
+  REPLACES the old attack; a small electric burst at arrival using its existing damage stat keeps it
+  a weapon (default — flag for owner review in the wave summary).
+- **Q2 (Storm-Sphere):** confirmed — aura drains the weapon-resource bar per second.
+- **Q3 (Hex-Wand):** confirmed — scale to caster-family median.
 
 Processed watermark: all notes ≤ 2026-07-20T18:10:40Z are in this ledger.
