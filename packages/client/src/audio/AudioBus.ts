@@ -737,6 +737,12 @@ export class AudioBus {
         this.noise(0.06, { gain: 0.18, type: "bandpass", freq: 1100, q: 3, x });
         this.tone(900, 0.08, { type: "sine", gain: 0.16, sweepTo: 1600, x });
         break;
+      case "shot:spark":
+        if (this.throttled("shot", 38)) return;
+        this.noise(0.055, { gain: 0.17, type: "highpass", freq: 2400, q: 2.4, x });
+        this.tone(1320, 0.07, { type: "square", gain: 0.12, sweepTo: 620, x });
+        this.tone(2360, 0.035, { type: "triangle", gain: 0.08, sweepTo: 1680, x });
+        break;
       case "hit": // melee/bullet landing on an enemy
         if (this.throttled("hit", 25)) return;
         // Highest-frequency sound in the game — 4 manifest variations + jitter fight fatigue.

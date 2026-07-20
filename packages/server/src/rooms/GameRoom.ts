@@ -24,6 +24,7 @@ import {
   AUG_PROJECTILE_SPEED,
   AUG_PROJECTILE_SPREAD,
   addImpulse,
+  admittedPrismaticBeamRayCount,
   applyCastGradeFloor,
   augmentDeliveriesForGate,
   augmentGateForWeapon,
@@ -158,6 +159,7 @@ import {
   encodeGearCosmetics,
   enemyHpScale,
   FISTS_WEAPON,
+  FRIENDLY_BEAM_ENTITY_CAP,
   GEAR_IDS,
   type GearRunRuntime,
   GROUND_EPSILON,
@@ -281,6 +283,7 @@ import {
   pointInSweptAnnularArc,
   poundDamage,
   prevWeapon,
+  prismaticBeamRayOffsets,
   QUAKE_REACH,
   type QuirkDef,
   type QuirkEffect,
@@ -457,6 +460,7 @@ import {
   WORM_MAX_SEGMENTS,
   WORM_TOTAL_XP,
   weaponAttackCooldown,
+  weaponEffectEmitterPoint,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
   weaponMuzzleReach,
@@ -496,8 +500,8 @@ import {
   ZONE_TTL,
   ZONER_DROP_INTERVAL,
   ZoneKind,
-  ZoneStyle,
   ZoneState,
+  ZoneStyle,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
 import { appendOwnerNote, sanitizeOwnerNote } from "../owner-notes.js";
@@ -615,12 +619,7 @@ interface WeaponResourceLedger {
   cooldown: number;
 }
 
-type WeaponSpendReason =
-  | "tap"
-  | "beam-ignite"
-  | "beam-active"
-  | "beam-cancel"
-  | "aura-active";
+type WeaponSpendReason = "tap" | "beam-ignite" | "beam-active" | "beam-cancel" | "aura-active";
 
 const GROUND_ZONE_ENTITY_CAP = 48;
 const GROUND_ZONE_OWNER_CAP = 4;
@@ -892,6 +891,10 @@ interface CombatState {
   beamPreviousX: number;
   beamPreviousY: number;
   beamPreviousLength: number;
+  /** Server-chosen Prism-Lantern fan. Index zero is the ordinary primary beam row. */
+  beamRayOffsets: number[];
+  beamPreviousLengths: number[];
+  beamCurrentLengths: number[];
   beamTeleportSeq: number;
   beamInputWasHeld: boolean;
   beamPulseT: number;
@@ -4357,6 +4360,9 @@ export class GameRoom extends Room<ArenaState> {
       beamPreviousX: player.x,
       beamPreviousY: player.y,
       beamPreviousLength: 0,
+      beamRayOffsets: [0],
+      beamPreviousLengths: [0],
+      beamCurrentLengths: [0],
       beamTeleportSeq: player.teleportSeq,
       beamInputWasHeld: false,
       beamPulseT: 0,
@@ -4397,7 +4403,7 @@ export class GameRoom extends Room<ArenaState> {
       this.syncWeaponRunFromArsenal(leaving);
       this.disconnectedPlayers.set(client.sessionId, { player: leaving, combat: leavingCombat });
     }
-    this.state.beams.delete(client.sessionId);
+    this.clearBeamRows(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.inputs.delete(client.sessionId);
     this.combat.delete(client.sessionId);
@@ -5901,13 +5907,13 @@ export class GameRoom extends Room<ArenaState> {
 
       if (weapon?.performance?.aura) {
         c.attackBuffer = 0;
-        this.state.beams.delete(id);
+        this.clearBeamRows(id);
         this.stepPlayerAura(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
         return;
       }
       if (weapon?.groundZone?.trigger === "channel") {
         c.attackBuffer = 0;
-        this.state.beams.delete(id);
+        this.clearBeamRows(id);
         this.stepPlayerGroundZone(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
         return;
       }
@@ -5921,7 +5927,7 @@ export class GameRoom extends Room<ArenaState> {
       const nonBeamHeld = this.beamHeld(id);
       if (!nonBeamHeld) c.drive.beamRequireRelease = false;
       c.beamInputWasHeld = nonBeamHeld;
-      this.state.beams.delete(id);
+      this.clearBeamRows(id);
       if (weapon?.performance?.continuous && nonBeamHeld && acting && c.stance !== STANCE_SLIDE) {
         // Presentation-only latch refresh: accepted beats still own attackSeq and all damage cadence.
         player.attackTick = this.state.tick;
@@ -5961,7 +5967,32 @@ export class GameRoom extends Room<ArenaState> {
         acting && c.stance !== STANCE_SLIDE && c.attackBuffer > 0 && c.cd <= 0 && c.drawLock <= 0;
       // §10 v0.104: the single Terraria affix can speed up / slow down the held weapon (Swift/Heavy…).
       const cdMul = lootCooldownMult(player.weaponAffix);
-      if (weapon?.gun) {
+      if (weapon?.warp) {
+        if (canAct) {
+          c.attackBuffer = 0;
+          const cooldown = weapon.cooldown * cdMul * this.weaponRecoveryMult(player, weapon);
+          const interval = effectiveAcceptedWeaponInterval(weapon, cooldown);
+          const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+          if (
+            this.trySpendWeaponResource(
+              player,
+              c,
+              weapon,
+              instanceId,
+              CombatDelivery.Warp,
+              0,
+              interval,
+              1,
+              0,
+              "tap",
+            ).accepted
+          ) {
+            this.stampAttackBeat(player);
+            this.warpWeaponToCursor(player, c, weapon);
+            c.cd = cooldown;
+          }
+        }
+      } else if (weapon?.gun) {
         // Schema-30 gun cadence survives; magazines/reload are authoring-only inputs to the Drive formula.
         if (canAct) {
           c.attackBuffer = 0;
@@ -7655,6 +7686,7 @@ export class GameRoom extends Room<ArenaState> {
         weapon,
         hand,
         weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0,
+        swing,
       );
 
     // §6 REZ (Gravedigger's Spade): the swing REVIVES the nearest downed ally within range (at 30% HP).
@@ -7902,6 +7934,22 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** Charge → authoritative ignition → sustained swept damage → recovery/overheat. */
+  private clearBeamRows(ownerId: string, satellitesOnly = false): void {
+    const keys: string[] = [];
+    this.state.beams.forEach((row, key) => {
+      if (row.ownerId === ownerId && (!satellitesOnly || key !== ownerId)) keys.push(key);
+    });
+    for (const key of keys) this.state.beams.delete(key);
+  }
+
+  private beamSatelliteCount(): number {
+    let count = 0;
+    this.state.beams.forEach((row, key) => {
+      if (key !== row.ownerId) count++;
+    });
+    return count;
+  }
+
   private stepPlayerBeam(
     player: PlayerState,
     id: string,
@@ -7918,7 +7966,7 @@ export class GameRoom extends Room<ArenaState> {
 
     if (!acting || c.beamTeleportSeq !== player.teleportSeq) {
       if (c.beamPhase !== 0) this.cancelBeam(player, id, c, true, true);
-      else this.state.beams.delete(id);
+      else this.clearBeamRows(id);
       c.beamInputWasHeld = held;
       c.beamTeleportSeq = player.teleportSeq;
       return;
@@ -7946,6 +7994,11 @@ export class GameRoom extends Room<ArenaState> {
         lootCooldownMult(player.weaponAffix) * this.weaponRecoveryMult(player, weapon),
         1 + AUG_BEAM_FOCUS_PER * c.beamFocusStacks,
       );
+      // Charging owns one primary row. The satellite budget is admitted atomically at ignition so several
+      // simultaneous Prism-Lantern charges cannot all reserve the same room capacity.
+      c.beamRayOffsets = [0];
+      c.beamPreviousLengths = [0];
+      c.beamCurrentLengths = [0];
       c.beamPhase = 1;
       c.beamPhaseT = 0;
       c.beamChannelT = 0;
@@ -7964,6 +8017,15 @@ export class GameRoom extends Room<ArenaState> {
         c.beamDescriptor.range,
         c.beamDescriptor.width / 2,
       );
+      for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+        c.beamPreviousLengths[ray] = this.clipBeamLength(
+          c.beamPreviousX,
+          c.beamPreviousY,
+          c.beamAngle + (c.beamRayOffsets[ray] ?? 0),
+          c.beamDescriptor.range,
+          c.beamDescriptor.width / 2,
+        );
+      }
       c.beamTeleportSeq = player.teleportSeq;
     }
 
@@ -8001,6 +8063,15 @@ export class GameRoom extends Room<ArenaState> {
           descriptor.range,
           descriptor.width / 2,
         );
+        for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+          c.beamPreviousLengths[ray] = this.clipBeamLength(
+            chargeRow.originX,
+            chargeRow.originY,
+            c.beamAngle + (c.beamRayOffsets[ray] ?? 0),
+            descriptor.range,
+            descriptor.width / 2,
+          );
+        }
         if (c.beamPhaseT + 1e-9 >= descriptor.chargeSeconds) {
           const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
           const ignition = this.trySpendWeaponResource(
@@ -8018,6 +8089,25 @@ export class GameRoom extends Room<ArenaState> {
           if (!ignition.accepted) {
             this.cancelBeam(player, id, c, false, false);
           } else {
+            const randomRays = weapon.beam.randomRays;
+            const admittedCount = randomRays
+              ? admittedPrismaticBeamRayCount(randomRays.count, this.beamSatelliteCount())
+              : 1;
+            c.beamRayOffsets = randomRays
+              ? prismaticBeamRayOffsets(admittedCount, randomRays.spread, descriptor.startSeq)
+              : [0];
+            c.beamPreviousLengths = new Array(c.beamRayOffsets.length);
+            c.beamCurrentLengths = new Array(c.beamRayOffsets.length).fill(0);
+            for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+              c.beamPreviousLengths[ray] = this.clipBeamLength(
+                c.beamPreviousX,
+                c.beamPreviousY,
+                c.beamAngle + (c.beamRayOffsets[ray] ?? 0),
+                descriptor.range,
+                descriptor.width / 2,
+              );
+            }
+            c.beamPreviousLength = c.beamPreviousLengths[0] ?? c.beamPreviousLength;
             c.drive.beamLockEndTick = 0;
             c.drive.beamRecoveryEndTick = 0;
             this.stampAttackBeat(player);
@@ -8090,11 +8180,23 @@ export class GameRoom extends Room<ArenaState> {
     );
     const length = this.damageBeamSweep(player, c, descriptor, dt);
     c.beamChannelT += dt;
-    this.syncBeamRow(player, id, c, descriptor, BeamPhase.Active, length, 1);
+    for (let ray = 0; ray < c.beamRayOffsets.length; ray++)
+      this.syncBeamRow(
+        player,
+        id,
+        c,
+        descriptor,
+        BeamPhase.Active,
+        c.beamCurrentLengths[ray] ?? length,
+        1,
+        ray,
+      );
     c.beamPreviousX = this.beamCurrentX;
     c.beamPreviousY = this.beamCurrentY;
     c.beamPreviousAngle = c.beamAngle;
     c.beamPreviousLength = this.beamCurrentLength;
+    for (let ray = 0; ray < c.beamRayOffsets.length; ray++)
+      c.beamPreviousLengths[ray] = c.beamCurrentLengths[ray] ?? length;
     if (spend.beamEmpty) this.finishBeam(player, id, c, true);
   }
 
@@ -8126,7 +8228,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     const weapon = WEAPONS[player.weapon];
     if (weapon?.beam) this.syncRestingBeamRow(player, id, c, weapon);
-    else this.state.beams.delete(id);
+    else this.clearBeamRows(id);
   }
 
   /** Hard cancellation for swaps/death/teleports/parry. Early/escape cancels pay the 20-heat commitment. */
@@ -8172,7 +8274,7 @@ export class GameRoom extends Room<ArenaState> {
     c.beamPendingDamage.clear();
     if (removeRow) {
       c.beamDescriptor = undefined;
-      this.state.beams.delete(id);
+      this.clearBeamRows(id);
     } else if (descriptor && WEAPONS[player.weapon]?.beam) {
       this.syncRestingBeamRow(player, id, c, WEAPONS[player.weapon]!);
     }
@@ -8184,6 +8286,7 @@ export class GameRoom extends Room<ArenaState> {
     c: CombatState,
     weapon: WeaponDef,
   ): void {
+    this.clearBeamRows(id, true);
     const lockActive =
       c.drive.beamLockEndTick !== 0 && !tickReached(this.state.tick, c.drive.beamLockEndTick);
     const recoveryActive =
@@ -8193,7 +8296,7 @@ export class GameRoom extends Room<ArenaState> {
       c.drive.beamLockEndTick !== 0 &&
       this.drivePendingValue(c) + 1e-9 < DRIVE_BEAM_RESTART_THRESHOLD;
     if (!lockActive && !recoveryActive && !awaitingThreshold && !c.drive.beamRequireRelease) {
-      this.state.beams.delete(id);
+      this.clearBeamRows(id);
       if (c.beamPhase === 0) c.beamDescriptor = undefined;
       return;
     }
@@ -8222,12 +8325,16 @@ export class GameRoom extends Room<ArenaState> {
     phase: number,
     length: number,
     intensity: number,
+    rayIndex = 0,
   ): BeamState {
-    let row = this.state.beams.get(id);
+    const offset = c.beamRayOffsets[rayIndex] ?? 0;
+    const rowKey =
+      rayIndex === 0 ? id : `${id}:prism:${rayIndex}:${Math.round(offset * 1_000_000)}`;
+    let row = this.state.beams.get(rowKey);
     if (!row) {
       row = new BeamState();
       row.ownerId = id;
-      this.state.beams.set(id, row);
+      this.state.beams.set(rowKey, row);
     }
     if (row.phase !== phase) row.phaseStartTick = this.state.tick;
     const muzzle = this.writeBeamMuzzle(player, descriptor.weaponId, c.beamAngle);
@@ -8239,8 +8346,8 @@ export class GameRoom extends Room<ArenaState> {
     row.phase = phase;
     row.originX = originX;
     row.originY = originY;
-    row.previousAngle = c.beamPreviousAngle;
-    row.angle = c.beamAngle;
+    row.previousAngle = c.beamPreviousAngle + offset;
+    row.angle = c.beamAngle + offset;
     row.effectiveLength = length;
     row.length = length;
     row.width = descriptor.width;
@@ -8251,7 +8358,9 @@ export class GameRoom extends Room<ArenaState> {
     row.element = WEAPONS[descriptor.weaponId]?.tags.element ?? "physical";
     row.previousOriginX = c.beamPreviousX;
     row.previousOriginY = c.beamPreviousY;
-    row.previousLength = c.beamPreviousLength;
+    row.previousLength = c.beamPreviousLengths[rayIndex] ?? c.beamPreviousLength;
+    if (this.state.beams.size > FRIENDLY_BEAM_ENTITY_CAP)
+      throw new Error(`friendly beam entity cap exceeded: ${this.state.beams.size}`);
     return row;
   }
 
@@ -8345,71 +8454,43 @@ export class GameRoom extends Room<ArenaState> {
       descriptor.range,
       descriptor.width / 2,
     );
-    let minX = Number.POSITIVE_INFINITY;
-    let minY = Number.POSITIVE_INFINITY;
-    let maxX = Number.NEGATIVE_INFINITY;
-    let maxY = Number.NEGATIVE_INFINITY;
-    for (let sample = 0; sample <= samples; sample++) {
-      const f = sample / samples;
-      const sx = c.beamPreviousX + (currentX - c.beamPreviousX) * f;
-      const sy = c.beamPreviousY + (currentY - c.beamPreviousY) * f;
-      const angle = c.beamPreviousAngle + angularDelta * f;
-      const length = this.clipBeamLength(sx, sy, angle, descriptor.range, descriptor.width / 2);
-      this.beamSampleX[sample] = sx;
-      this.beamSampleY[sample] = sy;
-      this.beamSampleLength[sample] = length;
-      const ex = sx + Math.cos(angle) * length;
-      const ey = sy + Math.sin(angle) * length;
-      this.beamSampleEndX[sample] = ex;
-      this.beamSampleEndY[sample] = ey;
-      minX = Math.min(minX, sx, ex);
-      minY = Math.min(minY, sy, ey);
-      maxX = Math.max(maxX, sx, ex);
-      maxY = Math.max(maxY, sy, ey);
-    }
-    const broadPad = descriptor.width / 2 + MAX_ENEMY_RADIUS;
-    this.enemyGrid.queryAabb(
-      minX - broadPad,
-      minY - broadPad,
-      maxX + broadPad,
-      maxY + broadPad,
-      this.enemyCandidates,
-    );
     c.beamHitIds.clear();
-    for (const enemyId of this.enemyCandidates) {
-      const enemy = this.state.enemies.get(enemyId);
-      if (!enemy || enemy.hp <= 0) continue;
-      const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+    for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+      const rayOffset = c.beamRayOffsets[ray] ?? 0;
+      let minX = Number.POSITIVE_INFINITY;
+      let minY = Number.POSITIVE_INFINITY;
+      let maxX = Number.NEGATIVE_INFINITY;
+      let maxY = Number.NEGATIVE_INFINITY;
       for (let sample = 0; sample <= samples; sample++) {
-        if (
-          bladeHitsCircleXY(
-            this.beamSampleX[sample]!,
-            this.beamSampleY[sample]!,
-            this.beamSampleEndX[sample]!,
-            this.beamSampleEndY[sample]!,
-            enemy.x,
-            enemy.y,
-            radius,
-            descriptor.width / 2,
-          )
-        ) {
-          c.beamHitIds.add(enemyId);
-          break;
-        }
+        const f = sample / samples;
+        const sx = c.beamPreviousX + (currentX - c.beamPreviousX) * f;
+        const sy = c.beamPreviousY + (currentY - c.beamPreviousY) * f;
+        const angle = c.beamPreviousAngle + angularDelta * f + rayOffset;
+        const length = this.clipBeamLength(sx, sy, angle, descriptor.range, descriptor.width / 2);
+        this.beamSampleX[sample] = sx;
+        this.beamSampleY[sample] = sy;
+        this.beamSampleLength[sample] = length;
+        const ex = sx + Math.cos(angle) * length;
+        const ey = sy + Math.sin(angle) * length;
+        this.beamSampleEndX[sample] = ex;
+        this.beamSampleEndY[sample] = ey;
+        minX = Math.min(minX, sx, ex);
+        minY = Math.min(minY, sy, ey);
+        maxX = Math.max(maxX, sx, ex);
+        maxY = Math.max(maxY, sy, ey);
       }
-    }
-    let wormHitCount = 0;
-    const runtime = this.bossController?.wormRuntime;
-    if (runtime) {
-      this.wormSegmentGrid.queryAabb(
-        minX - descriptor.width / 2 - 52,
-        minY - descriptor.width / 2 - 52,
-        maxX + descriptor.width / 2 + 52,
-        maxY + descriptor.width / 2 + 52,
-        this.wormSegmentCandidates,
+      const broadPad = descriptor.width / 2 + MAX_ENEMY_RADIUS;
+      this.enemyGrid.queryAabb(
+        minX - broadPad,
+        minY - broadPad,
+        maxX + broadPad,
+        maxY + broadPad,
+        this.enemyCandidates,
       );
-      for (const slot of this.wormSegmentCandidates) {
-        if (wormHitCount >= 2) break;
+      for (const enemyId of this.enemyCandidates) {
+        const enemy = this.state.enemies.get(enemyId);
+        if (!enemy || enemy.hp <= 0) continue;
+        const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
         for (let sample = 0; sample <= samples; sample++) {
           if (
             bladeHitsCircleXY(
@@ -8417,19 +8498,53 @@ export class GameRoom extends Room<ArenaState> {
               this.beamSampleY[sample]!,
               this.beamSampleEndX[sample]!,
               this.beamSampleEndY[sample]!,
-              runtime.x[slot]!,
-              runtime.y[slot]!,
-              runtime.segmentRadius(slot),
+              enemy.x,
+              enemy.y,
+              radius,
               descriptor.width / 2,
             )
           ) {
-            c.beamHitIds.add(`worm:${slot}:${runtime.segmentGeneration(slot)}`);
-            wormHitCount++;
+            c.beamHitIds.add(enemyId);
             break;
           }
         }
       }
+      let rayWormHitCount = 0;
+      const runtime = this.bossController?.wormRuntime;
+      if (runtime) {
+        this.wormSegmentGrid.queryAabb(
+          minX - descriptor.width / 2 - 52,
+          minY - descriptor.width / 2 - 52,
+          maxX + descriptor.width / 2 + 52,
+          maxY + descriptor.width / 2 + 52,
+          this.wormSegmentCandidates,
+        );
+        for (const slot of this.wormSegmentCandidates) {
+          if (rayWormHitCount >= 2) break;
+          for (let sample = 0; sample <= samples; sample++) {
+            if (
+              bladeHitsCircleXY(
+                this.beamSampleX[sample]!,
+                this.beamSampleY[sample]!,
+                this.beamSampleEndX[sample]!,
+                this.beamSampleEndY[sample]!,
+                runtime.x[slot]!,
+                runtime.y[slot]!,
+                runtime.segmentRadius(slot),
+                descriptor.width / 2,
+              )
+            ) {
+              c.beamHitIds.add(`worm:${slot}:${runtime.segmentGeneration(slot)}`);
+              rayWormHitCount++;
+              break;
+            }
+          }
+        }
+      }
+      c.beamCurrentLengths[ray] = this.beamSampleLength[samples]!;
     }
+    let wormHitCount = 0;
+    for (const targetId of c.beamHitIds) if (targetId.startsWith("worm:")) wormHitCount++;
     const targetCount = c.beamHitIds.size - wormHitCount + (wormHitCount > 0 ? 1 : 0);
     const stepDamage = beamStepDamage(descriptor.damagePerSecond, dt, targetCount);
     for (const enemyId of c.beamHitIds) {
@@ -8445,7 +8560,7 @@ export class GameRoom extends Room<ArenaState> {
     }
     this.beamCurrentX = currentX;
     this.beamCurrentY = currentY;
-    this.beamCurrentLength = this.beamSampleLength[samples]!;
+    this.beamCurrentLength = c.beamCurrentLengths[0] ?? 0;
     return this.beamCurrentLength;
   }
 
@@ -10266,6 +10381,39 @@ export class GameRoom extends Room<ArenaState> {
     return l > 1e-3 ? { x: dx / l, y: dy / l } : { x: c.aimX, y: c.aimY };
   }
 
+  /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
+   * the same bounds/POI/pit/deck validator as every other teleport, writes position itself, and bumps the
+   * movement hard-resync edge before applying the small arrival burst. */
+  private warpWeaponToCursor(player: PlayerState, c: CombatState, weapon: WeaponDef): void {
+    const warp = weapon.warp;
+    if (!warp) return;
+    const destination = this.navValidDest(
+      player,
+      c,
+      c.targetX,
+      c.targetY,
+      Number.POSITIVE_INFINITY,
+    );
+    const damage = weapon.damage * this.heldDamageMult(weapon, weapon.scalingGrades, player, 0);
+    const crit = this.weaponCritChance(player, c);
+    player.x = destination.x;
+    player.y = destination.y;
+    c.lastGroundX = destination.x;
+    c.lastGroundY = destination.y;
+    c.pitGrace = PIT_FALL_GRACE;
+    this.zeroMoveVel(player.id);
+    this.detonate(
+      destination.x,
+      destination.y,
+      warp.burstRadius,
+      damage,
+      crit,
+      player.id,
+      weapon.id,
+      CombatDelivery.Warp,
+    );
+  }
+
   private fireGun(
     player: PlayerState,
     c: CombatState,
@@ -10418,7 +10566,7 @@ export class GameRoom extends Room<ArenaState> {
       undefined,
       weapon.groundZone?.trigger === "landing"
         ? weapon.groundZone.damagePerSecond *
-          this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+            this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
         : undefined,
     );
   }
@@ -10432,6 +10580,7 @@ export class GameRoom extends Room<ArenaState> {
     weapon: WeaponDef,
     hand: DualWieldHand = 0,
     delaySeconds = 0,
+    swing?: SwingDescriptor,
   ): void {
     const sc = weapon.scatter;
     if (!sc) return;
@@ -10456,10 +10605,13 @@ export class GameRoom extends Room<ArenaState> {
     const el = weapon.tags.element;
     const kind = el && el !== "physical" ? `magma:${el}` : "magma";
     const emitterReach = weaponPerformanceEmitterReach(weapon);
+    const effectOrigin = weapon.effectEmitter
+      ? weaponEffectEmitterPoint(weapon, player, baseAng, swing, delaySeconds)
+      : undefined;
     const volley: PendingScatterVolley = {
       t: Math.max(0, delaySeconds),
-      originX: player.x + aim.x * emitterReach,
-      originY: player.y + aim.y * emitterReach,
+      originX: effectOrigin?.x ?? player.x + aim.x * emitterReach,
+      originY: effectOrigin?.y ?? player.y + aim.y * emitterReach,
       sweepX: player.x,
       sweepY: player.y,
       baseAng,
@@ -10483,8 +10635,7 @@ export class GameRoom extends Room<ArenaState> {
     for (let i = 0; i < volley.count; i++) {
       // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
       // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
-      const spread =
-        volley.count > 1 ? (i / (volley.count - 1) - 0.5) * 2 * volley.spread : 0;
+      const spread = volley.count > 1 ? (i / (volley.count - 1) - 0.5) * 2 * volley.spread : 0;
       const ang = volley.baseAng + spread + (Math.random() - 0.5) * 0.12;
       const spd = volley.speed * (0.85 + Math.random() * 0.3);
       this.fireProjectile(
@@ -12734,23 +12885,29 @@ export class GameRoom extends Room<ArenaState> {
         return;
       }
       const r2 = zone.radius * zone.radius;
-      if (meta.hostile) this.state.players.forEach((player) => {
-        // §8/§15: zoner puddles are UNPARRYABLE — only the §12 level-up invincibility skips them,
-        // NOT parry i-frames. You must walk out of the puddle.
-        if (!player.alive || this.inLevelWindow(player)) return;
-        const dx = player.x - zone.x;
-        const dy = player.y - zone.y;
-        if (dx * dx + dy * dy <= r2) {
-          // Enemy-created zoner puddles are not authored neutral ground hazards.
-          this.damagePlayer(player, meta.damagePerSecond * dt, "enemy");
-        }
-      });
+      if (meta.hostile)
+        this.state.players.forEach((player) => {
+          // §8/§15: zoner puddles are UNPARRYABLE — only the §12 level-up invincibility skips them,
+          // NOT parry i-frames. You must walk out of the puddle.
+          if (!player.alive || this.inLevelWindow(player)) return;
+          const dx = player.x - zone.x;
+          const dy = player.y - zone.y;
+          if (dx * dx + dy * dy <= r2) {
+            // Enemy-created zoner puddles are not authored neutral ground hazards.
+            this.damagePlayer(player, meta.damagePerSecond * dt, "enemy");
+          }
+        });
       if (meta.hostile) return;
       meta.tickAccumulator += dt;
       while (meta.tickAccumulator + 1e-9 >= meta.tickRate) {
         meta.tickAccumulator -= meta.tickRate;
         const kills: string[] = [];
-        this.enemyGrid.queryRadius(zone.x, zone.y, zone.radius + MAX_ENEMY_RADIUS, this.enemyCandidates);
+        this.enemyGrid.queryRadius(
+          zone.x,
+          zone.y,
+          zone.radius + MAX_ENEMY_RADIUS,
+          this.enemyCandidates,
+        );
         for (const enemyId of this.enemyCandidates) {
           const enemy = this.state.enemies.get(enemyId);
           if (!enemy) continue;
@@ -12774,8 +12931,7 @@ export class GameRoom extends Room<ArenaState> {
           if (meta.slowMultiplier < 1 && meta.slowSeconds > 0)
             this.enemyZoneSlow.set(enemyId, {
               multiplier: meta.slowMultiplier,
-              untilTick:
-                (this.state.tick + Math.ceil((meta.slowSeconds * 1000) / TICK_MS)) >>> 0,
+              untilTick: (this.state.tick + Math.ceil((meta.slowSeconds * 1000) / TICK_MS)) >>> 0,
             });
         }
         for (const enemyId of kills) this.state.enemies.delete(enemyId);

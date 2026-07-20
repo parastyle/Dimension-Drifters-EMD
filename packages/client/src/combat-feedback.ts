@@ -150,6 +150,7 @@ export function deliveryGroup(delivery: number): DeliveryGroup {
       return "gun";
     case CombatDelivery.Cast:
     case CombatDelivery.Beam:
+    case CombatDelivery.Warp:
       return "cast";
     case CombatDelivery.Thrown:
       return "thrown";

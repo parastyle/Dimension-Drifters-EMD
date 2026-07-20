@@ -1,7 +1,12 @@
 import { CHOP_IMPACT_FRAC, SWING_WINDOW_FRAC } from "./constants.js";
 import { clamp } from "./math.js";
 import type { Vec2 } from "./movement.js";
-import type { WeaponDef } from "./weapons.js";
+import {
+  meleeReach,
+  type WeaponDef,
+  type WeaponEffectEmitter,
+  weaponMuzzleReach,
+} from "./weapons.js";
 import { GENERATED_MELEE_COMBO_BARS } from "./weapons-expansion.generated.js";
 
 /**
@@ -1222,6 +1227,8 @@ export function meleeComboSequenceFor(
 ): readonly Readonly<MeleeComboStep>[] {
   if (variant === "dagger" || variant === "claw")
     return family === "rake" ? MELEE_COMBO_SEQUENCES.rake : MELEE_COMBO_SEQUENCES[family];
+  if (variant !== "default" && Object.hasOwn(GENERATED_MELEE_COMBO_BARS, variant))
+    return MELEE_COMBO_VARIANT_SEQUENCES[variant];
   if (variant !== "default" && familyForSignatureVariant(variant) === family)
     return MELEE_COMBO_VARIANT_SEQUENCES[variant];
   return MELEE_COMBO_SEQUENCES[family];
@@ -1287,7 +1294,7 @@ export function meleeComboSelectionFor(
     };
   }
   if (def.comboVariant && def.comboVariant !== "default") {
-    const family = familyForSignatureVariant(def.comboVariant);
+    const family = def.comboFamily ?? familyForSignatureVariant(def.comboVariant);
     return {
       family,
       variant: def.comboVariant,
@@ -1651,6 +1658,44 @@ export function swingEdgeActive(swing: SwingDescriptor, elapsedSeconds: number):
 /** The blade's aim angle at sweep progress `p` ∈ [0,1]: from `aim − swingArc/2` to `aim + swingArc/2`. */
 export function bladeAngleAt(aimAngle: number, swingArc: number, p: number): number {
   return aimAngle - swingArc / 2 + swingArc * clamp(p, 0, 1);
+}
+
+export interface WeaponEffectEmitterPoint {
+  x: number;
+  y: number;
+  angle: number;
+}
+
+export function weaponEffectEmitterFor(def: WeaponDef | undefined): WeaponEffectEmitter {
+  return def?.effectEmitter ?? "body";
+}
+
+/** Shared origin seam. Blade emitters sample the same swept edge angle as authoritative melee collision. */
+export function weaponEffectEmitterPoint(
+  def: WeaponDef | undefined,
+  actor: Vec2,
+  aimAngle: number,
+  swing?: SwingDescriptor,
+  elapsedSeconds = 0,
+): WeaponEffectEmitterPoint {
+  const emitter = weaponEffectEmitterFor(def);
+  if (!def || emitter === "body") return { x: actor.x, y: actor.y, angle: aimAngle };
+  if (emitter === "tip") {
+    const reach = weaponMuzzleReach(def);
+    return {
+      x: actor.x + Math.cos(aimAngle) * reach,
+      y: actor.y + Math.sin(aimAngle) * reach,
+      angle: aimAngle,
+    };
+  }
+  const progress = swing ? swingEdgeProgress(swing, elapsedSeconds) : 0.5;
+  const angle = bladeAngleAt(aimAngle, def.swingArc, progress);
+  const reach = meleeReach(def) * 0.78;
+  return {
+    x: actor.x + Math.cos(angle) * reach,
+    y: actor.y + Math.sin(angle) * reach,
+    angle,
+  };
 }
 
 /** Squared distance from point (px,py) to the segment A(ax,ay)→B(bx,by). Pure. */

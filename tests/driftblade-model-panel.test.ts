@@ -226,8 +226,8 @@ describe("driftblade-model panel", () => {
         "tombstone-greatsword",
         "x-sword-bone",
         "x-sword-coffin",
-        "x2-riftcleaver-greatblade",
       ],
+      "chop/riftcleaver-crystal-cadence": ["x2-riftcleaver-greatblade"],
       "chop/claymore-breach": ["x2-dustreaper-zweihander", "x2-tombwarden-claymore"],
       "chop/glaive-compass": [
         "x2-blightfork-glaive",
@@ -256,6 +256,7 @@ describe("driftblade-model panel", () => {
         "x2-sunlance-javelin-pike",
         "x2-venomtongue-trident",
       ],
+      "thrust/verdict-procession": ["x2-verdict-longsword"],
       "chop/pommel": ["x2-mauler-slug-thrower", "x2-slughammer-breachgun", "x2-thunderhead-sledge"],
       "chop/quake-mauler": [
         "x2-anvil-drop",
@@ -287,7 +288,7 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 21,
-      "arc/default": 119,
+      "arc/default": 118,
       "chop/default": 7,
       "rake/dagger": 1,
       "rake/claw": 5,

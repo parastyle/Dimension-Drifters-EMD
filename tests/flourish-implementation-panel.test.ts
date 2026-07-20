@@ -103,7 +103,9 @@ describe("flourish implementation ownership panel", () => {
       "/** Invert the existing delayed server-timeline mapper",
     );
     expect(equipWeapons).toContain("const retryingLazyArt =");
-    expect(equipWeapons).toContain("rig.weaponSwapPending || this.pendingArt.has(spriteId)");
+    expect(equipWeapons).toMatch(
+      /rig\.weaponSwapPending\s*\|\|\s*this\.pendingArt\.has\(spriteId\)/,
+    );
     expect(equipWeapons.indexOf("this.equipped.set(id, player.weapon)")).toBeLessThan(
       equipWeapons.indexOf("if (!this.ensureWeaponArt(spriteId))"),
     );

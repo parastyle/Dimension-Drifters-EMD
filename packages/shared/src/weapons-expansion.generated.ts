@@ -300,6 +300,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
+    "effectRecipe": "tombwarden-dark-slash",
+    "effectEmitter": "blade",
     "requirements": {
       "str": 12,
       "con": 6
@@ -452,6 +454,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "comboFamily": "chop",
+    "comboVariant": "riftcleaver-crystal-cadence",
+    "effectRecipe": "riftcleaver-crystal-shards",
+    "effectEmitter": "blade",
     "requirements": {
       "str": 8,
       "int": 7
@@ -570,6 +576,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "effectRecipe": "dustreaper-continuous-edge",
+    "effectEmitter": "blade",
     "requirements": {
       "str": 13
     },
@@ -605,6 +613,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "comboFamily": "thrust",
+    "comboVariant": "verdict-procession",
+    "effectRecipe": "verdict-tip-procession",
+    "effectEmitter": "tip",
     "requirements": {
       "str": 6,
       "int": 5
@@ -768,7 +780,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "physical",
       "classPool": "melee",
@@ -783,7 +795,16 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "str": 4
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 720,
+      "range": 520,
+      "damage": 7,
+      "charges": 3,
+      "refillSeconds": 1.2,
+      "pierce": 1,
+      "arcHeight": 72
+    }
   },
   "x2-gallows-splitter": {
     "id": "x2-gallows-splitter",
@@ -802,7 +823,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "physical",
       "classPool": "melee",
@@ -816,7 +837,16 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "str": 8
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 620,
+      "range": 560,
+      "damage": 11,
+      "charges": 2,
+      "refillSeconds": 1.65,
+      "pierce": 2,
+      "arcHeight": 104
+    }
   },
   "x2-cinderbrand-cleaver": {
     "id": "x2-cinderbrand-cleaver",
@@ -882,13 +912,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "halfArc": 1,
     "cooldown": 0.66,
     "displayLength": 240,
-    "swingArc": 2.6,
+    "swingArc": 12.566370614359172,
     "gripFrac": 0.06,
     "tags": {
       "grip": "2H",
       "size": "XL",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "frost",
       "classPool": "melee",
       "family": "axe",
@@ -899,6 +929,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A long-hafted crescent bardiche carved from blue glacier-iron, rime crusting its sweeping reach so the air it carves goes white with cold.",
+    "swingStyle": "spin",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true
+    },
     "requirements": {
       "dex": 9,
       "str": 6
@@ -1299,6 +1335,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A towering ceremonial greataxe chased in brass and stained-glass enamel, its broad bit ringing like a struck bell to call down a circle of holy light.",
+    "effectRecipe": "choir-iron-flame-slash",
+    "effectEmitter": "blade",
     "requirements": {
       "str": 12
     },
@@ -1423,6 +1461,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A colossal gallows-iron greatcleaver scarred with notches, its overhead drop landing like a falling trapdoor that quakes the dust from the boards.",
+    "effectRecipe": "hangman-blood-spatter",
+    "effectEmitter": "blade",
     "requirements": {
       "str": 13,
       "con": 6
@@ -9265,6 +9305,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "effectRecipe": "whispervolume-page-scatter",
+    "effectEmitter": "tip",
     "requirements": {
       "int": 7
     },
@@ -9568,25 +9610,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "grip": "2H",
       "size": "XL",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "toxic",
-      "classPool": "caster",
+      "classPool": "melee",
       "family": "grimoire",
       "rangeBand": "mid",
       "scaling": [
         "INT"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "page-flip",
+      "continuous": true,
+      "suppressSwing": true
+    },
     "requirements": {
       "int": 14
     },
     "twoHanded": true,
-    "chainLightning": {
-      "jumps": 5,
-      "range": 210,
-      "damage": 7,
-      "falloff": 0.85
-    }
+    "durability": 90
   },
   "x2-tallowtongue-pyre-stave": {
     "id": "x2-tallowtongue-pyre-stave",
@@ -9758,7 +9801,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "S",
-      "delivery": "melee-arc",
+      "delivery": "warp",
       "fireMode": "tap-charge",
       "element": "shock",
       "classPool": "caster",
@@ -9769,14 +9812,16 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A polished brass rod ringed with spinning copper coils and a glass spark-gap bulb, snapping a forked arc that chains across a crowd in a brass-bright crackle.",
+    "performance": {
+      "hold": "steady",
+      "action": "hold",
+      "suppressSwing": true
+    },
     "requirements": {
       "int": 8
     },
-    "chainLightning": {
-      "jumps": 5,
-      "range": 220,
-      "damage": 4,
-      "falloff": 0.85
+    "warp": {
+      "burstRadius": 48
     }
   },
   "x2-sunmote-reliquary-staff": {
@@ -10587,6 +10632,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "effectRecipe": "riftglass-rainbow-volley",
+    "effectEmitter": "tip",
     "requirements": {
       "int": 12
     },
@@ -10608,6 +10655,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "movement": {
         "chargeMul": 0.55,
         "channelMul": 0.35
+      },
+      "randomRays": {
+        "count": 7,
+        "spread": 1.05
       }
     }
   },
@@ -12255,10 +12306,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "swingArc": 2.4,
     "gripFrac": 0.14,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "S",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "caster",
       "family": "gauntlet",
@@ -12268,14 +12319,19 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "swingStyle": "punch",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true
+    },
     "requirements": {
       "int": 5
     },
-    "chainLightning": {
-      "jumps": 3,
-      "range": 180,
-      "damage": 4,
-      "falloff": 0.75
+    "twoHanded": true,
+    "glovePair": {
+      "auraColor": 3401471,
+      "auraRadius": 48
     }
   },
   "x2-cinderpalm-brand-glove": {
@@ -12464,10 +12520,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "projectile",
+      "fireMode": "auto",
       "element": "shock",
-      "classPool": "caster",
+      "classPool": "ranged",
       "family": "gauntlet",
       "rangeBand": "mid",
       "scaling": [
@@ -12477,11 +12533,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 8
     },
-    "chainLightning": {
-      "jumps": 5,
-      "range": 200,
+    "gun": {
       "damage": 4,
-      "falloff": 0.8
+      "projectileSpeed": 900,
+      "range": 620,
+      "fireRate": 0.38,
+      "magazine": 12,
+      "reloadSeconds": 1.2,
+      "bulletKind": "spark",
+      "muzzle": "spark",
+      "recoil": 0.0008,
+      "pierce": 2,
+      "muzzleColor": 11619327
     }
   },
   "x2-hellmouth-palmcaster": {
@@ -12828,6 +12891,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "effectRecipe": "galvanic-blue-burst",
+    "effectEmitter": "tip",
     "requirements": {
       "int": 10
     },
@@ -12842,6 +12907,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0035,
+      "projectileVisualScale": 2.2,
       "pierce": 3
     }
   },
@@ -13033,42 +13099,40 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "luk": "C"
     },
     "damage": 3,
-    "range": 520,
+    "range": 150,
     "halfArc": 0.5,
     "cooldown": 0.34,
     "displayLength": 56,
     "swingArc": 2.2,
     "gripFrac": 0.15,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "S",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "glove-pair",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "caster",
       "family": "gauntlet",
-      "rangeBand": "long",
+      "rangeBand": "close",
       "scaling": [
         "INT",
         "LUK"
       ]
     },
+    "swingStyle": "punch",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true
+    },
     "requirements": {
       "int": 6,
       "luk": 4
     },
-    "gun": {
-      "damage": 7,
-      "projectileSpeed": 860,
-      "range": 900,
-      "fireRate": 0.34,
-      "magazine": 8,
-      "reloadSeconds": 1.2,
-      "bulletKind": "ricochet",
-      "muzzle": "spark",
-      "recoil": 0.0015,
-      "pierce": 2,
-      "bounces": 3
+    "twoHanded": true,
+    "glovePair": {
+      "auraColor": 3401471,
+      "auraRadius": 48
     }
   },
   "x2-permafrost-cryo-bracer": {
@@ -13604,6 +13668,147 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
 };
 
 export const GENERATED_MELEE_COMBO_BARS = {
+  "riftcleaver-crystal-cadence": [
+    {
+      "name": "rift gate",
+      "motion": "falling-gate",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.22,
+        "activeEnd": 0.54,
+        "impact": 0.5,
+        "followEnd": 0.78
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      },
+      "ribbon": {
+        "profile": "massed-wedge",
+        "radialStart": 0.3,
+        "radialEnd": 1,
+        "widthMultiplier": 1.25,
+        "end": "squared"
+      }
+    },
+    {
+      "name": "crystal backswing",
+      "motion": "backswing-wheel",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.49,
+        "impact": 0.44,
+        "followEnd": 0.77
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      },
+      "ribbon": {
+        "profile": "hooked-comma",
+        "radialStart": 0.3,
+        "radialEnd": 1,
+        "widthMultiplier": 1.08,
+        "end": "hooked",
+        "setupEcho": "neutral-dim"
+      }
+    },
+    {
+      "name": "riftfall cleave",
+      "motion": "runaway-cleave",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.26,
+        "activeEnd": 0.64,
+        "impact": 0.54,
+        "followEnd": 0.86
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      },
+      "ribbon": {
+        "profile": "open-c",
+        "radialStart": 0.28,
+        "radialEnd": 1,
+        "widthMultiplier": 1.35,
+        "end": "torn",
+        "setupEcho": "neutral-dim"
+      }
+    }
+  ],
+  "verdict-procession": [
+    {
+      "name": "writ lunge",
+      "motion": "lunge",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.5,
+        "impact": 0.46,
+        "followEnd": 0.72
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "appeal disengage",
+      "motion": "disengage",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.46,
+        "impact": 0.4,
+        "followEnd": 0.7
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "final sentence",
+      "motion": "impale",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.56,
+        "impact": 0.52,
+        "followEnd": 0.76
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
   "katana-kagewake": [
     {
       "name": "Shade Draw",

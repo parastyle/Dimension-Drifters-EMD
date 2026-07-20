@@ -5604,7 +5604,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
   });
 
   it("charges the better half's real sell value, unbinds free, and preserves anti-launder identity", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", {
+    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", {
       leadRarity: 1,
       offRarity: 3,
       leadAffix: "keen",
@@ -5627,7 +5627,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
       [f.off.weapon, f.off.rarity, f.off.affix, f.off.earned],
     ]).toEqual(identities);
 
-    const noLaunder = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", {
+    const noLaunder = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", {
       leadRarity: 2,
       offRarity: 4,
       leadEarned: true,
@@ -5661,7 +5661,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
   });
 
   it("THE DRAIN-RATE TEST: the paired-off cooldown advances exactly once per 20Hz tick", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", { offCooldown: 1 });
+    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", { offCooldown: 1 });
     f.h.tick(10);
     expect(f.off.cooldown).toBeCloseTo(0.5, 8);
     f.h.send(f.player.id, "unbindPair");
@@ -5670,24 +5670,26 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
   });
 
   it("loads 0.72x the incoming weapon cooldown and builds per-hand SwingDescriptors", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter", { offAffix: "swift" });
+    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber", { offAffix: "swift" });
+    const leadCooldown = enemyComboShared.weaponAttackCooldown(WEAPONS["rattler-sabre"]!);
+    const offCooldown = enemyComboShared.weaponAttackCooldown(WEAPONS["x2-sandsong-saber"]!);
     f.combat.drawLock = 0;
     f.combat.handGate = 0;
     f.combat.cd = 0;
     f.off.cooldown = 0;
     f.h.room.resolveHandAttack(f.player, f.combat, 0, f.off, 0, false);
-    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.52, 8);
+    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * offCooldown, 8);
     expect(f.h.room.meleeSwings.get(`${f.player.id}:0`).swing.effectiveCooldown).toBeCloseTo(
-      enemyComboShared.PAIR_TEMPO * 0.3,
+      enemyComboShared.PAIR_TEMPO * leadCooldown,
       8,
     );
 
     f.combat.handGate = 0;
     f.off.cooldown = 0;
     f.h.room.resolveHandAttack(f.player, f.combat, 1, f.off, 1, false);
-    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * 0.3, 8);
+    expect(f.combat.handGate).toBeCloseTo(enemyComboShared.PAIR_TEMPO * leadCooldown, 8);
     expect(f.h.room.meleeSwings.get(`${f.player.id}:1`).swing.effectiveCooldown).toBeCloseTo(
-      enemyComboShared.PAIR_TEMPO * 0.52,
+      enemyComboShared.PAIR_TEMPO * offCooldown,
       8,
     );
   });
@@ -5775,7 +5777,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
         (leadDamage * enemyComboShared.PAIR_TEMPO * (lead.cooldown + off.cooldown));
       expect(ratio).toBeLessThanOrEqual(cap + 1e-9);
     };
-    assertCap("rattler-sabre", "x2-gallows-splitter", enemyComboShared.DUAL_THROUGHPUT_CAP);
+    assertCap("rattler-sabre", "x2-sandsong-saber", enemyComboShared.DUAL_THROUGHPUT_CAP);
     assertCap("rattler-sabre", "x-sword-neon-katana", enemyComboShared.DUAL_MATCHED_THROUGHPUT_CAP);
   });
 
@@ -5824,7 +5826,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
   });
 
   it("attributes overlapping paired melee receipts to each firing hand's weapon id and ships schema 27", () => {
-    const f = makeDualWieldFixture("rattler-sabre", "x2-gallows-splitter");
+    const f = makeDualWieldFixture("rattler-sabre", "x2-sandsong-saber");
     const enemy = new EnemyState();
     enemy.id = "dual-receipt-target";
     enemy.kind = "critter";
@@ -5844,7 +5846,7 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     const weaponIds = [...f.h.state().combatReceipts]
       .filter((receipt) => receipt.seq > 0 && receipt.sourcePlayerId === f.player.id)
       .map((receipt) => receipt.weaponId);
-    expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
+    expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
 
     const fresh = new enemyComboShared.PlayerState();
     expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
@@ -6142,7 +6144,7 @@ describe("GameRoom — weapon bank carry and exact pair projection", () => {
       kind: "pair",
       entryId: roomPairId(1),
       lead: roomBankInstance(1, "rattler-sabre", "legendary", "brutal"),
-      offhand: roomBankInstance(2, "x2-gallows-splitter", "rare", "keen"),
+      offhand: roomBankInstance(2, "x2-sandsong-saber", "rare", "keen"),
     };
     const safe = roomBankSingle(3);
     const joined = joinWeaponAccount(
@@ -7207,5 +7209,61 @@ describe("GameRoom — shared procedural weapon ground zones", () => {
     expect(h.state().projectiles.size).toBe(0);
     expect(landed?.style).toBe(ZoneStyle.Poison);
     expect(landed?.radius).toBe(weapon.groundZone.initialRadius);
+  });
+});
+
+// W-CONVERT — append-only server proof for Cogwright's full-distance authoritative cursor warp.
+describe("GameRoom — Cogwright Tesla-Rod warp", () => {
+  it("lands at the server-validated cursor with no weapon-range cap and bursts on arrival", () => {
+    const h = makeRoom();
+    h.join("tesla-warp");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("tesla-warp");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x2-cogwright-s-tesla-rod"];
+    if (!weapon?.warp) throw new Error("Cogwright warp fixture is required");
+
+    player.x = 320;
+    player.y = 360;
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.cd = 0;
+    const target = { x: 1_520, y: 960 };
+    const expected = h.room.navValidDest(
+      player,
+      combat,
+      target.x,
+      target.y,
+      Number.POSITIVE_INFINITY,
+    );
+    expect(Math.hypot(expected.x - player.x, expected.y - player.y)).toBeGreaterThan(weapon.range);
+
+    const enemy = new EnemyState();
+    enemy.id = "warp-arrival-dummy";
+    enemy.kind = "dummy";
+    enemy.hp = 1_000;
+    enemy.x = expected.x;
+    enemy.y = expected.y;
+    h.state().enemies.set(enemy.id, enemy);
+    h.room.enemyGrid.insert(enemy.id, enemy.x, enemy.y);
+    const teleportSeq = player.teleportSeq;
+
+    combat.targetX = target.x;
+    combat.targetY = target.y;
+    h.room.warpWeaponToCursor(player, combat, weapon);
+
+    expect(player.x).toBeCloseTo(expected.x, 6);
+    expect(player.y).toBeCloseTo(expected.y, 6);
+    expect(player.teleportSeq).toBe(teleportSeq + 1);
+    expect(enemy.hp).toBeLessThan(1_000);
+    expect(h.room.meleeSwings.has(player.id)).toBe(false);
+    expect(
+      [...h.state().combatReceipts.values()].some(
+        (receipt) =>
+          receipt.weaponId === weapon.id &&
+          receipt.delivery === enemyComboShared.CombatDelivery.Warp,
+      ),
+    ).toBe(true);
   });
 });

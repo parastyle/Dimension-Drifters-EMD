@@ -60,6 +60,8 @@ export interface BeamVfxRecipe {
   readonly edgeColor: number;
   readonly accentColor: number;
   readonly coreColor: number;
+  /** Optional per-authoritative-row palette for prismatic multi-beam weapons. */
+  readonly rainbowPalette?: readonly number[];
   readonly edgeWidth: number;
   readonly chromaWidth: number;
   readonly coreWidth: number;
@@ -448,6 +450,9 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     edgeColor: 0x3b1c91,
     accentColor: 0xff55c8,
     coreColor: 0x75fff2,
+    rainbowPalette: Object.freeze([
+      0xff4f73, 0xff9f32, 0xffe55c, 0x55e87a, 0x42cfff, 0x7187ff, 0xd96cff,
+    ]),
     edgeWidth: 0.94,
     chromaWidth: 0.54,
     coreWidth: 0.11,

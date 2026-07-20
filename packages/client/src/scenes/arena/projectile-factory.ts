@@ -4,6 +4,7 @@ import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 import { elementPack } from "../../vfx/particles.js";
+import type { WeaponEffectRecipe } from "../../vfx/weapon-effect-recipes.js";
 import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
 import { blendHex } from "./draw-util.js";
 
@@ -22,6 +23,7 @@ export const GUN_FX: Record<string, GunFx> = {
   tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
   nail: { color: 0xd6dde6, size: 14, style: "punch", trail: 26, trailW: 3 }, // nailgun: metallic dart
   ricochet: { color: 0x5dd6ff, size: 16, style: "spark", trail: 20, trailW: 6 }, // pistol: cyan electric
+  spark: { color: 0xb14bff, size: 18, style: "spark", trail: 32, trailW: 7 }, // Faradayer: crackling bolt
   orb: { color: 0x8f6aff, size: 22, style: "arcane", trail: 30, trailW: 11 }, // §38 caster: soft arcane sphere
   grenade: { color: 0xffb24a, size: 24, style: "boom", trail: 22, trailW: 8 }, // §41 mortar: fat lobbed shell
 };
@@ -110,6 +112,7 @@ export function makeThrownWeapon(
 export function makeMagma(
   scene: Phaser.Scene,
   pr: { x: number; y: number; vx: number; vy: number; kind: string },
+  recipe?: WeaponEffectRecipe,
 ): Phaser.GameObjects.Container {
   const i = pr.kind.indexOf(":");
   const element = i < 0 ? "fire" : pr.kind.slice(i + 1);
@@ -123,12 +126,17 @@ export function makeMagma(
   const glow = scene.add.circle(0, 0, 17, tint, 0.5).setBlendMode(Phaser.BlendModes.ADD);
   // The painted ball: the authored magma sheet for the molten look, else a painted element-orb frame.
   const sc = molten ? WEAPON_VFX["x-sword-bone"]?.scatter : null;
-  const pack = molten ? null : PARTICLE_PACKS[elementPack(element, "orb")];
-  const key = sc ? `scatter:${sc.url}` : pack ? `ptcl:${elementPack(element, "orb")}` : null;
+  const packId =
+    recipe?.projectile === "crystal-shard-orb" ? "arcane-shard" : elementPack(element, "orb");
+  const pack = molten ? null : PARTICLE_PACKS[packId];
+  const key = sc ? `scatter:${sc.url}` : pack ? `ptcl:${packId}` : null;
   let ball: Phaser.GameObjects.GameObject;
   if (key && scene.textures.exists(key)) {
     const frame = Math.floor(Math.random() * (sc?.count ?? pack?.count ?? 1));
-    const img = scene.add.image(0, 0, key, frame).setScale(36 / (sc?.frameWidth ?? pack?.frameWidth ?? 249));
+    const paintedSize = recipe?.projectile === "crystal-shard-orb" ? 44 : 36;
+    const img = scene.add
+      .image(0, 0, key, frame)
+      .setScale(paintedSize / (sc?.frameWidth ?? pack?.frameWidth ?? 249));
     scene.tweens.add({
       targets: img,
       angle: 360,
@@ -177,8 +185,12 @@ export function makeBullet(
   scene: Phaser.Scene,
   pr: { x: number; y: number; vx: number; vy: number; kind: string },
   visualScale = 1,
+  recipe?: WeaponEffectRecipe,
 ): Phaser.GameObjects.Container {
-  const fx = gunFx(pr.kind); // handles the ":element" colour suffix
+  const resolvedFx = gunFx(pr.kind); // handles the ":element" colour suffix
+  const fx = recipe?.projectileColor
+    ? { ...resolvedFx, color: recipe.projectileColor, style: "electric" }
+    : resolvedFx;
   const k = baseKind(pr.kind); // shape switches on the base kind (element-agnostic)
   const ang = Math.atan2(pr.vy, pr.vx);
   const ADD = Phaser.BlendModes.ADD;
@@ -224,14 +236,28 @@ export function makeBullet(
     const band = scene.add.rectangle(0, 0, 3.5, 10, fx.color, 0.9);
     const fuse = scene.add.circle(6, -3, 2.2, 0xffe6a0, 0.95).setBlendMode(ADD);
     items.push(shell, band, fuse);
-    scene.tweens.add({ targets: [shell, band], angle: 360, duration: 700, repeat: -1, ease: "Linear" });
+    scene.tweens.add({
+      targets: [shell, band],
+      angle: 360,
+      duration: 700,
+      repeat: -1,
+      ease: "Linear",
+    });
     scene.tweens.add({ targets: fuse, alpha: 0.3, duration: 90, yoyo: true, repeat: -1 }); // sputtering fuse
+  } else if (recipe?.projectile === "electric-bolt") {
+    items.push(scene.add.circle(0, 0, 11, fx.color, 0.34).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 6, fx.color, 0.82).setBlendMode(ADD));
+    items.push(scene.add.rectangle(0, 0, 20, 3, 0xbfe8ff).setRotation(ang).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 3, 0xffffff).setBlendMode(ADD));
+    items.push(scene.add.circle(0, 0, 10).setStrokeStyle(1.5, 0x64b5ff, 0.9).setBlendMode(ADD));
   } else {
     const big = k === "slug";
     items.push(scene.add.circle(0, 0, big ? 9 : 6, fx.color, 0.5).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, big ? 3.4 : 2.2, 0xffffff));
-    if (k === "ricochet")
+    if (k === "ricochet" || k === "spark")
       items.push(scene.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
+    if (k === "spark")
+      items.push(scene.add.circle(0, 0, 10).setStrokeStyle(1, 0xffffff, 0.55).setBlendMode(ADD));
   }
   return scene.add
     .container(pr.x, pr.y, items)

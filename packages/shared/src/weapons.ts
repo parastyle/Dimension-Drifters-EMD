@@ -13,6 +13,7 @@ import {
   FISTS_DAMAGE,
   FISTS_HALF_ARC,
   FISTS_RANGE,
+  MAX_PLAYERS,
   PAIR_TEMPO,
   REZ_RADIUS,
 } from "./constants.js";
@@ -77,8 +78,59 @@ export interface BeamDef {
     chargeMul: number;
     channelMul: number;
   };
+  /** Server-authored fan of simultaneous damaging rays. The primary ray is always angle offset zero. */
+  randomRays?: {
+    count: number;
+    spread: number;
+  };
   scalingGrades?: Partial<Record<Attr, Grade>>;
 }
+
+export const PRISM_BEAM_MAX_RAYS = 7;
+export const FRIENDLY_BEAM_ENTITY_CAP = 32;
+
+/** Satellite rows use only the budget left after reserving one primary beam row per player. */
+export function admittedPrismaticBeamRayCount(
+  authoredCount: number,
+  currentSatelliteRows: number,
+): number {
+  const requested = Math.max(1, Math.min(PRISM_BEAM_MAX_RAYS, Math.trunc(authoredCount)));
+  const satelliteBudget = Math.max(
+    0,
+    FRIENDLY_BEAM_ENTITY_CAP - MAX_PLAYERS - currentSatelliteRows,
+  );
+  return 1 + Math.min(requested - 1, satelliteBudget);
+}
+
+/** Deterministic random-looking offsets keyed by a server-owned accepted attack sequence. */
+export function prismaticBeamRayOffsets(count: number, spread: number, seed: number): number[] {
+  const n = Math.max(1, Math.min(PRISM_BEAM_MAX_RAYS, Math.trunc(count)));
+  const width = Math.max(0, spread);
+  const out = [0];
+  let state = (seed ^ 0x9e3779b9) >>> 0;
+  for (let i = 1; i < n; i++) {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    const unit = (state >>> 0) / 0xffffffff;
+    let offset = (unit * 2 - 1) * width;
+    if (Math.abs(offset) < width * 0.12) offset += offset < 0 ? -width * 0.12 : width * 0.12;
+    out.push(offset);
+  }
+  return out;
+}
+
+export type WeaponEffectEmitter = "body" | "tip" | "blade";
+export type WeaponEffectRecipeId =
+  | "galvanic-blue-burst"
+  | "riftglass-rainbow-volley"
+  | "whispervolume-page-scatter"
+  | "riftcleaver-crystal-shards"
+  | "verdict-tip-procession"
+  | "tombwarden-dark-slash"
+  | "choir-iron-flame-slash"
+  | "hangman-blood-spatter"
+  | "dustreaper-continuous-edge";
 
 /** Shared server-owned ground patch. The client renders the footprint from small authored texture chunks;
  * radius is gameplay truth and never inferred from renderer geometry. */
@@ -161,6 +213,20 @@ export interface WeaponDef {
   katanaHook?: KatanaHookDef;
   /** Authored held/attack performance and its optional continuous mechanic. */
   performance?: WeaponPerformanceDef;
+  /** Stable client recipe id plus the shared server/client origin policy for its authored effect. */
+  effectRecipe?: WeaponEffectRecipeId;
+  effectEmitter?: WeaponEffectEmitter;
+  /** A single two-hand slot occupied by a matched worn glove on each hand. Cosmetic aura only; accepted
+   * melee beats remain the authoritative damage source. */
+  glovePair?: {
+    auraColor: number;
+    auraRadius: number;
+  };
+  /** Cursor warp replaces the ordinary attack. The server validates and originates the move, then applies
+   * one arrival burst using the weapon's normal damage/scaling. */
+  warp?: {
+    burstRadius: number;
+  };
   /** Follow-up render-fleet marker; metadata only and never a substitute for an installed sheet. */
   bespokeVfxSheet?: boolean;
   /** Damage per swing (hp). */
@@ -222,6 +288,8 @@ export interface WeaponDef {
     refillSeconds: number;
     /** Enemies a single throw can cut through before vanishing. */
     pierce: number;
+    /** Cosmetic ballistic lift of the own-sprite projectile; server travel remains authoritative. */
+    arcHeight?: number;
     /** Per-source scaling (§14 WYSIWYG) — this projectile's own grades; omitted = the weapon's edge grades. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
   };

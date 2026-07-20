@@ -136,6 +136,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     description?: string;
     sprite?: string;
     sizeClass?: string;
+    swingStyle?: string;
     comboFamily?: string;
     comboVariant?: string;
     comboBar?: unknown[];
@@ -172,7 +173,16 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     }
   };
 
-  const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
+  const MECH_SIBLINGS = [
+    "thrown",
+    "quake",
+    "chainLightning",
+    "scatter",
+    "gun",
+    "beam",
+    "glovePair",
+    "warp",
+  ];
   const BEAM_GUN_IDS = new Set(["x2-voltcaster-machine-pistol", "x2-stormcaller-tesla-gatling"]);
   it("no concept authors a mechanic block as a SIBLING of behavior (the 11-weapon data-loss bug)", () => {
     for (const w of concepts)
@@ -221,7 +231,9 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         halfArc: { num: [0.3, 1.4] },
         cooldown: { num: [0.12, 1.5] },
         displayLength: { num: [40, 400] },
-        swingArc: { num: [1.8, 3.4] },
+        swingArc: {
+          num: w.swingStyle === "spin" ? [Math.PI * 2, Math.PI * 6] : [1.8, 3.4],
+        },
         gripFrac: { num: [0.04, 0.5] },
       });
       if (w.scalingGrades)
@@ -312,7 +324,17 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           charges: { int: [1, 6] },
           refillSeconds: { num: [0.6, 4] },
           pierce: { int: [1, 5] },
+          arcHeight: { num: [24, 180] },
           scalingGrades: { grades: true },
+        });
+      } else if (kind === "glovePair") {
+        checkFields(w.id, def.glovePair, b, {
+          auraColor: { int: [0, 0xffffff] },
+          auraRadius: { num: [24, 90] },
+        });
+      } else if (kind === "warp") {
+        checkFields(w.id, def.warp, b, {
+          burstRadius: { num: [24, 100] },
         });
       } else if (kind === "quake") {
         checkFields(w.id, def.quake, b, {

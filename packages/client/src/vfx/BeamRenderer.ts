@@ -1,6 +1,6 @@
 import {
   BeamPhase,
-  MAX_PLAYERS,
+  FRIENDLY_BEAM_ENTITY_CAP,
   shortestAngleDelta,
   TICK_MS,
   WEAPONS,
@@ -75,6 +75,7 @@ interface BeamEntry {
   releaseT: number;
   overheatT: number;
   seed: number;
+  angleOffset: number;
   poseReady: boolean;
   poseT: number;
   fromAngle: number;
@@ -158,6 +159,12 @@ function redlineFor(heat: number): number {
   return clamp01((heat - 0.68) / 0.32);
 }
 
+function beamPaletteColor(beam: BeamVfxRecipe | undefined, seed: number): number | undefined {
+  const palette = beam?.rainbowPalette;
+  if (!palette?.length) return undefined;
+  return palette[Math.min(palette.length - 1, Math.floor(seed * palette.length))];
+}
+
 /** Breathing is strictly inset: no pulse or heat escalation can overstate the authoritative diameter. */
 export function beamVisualWidth(
   authoritativeWidth: number,
@@ -179,6 +186,15 @@ function hashKey(value: string): number {
   return hash >>> 0;
 }
 
+export function beamRowAngleOffset(rowKey: string): number {
+  const marker = ":prism:";
+  const markerAt = rowKey.indexOf(marker);
+  if (markerAt < 0) return 0;
+  const parts = rowKey.slice(markerAt + marker.length).split(":");
+  const quantized = Number(parts[1]);
+  return Number.isFinite(quantized) ? quantized / 1_000_000 : 0;
+}
+
 /** Room-ceiling retained beam pool plus one prediction slot. Exact damaging capsules are never culled. */
 export class BeamRenderer {
   private readonly groundLight: Phaser.GameObjects.Graphics;
@@ -194,7 +210,7 @@ export class BeamRenderer {
     this.groundLight = scene.add.graphics().setDepth(2);
     this.graphics = scene.add.graphics().setDepth(9990);
     for (let i = 0; i < 18; i++) this.capsulePoints.push(new Phaser.Math.Vector2());
-    for (let i = 0; i < MAX_PLAYERS + 1; i++) {
+    for (let i = 0; i < FRIENDLY_BEAM_ENTITY_CAP + 1; i++) {
       const body = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
       const lip = globalThis.VFXRENDER.makePerRope(scene) as Phaser.GameObjects.Rope;
       body.setDepth(9991);
@@ -209,6 +225,7 @@ export class BeamRenderer {
         releaseT: 0,
         overheatT: 0,
         seed: 0,
+        angleOffset: 0,
         poseReady: false,
         poseT: 1,
         fromAngle: 0,
@@ -258,12 +275,17 @@ export class BeamRenderer {
     this.graphics.clear();
     for (const entry of this.entries) entry.seen = false;
     let hasAuthoritativeSelf = false;
-    rows.forEach((row, ownerId) => {
+    rows.forEach((row, rowKey) => {
+      const ownerId = row.ownerId || rowKey;
+      const primary = rowKey === ownerId;
       const predictedOwnerCharge =
-        ownerId === selfId && row.phase === BeamPhase.Charging && predicted?.startSeq === row.seq;
+        primary &&
+        ownerId === selfId &&
+        row.phase === BeamPhase.Charging &&
+        predicted?.startSeq === row.seq;
       if (ownerId === selfId && !predictedOwnerCharge) hasAuthoritativeSelf = true;
       if (predictedOwnerCharge) return;
-      const entry = this.acquire(`${ownerId}:${row.seq}`, ownerId, row.seq);
+      const entry = this.acquire(`${rowKey}:${row.seq}`, rowKey, ownerId, row.seq);
       if (!entry) return;
       entry.seen = true;
       this.observePhase(entry, row.phase);
@@ -280,7 +302,12 @@ export class BeamRenderer {
       );
     });
     if (predicted && !hasAuthoritativeSelf) {
-      const entry = this.acquire(`${predicted.ownerId}:predicted`, predicted.ownerId, 0);
+      const entry = this.acquire(
+        `${predicted.ownerId}:predicted`,
+        predicted.ownerId,
+        predicted.ownerId,
+        0,
+      );
       if (entry) {
         entry.seen = true;
         entry.body.setVisible(false);
@@ -310,7 +337,12 @@ export class BeamRenderer {
     }
   }
 
-  private acquire(key: string, ownerId: string, seq: number): BeamEntry | undefined {
+  private acquire(
+    key: string,
+    rowKey: string,
+    ownerId: string,
+    seq: number,
+  ): BeamEntry | undefined {
     for (const entry of this.entries) if (entry.key === key) return entry;
     for (const entry of this.entries) {
       if (entry.key) continue;
@@ -318,6 +350,7 @@ export class BeamRenderer {
       entry.ownerId = ownerId;
       entry.seq = seq;
       entry.seed = hashKey(key) / 0xffffffff;
+      entry.angleOffset = beamRowAngleOffset(rowKey);
       entry.lastPhase = BeamPhase.Idle;
       entry.poseReady = false;
       return entry;
@@ -348,7 +381,11 @@ export class BeamRenderer {
     entry.releaseT = Math.max(0, entry.releaseT - dt);
     entry.overheatT = Math.max(0, entry.overheatT - dt);
     const recipe = resolveCasterVfxRecipe(WEAPONS[row.weaponId]);
-    const color = recipe?.beam?.accentColor ?? COLOR[row.element] ?? DEFAULT_COLOR;
+    const color =
+      beamPaletteColor(recipe?.beam, entry.seed) ??
+      recipe?.beam?.accentColor ??
+      COLOR[row.element] ??
+      DEFAULT_COLOR;
     const pose = this.resolveDrawPose(entry, row, local, dt, writeOwnerPose);
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
 
@@ -513,8 +550,9 @@ export class BeamRenderer {
     let originY = entry.renderOriginY;
     if (writeOwnerPose?.(entry.ownerId, this.ownerPose)) {
       const reach = weaponMuzzleReach(WEAPONS[row.weaponId], this.ownerPose.renderScale);
-      originX = this.ownerPose.x + Math.cos(entry.renderAngle) * reach;
-      originY = this.ownerPose.y + Math.sin(entry.renderAngle) * reach;
+      const emitterAngle = entry.renderAngle - entry.angleOffset;
+      originX = this.ownerPose.x + Math.cos(emitterAngle) * reach;
+      originY = this.ownerPose.y + Math.sin(emitterAngle) * reach;
     }
     this.drawPose.originX = originX;
     this.drawPose.originY = originY;
@@ -580,9 +618,22 @@ export class BeamRenderer {
   ): void {
     const beam = recipe?.beam;
     const redline = redlineFor(row.heat);
-    const edgeColor = mixColor(beam?.edgeColor ?? color, 0xff3824, redline * 0.9);
-    const chromaColor = mixColor(beam?.accentColor ?? color, 0xffd06a, redline * 0.48);
-    const coreColor = mixColor(beam?.coreColor ?? 0xffffff, 0xfff0a8, redline * 0.8);
+    const prismatic = !!beam?.rainbowPalette?.length;
+    const edgeColor = mixColor(
+      prismatic ? mixColor(color, 0x180b38, 0.48) : (beam?.edgeColor ?? color),
+      0xff3824,
+      redline * 0.9,
+    );
+    const chromaColor = mixColor(
+      prismatic ? color : (beam?.accentColor ?? color),
+      0xffd06a,
+      redline * 0.48,
+    );
+    const coreColor = mixColor(
+      prismatic ? mixColor(color, 0xffffff, 0.76) : (beam?.coreColor ?? 0xffffff),
+      0xfff0a8,
+      redline * 0.8,
+    );
     const edgeWidth = visualWidth * (beam?.edgeWidth ?? 1);
     const chromaWidth = visualWidth * (beam?.chromaWidth ?? 0.68);
     const coreWidth = visualWidth * ((beam?.coreWidth ?? 0.22) + redline * 0.04);

@@ -34,7 +34,11 @@ const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
-const KINDS = new Set(["edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone"]);
+const KINDS = new Set([
+  "edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone",
+  "glovePair", "warp",
+]);
+const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark"]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
@@ -50,24 +54,28 @@ const TOP_KEYS = new Set([
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
   "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
-  "bespokeVfxSheet", "performance",
+  "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
-const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone"];
+const MECH_SIBLINGS = [
+  "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone", "glovePair", "warp",
+];
 const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLength", "swingArc", "gripFrac"]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "scalingGrades", "zone"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "scalingGrades", "zone"]),
   quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "scalingGrades", "explode"]),
+    "projectileVisualScale", "scalingGrades", "explode"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "scalingGrades", "zone"]),
+    "randomRays", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
+  glovePair: new Set(["kind", "auraColor", "auraRadius"]),
+  warp: new Set(["kind", "burstRadius"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
@@ -77,6 +85,13 @@ const ZONE_TRIGGERS = new Set(["channel", "attack", "landing"]);
 const ZONE_STYLES = new Set(["nether", "poison", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
+const EFFECT_EMITTERS = new Set(["body", "tip", "blade"]);
+const EFFECT_RECIPES = new Set([
+  "galvanic-blue-burst", "riftglass-rainbow-volley", "whispervolume-page-scatter",
+  "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
+  "choir-iron-flame-slash", "hangman-blood-spatter", "dustreaper-continuous-edge",
+]);
+const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const COMBO_MOTIONS = new Set([
   "slash", "overhead", "shoulder-chop", "rising-chop", "execution-slam", "rake", "scissor",
   "jab", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
@@ -249,8 +264,8 @@ function comboBarOf(w) {
     fail("comboBar is not an array");
     return undefined;
   }
-  if (w.comboBar.length < 4 || w.comboBar.length > 7)
-    fail(`comboBar has ${w.comboBar.length} beats; katana bars require 4..7`);
+  if (w.comboBar.length < 3 || w.comboBar.length > 7)
+    fail(`comboBar has ${w.comboBar.length} beats; authored bars require 3..7`);
   const out = [];
   for (let i = 0; i < w.comboBar.length; i++) {
     const step = w.comboBar[i];
@@ -452,13 +467,38 @@ function mapWeapon(w) {
     halfArc: num(s.halfArc, 0.3, 1.4, 0.85, "stats.halfArc"),
     cooldown: num(s.cooldown, 0.12, 1.5, 0.4, "stats.cooldown"),
     displayLength: num(s.displayLength, 40, 400, 90, "stats.displayLength"),
-    swingArc: num(s.swingArc, 1.8, 3.4, 2.6, "stats.swingArc"),
+    swingArc: num(
+      s.swingArc,
+      w.swingStyle === "spin" ? Math.PI * 2 : 1.8,
+      w.swingStyle === "spin" ? Math.PI * 6 : 3.4,
+      w.swingStyle === "spin" ? Math.PI * 4 : 2.6,
+      "stats.swingArc",
+    ),
     gripFrac: num(s.gripFrac, 0.04, 0.5, 0.12, "stats.gripFrac"),
     tags: {
       grip,
       size,
-      delivery: isGroundZone ? "ground-zone" : isBeam ? "beam" : isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
-      fireMode: isGroundZone || isBeam ? "hold" : isGun ? "auto" : "tap-charge",
+      delivery: isGroundZone
+        ? "ground-zone"
+        : isBeam
+          ? "beam"
+          : isGun
+            ? "projectile"
+            : kind === "thrown"
+              ? "thrown"
+              : kind === "quake"
+                ? "melee-slam"
+                : kind === "glovePair"
+                  ? "glove-pair"
+                  : kind === "warp"
+                    ? "warp"
+                    : "melee-arc",
+      fireMode: isGroundZone || isBeam || kind === "glovePair" ||
+        (type === "melee" && w.performance?.continuous === true)
+        ? "hold"
+        : isGun
+          ? "auto"
+          : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
       classPool: type,
       family: typeof w.family === "string" ? w.family : "exotic",
@@ -475,13 +515,19 @@ function mapWeapon(w) {
     else def.sprite = w.sprite;
   }
   if (w.sizeClass !== undefined) def.sizeClass = enumOf(w.sizeClass, SIZE_CLASSES, "sizeClass");
+  if (w.swingStyle !== undefined)
+    def.swingStyle = enumOf(w.swingStyle, SWING_STYLES, "swingStyle");
   if (w.comboFamily !== undefined)
     def.comboFamily = enumOf(w.comboFamily, COMBO_FAMILIES, "comboFamily");
   if (w.comboVariant !== undefined) {
-    if (typeof w.comboVariant !== "string" || !/^katana-[a-z0-9-]+$/.test(w.comboVariant))
-      fail(`comboVariant = ${JSON.stringify(w.comboVariant)} must match katana-[a-z0-9-]+`);
+    if (typeof w.comboVariant !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(w.comboVariant))
+      fail(`comboVariant = ${JSON.stringify(w.comboVariant)} must be a stable kebab-case id`);
     else def.comboVariant = w.comboVariant;
   }
+  if (w.effectRecipe !== undefined)
+    def.effectRecipe = enumOf(w.effectRecipe, EFFECT_RECIPES, "effectRecipe");
+  if (w.effectEmitter !== undefined)
+    def.effectEmitter = enumOf(w.effectEmitter, EFFECT_EMITTERS, "effectEmitter");
   const hook = katanaHookOf(w.katanaHook);
   if (hook) def.katanaHook = hook;
   const performance = performanceOf(w.performance);
@@ -522,6 +568,17 @@ function mapWeapon(w) {
     };
     const bg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (bg) def.beam.scalingGrades = bg;
+    if (b.randomRays !== undefined) {
+      if (!b.randomRays || typeof b.randomRays !== "object" || Array.isArray(b.randomRays)) {
+        fail("behavior.randomRays is not an object");
+      } else {
+        checkKeys(b.randomRays, RANDOM_RAY_KEYS, "behavior.randomRays");
+        def.beam.randomRays = {
+          count: int(b.randomRays.count, 2, 7, 5, "behavior.randomRays.count"),
+          spread: num(b.randomRays.spread, 0.15, 1.25, 0.7, "behavior.randomRays.spread"),
+        };
+      }
+    }
   } else if (isGun) {
     def.gun = {
       damage: num(b.damage, 1, 40, damage, "behavior.damage"),
@@ -536,6 +593,10 @@ function mapWeapon(w) {
         : enumOf(b.muzzle, MUZZLES, "behavior.muzzle"),
       recoil: num(b.recoil, 0.0004, 0.005, 0.0016, "behavior.recoil"),
     };
+    if (b.projectileVisualScale !== undefined)
+      def.gun.projectileVisualScale = num(
+        b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
+      );
     const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");
     if (pellets > 1) {
       def.gun.pellets = pellets;
@@ -551,6 +612,15 @@ function mapWeapon(w) {
     if (gg) def.gun.scalingGrades = gg;
     const ex = explodeOf(b.explode, "behavior.explode", 90);
     if (ex) def.gun.explode = ex;
+  } else if (kind === "glovePair") {
+    def.glovePair = {
+      auraColor: int(b.auraColor, 0, 0xffffff, 0x33e6ff, "behavior.auraColor"),
+      auraRadius: num(b.auraRadius, 24, 90, 52, "behavior.auraRadius"),
+    };
+  } else if (kind === "warp") {
+    def.warp = {
+      burstRadius: num(b.burstRadius, 24, 100, 48, "behavior.burstRadius"),
+    };
   } else if (kind === "thrown") {
     def.thrown = {
       speed: num(b.speed, 300, 1200, 680, "behavior.speed"),
@@ -560,6 +630,8 @@ function mapWeapon(w) {
       refillSeconds: num(b.refillSeconds, 0.6, 4, 1.5, "behavior.refillSeconds"),
       pierce: int(b.pierce, 1, 5, 1, "behavior.pierce"),
     };
+    if (b.arcHeight !== undefined)
+      def.thrown.arcHeight = num(b.arcHeight, 24, 180, 88, "behavior.arcHeight");
     const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (g) def.thrown.scalingGrades = g;
   } else if (kind === "quake") {

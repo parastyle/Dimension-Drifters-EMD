@@ -2033,6 +2033,8 @@ export class SpriteRig {
   private readonly shadowHalo: Phaser.GameObjects.Ellipse;
   private readonly auraGlow: Phaser.GameObjects.Ellipse;
   private readonly auraRing: Phaser.GameObjects.Ellipse;
+  private readonly gloveAuraBoltA: Phaser.GameObjects.Rectangle;
+  private readonly gloveAuraBoltB: Phaser.GameObjects.Rectangle;
   private readonly pairGlint: Phaser.GameObjects.Rectangle;
 
   constructor(
@@ -2160,7 +2162,24 @@ export class SpriteRig {
       .setStrokeStyle(3, 0x33e6ff, 0)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    order.unshift(this.shadowHalo, this.shadow, this.auraGlow, this.auraRing);
+    this.gloveAuraBoltA = scene.add
+      .rectangle(0, 0, 16, 2.4, 0xffffff, 0.9)
+      .setOrigin(0.15, 0.5)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    this.gloveAuraBoltB = scene.add
+      .rectangle(0, 0, 12, 2, 0xffffff, 0.82)
+      .setOrigin(0.15, 0.5)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    order.unshift(
+      this.shadowHalo,
+      this.shadow,
+      this.auraGlow,
+      this.auraRing,
+      this.gloveAuraBoltA,
+      this.gloveAuraBoltB,
+    );
 
     this.observedSourceRing = scene.add
       .ellipse(0, 0, 20, 12)
@@ -2666,6 +2685,8 @@ export class SpriteRig {
       this.shadow,
       this.auraGlow,
       this.auraRing,
+      this.gloveAuraBoltA,
+      this.gloveAuraBoltB,
       this.slideAfterimageB,
       this.slideAfterimageA,
     ];
@@ -4190,9 +4211,11 @@ export class SpriteRig {
   equipWeapon(spriteId: string, def: WeaponDef, manifest: SpriteManifest): void {
     const lead: RigLoadoutPiece = { spriteId, def, manifest, partIndex: 0 };
     const off: RigLoadoutPiece | undefined =
-      def.dual && manifest.parts.length >= 2
-        ? { spriteId, def, manifest, partIndex: 1 }
-        : undefined;
+      def.glovePair && manifest.parts.length >= 1
+        ? { spriteId, def, manifest, partIndex: 0 }
+        : def.dual && manifest.parts.length >= 2
+          ? { spriteId, def, manifest, partIndex: 1 }
+          : undefined;
     this.equipLoadout(lead, off);
   }
 
@@ -4367,6 +4390,7 @@ export class SpriteRig {
     const pairedMelee =
       paired &&
       !!this.weaponDef &&
+      !this.weaponDef.glovePair &&
       !this.weaponDef.gun &&
       !this.weaponDef.cast &&
       !this.weaponDef.beam;
@@ -4399,6 +4423,15 @@ export class SpriteRig {
     else if (barHand === "off") swingHand = 1;
     else if (barHand === "lead") swingHand = 0;
     else if (
+      paired &&
+      this.weaponDef?.glovePair &&
+      handOverride === undefined &&
+      swing?.hand === undefined &&
+      this.hasAttackBeatSeq
+    ) {
+      // The matched mitt occupies one slot, not a bind: accepted beats alternate its mirrored hand parts.
+      swingHand = dualHandForSeq(this.attackBeatSeq, 0);
+    } else if (
       paired &&
       handOverride === undefined &&
       swing?.hand === undefined &&
@@ -9705,22 +9738,46 @@ export class SpriteRig {
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
-    const aura = this.performanceSpec?.aura;
-    const auraActive = !!aura && anim.fireHeld === true && !this.downed;
+    const performanceAura = this.performanceSpec?.aura;
+    const gloveAura = this.weaponDef?.glovePair;
+    const auraRadius = performanceAura?.radius ?? gloveAura?.auraRadius;
+    const auraColor = performanceAura?.color ?? gloveAura?.auraColor;
+    const auraActive = auraRadius !== undefined && auraColor !== undefined && anim.fireHeld === true && !this.downed;
+    const gloveAuraActive = !!gloveAura && auraActive;
     this.auraGlow.setVisible(auraActive);
     this.auraRing.setVisible(auraActive);
-    if (aura && auraActive) {
+    this.gloveAuraBoltA.setVisible(gloveAuraActive);
+    this.gloveAuraBoltB.setVisible(gloveAuraActive);
+    if (auraActive) {
       const pulse = anim.reducedMotion === true ? 0 : Math.sin(t * Math.PI * 4.4) * 0.035;
       const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
-      const diameter = aura.radius * 2 * (1 + pulse) * inverseRigScale;
+      const diameter = auraRadius * 2 * (1 + pulse) * inverseRigScale;
       this.auraGlow
-        .setFillStyle(aura.color, 0.13)
+        .setFillStyle(auraColor, gloveAuraActive ? 0.1 : 0.13)
         .setDisplaySize(diameter, diameter * 0.56)
         .setAlpha(0.72);
       this.auraRing
-        .setStrokeStyle(3, aura.color, 0.72)
+        .setStrokeStyle(gloveAuraActive ? 2 : 3, auraColor, 0.72)
         .setDisplaySize(diameter * 0.96, diameter * 0.54)
         .setAlpha(0.82);
+      if (gloveAuraActive) {
+        const phase = anim.reducedMotion === true ? 0 : t * Math.PI * 9;
+        const boltRadius = diameter * 0.36;
+        const centerY = TARGET_BODY_H * 0.18;
+        this.gloveAuraBoltA
+          .setPosition(Math.cos(phase) * boltRadius, centerY + Math.sin(phase) * boltRadius * 0.48)
+          .setRotation(phase + Math.PI * 0.58)
+          .setFillStyle(auraColor, 0.9)
+          .setAlpha(0.68 + Math.sin(phase * 1.7) * 0.2);
+        this.gloveAuraBoltB
+          .setPosition(
+            Math.cos(phase + Math.PI) * boltRadius,
+            centerY + Math.sin(phase + Math.PI) * boltRadius * 0.48,
+          )
+          .setRotation(phase - Math.PI * 0.42)
+          .setFillStyle(auraColor, 0.82)
+          .setAlpha(0.62 + Math.cos(phase * 1.3) * 0.22);
+      }
     }
 
     let shrink = Math.max(0.34, 1 - this.hopPx / 560);

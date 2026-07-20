@@ -70,6 +70,7 @@ export const CombatDelivery = {
   Ultimate: 10,
   Zone: 11,
   Aura: 12,
+  Warp: 13,
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
 

@@ -19,7 +19,7 @@ describe("owner ledger W-SIZE", () => {
     const lower = lengths[middle - 1] ?? Number.NaN;
     const upper = lengths[middle] ?? Number.NaN;
     const median = lengths.length % 2 === 1 ? upper : (lower + upper) / 2;
-    expect(lengths).toHaveLength(99);
+    expect(lengths).toHaveLength(97);
     expect(median).toBe(90);
     expect(WEAPONS["x2-gravesinger-s-hex-wand"]?.displayLength).toBe(median);
   });

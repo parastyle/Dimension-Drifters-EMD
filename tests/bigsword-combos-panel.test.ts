@@ -21,7 +21,6 @@ const PANEL_ROSTER = {
     "tombstone-greatsword",
     "x-sword-coffin",
     "x-sword-bone",
-    "x2-riftcleaver-greatblade",
   ],
   "claymore-breach": ["x2-tombwarden-claymore", "x2-dustreaper-zweihander"],
   "glaive-compass": [

@@ -457,6 +457,8 @@ export function twoHandedPoseFor(
   def: WeaponDef,
   authority: TwoHandPoseAuthority = DEFAULT_TWO_HAND_POSE_AUTHORITY,
 ): boolean {
+  // A glove pair occupies the 2H equipment slot but still mounts one independent part on each hand.
+  if (def.glovePair) return false;
   return authority === "metadata"
     ? def.tags.grip === "2H" || def.twoHanded === true
     : def.twoHanded === true;
