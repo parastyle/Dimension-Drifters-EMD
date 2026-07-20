@@ -70,6 +70,8 @@ export interface GearDef {
   readonly effectText: string;
   readonly effectAvailability?: "active" | "partial" | "inert";
   readonly artKey: string;
+  /** Art-pipeline-only opt-in for the relaxed flowing-garment torso validation profile. */
+  readonly ornate?: true;
   /** Head-specific semantic sockets; absent means the canonical boilerplate face receivers. */
   readonly faceReceivers?: GearFaceReceivers;
   readonly legacySetId?: string;
@@ -419,6 +421,7 @@ export const GEAR_CATALOG = {
     ],
     effectText: "DEX to CON, then INT to CON, then LUK to STR",
     artKey: "ashen-crusader-shirt",
+    ornate: true,
     legacySetId: "ashen-crusader",
     originPool: "Ashlands",
   },
@@ -944,6 +947,7 @@ export const GEAR_CATALOG = {
     ],
     effectText: "STR to INT, then CON to INT",
     artKey: "nine-veils-shirt",
+    ornate: true,
     legacySetId: "nine-veils",
     originPool: "Frostfell",
   },
@@ -1209,6 +1213,7 @@ export const GEAR_CATALOG = {
     ],
     effectText: "INT to DEX, then LUK to DEX",
     artKey: "thornwatch-shirt",
+    ornate: true,
     legacySetId: "thornwatch",
     originPool: "Verdant Ruins",
   },
@@ -1341,6 +1346,7 @@ export const GEAR_CATALOG = {
     ],
     effectText: "STR to DEX, then INT to DEX",
     artKey: "neon-mirage-shirt",
+    ornate: true,
     legacySetId: "neon-mirage",
     originPool: "Neon-Cyber",
   },
@@ -1736,6 +1742,7 @@ export const GEAR_CATALOG = {
     ],
     effectText: "STR to INT, then LUK to INT",
     artKey: "pressurized-shirt",
+    ornate: true,
     legacySetId: "pressurized",
     originPool: "Neon-Cyber",
   },

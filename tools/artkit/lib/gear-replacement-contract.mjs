@@ -55,6 +55,13 @@ export const VALIDATION_THRESHOLDS = Object.freeze({
   faceSocketRadiusPx: 4,
 });
 
+// OWNER RULING 2026-07-20: only catalog items declared `ornate: true` may use this
+// flowing-garment torso profile; every unflagged torso remains on the strict thresholds above.
+export const ORNATE_TORSO_VALIDATION_THRESHOLDS = Object.freeze({
+  torsoCoreCoverage: 0.75,
+  torsoSilhouetteTolerancePx: 200,
+});
+
 /** Stable IDs whose original hat art is a complete head and must be rendered into the head frame. */
 export const FULL_HEAD_REPLACEMENT_IDS = Object.freeze([
   "ash-walker-hat",
@@ -228,17 +235,62 @@ export function erodeMask(mask, width, height, radius = VALIDATION_THRESHOLDS.ba
 
 export function dilateMask(mask, width, height, radius = VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx) {
   assertDimensions(mask, width, height, "mask dilation input");
+  if (!Number.isInteger(radius) || radius < 0) throw new Error(`mask dilation radius must be a non-negative integer, got ${radius}`);
   const output = new Uint8Array(mask.length);
-  const offsets = circularOffsets(radius);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (!mask[y * width + x]) continue;
-      for (const [dx, dy] of offsets) {
-        const targetX = x + dx;
-        const targetY = y + dy;
-        if (targetX >= 0 && targetY >= 0 && targetX < width && targetY < height) output[targetY * width + targetX] = 1;
+  if (radius === 0) {
+    for (let index = 0; index < mask.length; index++) output[index] = mask[index] ? 1 : 0;
+    return output;
+  }
+
+  // Exact squared-Euclidean distance transform. This produces the same circular dilation as
+  // enumerating every radius offset, but remains linear in canvas size for the 132px/200px gates.
+  const infiniteDistance = width * width + height * height + 1;
+  const verticalDistances = new Float64Array(mask.length);
+  const maxDimension = Math.max(width, height);
+  const input = new Float64Array(maxDimension);
+  const transformed = new Float64Array(maxDimension);
+  const locations = new Int32Array(maxDimension);
+  const boundaries = new Float64Array(maxDimension + 1);
+  const transformLine = (length) => {
+    let envelopeIndex = 0;
+    locations[0] = 0;
+    boundaries[0] = Number.NEGATIVE_INFINITY;
+    boundaries[1] = Number.POSITIVE_INFINITY;
+    for (let position = 1; position < length; position++) {
+      let boundary;
+      while (true) {
+        const location = locations[envelopeIndex];
+        boundary = (
+          (input[position] + position * position)
+          - (input[location] + location * location)
+        ) / (2 * position - 2 * location);
+        if (boundary > boundaries[envelopeIndex]) break;
+        envelopeIndex--;
       }
+      envelopeIndex++;
+      locations[envelopeIndex] = position;
+      boundaries[envelopeIndex] = boundary;
+      boundaries[envelopeIndex + 1] = Number.POSITIVE_INFINITY;
     }
+    envelopeIndex = 0;
+    for (let position = 0; position < length; position++) {
+      while (boundaries[envelopeIndex + 1] < position) envelopeIndex++;
+      const delta = position - locations[envelopeIndex];
+      transformed[position] = delta * delta + input[locations[envelopeIndex]];
+    }
+  };
+
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) input[y] = mask[y * width + x] ? 0 : infiniteDistance;
+    transformLine(height);
+    for (let y = 0; y < height; y++) verticalDistances[y * width + x] = transformed[y];
+  }
+  const squaredRadius = radius * radius;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) input[x] = verticalDistances[row + x];
+    transformLine(width);
+    for (let x = 0; x < width; x++) output[row + x] = transformed[x] <= squaredRadius ? 1 : 0;
   }
   return output;
 }
@@ -405,10 +457,15 @@ export function validateTorsoReplacement({
   frame,
   coreMask,
   allowedMask,
+  ornateAllowedMask = allowedMask,
+  ornate = false,
   pivot,
   partBox,
   generatedOutlineRadius = 8,
 }) {
+  const profile = ornate ? ORNATE_TORSO_VALIDATION_THRESHOLDS : VALIDATION_THRESHOLDS;
+  const selectedAllowedMask = ornate ? ornateAllowedMask : allowedMask;
+  assertDimensions(selectedAllowedMask, width, height, "torso silhouette mask");
   gate(generatedOutlineRadius === 8, "Outline", `replace-torso requires generated radius 8, got ${generatedOutlineRadius}`);
   const report = validateFullReplacement({
     alpha,
@@ -418,11 +475,11 @@ export function validateTorsoReplacement({
     coreMask,
     pivot,
     section: "Torso replacement",
-    minimumCoreCoverage: VALIDATION_THRESHOLDS.torsoCoreCoverage,
+    minimumCoreCoverage: profile.torsoCoreCoverage,
   });
   let escapedPixels = 0;
   for (let index = 0; index < alpha.length; index++) {
-    if (alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha && !allowedMask[index]) escapedPixels++;
+    if (alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha && !selectedAllowedMask[index]) escapedPixels++;
   }
   gate(escapedPixels === 0, "Torso silhouette", `${escapedPixels}px escape the base torso tolerance envelope`);
   gate(
@@ -430,7 +487,14 @@ export function validateTorsoReplacement({
     "Torso part-box",
     `replacement bounds ${report.bounds.width}x${report.bounds.height} exceed ${partBox.width}x${partBox.height}`,
   );
-  return { ...report, escapedPixels, silhouetteTolerancePx: VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx, partBox };
+  return {
+    ...report,
+    escapedPixels,
+    validationProfile: ornate ? "ornate" : "strict",
+    minimumCoreCoverage: profile.torsoCoreCoverage,
+    silhouetteTolerancePx: profile.torsoSilhouetteTolerancePx,
+    partBox,
+  };
 }
 
 export function validatePairedReplacements({ alpha, width, height, parts, splitX }) {

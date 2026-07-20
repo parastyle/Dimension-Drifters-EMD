@@ -19,6 +19,7 @@ import {
   FACE_ENVELOPES,
   FULL_HEAD_REPLACEMENT_IDS,
   MIGRATION_EXPECTED,
+  ORNATE_TORSO_VALIDATION_THRESHOLDS,
   PART_FRAMES,
   REPLACEMENT_CONTRACT_ID,
   VALIDATION_THRESHOLDS,
@@ -993,8 +994,12 @@ function replacementAuthoringBlock(job, bundle) {
   };
   const replacementLayoutImage = bundle.entries.findIndex((entry) => entry.description.includes("APPROVED PASSING REPLACE-FOOT")) + 1;
   switch (job.renderRole) {
-    case "replace-torso":
-      return `ONE complete dressed torso card in ${job.item.setName} identity ON Image 1, the attached base torso silhouette — the full garment from collar to hem covering the whole card; the lower region wears the set's legwear look; profile view, one visible side; house style; chroma green.`;
+    case "replace-torso": {
+      const ornateLaw = usesOrnateTorsoProfile(job)
+        ? ` ORNATE PROFILE: flowing silhouette details may extend up to ${ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx}px beyond the base-torso alpha, and opaque garment stock must cover at least ${Math.round(ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoCoreCoverage * 100)}% of the base core. Keep the garment inside the fixed torso frame.`
+        : "";
+      return `ONE complete dressed torso card in ${job.item.setName} identity ON Image 1, the attached base torso silhouette — the full garment from collar to hem covering the whole card; the lower region wears the set's legwear look; profile view, one visible side; house style; chroma green.${ornateLaw}`;
+    }
     case "replace-hand":
       return `GLOVES / replace-hand: Render TWO complete final dressed blob replacements ON the exact canonical hand frames: hand-l ${JSON.stringify(PART_FRAMES["hand-l"].crop)} at (384,522), hand-r ${JSON.stringify(PART_FRAMES["hand-r"].crop)} at (640,522). No bare hand pixels, fingers, thumb, or palm. Each covers >=98% of its base core, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
     case "replace-foot":
@@ -1397,6 +1402,19 @@ function verifyHatStackBand(data, bounds) {
 
 let replacementContextPromise = null;
 
+function usesOrnateTorsoProfile(job) {
+  return job?.renderRole === "replace-torso" && job.item.ornate === true;
+}
+
+function renderContextRevision(job, context) {
+  if (!usesOrnateTorsoProfile(job)) return context.revision;
+  return hashJson({
+    replacementContractRevision: context.revision,
+    itemFlags: { ornate: true },
+    torsoValidationThresholds: ORNATE_TORSO_VALIDATION_THRESHOLDS,
+  });
+}
+
 async function loadReplacementContext() {
   if (replacementContextPromise) return replacementContextPromise;
   replacementContextPromise = (async () => {
@@ -1428,6 +1446,12 @@ async function loadReplacementContext() {
       CANVAS.height,
       VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx,
     );
+    const ornateTorsoAllowed = dilateMask(
+      baseSilhouettes.body,
+      CANVAS.width,
+      CANVAS.height,
+      ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx,
+    );
     const canonicalMasks = {
       source: "installed boilerplate complete-part alpha",
       torsoAllowed: {
@@ -1451,6 +1475,7 @@ async function loadReplacementContext() {
     });
     return {
       torsoAllowed,
+      ornateTorsoAllowed,
       baseRgba,
       baseAlpha,
       baseSilhouettes,
@@ -1467,7 +1492,19 @@ async function loadReplacementContext() {
         baseSources,
         compositionOrders: COMPOSITION_ORDERS,
         thresholds: VALIDATION_THRESHOLDS,
-        torsoLaw: "one complete replace-torso object; >=90% base-core coverage; one island; base silhouette + 12px collar/hem tolerance; no zones",
+        torsoValidationProfiles: {
+          strict: {
+            torsoCoreCoverage: VALIDATION_THRESHOLDS.torsoCoreCoverage,
+            torsoSilhouetteTolerancePx: VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx,
+            allowedMask: describeMask(torsoAllowed),
+          },
+          ornate: {
+            ...ORNATE_TORSO_VALIDATION_THRESHOLDS,
+            allowedMask: describeMask(ornateTorsoAllowed),
+            optInCatalogFlag: "ornate: true",
+          },
+        },
+        torsoLaw: "one complete replace-torso object; strict >=90% core/+132px envelope unless catalog ornate:true opts into >=75% core/+200px; one island; no zones",
       },
     };
   })();
@@ -1508,6 +1545,8 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
       frame: PART_FRAMES.body.crop,
       coreMask: context.cores.body,
       allowedMask: context.torsoAllowed,
+      ornateAllowedMask: context.ornateTorsoAllowed,
+      ornate: usesOrnateTorsoProfile(job),
       pivot: PART_FRAMES.body.pivotSource,
       partBox: job.spec.maxPartBox,
       generatedOutlineRadius,
@@ -1572,7 +1611,7 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
   return {
     verified: true,
     contractId: REPLACEMENT_CONTRACT_ID,
-    contractRevision: context.revision,
+    contractRevision: renderContextRevision(job, context),
     renderRole: job.renderRole,
     generatedOutlineRadius,
     gates: gateReport,
@@ -1726,12 +1765,46 @@ function currentRenderInstall(job, context) {
     const status = JSON.parse(readFileSync(statusPath, "utf8"));
     return status.schemaVersion === 2
       && status.replacementContract?.id === REPLACEMENT_CONTRACT_ID
-      && status.replacementContract?.revision === context.revision
+      && status.replacementContract?.revision === renderContextRevision(job, context)
       && status.renderRole === job.renderRole
       && status.installedFile === repoPath(dst)
       && status.installedSha256 === sha256(dst)
       && status.validation?.verified === true;
   } catch {
+    return false;
+  }
+}
+
+async function tryPromoteInstalledStrictJob(job, context) {
+  if (usesOrnateTorsoProfile(job)) return false;
+  const dst = installedRenderJobPath(job);
+  const statusPath = renderJobStatusPath(job);
+  if (!existsSync(dst) || !existsSync(statusPath)) return false;
+  try {
+    const status = JSON.parse(readFileSync(statusPath, "utf8"));
+    if (status.schemaVersion !== 2
+      || status.id !== job.item.id
+      || status.renderRole !== job.renderRole
+      || status.installedFile !== repoPath(dst)
+      || status.installedSha256 !== sha256(dst)
+      || status.validation?.verified !== true) return false;
+    const inspected = await inspectInstalled(
+      dst,
+      job.spec.sourcePivots,
+      componentRegionsForSpec(job.spec),
+      false,
+      job,
+    );
+    atomicJson(statusPath, {
+      ...status,
+      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: renderContextRevision(job, context) },
+      validation: inspected.replacementValidation,
+      contractPromotedAt: new Date().toISOString(),
+    });
+    console.log(`CURRENT PROMOTED ${job.key} role=${job.renderRole} without rerender`);
+    return true;
+  } catch (error) {
+    console.log(`CURRENT PROMOTION FAIL ${job.key}: ${error.message}`);
     return false;
   }
 }
@@ -1791,7 +1864,7 @@ async function tryReusePairRender(job, context) {
       setId: job.item.setId,
       sourceCharacterId: job.item.sourceCharacterId,
       renderRole: job.renderRole,
-      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: renderContextRevision(job, context) },
       installedAt: new Date().toISOString(),
       installedFile: repoPath(dst),
       installedSha256: inspected.image.sha256,
@@ -1843,7 +1916,7 @@ async function tryInstallExistingMaster(job, context) {
       setId: job.item.setId,
       sourceCharacterId: job.item.sourceCharacterId,
       renderRole: job.renderRole,
-      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: renderContextRevision(job, context) },
       installedAt: new Date().toISOString(),
       installedFile: repoPath(dst),
       installedSha256: installed.installedSha256,
@@ -2110,8 +2183,11 @@ async function runSlot(options, slotSpec) {
       }
       continue;
     }
-    if (!options.validateOnly && !current && !options.force) current = await tryInstallExistingMaster(job, context);
-    if (!options.validateOnly && !current && !options.force) current = await tryReusePairRender(job, context);
+    if (!options.validateOnly && !current && !options.force) current = await tryPromoteInstalledStrictJob(job, context);
+    // A newly declared ornate item must see its changed prompt as well as its relaxed gates, so a
+    // stale ornate install deliberately bypasses old raw-master and legacy-candidate reuse.
+    if (!options.validateOnly && !current && !options.force && !usesOrnateTorsoProfile(job)) current = await tryInstallExistingMaster(job, context);
+    if (!options.validateOnly && !current && !options.force && !usesOrnateTorsoProfile(job)) current = await tryReusePairRender(job, context);
     if (!options.validateOnly && options.reuseOnly && !current) {
       console.log(`REUSE-ONLY PENDING ${job.key}`);
       continue;
@@ -2168,7 +2244,7 @@ async function runSlot(options, slotSpec) {
             setId: job.item.setId,
             sourceCharacterId: job.item.sourceCharacterId,
             renderRole: job.renderRole,
-            replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+            replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: renderContextRevision(job, context) },
             installedAt: new Date().toISOString(),
             installedFile: repoPath(dst),
             installedSha256: installed.installedSha256,

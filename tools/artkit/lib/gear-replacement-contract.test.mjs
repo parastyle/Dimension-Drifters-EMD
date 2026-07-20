@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import {
   COMPOSITION_ORDERS,
   MIGRATION_EXPECTED,
+  ORNATE_TORSO_VALIDATION_THRESHOLDS,
   PART_FRAMES,
   VALIDATION_THRESHOLDS,
   assertMigrationPlan,
@@ -15,6 +17,7 @@ import {
   validatePairedReplacements,
   validateTorsoReplacement,
 } from "./gear-replacement-contract.mjs";
+import { readGearCatalog } from "./gear-catalog.mjs";
 
 function alphaForMask(mask) {
   const alpha = new Uint8Array(mask.length);
@@ -72,6 +75,58 @@ test("replace-torso is one full object inside the base silhouette tolerance", ()
     () => validateTorsoReplacement({ ...fixture, generatedOutlineRadius: 0 }),
     /replace-torso requires generated radius 8/,
   );
+});
+
+test("ornate replace-torso accepts a 150px overhang at 80% core coverage while strict rejects it", () => {
+  const width = 600;
+  const height = 500;
+  const base = new Uint8Array(width * height);
+  for (let y = 200; y <= 299; y++) for (let x = 250; x <= 349; x++) base[y * width + x] = 1;
+  const alpha = new Uint8Array(width * height);
+  for (let y = 200; y <= 279; y++) for (let x = 250; x <= 349; x++) alpha[y * width + x] = 255;
+  // A connected flowing panel reaches 150px left of the base alpha: outside strict +132, inside ornate +200.
+  for (let y = 240; y <= 259; y++) for (let x = 100; x <= 249; x++) alpha[y * width + x] = 255;
+  const strictAllowed = dilateMask(base, width, height, VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx);
+  const ornateAllowed = dilateMask(base, width, height, ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx);
+  const fixture = {
+    alpha,
+    width,
+    height,
+    frame: [40, 100, 400, 300],
+    coreMask: base,
+    allowedMask: strictAllowed,
+    ornateAllowedMask: ornateAllowed,
+    pivot: { x: 300, y: 240 },
+    partBox: { width: 300, height: 150 },
+    generatedOutlineRadius: 8,
+  };
+
+  const ornate = validateTorsoReplacement({ ...fixture, ornate: true });
+  assert.equal(ornate.validationProfile, "ornate");
+  assert.equal(ornate.coreCoverage, 0.8);
+  assert.equal(ornate.minimumCoreCoverage, ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoCoreCoverage);
+  assert.equal(ornate.silhouetteTolerancePx, ORNATE_TORSO_VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx);
+  assert.equal(ornate.escapedPixels, 0);
+
+  let strictEscapedPixels = 0;
+  for (let index = 0; index < alpha.length; index++) if (alpha[index] > 8 && !strictAllowed[index]) strictEscapedPixels++;
+  assert.ok(strictEscapedPixels > 0);
+  assert.throws(
+    () => validateTorsoReplacement(fixture),
+    /80\.000% is below 90%/,
+  );
+});
+
+test("catalog declares exactly the five owner-approved ornate torsos", () => {
+  const catalogPath = fileURLToPath(new URL("../../../packages/shared/src/gear.ts", import.meta.url));
+  const ornateIds = readGearCatalog(catalogPath).filter((item) => item.ornate).map((item) => item.id).sort();
+  assert.deepEqual(ornateIds, [
+    "ashen-crusader-shirt",
+    "neon-mirage-shirt",
+    "nine-veils-shirt",
+    "pressurized-shirt",
+    "thornwatch-shirt",
+  ]);
 });
 
 function replacementFixture() {

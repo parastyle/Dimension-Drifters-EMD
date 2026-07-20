@@ -42,6 +42,15 @@ function assignedProperty(object, name, { optional = false } = {}) {
   return unwrapExpression(property.initializer);
 }
 
+function trueFlagProperty(object, name) {
+  const expression = assignedProperty(object, name, { optional: true });
+  if (expression === undefined) return undefined;
+  if (expression.kind !== ts.SyntaxKind.TrueKeyword) {
+    throw new Error(`GEAR_CATALOG ${name} must be the literal true when declared`);
+  }
+  return true;
+}
+
 function numericLiteral(expression, label) {
   if (ts.isNumericLiteral(expression)) return Number(expression.text);
   if (
@@ -111,6 +120,10 @@ export function readGearCatalog(catalogPath) {
     }
     const id = stringProperty(value, "id");
     if (id !== key) throw new Error(`GEAR_CATALOG key/id mismatch: ${key} != ${id}`);
+    const ornate = trueFlagProperty(value, "ornate");
+    if (ornate && stringProperty(value, "slot") !== "torso") {
+      throw new Error(`GEAR_CATALOG ornate is only valid for torso items: ${id}`);
+    }
     return Object.freeze({
       id,
       name: stringProperty(value, "name"),
@@ -120,6 +133,7 @@ export function readGearCatalog(catalogPath) {
       setId: stringProperty(value, "legacySetId", { optional: true }),
       originPool: stringProperty(value, "originPool", { optional: true }),
       faceReceivers: faceReceiversProperty(value),
+      ...(ornate ? { ornate } : {}),
     });
   });
 
