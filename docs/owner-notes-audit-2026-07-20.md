@@ -83,3 +83,9 @@ weapon waves.
 - **Q3 (Hex-Wand):** confirmed — scale to caster-family median.
 
 Processed watermark: all notes ≤ 2026-07-20T18:10:40Z are in this ledger.
+
+## STATUS: ALL 42 NOTES CLOSED (2026-07-20)
+
+Game wave: 45e7bb2 (G2 locomotion), d6175ea (G1/G3/G4/G5). Weapon waves: 52a5ca1
+(W-SIZE/POSE/ZONE, 18 weapons), 8dd2fc9 (W-CONVERT/VFX, 17 weapons). Suite 1406 green.
+Owner-review flag: Tesla-Rod arrival burst was a default, not an explicit ruling.
