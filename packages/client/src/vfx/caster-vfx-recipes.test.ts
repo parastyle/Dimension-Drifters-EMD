@@ -76,7 +76,7 @@ describe("caster VFX recipe resolver", () => {
   });
 
   it("resolves every beam weapon id to a distinct authored recipe signature", () => {
-    expect(BEAMS).toHaveLength(22);
+    expect(BEAMS).toHaveLength(21);
     expect(Object.keys(BEAM_VFX_RECIPES).sort()).toEqual(BEAMS.map((weapon) => weapon.id).sort());
     const signatures = new Set<string>();
     const visualSignatures = new Set<string>();

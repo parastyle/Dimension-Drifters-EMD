@@ -1,4 +1,9 @@
-import { thrownProjectileSpriteId, thrownProjectileWeaponId, WEAPONS } from "@dd/shared";
+import {
+  thrownProjectileRotationPolicy,
+  thrownProjectileSpriteId,
+  thrownProjectileWeaponId,
+  WEAPONS,
+} from "@dd/shared";
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
@@ -84,7 +89,7 @@ export function makeSpit(
 /** G4 thrown truth — resolve the launched weapon through the exact held-art seam, then spin that sprite. */
 export function makeThrownWeapon(
   scene: Phaser.Scene,
-  pr: { x: number; y: number; kind: string },
+  pr: { x: number; y: number; vx: number; vy: number; kind: string },
 ): Phaser.GameObjects.Container {
   const weaponId = thrownProjectileWeaponId(pr.kind);
   const weapon = weaponId ? WEAPONS[weaponId] : undefined;
@@ -98,6 +103,8 @@ export function makeThrownWeapon(
       : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
   const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
   const payload = scene.add.container(0, 0, [glow, blade]);
+  if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")
+    payload.setRotation(Math.atan2(pr.vy, pr.vx));
   return scene.add
     .container(pr.x, pr.y, [payload])
     .setDepth(99000)

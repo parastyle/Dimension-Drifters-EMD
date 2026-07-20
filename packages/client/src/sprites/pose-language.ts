@@ -1724,6 +1724,11 @@ export function sampleWeaponPerformance(
       handX = 0.1;
       handY = -0.05;
       break;
+    case "drag-at-feet":
+      angle = input.aimLocal + Math.PI;
+      handX = -Math.cos(input.aimLocal) * 0.2;
+      handY = 0.3;
+      break;
     case "aim-forward":
       angle = input.aimLocal;
       handX = Math.cos(input.aimLocal) * 0.15;
@@ -1783,12 +1788,35 @@ export function sampleWeaponPerformance(
     out.backHandX = cosine * forward + sine * lateral;
     out.backHandY = sine * forward - cosine * lateral - 0.04;
     out.backHandBlend = 1;
-    angle = wind ? mix(input.aimLocal - 0.15, input.aimLocal + Math.PI * 0.72, e) : input.aimLocal;
+    const drawTurns = (spec.preThrowRevolutions ?? 0) * Math.PI * 2;
+    angle = wind
+      ? mix(input.aimLocal - 0.15, input.aimLocal + Math.PI * 0.72 + drawTurns, e)
+      : input.aimLocal;
     out.backWeaponAngle = wind ? angle - 0.22 : input.aimLocal - 0.12;
   } else if (spec.action === "recoil" && input.phase !== "idle") {
     const kick = input.phase === "active" ? Math.sin(Math.PI * phaseT) : 1 - smoothstep01(phaseT);
     out.offsetX -= Math.cos(input.aimLocal) * 0.065 * kick;
     out.offsetY -= Math.sin(input.aimLocal) * 0.065 * kick;
+  } else if (spec.action === "spin") {
+    if (input.fireHeld && !input.reducedMotion) angle += input.timeS * Math.PI * 4.4;
+  } else if (spec.action === "lunge-punch" && input.phase !== "idle") {
+    const eased = smoothstep01(phaseT);
+    const forward =
+      input.phase === "anticipation"
+        ? mix(0.12, -0.34, eased)
+        : input.phase === "active"
+          ? mix(-0.34, 0.48, eased)
+          : mix(0.48, 0.12, eased);
+    const lateral = input.phase === "anticipation" ? mix(0.08, 0.15, eased) : 0.06;
+    const cosine = Math.cos(input.aimLocal);
+    const sine = Math.sin(input.aimLocal);
+    handX = cosine * forward - sine * lateral;
+    handY = sine * forward + cosine * lateral - 0.04;
+    out.backHandX = cosine * forward + sine * lateral;
+    out.backHandY = sine * forward - cosine * lateral - 0.04;
+    out.backHandBlend = 1;
+    angle = input.aimLocal;
+    out.backWeaponAngle = input.aimLocal;
   } else if (spec.action === "shake") {
     shakeWeight = spec.continuous ? (input.fireHeld ? 1 : 0) : input.phase === "idle" ? 0 : 1;
   }

@@ -665,6 +665,16 @@ interface PendingScatterVolley {
   kind: string;
 }
 
+/** One accepted authored lunge per player. A Map hard-caps this transient at MAX_PLAYERS. */
+interface PendingWeaponLunge {
+  t: number;
+  playerId: string;
+  weaponId: string;
+  aimX: number;
+  aimY: number;
+  distancePx: number;
+}
+
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
 interface DriveRuntime {
   valueF: number;
@@ -1128,6 +1138,9 @@ export class GameRoom extends Room<ArenaState> {
       firstStep: boolean;
       /** Landing-trigger ground zone; skips airborne contact and blooms when travel truth expires. */
       landingZoneDamage?: number;
+      /** Enemy-to-enemy redirects left for an authored thrown ricochet. */
+      ricochetHops?: number;
+      ricochetRange?: number;
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -1205,6 +1218,7 @@ export class GameRoom extends Room<ArenaState> {
       toughDamageMultiplier: number;
       weaponId: string;
       crit: number;
+      hitStatus?: WeaponDef["hitStatus"];
       elapsed: number;
       hit: Set<string>;
     }
@@ -1223,6 +1237,8 @@ export class GameRoom extends Room<ArenaState> {
   }[] = [];
   /** Accepted scatter descriptors waiting for an authored impact epoch (Cinderchoke downswing). */
   private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
+  /** Accepted punch lunges waiting for active start; final displacement is validated by server navigation. */
+  private readonly pendingWeaponLunges = new Map<string, PendingWeaponLunge>();
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
@@ -2294,6 +2310,7 @@ export class GameRoom extends Room<ArenaState> {
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pendingScatterVolleys.length = 0;
+    this.pendingWeaponLunges.clear();
     this.pickupGrace.clear();
     if (this.earnedPickups.size > 0) {
       this.earnedPickups.clear();
@@ -5310,7 +5327,11 @@ export class GameRoom extends Room<ArenaState> {
     row.sourcePlayerId = sourcePlayerId;
     row.weaponId = sourceWeaponId;
     row.delivery = delivery;
-    row.element = WEAPONS[sourceWeaponId]?.tags.element ?? "physical";
+    const sourceWeapon = WEAPONS[sourceWeaponId];
+    row.element =
+      delivery === CombatDelivery.Aura && sourceWeapon?.performance?.aura?.damageType
+        ? sourceWeapon.performance.aura.damageType
+        : (sourceWeapon?.tags.element ?? "physical");
     row.dirX = len > 1e-6 ? dx / len : 0;
     row.dirY = len > 1e-6 ? dy / len : 0;
     row.damage = Math.max(0, damage);
@@ -6158,6 +6179,7 @@ export class GameRoom extends Room<ArenaState> {
     }
 
     // 4.7 §ULT immutable-epoch action machines settle before enemy targeting reads player positions.
+    this.stepPendingWeaponLunges(dt);
     this.stepUltimates(dt);
     if (this.state.outcome !== "active") {
       this.clearCombatEntities();
@@ -7527,9 +7549,22 @@ export class GameRoom extends Room<ArenaState> {
       toughDamageMultiplier: katanaEffect?.toughDamageMultiplier ?? 1,
       weaponId: weapon.id,
       crit: attackCrit,
+      hitStatus: weapon.hitStatus,
       elapsed: 0,
       hit: new Set<string>(),
     });
+
+    const authoredLunge = weapon.performance?.lunge;
+    if (authoredLunge && hand === 0) {
+      this.pendingWeaponLunges.set(player.id, {
+        t: swing.activeStartSeconds,
+        playerId: player.id,
+        weaponId: weapon.id,
+        aimX: Math.cos(aim0),
+        aimY: Math.sin(aim0),
+        distancePx: authoredLunge.distancePx,
+      });
+    }
 
     if (katanaEffect?.invulnerabilitySeconds)
       c.invuln = Math.max(c.invuln, katanaEffect.invulnerabilitySeconds);
@@ -7859,6 +7894,34 @@ export class GameRoom extends Room<ArenaState> {
       player.attackHeld = false;
     }
     c.auraInputWasHeld = held;
+  }
+
+  /** Resolve an accepted lunge at active start. Cursor intent was normalized and captured at acceptance;
+   * the final endpoint passes through the same bounds, POI, pit, gate, and deck validator as other moves. */
+  private stepPendingWeaponLunges(dt: number): void {
+    for (const [playerId, lunge] of this.pendingWeaponLunges) {
+      lunge.t -= dt;
+      if (lunge.t > 0) continue;
+      this.pendingWeaponLunges.delete(playerId);
+      const player = this.state.players.get(playerId);
+      const combat = this.combat.get(playerId);
+      if (!player?.alive || !combat || player.weapon !== lunge.weaponId) continue;
+      const destination = this.navValidDest(
+        player,
+        combat,
+        player.x + lunge.aimX * lunge.distancePx,
+        player.y + lunge.aimY * lunge.distancePx,
+        lunge.distancePx,
+      );
+      const dx = destination.x - player.x;
+      const dy = destination.y - player.y;
+      // A pit/obstacle correction may slide sideways, but it may never turn the authored lunge backward.
+      if (dx * lunge.aimX + dy * lunge.aimY <= 0) continue;
+      player.x = destination.x;
+      player.y = destination.y;
+      combat.lastGroundX = destination.x;
+      combat.lastGroundY = destination.y;
+    }
   }
 
   private zoneTarget(player: PlayerState, c: CombatState, placementRange: number): Vec2 {
@@ -8693,6 +8756,7 @@ export class GameRoom extends Room<ArenaState> {
             player.x,
             player.y,
           );
+          this.applyEnemyHitStatus(eid, sw.hitStatus);
         }
         const runtime = this.bossController?.wormRuntime;
         if (runtime) {
@@ -8782,6 +8846,7 @@ export class GameRoom extends Room<ArenaState> {
               player.x,
               player.y,
             );
+            this.applyEnemyHitStatus(eid, sw.hitStatus);
           }
         }
         if (runtime) {
@@ -10335,6 +10400,7 @@ export class GameRoom extends Room<ArenaState> {
     delivery = 0,
     firstCollisionFrom?: Vec2,
     landingZoneDamage?: number,
+    targetRicochet?: { hops: number; range: number },
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
@@ -10379,6 +10445,8 @@ export class GameRoom extends Room<ArenaState> {
       firstCollisionY: firstCollisionFrom?.y,
       firstStep: true,
       landingZoneDamage,
+      ricochetHops: targetRicochet?.hops,
+      ricochetRange: targetRicochet?.range,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -10629,12 +10697,54 @@ export class GameRoom extends Room<ArenaState> {
         ? weapon.groundZone.damagePerSecond *
             this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
         : undefined,
+      t.ricochetHops
+        ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
+        : undefined,
     );
   }
 
   /** §14 scatter shot — fling `count` REAL magma projectiles in a cone toward aim. Each is a WYSIWYG
    *  damage source: an INT-scaled direct hit plus, on death, an INT-scaled explosion (both baked here
    *  from the player's attributes at swing time). Cone/speed/range/blast radius are FIXED (§14). */
+  /** Redirect one spent thrown impact toward the nearest fresh enemy. Selection is server-owned and uses
+   * the same greedy nearest-target primitive as chain lightning. */
+  private redirectThrownRicochet(
+    pr: ProjectileState,
+    meta: {
+      ttl: number;
+      hit: Set<string>;
+      pierce: number;
+      pierceMax?: number;
+      ricochetHops?: number;
+      ricochetRange?: number;
+    },
+  ): boolean {
+    if ((meta.ricochetHops ?? 0) <= 0) return false;
+    const candidates: ChainCandidate[] = [];
+    this.state.enemies.forEach((enemy, id) => {
+      if (enemy.hp > 0 && !(id === this.bossId && this.bossController?.wormRuntime))
+        candidates.push({ id, x: enemy.x, y: enemy.y });
+    });
+    const target = selectChainTargets(
+      pr,
+      candidates,
+      1,
+      meta.ricochetRange ?? 260,
+      meta.hit,
+    )[0];
+    if (!target) return false;
+    const dx = target.x - pr.x;
+    const dy = target.y - pr.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const speed = Math.hypot(pr.vx, pr.vy);
+    pr.vx = (dx / len) * speed;
+    pr.vy = (dy / len) * speed;
+    meta.ricochetHops = (meta.ricochetHops ?? 0) - 1;
+    meta.pierce = Math.max(1, meta.pierceMax ?? 1);
+    meta.ttl = (meta.ricochetRange ?? 260) / Math.max(1, speed);
+    return true;
+  }
+
   private fireScatter(
     player: PlayerState,
     c: CombatState,
@@ -11308,6 +11418,21 @@ export class GameRoom extends Room<ArenaState> {
       return 1;
     }
     return slow.multiplier;
+  }
+
+  /** One enemy-movement status seam for Frostquill zones and direct-hit freezes. */
+  private applyEnemySlow(enemyId: string, multiplier: number, seconds: number): void {
+    if (!(multiplier < 1) || seconds <= 0) return;
+    const untilTick = (this.state.tick + Math.ceil((seconds * 1000) / TICK_MS)) >>> 0;
+    const current = this.enemyZoneSlow.get(enemyId);
+    this.enemyZoneSlow.set(enemyId, {
+      multiplier: Math.min(current?.multiplier ?? 1, multiplier),
+      untilTick: Math.max(current?.untilTick ?? 0, untilTick),
+    });
+  }
+
+  private applyEnemyHitStatus(enemyId: string, status: WeaponDef["hitStatus"]): void {
+    if (status?.kind === "slow") this.applyEnemySlow(enemyId, status.multiplier, status.seconds);
   }
 
   private stepDuelists(dt: number, bodies: Vec2[]): void {
@@ -12652,6 +12777,7 @@ export class GameRoom extends Room<ArenaState> {
             this.enemyCandidates,
           );
         }
+        let targetRicocheted = false;
         for (const eid of this.enemyCandidates) {
           if (meta.pierce <= 0 || meta.hit.has(eid)) continue;
           const enemy = this.state.enemies.get(eid);
@@ -12685,10 +12811,14 @@ export class GameRoom extends Room<ArenaState> {
               meta.sourceX ?? pr.x,
               meta.sourceY ?? pr.y,
             );
+            if (this.redirectThrownRicochet(pr, meta)) {
+              targetRicocheted = true;
+              break;
+            }
           }
         }
         const runtime = this.bossController?.wormRuntime;
-        if (runtime && meta.pierce > 0) {
+        if (!targetRicocheted && runtime && meta.pierce > 0) {
           this.wormHitSlots.length = 0;
           this.wormSegmentGrid.queryAabb(
             Math.min(projectileFromX, pr.x) - PROJECTILE_RADIUS - 52,
@@ -12991,11 +13121,7 @@ export class GameRoom extends Room<ArenaState> {
               zone.x,
               zone.y,
             );
-          if (meta.slowMultiplier < 1 && meta.slowSeconds > 0)
-            this.enemyZoneSlow.set(enemyId, {
-              multiplier: meta.slowMultiplier,
-              untilTick: (this.state.tick + Math.ceil((meta.slowSeconds * 1000) / TICK_MS)) >>> 0,
-            });
+          this.applyEnemySlow(enemyId, meta.slowMultiplier, meta.slowSeconds);
         }
         for (const enemyId of kills) this.state.enemies.delete(enemyId);
       }

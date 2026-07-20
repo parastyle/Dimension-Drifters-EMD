@@ -257,6 +257,13 @@
         "swingArc": 2.4,
         "gripFrac": 0.12
       },
+      "comboFamily": "chop",
+      "comboVariant": "voltfang-rise",
+      "comboBar": [
+        { "name": "storm draw", "motion": "draw-cut", "direction": 1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.42, "impact": 0.28, "followEnd": 0.6 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "voltage rise", "motion": "rising-ward", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.43, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "thunder fall", "motion": "thunder-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.48, "impact": 0.34, "followEnd": 0.66 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-voltfang-tachi"
     },
     {
@@ -1118,6 +1125,14 @@
       "palettePrimary": "#22252B",
       "paletteAccent": "#FF8A2B",
       "cardartAction": "swung in a slow ground-cleaving arc, the heat-cracked bit flaring and trailing an ember-orange smear",
+      "swingStyle": "chop",
+      "performance": {
+        "hold": "steady",
+        "action": "overhead-downswing"
+      },
+      "effectRecipe": "cinderbrand-fire-slash",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "finishNote": "battle-worn",
       "stats": {
         "damage": 12,
@@ -1265,13 +1280,16 @@
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#FF8A2B",
       "cardartAction": "brought down in one solemn vertical cleave, a warm golden halo-flash blooming along the mirror edge",
+      "effectRecipe": "sanctified-holy-slash",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "finishNote": "pristine",
       "stats": {
         "damage": 13,
         "range": 160,
         "halfArc": 0.9,
         "cooldown": 0.74,
-        "displayLength": 138,
+        "displayLength": 186.3,
         "swingArc": 2.9,
         "gripFrac": 0.1
       },
@@ -1376,20 +1394,17 @@
         "int": 7
       },
       "behavior": {
-        "kind": "scatter",
-        "count": 4,
-        "spread": 0.6,
-        "speed": 320,
-        "range": 190,
-        "damage": 6,
-        "explode": {
-          "radius": 60,
-          "damage": 7
-        },
-        "scalingGrades": {
-          "int": "B"
-        }
+        "kind": "edge"
       },
+      "comboFamily": "chop",
+      "comboVariant": "hollowmoon-eclipse",
+      "comboBar": [
+        { "name": "hollow draw", "motion": "draw-cut", "direction": 1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.39, "impact": 0.25, "followEnd": 0.57 }, "path": { "kind": "sweep", "arcMultiplier": 0.86, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }, "ribbon": { "profile": "open-c", "radialStart": 0.24, "radialEnd": 1, "widthMultiplier": 0.76, "end": "open" } },
+        { "name": "waning return", "motion": "choked-turn", "direction": -1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.42, "impact": 0.28, "followEnd": 0.6 }, "path": { "kind": "fan", "arcMultiplier": -0.96, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }, "ribbon": { "profile": "reverse-hairpin", "radialStart": 0.2, "radialEnd": 1, "widthMultiplier": 0.82, "end": "hooked" } },
+        { "name": "deadlight rise", "motion": "rising-ward", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.45, "impact": 0.31, "followEnd": 0.63 }, "path": { "kind": "sweep", "arcMultiplier": 1.04, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }, "ribbon": { "profile": "rising-plane", "radialStart": 0.18, "radialEnd": 1, "widthMultiplier": 0.86, "end": "open" } },
+        { "name": "eclipse turn", "motion": "petalfall", "direction": -1, "hand": "both", "timing": { "activeStart": 0.18, "activeEnd": 0.48, "impact": 0.34, "followEnd": 0.66 }, "path": { "kind": "fan", "arcMultiplier": -1.12, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }, "ribbon": { "profile": "outer-crescent", "radialStart": 0.16, "radialEnd": 1, "widthMultiplier": 0.92, "end": "torn" } },
+        { "name": "moonless sentence", "motion": "sentence-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.22, "activeEnd": 0.56, "impact": 0.43, "followEnd": 0.76 }, "path": { "kind": "sweep", "arcMultiplier": 1.24, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }, "ribbon": { "profile": "heavy-sickle", "radialStart": 0.12, "radialEnd": 1, "widthMultiplier": 1, "end": "torn" } }
+      ],
       "id": "x2-hollowmoon-reaver"
     },
     {
@@ -1542,6 +1557,12 @@
       "palettePrimary": "#5A6472",
       "paletteAccent": "#33E6FF",
       "cardartAction": "brought down in a slow heavy vertical cleave, a burst of cyan frost-shards splitting off the faceted bit",
+      "swingStyle": "chop",
+      "hitStatus": {
+        "kind": "slow",
+        "multiplier": 0.1,
+        "seconds": 0.8
+      },
       "finishNote": "pristine",
       "stats": {
         "damage": 13,
@@ -1563,6 +1584,13 @@
       "behavior": {
         "kind": "edge"
       },
+      "comboFamily": "chop",
+      "comboVariant": "glacier-down-up",
+      "comboBar": [
+        { "name": "glacier fall", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "icebreak rise", "motion": "rising-chop", "direction": -1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "headtaker fall", "motion": "headsmans-drop", "direction": 1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.38, "impact": 0.27, "followEnd": 0.54 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-glacier-headtaker"
     },
     {
@@ -1922,7 +1950,7 @@
         "halfArc": 0.95,
         "cooldown": 0.64,
         "displayLength": 128,
-        "swingArc": 2.8,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.1
       },
       "scalingGrades": {
@@ -1935,6 +1963,12 @@
       },
       "behavior": {
         "kind": "edge"
+      },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "continuous": true
       },
       "id": "x2-iron-vow-bearded-axe"
     },
@@ -1963,7 +1997,8 @@
         "damage": 12,
         "charges": 3,
         "refillSeconds": 1.8,
-        "pierce": 3
+        "pierce": 3,
+        "rotation": "point-forward"
       },
       "stats": {
         "damage": 12,
@@ -2003,10 +2038,9 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a long-hafted frontier glaive — a wide single-edged curved blade pitted and dust-scoured to a dull olive sheen, a sand-worn leather-bound oak haft, a plain iron ferrule cap. Sweeping, gritty, plains-worn. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: glaive blade TIP to the RIGHT, bound haft/grip on the LEFT.",
       "cardartAction": "swept in a wide grinding horizontal arc, a swirling dust-trail and tan grit spiralling off the curved blade",
       "behavior": {
-        "kind": "quake",
-        "radius": 150,
-        "damage": 7
+        "kind": "edge"
       },
+      "suppressVfx": true,
       "stats": {
         "damage": 10,
         "range": 190,
@@ -2024,6 +2058,14 @@
         "dex": 7,
         "str": 6
       },
+      "comboFamily": "thrust",
+      "comboVariant": "dustdevil-jab-slash",
+      "comboBar": [
+        { "name": "dust jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "devil slash", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.4, "impact": 0.27, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "crosswind jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "leeward slash", "motion": "slash", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.43, "impact": 0.3, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-dustdevil-glaive"
     },
     {
@@ -2209,7 +2251,16 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a three-pronged gigging trident from the bayou frontier — three barbed iron tines stained sickly plasma-lime along their points (integral colour IN the metal, NO drips or haze), a moss-darkened wrapped haft, a bog-rotted ferrule. Crude, venomous, swamp-worn. MEDIUM detail, ~5 colours. Flat orthographic full side-profile, faces RIGHT: three trident PRONGS to the RIGHT, wrapped haft/grip on the LEFT.",
       "cardartAction": "jabbed forward in a quick stab, the three tines flicking a plasma-lime venom-spray off their barbs",
       "behavior": {
-        "kind": "edge"
+        "kind": "chainLightning",
+        "jumps": 3,
+        "range": 190,
+        "damage": 3,
+        "falloff": 0.75,
+        "vfx": {
+          "color": 0.32,
+          "jag": 0.3,
+          "life": 210
+        }
       },
       "stats": {
         "damage": 9,
@@ -2340,6 +2391,9 @@
       "behavior": {
         "kind": "edge"
       },
+      "effectRecipe": "hangman-blood-spatter",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "stats": {
         "damage": 11,
         "range": 200,
@@ -2382,6 +2436,9 @@
         "radius": 170,
         "damage": 8
       },
+      "effectRecipe": "hangman-blood-spatter",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "stats": {
         "damage": 15,
         "range": 240,
@@ -2430,6 +2487,11 @@
           "radius": 54,
           "damage": 6
         }
+      },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing",
+        "carryForwardPx": 18
       },
       "stats": {
         "damage": 10,
@@ -2510,6 +2572,7 @@
       "behavior": {
         "kind": "edge"
       },
+      "suppressVfx": true,
       "stats": {
         "damage": 12,
         "range": 195,
@@ -2527,6 +2590,13 @@
         "str": 8,
         "dex": 6
       },
+      "comboFamily": "chop",
+      "comboVariant": "saintspar-down-swing",
+      "comboBar": [
+        { "name": "chapel chop", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.43, "impact": 0.3, "followEnd": 0.62 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "guard swing", "motion": "long-reap", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.42, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "saintspar chop", "motion": "shoulder-chop", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.47, "impact": 0.33, "followEnd": 0.65 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-saintspar-lochaber"
     },
     {
@@ -2943,6 +3013,10 @@
           "damage": 5
         }
       },
+      "performance": {
+        "hold": "hanging-chain",
+        "action": "default-swing"
+      },
       "stats": {
         "damage": 7,
         "range": 144,
@@ -2960,6 +3034,13 @@
         "str": "C",
         "int": "C"
       },
+      "comboFamily": "chop",
+      "comboVariant": "quicksilver-up-down",
+      "comboBar": [
+        { "name": "censer rise", "motion": "rising-chop", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.11, "activeEnd": 0.37, "impact": 0.25, "followEnd": 0.54 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "thurible fall", "motion": "overhead", "direction": -1, "hand": "lead", "timing": { "activeStart": 0.13, "activeEnd": 0.41, "impact": 0.28, "followEnd": 0.59 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "mercury return", "motion": "rising-chop", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.12, "activeEnd": 0.39, "impact": 0.26, "followEnd": 0.56 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-quicksilver-censer"
     },
     {
@@ -3509,7 +3590,16 @@
       "paletteAccent": "#6E7042",
       "cardartAction": "clubbed in a short brutal arc, a puff of sickly olive rot-spores and bone-dust bursting off the knobbed head",
       "behavior": {
-        "kind": "edge"
+        "kind": "thrown",
+        "speed": 640,
+        "range": 480,
+        "damage": 3,
+        "charges": 3,
+        "refillSeconds": 1.5,
+        "pierce": 1,
+        "rotation": "spin",
+        "ricochetHops": 1,
+        "ricochetRange": 260
       },
       "stats": {
         "damage": 6,
@@ -3978,7 +4068,7 @@
         "halfArc": 1.1,
         "cooldown": 0.82,
         "displayLength": 280,
-        "swingArc": 3.2,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.5
       },
       "scalingGrades": {
@@ -3989,9 +4079,22 @@
         "str": 9,
         "dex": 9
       },
+      "comboFamily": "arc",
+      "comboVariant": "mournveil-fan-spin",
+      "comboBar": [
+        { "name": "mournveil fan", "motion": "spin-release", "direction": 1, "hand": "both", "timing": { "activeStart": 0.08, "activeEnd": 0.64, "impact": 0.36, "followEnd": 0.76 }, "path": { "kind": "fan", "arcMultiplier": 1, "deltaAngle": 6.283185307179586, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "mourning return", "motion": "spin-release", "direction": -1, "hand": "both", "timing": { "activeStart": 0.08, "activeEnd": 0.64, "impact": 0.36, "followEnd": 0.76 }, "path": { "kind": "fan", "arcMultiplier": -1, "deltaAngle": -6.283185307179586, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "veil closes", "motion": "spin-release", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.68, "impact": 0.4, "followEnd": 0.8 }, "path": { "kind": "fan", "arcMultiplier": 1, "deltaAngle": 6.283185307179586, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-mournveil-scythe",
       "behavior": {
         "kind": "edge"
+      },
+      "swingStyle": "spin",
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "continuous": true
       }
     },
     {
@@ -4393,7 +4496,14 @@
         "damage": 12,
         "charges": 3,
         "refillSeconds": 1.8,
-        "pierce": 2
+        "pierce": 2,
+        "rotation": "spin"
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "preThrowRevolutions": 1
       },
       "stats": {
         "damage": 9,
@@ -10060,6 +10170,19 @@
         "damage": 6,
         "falloff": 0.85
       },
+      "performance": {
+        "hold": "steady",
+        "action": "spin",
+        "continuous": true,
+        "suppressSwing": true,
+        "aura": {
+          "radius": 160,
+          "damagePerSecond": 14.3,
+          "resourcePerSecond": 18,
+          "tickRate": 0.2,
+          "color": 3401471
+        }
+      },
       "stats": {
         "damage": 10,
         "range": 160,
@@ -10940,6 +11063,18 @@
           "radius": 60,
           "damage": 4
         }
+      },
+      "performance": {
+        "hold": "aim-forward",
+        "action": "shake",
+        "continuous": true,
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 3.5,
+          "rotationRad": 0.07,
+          "frequencyHz": 12
+        },
+        "emitter": "spout"
       },
       "stats": {
         "damage": 4,
@@ -11934,6 +12069,25 @@
           "damage": 5
         }
       },
+      "performance": {
+        "hold": "overhead",
+        "action": "shake",
+        "continuous": true,
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 3.5,
+          "rotationRad": 0.065,
+          "frequencyHz": 13
+        },
+        "aura": {
+          "radius": 150,
+          "damagePerSecond": 12.1,
+          "resourcePerSecond": 18,
+          "tickRate": 0.2,
+          "color": 10288955,
+          "damageType": "bio"
+        }
+      },
       "id": "x2-sporebound-witchglobe"
     },
     {
@@ -12279,11 +12433,22 @@
         "gripFrac": 0.13
       },
       "behavior": {
-        "kind": "chainLightning",
-        "jumps": 5,
-        "range": 180,
-        "damage": 5,
-        "falloff": 0.8
+        "kind": "scatter",
+        "count": 3,
+        "spread": 0.2,
+        "speed": 300,
+        "range": 360,
+        "damage": 1,
+        "explode": {
+          "radius": 56,
+          "damage": 1.3333333333333333
+        }
+      },
+      "performance": {
+        "hold": "aim-forward",
+        "action": "recoil",
+        "suppressSwing": true,
+        "emitter": "spout"
       },
       "id": "x2-locust-glass-plague-orb"
     },
@@ -12798,6 +12963,7 @@
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#FF8A2B",
       "cardartAction": "both idols thrust forward spitting alternating darts of ember-orange firelight, melted wax flinging off in glowing droplets",
+      "renderAboveHands": true,
       "behavior": {
         "kind": "gun",
         "damage": 6,
@@ -12807,8 +12973,9 @@
         "pierce": 1,
         "magazine": 18,
         "reloadSeconds": 1.4,
-        "bulletKind": "spark",
-        "muzzle": "spark",
+        "bulletKind": "tracer",
+        "projectileVisualScale": 1.35,
+        "muzzle": "rapid",
         "muzzleColor": 16746027,
         "recoil": 0.001,
         "scalingGrades": {
@@ -13043,6 +13210,10 @@
       "palettePrimary": "#E8E4D8",
       "paletteAccent": "#C49A5A",
       "cardartAction": "driven down as an immense blinding column of holy-gold light erupts on a wide circle, white shock-rings rolling off the sun-disc",
+      "performance": {
+        "hold": "drag-at-feet",
+        "action": "default-swing"
+      },
       "behavior": {
         "kind": "quake",
         "radius": 178,
@@ -13132,10 +13303,28 @@
       "paletteAccent": "#B14BFF",
       "cardartAction": "exhaling a steady drilling ribbon of dimming, light-eating arc-violet void from the well-mouth, the rim fraying into dark threads",
       "behavior": {
-        "kind": "beam",
-        "damage": 10,
+        "kind": "gun",
+        "damage": 18,
+        "projectileSpeed": 520,
         "range": 800,
-        "tickRate": 0.1
+        "fireRate": 0.45,
+        "magazine": 6,
+        "reloadSeconds": 1.4,
+        "bulletKind": "grenade",
+        "muzzle": "boom",
+        "muzzleColor": 11619327,
+        "recoil": 0.0035,
+        "projectileVisualScale": 1.7,
+        "arcHeight": 112,
+        "explode": {
+          "radius": 96,
+          "damage": 27
+        }
+      },
+      "performance": {
+        "hold": "shoulder-launcher",
+        "action": "recoil",
+        "suppressSwing": true
       },
       "stats": {
         "damage": 10,
@@ -13194,7 +13383,7 @@
         "range": 460,
         "halfArc": 0.55,
         "cooldown": 0.3,
-        "displayLength": 60,
+        "displayLength": 90,
         "swingArc": 1.3,
         "gripFrac": 0.12
       },
@@ -13676,15 +13865,16 @@
       "behavior": {
         "kind": "scatter",
         "count": 6,
-        "spread": 0.5,
+        "spread": 0.28,
         "speed": 400,
-        "range": 200,
+        "range": 320,
         "damage": 4,
         "explode": {
           "radius": 46,
           "damage": 4
         }
       },
+      "effectEmitter": "tip",
       "scalingGrades": {
         "int": "B"
       },
@@ -14232,6 +14422,18 @@
         "radius": 180,
         "damage": 8
       },
+      "performance": {
+        "hold": "steady",
+        "action": "lunge-punch",
+        "suppressSwing": true,
+        "windupSeconds": 0.3,
+        "lunge": {
+          "distancePx": 120
+        }
+      },
+      "effectRecipe": "stormfist-blue-lunge",
+      "effectEmitter": "body",
+      "effectTiming": "swing-midpoint",
       "scalingGrades": {
         "int": "A",
         "str": "C"

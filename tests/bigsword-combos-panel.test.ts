@@ -24,7 +24,6 @@ const PANEL_ROSTER = {
   ],
   "claymore-breach": ["x2-tombwarden-claymore", "x2-dustreaper-zweihander"],
   "glaive-compass": [
-    "x2-dustdevil-glaive",
     "x2-thunderhead-voulge",
     "x2-wickfire-fauchard",
     "x2-blightfork-glaive",

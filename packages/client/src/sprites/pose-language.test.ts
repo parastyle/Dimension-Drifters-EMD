@@ -401,3 +401,45 @@ describe("weapon performance pose states", () => {
     expect(out.weaponAngle).toBe(Math.PI / 2);
   });
 });
+
+// NW-MELEE/NW-THROWN append-only pose contracts.
+describe("NW melee and thrown pose orders", () => {
+  it("resolves both katana hilt grips as hard two-hand poses", () => {
+    for (const id of ["drift-nodachi-pale-horizon", "x2-voltfang-tachi"]) {
+      const definition = weapon(id);
+      expect(twoHandedPoseFor(definition, "metadata"), id).toBe(true);
+      expect(weaponPoseResolutionFor(definition).hardTwoHanded, id).toBe(true);
+    }
+  });
+
+  it("holds Godsbone at the feet and Quicksilver hanging from its chain at rest", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.aimLocal = 0;
+    input.spec = performance("x2-godsbone-pillar");
+    const godsbone = { ...sampleWeaponPerformance(input, out) };
+    input.spec = performance("x2-quicksilver-censer");
+    const censer = { ...sampleWeaponPerformance(input, out) };
+
+    expect(godsbone).toMatchObject({ active: true, handX: -0.2, handY: 0.3 });
+    expect(godsbone.weaponAngle).toBeCloseTo(Math.PI);
+    expect(censer).toMatchObject({ active: true, handX: 0.1, handY: -0.05 });
+    expect(censer.weaponAngle).toBeCloseTo(Math.PI / 2);
+  });
+
+  it("adds exactly one full draw-phase hand twirl to Coilshot", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    const coilshot = performance("x2-coilshot-meteor");
+    input.phase = "anticipation";
+    input.phaseT = 1;
+    input.aimLocal = 0.2;
+    input.spec = { ...coilshot, preThrowRevolutions: 0 };
+    const untwirled = { ...sampleWeaponPerformance(input, out) };
+    input.spec = coilshot;
+    const twirled = { ...sampleWeaponPerformance(input, out) };
+
+    expect(coilshot.preThrowRevolutions).toBe(1);
+    expect(twirled.weaponAngle - untwirled.weaponAngle).toBeCloseTo(Math.PI * 2);
+  });
+});

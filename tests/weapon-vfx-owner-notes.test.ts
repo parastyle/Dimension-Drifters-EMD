@@ -34,6 +34,7 @@ const EXPECTED = {
   "x2-choir-iron-greataxe": ["choir-iron-flame-slash", "blade"],
   "x2-hangman-s-greatcleaver": ["hangman-blood-spatter", "blade"],
   "x2-dustreaper-zweihander": ["dustreaper-continuous-edge", "blade"],
+  "x2-thunderhead-stormfists": ["stormfist-blue-lunge", "body"],
 } as const;
 
 function weapon(id: string) {
@@ -51,7 +52,9 @@ function combo(id: string) {
 
 describe("owner-notes W-VFX weapon identities", () => {
   it("resolves one explicit recipe and shared emitter policy for every reworked weapon", () => {
-    expect(Object.keys(WEAPON_EFFECT_RECIPES)).toHaveLength(9);
+    expect(Object.keys(WEAPON_EFFECT_RECIPES)).toEqual(
+      expect.arrayContaining(Object.values(EXPECTED).map(([recipeId]) => recipeId)),
+    );
     for (const [weaponId, [recipeId, emitter]] of Object.entries(EXPECTED)) {
       const definition = weapon(weaponId);
       expect(definition.effectRecipe, weaponId).toBe(recipeId);
@@ -66,7 +69,8 @@ describe("owner-notes W-VFX weapon identities", () => {
       const point = weaponEffectEmitterPoint(definition, { x: 100, y: 200 }, 0, swing, 0);
       const distance = Math.hypot(point.x - 100, point.y - 200);
       expect(Number.isFinite(point.x) && Number.isFinite(point.y), weaponId).toBe(true);
-      if (emitter === "tip")
+      if (emitter === "body") expect(distance, weaponId).toBe(0);
+      else if (emitter === "tip")
         expect(distance, weaponId).toBeCloseTo(weaponMuzzleReach(definition), 8);
       else expect(distance, weaponId).toBeCloseTo(meleeReach(definition) * 0.78, 8);
     }

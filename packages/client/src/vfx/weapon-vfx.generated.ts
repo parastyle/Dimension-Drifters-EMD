@@ -453,5 +453,10 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "suite": {},
     "rot": 0,
     "vfxRadius": 250
+  },
+  "x2-mournveil-scythe": {
+    "suite": {},
+    "rot": 0,
+    "vfxRadius": 250
   }
 };

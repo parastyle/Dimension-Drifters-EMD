@@ -4,6 +4,7 @@ import { PARTICLE_PACKS } from "./particle-manifest.js";
 export interface WeaponEffectRecipe {
   readonly id: WeaponEffectRecipeId;
   readonly weaponId: string;
+  readonly reuseWeaponIds?: readonly string[];
   readonly emitter: WeaponEffectEmitter;
   readonly projectile?: "electric-bolt" | "crystal-shard-orb";
   readonly projectileColor?: number;
@@ -84,6 +85,27 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 8,
     additive: false,
     noGore: true,
+    suppressQuakeVfx: true,
+    reuseWeaponIds: Object.freeze([
+      "x2-quarry-splitter-bardiche",
+      "x2-buckhorn-boarspear",
+    ]),
+  }),
+  "cinderbrand-fire-slash": Object.freeze({
+    id: "cinderbrand-fire-slash",
+    weaponId: "x2-cinderbrand-cleaver",
+    emitter: "blade",
+    swingPack: "fire-bolt",
+    swingCount: 8,
+    additive: true,
+  }),
+  "sanctified-holy-slash": Object.freeze({
+    id: "sanctified-holy-slash",
+    weaponId: "x2-sanctified-headsman",
+    emitter: "blade",
+    swingPack: "holy-bolt",
+    swingCount: 8,
+    additive: true,
   }),
   "dustreaper-continuous-edge": Object.freeze({
     id: "dustreaper-continuous-edge",
@@ -93,6 +115,14 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingCount: 5,
     additive: false,
   }),
+  "stormfist-blue-lunge": Object.freeze({
+    id: "stormfist-blue-lunge",
+    weaponId: "x2-thunderhead-stormfists",
+    emitter: "body",
+    swingPack: "arcane-bolt",
+    swingCount: 8,
+    additive: true,
+  }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
 export function resolveWeaponEffectRecipe(
@@ -100,14 +130,15 @@ export function resolveWeaponEffectRecipe(
 ): WeaponEffectRecipe | undefined {
   const id = weapon?.effectRecipe;
   if (!id) return undefined;
-  const recipe = WEAPON_EFFECT_RECIPES[id];
-  return recipe?.weaponId === weapon.id && recipe.emitter === weapon.effectEmitter
+  const recipe: WeaponEffectRecipe | undefined = WEAPON_EFFECT_RECIPES[id];
+  return (recipe?.weaponId === weapon.id || recipe?.reuseWeaponIds?.includes(weapon.id)) &&
+    recipe.emitter === weapon.effectEmitter
     ? recipe
     : undefined;
 }
 
 export function shouldSpawnLegacyQuakeVfx(weapon: WeaponDef | undefined): boolean {
-  return resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true;
+  return weapon?.suppressVfx !== true && resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true;
 }
 
 export function weaponSwingIdentityScale(
@@ -146,6 +177,22 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     scale: 0.15,
     extent: 0.92,
     spinHz: 1.05,
+  }),
+  "x2-galvanic-liber-of-storms": Object.freeze({
+    weaponId: "x2-galvanic-liber-of-storms",
+    packs: Object.freeze(["arcane-wisp", "arcane-bolt", "arcane-spark"]),
+    count: 8,
+    scale: 0.14,
+    extent: 0.9,
+    spinHz: 1.2,
+  }),
+  "x2-sporebound-witchglobe": Object.freeze({
+    weaponId: "x2-sporebound-witchglobe",
+    packs: Object.freeze(["toxic-wisp", "toxic-splat", "toxic-mote"]),
+    count: 8,
+    scale: 0.13,
+    extent: 0.86,
+    spinHz: 0.72,
   }),
 } as const satisfies Record<string, WeaponAuraVfxRecipe>);
 

@@ -4371,7 +4371,7 @@ export class SpriteRig {
       hand: typeof frontHand,
     ): void => {
       if (!hand) return;
-      if (piece?.worn) stack.push(hand.img, piece.img);
+      if (piece?.worn || piece?.def.renderAboveHands) stack.push(hand.img, piece.img);
       else {
         if (piece) stack.push(piece.img);
         stack.push(hand.img);

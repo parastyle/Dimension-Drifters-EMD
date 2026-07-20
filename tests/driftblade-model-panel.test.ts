@@ -14,8 +14,7 @@ import { describe, expect, it } from "vitest";
  * future adopter (one map row + one sequence) auto-extends the conformance law without touching tests.
  * Per-variant bands come from the analyst's M1–M8; `cadenceGate` marks fast cutters (cooldown ≤ 0.5 s)
  * where M4's tremor/deformation sub-beats are waived to the phrase level. `a2Ratio` is the M2 middle-beat
- * anticipation bound (Voltfang authors the designer's sanctioned 0.70× because its beat 1 already fires
- * early, so the phrase still accelerates). */
+ * anticipation bound. */
 const ADOPTER_LAW: Record<
   string,
   { cadenceGate: boolean; a2Ratio: number; motions: readonly string[] }
@@ -35,11 +34,6 @@ const ADOPTER_LAW: Record<
     a2Ratio: 0.6,
     motions: ["shoulder-chop", "guard-check", "splinter-fall"],
   },
-  "katana-thunderlag": {
-    cadenceGate: true,
-    a2Ratio: 0.7,
-    motions: ["slash", "coil-drag", "thunder-fall"],
-  },
 };
 
 const ADOPTERS = Object.entries(DRIFT_MODEL_ADOPTERS);
@@ -56,7 +50,7 @@ function sequenceOf(variant: keyof typeof MELEE_COMBO_VARIANT_SEQUENCES) {
 
 describe("driftblade-model panel", () => {
   it("routes every adopter through the map while the model anchor stays greatsword", () => {
-    expect(ADOPTERS.length).toBeGreaterThanOrEqual(4);
+    expect(ADOPTERS.length).toBeGreaterThanOrEqual(3);
     for (const [id, variant] of ADOPTERS) {
       const selection = meleeComboSelectionFor(weapon(id));
       expect(selection, id).toMatchObject({ family: "chop", variant });
@@ -153,7 +147,7 @@ describe("driftblade-model panel", () => {
     }
   });
 
-  it("is not a clone of the model (M8) and the four adopters never blur into each other", () => {
+  it("is not a clone of the model (M8) and the adopters never blur into each other", () => {
     const greatsword = sequenceOf("greatsword");
     const signatures = new Set<string>();
     for (const [, variant] of ADOPTERS) {
@@ -211,7 +205,6 @@ describe("driftblade-model panel", () => {
       "chop/nodachi-coldcourt": ["x2-gravechill-nodachi"],
       "chop/nodachi-petalfall": ["x2-stormpetal-odachi"],
       "chop/katana-threehails": ["x2-hailwidow-katana"],
-      "chop/katana-thunderlag": ["x2-voltfang-tachi"],
       "chop/katana-kagewake": ["drift-wakizashi-kagewake"],
       "chop/katana-hushglass": ["drift-wakizashi-hushglass"],
       "chop/katana-stillwater-edict": ["drift-katana-stillwater-edict"],
@@ -228,11 +221,15 @@ describe("driftblade-model panel", () => {
         "x-sword-coffin",
       ],
       "chop/riftcleaver-crystal-cadence": ["x2-riftcleaver-greatblade"],
+      "chop/glacier-down-up": ["x2-glacier-headtaker"],
+      "chop/hollowmoon-eclipse": ["x2-hollowmoon-reaver"],
+      "chop/quicksilver-up-down": ["x2-quicksilver-censer"],
+      "chop/saintspar-down-swing": ["x2-saintspar-lochaber"],
+      "chop/voltfang-rise": ["x2-voltfang-tachi"],
       "punch/sparkknuckle-voltage-boxing": ["x2-sparkknuckle-hex-mitt"],
       "chop/claymore-breach": ["x2-dustreaper-zweihander", "x2-tombwarden-claymore"],
       "chop/glaive-compass": [
         "x2-blightfork-glaive",
-        "x2-dustdevil-glaive",
         "x2-thunderhead-voulge",
         "x2-wickfire-fauchard",
       ],
@@ -245,6 +242,8 @@ describe("driftblade-model panel", () => {
         "x2-sandsong-saber",
         "x2-toxinwell-khopesh",
       ],
+      "arc/mournveil-fan-spin": ["x2-mournveil-scythe"],
+      "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
         "x2-buckhorn-boarspear",
@@ -289,8 +288,8 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 20,
-      "arc/default": 117,
-      "chop/default": 7,
+      "arc/default": 116,
+      "chop/default": 8,
       "rake/dagger": 1,
       "rake/claw": 5,
     });

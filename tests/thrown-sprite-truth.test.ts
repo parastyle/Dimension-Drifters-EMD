@@ -2,6 +2,7 @@ import {
   isThrownProjectileKind,
   thrownProjectileKindFor,
   thrownProjectileSpriteId,
+  thrownProjectileRotationPolicy,
   thrownProjectileWeaponId,
   WEAPONS,
   weaponDisplaySpriteId,
@@ -43,5 +44,11 @@ describe("thrown projectile sprite truth", () => {
     const rustyCleaver = WEAPONS["rusty-cleaver"];
     if (!rustyCleaver) throw new Error("Missing Rusty Cleaver compatibility fixture");
     expect(thrownProjectileKindFor(rustyCleaver)).toBe("thrown:rusty-cleaver");
+  });
+
+  it("resolves each NW thrown weapon's authored in-flight rotation policy", () => {
+    expect(thrownProjectileRotationPolicy(WEAPONS["x2-boothook-harpoon"])).toBe("point-forward");
+    expect(thrownProjectileRotationPolicy(WEAPONS["x2-coilshot-meteor"])).toBe("spin");
+    expect(thrownProjectileRotationPolicy(WEAPONS["x2-carrion-cudgel"])).toBe("spin");
   });
 });

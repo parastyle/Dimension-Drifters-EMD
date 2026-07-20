@@ -104,6 +104,16 @@ export interface CasterVfxProjectileRecipe {
   readonly particleShape: CasterParticleShape;
 }
 
+/** A bounded crop from the weapon's own installed part texture, used as its projectile identity. */
+export interface CasterSpriteProjectileRecipe {
+  readonly spriteId: string;
+  readonly partRole: string;
+  readonly crop: Readonly<{ x: number; y: number; width: number; height: number }>;
+  readonly displayLength: number;
+  readonly flutterRadians?: number;
+  readonly flutterMs?: number;
+}
+
 export interface CasterVfxImpactRecipe {
   readonly blossom: "radial" | "pages" | "square" | "axis" | "rings" | "star" | "ward" | "burst";
   readonly radius: number;
@@ -123,6 +133,7 @@ export interface CasterVfxRecipe {
   readonly palette: CasterVfxPalette;
   readonly source: CasterVfxSourceRecipe;
   readonly projectile: CasterVfxProjectileRecipe;
+  readonly spriteProjectile?: CasterSpriteProjectileRecipe;
   readonly impact: CasterVfxImpactRecipe;
   readonly signature?: CasterVfxSignature;
   readonly beam?: BeamVfxRecipe;
@@ -136,6 +147,36 @@ const ELEMENT_PALETTES: Readonly<Record<CasterVfxElement, CasterVfxPalette>> = O
   shock: Object.freeze({ core: 0xffffff, mid: 0xffe24a, shadow: 0x6652c7 }),
   toxic: Object.freeze({ core: 0xedffb0, mid: 0x9cff3b, shadow: 0x285f2a }),
   void: Object.freeze({ core: 0xf1dcff, mid: 0xb14bff, shadow: 0x32104f }),
+});
+
+/** Exact owner-note palette exceptions; mechanics keep their normal element typing. */
+export const CASTER_VFX_PALETTE_OVERRIDES: Readonly<Partial<Record<string, CasterVfxPalette>>> =
+  Object.freeze({
+    "x2-thunderhead-stormfists": Object.freeze({
+      core: 0xffffff,
+      mid: 0x33e6ff,
+      shadow: 0x245b91,
+    }),
+  });
+
+/** Codex-reference crops derived directly from each weapon's own checked-in sprite. */
+export const CASTER_SPRITE_PROJECTILES: Readonly<
+  Partial<Record<string, CasterSpriteProjectileRecipe>>
+> = Object.freeze({
+  "x2-permafrost-cryo-bracer": Object.freeze({
+    spriteId: "x2-permafrost-cryo-bracer",
+    partRole: "part-1",
+    crop: Object.freeze({ x: 121, y: 0, width: 135, height: 84 }),
+    displayLength: 58,
+  }),
+  "x2-locust-glass-plague-orb": Object.freeze({
+    spriteId: "x2-locust-glass-plague-orb",
+    partRole: "part-1",
+    crop: Object.freeze({ x: 132, y: 45, width: 104, height: 62 }),
+    displayLength: 38,
+    flutterRadians: 0.18,
+    flutterMs: 230,
+  }),
 });
 
 const FORM_SOURCE: Readonly<
@@ -561,25 +602,6 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreFrame: 1,
     impact: Object.freeze({ points: 11, rings: 1, radiusScale: 1.16, spin: -0.8 }),
   }),
-  "x2-voidwell-idol": Object.freeze({
-    signature: "voidwell-inward-tide",
-    widthProfile: "ribbon",
-    edgeColor: 0x09030f,
-    accentColor: 0x6b20a8,
-    coreColor: 0xca8cff,
-    edgeWidth: 0.99,
-    chromaWidth: 0.76,
-    coreWidth: 0.08,
-    ripple: "double-helix",
-    rippleAmplitude: 0.2,
-    flickerHz: 3.5,
-    particleElement: "void",
-    bodyParticle: "wisp",
-    coreParticle: "orb",
-    bodyFrame: 5,
-    coreFrame: 7,
-    impact: Object.freeze({ points: 0, rings: 4, radiusScale: 1.42, spin: -0.55 }),
-  }),
   "x2-sanctum-brazier-staff": Object.freeze({
     signature: "sanctum-brazier-blueflame",
     widthProfile: "braided",
@@ -723,6 +745,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const form = casterVfxFormFor(def);
   const grade = casterGrade(def.scalingGrades?.int);
   const damageTier = damageTierFor(def);
+  const spriteProjectile = CASTER_SPRITE_PROJECTILES[def.id];
   const gradeIndex = grade === "pinnacle" ? 2 : grade === "master" ? 1 : 0;
   const damageIndex = damageTier === "nova" ? 2 : damageTier === "burst" ? 1 : 0;
   const sourceBase = FORM_SOURCE[form];
@@ -755,9 +778,10 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
     form,
     grade,
     damageTier,
-    palette: ELEMENT_PALETTES[element],
+    palette: CASTER_VFX_PALETTE_OVERRIDES[def.id] ?? ELEMENT_PALETTES[element],
     source,
     projectile,
+    ...(spriteProjectile ? { spriteProjectile } : {}),
     impact,
     ...(signature ? { signature } : {}),
     ...(beam ? { beam } : {}),

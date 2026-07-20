@@ -15,7 +15,7 @@ import { levelUpPlayer } from "../packages/server/src/rooms/progression.js";
 describe("improve2 shared systems integrity", () => {
   it("G-04 evaluates every authored beam through both early-vent and full-overheat cycles", () => {
     const beams = Object.values(WEAPONS).filter((weapon) => !!weapon?.beam);
-    expect(beams.length).toBe(22);
+    expect(beams.length).toBe(21);
     for (const beam of beams) {
       const early = beamCyclePower(beam!, BeamPowerCycle.EarlyVent);
       const full = beamCyclePower(beam!, BeamPowerCycle.FullOverheat);

@@ -131,7 +131,19 @@ export type WeaponEffectRecipeId =
   | "tombwarden-dark-slash"
   | "choir-iron-flame-slash"
   | "hangman-blood-spatter"
-  | "dustreaper-continuous-edge";
+  | "dustreaper-continuous-edge"
+  | "cinderbrand-fire-slash"
+  | "sanctified-holy-slash"
+  | "stormfist-blue-lunge";
+
+/** Parameterized enemy movement status shared by direct hits and Frostquill-style ground zones. */
+export interface EnemyHitStatusDef {
+  kind: "slow";
+  /** Multiplicative enemy movement speed while active (0.1 reads as a near-total freeze). */
+  multiplier: number;
+  /** Server-owned refresh duration in seconds. */
+  seconds: number;
+}
 
 /** Shared server-owned ground patch. The client renders the footprint from small authored texture chunks;
  * radius is gameplay truth and never inferred from renderer geometry. */
@@ -161,6 +173,7 @@ export interface GroundZoneDef {
 export type WeaponPerformanceHold =
   | "upright"
   | "hanging-chain"
+  | "drag-at-feet"
   | "steady"
   | "aim-forward"
   | "overhead"
@@ -171,7 +184,9 @@ export type WeaponPerformanceAction =
   | "hold"
   | "page-flip"
   | "shake"
+  | "spin"
   | "recoil"
+  | "lunge-punch"
   | "overhead-downswing"
   | "throw-release";
 
@@ -188,11 +203,17 @@ export interface WeaponPerformanceDef {
   windupSeconds?: number;
   /** Extra local carry clearance for oversized upright props, in final rendered pixels. */
   carryForwardPx?: number;
+  /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
+  preThrowRevolutions?: number;
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
   shake?: {
     amplitudePx: number;
     rotationRad: number;
     frequencyHz: number;
+  };
+  /** Authored forward displacement resolved from the accepted aim by the server at active start. */
+  lunge?: {
+    distancePx: number;
   };
   /** Held-implement source point. `spout` is the painted +X business end. */
   emitter?: "spout";
@@ -205,6 +226,8 @@ export interface WeaponPerformanceDef {
     resourcePerSecond: number;
     tickRate: number;
     color: number;
+    /** Optional receipt typing for an aura whose gameplay identity is narrower than the weapon element. */
+    damageType?: "bio";
   };
 }
 
@@ -225,6 +248,12 @@ export interface WeaponDef {
   effectEmitter?: WeaponEffectEmitter;
   /** Authored cue point shared by visual accents and real secondary projectiles. */
   effectTiming?: WeaponEffectTiming;
+  /** Explicitly suppress every swing/quake visual while retaining authoritative damage. */
+  suppressVfx?: boolean;
+  /** Status applied by each authoritative direct melee hit. */
+  hitStatus?: EnemyHitStatusDef;
+  /** Non-worn props that intentionally sit in front of visible hands (for example, hand-held idols). */
+  renderAboveHands?: boolean;
   /** A single two-hand slot occupied by a matched worn glove on each hand. Cosmetic aura only; accepted
    * melee beats remain the authoritative damage source. */
   glovePair?: {
@@ -299,6 +328,12 @@ export interface WeaponDef {
     pierce: number;
     /** Cosmetic ballistic lift of the own-sprite projectile; server travel remains authoritative. */
     arcHeight?: number;
+    /** In-flight orientation policy for the own-sprite projectile. */
+    rotation?: "spin" | "point-forward";
+    /** Enemy-to-enemy redirects remaining after the initial impact. */
+    ricochetHops?: number;
+    /** Maximum acquisition distance for each enemy ricochet. */
+    ricochetRange?: number;
     /** Per-source scaling (§14 WYSIWYG) — this projectile's own grades; omitted = the weapon's edge grades. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
   };
@@ -447,6 +482,8 @@ export interface WeaponDef {
     bulletKind: string;
     /** Client-only in-flight projectile scale. Never enters the fixed server hit radius. */
     projectileVisualScale?: number;
+    /** Cosmetic ballistic lift; the authoritative server trajectory and collision remain planar. */
+    arcHeight?: number;
     /** Client muzzle-flash style: "heavy" | "boom" | "rapid" | "punch" | "spark". */
     muzzle: string;
     /** Muzzle/bullet tint (hex). Omitted → a default hot orange. */
@@ -1642,7 +1679,7 @@ export function weaponDisplaySpriteId(weapon: Pick<WeaponDef, "id" | "sprite">):
   return weapon.sprite ?? weapon.id;
 }
 
-/** Server-side launch kind for a thrown weapon. No per-weapon visual exceptions are supported. */
+/** Server-side launch kind for a thrown weapon. */
 export function thrownProjectileKindFor(weapon: Pick<WeaponDef, "id">): string {
   return `${THROWN_PROJECTILE_KIND_PREFIX}${weapon.id}`;
 }
@@ -1664,6 +1701,17 @@ export function thrownProjectileSpriteId(kind: string): string | undefined {
   const weaponId = thrownProjectileWeaponId(kind);
   const weapon = weaponId ? WEAPONS[weaponId] : undefined;
   return weapon ? weaponDisplaySpriteId(weapon) : undefined;
+}
+
+/** Per-weapon in-flight orientation; legacy and unspecified throws retain their authored spin. */
+export function thrownProjectileRotationPolicy(
+  source: string | Pick<WeaponDef, "thrown"> | undefined,
+): "spin" | "point-forward" | undefined {
+  const weapon =
+    typeof source === "string"
+      ? WEAPONS[thrownProjectileWeaponId(source) ?? ""]
+      : source;
+  return weapon?.thrown ? (weapon.thrown.rotation ?? "spin") : undefined;
 }
 
 /** Next weapon in the roster (RMB/cycle), wrapping around. */

@@ -85,3 +85,9 @@ Waves: NG (game) first, then NB (bugs), NR (redo of wave-1 work), NW (new weapon
   ~3 fist-lengths, server-validated displacement.
 
 Watermark: all notes ≤ 2026-07-20T21:26:54Z ledgered.
+
+## STATUS: ALL 49 NOTES CLOSED (2026-07-20 late)
+
+NG wave: 951fb62 (beams live-proven + gloves replace hands). NB+NR: 32a3ae2 (5 bugs
+root-caused, 9 redos). NW: this commit (20 melee/thrown + 10 casters). Suite 1460 green.
+The beam-anchor e2e gate (e2e/tests/beam-anchor.spec.ts) now guards the live behavior.

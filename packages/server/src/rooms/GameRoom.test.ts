@@ -34,6 +34,7 @@ import {
   SET_BONUS_3,
   SHIFTER_KIND_IDS,
   salvageValue,
+  swingDescriptorFor,
   scripValue,
   TILE_GROUND,
   TILE_PIT,
@@ -7341,5 +7342,92 @@ describe("GameRoom - NB projectile contracts", () => {
       expect(h.room.projectileSeq, `projectile for shot ${shot + 1}`).toBe(projectileSeq + 1);
       h.tick(Math.ceil(cadence / 0.05));
     }
+  });
+});
+
+// NW-MELEE/NW-THROWN append-only server-authority contracts.
+describe("GameRoom - NW melee and thrown mechanics", () => {
+  it("applies Glacier Headtaker's authored freeze through the shared enemy slow status map", () => {
+    const h = makeRoom();
+    h.join("glacier");
+    h.state().enemies.clear();
+    const player = h.state().players.get("glacier");
+    player.x = 2_400;
+    player.y = 2_400;
+    const enemy = new EnemyState();
+    enemy.id = "freeze-target";
+    enemy.kind = "critter";
+    enemy.hp = 100;
+    enemy.x = player.x + 80;
+    enemy.y = player.y;
+    h.state().enemies.set(enemy.id, enemy);
+    h.room.rebuildEnemyGrid();
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = 1;
+    combat.aimY = 0;
+    const definition = WEAPONS["x2-glacier-headtaker"];
+    if (!definition?.hitStatus) throw new Error("Glacier freeze fixture is required");
+    const swing = swingDescriptorFor(definition, definition.cooldown);
+
+    h.room.resolveSwing(player, combat, definition, swing);
+    h.room.stepMeleeSwings(swing.activeEndSeconds + 0.001);
+
+    expect(enemy.hp).toBeLessThan(100);
+    expect(h.room.enemyZoneSlow.get(enemy.id)).toEqual({
+      multiplier: 0.1,
+      untilTick: 16,
+    });
+  });
+
+  it("selects Carrion Cudgel's nearest fresh ricochet target and consumes one hop", () => {
+    const h = makeRoom();
+    h.state().enemies.clear();
+    const near = new EnemyState();
+    near.id = "near";
+    near.kind = "critter";
+    near.hp = 10;
+    near.x = 30;
+    near.y = 0;
+    const far = new EnemyState();
+    far.id = "far";
+    far.kind = "critter";
+    far.hp = 10;
+    far.x = 0;
+    far.y = 80;
+    h.state().enemies.set(near.id, near);
+    h.state().enemies.set(far.id, far);
+    const projectile = { x: 0, y: 0, vx: -120, vy: 0 };
+    const meta = {
+      ttl: 0.01,
+      hit: new Set(["spent"]),
+      pierce: 0,
+      pierceMax: 1,
+      ricochetHops: 1,
+      ricochetRange: 260,
+    };
+
+    expect(h.room.redirectThrownRicochet(projectile, meta)).toBe(true);
+    expect(projectile.vx).toBeCloseTo(120);
+    expect(projectile.vy).toBeCloseTo(0);
+    expect(meta).toMatchObject({ pierce: 1, ricochetHops: 0 });
+    expect(meta.ttl).toBeCloseTo(260 / 120);
+  });
+
+  it("registers Mournveil's held fan-spin as one full authoritative damage arc", () => {
+    const h = makeRoom();
+    h.join("mournveil");
+    const player = h.state().players.get("mournveil");
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = 1;
+    combat.aimY = 0;
+    const definition = WEAPONS["x2-mournveil-scythe"];
+    if (!definition) throw new Error("Mournveil fan-spin fixture is required");
+
+    h.room.resolveSwing(player, combat, definition, swingDescriptorFor(definition, definition.cooldown));
+    const active = h.room.meleeSwings.get(player.id);
+
+    expect(definition.performance).toMatchObject({ continuous: true, action: "default-swing" });
+    expect(active?.swingArc).toBeCloseTo(Math.PI * 2);
+    expect(active?.swing.style).toBe("spin");
   });
 });

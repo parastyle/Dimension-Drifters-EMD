@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import { partTexture } from "../entities/SpriteRig.js";
+import { SPRITES } from "../sprites/manifest.js";
 import type { CasterVfxRecipe } from "./caster-vfx-recipes.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
 import { elementPack, particleBurst } from "./particles.js";
@@ -371,26 +373,56 @@ export function makeCasterProjectile(
     .ellipse(0, 0, glowRadius * 2.2, glowRadius * 1.45, recipe.palette.mid, 0.28)
     .setRotation(angle)
     .setBlendMode(Phaser.BlendModes.ADD);
-  const body = scene.add.graphics().setRotation(angle).setBlendMode(Phaser.BlendModes.ADD);
-  drawProjectileBody(body, recipe);
   const children: Phaser.GameObjects.GameObject[] = [trail, glow];
-  const packId = elementPack(recipe.element, recipe.projectile.particleShape);
-  const pack = PARTICLE_PACKS[packId];
-  if (pack && scene.textures.exists(`ptcl:${packId}`)) {
-    const painted = scene.add
-      .image(0, 0, `ptcl:${packId}`, (Math.random() * pack.count) | 0)
-      .setScale(recipe.projectile.bodyScale)
-      .setRotation(angle)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    children.push(painted);
+  const spriteRecipe = recipe.spriteProjectile;
+  if (spriteRecipe) {
+    const manifest = SPRITES[spriteRecipe.spriteId as keyof typeof SPRITES];
+    const part = manifest?.parts.find((candidate) => candidate.role === spriteRecipe.partRole);
+    const texture = partTexture(scene, spriteRecipe.spriteId, spriteRecipe.partRole);
+    if (part && scene.textures.exists(texture.key)) {
+      const crop = spriteRecipe.crop;
+      const sprite = scene.add
+        .image(0, 0, texture.key, texture.frame)
+        .setCrop(crop.x, crop.y, crop.width, crop.height)
+        .setOrigin((crop.x + crop.width * 0.5) / part.w, (crop.y + crop.height * 0.5) / part.h)
+        .setScale(spriteRecipe.displayLength / crop.width)
+        .setRotation(angle);
+      if (!reducedMotion && spriteRecipe.flutterRadians && spriteRecipe.flutterMs) {
+        scene.tweens.add({
+          targets: sprite,
+          rotation: angle + spriteRecipe.flutterRadians,
+          duration: spriteRecipe.flutterMs,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.inOut",
+        });
+      }
+      children.push(sprite);
+    }
   }
-  children.push(body);
+  if (!spriteRecipe || children.length === 2) {
+    const packId = elementPack(recipe.element, recipe.projectile.particleShape);
+    const pack = PARTICLE_PACKS[packId];
+    if (pack && scene.textures.exists(`ptcl:${packId}`)) {
+      const painted = scene.add
+        .image(0, 0, `ptcl:${packId}`, (Math.random() * pack.count) | 0)
+        .setScale(recipe.projectile.bodyScale)
+        .setRotation(angle)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      children.push(painted);
+    }
+    const body = scene.add.graphics().setRotation(angle).setBlendMode(Phaser.BlendModes.ADD);
+    drawProjectileBody(body, recipe);
+    children.push(body);
+  }
+  const payload = scene.add.container(0, 0, children);
   const container = scene.add
-    .container(projectile.x, projectile.y, children)
+    .container(projectile.x, projectile.y, [payload])
     .setDepth(99000)
     .setScale(visualScale);
   container.setData("casterRecipe", recipe);
   container.setData("ang", angle);
+  container.setData("arcPayload", payload);
   return container;
 }
 

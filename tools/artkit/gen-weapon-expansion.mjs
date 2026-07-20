@@ -39,7 +39,9 @@ const KINDS = new Set([
   "glovePair", "warp",
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
-const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb"]);
+const BULLET_KINDS = new Set([
+  "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade",
+]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
@@ -55,6 +57,7 @@ const TOP_KEYS = new Set([
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
   "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
   "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
+  "renderAboveHands", "suppressVfx", "hitStatus",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -64,13 +67,13 @@ const MECH_SIBLINGS = [
 const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLength", "swingArc", "gripFrac"]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "scalingGrades", "zone"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "scalingGrades", "zone"]),
   quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "projectileVisualScale", "scalingGrades", "explode", "burst"]),
+    "projectileVisualScale", "arcHeight", "scalingGrades", "explode", "burst"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
     "randomRays", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
@@ -92,6 +95,7 @@ const EFFECT_RECIPES = new Set([
   "galvanic-blue-burst", "riftglass-rainbow-volley", "whispervolume-page-scatter",
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
   "choir-iron-flame-slash", "hangman-blood-spatter", "dustreaper-continuous-edge",
+  "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const COMBO_MOTIONS = new Set([
@@ -133,18 +137,23 @@ const KATANA_HOOK_KEYS = new Set([
 const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
-  "emitter", "vfxAt", "aura",
+  "preThrowRevolutions", "lunge", "emitter", "vfxAt", "aura",
 ]);
 const PERFORMANCE_HOLDS = new Set([
-  "upright", "hanging-chain", "steady", "aim-forward", "overhead", "shoulder-launcher",
+  "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
 ]);
 const PERFORMANCE_ACTIONS = new Set([
-  "default-swing", "hold", "page-flip", "shake", "recoil", "overhead-downswing", "throw-release",
+  "default-swing", "hold", "page-flip", "shake", "spin", "recoil", "lunge-punch",
+  "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
+const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx"]);
 const PERFORMANCE_AURA_KEYS = new Set([
-  "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color",
+  "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color", "damageType",
 ]);
+const HIT_STATUS_KEYS = new Set(["kind", "multiplier", "seconds"]);
+const HIT_STATUS_KINDS = new Set(["slow"]);
+const THROWN_ROTATIONS = new Set(["spin", "point-forward"]);
 
 const checkKeys = (obj, allowed, path) => {
   for (const k of Object.keys(obj)) if (!allowed.has(k)) fail(`unknown key ${path}.${k}`);
@@ -412,6 +421,10 @@ function performanceOf(p) {
     out.windupSeconds = num(p.windupSeconds, 0.1, 0.75, 0.5, "performance.windupSeconds");
   if (p.carryForwardPx !== undefined)
     out.carryForwardPx = num(p.carryForwardPx, 0, 80, 0, "performance.carryForwardPx");
+  if (p.preThrowRevolutions !== undefined)
+    out.preThrowRevolutions = num(
+      p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
+    );
   if (p.shake !== undefined) {
     if (!p.shake || typeof p.shake !== "object" || Array.isArray(p.shake)) {
       fail("performance.shake is not an object");
@@ -421,6 +434,16 @@ function performanceOf(p) {
         amplitudePx: num(p.shake.amplitudePx, 0, 12, 3, "performance.shake.amplitudePx"),
         rotationRad: num(p.shake.rotationRad, 0, 0.25, 0.05, "performance.shake.rotationRad"),
         frequencyHz: num(p.shake.frequencyHz, 1, 24, 11, "performance.shake.frequencyHz"),
+      };
+    }
+  }
+  if (p.lunge !== undefined) {
+    if (!p.lunge || typeof p.lunge !== "object" || Array.isArray(p.lunge)) {
+      fail("performance.lunge is not an object");
+    } else {
+      checkKeys(p.lunge, PERFORMANCE_LUNGE_KEYS, "performance.lunge");
+      out.lunge = {
+        distancePx: num(p.lunge.distancePx, 48, 180, 120, "performance.lunge.distancePx"),
       };
     }
   }
@@ -438,9 +461,26 @@ function performanceOf(p) {
         tickRate: num(p.aura.tickRate, 0.05, 0.5, 0.2, "performance.aura.tickRate"),
         color: int(p.aura.color, 0, 0xffffff, 0xffe24a, "performance.aura.color"),
       };
+      if (p.aura.damageType !== undefined) {
+        out.aura.damageType = enumOf(p.aura.damageType, new Set(["bio"]), "performance.aura.damageType");
+      }
     }
   }
   return out;
+}
+
+function hitStatusOf(status) {
+  if (status === undefined) return undefined;
+  if (!status || typeof status !== "object" || Array.isArray(status)) {
+    fail("hitStatus is not an object");
+    return undefined;
+  }
+  checkKeys(status, HIT_STATUS_KEYS, "hitStatus");
+  return {
+    kind: enumOf(status.kind, HIT_STATUS_KINDS, "hitStatus.kind"),
+    multiplier: num(status.multiplier, 0.1, 1, 0.5, "hitStatus.multiplier"),
+    seconds: num(status.seconds, 0.05, 4, 0.5, "hitStatus.seconds"),
+  };
 }
 
 function mapWeapon(w) {
@@ -539,6 +579,16 @@ function mapWeapon(w) {
     def.effectEmitter = enumOf(w.effectEmitter, EFFECT_EMITTERS, "effectEmitter");
   if (w.effectTiming !== undefined)
     def.effectTiming = enumOf(w.effectTiming, EFFECT_TIMINGS, "effectTiming");
+  if (w.renderAboveHands !== undefined) {
+    if (typeof w.renderAboveHands !== "boolean") fail("renderAboveHands is not a boolean");
+    else def.renderAboveHands = w.renderAboveHands;
+  }
+  if (w.suppressVfx !== undefined) {
+    if (typeof w.suppressVfx !== "boolean") fail("suppressVfx is not a boolean");
+    else def.suppressVfx = w.suppressVfx;
+  }
+  const hitStatus = hitStatusOf(w.hitStatus);
+  if (hitStatus) def.hitStatus = hitStatus;
   const hook = katanaHookOf(w.katanaHook);
   if (hook) def.katanaHook = hook;
   const performance = performanceOf(w.performance);
@@ -608,6 +658,8 @@ function mapWeapon(w) {
       def.gun.projectileVisualScale = num(
         b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
       );
+    if (b.arcHeight !== undefined)
+      def.gun.arcHeight = num(b.arcHeight, 24, 180, 96, "behavior.arcHeight");
     if (b.burst !== undefined) {
       if (!b.burst || typeof b.burst !== "object" || Array.isArray(b.burst)) {
         fail("behavior.burst is not an object");
@@ -656,6 +708,12 @@ function mapWeapon(w) {
     };
     if (b.arcHeight !== undefined)
       def.thrown.arcHeight = num(b.arcHeight, 24, 180, 88, "behavior.arcHeight");
+    if (b.rotation !== undefined)
+      def.thrown.rotation = enumOf(b.rotation, THROWN_ROTATIONS, "behavior.rotation");
+    if (b.ricochetHops !== undefined)
+      def.thrown.ricochetHops = int(b.ricochetHops, 0, 4, 0, "behavior.ricochetHops");
+    if (b.ricochetRange !== undefined)
+      def.thrown.ricochetRange = num(b.ricochetRange, 80, 900, 260, "behavior.ricochetRange");
     const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (g) def.thrown.scalingGrades = g;
   } else if (kind === "quake") {

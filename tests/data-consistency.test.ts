@@ -142,6 +142,12 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
     comboBar?: unknown[];
     katanaHook?: Record<string, unknown>;
     bespokeVfxSheet?: boolean;
+    suppressVfx?: boolean;
+    effectRecipe?: string;
+    effectEmitter?: string;
+    effectTiming?: string;
+    performance?: Behavior;
+    hitStatus?: Behavior;
     behavior?: Behavior;
     stats?: Record<string, number>;
     scalingGrades?: Grades;
@@ -223,6 +229,32 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         expect(def.katanaHook, `${w.id}.katanaHook`).toEqual(w.katanaHook);
       if (w.bespokeVfxSheet !== undefined)
         expect(def.bespokeVfxSheet, `${w.id}.bespokeVfxSheet`).toBe(w.bespokeVfxSheet);
+      if (w.suppressVfx !== undefined)
+        expect(def.suppressVfx, `${w.id}.suppressVfx`).toBe(w.suppressVfx);
+      if (w.effectRecipe !== undefined)
+        expect(def.effectRecipe, `${w.id}.effectRecipe`).toBe(w.effectRecipe);
+      if (w.effectEmitter !== undefined)
+        expect(def.effectEmitter, `${w.id}.effectEmitter`).toBe(w.effectEmitter);
+      if (w.effectTiming !== undefined)
+        expect(def.effectTiming, `${w.id}.effectTiming`).toBe(w.effectTiming);
+      if (w.performance) {
+        checkFields(w.id, def.performance, w.performance, {
+          hold: { eq: true },
+          action: { eq: true },
+          continuous: { eq: true },
+          suppressSwing: { eq: true },
+          windupSeconds: { num: [0.1, 0.75] },
+          carryForwardPx: { num: [0, 80] },
+          preThrowRevolutions: { num: [0, 3] },
+        });
+      }
+      if (w.hitStatus) {
+        checkFields(w.id, def.hitStatus, w.hitStatus, {
+          kind: { eq: true },
+          multiplier: { num: [0.1, 1] },
+          seconds: { num: [0.05, 4] },
+        });
+      }
 
       // Held-swing baseline (stats.*)
       checkFields(w.id, def, s as Behavior, {
@@ -325,6 +357,9 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           refillSeconds: { num: [0.6, 4] },
           pierce: { int: [1, 5] },
           arcHeight: { num: [24, 180] },
+          rotation: { eq: true },
+          ricochetHops: { int: [0, 4] },
+          ricochetRange: { num: [80, 900] },
           scalingGrades: { grades: true },
         });
       } else if (kind === "glovePair") {

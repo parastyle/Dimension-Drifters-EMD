@@ -1190,7 +1190,6 @@ export const DRIFT_MODEL_ADOPTERS = Object.freeze({
   "x2-gravechill-nodachi": "nodachi-coldcourt",
   "x2-stormpetal-odachi": "nodachi-petalfall",
   "x2-hailwidow-katana": "katana-threehails",
-  "x2-voltfang-tachi": "katana-thunderlag",
 } as const satisfies Record<string, SignatureMeleeComboVariant>);
 
 function driftModelAdopterVariantFor(weaponId: string): SignatureMeleeComboVariant | undefined {

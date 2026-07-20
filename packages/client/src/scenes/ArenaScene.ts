@@ -62,6 +62,7 @@ import {
   isPetId,
   isPitAtPx,
   isThrownProjectileKind,
+  thrownProjectileRotationPolicy,
   LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
@@ -6809,21 +6810,28 @@ export class ArenaScene extends Phaser.Scene {
         const py = c.y + pr.vy * dtSec;
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
-      if (isThrownProjectileKind(pr.kind)) {
-        const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
-        (payload ?? c).rotation += dtSec * 22; // the launched implement is always its own held sprite
-        const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
-        const weapon = WEAPONS[weaponId];
-        const arcHeight = weapon?.thrown?.arcHeight ?? weapon?.groundZone?.grenadeArcHeight ?? 0;
-        if (payload && arcHeight > 0 && weapon?.thrown) {
-          const totalTicks = Math.max(
-            1,
-            Math.round(((weapon.thrown.range / weapon.thrown.speed) * 1000) / TICK_MS),
-          );
-          const ageTicks = (room.state.tick - pr.bornTick) >>> 0;
-          const progress = Phaser.Math.Clamp(ageTicks / totalTicks, 0, 1);
-          payload.y = -Math.sin(progress * Math.PI) * arcHeight;
-        }
+      const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
+      const weapon = WEAPONS[weaponId];
+      const thrown = isThrownProjectileKind(pr.kind);
+      const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
+      if (thrown) {
+        const rotating = payload ?? c;
+        if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")
+          rotating.rotation = Math.atan2(pr.vy, pr.vx);
+        else rotating.rotation += dtSec * 22;
+      }
+      const arcHeight = thrown
+        ? (weapon?.thrown?.arcHeight ?? weapon?.groundZone?.grenadeArcHeight ?? 0)
+        : (weapon?.gun?.arcHeight ?? 0);
+      const flight = thrown
+        ? weapon?.thrown && { range: weapon.thrown.range, speed: weapon.thrown.speed }
+        : weapon?.gun && { range: weapon.gun.range, speed: weapon.gun.projectileSpeed };
+      if (payload && arcHeight > 0 && flight) {
+        const totalTicks = Math.max(1, Math.round(((flight.range / flight.speed) * 1000) / TICK_MS));
+        const ageTicks = (room.state.tick - pr.bornTick) >>> 0;
+        const progress = Phaser.Math.Clamp(ageTicks / totalTicks, 0, 1);
+        payload.y = -Math.sin(progress * Math.PI) * arcHeight;
+        if (!thrown) payload.rotation += dtSec * 3.4;
       }
       if (baseKind(pr.kind) === "fireball") this.ultimateVfx.trackComet(id, c.x, c.y, pr.vx, pr.vy);
       if (
@@ -14553,6 +14561,7 @@ export class ArenaScene extends Phaser.Scene {
     swing: SwingDescriptor,
     exact = false,
   ): void {
+    if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
     if (weapon.tags.classPool === "melee" && weapon.performance?.action === "page-flip") {
       this.spawnPageFlutterArc(x, y, ang, weapon);
