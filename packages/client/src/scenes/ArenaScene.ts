@@ -1542,6 +1542,8 @@ export class ArenaScene extends Phaser.Scene {
   /** Last-seen duelist `atkSeq` per enemy — trigger a swing animation when it increments. */
   private readonly enemyAtk = new Map<string, number>();
   private readonly equipped = new Map<string, string>();
+  /** §DUAL render identity mirrors the nested off-hand link so stable pairs keep the frame hot path cheap. */
+  private readonly equippedOffhand = new Map<string, string>();
   /** §7 last-rendered character skin per player — recreate the rig when it changes (C-key swap). */
   private readonly charOf = new Map<string, string>();
   private readonly pickups = new Map<string, Phaser.GameObjects.Container>();
@@ -1963,6 +1965,7 @@ export class ArenaScene extends Phaser.Scene {
     this.feedbackStopAt.clear();
     this.enemyAtk.clear();
     this.equipped.clear();
+    this.equippedOffhand.clear();
     this.charOf.clear();
     this.pickups.clear();
     this.projectiles.clear();
@@ -3150,29 +3153,73 @@ export class ArenaScene extends Phaser.Scene {
       const rig = this.blobs.get(id);
       if (!rig) return;
       const previousWeaponId = this.equipped.get(id);
+      const previousOffhandWeaponId = this.equippedOffhand.get(id) ?? "";
+      // REFLECTION LAW: decoded client rows have no root-level offhandSlot/pairBaseSeq compatibility getters.
+      const offhandSlot = player.dualWield?.offhandSlot ?? 255;
+      const offhandRow =
+        offhandSlot !== 255 && offhandSlot !== player.activeSlot
+          ? player.slots[offhandSlot]
+          : undefined;
+      const offhandWeaponId =
+        offhandRow?.weapon && offhandRow.weapon !== player.weapon ? offhandRow.weapon : "";
       const def = WEAPONS[player.weapon];
       // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
       const spriteId = def?.sprite ?? player.weapon;
       const manifest = SPRITES[spriteId as keyof typeof SPRITES];
+      const offhandDef = offhandWeaponId ? WEAPONS[offhandWeaponId] : undefined;
+      const offhandSpriteId = offhandDef?.sprite ?? offhandWeaponId;
+      const offhandManifest = offhandWeaponId
+        ? SPRITES[offhandSpriteId as keyof typeof SPRITES]
+        : undefined;
+      const offhandRenderable =
+        !!offhandWeaponId &&
+        !!offhandDef &&
+        !!offhandManifest &&
+        !this.failedArt.has(offhandSpriteId);
+      const identitiesStable =
+        previousWeaponId === player.weapon && previousOffhandWeaponId === offhandWeaponId;
+      const heldLeadMatches = rig.heldWeaponDef(0)?.id === player.weapon;
+      const heldOffMatches = offhandRenderable
+        ? rig.heldWeaponDef(1)?.id === offhandWeaponId
+        : def?.dual
+          ? rig.heldWeaponDef(1)?.id === player.weapon
+          : !rig.heldWeaponDef(1);
       const retryingLazyArt =
-        previousWeaponId === player.weapon &&
+        identitiesStable &&
         !!def &&
         !!manifest &&
         !this.failedArt.has(spriteId) &&
-        rig.heldWeaponDef(0)?.id !== player.weapon &&
-        (rig.weaponSwapPending || this.pendingArt.has(spriteId));
-      if (previousWeaponId === player.weapon && !retryingLazyArt) return;
-      if (previousWeaponId !== player.weapon) {
+        (!heldLeadMatches || !heldOffMatches) &&
+        (rig.weaponSwapPending || this.pendingArt.has(spriteId) ||
+          (!!offhandWeaponId && this.pendingArt.has(offhandSpriteId)));
+      if (offhandWeaponId) {
+        rig.setDualWieldBaseSeq(player.dualWield?.pairBaseSeq ?? 0);
+      }
+      if (identitiesStable && !retryingLazyArt) return;
+      if (!identitiesStable) {
         if (previousWeaponId) {
-          rig.beginWeaponSwap(previousWeaponId, player.weapon, this.animClock);
+          const previousLoadoutId = previousOffhandWeaponId
+            ? `${previousWeaponId}|${previousOffhandWeaponId}`
+            : previousWeaponId;
+          const nextLoadoutId = offhandWeaponId
+            ? `${player.weapon}|${offhandWeaponId}`
+            : player.weapon;
+          rig.beginWeaponSwap(previousLoadoutId, nextLoadoutId, this.animClock);
         }
         // Identity truth advances before lazy-art retries. A -> B(lazy) -> A must replace B's pending
         // transition instead of comparing A with A forever while the rig remains empty-handed.
         this.equipped.set(id, player.weapon);
+        this.equippedOffhand.set(id, offhandWeaponId);
       }
       if (def && manifest && !this.failedArt.has(spriteId)) {
-        // §13 v0.104 an expansion drop's art loads on demand — hold off equipping until it lands
-        // (this runs per frame, so the weapon appears in hand a beat after the grab).
+        // §13 v0.104 expansion art loads on demand for BOTH linked rows. The rig converges only once every
+        // required hand is ready, so a lazy off-hand cannot accidentally complete the draw as a single stance.
+        const offhandArtReady =
+          !offhandWeaponId ||
+          !offhandDef ||
+          !offhandManifest ||
+          this.failedArt.has(offhandSpriteId) ||
+          this.ensureWeaponArt(offhandSpriteId);
         if (!this.ensureWeaponArt(spriteId)) {
           // §7 v0.105 de-clunk: don't keep drawing + SWINGING the OLD weapon while the new art loads (the rig
           // was mid-swap running the stale weapon's timing during the loot celebration). Drop to the new
@@ -3180,7 +3227,29 @@ export class ArenaScene extends Phaser.Scene {
           rig.unequip(def, true);
           return;
         }
-        rig.equipWeapon(spriteId, def, manifest);
+        if (!offhandArtReady) {
+          rig.unequip(def, true);
+          return;
+        }
+        if (
+          offhandWeaponId &&
+          offhandDef &&
+          offhandManifest &&
+          !this.failedArt.has(offhandSpriteId)
+        ) {
+          rig.equipLoadout(
+            { spriteId, def, manifest, partIndex: 0 },
+            {
+              spriteId: offhandSpriteId,
+              def: offhandDef,
+              manifest: offhandManifest,
+              partIndex: 0,
+            },
+            player.dualWield?.pairBaseSeq ?? 0,
+          );
+        } else {
+          rig.equipWeapon(spriteId, def, manifest);
+        }
         rig.setAttackBeat(
           player.attackSeq,
           player.attackHeld,
@@ -4026,6 +4095,7 @@ export class ArenaScene extends Phaser.Scene {
     this.petRigs.delete(id);
     this.petOwnerHp.delete(id);
     this.equipped.delete(id);
+    this.equippedOffhand.delete(id);
     this.charOf.delete(id);
     this.playerBufs.delete(id); // §4 v0.107 snapshot ring + fell watcher go with the player
     this.snapFell.delete(id);

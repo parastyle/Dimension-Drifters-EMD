@@ -2781,11 +2781,17 @@ export class SpriteRig {
     return this.pendingSwapKey.length > 0;
   }
 
-  private resetFlourishState(clearCounters: boolean): void {
+  private resetFlourishState(clearCounters: boolean, preservePendingSwap = false): void {
     this.clearFlourishActivity(true, true);
-    this.pendingSwapKey = "";
-    this.pendingSwapObservedKey = "";
-    this.pendingSwapEpochMs = -1e9;
+    if (preservePendingSwap && this.pendingSwapKey) {
+      // §FLOURISH a lazy image decode can create the same clock cut as a background-tab hitch. Keep the
+      // authoritative identity transition, but rebase its eventual draw to the attachment frame.
+      this.pendingSwapEpochMs = Number.NaN;
+    } else {
+      this.pendingSwapKey = "";
+      this.pendingSwapObservedKey = "";
+      this.pendingSwapEpochMs = -1e9;
+    }
     this.bladeNeutralReady = false;
     this.idleFlourishEligibleAtMs = Number.POSITIVE_INFINITY;
     if (clearCounters) {
@@ -7292,15 +7298,10 @@ export class SpriteRig {
     if (cancellationMoveActive || flourishAttackIntent) {
       this.idleFlourishEligibleAtMs = sceneNow + 1600 + this.idleFlourishOffsetMs;
     }
-    if (
-      outsidePaperView ||
-      rootCut ||
-      rawDtMs <= 0 ||
-      rawDtMs > JIGGLE_MAX_DT_S * 1000 ||
-      this.downed ||
-      this.ultimatePhase !== UltimatePhase.Idle
-    ) {
-      this.resetFlourishState(false);
+    const flourishClockCut =
+      outsidePaperView || rootCut || rawDtMs <= 0 || rawDtMs > JIGGLE_MAX_DT_S * 1000;
+    if (flourishClockCut || this.downed || this.ultimatePhase !== UltimatePhase.Idle) {
+      this.resetFlourishState(false, flourishClockCut);
     } else if (
       flourishAttackIntent ||
       movementOnsetOrHardChange ||

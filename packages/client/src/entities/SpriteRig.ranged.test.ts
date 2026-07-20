@@ -270,3 +270,81 @@ describe("SpriteRig BAR-4 raw Arena intent boundaries", () => {
     expect(flourishMovementIntent(1, 0, -1, 0)).toBe(true);
   });
 });
+
+// ARM-WPN-02 — append-only lazy-art clock-cut coverage for the two audited expansion failures.
+describe("SpriteRig retained lazy-art draw transition", () => {
+  it.each(["x2-hailshot-hand-maul", "x2-codex-of-forked-tongues"])(
+    "starts %s's incoming draw after a loading hitch",
+    async (weaponId) => {
+      const { SpriteRig } = await import("./SpriteRig.js");
+      const { weaponFlourishSpecFor } = await import("../sprites/pose-language.js");
+      const def = WEAPONS[weaponId];
+      if (!def) throw new Error(`missing lazy-art flourish fixture: ${weaponId}`);
+      const spec = weaponFlourishSpecFor(def);
+      type RigInstance = InstanceType<typeof SpriteRig>;
+      const rig = Object.create(SpriteRig.prototype) as RigInstance;
+      Object.assign(rig, {
+        flourishChannels: [
+          { active: false, startMs: -1e9, moment: "draw", hand: 0, rotationSign: 1, spec },
+          { active: false, startMs: -1e9, moment: "draw", hand: 1, rotationSign: -1, spec },
+        ],
+        flourishArms: [
+          { armed: false, earliestStartMs: -1e9, weaponId: "" },
+          { armed: false, earliestStartMs: -1e9, weaponId: "" },
+        ],
+        stowProxies: [
+          { startMs: -1e9, destroyAtMs: -1e9 },
+          { startMs: -1e9, destroyAtMs: -1e9 },
+        ],
+        flourishStreaks: [
+          { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+          { count: 0, lastAcceptedMs: -1e9, weaponId: "" },
+        ],
+        flourishHeadX: 0,
+        flourishHeadY: 0,
+        pendingSwapKey: `old->${weaponId}`,
+        pendingSwapObservedKey: `old->${weaponId}`,
+        pendingSwapEpochMs: 100,
+        lastSwapKey: `old->${weaponId}`,
+        lastSwapObservedKey: `old->${weaponId}`,
+        bladeNeutralReady: true,
+        idleFlourishEligibleAtMs: 0,
+        idleFlourishOffsetMs: 0,
+        flourishLeadSpec: spec,
+        flourishOffSpec: undefined,
+        weapons: [{ def }],
+        pairCeremonyStartMs: 0,
+        presentationClockNow: () => 500,
+      });
+      const internals = SpriteRig.prototype as unknown as {
+        resetFlourishState(
+          this: RigInstance,
+          clearCounters: boolean,
+          preservePendingSwap?: boolean,
+        ): void;
+        completePendingWeaponSwap(this: RigInstance): void;
+      };
+
+      internals.resetFlourishState.call(rig, false, true);
+      expect(rig.weaponSwapPending).toBe(true);
+      internals.completePendingWeaponSwap.call(rig);
+
+      const channels = (
+        rig as unknown as {
+          flourishChannels: Array<{
+            active: boolean;
+            moment: string;
+            startMs: number;
+            spec: { family: string };
+          }>;
+        }
+      ).flourishChannels;
+      expect(channels[0]).toMatchObject({
+        active: true,
+        moment: "draw",
+        startMs: 500,
+        spec: { family: spec.family },
+      });
+    },
+  );
+});
