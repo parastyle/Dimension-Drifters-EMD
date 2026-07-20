@@ -1058,6 +1058,10 @@ export class GameRoom extends Room<ArenaState> {
       delivery?: number;
       sourceX?: number;
       sourceY?: number;
+      /** Gun/cast tick-one collision begins at the authoritative body, before the muzzle offset. */
+      firstCollisionX?: number;
+      firstCollisionY?: number;
+      firstStep: boolean;
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -8144,10 +8148,11 @@ export class GameRoom extends Room<ArenaState> {
         // is the fairness lever the belt constants were authored for. Tested once/tick during the descriptor's
         // active interval (hit-once via `sw.hit`) so a mob walking into your swing still gets clipped.
         const facing = Math.cos(sw.aim0) >= 0 ? 1 : -1;
+        const forwardPad = MAX_ENEMY_RADIUS + sw.halfWidth;
         this.enemyGrid.queryAabb(
-          player.x - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range),
+          player.x - (facing > 0 ? MAX_ENEMY_RADIUS * 0.5 : sw.range + forwardPad),
           player.y - DEPTH_TOL_PLAYER - MAX_ENEMY_RADIUS,
-          player.x + (facing > 0 ? sw.range : MAX_ENEMY_RADIUS * 0.5),
+          player.x + (facing > 0 ? sw.range + forwardPad : MAX_ENEMY_RADIUS * 0.5),
           player.y + DEPTH_TOL_PLAYER + MAX_ENEMY_RADIUS,
           this.enemyCandidates,
         );
@@ -8156,7 +8161,7 @@ export class GameRoom extends Room<ArenaState> {
           if (!enemy || sw.hit.has(eid) || enemy.hp <= 0) continue; // once/swing; skip dead/stale ids
           const r = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
           const fx = (enemy.x - player.x) * facing; // forward distance along the belt (in front = positive)
-          if (fx < -r * 0.5 || fx > sw.range) continue; // behind us, or beyond blade reach
+          if (fx < -r * 0.5 || fx > sw.range + r + sw.halfWidth) continue;
           // Depth window: generous for the attacker, but a mob actively rolling in depth (dodgeState) shrinks
           // its own hurtbox depth (DEPTH_DODGE_MULT) so a well-timed roll genuinely slips the swing.
           const rolling = (this.dodgeState.get(eid)?.t ?? 0) > 0;
@@ -8180,9 +8185,9 @@ export class GameRoom extends Room<ArenaState> {
         if (runtime) {
           this.wormHitSlots.length = 0;
           this.wormSegmentGrid.queryAabb(
-            player.x - (facing > 0 ? 26 : sw.range),
+            player.x - (facing > 0 ? 26 : sw.range + sw.halfWidth + 52),
             player.y - DEPTH_TOL_PLAYER - 52,
-            player.x + (facing > 0 ? sw.range : 26),
+            player.x + (facing > 0 ? sw.range + sw.halfWidth + 52 : 26),
             player.y + DEPTH_TOL_PLAYER + 52,
             this.wormSegmentCandidates,
           );
@@ -8193,7 +8198,7 @@ export class GameRoom extends Room<ArenaState> {
             const fx = (runtime.x[slot]! - player.x) * facing;
             if (
               fx < -r * 0.5 ||
-              fx > sw.range ||
+              fx > sw.range + r + sw.halfWidth ||
               Math.abs(runtime.y[slot]! - player.y) > DEPTH_TOL_PLAYER + r
             )
               continue;
@@ -9744,6 +9749,7 @@ export class GameRoom extends Room<ArenaState> {
     sourcePlayerId = "",
     sourceWeaponId = "",
     delivery = 0,
+    firstCollisionFrom?: Vec2,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
@@ -9781,6 +9787,9 @@ export class GameRoom extends Room<ArenaState> {
       delivery,
       sourceX: from.x,
       sourceY: from.y,
+      firstCollisionX: firstCollisionFrom?.x,
+      firstCollisionY: firstCollisionFrom?.y,
+      firstStep: true,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -9865,6 +9874,7 @@ export class GameRoom extends Room<ArenaState> {
         player.id,
         weapon.id,
         CombatDelivery.Gun,
+        player,
       );
     }
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
@@ -9923,6 +9933,7 @@ export class GameRoom extends Room<ArenaState> {
         player.id,
         weapon.id,
         CombatDelivery.Cast,
+        player,
       );
     }
   }
@@ -11807,11 +11818,21 @@ export class GameRoom extends Room<ArenaState> {
   private stepProjectiles(dt: number): void {
     const doomed: string[] = [];
     this.state.projectiles.forEach((pr, id) => {
-      let projectileFromX = pr.x;
-      let projectileFromY = pr.y;
+      const meta = this.projectileMeta.get(id);
+      const sweptFriendly =
+        !meta?.hostile &&
+        (meta?.firstStep === true ||
+          meta?.delivery === CombatDelivery.Gun ||
+          meta?.delivery === CombatDelivery.Cast);
+      let projectileFromX = meta?.firstCollisionX ?? pr.x;
+      let projectileFromY = meta?.firstCollisionY ?? pr.y;
+      if (meta) {
+        meta.firstCollisionX = undefined;
+        meta.firstCollisionY = undefined;
+        meta.firstStep = false;
+      }
       pr.x += pr.vx * dt;
       pr.y += pr.vy * dt;
-      const meta = this.projectileMeta.get(id);
       if (meta) meta.ttl -= dt;
       if (!meta || meta.ttl <= 0) {
         doomed.push(id);
@@ -11905,22 +11926,41 @@ export class GameRoom extends Room<ArenaState> {
         });
         if (consumed && !reflected) doomed.push(id);
       } else {
-        // Friendly throw: damage each fresh enemy it touches until pierce runs out.
+        // Friendly projectile: damage each fresh enemy it touches until pierce runs out.
         const kills: string[] = [];
-        this.enemyGrid.queryRadius(
-          pr.x,
-          pr.y,
-          PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
-          this.enemyCandidates,
-        );
+        if (sweptFriendly) {
+          this.enemyGrid.queryAabb(
+            Math.min(projectileFromX, pr.x) - PROJECTILE_RADIUS - MAX_ENEMY_RADIUS,
+            Math.min(projectileFromY, pr.y) - PROJECTILE_RADIUS - MAX_ENEMY_RADIUS,
+            Math.max(projectileFromX, pr.x) + PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+            Math.max(projectileFromY, pr.y) + PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+            this.enemyCandidates,
+          );
+        } else {
+          this.enemyGrid.queryRadius(
+            pr.x,
+            pr.y,
+            PROJECTILE_RADIUS + MAX_ENEMY_RADIUS,
+            this.enemyCandidates,
+          );
+        }
         for (const eid of this.enemyCandidates) {
           if (meta.pierce <= 0 || meta.hit.has(eid)) continue;
           const enemy = this.state.enemies.get(eid);
           if (!enemy) continue;
           const reach = (ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS) + PROJECTILE_RADIUS;
-          const dx = pr.x - enemy.x;
-          const dy = pr.y - enemy.y;
-          if (dx * dx + dy * dy <= reach * reach) {
+          const collided = sweptFriendly
+            ? pointSegmentDistanceSq(
+                enemy.x,
+                enemy.y,
+                projectileFromX,
+                projectileFromY,
+                pr.x,
+                pr.y,
+              ) <=
+              reach * reach
+            : (pr.x - enemy.x) ** 2 + (pr.y - enemy.y) ** 2 <= reach * reach;
+          if (collided) {
             meta.hit.add(eid);
             meta.pierce -= 1;
             // Route through the ONE damage primitive (Brand · dummy-reset · boss portal · drop · XP) so the

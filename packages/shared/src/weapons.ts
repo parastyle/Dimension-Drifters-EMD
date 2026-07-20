@@ -368,6 +368,11 @@ export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): 
 /** Shared held-implement tip for bullets, caster bolts, and beams. */
 export const weaponMuzzleReach = gunMuzzleReach;
 
+/** Two-hand orbit carries the grip this far from the authoritative player root before extending the blade.
+ * SpriteRig uses `TARGET_BODY_H * 0.3` (76 * 0.3); sharing the world-space result prevents the rendered
+ * business end from outrunning server reach. */
+export const MELEE_TWO_HAND_GRIP_REACH = 22.8;
+
 /** §20 WYSIWYG melee reach: the effective hit `range` of a swept blade, in world px from the player centre.
  *  The gun bug's melee twin (playtest: "the tips of some melee weapons don't hit"): the blade SPRITE is drawn
  *  at `displayLength` scaled by the holder's rig (`characterScale`, §7), so on every character (all sit at
@@ -379,7 +384,9 @@ export const weaponMuzzleReach = gunMuzzleReach;
  *    2. scale the whole reach by the holder's `renderScale`, so a big character's longer-drawn blade hits as
  *       far as it looks. Pure + shared so the server hit test and any client preview can't drift. */
 export function meleeReach(weapon: WeaponDef, renderScale = 1): number {
-  const spriteTip = (1 - weapon.gripFrac) * weapon.displayLength;
+  const spriteTip =
+    (1 - weapon.gripFrac) * weapon.displayLength +
+    (weapon.twoHanded ? MELEE_TWO_HAND_GRIP_REACH : 0);
   return renderScale * Math.max(weapon.range, spriteTip);
 }
 

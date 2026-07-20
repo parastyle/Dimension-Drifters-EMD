@@ -6813,3 +6813,174 @@ describe("GameRoom — bank §2.3 stale-expedition abandonment at join", () => {
     expect(receipt?.payload).toMatchObject({ ok: true, outcome: "defeat", lostEntries: 1 });
   });
 });
+
+// HIT-REGISTRATION PANEL regressions - append-only authority coverage for the two field reports.
+describe("GameRoom - hit registration regressions", () => {
+  function addProjectileTarget(
+    h: ReturnType<typeof makeRoom>,
+    id: string,
+    kind: string,
+    x: number,
+    y: number,
+  ) {
+    const enemy = new EnemyState();
+    enemy.id = id;
+    enemy.kind = kind;
+    enemy.hp = 100_000;
+    enemy.x = x;
+    enemy.y = y;
+    h.state().enemies.set(id, enemy);
+    h.room.rebuildEnemyGrid();
+    return enemy;
+  }
+
+  it("registers a belt melee edge-of-arc hit at the maximum rendered weapon reach", () => {
+    const h = makeRoom({ belt: true });
+    h.join("edge-melee");
+    const player = h.state().players.get("edge-melee");
+    const weapon = WEAPONS["x2-stormpetal-odachi"];
+    if (!weapon) throw new Error("Stormpetal Odachi fixture is required");
+    player.weapon = weapon.id;
+    h.tick(1); // settle the weapon swap
+    player.x = 1_000;
+    player.y = BELT_Y0 + DEPTH_MAX / 2;
+
+    // SpriteRig's two-hand orbit carries the grip 76 * 0.30 = 22.8 px from the root before extending the
+    // business end. Put the target's near edges on the visual blade capsule at maximum reach and exactly on
+    // the player's authored 90 px belt tolerance: both painted/collider edges clip and therefore must hit.
+    const renderedGripReach = 76 * 0.3;
+    const renderedTip = Math.max(
+      weapon.range,
+      (1 - weapon.gripFrac) * weapon.displayLength + renderedGripReach,
+    );
+    const target = new EnemyState();
+    target.id = "edge-melee-target";
+    target.kind = "dummy";
+    target.hp = 100_000;
+    const targetRadius = ENEMY_KINDS[target.kind]?.radius ?? 24;
+    target.x =
+      player.x + renderedTip + targetRadius + enemyComboShared.MELEE_BLADE_HALFWIDTH;
+    target.y = player.y + enemyComboShared.DEPTH_TOL_PLAYER + targetRadius;
+    h.state().enemies.set(target.id, target);
+    h.room.rebuildEnemyGrid();
+
+    h.send(player.id, "attack", { aimX: 1, aimY: 0, tx: target.x, ty: target.y });
+    h.tick(16);
+
+    expect(target.hp).toBeLessThan(100_000);
+  });
+
+  it("deals full point-blank gun damage when a long muzzle starts inside a colossus collider", () => {
+    const h = makeRoom();
+    h.join("point-blank-gun");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("point-blank-gun");
+    const weapon = WEAPONS["x2-sunbreaker-railgun"];
+    if (!weapon?.gun) throw new Error("Sunbreaker Railgun fixture is required");
+    player.weapon = weapon.id;
+    h.tick(1);
+
+    const bossX = 2_000;
+    const bossY = 2_000;
+    const boss = addProjectileTarget(
+      h,
+      "point-blank-colossus",
+      "dimensional-colossus",
+      bossX,
+      bossY,
+    );
+    // Muzzle reach is 210 px. From x = boss - 40 it spawns at boss + 170: inside the colossus/projectile
+    // overlap (170 + 10), then its 1,400 px/s first step exits to boss + 240.
+    player.x = bossX - 40;
+    player.y = bossY;
+    const combat = h.room.combat.get(player.id);
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = bossX + 500;
+    combat.targetY = bossY;
+    h.room.fireGun(player, combat, weapon);
+    const projectile = [...h.state().projectiles.values()].at(-1);
+    if (!projectile) throw new Error("point-blank gun did not create a projectile");
+    const projectileMeta = h.room.projectileMeta.get(projectile.id);
+    if (projectileMeta) projectileMeta.crit = 0;
+    const expectedDamage = projectileMeta?.damage;
+    if (!(expectedDamage > 0)) throw new Error("point-blank projectile needs positive damage");
+
+    h.room.stepProjectiles(0.05);
+
+    expect(boss.hp).toBeCloseTo(100_000 - expectedDamage, 8);
+  });
+
+  it("counts a friendly projectile that spawns inside a collider as a tick-one hit", () => {
+    const h = makeRoom();
+    h.join("spawn-inside");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const boss = addProjectileTarget(h, "inside-colossus", "dimensional-colossus", 2_000, 2_000);
+    const radius = ENEMY_KINDS[boss.kind]?.radius ?? 24;
+    const damage = 37;
+    h.room.fireProjectile(
+      { x: boss.x + radius, y: boss.y },
+      { x: boss.x + radius + 1, y: boss.y },
+      1_400,
+      damage,
+      false,
+      "slug",
+      1,
+      2,
+    );
+
+    h.room.stepProjectiles(0.05);
+
+    expect(boss.hp).toBe(100_000 - damage);
+  });
+
+  it("keeps a from-range projectile as a full-damage control", () => {
+    const h = makeRoom();
+    h.join("range-control");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const boss = addProjectileTarget(h, "range-colossus", "dimensional-colossus", 2_000, 2_000);
+    const damage = 37;
+    h.room.fireProjectile(
+      { x: boss.x - 500, y: boss.y },
+      { x: boss.x, y: boss.y },
+      1_000,
+      damage,
+      false,
+      "slug",
+      1,
+      2,
+    );
+    for (let tick = 0; tick < 10 && boss.hp === 100_000; tick++) h.room.stepProjectiles(0.05);
+
+    expect(boss.hp).toBe(100_000 - damage);
+  });
+
+  it("registers spawn-inside contact against a live multi-segment worm collider", () => {
+    const { h, runtime, root } = makeSerrakethRoom();
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    h.room.rebuildEnemyGrid();
+    const slot = 0;
+    const damage = 31;
+    const radius = runtime.segmentRadius(slot);
+    const hp = root.hp;
+    h.room.fireProjectile(
+      { x: runtime.x[slot] + radius, y: runtime.y[slot] },
+      { x: runtime.x[slot] + radius + 1, y: runtime.y[slot] },
+      1_400,
+      damage,
+      false,
+      "slug",
+      1,
+      2,
+    );
+
+    h.room.stepProjectiles(0.05);
+
+    // Segment armor may reduce the authored damage, but range may not turn the contact into zero damage.
+    expect(root.hp).toBeLessThan(hp);
+  });
+});
