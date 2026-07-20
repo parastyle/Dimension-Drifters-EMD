@@ -13,21 +13,30 @@ import {
 import {
   assembleBoilerplate,
   assembleGearLoadout,
+  boundsDerivedRigSockets,
   DEFAULT_LOADOUT_HEAD_TEXTURE,
+  FOOT_SOCKET_MAX_DEVIATION_SOURCE,
+  GEAR_PARTS_MANIFEST,
+  type GearPartsManifest,
   gearClickVisibility,
   gearClickVisibilityNotice,
   gearManifestItem,
-  GEAR_PARTS_MANIFEST,
+  HAND_SOCKET_MAX_DEVIATION_SOURCE,
+  HEAD_SOCKET_MAX_DEVIATION_SOURCE,
+  HEAD_TARGET_SCALE,
   HEAD_WIDTH_ENVELOPE,
-  headScaleNormalization,
-  type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
   headRiderSourcePlacement,
+  headScaleNormalization,
   isGearReplacementManifest,
   resolveGearBakeLoadout,
   resolveLoadoutHeadTexture,
   stepHatSpringChain,
+  TORSO_CORE_HEIGHT_CAP,
+  TORSO_NORMALIZATION_MAX,
+  TORSO_NORMALIZATION_MIN,
+  torsoScaleNormalization,
   validateGearPartsManifest,
 } from "./gear-parts.js";
 
@@ -494,7 +503,7 @@ describe("per-head face-rider source placement", () => {
 
 // HEAD SIZE NORMALIZATION — append-only coverage for the manifest-driven replacement-head fleet.
 describe("manifest-driven replacement-head scale", () => {
-  it("keeps every installed head within 88-100% of the base alpha height and 135% of its width", () => {
+  it("keeps every installed head within the owner-nudged base alpha band and wide-mask envelope", () => {
     const v2 = replacementPairManifest("head-normalization-r1");
     const base = v2.boilerplate.parts.find((part) => part.id === "head");
     const heads = v2.slots.find((slot) => slot.id === "head")?.items ?? [];
@@ -507,10 +516,12 @@ describe("manifest-driven replacement-head scale", () => {
       const normalized = headScaleNormalization(v2, item.id as GearId);
       const effectiveHeight = normalized.headHeight * normalized.mountScale;
       const effectiveWidth = normalized.headWidth * normalized.mountScale;
-      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeGreaterThanOrEqual(0.88);
-      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeLessThanOrEqual(1.000001);
+      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeGreaterThanOrEqual(0.94);
+      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeLessThanOrEqual(
+        HEAD_TARGET_SCALE + 0.000001,
+      );
       expect(effectiveWidth / baseEffectiveWidth, item.id).toBeLessThanOrEqual(
-        HEAD_WIDTH_ENVELOPE + 0.000001,
+        HEAD_WIDTH_ENVELOPE * HEAD_TARGET_SCALE + 0.000001,
       );
     }
   });
@@ -602,10 +613,9 @@ describe("gear catalog click visibility", () => {
     expect(rows).toHaveLength(GEAR_IDS.length);
     expect(new Set(rows.map(([id]) => id)).size).toBe(GEAR_IDS.length);
     for (const [id, state] of rows) {
-      expect(
-        ["installed", "art-rendering", "invalid-art", "intentionally-artless"],
-        id,
-      ).toContain(state);
+      expect(["installed", "art-rendering", "invalid-art", "intentionally-artless"], id).toContain(
+        state,
+      );
       if (state === "installed")
         expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id)).toBeNull();
       else
@@ -645,6 +655,241 @@ describe("gear catalog click visibility", () => {
       expect(state === "installed", id).toBe(
         Boolean(GEAR_PARTS_MANIFEST && gearManifestItem(GEAR_PARTS_MANIFEST, id)),
       );
+    }
+  });
+});
+
+// BOUNDS-ANCHOR RIG — append-only catalog-wide torso normalization and socket authority coverage.
+describe("alpha-normalized torso family and bounds-derived rig sockets", () => {
+  const sourcePoint = (
+    v2: GearPartsManifest,
+    id: "head" | "hand-l" | "hand-r" | "foot-l" | "foot-r",
+  ) => {
+    const raw = v2.boilerplate.parts.find((part) => part.id === id)?.receiverAnchor.raw;
+    if (!raw) throw new Error(`missing boilerplate ${id} receiver`);
+    return raw;
+  };
+
+  it("normalizes all 12 torso core masses into one measured band while retaining ornate overhang", () => {
+    const v2 = replacementPairManifest("torso-normalization-r1");
+    const base = v2.boilerplate.parts.find((part) => part.id === "body");
+    const installedTorsoIds = new Set(
+      GEAR_PARTS_MANIFEST?.slots
+        .find((slot) => slot.id === "torso")
+        ?.items.filter((item) => item.renderRole === "replace-torso")
+        .map((item) => item.id) ?? [],
+    );
+    const torsos =
+      v2.slots
+        .find((slot) => slot.id === "torso")
+        ?.items.filter((item) => installedTorsoIds.has(item.id)) ?? [];
+    if (!base) throw new Error("base torso measurement missing");
+    expect(torsos).toHaveLength(12);
+    const baseEffectiveHeight = base.alphaBounds.height * base.mountScale;
+    const baseEffectiveWidth = base.alphaBounds.width * base.mountScale;
+
+    for (const item of torsos) {
+      const id = item.id as GearId;
+      const normalized = torsoScaleNormalization(v2, id);
+      const coreRatio = (normalized.coreHeight * normalized.mountScale) / baseEffectiveHeight;
+      const fullHeightRatio = normalized.effectiveBounds.height / baseEffectiveHeight;
+      const widthRatio = normalized.effectiveBounds.width / baseEffectiveWidth;
+      expect(normalized.gearId, id).toBe(id);
+      expect(normalized.factor, id).toBeGreaterThanOrEqual(TORSO_NORMALIZATION_MIN);
+      expect(normalized.factor, id).toBeLessThanOrEqual(TORSO_NORMALIZATION_MAX);
+      expect(coreRatio, id).toBeGreaterThanOrEqual(0.999999);
+      expect(coreRatio, id).toBeLessThanOrEqual(1.000001);
+      expect(fullHeightRatio, id).toBeGreaterThanOrEqual(0.999999);
+      expect(fullHeightRatio, id).toBeLessThanOrEqual(TORSO_CORE_HEIGHT_CAP + 0.01);
+      expect(widthRatio, id).toBeGreaterThanOrEqual(0.7);
+      expect(widthRatio, id).toBeLessThanOrEqual(1.03);
+
+      const resolved = resolveGearBakeLoadout(v2, { ...STARTER_GEAR_LOADOUT, torso: id });
+      expect(resolved.extras.torsoMountScale, id).toBeCloseTo(normalized.mountScale, 12);
+      expect(resolved.recipe.parts.body.layers[0]?.bakeTransform?.scale, id).toBeCloseTo(
+        normalized.mountScale,
+        12,
+      );
+    }
+  });
+
+  it("keeps the naked drifter's five receiver points and zero-origin bake path exactly unchanged", () => {
+    const v2 = replacementPairManifest("base-pixel-identity-r1");
+    const resolved = resolveGearBakeLoadout(v2, STARTER_GEAR_LOADOUT);
+    const sockets = resolved.extras.rigSockets;
+    expect(torsoScaleNormalization(v2, null).mountScale).toBe(1);
+    for (const id of ["head", "hand-l", "hand-r", "foot-l", "foot-r"] as const)
+      expect(sockets[id], id).toEqual(sourcePoint(v2, id));
+    for (const recipe of Object.values(resolved.recipe.parts)) {
+      expect(recipe.layers).toHaveLength(1);
+      expect(recipe.layers[0]?.role).toBe("base");
+      expect(recipe.layers[0]?.bakeTransform).toBeUndefined();
+      expect(recipe.layers[0]?.offsetX).toBeUndefined();
+      expect(recipe.layers[0]?.offsetY).toBeUndefined();
+    }
+  });
+
+  it("holds the head/top and foot/hem gaps across all 12 torsos while hands obey weapon-safe caps", () => {
+    const v2 = replacementPairManifest("socket-invariants-r1");
+    const baseSockets = boundsDerivedRigSockets(v2, null);
+    const legacyHead = sourcePoint(v2, "head");
+    const legacyLeftHand = sourcePoint(v2, "hand-l");
+    const legacyRightHand = sourcePoint(v2, "hand-r");
+    const legacyLeftFoot = sourcePoint(v2, "foot-l");
+    const legacyRightFoot = sourcePoint(v2, "foot-r");
+    const baseHeadGap = baseSockets.torsoBounds.top - legacyHead.y;
+    const baseFootGap = legacyLeftFoot.y - baseSockets.torsoBounds.bottom;
+    const installedTorsoIds = new Set(
+      GEAR_PARTS_MANIFEST?.slots
+        .find((slot) => slot.id === "torso")
+        ?.items.filter((item) => item.renderRole === "replace-torso")
+        .map((item) => item.id) ?? [],
+    );
+    const torsos =
+      v2.slots
+        .find((slot) => slot.id === "torso")
+        ?.items.filter((item) => installedTorsoIds.has(item.id)) ?? [];
+    expect(torsos).toHaveLength(12);
+
+    for (const item of torsos) {
+      const sockets = boundsDerivedRigSockets(v2, item.id as GearId);
+      expect(sockets.torsoBounds.top - sockets.head.y, `${item.id}:head-gap`).toBeCloseTo(
+        baseHeadGap,
+        10,
+      );
+      expect(
+        sockets["foot-l"].y - sockets.torsoBounds.bottom,
+        `${item.id}:left-foot-gap`,
+      ).toBeCloseTo(baseFootGap, 10);
+      expect(
+        sockets["foot-r"].y - sockets.torsoBounds.bottom,
+        `${item.id}:right-foot-gap`,
+      ).toBeCloseTo(baseFootGap, 10);
+      for (const [id, legacy] of [
+        ["hand-l", legacyLeftHand],
+        ["hand-r", legacyRightHand],
+      ] as const) {
+        expect(Math.abs(sockets[id].x - legacy.x), `${item.id}:${id}:x`).toBeLessThanOrEqual(
+          HAND_SOCKET_MAX_DEVIATION_SOURCE.x,
+        );
+        expect(Math.abs(sockets[id].y - legacy.y), `${item.id}:${id}:y`).toBeLessThanOrEqual(
+          HAND_SOCKET_MAX_DEVIATION_SOURCE.y,
+        );
+      }
+      expect(Math.abs(sockets.head.x - legacyHead.x), `${item.id}:head-x`).toBeLessThanOrEqual(
+        HEAD_SOCKET_MAX_DEVIATION_SOURCE.x,
+      );
+      for (const [id, legacy] of [
+        ["foot-l", legacyLeftFoot],
+        ["foot-r", legacyRightFoot],
+      ] as const) {
+        expect(Math.abs(sockets[id].x - legacy.x), `${item.id}:${id}:x`).toBeLessThanOrEqual(
+          FOOT_SOCKET_MAX_DEVIATION_SOURCE.x,
+        );
+        expect(Math.abs(sockets[id].y - legacy.y), `${item.id}:${id}:y`).toBeLessThanOrEqual(
+          FOOT_SOCKET_MAX_DEVIATION_SOURCE.y,
+        );
+      }
+    }
+  });
+
+  it("keeps all 17 nudged heads on face riders while hats remain on the base authoring band", () => {
+    const v2 = replacementPairManifest("all-head-riders-hats-r1");
+    const heads = v2.slots.find((slot) => slot.id === "head")?.items ?? [];
+    const base = v2.boilerplate.parts.find((part) => part.id === "head");
+    if (!base) throw new Error("base head missing");
+    expect(heads).toHaveLength(17);
+    const rigScale = 76 / v2.socketFrame.bodyHeightL;
+
+    for (const item of heads) {
+      const id = item.id as GearId;
+      const normalized = headScaleNormalization(v2, id);
+      const heightRatio =
+        (normalized.headHeight * normalized.mountScale) /
+        (base.alphaBounds.height * base.mountScale);
+      expect(heightRatio, id).toBeGreaterThanOrEqual(0.94);
+      expect(heightRatio, id).toBeLessThanOrEqual(HEAD_TARGET_SCALE + 0.000001);
+      const resolved = resolveGearBakeLoadout(v2, {
+        ...STARTER_GEAR_LOADOUT,
+        head: id,
+        hat: "coldsnap-hat",
+      });
+      expect(resolved.extras.headMountScale, id).toBeCloseTo(normalized.mountScale, 12);
+      const hat = resolved.extras.hats[0];
+      if (!hat) throw new Error(`${id} lost the control hat`);
+      const guardedHatScale =
+        ((rigScale * resolved.extras.headMountScale) / resolved.extras.headMountScale) *
+        hat.source.mountScale *
+        hat.stackScale;
+      expect(guardedHatScale, id).toBeCloseTo(
+        rigScale * hat.source.mountScale * hat.stackScale,
+        12,
+      );
+      for (const receiver of ["face.eyes", "face.mouth"] as const) {
+        const authoring =
+          receiver === "face.eyes"
+            ? GEAR_CATALOG["blank-drifter-head"].faceReceivers.eyes
+            : GEAR_CATALOG["blank-drifter-head"].faceReceivers.mouth;
+        const placement = headRiderSourcePlacement(id, receiver, authoring);
+        expect(authoring.x + placement.offset.x, `${id}:${receiver}:x`).toBe(
+          placement.targetSource.x,
+        );
+        expect(authoring.y + placement.offset.y, `${id}:${receiver}:y`).toBe(
+          placement.targetSource.y,
+        );
+      }
+    }
+  });
+
+  it("reduces alpha-box interpenetration for both wide masks on Graveside and Ashen collars", () => {
+    const v2 = replacementPairManifest("collar-mask-proof-r1");
+    const baseHead = v2.boilerplate.parts.find((part) => part.id === "head");
+    if (!baseHead) throw new Error("base head missing");
+    type Box = { left: number; top: number; right: number; bottom: number };
+    const overlap = (a: Box, b: Box) => ({
+      width: Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)),
+      height: Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)),
+    });
+
+    for (const torsoId of ["graveside-shirt", "ashen-crusader-shirt"] as const) {
+      const torsoItem = gearManifestItem(v2, torsoId);
+      const torsoPart = torsoItem?.parts.find((part) => part.id === "torso");
+      if (!torsoPart) throw new Error(`${torsoId} missing torso alpha`);
+      const torsoAfter = torsoScaleNormalization(v2, torsoId).effectiveBounds;
+      const sockets = boundsDerivedRigSockets(v2, torsoId);
+      const torsoBefore: Box = {
+        left: torsoPart.alphaBounds.left,
+        top: torsoPart.alphaBounds.top,
+        right: torsoPart.alphaBounds.left + torsoPart.alphaBounds.width,
+        bottom: torsoPart.alphaBounds.top + torsoPart.alphaBounds.height,
+      };
+      for (const headId of ["coldsnap-head", "demon-mask-head"] as const) {
+        const headItem = gearManifestItem(v2, headId);
+        const headPart = headItem?.parts.find((part) => part.id === "head");
+        if (!headPart) throw new Error(`${headId} missing head alpha`);
+        const afterMount = headScaleNormalization(v2, headId).mountScale;
+        const beforeMount = afterMount / HEAD_TARGET_SCALE;
+        const boxAt = (socket: Readonly<{ x: number; y: number }>, mount: number): Box => ({
+          left: socket.x + (headPart.alphaBounds.left - headPart.pivotSource.x) * mount,
+          top: socket.y + (headPart.alphaBounds.top - headPart.pivotSource.y) * mount,
+          right:
+            socket.x +
+            (headPart.alphaBounds.left + headPart.alphaBounds.width - headPart.pivotSource.x) *
+              mount,
+          bottom:
+            socket.y +
+            (headPart.alphaBounds.top + headPart.alphaBounds.height - headPart.pivotSource.y) *
+              mount,
+        });
+        const before = overlap(torsoBefore, boxAt(sourcePoint(v2, "head"), beforeMount));
+        const after = overlap(torsoAfter, boxAt(sockets.head, afterMount));
+        expect(after.width, `${torsoId}+${headId}:connected-width`).toBeGreaterThan(200);
+        expect(after.height, `${torsoId}+${headId}:connected-height`).toBeGreaterThan(100);
+        expect(
+          after.width * after.height,
+          `${torsoId}+${headId}:interpenetration-area`,
+        ).toBeLessThan(before.width * before.height);
+      }
     }
   });
 });

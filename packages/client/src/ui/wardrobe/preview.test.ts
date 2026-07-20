@@ -590,7 +590,10 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
     const assembly = assembleBoilerplate(manifest, 76);
     const head = assembly.parts.find((part) => part.source.id === "head");
     if (!head || assembly.parts.length !== 6) throw new Error("fixed boilerplate parts missing");
-    const edge = (part: (typeof assembly.parts)[number], side: "left" | "right" | "top" | "bottom") => {
+    const edge = (
+      part: (typeof assembly.parts)[number],
+      side: "left" | "right" | "top" | "bottom",
+    ) => {
       const frame = GEAR_BAKE_FRAMES[part.source.id];
       if (side === "left") return part.x - frame.origin.x * frame.width * part.scale;
       if (side === "right") return part.x + (1 - frame.origin.x) * frame.width * part.scale;
@@ -600,7 +603,9 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
     expect(bounds.minX).toBeCloseTo(Math.min(...assembly.parts.map((part) => edge(part, "left"))));
     expect(bounds.maxX).toBeCloseTo(Math.max(...assembly.parts.map((part) => edge(part, "right"))));
     expect(bounds.minY).toBeCloseTo(Math.min(...assembly.parts.map((part) => edge(part, "top"))));
-    expect(bounds.maxY).toBeCloseTo(Math.max(...assembly.parts.map((part) => edge(part, "bottom"))));
+    expect(bounds.maxY).toBeCloseTo(
+      Math.max(...assembly.parts.map((part) => edge(part, "bottom"))),
+    );
     expect(head.scale).toBeCloseTo(assembly.scale * head.source.mountScale);
   });
 });
@@ -684,5 +689,28 @@ describe("WardrobeCharacterPreview manifest-version fallback", () => {
     }
     expect(truth.extraNodes).toHaveLength(call.lease.extras.parts.length);
     expect(truth.extraNodes.every((node) => node.gear?.extraRole !== undefined)).toBe(true);
+  });
+});
+
+// BOUNDS-ANCHOR RIG — append-only proof that preview consumes the lease socket truth used by SpriteRig.
+describe("WardrobeCharacterPreview bounds-derived socket parity", () => {
+  it("mounts all five detached parts from the shared resolved source-card sockets", async () => {
+    const manifest = replacementPairManifest("wardrobe-bounds-sockets-r1");
+    const baker = new FakeSharedBaker();
+    const scene = fakeScene();
+    const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
+    preview.refresh({ ...STARTER_GEAR_LOADOUT, torso: "graveside-shirt" as GearId }, 0);
+    await settlePreview();
+
+    const resolution = baker.calls[0]?.resolution;
+    if (!resolution) throw new Error("shared socket lease did not resolve");
+    const root = manifest.socketFrame.bodyRootSource;
+    const sourceToPreview = 76 / manifest.socketFrame.bodyHeightL;
+    for (const partId of ["head", "hand-l", "hand-r", "foot-l", "foot-r"] as const) {
+      const socket = resolution.extras.rigSockets[partId];
+      const image = previewTruth(preview).partNodes.get(partId)?.image;
+      expect(image?.x, `${partId}:x`).toBeCloseTo((socket.x - root.x) * sourceToPreview, 10);
+      expect(image?.y, `${partId}:y`).toBeCloseTo((socket.y - root.y) * sourceToPreview, 10);
+    }
   });
 });

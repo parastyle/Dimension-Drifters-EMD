@@ -2317,6 +2317,29 @@ export class SpriteRig {
       .setOrigin(body.originX, body.originY);
   }
 
+  /** Apply the shared source-card socket solution to this retained rig's procedural limb rest points. */
+  private applyResolvedRigSockets(assembly: GearLoadoutAssembly): void {
+    const manifest = this.boilerplateManifest;
+    if (!manifest) return;
+    const root = manifest.socketFrame.bodyRootSource;
+    const sourceToRig =
+      this.boilerplateAssembly?.scale ?? TARGET_BODY_H / manifest.socketFrame.bodyHeightL;
+    for (const hand of this.hands) {
+      const socket = assembly.rigSockets[hand.front ? "hand-r" : "hand-l"];
+      hand.ox = (socket.x - root.x) * sourceToRig;
+      hand.oy = (socket.y - root.y) * sourceToRig;
+      hand.img.setPosition(hand.ox, hand.oy);
+    }
+    for (const foot of this.feet) {
+      const socket = assembly.rigSockets[foot.front ? "foot-r" : "foot-l"];
+      foot.ox = (socket.x - root.x) * sourceToRig;
+      foot.oy = (socket.y - root.y) * sourceToRig;
+      foot.img.setPosition(foot.ox, foot.oy);
+    }
+    // A torso swap is an intentional mount rebase, not spring input from the prior collar.
+    this.floatingHeadLodSleeping = true;
+  }
+
   private commitGearBakeLease(lease: GearTextureBakeLease): boolean {
     this.installBoilerplateIfReady();
     const head = this.boilerplateHead;
@@ -2363,6 +2386,7 @@ export class SpriteRig {
     const previousLease = this.gearBakeLease;
     this.gearBakeLease = lease;
     this.gearAssembly = lease.extras;
+    this.applyResolvedRigSockets(lease.extras);
     this.gearArtComplete = false;
     this.clearGearAttachments();
     this.syncGearArt();
@@ -2460,6 +2484,7 @@ export class SpriteRig {
     previousLease?.release();
     const next = assembleGearLoadout(manifest, loadout, prestige, towerComposition);
     this.gearAssembly = next;
+    this.applyResolvedRigSockets(next);
     this.gearArtComplete = false;
     ensureGearAssemblyTextures(this.scene, next);
 
@@ -6996,10 +7021,12 @@ export class SpriteRig {
       return;
     }
     const assemblyScale = this.boilerplateAssembly?.scale ?? 1;
-    // The identity master owns the complete neckless rest geometry. Alpha bounds and silhouette overlap never
-    // enter placement, so the current texture and the incoming closed-oval texture share this exact socket.
-    const localX = source.x / assemblyScale;
-    const localY = source.y / assemblyScale;
+    const root = this.boilerplateManifest?.socketFrame.bodyRootSource;
+    const resolvedSocket = this.gearAssembly?.rigSockets.head;
+    // The equipped torso's post-normalization alpha top/center owns the rest socket. Falling back to the
+    // boilerplate assembly preserves pre-load behavior; resolved base gear produces the identical numbers.
+    const localX = resolvedSocket && root ? resolvedSocket.x - root.x : source.x / assemblyScale;
+    const localY = resolvedSocket && root ? resolvedSocket.y - root.y : source.y / assemblyScale;
     const dx = localX * this.body.scaleX;
     const dy = localY * this.body.scaleY;
     const cosine = Math.cos(this.body.rotation);
@@ -7043,10 +7070,7 @@ export class SpriteRig {
     head
       .setPosition(this.floatingHeadSpring.x, this.floatingHeadSpring.y)
       .setRotation(this.body.rotation + determinantSign * source.rotation)
-      .setScale(
-        this.body.scaleX * headMountScale,
-        this.body.scaleY * headMountScale,
-      )
+      .setScale(this.body.scaleX * headMountScale, this.body.scaleY * headMountScale)
       .setVisible(true);
   }
 
@@ -7064,8 +7088,10 @@ export class SpriteRig {
     // replacement head. Face riders deliberately keep it and therefore follow the normalized face.
     const headMountScale =
       this.gearAssembly?.headMountScale ?? headSource.source.mountScale ?? HEAD_MOUNT_SCALE;
-    const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
-    const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
+    const parentScaleX =
+      spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
+    const parentScaleY =
+      spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
     const dx = localX * parentScaleX;
     const dy = localY * parentScaleY;
     const cosine = Math.cos(head.rotation);

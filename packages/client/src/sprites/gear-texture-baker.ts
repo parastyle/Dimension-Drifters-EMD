@@ -182,17 +182,36 @@ export class PhaserGearTextureBakeBackend implements GearTextureBakeBackend {
       false,
     );
     renderTexture.clear();
-    for (const layer of recipe.layers)
-      renderTexture.stamp(
-        layer.textureKey,
-        undefined,
-        -recipe.frame.left + (layer.offsetX ?? 0),
-        -recipe.frame.top + (layer.offsetY ?? 0),
-        {
-          originX: 0,
-          originY: 0,
-        },
-      );
+    for (const layer of recipe.layers) {
+      const transform = layer.bakeTransform;
+      if (transform && transform.scale !== 1) {
+        // Keep the authored torso pivot registered while scaling its measured alpha silhouette. The fixed
+        // frame clips exactly as before, so arena and wardrobe receive the same normalized baked card.
+        renderTexture.stamp(
+          layer.textureKey,
+          undefined,
+          transform.pivot.x - recipe.frame.left + (layer.offsetX ?? 0),
+          transform.pivot.y - recipe.frame.top + (layer.offsetY ?? 0),
+          {
+            originX: transform.pivot.x / transform.image.width,
+            originY: transform.pivot.y / transform.image.height,
+            scale: transform.scale,
+          },
+        );
+      } else {
+        // Preserve the original zero-origin stamp for the naked drifter and 1x garments pixel-for-pixel.
+        renderTexture.stamp(
+          layer.textureKey,
+          undefined,
+          -recipe.frame.left + (layer.offsetX ?? 0),
+          -recipe.frame.top + (layer.offsetY ?? 0),
+          {
+            originX: 0,
+            originY: 0,
+          },
+        );
+      }
+    }
     renderTexture.render();
     renderTexture.saveTexture(recipe.key);
 

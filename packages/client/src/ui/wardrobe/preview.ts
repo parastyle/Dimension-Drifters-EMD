@@ -4,20 +4,21 @@ import {
   assembleBoilerplate,
   assembleGearLoadout,
   type BoilerplateAssemblyPart,
+  type BoundsDerivedRigSockets,
   boilerplateTextureKey,
   ensureGearAssemblyTextures,
   ensureGearPartFrame,
-  gearClickVisibilityNotice,
   GEAR_BAKE_FRAMES,
   GEAR_BAKED_PART_IDS,
   GEAR_PARTS_MANIFEST,
-  HEAD_MOUNT_SCALE,
   type GearAssemblyPart,
   type GearBakedPartId,
   type GearExtraAssembly,
   type GearLoadoutAssembly,
   type GearPartsManifest,
+  gearClickVisibilityNotice,
   gearTextureKey,
+  HEAD_MOUNT_SCALE,
   isGearReplacementManifest,
   MAX_HAT_SLOTS,
 } from "../../sprites/gear-parts.js";
@@ -157,15 +158,21 @@ function expandExtraBounds(bounds: WardrobePreviewBounds, node: PreviewNode): vo
 export function wardrobeFixedPartBounds(
   manifest: GearPartsManifest,
   targetBodyHeight = TARGET_BODY_HEIGHT,
+  rigSockets?: BoundsDerivedRigSockets,
 ): WardrobePreviewBounds {
   const bounds = emptyBounds();
   for (const [order, part] of assembleBoilerplate(manifest, targetBodyHeight).parts.entries()) {
+    const socket = part.source.id === "body" ? undefined : rigSockets?.[part.source.id];
+    const root = manifest.socketFrame.bodyRootSource;
+    const sourceToTarget = targetBodyHeight / manifest.socketFrame.bodyHeightL;
+    const x = socket ? (socket.x - root.x) * sourceToTarget : part.x;
+    const y = socket ? (socket.y - root.y) * sourceToTarget : part.y;
     expandFixedPartBounds(bounds, {
       image: undefined as unknown as Phaser.GameObjects.Image,
       depth: part.depth,
       order,
-      x: part.x,
-      y: part.y,
+      x,
+      y,
       scaleX: part.scale,
       scaleY: part.scale,
       rotation: part.rotation,
@@ -368,9 +375,7 @@ export class WardrobeCharacterPreview {
         ? `DRIFTER · ${GEAR_CATALOG[previewId].slot.toUpperCase()} VISUAL DRAFT`
         : "DRIFTER · EQUIPPED V1 COMPATIBILITY",
     );
-    const clickNotice = inspectionId
-      ? gearClickVisibilityNotice(manifest, inspectionId)
-      : null;
+    const clickNotice = inspectionId ? gearClickVisibilityNotice(manifest, inspectionId) : null;
     if (clickNotice) this.status.setText(clickNotice).setColor("#ffb24a");
     if (textureState === "pending") {
       if (!clickNotice)
@@ -483,6 +488,7 @@ export class WardrobeCharacterPreview {
     const body = this.partNodes.get("body");
     const head = this.partNodes.get("head");
     if (!body || !head) return;
+    this.applyResolvedRigSockets(extras.rigSockets);
     const baseHeadMountScale = head.boilerplate?.source.mountScale ?? HEAD_MOUNT_SCALE;
     const baseHeadScale = (head.boilerplate?.scale ?? head.scaleX) / baseHeadMountScale;
     head.effectiveHeadMountScale = extras.headMountScale;
@@ -508,7 +514,11 @@ export class WardrobeCharacterPreview {
     this.artRoot.removeAll(false);
     this.artRoot.add(allNodes.map((node) => node.image));
 
-    const bounds = wardrobeFixedPartBounds(this.manifest as GearPartsManifest);
+    const bounds = wardrobeFixedPartBounds(
+      this.manifest as GearPartsManifest,
+      TARGET_BODY_HEIGHT,
+      extras.rigSockets,
+    );
     for (const node of this.extraNodes) expandExtraBounds(bounds, node);
     if (extras.towerOverflow > 0 && below) {
       const socket = topSocketPosition(below);
@@ -537,6 +547,7 @@ export class WardrobeCharacterPreview {
     const body = this.partNodes.get("body");
     const head = this.partNodes.get("head");
     if (!body || !head) return;
+    this.applyResolvedRigSockets(assembly.rigSockets);
     head.effectiveHeadMountScale = head.boilerplate?.source.mountScale ?? HEAD_MOUNT_SCALE;
     let order = GEAR_BAKED_PART_IDS.length;
     let belowHat: PreviewNode | undefined;
@@ -559,7 +570,11 @@ export class WardrobeCharacterPreview {
     this.artRoot.removeAll(false);
     this.artRoot.add(allNodes.map((node) => node.image));
 
-    const bounds = wardrobeFixedPartBounds(this.manifest as GearPartsManifest);
+    const bounds = wardrobeFixedPartBounds(
+      this.manifest as GearPartsManifest,
+      TARGET_BODY_HEIGHT,
+      assembly.rigSockets,
+    );
     for (const node of this.extraNodes) expandExtraBounds(bounds, node);
     if (assembly.towerOverflow > 0 && belowHat) {
       const socket = topSocketPosition(belowHat);
@@ -577,6 +592,21 @@ export class WardrobeCharacterPreview {
       expandRotatedBounds(bounds, socket.x, socket.y - 2, 1, 1, 0, -18, -14, 18, 2);
     }
     this.layoutComposite(finiteBounds(bounds));
+  }
+
+  /** Static preview consumes the same source-card socket solution as every retained arena rig. */
+  private applyResolvedRigSockets(sockets: BoundsDerivedRigSockets): void {
+    if (!this.manifest) return;
+    const root = this.manifest.socketFrame.bodyRootSource;
+    const sourceToPreview = TARGET_BODY_HEIGHT / this.manifest.socketFrame.bodyHeightL;
+    for (const partId of ["head", "hand-l", "hand-r", "foot-l", "foot-r"] as const) {
+      const node = this.partNodes.get(partId);
+      if (!node) continue;
+      const socket = sockets[partId];
+      node.x = (socket.x - root.x) * sourceToPreview;
+      node.y = (socket.y - root.y) * sourceToPreview;
+      node.image.setPosition(node.x, node.y);
+    }
   }
 
   private createExtraNode(
@@ -612,8 +642,10 @@ export class WardrobeCharacterPreview {
         (spec.source.receiverAnchor.yL - anchor.yL) * this.manifest.socketFrame.bodyHeightL;
       const headMountScale =
         head.effectiveHeadMountScale ?? source.source.mountScale ?? HEAD_MOUNT_SCALE;
-      const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
-      const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
+      const parentScaleX =
+        spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
+      const parentScaleY =
+        spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
       const dx = localX * parentScaleX;
       const dy = localY * parentScaleY;
       const cosine = Math.cos(head.rotation);

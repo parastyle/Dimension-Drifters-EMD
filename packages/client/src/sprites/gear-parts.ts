@@ -8,9 +8,20 @@ export const GEAR_REPLACEMENT_CONTRACT_ID = "GEAR_REPLACEMENT_V2" as const;
 export const MAX_VISIBLE_HATS = 12;
 export const MAX_HAT_SLOTS = 30;
 export const HEAD_MOUNT_SCALE = 0.85;
+export const HEAD_TARGET_SCALE = 1.06;
 export const HEAD_NORMALIZATION_MIN = 0.4;
-export const HEAD_NORMALIZATION_MAX = 1;
+export const HEAD_NORMALIZATION_MAX = HEAD_TARGET_SCALE;
 export const HEAD_WIDTH_ENVELOPE = 1.35;
+export const TORSO_CORE_HEIGHT_CAP = 1.2;
+export const TORSO_NORMALIZATION_MIN = 0.82;
+export const TORSO_NORMALIZATION_MAX = 1.08;
+
+/** Source-card caps; at the 76/512 rig scale these are 3.0 x 3.6px for weapon-bearing hands. */
+export const HAND_SOCKET_MAX_DEVIATION_SOURCE = Object.freeze({ x: 20, y: 24 });
+/** The current deepest collar needs 88.7 source px; 96 retains its exact top-edge gap. */
+export const HEAD_SOCKET_MAX_DEVIATION_SOURCE = Object.freeze({ x: 24, y: 96 });
+/** Hem following is presentation-only and remains within 5.94 rig px of server-era foot positions. */
+export const FOOT_SOCKET_MAX_DEVIATION_SOURCE = Object.freeze({ x: 16, y: 40 });
 
 export const GEAR_BAKED_PART_IDS = [
   "body",
@@ -81,6 +92,12 @@ export interface GearBakeSourceDependency {
   /** Source-canvas translation applied before the shared replacement frame is cropped. */
   readonly offsetX?: number;
   readonly offsetY?: number;
+  /** Optional source-card transform applied around the authored pivot before the fixed frame is cropped. */
+  readonly bakeTransform?: {
+    readonly scale: number;
+    readonly pivot: Readonly<{ x: number; y: number }>;
+    readonly image: Readonly<{ width: number; height: number }>;
+  };
   readonly state: GearTextureState;
   readonly blank: boolean;
 }
@@ -274,10 +291,36 @@ export interface GearAssemblyPart {
   extraRole?: "cloak-far" | "overlay-hat" | "prestige-cap";
 }
 
+export type BoundsDerivedRigSocketId = "head" | "hand-l" | "hand-r" | "foot-l" | "foot-r";
+
+export interface SourceCardBounds {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+export interface BoundsDerivedRigSockets {
+  readonly torsoGearId: GearId | null;
+  /** Torso alpha bounds after its bake-time mount transform, in the untrimmed 1024px source card. */
+  readonly torsoBounds: SourceCardBounds;
+  readonly head: Readonly<{ x: number; y: number }>;
+  readonly "hand-l": Readonly<{ x: number; y: number }>;
+  readonly "hand-r": Readonly<{ x: number; y: number }>;
+  readonly "foot-l": Readonly<{ x: number; y: number }>;
+  readonly "foot-r": Readonly<{ x: number; y: number }>;
+}
+
 export interface GearLoadoutAssembly {
   parts: GearAssemblyPart[];
   /** Effective replacement-head mount. Face riders inherit it; head-mounted hats divide it back out. */
   headMountScale: number;
+  /** Replacement torso transform baked around its authoring pivot; one means pixel-identical base scale. */
+  torsoMountScale: number;
+  /** One shared source-card socket truth consumed by arena rigs (local/remote) and wardrobe preview. */
+  rigSockets: BoundsDerivedRigSockets;
   towerTotal: number;
   towerVisible: number;
   towerOverflow: number;
@@ -904,6 +947,186 @@ export function gearManifestItem(
   return undefined;
 }
 
+export interface TorsoScaleNormalization {
+  readonly gearId: GearId | null;
+  readonly baseWidth: number;
+  readonly baseHeight: number;
+  readonly torsoWidth: number;
+  readonly torsoHeight: number;
+  /** Height used for family matching; ornate overhang beyond 1.20x base is deliberately not normalized. */
+  readonly coreHeight: number;
+  readonly factor: number;
+  readonly mountScale: number;
+  readonly effectiveBounds: SourceCardBounds;
+}
+
+function scaledSourceBounds(
+  bounds: Readonly<{ left: number; top: number; width: number; height: number }>,
+  pivot: Readonly<{ x: number; y: number }>,
+  scale: number,
+): SourceCardBounds {
+  const left = pivot.x + (bounds.left - pivot.x) * scale;
+  const top = pivot.y + (bounds.top - pivot.y) * scale;
+  const width = bounds.width * scale;
+  const height = bounds.height * scale;
+  return { left, top, width, height, right: left + width, bottom: top + height };
+}
+
+/**
+ * Normalize torso core mass without erasing ornate silhouette character.
+ *
+ *   coreH = min(torsoAlphaH, 1.20 * baseAlphaH)
+ *   mount = baseMount * clamp(baseAlphaH / coreH, 0.82, 1.08)
+ *
+ * A full-height match made the tall-collar/coattail torsos read like undersized shirts. Capping only the
+ * measurement treats the first 20% as family mass and leaves additional painted overhang visible. Scaling
+ * happens around the authored torso pivot, so its source-card registration remains stable.
+ */
+export function torsoScaleNormalization(
+  manifest: GearPartsManifest,
+  gearId: GearId | null | undefined,
+): TorsoScaleNormalization {
+  const base = manifest.boilerplate.parts.find((part) => part.id === "body");
+  const baseWidth = base?.alphaBounds.width ?? 1;
+  const baseHeight = base?.alphaBounds.height ?? 1;
+  const baseMountScale = base?.mountScale ?? 1;
+  const basePivot = base?.pivotSource ?? manifest.socketFrame.bodyRootSource;
+  const baseBounds = base?.alphaBounds ?? {
+    left: basePivot.x,
+    top: basePivot.y,
+    width: 1,
+    height: 1,
+  };
+  const item =
+    gearId && isGearId(gearId) && GEAR_CATALOG[gearId].slot === "torso"
+      ? gearManifestItem(manifest, gearId)
+      : undefined;
+  const torso =
+    item?.renderRole === "replace-torso"
+      ? item.parts.find((part) => part.id === "torso")
+      : undefined;
+  if (!torso) {
+    return {
+      gearId: null,
+      baseWidth,
+      baseHeight,
+      torsoWidth: baseWidth,
+      torsoHeight: baseHeight,
+      coreHeight: baseHeight,
+      factor: 1,
+      mountScale: baseMountScale,
+      effectiveBounds: scaledSourceBounds(baseBounds, basePivot, baseMountScale),
+    };
+  }
+  const torsoWidth = torso.alphaBounds.width;
+  const torsoHeight = torso.alphaBounds.height;
+  const coreHeight = Math.min(torsoHeight, baseHeight * TORSO_CORE_HEIGHT_CAP);
+  const factor = clamp(
+    baseHeight / Math.max(1, coreHeight),
+    TORSO_NORMALIZATION_MIN,
+    TORSO_NORMALIZATION_MAX,
+  );
+  const mountScale = baseMountScale * factor;
+  return {
+    gearId: gearId ?? null,
+    baseWidth,
+    baseHeight,
+    torsoWidth,
+    torsoHeight,
+    coreHeight,
+    factor,
+    mountScale,
+    effectiveBounds: scaledSourceBounds(torso.alphaBounds, torso.pivotSource, mountScale),
+  };
+}
+
+function boilerplateSocketSource(
+  manifest: GearPartsManifest,
+  partId: BoundsDerivedRigSocketId,
+): Readonly<{ x: number; y: number }> {
+  const raw = manifest.boilerplate.parts.find((part) => part.id === partId)?.receiverAnchor.raw;
+  if (raw) return raw;
+  const fallback: Readonly<Record<BoundsDerivedRigSocketId, Readonly<{ x: number; y: number }>>> = {
+    head: { x: 512, y: 317.44 },
+    "hand-l": { x: 384, y: 522 },
+    "hand-r": { x: 640, y: 522 },
+    "foot-l": { x: 448, y: 736 },
+    "foot-r": { x: 576, y: 736 },
+  };
+  return fallback[partId];
+}
+
+function clampSocketToLegacy(
+  candidate: Readonly<{ x: number; y: number }>,
+  legacy: Readonly<{ x: number; y: number }>,
+  cap: Readonly<{ x: number; y: number }>,
+): Readonly<{ x: number; y: number }> {
+  return {
+    x: clamp(candidate.x, legacy.x - cap.x, legacy.x + cap.x),
+    y: clamp(candidate.y, legacy.y - cap.y, legacy.y + cap.y),
+  };
+}
+
+/**
+ * Re-derive visible limb/head mounts from the equipped torso's post-normalization alpha edges. All gaps,
+ * insets, and relative height are measured from today's naked drifter, making its output bit-for-bit equal
+ * to the five legacy receiver points. Caps are presentation safeguards: hands stay within ~3px of weapon
+ * reach truth, deep collars retain their exact head gap, and hem-following feet move by at most ~6px.
+ */
+export function boundsDerivedRigSockets(
+  manifest: GearPartsManifest,
+  torsoGearId: GearId | null | undefined,
+): BoundsDerivedRigSockets {
+  const base = torsoScaleNormalization(manifest, null).effectiveBounds;
+  const torso = torsoScaleNormalization(manifest, torsoGearId);
+  const bounds = torso.effectiveBounds;
+  const legacyHead = boilerplateSocketSource(manifest, "head");
+  const legacyLeftHand = boilerplateSocketSource(manifest, "hand-l");
+  const legacyRightHand = boilerplateSocketSource(manifest, "hand-r");
+  const legacyLeftFoot = boilerplateSocketSource(manifest, "foot-l");
+  const legacyRightFoot = boilerplateSocketSource(manifest, "foot-r");
+  const baseCenterX = base.left + base.width * 0.5;
+  const centerX = bounds.left + bounds.width * 0.5;
+  const headGap = base.top - legacyHead.y;
+  const handRelativeHeight =
+    ((legacyLeftHand.y + legacyRightHand.y) * 0.5 - base.top) / base.height;
+  const leftHandInset = legacyLeftHand.x - base.left;
+  const rightHandInset = base.right - legacyRightHand.x;
+  const footGap = (legacyLeftFoot.y + legacyRightFoot.y) * 0.5 - base.bottom;
+  const leftFootCenterOffset = legacyLeftFoot.x - baseCenterX;
+  const rightFootCenterOffset = legacyRightFoot.x - baseCenterX;
+
+  return {
+    torsoGearId: torso.gearId,
+    torsoBounds: bounds,
+    head: clampSocketToLegacy(
+      { x: centerX, y: bounds.top - headGap },
+      legacyHead,
+      HEAD_SOCKET_MAX_DEVIATION_SOURCE,
+    ),
+    "hand-l": clampSocketToLegacy(
+      { x: bounds.left + leftHandInset, y: bounds.top + bounds.height * handRelativeHeight },
+      legacyLeftHand,
+      HAND_SOCKET_MAX_DEVIATION_SOURCE,
+    ),
+    "hand-r": clampSocketToLegacy(
+      { x: bounds.right - rightHandInset, y: bounds.top + bounds.height * handRelativeHeight },
+      legacyRightHand,
+      HAND_SOCKET_MAX_DEVIATION_SOURCE,
+    ),
+    "foot-l": clampSocketToLegacy(
+      { x: centerX + leftFootCenterOffset, y: bounds.bottom + footGap },
+      legacyLeftFoot,
+      FOOT_SOCKET_MAX_DEVIATION_SOURCE,
+    ),
+    "foot-r": clampSocketToLegacy(
+      { x: centerX + rightFootCenterOffset, y: bounds.bottom + footGap },
+      legacyRightFoot,
+      FOOT_SOCKET_MAX_DEVIATION_SOURCE,
+    ),
+  };
+}
+
 export interface HeadScaleNormalization {
   readonly gearId: GearId | null;
   readonly baseWidth: number;
@@ -954,12 +1177,12 @@ export function gearClickVisibilityNotice(
 /**
  * Normalize generated heads against the boilerplate's opaque silhouette without changing any art.
  *
- *   mount = HEAD_MOUNT_SCALE * clamp(min(baseH / headH, 1.35 * baseW / headW), 0.40, 1.00)
+ *   mount = baseMount * clamp(1.06 * min(baseH / headH, 1.35 * baseW / headW), 0.40, 1.06)
  *
- * Height is the primary fit target. The second term prevents a very wide silhouette (notably Coldsnap)
- * from remaining enormous just because it is shorter, while still allowing intentional masks/cowls to be
- * at most 35% wider than the base head. The clamp rejects pathological manifest measurements without ever
- * enlarging a replacement beyond the authored base-head mount.
+ * The owner's "wee bit small" ruling raises the entire landed target envelope by 6%, rather than only the
+ * narrow heads. Height remains primary; the second term prevents a very wide silhouette (notably Coldsnap)
+ * from remaining enormous just because it is shorter, while preserving the intentional 1.35x mask/cowl
+ * width character before the nudge. The clamp still rejects pathological manifest measurements.
  */
 export function headScaleNormalization(
   manifest: GearPartsManifest,
@@ -974,9 +1197,7 @@ export function headScaleNormalization(
       ? gearManifestItem(manifest, gearId)
       : undefined;
   const head =
-    item?.renderRole === "replace-head"
-      ? item.parts.find((part) => part.id === "head")
-      : undefined;
+    item?.renderRole === "replace-head" ? item.parts.find((part) => part.id === "head") : undefined;
   if (!head) {
     return {
       gearId: null,
@@ -990,8 +1211,8 @@ export function headScaleNormalization(
   }
   const headWidth = head.alphaBounds.width;
   const headHeight = head.alphaBounds.height;
-  const heightFit = baseHeight / headHeight;
-  const widthFit = (baseWidth * HEAD_WIDTH_ENVELOPE) / headWidth;
+  const heightFit = (baseHeight * HEAD_TARGET_SCALE) / headHeight;
+  const widthFit = (baseWidth * HEAD_WIDTH_ENVELOPE * HEAD_TARGET_SCALE) / headWidth;
   const factor = clamp(
     Math.min(heightFit, widthFit),
     HEAD_NORMALIZATION_MIN,
@@ -1130,6 +1351,8 @@ function replacementPartDependency(
   const gearId = loadout[slot];
   if (!isGearId(gearId) || GEAR_CATALOG[gearId].slot !== slot || blankGearId(gearId)) return null;
   const item = gearManifestItem(manifest, gearId);
+  const part = item?.parts.find((candidate) => candidate.id === slot);
+  const torsoMount = slot === "torso" ? torsoScaleNormalization(manifest, gearId) : null;
   return dependencyWithState(
     {
       role,
@@ -1137,7 +1360,16 @@ function replacementPartDependency(
       gearId,
       textureKey: item ? gearTextureKey(item) : `gear:${slot}:${gearId}`,
       textureUrl: item?.renderRole === renderRole ? gearTextureUrl(item) : null,
-      sourceRevision: item ? sourceRevisionOf(item, item.parts[0]) : "missing",
+      sourceRevision: item ? sourceRevisionOf(item, part ?? item.parts[0]) : "missing",
+      ...(item && part && torsoMount
+        ? {
+            bakeTransform: {
+              scale: torsoMount.mountScale,
+              pivot: part.pivotSource,
+              image: { width: item.image.width, height: item.image.height },
+            },
+          }
+        : {}),
       blank: false,
     },
     resolveState,
@@ -1165,9 +1397,13 @@ function dependencyToken(dependency: GearBakeSourceDependency | null): string {
   if (!dependency) return "blank";
   const identity = dependency.gearId ?? "boilerplate";
   const placement = `:${dependency.offsetX ?? 0},${dependency.offsetY ?? 0}`;
-  if (dependency.state === "missing") return `${identity}@fallback${placement}`;
-  if (dependency.state === "pending") return `${identity}@pending${placement}`;
-  return `${identity}@${dependency.sourceRevision}${placement}`;
+  const transform = dependency.bakeTransform;
+  const bake = transform
+    ? `:bake=${transform.scale},${transform.pivot.x},${transform.pivot.y}`
+    : "";
+  if (dependency.state === "missing") return `${identity}@fallback${placement}${bake}`;
+  if (dependency.state === "pending") return `${identity}@pending${placement}${bake}`;
+  return `${identity}@${dependency.sourceRevision}${placement}${bake}`;
 }
 
 export function gearPartRecipeKey(
@@ -1342,10 +1578,12 @@ export function resolveGearBakeLoadout(
   const winningLeftFoot = bootLeft?.state === "ready" ? bootLeft : footLeftBase;
   const winningRightFoot = bootRight?.state === "ready" ? bootRight : footRightBase;
   const effectiveHeadId =
-    headReplacement?.state === "ready" && headReplacement.gearId
-      ? headReplacement.gearId
-      : null;
+    headReplacement?.state === "ready" && headReplacement.gearId ? headReplacement.gearId : null;
+  const effectiveTorsoId =
+    torsoReplacement?.state === "ready" && torsoReplacement.gearId ? torsoReplacement.gearId : null;
   const headMountScale = headScaleNormalization(manifest, effectiveHeadId).mountScale;
+  const torsoMountScale = torsoScaleNormalization(manifest, effectiveTorsoId).mountScale;
+  const rigSockets = boundsDerivedRigSockets(manifest, effectiveTorsoId);
   const bodyKeyDependencies = torsoReplacement
     ? torsoReplacement.state === "ready"
       ? [torsoReplacement]
@@ -1498,6 +1736,8 @@ export function resolveGearBakeLoadout(
     hats,
     replacementHeadPosition: false,
     headMountScale,
+    torsoMountScale,
+    rigSockets,
     towerTotal,
     towerVisible,
     towerOverflow: Math.max(0, readySegmentTotal - readyVisibleSegments),
@@ -1683,6 +1923,8 @@ export function assembleGearLoadout(
     parts,
     headMountScale:
       manifest.boilerplate.parts.find((part) => part.id === "head")?.mountScale ?? HEAD_MOUNT_SCALE,
+    torsoMountScale: torsoScaleNormalization(manifest, loadout.torso).mountScale,
+    rigSockets: boundsDerivedRigSockets(manifest, loadout.torso),
     towerTotal,
     towerVisible,
     towerOverflow: Math.max(0, towerTotal - MAX_VISIBLE_HATS),
