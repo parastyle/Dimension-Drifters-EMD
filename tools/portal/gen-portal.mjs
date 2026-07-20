@@ -5,7 +5,7 @@
 //
 // The output is deliberately self-contained (inline CSS/JS). Art and audio stay as relative references to
 // packages/client/public so the portal works when opened from disk or served from the repository root.
-import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { emit, isCheck } from "../artkit/lib/emit.mjs";
@@ -17,7 +17,9 @@ const PUBLIC_REL = "../../packages/client/public";
 const sharedDist = resolve(REPO, "packages/shared/dist/index.js");
 
 if (isCheck && !existsSync(sharedDist)) {
-  console.warn("tools/portal/index.html check SKIPPED - packages/shared/dist/index.js is unavailable.");
+  console.warn(
+    "tools/portal/index.html check SKIPPED - packages/shared/dist/index.js is unavailable.",
+  );
   process.exit(0);
 }
 
@@ -65,7 +67,8 @@ function publicAsset(relativePath) {
 
 function firstExistingPublic(...relativePaths) {
   for (const relativePath of relativePaths) {
-    if (relativePath && existsSync(resolve(PUBLIC_DIR, relativePath))) return publicAsset(relativePath);
+    if (relativePath && existsSync(resolve(PUBLIC_DIR, relativePath)))
+      return publicAsset(relativePath);
   }
   return "";
 }
@@ -76,7 +79,11 @@ function rigThumbnail(id, preferred = ["body.png", "part-1.png"]) {
   const absoluteDir = resolve(PUBLIC_DIR, relativeDir);
   if (!existsSync(absoluteDir)) return "";
   const files = readdirSync(absoluteDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && [".png", ".jpg", ".jpeg", ".webp"].includes(extname(entry.name).toLowerCase()))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        [".png", ".jpg", ".jpeg", ".webp"].includes(extname(entry.name).toLowerCase()),
+    )
     .map((entry) => entry.name)
     .sort((a, b) => a.localeCompare(b));
   const picked =
@@ -129,10 +136,23 @@ const weapons = weaponIds.map((id) => {
     id,
     copyId: id,
     name: weapon?.name ?? prettyId(id),
-    thumb: firstExistingPublic(join("sprites", id, "part-1.png"), join("cards", `${id}.jpg`)) || rigThumbnail(id),
+    thumb:
+      firstExistingPublic(join("sprites", id, "part-1.png"), join("cards", `${id}.jpg`)) ||
+      rigThumbnail(id),
     glyph: "W",
     facts: [family, delivery, grip],
-    keywords: [family, delivery, grip, weapon?.tags?.classPool, weapon?.tags?.element, weapon?.tags?.size, weapon?.tags?.rangeBand, weapon?.tags?.fireMode, weapon?.expansion ? "expansion" : "base", "rarity loot"].filter(Boolean),
+    keywords: [
+      family,
+      delivery,
+      grip,
+      weapon?.tags?.classPool,
+      weapon?.tags?.element,
+      weapon?.tags?.size,
+      weapon?.tags?.rangeBand,
+      weapon?.tags?.fireMode,
+      weapon?.expansion ? "expansion" : "base",
+      "rarity loot",
+    ].filter(Boolean),
     family,
     delivery,
     grip,
@@ -156,18 +176,29 @@ const gear = GEAR_IDS.map((id) => {
     thumb: firstExistingPublic(join("sprites", "gear", slot, `${item.artKey}.png`)),
     glyph: "G",
     facts: [prettyId(slot), item.rarity, prettyId(set)],
-    keywords: [slot, item.slot, item.rarity, set, item.gearClass, item.powerTag, item.effectText, item.originPool].filter(Boolean),
+    keywords: [
+      slot,
+      item.slot,
+      item.rarity,
+      set,
+      item.gearClass,
+      item.powerTag,
+      item.effectText,
+      item.originPool,
+    ].filter(Boolean),
     slot,
     rarity: item.rarity,
     set,
     gearClass: item.gearClass,
-    action: "closet",
-    path: "/?closet=1",
-    actionLabel: "Unlock closet and copy ID",
+    action: "launch",
+    path: `/?dev=gear:${encodeURIComponent(id)}`,
+    actionLabel: "Equip in Testing Grounds",
   };
 });
 
-const dimensionBosses = new Map(Object.values(DIMENSIONS).map((dimension) => [dimension.boss, dimension.name]));
+const dimensionBosses = new Map(
+  Object.values(DIMENSIONS).map((dimension) => [dimension.boss, dimension.name]),
+);
 const bossIds = [...new Set([...BOSS_DEF_IDS, ...dimensionBosses.keys()])];
 const bosses = bossIds.map((id) => {
   const resolved = shared.bossDefFor?.(id);
@@ -182,7 +213,14 @@ const bosses = bossIds.map((id) => {
     thumb: rigThumbnail(id),
     glyph: "B",
     facts: [size, type, source],
-    keywords: [size, type, source, resolved?.name, resolved?.kind, ENEMY_KINDS?.[id]?.archetype].filter(Boolean),
+    keywords: [
+      size,
+      type,
+      source,
+      resolved?.name,
+      resolved?.kind,
+      ENEMY_KINDS?.[id]?.archetype,
+    ].filter(Boolean),
     size,
     type,
     source,
@@ -203,13 +241,19 @@ const pets = PET_IDS.flatMap((petId) => {
     thumb: firstExistingPublic(join("sprites", "pets", petId, `s${stage.band}`, "body.png")),
     glyph: "P",
     facts: [stage.name, `Lv ${stage.minLevel}-${stage.maxLevel}`, prettyId(pet.bonus.kind)],
-    keywords: [stage.name, `s${stage.band}`, pet.budgetKey, pet.bonus.kind, pet.capstone.kind].filter(Boolean),
+    keywords: [
+      stage.name,
+      `s${stage.band}`,
+      pet.budgetKey,
+      pet.bonus.kind,
+      pet.capstone.kind,
+    ].filter(Boolean),
     stage: String(stage.band),
     species: petId,
     bonus: pet.bonus.kind,
-    action: "menu",
-    actionLabel: "Copy pet ID and open game menu",
-    unavailable: "No pet selector deep-link",
+    action: "launch",
+    path: `/?dev=pet:${encodeURIComponent(petId)}`,
+    actionLabel: "Select in Testing Grounds",
   }));
 });
 
@@ -223,13 +267,19 @@ const dimensionThemes = DIMENSION_IDS.map((id) => {
     thumb: firstExistingPublic(join("tiles", id, "tile-0.png")),
     glyph: "D",
     facts: ["world theme", prettyId(dimension.boss), `${dimension.roster?.length ?? 0} enemies`],
-    keywords: [dimension.tagline, dimension.boss, dimension.hazard?.name, dimension.hazard?.description, ...(dimension.roster ?? [])].filter(Boolean),
+    keywords: [
+      dimension.tagline,
+      dimension.boss,
+      dimension.hazard?.name,
+      dimension.hazard?.description,
+      ...(dimension.roster ?? []),
+    ].filter(Boolean),
     boss: dimension.boss,
     hazard: dimension.hazard?.name ?? "",
     kind: "dimension",
-    action: "menu",
-    actionLabel: "Copy dimension ID and open game menu",
-    unavailable: "No dimension selector deep-link",
+    action: "launch",
+    path: "/",
+    actionLabel: "Launch dimension",
   };
 });
 
@@ -247,14 +297,24 @@ const beltLevels = Object.values(BELT_LEVELS).map((level) => {
       join("belt", `bg-${level.dimensionId}.png`),
     ),
     glyph: "L",
-    facts: ["belt level", dimension?.name ?? prettyId(level.dimensionId), boss ? prettyId(boss) : `${level.rooms?.length ?? 0} rooms`],
-    keywords: [level.blurb, level.dimensionId, dimension?.name, boss, ...(level.rooms ?? []).map((room) => room.name)].filter(Boolean),
+    facts: [
+      "belt level",
+      dimension?.name ?? prettyId(level.dimensionId),
+      boss ? prettyId(boss) : `${level.rooms?.length ?? 0} rooms`,
+    ],
+    keywords: [
+      level.blurb,
+      level.dimensionId,
+      dimension?.name,
+      boss,
+      ...(level.rooms ?? []).map((room) => room.name),
+    ].filter(Boolean),
     boss,
     hazard: `${level.pits?.length ?? 0} pits`,
     kind: "belt level",
     action: "launch",
     path: `/?belt=${encodeURIComponent(level.id)}`,
-    actionLabel: "Play belt level",
+    actionLabel: "Launch dimension",
   };
 });
 
@@ -283,9 +343,9 @@ const ultimates = ULTIMATE_VARIANTS.flatMap((variants, row) =>
       keywords: [familyName, primary, variant, `ultimate code ${code}`],
       family: familyName,
       variant: String(variant).toUpperCase(),
-      action: "menu",
-      actionLabel: "Copy ultimate code and open game",
-      unavailable: "No ultimate selector deep-link",
+      action: "copy",
+      actionLabel: "Copy ultimate code",
+      unavailable: "No dev grant path - ultimate code",
     };
   }),
 );
@@ -302,19 +362,28 @@ const augments = augmentIds.map((id) => {
     thumb: "",
     glyph: "A",
     facts: [augment.tag, delivery, augment.stacks ? "stacks" : "unique"],
-    keywords: [augment.tag, delivery, augment.desc, augment.icon, augment.stacks ? "stacks" : "unique"],
+    keywords: [
+      augment.tag,
+      delivery,
+      augment.desc,
+      augment.icon,
+      augment.stacks ? "stacks" : "unique",
+    ],
     tag: augment.tag,
     delivery,
     stackable: augment.stacks ? "stackable" : "unique",
-    action: "menu",
-    actionLabel: "Copy augment ID and open game",
-    unavailable: "No augment selector deep-link",
+    action: "copy",
+    actionLabel: "Copy augment ID",
+    unavailable: "No dev grant path - augment ID",
   };
 });
 
 const characters = PLAYABLE_CHARACTERS.map((id) => {
   const kit = CHARACTER_KITS[id] ?? { spread: {}, quirk: "unwritten" };
-  const spreadTotal = Object.values(kit.spread ?? {}).reduce((sum, value) => sum + Number(value), 0);
+  const spreadTotal = Object.values(kit.spread ?? {}).reduce(
+    (sum, value) => sum + Number(value),
+    0,
+  );
   const quirk = kit.quirk ?? "unwritten";
   return {
     key: id,
@@ -351,8 +420,17 @@ function readSounds() {
       name: prettyId(entry.id),
       thumb: "",
       glyph: "S",
-      facts: [entry.category, `${entry.durationSeconds}s`, `${entry.variations} take${entry.variations === 1 ? "" : "s"}`],
-      keywords: [entry.category, entry.replaces, `priority ${entry.priority}`, entry.loop ? "loop" : "one-shot"].filter(Boolean),
+      facts: [
+        entry.category,
+        `${entry.durationSeconds}s`,
+        `${entry.variations} take${entry.variations === 1 ? "" : "s"}`,
+      ],
+      keywords: [
+        entry.category,
+        entry.replaces,
+        `priority ${entry.priority}`,
+        entry.loop ? "loop" : "one-shot",
+      ].filter(Boolean),
       soundCategory: entry.category,
       priority: String(entry.priority),
       action: firstFile ? "audio" : "copy",
@@ -364,22 +442,91 @@ function readSounds() {
 }
 
 const sounds = readSounds();
-const catalogs = { weapons, gear, bosses, pets, dimensions, ultimates, augments, characters, sounds };
+const catalogs = {
+  weapons,
+  gear,
+  bosses,
+  pets,
+  dimensions,
+  ultimates,
+  augments,
+  characters,
+  sounds,
+};
 const categoryMeta = [
-  { id: "weapons", label: "Weapons", key: "1", glyph: "W", description: "Live weapon catalog - click to equip in Testing Grounds." },
-  { id: "gear", label: "Gear", key: "2", glyph: "G", description: "Wardrobe catalog - click to copy the ID and unlock the dev closet." },
-  { id: "bosses", label: "Bosses", key: "3", glyph: "B", description: "Bespoke and dimension bosses - click to spawn the selected fight." },
-  { id: "pets", label: "Pets", key: "4", glyph: "P", description: "Every companion stage and its current sprite cutout." },
-  { id: "dimensions", label: "Dimensions", key: "5", glyph: "D", description: "World themes plus every launchable belt level, with hazards, rosters, and bosses." },
-  { id: "ultimates", label: "Ultimates", key: "6", glyph: "U", description: "The complete five-family by four-variant wire-code matrix." },
-  { id: "augments", label: "Augments", key: "7", glyph: "A", description: "Universal and delivery-gated signature augments." },
-  { id: "characters", label: "Legacy Characters", key: "8", glyph: "C", description: "Legacy kits - click to wear the selected identity in Testing Grounds." },
-  { id: "sounds", label: "Sounds", key: "9", glyph: "S", description: "Rendered SFX manifest - click to audition the first take." },
+  {
+    id: "weapons",
+    label: "Weapons",
+    key: "1",
+    glyph: "W",
+    description: "Live weapon catalog - click to equip in Testing Grounds.",
+  },
+  {
+    id: "gear",
+    label: "Gear",
+    key: "2",
+    glyph: "G",
+    description:
+      "Wardrobe catalog - click to own the closet and equip that piece in Testing Grounds.",
+  },
+  {
+    id: "bosses",
+    label: "Bosses",
+    key: "3",
+    glyph: "B",
+    description: "Bespoke and dimension bosses - click to spawn the selected fight.",
+  },
+  {
+    id: "pets",
+    label: "Pets",
+    key: "4",
+    glyph: "P",
+    description: "Every companion stage - click to own and select that pet in Testing Grounds.",
+  },
+  {
+    id: "dimensions",
+    label: "Dimensions",
+    key: "5",
+    glyph: "D",
+    description:
+      "World themes open the game launch surface; belt cards launch their authored level directly.",
+  },
+  {
+    id: "ultimates",
+    label: "Ultimates",
+    key: "6",
+    glyph: "U",
+    description: "The complete five-family by four-variant wire-code matrix.",
+  },
+  {
+    id: "augments",
+    label: "Augments",
+    key: "7",
+    glyph: "A",
+    description: "Universal and delivery-gated signature augments.",
+  },
+  {
+    id: "characters",
+    label: "Legacy Characters",
+    key: "8",
+    glyph: "C",
+    description: "Legacy kits - click to wear the selected identity in Testing Grounds.",
+  },
+  {
+    id: "sounds",
+    label: "Sounds",
+    key: "9",
+    glyph: "S",
+    description: "Rendered SFX manifest - click to audition the first take.",
+  },
 ].filter((category) => category.id !== "sounds" || sounds.length > 0);
 
 const DATA = {
   gameUrl: "http://localhost:5180",
-  categories: categoryMeta.map((category) => ({ ...category, count: catalogs[category.id].length })),
+  categories: categoryMeta.map((category) => ({
+    ...category,
+    count: catalogs[category.id].length,
+  })),
   catalogs,
 };
 const embeddedData = JSON.stringify(DATA).replace(/</g, "\\u003c");
@@ -456,6 +603,13 @@ const html = `<!doctype html>
     .brand-copy { min-width: 0; }
     .brand-title { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .brand-sub { margin-top: 3px; color: var(--muted); font: 10px/1.25 var(--mono); text-transform: uppercase; letter-spacing: .12em; }
+    .places { display: grid; gap: 3px; margin-bottom: 18px; }
+    .place-link {
+      min-width: 0; overflow: hidden; padding: 7px 8px; border: 1px solid transparent; border-radius: 8px;
+      color: #aeb8c5; text-decoration: none; text-overflow: ellipsis; white-space: nowrap;
+      font: 11px/1.2 var(--mono);
+    }
+    .place-link:hover, .place-link:focus-visible { color: var(--ink); border-color: #31455b; background: rgba(66,221,237,.08); outline: none; }
     .nav-label { padding: 0 8px 7px; color: #667588; font: 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .15em; }
     .category-nav { display: grid; gap: 3px; }
     .nav-item {
@@ -574,7 +728,7 @@ const html = `<!doctype html>
       :root { --rail-w: 78px; }
       .rail { padding-inline: 9px; }
       .brand { justify-content: center; padding-inline: 0; }
-      .brand-copy, .nav-label, .nav-name, .nav-count, .nav-key, .rail-footer { display: none; }
+      .brand-copy, .nav-label, .nav-name, .nav-count, .nav-key, .rail-footer, .places { display: none; }
       .nav-item { display: flex; justify-content: center; padding-inline: 0; }
       .nav-glyph { width: 31px; }
       .topbar-main { grid-template-columns: minmax(0,1fr); gap: 9px; }
@@ -612,6 +766,14 @@ const html = `<!doctype html>
           <div class="brand-sub">Dimension Drifters</div>
         </div>
       </div>
+      <div class="nav-label">Places</div>
+      <nav class="places" aria-label="Developer places">
+        <a class="place-link" href="http://localhost:5180/?closet=1" target="_blank" rel="noopener">Game</a>
+        <a class="place-link" href="http://localhost:5180/?dev=weapon:rusty-cleaver" target="_blank" rel="noopener">Testing Grounds</a>
+        <a class="place-link" href="http://localhost:5050" target="_blank" rel="noopener">Weaponsmith</a>
+        <a class="place-link" href="../artkit/out/character-concepts/index.html" target="_blank" rel="noopener">Character concepts</a>
+        <a class="place-link" href="../artkit/out/gear/hat-contact-sheet.png" target="_blank" rel="noopener">Hat contact sheet</a>
+      </nav>
       <div class="nav-label">Catalogs</div>
       <nav class="category-nav" id="categoryNav"></nav>
       <div class="rail-footer">
@@ -1157,6 +1319,9 @@ emit(resolve(here, "index.html"), html, "tools/portal/index.html");
 
 if (!isCheck) {
   console.log("dev portal -> tools/portal/index.html");
-  for (const category of DATA.categories) console.log(`  ${category.label.padEnd(20)} ${String(category.count).padStart(4)}`);
-  console.log(`  ${"Total".padEnd(20)} ${String(DATA.categories.reduce((sum, category) => sum + category.count, 0)).padStart(4)}`);
+  for (const category of DATA.categories)
+    console.log(`  ${category.label.padEnd(20)} ${String(category.count).padStart(4)}`);
+  console.log(
+    `  ${"Total".padEnd(20)} ${String(DATA.categories.reduce((sum, category) => sum + category.count, 0)).padStart(4)}`,
+  );
 }

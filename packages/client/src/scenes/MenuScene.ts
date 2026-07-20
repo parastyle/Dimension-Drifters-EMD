@@ -102,6 +102,36 @@ async function ensureArenaScene(scene: Phaser.Scenes.ScenePlugin): Promise<void>
   const ArenaSceneClass = await arenaSceneImport;
   if (!scene.get("arena")) scene.add("arena", ArenaSceneClass, false);
 }
+
+/** DEV PORTAL account projection. Gear inspections own the complete closet and equip the requested
+ * piece in its canonical slot; pet inspections own and select the requested companion. The projected
+ * account is sent through the normal join sanitizer, so the Testing-Grounds player uses the same
+ * wardrobe/pet path as an ordinary menu launch. */
+export function devInspectionAccount(account: MetaAccountV4, spec: string): MetaAccountV4 {
+  const separator = spec.indexOf(":");
+  const kind = separator < 0 ? spec : spec.slice(0, separator);
+  const arg = separator < 0 ? "" : spec.slice(separator + 1);
+  if (kind === "gear") {
+    const gearId = GEAR_IDS.find((id) => id === arg);
+    if (!gearId) return account;
+    const item = GEAR_CATALOG[gearId];
+    return {
+      ...account,
+      ownedGear: [...GEAR_IDS],
+      equippedGear: { ...account.equippedGear, [item.slot]: gearId },
+    };
+  }
+  if (kind === "pet") {
+    const petId = PET_IDS.find((id) => id === arg);
+    if (!petId) return account;
+    return {
+      ...account,
+      pets: { ...account.pets, [petId]: account.pets[petId] ?? { bondXp: 0 } },
+      selectedPetId: petId,
+    };
+  }
+  return account;
+}
 const TITLE_COLOR = "#f0e6d2";
 const ACCENT = "#33e6ff";
 
@@ -279,10 +309,16 @@ export class MenuScene extends Phaser.Scene {
     this.armoryRows = [];
     this.launchIntent = "quick";
     this.launching = false;
-    // §39 DEV PORTAL deep-link: `?dev=boss:<kind>` / `weapon:<id>` / `char:<id>` skips the menu and drops
-    // straight into a Testing-Grounds sandbox (top-down arena, full room to fight) with that asset applied.
+    // §39 DEV PORTAL deep-link: boss/weapon/character/gear/pet specs skip the menu and drop straight into
+    // Testing Grounds. Gear and pet specs project the normal local account BEFORE ArenaScene reads it, so
+    // the server joins with the complete closet + equipped slot, or the owned + selected companion.
     const dev = new URLSearchParams(location.search).get("dev");
     if (dev) {
+      if (import.meta.env.DEV) {
+        const account = loadPetMetaAccount();
+        const inspected = devInspectionAccount(account, dev);
+        if (inspected !== account) savePetMetaAccount(inspected);
+      }
       void ensureArenaScene(this.scene).then(() =>
         this.scene.start("arena", { dimensionId: DEFAULT_DIMENSION, dev }),
       );

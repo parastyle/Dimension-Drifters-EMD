@@ -114,10 +114,27 @@ const CLASS_LABEL = {
   caster: "✷ Casters",
   weapon: "Weapons",
 };
+let allWeapons = [];
 async function loadList() {
-  const weapons = await api("/api/weapons");
+  allWeapons = await api("/api/weapons");
+  renderList();
+}
+
+function renderList() {
+  const query = $("#weaponSearch").value.trim().toLowerCase();
+  const statusFilter = $("#assignmentFilter").value;
+  const weapons = allWeapons.filter((weapon) => {
+    const matchesQuery =
+      !query ||
+      [weapon.name, weapon.id, weapon.cls, weapon.grip, weapon.family, ...(weapon.tags || [])]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query));
+    const matchesStatus = statusFilter === "all" || weapon.assignment?.status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
   const list = $("#list");
   list.innerHTML = "";
+  $("#listCount").textContent = `${weapons.length} of ${allWeapons.length} weapons`;
   let lastCls = null;
   for (const w of weapons) {
     if (w.cls !== lastCls) {
@@ -128,6 +145,10 @@ async function loadList() {
     const node = el(`<div class="wp" data-id="${w.id}">
       ${w.candidateCount ? `<span class="dot">${w.candidateCount}</span>` : ""}
       <b>${w.name}</b><small>${tags}${w.assigned?.author?.pending ? " · ⏳" : w.assigned?.suite ? " · ✓" : ""}</small></div>`);
+    const assignment = w.assignment || { status: "none", label: "none" };
+    node.appendChild(
+      el(`<span class="assignment-badge ${assignment.status}">${assignment.label}</span>`),
+    );
     node.onclick = () => selectWeapon(w.id);
     list.appendChild(node);
   }
@@ -138,6 +159,11 @@ async function selectWeapon(id) {
   for (const n of document.querySelectorAll(".wp")) n.classList.toggle("sel", n.dataset.id === id);
   const w = await api(`/api/weapon/${id}`);
   state.weapon = w;
+  const saveButton = $("#save");
+  saveButton.textContent = w.assignment?.hasFile ? "Save weapon" : "Create assignment";
+  saveButton.title = w.assignment?.hasFile
+    ? "Update this weapon's bespoke assignment file"
+    : "Create a bespoke assignment file from the values shown";
   state.vfxSubject = w.vfxSubject;
   state.candidates = w.candidates;
   state.weaponArt = w.weaponArt;
@@ -275,6 +301,15 @@ function renderMain(w) {
       </div>
     </details>
   `;
+
+  const assignment = w.assignment || { status: "none", label: "none", hasFile: false };
+  const assignmentAction = el(`<div style="display:flex;align-items:center;gap:8px">
+    <span class="assignment-badge ${assignment.status}" id="selectedAssignmentStatus">${assignment.label}</span>
+    ${assignment.hasFile ? "" : '<button type="button" id="createAssignment">Create assignment</button>'}
+  </div>`);
+  $("#main .row").appendChild(assignmentAction);
+  const createAssignment = $("#createAssignment");
+  if (createAssignment) createAssignment.onclick = () => $("#save").click();
 
   if (!eo) renderCandidates();
   wirePanelEdits();
@@ -611,8 +646,22 @@ $("#save").onclick = async () => {
     }),
   });
   status(r.ok ? `✓ saved ${state.weapon.name}` : "save failed");
+  if (r.ok) {
+    state.weapon.assigned = r.assigned;
+    state.weapon.assignment = r.assignment;
+    $("#save").textContent = "Save weapon";
+    const assignmentBadge = $("#selectedAssignmentStatus");
+    if (assignmentBadge) {
+      assignmentBadge.className = `assignment-badge ${r.assignment.status}`;
+      assignmentBadge.textContent = r.assignment.label;
+    }
+    $("#createAssignment")?.remove();
+  }
   loadList();
   setTimeout(() => status(""), 2500);
 };
 
+$("#weaponSearch").addEventListener("input", renderList);
+$("#assignmentFilter").addEventListener("change", renderList);
+$("#refreshList").addEventListener("click", loadList);
 loadList();

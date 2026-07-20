@@ -1715,7 +1715,7 @@ export class ArenaScene extends Phaser.Scene {
   /** §16 v0.116 the menu launched BOSS RUSH — forwarded as a join option (only the room CREATOR's flag
    *  takes effect; joiners inherit the host's synced `mode`). */
   private bossRush = false;
-  /** §39 pending dev-portal deep-link ("boss:<kind>" | "weapon:<id>" | "char:<id>"); applied once, then nulled. */
+  /** §39 pending dev-portal deep-link (boss/weapon/char/gear/pet); applied once, then nulled. */
   private devLaunch: string | null = null;
 
   init(data?: {
@@ -1740,7 +1740,7 @@ export class ArenaScene extends Phaser.Scene {
     this.petMetaAccount = loadPetMetaAccount();
     this.selectedPetId = data?.selectedPetId ?? this.petMetaAccount.selectedPetId;
     this.pendingCarry = data?.carry;
-    // §39 dev-portal deep-link (boss:<kind> | weapon:<id> | char:<id>), applied once after the room connects.
+    // §39 dev-portal deep-link (boss/weapon/char/gear/pet), applied once after the room connects.
     this.devLaunch = data?.dev ?? params.get("dev") ?? null;
   }
 
@@ -13544,8 +13544,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   /** §39 DEV PORTAL: apply a `?dev=` deep-link once the room is live — enter Testing Grounds, then spawn the
-   *  boss / equip the weapon / wear the character the portal requested. Messages process server-side in order,
-   *  but we delay the target a beat so `mode` is definitely `training` when its guard checks. */
+   * boss / equip the weapon / wear the character requested. Gear and pet were already applied to the normal
+   * join account by MenuScene, so reaching this target confirms the inspection after training mode syncs. */
   private applyDevLaunch(): void {
     if (!this.devLaunch || !this.room) return;
     const spec = this.devLaunch;
