@@ -709,3 +709,91 @@ describe("SpriteRig replacement bake integration", () => {
     expect(backend.createCalls).toHaveLength(createdBeforePrestigeOnlyChange);
   });
 });
+
+// NG2 — append-only proof that worn weapons replace the retained hand receivers instead of overlaying them.
+describe("SpriteRig glove-weapon hand replacement", () => {
+  async function weaponFixture(id: string) {
+    const [{ WEAPONS }, { SPRITES }] = await Promise.all([
+      import("@dd/shared"),
+      import("../sprites/manifest.js"),
+    ]);
+    const def = WEAPONS[id];
+    const sprite = SPRITES[id as keyof typeof SPRITES];
+    if (!def || !sprite) throw new Error(`missing glove replacement fixture: ${id}`);
+    return { def, sprite };
+  }
+
+  function handImages(rig: SpriteRig): { front: FakeDisplayObject; back: FakeDisplayObject } {
+    const hands = (rig as unknown as RigTruth).hands;
+    const front = hands.find((hand) => hand.front)?.img;
+    const back = hands.find((hand) => !hand.front)?.img;
+    if (!front || !back) throw new Error("replacement rig is missing its hand receivers");
+    return { front, back };
+  }
+
+  it("hides only the occupied weapon hand for a single glove", async () => {
+    const { def, sprite } = await weaponFixture("x2-cinderpalm-brand-glove");
+    const rig = new SpriteRig(fakeScene(), 0, 0, false, "single-glove-rig", "drifter");
+    const hands = handImages(rig);
+
+    rig.equipWeapon(def.id, def, sprite);
+
+    expect(hands.front.visible).toBe(false);
+    expect(hands.back.visible).toBe(true);
+  });
+
+  it("hides both occupied hand receivers for a glove-pair", async () => {
+    const { def, sprite } = await weaponFixture("x2-sparkknuckle-hex-mitt");
+    const rig = new SpriteRig(fakeScene(), 0, 0, false, "paired-glove-rig", "drifter");
+    const hands = handImages(rig);
+
+    rig.equipWeapon(def.id, def, sprite);
+
+    expect(hands.front.visible).toBe(false);
+    expect(hands.back.visible).toBe(false);
+  });
+
+  it("restores hands on stow and when swapping to a held weapon", async () => {
+    const [{ WEAPONS }, glove, sword] = await Promise.all([
+      import("@dd/shared"),
+      weaponFixture("x2-cinderpalm-brand-glove"),
+      weaponFixture("rattler-sabre"),
+    ]);
+    const rig = new SpriteRig(fakeScene(), 0, 0, false, "glove-swap-rig", "drifter");
+    const hands = handImages(rig);
+
+    rig.equipWeapon(glove.def.id, glove.def, glove.sprite);
+    rig.unequip(WEAPONS.fists!);
+    expect([hands.front.visible, hands.back.visible]).toEqual([true, true]);
+
+    rig.equipWeapon(glove.def.id, glove.def, glove.sprite);
+    rig.equipWeapon(sword.def.id, sword.def, sword.sprite);
+    expect([hands.front.visible, hands.back.visible]).toEqual([true, true]);
+  });
+
+  it("gives a wielded weapon glove priority and restores baked gear-glove art on stow", async () => {
+    const manifest = replacementPairManifest("rig-glove-priority-r1");
+    const { scene } = replacementScene();
+    const rig = new SpriteRig(scene, 0, 0, false, "gear-glove-priority-rig", "drifter", manifest);
+    const hands = handImages(rig);
+    const loadout = {
+      ...STARTER_GEAR_LOADOUT,
+      gloves: "house-edge-gloves" as GearId,
+    } as Record<GearSlot, GearId>;
+    rig.equipGearLoadout(loadout, manifest);
+    await vi.waitFor(() => expect(hands.front.texture.key).toMatch(/^gear-bake:/));
+    const gearGloveTexture = hands.front.texture.key;
+    const [{ WEAPONS }, glove] = await Promise.all([
+      import("@dd/shared"),
+      weaponFixture("x2-cinderpalm-brand-glove"),
+    ]);
+
+    rig.equipWeapon(glove.def.id, glove.def, glove.sprite);
+    expect(hands.front.visible).toBe(false);
+    expect(hands.front.texture.key).toBe(gearGloveTexture);
+
+    rig.unequip(WEAPONS.fists!);
+    expect(hands.front.visible).toBe(true);
+    expect(hands.front.texture.key).toBe(gearGloveTexture);
+  });
+});

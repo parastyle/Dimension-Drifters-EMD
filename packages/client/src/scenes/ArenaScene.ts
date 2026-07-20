@@ -249,7 +249,7 @@ import {
   wrappedDockOffset,
 } from "../ui/weapon-dock-layout.js";
 import {
-  type BeamOwnerPose,
+  type BeamMuzzlePose,
   BeamRenderer,
   type BeamRenderRows,
   type BeamRenderState,
@@ -1224,14 +1224,16 @@ export class ArenaScene extends Phaser.Scene {
     opacity: 1,
     element: "physical",
   };
-  /** Rebase beams onto the exact root already presented this frame (predicted self / delayed remote). */
-  private readonly writeBeamOwnerPose = (ownerId: string, out: BeamOwnerPose): boolean => {
+  /** Rebase beams onto the final rendered weapon tip this frame (predicted self / delayed remote). */
+  private readonly writeBeamMuzzlePose = (
+    ownerId: string,
+    weaponId: string,
+    out: BeamMuzzlePose,
+  ): boolean => {
     const rig = this.blobs.get(ownerId);
-    const player = this.room?.state.players.get(ownerId);
-    if (!rig || !player) return false;
-    out.x = rig.x;
-    out.y = this.belt ? BELT_Y0 + (rig.y - BELT_Y0) / BELT_FORESHORTEN : rig.y;
-    out.renderScale = characterScale(player.character);
+    if (!rig || rig.heldWeaponDef(0)?.id !== weaponId || !rig.writeWeaponMuzzle(0, out))
+      return false;
+    if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
     return true;
   };
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
@@ -15008,7 +15010,7 @@ export class ArenaScene extends Phaser.Scene {
       this.belt ? BELT_FORESHORTEN : 1,
       predicted,
       prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
-      this.writeBeamOwnerPose,
+      this.writeBeamMuzzlePose,
     );
     this.beamPredictionHeld = held;
   }

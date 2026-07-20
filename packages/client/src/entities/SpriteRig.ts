@@ -2356,6 +2356,7 @@ export class SpriteRig {
       .setOrigin(body.originX, body.originY)
       .setScale(body.scale);
     this.boilerplateReady = true;
+    this.syncWeaponHandReplacement();
     this.resetSecondaryMotion();
     this.rebuildRenderStack();
     this.restTint();
@@ -2677,6 +2678,28 @@ export class SpriteRig {
     if (weapon.tellEcho) stack.push(weapon.tellEcho);
   }
 
+  /** Weapon gloves claim the same retained hand receivers as baked gear gloves. The hand node keeps
+   *  animating as the mount/transform authority, but its current boilerplate-or-gear texture is hidden while
+   *  a worn weapon occupies that receiver. A glove-pair is the one explicit two-receiver weapon contract. */
+  private weaponReplacesHandReceiver(receiver: "hand-l" | "hand-r"): boolean {
+    if (this.weapons.some((weapon) => weapon.def.glovePair !== undefined)) return true;
+    const handIndex = receiver === "hand-r" ? 0 : 1;
+    return this.weapons[handIndex]?.worn === true;
+  }
+
+  private syncWeaponHandReplacement(): void {
+    for (const hand of this.hands) {
+      const receiver = hand.front ? "hand-r" : "hand-l";
+      hand.img.setVisible(!this.weaponReplacesHandReceiver(receiver));
+    }
+    for (const attachment of this.gearAttachments) {
+      const receiver = attachment.spec.source.receiver;
+      if (receiver === "hand-l" || receiver === "hand-r") {
+        attachment.image.setVisible(!this.weaponReplacesHandReceiver(receiver));
+      }
+    }
+  }
+
   /** One retained back-to-front law shared by weapon and wardrobe descriptor edges. */
   private rebuildRenderStack(): void {
     if (!this.root) return;
@@ -2838,6 +2861,22 @@ export class SpriteRig {
     if (!rigHand) return { x: this.root.x, y: this.root.y };
     const point = this.root.getWorldTransformMatrix().transformPoint(rigHand.img.x, rigHand.img.y);
     return { x: point.x, y: point.y };
+  }
+
+  /**
+   * Copy the live held implement's +X tip after every authored pose, hand spring, art-axis correction,
+   * character mirror, and root transform. Beam presentation consumes this allocation-free seam after
+   * `animate`, so its first rendered vertex is the muzzle the player can actually see this frame.
+   */
+  writeWeaponMuzzle(hand: 0 | 1, out: { x: number; y: number }): boolean {
+    const weapon = this.weapons[hand];
+    if (!weapon?.img.active || !weapon.img.visible) return false;
+    const image = weapon.img;
+    const tip = image.width * Math.abs(image.scaleX) * (1 - image.originX);
+    const localX = image.x + Math.cos(weapon.semanticRotation) * tip;
+    const localY = image.y + Math.sin(weapon.semanticRotation) * tip;
+    this.root.getWorldTransformMatrix().transformPoint(localX, localY, out);
+    return true;
   }
 
   /** Retained per-barrel kick. Camera shake and muzzle styling stay at Arena's hand-aware cue site. */
@@ -4309,6 +4348,7 @@ export class SpriteRig {
     const backWpn = attach(off, backHand);
     const frontPiece = this.weapons[0];
     const backPiece = this.weapons[1];
+    this.syncWeaponHandReplacement();
 
     // Explicit z-stack (bottom→top): each weapon overlays the BODY but tucks UNDER its hand.
     // Single-wield keeps the back hand behind the body; dual brings it forward so both read.
@@ -5035,6 +5075,7 @@ export class SpriteRig {
     this.destroyTomeVisual();
     for (const w of this.weapons) w.img.destroy();
     this.weapons = [];
+    this.syncWeaponHandReplacement();
     this.weaponDef = def;
     this.refreshPoseLanguageSelection(false, true);
     this.loadoutKey = def.id;
@@ -7318,6 +7359,9 @@ export class SpriteRig {
 
   private placeNodeGear(attachment: GearAttachment): void {
     const receiver = attachment.spec.source.receiver;
+    const handReplaced =
+      (receiver === "hand-l" || receiver === "hand-r") &&
+      this.weaponReplacesHandReceiver(receiver);
     let node: Phaser.GameObjects.Image | undefined;
     if (receiver === "hand-l" || receiver === "hand-r") {
       const front = receiver === "hand-r";
@@ -7343,7 +7387,7 @@ export class SpriteRig {
         node.scaleX * attachment.spec.source.mountScale,
         node.scaleY * attachment.spec.source.mountScale,
       )
-      .setVisible(true);
+      .setVisible(!handReplaced);
   }
 
   private topSocketPosition(attachment: GearAttachment, out: { x: number; y: number }): void {

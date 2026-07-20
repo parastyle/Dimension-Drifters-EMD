@@ -4,7 +4,6 @@ import {
   shortestAngleDelta,
   TICK_MS,
   WEAPONS,
-  weaponMuzzleReach,
 } from "@dd/shared";
 import Phaser from "phaser";
 import type { ColorblindAssistMode } from "../settings.js";
@@ -45,13 +44,16 @@ export interface BeamRenderRows {
   forEach(callback: (row: BeamRenderState, ownerId: string) => void): void;
 }
 
-export interface BeamOwnerPose {
+export interface BeamMuzzlePose {
   x: number;
   y: number;
-  renderScale: number;
 }
 
-export type BeamOwnerPoseWriter = (ownerId: string, out: BeamOwnerPose) => boolean;
+export type BeamMuzzlePoseWriter = (
+  ownerId: string,
+  weaponId: string,
+  out: BeamMuzzlePose,
+) => boolean;
 
 export interface PredictedBeamCharge {
   ownerId: string;
@@ -75,7 +77,6 @@ interface BeamEntry {
   releaseT: number;
   overheatT: number;
   seed: number;
-  angleOffset: number;
   poseReady: boolean;
   poseT: number;
   fromAngle: number;
@@ -186,22 +187,13 @@ function hashKey(value: string): number {
   return hash >>> 0;
 }
 
-export function beamRowAngleOffset(rowKey: string): number {
-  const marker = ":prism:";
-  const markerAt = rowKey.indexOf(marker);
-  if (markerAt < 0) return 0;
-  const parts = rowKey.slice(markerAt + marker.length).split(":");
-  const quantized = Number(parts[1]);
-  return Number.isFinite(quantized) ? quantized / 1_000_000 : 0;
-}
-
 /** Room-ceiling retained beam pool plus one prediction slot. Exact damaging capsules are never culled. */
 export class BeamRenderer {
   private readonly groundLight: Phaser.GameObjects.Graphics;
   private readonly graphics: Phaser.GameObjects.Graphics;
   private readonly entries: BeamEntry[] = [];
   private readonly capsulePoints: Phaser.Math.Vector2[] = [];
-  private readonly ownerPose: BeamOwnerPose = { x: 0, y: 0, renderScale: 1 };
+  private readonly muzzlePose: BeamMuzzlePose = { x: 0, y: 0 };
   private readonly drawPose: BeamDrawPose = { originX: 0, originY: 0, angle: 0, length: 0 };
   private colorblindShapes = false;
 
@@ -225,7 +217,6 @@ export class BeamRenderer {
         releaseT: 0,
         overheatT: 0,
         seed: 0,
-        angleOffset: 0,
         poseReady: false,
         poseT: 1,
         fromAngle: 0,
@@ -269,7 +260,7 @@ export class BeamRenderer {
     beltYScale: number,
     predicted?: PredictedBeamCharge,
     reducedMotion = false,
-    writeOwnerPose?: BeamOwnerPoseWriter,
+    writeMuzzlePose?: BeamMuzzlePoseWriter,
   ): void {
     this.groundLight.clear();
     this.graphics.clear();
@@ -285,7 +276,7 @@ export class BeamRenderer {
         predicted?.startSeq === row.seq;
       if (ownerId === selfId && !predictedOwnerCharge) hasAuthoritativeSelf = true;
       if (predictedOwnerCharge) return;
-      const entry = this.acquire(`${rowKey}:${row.seq}`, rowKey, ownerId, row.seq);
+      const entry = this.acquire(`${rowKey}:${row.seq}`, ownerId, row.seq);
       if (!entry) return;
       entry.seen = true;
       this.observePhase(entry, row.phase);
@@ -298,23 +289,24 @@ export class BeamRenderer {
         beltY0,
         beltYScale,
         reducedMotion,
-        writeOwnerPose,
+        writeMuzzlePose,
       );
     });
     if (predicted && !hasAuthoritativeSelf) {
-      const entry = this.acquire(
-        `${predicted.ownerId}:predicted`,
-        predicted.ownerId,
-        predicted.ownerId,
-        0,
-      );
+      const entry = this.acquire(`${predicted.ownerId}:predicted`, predicted.ownerId, 0);
       if (entry) {
         entry.seen = true;
         entry.body.setVisible(false);
         entry.lip.setVisible(false);
+        let originX = predicted.originX;
+        let originY = predicted.originY;
+        if (writeMuzzlePose?.(predicted.ownerId, predicted.weaponId, this.muzzlePose)) {
+          originX = this.muzzlePose.x;
+          originY = this.muzzlePose.y;
+        }
         this.drawCharge(
-          predicted.originX,
-          this.projectY(predicted.originY, beltY0, beltYScale),
+          originX,
+          this.projectY(originY, beltY0, beltYScale),
           predicted.angle,
           Math.min(0.95, predicted.progress),
           COLOR[predicted.element] ?? DEFAULT_COLOR,
@@ -337,12 +329,7 @@ export class BeamRenderer {
     }
   }
 
-  private acquire(
-    key: string,
-    rowKey: string,
-    ownerId: string,
-    seq: number,
-  ): BeamEntry | undefined {
+  private acquire(key: string, ownerId: string, seq: number): BeamEntry | undefined {
     for (const entry of this.entries) if (entry.key === key) return entry;
     for (const entry of this.entries) {
       if (entry.key) continue;
@@ -350,7 +337,6 @@ export class BeamRenderer {
       entry.ownerId = ownerId;
       entry.seq = seq;
       entry.seed = hashKey(key) / 0xffffffff;
-      entry.angleOffset = beamRowAngleOffset(rowKey);
       entry.lastPhase = BeamPhase.Idle;
       entry.poseReady = false;
       return entry;
@@ -375,7 +361,7 @@ export class BeamRenderer {
     beltY0: number,
     beltYScale: number,
     reducedMotion: boolean,
-    writeOwnerPose: BeamOwnerPoseWriter | undefined,
+    writeMuzzlePose: BeamMuzzlePoseWriter | undefined,
   ): void {
     entry.ignitionT = Math.max(0, entry.ignitionT - dt);
     entry.releaseT = Math.max(0, entry.releaseT - dt);
@@ -386,7 +372,7 @@ export class BeamRenderer {
       recipe?.beam?.accentColor ??
       COLOR[row.element] ??
       DEFAULT_COLOR;
-    const pose = this.resolveDrawPose(entry, row, local, dt, writeOwnerPose);
+    const pose = this.resolveDrawPose(entry, row, local, dt, writeMuzzlePose);
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
 
     if (row.phase === BeamPhase.Charging) {
@@ -505,7 +491,7 @@ export class BeamRenderer {
     row: BeamRenderState,
     local: boolean,
     dt: number,
-    writeOwnerPose: BeamOwnerPoseWriter | undefined,
+    writeMuzzlePose: BeamMuzzlePoseWriter | undefined,
   ): BeamDrawPose {
     if (!entry.poseReady) {
       entry.poseReady = true;
@@ -548,11 +534,9 @@ export class BeamRenderer {
 
     let originX = entry.renderOriginX;
     let originY = entry.renderOriginY;
-    if (writeOwnerPose?.(entry.ownerId, this.ownerPose)) {
-      const reach = weaponMuzzleReach(WEAPONS[row.weaponId], this.ownerPose.renderScale);
-      const emitterAngle = entry.renderAngle - entry.angleOffset;
-      originX = this.ownerPose.x + Math.cos(emitterAngle) * reach;
-      originY = this.ownerPose.y + Math.sin(emitterAngle) * reach;
+    if (writeMuzzlePose?.(entry.ownerId, row.weaponId, this.muzzlePose)) {
+      originX = this.muzzlePose.x;
+      originY = this.muzzlePose.y;
     }
     this.drawPose.originX = originX;
     this.drawPose.originY = originY;
