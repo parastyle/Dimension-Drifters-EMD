@@ -28,8 +28,8 @@ export function replacementPairManifestInput(revision = "pairs-test-r1"): unknow
     id: GEAR_REPLACEMENT_CONTRACT_ID,
     revision,
     partFrames: {
-      body: [344, 324, 336, 376],
-      head: [352, 112, 384, 456],
+      body: [268, 180, 488, 544],
+      head: [290, 40, 508, 552],
       "hand-l": [294, 432, 180, 180],
       "hand-r": [550, 432, 180, 180],
       "foot-l": [353, 641, 190, 190],

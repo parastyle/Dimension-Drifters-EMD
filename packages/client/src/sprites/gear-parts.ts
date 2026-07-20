@@ -337,18 +337,18 @@ function finite(value: unknown): value is number {
 
 const FROZEN_GEAR_BAKE_FRAMES: Readonly<Record<GearBakedPartId, GearBakeFrame>> = Object.freeze({
   body: Object.freeze({
-    left: 344,
-    top: 324,
-    width: 336,
-    height: 376,
-    origin: Object.freeze({ x: 168 / 336, y: 188 / 376 }),
+    left: 268,
+    top: 180,
+    width: 488,
+    height: 544,
+    origin: Object.freeze({ x: 244 / 488, y: 332 / 544 }),
   }),
   head: Object.freeze({
-    left: 352,
-    top: 112,
-    width: 384,
-    height: 456,
-    origin: Object.freeze({ x: 160 / 384, y: 188 / 456 }),
+    left: 290,
+    top: 40,
+    width: 508,
+    height: 552,
+    origin: Object.freeze({ x: 222 / 508, y: 260 / 552 }),
   }),
   "hand-l": Object.freeze({
     left: 294,

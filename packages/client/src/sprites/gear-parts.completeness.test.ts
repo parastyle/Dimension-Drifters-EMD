@@ -7,33 +7,19 @@ import {
 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import generatedManifest from "../../../../tools/artkit/out/gear/gear-parts-manifest.json";
+import { GEAR_PARTS_MANIFEST } from "./gear-parts.js";
 
 // Burn-down list: remove an id as soon as its full-object/current-slot manifest row lands. A stale entry
 // fails because `missingArt` is compared exactly, so completed renders cannot hide in the allowlist.
 const PENDING_RENDER_ALLOWLIST = [
-  "ash-walker-head",
-  "ash-walker-shirt",
-  "ashen-crusader-head",
   "ashen-crusader-shirt",
-  "molten-core-head",
-  "molten-core-shirt",
   "coldsnap-head",
-  "coldsnap-shirt",
-  "graveside-head",
   "graveside-shirt",
-  "nine-veils-head",
   "nine-veils-shirt",
-  "demon-mask-shirt",
-  "thornwatch-head",
   "thornwatch-shirt",
   "thornwatch-boots",
-  "neon-mirage-head",
   "neon-mirage-shirt",
-  "house-edge-head",
-  "house-edge-shirt",
-  "unbending-shirt",
   "unbending-boots",
-  "pressurized-head",
   "pressurized-shirt",
   "mended-workshirt",
   "reinforced-workshirt",
@@ -54,6 +40,7 @@ interface RawManifestItem {
 
 describe("gear catalog and art manifest completeness", () => {
   it("covers every nonblank id with current art or the exact pending-render burn-down list", () => {
+    expect(GEAR_PARTS_MANIFEST).not.toBeNull();
     const manifestItems = generatedManifest.slots.flatMap(
       (slot) => slot.items as RawManifestItem[],
     );

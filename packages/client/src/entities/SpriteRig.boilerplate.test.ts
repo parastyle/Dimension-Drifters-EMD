@@ -481,6 +481,20 @@ describe("SpriteRig mixed-set gear attachment groups", () => {
       expect(attachment.image.visible).toBe(true);
       expect((rig.root as unknown as FakeContainer).list).toContain(attachment.image);
     }
+    const head = truth.boilerplateHead;
+    expect(head).toBeDefined();
+    for (const attachment of truth.gearAttachments.filter((candidate) =>
+      ["face.eyes", "face.mouth"].includes(candidate.spec.source.receiver),
+    )) {
+      expect(attachment.image.scaleX).toBeCloseTo(
+        (head?.scaleX ?? Number.NaN) * attachment.spec.source.mountScale,
+        10,
+      );
+      expect(attachment.image.scaleY).toBeCloseTo(
+        (head?.scaleY ?? Number.NaN) * attachment.spec.source.mountScale,
+        10,
+      );
+    }
     expect(groups).toEqual({ body: 2, hands: 2, feet: 2, head: 4 });
     expect(truth.gearAttachments).toHaveLength(10);
     expect(new Set(truth.gearAttachments.map((attachment) => attachment.spec.gearId)).size).toBe(8);

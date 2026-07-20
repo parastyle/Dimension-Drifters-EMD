@@ -570,22 +570,19 @@ describe("WardrobeCharacterPreview shared extras and replacement heads", () => {
 
     const assembly = assembleBoilerplate(manifest, 76);
     const head = assembly.parts.find((part) => part.source.id === "head");
-    const leftHand = assembly.parts.find((part) => part.source.id === "hand-l");
-    const feet = assembly.parts.filter(
-      (part) => part.source.id === "foot-l" || part.source.id === "foot-r",
-    );
-    if (!head || !leftHand || feet.length !== 2) throw new Error("fixed boilerplate parts missing");
-    const scale = assembly.scale;
-    expect(bounds.minX).toBeCloseTo(leftHand.x - GEAR_BAKE_FRAMES["hand-l"].origin.x * 180 * scale);
-    expect(bounds.maxX).toBeCloseTo(head.x + (1 - GEAR_BAKE_FRAMES.head.origin.x) * 384 * scale);
-    expect(bounds.minY).toBeCloseTo(head.y - GEAR_BAKE_FRAMES.head.origin.y * 456 * scale);
-    expect(bounds.maxY).toBeCloseTo(
-      Math.max(
-        ...feet.map(
-          (foot) => foot.y + (1 - GEAR_BAKE_FRAMES[foot.source.id].origin.y) * 190 * scale,
-        ),
-      ),
-    );
+    if (!head || assembly.parts.length !== 6) throw new Error("fixed boilerplate parts missing");
+    const edge = (part: (typeof assembly.parts)[number], side: "left" | "right" | "top" | "bottom") => {
+      const frame = GEAR_BAKE_FRAMES[part.source.id];
+      if (side === "left") return part.x - frame.origin.x * frame.width * part.scale;
+      if (side === "right") return part.x + (1 - frame.origin.x) * frame.width * part.scale;
+      if (side === "top") return part.y - frame.origin.y * frame.height * part.scale;
+      return part.y + (1 - frame.origin.y) * frame.height * part.scale;
+    };
+    expect(bounds.minX).toBeCloseTo(Math.min(...assembly.parts.map((part) => edge(part, "left"))));
+    expect(bounds.maxX).toBeCloseTo(Math.max(...assembly.parts.map((part) => edge(part, "right"))));
+    expect(bounds.minY).toBeCloseTo(Math.min(...assembly.parts.map((part) => edge(part, "top"))));
+    expect(bounds.maxY).toBeCloseTo(Math.max(...assembly.parts.map((part) => edge(part, "bottom"))));
+    expect(head.scale).toBeCloseTo(assembly.scale * head.source.mountScale);
   });
 });
 
