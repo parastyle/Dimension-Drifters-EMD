@@ -92,3 +92,8 @@
 - **ART** **Golden anchors locked:** Drifter #3, Rusty Cleaver #1, Critter #2, OLD RUST #3. 30-asset style test generated. *(v0.13)*
 - **INFRA** **Art-review web UI** (`tools/artkit/review/`) — browse/pick/edit/re-roll, auto-keying. *(v0.13)* **Upgraded** to object-explorer sidebar (status filters + category tree + sort), grouped grid, keyboard nav (`/`,`1–9`,`←→`,`R`,`Esc`), candidate lightbox, toasts, progress stat, persisted view, mobile-responsive.
 - **DOC** Reference projects logged (§27.4); repo conventions (compiled `shared`, `.js` imports, pure-sim) adopted. *(v0.5)*
+
+## Overnight handoff 2026-07-20 (pre-shutdown)
+- ORNATE TORSO GATE CONFLICT: 5 torsos (ashen-crusader, nine-veils, thornwatch, neon-mirage, pressurized) systematically fail BOTH the 132px silhouette envelope AND 90% core coverage across 20+ attempts — the two gates are in tension with these flowing designs. Needs a design ruling (per-item envelopes, lower coverage floor for declared-ornate items, or art direction change), not more render burn. Heads are 12/12 done.
+- POST-FLEET RE-RENDER QUEUE: 5 reclassified cowls (see docs/head-fit-panel/panel.md) + thornwatch-boots/unbending-boots (zero alpha at pivot).
+- Gate should ARCHIVE rejected attempts beside their failure reports instead of discarding (a margin change could then re-judge history for free — this cost us a day).
