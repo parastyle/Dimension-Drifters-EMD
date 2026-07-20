@@ -29,7 +29,7 @@ const HINT_THROTTLE_MS = 3_200;
 const HINT_FADE_IN_MS = 120;
 const HINT_FADE_OUT_MS = 260;
 const LEGEND_WIDTH = 760;
-const LEGEND_HEIGHT = 430;
+const LEGEND_HEIGHT = 490;
 
 export interface VerbLegendSurface {
   layout(width: number, height: number): void;
@@ -81,10 +81,10 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
       .lineStyle(2, 0x8ba7b8, 0.72)
       .strokeRoundedRect(-LEGEND_WIDTH / 2, -LEGEND_HEIGHT / 2, LEGEND_WIDTH, LEGEND_HEIGHT, 14)
       .lineStyle(1, 0x263947, 0.9)
-      .lineBetween(0, -126, 0, 70)
-      .lineBetween(-342, 82, 342, 82);
+      .lineBetween(0, -156, 0, 100)
+      .lineBetween(-342, 112, 342, 112);
 
-    const title = createText(scene, 0, -184, "VERB LEGEND", {
+    const title = createText(scene, 0, -214, "VERB LEGEND", {
       fontFamily: "Arial, sans-serif",
       fontSize: "24px",
       fontStyle: "bold",
@@ -95,7 +95,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
     const intro = createText(
       scene,
       0,
-      -148,
+      -178,
       "Move clean. Read the glint. Commit to the response.",
       {
         fontFamily: "Arial, sans-serif",
@@ -106,7 +106,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
     const left = createText(
       scene,
       -342,
-      -116,
+      -146,
       [
         "[WASD] Move",
         "[Space] Tap to jump",
@@ -126,7 +126,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
     const right = createText(
       scene,
       24,
-      -116,
+      -146,
       [
         "[RMB] Fire · Hold to channel",
         "[RMB] Release to vent",
@@ -134,6 +134,8 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
         "[E] Pick up / interact",
         "[Q] Next weapon or slot",
         "[Z/X] Previous/next gallery page",
+        "[T] Enter Testing Grounds",
+        "[G/T] Game / weapon note in Grounds",
         "[1–3] Equip slot",
         "[Tab] Backpack",
         "[C] Change cosmetic",
@@ -145,13 +147,13 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
         lineSpacing: 8,
       },
     );
-    const responseTitle = createText(scene, -342, 96, "RESPONSE LANGUAGE", {
+    const responseTitle = createText(scene, -342, 126, "RESPONSE LANGUAGE", {
       fontFamily: "Arial, sans-serif",
       fontSize: "12px",
       fontStyle: "bold",
       color: "#91a5b1",
     });
-    const white = createText(scene, -342, 122, "WHITE GLINT — PARRY", {
+    const white = createText(scene, -342, 152, "WHITE GLINT — PARRY", {
       fontFamily: "Arial, sans-serif",
       fontSize: "15px",
       fontStyle: "bold",
@@ -159,7 +161,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
       stroke: "#05070a",
       strokeThickness: 3,
     });
-    const gold = createText(scene, -342, 148, "GOLD GLINT — EMPOWERED · PARRY AGAIN OR STEP OUT", {
+    const gold = createText(scene, -342, 178, "GOLD GLINT — EMPOWERED · PARRY AGAIN OR STEP OUT", {
       fontFamily: "Arial, sans-serif",
       fontSize: "15px",
       fontStyle: "bold",
@@ -167,7 +169,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
       stroke: "#05070a",
       strokeThickness: 3,
     });
-    const red = createText(scene, 176, 122, "RED — MOVE", {
+    const red = createText(scene, 176, 152, "RED — MOVE", {
       fontFamily: "Arial, sans-serif",
       fontSize: "15px",
       fontStyle: "bold",
@@ -175,7 +177,7 @@ class PhaserVerbLegendSurface implements VerbLegendSurface {
       stroke: "#05070a",
       strokeThickness: 3,
     });
-    const footer = createText(scene, 342, 184, "[H] Close", {
+    const footer = createText(scene, 342, 214, "[H] Close", {
       fontFamily: "Arial, sans-serif",
       fontSize: "14px",
       fontStyle: "bold",

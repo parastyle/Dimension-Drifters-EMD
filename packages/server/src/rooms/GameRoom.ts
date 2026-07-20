@@ -496,6 +496,7 @@ import {
   ZoneState,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
+import { appendOwnerNote, sanitizeOwnerNote } from "../owner-notes.js";
 import {
   BossController,
   conserveVastagharVictoryXp,
@@ -1414,7 +1415,7 @@ export class GameRoom extends Room<ArenaState> {
       },
     );
 
-    // G = one ordinary, budgeted buffered ultimate action. The client supplies intent only; aim is
+    // F = one ordinary, budgeted buffered ultimate action. The client supplies intent only; aim is
     // normalized here and every destination/target set is rebuilt from authoritative state at acceptance.
     this.onMessage(
       "ultimate",
@@ -2061,6 +2062,44 @@ export class GameRoom extends Room<ArenaState> {
       // move the squad, but a host action never settles or destroys a teammate's escrow.
       this.toggleTraining(client.sessionId);
     });
+
+    // Owner field notes: a dev-gated Testing-Grounds affordance, persisted outside schema state.
+    // Weapon identity is derived from the authoritative live active slot, never trusted from the client.
+    this.onMessage(
+      "ownerNote",
+      (client, message: { type?: unknown; note?: unknown }) => {
+        const reject = (reason: string): void =>
+          client.send("ownerNoteAck", { saved: false, reason });
+        if (!this.devToolsEnabled()) return reject("dev tools disabled");
+        if (!this.takeAction(client)) return reject("rate limited");
+        if (this.state.mode !== "training") return reject("Testing Grounds only");
+        const player = this.state.players.get(client.sessionId);
+        if (!player) return reject("player unavailable");
+        const type = message?.type;
+        if (type !== "game" && type !== "weapon") return reject("invalid note type");
+        const note = sanitizeOwnerNote(message?.note);
+        if (!note) return reject("empty note");
+        try {
+          appendOwnerNote({
+            ts: new Date().toISOString(),
+            session: client.sessionId,
+            mode: "training",
+            type,
+            ...(type === "weapon"
+              ? {
+                  weaponId: player.weapon,
+                  weaponName: WEAPONS[player.weapon]?.name ?? player.weapon,
+                }
+              : {}),
+            note,
+          });
+          client.send("ownerNoteAck", { saved: true });
+        } catch (error) {
+          console.error(`[room ${this.roomId}] owner-note append failed`, error);
+          reject("disk write failed");
+        }
+      },
+    );
 
     // §31 SHOWROOM paging: cycle the Testing-Grounds weapon gallery to the next/prev page. Host-only +
     // training-only (the shared gallery is a co-op-wide view).

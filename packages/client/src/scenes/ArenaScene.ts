@@ -153,7 +153,12 @@ import {
   SpriteRig,
 } from "../entities/SpriteRig.js";
 import { WormRig } from "../entities/WormRig.js";
-import { routeWeaponInput, type WeaponInputMode } from "../input-routing.js";
+import {
+  type OwnerNoteType,
+  routeOwnerNoteInput,
+  routeWeaponInput,
+  type WeaponInputMode,
+} from "../input-routing.js";
 import {
   type DistanceJumpIndicator,
   type PredCmd,
@@ -196,6 +201,7 @@ import {
   objectiveHudCopy,
   objectiveHudLayout,
 } from "../ui/objective-hud-layout.js";
+import { OwnerNoteOverlay } from "../ui/owner-note-overlay.js";
 import { type PairPreviewItem, pairPreview } from "../ui/pair-preview.js";
 import {
   formatPetProgressReceipt,
@@ -1335,6 +1341,7 @@ export class ArenaScene extends Phaser.Scene {
     | "Z"
     | "X"
     | "F"
+    | "G"
     | "H"
     | "T"
     | "B"
@@ -1437,6 +1444,8 @@ export class ArenaScene extends Phaser.Scene {
   private dangerVignette!: Phaser.GameObjects.Graphics;
   private juggleVignette!: Phaser.GameObjects.Graphics;
   private verbUi?: VerbLegendManager;
+  private ownerNoteUi?: OwnerNoteOverlay;
+  private ownerNoteKeyboardPaused = false;
   private jugglePulseUntil = -1e9;
   private hurtFlash = 0;
   /** §19 v0.108 polish — smoothed bar fills (lerp toward the true ratio), so hits/heals/XP read as
@@ -1891,6 +1900,9 @@ export class ArenaScene extends Phaser.Scene {
       this.input.keyboard?.off("keydown", this.resumeAudioKeyHandler);
       this.resumeAudioKeyHandler = null;
     }
+    this.ownerNoteUi?.destroy();
+    this.ownerNoteUi = undefined;
+    this.restoreOwnerNoteKeyboard();
     this.input.keyboard?.removeCapture("TAB");
     this.input.keyboard?.removeCapture("ESC");
   }
@@ -2039,6 +2051,8 @@ export class ArenaScene extends Phaser.Scene {
     this.dangerVignette = undefined!;
     this.juggleVignette = undefined!;
     this.verbUi = undefined;
+    this.ownerNoteUi = undefined;
+    this.ownerNoteKeyboardPaused = false;
     this.weaponText = undefined!;
     this.augmentText = undefined!;
     this.objectiveHudGfx = undefined!;
@@ -2386,7 +2400,7 @@ export class ArenaScene extends Phaser.Scene {
     const keyboard = this.input.keyboard;
     if (!keyboard) throw new Error("Keyboard input unavailable");
     this.keys = keyboard.addKeys(
-      "W,A,S,D,R,P,Q,E,Z,X,F,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
+      "W,A,S,D,R,P,Q,E,Z,X,F,G,H,T,B,C,M,TAB,ESC,SPACE,SHIFT,CTRL,ONE,TWO,THREE,FOUR,FIVE,LEFT,RIGHT,UP,DOWN,ENTER",
     ) as Record<
       | "W"
       | "A"
@@ -2399,6 +2413,7 @@ export class ArenaScene extends Phaser.Scene {
       | "Z"
       | "X"
       | "F"
+      | "G"
       | "H"
       | "T"
       | "B"
@@ -2424,6 +2439,12 @@ export class ArenaScene extends Phaser.Scene {
     // Tab would otherwise move browser focus off the canvas — capture it so the summon menu owns it.
     keyboard.addCapture("TAB");
     keyboard.addCapture("ESC");
+    this.ownerNoteUi = new OwnerNoteOverlay({
+      onSubmit: (context, note) => {
+        this.room?.send("ownerNote", { type: context.type, note });
+      },
+      onClose: () => this.restoreOwnerNoteKeyboard(),
+    });
     this.input.setDefaultCursor("crosshair");
     // Create/resume the AudioContext on the first real gesture (click or key) — the browser autoplay
     // policy blocks it otherwise. Idempotent + cheap, so wiring it to both is harmless.
@@ -4033,12 +4054,25 @@ export class ArenaScene extends Phaser.Scene {
             this.onWeaponSettlementReceipt(payload);
           },
         ) as () => void;
+        const disposeOwnerNoteAck = room.onMessage<{ saved?: unknown; reason?: unknown }>(
+          "ownerNoteAck",
+          (payload) => {
+            if (generation !== this.connectionGeneration || this.room !== room) return;
+            if (payload?.saved === true) {
+              this.flashBanner("✓ OWNER NOTE SAVED", "#9cff6a");
+            } else {
+              const reason = typeof payload?.reason === "string" ? payload.reason : "server rejected";
+              this.flashBanner(`NOTE NOT SAVED · ${reason}`, "#ff8a6b");
+            }
+          },
+        ) as () => void;
         this.roomStateDisposers.push(
           disposeMetaAccount,
           disposePetProgress,
           disposePetPickup,
           disposeWeaponManifest,
           disposeWeaponSettlement,
+          disposeOwnerNoteAck,
         );
         // §4 schema handshake (audit): if the server's schema version ≠ ours, our compiled state schema is
         // stale → Colyseus would decode patches with corrupted field offsets. Detect on the first state and
@@ -4161,10 +4195,12 @@ export class ArenaScene extends Phaser.Scene {
   override update(_time: number, deltaMs: number): void {
     const preSelf = this.room?.state.players?.get(this.room.sessionId);
     const competingLevelModal = this.inLevelWindow(preSelf) || this.levelWinInputReleaseLatch;
+    const ownerNoteModalOpen = !!this.ownerNoteUi?.isOpen();
     if (competingLevelModal) {
+      if (ownerNoteModalOpen) this.ownerNoteUi?.close();
       this.verbs.closeForCompetingModal(this.time.now);
       this.verbs.retireHint();
-    } else if (Phaser.Input.Keyboard.JustDown(this.keys.H)) {
+    } else if (!ownerNoteModalOpen && Phaser.Input.Keyboard.JustDown(this.keys.H)) {
       if (!this.verbs.isLegendOpen()) {
         this.bagOpen = false;
         this.shopOpen = false;
@@ -4189,7 +4225,8 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cameras.main;
     this.audio.setListener(cam.scrollX + cam.width / cam.zoom / 2, cam.width / cam.zoom / 2);
     // Weapon verbs stay physically distinct: E interacts, Q cycles, Z/X page the training gallery, and
-    // R owns only the held-weapon drop/salvage gesture. Restart remains the on-screen button, top-right.
+    // R owns only drop/salvage. G/T become hard-modal owner notes only inside Testing Grounds; T retains
+    // its enter-Testing-Grounds verb outside. Restart remains the on-screen button, top-right.
     const selfP = this.room.state.players.get(this.room.sessionId);
     const alive = !!selfP && selfP.alive;
     const ultimatePressed = Phaser.Input.Keyboard.JustDown(this.keys.F);
@@ -4207,12 +4244,30 @@ export class ArenaScene extends Phaser.Scene {
       (Phaser.Input.Keyboard.JustDown(this.keys.TAB) ||
         Phaser.Input.Keyboard.JustDown(this.keys.ESC));
     if (summonClosePressed) this.closeSummonMenu();
-    const levelWindowInputBlocked =
+    if (this.ownerNoteUi?.isOpen() && this.room.state.mode !== "training") {
+      this.ownerNoteUi.close();
+    }
+    const weaponInputMode: WeaponInputMode = this.belt
+      ? "belt"
+      : this.room.state.mode === "training"
+        ? "training"
+        : "arena";
+    const competingModalOpen =
       levelWindowOpen ||
       this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
       summonClosePressed;
+    const ownerNoteInput = routeOwnerNoteInput({
+      mode: weaponInputMode,
+      modalOpen: competingModalOpen || !!this.ownerNoteUi?.isOpen(),
+      gameNotePressed: Phaser.Input.Keyboard.JustDown(this.keys.G),
+      weaponNotePressed: Phaser.Input.Keyboard.JustDown(this.keys.T),
+    });
+    if (ownerNoteInput.openNote && selfP) this.openOwnerNote(ownerNoteInput.openNote, selfP);
+    if (ownerNoteInput.toggleTraining) this.room.send("toggleTraining");
+    const levelWindowInputBlocked =
+      competingModalOpen || !ownerNoteInput.gameplayEnabled || !!this.ownerNoteUi?.isOpen();
     this.pointerOverInteractiveUi = this.input.hitTestPointer(this.input.activePointer).length > 0;
     const predictedAirborne = this.predictor
       ? this.selfPredHeight > GROUND_EPSILON
@@ -4340,13 +4395,9 @@ export class ArenaScene extends Phaser.Scene {
       const cyclePressed = Phaser.Input.Keyboard.JustDown(this.keys.Q);
       const previousPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.Z);
       const nextPagePressed = Phaser.Input.Keyboard.JustDown(this.keys.X);
-      const weaponInputMode: WeaponInputMode = this.belt
-        ? "belt"
-        : this.room.state.mode === "training"
-          ? "training"
-          : "arena";
       const weaponInput = routeWeaponInput({
         mode: weaponInputMode,
+        modalOpen: levelWindowInputBlocked,
         alive,
         pickupPromptVisible: nearPickup,
         interactPressed,
@@ -4386,7 +4437,6 @@ export class ArenaScene extends Phaser.Scene {
           if (def) this.cyclePoseShowroom(def);
         }
       }
-      if (Phaser.Input.Keyboard.JustDown(this.keys.T)) this.room?.send("toggleTraining");
       if (Phaser.Input.Keyboard.JustDown(this.keys.B)) this.room?.send("spawnBoss");
       // §19 v0.108 M toggles audio mute (persisted) + a confirming toast.
       if (Phaser.Input.Keyboard.JustDown(this.keys.M)) {
@@ -7308,12 +7358,49 @@ export class ArenaScene extends Phaser.Scene {
     return this.verbUi;
   }
 
+  private openOwnerNote(type: OwnerNoteType, self: PlayerState): void {
+    const opened = this.ownerNoteUi?.open({
+      type,
+      activeSlot: self.activeSlot,
+      weaponId: type === "weapon" ? self.weapon : undefined,
+      weaponName: type === "weapon" ? (WEAPONS[self.weapon]?.name ?? self.weapon) : undefined,
+    });
+    if (!opened) return;
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      keyboard.resetKeys();
+      keyboard.disableGlobalCapture();
+      keyboard.manager.enabled = false;
+      keyboard.enabled = false;
+      this.ownerNoteKeyboardPaused = true;
+    }
+    this.rHold = 0;
+    this.rSalvaged = false;
+    this.jumpQueued = false;
+    this.poundQueued = false;
+    this.slideQueued = false;
+    this.crouchHeld = false;
+  }
+
+  private restoreOwnerNoteKeyboard(): void {
+    if (!this.ownerNoteKeyboardPaused) return;
+    const keyboard = this.input.keyboard;
+    if (keyboard) {
+      keyboard.manager.enabled = true;
+      keyboard.enabled = true;
+      keyboard.resetKeys();
+      keyboard.enableGlobalCapture();
+    }
+    this.ownerNoteKeyboardPaused = false;
+  }
+
   private inputModalBlocked(self: PlayerState | undefined): boolean {
     return (
       this.inLevelWindow(self) ||
       this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
-      this.summonOpen
+      this.summonOpen ||
+      !!this.ownerNoteUi?.isOpen()
     );
   }
 
@@ -7326,6 +7413,8 @@ export class ArenaScene extends Phaser.Scene {
       !this.keys.E.isDown &&
       !this.keys.Z.isDown &&
       !this.keys.X.isDown &&
+      !this.keys.G.isDown &&
+      !this.keys.T.isDown &&
       !this.keys.C.isDown &&
       !this.keys.TAB.isDown &&
       !this.keys.CTRL.isDown
@@ -11410,7 +11499,9 @@ export class ArenaScene extends Phaser.Scene {
         }
       });
       if (galleryPage > 0) {
-        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons · [Z/X] Prev/Next`;
+        copy.location = `${copy.location} · Page ${galleryPage}/${galleryPages} · ${galleryWeapons} weapons · [Z/X] Prev/Next · [G] Game note · [T] Weapon note`;
+      } else {
+        copy.location = `${copy.location} · [G] Game note · [T] Weapon note`;
       }
     }
     const layout = objectiveHudLayout({

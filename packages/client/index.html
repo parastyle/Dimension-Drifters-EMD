@@ -38,6 +38,113 @@
       #hud b {
         color: #4fd1c5;
       }
+      .owner-note-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000000;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+        background: rgba(4, 6, 10, 0.72);
+        pointer-events: auto;
+      }
+      .owner-note-bubble {
+        width: min(760px, calc(100vw - 32px));
+        box-sizing: border-box;
+        padding: 24px;
+        color: #e8edf2;
+        background: linear-gradient(150deg, rgba(19, 28, 35, 0.99), rgba(9, 13, 18, 0.99));
+        border: 2px solid #7ca6b8;
+        border-radius: 18px 18px 18px 5px;
+        box-shadow: 0 22px 80px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(206, 231, 239, 0.12);
+      }
+      .owner-note-kicker {
+        color: #61d6cc;
+        font: 700 12px/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+        letter-spacing: 0.16em;
+      }
+      .owner-note-bubble h2 {
+        margin: 7px 0 5px;
+        color: #f4e5bc;
+        font: 800 24px/1.15 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .owner-note-context {
+        margin-bottom: 14px;
+        color: #b6cad4;
+        font: 700 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+        overflow-wrap: anywhere;
+      }
+      .owner-note-bubble textarea {
+        display: block;
+        width: 100%;
+        min-height: 190px;
+        resize: vertical;
+        box-sizing: border-box;
+        padding: 14px 15px;
+        color: #f2f5f7;
+        caret-color: #61d6cc;
+        background: #070b0f;
+        border: 1px solid #486675;
+        border-radius: 8px;
+        outline: none;
+        font: 15px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      .owner-note-bubble textarea:focus {
+        border-color: #61d6cc;
+        box-shadow: 0 0 0 3px rgba(97, 214, 204, 0.16);
+      }
+      .owner-note-error {
+        min-height: 20px;
+        padding-top: 4px;
+        color: #ff9b7a;
+        font-size: 13px;
+      }
+      .owner-note-bubble footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        color: #9fb1bb;
+        font-size: 13px;
+      }
+      .owner-note-bubble footer > div {
+        display: flex;
+        gap: 8px;
+        flex: none;
+      }
+      .owner-note-bubble kbd {
+        color: #e9f4f6;
+        font: inherit;
+      }
+      .owner-note-bubble button {
+        padding: 8px 12px;
+        color: #d9e4e8;
+        background: #18232b;
+        border: 1px solid #4a6572;
+        border-radius: 6px;
+        font: 700 13px/1 system-ui, sans-serif;
+        cursor: pointer;
+      }
+      .owner-note-bubble button:hover,
+      .owner-note-bubble button:focus-visible {
+        border-color: #8bb6c6;
+        outline: none;
+      }
+      .owner-note-bubble .owner-note-save {
+        color: #071011;
+        background: #61d6cc;
+        border-color: #8bf3ea;
+      }
+      @media (max-width: 680px) {
+        .owner-note-bubble {
+          padding: 18px;
+        }
+        .owner-note-bubble footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
     </style>
   </head>
   <body>

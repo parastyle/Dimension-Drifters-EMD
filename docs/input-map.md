@@ -15,6 +15,8 @@ The survey also searched the rest of `packages/client`, `packages/client/index.h
 | `Q` | Next weapon, next belt slot, or next gallery page | Next weapon or next occupied belt slot | Active gameplay, no blocking modal; works in arena and Testing Grounds |
 | `Z` | Unbound | Previous weapon-gallery page | Testing Grounds only |
 | `X` | Unbound | Next weapon-gallery page | Testing Grounds only |
+| `G` | Unbound | Open a general game-note bubble | Testing Grounds only; the note bubble becomes a hard modal |
+| `T` | Toggle arena / Testing Grounds | Enter Testing Grounds from arena; open a weapon-note bubble inside Testing Grounds | Development tools only; server validates both the training gate and note write |
 | `R` | Near pickup: grab; otherwise tap to drop or hold to salvage | Tap to drop or hold to salvage only; inert while an `E` pickup prompt is visible | Active gameplay, alive, held weapon, no blocking modal |
 | `1–3` | Direct belt slots; level-up choices 1–3 | Unchanged | Level window owns the keys while open; otherwise belt mode owns them |
 | `4–5` | Level-up choices 4–5 | Unchanged | Level window only |
@@ -60,7 +62,9 @@ The new route has no fallback meaning: `E` can only produce pickup, `Q` can only
 | `1`, `2`, `3` | Equip arsenal slot | Belt mode only when no level window owns the number keys |
 | `Z`, `X` | Previous / next gallery page | Testing Grounds only; server still enforces host-only shared-gallery mutation |
 | `P` | Cycle the equipped weapon's pose preview | Development build and Testing Grounds only |
-| `T` | Toggle arena / Testing Grounds | Active gameplay; server validates the request |
+| `G` | Open a general game-note bubble | Testing Grounds only; unavailable while another modal owns input |
+| `T` | Open a weapon-note bubble and snapshot the active-slot weapon id/name | Testing Grounds only; unavailable while another modal owns input |
+| `T` | Enter Testing Grounds | Arena / non-training gameplay only; server validates the development-tools gate |
 | `B` | Spawn the playtest boss | Active gameplay; server validates the request |
 | `C` | Cycle legacy cosmetic character | Active gameplay |
 | `M` | Toggle persisted audio mute | Active gameplay |
@@ -71,7 +75,7 @@ The new route has no fallback meaning: `E` can only produce pickup, `Q` can only
 | `Esc` | Close summon menu | Summon menu open |
 | `H` | Open/close Verb Legend | Not during a level window; opening it closes Backpack, shop, or summon menu |
 
-`Tab` and `Esc` are captured by Phaser so the browser does not steal focus. Any keyboard or pointer gesture also resumes the audio context; that is an idempotent browser-policy hook, not a gameplay action.
+`Tab` and `Esc` are captured by Phaser so the browser does not steal focus. The owner-note textarea temporarily disables Phaser keyboard processing and global key capture, resets held-key state, and restores both on save/cancel so typing cannot move, fire, parry, cycle, or leak a held key back into play. Any keyboard or pointer gesture also resumes the audio context; that is an idempotent browser-policy hook, not a gameplay action.
 
 ### Level-up / signature window
 
@@ -137,21 +141,23 @@ The full-screen backdrop/panel are interactive absorbers, preventing clicks from
 
 ## Collision state machine after remap
 
-1. A hard modal (level window, release latch, Verb Legend, summon menu, or its close edge) owns input and blocks gameplay handlers.
-2. With gameplay enabled, the client resolves the nearest in-range pickup and shows `[E] Pick up` on that exact target.
-3. `E` sends only `grabWeapon(pickupId)`. Without the prompt it is inert; it never falls through to cycle or page. A pickup edge also wins over any cycle/page edge sampled in that same frame.
-4. `R` is disabled while that pickup prompt is present. Away from pickups, release before the threshold drops; reaching the threshold salvages and suppresses release-drop.
-5. `Q` sends only a forward weapon/slot cycle. In Testing Grounds it still cycles the held weapon; it never pages the gallery.
-6. `Z/X` produce a page delta only when mode is `training`. Both are inert in arena and belt combat.
-7. `F`, `Tab`, number keys, movement keys, and `Space` retain their existing mutually exclusive proximity/modal grammars described above.
-8. A pointer over interactive UI suppresses the LMB parry and RMB fire/channel paths, so one HUD click cannot also perform a combat verb.
+1. A hard modal (owner-note bubble, level window, release latch, Verb Legend, summon menu, or its close edge) owns input and blocks gameplay handlers.
+2. In arena/non-training play, `T` keeps its single enter-Testing-Grounds verb and `G` is inert. In Testing Grounds, `G` opens a game note and `T` opens a weapon note; neither can also toggle the mode.
+3. While an owner-note bubble is open, its DOM textarea owns every keyboard/pointer frame. `Enter` submits, `Shift+Enter` inserts a newline, and `Esc` cancels.
+4. With gameplay enabled, the client resolves the nearest in-range pickup and shows `[E] Pick up` on that exact target.
+5. `E` sends only `grabWeapon(pickupId)`. Without the prompt it is inert; it never falls through to cycle or page. A pickup edge also wins over any cycle/page edge sampled in that same frame.
+6. `R` is disabled while that pickup prompt is present. Away from pickups, release before the threshold drops; reaching the threshold salvages and suppresses release-drop.
+7. `Q` sends only a forward weapon/slot cycle. In Testing Grounds it still cycles the held weapon; it never pages the gallery.
+8. `Z/X` produce a page delta only when mode is `training`. Both are inert in arena and belt combat.
+9. `F`, `Tab`, number keys, movement keys, and `Space` retain their existing mutually exclusive proximity/modal grammars described above.
+10. A pointer over interactive UI suppresses the LMB parry and RMB fire/channel paths, so one HUD click cannot also perform a combat verb.
 
 ## UI copy audit
 
 - Top HTML HUD: now includes `E interact · Q cycle · H controls`.
 - Pickup affordance: new world-space `[E] Pick up` prompt on the highlighted target.
-- Verb Legend: `E` pickup/interact, `Q` next weapon/slot, `Z/X` gallery pages.
-- Testing Grounds objective/location plate: appends `[Z/X] Prev/Next` beside the live gallery page count.
+- Verb Legend: `E` pickup/interact, `Q` next weapon/slot, `Z/X` gallery pages, `T` enter Testing Grounds, and contextual `G/T` notes.
+- Testing Grounds objective/location plate: appends `[Z/X] Prev/Next`, `[G] Game note`, and `[T] Weapon note` beside the live gallery page count.
 - Ordinary weapon dock: removes all `E` badges; previous items are passive and `[Q] NEXT` is the only cycle affordance.
 - Belt arsenal readout: adds `[Q] Next slot`.
 - Backpack and Trading Post: existing `[Tab]` / `[F]` close and click verbs remain correct.

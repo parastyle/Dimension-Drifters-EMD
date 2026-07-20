@@ -32,3 +32,6 @@ tools/artkit/review/flags.json
 tools/soundkit/out/
 tools/artkit/.artkit-codex-homes/
 tools/artkit/output/
+
+# Durable local owner playtest notes are runtime data, not source.
+/data/owner-notes.jsonl

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { routeWeaponInput, type WeaponInputMode } from "./input-routing.js";
+import { routeOwnerNoteInput, routeWeaponInput, type WeaponInputMode } from "./input-routing.js";
 
 const base = (mode: WeaponInputMode = "arena") => ({
   mode,
+  modalOpen: false,
   alive: true,
   pickupPromptVisible: false,
   interactPressed: false,
@@ -66,5 +67,63 @@ describe("weapon input routing", () => {
       cycle: false,
       galleryPage: 1,
     });
+  });
+
+  it("swallows every weapon/combat selection verb while a note modal is open", () => {
+    expect(
+      routeWeaponInput({
+        ...base("training"),
+        modalOpen: true,
+        pickupPromptVisible: true,
+        interactPressed: true,
+        cyclePressed: true,
+        previousPagePressed: true,
+        nextPagePressed: true,
+      }),
+    ).toEqual({ pickup: false, cycle: false, galleryPage: 0 });
+  });
+});
+
+describe("owner-note input routing", () => {
+  const sample = (overrides: Partial<Parameters<typeof routeOwnerNoteInput>[0]> = {}) => ({
+    mode: "training" as const,
+    modalOpen: false,
+    gameNotePressed: false,
+    weaponNotePressed: false,
+    ...overrides,
+  });
+
+  it("opens G as a game note and T as a weapon note only in Testing Grounds", () => {
+    expect(routeOwnerNoteInput(sample({ gameNotePressed: true }))).toEqual({
+      openNote: "game",
+      toggleTraining: false,
+      gameplayEnabled: false,
+    });
+    expect(routeOwnerNoteInput(sample({ weaponNotePressed: true }))).toEqual({
+      openNote: "weapon",
+      toggleTraining: false,
+      gameplayEnabled: false,
+    });
+    expect(routeOwnerNoteInput(sample({ mode: "arena", gameNotePressed: true }))).toEqual({
+      openNote: null,
+      toggleTraining: false,
+      gameplayEnabled: true,
+    });
+  });
+
+  it("keeps T's enter-Testing-Grounds verb outside training", () => {
+    expect(routeOwnerNoteInput(sample({ mode: "arena", weaponNotePressed: true }))).toEqual({
+      openNote: null,
+      toggleTraining: true,
+      gameplayEnabled: true,
+    });
+  });
+
+  it("lets an open modal swallow note, training-toggle, and gameplay verbs", () => {
+    expect(
+      routeOwnerNoteInput(
+        sample({ modalOpen: true, gameNotePressed: true, weaponNotePressed: true }),
+      ),
+    ).toEqual({ openNote: null, toggleTraining: false, gameplayEnabled: false });
   });
 });
