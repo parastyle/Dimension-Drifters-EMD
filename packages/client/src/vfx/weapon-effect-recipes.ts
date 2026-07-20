@@ -1,4 +1,5 @@
 import type { WeaponDef, WeaponEffectEmitter, WeaponEffectRecipeId } from "@dd/shared";
+import { PARTICLE_PACKS } from "./particle-manifest.js";
 
 export interface WeaponEffectRecipe {
   readonly id: WeaponEffectRecipeId;
@@ -9,9 +10,11 @@ export interface WeaponEffectRecipe {
   readonly impactPack?: string;
   readonly swingPack?: string;
   readonly swingCount?: number;
+  readonly swingScaleMode?: "blade-length";
   readonly additive?: boolean;
   readonly chain?: "scattered-pages";
   readonly noGore?: boolean;
+  readonly suppressQuakeVfx?: boolean;
 }
 
 export const WEAPON_EFFECT_RECIPES = Object.freeze({
@@ -61,7 +64,9 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     emitter: "blade",
     swingPack: "void-bolt",
     swingCount: 8,
+    swingScaleMode: "blade-length",
     additive: true,
+    suppressQuakeVfx: true,
   }),
   "choir-iron-flame-slash": Object.freeze({
     id: "choir-iron-flame-slash",
@@ -100,3 +105,59 @@ export function resolveWeaponEffectRecipe(
     ? recipe
     : undefined;
 }
+
+export function shouldSpawnLegacyQuakeVfx(weapon: WeaponDef | undefined): boolean {
+  return resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true;
+}
+
+export function weaponSwingIdentityScale(
+  recipe: WeaponEffectRecipe | undefined,
+  bladeLength = 0,
+): number {
+  if (recipe?.swingScaleMode !== "blade-length" || !recipe.swingPack || bladeLength <= 0)
+    return recipe?.noGore ? 0.34 : 0.46;
+  const frameWidth = PARTICLE_PACKS[recipe.swingPack]?.frameWidth ?? 96;
+  return bladeLength / Math.max(1, frameWidth);
+}
+
+export interface WeaponAuraVfxRecipe {
+  readonly weaponId: string;
+  readonly packs: readonly string[];
+  readonly count: number;
+  readonly scale: number;
+  readonly extent: number;
+  readonly spinHz: number;
+}
+
+/** Retained painted-aura recipes. Gameplay radii stay in shared weapon data; these only place Codex art. */
+export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
+  "x2-sparkknuckle-hex-mitt": Object.freeze({
+    weaponId: "x2-sparkknuckle-hex-mitt",
+    packs: Object.freeze(["shock-spark"]),
+    count: 4,
+    scale: 0.085,
+    extent: 0.58,
+    spinHz: 1.7,
+  }),
+  "x2-fulgurite-storm-sphere": Object.freeze({
+    weaponId: "x2-fulgurite-storm-sphere",
+    packs: Object.freeze(["shock-spark", "shock-bolt"]),
+    count: 8,
+    scale: 0.15,
+    extent: 0.92,
+    spinHz: 1.05,
+  }),
+} as const satisfies Record<string, WeaponAuraVfxRecipe>);
+
+export function resolveWeaponAuraVfxRecipe(
+  weapon: WeaponDef | undefined,
+): WeaponAuraVfxRecipe | undefined {
+  if (!weapon) return undefined;
+  return WEAPON_AURA_VFX_RECIPES[weapon.id as keyof typeof WEAPON_AURA_VFX_RECIPES];
+}
+
+export const TESLA_WARP_VFX_RECIPE = Object.freeze({
+  weaponId: "x2-cogwright-s-tesla-rod",
+  departurePacks: Object.freeze(["shock-bolt", "shock-spark"]),
+  arrivalPacks: Object.freeze(["shock-splat", "shock-bolt"]),
+});

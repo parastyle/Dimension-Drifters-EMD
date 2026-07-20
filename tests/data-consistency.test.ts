@@ -312,7 +312,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         });
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
-            radius: { num: [30, 90] },
+            radius: { num: [30, 140] },
             damage: { num: [1, 30] },
             scalingGrades: { grades: true },
           });

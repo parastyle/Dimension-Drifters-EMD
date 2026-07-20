@@ -177,7 +177,9 @@ import {
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
+import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
+import { resolveWeaponAuraVfxRecipe } from "../vfx/weapon-effect-recipes.js";
 
 export { GEAR_PARTS_MANIFEST } from "../sprites/gear-parts.js";
 
@@ -2035,6 +2037,7 @@ export class SpriteRig {
   private readonly auraRing: Phaser.GameObjects.Ellipse;
   private readonly gloveAuraBoltA: Phaser.GameObjects.Rectangle;
   private readonly gloveAuraBoltB: Phaser.GameObjects.Rectangle;
+  private readonly paintedAuraParticles: readonly Phaser.GameObjects.Image[];
   private readonly pairGlint: Phaser.GameObjects.Rectangle;
 
   constructor(
@@ -2172,6 +2175,12 @@ export class SpriteRig {
       .setOrigin(0.15, 0.5)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
+    this.paintedAuraParticles = Array.from({ length: 8 }, (_, index) =>
+      scene.add
+        .image(0, 0, "ptcl:shock-spark", index % (PARTICLE_PACKS["shock-spark"]?.count ?? 1))
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setVisible(false),
+    );
     order.unshift(
       this.shadowHalo,
       this.shadow,
@@ -2179,6 +2188,7 @@ export class SpriteRig {
       this.auraRing,
       this.gloveAuraBoltA,
       this.gloveAuraBoltB,
+      ...this.paintedAuraParticles,
     );
 
     this.observedSourceRing = scene.add
@@ -2710,6 +2720,7 @@ export class SpriteRig {
       this.auraRing,
       this.gloveAuraBoltA,
       this.gloveAuraBoltB,
+      ...this.paintedAuraParticles,
       this.slideAfterimageB,
       this.slideAfterimageA,
     ];
@@ -4035,6 +4046,7 @@ export class SpriteRig {
         this.weapons.length > 1 && this.pairBaseSeqReady
           ? dualHandForSeq(beat, this.pairBaseSeq)
           : 0;
+      if (this.weaponDef.gun) this.triggerGunRecoil(acceptedWallEpochMs, hand);
       this.cancelForAcceptedRangedBeat(hand);
       this.recordAcceptedRangedBeat(hand, epochMs);
     }
@@ -7360,8 +7372,7 @@ export class SpriteRig {
   private placeNodeGear(attachment: GearAttachment): void {
     const receiver = attachment.spec.source.receiver;
     const handReplaced =
-      (receiver === "hand-l" || receiver === "hand-r") &&
-      this.weaponReplacesHandReceiver(receiver);
+      (receiver === "hand-l" || receiver === "hand-r") && this.weaponReplacesHandReceiver(receiver);
     let node: Phaser.GameObjects.Image | undefined;
     if (receiver === "hand-l" || receiver === "hand-r") {
       const front = receiver === "hand-r";
@@ -8474,7 +8485,10 @@ export class SpriteRig {
           // haymaker. Empty fists enter here behind CLIENT_VISUAL_COMBOS; no sprite is required for hands/body.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.punch[0];
           const heavy = twoHandedPoseFor(def, this.poseVariants.twoHandAuthority) ? 1 : 0;
-          const reach = TARGET_BODY_H * (pose?.motion === "jab" ? 0.48 : 0.55 + 0.25 * heavy);
+          const isCross = pose?.motion === "cross";
+          const reach =
+            TARGET_BODY_H *
+            (pose?.motion === "jab" ? 0.48 : isCross ? 0.68 + 0.18 * heavy : 0.55 + 0.25 * heavy);
           const wind = pose?.timing.activeStart ?? 0.1;
           const imp = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
           const follow = pose?.timing.followEnd ?? 0.44;
@@ -8483,27 +8497,27 @@ export class SpriteRig {
           let r = 0; // fist extension
           let drive = 0; // 0..1 body-commitment envelope
           let lateral = 0;
-          if (pose?.motion === "jab") {
+          if (pose?.motion === "jab" || isCross) {
             if (tt < wind) {
               const p = tt / wind;
-              r = reach * (-0.14 - 0.12 * p); // compact outside chamber
-              lateral = TARGET_BODY_H * 0.08 * p;
-              drive = 0.18 * p;
+              r = reach * ((isCross ? -0.24 : -0.14) - (isCross ? 0.16 : 0.12) * p);
+              lateral = TARGET_BODY_H * (isCross ? -0.12 : 0.08) * p;
+              drive = (isCross ? 0.38 : 0.18) * p;
             } else if (tt < imp) {
               const p = (tt - wind) / (imp - wind);
               const e = 1 - (1 - p) ** 3;
-              r = reach * (-0.26 + 1.26 * e);
-              lateral = TARGET_BODY_H * 0.08 * (1 - e);
-              drive = 0.18 + 0.72 * e;
+              r = reach * ((isCross ? -0.4 : -0.26) + (isCross ? 1.4 : 1.26) * e);
+              lateral = TARGET_BODY_H * (isCross ? -0.12 : 0.08) * (1 - e);
+              drive = (isCross ? 0.38 : 0.18) + (isCross ? 0.62 : 0.72) * e;
             } else if (tt < follow) {
               r = reach;
-              drive = 0.9;
+              drive = isCross ? 1 : 0.9;
             } else {
               const p = (tt - follow) / (1 - follow);
               const e = p * (2 - p);
-              r = reach * (1 - 1.14 * e); // retract to outside guard, not neutral
-              lateral = -TARGET_BODY_H * 0.08 * e;
-              drive = 0.9 * (1 - e) + 0.12 * e;
+              r = reach * (1 - (isCross ? 1.22 : 1.14) * e);
+              lateral = -TARGET_BODY_H * (isCross ? 0.12 : 0.08) * e;
+              drive = (isCross ? 1 : 0.9) * (1 - e) + (isCross ? 0.2 : 0.12) * e;
             }
           } else {
             const haymaker = pose?.motion === "haymaker";
@@ -8551,13 +8565,27 @@ export class SpriteRig {
           // Body: the punch comes from the HIPS — paper-twist (shoulders turning through), lean into the
           // blow, a dug-in crouch. The rear cross mirrors the lean; the finisher commits the whole frame.
           const commitScale =
-            pose?.motion === "jab" ? 0.55 : pose?.motion === "haymaker" ? 1.2 : 0.85;
+            pose?.motion === "jab"
+              ? 0.55
+              : isCross
+                ? 1.18
+                : pose?.motion === "haymaker"
+                  ? 1.2
+                  : 0.85;
           this.body.scaleX *= 1 - (0.12 + 0.1 * heavy) * drive * commitScale;
           this.body.rotation +=
             direction * (0.1 + 0.09 * heavy) * drive * commitScale * Math.cos(aimLocal);
           this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
           if (heavy || pose?.motion === "haymaker")
             this.body.scaleY *= 1 - 0.06 * drive * commitScale;
+          if (poseVariant === "sparkknuckle-voltage-boxing" && pose?.timing.impact !== undefined) {
+            const impactFrame = Math.max(0, 1 - Math.abs(tt - pose.timing.impact) / 0.055);
+            const snap = impactFrame * impactFrame;
+            this.pairWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
+            this.pairGlintAlpha = Math.max(this.pairGlintAlpha, snap * 0.82);
+            this.body.rotation += direction * snap * 0.09 * Math.cos(aimLocal);
+            this.body.scaleY *= 1 - snap * 0.08;
+          }
         } else if (poseStyle === "thrust") {
           // §45 THRUST keeps the existing locked-blade lunge envelope, with an outside draw, mirrored
           // disengage circle, and longer step-through/stick. Signed body tilt makes step 2 read distinctly.
@@ -8843,6 +8871,8 @@ export class SpriteRig {
       performancePoseActive = this.performanceSample.active;
       if (performancePoseActive) {
         weaponAngle = this.performanceSample.weaponAngle;
+        if (Number.isFinite(this.performanceSample.backWeaponAngle))
+          backWeaponAngle = this.performanceSample.backWeaponAngle;
         this.swingOffX += this.performanceSample.offsetX * TARGET_BODY_H;
         this.swingOffY += this.performanceSample.offsetY * TARGET_BODY_H;
         ownFront = Math.max(ownFront, this.performanceSample.ownership);
@@ -9217,6 +9247,11 @@ export class SpriteRig {
         const targetY = this.body.y + this.performanceSample.handY * TARGET_BODY_H;
         hx += (targetX - hx) * this.performanceSample.handBlend;
         hy += (targetY - hy) * this.performanceSample.handBlend;
+      } else if (!hnd.front && performancePoseActive && this.performanceSample.backHandBlend > 0) {
+        const targetX = this.body.x + this.performanceSample.backHandX * TARGET_BODY_H;
+        const targetY = this.body.y + this.performanceSample.backHandY * TARGET_BODY_H;
+        hx += (targetX - hx) * this.performanceSample.backHandBlend;
+        hy += (targetY - hy) * this.performanceSample.backHandBlend;
       }
       if (
         rangedAimBlend > 0 &&
@@ -9386,9 +9421,7 @@ export class SpriteRig {
             : Math.max(0, -Math.sin(legPh)) * movementInput.spec.footLiftPx * gait;
       let fy = ft.oy - footLift * s + movementPose.footTrailYPx * s;
       let fx =
-        ft.ox +
-        movementPose.footStridePx * footPhaseSign * s +
-        movementPose.footTrailXPx * s;
+        ft.ox + movementPose.footStridePx * footPhaseSign * s + movementPose.footTrailXPx * s;
       if (!PROCEDURAL_JIGGLE) {
         fy += idle;
       }
@@ -9786,13 +9819,38 @@ export class SpriteRig {
     const gloveAura = this.weaponDef?.glovePair;
     const auraRadius = performanceAura?.radius ?? gloveAura?.auraRadius;
     const auraColor = performanceAura?.color ?? gloveAura?.auraColor;
-    const auraActive = auraRadius !== undefined && auraColor !== undefined && anim.fireHeld === true && !this.downed;
+    const auraActive =
+      auraRadius !== undefined && auraColor !== undefined && anim.fireHeld === true && !this.downed;
     const gloveAuraActive = !!gloveAura && auraActive;
-    this.auraGlow.setVisible(auraActive);
-    this.auraRing.setVisible(auraActive);
-    this.gloveAuraBoltA.setVisible(gloveAuraActive);
-    this.gloveAuraBoltB.setVisible(gloveAuraActive);
-    if (auraActive) {
+    const paintedAura = resolveWeaponAuraVfxRecipe(this.weaponDef);
+    const paintedAuraActive = auraActive && paintedAura !== undefined;
+    this.auraGlow.setVisible(auraActive && !paintedAuraActive);
+    this.auraRing.setVisible(auraActive && !paintedAuraActive);
+    this.gloveAuraBoltA.setVisible(gloveAuraActive && !paintedAuraActive);
+    this.gloveAuraBoltB.setVisible(gloveAuraActive && !paintedAuraActive);
+    for (const particle of this.paintedAuraParticles) particle.setVisible(false);
+    if (paintedAuraActive) {
+      const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
+      const centerY = TARGET_BODY_H * 0.18;
+      const stillPhase = anim.reducedMotion === true ? 0 : t * Math.PI * 2 * paintedAura.spinHz;
+      for (let i = 0; i < Math.min(paintedAura.count, this.paintedAuraParticles.length); i++) {
+        const particle = this.paintedAuraParticles[i];
+        const packId = paintedAura.packs[i % paintedAura.packs.length];
+        const pack = packId ? PARTICLE_PACKS[packId] : undefined;
+        if (!particle || !pack) continue;
+        const phase = stillPhase + i * 2.399 + Math.sin(t * 5.2 + i * 1.71) * 0.16;
+        const orbit =
+          auraRadius * paintedAura.extent * (0.72 + ((i * 37) % 5) * 0.055) * inverseRigScale;
+        const frame = (Math.floor(t * 11) + i * 3) % pack.count;
+        particle
+          .setTexture(`ptcl:${packId}`, frame)
+          .setPosition(Math.cos(phase) * orbit, centerY + Math.sin(phase) * orbit * 0.56)
+          .setRotation(phase + Math.PI * 0.44)
+          .setScale(paintedAura.scale * inverseRigScale * (0.86 + (i % 3) * 0.08))
+          .setAlpha(0.54 + ((i * 29) % 4) * 0.1)
+          .setVisible(true);
+      }
+    } else if (auraActive) {
       const pulse = anim.reducedMotion === true ? 0 : Math.sin(t * Math.PI * 4.4) * 0.035;
       const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
       const diameter = auraRadius * 2 * (1 + pulse) * inverseRigScale;

@@ -131,6 +131,7 @@ import {
   WEAPONS,
   type WeaponDef,
   weaponDisplaySpriteId,
+  weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
   weaponMuzzleReach,
   weaponPerformanceEmitterReach,
@@ -282,14 +283,18 @@ import {
 } from "../vfx/vastaghar-vfx.js";
 import {
   resolveWeaponEffectRecipe,
+  shouldSpawnLegacyQuakeVfx,
   type WeaponEffectRecipe,
 } from "../vfx/weapon-effect-recipes.js";
 import {
   spawnScatteredPages,
+  spawnTeslaWarpArrival,
+  spawnTeslaWarpDeparture,
   spawnWeaponProjectileImpact,
   spawnWeaponSwingIdentity,
 } from "../vfx/weapon-effect-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
+import { localAttackCooldownSeconds } from "./arena/attack-cadence.js";
 import {
   bakeCardArt,
   bakeSplitDockArt,
@@ -3597,6 +3602,8 @@ export class ArenaScene extends Phaser.Scene {
     if (!weapon) return;
     if (weapon.warp) {
       const arrivalY = this.belt ? this.beltY(player.y) : player.y;
+      if (player.id !== this.room?.sessionId) spawnTeslaWarpDeparture(this, rig.x, rig.y);
+      spawnTeslaWarpArrival(this, player.x, arrivalY);
       spawnExplosion(this, player.x, arrivalY, weapon.warp.burstRadius, "shock");
       this.audio.play("shot:spark", {
         x: player.x,
@@ -3636,15 +3643,16 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     const recipe = resolveWeaponEffectRecipe(weapon);
     if (!recipe?.swingPack) return;
-    this.time.delayedCall(swing.activeStartSeconds * 1000, () => {
+    const cueSeconds = weaponEffectCueSeconds(weapon, swing);
+    this.time.delayedCall(cueSeconds * 1000, () => {
       const point = weaponEffectEmitterPoint(
         weapon,
         { x: rig.x, y: rig.y },
         aimAngle,
         swing,
-        swing.activeStartSeconds,
+        cueSeconds,
       );
-      spawnWeaponSwingIdentity(this, recipe, point.x, point.y, point.angle);
+      spawnWeaponSwingIdentity(this, recipe, point.x, point.y, point.angle, weapon.displayLength);
     });
   }
 
@@ -6599,10 +6607,10 @@ export class ArenaScene extends Phaser.Scene {
         existing.destroy();
         this.projectiles.delete(id);
       }
-      // Projectile rows intentionally omit ownership. Resolve the existing nearest-shooter attribution before
-      // choosing art so a caster-owned row can use its weapon recipe without adding schema/message fields.
-      let shooter: string | null = null;
-      if (!pr.hostile) {
+      // Launch ownership is immutable on the row: recipe art must be selected on the first rendered frame,
+      // even when a fast projectile's first snapshot is already outside the old nearest-shooter radius.
+      let shooter: string | null = pr.sourcePlayerId || null;
+      if (!shooter && !pr.hostile) {
         let best = 220;
         room.state.players.forEach((p, pid) => {
           const d = Math.hypot(p.x - pr.x, p.y - pr.y);
@@ -6613,7 +6621,8 @@ export class ArenaScene extends Phaser.Scene {
         });
       }
       const sourcePlayer = shooter ? room.state.players.get(shooter) : undefined;
-      const sourceWeapon = sourcePlayer ? WEAPONS[sourcePlayer.weapon] : undefined;
+      const sourceWeaponId = pr.sourceWeaponId || sourcePlayer?.weapon || "";
+      const sourceWeapon = WEAPONS[sourceWeaponId];
       const weaponEffectRecipe = resolveWeaponEffectRecipe(sourceWeapon);
       const projectileKind = baseKind(pr.kind);
       const comet = projectileKind === "fireball";
@@ -6636,6 +6645,7 @@ export class ArenaScene extends Phaser.Scene {
                   pr,
                   casterRecipe,
                   prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+                  sourceWeapon?.gun?.projectileVisualScale ?? 1,
                 )
               : fx
                 ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1)
@@ -6663,7 +6673,7 @@ export class ArenaScene extends Phaser.Scene {
       container.setData("explodeR", pr.explodeR); // §14 WYSIWYG: render the blast at the real radius
       if (fx) container.setData("ang", Math.atan2(pr.vy, pr.vx)); // flight angle for the oriented impact
       this.projectiles.set(id, container);
-      if (sourcePlayer) container.setData("sourceWeapon", sourcePlayer.weapon);
+      if (sourceWeaponId) container.setData("sourceWeapon", sourceWeaponId);
       if (shooter) container.setData("sourcePlayer", shooter);
       // Muzzle flash a freshly-fired gun bullet at the SHOOTER's barrel (nearest player), one per shot.
       if (fx) {
@@ -9821,7 +9831,7 @@ export class ArenaScene extends Phaser.Scene {
     // faster than the server accepts (half the swings become ghosts) and a Swift/fast one can never send at
     // its real rate. Matching it here makes the local swing cadence WYSIWYG with the damage the server deals.
     const cdMul = lootCooldownMult(self.weaponAffix);
-    this.localAtkCd = (weapon?.gun?.fireRate ?? weapon?.cooldown ?? 0.3) * cdMul;
+    this.localAtkCd = localAttackCooldownSeconds(weapon, cdMul);
     // §44 one PREDICTED descriptor/epoch for every local swing consumer. The server constructs the identical
     // effective-cooldown descriptor only on acceptance; buffering/network delay remains until swing-seq sync.
     const swing = weapon ? swingDescriptorFor(weapon, weapon.cooldown * cdMul) : undefined;
@@ -9889,6 +9899,7 @@ export class ArenaScene extends Phaser.Scene {
       cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
+    if (weapon?.warp && rig) spawnTeslaWarpDeparture(this, rig.x, rig.y);
     if (weapon?.tags.classPool === "caster" && !weapon.warp && rig && !weapon.performance?.aura) {
       const cue = () => {
         this.spawnCasterSource(weapon, rig.x, rig.y, Math.atan2(this.selfAim.y, this.selfAim.x));
@@ -9912,14 +9923,15 @@ export class ArenaScene extends Phaser.Scene {
       const quake = weapon.quake;
       this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
-        spawnQuake(
-          this,
-          ep.x,
-          this.belt ? this.beltY(ep.y) : ep.y,
-          quake,
-          weapon,
-          this.belt ? BELT_FORESHORTEN : 1,
-        );
+        if (shouldSpawnLegacyQuakeVfx(weapon))
+          spawnQuake(
+            this,
+            ep.x,
+            this.belt ? this.beltY(ep.y) : ep.y,
+            quake,
+            weapon,
+            this.belt ? BELT_FORESHORTEN : 1,
+          );
         // §7 v0.105 de-clunk: only freeze if the quake actually CONNECTED (an enemy inside the AoE) — a
         // real impact is a skill beat → priority (bypasses the freeze budget).
         const qr = quake.radius;

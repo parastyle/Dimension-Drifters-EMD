@@ -448,5 +448,10 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     },
     "rot": 0,
     "vfxRadius": 68
+  },
+  "x2-permafrost-bardiche": {
+    "suite": {},
+    "rot": 0,
+    "vfxRadius": 250
   }
 };

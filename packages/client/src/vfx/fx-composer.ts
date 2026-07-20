@@ -1,6 +1,7 @@
 // Bespoke weapon-FX component composer (§49): unlike a flipbook, every trimmed island owns a timeline —
 // especially shrapnel, whose separately-cut pieces must fan/spin independently instead of moving as a slab.
 import Phaser from "phaser";
+import { wispTweenTiming } from "./fx-emitter-lifetime.js";
 import { FX_BUZZSAW_WAKE } from "./fx-pack-buzzsaw-wake.js";
 import { FX_EMBER_ERUPTION } from "./fx-pack-ember-eruption.js";
 import { FX_FROST_NOVA } from "./fx-pack-frost-nova.js";
@@ -336,17 +337,18 @@ export function playFxPack(
     const wispScale = sc * (0.42 + ((index * 11) % 5) * 0.045);
     const dx = (Math.random() - 0.5) * radius * 0.44;
     const dy = radius * (0.22 + Math.random() * 0.2);
+    const timing = wispTweenTiming(order);
     img.setScale(wispScale * 0.78).setAlpha(0.78).setRotation((Math.random() - 0.5) * 0.28);
     scene.tweens.chain({
       targets: img,
-      delay: 45 + order * 22,
       tweens: [
         {
+          delay: timing.delay,
           x: x + dx,
           y: y - dy,
           scale: wispScale,
           alpha: 0.68,
-          duration: 420 + order * 35,
+          duration: timing.riseDuration,
           ease: "Sine.easeOut",
         },
         {
@@ -354,7 +356,7 @@ export function playFxPack(
           y: y - dy * 1.35,
           scale: wispScale * 1.12,
           alpha: 0,
-          duration: 520 + order * 45,
+          duration: timing.fadeDuration,
           ease: "Sine.easeInOut",
         },
       ],

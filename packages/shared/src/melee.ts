@@ -78,6 +78,7 @@ export type MeleeComboMotion =
   | "rake"
   | "scissor"
   | "jab"
+  | "cross"
   | "hook"
   | "haymaker"
   | "lunge"
@@ -1511,7 +1512,23 @@ function inverseSmoothstep(value: number): number {
  *  per-style path/easing sync is the later accepted-epoch/path protocol, not a hidden geometry rewrite here. */
 export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): SwingDescriptor {
   const style = swingStyleFor(def);
-  const poseSeconds = Math.max(0, effectiveCooldown) * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
+  const cooldown = Math.max(0, effectiveCooldown);
+  const authoredWindup = def.performance?.windupSeconds;
+  if (authoredWindup !== undefined && authoredWindup > 0) {
+    const poseSeconds = cooldown;
+    const activeStartSeconds = Math.min(authoredWindup, Math.max(0, poseSeconds - 0.06));
+    const activeDuration = Math.min(0.12, Math.max(0.06, poseSeconds * 0.12));
+    const activeEndSeconds = Math.min(poseSeconds, activeStartSeconds + activeDuration);
+    return Object.freeze({
+      effectiveCooldown: cooldown,
+      style,
+      poseSeconds,
+      activeStartSeconds,
+      activeEndSeconds,
+      impactSeconds: activeStartSeconds + (activeEndSeconds - activeStartSeconds) * 0.85,
+    });
+  }
+  const poseSeconds = cooldown * (style === "spin" ? 1 : SWING_WINDOW_FRAC);
   let activeStartFrac: number;
   let activeEndFrac: number;
   switch (style) {
@@ -1541,7 +1558,7 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
       break;
   }
   return Object.freeze({
-    effectiveCooldown: Math.max(0, effectiveCooldown),
+    effectiveCooldown: cooldown,
     style,
     poseSeconds,
     activeStartSeconds: poseSeconds * activeStartFrac,
@@ -1668,6 +1685,13 @@ export interface WeaponEffectEmitterPoint {
 
 export function weaponEffectEmitterFor(def: WeaponDef | undefined): WeaponEffectEmitter {
   return def?.effectEmitter ?? "body";
+}
+
+/** One authored cue clock shared by client accents and server-owned secondary projectiles. */
+export function weaponEffectCueSeconds(def: WeaponDef | undefined, swing: SwingDescriptor): number {
+  return def?.effectTiming === "swing-midpoint"
+    ? (swing.activeStartSeconds + swing.activeEndSeconds) * 0.5
+    : swing.activeStartSeconds;
 }
 
 /** Shared origin seam. Blade emitters sample the same swept edge angle as authoritative melee collision. */

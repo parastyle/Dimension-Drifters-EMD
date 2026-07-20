@@ -228,6 +228,7 @@ describe("driftblade-model panel", () => {
         "x-sword-coffin",
       ],
       "chop/riftcleaver-crystal-cadence": ["x2-riftcleaver-greatblade"],
+      "punch/sparkknuckle-voltage-boxing": ["x2-sparkknuckle-hex-mitt"],
       "chop/claymore-breach": ["x2-dustreaper-zweihander", "x2-tombwarden-claymore"],
       "chop/glaive-compass": [
         "x2-blightfork-glaive",
@@ -287,8 +288,8 @@ describe("driftblade-model panel", () => {
       ],
     });
     expect(defaultCounts).toEqual({
-      "punch/default": 21,
-      "arc/default": 118,
+      "punch/default": 20,
+      "arc/default": 117,
       "chop/default": 7,
       "rake/dagger": 1,
       "rake/claw": 5,

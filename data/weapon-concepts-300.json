@@ -599,10 +599,38 @@
             "end": "torn",
             "setupEcho": "neutral-dim"
           }
+        },
+        {
+          "name": "riftbreaker collapse",
+          "motion": "true-charged-slam",
+          "direction": 1,
+          "hand": "both",
+          "timing": {
+            "activeStart": 0.34,
+            "activeEnd": 0.64,
+            "impact": 0.61,
+            "followEnd": 0.82
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": 1,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          },
+          "ribbon": {
+            "profile": "broken-cross",
+            "radialStart": 0.24,
+            "radialEnd": 1,
+            "widthMultiplier": 1.5,
+            "end": "torn",
+            "setupEcho": "neutral-dim"
+          }
         }
       ],
       "effectRecipe": "riftcleaver-crystal-shards",
       "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "id": "x2-riftcleaver-greatblade"
     },
     {
@@ -1019,6 +1047,10 @@
         "pierce": 1,
         "arcHeight": 72
       },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing"
+      },
       "id": "x2-boothill-hatchet"
     },
     {
@@ -1298,6 +1330,11 @@
         "charges": 4,
         "refillSeconds": 1.6,
         "pierce": 2
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true
       },
       "id": "x2-bogwater-twinbits"
     },
@@ -1648,7 +1685,14 @@
         "dex": 9
       },
       "behavior": {
-        "kind": "edge"
+        "kind": "thrown",
+        "speed": 900,
+        "range": 600,
+        "damage": 6,
+        "charges": 4,
+        "refillSeconds": 1.2,
+        "pierce": 1,
+        "arcHeight": 72
       },
       "id": "x2-quicksilver-skinning-cleaver"
     },
@@ -5641,6 +5685,10 @@
         "projectileSpeed": 1400,
         "range": 880,
         "fireRate": 0.6,
+        "burst": {
+          "count": 4,
+          "intervalSeconds": 0.05
+        },
         "pierce": 3,
         "magazine": 5,
         "reloadSeconds": 1.8,
@@ -10715,7 +10763,7 @@
       "theme": "bone fetish chain-curse wand",
       "finish": "organic",
       "description": "A slim femur wand strung with finger-bone charms and knotted black hair, its splintered tip spitting a forking purple curse that leaps soul to soul.",
-      "grip": "1H",
+      "grip": "2H",
       "size": "S",
       "rangeBand": "mid",
       "element": "arcane",
@@ -10730,13 +10778,32 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a slim polished femur-bone wand strung with tiny dangling finger-bone charms and knotted black hair-bindings, its far tip splintered to a jagged point, a sinew-wrapped grip at the base; matte solid object, NO sparks/glow/lightning baked in. Gritty occult-frontier cross-dimension look, flat orthographic full side-profile, ~5 colours (bone #CFC6AE, charcoal #22252B hair, gunmetal #3A4049, arc-violet #B14BFF charm-bead accent as solid dots, tan #C49A5A sinew). Faces RIGHT: splintered bone tip/business end to the RIGHT, sinew grip on the LEFT.",
       "palettePrimary": "#CFC6AE",
       "paletteAccent": "#B14BFF",
-      "cardartAction": "flicked forward, a jagged arc-violet curse-bolt forking from the splintered tip and leaping enemy to enemy in a chain of dwindling sparks",
+      "cardartAction": "braced over the shoulder like a bone rocket tube, launching one massive arc-violet hex shell that blooms into a grave-bright blast",
       "behavior": {
-        "kind": "chainLightning",
-        "jumps": 4,
-        "range": 200,
+        "kind": "gun",
         "damage": 5,
-        "falloff": 0.8
+        "projectileSpeed": 600,
+        "range": 900,
+        "fireRate": 0.8,
+        "magazine": 4,
+        "reloadSeconds": 1.2,
+        "bulletKind": "orb",
+        "muzzle": "boom",
+        "recoil": 0.004,
+        "projectileVisualScale": 2.6,
+        "scalingGrades": {
+          "int": "A",
+          "luk": "C"
+        },
+        "explode": {
+          "radius": 110,
+          "damage": 5
+        }
+      },
+      "performance": {
+        "hold": "shoulder-launcher",
+        "action": "recoil",
+        "suppressSwing": true
       },
       "stats": {
         "damage": 5,
@@ -11657,9 +11724,10 @@
         }
       },
       "performance": {
-        "hold": "overhead",
+        "hold": "steady",
         "action": "overhead-downswing",
         "suppressSwing": true,
+        "windupSeconds": 0.5,
         "shake": {
           "amplitudePx": 3,
           "rotationRad": 0.055,
@@ -12791,7 +12859,8 @@
       },
       "performance": {
         "hold": "upright",
-        "action": "default-swing"
+        "action": "default-swing",
+        "carryForwardPx": 36
       },
       "stats": {
         "damage": 13,
@@ -13347,6 +13416,86 @@
         "auraRadius": 48
       },
       "swingStyle": "punch",
+      "comboFamily": "punch",
+      "comboVariant": "sparkknuckle-voltage-boxing",
+      "comboBar": [
+        {
+          "name": "lead rising hook",
+          "motion": "hook",
+          "direction": 1,
+          "hand": "lead",
+          "timing": {
+            "activeStart": 0.16,
+            "activeEnd": 0.43,
+            "impact": 0.4,
+            "followEnd": 0.57
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": 1,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        },
+        {
+          "name": "rear voltage cross",
+          "motion": "cross",
+          "direction": -1,
+          "hand": "off",
+          "timing": {
+            "activeStart": 0.13,
+            "activeEnd": 0.39,
+            "impact": 0.36,
+            "followEnd": 0.54
+          },
+          "path": {
+            "kind": "capsule",
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        },
+        {
+          "name": "off-side body hook",
+          "motion": "hook",
+          "direction": -1,
+          "hand": "lead",
+          "timing": {
+            "activeStart": 0.18,
+            "activeEnd": 0.46,
+            "impact": 0.43,
+            "followEnd": 0.59
+          },
+          "path": {
+            "kind": "sweep",
+            "arcMultiplier": -1,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        },
+        {
+          "name": "thunder cross finisher",
+          "motion": "cross",
+          "direction": 1,
+          "hand": "off",
+          "timing": {
+            "activeStart": 0.2,
+            "activeEnd": 0.5,
+            "impact": 0.46,
+            "followEnd": 0.68
+          },
+          "path": {
+            "kind": "capsule",
+            "arcMultiplier": 0,
+            "rangeMultiplier": 1,
+            "damageMultiplier": 1,
+            "knockback": 0
+          }
+        }
+      ],
       "performance": {
         "hold": "steady",
         "action": "default-swing",
@@ -13938,6 +14087,10 @@
         "projectileSpeed": 1300,
         "range": 720,
         "fireRate": 0.6,
+        "burst": {
+          "count": 4,
+          "intervalSeconds": 0.05
+        },
         "pierce": 3,
         "magazine": 5,
         "reloadSeconds": 1.8,

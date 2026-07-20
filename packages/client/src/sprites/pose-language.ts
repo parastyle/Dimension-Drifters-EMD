@@ -1636,9 +1636,13 @@ export interface WeaponPerformanceInput {
 export interface WeaponPerformanceSample {
   active: boolean;
   weaponAngle: number;
+  backWeaponAngle: number;
   handX: number;
   handY: number;
   handBlend: number;
+  backHandX: number;
+  backHandY: number;
+  backHandBlend: number;
   offsetX: number;
   offsetY: number;
   ownership: number;
@@ -1666,9 +1670,13 @@ export function createWeaponPerformanceSample(): WeaponPerformanceSample {
   return {
     active: false,
     weaponAngle: 0,
+    backWeaponAngle: Number.NaN,
     handX: 0,
     handY: 0,
     handBlend: 0,
+    backHandX: 0,
+    backHandY: 0,
+    backHandBlend: 0,
     offsetX: 0,
     offsetY: 0,
     ownership: 0,
@@ -1678,9 +1686,13 @@ export function createWeaponPerformanceSample(): WeaponPerformanceSample {
 function clearWeaponPerformanceSample(out: WeaponPerformanceSample): void {
   out.active = false;
   out.weaponAngle = 0;
+  out.backWeaponAngle = Number.NaN;
   out.handX = 0;
   out.handY = 0;
   out.handBlend = 0;
+  out.backHandX = 0;
+  out.backHandY = 0;
+  out.backHandBlend = 0;
   out.offsetX = 0;
   out.offsetY = 0;
   out.ownership = 0;
@@ -1704,7 +1716,7 @@ export function sampleWeaponPerformance(
   switch (spec.hold) {
     case "upright":
       angle = -Math.PI / 2;
-      handX = 0.08;
+      handX = 0.08 + (spec.carryForwardPx ?? 0) / 76;
       handY = -0.08;
       break;
     case "hanging-chain":
@@ -1722,9 +1734,17 @@ export function sampleWeaponPerformance(
       handX = 0;
       handY = -0.4;
       break;
+    case "shoulder-launcher":
+      angle = input.aimLocal;
+      handX = -0.08;
+      handY = -0.32;
+      break;
     default:
       break;
   }
+  const restAngle = angle;
+  const restHandX = handX;
+  const restHandY = handY;
 
   // Upright records preserve their ordinary authored attack and only replace the neutral equilibrium.
   if (spec.action === "default-swing" && input.phase !== "idle") return out;
@@ -1733,10 +1753,11 @@ export function sampleWeaponPerformance(
   let shakeWeight = 0;
   if (spec.action === "overhead-downswing") {
     if (input.phase === "anticipation") {
-      const raise = smoothstep01(phaseT);
-      handY = mix(-0.08, -0.4, raise);
-      angle = mix(input.aimLocal - 0.12, -Math.PI / 2, raise);
-      shakeWeight = raise;
+      const raise = smoothstep01(phaseT / 0.14);
+      handX = mix(restHandX, 0, raise);
+      handY = mix(restHandY, -0.4, raise);
+      angle = mix(restAngle, -Math.PI / 2, raise);
+      shakeWeight = smoothstep01((phaseT - 0.12) / 0.16);
     } else if (input.phase === "active") {
       const swing = smoothstep01(phaseT);
       handX = mix(0, Math.cos(input.aimLocal) * 0.16, swing);
@@ -1744,11 +1765,26 @@ export function sampleWeaponPerformance(
       angle = mix(-Math.PI / 2, input.aimLocal + 0.7, swing);
     } else if (input.phase === "recovery") {
       const settle = smoothstep01(phaseT);
-      handX = mix(Math.cos(input.aimLocal) * 0.16, 0, settle);
-      handY = mix(Math.sin(input.aimLocal) * 0.16 - 0.03, -0.4, settle);
-      angle = mix(input.aimLocal + 0.7, -Math.PI / 2, settle);
-      actionOwn = 1 - 0.12 * settle;
+      handX = mix(Math.cos(input.aimLocal) * 0.16, restHandX, settle);
+      handY = mix(Math.sin(input.aimLocal) * 0.16 - 0.03, restHandY, settle);
+      angle = mix(input.aimLocal + 0.7, restAngle, settle);
+      actionOwn = 1 - settle;
     }
+  } else if (spec.action === "throw-release" && input.phase !== "idle") {
+    const wind = input.phase === "anticipation";
+    const release = input.phase === "active";
+    const e = smoothstep01(phaseT);
+    const forward = wind ? mix(0.1, -0.3, e) : release ? mix(-0.3, 0.46, e) : mix(0.46, 0.12, e);
+    const lateral = wind ? mix(0.08, 0.15, e) : release ? mix(0.15, 0.035, e) : mix(0.035, 0.08, e);
+    const cosine = Math.cos(input.aimLocal);
+    const sine = Math.sin(input.aimLocal);
+    handX = cosine * forward - sine * lateral;
+    handY = sine * forward + cosine * lateral - 0.04;
+    out.backHandX = cosine * forward + sine * lateral;
+    out.backHandY = sine * forward - cosine * lateral - 0.04;
+    out.backHandBlend = 1;
+    angle = wind ? mix(input.aimLocal - 0.15, input.aimLocal + Math.PI * 0.72, e) : input.aimLocal;
+    out.backWeaponAngle = wind ? angle - 0.22 : input.aimLocal - 0.12;
   } else if (spec.action === "recoil" && input.phase !== "idle") {
     const kick = input.phase === "active" ? Math.sin(Math.PI * phaseT) : 1 - smoothstep01(phaseT);
     out.offsetX -= Math.cos(input.aimLocal) * 0.065 * kick;

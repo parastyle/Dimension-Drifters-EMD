@@ -520,6 +520,10 @@ export class ProjectileState extends Schema {
   @type("number") explodeR = 0;
   /** Spawn tick lets clients draw a cosmetic grenade arc without another changing wire field. */
   @type("uint32") bornTick = 0;
+  /** Immutable launch ownership. Clients must never guess this from a projectile's first sampled position. */
+  @type("string") sourcePlayerId = "";
+  /** Immutable launch weapon. Recipe art resolves from this id even after the owner swaps weapons. */
+  @type("string") sourceWeaponId = "";
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

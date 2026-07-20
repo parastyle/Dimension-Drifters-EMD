@@ -1,4 +1,4 @@
-import { WEAPONS, type WeaponDef } from "@dd/shared";
+import { swingDescriptorFor, WEAPONS, type WeaponDef } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   aimRelativePoint,
@@ -302,8 +302,11 @@ describe("weapon performance pose states", () => {
     "x2-tallowtongue-pyre-stave": ["steady", "shake"],
     "x2-hollowbarrel-spell-scattergun-staff": ["aim-forward", "recoil"],
     "x2-hexbloom-scattergrimoire": ["steady", "shake"],
-    "x2-cinderchoke-brazier-orb": ["overhead", "overhead-downswing"],
+    "x2-cinderchoke-brazier-orb": ["steady", "overhead-downswing"],
     "x2-fulgurite-storm-sphere": ["overhead", "shake"],
+    "x2-gravesinger-s-hex-wand": ["shoulder-launcher", "recoil"],
+    "x2-bogwater-twinbits": ["steady", "throw-release"],
+    "x2-boothill-hatchet": ["upright", "default-swing"],
   } as const;
 
   it("resolves the ledger hold/action state for every named weapon", () => {
@@ -314,24 +317,75 @@ describe("weapon performance pose states", () => {
     }
   });
 
-  it("parameterizes both overhead shakes through the same performance sampler", () => {
+  it("raises Cinderchoke only for its strike-start jiggle, then commits the downswing", () => {
     const input = createWeaponPerformanceInput();
     const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-cinderchoke-brazier-orb");
+    input.aimLocal = 0.2;
+    input.timeS = 0.37;
+
+    const idle = { ...sampleWeaponPerformance(input, out) };
     input.phase = "anticipation";
     input.phaseT = 0.8;
-    input.timeS = 0.37;
-    input.fireHeld = true;
+    const overhead = { ...sampleWeaponPerformance(input, out) };
+    input.phase = "active";
+    input.phaseT = 1;
+    const strike = { ...sampleWeaponPerformance(input, out) };
+    const swing = swingDescriptorFor(weapon("x2-cinderchoke-brazier-orb"), 0.6);
 
-    input.spec = performance("x2-cinderchoke-brazier-orb");
-    const cinder = { ...sampleWeaponPerformance(input, out) };
-    input.spec = performance("x2-fulgurite-storm-sphere");
-    const storm = { ...sampleWeaponPerformance(input, out) };
+    expect(input.spec.windupSeconds).toBe(0.5);
+    expect(swing.activeStartSeconds).toBe(0.5);
+    expect(idle.weaponAngle).toBeCloseTo(0.08);
+    expect(idle.handY).toBeGreaterThan(-0.2);
+    expect(overhead.handY).toBe(-0.4);
+    expect(overhead.weaponAngle).not.toBe(-Math.PI / 2);
+    expect(strike.handY).toBeGreaterThan(-0.1);
+    expect(strike.weaponAngle).toBeCloseTo(0.9);
+  });
 
-    expect(cinder.active).toBe(true);
-    expect(storm.active).toBe(true);
-    expect(cinder.handY).toBeLessThan(-0.3);
-    expect(storm.handY).toBe(-0.4);
-    expect(cinder.weaponAngle).not.toBe(storm.weaponAngle);
+  it("moves the Cairn forward by its authored clearance while preserving ordinary attacks", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-cairn-of-hollow-names");
+    const cairn = { ...sampleWeaponPerformance(input, out) };
+    input.spec = performance("x2-rotgrove-totem");
+    const control = { ...sampleWeaponPerformance(input, out) };
+
+    expect(cairn.handX - control.handX).toBeCloseTo(36 / 76);
+    input.spec = performance("x2-cairn-of-hollow-names");
+    input.phase = "active";
+    expect(sampleWeaponPerformance(input, out).active).toBe(false);
+  });
+
+  it("winds both Bogwater hands behind the body and lurches both through release", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-bogwater-twinbits");
+    input.phase = "anticipation";
+    input.phaseT = 1;
+    const wound = { ...sampleWeaponPerformance(input, out) };
+    input.phase = "active";
+    input.phaseT = 1;
+    const released = { ...sampleWeaponPerformance(input, out) };
+
+    expect(wound.handX).toBeCloseTo(-0.3);
+    expect(wound.backHandX).toBeCloseTo(-0.3);
+    expect(wound.backHandBlend).toBe(1);
+    expect(released.handX).toBeCloseTo(0.46);
+    expect(released.backHandX).toBeCloseTo(0.46);
+    expect(released.weaponAngle).toBe(0);
+  });
+
+  it("holds Gravesinger behind and above the shoulders and Boothill upright at rest", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.spec = performance("x2-gravesinger-s-hex-wand");
+    const launcher = { ...sampleWeaponPerformance(input, out) };
+    input.spec = performance("x2-boothill-hatchet");
+    const hatchet = { ...sampleWeaponPerformance(input, out) };
+
+    expect(launcher).toMatchObject({ handX: -0.08, handY: -0.32, weaponAngle: 0 });
+    expect(hatchet.weaponAngle).toBe(-Math.PI / 2);
   });
 
   it("lets upright holds yield to the ordinary swing while authored holds retain ownership", () => {

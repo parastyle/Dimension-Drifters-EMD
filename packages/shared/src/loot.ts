@@ -224,8 +224,10 @@ export function effectivePower(def: WeaponDef): number {
     cadence += def.thrown.refillSeconds / Math.max(1, def.thrown.charges);
   }
   if (def.gun) {
-    perUse = def.gun.damage * (def.gun.pellets ?? 1) * 0.85 * pierceTargets(def.gun.pierce);
-    if (def.gun.explode) perUse += def.gun.explode.damage;
+    const burstCount = def.gun.burst?.count ?? 1;
+    perUse =
+      def.gun.damage * (def.gun.pellets ?? 1) * burstCount * 0.85 * pierceTargets(def.gun.pierce);
+    if (def.gun.explode) perUse += def.gun.explode.damage * burstCount;
     // A ricochet carom re-arms the pierce set per leg — each bounce is most of a fresh bullet.
     perUse *= 1 + 0.5 * (def.gun.bounces ?? 0);
     cadence = Math.max(0.05, def.gun.fireRate);

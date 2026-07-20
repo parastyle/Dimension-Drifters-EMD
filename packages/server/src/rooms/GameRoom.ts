@@ -460,6 +460,7 @@ import {
   WORM_MAX_SEGMENTS,
   WORM_TOTAL_XP,
   weaponAttackCooldown,
+  weaponEffectCueSeconds,
   weaponEffectEmitterPoint,
   weaponEntryInstances,
   weaponEntryPhysicalSize,
@@ -770,6 +771,11 @@ interface CombatState {
   jumpBuffer: number;
   /** Remaining weapon cooldown, sec. */
   cd: number;
+  /** Ordered gun rounds still owed by the current accepted trigger. */
+  gunBurstRemaining: number;
+  gunBurstT: number;
+  gunBurstWeaponId: string;
+  gunBurstHand: DualWieldHand;
   /** Remaining respawn countdown while dead, sec. */
   respawn: number;
   /** Remaining parry i-frames (negate contact damage), sec. */
@@ -2953,6 +2959,10 @@ export class GameRoom extends Room<ArenaState> {
     }
     c.lastWeapon = weaponId;
     c.cd = Math.max(0, cooldown);
+    c.gunBurstRemaining = 0;
+    c.gunBurstT = 0;
+    c.gunBurstWeaponId = "";
+    c.gunBurstHand = 0;
     c.reloadCd = 0;
     c.attackBuffer = 0;
     if (applyDrawLock) {
@@ -4263,6 +4273,10 @@ export class GameRoom extends Room<ArenaState> {
       parryBuffer: 0,
       jumpBuffer: 0,
       cd: 0,
+      gunBurstRemaining: 0,
+      gunBurstT: 0,
+      gunBurstWeaponId: "",
+      gunBurstHand: 0,
       respawn: 0,
       invuln: 0,
       parryCd: 0,
@@ -5803,6 +5817,7 @@ export class GameRoom extends Room<ArenaState> {
       // remainder across the 20Hz grid — otherwise a 0.08s fire-rate quantises to 0.10s (a silent ~20%
       // DPS loss on fast autos). Resetting weapons (melee/thrown) clamp to 0 effectively (they set `= cd`).
       c.cd = Math.max(-dt, c.cd - dt);
+      c.gunBurstT = Math.max(-dt, c.gunBurstT - dt);
       c.drawLock = Math.max(0, c.drawLock - dt);
       c.handGate = Math.max(-dt, c.handGate - dt);
       this.stepStowedWeaponResources(player, c, dt);
@@ -5904,6 +5919,7 @@ export class GameRoom extends Room<ArenaState> {
         offSlot = undefined;
       }
       if (offSlot) this.stepPairedOffWeaponResources(player, offSlot, dt);
+      this.stepGunBurst(player, c, weapon, offSlot, acting);
 
       if (weapon?.performance?.aura) {
         c.attackBuffer = 0;
@@ -6015,6 +6031,7 @@ export class GameRoom extends Room<ArenaState> {
           ) {
             this.stampAttackBeat(player);
             this.fireGun(player, c, weapon);
+            this.armGunBurst(c, weapon, 0);
             c.cd += cooldown; // accumulating cadence carries its sub-tick remainder
           }
         }
@@ -7437,6 +7454,7 @@ export class GameRoom extends Room<ArenaState> {
 
     if (weapon.gun) {
       this.fireGun(player, c, weapon, hand);
+      this.armGunBurst(c, weapon, hand);
       this.setHandCooldown(c, offSlot, hand, soloCooldown, true);
     } else if (weapon.thrown) {
       this.throwWeapon(player, c, weapon, hand);
@@ -7685,7 +7703,11 @@ export class GameRoom extends Room<ArenaState> {
         c,
         weapon,
         hand,
-        weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0,
+        weapon.effectTiming !== undefined
+          ? weaponEffectCueSeconds(weapon, swing)
+          : weapon.performance?.vfxAt === "impact"
+            ? swing.impactSeconds
+            : 0,
         swing,
       );
 
@@ -10333,6 +10355,8 @@ export class GameRoom extends Room<ArenaState> {
     pr.vx = (dx / len) * speed;
     pr.vy = (dy / len) * speed;
     pr.bornTick = this.state.tick;
+    pr.sourcePlayerId = sourcePlayerId;
+    pr.sourceWeaponId = sourceWeaponId;
     pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
@@ -10379,6 +10403,43 @@ export class GameRoom extends Room<ArenaState> {
     const dy = c.targetY - player.y;
     const l = Math.hypot(dx, dy);
     return l > 1e-3 ? { x: dx / l, y: dy / l } : { x: c.aimX, y: c.aimY };
+  }
+
+  private armGunBurst(c: CombatState, weapon: WeaponDef, hand: DualWieldHand): void {
+    const burst = weapon.gun?.burst;
+    if (!burst || burst.count <= 1) return;
+    c.gunBurstWeaponId = weapon.id;
+    c.gunBurstHand = hand;
+    c.gunBurstRemaining = burst.count - 1;
+    c.gunBurstT = burst.intervalSeconds;
+  }
+
+  private clearGunBurst(c: CombatState): void {
+    c.gunBurstWeaponId = "";
+    c.gunBurstHand = 0;
+    c.gunBurstRemaining = 0;
+    c.gunBurstT = 0;
+  }
+
+  /** Emit follow-up rounds from an accepted trigger; they need no second input or Drive spend. */
+  private stepGunBurst(
+    player: PlayerState,
+    c: CombatState,
+    leadWeapon: WeaponDef | undefined,
+    offSlot: ArsenalSlot | undefined,
+    acting: boolean,
+  ): void {
+    if (c.gunBurstRemaining <= 0) return;
+    const weapon = c.gunBurstHand === 0 ? leadWeapon : WEAPONS[offSlot?.weapon ?? ""];
+    if (!acting || weapon?.id !== c.gunBurstWeaponId || !weapon.gun?.burst) {
+      this.clearGunBurst(c);
+      return;
+    }
+    if (c.gunBurstT > 0) return;
+    this.fireGun(player, c, weapon, c.gunBurstHand);
+    c.gunBurstRemaining--;
+    if (c.gunBurstRemaining <= 0) this.clearGunBurst(c);
+    else c.gunBurstT += weapon.gun.burst.intervalSeconds;
   }
 
   /** Cogwright's Tesla-Rod: the cursor is intent only. The server resolves the full-distance endpoint through
@@ -12738,6 +12799,8 @@ export class GameRoom extends Room<ArenaState> {
     meta.hostile = false;
     meta.sourcePlayerId = player.id;
     meta.sourceWeaponId = player.weapon;
+    pr.sourcePlayerId = player.id;
+    pr.sourceWeaponId = player.weapon;
     meta.delivery = CombatDelivery.Parry;
     meta.sourceX = player.x;
     meta.sourceY = player.y;

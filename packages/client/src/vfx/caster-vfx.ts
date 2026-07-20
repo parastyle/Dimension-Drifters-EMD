@@ -351,6 +351,7 @@ export function makeCasterProjectile(
   projectile: { x: number; y: number; vx: number; vy: number },
   recipe: CasterVfxRecipe,
   reducedMotion: boolean,
+  visualScale = 1,
 ): Phaser.GameObjects.Container {
   const angle = Math.atan2(projectile.vy, projectile.vx);
   const trailLength = recipe.projectile.trailLength * (reducedMotion ? 0.76 : 1);
@@ -384,7 +385,10 @@ export function makeCasterProjectile(
     children.push(painted);
   }
   children.push(body);
-  const container = scene.add.container(projectile.x, projectile.y, children).setDepth(99000);
+  const container = scene.add
+    .container(projectile.x, projectile.y, children)
+    .setDepth(99000)
+    .setScale(visualScale);
   container.setData("casterRecipe", recipe);
   container.setData("ang", angle);
   return container;

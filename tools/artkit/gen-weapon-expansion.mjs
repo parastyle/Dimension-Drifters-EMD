@@ -39,7 +39,7 @@ const KINDS = new Set([
   "glovePair", "warp",
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
-const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark"]);
+const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb"]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
@@ -54,7 +54,7 @@ const TOP_KEYS = new Set([
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
   "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
-  "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter",
+  "bespokeVfxSheet", "performance", "swingStyle", "effectRecipe", "effectEmitter", "effectTiming",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
@@ -70,7 +70,7 @@ const BEHAVIOR_KEYS = {
   scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "projectileVisualScale", "scalingGrades", "explode"]),
+    "projectileVisualScale", "scalingGrades", "explode", "burst"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
     "randomRays", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
@@ -78,6 +78,7 @@ const BEHAVIOR_KEYS = {
   warp: new Set(["kind", "burstRadius"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+const GUN_BURST_KEYS = new Set(["count", "intervalSeconds"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
@@ -86,6 +87,7 @@ const ZONE_STYLES = new Set(["nether", "poison", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
 const EFFECT_EMITTERS = new Set(["body", "tip", "blade"]);
+const EFFECT_TIMINGS = new Set(["active-start", "swing-midpoint"]);
 const EFFECT_RECIPES = new Set([
   "galvanic-blue-burst", "riftglass-rainbow-volley", "whispervolume-page-scatter",
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
@@ -94,7 +96,7 @@ const EFFECT_RECIPES = new Set([
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const COMBO_MOTIONS = new Set([
   "slash", "overhead", "shoulder-chop", "rising-chop", "execution-slam", "rake", "scissor",
-  "jab", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
+  "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
@@ -130,11 +132,14 @@ const KATANA_HOOK_KEYS = new Set([
 ]);
 const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 const PERFORMANCE_KEYS = new Set([
-  "hold", "action", "continuous", "suppressSwing", "shake", "emitter", "vfxAt", "aura",
+  "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
+  "emitter", "vfxAt", "aura",
 ]);
-const PERFORMANCE_HOLDS = new Set(["upright", "hanging-chain", "steady", "aim-forward", "overhead"]);
+const PERFORMANCE_HOLDS = new Set([
+  "upright", "hanging-chain", "steady", "aim-forward", "overhead", "shoulder-launcher",
+]);
 const PERFORMANCE_ACTIONS = new Set([
-  "default-swing", "hold", "page-flip", "shake", "recoil", "overhead-downswing",
+  "default-swing", "hold", "page-flip", "shake", "recoil", "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
 const PERFORMANCE_AURA_KEYS = new Set([
@@ -403,6 +408,10 @@ function performanceOf(p) {
     if (typeof p.suppressSwing !== "boolean") fail("performance.suppressSwing is not a boolean");
     else out.suppressSwing = p.suppressSwing;
   }
+  if (p.windupSeconds !== undefined)
+    out.windupSeconds = num(p.windupSeconds, 0.1, 0.75, 0.5, "performance.windupSeconds");
+  if (p.carryForwardPx !== undefined)
+    out.carryForwardPx = num(p.carryForwardPx, 0, 80, 0, "performance.carryForwardPx");
   if (p.shake !== undefined) {
     if (!p.shake || typeof p.shake !== "object" || Array.isArray(p.shake)) {
       fail("performance.shake is not an object");
@@ -528,6 +537,8 @@ function mapWeapon(w) {
     def.effectRecipe = enumOf(w.effectRecipe, EFFECT_RECIPES, "effectRecipe");
   if (w.effectEmitter !== undefined)
     def.effectEmitter = enumOf(w.effectEmitter, EFFECT_EMITTERS, "effectEmitter");
+  if (w.effectTiming !== undefined)
+    def.effectTiming = enumOf(w.effectTiming, EFFECT_TIMINGS, "effectTiming");
   const hook = katanaHookOf(w.katanaHook);
   if (hook) def.katanaHook = hook;
   const performance = performanceOf(w.performance);
@@ -597,6 +608,19 @@ function mapWeapon(w) {
       def.gun.projectileVisualScale = num(
         b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
       );
+    if (b.burst !== undefined) {
+      if (!b.burst || typeof b.burst !== "object" || Array.isArray(b.burst)) {
+        fail("behavior.burst is not an object");
+      } else {
+        checkKeys(b.burst, GUN_BURST_KEYS, "behavior.burst");
+        def.gun.burst = {
+          count: int(b.burst.count, 2, 8, 2, "behavior.burst.count"),
+          intervalSeconds: num(
+            b.burst.intervalSeconds, 0.05, 0.3, 0.08, "behavior.burst.intervalSeconds",
+          ),
+        };
+      }
+    }
     const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");
     if (pellets > 1) {
       def.gun.pellets = pellets;
@@ -610,7 +634,7 @@ function mapWeapon(w) {
     if (mc !== undefined) def.gun.muzzleColor = mc;
     const gg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (gg) def.gun.scalingGrades = gg;
-    const ex = explodeOf(b.explode, "behavior.explode", 90);
+    const ex = explodeOf(b.explode, "behavior.explode", 140);
     if (ex) def.gun.explode = ex;
   } else if (kind === "glovePair") {
     def.glovePair = {

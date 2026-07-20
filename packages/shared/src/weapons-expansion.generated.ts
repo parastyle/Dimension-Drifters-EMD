@@ -458,6 +458,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboVariant": "riftcleaver-crystal-cadence",
     "effectRecipe": "riftcleaver-crystal-shards",
     "effectEmitter": "blade",
+    "effectTiming": "swing-midpoint",
     "requirements": {
       "str": 8,
       "int": 7
@@ -792,6 +793,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A stout one-hand camp hatchet with a chipped grey bit and an ash haft gone black with grip-sweat, the workhorse of every drifter's bedroll.",
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing"
+    },
     "requirements": {
       "str": 4
     },
@@ -1049,6 +1054,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A matched pair of swamp-iron hand-axes slick with green bog-rot, hurled spinning to bury their corroded bits before whirling back to the grip.",
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true
+    },
     "requirements": {
       "dex": 6
     },
@@ -1364,7 +1374,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "physical",
       "classPool": "melee",
@@ -1378,7 +1388,16 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "dex": 9
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 900,
+      "range": 600,
+      "damage": 6,
+      "charges": 4,
+      "refillSeconds": 1.2,
+      "pierce": 1,
+      "arcHeight": 72
+    }
   },
   "x2-witchwood-splitter": {
     "id": "x2-witchwood-splitter",
@@ -4986,6 +5005,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "punch",
       "recoil": 0.0035,
+      "burst": {
+        "count": 4,
+        "intervalSeconds": 0.05
+      },
       "pierce": 3,
       "muzzleColor": 3401983
     }
@@ -9759,10 +9782,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "swingArc": 2,
     "gripFrac": 0.16,
     "tags": {
-      "grip": "1H",
+      "grip": "2H",
       "size": "S",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "projectile",
+      "fireMode": "auto",
       "element": "arcane",
       "classPool": "caster",
       "family": "wand",
@@ -9773,15 +9796,35 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A slim femur wand strung with finger-bone charms and knotted black hair, its splintered tip spitting a forking purple curse that leaps soul to soul.",
+    "performance": {
+      "hold": "shoulder-launcher",
+      "action": "recoil",
+      "suppressSwing": true
+    },
     "requirements": {
       "int": 6,
       "luk": 4
     },
-    "chainLightning": {
-      "jumps": 4,
-      "range": 200,
+    "twoHanded": true,
+    "gun": {
       "damage": 5,
-      "falloff": 0.8
+      "projectileSpeed": 600,
+      "range": 900,
+      "fireRate": 0.8,
+      "magazine": 4,
+      "reloadSeconds": 1.2,
+      "bulletKind": "orb",
+      "muzzle": "boom",
+      "recoil": 0.004,
+      "projectileVisualScale": 2.6,
+      "scalingGrades": {
+        "int": "A",
+        "luk": "C"
+      },
+      "explode": {
+        "radius": 110,
+        "damage": 5
+      }
     }
   },
   "x2-cogwright-s-tesla-rod": {
@@ -10690,9 +10733,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "performance": {
-      "hold": "overhead",
+      "hold": "steady",
       "action": "overhead-downswing",
       "suppressSwing": true,
+      "windupSeconds": 0.5,
       "shake": {
         "amplitudePx": 3,
         "rotationRad": 0.055,
@@ -11821,7 +11865,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "performance": {
       "hold": "upright",
-      "action": "default-swing"
+      "action": "default-swing",
+      "carryForwardPx": 36
     },
     "requirements": {
       "int": 11,
@@ -12320,6 +12365,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "sparkknuckle-voltage-boxing",
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -12908,6 +12955,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "heavy",
       "recoil": 0.0035,
       "projectileVisualScale": 2.2,
+      "burst": {
+        "count": 4,
+        "intervalSeconds": 0.05
+      },
       "pierce": 3
     }
   },
@@ -13748,6 +13799,33 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "end": "torn",
         "setupEcho": "neutral-dim"
       }
+    },
+    {
+      "name": "riftbreaker collapse",
+      "motion": "true-charged-slam",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.34,
+        "activeEnd": 0.64,
+        "impact": 0.61,
+        "followEnd": 0.82
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      },
+      "ribbon": {
+        "profile": "broken-cross",
+        "radialStart": 0.24,
+        "radialEnd": 1,
+        "widthMultiplier": 1.5,
+        "end": "torn",
+        "setupEcho": "neutral-dim"
+      }
     }
   ],
   "verdict-procession": [
@@ -13803,6 +13881,84 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "path": {
         "kind": "capsule",
         "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
+  "sparkknuckle-voltage-boxing": [
+    {
+      "name": "lead rising hook",
+      "motion": "hook",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.16,
+        "activeEnd": 0.43,
+        "impact": 0.4,
+        "followEnd": 0.57
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "rear voltage cross",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.39,
+        "impact": 0.36,
+        "followEnd": 0.54
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "off-side body hook",
+      "motion": "hook",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.46,
+        "impact": 0.43,
+        "followEnd": 0.59
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "thunder cross finisher",
+      "motion": "cross",
+      "direction": 1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.46,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0

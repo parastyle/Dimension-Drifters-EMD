@@ -10,6 +10,7 @@ export type FiringStanceFamily =
   | "scattergun"
   | "rapid-gun"
   | "launcher"
+  | "shoulder-launcher"
   | "fist-gun"
   | "wand"
   | "staff"
@@ -92,6 +93,16 @@ export const FIRING_STANCES: Readonly<Record<FiringStanceFamily, FiringStanceSpe
     bodyTurn: 0.03,
     aimed: true,
   },
+  "shoulder-launcher": {
+    family: "shoulder-launcher",
+    yBand: [-0.36, -0.21],
+    lead: { x: -0.08, y: -0.32, aimReach: 0.008 },
+    off: { x: 0.04, y: -0.23, aimReach: 0.006 },
+    twoHandSpacing: 0.3,
+    bodyAdvance: -0.012,
+    bodyTurn: 0.08,
+    aimed: true,
+  },
   "fist-gun": {
     family: "fist-gun",
     yBand: [FIST_GUN_CHEST_CAP_Y, 0.02],
@@ -164,6 +175,7 @@ export function firingStanceFamilyFor(def: WeaponDef): FiringStanceFamily {
   const { delivery, family, grip, classPool, fireMode } = def.tags;
   if (def.thrown || delivery === "thrown") return "thrown";
   if ((def.gun || def.beam) && isWornWeapon(def)) return "fist-gun";
+  if (def.performance?.hold === "shoulder-launcher") return "shoulder-launcher";
 
   if (classPool === "caster") {
     if (BOOK_FAMILY.test(family)) return "tome";

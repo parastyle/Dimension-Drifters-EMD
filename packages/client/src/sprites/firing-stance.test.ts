@@ -80,6 +80,19 @@ describe("weapon firing-stance table", () => {
     }
   });
 
+  it("gives Gravesinger its intentional behind-head, above-shoulder launcher lane", () => {
+    const launcher = weapon("x2-gravesinger-s-hex-wand");
+    const stance = firingStanceFor(launcher);
+    const lead = firingHandTarget(launcher, "lead", 0);
+    const off = firingHandTarget(launcher, "off", 0);
+
+    expect(firingStanceFamilyFor(launcher)).toBe("shoulder-launcher");
+    expect(stance.yBand).toEqual([-0.36, -0.21]);
+    expect(lead.x).toBeLessThan(0);
+    expect(lead.y).toBeLessThan(FIRING_FACE_LINE_Y);
+    expect(off.y).toBeLessThan(FIRING_FACE_LINE_Y);
+  });
+
   it("resolves heterogeneous dual-wield hands independently", () => {
     const pistol = weapon("x-gun-ricochet-pistol");
     const fistGun = weapon("x2-hellmouth-palmcaster");

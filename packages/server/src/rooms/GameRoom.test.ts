@@ -2277,7 +2277,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(32);
+    expect(h.state().schemaVersion).toBe(33);
   });
 });
 
@@ -3384,7 +3384,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3765,7 +3765,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3892,7 +3892,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4290,7 +4290,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4549,8 +4549,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(32);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(fixture.h.state().schemaVersion).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5076,8 +5076,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(32);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(h.state().schemaVersion).toBe(33);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5127,7 +5127,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([32, 32]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([33, 33]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5849,8 +5849,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-sandsong-saber"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(33);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6422,8 +6422,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
-    expect(h.state().schemaVersion).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
+    expect(h.state().schemaVersion).toBe(33);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6711,7 +6711,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(33);
   });
 });
 
@@ -7265,5 +7265,81 @@ describe("GameRoom — Cogwright Tesla-Rod warp", () => {
           receipt.delivery === enemyComboShared.CombatDelivery.Warp,
       ),
     ).toBe(true);
+  });
+});
+
+// NB BUG SQUAD: append-only authoritative projectile attribution and cadence regressions.
+describe("GameRoom - NB projectile contracts", () => {
+  function projectileRoom(id: string, weaponId: string) {
+    const h = makeRoom();
+    h.join(id);
+    h.state().mode = "training";
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    h.state().enemies.clear();
+    const player = h.state().players.get(id);
+    player.x = 2_400;
+    player.y = 2_400;
+    player.weapon = weaponId;
+    h.tick(1);
+    return { h, player };
+  }
+
+  it("emits Galvanic's accepted trigger as four ordered, authoritatively attributed rounds", () => {
+    const weaponId = "x2-galvanic-overcasters";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.gun?.burst) throw new Error("Galvanic burst fixture is required");
+    const { h, player } = projectileRoom("galvanic", weaponId);
+    const firstProjectileSeq = h.room.projectileSeq;
+
+    h.send(player.id, "attack", {
+      aimX: 1,
+      aimY: 0,
+      tx: player.x + weapon.gun.range,
+      ty: player.y,
+    });
+    h.tick(4);
+
+    const rounds = [...h.state().projectiles.values()].filter(
+      (row) => row.sourceWeaponId === weaponId,
+    );
+    expect(weapon.gun.burst).toEqual({ count: 4, intervalSeconds: 0.05 });
+    expect(h.room.projectileSeq - firstProjectileSeq).toBe(4);
+    expect(rounds).toHaveLength(4);
+    const firstBornTick = rounds[0]?.bornTick;
+    expect(firstBornTick).toBeDefined();
+    expect(rounds.map((row) => row.bornTick)).toEqual([
+      firstBornTick,
+      firstBornTick! + 1,
+      firstBornTick! + 2,
+      firstBornTick! + 3,
+    ]);
+    expect(rounds.every((row) => row.sourcePlayerId === player.id)).toBe(true);
+    h.tick(6);
+    expect(h.room.projectileSeq - firstProjectileSeq).toBe(4);
+  });
+
+  it("makes every Arcanist held-fire cadence request an accepted projectile beat", () => {
+    const weaponId = "x-staff-arcane-lance";
+    const weapon = WEAPONS[weaponId];
+    if (!weapon?.cast) throw new Error("Arcanist cast fixture is required");
+    const { h, player } = projectileRoom("arcanist", weaponId);
+    const cadence = enemyComboShared.weaponAttackCooldown(weapon);
+
+    expect(cadence).toBe(weapon.cast.cooldown);
+    for (let shot = 0; shot < 4; shot++) {
+      const attackSeq = player.attackSeq;
+      const projectileSeq = h.room.projectileSeq;
+      h.send(player.id, "attack", {
+        aimX: 1,
+        aimY: 0,
+        tx: player.x + weapon.cast.range,
+        ty: player.y,
+      });
+      h.tick(1);
+      expect(player.attackSeq, `accepted shot ${shot + 1}`).toBe(attackSeq + 1);
+      expect(h.room.projectileSeq, `projectile for shot ${shot + 1}`).toBe(projectileSeq + 1);
+      h.tick(Math.ceil(cadence / 0.05));
+    }
   });
 });

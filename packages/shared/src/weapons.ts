@@ -121,6 +121,7 @@ export function prismaticBeamRayOffsets(count: number, spread: number, seed: num
 }
 
 export type WeaponEffectEmitter = "body" | "tip" | "blade";
+export type WeaponEffectTiming = "active-start" | "swing-midpoint";
 export type WeaponEffectRecipeId =
   | "galvanic-blue-burst"
   | "riftglass-rainbow-volley"
@@ -162,7 +163,8 @@ export type WeaponPerformanceHold =
   | "hanging-chain"
   | "steady"
   | "aim-forward"
-  | "overhead";
+  | "overhead"
+  | "shoulder-launcher";
 
 export type WeaponPerformanceAction =
   | "default-swing"
@@ -170,7 +172,8 @@ export type WeaponPerformanceAction =
   | "page-flip"
   | "shake"
   | "recoil"
-  | "overhead-downswing";
+  | "overhead-downswing"
+  | "throw-release";
 
 export interface WeaponPerformanceDef {
   /** Stable held equilibrium resolved by the client pose-language sampler. */
@@ -181,6 +184,10 @@ export interface WeaponPerformanceDef {
   continuous?: boolean;
   /** Prevent the generic swing vocabulary from competing with this authored performance. */
   suppressSwing?: boolean;
+  /** Fixed pre-contact read for a performance that must outlive the generic style anticipation. */
+  windupSeconds?: number;
+  /** Extra local carry clearance for oversized upright props, in final rendered pixels. */
+  carryForwardPx?: number;
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
   shake?: {
     amplitudePx: number;
@@ -216,6 +223,8 @@ export interface WeaponDef {
   /** Stable client recipe id plus the shared server/client origin policy for its authored effect. */
   effectRecipe?: WeaponEffectRecipeId;
   effectEmitter?: WeaponEffectEmitter;
+  /** Authored cue point shared by visual accents and real secondary projectiles. */
+  effectTiming?: WeaponEffectTiming;
   /** A single two-hand slot occupied by a matched worn glove on each hand. Cosmetic aura only; accepted
    * melee beats remain the authoritative damage source. */
   glovePair?: {
@@ -417,6 +426,11 @@ export interface WeaponDef {
     range: number;
     /** Seconds between shots (the fire-rate cooldown). */
     fireRate: number;
+    /** Ordered rounds emitted by one accepted trigger, separated by a server-authoritative interval. */
+    burst?: {
+      count: number;
+      intervalSeconds: number;
+    };
     /** Bullets per trigger pull — >1 = a shotgun SPREAD volley (one ammo spends all pellets). Default 1. */
     pellets?: number;
     /** Cone half-angle (radians): pellet spread for shotguns, or muzzle inaccuracy for autos. Default 0. */
@@ -577,7 +591,9 @@ export function pairDamagePerUse(weapon: WeaponDef): number {
   if (weapon.gun) {
     return Math.max(
       0,
-      weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) + (weapon.gun.explode?.damage ?? 0),
+      (weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) +
+        (weapon.gun.explode?.damage ?? 0)) *
+        Math.max(1, weapon.gun.burst?.count ?? 1),
     );
   }
   if (weapon.cast) return Math.max(0, weapon.cast.damage);
@@ -770,14 +786,14 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
       label: "shot",
       base: def.gun.damage,
       grades: def.gun.scalingGrades ?? def.scalingGrades,
-      count: def.gun.pellets ?? 1,
+      count: (def.gun.pellets ?? 1) * (def.gun.burst?.count ?? 1),
     });
     if (def.gun.explode) {
       out.push({
         label: "blast",
         base: def.gun.explode.damage,
         grades: def.gun.explode.scalingGrades ?? def.gun.scalingGrades ?? def.scalingGrades,
-        count: def.gun.pellets ?? 1,
+        count: (def.gun.pellets ?? 1) * (def.gun.burst?.count ?? 1),
       });
     }
   } else if (def.thrown) {

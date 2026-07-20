@@ -4,5 +4,8 @@
     "suite": {
       "magma-scatter": null
     }
+  },
+  "x2-permafrost-bardiche": {
+    "vfxRadius": 250
   }
 }

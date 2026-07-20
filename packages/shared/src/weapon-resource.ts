@@ -166,6 +166,7 @@ export function resourceEffectivePower(
     budget =
       (0.85 * Math.max(0, gun.damage) * Math.max(1, gun.pellets ?? 1) * pierceTargets(gun.pierce) +
         Math.max(0, gun.explode?.damage ?? 0)) *
+      Math.max(1, gun.burst?.count ?? 1) *
       (1 + 0.5 * Math.max(0, gun.bounces ?? 0));
   } else if (delivery === "cast") {
     budget = Math.max(0, weapon.cast!.damage) * pierceTargets(weapon.cast!.pierce);

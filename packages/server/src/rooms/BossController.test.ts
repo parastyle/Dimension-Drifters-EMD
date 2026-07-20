@@ -812,8 +812,8 @@ describe("Vastaghar flagship — authored 20 Hz authority", () => {
   });
 
   it("retains the v26 nested flagship state under schema 31", () => {
-    expect(vastShared.SCHEMA_VERSION).toBe(32);
-    expect(new vastShared.ArenaState().schemaVersion).toBe(32);
+    expect(vastShared.SCHEMA_VERSION).toBe(33);
+    expect(new vastShared.ArenaState().schemaVersion).toBe(33);
     expect(new vastShared.ArenaState().vastaghar).toBeInstanceOf(vastShared.VastagharBossState);
   });
 });

@@ -1,6 +1,40 @@
 import Phaser from "phaser";
 import { particleBurst } from "./particles.js";
-import type { WeaponEffectRecipe } from "./weapon-effect-recipes.js";
+import {
+  TESLA_WARP_VFX_RECIPE,
+  type WeaponEffectRecipe,
+  weaponSwingIdentityScale,
+} from "./weapon-effect-recipes.js";
+
+export { weaponSwingIdentityScale };
+
+export function spawnTeslaWarpDeparture(scene: Phaser.Scene, x: number, y: number): void {
+  for (const [index, pack] of TESLA_WARP_VFX_RECIPE.departurePacks.entries()) {
+    particleBurst(scene, pack, x, y, {
+      count: index === 0 ? 11 : 7,
+      dirRad: -Math.PI / 2,
+      spread: index === 0 ? 0.75 : Math.PI * 2,
+      speed: index === 0 ? 235 : 145,
+      scale: index === 0 ? 0.42 : 0.28,
+      lifeMs: index === 0 ? 260 : 330,
+      additive: true,
+    });
+  }
+}
+
+export function spawnTeslaWarpArrival(scene: Phaser.Scene, x: number, y: number): void {
+  for (const [index, pack] of TESLA_WARP_VFX_RECIPE.arrivalPacks.entries()) {
+    particleBurst(scene, pack, x, y, {
+      count: index === 0 ? 14 : 9,
+      dirRad: 0,
+      spread: Math.PI * 2,
+      speed: index === 0 ? 185 : 245,
+      scale: index === 0 ? 0.48 : 0.38,
+      lifeMs: index === 0 ? 420 : 300,
+      additive: true,
+    });
+  }
+}
 
 export function spawnWeaponProjectileImpact(
   scene: Phaser.Scene,
@@ -39,6 +73,7 @@ export function spawnWeaponSwingIdentity(
   x: number,
   y: number,
   angle: number,
+  bladeLength = 0,
 ): void {
   if (!recipe?.swingPack) return;
   particleBurst(scene, recipe.swingPack, x, y, {
@@ -46,7 +81,7 @@ export function spawnWeaponSwingIdentity(
     dirRad: angle,
     spread: recipe.noGore ? 0.75 : 0.42,
     speed: recipe.noGore ? 105 : 170,
-    scale: recipe.noGore ? 0.34 : 0.46,
+    scale: weaponSwingIdentityScale(recipe, bladeLength),
     lifeMs: recipe.noGore ? 420 : 330,
     additive: recipe.additive,
     sink: recipe.noGore ? 18 : 0,
