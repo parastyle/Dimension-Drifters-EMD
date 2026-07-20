@@ -7,9 +7,11 @@ import {
   boilerplateTextureKey,
   ensureGearAssemblyTextures,
   ensureGearPartFrame,
+  gearClickVisibilityNotice,
   GEAR_BAKE_FRAMES,
   GEAR_BAKED_PART_IDS,
   GEAR_PARTS_MANIFEST,
+  HEAD_MOUNT_SCALE,
   type GearAssemblyPart,
   type GearBakedPartId,
   type GearExtraAssembly,
@@ -43,6 +45,7 @@ interface PreviewNode {
   scaleY: number;
   rotation: number;
   boilerplate?: BoilerplateAssemblyPart;
+  effectiveHeadMountScale?: number;
   gear?: GearAssemblyPart;
 }
 
@@ -293,18 +296,29 @@ export class WardrobeCharacterPreview {
     const boundedPrestige = Number.isFinite(prestige)
       ? Math.min(MAX_HAT_SLOTS, Math.max(0, Math.floor(prestige)))
       : 0;
-    const key = loadoutKey(draft, boundedPrestige, validPreviewId);
+    const key = `${loadoutKey(draft, boundedPrestige, previewCandidate)}|draft:${validPreviewId ? "1" : "0"}`;
     if (key === this.currentKey) return;
     this.currentKey = key;
     const generation = ++this.requestGeneration;
     if (!this.replacementContract) {
-      this.refreshCompatibility(draft, boundedPrestige, generation, validPreviewId);
+      this.refreshCompatibility(
+        draft,
+        boundedPrestige,
+        generation,
+        validPreviewId,
+        previewCandidate,
+      );
       return;
     }
 
     const bakeCache = this.bakeCache;
     if (!bakeCache) return;
-    if (this.currentLease) {
+    const clickNotice = previewCandidate
+      ? gearClickVisibilityNotice(manifest, previewCandidate)
+      : null;
+    if (clickNotice) {
+      this.status.setText(clickNotice).setColor("#ffb24a");
+    } else if (this.currentLease) {
       this.status
         .setText(
           validPreviewId ? "VISUAL DRAFT LOADING · LAST COMPLETE HELD" : "EQUIPPED BAKE LOADING…",
@@ -324,11 +338,16 @@ export class WardrobeCharacterPreview {
           lease.release();
           return;
         }
-        this.commitLease(lease, validPreviewId);
+        this.commitLease(lease, validPreviewId, previewCandidate);
       })
       .catch(() => {
         if (!this.alive || generation !== this.requestGeneration) return;
-        this.status.setText("PREVIEW BAKE DELAYED · LAST COMPLETE HELD").setColor("#ffb24a");
+        const notice = previewCandidate
+          ? gearClickVisibilityNotice(manifest, previewCandidate)
+          : null;
+        this.status
+          .setText(notice ?? "PREVIEW BAKE DELAYED · LAST COMPLETE HELD")
+          .setColor("#ffb24a");
       });
   }
 
@@ -337,6 +356,7 @@ export class WardrobeCharacterPreview {
     prestige: number,
     generation: number,
     previewId?: GearId,
+    inspectionId?: GearId,
   ): void {
     const manifest = this.manifest;
     if (!manifest) return;
@@ -348,24 +368,30 @@ export class WardrobeCharacterPreview {
         ? `DRIFTER · ${GEAR_CATALOG[previewId].slot.toUpperCase()} VISUAL DRAFT`
         : "DRIFTER · EQUIPPED V1 COMPATIBILITY",
     );
+    const clickNotice = inspectionId
+      ? gearClickVisibilityNotice(manifest, inspectionId)
+      : null;
+    if (clickNotice) this.status.setText(clickNotice).setColor("#ffb24a");
     if (textureState === "pending") {
-      this.status.setText("V1 GARMENTS LOADING · BOILERPLATE HELD").setColor("#6f8994");
+      if (!clickNotice)
+        this.status.setText("V1 GARMENTS LOADING · BOILERPLATE HELD").setColor("#6f8994");
       this.scene.load.once("complete", () => {
         if (!this.alive || generation !== this.requestGeneration) return;
         this.rebuildCompatibilityAssembly(assembly);
         this.status
-          .setText("V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE")
-          .setColor("#ff9a6a");
+          .setText(clickNotice ?? "V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE")
+          .setColor(clickNotice ? "#ffb24a" : "#ff9a6a");
       });
       return;
     }
     this.status
       .setText(
-        textureState === "missing"
-          ? "V1 COMPATIBILITY · SOME ART UNAVAILABLE"
-          : "V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE",
+        clickNotice ??
+          (textureState === "missing"
+            ? "V1 COMPATIBILITY · SOME ART UNAVAILABLE"
+            : "V1 COMPATIBILITY · REPLACEMENT CONTRACT UNAVAILABLE"),
       )
-      .setColor(textureState === "missing" ? "#ffb24a" : "#ff9a6a");
+      .setColor(clickNotice || textureState === "missing" ? "#ffb24a" : "#ff9a6a");
   }
 
   private installBoilerplatePose(manifest: GearPartsManifest): void {
@@ -398,7 +424,11 @@ export class WardrobeCharacterPreview {
     this.shadow.setVisible(nodes.length === GEAR_BAKED_PART_IDS.length);
   }
 
-  private commitLease(lease: GearTextureBakeLease, previewId?: GearId): void {
+  private commitLease(
+    lease: GearTextureBakeLease,
+    previewId?: GearId,
+    inspectionId?: GearId,
+  ): void {
     for (const partId of GEAR_BAKED_PART_IDS) {
       const node = this.partNodes.get(partId);
       const handle = lease.handles[partId];
@@ -425,7 +455,19 @@ export class WardrobeCharacterPreview {
         ? `DRIFTER · ${GEAR_CATALOG[previewId].slot.toUpperCase()} VISUAL DRAFT`
         : "DRIFTER · EQUIPPED SIX-PART BAKE",
     );
-    if (lease.readiness === "fallback" || lease.diagnostics.length > 0) {
+    const clickNotice = inspectionId
+      ? gearClickVisibilityNotice(this.manifest, inspectionId)
+      : null;
+    const clickedDiagnostic = inspectionId
+      ? lease.diagnostics.find((diagnostic) => diagnostic.gearId === inspectionId)
+      : undefined;
+    if (clickNotice) {
+      this.status.setText(clickNotice).setColor("#ffb24a");
+    } else if (clickedDiagnostic && inspectionId) {
+      this.status
+        .setText(`${GEAR_CATALOG[inspectionId].name.toUpperCase()} · ART UNAVAILABLE · BASE SHOWN`)
+        .setColor("#ffb24a");
+    } else if (lease.readiness === "fallback" || lease.diagnostics.length > 0) {
       this.status.setText("SOCKET VERIFIED · SOME ART UNAVAILABLE").setColor("#ffb24a");
     } else {
       this.status.setText("SHARED BAKE · SIX-PART VERIFIED").setColor("#6f8994");
@@ -441,6 +483,12 @@ export class WardrobeCharacterPreview {
     const body = this.partNodes.get("body");
     const head = this.partNodes.get("head");
     if (!body || !head) return;
+    const baseHeadMountScale = head.boilerplate?.source.mountScale ?? HEAD_MOUNT_SCALE;
+    const baseHeadScale = (head.boilerplate?.scale ?? head.scaleX) / baseHeadMountScale;
+    head.effectiveHeadMountScale = extras.headMountScale;
+    head.scaleX = baseHeadScale * extras.headMountScale;
+    head.scaleY = baseHeadScale * extras.headMountScale;
+    head.image.setScale(head.scaleX, head.scaleY);
     let order = GEAR_BAKED_PART_IDS.length;
     if (extras.cloak) {
       const cloak = this.createExtraNode(extras.cloak, body, head, order++);
@@ -489,6 +537,7 @@ export class WardrobeCharacterPreview {
     const body = this.partNodes.get("body");
     const head = this.partNodes.get("head");
     if (!body || !head) return;
+    head.effectiveHeadMountScale = head.boilerplate?.source.mountScale ?? HEAD_MOUNT_SCALE;
     let order = GEAR_BAKED_PART_IDS.length;
     let belowHat: PreviewNode | undefined;
     for (const spec of assembly.parts) {
@@ -546,7 +595,8 @@ export class WardrobeCharacterPreview {
     let rotation: number;
     if (belowHat) {
       const socket = topSocketPosition(belowHat);
-      const headMountScale = head.boilerplate?.source.mountScale || 1;
+      const headMountScale =
+        head.effectiveHeadMountScale ?? head.boilerplate?.source.mountScale ?? HEAD_MOUNT_SCALE;
       x = socket.x;
       y = socket.y;
       scaleX = (head.scaleX / headMountScale) * spec.source.mountScale * spec.stackScale;
@@ -560,7 +610,8 @@ export class WardrobeCharacterPreview {
         (spec.source.receiverAnchor.xL - anchor.xL) * this.manifest.socketFrame.bodyHeightL;
       const localY =
         (spec.source.receiverAnchor.yL - anchor.yL) * this.manifest.socketFrame.bodyHeightL;
-      const headMountScale = source.source.mountScale || 1;
+      const headMountScale =
+        head.effectiveHeadMountScale ?? source.source.mountScale ?? HEAD_MOUNT_SCALE;
       const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
       const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
       const dx = localX * parentScaleX;

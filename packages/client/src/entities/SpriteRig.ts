@@ -114,6 +114,7 @@ import {
   gearTextureKey,
   type HatChainInput,
   type HatSpringState,
+  HEAD_MOUNT_SCALE,
   isGearReplacementManifest,
   MAX_HAT_SLOTS,
   type ResolvedLoadoutHeadTexture,
@@ -7037,12 +7038,14 @@ export class SpriteRig {
     stepFloatingHeadSpring(this.floatingHeadSpring, input);
     this.floatingHeadLodSleeping = false;
     const determinantSign = this.body.scaleX * this.body.scaleY < 0 ? -1 : 1;
+    const headMountScale =
+      this.gearAssembly?.headMountScale ?? source.source.mountScale ?? HEAD_MOUNT_SCALE;
     head
       .setPosition(this.floatingHeadSpring.x, this.floatingHeadSpring.y)
       .setRotation(this.body.rotation + determinantSign * source.rotation)
       .setScale(
-        this.body.scaleX * source.source.mountScale,
-        this.body.scaleY * source.source.mountScale,
+        this.body.scaleX * headMountScale,
+        this.body.scaleY * headMountScale,
       )
       .setVisible(true);
   }
@@ -7057,7 +7060,10 @@ export class SpriteRig {
     const anchor = headSource.source.receiverAnchor;
     const localX = (spec.source.receiverAnchor.xL - anchor.xL) * manifest.socketFrame.bodyHeightL;
     const localY = (spec.source.receiverAnchor.yL - anchor.yL) * manifest.socketFrame.bodyHeightL;
-    const headMountScale = headSource.source.mountScale || 1;
+    // Hats use the base-head authoring band, so divide out the same effective scale applied to the
+    // replacement head. Face riders deliberately keep it and therefore follow the normalized face.
+    const headMountScale =
+      this.gearAssembly?.headMountScale ?? headSource.source.mountScale ?? HEAD_MOUNT_SCALE;
     const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
     const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
     const dx = localX * parentScaleX;
@@ -7207,7 +7213,8 @@ export class SpriteRig {
         const below = this.hatAttachments[index - 1];
         if (!below || !head || !headSource) continue;
         this.topSocketPosition(below, socket);
-        const headMountScale = headSource.source.mountScale || 1;
+        const headMountScale =
+          this.gearAssembly?.headMountScale ?? headSource.source.mountScale ?? HEAD_MOUNT_SCALE;
         const basisScaleX = head.scaleX / headMountScale;
         const basisScaleY = head.scaleY / headMountScale;
         const determinantSign = basisScaleX * basisScaleY < 0 ? -1 : 1;

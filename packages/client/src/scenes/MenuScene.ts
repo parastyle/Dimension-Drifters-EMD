@@ -26,6 +26,7 @@ import { RENDER_DPR } from "../render-dpr.js";
 import {
   boilerplateTextureKey,
   boilerplateTextureUrl,
+  gearClickVisibilityNotice,
   GEAR_PARTS_MANIFEST,
 } from "../sprites/gear-parts.js";
 import {
@@ -1003,9 +1004,10 @@ export class MenuScene extends Phaser.Scene {
       "effectAvailability" in def && def.effectAvailability === "inert"
         ? "Dependency pending · preview only"
         : availability;
+    const artNotice = gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, inspectedId);
     this.setBoundedWardrobeText(
       this.wardrobeInspector,
-      `${def.name}\n${def.rarity} · ${gearRarityPips(def)} · ${def.gearClass}\n${def.effectText}\n${dependency}`,
+      `${def.name}\n${def.rarity} · ${gearRarityPips(def)} · ${def.gearClass}\n${def.effectText}\n${dependency}${artNotice ? `\n${artNotice}` : ""}`,
       WARDROBE_LAYOUT.inspector,
     );
   }

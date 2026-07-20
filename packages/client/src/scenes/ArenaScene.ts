@@ -48,6 +48,8 @@ import {
   effectiveMelee,
   enemyHpScale,
   FISTS_WEAPON,
+  GEAR_CATALOG,
+  type GearId,
   GROUND_EPSILON,
   generateArena,
   getDimension,
@@ -170,6 +172,7 @@ import {
   updateSettings,
 } from "../settings.js";
 import { CARD_ART_IDS } from "../sprites/card-manifest.js";
+import { gearClickVisibilityNotice } from "../sprites/gear-parts.js";
 import { SPRITES } from "../sprites/manifest.js";
 import { loadPetPartsManifest, type PetPartsManifest } from "../sprites/pet-parts.js";
 import {
@@ -13736,7 +13739,11 @@ export class ArenaScene extends Phaser.Scene {
       else if (kind === "weapon" && arg) room.send("devEquip", { weapon: arg });
       else if (kind === "char" && arg) room.send("devEquip", { character: arg });
       else if (kind === "enemy" && arg) room.send("debugSpawn", { kind: arg, count: 3 });
-      this.flashBanner(`▶ Dev: ${kind} ${arg}`, "#33e6ff");
+      const gearNotice =
+        kind === "gear" && arg in GEAR_CATALOG
+          ? gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, arg as GearId)
+          : null;
+      this.flashBanner(gearNotice ?? `▶ Dev: ${kind} ${arg}`, gearNotice ? "#ffb24a" : "#33e6ff");
     };
     // toggleTraining is a TOGGLE — send it AT MOST ONCE (re-sending before the mode syncs back over the
     // round-trip flips it back and forth). Then just WAIT for the synced confirmation before firing the target.

@@ -488,6 +488,25 @@ describe("WardrobeCharacterPreview shared bake parity", () => {
     ).toBe(true);
     expect(previewTruth(preview).status.text).toContain("SOME ART UNAVAILABLE");
   });
+
+  it("names artless and missing clicked items while retaining the base-model bake", async () => {
+    const manifest = replacementPairManifest("wardrobe-click-fallback-r1");
+    const baker = new FakeSharedBaker();
+    const scene = fakeScene();
+    const preview = new WardrobeCharacterPreview(scene.scene, { manifest, bakeCache: baker });
+
+    preview.refresh(STARTER_GEAR_LOADOUT, 0, "blank-drifter-head");
+    await settlePreview();
+    expect(previewTruth(preview).status.text).toContain("STITCH HEAD");
+    expect(previewTruth(preview).status.text).toContain("INTENTIONALLY ARTLESS");
+    expect(previewTruth(preview).partNodes.get("head")?.image.visible).toBe(true);
+
+    preview.refresh(STARTER_GEAR_LOADOUT, 0, "brass-readers");
+    await settlePreview();
+    expect(previewTruth(preview).status.text).toContain("BRASS READERS");
+    expect(previewTruth(preview).status.text).toContain("ART RENDERING");
+    expect(previewTruth(preview).partNodes.get("head")?.image.visible).toBe(true);
+  });
 });
 
 describe("WardrobeCharacterPreview shared extras and replacement heads", () => {

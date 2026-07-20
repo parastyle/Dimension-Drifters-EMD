@@ -7,6 +7,10 @@ export const HAT_STACK_BAND_ID = "HAT_STACK_BAND_V1" as const;
 export const GEAR_REPLACEMENT_CONTRACT_ID = "GEAR_REPLACEMENT_V2" as const;
 export const MAX_VISIBLE_HATS = 12;
 export const MAX_HAT_SLOTS = 30;
+export const HEAD_MOUNT_SCALE = 0.85;
+export const HEAD_NORMALIZATION_MIN = 0.4;
+export const HEAD_NORMALIZATION_MAX = 1;
+export const HEAD_WIDTH_ENVELOPE = 1.35;
 
 export const GEAR_BAKED_PART_IDS = [
   "body",
@@ -272,6 +276,8 @@ export interface GearAssemblyPart {
 
 export interface GearLoadoutAssembly {
   parts: GearAssemblyPart[];
+  /** Effective replacement-head mount. Face riders inherit it; head-mounted hats divide it back out. */
+  headMountScale: number;
   towerTotal: number;
   towerVisible: number;
   towerOverflow: number;
@@ -898,6 +904,110 @@ export function gearManifestItem(
   return undefined;
 }
 
+export interface HeadScaleNormalization {
+  readonly gearId: GearId | null;
+  readonly baseWidth: number;
+  readonly baseHeight: number;
+  readonly headWidth: number;
+  readonly headHeight: number;
+  readonly factor: number;
+  readonly mountScale: number;
+}
+
+export type GearClickVisibility =
+  | "installed"
+  | "art-rendering"
+  | "invalid-art"
+  | "intentionally-artless";
+
+const INVALID_GEAR_ART_IDS = new Set<GearId>(["thornwatch-boots", "unbending-boots"]);
+
+/** Every catalog click receives an explicit visual outcome, even when its art row is absent. */
+export function gearClickVisibility(
+  manifest: GearPartsManifest | null | undefined,
+  gearId: GearId,
+): GearClickVisibility {
+  if (blankGearId(gearId)) return "intentionally-artless";
+  if (manifest && gearManifestItem(manifest, gearId)) return "installed";
+  if (INVALID_GEAR_ART_IDS.has(gearId)) return "invalid-art";
+  return "art-rendering";
+}
+
+/** Short, named copy shared by the closet preview and the `?dev=gear:<id>` inspection banner. */
+export function gearClickVisibilityNotice(
+  manifest: GearPartsManifest | null | undefined,
+  gearId: GearId,
+): string | null {
+  const name = GEAR_CATALOG[gearId].name.toUpperCase();
+  switch (gearClickVisibility(manifest, gearId)) {
+    case "installed":
+      return null;
+    case "intentionally-artless":
+      return `${name} · INTENTIONALLY ARTLESS · BASE SHOWN`;
+    case "invalid-art":
+      return `${name} · ART UNAVAILABLE · BASE SHOWN`;
+    case "art-rendering":
+      return `${name} · ART RENDERING…`;
+  }
+}
+
+/**
+ * Normalize generated heads against the boilerplate's opaque silhouette without changing any art.
+ *
+ *   mount = HEAD_MOUNT_SCALE * clamp(min(baseH / headH, 1.35 * baseW / headW), 0.40, 1.00)
+ *
+ * Height is the primary fit target. The second term prevents a very wide silhouette (notably Coldsnap)
+ * from remaining enormous just because it is shorter, while still allowing intentional masks/cowls to be
+ * at most 35% wider than the base head. The clamp rejects pathological manifest measurements without ever
+ * enlarging a replacement beyond the authored base-head mount.
+ */
+export function headScaleNormalization(
+  manifest: GearPartsManifest,
+  gearId: GearId | null | undefined,
+): HeadScaleNormalization {
+  const base = manifest.boilerplate.parts.find((part) => part.id === "head");
+  const baseWidth = base?.alphaBounds.width ?? 1;
+  const baseHeight = base?.alphaBounds.height ?? 1;
+  const baseMountScale = base?.mountScale ?? HEAD_MOUNT_SCALE;
+  const item =
+    gearId && isGearId(gearId) && GEAR_CATALOG[gearId].slot === "head"
+      ? gearManifestItem(manifest, gearId)
+      : undefined;
+  const head =
+    item?.renderRole === "replace-head"
+      ? item.parts.find((part) => part.id === "head")
+      : undefined;
+  if (!head) {
+    return {
+      gearId: null,
+      baseWidth,
+      baseHeight,
+      headWidth: baseWidth,
+      headHeight: baseHeight,
+      factor: 1,
+      mountScale: baseMountScale,
+    };
+  }
+  const headWidth = head.alphaBounds.width;
+  const headHeight = head.alphaBounds.height;
+  const heightFit = baseHeight / headHeight;
+  const widthFit = (baseWidth * HEAD_WIDTH_ENVELOPE) / headWidth;
+  const factor = clamp(
+    Math.min(heightFit, widthFit),
+    HEAD_NORMALIZATION_MIN,
+    HEAD_NORMALIZATION_MAX,
+  );
+  return {
+    gearId: gearId ?? null,
+    baseWidth,
+    baseHeight,
+    headWidth,
+    headHeight,
+    factor,
+    mountScale: baseMountScale * factor,
+  };
+}
+
 export type HeadRiderReceiver = "face.eyes" | "face.mouth";
 
 export interface HeadRiderSourcePlacement {
@@ -1231,6 +1341,11 @@ export function resolveGearBakeLoadout(
   const winningRightHand = gloveRight?.state === "ready" ? gloveRight : handRightBase;
   const winningLeftFoot = bootLeft?.state === "ready" ? bootLeft : footLeftBase;
   const winningRightFoot = bootRight?.state === "ready" ? bootRight : footRightBase;
+  const effectiveHeadId =
+    headReplacement?.state === "ready" && headReplacement.gearId
+      ? headReplacement.gearId
+      : null;
+  const headMountScale = headScaleNormalization(manifest, effectiveHeadId).mountScale;
   const bodyKeyDependencies = torsoReplacement
     ? torsoReplacement.state === "ready"
       ? [torsoReplacement]
@@ -1382,6 +1497,7 @@ export function resolveGearBakeLoadout(
     cloak,
     hats,
     replacementHeadPosition: false,
+    headMountScale,
     towerTotal,
     towerVisible,
     towerOverflow: Math.max(0, readySegmentTotal - readyVisibleSegments),
@@ -1565,6 +1681,8 @@ export function assembleGearLoadout(
   parts.sort((a, b) => a.depth - b.depth || a.stackIndex - b.stackIndex);
   return {
     parts,
+    headMountScale:
+      manifest.boilerplate.parts.find((part) => part.id === "head")?.mountScale ?? HEAD_MOUNT_SCALE,
     towerTotal,
     towerVisible,
     towerOverflow: Math.max(0, towerTotal - MAX_VISIBLE_HATS),

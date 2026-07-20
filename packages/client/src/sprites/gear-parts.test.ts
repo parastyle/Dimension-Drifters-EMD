@@ -1,4 +1,10 @@
-import { type GearId, type GearSlot, STARTER_GEAR_LOADOUT } from "@dd/shared";
+import {
+  GEAR_CATALOG,
+  GEAR_IDS,
+  type GearId,
+  type GearSlot,
+  STARTER_GEAR_LOADOUT,
+} from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
   replacementPairManifest,
@@ -8,6 +14,12 @@ import {
   assembleBoilerplate,
   assembleGearLoadout,
   DEFAULT_LOADOUT_HEAD_TEXTURE,
+  gearClickVisibility,
+  gearClickVisibilityNotice,
+  gearManifestItem,
+  GEAR_PARTS_MANIFEST,
+  HEAD_WIDTH_ENVELOPE,
+  headScaleNormalization,
   type GearPartsManifest,
   hatStackScale,
   hatTowerTotal,
@@ -476,6 +488,163 @@ describe("per-head face-rider source placement", () => {
         };
         expect(Math.hypot(actual.x - expected.x, actual.y - expected.y)).toBeLessThanOrEqual(0.01);
       }
+    }
+  });
+});
+
+// HEAD SIZE NORMALIZATION — append-only coverage for the manifest-driven replacement-head fleet.
+describe("manifest-driven replacement-head scale", () => {
+  it("keeps every installed head within 88-100% of the base alpha height and 135% of its width", () => {
+    const v2 = replacementPairManifest("head-normalization-r1");
+    const base = v2.boilerplate.parts.find((part) => part.id === "head");
+    const heads = v2.slots.find((slot) => slot.id === "head")?.items ?? [];
+    if (!base || heads.length === 0) throw new Error("head normalization fixture is incomplete");
+    const baseEffectiveHeight = base.alphaBounds.height * base.mountScale;
+    const baseEffectiveWidth = base.alphaBounds.width * base.mountScale;
+
+    for (const item of heads) {
+      if (!GEAR_CATALOG[item.id as GearId]) continue;
+      const normalized = headScaleNormalization(v2, item.id as GearId);
+      const effectiveHeight = normalized.headHeight * normalized.mountScale;
+      const effectiveWidth = normalized.headWidth * normalized.mountScale;
+      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeGreaterThanOrEqual(0.88);
+      expect(effectiveHeight / baseEffectiveHeight, item.id).toBeLessThanOrEqual(1.000001);
+      expect(effectiveWidth / baseEffectiveWidth, item.id).toBeLessThanOrEqual(
+        HEAD_WIDTH_ENVELOPE + 0.000001,
+      );
+    }
+  });
+
+  it("automatically normalizes all five reclassified cowl heads from their manifest alpha bounds", () => {
+    const v2 = replacementPairManifest("cowl-head-normalization-r1");
+    const baseScale = v2.boilerplate.parts.find((part) => part.id === "head")?.mountScale;
+    if (!baseScale) throw new Error("base head scale is unavailable");
+    for (const id of [
+      "ash-walker-hat",
+      "ashen-crusader-hat",
+      "thornwatch-hat",
+      "neon-mirage-hat",
+      "pressurized-hat",
+    ] as const) {
+      const item = gearManifestItem(v2, id);
+      expect(item?.parts[0]?.alphaBounds.height, id).toBeGreaterThan(0);
+      const normalized = headScaleNormalization(v2, id);
+      expect(normalized.gearId, id).toBe(id);
+      expect(normalized.mountScale, id).toBeLessThan(baseScale);
+    }
+  });
+
+  it("uses the normalized scale for every per-head face receiver in both facings", () => {
+    const v2 = replacementPairManifest("head-rider-normalization-r1");
+    const heads = v2.slots.find((slot) => slot.id === "head")?.items ?? [];
+    const baseReceivers = GEAR_CATALOG["blank-drifter-head"].faceReceivers;
+    const pivot = { x: 512, y: 300 };
+    for (const item of heads) {
+      const id = item.id as GearId;
+      if (!GEAR_CATALOG[id]) continue;
+      const effectiveScale =
+        (76 / v2.socketFrame.bodyHeightL) * headScaleNormalization(v2, id).mountScale;
+      for (const [receiver, authoringSource] of [
+        ["face.eyes", baseReceivers.eyes],
+        ["face.mouth", baseReceivers.mouth],
+      ] as const) {
+        const placement = headRiderSourcePlacement(id, receiver, authoringSource);
+        for (const facing of [1, -1] as const) {
+          const actualX =
+            (authoringSource.x + placement.offset.x - pivot.x) * effectiveScale * facing;
+          const actualY = (authoringSource.y + placement.offset.y - pivot.y) * effectiveScale;
+          const expectedX = (placement.targetSource.x - pivot.x) * effectiveScale * facing;
+          const expectedY = (placement.targetSource.y - pivot.y) * effectiveScale;
+          expect(
+            Math.hypot(actualX - expectedX, actualY - expectedY),
+            `${item.id}:${receiver}`,
+          ).toBeLessThanOrEqual(0.01);
+        }
+      }
+    }
+  });
+
+  it("keeps the hat band at base scale on the widest and narrowest installed heads", () => {
+    const v2 = replacementPairManifest("head-hat-band-r1");
+    const rigScale = 76 / v2.socketFrame.bodyHeightL;
+    for (const [head, hat] of [
+      ["coldsnap-head", "coldsnap-hat"],
+      ["unbending-head", "unbending-hat"],
+    ] as const) {
+      const resolved = resolveGearBakeLoadout(v2, {
+        ...STARTER_GEAR_LOADOUT,
+        head,
+        hat,
+      });
+      const firstHat = resolved.extras.hats[0];
+      if (!firstHat) throw new Error(`${head} did not resolve its hat`);
+      const renderedHeadScale = rigScale * resolved.extras.headMountScale;
+      const guardedHatScale =
+        (renderedHeadScale / resolved.extras.headMountScale) *
+        firstHat.source.mountScale *
+        firstHat.stackScale;
+      expect(guardedHatScale, head).toBeCloseTo(
+        rigScale * firstHat.source.mountScale * firstHat.stackScale,
+        10,
+      );
+      expect(firstHat.x, head).toBeCloseTo(firstHat.source.receiverAnchor.xL * 76, 10);
+      expect(firstHat.y, head).toBeCloseTo(firstHat.source.receiverAnchor.yL * 76, 10);
+      expect(firstHat.topSocketSource, head).not.toBeNull();
+    }
+  });
+});
+
+// ARMORY CLICK VISIBILITY — append-only catalog-wide classification and named fallback coverage.
+describe("gear catalog click visibility", () => {
+  it("classifies every catalog id into an explicit click outcome", () => {
+    expect(GEAR_PARTS_MANIFEST).not.toBeNull();
+    const rows = GEAR_IDS.map((id) => [id, gearClickVisibility(GEAR_PARTS_MANIFEST, id)] as const);
+    expect(rows).toHaveLength(GEAR_IDS.length);
+    expect(new Set(rows.map(([id]) => id)).size).toBe(GEAR_IDS.length);
+    for (const [id, state] of rows) {
+      expect(
+        ["installed", "art-rendering", "invalid-art", "intentionally-artless"],
+        id,
+      ).toContain(state);
+      if (state === "installed")
+        expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id)).toBeNull();
+      else
+        expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id), id).toContain(
+          GEAR_CATALOG[id].name.toUpperCase(),
+        );
+    }
+  });
+
+  it("distinguishes intentional blanks, invalid boots, and pending reader art", () => {
+    for (const id of GEAR_IDS.filter((candidate) => candidate.startsWith("blank-drifter-"))) {
+      expect(gearClickVisibility(GEAR_PARTS_MANIFEST, id), id).toBe("intentionally-artless");
+      expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id), id).toContain(
+        "INTENTIONALLY ARTLESS",
+      );
+    }
+    for (const id of ["thornwatch-boots", "unbending-boots"] as const) {
+      expect(gearClickVisibility(GEAR_PARTS_MANIFEST, id), id).toBe("invalid-art");
+      expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id), id).toContain("BASE SHOWN");
+    }
+    for (const id of ["brass-readers", "loaded-readers", "lucky-readers"] as const) {
+      expect(gearClickVisibility(GEAR_PARTS_MANIFEST, id), id).toBe("art-rendering");
+      expect(gearClickVisibilityNotice(GEAR_PARTS_MANIFEST, id), id).toContain("ART RENDERING");
+    }
+  });
+
+  it("lets each reclassified cowl advance from rendering to installed solely by landing a manifest row", () => {
+    for (const id of [
+      "ash-walker-hat",
+      "ashen-crusader-hat",
+      "thornwatch-hat",
+      "neon-mirage-hat",
+      "pressurized-hat",
+    ] as const) {
+      const state = gearClickVisibility(GEAR_PARTS_MANIFEST, id);
+      expect(["art-rendering", "installed"], id).toContain(state);
+      expect(state === "installed", id).toBe(
+        Boolean(GEAR_PARTS_MANIFEST && gearManifestItem(GEAR_PARTS_MANIFEST, id)),
+      );
     }
   });
 });
