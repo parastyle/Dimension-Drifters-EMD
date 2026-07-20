@@ -618,6 +618,268 @@ export function weaponPoseSpecFor(
 export type FlourishMoment = "draw" | "stow" | "after-attack" | "idle-settle";
 export type FlourishPhase = "anticipation" | "statement" | "catch";
 export type BladeSizeClass = "short" | "standard" | "long" | "great" | "colossal";
+
+export type MovementPostureKey = "sword" | "gunner" | "caster" | "weighted";
+
+/**
+ * Presentation-only walk vocabulary. Distances are rig-local pixels at 1x body scale; rotations are radians.
+ * The class-pool table is the base truth, while genuinely large implements resolve to the weighted overlay.
+ */
+export interface MovementPostureSpec {
+  readonly key: MovementPostureKey;
+  readonly strideLengthPx: number;
+  readonly bodyBobPx: number;
+  readonly bodyStepDipPx: number;
+  readonly bodyBounceX: number;
+  readonly bodyBounceY: number;
+  readonly runLeanRad: number;
+  readonly inertiaLeanRad: number;
+  readonly counterLeanRad: number;
+  readonly handSwingPx: number;
+  readonly handBobPx: number;
+  readonly handTrailXPx: number;
+  readonly handTrailYPx: number;
+  readonly weaponCarryForwardPx: number;
+  readonly weaponCarryUpPx: number;
+  readonly weaponTrailSwayPx: number;
+  readonly footStridePx: number;
+  readonly footLiftPx: number;
+  readonly footTrailXPx: number;
+  readonly footTrailYPx: number;
+  readonly footPivotRad: number;
+  readonly headBobPx: number;
+}
+
+function movementPosture(spec: MovementPostureSpec): MovementPostureSpec {
+  return Object.freeze(spec);
+}
+
+/** One authored posture per shared classPool. No weapon id enters the walk-cycle implementation. */
+export const CLASS_POOL_MOVEMENT_POSTURES: Readonly<
+  Record<WeaponDef["tags"]["classPool"], MovementPostureSpec>
+> = Object.freeze({
+  melee: movementPosture({
+    key: "sword",
+    strideLengthPx: 142,
+    bodyBobPx: 7.5,
+    bodyStepDipPx: 1.1,
+    bodyBounceX: 0.03,
+    bodyBounceY: 0.045,
+    runLeanRad: 0.17,
+    inertiaLeanRad: 0.28,
+    counterLeanRad: 0.075,
+    handSwingPx: 8.5,
+    handBobPx: 1.6,
+    handTrailXPx: 29,
+    handTrailYPx: 23,
+    weaponCarryForwardPx: 0,
+    weaponCarryUpPx: 0,
+    weaponTrailSwayPx: 0.8,
+    footStridePx: 12,
+    footLiftPx: 15,
+    footTrailXPx: 18,
+    footTrailYPx: 10,
+    footPivotRad: 0.13,
+    headBobPx: 0.9,
+  }),
+  ranged: movementPosture({
+    key: "gunner",
+    strideLengthPx: 166,
+    bodyBobPx: 4.2,
+    bodyStepDipPx: 0.4,
+    bodyBounceX: 0.016,
+    bodyBounceY: 0.024,
+    runLeanRad: 0.09,
+    inertiaLeanRad: 0.16,
+    counterLeanRad: 0,
+    handSwingPx: 3.8,
+    handBobPx: 0.8,
+    handTrailXPx: 16,
+    handTrailYPx: 13,
+    weaponCarryForwardPx: 5.5,
+    weaponCarryUpPx: 1.4,
+    weaponTrailSwayPx: 2.1,
+    footStridePx: 8,
+    footLiftPx: 9,
+    footTrailXPx: 12,
+    footTrailYPx: 7,
+    footPivotRad: 0.065,
+    headBobPx: 0.6,
+  }),
+  caster: movementPosture({
+    key: "caster",
+    strideLengthPx: 150,
+    bodyBobPx: 6.2,
+    bodyStepDipPx: 0.6,
+    bodyBounceX: 0.022,
+    bodyBounceY: 0.034,
+    runLeanRad: 0.075,
+    inertiaLeanRad: 0.18,
+    counterLeanRad: 0.018,
+    handSwingPx: 5.2,
+    handBobPx: 1.8,
+    handTrailXPx: 20,
+    handTrailYPx: 17,
+    weaponCarryForwardPx: -3.2,
+    weaponCarryUpPx: 2.8,
+    weaponTrailSwayPx: 1.1,
+    footStridePx: 9.5,
+    footLiftPx: 12,
+    footTrailXPx: 15,
+    footTrailYPx: 8,
+    footPivotRad: 0.09,
+    headBobPx: 1.8,
+  }),
+});
+
+/** Large 2H/XL implements override their class pool with slower, planted, visibly inertial weight. */
+export const WEIGHTED_MOVEMENT_POSTURE: MovementPostureSpec = movementPosture({
+  key: "weighted",
+  strideLengthPx: 192,
+  bodyBobPx: 5.4,
+  bodyStepDipPx: 3.2,
+  bodyBounceX: 0.038,
+  bodyBounceY: 0.058,
+  runLeanRad: 0.13,
+  inertiaLeanRad: 0.4,
+  counterLeanRad: 0.045,
+  handSwingPx: 3.2,
+  handBobPx: 1.1,
+  handTrailXPx: 35,
+  handTrailYPx: 27,
+  weaponCarryForwardPx: -2.4,
+  weaponCarryUpPx: 0.6,
+  weaponTrailSwayPx: 1.4,
+  footStridePx: 13,
+  footLiftPx: 10.5,
+  footTrailXPx: 27,
+  footTrailYPx: 14,
+  footPivotRad: 0.1,
+  headBobPx: 0.75,
+});
+
+export function movementPostureFor(def: WeaponDef): MovementPostureSpec {
+  const family = weaponPoseFamilyFor(def);
+  const sizeClass = bladeSizeClassFor(def);
+  const weightedSword =
+    family === "two-hand-sword" && (sizeClass === "great" || sizeClass === "colossal");
+  const weightedImplement =
+    family === "two-hand-heavy" ||
+    weightedSword ||
+    (def.tags.size === "XL" && (def.twoHanded === true || def.tags.grip === "2H"));
+  return weightedImplement
+    ? WEIGHTED_MOVEMENT_POSTURE
+    : CLASS_POOL_MOVEMENT_POSTURES[def.tags.classPool];
+}
+
+export interface MovementPostureInput {
+  spec: MovementPostureSpec;
+  facing: number;
+  moveX: number;
+  lagX: number;
+  lagY: number;
+  gait: number;
+  stridePhase: number;
+  reducedMotion: boolean;
+}
+
+export interface MovementPostureSample {
+  localMoveX: number;
+  localLagX: number;
+  bodyRotationRad: number;
+  bodyBobPx: number;
+  bodyBounce: number;
+  handSwingPx: number;
+  handBobPx: number;
+  handTrailXPx: number;
+  handTrailYPx: number;
+  weaponCarryForwardPx: number;
+  weaponCarryUpPx: number;
+  weaponTrailSwayPx: number;
+  footStridePx: number;
+  footLiftPx: number;
+  footTrailXPx: number;
+  footTrailYPx: number;
+  footPivotRad: number;
+  headBobPx: number;
+}
+
+export function createMovementPostureInput(): MovementPostureInput {
+  return {
+    spec: CLASS_POOL_MOVEMENT_POSTURES.melee,
+    facing: 1,
+    moveX: 0,
+    lagX: 0,
+    lagY: 0,
+    gait: 0,
+    stridePhase: 0,
+    reducedMotion: false,
+  };
+}
+
+export function createMovementPostureSample(): MovementPostureSample {
+  return {
+    localMoveX: 0,
+    localLagX: 0,
+    bodyRotationRad: 0,
+    bodyBobPx: 0,
+    bodyBounce: 0,
+    handSwingPx: 0,
+    handBobPx: 0,
+    handTrailXPx: 0,
+    handTrailYPx: 0,
+    weaponCarryForwardPx: 0,
+    weaponCarryUpPx: 0,
+    weaponTrailSwayPx: 0,
+    footStridePx: 0,
+    footLiftPx: 0,
+    footTrailXPx: 0,
+    footTrailYPx: 0,
+    footPivotRad: 0,
+    headBobPx: 0,
+  };
+}
+
+/** Allocation-free walk-cycle sampler; all outputs are rig-local and the root owns the one final mirror. */
+export function sampleMovementPosture(
+  input: Readonly<MovementPostureInput>,
+  out: MovementPostureSample,
+): MovementPostureSample {
+  const facing = input.facing < 0 ? -1 : 1;
+  const gait = Math.max(0, Math.min(1, input.gait));
+  const accent = input.reducedMotion ? 0 : gait;
+  const strideSin = Math.sin(input.stridePhase);
+  const strideCos = Math.cos(input.stridePhase);
+  const stepBeat = Math.sin(input.stridePhase * 2);
+  const spec = input.spec;
+  out.localMoveX = input.moveX * facing;
+  out.localLagX = input.lagX * facing;
+  out.bodyRotationRad =
+    out.localMoveX * spec.runLeanRad * gait +
+    out.localLagX * spec.inertiaLeanRad * (input.reducedMotion ? 0 : 1) -
+    strideSin * spec.counterLeanRad * accent;
+  out.bodyBobPx =
+    accent === 0
+      ? 0
+      : stepBeat * spec.bodyBobPx * accent + Math.abs(strideSin) * spec.bodyStepDipPx * accent;
+  out.bodyBounce = accent === 0 ? 0 : stepBeat * accent;
+  out.handSwingPx = accent === 0 ? 0 : strideCos * spec.handSwingPx * accent;
+  out.handBobPx = accent === 0 ? 0 : Math.abs(strideSin) * spec.handBobPx * accent;
+  out.handTrailXPx = input.reducedMotion ? 0 : -out.localLagX * spec.handTrailXPx;
+  out.handTrailYPx = input.reducedMotion ? 0 : -input.lagY * spec.handTrailYPx;
+  out.weaponCarryForwardPx = spec.weaponCarryForwardPx * gait;
+  out.weaponCarryUpPx = spec.weaponCarryUpPx * gait;
+  out.weaponTrailSwayPx =
+    accent === 0 ? 0 : (-out.localLagX * 0.62 + strideSin * 0.38) * spec.weaponTrailSwayPx * accent;
+  out.footStridePx = accent === 0 ? 0 : strideCos * spec.footStridePx * accent;
+  out.footLiftPx = accent === 0 ? 0 : Math.max(0, strideSin) * spec.footLiftPx * accent;
+  out.footTrailXPx = input.reducedMotion ? 0 : -out.localLagX * spec.footTrailXPx;
+  out.footTrailYPx = input.reducedMotion ? 0 : -input.lagY * spec.footTrailYPx;
+  out.footPivotRad = accent === 0 ? 0 : strideCos * spec.footPivotRad * accent;
+  out.headBobPx = accent === 0 ? 0 : -stepBeat * spec.headBobPx * accent;
+  return out;
+}
+
 export const FLOURISH_DUAL_DRAW_ECHO_MS = 50;
 export const FLOURISH_DUAL_STOW_ECHO_MS = 45;
 export const FLOURISH_DUAL_AFTER_ECHO_MS = 55;

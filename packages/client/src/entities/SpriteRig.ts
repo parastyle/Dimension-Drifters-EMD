@@ -135,6 +135,8 @@ import {
   bladeSizeClassFor,
   createFlourishInput,
   createFlourishSample,
+  createMovementPostureInput,
+  createMovementPostureSample,
   createPoseLanguageInput,
   createPoseLanguageSample,
   createPoseVariantSelection,
@@ -144,6 +146,9 @@ import {
   type FlourishInput,
   type FlourishMoment,
   type FlourishSample,
+  type MovementPostureInput,
+  type MovementPostureSample,
+  movementPostureFor,
   oneHandBladePoseVariantFrom,
   POSE_ONE_HAND_BLADE_VARIANT_REGISTRY_KEY,
   POSE_PISTOL_VARIANT_REGISTRY_KEY,
@@ -156,6 +161,7 @@ import {
   poseImpulsePending,
   poseSupportHandFor,
   sampleFlourish,
+  sampleMovementPosture,
   samplePoseLanguage,
   twoHandedPoseFor,
   twoHandPoseAuthorityFrom,
@@ -193,9 +199,6 @@ export function partTexture(
 
 /** On-screen height of the body part, in px. Everything else scales from this. (tuning) */
 const TARGET_BODY_H = 76; // §37 slightly smaller characters (was 84) — reads better in the zoomed-out belt
-/** §7 v0.112 procedural gait — px travelled per full stride cycle (2 steps). Distance-based, so the step
- *  cadence MATCHES actual speed (no jog-in-place, no fixed loop that runs after you stop). (tuning) */
-const STRIDE_LEN = 150;
 /** Vertical "look" toward the cursor (local player): how far the torso leans with the aim's up/down. */
 const BODY_LOOK_LEAN = 0.14;
 /** Pointed weapons obey semantic +X. The one neutral exception to laser-flat aim is this small ready cant. */
@@ -208,6 +211,8 @@ export function forwardMeleeReadyAngle(aimLocal: number): number {
 const CLIENT_VISUAL_COMBOS = true;
 /** The authored guard eases to neutral only after accepted-cadence grace lapses. */
 const COMBO_HOLD_RELEASE_MS = 120;
+/** G3 presentation-only bridge. It is capped below one tenth of a second and never retimes a descriptor. */
+export const COMBO_STAGE_TRANSITION_MAX_MS = 80;
 const MELEE_GLINT_LEAD_MS = 280;
 const MELEE_GLINT_CREST_MS = 60;
 /** Open books bridge the authoritative held latch, then remain readable for one quiet settling beat. */
@@ -256,6 +261,19 @@ interface ComboChainState {
   hasAttackSeq: boolean;
   attackSeq: number;
   acceptedAtMs: number;
+}
+
+interface ComboStageTransitionState {
+  readonly startedAtMs: number;
+  readonly durationMs: number;
+  readonly parts: ReadonlyArray<{
+    readonly node: Phaser.GameObjects.Image;
+    readonly previous: Readonly<ComboStagePoseTransform>;
+  }>;
+  readonly weapons: ReadonlyArray<{
+    readonly node: Phaser.GameObjects.Image;
+    readonly previous: Readonly<ComboStagePoseTransform>;
+  }>;
 }
 
 function createComboChainState(): ComboChainState {
@@ -441,6 +459,46 @@ function backOut01(value: number): number {
 function mixAngle(from: number, to: number, t: number): number {
   const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
   return from + delta * clamp01(t);
+}
+
+/** Finish the bridge inside the next beat's authored anticipation, capped for unchanged combo cadence. */
+export function comboStageTransitionDurationMs(activeStartSeconds: number): number {
+  return Math.min(COMBO_STAGE_TRANSITION_MAX_MS, Math.max(0, activeStartSeconds * 1000 * 0.8));
+}
+
+export function comboStageTransitionBlend(elapsedMs: number, durationMs: number): number {
+  if (durationMs <= 0) return 1;
+  return smoothstep01(elapsedMs / durationMs);
+}
+
+/** The local paper channels bridged at a combo boundary. Root/world position is intentionally absent. */
+export interface ComboStagePoseTransform {
+  x: number;
+  y: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+/** Mutating pure sampler used by SpriteRig and no-discontinuity regression tests. `target` may equal `out`. */
+export function blendComboStagePoseTransform(
+  previous: Readonly<ComboStagePoseTransform>,
+  target: Readonly<ComboStagePoseTransform>,
+  elapsedMs: number,
+  durationMs: number,
+  out: ComboStagePoseTransform,
+): void {
+  const blend = comboStageTransitionBlend(elapsedMs, durationMs);
+  const targetX = target.x;
+  const targetY = target.y;
+  const targetRotation = target.rotation;
+  const targetScaleX = target.scaleX;
+  const targetScaleY = target.scaleY;
+  out.x = previous.x + (targetX - previous.x) * blend;
+  out.y = previous.y + (targetY - previous.y) * blend;
+  out.rotation = mixAngle(previous.rotation, targetRotation, blend);
+  out.scaleX = previous.scaleX + (targetScaleX - previous.scaleX) * blend;
+  out.scaleY = previous.scaleY + (targetScaleY - previous.scaleY) * blend;
 }
 
 function stepAngleBounded(from: number, to: number, maxDelta: number): number {
@@ -1712,6 +1770,8 @@ export class SpriteRig {
   private poseLeadSpec?: WeaponPoseSpec;
   private poseOffSpec?: WeaponPoseSpec;
   private poseTwoHanded = false;
+  private readonly movementPostureInput: MovementPostureInput = createMovementPostureInput();
+  private readonly movementPostureSample: MovementPostureSample = createMovementPostureSample();
   private flourishLeadSpec?: WeaponFlourishSpec;
   private flourishOffSpec?: WeaponFlourishSpec;
   private poseLeadBladeSize: BladeSizeClass = "standard";
@@ -1837,6 +1897,8 @@ export class SpriteRig {
     readonly direction: -1 | 0 | 1;
     readonly expiresAtMs: number;
   };
+  /** G3 final-render bridge between accepted combo stages. World/root position is never captured or moved. */
+  private comboStageTransition?: ComboStageTransitionState;
   /** §40 per-frame weapon POSITION offset from the hand (chop lift / thrust lunge). Reset each frame. */
   private swingOffX = 0;
   private swingOffY = 0;
@@ -2689,6 +2751,7 @@ export class SpriteRig {
     const offDef = this.weapons[1]?.def;
     this.poseLeadSpec = leadDef ? weaponPoseSpecFor(leadDef, this.poseVariants) : undefined;
     this.poseOffSpec = offDef ? weaponPoseSpecFor(offDef, this.poseVariants) : undefined;
+    if (leadDef) this.movementPostureInput.spec = movementPostureFor(leadDef);
     this.flourishLeadSpec = leadDef ? weaponFlourishSpecFor(leadDef) : undefined;
     this.flourishOffSpec = offDef ? weaponFlourishSpecFor(offDef) : undefined;
     this.poseLeadBladeSize = leadDef ? bladeSizeClassFor(leadDef) : "standard";
@@ -3092,7 +3155,7 @@ export class SpriteRig {
         const bodyDy = (s * out.bodyForward + c * out.bodyLateral) * TARGET_BODY_H;
         this.body.x += bodyDx;
         this.body.y += bodyDy;
-        this.body.rotation += this.facing * out.bodyTurn;
+        this.body.rotation += out.bodyTurn;
         const footDx = (c * out.footForward - s * out.footLateral) * TARGET_BODY_H;
         const footDy = (s * out.footForward + c * out.footLateral) * TARGET_BODY_H;
         for (const foot of this.feet) {
@@ -3481,6 +3544,68 @@ export class SpriteRig {
     this.resetComboChain(true);
   }
 
+  /** Snapshot only already-rendered local paper transforms. The next stage keeps advancing on its original
+   * descriptor clock underneath this short bridge, so accepted timing, DPS, and authored root motion stay exact. */
+  private beginComboStageTransition(startedAtMs: number, swing: RigSwingDescriptor): void {
+    const durationMs = comboStageTransitionDurationMs(swing.activeStartSeconds);
+    if (durationMs <= 0) {
+      this.comboStageTransition = undefined;
+      return;
+    }
+    const capture = (node: Phaser.GameObjects.Image) => ({
+      node,
+      previous: {
+        x: node.x,
+        y: node.y,
+        rotation: node.rotation,
+        scaleX: node.scaleX,
+        scaleY: node.scaleY,
+      },
+    });
+    this.comboStageTransition = {
+      startedAtMs,
+      durationMs,
+      parts: this.parts.map(capture),
+      weapons: this.weapons.map((weapon) => capture(weapon.img)),
+    };
+  }
+
+  /** Final stage writer after art correction and before gear followers: at elapsed zero every captured channel
+   * is bit-identical to the prior stage; by the bounded deadline the untouched next pose owns it fully. */
+  private applyComboStageTransition(sceneNow: number): void {
+    const transition = this.comboStageTransition;
+    if (!transition) return;
+    const elapsedMs = sceneNow - transition.startedAtMs;
+    for (const captured of transition.parts) {
+      if (!captured.node.active) continue;
+      blendComboStagePoseTransform(
+        captured.previous,
+        captured.node,
+        elapsedMs,
+        transition.durationMs,
+        captured.node,
+      );
+    }
+    for (let index = 0; index < transition.weapons.length; index++) {
+      const captured = transition.weapons[index];
+      const weapon = this.weapons[index];
+      if (!captured || !weapon || captured.node !== weapon.img || !weapon.img.active) continue;
+      blendComboStagePoseTransform(
+        captured.previous,
+        weapon.img,
+        elapsedMs,
+        transition.durationMs,
+        weapon.img,
+      );
+      const geometry =
+        index === 0 && this.tome?.openVisible
+          ? weapon.artGeometry?.open
+          : weapon.artGeometry?.closed;
+      weapon.semanticRotation = weapon.img.rotation - (geometry?.artAngle ?? 0);
+    }
+    if (elapsedMs >= transition.durationMs) this.comboStageTransition = undefined;
+  }
+
   /** Undo late paper transforms and close-blade target deltas when no subsequent frame can restore identity. */
   private releaseAttackVisuals(): void {
     const attackDy = this.attackArtOffY - this.attackLiftPx;
@@ -3592,6 +3717,7 @@ export class SpriteRig {
     this.swingVariant = "default";
     if (clearHold) {
       this.comboHoldPose = undefined;
+      this.comboStageTransition = undefined;
       for (const chain of this.comboChains) {
         chain.family = "none";
         chain.step = 0;
@@ -4222,6 +4348,10 @@ export class SpriteRig {
       !this.weaponDef.gun &&
       !this.weaponDef.cast &&
       !this.weaponDef.beam;
+    const priorPairStep = this.pairBarStep;
+    const pairStageContinues =
+      pairedMelee && priorPairStep >= 0 && timeMs <= this.pairBarExpiresAtMs;
+    let comboStageAdvances = false;
     const explicitPairStep = pairStepOverride ?? swing?.pairStep;
     let pairStep = -1;
     if (pairedMelee) {
@@ -4236,6 +4366,7 @@ export class SpriteRig {
             ? (this.pairBarStep + 1) % DUAL_MELEE_SEQUENCE_LENGTH
             : 0;
       }
+      comboStageAdvances = pairStageContinues && pairStep !== priorPairStep;
       this.pairBarStep = pairStep;
       const cadence = requestedSwing?.effectiveCooldown ?? this.weaponDef?.cooldown ?? 0.3;
       this.pairBarExpiresAtMs = timeMs + cadence * 1000 + comboGraceMs(cadence);
@@ -4318,6 +4449,7 @@ export class SpriteRig {
       const chain = this.comboChains[handIndex];
       const continues =
         chain.family === family && chain.weaponId === activeDef.id && timeMs <= chain.expiresAtMs;
+      const previousStep = chain.step;
       const step =
         pairStep >= 0
           ? Math.min(sequence.length - 1, Math.floor(pairStep / 2))
@@ -4345,6 +4477,7 @@ export class SpriteRig {
       // comboStepForAttackSeq(this.attackBeatSeq, sequence.length); weapon/family/time now own the chain.
       const authored = sequence[step];
       if (authored) {
+        if (continues && step !== previousStep) comboStageAdvances = true;
         if (isTerminalFlourishStep(step, sequence.length)) terminalFlourishHand = handIndex;
         // Continuity is based on the accepted/predicted START: readyAt=start+effective CD, then the authored
         // grace. Early buffered requests only reach this method when locally fired; Stage 2 will reconcile
@@ -4383,6 +4516,7 @@ export class SpriteRig {
     } else if (!this.crossfallActive) {
       this.resetComboChain(true);
     }
+    if (comboStageAdvances && nextSwing) this.beginComboStageTransition(timeMs, nextSwing);
     this.swingStart = timeMs;
     this.swing = nextSwing;
     this.swingAimWorld = aimWorld ?? Number.NaN;
@@ -7005,13 +7139,12 @@ export class SpriteRig {
     outsidePaperView: boolean,
     rebase: boolean,
     reducedMotion: boolean,
-    stridePhase: number,
-    gait: number,
     localMoveX: number,
     moveY: number,
     localSpringSignalX: number,
     springSignalY: number,
     landed: boolean,
+    movementHeadBobPx: number,
   ): void {
     const head = this.boilerplateHead;
     const source = this.boilerplateHeadAssembly;
@@ -7049,7 +7182,7 @@ export class SpriteRig {
     input.authoredOffsetX =
       this.floatingHeadAttackLead.x - directionX * stanceLag + this.flourishHeadX;
     input.authoredOffsetY =
-      sampleFloatingHeadWalkBob(stridePhase, gait, reducedMotion) +
+      movementHeadBobPx +
       this.floatingHeadAttackLead.y -
       directionY * stanceLag * 0.7 -
       FLOATING_HEAD_SPRING_TUNING.airHangPx * airMix +
@@ -7434,18 +7567,25 @@ export class SpriteRig {
     if (mvLen > 0.15) {
       const nx = anim.moveX / mvLen;
       const ny = anim.moveY / mvLen;
-      const dot = nx * this.headingX + ny * this.headingY; // 1 = same way … −1 = reversal
-      if (gait > 0.4 && dot < 0.72 && this.turnCommit < 0.06) {
-        turnTriggered = true;
-        this.turnCommit = Math.min(1, (1 - dot) * 0.9);
-        this.turnDirX = nx;
-        this.turnDirY = ny;
-        this.headingX = nx; // snap the tracked heading so the change doesn't re-trigger next frame
+      // A start from rest establishes heading without treating left as a reversal of the +X constructor
+      // default. Only an already-established moving heading can trigger the turn-commit performance.
+      if (firstAnim || gait <= 0.4) {
+        this.headingX = nx;
         this.headingY = ny;
+      } else {
+        const dot = nx * this.headingX + ny * this.headingY; // 1 = same way … −1 = reversal
+        if (dot < 0.72 && this.turnCommit < 0.06) {
+          turnTriggered = true;
+          this.turnCommit = Math.min(1, (1 - dot) * 0.9);
+          this.turnDirX = nx;
+          this.turnDirY = ny;
+          this.headingX = nx; // snap the tracked heading so the change doesn't re-trigger next frame
+          this.headingY = ny;
+        }
+        const hk = 1 - Math.exp((-6 * dtMs) / 1000);
+        this.headingX += (nx - this.headingX) * hk;
+        this.headingY += (ny - this.headingY) * hk;
       }
-      const hk = 1 - Math.exp((-6 * dtMs) / 1000);
-      this.headingX += (nx - this.headingX) * hk;
-      this.headingY += (ny - this.headingY) * hk;
     }
     const commit = this.turnCommit;
 
@@ -7482,7 +7622,7 @@ export class SpriteRig {
           Math.abs(this.jiggleSignalY) < JIGGLE_SIGNAL_DEAD_ZONE ? 0 : this.jiggleSignalY;
       }
     }
-    this.strideT += ((spd * dtS) / STRIDE_LEN) * Math.PI * 2;
+    this.strideT += ((spd * dtS) / this.movementPostureInput.spec.strideLengthPx) * Math.PI * 2;
     if (this.strideT > Math.PI * 2e6) this.strideT -= Math.PI * 2e6; // keep it bounded over a long session
     const legPh = this.strideT;
 
@@ -7514,7 +7654,17 @@ export class SpriteRig {
     // §7 v0.105 de-clunk: EASE the visual mirror toward the committed facing, passing through scaleX≈0 —
     // that reads as a TURN, not a one-frame full-body flip. UNIFORM baseScale on both axes = a pure mirror,
     // never a stretch, so the hand-painted art keeps its aspect ratio at any size (§28.4).
-    this.facingBlend += (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000)); // τ≈83ms
+    if (firstAnim) this.facingBlend = this.facing;
+    else this.facingBlend += (this.facing - this.facingBlend) * (1 - Math.exp((-12 * dtMs) / 1000));
+    const movementInput = this.movementPostureInput;
+    movementInput.facing = this.facing;
+    movementInput.moveX = anim.moveX;
+    movementInput.lagX = lagX;
+    movementInput.lagY = lagY;
+    movementInput.gait = gait;
+    movementInput.stridePhase = legPh;
+    movementInput.reducedMotion = reducedMotion;
+    const movementPose = sampleMovementPosture(movementInput, this.movementPostureSample);
     if (outsidePaperView && this.spawnStartMs >= 0) this.spawnStartMs = -1;
     const spawnElapsedMs =
       this.spawnStartMs >= 0 ? timeMs - this.spawnStartMs : Number.POSITIVE_INFINITY;
@@ -7542,17 +7692,18 @@ export class SpriteRig {
 
     // §7 v0.112 Bob + squash/stretch: the bob is STRIDE-synced when moving (two dips per stride = one per
     // footfall) and a slow breathing sway when idle — so it never runs a fixed loop out of step with the feet.
-    const bob = gait * Math.sin(legPh * 2) + (1 - gait) * Math.sin(t * 2.2) * 0.55;
+    const idleBob = reducedMotion ? 0 : (1 - gait) * Math.sin(t * 2.2) * 0.55;
     // Signed attack pitch is applied late; reset detached-part scale so it never compounds frame-to-frame.
     for (const hand of this.hands) hand.img.setScale(s);
     for (const foot of this.feet) foot.img.setScale(s);
     this.body.x = 0;
-    this.body.y = bob * 3 * s * 4; // a touch of vertical bob, proportional to size
-    this.body.scaleX = s * (1 + bob * 0.04);
-    this.body.scaleY = s * (1 - bob * 0.06);
-    // §MADNESS the torso leans HARD into the run + accel — a loose, weighty forward pitch (Madness-Combat
-    // flash feel), not a stiff upright. Movement lean 0.16→0.34, accel lean 0.32→0.55.
-    this.body.rotation = anim.moveX * 0.34 * gait + lagX * 0.55 + lookY * BODY_LOOK_LEAN;
+    this.body.y = (movementPose.bodyBobPx + idleBob * 12) * s;
+    this.body.scaleX =
+      s * (1 + movementPose.bodyBounce * movementInput.spec.bodyBounceX + idleBob * 0.04);
+    this.body.scaleY =
+      s * (1 - movementPose.bodyBounce * movementInput.spec.bodyBounceY - idleBob * 0.06);
+    // Local movement/lag own the paper-card pitch; the root's signed scale performs the only mirror.
+    this.body.rotation = movementPose.bodyRotationRad + lookY * BODY_LOOK_LEAN;
 
     // §20 momentum FLINCH (Stage A): the torso leans + jolts with the impulse shove (gun recoil / hit
     // knockback). The whole body already slides via the server position; this is the additive flinch on
@@ -7569,7 +7720,7 @@ export class SpriteRig {
     // §7 v0.111 turn-commit BODY: an exaggerated one-time lean + plant-dip into the new heading (decays), on
     // top of the steady movement lean above — reads as the rider hauling into the turn, then settling.
     if (commit > 0.01) {
-      this.body.rotation += this.turnDirX * commit * 0.5; // haul the torso into the new direction
+      this.body.rotation += this.turnDirX * this.facing * commit * 0.5;
       this.body.y += (3 + this.turnDirY * 4) * commit * s; // plant/dip (a touch more when turning downward)
       this.body.scaleY *= 1 - commit * 0.06; // brief squash as the weight lands
     }
@@ -7587,7 +7738,7 @@ export class SpriteRig {
     }
     if (brace > 0) {
       this.body.y += brace * s * 7; // dip into the brace
-      this.body.scaleY = s * (1 - bob * 0.06 - brace * 0.05); // slight squash
+      this.body.scaleY *= 1 - brace * 0.05; // slight squash
     }
 
     // Weapon angle — guns and melee both honor semantic +X/aim. Swing choreography may travel through
@@ -7798,8 +7949,7 @@ export class SpriteRig {
       const hasFistGun = this.weapons.some(
         (weapon) => firingStanceFor(weapon.def).family === "fist-gun",
       );
-      this.body.rotation +=
-        this.facing * (hasFistGun ? 0 : leadFiringStance.bodyTurn) * rangedAimBlend;
+      this.body.rotation += (hasFistGun ? 0 : leadFiringStance.bodyTurn) * rangedAimBlend;
       const recoilElapsed = sceneNow - this.gunRecoilAtMs;
       if (recoilElapsed >= 0 && recoilElapsed < 140) {
         const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
@@ -8648,7 +8798,7 @@ export class SpriteRig {
         );
         this.body.x += this.posePoint.x * TARGET_BODY_H;
         this.body.y += this.posePoint.y * TARGET_BODY_H;
-        this.body.rotation += this.facing * this.poseLeadSample.bodyTurn;
+        this.body.rotation += this.poseLeadSample.bodyTurn;
       }
       if (this.poseTwoHanded) {
         const spacingMicro =
@@ -8750,8 +8900,7 @@ export class SpriteRig {
       aimRelativePoint(activeBladeStance.bodyForward, 0, heldAimLocal, this.posePoint);
       this.body.x += this.posePoint.x * TARGET_BODY_H;
       this.body.y += this.posePoint.y * TARGET_BODY_H;
-      this.body.rotation +=
-        this.facing * (activeBladeStance.bodyTurn - (this.poseLeadSample.bodyTurn || 0));
+      this.body.rotation += activeBladeStance.bodyTurn - (this.poseLeadSample.bodyTurn || 0);
       if (this.poseLeadBladeSize === "great" || this.poseLeadBladeSize === "colossal") {
         this.body.y += gait * TARGET_BODY_H * 0.018;
       }
@@ -8811,7 +8960,7 @@ export class SpriteRig {
         aimRelativePoint(sample.bodyForward, sample.bodyLateral, heldAimLocal, this.posePoint);
         this.body.x += this.posePoint.x * TARGET_BODY_H * bodyShare;
         this.body.y += this.posePoint.y * TARGET_BODY_H * bodyShare;
-        this.body.rotation += this.facing * sample.bodyTurn * bodyShare;
+        this.body.rotation += sample.bodyTurn * bodyShare;
         aimRelativePoint(sample.footForward, sample.footLateral, heldAimLocal, this.posePoint);
         this.attackFrontFootX += this.posePoint.x * TARGET_BODY_H * bodyShare;
         this.attackFrontFootY += this.posePoint.y * TARGET_BODY_H * bodyShare;
@@ -8905,28 +9054,27 @@ export class SpriteRig {
       !!this.weaponDef &&
       usesAimedFiringStance(this.weaponDef);
     for (const hnd of this.hands) {
-      const armPh = legPh + (hnd.front ? 0 : Math.PI); // arms out of phase with each other + the legs
-      const swingX = Math.cos(armPh) * s * 8 * gait; // §MADNESS bigger fore-aft arm swing with the walk
-      const bobY = Math.abs(Math.sin(legPh)) * s * 2 * gait; // a little vertical with each footfall
+      const handPhaseSign = hnd.front ? 1 : -1;
+      const swingX = movementPose.handSwingPx * handPhaseSign * s;
+      const bobY = movementPose.handBobPx * s;
       const idleY =
         anim.reducedMotion === true || outsidePaperView
           ? 0
           : Math.sin(t * 2 + (hnd.front ? 0 : 1.3)) * s * 2.5 * (1 - gait); // breathing when idle
-      // §MADNESS loose, dangly arms — a big inertia trail so the hands swing behind + overshoot the body on
-      // every speed/direction change (the flash-animation follow-through), then settle.
-      const trailX = -lagX * this.facing * s * 36;
-      const trailY = -lagY * s * 30;
-      let hx = hnd.ox + swingX;
-      let hy = hnd.oy + bobY;
+      let hx = hnd.ox + swingX + movementPose.handTrailXPx * s;
+      let hy = hnd.oy + bobY + movementPose.handTrailYPx * s;
       if (!PROCEDURAL_JIGGLE) {
-        hx += trailX;
         hy += idleY;
-        hy += trailY;
       }
       const handIndex = hnd.front ? 0 : 1;
       const heldFiringDef = this.weapons[handIndex]?.def;
       const castsFromFreeHand = !hnd.front && !heldFiringDef && tomeCastingHandActive;
       const posedFiringDef = heldFiringDef ?? (castsFromFreeHand ? this.weaponDef : undefined);
+      if (heldFiringDef) {
+        hx +=
+          (movementPose.weaponCarryForwardPx + movementPose.weaponTrailSwayPx * handPhaseSign) * s;
+        hy -= movementPose.weaponCarryUpPx * s;
+      }
       if (
         handIndex === poseSupportHand &&
         poseHandSample &&
@@ -9103,14 +9251,20 @@ export class SpriteRig {
         anim.reducedMotion === true || outsidePaperView
           ? 0
           : Math.sin(t * 2.6 + i) * s * 3.5 * (1 - gait);
-      const trailX = -lagX * this.facing * s * 20; // §MADNESS looser foot drag on a speed/direction change
-      const trailY = -lagY * s * 12;
-      let fy = ft.oy - Math.max(0, Math.sin(ph)) * s * 19 * gait;
-      let fx = ft.ox + Math.cos(ph) * s * 10 * gait;
+      const footPhaseSign = i % 2 === 0 ? 1 : -1;
+      const footLift =
+        i % 2 === 0
+          ? movementPose.footLiftPx
+          : reducedMotion
+            ? 0
+            : Math.max(0, -Math.sin(legPh)) * movementInput.spec.footLiftPx * gait;
+      let fy = ft.oy - footLift * s + movementPose.footTrailYPx * s;
+      let fx =
+        ft.ox +
+        movementPose.footStridePx * footPhaseSign * s +
+        movementPose.footTrailXPx * s;
       if (!PROCEDURAL_JIGGLE) {
         fy += idle;
-        fy += trailY;
-        fx += trailX;
       }
       if (this.poseLeadSpec && !poseCloseBladeSuppressed && !this.crossfallActive) {
         aimRelativePoint(
@@ -9123,14 +9277,16 @@ export class SpriteRig {
         fy += this.posePoint.y * TARGET_BODY_H * this.poseLeadSample.footBlend;
       }
       if (activeBladeStance) {
+        const movementX = fx - ft.ox;
+        const movementY = fy - ft.oy;
         aimRelativePoint(
           ft.front ? activeBladeStance.frontFootForward : activeBladeStance.backFootForward,
           ft.front ? activeBladeStance.frontFootLateral : activeBladeStance.backFootLateral,
           heldAimLocal,
           this.posePoint,
         );
-        fx = ft.ox + this.posePoint.x * TARGET_BODY_H;
-        fy = ft.oy + this.posePoint.y * TARGET_BODY_H;
+        fx = ft.ox + this.posePoint.x * TARGET_BODY_H + movementX;
+        fy = ft.oy + this.posePoint.y * TARGET_BODY_H + movementY;
       }
       const footBlend = ft.front
         ? clamp01(this.attackFrontFootBlend)
@@ -9188,8 +9344,8 @@ export class SpriteRig {
       ft.img.y = fy; // §MADNESS higher foot lift
       ft.img.x = fx; // stride + drag
       ft.img.rotation = PROCEDURAL_JIGGLE
-        ? Math.cos(ph) * 0.14 * gait - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
-        : Math.cos(ph) * 0.14 * gait + lagX * this.facing * 0.18; // pivot + lean into accel
+        ? movementPose.footPivotRad * footPhaseSign - (ft.jx / JIGGLE_FOOT_MAX_X) * 0.18
+        : movementPose.footPivotRad * footPhaseSign;
     }
 
     this.applyUltimatePose(timeMs);
@@ -9441,6 +9597,7 @@ export class SpriteRig {
     this.updateStowProxies(sceneNow, reducedMotion);
     // Copy the FINAL authored/jiggle/spawn transform. No tween or external caller competes for weapon state.
     this.applyWeaponArtGeometry();
+    this.applyComboStageTransition(sceneNow);
     const localMoveX = anim.moveX * this.facing;
     this.sampleFloatingHeadAttackLead(sceneNow, anim, anim.reducedMotion === true);
     this.syncBoilerplateHeadPose(
@@ -9448,13 +9605,12 @@ export class SpriteRig {
       outsidePaperView,
       jiggleRebase,
       anim.reducedMotion === true,
-      legPh,
-      gait,
       localMoveX,
       anim.moveY,
       springSignalX * this.facing,
       springSignalY,
       landed,
+      movementPose.headBobPx,
     );
     const dashLean =
       this.moveStance === STANCE_DASH
