@@ -66,7 +66,7 @@ function mountPanelEngine(key, stageSel, heroEnabled) {
   if (engine.setVfxRadius) engine.setVfxRadius(state.vfxRadius); // §14 fixed VFX size
   engine.setHero(heroUrl());
   if (key === "combined" && engine.setActors) {
-    engine.setActors("/art/drifter/candidate-1.keyed.png", "/art/critter/candidate-1.keyed.png");
+    engine.setActors("/art/dust-ranger/candidate-1.keyed.png", "/art/dummy/candidate-1.keyed.png");
     engine.setWeaponSprite(state.weaponArt, {
       thrown: !!state.weapon?.thrown,
       displayLength: state.displayLength,
