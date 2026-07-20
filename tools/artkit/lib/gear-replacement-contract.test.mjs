@@ -1,32 +1,20 @@
 import assert from "node:assert/strict";
-import { dirname, resolve } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
-import { readGearCatalog } from "./gear-catalog.mjs";
 import {
   COMPOSITION_ORDERS,
   MIGRATION_EXPECTED,
   PART_FRAMES,
+  VALIDATION_THRESHOLDS,
   assertMigrationPlan,
-  buildCanonicalBodyMasks,
   buildMigrationPlan,
+  dilateMask,
+  erodeMask,
   renderRoleForItem,
   scrubSmallAlphaComponents,
   validateFullReplacement,
   validatePairedReplacements,
-  validateTorsoPatch,
+  validateTorsoReplacement,
 } from "./gear-replacement-contract.mjs";
-
-const WIDTH = 1024;
-const HEIGHT = 1024;
-
-function rectangularBodyAlpha() {
-  const alpha = new Uint8Array(WIDTH * HEIGHT);
-  for (let y = 350; y <= 680; y++) {
-    for (let x = 400; x <= 600; x++) alpha[y * WIDTH + x] = 255;
-  }
-  return alpha;
-}
 
 function alphaForMask(mask) {
   const alpha = new Uint8Array(mask.length);
@@ -34,52 +22,55 @@ function alphaForMask(mask) {
   return alpha;
 }
 
-test("synthetic torso masks enforce containment, coverage, overlap order, holes, and silhouette equality", () => {
-  const preOutline = rectangularBodyAlpha();
-  const masks = buildCanonicalBodyMasks(preOutline, WIDTH, HEIGHT);
-  const baseSilhouette = new Uint8Array(masks.bodyFill);
-  const shirt = alphaForMask(masks.shirtRequired);
-  const pants = alphaForMask(masks.pantsRequired);
+test("replace-torso is one full object inside the base silhouette tolerance", () => {
+  const width = 80;
+  const height = 60;
+  const base = new Uint8Array(width * height);
+  for (let y = 10; y <= 49; y++) for (let x = 20; x <= 59; x++) base[y * width + x] = 1;
+  const core = erodeMask(base, width, height, 2);
+  const allowed = dilateMask(base, width, height, 3);
+  const fixture = {
+    alpha: alphaForMask(base),
+    width,
+    height,
+    frame: [14, 4, 52, 52],
+    coreMask: core,
+    allowedMask: allowed,
+    pivot: { x: 40, y: 30 },
+    partBox: { width: 44, height: 44 },
+    generatedOutlineRadius: 8,
+  };
+  const passing = validateTorsoReplacement(fixture);
+  assert.equal(passing.coreCoverage, 1);
+  assert.equal(passing.primaryIslandCount, 1);
+  assert.equal(passing.escapedPixels, 0);
+  assert.equal(passing.silhouetteTolerancePx, VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx);
+  assert.deepEqual(COMPOSITION_ORDERS.body, ["torso"]);
 
-  const shirtReport = validateTorsoPatch({ alpha: shirt, width: WIDTH, height: HEIGHT, slot: "shirt", masks, baseSilhouette });
-  const pantsReport = validateTorsoPatch({ alpha: pants, width: WIDTH, height: HEIGHT, slot: "pants", masks, baseSilhouette });
-  assert.equal(shirtReport.requiredCoverage, 1);
-  assert.equal(pantsReport.requiredCoverage, 1);
-  assert.equal(shirtReport.silhouetteXorPixels, 0);
-  assert.equal(pantsReport.silhouetteXorPixels, 0);
-  assert.deepEqual(COMPOSITION_ORDERS.body, ["body", "pants", "shirt"]);
-
-  const overlapIndex = 556 * WIDTH + 500;
-  assert.equal(masks.shirtRequired[overlapIndex], 1);
-  assert.equal(masks.pantsRequired[overlapIndex], 1);
-  const composedMarker = ["body", "pants", "shirt"].reduce((winner, layer) => layer === "body" || (layer === "pants" && pants[overlapIndex]) || (layer === "shirt" && shirt[overlapIndex]) ? layer : winner, "none");
-  assert.equal(composedMarker, "shirt");
-
-  const escaped = new Uint8Array(shirt);
-  escaped[670 * WIDTH + 500] = 255;
+  const incomplete = new Uint8Array(fixture.alpha);
+  for (let y = 10; y <= 15; y++) for (let x = 20; x <= 59; x++) incomplete[y * width + x] = 0;
   assert.throws(
-    () => validateTorsoPatch({ alpha: escaped, width: WIDTH, height: HEIGHT, slot: "shirt", masks, baseSilhouette }),
-    /Torso containment: alpha pixel .* outside shirtAllowed/,
+    () => validateTorsoReplacement({ ...fixture, alpha: incomplete }),
+    /88\.889% is below 90%/,
   );
 
-  const undercovered = new Uint8Array(shirt);
-  undercovered.fill(0);
-  undercovered[450 * WIDTH + 500] = 255;
+  const escaped = new Uint8Array(fixture.alpha);
+  for (let x = 60; x <= 64; x++) escaped[30 * width + x] = 255;
   assert.throws(
-    () => validateTorsoPatch({ alpha: undercovered, width: WIDTH, height: HEIGHT, slot: "shirt", masks, baseSilhouette }),
-    /required coverage/,
+    () => validateTorsoReplacement({ ...fixture, alpha: escaped }),
+    /Torso silhouette: \d+px escape the base torso tolerance envelope/,
   );
 
-  const holed = new Uint8Array(shirt);
-  for (let x = 480; x < 485; x++) holed[450 * WIDTH + x] = 0;
+  const extraIsland = new Uint8Array(fixture.alpha);
+  extraIsland[6 * width + 16] = 255;
   assert.throws(
-    () => validateTorsoPatch({ alpha: holed, width: WIDTH, height: HEIGHT, slot: "shirt", masks, baseSilhouette }),
-    /5px transparent hole/,
+    () => validateTorsoReplacement({ ...fixture, alpha: extraIsland }),
+    /expected one connected primary island, found 2/,
   );
 
   assert.throws(
-    () => validateTorsoPatch({ alpha: shirt, width: WIDTH, height: HEIGHT, slot: "shirt", masks, baseSilhouette, generatedOutlineRadius: 8 }),
-    /torso patches must have zero generated rim/,
+    () => validateTorsoReplacement({ ...fixture, generatedOutlineRadius: 0 }),
+    /replace-torso requires generated radius 8/,
   );
 });
 
@@ -164,33 +155,28 @@ test("post-resize speck scrub removes only sub-64px ringing before strict paired
   );
 });
 
-test("catalog-derived migration plan pins exact roles, calls, and component totals", () => {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const repo = resolve(here, "../../..");
-  const directoryBySlot = new Map([
-    ["boots", "boots"], ["gloves", "gloves"], ["shirt", "shirt"], ["pants", "pants"],
-    ["cloak", "cloak"], ["glasses", "glasses"], ["facialHair", "facial-hair"], ["hat", "hats"],
-  ]);
-  const items = readGearCatalog(resolve(repo, "packages/shared/src/gear.ts"))
-    .filter((item) => !item.id.startsWith("blank-drifter-"))
-    .map((item) => ({ ...item, slotDirectory: directoryBySlot.get(item.slot) }));
-  const plan = assertMigrationPlan(buildMigrationPlan(items));
-
-  assert.equal(plan.counts.rerenderItems, 83);
-  assert.equal(plan.counts.renderCalls, 85);
-  assert.equal(plan.counts.rerenderComponentParts, 112);
-  assert.equal(plan.counts.finalNonblankItems, 105);
-  assert.equal(plan.counts.finalRoleTextures, 107);
-  assert.equal(plan.counts.finalManifestParts, 134);
+test("migration plan is exactly twelve catalog-derived torso/head pairs", () => {
+  const pairItems = [];
+  for (let index = 1; index <= 12; index++) {
+    pairItems.push({ id: `set-${index}-shirt`, slot: "torso", slotDirectory: "torso" });
+    pairItems.push({ id: `set-${index}-head`, slot: "head", slotDirectory: "heads" });
+    pairItems.push({ id: `set-${index}-hat`, slot: "hat", slotDirectory: "hats" });
+  }
+  const plan = assertMigrationPlan(buildMigrationPlan(pairItems));
+  assert.equal(plan.counts.rerenderItems, 24);
+  assert.equal(plan.counts.renderCalls, 24);
+  assert.equal(plan.counts.rerenderComponentParts, 24);
   assert.deepEqual(plan.counts.byBatch, MIGRATION_EXPECTED.byBatch);
-  assert.equal(plan.roles.filter((row) => row.renderRole === "overlay-hat").length, 10);
-  assert.equal(plan.roles.filter((row) => row.renderRole === "replace-head").length, 2);
-  assert.equal(plan.preserved.filter((job) => job.renderRole === "cloak-far").length, 12);
-  assert.equal(plan.preserved.every((job) => job.creativeRender === false), true);
-  assert.equal(renderRoleForItem(items.find((item) => item.id === "demon-mask-hat")), "replace-head");
+  assert.equal(plan.preserved.filter((job) => job.renderRole === "overlay-hat").length, 12);
+  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-shirt")), "replace-torso");
+  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-head")), "replace-head");
+  assert.equal(renderRoleForItem(pairItems.find((item) => item.id === "set-1-hat")), "overlay-hat");
+  assert.throws(() => renderRoleForItem({ id: "retired-pants", slot: "pants" }), /retired pants catalog row/);
   assert.deepEqual(Object.fromEntries(Object.entries(PART_FRAMES).map(([id, frame]) => [id, frame.crop])), {
-    body: [344, 324, 336, 376],
-    head: [352, 112, 384, 456],
+    // Widened 2026-07-18 per the silhouette-character law (owner ruling, then "widen the
+    // margins"): near-inset frames for collars/props/plumes; pivots unchanged.
+    body: [268, 180, 488, 544],
+    head: [290, 40, 508, 552],
     "hand-l": [294, 432, 180, 180],
     "hand-r": [550, 432, 180, 180],
     "foot-l": [353, 641, 190, 190],

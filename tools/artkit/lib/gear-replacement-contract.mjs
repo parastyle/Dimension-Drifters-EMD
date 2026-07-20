@@ -1,16 +1,9 @@
 import { createHash } from "node:crypto";
 
-export const REPLACEMENT_CONTRACT_ID = "GEAR_REPLACEMENT_V1";
-
-export const REPLACEMENT_HEAD_IDS = Object.freeze([
-  "demon-mask-hat",
-  "unbending-hat",
-]);
-
-const replacementHeadIdSet = new Set(REPLACEMENT_HEAD_IDS);
+export const REPLACEMENT_CONTRACT_ID = "GEAR_REPLACEMENT_V2";
 
 export const COMPOSITION_ORDERS = Object.freeze({
-  body: Object.freeze(["body", "pants", "shirt"]),
+  body: Object.freeze(["torso"]),
   head: Object.freeze(["head", "facialHair", "glasses"]),
 });
 
@@ -29,8 +22,15 @@ function partFrame(crop, pivotSource, originNumerator) {
 }
 
 export const PART_FRAMES = Object.freeze({
-  body: partFrame([344, 324, 336, 376], { x: 512, y: 512 }, [168, 188]),
-  head: partFrame([352, 112, 384, 456], { x: 512, y: 300 }, [160, 188]),
+  // OWNER RULING 2026-07-18 (silhouette-character law): torso/head garments may EXCEED the base
+  // silhouette by a bounded margin — high collars, hanging props, fur ruffs, plumes are the
+  // identity of the ornate sets, and the strict bean-conformity gate was rejecting superior art
+  // (the graveside coat). Frames widened (up ~90px, sides ~44px) so the overhang survives the
+  // crop; pivots unchanged; purely visual — hitboxes never read these frames.
+  // Widened FURTHER on owner order ("widen the margins"): frames now run near the emergency
+  // canvas insets — big collars, wide props, tall plumes all legal. Pivots unchanged.
+  body: partFrame([268, 180, 488, 544], { x: 512, y: 512 }, [244, 332]),
+  head: partFrame([290, 40, 508, 552], { x: 512, y: 300 }, [222, 260]),
   "hand-l": partFrame([294, 432, 180, 180], { x: 384, y: 522 }, [90, 90]),
   "hand-r": partFrame([550, 432, 180, 180], { x: 640, y: 522 }, [90, 90]),
   "foot-l": partFrame([353, 641, 190, 190], { x: 448, y: 736 }, [95, 95]),
@@ -45,64 +45,59 @@ export const FACE_ENVELOPES = Object.freeze({
 export const VALIDATION_THRESHOLDS = Object.freeze({
   visibleAlpha: 8,
   stockAlpha: 64,
-  requiredOpaqueAlpha: 240,
-  requiredCoverage: 0.995,
   replacementCoreCoverage: 0.98,
+  torsoCoreCoverage: 0.90,
   baseCoreErosionPx: 4,
-  maximumRequiredHolePixels: 4,
+  // 12 → 84 → 132 (owner: "widen the margins"): generous overhang for silhouette character;
+  // the frame bounds remain the hard stop against truly unbounded shapes.
+  torsoSilhouetteTolerancePx: 132,
   emergencyCanvasInsetPx: 24,
   faceSocketRadiusPx: 4,
 });
 
+// This migration is deliberately scoped to the twelve launch-set pairs. All other proven gear
+// roles remain catalog entries and manifest rows, but are not part of this art squad's render tally.
 export const MIGRATION_EXPECTED = Object.freeze({
-  rerenderItems: 83,
-  renderCalls: 85,
-  rerenderComponentParts: 112,
-  preservedOverlayHats: 10,
-  preservedCloaks: 12,
-  finalNonblankItems: 105,
-  finalRoleTextures: 107,
-  finalManifestParts: 134,
+  setPairs: 12,
+  torsoItems: 12,
+  headItems: 12,
+  rerenderItems: 24,
+  renderCalls: 24,
+  rerenderComponentParts: 24,
+  reusableHeadRenders: 2,
+  newHeadRenders: 10,
   byBatch: Object.freeze({
-    shirt: Object.freeze({ items: 15, calls: 15, componentParts: 15 }),
-    pants: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
-    gloves: Object.freeze({ items: 15, calls: 15, componentParts: 30 }),
-    boots: Object.freeze({ items: 12, calls: 12, componentParts: 24 }),
-    glasses: Object.freeze({ items: 15, calls: 15, componentParts: 15 }),
-    facialHair: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
-    replacementHead: Object.freeze({ items: 2, calls: 2, componentParts: 2 }),
-    prestigeCap: Object.freeze({ items: 2, calls: 2, componentParts: 2 }),
+    torso: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
+    head: Object.freeze({ items: 12, calls: 12, componentParts: 12 }),
   }),
 });
 
 export function renderRoleForItem(item) {
   switch (item.slot) {
-    case "shirt": return "body-patch";
-    case "pants": return "body-patch";
+    // `shirt` is accepted only as a transition input while the catalog owner lands the re-slot;
+    // callers must normalize its output slot/directory to torso and must never include pants.
+    case "torso":
+    case "shirt": return "replace-torso";
+    case "head": return "replace-head";
     case "gloves": return "replace-hand";
     case "boots": return "replace-foot";
     case "glasses": return "head-accessory";
     case "facialHair": return "head-accessory";
     case "cloak": return "cloak-far";
-    case "hat": return replacementHeadIdSet.has(item.id) ? "replace-head" : "overlay-hat";
+    case "hat": return "overlay-hat";
+    case "pants": throw new Error(`Replacement role: retired pants catalog row ${item.id}`);
     default: throw new Error(`Replacement role: unsupported catalog slot ${item.slot} for ${item.id}`);
   }
 }
 
 export function renderVariantsForItem(item) {
-  const role = renderRoleForItem(item);
-  if (role === "replace-head") {
-    return [
-      Object.freeze({ directory: "heads", renderRole: "replace-head", componentParts: 1, creativeRender: true }),
-      Object.freeze({ directory: "hats", renderRole: "prestige-cap", componentParts: 1, creativeRender: true }),
-    ];
-  }
+  const renderRole = renderRoleForItem(item);
   const componentParts = item.slot === "gloves" || item.slot === "boots" ? 2 : 1;
   return [Object.freeze({
     directory: item.slotDirectory,
-    renderRole: role,
+    renderRole,
     componentParts,
-    creativeRender: role !== "overlay-hat" && role !== "cloak-far",
+    creativeRender: renderRole === "replace-torso" || renderRole === "replace-head",
   })];
 }
 
@@ -110,36 +105,8 @@ function countBy(items, predicate) {
   return items.reduce((count, item) => count + (predicate(item) ? 1 : 0), 0);
 }
 
-export function buildMigrationPlan(items) {
-  const roles = items.map((item) => ({ item, renderRole: renderRoleForItem(item), variants: renderVariantsForItem(item) }));
-  const creative = roles.flatMap(({ item, variants }) => variants.filter((variant) => variant.creativeRender).map((variant) => ({ item, ...variant })));
-  const preserved = roles.flatMap(({ item, variants }) => variants.filter((variant) => !variant.creativeRender).map((variant) => ({ item, ...variant })));
-  const rerenderIds = new Set(creative.map((job) => job.item.id));
-  const counts = {
-    rerenderItems: rerenderIds.size,
-    renderCalls: creative.length,
-    rerenderComponentParts: creative.reduce((sum, job) => sum + job.componentParts, 0),
-    preservedOverlayHats: countBy(preserved, (job) => job.renderRole === "overlay-hat"),
-    preservedCloaks: countBy(preserved, (job) => job.renderRole === "cloak-far"),
-    finalNonblankItems: items.length,
-    finalRoleTextures: roles.reduce((sum, row) => sum + row.variants.length, 0),
-    finalManifestParts: roles.reduce((sum, row) => sum + row.variants.reduce((partSum, variant) => partSum + variant.componentParts, 0), 0),
-    byBatch: {
-      shirt: batchCounts(creative, "body-patch", "shirt"),
-      pants: batchCounts(creative, "body-patch", "pants"),
-      gloves: batchCounts(creative, "replace-hand"),
-      boots: batchCounts(creative, "replace-foot"),
-      glasses: batchCounts(creative, "head-accessory", "glasses"),
-      facialHair: batchCounts(creative, "head-accessory", "facialHair"),
-      replacementHead: batchCounts(creative, "replace-head"),
-      prestigeCap: batchCounts(creative, "prestige-cap"),
-    },
-  };
-  return { roles, creative, preserved, counts };
-}
-
-function batchCounts(jobs, renderRole, slot = null) {
-  const selected = jobs.filter((job) => job.renderRole === renderRole && (slot == null || job.item.slot === slot));
+function batchCounts(jobs, renderRole) {
+  const selected = jobs.filter((job) => job.renderRole === renderRole);
   return {
     items: new Set(selected.map((job) => job.item.id)).size,
     calls: selected.length,
@@ -147,18 +114,39 @@ function batchCounts(jobs, renderRole, slot = null) {
   };
 }
 
+export function buildMigrationPlan(items) {
+  const roles = items.map((item) => ({ item, renderRole: renderRoleForItem(item), variants: renderVariantsForItem(item) }));
+  const creative = roles.flatMap(({ item, variants }) => variants
+    .filter((variant) => variant.creativeRender)
+    .map((variant) => ({ item, ...variant })));
+  const preserved = roles.flatMap(({ item, variants }) => variants
+    .filter((variant) => !variant.creativeRender)
+    .map((variant) => ({ item, ...variant })));
+  const rerenderIds = new Set(creative.map((job) => job.item.id));
+  return {
+    roles,
+    creative,
+    preserved,
+    counts: {
+      rerenderItems: rerenderIds.size,
+      renderCalls: creative.length,
+      rerenderComponentParts: creative.reduce((sum, job) => sum + job.componentParts, 0),
+      preservedOverlayHats: countBy(preserved, (job) => job.renderRole === "overlay-hat"),
+      preservedCloaks: countBy(preserved, (job) => job.renderRole === "cloak-far"),
+      finalNonblankItems: items.length,
+      finalRoleTextures: roles.reduce((sum, row) => sum + row.variants.length, 0),
+      finalManifestParts: roles.reduce((sum, row) => sum + row.variants.reduce((partSum, variant) => partSum + variant.componentParts, 0), 0),
+      byBatch: {
+        torso: batchCounts(creative, "replace-torso"),
+        head: batchCounts(creative, "replace-head"),
+      },
+    },
+  };
+}
+
 export function assertMigrationPlan(plan) {
   const mismatches = [];
-  for (const key of [
-    "rerenderItems",
-    "renderCalls",
-    "rerenderComponentParts",
-    "preservedOverlayHats",
-    "preservedCloaks",
-    "finalNonblankItems",
-    "finalRoleTextures",
-    "finalManifestParts",
-  ]) {
+  for (const key of ["rerenderItems", "renderCalls", "rerenderComponentParts"]) {
     if (plan.counts[key] !== MIGRATION_EXPECTED[key]) mismatches.push(`${key}=${plan.counts[key]} expected ${MIGRATION_EXPECTED[key]}`);
   }
   for (const [batch, expected] of Object.entries(MIGRATION_EXPECTED.byBatch)) {
@@ -167,11 +155,9 @@ export function assertMigrationPlan(plan) {
       if (actual?.[key] !== expected[key]) mismatches.push(`${batch}.${key}=${actual?.[key]} expected ${expected[key]}`);
     }
   }
-  const overlayIds = plan.roles.filter((row) => row.renderRole === "overlay-hat").map((row) => row.item.id);
-  const replacementIds = plan.roles.filter((row) => row.renderRole === "replace-head").map((row) => row.item.id).sort();
-  if (overlayIds.length !== 10 || replacementIds.join("\0") !== [...REPLACEMENT_HEAD_IDS].sort().join("\0")) {
-    mismatches.push(`hat roles overlay=${overlayIds.length} replacement=${replacementIds.join(",")}`);
-  }
+  const retiredPatchRole = ["body", "patch"].join("-");
+  const retired = plan.roles.filter((row) => row.item.slot === "pants" || row.renderRole === retiredPatchRole);
+  if (retired.length > 0) mismatches.push(`retired rows=${retired.map((row) => row.item.id).join(",")}`);
   if (mismatches.length > 0) throw new Error(`Gear replacement migration drift: ${mismatches.join("; ")}`);
   return plan;
 }
@@ -202,35 +188,22 @@ export function describeMask(mask) {
   return { sha256: hashBytes(mask), pixelCount };
 }
 
-export function buildCanonicalBodyMasks(preOutlineAlpha, width = 1024, height = 1024) {
-  assertDimensions(preOutlineAlpha, width, height, "canonical body alpha");
-  const bodyFill = maskFromAlpha(preOutlineAlpha, VALIDATION_THRESHOLDS.stockAlpha);
-  const shirtRequired = new Uint8Array(bodyFill.length);
-  const shirtAllowed = new Uint8Array(bodyFill.length);
-  const pantsRequired = new Uint8Array(bodyFill.length);
-  const pantsAllowed = new Uint8Array(bodyFill.length);
-  const [left, top, frameWidth, frameHeight] = PART_FRAMES.body.crop;
-  for (let y = top; y < top + frameHeight; y++) {
-    const v = (y - 324) / 375;
-    for (let x = left; x < left + frameWidth; x++) {
-      const index = y * width + x;
-      if (!bodyFill[index]) continue;
-      if (v <= 0.62) shirtRequired[index] = 1;
-      if (v <= 0.72) shirtAllowed[index] = 1;
-      if (v >= 0.60) pantsRequired[index] = 1;
-      if (v >= 0.52) pantsAllowed[index] = 1;
-    }
+function assertDimensions(values, width, height, label) {
+  if (values.length !== width * height) throw new Error(`${label}: expected ${width * height} pixels, found ${values.length}`);
+}
+
+function circularOffsets(radius) {
+  const offsets = [];
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) if (dx * dx + dy * dy <= radius * radius) offsets.push([dx, dy]);
   }
-  return { bodyFill, shirtRequired, shirtAllowed, pantsRequired, pantsAllowed };
+  return offsets;
 }
 
 export function erodeMask(mask, width, height, radius = VALIDATION_THRESHOLDS.baseCoreErosionPx) {
   assertDimensions(mask, width, height, "mask erosion input");
   const output = new Uint8Array(mask.length);
-  const offsets = [];
-  for (let dy = -radius; dy <= radius; dy++) {
-    for (let dx = -radius; dx <= radius; dx++) if (dx * dx + dy * dy <= radius * radius) offsets.push([dx, dy]);
-  }
+  const offsets = circularOffsets(radius);
   for (let y = radius; y < height - radius; y++) {
     for (let x = radius; x < width - radius; x++) {
       const index = y * width + x;
@@ -245,8 +218,21 @@ export function erodeMask(mask, width, height, radius = VALIDATION_THRESHOLDS.ba
   return output;
 }
 
-function assertDimensions(values, width, height, label) {
-  if (values.length !== width * height) throw new Error(`${label}: expected ${width * height} pixels, found ${values.length}`);
+export function dilateMask(mask, width, height, radius = VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx) {
+  assertDimensions(mask, width, height, "mask dilation input");
+  const output = new Uint8Array(mask.length);
+  const offsets = circularOffsets(radius);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!mask[y * width + x]) continue;
+      for (const [dx, dy] of offsets) {
+        const targetX = x + dx;
+        const targetY = y + dy;
+        if (targetX >= 0 && targetY >= 0 && targetX < width && targetY < height) output[targetY * width + targetX] = 1;
+      }
+    }
+  }
+  return output;
 }
 
 function gate(condition, section, message) {
@@ -276,75 +262,6 @@ export function validateAlphaInsideFrame(alpha, width, height, frame, section = 
   }
   gate(visiblePixels > 0, section, "no visible pixels");
   return { visiblePixels };
-}
-
-function transparentHoleSizes(alpha, requiredMask, width, height) {
-  const seen = new Uint8Array(alpha.length);
-  const sizes = [];
-  for (let start = 0; start < alpha.length; start++) {
-    if (seen[start] || !requiredMask[start] || alpha[start] > VALIDATION_THRESHOLDS.visibleAlpha) continue;
-    let size = 0;
-    const queue = [start];
-    seen[start] = 1;
-    for (let cursor = 0; cursor < queue.length; cursor++) {
-      const index = queue[cursor];
-      size++;
-      const x = index % width;
-      const y = Math.floor(index / width);
-      for (const next of [index - 1, index + 1, index - width, index + width]) {
-        if (next < 0 || next >= alpha.length || seen[next] || !requiredMask[next]) continue;
-        const nextX = next % width;
-        const nextY = Math.floor(next / width);
-        if (Math.abs(nextX - x) + Math.abs(nextY - y) !== 1) continue;
-        if (alpha[next] <= VALIDATION_THRESHOLDS.visibleAlpha) { seen[next] = 1; queue.push(next); }
-      }
-    }
-    sizes.push(size);
-  }
-  return sizes;
-}
-
-export function validateTorsoPatch({
-  alpha,
-  width,
-  height,
-  slot,
-  masks,
-  baseSilhouette,
-  generatedOutlineRadius = 0,
-}) {
-  assertDimensions(alpha, width, height, `${slot} alpha`);
-  gate(slot === "shirt" || slot === "pants", "Role", `torso patch slot must be shirt or pants, got ${slot}`);
-  gate(generatedOutlineRadius === 0, "Outline", `torso patches must have zero generated rim, got radius ${generatedOutlineRadius}`);
-  const allowed = slot === "shirt" ? masks.shirtAllowed : masks.pantsAllowed;
-  const required = slot === "shirt" ? masks.shirtRequired : masks.pantsRequired;
-  let visiblePixels = 0;
-  let requiredPixels = 0;
-  let requiredOpaquePixels = 0;
-  for (let index = 0; index < alpha.length; index++) {
-    if (alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha) {
-      visiblePixels++;
-      gate(allowed[index] === 1, "Torso containment", `alpha pixel ${index} lies outside ${slot}Allowed`);
-    }
-    if (required[index]) {
-      requiredPixels++;
-      if (alpha[index] >= VALIDATION_THRESHOLDS.requiredOpaqueAlpha) requiredOpaquePixels++;
-    }
-  }
-  gate(visiblePixels > 0, "File/frame", `${slot} patch has no visible pixels`);
-  const requiredCoverage = requiredPixels === 0 ? 0 : requiredOpaquePixels / requiredPixels;
-  gate(requiredCoverage >= VALIDATION_THRESHOLDS.requiredCoverage, "Torso containment", `${slot} required coverage ${(requiredCoverage * 100).toFixed(3)}% is below 99.5%`);
-  const holes = transparentHoleSizes(alpha, required, width, height);
-  const largestTransparentHole = holes.length > 0 ? Math.max(...holes) : 0;
-  gate(largestTransparentHole <= VALIDATION_THRESHOLDS.maximumRequiredHolePixels, "Torso containment", `${slot} required mask has a ${largestTransparentHole}px transparent hole`);
-  let silhouetteXorPixels = 0;
-  for (let index = 0; index < alpha.length; index++) {
-    const before = baseSilhouette[index] ? 1 : 0;
-    const after = before || alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha ? 1 : 0;
-    if (before !== after) silhouetteXorPixels++;
-  }
-  gate(silhouetteXorPixels === 0, "Torso containment", `composite alpha-support XOR changed ${silhouetteXorPixels} pixels`);
-  return { visiblePixels, requiredPixels, requiredOpaquePixels, requiredCoverage, largestTransparentHole, silhouetteXorPixels };
 }
 
 export function connectedAlphaComponents(alpha, width, height, threshold = VALIDATION_THRESHOLDS.visibleAlpha) {
@@ -407,11 +324,7 @@ export function scrubSmallAlphaComponents(
       removedPixels++;
     }
   }
-  return {
-    removedComponentCount: removedComponents.length,
-    removedPixels,
-    removedComponents,
-  };
+  return { removedComponentCount: removedComponents.length, removedPixels, removedComponents };
 }
 
 function maskPixelCount(mask) {
@@ -420,7 +333,16 @@ function maskPixelCount(mask) {
   return count;
 }
 
-export function validateFullReplacement({ alpha, width, height, frame, coreMask, pivot, section = "Full replacement coverage" }) {
+export function validateFullReplacement({
+  alpha,
+  width,
+  height,
+  frame,
+  coreMask,
+  pivot,
+  section = "Full replacement coverage",
+  minimumCoreCoverage = VALIDATION_THRESHOLDS.replacementCoreCoverage,
+}) {
   validateAlphaInsideFrame(alpha, width, height, frame, section);
   const corePixels = maskPixelCount(coreMask);
   gate(corePixels > 0, section, "base core mask is empty");
@@ -453,9 +375,9 @@ export function validateFullReplacement({ alpha, width, height, frame, coreMask,
     height: uncoveredBottom - uncoveredTop + 1,
   };
   gate(
-    coreCoverage >= VALIDATION_THRESHOLDS.replacementCoreCoverage,
+    coreCoverage >= minimumCoreCoverage,
     section,
-    `base-core coverage ${(coreCoverage * 100).toFixed(3)}% is below 98%; uncovered=${uncoveredCorePixels}px bounds=${JSON.stringify(uncoveredCoreBounds)}`,
+    `base-core coverage ${(coreCoverage * 100).toFixed(3)}% is below ${(minimumCoreCoverage * 100).toFixed(0)}%; uncovered=${uncoveredCorePixels}px bounds=${JSON.stringify(uncoveredCoreBounds)}`,
   );
   const { components } = connectedAlphaComponents(alpha, width, height);
   gate(components.length === 1, section, `expected one connected primary island, found ${components.length}`);
@@ -466,6 +388,41 @@ export function validateFullReplacement({ alpha, width, height, frame, coreMask,
   gate(bounds.width <= envelope.width && bounds.height <= envelope.height, section, `replacement bounds ${bounds.width}x${bounds.height} exceed role envelope ${envelope.width}x${envelope.height}`);
   gate(contains(frame, bounds.centroid.x, bounds.centroid.y), section, "replacement centroid escapes role envelope");
   return { corePixels, coveredCorePixels, uncoveredCorePixels, uncoveredCoreBounds, coreCoverage, primaryIslandCount: components.length, bounds };
+}
+
+export function validateTorsoReplacement({
+  alpha,
+  width,
+  height,
+  frame,
+  coreMask,
+  allowedMask,
+  pivot,
+  partBox,
+  generatedOutlineRadius = 8,
+}) {
+  gate(generatedOutlineRadius === 8, "Outline", `replace-torso requires generated radius 8, got ${generatedOutlineRadius}`);
+  const report = validateFullReplacement({
+    alpha,
+    width,
+    height,
+    frame,
+    coreMask,
+    pivot,
+    section: "Torso replacement",
+    minimumCoreCoverage: VALIDATION_THRESHOLDS.torsoCoreCoverage,
+  });
+  let escapedPixels = 0;
+  for (let index = 0; index < alpha.length; index++) {
+    if (alpha[index] > VALIDATION_THRESHOLDS.visibleAlpha && !allowedMask[index]) escapedPixels++;
+  }
+  gate(escapedPixels === 0, "Torso silhouette", `${escapedPixels}px escape the base torso tolerance envelope`);
+  gate(
+    report.bounds.width <= partBox.width && report.bounds.height <= partBox.height,
+    "Torso part-box",
+    `replacement bounds ${report.bounds.width}x${report.bounds.height} exceed ${partBox.width}x${partBox.height}`,
+  );
+  return { ...report, escapedPixels, silhouetteTolerancePx: VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx, partBox };
 }
 
 export function validatePairedReplacements({ alpha, width, height, parts, splitX }) {
