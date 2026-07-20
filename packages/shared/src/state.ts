@@ -499,8 +499,8 @@ export class ProjectileState extends Schema {
   /** Velocity, px/sec (synced so the client can extrapolate between snapshots). */
   @type("number") vx = 0;
   @type("number") vy = 0;
-  /** Visual kind — keys the client's projectile renderer ("spit" enemy, "cleaver" thrown weapon,
-   *  "magma" exploding scatter shot). */
+  /** Visual kind — keys the client's projectile renderer ("spit" enemy, "thrown:<weapon-id>" thrown
+   *  implement, "magma" exploding scatter shot). */
   @type("string") kind = "spit";
   /** true = enemy attack (hits players); false = player throw (hits enemies). */
   @type("boolean") hostile = true;

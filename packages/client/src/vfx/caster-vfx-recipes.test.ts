@@ -1,6 +1,7 @@
 import { WEAPONS } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
+  BEAM_VFX_RECIPES,
   CASTER_VFX_ELEMENTS,
   CASTER_VFX_SIGNATURES,
   type CasterVfxRecipe,
@@ -9,6 +10,7 @@ import {
 import { PARTICLE_PACKS } from "./particle-manifest.js";
 
 const CASTERS = Object.values(WEAPONS).filter((weapon) => weapon.tags.classPool === "caster");
+const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
   it("resolves every one of the 99 caster ids to a complete non-default recipe", () => {
@@ -71,5 +73,53 @@ describe("caster VFX recipe resolver", () => {
   it("does not claim non-caster weapons", () => {
     expect(resolveCasterVfxRecipe(WEAPONS.driftblade)).toBeUndefined();
     expect(resolveCasterVfxRecipe(undefined)).toBeUndefined();
+  });
+
+  it("resolves every beam weapon id to a distinct authored recipe signature", () => {
+    expect(BEAMS).toHaveLength(23);
+    expect(Object.keys(BEAM_VFX_RECIPES).sort()).toEqual(BEAMS.map((weapon) => weapon.id).sort());
+    const signatures = new Set<string>();
+    const visualSignatures = new Set<string>();
+    for (const weapon of BEAMS) {
+      const recipe = resolveCasterVfxRecipe(weapon);
+      expect(recipe, weapon.id).toBeDefined();
+      expect(recipe?.beam, weapon.id).toBeDefined();
+      expect(recipe?.key, weapon.id).toContain(`:beam:${recipe?.beam?.signature}`);
+      expect(signatures.has(recipe?.beam?.signature ?? ""), weapon.id).toBe(false);
+      signatures.add(recipe?.beam?.signature ?? "");
+      const visualSignature = JSON.stringify([
+        recipe?.beam?.widthProfile,
+        recipe?.beam?.edgeColor,
+        recipe?.beam?.accentColor,
+        recipe?.beam?.coreColor,
+        recipe?.beam?.edgeWidth,
+        recipe?.beam?.chromaWidth,
+        recipe?.beam?.coreWidth,
+        recipe?.beam?.ripple,
+        recipe?.beam?.rippleAmplitude,
+        recipe?.beam?.flickerHz,
+        recipe?.beam?.particleElement,
+        recipe?.beam?.bodyParticle,
+        recipe?.beam?.coreParticle,
+        recipe?.beam?.bodyFrame,
+        recipe?.beam?.coreFrame,
+        recipe?.beam?.impact,
+      ]);
+      expect(visualSignatures.has(visualSignature), weapon.id).toBe(false);
+      visualSignatures.add(visualSignature);
+      expect(recipe?.beam?.edgeWidth, weapon.id).toBeLessThanOrEqual(1);
+      expect(recipe?.beam?.chromaWidth, weapon.id).toBeLessThanOrEqual(1);
+      expect(recipe?.beam?.coreWidth, weapon.id).toBeLessThanOrEqual(1);
+      expect(
+        PARTICLE_PACKS[`${recipe?.beam?.particleElement}-${recipe?.beam?.bodyParticle}`],
+        `${weapon.id}:body`,
+      ).toBeDefined();
+      expect(
+        PARTICLE_PACKS[`${recipe?.beam?.particleElement}-${recipe?.beam?.coreParticle}`],
+        `${weapon.id}:core`,
+      ).toBeDefined();
+    }
+    expect(signatures.size).toBe(BEAMS.length);
+    expect(visualSignatures.size).toBe(BEAMS.length);
   });
 });

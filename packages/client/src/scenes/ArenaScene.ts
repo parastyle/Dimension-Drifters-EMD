@@ -61,6 +61,7 @@ import {
   inMeleeArc,
   isPetId,
   isPitAtPx,
+  isThrownProjectileKind,
   LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
@@ -129,6 +130,7 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  weaponDisplaySpriteId,
   weaponMuzzleReach,
   weaponSetBonus,
 } from "@dd/shared";
@@ -244,6 +246,7 @@ import {
   wrappedDockOffset,
 } from "../ui/weapon-dock-layout.js";
 import {
+  type BeamOwnerPose,
   BeamRenderer,
   type BeamRenderRows,
   type BeamRenderState,
@@ -313,7 +316,7 @@ import {
   makeCounter,
   makeMagma,
   makeSpit,
-  makeThrownCleaver,
+  makeThrownWeapon,
 } from "./arena/projectile-factory.js";
 import {
   preloadImpactFlipbooks,
@@ -1207,6 +1210,16 @@ export class ArenaScene extends Phaser.Scene {
     progress: 0,
     opacity: 1,
     element: "physical",
+  };
+  /** Rebase beams onto the exact root already presented this frame (predicted self / delayed remote). */
+  private readonly writeBeamOwnerPose = (ownerId: string, out: BeamOwnerPose): boolean => {
+    const rig = this.blobs.get(ownerId);
+    const player = this.room?.state.players.get(ownerId);
+    if (!rig || !player) return false;
+    out.x = rig.x;
+    out.y = this.belt ? BELT_Y0 + (rig.y - BELT_Y0) / BELT_FORESHORTEN : rig.y;
+    out.renderScale = characterScale(player.character);
+    return true;
   };
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
   /** Bounded painted renderer for the server-authoritative kill-XP Echo map. */
@@ -3238,10 +3251,10 @@ export class ArenaScene extends Phaser.Scene {
         offhandRow?.weapon && offhandRow.weapon !== player.weapon ? offhandRow.weapon : "";
       const def = WEAPONS[player.weapon];
       // §6 a weapon may borrow another's sprite as placeholder art (e.g. the Gravedigger's Spade) via `sprite`.
-      const spriteId = def?.sprite ?? player.weapon;
+      const spriteId = def ? weaponDisplaySpriteId(def) : player.weapon;
       const manifest = SPRITES[spriteId as keyof typeof SPRITES];
       const offhandDef = offhandWeaponId ? WEAPONS[offhandWeaponId] : undefined;
-      const offhandSpriteId = offhandDef?.sprite ?? offhandWeaponId;
+      const offhandSpriteId = offhandDef ? weaponDisplaySpriteId(offhandDef) : offhandWeaponId;
       const offhandManifest = offhandWeaponId
         ? SPRITES[offhandSpriteId as keyof typeof SPRITES]
         : undefined;
@@ -4090,7 +4103,8 @@ export class ArenaScene extends Phaser.Scene {
             if (payload?.saved === true) {
               this.flashBanner("✓ OWNER NOTE SAVED", "#9cff6a");
             } else {
-              const reason = typeof payload?.reason === "string" ? payload.reason : "server rejected";
+              const reason =
+                typeof payload?.reason === "string" ? payload.reason : "server rejected";
               this.flashBanner(`NOTE NOT SAVED · ${reason}`, "#ff8a6b");
             }
           },
@@ -6562,8 +6576,8 @@ export class ArenaScene extends Phaser.Scene {
           )
         : fx
           ? makeBullet(this, pr)
-          : pr.kind === "cleaver"
-            ? makeThrownCleaver(this, pr)
+          : isThrownProjectileKind(pr.kind)
+            ? makeThrownWeapon(this, pr)
             : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
               ? makeMagma(this, pr)
               : pr.kind === "counter" || pr.kind === "deflect"
@@ -6715,7 +6729,7 @@ export class ArenaScene extends Phaser.Scene {
         const py = c.y + pr.vy * dtSec;
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
-      if (pr.kind === "cleaver") c.rotation += dtSec * 22; // spin the blade
+      if (isThrownProjectileKind(pr.kind)) c.rotation += dtSec * 22; // spin the thrown implement
       if (baseKind(pr.kind) === "fireball") this.ultimateVfx.trackComet(id, c.x, c.y, pr.vx, pr.vy);
       if (
         !pr.hostile &&
@@ -6746,12 +6760,11 @@ export class ArenaScene extends Phaser.Scene {
           const weapon = WEAPONS[weaponId];
           const length = Math.hypot(pr.vx, pr.vy) || 1;
           const base = baseKind(pr.kind);
-          const delivery =
-            pr.kind === "cleaver"
-              ? CombatDelivery.Thrown
-              : base === "magma"
-                ? CombatDelivery.Scatter
-                : CombatDelivery.Gun;
+          const delivery = isThrownProjectileKind(pr.kind)
+            ? CombatDelivery.Thrown
+            : base === "magma"
+              ? CombatDelivery.Scatter
+              : CombatDelivery.Gun;
           this.combatFeedback.onPredictedContact(
             {
               targetId,
@@ -7485,9 +7498,11 @@ export class ArenaScene extends Phaser.Scene {
         const right = self.bag[b];
         const rarity = (right?.rarity ?? 0) - (left?.rarity ?? 0);
         if (rarity !== 0) return rarity;
-        return (WEAPONS[left?.weapon ?? ""]?.name ?? "").localeCompare(
-          WEAPONS[right?.weapon ?? ""]?.name ?? "",
-        ) || a - b;
+        return (
+          (WEAPONS[left?.weapon ?? ""]?.name ?? "").localeCompare(
+            WEAPONS[right?.weapon ?? ""]?.name ?? "",
+          ) || a - b
+        );
       });
   }
 
@@ -7514,7 +7529,8 @@ export class ArenaScene extends Phaser.Scene {
     const row = Math.floor(this.bagFocusCell / 4);
     const column = this.bagFocusCell % 4;
     const nextRow = move === "up" ? (row + 2) % 3 : move === "down" ? (row + 1) % 3 : row;
-    const nextColumn = move === "left" ? (column + 3) % 4 : move === "right" ? (column + 1) % 4 : column;
+    const nextColumn =
+      move === "left" ? (column + 3) % 4 : move === "right" ? (column + 1) % 4 : column;
     this.bagFocusCell = nextRow * 4 + nextColumn;
     const bagIndex = self ? this.sortedBackpackOrder(self)[this.bagFocusCell] : undefined;
     this.bagSelected = bagIndex === undefined ? null : { source: "bag", index: bagIndex };
@@ -7559,9 +7575,10 @@ export class ArenaScene extends Phaser.Scene {
       this.room?.send("unbindPair");
       return;
     }
-    const candidate = selected.source === "bag"
-      ? this.bagPairItem(self, selected.index)
-      : this.slotPairItem(self, selected.index);
+    const candidate =
+      selected.source === "bag"
+        ? this.bagPairItem(self, selected.index)
+        : this.slotPairItem(self, selected.index);
     if (!candidate || !pairEligible(WEAPONS[entry.leadId], WEAPONS[candidate.weaponId])) {
       this.flashBanner("Select a compatible weapon to bind", ARMORY_CSS_COLORS.warning);
       return;
@@ -10096,7 +10113,7 @@ export class ArenaScene extends Phaser.Scene {
     const g = this.telegraphGfx;
     const TELL = 150; // begin the cue ~150px out — a readable beat at bullet speed
     this.room.state.projectiles.forEach((pr, id) => {
-      if (pr.kind !== "spit") return; // friendly gun/cleaver/magma/counter shots aren't a threat to parry
+      if (pr.kind !== "spit") return; // friendly gun/thrown/magma/counter shots aren't a threat to parry
       const c = this.projectiles.get(id);
       const px = c?.x ?? pr.x;
       const py = c?.y ?? pr.y;
@@ -12947,9 +12964,7 @@ export class ArenaScene extends Phaser.Scene {
           active && entry.offId ? x + chipW * 0.66 : x + chipW / 2,
           y + chipH / 2 + 3 * s,
         );
-      name
-        .setFontSize(nm.length > 22 ? 14 : 16)
-        .setOrigin(0.5, 0.5);
+      name.setFontSize(nm.length > 22 ? 14 : 16).setOrigin(0.5, 0.5);
       const pairGlyph = this.hudText(this.arsenalTexts, 10 + i, 100049)
         .setText("⚯")
         .setColor(linkedOff ? "#7a8290" : "#f1e8cf")
@@ -13314,13 +13329,27 @@ export class ArenaScene extends Phaser.Scene {
     drawArmoryPanel(g, layout.panel.x, layout.panel.y, layout.panel.width, layout.panel.height, {
       fill: ARMORY_COLORS.surface0,
     });
-    drawArmoryPanel(g, layout.header.x, layout.header.y, layout.header.width, layout.header.height, {
-      fill: ARMORY_COLORS.surface1,
-      major: false,
-    });
-    drawArmoryPanel(g, layout.detail.x, layout.detail.y, layout.detail.width, layout.detail.height, {
-      fill: ARMORY_COLORS.surface1,
-    });
+    drawArmoryPanel(
+      g,
+      layout.header.x,
+      layout.header.y,
+      layout.header.width,
+      layout.header.height,
+      {
+        fill: ARMORY_COLORS.surface1,
+        major: false,
+      },
+    );
+    drawArmoryPanel(
+      g,
+      layout.detail.x,
+      layout.detail.y,
+      layout.detail.width,
+      layout.detail.height,
+      {
+        fill: ARMORY_COLORS.surface1,
+      },
+    );
     drawArmoryPanel(g, layout.dock.x, layout.dock.y, layout.dock.width, layout.dock.height, {
       fill: ARMORY_COLORS.surface1,
       major: false,
@@ -13388,7 +13417,10 @@ export class ArenaScene extends Phaser.Scene {
         });
         this.bagTabZones[index] = zone;
       }
-      zone.setVisible(enabled).setPosition(x + tabWidth / 2, y).setSize(tabWidth, 46);
+      zone
+        .setVisible(enabled)
+        .setPosition(x + tabWidth / 2, y)
+        .setSize(tabWidth, 46);
     });
 
     for (let cellIndex = 0; cellIndex < 12; cellIndex++) {
@@ -13442,7 +13474,9 @@ export class ArenaScene extends Phaser.Scene {
         .setOrigin(0, 0)
         .setVisible(true);
       this.hudText(this.bagTexts, 30 + cellIndex, 100046)
-        .setText(`${rarityMark(rarityName)}\n${item.affix ? affixById(item.affix).name : "No affix"}`)
+        .setText(
+          `${rarityMark(rarityName)}\n${item.affix ? affixById(item.affix).name : "No affix"}`,
+        )
         .setPosition(rect.x + artWidth + 20, rect.y + (layout.mode === "wide" ? 68 : 52))
         .setWordWrapWidth(rect.width - artWidth - 30)
         .setColor(ARMORY_CSS_COLORS.textSecondary)
@@ -13506,7 +13540,9 @@ export class ArenaScene extends Phaser.Scene {
     const detailX = layout.detail.x + 20;
     const detailWidth = layout.detail.width - 40;
     this.hudText(this.bagTexts, 50, 100046)
-      .setText(this.bagWorkflow === "upgrades" ? "PERMANENT UPGRADE" : weapon?.name ?? "SELECT AN ITEM")
+      .setText(
+        this.bagWorkflow === "upgrades" ? "PERMANENT UPGRADE" : (weapon?.name ?? "SELECT AN ITEM"),
+      )
       .setPosition(detailX, layout.detail.y + 20)
       .setWordWrapWidth(detailWidth)
       .setColor(ARMORY_CSS_COLORS.textPrimary)
@@ -13515,13 +13551,19 @@ export class ArenaScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setVisible(true);
 
-    let detailCopy = "Choose a tile with arrows or pointer. Selection stays here while you compare.";
+    let detailCopy =
+      "Choose a tile with arrows or pointer. Selection stays here while you compare.";
     let actionLabel = "SELECT AN ITEM";
     let actionEnabled = false;
     if (this.bagWorkflow === "upgrades") {
       const upgradeIndex = this.bagFocusCell % META_UPGRADES.length;
       const upgrade = META_UPGRADES[upgradeIndex];
-      const level = upgrade?.id === "vitality" ? self.upVitality : upgrade?.id === "fortune" ? self.upFortune : self.upPower;
+      const level =
+        upgrade?.id === "vitality"
+          ? self.upVitality
+          : upgrade?.id === "fortune"
+            ? self.upFortune
+            : self.upPower;
       const cost = upgrade ? nextUpgradeCost(upgrade.id, level) : null;
       detailCopy = upgrade
         ? `${upgrade.name}  ${level}/${upgrade.maxLevel}\n${upgrade.desc}\n\nPermanent across runs.\nScrip available  ◈${self.scrip}`
@@ -13532,7 +13574,10 @@ export class ArenaScene extends Phaser.Scene {
       const value = scripValue(selectedRarity, selectedEarned);
       detailCopy = `${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${this.bagSelected?.source === "slot" ? `Active cell ${(this.bagSelected.index ?? 0) + 1}` : "Stored in backpack"}\nValue  ◈${value}\n\n${this.bagWorkflow === "sell" ? "Selling is final for this run." : this.bagWorkflow === "bind" ? "Binding creates one atomic two-cell pair." : `Equips into active cell ${self.activeSlot + 1}.`}`;
       if (this.bagWorkflow === "inventory") {
-        actionLabel = this.bagSelected?.source === "slot" ? "STOW IN BACKPACK" : `EQUIP IN ACTIVE ${self.activeSlot + 1}`;
+        actionLabel =
+          this.bagSelected?.source === "slot"
+            ? "STOW IN BACKPACK"
+            : `EQUIP IN ACTIVE ${self.activeSlot + 1}`;
         actionEnabled = true;
       } else if (this.bagWorkflow === "sell") {
         actionLabel = value > 0 ? `SELL FOR ◈${value}` : "NO SELL VALUE";
@@ -13590,7 +13635,9 @@ export class ArenaScene extends Phaser.Scene {
       .setPosition(actionRect.x + actionRect.width / 2, actionRect.y + actionRect.height / 2)
       .setSize(actionRect.width, actionRect.height);
     this.hudText(this.bagTexts, 53, 100046)
-      .setText(`[Q] ACTIVE SLOT  ·  [1–3] DIRECT  ·  [Z/X] WORKFLOW  ·  [ENTER] ACTION  ·  [TAB/ESC] CLOSE  ·  ◈${self.scrip}`)
+      .setText(
+        `[Q] ACTIVE SLOT  ·  [1–3] DIRECT  ·  [Z/X] WORKFLOW  ·  [ENTER] ACTION  ·  [TAB/ESC] CLOSE  ·  ◈${self.scrip}`,
+      )
       .setPosition(layout.dock.x + layout.dock.width - 24, layout.dock.y + layout.dock.height - 18)
       .setColor(ARMORY_CSS_COLORS.textSecondary)
       .setFontSize(14)
@@ -14784,6 +14831,7 @@ export class ArenaScene extends Phaser.Scene {
       this.belt ? BELT_FORESHORTEN : 1,
       predicted,
       prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
+      this.writeBeamOwnerPose,
     );
     this.beamPredictionHeld = held;
   }

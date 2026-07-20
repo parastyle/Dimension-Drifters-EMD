@@ -1,3 +1,4 @@
+import { thrownProjectileSpriteId, thrownProjectileWeaponId, WEAPONS } from "@dd/shared";
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
@@ -7,7 +8,7 @@ import { WEAPON_VFX } from "../../vfx/weapon-vfx.generated.js";
 import { blendHex } from "./draw-util.js";
 
 /** §9/§14/§15 projectile FACTORY — builds the in-flight render container for every projectile kind
- *  (enemy spit, thrown cleaver, magma scatter ball, gun bullets). Pure factories: each takes the scene
+ *  (enemy spit, own-sprite thrown implements, magma scatter ball, gun bullets). Pure factories: each takes the scene
  *  (for the GameObject factory + tween manager) and the synced projectile snapshot, and returns a
  *  Container at depth 99000. Extracted from ArenaScene so `syncProjectiles` stays a thin reconciler. */
 
@@ -78,20 +79,26 @@ export function makeSpit(
   return c;
 }
 
-/** Thrown cleaver — the actual weapon sprite spinning through the air (§10 thrown delivery). */
-export function makeThrownCleaver(
+/** G4 thrown truth — resolve the launched weapon through the exact held-art seam, then spin that sprite. */
+export function makeThrownWeapon(
   scene: Phaser.Scene,
-  pr: { x: number; y: number },
+  pr: { x: number; y: number; kind: string },
 ): Phaser.GameObjects.Container {
-  const part = SPRITES["rusty-cleaver"]?.parts[0];
-  const tx = part ? partTexture(scene, "rusty-cleaver", part.role) : null;
-  // §10 the boot-installed cleaver lives in dd-sprites; retain loose-part fallback through partTexture.
+  const weaponId = thrownProjectileWeaponId(pr.kind);
+  const weapon = weaponId ? WEAPONS[weaponId] : undefined;
+  const spriteId = thrownProjectileSpriteId(pr.kind);
+  const part = spriteId ? SPRITES[spriteId as keyof typeof SPRITES]?.parts[0] : undefined;
+  const tx = part && spriteId ? partTexture(scene, spriteId, part.role) : null;
+  // Missing or rolling-client art keeps a visible payload, but never substitutes another weapon sprite.
   const blade =
     part && tx
-      ? scene.add.image(0, 0, tx.key, tx.frame).setScale(108 / part.w)
+      ? scene.add.image(0, 0, tx.key, tx.frame).setScale((weapon?.displayLength ?? part.w) / part.w)
       : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
   const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
-  return scene.add.container(pr.x, pr.y, [glow, blade]).setDepth(99000);
+  return scene.add
+    .container(pr.x, pr.y, [glow, blade])
+    .setDepth(99000)
+    .setData("spriteId", spriteId ?? "");
 }
 
 /** Scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered as PAINTED

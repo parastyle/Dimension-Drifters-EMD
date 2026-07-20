@@ -38,6 +38,46 @@ export type CasterParticleShape =
   | "spark"
   | "splat"
   | "wisp";
+export type BeamVfxWidthProfile =
+  | "needle"
+  | "tapered"
+  | "ribbon"
+  | "braided"
+  | "segmented"
+  | "hourglass";
+export type BeamVfxRippleSignature =
+  | "steady"
+  | "sine"
+  | "double-helix"
+  | "sawtooth"
+  | "pulse-train"
+  | "stutter";
+
+/** Presentation-only beam dialect. All widths are inset fractions of the authoritative damage band. */
+export interface BeamVfxRecipe {
+  readonly signature: string;
+  readonly widthProfile: BeamVfxWidthProfile;
+  readonly edgeColor: number;
+  readonly accentColor: number;
+  readonly coreColor: number;
+  readonly edgeWidth: number;
+  readonly chromaWidth: number;
+  readonly coreWidth: number;
+  readonly ripple: BeamVfxRippleSignature;
+  readonly rippleAmplitude: number;
+  readonly flickerHz: number;
+  readonly particleElement: CasterVfxElement;
+  readonly bodyParticle: CasterParticleShape;
+  readonly coreParticle: CasterParticleShape;
+  readonly bodyFrame: number;
+  readonly coreFrame: number;
+  readonly impact: {
+    readonly points: number;
+    readonly rings: number;
+    readonly radiusScale: number;
+    readonly spin: number;
+  };
+}
 
 export interface CasterVfxPalette {
   readonly core: number;
@@ -83,6 +123,7 @@ export interface CasterVfxRecipe {
   readonly projectile: CasterVfxProjectileRecipe;
   readonly impact: CasterVfxImpactRecipe;
   readonly signature?: CasterVfxSignature;
+  readonly beam?: BeamVfxRecipe;
 }
 
 const ELEMENT_PALETTES: Readonly<Record<CasterVfxElement, CasterVfxPalette>> = Object.freeze({
@@ -187,6 +228,450 @@ export const CASTER_VFX_SIGNATURES: Readonly<Partial<Record<string, CasterVfxSig
     "x2-obsidian-maw-void-staff": "obsidian-maw",
   });
 
+/**
+ * The complete beam catalog gets authored identities rather than element-only recolours. The renderer uses
+ * these recipes for its inset width stack, motion trace, painted 96-pack ropes, and endpoint punctuation.
+ */
+export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.freeze({
+  "x2-voltcaster-machine-pistol": Object.freeze({
+    signature: "voltcaster-needle-burst",
+    widthProfile: "needle",
+    edgeColor: 0x189dff,
+    accentColor: 0x72f4ff,
+    coreColor: 0xffffff,
+    edgeWidth: 0.92,
+    chromaWidth: 0.42,
+    coreWidth: 0.1,
+    ripple: "stutter",
+    rippleAmplitude: 0.1,
+    flickerHz: 19,
+    particleElement: "shock",
+    bodyParticle: "bolt",
+    coreParticle: "spark",
+    bodyFrame: 0,
+    coreFrame: 3,
+    impact: Object.freeze({ points: 3, rings: 0, radiusScale: 0.7, spin: 2.8 }),
+  }),
+  "x2-stormcaller-tesla-gatling": Object.freeze({
+    signature: "stormcaller-braided-barrage",
+    widthProfile: "braided",
+    edgeColor: 0x4348b8,
+    accentColor: 0x68d8ff,
+    coreColor: 0xfff6a8,
+    edgeWidth: 0.98,
+    chromaWidth: 0.64,
+    coreWidth: 0.17,
+    ripple: "double-helix",
+    rippleAmplitude: 0.28,
+    flickerHz: 11,
+    particleElement: "shock",
+    bodyParticle: "wisp",
+    coreParticle: "bolt",
+    bodyFrame: 1,
+    coreFrame: 6,
+    impact: Object.freeze({ points: 8, rings: 1, radiusScale: 1.15, spin: -1.5 }),
+  }),
+  "x2-null-grimoire-of-the-hollow-page": Object.freeze({
+    signature: "hollow-page-aperture-ray",
+    widthProfile: "ribbon",
+    edgeColor: 0x220833,
+    accentColor: 0x9d4dff,
+    coreColor: 0xe8d4ff,
+    edgeWidth: 0.96,
+    chromaWidth: 0.72,
+    coreWidth: 0.2,
+    ripple: "sine",
+    rippleAmplitude: 0.18,
+    flickerHz: 4,
+    particleElement: "void",
+    bodyParticle: "wisp",
+    coreParticle: "ring",
+    bodyFrame: 1,
+    coreFrame: 6,
+    impact: Object.freeze({ points: 4, rings: 2, radiusScale: 0.94, spin: 0.7 }),
+  }),
+  "x2-psalter-of-the-burning-halo": Object.freeze({
+    signature: "burning-halo-pulse-train",
+    widthProfile: "segmented",
+    edgeColor: 0xb56a16,
+    accentColor: 0xffd45f,
+    coreColor: 0xffffed,
+    edgeWidth: 0.94,
+    chromaWidth: 0.6,
+    coreWidth: 0.23,
+    ripple: "pulse-train",
+    rippleAmplitude: 0.2,
+    flickerHz: 7,
+    particleElement: "holy",
+    bodyParticle: "ring",
+    coreParticle: "mote",
+    bodyFrame: 2,
+    coreFrame: 7,
+    impact: Object.freeze({ points: 6, rings: 3, radiusScale: 1.2, spin: 0.9 }),
+  }),
+  "x2-frostquill-compendium": Object.freeze({
+    signature: "frostquill-feather-ribbon",
+    widthProfile: "tapered",
+    edgeColor: 0x276ca8,
+    accentColor: 0x91e8ff,
+    coreColor: 0xffffff,
+    edgeWidth: 0.9,
+    chromaWidth: 0.58,
+    coreWidth: 0.16,
+    ripple: "sine",
+    rippleAmplitude: 0.12,
+    flickerHz: 3,
+    particleElement: "frost",
+    bodyParticle: "wisp",
+    coreParticle: "shard",
+    bodyFrame: 6,
+    coreFrame: 4,
+    impact: Object.freeze({ points: 7, rings: 1, radiusScale: 1.05, spin: -0.45 }),
+  }),
+  "x2-brinequill-tidescepter": Object.freeze({
+    signature: "brinequill-tidal-hourglass",
+    widthProfile: "hourglass",
+    edgeColor: 0x176982,
+    accentColor: 0x4fd8ce,
+    coreColor: 0xdffcff,
+    edgeWidth: 0.93,
+    chromaWidth: 0.66,
+    coreWidth: 0.14,
+    ripple: "double-helix",
+    rippleAmplitude: 0.14,
+    flickerHz: 2,
+    particleElement: "frost",
+    bodyParticle: "orb",
+    coreParticle: "wisp",
+    bodyFrame: 3,
+    coreFrame: 8,
+    impact: Object.freeze({ points: 5, rings: 2, radiusScale: 0.88, spin: 0.38 }),
+  }),
+  "x2-sunmote-reliquary-staff": Object.freeze({
+    signature: "sunmote-corona-column",
+    widthProfile: "tapered",
+    edgeColor: 0xe84b16,
+    accentColor: 0xffa82e,
+    coreColor: 0xfff4b0,
+    edgeWidth: 0.97,
+    chromaWidth: 0.7,
+    coreWidth: 0.3,
+    ripple: "steady",
+    rippleAmplitude: 0.06,
+    flickerHz: 6,
+    particleElement: "fire",
+    bodyParticle: "mote",
+    coreParticle: "ring",
+    bodyFrame: 4,
+    coreFrame: 0,
+    impact: Object.freeze({ points: 12, rings: 2, radiusScale: 1.28, spin: 0.62 }),
+  }),
+  "x2-carrion-roost-necro-scepter": Object.freeze({
+    signature: "carrion-roost-witchwake",
+    widthProfile: "segmented",
+    edgeColor: 0x29123f,
+    accentColor: 0x8ecb44,
+    coreColor: 0xd8ff9b,
+    edgeWidth: 0.91,
+    chromaWidth: 0.48,
+    coreWidth: 0.12,
+    ripple: "stutter",
+    rippleAmplitude: 0.24,
+    flickerHz: 13,
+    particleElement: "toxic",
+    bodyParticle: "splat",
+    coreParticle: "wisp",
+    bodyFrame: 5,
+    coreFrame: 2,
+    impact: Object.freeze({ points: 5, rings: 0, radiusScale: 1.12, spin: -2.1 }),
+  }),
+  "x2-auroral-filament-wand": Object.freeze({
+    signature: "auroral-filament-thread",
+    widthProfile: "needle",
+    edgeColor: 0x6b65ff,
+    accentColor: 0x8df6ff,
+    coreColor: 0xffffff,
+    edgeWidth: 0.76,
+    chromaWidth: 0.28,
+    coreWidth: 0.055,
+    ripple: "sine",
+    rippleAmplitude: 0.08,
+    flickerHz: 8,
+    particleElement: "shock",
+    bodyParticle: "wisp",
+    coreParticle: "spark",
+    bodyFrame: 8,
+    coreFrame: 1,
+    impact: Object.freeze({ points: 2, rings: 1, radiusScale: 0.5, spin: 1.8 }),
+  }),
+  "x2-mesa-spine-thunder-stave": Object.freeze({
+    signature: "mesa-spine-forked-crown",
+    widthProfile: "braided",
+    edgeColor: 0x5535ad,
+    accentColor: 0xffdc38,
+    coreColor: 0xffffd9,
+    edgeWidth: 0.98,
+    chromaWidth: 0.62,
+    coreWidth: 0.19,
+    ripple: "sawtooth",
+    rippleAmplitude: 0.3,
+    flickerHz: 17,
+    particleElement: "shock",
+    bodyParticle: "bolt",
+    coreParticle: "shard",
+    bodyFrame: 5,
+    coreFrame: 7,
+    impact: Object.freeze({ points: 9, rings: 0, radiusScale: 1.22, spin: -2.6 }),
+  }),
+  "x2-gilded-hourglass-frost-scepter": Object.freeze({
+    signature: "gilded-hourglass-waist",
+    widthProfile: "hourglass",
+    edgeColor: 0xa77924,
+    accentColor: 0x8bdfff,
+    coreColor: 0xfff2c7,
+    edgeWidth: 0.95,
+    chromaWidth: 0.68,
+    coreWidth: 0.18,
+    ripple: "pulse-train",
+    rippleAmplitude: 0.15,
+    flickerHz: 5,
+    particleElement: "frost",
+    bodyParticle: "mote",
+    coreParticle: "ring",
+    bodyFrame: 2,
+    coreFrame: 5,
+    impact: Object.freeze({ points: 4, rings: 3, radiusScale: 0.82, spin: -0.32 }),
+  }),
+  "x2-riftglass-prism-lantern": Object.freeze({
+    signature: "riftglass-prismatic-saw",
+    widthProfile: "ribbon",
+    edgeColor: 0x3b1c91,
+    accentColor: 0xff55c8,
+    coreColor: 0x75fff2,
+    edgeWidth: 0.94,
+    chromaWidth: 0.54,
+    coreWidth: 0.11,
+    ripple: "sawtooth",
+    rippleAmplitude: 0.22,
+    flickerHz: 9,
+    particleElement: "arcane",
+    bodyParticle: "shard",
+    coreParticle: "spark",
+    bodyFrame: 7,
+    coreFrame: 5,
+    impact: Object.freeze({ points: 10, rings: 1, radiusScale: 1.1, spin: 2.2 }),
+  }),
+  "x2-gravewax-seance-globe": Object.freeze({
+    signature: "gravewax-seance-taper",
+    widthProfile: "tapered",
+    edgeColor: 0x24102d,
+    accentColor: 0x9b6ac5,
+    coreColor: 0xd8efb0,
+    edgeWidth: 0.92,
+    chromaWidth: 0.52,
+    coreWidth: 0.13,
+    ripple: "steady",
+    rippleAmplitude: 0.04,
+    flickerHz: 1,
+    particleElement: "void",
+    bodyParticle: "orb",
+    coreParticle: "mote",
+    bodyFrame: 4,
+    coreFrame: 8,
+    impact: Object.freeze({ points: 3, rings: 3, radiusScale: 1.3, spin: 0.2 }),
+  }),
+  "x2-quartzlight-wayfinder": Object.freeze({
+    signature: "quartzlight-compass-dashes",
+    widthProfile: "segmented",
+    edgeColor: 0x8c7433,
+    accentColor: 0xfff0a0,
+    coreColor: 0xffffff,
+    edgeWidth: 0.88,
+    chromaWidth: 0.44,
+    coreWidth: 0.09,
+    ripple: "pulse-train",
+    rippleAmplitude: 0.1,
+    flickerHz: 4.5,
+    particleElement: "holy",
+    bodyParticle: "shard",
+    coreParticle: "bolt",
+    bodyFrame: 0,
+    coreFrame: 8,
+    impact: Object.freeze({ points: 4, rings: 1, radiusScale: 0.72, spin: 1.1 }),
+  }),
+  "x2-pearl-of-penance-censer": Object.freeze({
+    signature: "penance-pearl-rosary",
+    widthProfile: "segmented",
+    edgeColor: 0x9a815d,
+    accentColor: 0xffe5b0,
+    coreColor: 0xffffff,
+    edgeWidth: 0.96,
+    chromaWidth: 0.74,
+    coreWidth: 0.25,
+    ripple: "steady",
+    rippleAmplitude: 0.03,
+    flickerHz: 2.5,
+    particleElement: "holy",
+    bodyParticle: "orb",
+    coreParticle: "mote",
+    bodyFrame: 6,
+    coreFrame: 3,
+    impact: Object.freeze({ points: 5, rings: 3, radiusScale: 1.18, spin: -0.18 }),
+  }),
+  "x2-smoldering-eye-of-perdition": Object.freeze({
+    signature: "perdition-ocular-pulse",
+    widthProfile: "hourglass",
+    edgeColor: 0x16070d,
+    accentColor: 0xe13c24,
+    coreColor: 0xffb14f,
+    edgeWidth: 0.99,
+    chromaWidth: 0.58,
+    coreWidth: 0.16,
+    ripple: "pulse-train",
+    rippleAmplitude: 0.26,
+    flickerHz: 6.5,
+    particleElement: "void",
+    bodyParticle: "orb",
+    coreParticle: "ring",
+    bodyFrame: 7,
+    coreFrame: 3,
+    impact: Object.freeze({ points: 1, rings: 2, radiusScale: 1.34, spin: 0 }),
+  }),
+  "x2-nullsaint-reliquary": Object.freeze({
+    signature: "nullsaint-razor-null",
+    widthProfile: "needle",
+    edgeColor: 0x12051e,
+    accentColor: 0x7d2dce,
+    coreColor: 0xf1dcff,
+    edgeWidth: 0.82,
+    chromaWidth: 0.3,
+    coreWidth: 0.07,
+    ripple: "steady",
+    rippleAmplitude: 0.02,
+    flickerHz: 10,
+    particleElement: "void",
+    bodyParticle: "bolt",
+    coreParticle: "shard",
+    bodyFrame: 8,
+    coreFrame: 0,
+    impact: Object.freeze({ points: 4, rings: 0, radiusScale: 0.62, spin: 3.4 }),
+  }),
+  "x2-saintskull-monstrance": Object.freeze({
+    signature: "saintskull-bone-star",
+    widthProfile: "tapered",
+    edgeColor: 0x71582c,
+    accentColor: 0xffd979,
+    coreColor: 0xfffff4,
+    edgeWidth: 0.97,
+    chromaWidth: 0.64,
+    coreWidth: 0.21,
+    ripple: "sawtooth",
+    rippleAmplitude: 0.11,
+    flickerHz: 5.5,
+    particleElement: "holy",
+    bodyParticle: "shard",
+    coreParticle: "ring",
+    bodyFrame: 4,
+    coreFrame: 1,
+    impact: Object.freeze({ points: 11, rings: 1, radiusScale: 1.16, spin: -0.8 }),
+  }),
+  "x2-voidwell-idol": Object.freeze({
+    signature: "voidwell-inward-tide",
+    widthProfile: "ribbon",
+    edgeColor: 0x09030f,
+    accentColor: 0x6b20a8,
+    coreColor: 0xca8cff,
+    edgeWidth: 0.99,
+    chromaWidth: 0.76,
+    coreWidth: 0.08,
+    ripple: "double-helix",
+    rippleAmplitude: 0.2,
+    flickerHz: 3.5,
+    particleElement: "void",
+    bodyParticle: "wisp",
+    coreParticle: "orb",
+    bodyFrame: 5,
+    coreFrame: 7,
+    impact: Object.freeze({ points: 0, rings: 4, radiusScale: 1.42, spin: -0.55 }),
+  }),
+  "x2-sanctum-brazier-staff": Object.freeze({
+    signature: "sanctum-brazier-blueflame",
+    widthProfile: "braided",
+    edgeColor: 0x1c318d,
+    accentColor: 0x46bbff,
+    coreColor: 0xffec83,
+    edgeWidth: 0.98,
+    chromaWidth: 0.69,
+    coreWidth: 0.2,
+    ripple: "sine",
+    rippleAmplitude: 0.25,
+    flickerHz: 12,
+    particleElement: "shock",
+    bodyParticle: "wisp",
+    coreParticle: "mote",
+    bodyFrame: 2,
+    coreFrame: 4,
+    impact: Object.freeze({ points: 7, rings: 2, radiusScale: 1.26, spin: 1.7 }),
+  }),
+  "x2-seraph-s-knuckle-reliquary": Object.freeze({
+    signature: "seraph-knuckle-piston",
+    widthProfile: "segmented",
+    edgeColor: 0xa85e18,
+    accentColor: 0xffca4d,
+    coreColor: 0xffffff,
+    edgeWidth: 0.9,
+    chromaWidth: 0.5,
+    coreWidth: 0.15,
+    ripple: "stutter",
+    rippleAmplitude: 0.18,
+    flickerHz: 15,
+    particleElement: "holy",
+    bodyParticle: "splat",
+    coreParticle: "bolt",
+    bodyFrame: 3,
+    coreFrame: 6,
+    impact: Object.freeze({ points: 6, rings: 0, radiusScale: 0.96, spin: 2.4 }),
+  }),
+  "x2-voidgrasp-null-gauntlet": Object.freeze({
+    signature: "voidgrasp-claw-braid",
+    widthProfile: "braided",
+    edgeColor: 0x180522,
+    accentColor: 0xa73ce6,
+    coreColor: 0xf1bcff,
+    edgeWidth: 0.93,
+    chromaWidth: 0.57,
+    coreWidth: 0.13,
+    ripple: "double-helix",
+    rippleAmplitude: 0.34,
+    flickerHz: 8.5,
+    particleElement: "void",
+    bodyParticle: "bolt",
+    coreParticle: "splat",
+    bodyFrame: 6,
+    coreFrame: 5,
+    impact: Object.freeze({ points: 5, rings: 1, radiusScale: 1.08, spin: -2.9 }),
+  }),
+  "x2-glasswidow-hexweave": Object.freeze({
+    signature: "glasswidow-web-stitch",
+    widthProfile: "hourglass",
+    edgeColor: 0x21072b,
+    accentColor: 0xe057ff,
+    coreColor: 0xf7e6ff,
+    edgeWidth: 0.86,
+    chromaWidth: 0.39,
+    coreWidth: 0.06,
+    ripple: "stutter",
+    rippleAmplitude: 0.31,
+    flickerHz: 14,
+    particleElement: "void",
+    bodyParticle: "ring",
+    coreParticle: "shard",
+    bodyFrame: 0,
+    coreFrame: 8,
+    impact: Object.freeze({ points: 8, rings: 2, radiusScale: 0.78, spin: 3.1 }),
+  }),
+});
+
 const BOOK_FAMILIES =
   /^(?:almanac|bestiary|chapbook|compendium|grimoire|ledger|manuscript|psalter|spellbook|tome)$/;
 const RECIPE_CACHE = new WeakMap<WeaponDef, CasterVfxRecipe>();
@@ -241,9 +726,9 @@ function damageTierFor(def: WeaponDef): CasterVfxDamageTier {
   return "spark";
 }
 
-/** Resolve presentation only from existing weapon truth plus the six-entry signature table. */
+/** Resolve presentation only from weapon truth plus the authored caster and beam signatures. */
 export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRecipe | undefined {
-  if (def?.tags.classPool !== "caster") return undefined;
+  if (!def || (def.tags.classPool !== "caster" && !def.beam)) return undefined;
   const cached = RECIPE_CACHE.get(def);
   if (cached) return cached;
   const element = CASTER_VFX_ELEMENTS.includes(def.tags.element as CasterVfxElement)
@@ -258,6 +743,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const projectileBase = FORM_PROJECTILE[form];
   const impactBase = FORM_IMPACT[form];
   const signature = CASTER_VFX_SIGNATURES[def.id];
+  const beam = BEAM_VFX_RECIPES[def.id];
   const source = Object.freeze({
     ...sourceBase,
     radius: 18 + gradeIndex * 4,
@@ -277,7 +763,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const recipe = Object.freeze({
     kind: "caster-vfx" as const,
     isDefault: false as const,
-    key: `caster:${element}:${form}:${grade}:${damageTier}${signature ? `:${signature}` : ""}`,
+    key: `caster:${element}:${form}:${grade}:${damageTier}${signature ? `:${signature}` : ""}${beam ? `:beam:${beam.signature}` : ""}`,
     weaponId: def.id,
     element,
     form,
@@ -288,6 +774,7 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
     projectile,
     impact,
     ...(signature ? { signature } : {}),
+    ...(beam ? { beam } : {}),
   });
   RECIPE_CACHE.set(def, recipe);
   return recipe;

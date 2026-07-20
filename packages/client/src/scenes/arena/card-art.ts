@@ -5,6 +5,7 @@ import {
   RARITY_CURSED,
   WEAPONS,
   weaponDamageSources,
+  weaponDisplaySpriteId,
 } from "@dd/shared";
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
@@ -111,7 +112,7 @@ export function bakeCardArt(
   const tex = scene.textures.exists(`card-${id}`) ? `card-${id}` : null;
   // §9 card ids are weapon ids, but several curated weapons borrow another sprite. Resolve that installed
   // part exactly like the rig, including its frame coordinates inside the packed dd-sprites source page.
-  const spriteId = WEAPONS[id]?.sprite ?? id;
+  const spriteId = WEAPONS[id] ? weaponDisplaySpriteId(WEAPONS[id]) : id;
   const part = SPRITES[spriteId as keyof typeof SPRITES]?.parts[0];
   const tx = part ? partTexture(scene, spriteId, part.role) : null;
   const atlasFrame = tx?.frame ? scene.textures.get(tx.key).get(tx.frame) : null;

@@ -1,6 +1,6 @@
-import type { WeaponDef } from "@dd/shared";
+import { isThrownProjectileKind, type WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
-import { playFxPack, type FxPackName } from "../../vfx/fx-composer.js";
+import { type FxPackName, playFxPack } from "../../vfx/fx-composer.js";
 import { FX_GRAVE_CALL } from "../../vfx/fx-pack-grave-call.js";
 import { FX_HOLY_SMITE } from "../../vfx/fx-pack-holy-smite.js";
 import { FX_LIGHTNING_BALL } from "../../vfx/fx-pack-lightning-ball.js";
@@ -901,14 +901,14 @@ function spawnExplosionCore(
   }
 }
 
-/** Small impact splat where a projectile hit or expired (green spit / amber cleaver). */
+/** Small impact splat where a projectile hit or expired (green spit / amber thrown implement). */
 export function spawnSplat(
   scene: Phaser.Scene,
   x: number,
   y: number,
   kind?: string,
 ): void {
-  const color = kind === "cleaver" ? 0xffb23b : 0xc9ff5e;
+  const color = kind && isThrownProjectileKind(kind) ? 0xffb23b : 0xc9ff5e;
   const ring = scene.add.circle(x, y, 7, color, 0.7).setDepth(99001);
   scene.tweens.add({
     targets: ring,

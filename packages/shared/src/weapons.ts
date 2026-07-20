@@ -1465,6 +1465,40 @@ export const WEAPON_IDS = Object.keys(WEAPONS).filter(
 export const EXPANSION_WEAPON_IDS = Object.keys(WEAPONS).filter((id) => WEAPONS[id]?.expansion);
 export const DEFAULT_WEAPON = "rusty-cleaver";
 
+/** G4 thrown-weapon wire identity. The kind carries the authored WEAPON id; clients resolve its display
+ * sprite through the same `sprite ?? id` seam as the held rig. Encoding the weapon rather than today's
+ * sprite keeps future placeholder-art swaps truthful without adding a projectile schema field. */
+export const THROWN_PROJECTILE_KIND_PREFIX = "thrown:";
+
+/** One resolution root for every place that displays a weapon, including borrowed §6 placeholder art. */
+export function weaponDisplaySpriteId(weapon: Pick<WeaponDef, "id" | "sprite">): string {
+  return weapon.sprite ?? weapon.id;
+}
+
+/** Server-side launch kind for a thrown weapon. No per-weapon visual exceptions are supported. */
+export function thrownProjectileKindFor(weapon: Pick<WeaponDef, "id">): string {
+  return `${THROWN_PROJECTILE_KIND_PREFIX}${weapon.id}`;
+}
+
+/** Decode current thrown kinds plus the pre-G4 cleaver kind for rolling-client/replay compatibility. */
+export function thrownProjectileWeaponId(kind: string): string | undefined {
+  if (kind === "cleaver") return DEFAULT_WEAPON;
+  if (!kind.startsWith(THROWN_PROJECTILE_KIND_PREFIX)) return undefined;
+  const weaponId = kind.slice(THROWN_PROJECTILE_KIND_PREFIX.length);
+  return weaponId || undefined;
+}
+
+export function isThrownProjectileKind(kind: string): boolean {
+  return thrownProjectileWeaponId(kind) !== undefined;
+}
+
+/** Client-side projectile art resolution. This is deliberately the exact held-sprite rule. */
+export function thrownProjectileSpriteId(kind: string): string | undefined {
+  const weaponId = thrownProjectileWeaponId(kind);
+  const weapon = weaponId ? WEAPONS[weaponId] : undefined;
+  return weapon ? weaponDisplaySpriteId(weapon) : undefined;
+}
+
 /** Next weapon in the roster (RMB/cycle), wrapping around. */
 export function nextWeapon(current: string): string {
   const i = WEAPON_IDS.indexOf(current);

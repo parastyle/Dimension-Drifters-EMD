@@ -375,6 +375,7 @@ import {
   type ToughComboDef,
   type ToughComboReturn,
   type ToughComboStep,
+  thrownProjectileKindFor,
   toughChance,
   ULT_ALPHA_DAMAGE,
   ULT_ALPHA_EXECUTE_FRAC,
@@ -983,6 +984,8 @@ export class GameRoom extends Room<ArenaState> {
   private beamCurrentX = 0;
   private beamCurrentY = 0;
   private beamCurrentLength = 0;
+  /** One allocation-free muzzle seam shared by charge sync, live collision, and replicated geometry. */
+  private readonly beamMuzzleScratch = { x: 0, y: 0 };
   private readonly inputs = new Map<string, InputState>();
   private readonly combat = new Map<string, CombatState>();
   /** Local/offline account truth: validated client claim in, canonical room mutations/receipts out. */
@@ -2065,41 +2068,38 @@ export class GameRoom extends Room<ArenaState> {
 
     // Owner field notes: a dev-gated Testing-Grounds affordance, persisted outside schema state.
     // Weapon identity is derived from the authoritative live active slot, never trusted from the client.
-    this.onMessage(
-      "ownerNote",
-      (client, message: { type?: unknown; note?: unknown }) => {
-        const reject = (reason: string): void =>
-          client.send("ownerNoteAck", { saved: false, reason });
-        if (!this.devToolsEnabled()) return reject("dev tools disabled");
-        if (!this.takeAction(client)) return reject("rate limited");
-        if (this.state.mode !== "training") return reject("Testing Grounds only");
-        const player = this.state.players.get(client.sessionId);
-        if (!player) return reject("player unavailable");
-        const type = message?.type;
-        if (type !== "game" && type !== "weapon") return reject("invalid note type");
-        const note = sanitizeOwnerNote(message?.note);
-        if (!note) return reject("empty note");
-        try {
-          appendOwnerNote({
-            ts: new Date().toISOString(),
-            session: client.sessionId,
-            mode: "training",
-            type,
-            ...(type === "weapon"
-              ? {
-                  weaponId: player.weapon,
-                  weaponName: WEAPONS[player.weapon]?.name ?? player.weapon,
-                }
-              : {}),
-            note,
-          });
-          client.send("ownerNoteAck", { saved: true });
-        } catch (error) {
-          console.error(`[room ${this.roomId}] owner-note append failed`, error);
-          reject("disk write failed");
-        }
-      },
-    );
+    this.onMessage("ownerNote", (client, message: { type?: unknown; note?: unknown }) => {
+      const reject = (reason: string): void =>
+        client.send("ownerNoteAck", { saved: false, reason });
+      if (!this.devToolsEnabled()) return reject("dev tools disabled");
+      if (!this.takeAction(client)) return reject("rate limited");
+      if (this.state.mode !== "training") return reject("Testing Grounds only");
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return reject("player unavailable");
+      const type = message?.type;
+      if (type !== "game" && type !== "weapon") return reject("invalid note type");
+      const note = sanitizeOwnerNote(message?.note);
+      if (!note) return reject("empty note");
+      try {
+        appendOwnerNote({
+          ts: new Date().toISOString(),
+          session: client.sessionId,
+          mode: "training",
+          type,
+          ...(type === "weapon"
+            ? {
+                weaponId: player.weapon,
+                weaponName: WEAPONS[player.weapon]?.name ?? player.weapon,
+              }
+            : {}),
+          note,
+        });
+        client.send("ownerNoteAck", { saved: true });
+      } catch (error) {
+        console.error(`[room ${this.roomId}] owner-note append failed`, error);
+        reject("disk write failed");
+      }
+    });
 
     // §31 SHOWROOM paging: cycle the Testing-Grounds weapon gallery to the next/prev page. Host-only +
     // training-only (the shared gallery is a co-op-wide view).
@@ -7641,9 +7641,9 @@ export class GameRoom extends Room<ArenaState> {
       c.beamPendingDamage.clear();
       c.beamAngle = Math.atan2(c.aimY, c.aimX);
       c.beamPreviousAngle = c.beamAngle;
-      const reach = weaponMuzzleReach(weapon, characterScale(player.character));
-      c.beamPreviousX = player.x + Math.cos(c.beamAngle) * reach;
-      c.beamPreviousY = player.y + Math.sin(c.beamAngle) * reach;
+      const muzzle = this.writeBeamMuzzle(player, weapon.id, c.beamAngle);
+      c.beamPreviousX = muzzle.x;
+      c.beamPreviousY = muzzle.y;
       c.beamPreviousLength = this.clipBeamLength(
         c.beamPreviousX,
         c.beamPreviousY,
@@ -7905,9 +7905,9 @@ export class GameRoom extends Room<ArenaState> {
       this.state.beams.set(id, row);
     }
     if (row.phase !== phase) row.phaseStartTick = this.state.tick;
-    const reach = weaponMuzzleReach(WEAPONS[descriptor.weaponId], characterScale(player.character));
-    const originX = player.x + Math.cos(c.beamAngle) * reach;
-    const originY = player.y + Math.sin(c.beamAngle) * reach;
+    const muzzle = this.writeBeamMuzzle(player, descriptor.weaponId, c.beamAngle);
+    const originX = muzzle.x;
+    const originY = muzzle.y;
     row.weaponId = descriptor.weaponId;
     row.seq = descriptor.startSeq;
     row.startSeq = descriptor.startSeq;
@@ -7928,6 +7928,18 @@ export class GameRoom extends Room<ArenaState> {
     row.previousOriginY = c.beamPreviousY;
     row.previousLength = c.beamPreviousLength;
     return row;
+  }
+
+  /** Weapon-rooted beam origin. Every authoritative consumer calls this exact seam each fixed tick. */
+  private writeBeamMuzzle(
+    player: PlayerState,
+    weaponId: string,
+    angle: number,
+  ): { x: number; y: number } {
+    const reach = weaponMuzzleReach(WEAPONS[weaponId], characterScale(player.character));
+    this.beamMuzzleScratch.x = player.x + Math.cos(angle) * reach;
+    this.beamMuzzleScratch.y = player.y + Math.sin(angle) * reach;
+    return this.beamMuzzleScratch;
   }
 
   /** Exact ray truncation against arena edges and colliding POI/belt circles. */
@@ -7997,9 +8009,9 @@ export class GameRoom extends Room<ArenaState> {
     descriptor: BeamDescriptor,
     dt: number,
   ): number {
-    const reach = weaponMuzzleReach(WEAPONS[descriptor.weaponId], characterScale(player.character));
-    const currentX = player.x + Math.cos(c.beamAngle) * reach;
-    const currentY = player.y + Math.sin(c.beamAngle) * reach;
+    const muzzle = this.writeBeamMuzzle(player, descriptor.weaponId, c.beamAngle);
+    const currentX = muzzle.x;
+    const currentY = muzzle.y;
     const angularDelta = shortestAngleDelta(c.beamPreviousAngle, c.beamAngle);
     const originTravel = Math.hypot(currentX - c.beamPreviousX, currentY - c.beamPreviousY);
     const samples = beamSweepSampleCount(
@@ -9995,7 +10007,7 @@ export class GameRoom extends Room<ArenaState> {
       t.speed,
       dmg,
       false,
-      "cleaver",
+      thrownProjectileKindFor(weapon),
       t.pierce,
       ttl,
       undefined,

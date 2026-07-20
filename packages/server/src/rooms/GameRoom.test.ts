@@ -3012,6 +3012,43 @@ describe("GameRoom — beam channel authority", () => {
     expect(combat.beamPhase).toBe(0);
     expect(input.actionBudget).toBe(ACTION_MSGS_PER_TICK);
   });
+
+  it("keeps the authoritative muzzle origin attached while the shooter moves during fire", () => {
+    const { h, player } = makeBeamRoom("beam-moving-origin");
+    const chargeTicks = Math.round(BEAM_CHARGE_SECONDS / 0.05);
+    for (let seq = 1; seq <= chargeTicks; seq++) sendBeamFrame(h, player.id, seq, true);
+
+    const beforePlayerX = player.x;
+    const beforePlayerY = player.y;
+    const beforeRow = h.state().beams.get(player.id);
+    expect(beforeRow?.phase).toBe(SyncedBeamPhase.Active);
+    const beforeOriginX = beforeRow.originX;
+    const beforeOriginY = beforeRow.originY;
+    const muzzleOffsetX = beforeOriginX - beforePlayerX;
+    const muzzleOffsetY = beforeOriginY - beforePlayerY;
+
+    h.send(player.id, "input", {
+      seq: chargeTicks + 1,
+      dx: 0,
+      dy: 1,
+      jump: false,
+      fireHeld: true,
+      aimX: 1,
+      aimY: 0,
+      targetX: player.x + 500,
+      targetY: player.y,
+    });
+    h.tick(1);
+
+    const movedRow = h.state().beams.get(player.id);
+    expect(player.y).toBeGreaterThan(beforePlayerY);
+    expect(movedRow.phase).toBe(SyncedBeamPhase.Active);
+    expect(movedRow.previousOriginX).toBeCloseTo(beforeOriginX, 8);
+    expect(movedRow.previousOriginY).toBeCloseTo(beforeOriginY, 8);
+    expect(movedRow.originX - player.x).toBeCloseTo(muzzleOffsetX, 8);
+    expect(movedRow.originY - player.y).toBeCloseTo(muzzleOffsetY, 8);
+    expect(movedRow.originY - beforeOriginY).toBeCloseTo(player.y - beforePlayerY, 8);
+  });
 });
 
 // Wave 1 append-only coverage: the room owns one compatibility root and routes combat through the
@@ -6858,8 +6895,7 @@ describe("GameRoom - hit registration regressions", () => {
     target.kind = "dummy";
     target.hp = 100_000;
     const targetRadius = ENEMY_KINDS[target.kind]?.radius ?? 24;
-    target.x =
-      player.x + renderedTip + targetRadius + enemyComboShared.MELEE_BLADE_HALFWIDTH;
+    target.x = player.x + renderedTip + targetRadius + enemyComboShared.MELEE_BLADE_HALFWIDTH;
     target.y = player.y + enemyComboShared.DEPTH_TOL_PLAYER + targetRadius;
     h.state().enemies.set(target.id, target);
     h.room.rebuildEnemyGrid();
