@@ -6,10 +6,29 @@ export interface WardrobeRect {
 }
 
 export interface WardrobeViewportLayout {
+  mode: "wide" | "floor" | "safety";
   scale: number;
   centerX: number;
   centerY: number;
   panelRect: WardrobeRect;
+  headerRect: WardrobeRect;
+  footerRect: WardrobeRect;
+  bodyRect: WardrobeRect;
+  slotRailRect: WardrobeRect;
+  slotRects: WardrobeRect[];
+  heroRect: WardrobeRect;
+  heroArtRect: WardrobeRect;
+  companionShelfRect: WardrobeRect;
+  catalogRect: WardrobeRect;
+  catalogToolbarRect: WardrobeRect;
+  catalogViewportRect: WardrobeRect;
+  detailRect: WardrobeRect;
+  detailArtRect: WardrobeRect;
+  presetChipRects: WardrobeRect[];
+  gridColumns: number;
+  gridGap: number;
+  gridRowHeight: number;
+  tilePoolSize: number;
   headerTitleRect: WardrobeRect;
   presetRowRect: WardrobeRect;
   itemCardRects: WardrobeRect[];
@@ -22,40 +41,27 @@ export interface WardrobeViewportLayout {
   previewStatusRect: WardrobeRect;
 }
 
-export const WARDROBE_PANEL_WIDTH = 1_160;
-export const WARDROBE_PANEL_HEIGHT = 440;
-export const WARDROBE_ITEM_CARD_WIDTH = 350;
-export const WARDROBE_ITEM_CARD_HEIGHT = 40;
-export const WARDROBE_ITEM_TEXT_WIDTH = 322;
+export const WARDROBE_PANEL_WIDTH = 1_920;
+export const WARDROBE_PANEL_HEIGHT = 1_080;
+export const WARDROBE_ITEM_CARD_WIDTH = 208;
+export const WARDROBE_ITEM_CARD_HEIGHT = 216;
+export const WARDROBE_ITEM_TEXT_WIDTH = 188;
 
-const panelRect: WardrobeRect = {
-  x: -WARDROBE_PANEL_WIDTH / 2,
-  y: -WARDROBE_PANEL_HEIGHT / 2,
-  width: WARDROBE_PANEL_WIDTH,
-  height: WARDROBE_PANEL_HEIGHT,
-};
-
+/** Compatibility coordinates owned by the opaque bounds-derived preview. Callers may transform its root. */
 export const WARDROBE_LAYOUT = {
-  panel: panelRect,
-  heading: { x: -560, y: -204 },
-  headerTitle: { x: -560, y: -192, width: 1_120, height: 24 },
-  presetRow: { x: -410, y: -158, width: 344, height: 30 },
-  presetChipRects: [
-    { x: -410, y: -158, width: 84, height: 30 },
-    { x: -318, y: -158, width: 44, height: 30 },
-    { x: -266, y: -158, width: 44, height: 30 },
-    { x: -214, y: -158, width: 44, height: 30 },
-    { x: -162, y: -158, width: 44, height: 30 },
-    { x: -110, y: -158, width: 44, height: 30 },
-  ],
-  pagePrevious: { x: 198, y: -143 },
-  pageNext: { x: 242, y: -143 },
-  slotX: -500,
-  slotStartY: -104,
-  slotStepY: 36,
-  itemX: 60,
-  itemStartY: -96,
-  itemStepY: 44,
+  panel: { x: 0, y: 0, width: WARDROBE_PANEL_WIDTH, height: WARDROBE_PANEL_HEIGHT },
+  heading: { x: 0, y: 0 },
+  headerTitle: { x: 0, y: 0, width: 640, height: 30 },
+  presetRow: { x: 0, y: 0, width: 640, height: 48 },
+  presetChipRects: [] as WardrobeRect[],
+  pagePrevious: { x: 0, y: 0 },
+  pageNext: { x: 0, y: 0 },
+  slotX: 0,
+  slotStartY: 0,
+  slotStepY: 0,
+  itemX: 0,
+  itemStartY: 0,
+  itemStepY: 0,
   previewArt: { x: -410, y: -120, width: 240, height: 184 },
   previewCaption: { x: -410, y: 68, width: 240, height: 12 },
   previewStatus: { x: -410, y: 82, width: 240, height: 12 },
@@ -73,11 +79,8 @@ export const WARDROBE_LAYOUT = {
 
 export function wardrobeItemCardRect(index: number): WardrobeRect {
   return {
-    x: WARDROBE_LAYOUT.itemX - WARDROBE_ITEM_CARD_WIDTH / 2,
-    y:
-      WARDROBE_LAYOUT.itemStartY +
-      index * WARDROBE_LAYOUT.itemStepY -
-      WARDROBE_ITEM_CARD_HEIGHT / 2,
+    x: (index % 3) * (WARDROBE_ITEM_CARD_WIDTH + 12),
+    y: Math.floor(index / 3) * (WARDROBE_ITEM_CARD_HEIGHT + 12),
     width: WARDROBE_ITEM_CARD_WIDTH,
     height: WARDROBE_ITEM_CARD_HEIGHT,
   };
@@ -93,50 +96,153 @@ export function wardrobeItemTextRect(index: number): WardrobeRect {
   };
 }
 
-function viewportRect(
-  rect: WardrobeRect,
-  scale: number,
-  centerX: number,
-  centerY: number,
-): WardrobeRect {
-  return {
-    x: centerX + rect.x * scale,
-    y: centerY + rect.y * scale,
-    width: rect.width * scale,
-    height: rect.height * scale,
-  };
-}
-
 export function wardrobeViewportLayout(width: number, height: number): WardrobeViewportLayout {
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
-  const titleY = Math.max(52, Math.min(86, safeHeight * 0.09));
-  const scale = Math.min(
-    1,
-    (safeWidth - 24) / WARDROBE_PANEL_WIDTH,
-    Math.max(0.72, (safeHeight - 300) / WARDROBE_PANEL_HEIGHT),
-  );
-  const centerX = safeWidth / 2;
-  const centerY = titleY + 112 + (WARDROBE_PANEL_HEIGHT / 2) * scale;
-  const transform = (rect: WardrobeRect): WardrobeRect =>
-    viewportRect(rect, scale, centerX, centerY);
+  const mode = safeWidth >= 1_440 && safeHeight >= 720 ? "wide" : safeWidth >= 1_280 ? "floor" : "safety";
+  const floor = mode !== "wide";
+  const margin = floor ? 16 : 24;
+  const gap = floor ? 8 : 12;
+  const headerHeight = floor ? 72 : 88;
+  const footerHeight = floor ? 60 : 64;
+  const bodyY = floor ? 84 : 100;
+  const bodyHeight = Math.max(360, safeHeight - bodyY - footerHeight - (floor ? 0 : gap));
+  const slotWidth = floor ? Math.min(80, safeWidth * 0.07) : 132;
+  const heroWidth = floor ? Math.max(300, Math.min(384, safeWidth * 0.3)) : Math.min(620, safeWidth * 0.323);
+  const detailWidth = floor ? Math.min(292, Math.round(safeWidth * 0.228)) : 404;
+  const remaining = safeWidth - margin * 2 - gap * 3 - slotWidth - heroWidth - detailWidth;
+  const catalogWidth = Math.max(floor ? 360 : 420, remaining);
+  const slotRailRect = { x: margin, y: bodyY, width: slotWidth, height: bodyHeight };
+  const heroRect = { x: slotRailRect.x + slotWidth + gap, y: bodyY, width: heroWidth, height: bodyHeight };
+  const catalogRect = { x: heroRect.x + heroWidth + gap, y: bodyY, width: catalogWidth, height: bodyHeight };
+  const detailRect = {
+    x: Math.min(safeWidth - margin - detailWidth, catalogRect.x + catalogRect.width + gap),
+    y: bodyY,
+    width: detailWidth,
+    height: bodyHeight,
+  };
+  const padding = floor ? 12 : 16;
+  const toolbarHeight = floor ? 144 : 132;
+  const gridColumns = floor || safeWidth < 1_800 ? 2 : 3;
+  const gridGap = floor ? 8 : 12;
+  const tileWidth = (catalogRect.width - padding * 2 - gridGap * (gridColumns - 1)) / gridColumns;
+  const tileHeight = floor ? 184 : 216;
+  const gridRowHeight = tileHeight + gridGap;
+  const visibleRows = floor ? 2 : 3;
+  const catalogViewportRect = {
+    x: catalogRect.x + padding,
+    y: catalogRect.y + padding + toolbarHeight,
+    width: catalogRect.width - padding * 2,
+    height: Math.min(visibleRows * gridRowHeight - gridGap, bodyHeight - padding * 2 - toolbarHeight),
+  };
+  const itemCardRects = Array.from({ length: floor ? 8 : 15 }, (_, index) => ({
+    x: catalogViewportRect.x + (index % gridColumns) * (tileWidth + gridGap),
+    y: catalogViewportRect.y + Math.floor(index / gridColumns) * gridRowHeight,
+    width: tileWidth,
+    height: tileHeight,
+  }));
+  const companionHeight = floor ? 112 : 128;
+  const companionShelfRect = {
+    x: heroRect.x + padding,
+    y: heroRect.y + heroRect.height - companionHeight - padding,
+    width: heroRect.width - padding * 2,
+    height: companionHeight,
+  };
+  const heroArtRect = {
+    x: heroRect.x + padding,
+    y: heroRect.y + padding,
+    width: heroRect.width - padding * 2,
+    height: companionShelfRect.y - heroRect.y - padding * 2,
+  };
+  const slotGap = floor ? 8 : 8;
+  const slotHeight = Math.max(48, (slotRailRect.height - padding * 2 - slotGap * 7) / 8);
+  const slotRects = Array.from({ length: 8 }, (_, index) => ({
+    x: slotRailRect.x + padding / 2,
+    y: slotRailRect.y + padding + index * (slotHeight + slotGap),
+    width: slotRailRect.width - padding,
+    height: slotHeight,
+  }));
+  const presetWidth = floor ? 48 : 76;
+  const presetChipRects = Array.from({ length: 6 }, (_, index) => ({
+    x: margin + 250 + index * (presetWidth + 8),
+    y: floor ? 14 : 20,
+    width: presetWidth,
+    height: 48,
+  }));
+  const headerRect = { x: margin, y: 0, width: safeWidth - margin * 2, height: headerHeight };
+  const footerRect = {
+    x: margin,
+    y: safeHeight - footerHeight,
+    width: safeWidth - margin * 2,
+    height: footerHeight,
+  };
+  const detailArtRect = {
+    x: detailRect.x + padding,
+    y: detailRect.y + (floor ? 132 : 148),
+    width: detailRect.width - padding * 2,
+    height: floor ? 120 : 160,
+  };
+  const collectionsRect = {
+    x: detailRect.x + padding,
+    y: detailArtRect.y + detailArtRect.height + 92,
+    width: detailRect.width - padding * 2,
+    height: Math.max(112, detailRect.height - (detailArtRect.y - detailRect.y) - detailArtRect.height - 180),
+  };
+  const prestigeRect = {
+    x: heroRect.x + padding,
+    y: heroRect.y + padding,
+    width: heroRect.width - padding * 2,
+    height: Math.min(260, heroArtRect.height),
+  };
   return {
-    scale,
-    centerX,
-    centerY,
-    panelRect: transform(WARDROBE_LAYOUT.panel),
-    headerTitleRect: transform(WARDROBE_LAYOUT.headerTitle),
-    presetRowRect: transform(WARDROBE_LAYOUT.presetRow),
-    itemCardRects: Array.from({ length: 6 }, (_, index) => transform(wardrobeItemCardRect(index))),
-    itemCardTextRects: Array.from({ length: 6 }, (_, index) =>
-      transform(wardrobeItemTextRect(index)),
-    ),
-    collectionsRect: transform(WARDROBE_LAYOUT.collections),
-    prestigeRect: transform(WARDROBE_LAYOUT.prestige),
-    prestigeSurvivorRect: transform(WARDROBE_LAYOUT.prestigeSurvivor),
-    previewArtRect: transform(WARDROBE_LAYOUT.previewArt),
-    previewCaptionRect: transform(WARDROBE_LAYOUT.previewCaption),
-    previewStatusRect: transform(WARDROBE_LAYOUT.previewStatus),
+    mode,
+    scale: 1,
+    centerX: 0,
+    centerY: 0,
+    panelRect: { x: 0, y: 0, width: safeWidth, height: safeHeight },
+    headerRect,
+    footerRect,
+    bodyRect: { x: margin, y: bodyY, width: safeWidth - margin * 2, height: bodyHeight },
+    slotRailRect,
+    slotRects,
+    heroRect,
+    heroArtRect,
+    companionShelfRect,
+    catalogRect,
+    catalogToolbarRect: {
+      x: catalogRect.x + padding,
+      y: catalogRect.y + padding,
+      width: catalogRect.width - padding * 2,
+      height: toolbarHeight - gap,
+    },
+    catalogViewportRect,
+    detailRect,
+    detailArtRect,
+    presetChipRects,
+    gridColumns,
+    gridGap,
+    gridRowHeight,
+    tilePoolSize: floor ? 8 : 15,
+    headerTitleRect: { x: margin + 16, y: 14, width: 210, height: headerHeight - 24 },
+    presetRowRect: {
+      x: presetChipRects[0]?.x ?? margin,
+      y: presetChipRects[0]?.y ?? 0,
+      width: 6 * presetWidth + 5 * 8,
+      height: 48,
+    },
+    itemCardRects,
+    itemCardTextRects: itemCardRects.map((card) => ({
+      x: card.x + 10,
+      y: card.y + card.height * 0.62,
+      width: card.width - 20,
+      height: card.height * 0.34,
+    })),
+    collectionsRect,
+    prestigeRect,
+    prestigeSurvivorRect: { x: prestigeRect.x + 16, y: prestigeRect.y + 120, width: prestigeRect.width - 32, height: Math.max(40, prestigeRect.height - 136) },
+    previewArtRect: { ...heroArtRect, height: Math.max(1, heroArtRect.height - 44) },
+    previewCaptionRect: { x: heroArtRect.x, y: heroArtRect.y + heroArtRect.height - 44, width: heroArtRect.width, height: 20 },
+    previewStatusRect: { x: heroArtRect.x, y: heroArtRect.y + heroArtRect.height - 22, width: heroArtRect.width, height: 20 },
   };
 }
 

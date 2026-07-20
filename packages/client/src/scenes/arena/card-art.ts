@@ -98,7 +98,7 @@ export function bakeCardArt(
   H: number,
   R: number,
 ): string {
-  const key = `cardbg-${id}`;
+  const key = `cardbg-${id}-${W}x${H}`;
   if (scene.textures.exists(key)) return key;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -201,6 +201,13 @@ export function buildDockChip(scene: Phaser.Scene, id: string): DockChip {
   return { id, container, art, paper, order, pairGlyph };
 }
 
+/** Rebind one of the four retained neighbour chips without allocating a display object. */
+export function rebindDockChip(scene: Phaser.Scene, chip: DockChip, id: string): void {
+  if (chip.id === id) return;
+  chip.id = id;
+  chip.art.setTexture(bakeCardArt(scene, id, 212, 296, 14));
+}
+
 /** Resize/repaint one passive chip. This is deliberately event-driven rather than a frame update.
  *  Art + a 1 px accent outline (with a 1 px black outer rim) + the key badge only — no name at rest. */
 export function layoutDockChip(
@@ -234,7 +241,7 @@ export function layoutDockChip(
     .strokeRoundedRect(width / 2 - plateW, -height / 2, plateW, plateH, 3);
   chip.order
     .setText(order)
-    .setFontSize(Math.max(9, 11 * scale))
+    .setFontSize(Math.max(14, 14 * scale))
     .setPosition(width / 2 - plateW / 2, -height / 2 + plateH / 2);
   chip.pairGlyph
     .setVisible(paired)
@@ -458,15 +465,15 @@ export function layoutDockJunction(
       .fillCircle(size * 0.05, -size * 0.22, size * 0.075)
       .fillCircle(size * 0.14, -size * 0.18, size * 0.07);
   }
-  junction.index.setFontSize(Math.max(9, 10 * dockScale)).setPosition(-half + 5, -half + 4);
+  junction.index.setFontSize(Math.max(14, 14 * dockScale)).setPosition(-half + 7, -half + 6);
   // Footer line 1 = the weapon name (the one legible name the whole dock buys); line 2 = tier · affix.
   junction.name
-    .setFontSize(Math.max(12, size * 0.125))
+    .setFontSize(Math.max(18, size * 0.125))
     .setPosition(-half + 5, half - footerHeight + 3);
-  junction.loot.setFontSize(Math.max(10, size * 0.1)).setPosition(-half + 5, half - 3);
-  junction.resource.setFontSize(Math.max(11, size * 0.115)).setPosition(half - 5, -half + 4);
+  junction.loot.setFontSize(Math.max(14, size * 0.1)).setPosition(-half + 5, half - 3);
+  junction.resource.setFontSize(Math.max(14, size * 0.115)).setPosition(half - 5, -half + 4);
   junction.resource2
-    .setFontSize(Math.max(11, size * 0.115))
+    .setFontSize(Math.max(14, size * 0.115))
     .setPosition(half - 5, -half + 6 + junction.resource.displayHeight);
 
   // Backing plates (§1.5): index top-left at 0.78; the ammo/heat badge gets its own pill stroked in the
@@ -776,7 +783,7 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
     .lineBetween(L + 4, H / 2 - 68, -L - 4, H / 2 - 68);
   const offName = mk(padL, H / 2 - 64, 12, "#f1e8cf", "", 0, true);
   const offStats = mk(padL, H / 2 - 46, 10, "#d8cfb8", "");
-  const offGrades = mk(padL, H / 2 - 30, 9, "#9fb0c2", "");
+  const offGrades = mk(padL, H / 2 - 30, 10, "#9fb0c2", "");
   const offSummary = scene.add
     .container(0, 0, [offSummaryPaper, offName, offStats, offGrades])
     .setVisible(false);
@@ -789,7 +796,8 @@ export function buildCard(scene: Phaser.Scene, id: string): Card {
     text.setResolution(res).setShadow(0, 1, "#000000", 2, true, true);
   }
 
-  const container = scene.add.container(0, 0, o).setScrollFactor(0).setDepth(100000);
+  const content = scene.add.container(0, 0, o).setScale(360 / W, 520 / H);
+  const container = scene.add.container(0, 0, [content]).setScrollFactor(0).setDepth(100000);
   return {
     id,
     container,

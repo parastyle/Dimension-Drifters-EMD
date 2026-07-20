@@ -49,3 +49,26 @@ describe("wardrobe responsive layout", () => {
     });
   });
 });
+
+// ARMORY UI TRACK A — append-only authoritative viewport geometry.
+describe("wardrobe full-viewport tiers", () => {
+  it("matches the 1920 Closet columns and 15-tile pool", () => {
+    const layout = wardrobeViewportLayout(1_920, 1_080);
+    expect([layout.bodyRect.y, layout.bodyRect.height]).toEqual([100, 904]);
+    expect([layout.slotRailRect.x, layout.slotRailRect.width]).toEqual([24, 132]);
+    expect([layout.heroRect.x, layout.heroRect.width]).toEqual([168, 620]);
+    expect([layout.catalogRect.x, layout.catalogRect.width]).toEqual([800, 680]);
+    expect([layout.detailRect.x, layout.detailRect.width]).toEqual([1_492, 404]);
+    expect([layout.gridColumns, layout.tilePoolSize]).toEqual([3, 15]);
+  });
+
+  it("matches the 1280 floor without root down-scaling", () => {
+    const layout = wardrobeViewportLayout(1_280, 720);
+    expect([layout.bodyRect.y, layout.bodyRect.height]).toEqual([84, 576]);
+    expect([layout.slotRailRect.x, layout.slotRailRect.width]).toEqual([16, 80]);
+    expect([layout.heroRect.x, layout.heroRect.width]).toEqual([104, 384]);
+    expect([layout.catalogRect.x, layout.catalogRect.width]).toEqual([496, 468]);
+    expect([layout.detailRect.x, layout.detailRect.width]).toEqual([972, 292]);
+    expect([layout.scale, layout.gridColumns, layout.tilePoolSize]).toEqual([1, 2, 8]);
+  });
+});

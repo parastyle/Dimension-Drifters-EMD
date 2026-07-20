@@ -1,5 +1,6 @@
 import {
   createMetaAccountV4,
+  GEAR_CATALOG,
   GEAR_SLOTS,
   type PairedWeaponEntryV1,
   type SingleWeaponEntryV1,
@@ -104,6 +105,23 @@ describe("wardrobe model", () => {
     expect(sets).toHaveLength(12);
     expect(sets.every((row) => row.total === GEAR_SLOTS.length)).toBe(true);
     expect(sets[0]?.name).toContain("Asha");
+  });
+
+  it("derives exact missing slots and completion for each eight-piece set", () => {
+    const account = createMetaAccountV4();
+    const ashPieces = Object.entries(GEAR_CATALOG).filter(
+      ([, def]) => def.legacySetId === "ash-walker",
+    );
+    account.ownedGear.push(
+      ...ashPieces.filter(([, def]) => def.slot !== "boots").map(([id]) => id as (typeof account.ownedGear)[number]),
+    );
+    let ash = wardrobeSetViews(account).find((set) => set.id === "ash-walker");
+    expect(ash).toMatchObject({ owned: 7, total: 8, complete: false, missingSlots: ["boots"] });
+    const boots = ashPieces.find(([, def]) => def.slot === "boots")?.[0];
+    if (!boots) throw new Error("ash-walker boots fixture missing");
+    account.ownedGear.push(boots as (typeof account.ownedGear)[number]);
+    ash = wardrobeSetViews(account).find((set) => set.id === "ash-walker");
+    expect(ash).toMatchObject({ owned: 8, total: 8, complete: true, missingSlots: [] });
   });
 });
 

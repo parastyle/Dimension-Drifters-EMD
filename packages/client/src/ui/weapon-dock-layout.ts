@@ -2,13 +2,11 @@
 // separately so its unit tests never need Phaser or layout fixtures.
 export { type LoadoutEntryView, loadoutEntryView } from "./loadout-entry-view.js";
 
-export type WeaponDockPoint = {
-  x: number;
-  y: number;
-};
+export type WeaponDockPoint = { x: number; y: number };
 
 export type WeaponDockLayout = {
   scale: number;
+  idleScale?: number;
   junctionSize: number;
   junction: WeaponDockPoint;
   cornerLeft: number;
@@ -24,7 +22,8 @@ export type WeaponDockLayout = {
   rightTab: WeaponDockPoint;
   bottomOccupiedLeft: number;
   rightOccupiedTop: number;
-  focus: WeaponDockPoint & { scale: number };
+  focus: WeaponDockPoint & { scale: number; width?: number; height?: number };
+  positionBar?: { x: number; y: number; width: number; height: number };
 };
 
 export type WeaponDockLayoutInput = {
@@ -39,47 +38,18 @@ export type WeaponDockLayoutInput = {
   safeBottom?: number;
 };
 
-type DockTier = {
-  junction: number;
-  bottomWidth: number;
-  bottomHeight: number;
-  rightWidth: number;
-  rightHeight: number;
-  gap: number;
+export type BackpackModalLayout = {
+  mode: "wide" | "floor" | "safety";
+  panel: { x: number; y: number; width: number; height: number };
+  header: { x: number; y: number; width: number; height: number };
+  grid: { x: number; y: number; width: number; height: number };
+  detail: { x: number; y: number; width: number; height: number };
+  dock: { x: number; y: number; width: number; height: number };
+  cells: Array<{ x: number; y: number; width: number; height: number }>;
 };
 
-// AWAKE tier table (dockux-panel §1.2): the dock earns its pixels only while the player uses it —
-// awake sizes are ~33% up; the whole dock rides the shared fadeProgress down to IDLE_DOCK_SCALE at rest.
-const DOCK_TIERS: readonly DockTier[] = [
-  {
-    junction: 112,
-    bottomWidth: 84,
-    bottomHeight: 58,
-    rightWidth: 58,
-    rightHeight: 84,
-    gap: 8,
-  },
-  {
-    junction: 104,
-    bottomWidth: 72,
-    bottomHeight: 50,
-    rightWidth: 50,
-    rightHeight: 72,
-    gap: 6,
-  },
-  {
-    junction: 96,
-    bottomWidth: 60,
-    bottomHeight: 44,
-    rightWidth: 44,
-    rightHeight: 60,
-    gap: 5,
-  },
-];
-
-/** Idle multiplier (dockux-panel §1.2): the whole dock (elbow + arms + tabs) scales by this at rest,
- *  anchored at the bottom-right corner point, riding the existing fade grammar — no new tween. */
-export const IDLE_DOCK_SCALE = 0.72;
+/** Wide idle multiplier; floor geometry returns the exact 96/128 ratio through `layout.idleScale`. */
+export const IDLE_DOCK_SCALE = 116 / 152;
 
 function clamp(value: number, low: number, high: number): number {
   return Math.max(low, Math.min(high, value));
@@ -89,38 +59,78 @@ function halfPixel(value: number): number {
   return Math.round(value * 2) / 2;
 }
 
-function tierFor(rosterCount: number): DockTier {
-  if (rosterCount <= 7) return DOCK_TIERS[0] as DockTier;
-  if (rosterCount <= 13) return DOCK_TIERS[1] as DockTier;
-  return DOCK_TIERS[2] as DockTier;
+/** Exact fixed-cell modal tiers from the Armory panel spec. */
+export function backpackModalLayout(screenWidth: number, screenHeight: number): BackpackModalLayout {
+  const width = Math.max(1, screenWidth);
+  const height = Math.max(1, screenHeight);
+  const mode = width >= 1_440 && height >= 800 ? "wide" : width >= 1_280 && height >= 720 ? "floor" : "safety";
+  const wide = mode === "wide";
+  const panelWidth = Math.min(width - (wide ? 96 : 32), wide ? 1_536 : 1_184);
+  const panelHeight = Math.min(height - (wide ? 96 : 32), wide ? 824 : 624);
+  const panel = {
+    x: halfPixel((width - panelWidth) / 2),
+    y: halfPixel((height - panelHeight) / 2),
+    width: panelWidth,
+    height: panelHeight,
+  };
+  const headerHeight = wide ? 72 : 64;
+  const dockHeight = wide ? 120 : 100;
+  const contentPadding = 24;
+  const gap = 16;
+  const detailWidth = Math.min(wide ? 432 : 360, panelWidth * 0.34);
+  const gridWidth = panelWidth - contentPadding * 2 - gap - detailWidth;
+  const contentY = panel.y + headerHeight;
+  const contentHeight = panelHeight - headerHeight - dockHeight;
+  const grid = { x: panel.x + contentPadding, y: contentY, width: gridWidth, height: contentHeight };
+  const detail = {
+    x: grid.x + grid.width + gap,
+    y: contentY,
+    width: detailWidth,
+    height: contentHeight,
+  };
+  const dock = {
+    x: panel.x,
+    y: panel.y + panel.height - dockHeight,
+    width: panel.width,
+    height: dockHeight,
+  };
+  const cellWidth = wide ? 244 : 181;
+  const cellHeight = wide ? 176 : 136;
+  const cellGap = wide ? 12 : 8;
+  const usedWidth = cellWidth * 4 + cellGap * 3;
+  const usedHeight = cellHeight * 3 + cellGap * 2;
+  const cellX = grid.x + Math.max(0, (grid.width - usedWidth) / 2);
+  const cellY = grid.y + Math.max(0, (grid.height - usedHeight) / 2);
+  const cells = Array.from({ length: 12 }, (_, index) => ({
+    x: halfPixel(cellX + (index % 4) * (cellWidth + cellGap)),
+    y: halfPixel(cellY + Math.floor(index / 4) * (cellHeight + cellGap)),
+    width: cellWidth,
+    height: cellHeight,
+  }));
+  return { mode, panel, header: { x: panel.x, y: panel.y, width: panel.width, height: headerHeight }, grid, detail, dock, cells };
 }
 
-/**
- * CSS-pixel layout for the non-belt mirrored-L dock. Only the two nearest entries on either side are
- * readable; the full cyclic roster is represented separately by the junction's index ticks.
- */
+/** CSS-pixel layout for the retained five-chip mirrored-L dock and one lazy focus card. */
 export function weaponDockLayout(input: WeaponDockLayoutInput): WeaponDockLayout {
   const width = Math.max(1, input.screenWidth);
   const height = Math.max(1, input.screenHeight);
-  const scale = clamp(Math.min(width / 1600, height / 900), 0.78, 1.25);
-  const tier = tierFor(input.rosterCount);
-  const rightInset = Math.max(input.safeRight ?? 0, 8 * scale);
-  const bottomInset = Math.max(input.safeBottom ?? 0, 8 * scale);
-  const junctionSize = halfPixel(tier.junction * scale);
+  const viewportScale = clamp(Math.min(width / 1920, height / 1080), 2 / 3, 1);
+  const t = clamp((viewportScale - 2 / 3) * 3, 0, 1);
+  const lerp = (floor: number, wide: number): number => floor + (wide - floor) * t;
+  const rightInset = Math.max(input.safeRight ?? 0, lerp(16, 24));
+  const bottomInset = Math.max(input.safeBottom ?? 0, lerp(16, 24));
+  const junctionSize = halfPixel(lerp(128, 152));
   const cornerLeft = halfPixel(width - rightInset - junctionSize);
   const cornerTop = halfPixel(height - bottomInset - junctionSize);
-
   const wantedBottom = Math.max(0, Math.min(2, Math.floor(input.bottomVisible)));
   const wantedRight = Math.max(0, Math.min(2, Math.floor(input.rightVisible)));
-  const baseBottomWidth = tier.bottomWidth * scale;
-  const baseBottomHeight = tier.bottomHeight * scale;
-  const baseRightWidth = tier.rightWidth * scale;
-  const baseRightHeight = tier.rightHeight * scale;
-  const baseGap = tier.gap * scale;
+  const baseBottomWidth = lerp(88, 104);
+  const baseBottomHeight = lerp(64, 72);
+  const baseRightWidth = lerp(64, 72);
+  const baseRightHeight = lerp(88, 104);
+  const baseGap = lerp(8, 12);
   const bottomSpan = wantedBottom * (baseBottomWidth + baseGap);
   const rightSpan = wantedRight * (baseRightHeight + baseGap);
-  // 0.80 floor (dockux-panel §1.2): with the neighbour chips carrying no text they compress slightly
-  // less before overflowing to the `+N` tab, keeping the key-hint badges legible.
   const fit = clamp(
     Math.min(
       1,
@@ -130,66 +140,44 @@ export function weaponDockLayout(input: WeaponDockLayoutInput): WeaponDockLayout
     0.8,
     1,
   );
-
   const bottomChipWidth = halfPixel(baseBottomWidth * fit);
   const bottomChipHeight = halfPixel(baseBottomHeight * fit);
   const rightChipWidth = halfPixel(baseRightWidth * fit);
   const rightChipHeight = halfPixel(baseRightHeight * fit);
-  const gap = halfPixel(Math.max(2, baseGap * fit));
+  const gap = halfPixel(Math.max(4, baseGap * fit));
   const bottom: WeaponDockPoint[] = [];
   const right: WeaponDockPoint[] = [];
-
   for (let index = 0; index < wantedBottom; index++) {
     const step = index + 1;
     const x = cornerLeft - step * (bottomChipWidth + gap) + bottomChipWidth / 2;
     if (x - bottomChipWidth / 2 < input.leftStop) break;
-    bottom.push({
-      x: halfPixel(x),
-      y: halfPixel(height - bottomInset - bottomChipHeight / 2),
-    });
+    bottom.push({ x: halfPixel(x), y: halfPixel(height - bottomInset - bottomChipHeight / 2) });
   }
   for (let index = 0; index < wantedRight; index++) {
     const step = index + 1;
     const y = cornerTop - step * (rightChipHeight + gap) + rightChipHeight / 2;
     if (y - rightChipHeight / 2 < input.topStop) break;
-    right.push({
-      x: halfPixel(width - rightInset - rightChipWidth / 2),
-      y: halfPixel(y),
-    });
+    right.push({ x: halfPixel(width - rightInset - rightChipWidth / 2), y: halfPixel(y) });
   }
-
   const bottomOccupiedLeft =
-    bottom.length > 0
-      ? (bottom[bottom.length - 1] as WeaponDockPoint).x - bottomChipWidth / 2
-      : cornerLeft;
+    bottom.length > 0 ? (bottom[bottom.length - 1]?.x ?? cornerLeft) - bottomChipWidth / 2 : cornerLeft;
   const rightOccupiedTop =
-    right.length > 0
-      ? (right[right.length - 1] as WeaponDockPoint).y - rightChipHeight / 2
-      : cornerTop;
+    right.length > 0 ? (right[right.length - 1]?.y ?? cornerTop) - rightChipHeight / 2 : cornerTop;
   const bottomTab = {
-    x: halfPixel(bottomOccupiedLeft - 11 * scale),
+    x: halfPixel(bottomOccupiedLeft - lerp(12, 16)),
     y: halfPixel(height - bottomInset - bottomChipHeight / 2),
   };
   const rightTab = {
     x: halfPixel(width - rightInset - rightChipWidth / 2),
-    y: halfPixel(rightOccupiedTop - 10 * scale),
+    y: halfPixel(rightOccupiedTop - lerp(12, 16)),
   };
-
-  let focusScale = clamp(scale, 0.82, 1);
-  let focusWidth = 212 * focusScale;
-  let focusHeight = 296 * focusScale;
-  const focusRight = cornerLeft - 12 * scale;
-  const focusBottom = cornerTop - 12 * scale;
-  // Fallback squeeze raised 0.74 → 0.78 (dockux-panel §1.2): the inspector may overlap the
-  // (hidden-while-focused) rails before it shrinks.
-  if (focusRight - focusWidth < 8 * scale || focusBottom - focusHeight < 8 * scale) {
-    focusScale = 0.78;
-    focusWidth = 212 * focusScale;
-    focusHeight = 296 * focusScale;
-  }
-
+  const focusWidth = lerp(320, 360);
+  const focusHeight = lerp(456, 520);
+  const focusRight = cornerLeft - lerp(8, 12);
+  const focusBottom = cornerTop - lerp(8, 12);
   return {
-    scale,
+    scale: 1,
+    idleScale: lerp(96, 116) / junctionSize,
     junctionSize,
     junction: {
       x: halfPixel(cornerLeft + junctionSize / 2),
@@ -206,12 +194,20 @@ export function weaponDockLayout(input: WeaponDockLayoutInput): WeaponDockLayout
     right,
     bottomTab,
     rightTab,
-    bottomOccupiedLeft: halfPixel(Math.min(bottomOccupiedLeft, bottomTab.x - 8 * scale)),
-    rightOccupiedTop: halfPixel(Math.min(rightOccupiedTop, rightTab.y - 7 * scale)),
+    bottomOccupiedLeft: halfPixel(Math.min(bottomOccupiedLeft, bottomTab.x - 8)),
+    rightOccupiedTop: halfPixel(Math.min(rightOccupiedTop, rightTab.y - 7)),
     focus: {
       x: halfPixel(focusRight - focusWidth / 2),
       y: halfPixel(focusBottom - focusHeight / 2),
-      scale: focusScale,
+      scale: focusWidth / 360,
+      width: focusWidth,
+      height: focusHeight,
+    },
+    positionBar: {
+      x: halfPixel(cornerLeft - lerp(176, 224)),
+      y: halfPixel(height - bottomInset - lerp(18, 22)),
+      width: lerp(144, 192),
+      height: 6,
     },
   };
 }

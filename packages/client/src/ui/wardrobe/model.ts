@@ -12,6 +12,7 @@ import {
   weaponEntryInstances,
   weaponEntryPhysicalSize,
 } from "@dd/shared";
+import type { ArmoryArtStatus } from "../armory-ui/tokens.js";
 
 export const WARDROBE_PRESET_STORAGE_KEY = "dd.wardrobe.presets.v1";
 export const WARDROBE_WRITABLE_PRESETS = 5;
@@ -39,6 +40,14 @@ export interface WardrobeSlotItemView {
   owned: boolean;
   equipped: boolean;
   lockedCopy: string;
+  artStatus?: ArmoryArtStatus;
+}
+
+export interface WardrobeSetSlotView {
+  slot: GearSlot;
+  gearId: GearId;
+  owned: boolean;
+  equipped: boolean;
 }
 
 export interface WardrobeSetView {
@@ -48,7 +57,34 @@ export interface WardrobeSetView {
   equipped: number;
   total: number;
   complete: boolean;
+  slots: WardrobeSetSlotView[];
+  missingSlots: GearSlot[];
 }
+
+export type WardrobeOwnershipFilter = "all" | "owned" | "locked";
+export type WardrobeSort = "recommended" | "name" | "rarity" | "set" | "owned" | "newest";
+
+export interface WardrobeCatalogFilters {
+  query: string;
+  slot: GearSlot;
+  rarity: GearDef["rarity"] | "all";
+  setId: string | "all";
+  gearClass: GearDef["gearClass"] | "all";
+  ownership: WardrobeOwnershipFilter;
+  artStatus: ArmoryArtStatus | "all";
+  sort: WardrobeSort;
+}
+
+export const DEFAULT_WARDROBE_FILTERS: WardrobeCatalogFilters = {
+  query: "",
+  slot: "hat",
+  rarity: "all",
+  setId: "all",
+  gearClass: "all",
+  ownership: "all",
+  artStatus: "all",
+  sort: "recommended",
+};
 
 export const PRESTIGE_CAP = 30;
 export const PRESTIGE_CONFIRM_HOLD_MS = 2_000;
@@ -392,6 +428,11 @@ export function equipWardrobeItem(account: MetaAccountV4, id: GearId): MetaAccou
   return sanitizeMetaAccountV4(next);
 }
 
+/** Every slot has an explicit artless starter, so reversible unequip never invents nullable equipment. */
+export function unequipWardrobeSlot(account: MetaAccountV4, slot: GearSlot): MetaAccountV4 {
+  return equipWardrobeItem(account, STARTER_GEAR_LOADOUT[slot]);
+}
+
 export function applyWardrobePreset(
   account: MetaAccountV4,
   state: WardrobePresetState,
@@ -441,13 +482,83 @@ export function wardrobeSlotItems(account: MetaAccountV4, slot: GearSlot): Wardr
     .sort((a, b) => Number(b.owned) - Number(a.owned) || a.def.netCode - b.def.netCode);
 }
 
+const GEAR_RARITY_ORDER: Readonly<Record<GearDef["rarity"], number>> = {
+  Common: 1,
+  Uncommon: 2,
+  Rare: 3,
+  "Really Rare": 4,
+  Ultimate: 6,
+};
+
+/** Search/filter/sort is pure; explicit art state is injected from the manifest-owned visibility seam. */
+export function wardrobeCatalogItems(
+  account: MetaAccountV4,
+  filters: WardrobeCatalogFilters,
+  artStatusFor: (id: GearId) => ArmoryArtStatus = () => "ready",
+): WardrobeSlotItemView[] {
+  const query = filters.query.trim().toLocaleLowerCase();
+  const rows = wardrobeSlotItems(account, filters.slot)
+    .map((item) => ({ ...item, artStatus: artStatusFor(item.id) }))
+    .filter((item) => {
+      const def = item.def;
+      if (filters.rarity !== "all" && def.rarity !== filters.rarity) return false;
+      if (filters.setId !== "all" && def.legacySetId !== filters.setId) return false;
+      if (filters.gearClass !== "all" && def.gearClass !== filters.gearClass) return false;
+      if (filters.ownership === "owned" && !item.owned) return false;
+      if (filters.ownership === "locked" && item.owned) return false;
+      if (filters.artStatus !== "all" && item.artStatus !== filters.artStatus) return false;
+      if (!query) return true;
+      return [def.name, def.effectText, def.legacySetId ?? "", def.gearClass, def.rarity]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(query);
+    });
+  rows.sort((a, b) => {
+    if (filters.sort === "name")
+      return a.def.name.localeCompare(b.def.name) || a.def.netCode - b.def.netCode;
+    if (filters.sort === "rarity")
+      return (
+        GEAR_RARITY_ORDER[b.def.rarity] - GEAR_RARITY_ORDER[a.def.rarity] ||
+        a.def.name.localeCompare(b.def.name)
+      );
+    if (filters.sort === "set")
+      return (
+        (a.def.legacySetId ?? "zz").localeCompare(b.def.legacySetId ?? "zz") ||
+        a.def.name.localeCompare(b.def.name)
+      );
+    if (filters.sort === "owned")
+      return (
+        Number(b.owned) - Number(a.owned) ||
+        Number(b.equipped) - Number(a.equipped) ||
+        a.def.name.localeCompare(b.def.name)
+      );
+    if (filters.sort === "newest") return b.def.netCode - a.def.netCode;
+    return (
+      Number(b.equipped) - Number(a.equipped) ||
+      Number(b.owned) - Number(a.owned) ||
+      GEAR_RARITY_ORDER[b.def.rarity] - GEAR_RARITY_ORDER[a.def.rarity] ||
+      a.def.netCode - b.def.netCode
+    );
+  });
+  return rows;
+}
+
 export function wardrobeSetViews(account: MetaAccountV4): WardrobeSetView[] {
   const owned = new Set(account.ownedGear);
   const equipped = new Set(Object.values(account.equippedGear));
   return Object.entries(SET_NAMES).map(([id, name]) => {
     const items = GEAR_IDS.filter((gearId) => GEAR_CATALOG[gearId].legacySetId === id);
-    const ownedCount = items.filter((gearId) => owned.has(gearId)).length;
-    const equippedCount = items.filter((gearId) => equipped.has(gearId)).length;
+    // Several legacy cowls are replacement heads in the live rig, while their paired collection identity
+    // remains the set's hat piece. Keep runtime equipment canonical and normalize only this completion view.
+    const collectionSlot = (gearId: GearId): GearSlot =>
+      gearId.endsWith("-hat") ? "hat" : GEAR_CATALOG[gearId].slot;
+    const slots = GEAR_SLOTS.map((slot) => {
+      const gearId = items.find((candidate) => collectionSlot(candidate) === slot);
+      if (!gearId) return undefined;
+      return { slot, gearId, owned: owned.has(gearId), equipped: equipped.has(gearId) };
+    }).filter((row): row is WardrobeSetSlotView => row !== undefined);
+    const ownedCount = slots.filter((row) => row.owned).length;
+    const equippedCount = slots.filter((row) => row.equipped).length;
     return {
       id,
       name,
@@ -455,6 +566,8 @@ export function wardrobeSetViews(account: MetaAccountV4): WardrobeSetView[] {
       equipped: equippedCount,
       total: items.length,
       complete: items.length === GEAR_SLOTS.length && ownedCount === items.length,
+      slots,
+      missingSlots: slots.filter((row) => !row.owned).map((row) => row.slot),
     };
   });
 }
@@ -464,6 +577,6 @@ export function wardrobePreview(account: MetaAccountV4) {
 }
 
 export function gearRarityPips(def: Pick<GearDef, "rarity">): string {
-  const count = ["Common", "Uncommon", "Rare", "Really Rare", "Ultimate"].indexOf(def.rarity) + 1;
-  return `${"◆".repeat(Math.max(1, count))}${"◇".repeat(Math.max(0, 5 - count))}`;
+  const canonicalCount = GEAR_RARITY_ORDER[def.rarity];
+  return "◆".repeat(canonicalCount);
 }

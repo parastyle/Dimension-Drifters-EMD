@@ -155,6 +155,7 @@ import {
 import { WormRig } from "../entities/WormRig.js";
 import {
   type OwnerNoteType,
+  routeArmoryUiInput,
   routeOwnerNoteInput,
   routeWeaponInput,
   type WeaponInputMode,
@@ -226,8 +227,16 @@ import {
   ultimateSeqEdge,
 } from "../ui/ultimate-reveal.js";
 import { type ContextHintId, VerbLegendManager } from "../ui/verb-legend.js";
+import { backpackTileIntent } from "../ui/armory/backpack-actions.js";
 import {
-  IDLE_DOCK_SCALE,
+  ARMORY_COLORS,
+  ARMORY_CSS_COLORS,
+  armoryTextStyle,
+  drawArmoryPanel,
+  rarityMark,
+} from "../ui/armory-ui/tokens.js";
+import {
+  backpackModalLayout,
   type LoadoutEntryView,
   loadoutEntryView,
   type WeaponDockLayout,
@@ -279,6 +288,7 @@ import {
   drawTierPips,
   layoutDockChip,
   layoutDockJunction,
+  rebindDockChip,
   setDockJunctionLoadout,
   WEAPON_ACCENT,
 } from "./arena/card-art.js";
@@ -569,7 +579,7 @@ interface CarouselDock {
   elbow: Phaser.GameObjects.Container;
   junction: DockJunction;
   detailLayer: Phaser.GameObjects.Container;
-  chips: Map<string, DockChip>;
+  chips: DockChip[];
   detailCards: Map<string, Card>;
   detailLru: string[];
   currentDetailId: string;
@@ -1676,6 +1686,8 @@ export class ArenaScene extends Phaser.Scene {
   private rSalvaged = false;
   /** Nearest grabbable pickup this frame (world px), for the E prompt and highlight ring. */
   private grabTarget: { x: number; y: number } | null = null;
+  private grabTargetId = "";
+  private galleryLabelFocusId = "";
   private grabRadius = PICKUP_RADIUS;
   /** The pulsing amber ring drawn on the pickup E will take. */
   private grabGfx!: Phaser.GameObjects.Graphics;
@@ -1712,6 +1724,12 @@ export class ArenaScene extends Phaser.Scene {
   private bagPanelOpenAt = 0;
   private bagPanelCloseAt = 0; // >0 while the 150 ms close drop is playing (zones already disabled)
   private bagPanelMode: "bag" | "shop" = "bag";
+  private bagWorkflow: "inventory" | "sell" | "bind" | "upgrades" = "inventory";
+  private bagFocusCell = 0;
+  private bagSelected: { source: "bag" | "slot"; index: number } | null = null;
+  private bagTabZones: Phaser.GameObjects.Rectangle[] = [];
+  private bagActionZone: Phaser.GameObjects.Rectangle | null = null;
+  private bagRenderSignature = "";
   // §29 shopkeeper: a world-space vendor drawn at state.beltShopX; `shopOpen` is the SELL overlay (F near
   // the vendor). When open, the same slot/bag zones sell for scrip instead of swapping/equipping.
   private shopNpcG: Phaser.GameObjects.Graphics | null = null;
@@ -2010,6 +2028,12 @@ export class ArenaScene extends Phaser.Scene {
     this.arsenalPairArt = null;
     this.bagTexts = [];
     this.bagZones = [];
+    this.bagTabZones = [];
+    this.bagActionZone = null;
+    this.bagRenderSignature = "";
+    this.bagSelected = null;
+    this.bagFocusCell = 0;
+    this.bagWorkflow = "inventory";
     this.slotZones = [];
     this.pairSlotZones = [];
     this.bagPairZones = [];
@@ -2218,6 +2242,7 @@ export class ArenaScene extends Phaser.Scene {
     this.rHold = 0;
     this.rSalvaged = false;
     this.grabTarget = null;
+    this.grabTargetId = "";
     this.grabRadius = PICKUP_RADIUS;
     this.bagOpen = false;
     this.shopOpen = false;
@@ -2928,12 +2953,14 @@ export class ArenaScene extends Phaser.Scene {
       const weaponClass = isMystery ? pk.weaponClass : def?.tags.classPool;
       const classGlyph = weaponClass === "ranged" ? "➶" : weaponClass === "caster" ? "✦" : "⚔";
       const affixName = pk.affixPublic ? affixById(pk.affixPublic).name : "";
+      const galleryIndex = Number(id.split(":", 5)[3]);
+      const galleryPlate = `#${String(Number.isInteger(galleryIndex) ? galleryIndex + 1 : 1).padStart(2, "0")}`;
       const labelText = isMystery
         ? `${rarity.name} ${classGlyph}`
         : `${def?.name ?? weapon}${affixName ? ` · ${affixName}` : ""}${pk.rarity > 0 ? ` (${rarity.name})` : ""}`;
       const label = this.add
-        .text(0, 42, labelText, {
-          fontSize: isGallery ? "10px" : "11px",
+        .text(0, 42, isGallery ? galleryPlate : labelText, {
+          fontSize: "14px",
           color: accentHex,
           fontStyle: "bold",
           align: "center",
@@ -2955,6 +2982,8 @@ export class ArenaScene extends Phaser.Scene {
         spinEdge: edge,
         mysteryMark,
         pickupLabel: label,
+        pickupLabelShort: isGallery ? galleryPlate : labelText,
+        pickupLabelFull: labelText,
         pickupWeapon: pk.weaponPublic,
         baseScale,
         spinTheta: 0,
@@ -4252,12 +4281,59 @@ export class ArenaScene extends Phaser.Scene {
       : this.room.state.mode === "training"
         ? "training"
         : "arena";
+    if (this.shopOpen && !nearBeltShop) this.closeBackpackModal();
+    const armoryModalOpen = this.bagOpen || this.shopOpen;
+    const higherModalOpen =
+      levelWindowOpen ||
+      this.levelWinInputReleaseLatch ||
+      this.verbs.isModalBlocking() ||
+      this.summonOpen ||
+      summonClosePressed ||
+      !!this.ownerNoteUi?.isOpen();
+    if (armoryModalOpen) {
+      const digit = Phaser.Input.Keyboard.JustDown(this.keys.ONE)
+        ? 1
+        : Phaser.Input.Keyboard.JustDown(this.keys.TWO)
+          ? 2
+          : Phaser.Input.Keyboard.JustDown(this.keys.THREE)
+            ? 3
+            : null;
+      const armoryInput = routeArmoryUiInput({
+        context: "backpack",
+        modalOpen: higherModalOpen,
+        textInputFocused: false,
+        leftPressed: Phaser.Input.Keyboard.JustDown(this.keys.LEFT),
+        rightPressed: Phaser.Input.Keyboard.JustDown(this.keys.RIGHT),
+        upPressed: Phaser.Input.Keyboard.JustDown(this.keys.UP),
+        downPressed: Phaser.Input.Keyboard.JustDown(this.keys.DOWN),
+        enterPressed: Phaser.Input.Keyboard.JustDown(this.keys.ENTER),
+        escapePressed: Phaser.Input.Keyboard.JustDown(this.keys.ESC),
+        closePressed: Phaser.Input.Keyboard.JustDown(this.keys.TAB),
+        previousContextPressed: Phaser.Input.Keyboard.JustDown(this.keys.Q),
+        nextContextPressed: false,
+        previousPagePressed: Phaser.Input.Keyboard.JustDown(this.keys.Z),
+        nextPagePressed: Phaser.Input.Keyboard.JustDown(this.keys.X),
+        resetPressed: false,
+        digitPressed: digit,
+      });
+      if (armoryInput.move) this.moveBackpackFocus(armoryInput.move, selfP);
+      if (armoryInput.contextDelta !== 0 && selfP) this.cycleBeltLoadout(selfP, 1);
+      if (armoryInput.activeSlot !== null && selfP) {
+        this.selectBeltSlot(selfP, armoryInput.activeSlot - 1);
+        this.bagSelected = { source: "slot", index: armoryInput.activeSlot - 1 };
+        this.bagRenderSignature = "";
+      }
+      if (armoryInput.workflowDelta !== 0) this.moveBackpackWorkflow(armoryInput.workflowDelta);
+      if (armoryInput.primary && selfP) this.activateBackpackSelection(selfP);
+      if (armoryInput.close || (this.shopOpen && ultimatePressed)) this.closeBackpackModal();
+    }
     const competingModalOpen =
       levelWindowOpen ||
       this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
-      summonClosePressed;
+      summonClosePressed ||
+      armoryModalOpen;
     const ownerNoteInput = routeOwnerNoteInput({
       mode: weaponInputMode,
       modalOpen: competingModalOpen || !!this.ownerNoteUi?.isOpen(),
@@ -4363,6 +4439,7 @@ export class ArenaScene extends Phaser.Scene {
             bestD = d;
             nearPickup = true;
             grabPickupId = id;
+            this.grabTargetId = id;
             this.grabTarget = { x: pk.x, y: pk.y };
             this.grabRadius = radius;
           }
@@ -4447,7 +4524,10 @@ export class ArenaScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.keys.TAB)) {
         if (this.belt) {
           this.bagOpen = !this.bagOpen;
-          if (this.bagOpen) this.shopOpen = false; // one overlay at a time
+          if (this.bagOpen) {
+            this.shopOpen = false; // one overlay at a time
+            this.openBackpackWorkflow("inventory");
+          }
         } else {
           const training = this.room?.state.mode === "training";
           if (training && !this.summonOpen) this.openSummonMenu();
@@ -4458,7 +4538,10 @@ export class ArenaScene extends Phaser.Scene {
       if (this.belt) {
         if (ultimatePressed && nearBeltShop) {
           this.shopOpen = !this.shopOpen;
-          if (this.shopOpen) this.bagOpen = false;
+          if (this.shopOpen) {
+            this.bagOpen = false;
+            this.openBackpackWorkflow("sell");
+          }
         }
         if (!nearBeltShop) this.shopOpen = false;
       }
@@ -7394,12 +7477,111 @@ export class ArenaScene extends Phaser.Scene {
     this.ownerNoteKeyboardPaused = false;
   }
 
+  private sortedBackpackOrder(self: PlayerState): number[] {
+    return self.bag
+      .map((_, index) => index)
+      .sort((a, b) => {
+        const left = self.bag[a];
+        const right = self.bag[b];
+        const rarity = (right?.rarity ?? 0) - (left?.rarity ?? 0);
+        if (rarity !== 0) return rarity;
+        return (WEAPONS[left?.weapon ?? ""]?.name ?? "").localeCompare(
+          WEAPONS[right?.weapon ?? ""]?.name ?? "",
+        ) || a - b;
+      });
+  }
+
+  private openBackpackWorkflow(workflow: "inventory" | "sell"): void {
+    this.bagWorkflow = workflow;
+    this.bagFocusCell = 0;
+    this.bagSelected = null;
+    this.bagHoverCell = -1;
+    this.bagRenderSignature = "";
+  }
+
+  private closeBackpackModal(): void {
+    this.bagOpen = false;
+    this.shopOpen = false;
+    this.bagSelected = null;
+    this.bagHoverCell = -1;
+    this.bagRenderSignature = "";
+  }
+
+  private moveBackpackFocus(
+    move: "left" | "right" | "up" | "down",
+    self: PlayerState | undefined,
+  ): void {
+    const row = Math.floor(this.bagFocusCell / 4);
+    const column = this.bagFocusCell % 4;
+    const nextRow = move === "up" ? (row + 2) % 3 : move === "down" ? (row + 1) % 3 : row;
+    const nextColumn = move === "left" ? (column + 3) % 4 : move === "right" ? (column + 1) % 4 : column;
+    this.bagFocusCell = nextRow * 4 + nextColumn;
+    const bagIndex = self ? this.sortedBackpackOrder(self)[this.bagFocusCell] : undefined;
+    this.bagSelected = bagIndex === undefined ? null : { source: "bag", index: bagIndex };
+    this.bagRenderSignature = "";
+  }
+
+  private moveBackpackWorkflow(delta: -1 | 1): void {
+    if (!this.shopOpen) return;
+    const workflows = ["sell", "bind", "upgrades"] as const;
+    const index = Math.max(0, workflows.indexOf(this.bagWorkflow as (typeof workflows)[number]));
+    this.bagWorkflow = workflows[(index + delta + workflows.length) % workflows.length] ?? "sell";
+    this.bagSelected = null;
+    this.bagRenderSignature = "";
+  }
+
+  private activateBackpackSelection(self: PlayerState): void {
+    if (this.bagWorkflow === "upgrades") {
+      const upgrade = META_UPGRADES[this.bagFocusCell % META_UPGRADES.length];
+      if (upgrade) this.room?.send("buyUpgrade", { id: upgrade.id });
+      return;
+    }
+    const selected = this.bagSelected;
+    if (!selected) return;
+    if (this.bagWorkflow === "inventory") {
+      if (selected.source === "bag") {
+        this.room?.send("bagEquip", { index: selected.index, slot: self.activeSlot });
+      } else if (self.bag.length >= BAG_CAP) {
+        this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, ARMORY_CSS_COLORS.warning);
+      } else {
+        this.room?.send("bagStore", { slot: selected.index });
+      }
+      return;
+    }
+    if (this.bagWorkflow === "sell") {
+      this.room?.send("sellWeapon", { from: selected.source, index: selected.index });
+      this.bagSelected = null;
+      this.bagRenderSignature = "";
+      return;
+    }
+    const entry = loadoutEntryView(self);
+    if (entry.offId) {
+      this.room?.send("unbindPair");
+      return;
+    }
+    const candidate = selected.source === "bag"
+      ? this.bagPairItem(self, selected.index)
+      : this.slotPairItem(self, selected.index);
+    if (!candidate || !pairEligible(WEAPONS[entry.leadId], WEAPONS[candidate.weaponId])) {
+      this.flashBanner("Select a compatible weapon to bind", ARMORY_CSS_COLORS.warning);
+      return;
+    }
+    this.pairCandidate = {
+      source: selected.source,
+      index: selected.index,
+      identity: this.pairItemIdentity(candidate),
+    };
+    this.confirmPair(self);
+  }
+
   private inputModalBlocked(self: PlayerState | undefined): boolean {
     return (
       this.inLevelWindow(self) ||
       this.levelWinInputReleaseLatch ||
       this.verbs.isModalBlocking() ||
       this.summonOpen ||
+      this.bagOpen ||
+      this.shopOpen ||
       !!this.ownerNoteUi?.isOpen()
     );
   }
@@ -9806,11 +9988,37 @@ export class ArenaScene extends Phaser.Scene {
     if (rig && self.augments) this.spawnParryFx(rig.x, rig.y, self.augments);
   }
 
+  private updateGalleryPickupLabel(targetId: string): void {
+    if (targetId === this.galleryLabelFocusId) return;
+    const previous = this.pickups.get(this.galleryLabelFocusId);
+    const previousLabel = previous?.getData("pickupLabel") as Phaser.GameObjects.Text | undefined;
+    const previousShort = previous?.getData("pickupLabelShort") as string | undefined;
+    if (previousLabel && previousShort) {
+      previousLabel
+        .setText(previousShort)
+        .setFontSize(14)
+        .setWordWrapWidth(132)
+        .setPadding(4, 2, 4, 2);
+    }
+    this.galleryLabelFocusId = targetId.startsWith("pk:") ? targetId : "";
+    const focused = this.pickups.get(this.galleryLabelFocusId);
+    const focusedLabel = focused?.getData("pickupLabel") as Phaser.GameObjects.Text | undefined;
+    const focusedFull = focused?.getData("pickupLabelFull") as string | undefined;
+    if (focusedLabel && focusedFull) {
+      focusedLabel
+        .setText(`${focusedFull}\n[E] PICK UP`)
+        .setFontSize(14)
+        .setWordWrapWidth(176)
+        .setPadding(8, 5, 8, 5);
+    }
+  }
+
   /** E pickup affordance: one pulsing ring plus one prompt on the exact nearest reachable weapon. */
   private renderGrabHighlight(): void {
     const g = this.grabGfx;
     g.clear();
     const t = this.grabTarget;
+    this.updateGalleryPickupLabel(this.grabTargetId);
     if (!t) {
       this.grabPromptText.setVisible(false);
       return;
@@ -11504,6 +11712,22 @@ export class ArenaScene extends Phaser.Scene {
         copy.location = `${copy.location} · [G] Game note · [T] Weapon note`;
       }
     }
+    if (mode === "training") {
+      let page = 0;
+      let pages = 0;
+      let count = 0;
+      state?.pickups.forEach((_pickup, id) => {
+        if (!id.startsWith("pk:")) return;
+        count++;
+        if (page > 0) return;
+        const [, rawPage, rawPages] = id.split(":", 4);
+        page = Number(rawPage) || 0;
+        pages = Number(rawPages) || 0;
+      });
+      if (page > 0) {
+        copy.location = `WEAPON EVALUATION  ·  PAGE ${String(page).padStart(2, "0")}/${String(pages).padStart(2, "0")}  ·  ${count} WEAPONS  ·  [Z/X] PAGE  ·  [Q] CYCLE  ·  [E] PICK UP  ·  [R] DROP/HOLD SALVAGE  ·  [/] PORTAL SEARCH  ·  [G/T] OWNER NOTES`;
+      }
+    }
     const layout = objectiveHudLayout({
       screenWidth: this.screenW(),
       uiScale: scale,
@@ -11763,12 +11987,12 @@ export class ArenaScene extends Phaser.Scene {
     const body = this.add.container(0, 0, [rails, bottomTab, rightTab, elbow]);
     root.add([body, detailLayer]);
 
-    const chips = new Map<string, DockChip>();
-    for (const id of WEAPON_IDS) {
-      const chip = buildDockChip(this, id);
+    const chips: DockChip[] = [];
+    for (let index = 0; index < 4; index++) {
+      const chip = buildDockChip(this, FISTS_WEAPON);
       chip.container.setVisible(false);
       bottomArm.add(chip.container);
-      chips.set(id, chip);
+      chips.push(chip);
     }
     this.carouselDock = {
       root,
@@ -11863,12 +12087,13 @@ export class ArenaScene extends Phaser.Scene {
     // dockux-panel §1.2: the whole dock body rides the SAME fade — awake earns the big pixels, idle
     // shrinks below today's footprint. Anchored at the bottom-right corner point so it stays edge-flush.
     // No new tween/timing; with prefers-reduced-motion the scale snaps between the endpoints instead.
+    const layout = dock.layout;
+    const idleScale = layout?.idleScale ?? 116 / 152;
     const scale = prefersReducedPaperMotion()
       ? p >= 0.5
         ? 1
-        : IDLE_DOCK_SCALE
-      : IDLE_DOCK_SCALE + (1 - IDLE_DOCK_SCALE) * p;
-    const layout = dock.layout;
+        : idleScale
+      : idleScale + (1 - idleScale) * p;
     if (layout) {
       const anchorX = layout.cornerLeft + layout.junctionSize;
       const anchorY = layout.cornerTop + layout.junctionSize;
@@ -11954,9 +12179,10 @@ export class ArenaScene extends Phaser.Scene {
     const dock = this.carouselDock;
     if (!dock) return;
     const entry = loadoutEntryView(self);
-    for (const chip of dock.chips.values()) {
+    for (const chip of dock.chips) {
       if (chip.container.visible) chip.container.setVisible(false);
     }
+    let poolIndex = 0;
     const place = (
       id: string,
       target: Phaser.GameObjects.Container,
@@ -11965,8 +12191,9 @@ export class ArenaScene extends Phaser.Scene {
       height: number,
       order: string,
     ) => {
-      const chip = dock.chips.get(id);
+      const chip = dock.chips[poolIndex++];
       if (!chip) return;
+      rebindDockChip(this, chip, id);
       if (chip.container.parentContainer !== target) {
         chip.container.parentContainer?.remove(chip.container);
         target.add(chip.container);
@@ -12005,29 +12232,29 @@ export class ArenaScene extends Phaser.Scene {
     dock.bottomTab
       .setText(bottomCulled > 0 ? `PREV +${bottomCulled}` : "PREV")
       .setPosition(layout.bottomTab.x, layout.bottomTab.y)
-      .setFontSize(Math.max(9, 11 * layout.scale));
+      .setFontSize(14);
     dock.rightTab
       .setText(rightCulled > 0 ? `[Q] NEXT +${rightCulled}` : "[Q] NEXT")
       .setPosition(layout.rightTab.x, layout.rightTab.y)
-      .setFontSize(Math.max(9, 11 * layout.scale));
+      .setFontSize(14);
 
     const n = WEAPON_IDS.length;
-    const tickGap = Math.max(1.5, Math.min(3, (layout.junctionSize - 10) / Math.max(1, n)));
-    const tickWidth = Math.max(1, tickGap - 0.6);
-    const total = n * tickGap;
-    const tickX = layout.junction.x - total / 2;
-    const tickY = layout.cornerTop - 3 * layout.scale;
     const accent = this.carouselDockAccent(entry);
+    const bar = layout.positionBar ?? {
+      x: layout.junction.x - 104,
+      y: layout.junction.y + layout.junctionSize / 2 + 12,
+      width: 208,
+      height: 4,
+    };
+    const fraction = n > 1 && dock.selectedIndex >= 0 ? dock.selectedIndex / (n - 1) : 0;
     dock.ticks.clear();
-    for (let index = 0; index < n; index++) {
-      dock.ticks
-        .lineStyle(
-          Math.max(1, 1.4 * layout.scale),
-          index === dock.selectedIndex ? accent : 0xcfc6ae,
-          index === dock.selectedIndex ? 1 : 0.38,
-        )
-        .lineBetween(tickX + index * tickGap, tickY, tickX + index * tickGap + tickWidth, tickY);
-    }
+    dock.ticks
+      .fillStyle(0x0e1117, 0.94)
+      .fillRoundedRect(bar.x, bar.y, bar.width, bar.height, bar.height / 2)
+      .fillStyle(0x59616d, 0.72)
+      .fillRoundedRect(bar.x + 2, bar.y + 2, bar.width - 4, Math.max(2, bar.height - 4), 2)
+      .fillStyle(accent, 1)
+      .fillCircle(bar.x + 3 + (bar.width - 6) * fraction, bar.y + bar.height / 2, 5);
 
     dock.elbow.setPosition(layout.junction.x, layout.junction.y);
     layoutDockJunction(
@@ -12048,7 +12275,7 @@ export class ArenaScene extends Phaser.Scene {
     if (focused?.container.visible) {
       focused.container
         .setPosition(layout.focus.x, layout.focus.y)
-        .setScale(layout.focus.scale)
+        .setScale((layout.focus.width ?? 360) / 360, (layout.focus.height ?? 520) / 520)
         .setRotation(0);
     }
   }
@@ -12165,7 +12392,11 @@ export class ArenaScene extends Phaser.Scene {
     const { focus, junction } = dock.layout;
     card.container.setVisible(true);
     if (prefersReducedPaperMotion()) {
-      card.container.setPosition(focus.x, focus.y).setScale(focus.scale).setRotation(0).setAlpha(1);
+      card.container
+        .setPosition(focus.x, focus.y)
+        .setScale((focus.width ?? 360) / 360, (focus.height ?? 520) / 520)
+        .setRotation(0)
+        .setAlpha(1);
       return;
     }
     card.container
@@ -12177,8 +12408,8 @@ export class ArenaScene extends Phaser.Scene {
       targets: card.container,
       x: focus.x,
       y: focus.y,
-      scaleX: focus.scale,
-      scaleY: focus.scale,
+      scaleX: (focus.width ?? 360) / 360,
+      scaleY: (focus.height ?? 520) / 520,
       rotation: 0,
       alpha: 1,
       duration: 190,
@@ -12276,6 +12507,12 @@ export class ArenaScene extends Phaser.Scene {
     }
     const cost = driveCostView(card.id);
     card.resource.setText(`DRIVE ${cost.pipText} · ${cost.copy}`);
+    const artState = this.failedArt.has(card.id)
+      ? "ART UNAVAILABLE"
+      : this.pendingArt.has(card.id)
+        ? "ART RENDERING…"
+        : "ART READY";
+    card.resource.setText(`${card.resource.text}\n${artState}`);
     if (activePairCard && offDef && entry.offId) {
       const preview = pairPreview({
         lead: {
@@ -12621,12 +12858,14 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.arsenalG) this.arsenalG = this.add.graphics().setScrollFactor(0).setDepth(100048);
     const g = this.arsenalG;
     g.clear();
-    const chipW = 156 * s;
-    const chipH = 42 * s;
-    const gap = 10 * s;
+    const panelUp = this.bagOpen || this.shopOpen;
+    const modal = backpackModalLayout(this.screenW(), this.screenH());
+    const chipW = panelUp ? Math.min(344, (modal.dock.width - 240) / 3) : 220;
+    const chipH = panelUp ? (modal.mode === "wide" ? 72 : 64) : 64;
+    const gap = panelUp ? 12 : 10;
     const total = 3 * chipW + 2 * gap;
     const x0 = this.screenW() / 2 - total / 2;
-    const baseY = this.screenH() - 84 * s;
+    const baseY = panelUp ? modal.dock.y + 18 : this.screenH() - chipH - 20;
     this.arsenalPairArt?.setVisible(false);
     for (let i = 0; i < 3; i++) {
       const active = i === entry.leadSlot;
@@ -12634,7 +12873,7 @@ export class ArenaScene extends Phaser.Scene {
       const empty = !wid || wid === "fists";
       const col = empty ? 0x39424e : (RARITIES[rarity]?.color ?? 0x9aa5b1);
       const x = x0 + i * (chipW + gap);
-      const y = baseY - (active ? 8 * s : 0);
+      const y = baseY - (active ? 8 : 0);
       g.fillStyle(0x0c1016, active ? 0.9 : 0.66).fillRoundedRect(x, y, chipW, chipH, 7 * s);
       g.lineStyle(active ? 3 * s : 1.5 * s, col, active ? 1 : 0.6).strokeRoundedRect(
         x,
@@ -12691,7 +12930,7 @@ export class ArenaScene extends Phaser.Scene {
         .setText(String(i + 1))
         .setColor(active ? "#ffe27a" : "#5c6672")
         .setPosition(x + 8 * s, y + 5 * s);
-      key.setFontSize(12 * s).setOrigin(0, 0);
+      key.setFontSize(14).setOrigin(0, 0);
       // weapon name (rarity-tinted); an empty slot says so instead of a dash that reads as a bug
       const leadName = WEAPONS[wid]?.name ?? "Unknown weapon";
       const nm = linkedOff
@@ -12709,39 +12948,38 @@ export class ArenaScene extends Phaser.Scene {
           y + chipH / 2 + 3 * s,
         );
       name
-        .setFontSize((empty || linkedOff ? 11 : nm.length > 22 ? 10 : nm.length > 16 ? 11 : 13) * s)
+        .setFontSize(nm.length > 22 ? 14 : 16)
         .setOrigin(0.5, 0.5);
       const pairGlyph = this.hudText(this.arsenalTexts, 10 + i, 100049)
         .setText("⚯")
         .setColor(linkedOff ? "#7a8290" : "#f1e8cf")
         .setPosition(x + chipW - 7 * s, y + chipH - 3 * s)
         .setVisible(paired);
-      pairGlyph.setFontSize(13 * s).setOrigin(1, 1);
+      pairGlyph.setFontSize(14).setOrigin(1, 1);
       const cost = empty ? undefined : driveCostView(wid);
       const found = this.manifestEntryAt("active", i)?.origin === "found";
       this.hudText(this.arsenalTexts, 13 + i, 100049)
         .setText(cost ? `${cost.pipText} ${cost.copy}${found ? " · FOUND · AT RISK" : ""}` : "")
         .setColor(found ? "#ffb24a" : "#a9cbd1")
         .setPosition(x + chipW / 2, y + chipH - 3 * s)
-        .setFontSize(8 * s)
+        .setFontSize(14)
         .setOrigin(0.5, 1)
         .setVisible(!!cost);
       // dockux-panel §3.4: while the panel is open, the slot chip itself says what a click does.
-      const panelUp = this.bagOpen || this.shopOpen;
       const tag = this.hudText(this.arsenalTexts, 7 + i, 100049)
         .setText(
           paired
             ? linkedOff
               ? "Off-hand"
               : "Atomic pair"
-            : this.shopOpen
-              ? "[Click] Sell"
-              : "[Click] Stow",
+            : this.bagWorkflow === "inventory"
+              ? "STOW"
+              : "SELECT",
         )
         .setColor(this.shopOpen ? "#ffd24a" : "#9fb0c2")
         .setPosition(x + chipW - 6 * s, y + 4 * s)
         .setVisible(panelUp);
-      tag.setFontSize(9 * s).setOrigin(1, 0);
+      tag.setFontSize(14).setOrigin(1, 0);
       // click zone (swap to this slot, or stash it when the bag is open)
       let z = this.slotZones[i];
       if (!z) {
@@ -12765,13 +13003,14 @@ export class ArenaScene extends Phaser.Scene {
             this.flashBanner("The off-hand is part of one atomic pair", "#ff8a2b");
             return;
           }
-          if (this.shopOpen) {
-            this.room?.send("sellWeapon", { from: "slot", index: i });
-          } else if (this.bagOpen) {
+          if (this.bagOpen && backpackTileIntent(this.bagWorkflow, "slot") === "stow") {
             // dockux-panel §2.2: say WHY a stow did nothing instead of failing silently.
             if (me.bag.length >= BAG_CAP)
               this.flashBanner(`Pack full — ${BAG_CAP}/${BAG_CAP}`, "#ff8a2b");
             else this.room?.send("bagStore", { slot: i });
+          } else if (this.bagOpen || this.shopOpen) {
+            this.bagSelected = { source: "slot", index: i };
+            this.bagRenderSignature = "";
           } else {
             this.selectBeltSlot(me, i);
           }
@@ -12780,12 +13019,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       z.setPosition(x + chipW / 2, y + chipH / 2).setSize(chipW, chipH);
 
-      const canPairSlot =
-        this.shopOpen &&
-        !entry.offId &&
-        !active &&
-        !empty &&
-        pairEligible(WEAPONS[entry.leadId], WEAPONS[wid]);
+      const canPairSlot = false;
       const slotPairItem = canPairSlot ? this.slotPairItem(self, i) : undefined;
       const pairSlotSelected =
         !!slotPairItem &&
@@ -12838,7 +13072,7 @@ export class ArenaScene extends Phaser.Scene {
       .setText(parts.join(" · "))
       .setColor("#9fb0c2")
       .setPosition(this.screenW() / 2, baseY - 16 * s);
-    info.setFontSize(12 * s).setOrigin(0.5, 1);
+    info.setFontSize(14).setOrigin(0.5, 1);
     if (this.lastPairKey && entry.pairKey !== this.lastPairKey) {
       if (entry.offId) {
         this.pairCandidate = null;
@@ -12884,7 +13118,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       this.bagPanelCloseAt = 0;
       this.bagPanelMode = this.shopOpen ? "shop" : "bag";
-      this.renderBagPanel(self, s);
+      this.renderArmoryBackpackPanel(self);
     } else if (this.bagPanelShown) {
       if (this.bagPanelCloseAt === 0) {
         this.bagPanelCloseAt = this.time.now;
@@ -12902,7 +13136,7 @@ export class ArenaScene extends Phaser.Scene {
         this.bagPanelCloseAt = 0;
         this.hideBagPanel();
       } else {
-        this.renderBagPanel(self, s);
+        this.renderArmoryBackpackPanel(self);
       }
     }
   }
@@ -13035,6 +13269,333 @@ export class ArenaScene extends Phaser.Scene {
         g.lineBetween(x1 + ux * d, y1 + uy * d, x1 + ux * e, y1 + uy * e);
       }
     }
+  }
+
+  private renderArmoryBackpackPanel(self: PlayerState): void {
+    const layout = backpackModalLayout(this.screenW(), this.screenH());
+    this.bagDisplayOrder = this.sortedBackpackOrder(self);
+    if (!this.bagSelected) {
+      const first = this.bagDisplayOrder[this.bagFocusCell] ?? this.bagDisplayOrder[0];
+      if (first !== undefined) this.bagSelected = { source: "bag", index: first };
+    }
+    const entry = loadoutEntryView(self);
+    const bagIdentity = self.bag
+      .map((item) => `${item.weapon}:${item.rarity}:${item.affix}:${item.earned}`)
+      .join("|");
+    const signature = [
+      this.screenW(),
+      this.screenH(),
+      this.bagWorkflow,
+      bagIdentity,
+      entry.pairKey,
+      entry.leadSlot,
+      self.scrip,
+      self.upVitality,
+      self.upFortune,
+      self.upPower,
+      this.bagSelected?.source,
+      this.bagSelected?.index,
+      this.bagFocusCell,
+      this.bagHoverCell,
+    ].join(":");
+    if (signature === this.bagRenderSignature) return;
+    this.bagRenderSignature = signature;
+    if (!this.bagG) this.bagG = this.add.graphics().setScrollFactor(0).setDepth(100044);
+    const g = this.bagG.setVisible(true).setAlpha(1).clear();
+    for (const text of this.bagTexts) text?.setVisible(false);
+    for (const art of this.bagArts) art?.setVisible(false);
+    for (const zone of this.buyZones) zone.setVisible(false);
+    for (const zone of this.pairSlotZones) zone.setVisible(false);
+    for (const zone of this.bagPairZones) zone.setVisible(false);
+    this.pairConfirmZone?.setVisible(false);
+    this.unbindZone?.setVisible(false);
+
+    g.fillStyle(ARMORY_COLORS.bg, 0.66).fillRect(0, 0, this.screenW(), this.screenH());
+    drawArmoryPanel(g, layout.panel.x, layout.panel.y, layout.panel.width, layout.panel.height, {
+      fill: ARMORY_COLORS.surface0,
+    });
+    drawArmoryPanel(g, layout.header.x, layout.header.y, layout.header.width, layout.header.height, {
+      fill: ARMORY_COLORS.surface1,
+      major: false,
+    });
+    drawArmoryPanel(g, layout.detail.x, layout.detail.y, layout.detail.width, layout.detail.height, {
+      fill: ARMORY_COLORS.surface1,
+    });
+    drawArmoryPanel(g, layout.dock.x, layout.dock.y, layout.dock.width, layout.dock.height, {
+      fill: ARMORY_COLORS.surface1,
+      major: false,
+    });
+
+    const title = this.hudText(this.bagTexts, 0, 100046)
+      .setText(`BACKPACK  ${self.bag.length}/${BAG_CAP}`)
+      .setPosition(layout.header.x + 24, layout.header.y + layout.header.height / 2)
+      .setColor(ARMORY_CSS_COLORS.textPrimary)
+      .setFontSize(24)
+      .setFontStyle("bold")
+      .setOrigin(0, 0.5)
+      .setVisible(true);
+    void title;
+    this.hudText(this.bagTexts, 1, 100046)
+      .setText("WORLD LIVE")
+      .setPosition(layout.header.x + layout.header.width - 24, layout.header.y + 14)
+      .setColor(ARMORY_CSS_COLORS.success)
+      .setBackgroundColor(ARMORY_CSS_COLORS.surface3)
+      .setPadding(10, 5, 10, 5)
+      .setFontSize(14)
+      .setFontStyle("bold")
+      .setOrigin(1, 0)
+      .setVisible(true);
+
+    const workflows = ["inventory", "sell", "bind", "upgrades"] as const;
+    const tabWidth = layout.mode === "wide" ? 132 : 108;
+    workflows.forEach((workflow, index) => {
+      const x = layout.header.x + 250 + index * (tabWidth + 8);
+      const y = layout.header.y + layout.header.height / 2;
+      const enabled = workflow === "inventory" || this.shopOpen;
+      drawArmoryPanel(g, x, y - 23, tabWidth, 46, {
+        major: false,
+        selected: this.bagWorkflow === workflow,
+        fill: enabled ? ARMORY_COLORS.surface2 : ARMORY_COLORS.surface0,
+        accent: enabled ? undefined : ARMORY_COLORS.border,
+      });
+      this.hudText(this.bagTexts, 70 + index, 100046)
+        .setText(workflow.toUpperCase())
+        .setPosition(x + tabWidth / 2, y)
+        .setColor(
+          !enabled
+            ? ARMORY_CSS_COLORS.textMuted
+            : this.bagWorkflow === workflow
+              ? ARMORY_CSS_COLORS.accent
+              : ARMORY_CSS_COLORS.textSecondary,
+        )
+        .setFontSize(14)
+        .setFontStyle("bold")
+        .setOrigin(0.5)
+        .setVisible(true);
+      let zone = this.bagTabZones[index];
+      if (!zone) {
+        zone = this.add
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+          .setScrollFactor(0)
+          .setDepth(100052)
+          .setInteractive({ useHandCursor: true });
+        zone.on("pointerdown", () => {
+          const target = workflows[index];
+          if (!target || (target !== "inventory" && !this.shopOpen)) return;
+          this.bagWorkflow = target;
+          this.bagSelected = null;
+          this.bagRenderSignature = "";
+        });
+        this.bagTabZones[index] = zone;
+      }
+      zone.setVisible(enabled).setPosition(x + tabWidth / 2, y).setSize(tabWidth, 46);
+    });
+
+    for (let cellIndex = 0; cellIndex < 12; cellIndex++) {
+      const rect = layout.cells[cellIndex]!;
+      const bagIndex = this.bagDisplayOrder[cellIndex];
+      const item = bagIndex === undefined ? undefined : self.bag[bagIndex];
+      const selected =
+        !!item && this.bagSelected?.source === "bag" && this.bagSelected.index === bagIndex;
+      const focused = cellIndex === this.bagFocusCell || cellIndex === this.bagHoverCell;
+      if (!item?.weapon) {
+        g.lineStyle(1, ARMORY_COLORS.border, 0.8);
+        this.dashedRect(g, rect.x, rect.y, rect.width, rect.height, 8, 6);
+        this.hudText(this.bagTexts, 10 + cellIndex, 100046)
+          .setText(`EMPTY ${String(cellIndex + 1).padStart(2, "0")}`)
+          .setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2)
+          .setColor(ARMORY_CSS_COLORS.textMuted)
+          .setFontSize(14)
+          .setOrigin(0.5)
+          .setVisible(true);
+        this.bagZones[cellIndex]?.setVisible(false);
+        continue;
+      }
+      const rarityName = RARITIES[item.rarity]?.name ?? "Common";
+      const rarityColor = RARITIES[item.rarity]?.color ?? ARMORY_COLORS.textSecondary;
+      drawArmoryPanel(g, rect.x, rect.y, rect.width, rect.height, {
+        major: false,
+        selected: selected || focused,
+        fill: ARMORY_COLORS.surface2,
+        accent: selected ? ARMORY_COLORS.action : focused ? ARMORY_COLORS.accent : rarityColor,
+      });
+      const artKey = bakeCardArt(this, item.weapon, 212, 296, 14);
+      let art = this.bagArts[cellIndex];
+      if (!art) {
+        art = this.add.image(0, 0, artKey).setScrollFactor(0).setDepth(100045);
+        this.bagArts[cellIndex] = art;
+      } else if (art.texture.key !== artKey) art.setTexture(artKey);
+      const artWidth = layout.mode === "wide" ? 104 : 72;
+      art
+        .setCrop(0, 0, 212, 212)
+        .setDisplaySize(artWidth, artWidth)
+        .setPosition(rect.x + 10 + artWidth / 2, rect.y + 10 + artWidth / 2)
+        .setVisible(true);
+      const name = WEAPONS[item.weapon]?.name ?? "Unknown weapon";
+      this.hudText(this.bagTexts, 10 + cellIndex, 100046)
+        .setText(name.length > 24 ? `${name.slice(0, 23)}…` : name)
+        .setPosition(rect.x + artWidth + 20, rect.y + 14)
+        .setWordWrapWidth(rect.width - artWidth - 30)
+        .setColor(`#${rarityColor.toString(16).padStart(6, "0")}`)
+        .setFontSize(layout.mode === "wide" ? 16 : 14)
+        .setFontStyle("bold")
+        .setOrigin(0, 0)
+        .setVisible(true);
+      this.hudText(this.bagTexts, 30 + cellIndex, 100046)
+        .setText(`${rarityMark(rarityName)}\n${item.affix ? affixById(item.affix).name : "No affix"}`)
+        .setPosition(rect.x + artWidth + 20, rect.y + (layout.mode === "wide" ? 68 : 52))
+        .setWordWrapWidth(rect.width - artWidth - 30)
+        .setColor(ARMORY_CSS_COLORS.textSecondary)
+        .setFontSize(14)
+        .setOrigin(0, 0)
+        .setVisible(true);
+      let zone = this.bagZones[cellIndex];
+      if (!zone) {
+        zone = this.add
+          .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+          .setScrollFactor(0)
+          .setDepth(100051)
+          .setInteractive({ useHandCursor: true });
+        zone.on("pointerover", () => {
+          this.bagHoverCell = cellIndex;
+          this.bagFocusCell = cellIndex;
+          this.bagRenderSignature = "";
+        });
+        zone.on("pointerout", () => {
+          if (this.bagHoverCell === cellIndex) this.bagHoverCell = -1;
+          this.bagRenderSignature = "";
+        });
+        zone.on("pointerdown", () => {
+          const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+          const index = this.bagDisplayOrder[cellIndex];
+          if (!me || index === undefined || index >= me.bag.length) return;
+          this.bagSelected = { source: "bag", index };
+          this.bagFocusCell = cellIndex;
+          this.bagRenderSignature = "";
+          if (backpackTileIntent(this.bagWorkflow, "bag") === "equip") {
+            this.activateBackpackSelection(me);
+          }
+        });
+        this.bagZones[cellIndex] = zone;
+      }
+      zone
+        .setVisible(true)
+        .setPosition(rect.x + rect.width / 2, rect.y + rect.height / 2)
+        .setSize(rect.width, rect.height);
+    }
+
+    let selectedWeaponId = "";
+    let selectedRarity = 0;
+    let selectedAffix = "";
+    let selectedEarned = false;
+    if (this.bagSelected?.source === "bag") {
+      const selected = self.bag[this.bagSelected.index];
+      selectedWeaponId = selected?.weapon ?? "";
+      selectedRarity = selected?.rarity ?? 0;
+      selectedAffix = selected?.affix ?? "";
+      selectedEarned = selected?.earned ?? false;
+    } else if (this.bagSelected?.source === "slot") {
+      const selected = this.slotPairItem(self, this.bagSelected.index);
+      selectedWeaponId = selected?.weaponId ?? "";
+      selectedRarity = selected?.rarity ?? 0;
+      selectedAffix = selected?.affix ?? "";
+      selectedEarned = selected?.earned ?? false;
+    }
+    const weapon = WEAPONS[selectedWeaponId];
+    const rarityName = RARITIES[selectedRarity]?.name ?? "Common";
+    const detailX = layout.detail.x + 20;
+    const detailWidth = layout.detail.width - 40;
+    this.hudText(this.bagTexts, 50, 100046)
+      .setText(this.bagWorkflow === "upgrades" ? "PERMANENT UPGRADE" : weapon?.name ?? "SELECT AN ITEM")
+      .setPosition(detailX, layout.detail.y + 20)
+      .setWordWrapWidth(detailWidth)
+      .setColor(ARMORY_CSS_COLORS.textPrimary)
+      .setFontSize(18)
+      .setFontStyle("bold")
+      .setOrigin(0, 0)
+      .setVisible(true);
+
+    let detailCopy = "Choose a tile with arrows or pointer. Selection stays here while you compare.";
+    let actionLabel = "SELECT AN ITEM";
+    let actionEnabled = false;
+    if (this.bagWorkflow === "upgrades") {
+      const upgradeIndex = this.bagFocusCell % META_UPGRADES.length;
+      const upgrade = META_UPGRADES[upgradeIndex];
+      const level = upgrade?.id === "vitality" ? self.upVitality : upgrade?.id === "fortune" ? self.upFortune : self.upPower;
+      const cost = upgrade ? nextUpgradeCost(upgrade.id, level) : null;
+      detailCopy = upgrade
+        ? `${upgrade.name}  ${level}/${upgrade.maxLevel}\n${upgrade.desc}\n\nPermanent across runs.\nScrip available  ◈${self.scrip}`
+        : "No upgrade selected";
+      actionLabel = cost === null ? "MAXIMUM RANK" : `BUY ${upgrade?.name.toUpperCase()}  ◈${cost}`;
+      actionEnabled = cost !== null && self.scrip >= cost;
+    } else if (weapon) {
+      const value = scripValue(selectedRarity, selectedEarned);
+      detailCopy = `${rarityMark(rarityName)}\n${selectedAffix ? affixById(selectedAffix).name : "No affix"}\n\n${this.bagSelected?.source === "slot" ? `Active cell ${(this.bagSelected.index ?? 0) + 1}` : "Stored in backpack"}\nValue  ◈${value}\n\n${this.bagWorkflow === "sell" ? "Selling is final for this run." : this.bagWorkflow === "bind" ? "Binding creates one atomic two-cell pair." : `Equips into active cell ${self.activeSlot + 1}.`}`;
+      if (this.bagWorkflow === "inventory") {
+        actionLabel = this.bagSelected?.source === "slot" ? "STOW IN BACKPACK" : `EQUIP IN ACTIVE ${self.activeSlot + 1}`;
+        actionEnabled = true;
+      } else if (this.bagWorkflow === "sell") {
+        actionLabel = value > 0 ? `SELL FOR ◈${value}` : "NO SELL VALUE";
+        actionEnabled = value > 0;
+      } else {
+        actionLabel = entry.offId ? "UNBIND PAIR — FREE" : "BIND SELECTED PAIR";
+        actionEnabled = !!entry.offId || pairEligible(WEAPONS[entry.leadId], weapon);
+      }
+    } else if (this.bagWorkflow === "bind" && entry.offId) {
+      detailCopy = `${WEAPONS[entry.leadId]?.name ?? "Lead"} × ${WEAPONS[entry.offId]?.name ?? "Off-hand"}\n\nAtomic pair occupies two active cells.`;
+      actionLabel = "UNBIND PAIR — FREE";
+      actionEnabled = true;
+    }
+    this.hudText(this.bagTexts, 51, 100046)
+      .setText(detailCopy)
+      .setPosition(detailX, layout.detail.y + 62)
+      .setWordWrapWidth(detailWidth)
+      .setColor(ARMORY_CSS_COLORS.textSecondary)
+      .setFontSize(14)
+      .setLineSpacing(5)
+      .setOrigin(0, 0)
+      .setVisible(true);
+    const actionRect = {
+      x: layout.detail.x + 20,
+      y: layout.detail.y + layout.detail.height - 72,
+      width: layout.detail.width - 40,
+      height: 52,
+    };
+    drawArmoryPanel(g, actionRect.x, actionRect.y, actionRect.width, actionRect.height, {
+      major: false,
+      fill: actionEnabled ? 0x342b1a : ARMORY_COLORS.surface2,
+      accent: actionEnabled ? ARMORY_COLORS.action : ARMORY_COLORS.border,
+    });
+    this.hudText(this.bagTexts, 52, 100053)
+      .setText(actionLabel)
+      .setPosition(actionRect.x + actionRect.width / 2, actionRect.y + actionRect.height / 2)
+      .setColor(actionEnabled ? ARMORY_CSS_COLORS.action : ARMORY_CSS_COLORS.textMuted)
+      .setFontSize(14)
+      .setFontStyle("bold")
+      .setOrigin(0.5)
+      .setVisible(true);
+    if (!this.bagActionZone) {
+      this.bagActionZone = this.add
+        .rectangle(0, 0, 1, 1, 0xffffff, 0.001)
+        .setScrollFactor(0)
+        .setDepth(100054)
+        .setInteractive({ useHandCursor: true });
+      this.bagActionZone.on("pointerdown", () => {
+        const me = this.room?.state.players.get(this.room?.sessionId ?? "");
+        if (me) this.activateBackpackSelection(me);
+      });
+    }
+    this.bagActionZone
+      .setVisible(actionEnabled)
+      .setPosition(actionRect.x + actionRect.width / 2, actionRect.y + actionRect.height / 2)
+      .setSize(actionRect.width, actionRect.height);
+    this.hudText(this.bagTexts, 53, 100046)
+      .setText(`[Q] ACTIVE SLOT  ·  [1–3] DIRECT  ·  [Z/X] WORKFLOW  ·  [ENTER] ACTION  ·  [TAB/ESC] CLOSE  ·  ◈${self.scrip}`)
+      .setPosition(layout.dock.x + layout.dock.width - 24, layout.dock.y + layout.dock.height - 18)
+      .setColor(ARMORY_CSS_COLORS.textSecondary)
+      .setFontSize(14)
+      .setOrigin(1, 1)
+      .setVisible(true);
   }
 
   private renderBagPanel(self: PlayerState, s: number): void {
@@ -13690,6 +14251,8 @@ export class ArenaScene extends Phaser.Scene {
   private hideBagPanel(): void {
     this.bagG?.setVisible(false);
     for (const z of this.bagZones) z.setVisible(false);
+    for (const z of this.bagTabZones) z.setVisible(false);
+    this.bagActionZone?.setVisible(false);
     for (const z of this.buyZones) z.setVisible(false);
     for (const z of this.pairSlotZones) z.setVisible(false);
     for (const z of this.bagPairZones) z.setVisible(false);

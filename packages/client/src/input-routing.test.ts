@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { routeOwnerNoteInput, routeWeaponInput, type WeaponInputMode } from "./input-routing.js";
+import {
+  routeArmoryUiInput,
+  routeOwnerNoteInput,
+  routeWeaponInput,
+  type ArmoryUiContext,
+  type WeaponInputMode,
+} from "./input-routing.js";
 
 const base = (mode: WeaponInputMode = "arena") => ({
   mode,
@@ -125,5 +131,88 @@ describe("owner-note input routing", () => {
         sample({ modalOpen: true, gameNotePressed: true, weaponNotePressed: true }),
       ),
     ).toEqual({ openNote: null, toggleTraining: false, gameplayEnabled: false });
+  });
+});
+
+// ARMORY UI TRACK A — append-only context routing coverage.
+describe("armory UI input routing", () => {
+  const sample = (
+    context: ArmoryUiContext,
+    overrides: Partial<Parameters<typeof routeArmoryUiInput>[0]> = {},
+  ) => ({
+    context,
+    modalOpen: false,
+    textInputFocused: false,
+    leftPressed: false,
+    rightPressed: false,
+    upPressed: false,
+    downPressed: false,
+    enterPressed: false,
+    escapePressed: false,
+    closePressed: false,
+    previousContextPressed: false,
+    nextContextPressed: false,
+    previousPagePressed: false,
+    nextPagePressed: false,
+    resetPressed: false,
+    digitPressed: null,
+    ...overrides,
+  });
+
+  it("maps the same physical keys to explicit Closet-only navigation verbs", () => {
+    expect(routeArmoryUiInput(sample("wardrobe", { nextContextPressed: true }))).toMatchObject({
+      contextDelta: 1,
+      workflowDelta: 0,
+      gameplayEnabled: false,
+    });
+    expect(routeArmoryUiInput(sample("wardrobe", { nextPagePressed: true }))).toMatchObject({
+      pageDelta: 1,
+      preset: null,
+    });
+    expect(routeArmoryUiInput(sample("wardrobe", { resetPressed: true, digitPressed: 6 }))).toMatchObject({
+      reset: true,
+      preset: 6,
+    });
+  });
+
+  it("maps Backpack Z/X to workflows and keeps Q/1-3 inside the modal", () => {
+    expect(
+      routeArmoryUiInput(
+        sample("backpack", {
+          nextContextPressed: true,
+          previousPagePressed: true,
+          digitPressed: 3,
+        }),
+      ),
+    ).toMatchObject({ contextDelta: 1, workflowDelta: -1, pageDelta: 0, activeSlot: 3 });
+  });
+
+  it("lets any higher modal and a focused search field swallow the complete catalog frame", () => {
+    for (const overrides of [{ modalOpen: true }, { textInputFocused: true }]) {
+      expect(
+        routeArmoryUiInput(
+          sample("wardrobe", {
+            ...overrides,
+            rightPressed: true,
+            enterPressed: true,
+            nextContextPressed: true,
+            nextPagePressed: true,
+            resetPressed: true,
+            digitPressed: 2,
+          }),
+        ),
+      ).toEqual({
+        move: null,
+        primary: false,
+        contextDelta: 0,
+        pageDelta: 0,
+        workflowDelta: 0,
+        reset: false,
+        preset: null,
+        activeSlot: null,
+        close: false,
+        gameplayEnabled: false,
+      });
+    }
   });
 });

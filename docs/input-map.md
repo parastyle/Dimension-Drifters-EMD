@@ -96,13 +96,11 @@ The level window is a hard modal. Its release latch must clear before gameplay r
 | Restart / Wardrobe button | Restart active run, or return to Wardrobe after outcome | Arena HUD |
 | Arsenal slot | Select slot | Belt HUD, panel closed |
 | Arsenal slot | Stow to pack | Backpack open |
-| Arsenal slot | Sell | Trading Post open |
-| Arsenal or pack pair glyph | Choose off-hand candidate | Trading Post open |
-| Pack weapon card | Equip into active slot / sell | Backpack / Trading Post |
-| Bind / Unbind button | Confirm pair / remove pair | Trading Post |
-| Upgrade card | Buy permanent upgrade | Trading Post |
+| Arsenal slot | Select; Inventory click stows directly | Trading Post / Backpack open |
+| Pack weapon card | Inventory equips directly; Sell/Bind only selects | Backpack / Trading Post |
+| Persistent detail action | Sell, bind/unbind, or buy the selected upgrade | Trading Post; explicit confirmation surface |
 
-The ordinary carousel is display-only. Its previous arm is labelled `PREV`; its actionable next arm is labelled `[Q] NEXT`. Backpack copy remains `[Click] Equip · [Tab] Close`; Trading Post copy remains `[Click] Sell · [F] Close`. While the pointer is over any interactive HUD object, LMB/RMB combat is suppressed.
+The ordinary carousel is display-only. Its previous arm is labelled `PREV`; its actionable next arm is labelled `[Q] NEXT`. The backpack traps arrows/Enter, uses `Z/X` for trading workflows, `Q` for the active slot, and `Tab`/`Esc` to close. While it is open the modal swallows gameplay and owner-note input. While the pointer is over any interactive HUD object, LMB/RMB combat is suppressed.
 
 ### Testing Grounds summon menu
 
@@ -123,7 +121,12 @@ The full-screen backdrop/panel are interactive absorbers, preventing clicks from
 | --- | --- | --- |
 | `1–6` | Apply wardrobe preset | Wardrobe / closet tab |
 | `R` | Clear selected wardrobe slot to its starter item | Wardrobe / closet tab |
-| `Enter` | Continue to Destinations | Wardrobe or Armory / Carry tab |
+| Arrow keys | Move the roving catalog focus | Wardrobe or Armory / Carry tab |
+| `Enter` | Equip/unequip the focused gear, or stage/remove the focused weapon entry | Wardrobe or Armory / Carry tab |
+| `Q`, `E` | Previous/next Closet slot; move staged Armory item between Active and Pack | Wardrobe / Armory context |
+| `Z`, `X` | Previous/next virtual catalog page | Wardrobe or Armory / Carry tab |
+| `/` | Focus the active canvas catalog search field | Wardrobe or Armory / Carry tab |
+| `Esc` | Return to Destinations, or close the Prestige drawer first | Wardrobe or Armory / Carry tab |
 | `1…N` | Launch the numbered dimension | Destinations tab |
 | `B` | Launch Boss Rush | Destinations tab |
 | `H` | Toggle Quick Join / Host New Run | Destinations tab |
@@ -141,7 +144,7 @@ The full-screen backdrop/panel are interactive absorbers, preventing clicks from
 
 ## Collision state machine after remap
 
-1. A hard modal (owner-note bubble, level window, release latch, Verb Legend, summon menu, or its close edge) owns input and blocks gameplay handlers.
+1. A hard modal (owner-note bubble, level window, release latch, Verb Legend, summon menu, backpack/trading workspace, or its close edge) owns input and blocks gameplay handlers.
 2. In arena/non-training play, `T` keeps its single enter-Testing-Grounds verb and `G` is inert. In Testing Grounds, `G` opens a game note and `T` opens a weapon note; neither can also toggle the mode.
 3. While an owner-note bubble is open, its DOM textarea owns every keyboard/pointer frame. `Enter` submits, `Shift+Enter` inserts a newline, and `Esc` cancels.
 4. With gameplay enabled, the client resolves the nearest in-range pickup and shows `[E] Pick up` on that exact target.
@@ -157,9 +160,9 @@ The full-screen backdrop/panel are interactive absorbers, preventing clicks from
 - Top HTML HUD: now includes `E interact · Q cycle · H controls`.
 - Pickup affordance: new world-space `[E] Pick up` prompt on the highlighted target.
 - Verb Legend: `E` pickup/interact, `Q` next weapon/slot, `Z/X` gallery pages, `T` enter Testing Grounds, and contextual `G/T` notes.
-- Testing Grounds objective/location plate: appends `[Z/X] Prev/Next`, `[G] Game note`, and `[T] Weapon note` beside the live gallery page count.
+- Testing Grounds objective/location plate: identifies `WEAPON EVALUATION` and shows page count, `Z/X`, `Q`, `E`, `R`, Portal search, and `G/T` owner-note context; only the nearest gallery pickup expands to its full 14 px label.
 - Ordinary weapon dock: removes all `E` badges; previous items are passive and `[Q] NEXT` is the only cycle affordance.
 - Belt arsenal readout: adds `[Q] Next slot`.
-- Backpack and Trading Post: existing `[Tab]` / `[F]` close and click verbs remain correct.
+- Backpack and Trading Post: the header exposes Inventory/Sell/Bind/Upgrades; selling exists only on the persistent `Sell for ◈N` action, never on a tile click.
 - Testing Grounds summon sheet: existing `Tab / Esc to close` remains correct.
 - Dev portal Testing Grounds links/cards: no in-game key names were present, so no portal copy changed.

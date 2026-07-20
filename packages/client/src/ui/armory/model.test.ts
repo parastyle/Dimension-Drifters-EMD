@@ -1,10 +1,13 @@
 import { createMetaAccountV4, type SingleWeaponEntryV1 } from "@dd/shared";
 import { describe, expect, it } from "vitest";
 import {
+  armoryCatalogEntries,
   armoryCarrySelection,
   armoryEntryViews,
   armorySummary,
   createArmoryDraft,
+  DEFAULT_ARMORY_FILTERS,
+  moveArmoryEntryZone,
   toggleArmoryEntry,
 } from "./model.js";
 
@@ -76,5 +79,20 @@ describe("armory carry model", () => {
     const summary = armorySummary(account, createArmoryDraft(account));
     expect(summary.atRiskPhysical).toBe(0);
     expect(summary.safeEntries).toBe(0);
+  });
+
+  it("moves a staged entry between Active and Pack reversibly and filters the resulting zone", () => {
+    const account = createMetaAccountV4();
+    const kept = entry(7, "rare");
+    account.weaponBank.stash.push(kept);
+    let draft = toggleArmoryEntry(account, createArmoryDraft(account), kept.entryId).draft;
+    expect(draft.placements[0]?.zone).toBe("active");
+    draft = moveArmoryEntryZone(account, draft, kept.entryId, 1).draft;
+    expect(draft.placements[0]?.zone).toBe("pack");
+    expect(
+      armoryCatalogEntries(account, draft, { ...DEFAULT_ARMORY_FILTERS, zone: "pack" }),
+    ).toHaveLength(1);
+    draft = moveArmoryEntryZone(account, draft, kept.entryId, -1).draft;
+    expect(draft.placements[0]?.zone).toBe("active");
   });
 });

@@ -435,3 +435,9 @@ No owner decision is required to begin either track. The specification deliberat
 - The generated Portal artifact remains owned by `gen-portal.mjs`; its emitted catalog contains 326 weapons, 113 gear items, and the existing non-armory categories.
 - Weaponsmith now uses the same visual contract with a full-height virtual roster (at most 30 mounted rows), eight metadata filters, four preview modes, three reference panes, two persistent render contexts, accessible inspector accordions, and explicit Testing Grounds launch and save controls. The existing full-catalog API, assignment workflow, render queue, candidate comparison, prompt editing, and save payload remain intact.
 - `server.mjs` adds presentation metadata only: delivery, element, candidate count, and the explicit `READY`, `RENDERING`, `ARTLESS`, or `UNAVAILABLE` art state used by the web UI.
+
+## 17. Track A implementation notes
+
+- Menu Closet and Armory now use full-viewport CSS-pixel layouts at the exact 1920 x 1080 and 1280 x 720 tiers. The Closet retains the bounds-derived preview as an opaque child and transforms only its public root; its catalog uses 15/8 persistent tile controls with a virtual window, live hover/focus preview, explicit manifest art states, and all twelve set-completion views.
+- The non-belt dock retains exactly one junction, four pooled/rebound neighbor chips, and a three-entry focus-card LRU. The backpack uses twelve fixed pooled cells, a dirty state signature, separate Inventory/Sell/Bind/Upgrades tabs, and an explicit destructive Sell action.
+- Closet, menu Armory, and backpack keys route through `input-routing.ts` contexts. Higher-priority modals swallow the whole frame, including Testing Grounds owner-note G/T input, while the Testing Grounds gallery keeps server paging and exposes only the nearest pickup's full label.
