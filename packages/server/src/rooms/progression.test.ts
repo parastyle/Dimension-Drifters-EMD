@@ -651,7 +651,7 @@ describe("gear G1/G2 shared catalog, account, and allocation laws", () => {
   });
 
   it("pins schema 31 while retaining the nested final wire envelope", () => {
-    expect(petShared.SCHEMA_VERSION).toBe(31);
+    expect(petShared.SCHEMA_VERSION).toBe(32);
     const playerSymbols = Object.getOwnPropertySymbols(petShared.PlayerState);
     const playerMetadata = (
       petShared.PlayerState as unknown as Record<symbol, Record<number, { name: string }>>

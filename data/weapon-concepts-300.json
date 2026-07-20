@@ -1250,7 +1250,7 @@
         "range": 112,
         "halfArc": 0.75,
         "cooldown": 0.34,
-        "displayLength": 60,
+        "displayLength": 120,
         "swingArc": 2.3,
         "gripFrac": 0.14
       },
@@ -1380,7 +1380,7 @@
         "range": 104,
         "halfArc": 0.85,
         "cooldown": 0.3,
-        "displayLength": 60,
+        "displayLength": 120,
         "swingArc": 3,
         "gripFrac": 0.15
       },
@@ -9665,6 +9665,17 @@
       "requirements": {
         "int": 9
       },
+      "performance": {
+        "hold": "steady",
+        "action": "shake",
+        "continuous": true,
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 3,
+          "rotationRad": 0.05,
+          "frequencyHz": 12
+        }
+      },
       "id": "x2-hexbloom-scattergrimoire"
     },
     {
@@ -10200,7 +10211,20 @@
         "kind": "beam",
         "damage": 4,
         "range": 800,
-        "tickRate": 0.1
+        "tickRate": 0.1,
+        "zone": {
+          "trigger": "attack",
+          "style": "ice",
+          "initialRadius": 56,
+          "maxRadius": 56,
+          "growthPerSecond": 0,
+          "lingerSeconds": 1.25,
+          "damagePerSecond": 0,
+          "tickRate": 0.1,
+          "placementRange": 640,
+          "slowMultiplier": 0.55,
+          "slowSeconds": 0.65
+        }
       },
       "stats": {
         "damage": 10,
@@ -10262,6 +10286,12 @@
       },
       "requirements": {
         "int": 5
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "page-flip",
+        "continuous": true,
+        "suppressSwing": true
       },
       "id": "x2-emberleaf-chapbook"
     },
@@ -10441,6 +10471,17 @@
       "scalingGrades": {
         "int": "A"
       },
+      "performance": {
+        "hold": "steady",
+        "action": "shake",
+        "continuous": true,
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 2.5,
+          "rotationRad": 0.045,
+          "frequencyHz": 10
+        }
+      },
       "id": "x2-tallowtongue-pyre-stave"
     },
     {
@@ -10521,7 +10562,7 @@
         "range": 130,
         "halfArc": 0.6,
         "cooldown": 0.4,
-        "displayLength": 56,
+        "displayLength": 90,
         "swingArc": 2,
         "gripFrac": 0.16
       },
@@ -10745,6 +10786,12 @@
           "damage": 3
         }
       },
+      "performance": {
+        "hold": "aim-forward",
+        "action": "recoil",
+        "suppressSwing": true,
+        "emitter": "spout"
+      },
       "stats": {
         "damage": 5,
         "range": 150,
@@ -10886,7 +10933,7 @@
         "range": 120,
         "halfArc": 0.9,
         "cooldown": 0.7,
-        "displayLength": 88,
+        "displayLength": 264,
         "swingArc": 2.8,
         "gripFrac": 0.14
       },
@@ -11000,11 +11047,22 @@
       "paletteAccent": "#9CFF3B",
       "cardartAction": "flicked forward, the tonic bottle hurling a chaining splash of corrosive plasma-lime quackery that leaps foe to foe in dwindling spatters",
       "behavior": {
-        "kind": "chainLightning",
-        "jumps": 4,
-        "range": 190,
-        "damage": 5,
-        "falloff": 0.8
+        "kind": "groundZone",
+        "zone": {
+          "trigger": "channel",
+          "style": "poison",
+          "initialRadius": 32,
+          "maxRadius": 125,
+          "growthPerSecond": 72,
+          "lingerSeconds": 2.4,
+          "damagePerSecond": 11.9047619,
+          "tickRate": 0.1,
+          "placementRange": 125,
+          "scalingGrades": {
+            "int": "A",
+            "luk": "C"
+          }
+        }
       },
       "stats": {
         "damage": 5,
@@ -11409,6 +11467,17 @@
           "damage": 6
         }
       },
+      "performance": {
+        "hold": "overhead",
+        "action": "overhead-downswing",
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 3,
+          "rotationRad": 0.055,
+          "frequencyHz": 11
+        },
+        "vfxAt": "impact"
+      },
       "id": "x2-cinderchoke-brazier-orb"
     },
     {
@@ -11498,6 +11567,24 @@
         "damage": 6,
         "falloff": 0.8
       },
+      "performance": {
+        "hold": "overhead",
+        "action": "shake",
+        "continuous": true,
+        "suppressSwing": true,
+        "shake": {
+          "amplitudePx": 3.5,
+          "rotationRad": 0.065,
+          "frequencyHz": 13
+        },
+        "aura": {
+          "radius": 150,
+          "damagePerSecond": 18,
+          "resourcePerSecond": 20,
+          "tickRate": 0.2,
+          "color": 3401471
+        }
+      },
       "id": "x2-fulgurite-storm-sphere"
     },
     {
@@ -11538,6 +11625,11 @@
         "kind": "quake",
         "radius": 130,
         "damage": 10
+      },
+      "performance": {
+        "hold": "hanging-chain",
+        "action": "hold",
+        "suppressSwing": true
       },
       "id": "x2-coffin-nail-rosary-orb"
     },
@@ -11609,7 +11701,7 @@
       "palettePrimary": "#5A6472",
       "paletteAccent": "#B14BFF",
       "artPrompt": "Weapon-only in-world sprite (no character, no background): a smoky grey crystal-ball clouded inside with a swirling dark fog, set on a melted-wax candle-stub pedestal that forms the grip on the LEFT, drips of pale wax frozen down it. A seance void-orb. Flat orthographic full side-profile, ~5 colours: steel #5A6472, off-white #E8E4D8 wax, arc-violet #B14BFF fog inside, charcoal #22252B outline, gunmetal #3A4049. Orb HEAD faces RIGHT, wax pedestal grip on the LEFT. Matte solid, NO emitted glow, NO smoke wisps.",
-      "cardartAction": "aimed forward, a thin devouring ribbon of purple void-shadow drilling out of the globe in a steady beam",
+      "cardartAction": "held low while tiny nether-texture fragments accrete into a widening void patch across the ground",
       "stats": {
         "damage": 6,
         "range": 760,
@@ -11620,10 +11712,21 @@
         "gripFrac": 0.12
       },
       "behavior": {
-        "kind": "beam",
-        "damage": 6,
-        "range": 760,
-        "tickRate": 0.1
+        "kind": "groundZone",
+        "zone": {
+          "trigger": "channel",
+          "style": "nether",
+          "initialRadius": 36,
+          "maxRadius": 220,
+          "growthPerSecond": 128,
+          "lingerSeconds": 2,
+          "damagePerSecond": 60,
+          "tickRate": 0.1,
+          "placementRange": 240,
+          "scalingGrades": {
+            "int": "S"
+          }
+        }
       },
       "id": "x2-gravewax-seance-globe"
     },
@@ -12174,6 +12277,10 @@
         "radius": 160,
         "damage": 9
       },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing"
+      },
       "stats": {
         "damage": 9,
         "range": 160,
@@ -12291,19 +12398,30 @@
       "paletteAccent": "#6E7042",
       "cardartAction": "thrust forward flinging a hissing fan of toxic-green bile motes that splash into dripping acid bursts, feathers scattering off the cage",
       "behavior": {
-        "kind": "scatter",
-        "count": 7,
-        "spread": 0.5,
+        "kind": "thrown",
         "speed": 420,
         "range": 240,
         "damage": 4,
+        "charges": 3,
+        "refillSeconds": 1.5,
         "pierce": 1,
         "scalingGrades": {
           "int": "B"
         },
-        "explode": {
-          "radius": 44,
-          "damage": 4
+        "zone": {
+          "trigger": "landing",
+          "style": "poison",
+          "initialRadius": 44,
+          "maxRadius": 44,
+          "growthPerSecond": 0,
+          "lingerSeconds": 4.5,
+          "damagePerSecond": 11.1111111,
+          "tickRate": 0.1,
+          "placementRange": 240,
+          "grenadeArcHeight": 120,
+          "scalingGrades": {
+            "int": "B"
+          }
         }
       },
       "stats": {
@@ -12481,6 +12599,10 @@
         "kind": "quake",
         "radius": 175,
         "damage": 13
+      },
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing"
       },
       "stats": {
         "damage": 13,

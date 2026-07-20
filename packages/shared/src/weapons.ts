@@ -80,6 +80,75 @@ export interface BeamDef {
   scalingGrades?: Partial<Record<Attr, Grade>>;
 }
 
+/** Shared server-owned ground patch. The client renders the footprint from small authored texture chunks;
+ * radius is gameplay truth and never inferred from renderer geometry. */
+export interface GroundZoneDef {
+  trigger: "channel" | "attack" | "landing";
+  style: "nether" | "poison" | "ice";
+  initialRadius: number;
+  maxRadius: number;
+  growthPerSecond: number;
+  lingerSeconds: number;
+  damagePerSecond: number;
+  /** Positive multiple of the shared 50ms room step. */
+  tickRate: number;
+  /** Cursor/landing placement clamp in world pixels. */
+  placementRange: number;
+  scalingGrades?: Partial<Record<Attr, Grade>>;
+  /** Multiplicative move speed while inside; 1 means no slow. */
+  slowMultiplier?: number;
+  /** Slow refresh duration applied by each authoritative zone tick. */
+  slowSeconds?: number;
+  /** Cosmetic ballistic lift for landing-trigger throws; server travel remains authoritative. */
+  grenadeArcHeight?: number;
+}
+
+/** Reusable held-performance vocabulary. These fields describe presentation and explicitly named
+ * continuous mechanics; ordinary damage geometry remains in the weapon's existing source blocks. */
+export type WeaponPerformanceHold =
+  | "upright"
+  | "hanging-chain"
+  | "steady"
+  | "aim-forward"
+  | "overhead";
+
+export type WeaponPerformanceAction =
+  | "default-swing"
+  | "hold"
+  | "page-flip"
+  | "shake"
+  | "recoil"
+  | "overhead-downswing";
+
+export interface WeaponPerformanceDef {
+  /** Stable held equilibrium resolved by the client pose-language sampler. */
+  hold: WeaponPerformanceHold;
+  /** Attack-time pose layered on the held equilibrium. */
+  action: WeaponPerformanceAction;
+  /** The pointer's held edge is meaningful between accepted discrete beats. */
+  continuous?: boolean;
+  /** Prevent the generic swing vocabulary from competing with this authored performance. */
+  suppressSwing?: boolean;
+  /** Parameterized in-place motion; shared by every shake-capable hold state. */
+  shake?: {
+    amplitudePx: number;
+    rotationRad: number;
+    frequencyHz: number;
+  };
+  /** Held-implement source point. `spout` is the painted +X business end. */
+  emitter?: "spout";
+  /** Delay projectile/source punctuation until the accepted swing's impact epoch. */
+  vfxAt?: "impact";
+  /** Garlic-style authoritative channel centered on the wielder. */
+  aura?: {
+    radius: number;
+    damagePerSecond: number;
+    resourcePerSecond: number;
+    tickRate: number;
+    color: number;
+  };
+}
+
 export interface WeaponDef {
   /** Matches the installed sprite id (texture key base = `${id}:part-1`). */
   id: string;
@@ -90,6 +159,8 @@ export interface WeaponDef {
   sizeClass?: WeaponSizeClass;
   /** Server-consumed accepted-beat identity hook for the katana line. */
   katanaHook?: KatanaHookDef;
+  /** Authored held/attack performance and its optional continuous mechanic. */
+  performance?: WeaponPerformanceDef;
   /** Follow-up render-fleet marker; metadata only and never a substitute for an installed sheet. */
   bespokeVfxSheet?: boolean;
   /** Damage per swing (hp). */
@@ -154,6 +225,8 @@ export interface WeaponDef {
     /** Per-source scaling (§14 WYSIWYG) — this projectile's own grades; omitted = the weapon's edge grades. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
   };
+  /** Procedural ground-AoE payload shared by channel, attack, and grenade-landing weapons. */
+  groundZone?: GroundZoneDef;
   /**
    * Earthquake on swing: AoE damage to every enemy within `radius` px of the player. `vfx` is the
    * client cosmetic (§14 hero Codex skin + engine overlays) — authored in the Weaponsmith tool and
@@ -290,6 +363,8 @@ export interface WeaponDef {
     reloadSeconds: number;
     /** Client bullet visual: "slug" | "pellet" | "tracer" | "nail" | "ricochet". */
     bulletKind: string;
+    /** Client-only in-flight projectile scale. Never enters the fixed server hit radius. */
+    projectileVisualScale?: number;
     /** Client muzzle-flash style: "heavy" | "boom" | "rapid" | "punch" | "spark". */
     muzzle: string;
     /** Muzzle/bullet tint (hex). Omitted → a default hot orange. */
@@ -368,6 +443,12 @@ export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): 
 /** Shared held-implement tip for bullets, caster bolts, and beams. */
 export const weaponMuzzleReach = gunMuzzleReach;
 
+/** Painted +X emitter reach for authored spouts. Both client punctuation and server projectile spawn call
+ * this exact seam; a zero return means the weapon retains its legacy source-origin policy. */
+export function weaponPerformanceEmitterReach(weapon: WeaponDef | undefined): number {
+  return weapon?.performance?.emitter === "spout" ? weaponMuzzleReach(weapon) : 0;
+}
+
 /** Two-hand orbit carries the grip this far from the authoritative player root before extending the blade.
  * SpriteRig uses `TARGET_BODY_H * 0.3` (76 * 0.3); sharing the world-space result prevents the rendered
  * business end from outrunning server reach. */
@@ -404,6 +485,7 @@ export function pairDelivery(weapon: WeaponDef): "melee" | "gun" | "cast" | "" {
     weapon.tags.grip !== "1H" ||
     weapon.dual === true ||
     weapon.beam ||
+    weapon.groundZone ||
     weapon.thrown
   )
     return "";
@@ -1299,6 +1381,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       magazine: 3,
       reloadSeconds: 1.8,
       bulletKind: "grenade",
+      projectileVisualScale: 5,
       muzzle: "boom",
       muzzleColor: 0xffb24a,
       recoil: 0.005, // the heaviest kick in the rack

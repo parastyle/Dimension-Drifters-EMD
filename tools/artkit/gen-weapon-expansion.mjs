@@ -34,7 +34,7 @@ const TYPES = new Set(["melee", "ranged", "caster"]);
 const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
-const KINDS = new Set(["edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam"]);
+const KINDS = new Set(["edge", "thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone"]);
 const BULLET_KINDS = new Set(["slug", "pellet", "tracer", "nail", "ricochet", "spark"]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
@@ -50,15 +50,15 @@ const TOP_KEYS = new Set([
   "rangeBand", "scaling", "scalingGrades", "requirements", "artPrompt", "palettePrimary",
   "paletteAccent", "cardartAction", "behavior", "stats", "description", "banned", "expansion",
   "sprite", "sizeClass", "comboFamily", "comboVariant", "comboBar", "katanaHook",
-  "bespokeVfxSheet",
+  "bespokeVfxSheet", "performance",
 ]);
 // The sibling-block bug (§43): mechanic stats authored NEXT TO `behavior` instead of inside it were
 // silently ignored, shipping 11 weapons with default kits. Now an instant failure.
-const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam"];
+const MECH_SIBLINGS = ["thrown", "quake", "chainLightning", "scatter", "gun", "beam", "groundZone"];
 const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLength", "swingArc", "gripFrac"]);
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
-  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "scalingGrades"]),
+  thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "scalingGrades", "zone"]),
   quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
@@ -66,9 +66,15 @@ const BEHAVIOR_KEYS = {
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "scalingGrades", "explode"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "scalingGrades"]),
+    "scalingGrades", "zone"]),
+  groundZone: new Set(["kind", "zone"]),
 };
 const EXPLODE_KEYS = new Set(["radius", "damage", "scalingGrades"]);
+const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
+  "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
+  "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
+const ZONE_TRIGGERS = new Set(["channel", "attack", "landing"]);
+const ZONE_STYLES = new Set(["nether", "poison", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
 const COMBO_MOTIONS = new Set([
@@ -108,6 +114,17 @@ const KATANA_HOOK_KEYS = new Set([
   "finisherBurst", "perfectInvulnerabilitySeconds",
 ]);
 const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
+const PERFORMANCE_KEYS = new Set([
+  "hold", "action", "continuous", "suppressSwing", "shake", "emitter", "vfxAt", "aura",
+]);
+const PERFORMANCE_HOLDS = new Set(["upright", "hanging-chain", "steady", "aim-forward", "overhead"]);
+const PERFORMANCE_ACTIONS = new Set([
+  "default-swing", "hold", "page-flip", "shake", "recoil", "overhead-downswing",
+]);
+const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
+const PERFORMANCE_AURA_KEYS = new Set([
+  "radius", "damagePerSecond", "resourcePerSecond", "tickRate", "color",
+]);
 
 const checkKeys = (obj, allowed, path) => {
   for (const k of Object.keys(obj)) if (!allowed.has(k)) fail(`unknown key ${path}.${k}`);
@@ -193,6 +210,36 @@ function explodeOf(e, path, rMax) {
   };
   const g = grades(e.scalingGrades, `${path}.scalingGrades`, undefined);
   if (g) out.scalingGrades = g;
+  return out;
+}
+
+function groundZoneOf(z, path = "behavior.zone") {
+  if (z === undefined) return undefined;
+  if (!z || typeof z !== "object") {
+    fail(`${path} is not an object`);
+    return undefined;
+  }
+  checkKeys(z, ZONE_KEYS, path);
+  const out = {
+    trigger: enumOf(z.trigger, ZONE_TRIGGERS, `${path}.trigger`),
+    style: enumOf(z.style, ZONE_STYLES, `${path}.style`),
+    initialRadius: num(z.initialRadius, 12, 240, 32, `${path}.initialRadius`),
+    maxRadius: num(z.maxRadius, 12, 320, 96, `${path}.maxRadius`),
+    growthPerSecond: num(z.growthPerSecond, 0, 240, 0, `${path}.growthPerSecond`),
+    lingerSeconds: num(z.lingerSeconds, 0.25, 8, 2, `${path}.lingerSeconds`),
+    damagePerSecond: num(z.damagePerSecond, 0, 120, 0, `${path}.damagePerSecond`),
+    tickRate: beamTick(z.tickRate, `${path}.tickRate`),
+    placementRange: num(z.placementRange, 40, 900, 240, `${path}.placementRange`),
+  };
+  if (out.maxRadius < out.initialRadius) fail(`${path}.maxRadius must be >= initialRadius`);
+  const g = grades(z.scalingGrades, `${path}.scalingGrades`, undefined);
+  if (g) out.scalingGrades = g;
+  if (z.slowMultiplier !== undefined)
+    out.slowMultiplier = num(z.slowMultiplier, 0.1, 1, 1, `${path}.slowMultiplier`);
+  if (z.slowSeconds !== undefined)
+    out.slowSeconds = num(z.slowSeconds, 0.05, 4, 0.5, `${path}.slowSeconds`);
+  if (z.grenadeArcHeight !== undefined)
+    out.grenadeArcHeight = num(z.grenadeArcHeight, 24, 240, 100, `${path}.grenadeArcHeight`);
   return out;
 }
 
@@ -322,6 +369,56 @@ function katanaHookOf(h) {
   return out;
 }
 
+function performanceOf(p) {
+  if (p === undefined) return undefined;
+  if (!p || typeof p !== "object" || Array.isArray(p)) {
+    fail("performance is not an object");
+    return undefined;
+  }
+  checkKeys(p, PERFORMANCE_KEYS, "performance");
+  const out = {
+    hold: enumOf(p.hold, PERFORMANCE_HOLDS, "performance.hold"),
+    action: enumOf(p.action, PERFORMANCE_ACTIONS, "performance.action"),
+  };
+  if (p.continuous !== undefined) {
+    if (typeof p.continuous !== "boolean") fail("performance.continuous is not a boolean");
+    else out.continuous = p.continuous;
+  }
+  if (p.suppressSwing !== undefined) {
+    if (typeof p.suppressSwing !== "boolean") fail("performance.suppressSwing is not a boolean");
+    else out.suppressSwing = p.suppressSwing;
+  }
+  if (p.shake !== undefined) {
+    if (!p.shake || typeof p.shake !== "object" || Array.isArray(p.shake)) {
+      fail("performance.shake is not an object");
+    } else {
+      checkKeys(p.shake, PERFORMANCE_SHAKE_KEYS, "performance.shake");
+      out.shake = {
+        amplitudePx: num(p.shake.amplitudePx, 0, 12, 3, "performance.shake.amplitudePx"),
+        rotationRad: num(p.shake.rotationRad, 0, 0.25, 0.05, "performance.shake.rotationRad"),
+        frequencyHz: num(p.shake.frequencyHz, 1, 24, 11, "performance.shake.frequencyHz"),
+      };
+    }
+  }
+  if (p.emitter !== undefined) out.emitter = enumOf(p.emitter, new Set(["spout"]), "performance.emitter");
+  if (p.vfxAt !== undefined) out.vfxAt = enumOf(p.vfxAt, new Set(["impact"]), "performance.vfxAt");
+  if (p.aura !== undefined) {
+    if (!p.aura || typeof p.aura !== "object" || Array.isArray(p.aura)) {
+      fail("performance.aura is not an object");
+    } else {
+      checkKeys(p.aura, PERFORMANCE_AURA_KEYS, "performance.aura");
+      out.aura = {
+        radius: num(p.aura.radius, 60, 260, 150, "performance.aura.radius"),
+        damagePerSecond: num(p.aura.damagePerSecond, 1, 80, 18, "performance.aura.damagePerSecond"),
+        resourcePerSecond: num(p.aura.resourcePerSecond, 1, 80, 20, "performance.aura.resourcePerSecond"),
+        tickRate: num(p.aura.tickRate, 0.05, 0.5, 0.2, "performance.aura.tickRate"),
+        color: int(p.aura.color, 0, 0xffffff, 0xffe24a, "performance.aura.color"),
+      };
+    }
+  }
+  return out;
+}
+
 function mapWeapon(w) {
   checkKeys(w, TOP_KEYS, "");
   for (const k of MECH_SIBLINGS)
@@ -339,6 +436,7 @@ function mapWeapon(w) {
   const rangeBand = enumOf(w.rangeBand, BANDS, "rangeBand");
   const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
   const isGun = !isBeam && (kind === "gun" || type === "ranged");
+  const isGroundZone = kind === "groundZone";
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
   const damage = num(s.damage, 1, 40, 8, "stats.damage");
@@ -359,8 +457,8 @@ function mapWeapon(w) {
     tags: {
       grip,
       size,
-      delivery: isBeam ? "beam" : isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
-      fireMode: isBeam ? "hold" : isGun ? "auto" : "tap-charge",
+      delivery: isGroundZone ? "ground-zone" : isBeam ? "beam" : isGun ? "projectile" : kind === "thrown" ? "thrown" : kind === "quake" ? "melee-slam" : "melee-arc",
+      fireMode: isGroundZone || isBeam ? "hold" : isGun ? "auto" : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
       classPool: type,
       family: typeof w.family === "string" ? w.family : "exotic",
@@ -386,6 +484,8 @@ function mapWeapon(w) {
   }
   const hook = katanaHookOf(w.katanaHook);
   if (hook) def.katanaHook = hook;
+  const performance = performanceOf(w.performance);
+  if (performance) def.performance = performance;
   if (w.bespokeVfxSheet !== undefined) {
     if (typeof w.bespokeVfxSheet !== "boolean") fail("bespokeVfxSheet is not a boolean");
     else def.bespokeVfxSheet = w.bespokeVfxSheet;
@@ -501,6 +601,10 @@ function mapWeapon(w) {
     const ex = explodeOf(b.explode, "behavior.explode", 80);
     if (ex) def.scatter.explode = ex;
   }
+  const groundZone = groundZoneOf(b.zone);
+  if (groundZone) def.groundZone = groundZone;
+  if (isGroundZone && groundZone?.trigger !== "channel")
+    fail("behavior(groundZone).zone.trigger must be channel");
   // kind "edge" → plain melee (no behavior block).
   return def;
 }

@@ -4,6 +4,8 @@ import {
   aimRelativePoint,
   createPoseLanguageInput,
   createPoseLanguageSample,
+  createWeaponPerformanceInput,
+  createWeaponPerformanceSample,
   DEFAULT_POSE_VARIANTS,
   nextPoseShowroomOption,
   type PoseActionPhase,
@@ -14,9 +16,11 @@ import {
   poseImpulsePending,
   poseShowroomVariantSetFor,
   samplePoseLanguage,
+  sampleWeaponPerformance,
   twoHandedPoseFor,
   WEAPON_POSE_SPECS,
   type WeaponPoseFamily,
+  weaponPerformanceSpecFor,
   weaponPoseFamilyFor,
   weaponPoseResolutionFor,
   weaponPoseSpecFor,
@@ -26,6 +30,12 @@ function weapon(id: string): WeaponDef {
   const def = WEAPONS[id];
   if (!def) throw new Error(`Missing pose-language fixture weapon: ${id}`);
   return def;
+}
+
+function performance(id: string): NonNullable<WeaponDef["performance"]> {
+  const spec = weapon(id).performance;
+  if (!spec) throw new Error(`Missing weapon-performance fixture: ${id}`);
+  return spec;
 }
 
 function variants(overrides: Partial<PoseVariantSelection> = {}): PoseVariantSelection {
@@ -279,5 +289,61 @@ describe("flourish live-catalog coverage", () => {
       expect(["short", "standard", "long", "great", "colossal"]).toContain(bladeSizeClassFor(def));
     }
     expect(bladeSizeClassFor(weapon("driftblade"))).toBe("great");
+  });
+});
+
+// Owner-ledger W-POSE coverage is append-only: one reusable sampler resolves all nine authored records.
+describe("weapon performance pose states", () => {
+  const expected = {
+    "x2-cairn-of-hollow-names": ["upright", "default-swing"],
+    "x2-rotgrove-totem": ["upright", "default-swing"],
+    "x2-coffin-nail-rosary-orb": ["hanging-chain", "hold"],
+    "x2-emberleaf-chapbook": ["steady", "page-flip"],
+    "x2-tallowtongue-pyre-stave": ["steady", "shake"],
+    "x2-hollowbarrel-spell-scattergun-staff": ["aim-forward", "recoil"],
+    "x2-hexbloom-scattergrimoire": ["steady", "shake"],
+    "x2-cinderchoke-brazier-orb": ["overhead", "overhead-downswing"],
+    "x2-fulgurite-storm-sphere": ["overhead", "shake"],
+  } as const;
+
+  it("resolves the ledger hold/action state for every named weapon", () => {
+    for (const [id, [hold, action]] of Object.entries(expected)) {
+      const spec = weaponPerformanceSpecFor(weapon(id));
+      expect(spec?.hold, id).toBe(hold);
+      expect(spec?.action, id).toBe(action);
+    }
+  });
+
+  it("parameterizes both overhead shakes through the same performance sampler", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.phase = "anticipation";
+    input.phaseT = 0.8;
+    input.timeS = 0.37;
+    input.fireHeld = true;
+
+    input.spec = performance("x2-cinderchoke-brazier-orb");
+    const cinder = { ...sampleWeaponPerformance(input, out) };
+    input.spec = performance("x2-fulgurite-storm-sphere");
+    const storm = { ...sampleWeaponPerformance(input, out) };
+
+    expect(cinder.active).toBe(true);
+    expect(storm.active).toBe(true);
+    expect(cinder.handY).toBeLessThan(-0.3);
+    expect(storm.handY).toBe(-0.4);
+    expect(cinder.weaponAngle).not.toBe(storm.weaponAngle);
+  });
+
+  it("lets upright holds yield to the ordinary swing while authored holds retain ownership", () => {
+    const input = createWeaponPerformanceInput();
+    const out = createWeaponPerformanceSample();
+    input.phase = "active";
+    input.phaseT = 0.5;
+    input.spec = performance("x2-cairn-of-hollow-names");
+    expect(sampleWeaponPerformance(input, out).active).toBe(false);
+
+    input.spec = performance("x2-coffin-nail-rosary-orb");
+    expect(sampleWeaponPerformance(input, out).active).toBe(true);
+    expect(out.weaponAngle).toBe(Math.PI / 2);
   });
 });

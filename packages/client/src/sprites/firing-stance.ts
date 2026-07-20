@@ -198,7 +198,10 @@ export function firingStanceFor(def: WeaponDef): FiringStanceSpec {
 }
 
 export function usesAimedFiringStance(def: WeaponDef): boolean {
-  return firingStanceFor(def).aimed && !!(def.gun || def.beam || def.cast);
+  return (
+    firingStanceFor(def).aimed &&
+    !!(def.gun || def.beam || def.cast || def.groundZone?.trigger === "channel")
+  );
 }
 
 export type FiringHandRole = "lead" | "off" | "casting";

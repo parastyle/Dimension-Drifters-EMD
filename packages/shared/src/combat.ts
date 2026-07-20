@@ -68,13 +68,16 @@ export const CombatDelivery = {
   Parry: 8,
   Scatter: 9,
   Ultimate: 10,
+  Zone: 11,
+  Aura: 12,
 } as const;
 export type CombatDeliveryValue = (typeof CombatDelivery)[keyof typeof CombatDelivery];
 
-export type WeaponDelivery = "melee" | "thrown" | "gun" | "cast" | "beam";
+export type WeaponDelivery = "melee" | "thrown" | "gun" | "cast" | "beam" | "zone";
 
 /** Live delivery is behavioral; authored tag prose is not an affordability authority. */
 export function weaponDeliveryFor(weapon: WeaponDef): WeaponDelivery {
+  if (weapon.groundZone?.trigger === "channel") return "zone";
   if (weapon.beam) return "beam";
   if (weapon.thrown) return "thrown";
   if (weapon.gun) return "gun";

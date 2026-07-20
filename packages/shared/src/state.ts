@@ -395,11 +395,22 @@ export class EnemyState extends Schema {
 }
 
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */
+/** Append-only compact ground-zone wire taxonomy. */
+export const ZoneKind = { Hostile: 0, Weapon: 1 } as const;
+export const ZoneStyle = { Legacy: 0, Nether: 1, Poison: 2, Ice: 3 } as const;
+
 export class ZoneState extends Schema {
   @type("string") id = "";
   @type("number") x = 0;
   @type("number") y = 0;
   @type("number") radius = 0;
+  @type("uint8") kind: number = ZoneKind.Hostile;
+  @type("uint8") style: number = ZoneStyle.Legacy;
+  @type("string") ownerId = "";
+  @type("string") weaponId = "";
+  @type("uint16") seed = 0;
+  @type("number") maxRadius = 0;
+  @type("uint32") bornTick = 0;
 }
 
 /**
@@ -507,6 +518,8 @@ export class ProjectileState extends Schema {
   /** §14 WYSIWYG: if > 0, this projectile detonates an AoE of this px radius on death — the client
    *  renders an explosion of EXACTLY this size so the visual matches the server hitbox. 0 = no blast. */
   @type("number") explodeR = 0;
+  /** Spawn tick lets clients draw a cosmetic grenade arc without another changing wire field. */
+  @type("uint32") bornTick = 0;
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

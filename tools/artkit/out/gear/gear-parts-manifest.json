@@ -262,14 +262,33 @@
       "emergencyCanvasInsetPx": 24,
       "faceSocketRadiusPx": 4
     },
-    "torsoLaw": "one complete replace-torso object; >=90% base-core coverage; one island; base silhouette + 12px collar/hem tolerance; no zones"
+    "torsoValidationProfiles": {
+      "strict": {
+        "torsoCoreCoverage": 0.9,
+        "torsoSilhouetteTolerancePx": 132,
+        "allowedMask": {
+          "sha256": "f3793d710a22253e414ca8a835ded29725fa656638897d769b631fde371e295b",
+          "pixelCount": 327510
+        }
+      },
+      "ornate": {
+        "torsoCoreCoverage": 0.75,
+        "torsoSilhouetteTolerancePx": 200,
+        "allowedMask": {
+          "sha256": "95a86fde452d9dc20f0a6df408530ad4f9cb7709339ece64a69835e78286b81e",
+          "pixelCount": 480932
+        },
+        "optInCatalogFlag": "ornate: true"
+      }
+    },
+    "torsoLaw": "one complete replace-torso object; strict >=90% core/+132px envelope unless catalog ornate:true opts into >=75% core/+200px; one island; no zones"
   },
   "migration": {
     "plan": {
-      "rerenderItems": 24,
-      "renderCalls": 24,
-      "rerenderComponentParts": 24,
-      "preservedOverlayHats": 12,
+      "rerenderItems": 29,
+      "renderCalls": 29,
+      "rerenderComponentParts": 29,
+      "preservedOverlayHats": 7,
       "preservedCloaks": 12,
       "finalNonblankItems": 102,
       "finalRoleTextures": 102,
@@ -281,15 +300,17 @@
           "componentParts": 12
         },
         "head": {
-          "items": 12,
-          "calls": 12,
-          "componentParts": 12
+          "items": 17,
+          "calls": 17,
+          "componentParts": 17
         }
       }
     },
     "rerenderIds": [
+      "ash-walker-hat",
       "ash-walker-head",
       "ash-walker-shirt",
+      "ashen-crusader-hat",
       "ashen-crusader-head",
       "ashen-crusader-shirt",
       "molten-core-head",
@@ -302,30 +323,28 @@
       "nine-veils-shirt",
       "demon-mask-head",
       "demon-mask-shirt",
+      "thornwatch-hat",
       "thornwatch-head",
       "thornwatch-shirt",
+      "neon-mirage-hat",
       "neon-mirage-head",
       "neon-mirage-shirt",
       "house-edge-head",
       "house-edge-shirt",
       "unbending-head",
       "unbending-shirt",
+      "pressurized-hat",
       "pressurized-head",
       "pressurized-shirt"
     ],
     "preservedOverlayHatIds": [
-      "ash-walker-hat",
-      "ashen-crusader-hat",
       "molten-core-hat",
       "coldsnap-hat",
       "graveside-hat",
       "nine-veils-hat",
       "demon-mask-hat",
-      "thornwatch-hat",
-      "neon-mirage-hat",
       "house-edge-hat",
-      "unbending-hat",
-      "pressurized-hat"
+      "unbending-hat"
     ],
     "preservedCloakIds": [
       "ash-walker-cloak",
@@ -341,95 +360,69 @@
       "unbending-cloak",
       "pressurized-cloak"
     ],
-    "completedRerenderItems": 17,
-    "completedRenderCalls": 17,
-    "pendingRenderCalls": 7,
-    "completedComponentParts": 17,
+    "completedRerenderItems": 29,
+    "completedRenderCalls": 29,
+    "pendingRenderCalls": 0,
+    "completedComponentParts": 29,
     "reuseVerdicts": {
       "file": "tools/artkit/out/gear/torso-head-reuse-verdicts.json",
-      "kept": [
-        "demon-mask-head",
-        "unbending-head"
-      ],
+      "kept": [],
       "rerendered": [
+        "ash-walker-hat",
         "ash-walker-head",
         "ash-walker-shirt",
+        "ashen-crusader-hat",
         "ashen-crusader-head",
+        "ashen-crusader-shirt",
         "molten-core-head",
         "molten-core-shirt",
+        "coldsnap-head",
         "coldsnap-shirt",
         "graveside-head",
+        "graveside-shirt",
         "nine-veils-head",
+        "nine-veils-shirt",
+        "demon-mask-head",
         "demon-mask-shirt",
+        "thornwatch-hat",
         "thornwatch-head",
+        "thornwatch-shirt",
+        "neon-mirage-hat",
         "neon-mirage-head",
+        "neon-mirage-shirt",
         "house-edge-head",
         "house-edge-shirt",
+        "unbending-head",
         "unbending-shirt",
-        "pressurized-head"
+        "pressurized-hat",
+        "pressurized-head",
+        "pressurized-shirt"
       ],
       "survivors": [
-        "ash-walker-shirt",
-        "ashen-crusader-shirt",
         "molten-core-shirt",
+        "demon-mask-shirt",
         "house-edge-shirt"
       ]
     },
     "renderFleet": null,
     "validation": {
-      "expectedItems": 24,
-      "installedItems": 17,
-      "missing": [
-        {
-          "id": "ashen-crusader-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/ashen-crusader-shirt.png"
-        },
-        {
-          "id": "coldsnap-head",
-          "renderRole": "replace-head",
-          "file": "tools/artkit/out/gear/installed/heads/coldsnap-head.png"
-        },
-        {
-          "id": "graveside-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/graveside-shirt.png"
-        },
-        {
-          "id": "nine-veils-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/nine-veils-shirt.png"
-        },
-        {
-          "id": "thornwatch-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/thornwatch-shirt.png"
-        },
-        {
-          "id": "neon-mirage-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/neon-mirage-shirt.png"
-        },
-        {
-          "id": "pressurized-shirt",
-          "renderRole": "replace-torso",
-          "file": "tools/artkit/out/gear/installed/torso/pressurized-shirt.png"
-        }
-      ],
+      "expectedItems": 29,
+      "installedItems": 29,
+      "missing": [],
       "invalid": [],
-      "verified": false
+      "verified": true
     }
   },
   "compositeProof": {
-    "ready": false,
+    "ready": true,
     "body": {
       "blank": 1,
-      "completeTorsos": 6,
+      "completeTorsos": 12,
       "expectedCompleteTorsos": 12
     },
     "head": {
-      "completeHeads": 11,
-      "expectedCompleteHeads": 12
+      "completeHeads": 17,
+      "expectedCompleteHeads": 17
     },
     "laws": {
       "torso": "one complete replacement object; no zone or separate pants layer",
@@ -1191,11 +1184,11 @@
     "missing": []
   },
   "expectedItemCount": 102,
-  "installedItemCount": 90,
+  "installedItemCount": 97,
   "expectedRoleTextureCount": 102,
-  "installedRoleTextureCount": 90,
+  "installedRoleTextureCount": 97,
   "expectedPartCount": 129,
-  "installedPartCount": 115,
+  "installedPartCount": 122,
   "slots": [
     {
       "id": "head",
@@ -1207,19 +1200,29 @@
       "componentIds": [
         "head"
       ],
-      "expectedItemCount": 12,
-      "installedItemCount": 11,
-      "expectedRoleTextureCount": 12,
-      "installedRoleTextureCount": 11,
-      "expectedPartCount": 12,
-      "installedPartCount": 11,
+      "expectedItemCount": 17,
+      "installedItemCount": 17,
+      "expectedRoleTextureCount": 17,
+      "installedRoleTextureCount": 17,
+      "expectedPartCount": 17,
+      "installedPartCount": 17,
       "items": [
         {
-          "id": "ash-walker-head",
-          "name": "Ash-Walker's Head",
+          "id": "ash-walker-hat",
+          "name": "Ash-Walker's Cowl",
           "setId": "ash-walker",
           "setName": "Ash-Walker",
-          "rarity": "Common",
+          "rarity": "Ultimate",
+          "faceReceivers": {
+            "eyes": {
+              "x": 680.05,
+              "y": 237.83
+            },
+            "mouth": {
+              "x": 681,
+              "y": 342
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -1230,17 +1233,17 @@
             "packages/client/public/sprites/cc-asha-the-ash-walker/body.png"
           ],
           "renderRole": "replace-head",
-          "texture": "ash-walker-head.png",
-          "installedFile": "tools/artkit/out/gear/installed/heads/ash-walker-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/ash-walker-head.attempt-1.codex.log",
-          "sourceRevision": "55881bcdd56b0e5911eb2af6ec5ded1cab21d83b4a8b99888dcb09cea0488b2c",
+          "texture": "ash-walker-hat.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/ash-walker-hat.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/ash-walker-hat.attempt-1.codex.log",
+          "sourceRevision": "d4ed4c9aae57e56b2ede57f6573f77a8f42bc80120913e33879666049a5821a0",
           "alphaBounds": {
-            "left": 360,
-            "top": 112,
-            "width": 361,
-            "height": 456,
-            "right": 720,
-            "bottom": 567
+            "left": 306,
+            "top": 40,
+            "width": 469,
+            "height": 552,
+            "right": 774,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -1248,10 +1251,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "55881bcdd56b0e5911eb2af6ec5ded1cab21d83b4a8b99888dcb09cea0488b2c",
-            "opaquePixelCount": 125962,
-            "visiblePixelCount": 127298,
-            "transparentPixelCount": 921278
+            "sha256": "d4ed4c9aae57e56b2ede57f6573f77a8f42bc80120913e33879666049a5821a0",
+            "opaquePixelCount": 203677,
+            "visiblePixelCount": 205346,
+            "transparentPixelCount": 843230
           },
           "parts": [
             {
@@ -1310,14 +1313,14 @@
                   552
                 ]
               },
-              "sourceHash": "0e09c96b891689e3ea0af4f68b6264c2e49b2e35a89007b1d8277ffc990ac8bd",
+              "sourceHash": "21eb956ae32bbdb001e216febaf8a190cdf24cad45f13cc0c5f54036de353391",
               "alphaBounds": {
-                "left": 360,
-                "top": 112,
-                "width": 361,
-                "height": 456,
-                "right": 720,
-                "bottom": 567
+                "left": 306,
+                "top": 40,
+                "width": 469,
+                "height": 552,
+                "right": 774,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -1331,40 +1334,370 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42416,
-                "uncoveredCorePixels": 19,
-                "uncoveredCoreBounds": {
-                  "left": 402,
-                  "top": 174,
-                  "right": 441,
-                  "bottom": 306,
-                  "width": 40,
-                  "height": 133
-                },
-                "coreCoverage": 0.9995522563921292,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 127298,
-                  "left": 360,
-                  "top": 112,
-                  "right": 720,
-                  "bottom": 567,
-                  "width": 361,
-                  "height": 456,
+                  "pixels": 205346,
+                  "left": 306,
+                  "top": 40,
+                  "right": 774,
+                  "bottom": 591,
+                  "width": 469,
+                  "height": 552,
                   "centroid": {
-                    "x": 551.0535200867256,
-                    "y": 338.14052852362175
+                    "x": 557.4994058808061,
+                    "y": 326.26149523243697
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0.17720045146666866
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "ash-walker-head",
+          "name": "Ash-Walker's Head",
+          "setId": "ash-walker",
+          "setName": "Ash-Walker",
+          "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 680.05,
+              "y": 237.83
+            },
+            "mouth": {
+              "x": 681,
+              "y": 342
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-asha-the-ash-walker",
+          "sourceCharacterName": "Asha the Ash-Walker",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-asha-the-ash-walker.jpg",
+            "packages/client/public/sprites/cc-asha-the-ash-walker/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "ash-walker-head.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/ash-walker-head.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/ash-walker-head.codex.log",
+          "sourceRevision": "7ffba0518c6a2e7357f9e5cd9a8254ab5080298f8912916c1ad30fff84f0c3b9",
+          "alphaBounds": {
+            "left": 320,
+            "top": 40,
+            "width": 436,
+            "height": 552,
+            "right": 755,
+            "bottom": 591
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "7ffba0518c6a2e7357f9e5cd9a8254ab5080298f8912916c1ad30fff84f0c3b9",
+            "opaquePixelCount": 183823,
+            "visiblePixelCount": 185413,
+            "transparentPixelCount": 863163
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "f56a655b2dbd023f250831868ca46214020bbb1f35a789cdec959bc4e95f3401",
+              "alphaBounds": {
+                "left": 320,
+                "top": 40,
+                "width": 436,
+                "height": 552,
+                "right": 755,
+                "bottom": 591
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 185413,
+                  "left": 320,
+                  "top": 40,
+                  "right": 755,
+                  "bottom": 591,
+                  "width": 436,
+                  "height": 552,
+                  "centroid": {
+                    "x": 550.8357450664192,
+                    "y": 313.77006466644735
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0.17720045146666866
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "ashen-crusader-hat",
+          "name": "Crusader's Cowl",
+          "setId": "ashen-crusader",
+          "setName": "Ashen Crusader",
+          "rarity": "Ultimate",
+          "faceReceivers": {
+            "eyes": {
+              "x": 670,
+              "y": 250
+            },
+            "mouth": {
+              "x": 640,
+              "y": 365
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
+          "sourceCharacterName": "Brother Cassian, the Ashen Crusader",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-brother-cassian-the-ashen-crusader.jpg",
+            "packages/client/public/sprites/cc-brother-cassian-the-ashen-crusader/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "ashen-crusader-hat.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/ashen-crusader-hat.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/ashen-crusader-hat.attempt-1.codex.log",
+          "sourceRevision": "e98d7fb12a2372728e095d726fc830b075997af171151a26d1a2a1d28325bbad",
+          "alphaBounds": {
+            "left": 337,
+            "top": 40,
+            "width": 399,
+            "height": 552,
+            "right": 735,
+            "bottom": 591
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "e98d7fb12a2372728e095d726fc830b075997af171151a26d1a2a1d28325bbad",
+            "opaquePixelCount": 164881,
+            "visiblePixelCount": 166513,
+            "transparentPixelCount": 882063
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "92b107845d9a3567d60c34117cbd0bd7e19d97e27a839c509e7122de51281dca",
+              "alphaBounds": {
+                "left": 337,
+                "top": 40,
+                "width": 399,
+                "height": 552,
+                "right": 735,
+                "bottom": 591
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42434,
+                "uncoveredCorePixels": 1,
+                "uncoveredCoreBounds": {
+                  "left": 411,
+                  "top": 214,
+                  "right": 411,
+                  "bottom": 214,
+                  "width": 1,
+                  "height": 1
+                },
+                "coreCoverage": 0.9999764345469542,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 166513,
+                  "left": 337,
+                  "top": 40,
+                  "right": 735,
+                  "bottom": 591,
+                  "width": 399,
+                  "height": 552,
+                  "centroid": {
+                    "x": 531.533766132374,
+                    "y": 313.29725607009664
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -1382,6 +1715,16 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 670,
+              "y": 250
+            },
+            "mouth": {
+              "x": 640,
+              "y": 365
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -1395,14 +1738,14 @@
           "texture": "ashen-crusader-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/ashen-crusader-head.png",
           "renderLog": "tools/artkit/out/gear/logs/heads/ashen-crusader-head.codex.log",
-          "sourceRevision": "2d0ffaef3c47148b62f11f0a82bed6bd1cc99ebda5459015b93a413150e2e9c4",
+          "sourceRevision": "6c28f8cb96fc6171a414f10ab51e965da8b0e447351fe79b0daee54cc6b67dae",
           "alphaBounds": {
-            "left": 352,
-            "top": 114,
-            "width": 384,
-            "height": 448,
-            "right": 735,
-            "bottom": 561
+            "left": 304,
+            "top": 40,
+            "width": 473,
+            "height": 552,
+            "right": 776,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -1410,10 +1753,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "2d0ffaef3c47148b62f11f0a82bed6bd1cc99ebda5459015b93a413150e2e9c4",
-            "opaquePixelCount": 119795,
-            "visiblePixelCount": 121173,
-            "transparentPixelCount": 927403
+            "sha256": "6c28f8cb96fc6171a414f10ab51e965da8b0e447351fe79b0daee54cc6b67dae",
+            "opaquePixelCount": 181276,
+            "visiblePixelCount": 182961,
+            "transparentPixelCount": 865615
           },
           "parts": [
             {
@@ -1472,14 +1815,14 @@
                   552
                 ]
               },
-              "sourceHash": "1e77455227ed434e19960d67852ffd61ee8d2fa690999d3faaec2891d47a1077",
+              "sourceHash": "4afc631cdbc4e215debf888a10fe8a0346dd440b34925e3c8a69bdafae1d783d",
               "alphaBounds": {
-                "left": 352,
-                "top": 114,
-                "width": 384,
-                "height": 448,
-                "right": 735,
-                "bottom": 561
+                "left": 304,
+                "top": 40,
+                "width": 473,
+                "height": 552,
+                "right": 776,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -1493,40 +1836,33 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 41737,
-                "uncoveredCorePixels": 698,
-                "uncoveredCoreBounds": {
-                  "left": 402,
-                  "top": 210,
-                  "right": 431,
-                  "bottom": 293,
-                  "width": 30,
-                  "height": 84
-                },
-                "coreCoverage": 0.9835513137740073,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 121173,
-                  "left": 352,
-                  "top": 114,
-                  "right": 735,
-                  "bottom": 561,
-                  "width": 384,
-                  "height": 448,
+                  "pixels": 182961,
+                  "left": 304,
+                  "top": 40,
+                  "right": 776,
+                  "bottom": 591,
+                  "width": 473,
+                  "height": 552,
                   "centroid": {
-                    "x": 548.4835483152187,
-                    "y": 328.22425787923055
+                    "x": 546.4315017954646,
+                    "y": 304.1127016140052
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -1544,6 +1880,16 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 684,
+              "y": 235
+            },
+            "mouth": {
+              "x": 678,
+              "y": 337
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-cinderpyre",
@@ -1557,14 +1903,14 @@
           "texture": "molten-core-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/molten-core-head.png",
           "renderLog": "tools/artkit/out/gear/logs/heads/molten-core-head.codex.log",
-          "sourceRevision": "ea121bc190d0f555162b5fc4f7ea291d1a7473a16dbecd50e013eb994e91226f",
+          "sourceRevision": "4b845154bb0e9caca2b80c0350afec2315ec660bbde3a756696f77fab3450c47",
           "alphaBounds": {
-            "left": 360,
-            "top": 112,
-            "width": 362,
-            "height": 456,
-            "right": 721,
-            "bottom": 567
+            "left": 320,
+            "top": 40,
+            "width": 438,
+            "height": 552,
+            "right": 757,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -1572,10 +1918,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "ea121bc190d0f555162b5fc4f7ea291d1a7473a16dbecd50e013eb994e91226f",
-            "opaquePixelCount": 133153,
-            "visiblePixelCount": 134450,
-            "transparentPixelCount": 914126
+            "sha256": "4b845154bb0e9caca2b80c0350afec2315ec660bbde3a756696f77fab3450c47",
+            "opaquePixelCount": 194819,
+            "visiblePixelCount": 196368,
+            "transparentPixelCount": 852208
           },
           "parts": [
             {
@@ -1634,14 +1980,14 @@
                   552
                 ]
               },
-              "sourceHash": "7f8fde8312c5398fdb34535307ac06651368fbc007c15f25e254b1801c6be047",
+              "sourceHash": "a6d26430df7ae45e664b40aa7facfcfb5400f0a64dfa9857bb739648a1ddcc8d",
               "alphaBounds": {
-                "left": 360,
-                "top": 112,
-                "width": 362,
-                "height": 456,
-                "right": 721,
-                "bottom": 567
+                "left": 320,
+                "top": 40,
+                "width": 438,
+                "height": 552,
+                "right": 757,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -1655,40 +2001,205 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42216,
-                "uncoveredCorePixels": 219,
-                "uncoveredCoreBounds": {
-                  "left": 406,
-                  "top": 154,
-                  "right": 501,
-                  "bottom": 237,
-                  "width": 96,
-                  "height": 84
-                },
-                "coreCoverage": 0.9948391657829622,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 134450,
-                  "left": 360,
-                  "top": 112,
-                  "right": 721,
-                  "bottom": 567,
-                  "width": 362,
-                  "height": 456,
+                  "pixels": 196368,
+                  "left": 320,
+                  "top": 40,
+                  "right": 757,
+                  "bottom": 591,
+                  "width": 438,
+                  "height": 552,
                   "centroid": {
-                    "x": 548.7265972480476,
-                    "y": 356.8916995165489
+                    "x": 548.3961541595372,
+                    "y": 337.0485058665363
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "coldsnap-head",
+          "name": "Coldsnap Head",
+          "setId": "coldsnap",
+          "setName": "Coldsnap",
+          "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 573,
+              "y": 311
+            },
+            "mouth": {
+              "x": 585,
+              "y": 385
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-cordell-coldsnap-vane",
+          "sourceCharacterName": "Cordell \"Coldsnap\" Vane",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-cordell-coldsnap-vane.jpg",
+            "packages/client/public/sprites/cc-cordell-coldsnap-vane/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "coldsnap-head.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/coldsnap-head.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/coldsnap-head.codex.log",
+          "sourceRevision": "438b856f153ae7d91a0157042d806452525d4bf3db71d1f4cc150801f2ddc497",
+          "alphaBounds": {
+            "left": 290,
+            "top": 98,
+            "width": 508,
+            "height": 428,
+            "right": 797,
+            "bottom": 525
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "438b856f153ae7d91a0157042d806452525d4bf3db71d1f4cc150801f2ddc497",
+            "opaquePixelCount": 109063,
+            "visiblePixelCount": 110840,
+            "transparentPixelCount": 937736
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "c279cea064c883e3aeb7aa55ca57015772f0bff33a60e932867fa176a47ad397",
+              "alphaBounds": {
+                "left": 290,
+                "top": 98,
+                "width": 508,
+                "height": 428,
+                "right": 797,
+                "bottom": 525
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42408,
+                "uncoveredCorePixels": 27,
+                "uncoveredCoreBounds": {
+                  "left": 403,
+                  "top": 164,
+                  "right": 622,
+                  "bottom": 327,
+                  "width": 220,
+                  "height": 164
+                },
+                "coreCoverage": 0.9993637327677625,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 110840,
+                  "left": 290,
+                  "top": 98,
+                  "right": 797,
+                  "bottom": 525,
+                  "width": 508,
+                  "height": 428,
+                  "centroid": {
+                    "x": 529.8477715626128,
+                    "y": 309.4501443522194
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -1706,6 +2217,16 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 620,
+              "y": 301
+            },
+            "mouth": {
+              "x": 630,
+              "y": 386
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -1718,15 +2239,15 @@
           "renderRole": "replace-head",
           "texture": "graveside-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/graveside-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/graveside-head.attempt-2.codex.log",
-          "sourceRevision": "2d2dee31de757c00f8790b690c5b026bd73e16f099adb18467bd19004a19f05d",
+          "renderLog": "tools/artkit/out/gear/logs/heads/graveside-head.codex.log",
+          "sourceRevision": "4c2786b6aa4795d850462619ce8a672ce6dd6374cea5b1ef6a467c90db326364",
           "alphaBounds": {
-            "left": 352,
-            "top": 141,
-            "width": 384,
-            "height": 383,
-            "right": 735,
-            "bottom": 523
+            "left": 290,
+            "top": 60,
+            "width": 508,
+            "height": 507,
+            "right": 797,
+            "bottom": 566
           },
           "image": {
             "width": 1024,
@@ -1734,10 +2255,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "2d2dee31de757c00f8790b690c5b026bd73e16f099adb18467bd19004a19f05d",
-            "opaquePixelCount": 84971,
-            "visiblePixelCount": 86319,
-            "transparentPixelCount": 962257
+            "sha256": "4c2786b6aa4795d850462619ce8a672ce6dd6374cea5b1ef6a467c90db326364",
+            "opaquePixelCount": 147026,
+            "visiblePixelCount": 148764,
+            "transparentPixelCount": 899812
           },
           "parts": [
             {
@@ -1796,14 +2317,14 @@
                   552
                 ]
               },
-              "sourceHash": "aa008bd9370ac0b682995721dcb6c61baa7bb1baa635be006ff94c27e25c501e",
+              "sourceHash": "de5be0a3d98a867608a09e2721194282aeb2eaaca256014b5999fb48891c9221",
               "alphaBounds": {
-                "left": 352,
-                "top": 141,
-                "width": 384,
-                "height": 383,
-                "right": 735,
-                "bottom": 523
+                "left": 290,
+                "top": 60,
+                "width": 508,
+                "height": 507,
+                "right": 797,
+                "bottom": 566
               },
               "pivotAlpha": 255
             }
@@ -1817,40 +2338,33 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 41780,
-                "uncoveredCorePixels": 655,
-                "uncoveredCoreBounds": {
-                  "left": 402,
-                  "top": 176,
-                  "right": 453,
-                  "bottom": 358,
-                  "width": 52,
-                  "height": 183
-                },
-                "coreCoverage": 0.9845646282549781,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 86319,
-                  "left": 352,
-                  "top": 141,
-                  "right": 735,
-                  "bottom": 523,
-                  "width": 384,
-                  "height": 383,
+                  "pixels": 148764,
+                  "left": 290,
+                  "top": 60,
+                  "right": 797,
+                  "bottom": 566,
+                  "width": 508,
+                  "height": 507,
                   "centroid": {
-                    "x": 539.5811119220566,
-                    "y": 320.05744969242
+                    "x": 537.9615767255519,
+                    "y": 297.3965341077142
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -1868,6 +2382,16 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 668,
+              "y": 244
+            },
+            "mouth": {
+              "x": 674,
+              "y": 318
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -1881,14 +2405,14 @@
           "texture": "nine-veils-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/nine-veils-head.png",
           "renderLog": "tools/artkit/out/gear/logs/heads/nine-veils-head.codex.log",
-          "sourceRevision": "2ed8b222764e214959a8d921b9e82a2a1cbfa7d2d603c99218c2e43d56ad7104",
+          "sourceRevision": "512f3094b366ceb7c592e72b9a4258c5c208ef6bb605fce8f576f80a3fe93be4",
           "alphaBounds": {
-            "left": 368,
-            "top": 112,
-            "width": 342,
-            "height": 456,
-            "right": 709,
-            "bottom": 567
+            "left": 331,
+            "top": 40,
+            "width": 413,
+            "height": 552,
+            "right": 743,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -1896,10 +2420,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "2ed8b222764e214959a8d921b9e82a2a1cbfa7d2d603c99218c2e43d56ad7104",
-            "opaquePixelCount": 125654,
-            "visiblePixelCount": 127067,
-            "transparentPixelCount": 921509
+            "sha256": "512f3094b366ceb7c592e72b9a4258c5c208ef6bb605fce8f576f80a3fe93be4",
+            "opaquePixelCount": 183431,
+            "visiblePixelCount": 185108,
+            "transparentPixelCount": 863468
           },
           "parts": [
             {
@@ -1958,14 +2482,14 @@
                   552
                 ]
               },
-              "sourceHash": "4b5ab5d879aa56b0895cdbcb44cd72dba89a31813ef796417466ce49465f5f03",
+              "sourceHash": "570560af6dcf7c1f9685f0831308eb089792284c06e04d55fa99d6f067900445",
               "alphaBounds": {
-                "left": 368,
-                "top": 112,
-                "width": 342,
-                "height": 456,
-                "right": 709,
-                "bottom": 567
+                "left": 331,
+                "top": 40,
+                "width": 413,
+                "height": 552,
+                "right": 743,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -1979,40 +2503,33 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42332,
-                "uncoveredCorePixels": 103,
-                "uncoveredCoreBounds": {
-                  "left": 402,
-                  "top": 192,
-                  "right": 428,
-                  "bottom": 285,
-                  "width": 27,
-                  "height": 94
-                },
-                "coreCoverage": 0.997572758336279,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 127067,
-                  "left": 368,
-                  "top": 112,
-                  "right": 709,
-                  "bottom": 567,
-                  "width": 342,
-                  "height": 456,
+                  "pixels": 185108,
+                  "left": 331,
+                  "top": 40,
+                  "right": 743,
+                  "bottom": 591,
+                  "width": 413,
+                  "height": 552,
                   "centroid": {
-                    "x": 545.3634303162899,
-                    "y": 350.2868565402504
+                    "x": 545.3402230049485,
+                    "y": 328.71592259653823
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2030,6 +2547,16 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 688,
+              "y": 287
+            },
+            "mouth": {
+              "x": 700,
+              "y": 385
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -2042,15 +2569,15 @@
           "renderRole": "replace-head",
           "texture": "demon-mask-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/demon-mask-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/demon-mask-head.codex.log",
-          "sourceRevision": "ce0c9dacb6141c8d31dcb402aa525ca144f16e9ce5150d01077fc9a928bbd09e",
+          "renderLog": "tools/artkit/out/gear/logs/heads/demon-mask-head.attempt-1.codex.log",
+          "sourceRevision": "c67fdc3b56983c5b0c1ba7d70fd7d4af0e767a8fa5256e1fc2e578bf39a1f537",
           "alphaBounds": {
-            "left": 352,
-            "top": 118,
-            "width": 384,
-            "height": 438,
-            "right": 735,
-            "bottom": 555
+            "left": 290,
+            "top": 109,
+            "width": 508,
+            "height": 406,
+            "right": 797,
+            "bottom": 514
           },
           "image": {
             "width": 1024,
@@ -2058,10 +2585,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "ce0c9dacb6141c8d31dcb402aa525ca144f16e9ce5150d01077fc9a928bbd09e",
-            "opaquePixelCount": 131277,
-            "visiblePixelCount": 132809,
-            "transparentPixelCount": 915767
+            "sha256": "c67fdc3b56983c5b0c1ba7d70fd7d4af0e767a8fa5256e1fc2e578bf39a1f537",
+            "opaquePixelCount": 165740,
+            "visiblePixelCount": 167405,
+            "transparentPixelCount": 881171
           },
           "parts": [
             {
@@ -2120,14 +2647,14 @@
                   552
                 ]
               },
-              "sourceHash": "fb439aad0f516f4c475217d0bf5c1157218724d8fad12e4e48c7c1fb1b83ae93",
+              "sourceHash": "bfa03d988f44849382e770a9949474d4ff555434eff894d0cf74af1f84d66d6a",
               "alphaBounds": {
-                "left": 352,
-                "top": 118,
-                "width": 384,
-                "height": 438,
-                "right": 735,
-                "bottom": 555
+                "left": 290,
+                "top": 109,
+                "width": 508,
+                "height": 406,
+                "right": 797,
+                "bottom": 514
               },
               "pivotAlpha": 255
             }
@@ -2141,40 +2668,205 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42403,
-                "uncoveredCorePixels": 32,
-                "uncoveredCoreBounds": {
-                  "left": 452,
-                  "top": 153,
-                  "right": 504,
-                  "bottom": 177,
-                  "width": 53,
-                  "height": 25
-                },
-                "coreCoverage": 0.9992459055025333,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 132809,
-                  "left": 352,
-                  "top": 118,
-                  "right": 735,
-                  "bottom": 555,
-                  "width": 384,
-                  "height": 438,
+                  "pixels": 167405,
+                  "left": 290,
+                  "top": 109,
+                  "right": 797,
+                  "bottom": 514,
+                  "width": 508,
+                  "height": 406,
                   "centroid": {
-                    "x": 545.0071079520213,
-                    "y": 353.05407013078934
+                    "x": 548.2225680236552,
+                    "y": 321.9759445655745
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "thornwatch-hat",
+          "name": "Thornwatch Plume",
+          "setId": "thornwatch",
+          "setName": "Thornwatch",
+          "rarity": "Ultimate",
+          "faceReceivers": {
+            "eyes": {
+              "x": 665,
+              "y": 259
+            },
+            "mouth": {
+              "x": 670,
+              "y": 340
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
+          "sourceCharacterName": "Dame Veyra of the Thornwatch",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-dame-veyra-of-the-thornwatch.jpg",
+            "packages/client/public/sprites/cc-dame-veyra-of-the-thornwatch/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "thornwatch-hat.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/thornwatch-hat.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/thornwatch-hat.attempt-1.codex.log",
+          "sourceRevision": "f18d3f1cdccbb08d5cd7d4ad4640fe72071fd1d1bdcc890e07398528bf98c3d0",
+          "alphaBounds": {
+            "left": 290,
+            "top": 84,
+            "width": 508,
+            "height": 459,
+            "right": 797,
+            "bottom": 542
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "f18d3f1cdccbb08d5cd7d4ad4640fe72071fd1d1bdcc890e07398528bf98c3d0",
+            "opaquePixelCount": 155340,
+            "visiblePixelCount": 157577,
+            "transparentPixelCount": 890999
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "c12d1a76dd7b73c0cbbc7e323da7d21415c2f0d87f3f663399c54ba5095ca60d",
+              "alphaBounds": {
+                "left": 290,
+                "top": 84,
+                "width": 508,
+                "height": 459,
+                "right": 797,
+                "bottom": 542
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42202,
+                "uncoveredCorePixels": 233,
+                "uncoveredCoreBounds": {
+                  "left": 445,
+                  "top": 172,
+                  "right": 572,
+                  "bottom": 393,
+                  "width": 128,
+                  "height": 222
+                },
+                "coreCoverage": 0.9945092494403205,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 157577,
+                  "left": 290,
+                  "top": 84,
+                  "right": 797,
+                  "bottom": 542,
+                  "width": 508,
+                  "height": 459,
+                  "centroid": {
+                    "x": 538.1713448028582,
+                    "y": 317.57168241558094
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2192,6 +2884,16 @@
           "setId": "thornwatch",
           "setName": "Thornwatch",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 665,
+              "y": 259
+            },
+            "mouth": {
+              "x": 670,
+              "y": 340
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
@@ -2205,14 +2907,14 @@
           "texture": "thornwatch-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/thornwatch-head.png",
           "renderLog": "tools/artkit/out/gear/logs/heads/thornwatch-head.codex.log",
-          "sourceRevision": "de0d3a1f39da09c8a86275914be638f5298098669ef257fd0e241dee8bfaddba",
+          "sourceRevision": "f1a2b058affec76f8f76663993bac7fc6d27eb566b21df9f60c0f58b4f413707",
           "alphaBounds": {
-            "left": 359,
-            "top": 112,
-            "width": 365,
-            "height": 456,
-            "right": 723,
-            "bottom": 567
+            "left": 318,
+            "top": 40,
+            "width": 441,
+            "height": 552,
+            "right": 758,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -2220,10 +2922,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "de0d3a1f39da09c8a86275914be638f5298098669ef257fd0e241dee8bfaddba",
-            "opaquePixelCount": 115822,
-            "visiblePixelCount": 117511,
-            "transparentPixelCount": 931065
+            "sha256": "f1a2b058affec76f8f76663993bac7fc6d27eb566b21df9f60c0f58b4f413707",
+            "opaquePixelCount": 168473,
+            "visiblePixelCount": 170529,
+            "transparentPixelCount": 878047
           },
           "parts": [
             {
@@ -2282,14 +2984,14 @@
                   552
                 ]
               },
-              "sourceHash": "2b095feacbb6d4a90d504d23dbab328cabb3126f3461b6d5142986f2024d06e2",
+              "sourceHash": "b59b4181d1b7a32bb2c2f489fbb08b78c1b923495020e212e9b10d64e32494b5",
               "alphaBounds": {
-                "left": 359,
-                "top": 112,
-                "width": 365,
-                "height": 456,
-                "right": 723,
-                "bottom": 567
+                "left": 318,
+                "top": 40,
+                "width": 441,
+                "height": 552,
+                "right": 758,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -2303,40 +3005,205 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42095,
-                "uncoveredCorePixels": 340,
+                "coveredCorePixels": 41992,
+                "uncoveredCorePixels": 443,
                 "uncoveredCoreBounds": {
-                  "left": 434,
-                  "top": 159,
-                  "right": 552,
-                  "bottom": 393,
-                  "width": 119,
-                  "height": 235
+                  "left": 415,
+                  "top": 275,
+                  "right": 458,
+                  "bottom": 371,
+                  "width": 44,
+                  "height": 97
                 },
-                "coreCoverage": 0.9919877459644162,
+                "coreCoverage": 0.9895605043006952,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 117511,
-                  "left": 359,
-                  "top": 112,
-                  "right": 723,
-                  "bottom": 567,
-                  "width": 365,
-                  "height": 456,
+                  "pixels": 170529,
+                  "left": 318,
+                  "top": 40,
+                  "right": 758,
+                  "bottom": 591,
+                  "width": 441,
+                  "height": 552,
                   "centroid": {
-                    "x": 551.4153483503673,
-                    "y": 331.6031690650237
+                    "x": 551.059391657724,
+                    "y": 305.9238545936468
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "neon-mirage-hat",
+          "name": "Zero-Latency Cap",
+          "setId": "neon-mirage",
+          "setName": "Neon Mirage",
+          "rarity": "Ultimate",
+          "faceReceivers": {
+            "eyes": {
+              "x": 655,
+              "y": 289
+            },
+            "mouth": {
+              "x": 660,
+              "y": 388
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-neon-mirage",
+          "sourceCharacterName": "Neon Mirage",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-neon-mirage.jpg",
+            "packages/client/public/sprites/cc-neon-mirage/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "neon-mirage-hat.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/neon-mirage-hat.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/neon-mirage-hat.attempt-1.codex.log",
+          "sourceRevision": "784a5b5642b1256be13ba63c7c3525eb253dd806f47e423f3602bd97020a5307",
+          "alphaBounds": {
+            "left": 326,
+            "top": 40,
+            "width": 422,
+            "height": 552,
+            "right": 747,
+            "bottom": 591
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "784a5b5642b1256be13ba63c7c3525eb253dd806f47e423f3602bd97020a5307",
+            "opaquePixelCount": 182628,
+            "visiblePixelCount": 184175,
+            "transparentPixelCount": 864401
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "c7e451eac0b746a813b9d6664db9c2b94c11b92f4c459825db84b6e6210dfa01",
+              "alphaBounds": {
+                "left": 326,
+                "top": 40,
+                "width": 422,
+                "height": 552,
+                "right": 747,
+                "bottom": 591
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 184175,
+                  "left": 326,
+                  "top": 40,
+                  "right": 747,
+                  "bottom": 591,
+                  "width": 422,
+                  "height": 552,
+                  "centroid": {
+                    "x": 532.5501886792453,
+                    "y": 314.24059182842404
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2354,6 +3221,16 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 655,
+              "y": 289
+            },
+            "mouth": {
+              "x": 660,
+              "y": 388
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-neon-mirage",
@@ -2367,14 +3244,14 @@
           "texture": "neon-mirage-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/neon-mirage-head.png",
           "renderLog": "tools/artkit/out/gear/logs/heads/neon-mirage-head.codex.log",
-          "sourceRevision": "dbc05d461786d6c8fbce620a046a13908a15cd79638fbad4da45cb722255180d",
+          "sourceRevision": "432c2ed1f692f7b4b9326fb17960abbd3e7cc99de2721a32d67cd861cf248483",
           "alphaBounds": {
-            "left": 352,
-            "top": 112,
-            "width": 380,
-            "height": 456,
-            "right": 731,
-            "bottom": 567
+            "left": 310,
+            "top": 40,
+            "width": 460,
+            "height": 552,
+            "right": 769,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -2382,10 +3259,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "dbc05d461786d6c8fbce620a046a13908a15cd79638fbad4da45cb722255180d",
-            "opaquePixelCount": 123707,
-            "visiblePixelCount": 125033,
-            "transparentPixelCount": 923543
+            "sha256": "432c2ed1f692f7b4b9326fb17960abbd3e7cc99de2721a32d67cd861cf248483",
+            "opaquePixelCount": 180775,
+            "visiblePixelCount": 182404,
+            "transparentPixelCount": 866172
           },
           "parts": [
             {
@@ -2444,14 +3321,14 @@
                   552
                 ]
               },
-              "sourceHash": "d46858d87f568f95d5da2bc46f6a9e85ce75a6361e3cfd6ab56da393d5052214",
+              "sourceHash": "054714930c918f3579fcc53dd22ad4ba5488ffea78fb263cc2fe35773073189d",
               "alphaBounds": {
-                "left": 352,
-                "top": 112,
-                "width": 380,
-                "height": 456,
-                "right": 731,
-                "bottom": 567
+                "left": 310,
+                "top": 40,
+                "width": 460,
+                "height": 552,
+                "right": 769,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -2465,40 +3342,33 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42425,
-                "uncoveredCorePixels": 10,
-                "uncoveredCoreBounds": {
-                  "left": 403,
-                  "top": 276,
-                  "right": 406,
-                  "bottom": 292,
-                  "width": 4,
-                  "height": 17
-                },
-                "coreCoverage": 0.9997643454695416,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 125033,
-                  "left": 352,
-                  "top": 112,
-                  "right": 731,
-                  "bottom": 567,
-                  "width": 380,
-                  "height": 456,
+                  "pixels": 182404,
+                  "left": 310,
+                  "top": 40,
+                  "right": 769,
+                  "bottom": 591,
+                  "width": 460,
+                  "height": 552,
                   "centroid": {
-                    "x": 550.6412547087568,
-                    "y": 323.7911111466573
+                    "x": 550.6929727418259,
+                    "y": 296.16214008464726
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2516,6 +3386,16 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 625,
+              "y": 333
+            },
+            "mouth": {
+              "x": 620,
+              "y": 393
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -2528,15 +3408,15 @@
           "renderRole": "replace-head",
           "texture": "house-edge-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/house-edge-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/house-edge-head.attempt-2.codex.log",
-          "sourceRevision": "dfb46f401f9cf34368f69c0750be49403350be8d5076d2edf849606c9a079c8b",
+          "renderLog": "tools/artkit/out/gear/logs/heads/house-edge-head.codex.log",
+          "sourceRevision": "32909b50042efc8b947eab64e9af1366534e02e9bdb97850700298aa51ef961e",
           "alphaBounds": {
-            "left": 386,
-            "top": 112,
-            "width": 300,
-            "height": 456,
-            "right": 685,
-            "bottom": 567
+            "left": 353,
+            "top": 40,
+            "width": 362,
+            "height": 552,
+            "right": 714,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -2544,10 +3424,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "dfb46f401f9cf34368f69c0750be49403350be8d5076d2edf849606c9a079c8b",
-            "opaquePixelCount": 90580,
-            "visiblePixelCount": 92281,
-            "transparentPixelCount": 956295
+            "sha256": "32909b50042efc8b947eab64e9af1366534e02e9bdb97850700298aa51ef961e",
+            "opaquePixelCount": 131457,
+            "visiblePixelCount": 133465,
+            "transparentPixelCount": 915111
           },
           "parts": [
             {
@@ -2606,14 +3486,14 @@
                   552
                 ]
               },
-              "sourceHash": "b4a8325cc67bb97b0378a3e9ccff689ad55a4c74b0f8b4da4744e5ea58b33c88",
+              "sourceHash": "6f34b2d8a86ac47f8a6dfe0efc85a9806df0de1df77c6b2ab1f76ec5ce802bec",
               "alphaBounds": {
-                "left": 386,
-                "top": 112,
-                "width": 300,
-                "height": 456,
-                "right": 685,
-                "bottom": 567
+                "left": 353,
+                "top": 40,
+                "width": 362,
+                "height": 552,
+                "right": 714,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -2627,40 +3507,40 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 41826,
-                "uncoveredCorePixels": 609,
+                "coveredCorePixels": 42422,
+                "uncoveredCorePixels": 13,
                 "uncoveredCoreBounds": {
-                  "left": 402,
-                  "top": 153,
-                  "right": 504,
-                  "bottom": 405,
-                  "width": 103,
-                  "height": 253
+                  "left": 421,
+                  "top": 192,
+                  "right": 445,
+                  "bottom": 198,
+                  "width": 25,
+                  "height": 7
                 },
-                "coreCoverage": 0.9856486390950866,
+                "coreCoverage": 0.9996936491104041,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 92281,
-                  "left": 386,
-                  "top": 112,
-                  "right": 685,
-                  "bottom": 567,
-                  "width": 300,
-                  "height": 456,
+                  "pixels": 133465,
+                  "left": 353,
+                  "top": 40,
+                  "right": 714,
+                  "bottom": 591,
+                  "width": 362,
+                  "height": 552,
                   "centroid": {
-                    "x": 542.9501089064921,
-                    "y": 315.4291565977829
+                    "x": 542.6150451429214,
+                    "y": 286.21685085977595
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2678,6 +3558,16 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 623,
+              "y": 375
+            },
+            "mouth": {
+              "x": 635,
+              "y": 430
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -2690,15 +3580,15 @@
           "renderRole": "replace-head",
           "texture": "unbending-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/unbending-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/unbending-head.codex.log",
-          "sourceRevision": "765f794d49a7f23c383e0174d77b9f79df55146af86739f452e3754ae261d13f",
+          "renderLog": "tools/artkit/out/gear/logs/heads/unbending-head.attempt-1.codex.log",
+          "sourceRevision": "2731a75003f1833d8e14adbcfe065a20fc3715efdc1f76fde6c53a61e80ab6ad",
           "alphaBounds": {
-            "left": 365,
-            "top": 112,
-            "width": 349,
-            "height": 456,
-            "right": 713,
-            "bottom": 567
+            "left": 363,
+            "top": 40,
+            "width": 339,
+            "height": 552,
+            "right": 701,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -2706,10 +3596,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "765f794d49a7f23c383e0174d77b9f79df55146af86739f452e3754ae261d13f",
-            "opaquePixelCount": 109259,
-            "visiblePixelCount": 110906,
-            "transparentPixelCount": 937670
+            "sha256": "2731a75003f1833d8e14adbcfe065a20fc3715efdc1f76fde6c53a61e80ab6ad",
+            "opaquePixelCount": 138011,
+            "visiblePixelCount": 139536,
+            "transparentPixelCount": 909040
           },
           "parts": [
             {
@@ -2768,14 +3658,14 @@
                   552
                 ]
               },
-              "sourceHash": "ea9f426f5a20d90951e80b872445db942217996d324c5469fe0df1ad438af560",
+              "sourceHash": "9b75cb181d192e84c98a4ad4716a48a67fdf21639d0f62eb94d632d09302aae0",
               "alphaBounds": {
-                "left": 365,
-                "top": 112,
-                "width": 349,
-                "height": 456,
-                "right": 713,
-                "bottom": 567
+                "left": 363,
+                "top": 40,
+                "width": 339,
+                "height": 552,
+                "right": 701,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -2789,40 +3679,198 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42337,
-                "uncoveredCorePixels": 98,
-                "uncoveredCoreBounds": {
-                  "left": 427,
-                  "top": 188,
-                  "right": 609,
-                  "bottom": 378,
-                  "width": 183,
-                  "height": 191
-                },
-                "coreCoverage": 0.9976905856015081,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 110906,
-                  "left": 365,
-                  "top": 112,
-                  "right": 713,
-                  "bottom": 567,
-                  "width": 349,
-                  "height": 456,
+                  "pixels": 139536,
+                  "left": 363,
+                  "top": 40,
+                  "right": 701,
+                  "bottom": 591,
+                  "width": 339,
+                  "height": 552,
                   "centroid": {
-                    "x": 541.272212504283,
-                    "y": 343.56372964492454
+                    "x": 535.1243621717693,
+                    "y": 320.6493951381722
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "hatMount": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  }
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "pressurized-hat",
+          "name": "Magnus Pressure Hat",
+          "setId": "pressurized",
+          "setName": "Pressurized",
+          "rarity": "Ultimate",
+          "faceReceivers": {
+            "eyes": {
+              "x": 669,
+              "y": 347
+            },
+            "mouth": {
+              "x": 670,
+              "y": 420
+            }
+          },
+          "slot": "head",
+          "slotDirectory": "heads",
+          "sourceCharacterId": "cc-tinker-magnus-brasswick",
+          "sourceCharacterName": "Tinker-Magnus Brasswick",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/head.png",
+            "packages/client/public/ui/portraits/cc-tinker-magnus-brasswick.jpg",
+            "packages/client/public/sprites/cc-tinker-magnus-brasswick/body.png"
+          ],
+          "renderRole": "replace-head",
+          "texture": "pressurized-hat.png",
+          "installedFile": "tools/artkit/out/gear/installed/heads/pressurized-hat.png",
+          "renderLog": "tools/artkit/out/gear/logs/heads/pressurized-hat.attempt-1.codex.log",
+          "sourceRevision": "1dd10ad07d21df016cb7615a62ae5cf0d1a455ad73425d734e063069ee92d510",
+          "alphaBounds": {
+            "left": 316,
+            "top": 40,
+            "width": 447,
+            "height": 552,
+            "right": 762,
+            "bottom": 591
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "1dd10ad07d21df016cb7615a62ae5cf0d1a455ad73425d734e063069ee92d510",
+            "opaquePixelCount": 191575,
+            "visiblePixelCount": 193257,
+            "transparentPixelCount": 855319
+          },
+          "parts": [
+            {
+              "id": "head",
+              "renderRole": "replace-head",
+              "parent": "body",
+              "receiver": "head",
+              "pivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 300
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 300
+              },
+              "receiverAnchor": {
+                "id": "head",
+                "xL": 0,
+                "yL": -0.38,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "hat",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.38
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 317.44
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 0.85,
+              "plane": 10,
+              "spring": null,
+              "fixedFrame": "head",
+              "fixedCrop": [
+                290,
+                40,
+                508,
+                552
+              ],
+              "outputOrigin": {
+                "x": 0.43700787401574803,
+                "y": 0.47101449275362317,
+                "numerator": [
+                  222,
+                  260
+                ],
+                "denominator": [
+                  508,
+                  552
+                ]
+              },
+              "sourceHash": "e6ef6b778f75bcd0870ea4cf7e8f6bfec6209280fd5fd6495e9bd4032f9acf48",
+              "alphaBounds": {
+                "left": 316,
+                "top": 40,
+                "width": 447,
+                "height": 552,
+                "right": 762,
+                "bottom": 591
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-head": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-head",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 42435,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 193257,
+                  "left": 316,
+                  "top": 40,
+                  "right": 762,
+                  "bottom": 591,
+                  "width": 447,
+                  "height": 552,
+                  "centroid": {
+                    "x": 538.5273340681063,
+                    "y": 319.47805254143447
+                  }
+                },
+                "faceCompatibility": {
+                  "eyes": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
+                  },
+                  "mouth": {
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -2840,6 +3888,16 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Common",
+          "faceReceivers": {
+            "eyes": {
+              "x": 669,
+              "y": 347
+            },
+            "mouth": {
+              "x": 670,
+              "y": 420
+            }
+          },
           "slot": "head",
           "slotDirectory": "heads",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -2852,15 +3910,15 @@
           "renderRole": "replace-head",
           "texture": "pressurized-head.png",
           "installedFile": "tools/artkit/out/gear/installed/heads/pressurized-head.png",
-          "renderLog": "tools/artkit/out/gear/logs/heads/pressurized-head.attempt-1.codex.log",
-          "sourceRevision": "46d3190985d7989f1f7d15c93dc9b8e6eeb3a8f9a394ff719d3c8216e5d3ebe9",
+          "renderLog": "tools/artkit/out/gear/logs/heads/pressurized-head.codex.log",
+          "sourceRevision": "63e5647674b3847bcdfbb7e843e094120572ffce9c62b2ec9a8e388dffd9c18a",
           "alphaBounds": {
-            "left": 352,
-            "top": 117,
-            "width": 384,
-            "height": 441,
-            "right": 735,
-            "bottom": 557
+            "left": 302,
+            "top": 40,
+            "width": 480,
+            "height": 552,
+            "right": 781,
+            "bottom": 591
           },
           "image": {
             "width": 1024,
@@ -2868,10 +3926,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "46d3190985d7989f1f7d15c93dc9b8e6eeb3a8f9a394ff719d3c8216e5d3ebe9",
-            "opaquePixelCount": 131040,
-            "visiblePixelCount": 132500,
-            "transparentPixelCount": 916076
+            "sha256": "63e5647674b3847bcdfbb7e843e094120572ffce9c62b2ec9a8e388dffd9c18a",
+            "opaquePixelCount": 204470,
+            "visiblePixelCount": 206271,
+            "transparentPixelCount": 842305
           },
           "parts": [
             {
@@ -2930,14 +3988,14 @@
                   552
                 ]
               },
-              "sourceHash": "1e1f7fc5e3aa945765ccc1e103f5f500dedef64f49991f22e925391d46526f30",
+              "sourceHash": "4f4e5be29db02e6aab750a2a5d054ccd8661d8a8f1fb683d88625fb8be619278",
               "alphaBounds": {
-                "left": 352,
-                "top": 117,
-                "width": 384,
-                "height": 441,
-                "right": 735,
-                "bottom": 557
+                "left": 302,
+                "top": 40,
+                "width": 480,
+                "height": 552,
+                "right": 781,
+                "bottom": 591
               },
               "pivotAlpha": 255
             }
@@ -2951,40 +4009,33 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 42435,
-                "coveredCorePixels": 42293,
-                "uncoveredCorePixels": 142,
-                "uncoveredCoreBounds": {
-                  "left": 469,
-                  "top": 153,
-                  "right": 527,
-                  "bottom": 174,
-                  "width": 59,
-                  "height": 22
-                },
-                "coreCoverage": 0.9966537056674915,
+                "coveredCorePixels": 42435,
+                "uncoveredCorePixels": 0,
+                "uncoveredCoreBounds": null,
+                "coreCoverage": 1,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 132500,
-                  "left": 352,
-                  "top": 117,
-                  "right": 735,
-                  "bottom": 557,
-                  "width": 384,
-                  "height": 441,
+                  "pixels": 206271,
+                  "left": 302,
+                  "top": 40,
+                  "right": 781,
+                  "bottom": 591,
+                  "width": 480,
+                  "height": 552,
                   "centroid": {
-                    "x": 538.2788,
-                    "y": 347.0393886792453
+                    "x": 535.2205011853339,
+                    "y": 328.44804165394066
                   }
                 },
                 "faceCompatibility": {
                   "eyes": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.48166378315170694
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "mouth": {
-                    "opaquePixels": 51,
-                    "nearestDistance": 0.5122499389946413
+                    "opaquePixels": 49,
+                    "nearestDistance": 0
                   },
                   "hatMount": {
                     "opaquePixels": 49,
@@ -3009,11 +4060,11 @@
         "torso"
       ],
       "expectedItemCount": 12,
-      "installedItemCount": 6,
+      "installedItemCount": 12,
       "expectedRoleTextureCount": 12,
-      "installedRoleTextureCount": 6,
+      "installedRoleTextureCount": 12,
       "expectedPartCount": 12,
-      "installedPartCount": 6,
+      "installedPartCount": 12,
       "items": [
         {
           "id": "ash-walker-shirt",
@@ -3021,6 +4072,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -3159,7 +4211,166 @@
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "ashen-crusader-shirt",
+          "name": "Censer-Worn Ashen Habit",
+          "setId": "ashen-crusader",
+          "setName": "Ashen Crusader",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
+          "sourceCharacterName": "Brother Cassian, the Ashen Crusader",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-brother-cassian-the-ashen-crusader.jpg",
+            "packages/client/public/sprites/cc-brother-cassian-the-ashen-crusader/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "ashen-crusader-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/ashen-crusader-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/ashen-crusader-shirt.attempt-1.codex.log",
+          "sourceRevision": "8fd534deec98b102b0e0939aeaa39b2e3359c0bbe412cf836d678d9bdcb87113",
+          "alphaBounds": {
+            "left": 370,
+            "top": 180,
+            "width": 284,
+            "height": 544,
+            "right": 653,
+            "bottom": 723
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "8fd534deec98b102b0e0939aeaa39b2e3359c0bbe412cf836d678d9bdcb87113",
+            "opaquePixelCount": 124774,
+            "visiblePixelCount": 126270,
+            "transparentPixelCount": 922306
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "51f4fead1925965b7db4aa843a6c1acaa1b5f324c138b9aebe88e82ee91ece3c",
+              "alphaBounds": {
+                "left": 370,
+                "top": 180,
+                "width": 284,
+                "height": 544,
+                "right": 653,
+                "bottom": 723
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "7fd7afa29fee1cf336146aadac5ef33fc75f341e93f0c2bb5344a42714f6a5f4",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 84243,
+                "uncoveredCorePixels": 15034,
+                "uncoveredCoreBounds": {
+                  "left": 348,
+                  "top": 354,
+                  "right": 675,
+                  "bottom": 658,
+                  "width": 328,
+                  "height": 305
+                },
+                "coreCoverage": 0.8485651258599676,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 126270,
+                  "left": 370,
+                  "top": 180,
+                  "right": 653,
+                  "bottom": 723,
+                  "width": 284,
+                  "height": 544,
+                  "centroid": {
+                    "x": 516.4729626989783,
+                    "y": 468.10922626118634
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "ornate",
+                "minimumCoreCoverage": 0.75,
+                "silhouetteTolerancePx": 200,
                 "partBox": {
                   "width": 488,
                   "height": 544
@@ -3175,6 +4386,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-cinderpyre",
@@ -3313,6 +4525,8 @@
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
                 "partBox": {
                   "width": 488,
@@ -3329,6 +4543,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -3460,7 +4675,323 @@
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "graveside-shirt",
+          "name": "Graveside Parson's Suit",
+          "setId": "graveside",
+          "setName": "Graveside",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-elias-parson-thorne",
+          "sourceCharacterName": "Elias \"Parson\" Thorne",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-elias-parson-thorne.jpg",
+            "packages/client/public/sprites/cc-elias-parson-thorne/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "graveside-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/graveside-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/graveside-shirt.attempt-2.codex.log",
+          "sourceRevision": "3dc2c427ab41490f6967447d8f056ce880b6dfe4538b141819437dd0f737c53f",
+          "alphaBounds": {
+            "left": 341,
+            "top": 232,
+            "width": 342,
+            "height": 462,
+            "right": 682,
+            "bottom": 693
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "3dc2c427ab41490f6967447d8f056ce880b6dfe4538b141819437dd0f737c53f",
+            "opaquePixelCount": 134379,
+            "visiblePixelCount": 134379,
+            "transparentPixelCount": 914197
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "ac9a4cae2a98034403fc7ab7db630c9faefff269a653dc6865535b2262da1286",
+              "alphaBounds": {
+                "left": 341,
+                "top": 232,
+                "width": 342,
+                "height": 462,
+                "right": 682,
+                "bottom": 693
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 99095,
+                "uncoveredCorePixels": 182,
+                "uncoveredCoreBounds": {
+                  "left": 361,
+                  "top": 627,
+                  "right": 627,
+                  "bottom": 695,
+                  "width": 267,
+                  "height": 69
+                },
+                "coreCoverage": 0.9981667455704746,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 134379,
+                  "left": 341,
+                  "top": 232,
+                  "right": 682,
+                  "bottom": 693,
+                  "width": 342,
+                  "height": 462,
+                  "centroid": {
+                    "x": 509.6804188154399,
+                    "y": 471.8825486125064
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
+                "silhouetteTolerancePx": 132,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "nine-veils-shirt",
+          "name": "Nine-Veil Vestments",
+          "setId": "nine-veils",
+          "setName": "Nine Veils",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-iridia-of-the-nine-veils",
+          "sourceCharacterName": "Iridia of the Nine Veils",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-iridia-of-the-nine-veils.jpg",
+            "packages/client/public/sprites/cc-iridia-of-the-nine-veils/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "nine-veils-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/nine-veils-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/nine-veils-shirt.attempt-1.codex.log",
+          "sourceRevision": "cc430927269741b40949100777e09a687fbaf081a50af6339d3ca6a781b15350",
+          "alphaBounds": {
+            "left": 366,
+            "top": 180,
+            "width": 292,
+            "height": 544,
+            "right": 657,
+            "bottom": 723
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "cc430927269741b40949100777e09a687fbaf081a50af6339d3ca6a781b15350",
+            "opaquePixelCount": 133264,
+            "visiblePixelCount": 134799,
+            "transparentPixelCount": 913777
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "8ea8a5b79932f5570f58882229dc7b44c015fe032aabbea62c3da6b085756668",
+              "alphaBounds": {
+                "left": 366,
+                "top": 180,
+                "width": 292,
+                "height": 544,
+                "right": 657,
+                "bottom": 723
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "7fd7afa29fee1cf336146aadac5ef33fc75f341e93f0c2bb5344a42714f6a5f4",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 92371,
+                "uncoveredCorePixels": 6906,
+                "uncoveredCoreBounds": {
+                  "left": 348,
+                  "top": 348,
+                  "right": 675,
+                  "bottom": 679,
+                  "width": 328,
+                  "height": 332
+                },
+                "coreCoverage": 0.9304370599433908,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 134799,
+                  "left": 366,
+                  "top": 180,
+                  "right": 657,
+                  "bottom": 723,
+                  "width": 292,
+                  "height": 544,
+                  "centroid": {
+                    "x": 506.2962039777743,
+                    "y": 467.759048657631
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "ornate",
+                "minimumCoreCoverage": 0.75,
+                "silhouetteTolerancePx": 200,
                 "partBox": {
                   "width": 488,
                   "height": 544
@@ -3476,6 +5007,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -3614,7 +5146,323 @@
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "thornwatch-shirt",
+          "name": "Thornwatch Court Dress",
+          "setId": "thornwatch",
+          "setName": "Thornwatch",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
+          "sourceCharacterName": "Dame Veyra of the Thornwatch",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-dame-veyra-of-the-thornwatch.jpg",
+            "packages/client/public/sprites/cc-dame-veyra-of-the-thornwatch/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "thornwatch-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/thornwatch-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/thornwatch-shirt.attempt-2.codex.log",
+          "sourceRevision": "98e5adffa10c8c21f1f8661a2f4c9cb981eafcfaef372491600c3b22186909cc",
+          "alphaBounds": {
+            "left": 353,
+            "top": 180,
+            "width": 318,
+            "height": 544,
+            "right": 670,
+            "bottom": 723
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "98e5adffa10c8c21f1f8661a2f4c9cb981eafcfaef372491600c3b22186909cc",
+            "opaquePixelCount": 128741,
+            "visiblePixelCount": 130233,
+            "transparentPixelCount": 918343
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "3a30ba849ee50207b3e3dd9b8338a7857fa3204290ee0354ab5f00fd31ba5957",
+              "alphaBounds": {
+                "left": 353,
+                "top": 180,
+                "width": 318,
+                "height": 544,
+                "right": 670,
+                "bottom": 723
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "7fd7afa29fee1cf336146aadac5ef33fc75f341e93f0c2bb5344a42714f6a5f4",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 85317,
+                "uncoveredCorePixels": 13960,
+                "uncoveredCoreBounds": {
+                  "left": 348,
+                  "top": 385,
+                  "right": 675,
+                  "bottom": 682,
+                  "width": 328,
+                  "height": 298
+                },
+                "coreCoverage": 0.859383341559475,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 130233,
+                  "left": 353,
+                  "top": 180,
+                  "right": 670,
+                  "bottom": 723,
+                  "width": 318,
+                  "height": 544,
+                  "centroid": {
+                    "x": 519.3553937941996,
+                    "y": 461.37286248493086
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "ornate",
+                "minimumCoreCoverage": 0.75,
+                "silhouetteTolerancePx": 200,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "neon-mirage-shirt",
+          "name": "Chromeline Signalsuit",
+          "setId": "neon-mirage",
+          "setName": "Neon Mirage",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-neon-mirage",
+          "sourceCharacterName": "Neon Mirage",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-neon-mirage.jpg",
+            "packages/client/public/sprites/cc-neon-mirage/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "neon-mirage-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/neon-mirage-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/neon-mirage-shirt.attempt-1.codex.log",
+          "sourceRevision": "8c88d8d6cae23bb5aa4ed7eeb89ee36017878f16b70ce54444a06eeaf9cce1a7",
+          "alphaBounds": {
+            "left": 324,
+            "top": 180,
+            "width": 377,
+            "height": 544,
+            "right": 700,
+            "bottom": 723
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "8c88d8d6cae23bb5aa4ed7eeb89ee36017878f16b70ce54444a06eeaf9cce1a7",
+            "opaquePixelCount": 156308,
+            "visiblePixelCount": 158004,
+            "transparentPixelCount": 890572
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "212818981536b111301e0469eb9f5a4f1099349335321c99ae7f3cfb3f206d84",
+              "alphaBounds": {
+                "left": 324,
+                "top": 180,
+                "width": 377,
+                "height": 544,
+                "right": 700,
+                "bottom": 723
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "7fd7afa29fee1cf336146aadac5ef33fc75f341e93f0c2bb5344a42714f6a5f4",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 93065,
+                "uncoveredCorePixels": 6212,
+                "uncoveredCoreBounds": {
+                  "left": 348,
+                  "top": 392,
+                  "right": 675,
+                  "bottom": 680,
+                  "width": 328,
+                  "height": 289
+                },
+                "coreCoverage": 0.9374276015592735,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 158004,
+                  "left": 324,
+                  "top": 180,
+                  "right": 700,
+                  "bottom": 723,
+                  "width": 377,
+                  "height": 544,
+                  "centroid": {
+                    "x": 525.9521974127238,
+                    "y": 444.2876193007772
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "ornate",
+                "minimumCoreCoverage": 0.75,
+                "silhouetteTolerancePx": 200,
                 "partBox": {
                   "width": 488,
                   "height": 544
@@ -3630,6 +5478,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -3768,6 +5617,8 @@
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
                 "partBox": {
                   "width": 488,
@@ -3784,6 +5635,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "torso",
           "slotDirectory": "torso",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -3797,14 +5649,14 @@
           "texture": "unbending-shirt.png",
           "installedFile": "tools/artkit/out/gear/installed/torso/unbending-shirt.png",
           "renderLog": "tools/artkit/out/gear/logs/torso/unbending-shirt.attempt-2.codex.log",
-          "sourceRevision": "925917577ffc9486ddab35587a956e7c77a494e93ec0435743131bf187e332e2",
+          "sourceRevision": "25ddfbb935d103fda9a119441d4891aec341234654065e65cff8e78dc4474f48",
           "alphaBounds": {
-            "left": 356,
-            "top": 324,
-            "width": 312,
-            "height": 376,
-            "right": 667,
-            "bottom": 699
+            "left": 307,
+            "top": 232,
+            "width": 411,
+            "height": 462,
+            "right": 717,
+            "bottom": 693
           },
           "image": {
             "width": 1024,
@@ -3812,10 +5664,10 @@
             "channels": 4,
             "hasAlpha": true,
             "format": "png",
-            "sha256": "925917577ffc9486ddab35587a956e7c77a494e93ec0435743131bf187e332e2",
-            "opaquePixelCount": 96676,
-            "visiblePixelCount": 97794,
-            "transparentPixelCount": 950782
+            "sha256": "25ddfbb935d103fda9a119441d4891aec341234654065e65cff8e78dc4474f48",
+            "opaquePixelCount": 170763,
+            "visiblePixelCount": 170763,
+            "transparentPixelCount": 877813
           },
           "parts": [
             {
@@ -3874,14 +5726,14 @@
                   544
                 ]
               },
-              "sourceHash": "67f264f2bcb9cde2378f4e2d54bf6b7b9a00d0c54b64fa37e83a6f3a812712f5",
+              "sourceHash": "6fc35a337cae544657923e2c37c3f843ccf6269039f65468308c9e0801d8561d",
               "alphaBounds": {
-                "left": 356,
-                "top": 324,
-                "width": 312,
-                "height": 376,
-                "right": 667,
-                "bottom": 699
+                "left": 307,
+                "top": 232,
+                "width": 411,
+                "height": 462,
+                "right": 717,
+                "bottom": 693
               },
               "pivotAlpha": 255
             }
@@ -3895,34 +5747,193 @@
               "generatedOutlineRadius": 8,
               "gates": {
                 "corePixels": 99277,
-                "coveredCorePixels": 92271,
-                "uncoveredCorePixels": 7006,
+                "coveredCorePixels": 99135,
+                "uncoveredCorePixels": 142,
                 "uncoveredCoreBounds": {
-                  "left": 348,
-                  "top": 328,
-                  "right": 675,
-                  "bottom": 674,
-                  "width": 328,
-                  "height": 347
+                  "left": 471,
+                  "top": 693,
+                  "right": 557,
+                  "bottom": 695,
+                  "width": 87,
+                  "height": 3
                 },
-                "coreCoverage": 0.9294297772898052,
+                "coreCoverage": 0.9985696586319087,
                 "primaryIslandCount": 1,
                 "bounds": {
                   "label": 1,
-                  "pixels": 97794,
-                  "left": 356,
-                  "top": 324,
-                  "right": 667,
-                  "bottom": 699,
-                  "width": 312,
-                  "height": 376,
+                  "pixels": 170763,
+                  "left": 307,
+                  "top": 232,
+                  "right": 717,
+                  "bottom": 693,
+                  "width": 411,
+                  "height": 462,
                   "centroid": {
-                    "x": 511.7639732498926,
-                    "y": 524.6558480070352
+                    "x": 511.6818924474271,
+                    "y": 463.3458184735569
                   }
                 },
                 "escapedPixels": 0,
+                "validationProfile": "strict",
+                "minimumCoreCoverage": 0.9,
                 "silhouetteTolerancePx": 132,
+                "partBox": {
+                  "width": 488,
+                  "height": 544
+                }
+              }
+            }
+          },
+          "stackBandVerification": null
+        },
+        {
+          "id": "pressurized-shirt",
+          "name": "Vent-Seam Boiler Suit",
+          "setId": "pressurized",
+          "setName": "Pressurized",
+          "rarity": "Uncommon",
+          "faceReceivers": null,
+          "slot": "torso",
+          "slotDirectory": "torso",
+          "sourceCharacterId": "cc-tinker-magnus-brasswick",
+          "sourceCharacterName": "Tinker-Magnus Brasswick",
+          "identityReferences": [
+            "packages/client/public/sprites/boilerplate/body.png",
+            "packages/client/public/ui/portraits/cc-tinker-magnus-brasswick.jpg",
+            "packages/client/public/sprites/cc-tinker-magnus-brasswick/body.png"
+          ],
+          "renderRole": "replace-torso",
+          "texture": "pressurized-shirt.png",
+          "installedFile": "tools/artkit/out/gear/installed/torso/pressurized-shirt.png",
+          "renderLog": "tools/artkit/out/gear/logs/torso/pressurized-shirt.attempt-1.codex.log",
+          "sourceRevision": "a8f82da1548ed366757461c99acf1dea934e84d1e4e158116f4ecf091854f895",
+          "alphaBounds": {
+            "left": 346,
+            "top": 180,
+            "width": 333,
+            "height": 544,
+            "right": 678,
+            "bottom": 723
+          },
+          "image": {
+            "width": 1024,
+            "height": 1024,
+            "channels": 4,
+            "hasAlpha": true,
+            "format": "png",
+            "sha256": "a8f82da1548ed366757461c99acf1dea934e84d1e4e158116f4ecf091854f895",
+            "opaquePixelCount": 158238,
+            "visiblePixelCount": 159615,
+            "transparentPixelCount": 888961
+          },
+          "parts": [
+            {
+              "id": "torso",
+              "renderRole": "replace-torso",
+              "parent": "body",
+              "receiver": "torso",
+              "pivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "pivotTrimmed": {
+                "x": 512,
+                "y": 512
+              },
+              "authoringPivotSource": {
+                "x": 512,
+                "y": 512
+              },
+              "receiverAnchor": {
+                "id": "torso",
+                "xL": 0,
+                "yL": -0.04,
+                "parent": "body",
+                "parentTransform": "final body card",
+                "plane": "torso",
+                "normalized": {
+                  "xL": 0,
+                  "yL": -0.04
+                },
+                "raw": {
+                  "x": 512,
+                  "y": 491.52
+                }
+              },
+              "restAngle": 0,
+              "mountScale": 1,
+              "plane": 0,
+              "spring": null,
+              "fixedFrame": "body",
+              "fixedCrop": [
+                268,
+                180,
+                488,
+                544
+              ],
+              "outputOrigin": {
+                "x": 0.5,
+                "y": 0.6102941176470589,
+                "numerator": [
+                  244,
+                  332
+                ],
+                "denominator": [
+                  488,
+                  544
+                ]
+              },
+              "sourceHash": "bd4b076afcca83f682f6b2670b606d716becee265fd6460274026507f75eb310",
+              "alphaBounds": {
+                "left": 346,
+                "top": 180,
+                "width": 333,
+                "height": 544,
+                "right": 678,
+                "bottom": 723
+              },
+              "pivotAlpha": 255
+            }
+          ],
+          "validation": {
+            "replace-torso": {
+              "verified": true,
+              "contractId": "GEAR_REPLACEMENT_V2",
+              "contractRevision": "7fd7afa29fee1cf336146aadac5ef33fc75f341e93f0c2bb5344a42714f6a5f4",
+              "renderRole": "replace-torso",
+              "generatedOutlineRadius": 8,
+              "gates": {
+                "corePixels": 99277,
+                "coveredCorePixels": 98794,
+                "uncoveredCorePixels": 483,
+                "uncoveredCoreBounds": {
+                  "left": 348,
+                  "top": 440,
+                  "right": 674,
+                  "bottom": 597,
+                  "width": 327,
+                  "height": 158
+                },
+                "coreCoverage": 0.9951348247831824,
+                "primaryIslandCount": 1,
+                "bounds": {
+                  "label": 1,
+                  "pixels": 159615,
+                  "left": 346,
+                  "top": 180,
+                  "right": 678,
+                  "bottom": 723,
+                  "width": 333,
+                  "height": 544,
+                  "centroid": {
+                    "x": 512.0914951602293,
+                    "y": 461.7763368104501
+                  }
+                },
+                "escapedPixels": 0,
+                "validationProfile": "ornate",
+                "minimumCoreCoverage": 0.75,
+                "silhouetteTolerancePx": 200,
                 "partBox": {
                   "width": 488,
                   "height": 544
@@ -3959,6 +5970,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -4215,6 +6227,7 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -4471,6 +6484,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-cinderpyre",
@@ -4727,6 +6741,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -4983,6 +6998,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -5239,6 +7255,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -5495,6 +7512,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -5751,6 +7769,7 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-neon-mirage",
@@ -6007,6 +8026,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -6263,6 +8283,7 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Uncommon",
+          "faceReceivers": null,
           "slot": "boots",
           "slotDirectory": "boots",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -6540,6 +8561,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -6782,6 +8804,7 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -7024,6 +9047,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-cinderpyre",
@@ -7266,6 +9290,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -7508,6 +9533,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -7757,6 +9783,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -7999,6 +10026,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -8241,6 +10269,7 @@
           "setId": "thornwatch",
           "setName": "Thornwatch",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
@@ -8483,6 +10512,7 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-neon-mirage",
@@ -8725,6 +10755,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -8967,6 +10998,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -9209,6 +11241,7 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -9451,6 +11484,7 @@
           "setId": "shopkeep-power",
           "setName": "Trading Post starter gear",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": null,
@@ -9691,6 +11725,7 @@
           "setId": "shopkeep-power",
           "setName": "Trading Post starter gear",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": null,
@@ -9931,6 +11966,7 @@
           "setId": "shopkeep-power",
           "setName": "Trading Post starter gear",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "gloves",
           "slotDirectory": "gloves",
           "sourceCharacterId": null,
@@ -10190,6 +12226,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -10304,6 +12341,7 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -10418,6 +12456,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-cinderpyre",
@@ -10532,6 +12571,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -10646,6 +12686,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -10760,6 +12801,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -10874,6 +12916,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -10988,6 +13031,7 @@
           "setId": "thornwatch",
           "setName": "Thornwatch",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
@@ -11102,6 +13146,7 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-neon-mirage",
@@ -11216,6 +13261,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -11330,6 +13376,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -11444,6 +13491,7 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Really Rare",
+          "faceReceivers": null,
           "slot": "cloak",
           "slotDirectory": "cloak",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -11577,6 +13625,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -11715,6 +13764,7 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -11853,6 +13903,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-cinderpyre",
@@ -11991,6 +14042,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -12129,6 +14181,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -12267,6 +14320,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -12405,6 +14459,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -12543,6 +14598,7 @@
           "setId": "thornwatch",
           "setName": "Thornwatch",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
@@ -12681,6 +14737,7 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-neon-mirage",
@@ -12819,6 +14876,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -12957,6 +15015,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -13095,6 +15154,7 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Rare",
+          "faceReceivers": null,
           "slot": "glasses",
           "slotDirectory": "glasses",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -13252,6 +15312,7 @@
           "setId": "ash-walker",
           "setName": "Ash-Walker",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-asha-the-ash-walker",
@@ -13390,6 +15451,7 @@
           "setId": "ashen-crusader",
           "setName": "Ashen Crusader",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
@@ -13528,6 +15590,7 @@
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-cinderpyre",
@@ -13666,6 +15729,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -13804,6 +15868,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -13942,6 +16007,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -14080,6 +16146,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -14218,6 +16285,7 @@
           "setId": "thornwatch",
           "setName": "Thornwatch",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
@@ -14356,6 +16424,7 @@
           "setId": "neon-mirage",
           "setName": "Neon Mirage",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-neon-mirage",
@@ -14494,6 +16563,7 @@
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -14632,6 +16702,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -14770,6 +16841,7 @@
           "setId": "pressurized",
           "setName": "Pressurized",
           "rarity": "Common",
+          "faceReceivers": null,
           "slot": "facialHair",
           "slotDirectory": "facial-hair",
           "sourceCharacterId": "cc-tinker-magnus-brasswick",
@@ -14914,379 +16986,20 @@
       "componentIds": [
         "hat"
       ],
-      "expectedItemCount": 12,
-      "installedItemCount": 12,
-      "expectedRoleTextureCount": 12,
-      "installedRoleTextureCount": 12,
-      "expectedPartCount": 12,
-      "installedPartCount": 12,
+      "expectedItemCount": 7,
+      "installedItemCount": 7,
+      "expectedRoleTextureCount": 7,
+      "installedRoleTextureCount": 7,
+      "expectedPartCount": 7,
+      "installedPartCount": 7,
       "items": [
-        {
-          "id": "ash-walker-hat",
-          "name": "Ash-Walker's Cowl",
-          "setId": "ash-walker",
-          "setName": "Ash-Walker",
-          "rarity": "Ultimate",
-          "slot": "hat",
-          "slotDirectory": "hats",
-          "sourceCharacterId": "cc-asha-the-ash-walker",
-          "sourceCharacterName": "Asha the Ash-Walker",
-          "identityReferences": [
-            "packages/client/public/ui/portraits/cc-asha-the-ash-walker.jpg",
-            "packages/client/public/sprites/cc-asha-the-ash-walker/body.png",
-            "packages/client/public/sprites/boilerplate/identity-master.png",
-            "packages/client/public/sprites/boilerplate/head.png"
-          ],
-          "renderRole": "overlay-hat",
-          "texture": "ash-walker-hat.png",
-          "installedFile": "packages/client/public/sprites/gear/hats/ash-walker-hat.png",
-          "renderLog": "tools/artkit/out/gear/logs/hats/ash-walker-hat.codex.log",
-          "sourceRevision": "78d4561191ced8f02aa0c6a42bf108cb82cbe2ee426544e29ee24024f941aaf1",
-          "alphaBounds": {
-            "left": 347,
-            "top": 30,
-            "width": 330,
-            "height": 356,
-            "right": 676,
-            "bottom": 385
-          },
-          "image": {
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "hasAlpha": true,
-            "format": "png",
-            "sha256": "78d4561191ced8f02aa0c6a42bf108cb82cbe2ee426544e29ee24024f941aaf1",
-            "opaquePixelCount": 90638,
-            "visiblePixelCount": 91766,
-            "transparentPixelCount": 956810
-          },
-          "parts": [
-            {
-              "id": "hat",
-              "renderRole": "overlay-hat",
-              "parent": "body",
-              "receiver": "head",
-              "pivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "pivotTrimmed": {
-                "x": 512,
-                "y": 317
-              },
-              "authoringPivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "receiverAnchor": {
-                "id": "head",
-                "xL": 0,
-                "yL": -0.38,
-                "parent": "body",
-                "parentTransform": "final body card",
-                "plane": "hat",
-                "normalized": {
-                  "xL": 0,
-                  "yL": -0.38
-                },
-                "raw": {
-                  "x": 512,
-                  "y": 317.44
-                }
-              },
-              "restAngle": 0,
-              "mountScale": 0.85,
-              "plane": 20,
-              "spring": {
-                "preset": "hat-jiggle",
-                "hz": 5.2,
-                "dampingRatio": 0.58,
-                "maxDeg": 9,
-                "dragGain": 0.7
-              },
-              "fixedFrame": null,
-              "fixedCrop": null,
-              "outputOrigin": null,
-              "sourceHash": "78d4561191ced8f02aa0c6a42bf108cb82cbe2ee426544e29ee24024f941aaf1",
-              "alphaBounds": {
-                "left": 347,
-                "top": 30,
-                "width": 330,
-                "height": 356,
-                "right": 676,
-                "bottom": 385
-              },
-              "pivotAlpha": 255
-            }
-          ],
-          "validation": {
-            "overlay-hat": {
-              "verified": true,
-              "contractId": "GEAR_REPLACEMENT_V2",
-              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
-              "renderRole": "overlay-hat",
-              "generatedOutlineRadius": 8,
-              "gates": {
-                "stackBandVerification": {
-                  "frame": "HAT_STACK_BAND_V1",
-                  "verified": true,
-                  "pivotInsideStock": true,
-                  "pivotAlpha": 255,
-                  "mountBandOccupied": true,
-                  "mountOpaquePixels": 12219,
-                  "minimumMountOpaquePixels": 24,
-                  "silhouetteInsideEnvelope": true,
-                  "topSocketSource": {
-                    "x": 512,
-                    "y": 30
-                  },
-                  "centralCrownPath": true,
-                  "bounds": {
-                    "left": 347,
-                    "top": 30,
-                    "right": 676,
-                    "bottom": 385
-                  }
-                },
-                "readability": {
-                  "verified": true,
-                  "islandCount": 2,
-                  "checks": [
-                    {
-                      "scale": 1,
-                      "projectedWidth": 330,
-                      "projectedHeight": 356,
-                      "projectedOpaquePixels": 91766,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.82,
-                      "projectedWidth": 271,
-                      "projectedHeight": 292,
-                      "projectedOpaquePixels": 61703,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.24,
-                      "projectedWidth": 79,
-                      "projectedHeight": 85,
-                      "projectedOpaquePixels": 5286,
-                      "verified": true
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "stackBandVerification": {
-            "frame": "HAT_STACK_BAND_V1",
-            "verified": true,
-            "pivotInsideStock": true,
-            "pivotAlpha": 255,
-            "mountBandOccupied": true,
-            "mountOpaquePixels": 12219,
-            "minimumMountOpaquePixels": 24,
-            "silhouetteInsideEnvelope": true,
-            "topSocketSource": {
-              "x": 512,
-              "y": 30
-            },
-            "centralCrownPath": true,
-            "bounds": {
-              "left": 347,
-              "top": 30,
-              "right": 676,
-              "bottom": 385
-            }
-          }
-        },
-        {
-          "id": "ashen-crusader-hat",
-          "name": "Crusader's Cowl",
-          "setId": "ashen-crusader",
-          "setName": "Ashen Crusader",
-          "rarity": "Ultimate",
-          "slot": "hat",
-          "slotDirectory": "hats",
-          "sourceCharacterId": "cc-brother-cassian-the-ashen-crusader",
-          "sourceCharacterName": "Brother Cassian, the Ashen Crusader",
-          "identityReferences": [
-            "packages/client/public/ui/portraits/cc-brother-cassian-the-ashen-crusader.jpg",
-            "packages/client/public/sprites/cc-brother-cassian-the-ashen-crusader/body.png",
-            "packages/client/public/sprites/boilerplate/identity-master.png",
-            "packages/client/public/sprites/boilerplate/head.png"
-          ],
-          "renderRole": "overlay-hat",
-          "texture": "ashen-crusader-hat.png",
-          "installedFile": "packages/client/public/sprites/gear/hats/ashen-crusader-hat.png",
-          "renderLog": "tools/artkit/out/gear/logs/hats/ashen-crusader-hat.codex.log",
-          "sourceRevision": "615cb24a0e11c7139efe05a95be9c4edac9f53a7b543ce5329105faf07546282",
-          "alphaBounds": {
-            "left": 383,
-            "top": 30,
-            "width": 258,
-            "height": 356,
-            "right": 640,
-            "bottom": 385
-          },
-          "image": {
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "hasAlpha": true,
-            "format": "png",
-            "sha256": "615cb24a0e11c7139efe05a95be9c4edac9f53a7b543ce5329105faf07546282",
-            "opaquePixelCount": 62930,
-            "visiblePixelCount": 64028,
-            "transparentPixelCount": 984548
-          },
-          "parts": [
-            {
-              "id": "hat",
-              "renderRole": "overlay-hat",
-              "parent": "body",
-              "receiver": "head",
-              "pivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "pivotTrimmed": {
-                "x": 512,
-                "y": 317
-              },
-              "authoringPivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "receiverAnchor": {
-                "id": "head",
-                "xL": 0,
-                "yL": -0.38,
-                "parent": "body",
-                "parentTransform": "final body card",
-                "plane": "hat",
-                "normalized": {
-                  "xL": 0,
-                  "yL": -0.38
-                },
-                "raw": {
-                  "x": 512,
-                  "y": 317.44
-                }
-              },
-              "restAngle": 0,
-              "mountScale": 0.85,
-              "plane": 20,
-              "spring": {
-                "preset": "hat-jiggle",
-                "hz": 5.2,
-                "dampingRatio": 0.58,
-                "maxDeg": 9,
-                "dragGain": 0.7
-              },
-              "fixedFrame": null,
-              "fixedCrop": null,
-              "outputOrigin": null,
-              "sourceHash": "615cb24a0e11c7139efe05a95be9c4edac9f53a7b543ce5329105faf07546282",
-              "alphaBounds": {
-                "left": 383,
-                "top": 30,
-                "width": 258,
-                "height": 356,
-                "right": 640,
-                "bottom": 385
-              },
-              "pivotAlpha": 255
-            }
-          ],
-          "validation": {
-            "overlay-hat": {
-              "verified": true,
-              "contractId": "GEAR_REPLACEMENT_V2",
-              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
-              "renderRole": "overlay-hat",
-              "generatedOutlineRadius": 8,
-              "gates": {
-                "stackBandVerification": {
-                  "frame": "HAT_STACK_BAND_V1",
-                  "verified": true,
-                  "pivotInsideStock": true,
-                  "pivotAlpha": 255,
-                  "mountBandOccupied": true,
-                  "mountOpaquePixels": 10424,
-                  "minimumMountOpaquePixels": 24,
-                  "silhouetteInsideEnvelope": true,
-                  "topSocketSource": {
-                    "x": 514,
-                    "y": 30
-                  },
-                  "centralCrownPath": true,
-                  "bounds": {
-                    "left": 383,
-                    "top": 30,
-                    "right": 640,
-                    "bottom": 385
-                  }
-                },
-                "readability": {
-                  "verified": true,
-                  "islandCount": 3,
-                  "checks": [
-                    {
-                      "scale": 1,
-                      "projectedWidth": 258,
-                      "projectedHeight": 356,
-                      "projectedOpaquePixels": 64028,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.82,
-                      "projectedWidth": 212,
-                      "projectedHeight": 292,
-                      "projectedOpaquePixels": 43052,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.24,
-                      "projectedWidth": 62,
-                      "projectedHeight": 85,
-                      "projectedOpaquePixels": 3688,
-                      "verified": true
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "stackBandVerification": {
-            "frame": "HAT_STACK_BAND_V1",
-            "verified": true,
-            "pivotInsideStock": true,
-            "pivotAlpha": 255,
-            "mountBandOccupied": true,
-            "mountOpaquePixels": 10424,
-            "minimumMountOpaquePixels": 24,
-            "silhouetteInsideEnvelope": true,
-            "topSocketSource": {
-              "x": 514,
-              "y": 30
-            },
-            "centralCrownPath": true,
-            "bounds": {
-              "left": 383,
-              "top": 30,
-              "right": 640,
-              "bottom": 385
-            }
-          }
-        },
         {
           "id": "molten-core-hat",
           "name": "Cinder Crown",
           "setId": "molten-core",
           "setName": "Molten Core",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-cinderpyre",
@@ -15467,6 +17180,7 @@
           "setId": "coldsnap",
           "setName": "Coldsnap",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-cordell-coldsnap-vane",
@@ -15647,6 +17361,7 @@
           "setId": "graveside",
           "setName": "Graveside",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-elias-parson-thorne",
@@ -15827,6 +17542,7 @@
           "setId": "nine-veils",
           "setName": "Nine Veils",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-iridia-of-the-nine-veils",
@@ -16007,6 +17723,7 @@
           "setId": "demon-mask",
           "setName": "Demon Mask",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-kuro-oni-the-demon-mask",
@@ -16182,371 +17899,12 @@
           }
         },
         {
-          "id": "thornwatch-hat",
-          "name": "Thornwatch Plume",
-          "setId": "thornwatch",
-          "setName": "Thornwatch",
-          "rarity": "Ultimate",
-          "slot": "hat",
-          "slotDirectory": "hats",
-          "sourceCharacterId": "cc-dame-veyra-of-the-thornwatch",
-          "sourceCharacterName": "Dame Veyra of the Thornwatch",
-          "identityReferences": [
-            "packages/client/public/ui/portraits/cc-dame-veyra-of-the-thornwatch.jpg",
-            "packages/client/public/sprites/cc-dame-veyra-of-the-thornwatch/body.png",
-            "packages/client/public/sprites/boilerplate/identity-master.png",
-            "packages/client/public/sprites/boilerplate/head.png"
-          ],
-          "renderRole": "overlay-hat",
-          "texture": "thornwatch-hat.png",
-          "installedFile": "packages/client/public/sprites/gear/hats/thornwatch-hat.png",
-          "renderLog": "tools/artkit/out/gear/logs/hats/thornwatch-hat.codex.log",
-          "sourceRevision": "041ef8caea6b454e3afef50568991eb3c0e33461994dd1d6b4cb185d38a7ea0b",
-          "alphaBounds": {
-            "left": 304,
-            "top": 30,
-            "width": 417,
-            "height": 356,
-            "right": 720,
-            "bottom": 385
-          },
-          "image": {
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "hasAlpha": true,
-            "format": "png",
-            "sha256": "041ef8caea6b454e3afef50568991eb3c0e33461994dd1d6b4cb185d38a7ea0b",
-            "opaquePixelCount": 97936,
-            "visiblePixelCount": 99761,
-            "transparentPixelCount": 948815
-          },
-          "parts": [
-            {
-              "id": "hat",
-              "renderRole": "overlay-hat",
-              "parent": "body",
-              "receiver": "head",
-              "pivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "pivotTrimmed": {
-                "x": 512,
-                "y": 317
-              },
-              "authoringPivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "receiverAnchor": {
-                "id": "head",
-                "xL": 0,
-                "yL": -0.38,
-                "parent": "body",
-                "parentTransform": "final body card",
-                "plane": "hat",
-                "normalized": {
-                  "xL": 0,
-                  "yL": -0.38
-                },
-                "raw": {
-                  "x": 512,
-                  "y": 317.44
-                }
-              },
-              "restAngle": 0,
-              "mountScale": 0.85,
-              "plane": 20,
-              "spring": {
-                "preset": "hat-jiggle",
-                "hz": 5.2,
-                "dampingRatio": 0.58,
-                "maxDeg": 9,
-                "dragGain": 0.7
-              },
-              "fixedFrame": null,
-              "fixedCrop": null,
-              "outputOrigin": null,
-              "sourceHash": "041ef8caea6b454e3afef50568991eb3c0e33461994dd1d6b4cb185d38a7ea0b",
-              "alphaBounds": {
-                "left": 304,
-                "top": 30,
-                "width": 417,
-                "height": 356,
-                "right": 720,
-                "bottom": 385
-              },
-              "pivotAlpha": 255
-            }
-          ],
-          "validation": {
-            "overlay-hat": {
-              "verified": true,
-              "contractId": "GEAR_REPLACEMENT_V2",
-              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
-              "renderRole": "overlay-hat",
-              "generatedOutlineRadius": 8,
-              "gates": {
-                "stackBandVerification": {
-                  "frame": "HAT_STACK_BAND_V1",
-                  "verified": true,
-                  "pivotInsideStock": true,
-                  "pivotAlpha": 255,
-                  "mountBandOccupied": true,
-                  "mountOpaquePixels": 10597,
-                  "minimumMountOpaquePixels": 24,
-                  "silhouetteInsideEnvelope": true,
-                  "topSocketSource": {
-                    "x": 419,
-                    "y": 30
-                  },
-                  "centralCrownPath": true,
-                  "bounds": {
-                    "left": 304,
-                    "top": 30,
-                    "right": 720,
-                    "bottom": 385
-                  }
-                },
-                "readability": {
-                  "verified": true,
-                  "islandCount": 5,
-                  "checks": [
-                    {
-                      "scale": 1,
-                      "projectedWidth": 417,
-                      "projectedHeight": 356,
-                      "projectedOpaquePixels": 99761,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.82,
-                      "projectedWidth": 342,
-                      "projectedHeight": 292,
-                      "projectedOpaquePixels": 67079,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.24,
-                      "projectedWidth": 100,
-                      "projectedHeight": 85,
-                      "projectedOpaquePixels": 5746,
-                      "verified": true
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "stackBandVerification": {
-            "frame": "HAT_STACK_BAND_V1",
-            "verified": true,
-            "pivotInsideStock": true,
-            "pivotAlpha": 255,
-            "mountBandOccupied": true,
-            "mountOpaquePixels": 10597,
-            "minimumMountOpaquePixels": 24,
-            "silhouetteInsideEnvelope": true,
-            "topSocketSource": {
-              "x": 419,
-              "y": 30
-            },
-            "centralCrownPath": true,
-            "bounds": {
-              "left": 304,
-              "top": 30,
-              "right": 720,
-              "bottom": 385
-            }
-          }
-        },
-        {
-          "id": "neon-mirage-hat",
-          "name": "Zero-Latency Cap",
-          "setId": "neon-mirage",
-          "setName": "Neon Mirage",
-          "rarity": "Ultimate",
-          "slot": "hat",
-          "slotDirectory": "hats",
-          "sourceCharacterId": "cc-neon-mirage",
-          "sourceCharacterName": "Neon Mirage",
-          "identityReferences": [
-            "packages/client/public/ui/portraits/cc-neon-mirage.jpg",
-            "packages/client/public/sprites/cc-neon-mirage/body.png",
-            "packages/client/public/sprites/boilerplate/identity-master.png",
-            "packages/client/public/sprites/boilerplate/head.png"
-          ],
-          "renderRole": "overlay-hat",
-          "texture": "neon-mirage-hat.png",
-          "installedFile": "packages/client/public/sprites/gear/hats/neon-mirage-hat.png",
-          "renderLog": "tools/artkit/out/gear/logs/hats/neon-mirage-hat.codex.log",
-          "sourceRevision": "c10f2ddaf405871af23e52f719f28e9db21765a835ffa99b7ede0d21daeff573",
-          "alphaBounds": {
-            "left": 329,
-            "top": 30,
-            "width": 367,
-            "height": 356,
-            "right": 695,
-            "bottom": 385
-          },
-          "image": {
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "hasAlpha": true,
-            "format": "png",
-            "sha256": "c10f2ddaf405871af23e52f719f28e9db21765a835ffa99b7ede0d21daeff573",
-            "opaquePixelCount": 97573,
-            "visiblePixelCount": 98736,
-            "transparentPixelCount": 949840
-          },
-          "parts": [
-            {
-              "id": "hat",
-              "renderRole": "overlay-hat",
-              "parent": "body",
-              "receiver": "head",
-              "pivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "pivotTrimmed": {
-                "x": 512,
-                "y": 317
-              },
-              "authoringPivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "receiverAnchor": {
-                "id": "head",
-                "xL": 0,
-                "yL": -0.38,
-                "parent": "body",
-                "parentTransform": "final body card",
-                "plane": "hat",
-                "normalized": {
-                  "xL": 0,
-                  "yL": -0.38
-                },
-                "raw": {
-                  "x": 512,
-                  "y": 317.44
-                }
-              },
-              "restAngle": 0,
-              "mountScale": 0.85,
-              "plane": 20,
-              "spring": {
-                "preset": "hat-jiggle",
-                "hz": 5.2,
-                "dampingRatio": 0.58,
-                "maxDeg": 9,
-                "dragGain": 0.7
-              },
-              "fixedFrame": null,
-              "fixedCrop": null,
-              "outputOrigin": null,
-              "sourceHash": "c10f2ddaf405871af23e52f719f28e9db21765a835ffa99b7ede0d21daeff573",
-              "alphaBounds": {
-                "left": 329,
-                "top": 30,
-                "width": 367,
-                "height": 356,
-                "right": 695,
-                "bottom": 385
-              },
-              "pivotAlpha": 255
-            }
-          ],
-          "validation": {
-            "overlay-hat": {
-              "verified": true,
-              "contractId": "GEAR_REPLACEMENT_V2",
-              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
-              "renderRole": "overlay-hat",
-              "generatedOutlineRadius": 8,
-              "gates": {
-                "stackBandVerification": {
-                  "frame": "HAT_STACK_BAND_V1",
-                  "verified": true,
-                  "pivotInsideStock": true,
-                  "pivotAlpha": 255,
-                  "mountBandOccupied": true,
-                  "mountOpaquePixels": 10555,
-                  "minimumMountOpaquePixels": 24,
-                  "silhouetteInsideEnvelope": true,
-                  "topSocketSource": {
-                    "x": 512,
-                    "y": 30
-                  },
-                  "centralCrownPath": true,
-                  "bounds": {
-                    "left": 329,
-                    "top": 30,
-                    "right": 695,
-                    "bottom": 385
-                  }
-                },
-                "readability": {
-                  "verified": true,
-                  "islandCount": 5,
-                  "checks": [
-                    {
-                      "scale": 1,
-                      "projectedWidth": 367,
-                      "projectedHeight": 356,
-                      "projectedOpaquePixels": 98736,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.82,
-                      "projectedWidth": 301,
-                      "projectedHeight": 292,
-                      "projectedOpaquePixels": 66390,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.24,
-                      "projectedWidth": 88,
-                      "projectedHeight": 85,
-                      "projectedOpaquePixels": 5687,
-                      "verified": true
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "stackBandVerification": {
-            "frame": "HAT_STACK_BAND_V1",
-            "verified": true,
-            "pivotInsideStock": true,
-            "pivotAlpha": 255,
-            "mountBandOccupied": true,
-            "mountOpaquePixels": 10555,
-            "minimumMountOpaquePixels": 24,
-            "silhouetteInsideEnvelope": true,
-            "topSocketSource": {
-              "x": 512,
-              "y": 30
-            },
-            "centralCrownPath": true,
-            "bounds": {
-              "left": 329,
-              "top": 30,
-              "right": 695,
-              "bottom": 385
-            }
-          }
-        },
-        {
           "id": "house-edge-hat",
           "name": "Quickfinger's Boater",
           "setId": "house-edge",
           "setName": "House Edge",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-quickfinger-odette-lacroix",
@@ -16727,6 +18085,7 @@
           "setId": "unbending",
           "setName": "Unbending",
           "rarity": "Ultimate",
+          "faceReceivers": null,
           "slot": "hat",
           "slotDirectory": "hats",
           "sourceCharacterId": "cc-sir-galloway-the-unbending",
@@ -16900,186 +18259,6 @@
               "bottom": 385
             }
           }
-        },
-        {
-          "id": "pressurized-hat",
-          "name": "Magnus Pressure Hat",
-          "setId": "pressurized",
-          "setName": "Pressurized",
-          "rarity": "Ultimate",
-          "slot": "hat",
-          "slotDirectory": "hats",
-          "sourceCharacterId": "cc-tinker-magnus-brasswick",
-          "sourceCharacterName": "Tinker-Magnus Brasswick",
-          "identityReferences": [
-            "packages/client/public/ui/portraits/cc-tinker-magnus-brasswick.jpg",
-            "packages/client/public/sprites/cc-tinker-magnus-brasswick/body.png",
-            "packages/client/public/sprites/boilerplate/identity-master.png",
-            "packages/client/public/sprites/boilerplate/head.png"
-          ],
-          "renderRole": "overlay-hat",
-          "texture": "pressurized-hat.png",
-          "installedFile": "packages/client/public/sprites/gear/hats/pressurized-hat.png",
-          "renderLog": "tools/artkit/out/gear/logs/hats/pressurized-hat.codex.log",
-          "sourceRevision": "5caf60d4f9ecebaccf9c6b5943fdbc23f01dba96eb711f687e0da267363f4192",
-          "alphaBounds": {
-            "left": 344,
-            "top": 30,
-            "width": 336,
-            "height": 356,
-            "right": 679,
-            "bottom": 385
-          },
-          "image": {
-            "width": 1024,
-            "height": 1024,
-            "channels": 4,
-            "hasAlpha": true,
-            "format": "png",
-            "sha256": "5caf60d4f9ecebaccf9c6b5943fdbc23f01dba96eb711f687e0da267363f4192",
-            "opaquePixelCount": 90109,
-            "visiblePixelCount": 91290,
-            "transparentPixelCount": 957286
-          },
-          "parts": [
-            {
-              "id": "hat",
-              "renderRole": "overlay-hat",
-              "parent": "body",
-              "receiver": "head",
-              "pivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "pivotTrimmed": {
-                "x": 512,
-                "y": 317
-              },
-              "authoringPivotSource": {
-                "x": 512,
-                "y": 317
-              },
-              "receiverAnchor": {
-                "id": "head",
-                "xL": 0,
-                "yL": -0.38,
-                "parent": "body",
-                "parentTransform": "final body card",
-                "plane": "hat",
-                "normalized": {
-                  "xL": 0,
-                  "yL": -0.38
-                },
-                "raw": {
-                  "x": 512,
-                  "y": 317.44
-                }
-              },
-              "restAngle": 0,
-              "mountScale": 0.85,
-              "plane": 20,
-              "spring": {
-                "preset": "hat-jiggle",
-                "hz": 5.2,
-                "dampingRatio": 0.58,
-                "maxDeg": 9,
-                "dragGain": 0.7
-              },
-              "fixedFrame": null,
-              "fixedCrop": null,
-              "outputOrigin": null,
-              "sourceHash": "5caf60d4f9ecebaccf9c6b5943fdbc23f01dba96eb711f687e0da267363f4192",
-              "alphaBounds": {
-                "left": 344,
-                "top": 30,
-                "width": 336,
-                "height": 356,
-                "right": 679,
-                "bottom": 385
-              },
-              "pivotAlpha": 255
-            }
-          ],
-          "validation": {
-            "overlay-hat": {
-              "verified": true,
-              "contractId": "GEAR_REPLACEMENT_V2",
-              "contractRevision": "3e0eb9586b35df131242cb8e2d2349fa23dd02123bae6427a9f8871456375d4c",
-              "renderRole": "overlay-hat",
-              "generatedOutlineRadius": 8,
-              "gates": {
-                "stackBandVerification": {
-                  "frame": "HAT_STACK_BAND_V1",
-                  "verified": true,
-                  "pivotInsideStock": true,
-                  "pivotAlpha": 255,
-                  "mountBandOccupied": true,
-                  "mountOpaquePixels": 12274,
-                  "minimumMountOpaquePixels": 24,
-                  "silhouetteInsideEnvelope": true,
-                  "topSocketSource": {
-                    "x": 408,
-                    "y": 35
-                  },
-                  "centralCrownPath": true,
-                  "bounds": {
-                    "left": 344,
-                    "top": 30,
-                    "right": 679,
-                    "bottom": 385
-                  }
-                },
-                "readability": {
-                  "verified": true,
-                  "islandCount": 5,
-                  "checks": [
-                    {
-                      "scale": 1,
-                      "projectedWidth": 336,
-                      "projectedHeight": 356,
-                      "projectedOpaquePixels": 91290,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.82,
-                      "projectedWidth": 276,
-                      "projectedHeight": 292,
-                      "projectedOpaquePixels": 61383,
-                      "verified": true
-                    },
-                    {
-                      "scale": 0.24,
-                      "projectedWidth": 81,
-                      "projectedHeight": 85,
-                      "projectedOpaquePixels": 5258,
-                      "verified": true
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "stackBandVerification": {
-            "frame": "HAT_STACK_BAND_V1",
-            "verified": true,
-            "pivotInsideStock": true,
-            "pivotAlpha": 255,
-            "mountBandOccupied": true,
-            "mountOpaquePixels": 12274,
-            "minimumMountOpaquePixels": 24,
-            "silhouetteInsideEnvelope": true,
-            "topSocketSource": {
-              "x": 408,
-              "y": 35
-            },
-            "centralCrownPath": true,
-            "bounds": {
-              "left": 344,
-              "top": 30,
-              "right": 679,
-              "bottom": 385
-            }
-          }
         }
       ]
     }
@@ -17089,16 +18268,15 @@
     "packages/client/public/sprites/gear/boots/unbending-boots.png",
     "packages/client/public/sprites/gear/glasses/brass-readers.png",
     "packages/client/public/sprites/gear/glasses/loaded-readers.png",
-    "packages/client/public/sprites/gear/glasses/lucky-readers.png",
-    "tools/artkit/out/gear/installed/heads/coldsnap-head.png",
-    "tools/artkit/out/gear/installed/torso/ashen-crusader-shirt.png",
-    "tools/artkit/out/gear/installed/torso/graveside-shirt.png",
-    "tools/artkit/out/gear/installed/torso/neon-mirage-shirt.png",
-    "tools/artkit/out/gear/installed/torso/nine-veils-shirt.png",
-    "tools/artkit/out/gear/installed/torso/pressurized-shirt.png",
-    "tools/artkit/out/gear/installed/torso/thornwatch-shirt.png"
+    "packages/client/public/sprites/gear/glasses/lucky-readers.png"
   ],
-  "extras": [],
+  "extras": [
+    "packages/client/public/sprites/gear/hats/ash-walker-hat.png",
+    "packages/client/public/sprites/gear/hats/ashen-crusader-hat.png",
+    "packages/client/public/sprites/gear/hats/neon-mirage-hat.png",
+    "packages/client/public/sprites/gear/hats/pressurized-hat.png",
+    "packages/client/public/sprites/gear/hats/thornwatch-hat.png"
+  ],
   "invalid": [
     {
       "file": "packages/client/public/sprites/gear/boots/thornwatch-boots.png",

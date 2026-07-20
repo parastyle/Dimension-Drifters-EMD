@@ -2277,7 +2277,7 @@ describe("improve2 integrity regressions", () => {
     expect(receipt?.delivery).toBe(CombatDelivery.Gun);
     expect(h.state().combatReceipts.length).toBe(COMBAT_RECEIPT_CAP);
     expect([...h.state().combatReceipts]).toEqual(rows);
-    expect(h.state().schemaVersion).toBe(31);
+    expect(h.state().schemaVersion).toBe(32);
   });
 });
 
@@ -3384,7 +3384,7 @@ describe("GameRoom — §51 tough-enemy melee combos (Wave 1 authority)", () => 
   });
 
   it("ships schema 19, named depth decks, and guardrail-safe authored literals", () => {
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect(new EnemyState().comboSeq).toBe(0);
     expect(new EnemyState().comboFlags).toBe(0);
     expect(herePlayerJuggledDefault()).toBe(0);
@@ -3765,7 +3765,7 @@ describe("GameRoom — jump-feel J1 authoritative stance/physics", () => {
 
   it("ships schema 21 with the three appended uint8 stance/VFX defaults", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect([player.moveStance, player.poundSeq, player.stanceSeq]).toEqual([0, 0, 0]);
   });
 });
@@ -3892,7 +3892,7 @@ describe("GameRoom — classmerge 21a", () => {
 
   it("appends runCharacter at schema 21 with a safe Drifter default", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect(player.runCharacter).toBe("drifter");
   });
 });
@@ -4290,7 +4290,7 @@ describe("GameRoom — schema-23 Megabonk slide inherits the 21b dodge laws", ()
 
   it("ships schema 23 with the dodge edge and appended slide predictor state", () => {
     const player = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect(player.dodgedSeq).toBe(0);
     expect([player.momentumX, player.momentumY, player.slidePhase, player.slidePhaseTick]).toEqual([
       0, 0, 0, 0,
@@ -4549,8 +4549,8 @@ describe("GameRoom — appended schema-23 slide momentum and chain laws", () => 
 
   it("stamps schema 23 on the room and initializes the appended momentum state", () => {
     const fixture = makeSlideRoom("slide-schema-23");
-    expect(fixture.h.state().schemaVersion).toBe(31);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(fixture.h.state().schemaVersion).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect([
       fixture.player.momentumX,
       fixture.player.momentumY,
@@ -5076,8 +5076,8 @@ describe("ULT U1 lifecycle, co-op, and schema 25", () => {
     const h = makeRoom();
     h.join("ult-schema");
     const player = h.state().players.get("ult-schema");
-    expect(h.state().schemaVersion).toBe(31);
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(h.state().schemaVersion).toBe(32);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
     expect([
       player.ultimate.archetype,
       player.ultimate.charge,
@@ -5127,7 +5127,7 @@ describe("pet v1 join snapshot, lock, and schema 25", () => {
     h.room.clients.push(client);
     h.room.onJoin(client, { metaAccount: account, selectedPetId: "brass-crab" });
     const player = h.state().players.get("pet-lock");
-    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([31, 31]);
+    expect([h.state().schemaVersion, enemyComboShared.SCHEMA_VERSION]).toEqual([32, 32]);
     expect({ petId: player.petId, petLevelBand: player.petLevelBand }).toEqual({
       petId: "hearth-newt",
       petLevelBand: 3,
@@ -5847,8 +5847,8 @@ describe("GameRoom — dual-wield schema 27 server core", () => {
     expect(new Set(weaponIds)).toEqual(new Set(["rattler-sabre", "x2-gallows-splitter"]));
 
     const fresh = new enemyComboShared.PlayerState();
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
-    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(new enemyComboShared.ArenaState().schemaVersion).toBe(32);
     expect(fresh.dualWield).toMatchObject({
       offhandSlot: 255,
       pairBaseSeq: 0,
@@ -6420,8 +6420,8 @@ describe("GameRoom — schema-31 Drive authority", () => {
     );
     const cost = enemyComboShared.driveCostForProfile(profile, interval);
 
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
-    expect(h.state().schemaVersion).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
+    expect(h.state().schemaVersion).toBe(32);
     expect(player.weaponResource).toBe(player.dualWield.weaponResource);
     expect(player.weaponResource).toMatchObject({
       valueQ: 10_000,
@@ -6709,7 +6709,7 @@ describe("GameRoom — schema-31 public prestige ceremony", () => {
     )[tailSymbols[0]!];
     if (!metadata) throw new Error("DualWieldState schema metadata is required");
     expect(metadata[7]).toMatchObject({ name: "prestige", type: "uint8" });
-    expect(enemyComboShared.SCHEMA_VERSION).toBe(31);
+    expect(enemyComboShared.SCHEMA_VERSION).toBe(32);
   });
 });
 
@@ -7018,5 +7018,194 @@ describe("GameRoom - hit registration regressions", () => {
 
     // Segment armor may reduce the authored damage, but range may not turn the contact into zero damage.
     expect(root.hp).toBeLessThan(hp);
+  });
+});
+
+// Owner-ledger W-POSE authority coverage: append-only channel and shared spout-origin contracts.
+describe("GameRoom — authored weapon performances", () => {
+  it("drains Storm-Sphere Drive per second and stops damage at empty until release", async () => {
+    const { CombatDelivery } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("storm-aura");
+    const player = h.state().players.get("storm-aura");
+    const combat = h.room.combat.get("storm-aura");
+    const weapon = WEAPONS["x2-fulgurite-storm-sphere"];
+    if (!weapon?.performance?.aura) throw new Error("Storm-Sphere aura fixture is required");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    h.room.setWeaponResourceRegenOverride(player.id, "paused");
+    combat.drive.valueF = 1;
+    player.weaponResource.valueQ = 100;
+    const input = h.room.inputs.get(player.id);
+    input.held.fireHeld = true;
+    input.lastFreshFireTick = h.state().tick;
+    const detonate = vi.spyOn(h.room, "detonate");
+
+    h.room.beginWeaponResourceTick(player, combat, 0.05);
+    h.room.stepPlayerAura(player, player.id, combat, weapon, 0.05, true);
+    h.room.commitWeaponResourceTick(player, combat);
+
+    expect(player.weaponResource.valueQ).toBe(0);
+    expect(combat.auraActive).toBe(false);
+    expect(combat.auraRequireRelease).toBe(true);
+    expect(player.attackHeld).toBe(false);
+    expect(detonate).toHaveBeenCalledTimes(1);
+    expect(detonate.mock.calls[0]?.[7]).toBe(CombatDelivery.Aura);
+
+    h.room.beginWeaponResourceTick(player, combat, 0.05);
+    h.room.stepPlayerAura(player, player.id, combat, weapon, 0.05, true);
+    h.room.commitWeaponResourceTick(player, combat);
+    expect(player.weaponResource.valueQ).toBe(0);
+    expect(detonate).toHaveBeenCalledTimes(1);
+
+    input.held.fireHeld = false;
+    h.room.stepPlayerAura(player, player.id, combat, weapon, 0.05, true);
+    expect(combat.auraRequireRelease).toBe(false);
+  });
+
+  it("spawns Hollowbarrel pellets at the shared spout and sweeps from the shooter", async () => {
+    const { weaponPerformanceEmitterReach } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("scatter-spout");
+    const player = h.state().players.get("scatter-spout");
+    const combat = h.room.combat.get("scatter-spout");
+    const weapon = WEAPONS["x2-hollowbarrel-spell-scattergun-staff"];
+    if (!weapon?.scatter) throw new Error("Hollowbarrel scatter fixture is required");
+    player.x = 1_500;
+    player.y = 1_500;
+    combat.targetX = player.x + 500;
+    combat.targetY = player.y;
+    combat.aimX = 1;
+    combat.aimY = 0;
+    const reach = weaponPerformanceEmitterReach(weapon);
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    h.room.fireScatter(player, combat, weapon);
+
+    expect(h.state().projectiles.size).toBe(weapon.scatter.count);
+    for (const projectile of h.state().projectiles.values()) {
+      const meta = h.room.projectileMeta.get(projectile.id);
+      expect(projectile.x).toBeCloseTo(player.x + reach, 8);
+      expect(projectile.y).toBeCloseTo(player.y, 8);
+      expect(meta?.firstCollisionX).toBe(player.x);
+      expect(meta?.firstCollisionY).toBe(player.y);
+    }
+    random.mockRestore();
+  });
+});
+
+// Owner-ledger W-ZONE authority coverage. These append the growth, tick, Drive, and landing contracts.
+describe("GameRoom — shared procedural weapon ground zones", () => {
+  it("grows Gravewax over held time through the continuous Drive seam and never creates a beam", async () => {
+    const { weaponResourceProfile, ZoneKind } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("grave-zone");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("grave-zone");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x2-gravewax-seance-globe"];
+    if (!weapon?.groundZone) throw new Error("Gravewax ground-zone fixture is required");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.targetX = player.x + 120;
+    combat.targetY = player.y;
+    combat.aimX = 1;
+    combat.aimY = 0;
+    const input = h.room.inputs.get(player.id);
+    input.held.fireHeld = true;
+    input.lastFreshFireTick = h.state().tick;
+    const driveBefore = player.weaponResource.valueQ;
+
+    h.room.stepPlayerGroundZone(player, player.id, combat, weapon, 0.05, true);
+    const zone = [...h.state().zones.values()].find((row) => row.ownerId === player.id);
+    if (!zone) throw new Error("held Gravewax did not create a zone");
+    const firstRadius = zone.radius;
+    for (let i = 0; i < 5; i++) {
+      input.lastFreshFireTick = h.state().tick;
+      h.room.stepPlayerGroundZone(player, player.id, combat, weapon, 0.05, true);
+    }
+
+    expect(zone.kind).toBe(ZoneKind.Weapon);
+    expect(zone.radius).toBeGreaterThan(firstRadius);
+    expect(zone.radius).toBeLessThanOrEqual(weapon.groundZone.maxRadius);
+    expect(player.weaponResource.valueQ).toBeLessThan(driveBefore);
+    expect(weaponResourceProfile(weapon.id)?.branch).toBe("zone");
+    expect(weapon.beam).toBeUndefined();
+    expect(h.state().beams.size).toBe(0);
+  });
+
+  it("ticks poison damage and applies Frostquill's authored slow on the server", async () => {
+    const { ZoneStyle } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("zone-ticks");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("zone-ticks");
+    const enemy = new EnemyState();
+    enemy.id = "zone-target";
+    enemy.kind = "critter";
+    enemy.x = player.x + 80;
+    enemy.y = player.y;
+    enemy.hp = 1_000;
+    h.state().enemies.set(enemy.id, enemy);
+    h.room.rebuildEnemyGrid();
+    const poison = WEAPONS["x2-snakeoil-tincture-scepter"];
+    const frost = WEAPONS["x2-frostquill-compendium"];
+    if (!poison?.groundZone || !frost?.groundZone)
+      throw new Error("poison/frost ground-zone fixtures are required");
+
+    const poisonZone = h.room.spawnWeaponGroundZoneAt(
+      player,
+      poison,
+      enemy.x,
+      enemy.y,
+      poison.groundZone.damagePerSecond,
+    );
+    const frostZone = h.room.spawnWeaponGroundZoneAt(player, frost, enemy.x, enemy.y, 0);
+    h.room.stepZones(0.05);
+    h.room.stepZones(0.05);
+
+    expect(poisonZone?.style).toBe(ZoneStyle.Poison);
+    expect(frostZone?.style).toBe(ZoneStyle.Ice);
+    expect(enemy.hp).toBeLessThan(1_000);
+    expect(h.room.enemyGroundZoneSlow(enemy.id)).toBe(frost.groundZone.slowMultiplier);
+    expect(h.room.enemyZoneSlow.get(enemy.id)?.untilTick).toBeGreaterThan(h.state().tick);
+  });
+
+  it("converts Carrion Effigy to an own-sprite arc grenade that blooms poison only on landing", async () => {
+    const { thrownProjectileSpriteId, ZoneStyle } = await import("@dd/shared");
+    const h = makeRoom();
+    h.join("carrion-grenade");
+    h.room.map.pois.length = 0;
+    h.room.map.tiles.fill(TILE_GROUND);
+    const player = h.state().players.get("carrion-grenade");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x2-carrion-effigy"];
+    if (!weapon?.thrown || weapon.groundZone?.trigger !== "landing")
+      throw new Error("Carrion landing-grenade fixture is required");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.targetX = player.x + weapon.thrown.range;
+    combat.targetY = player.y;
+    combat.aimX = 1;
+    combat.aimY = 0;
+
+    h.room.throwWeapon(player, combat, weapon);
+    const projectile = [...h.state().projectiles.values()][0];
+    if (!projectile) throw new Error("Carrion did not launch its grenade");
+    const meta = h.room.projectileMeta.get(projectile.id);
+    expect(weapon.scatter).toBeUndefined();
+    expect(projectile.kind).toBe(`thrown:${weapon.id}`);
+    expect(thrownProjectileSpriteId(projectile.kind)).toBe(weapon.id);
+    expect(projectile.bornTick).toBe(h.state().tick);
+    expect(meta?.landingZoneDamage).toBeGreaterThan(0);
+    expect(h.state().zones.size).toBe(0);
+
+    for (let i = 0; i < 20 && h.state().projectiles.size > 0; i++) h.room.stepProjectiles(0.05);
+    const landed = [...h.state().zones.values()].find((row) => row.weaponId === weapon.id);
+    expect(h.state().projectiles.size).toBe(0);
+    expect(landed?.style).toBe(ZoneStyle.Poison);
+    expect(landed?.radius).toBe(weapon.groundZone.initialRadius);
   });
 });

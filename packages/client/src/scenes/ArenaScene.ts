@@ -130,8 +130,10 @@ import {
   WEAPON_IDS,
   WEAPONS,
   type WeaponDef,
+  ZoneKind,
   weaponDisplaySpriteId,
   weaponMuzzleReach,
+  weaponPerformanceEmitterReach,
   weaponSetBonus,
 } from "@dd/shared";
 import { Client, type Room } from "colyseus.js";
@@ -296,6 +298,7 @@ import {
   WEAPON_ACCENT,
 } from "./arena/card-art.js";
 import { boltPoints, strokeBolt } from "./arena/draw-util.js";
+import { makeGroundZonePatch, syncGroundZonePatch } from "./arena/ground-zone-renderer.js";
 import {
   buildArenaFloor,
   buildPois,
@@ -3578,15 +3581,20 @@ export class ArenaScene extends Phaser.Scene {
 
   private triggerAcceptedRigAttack(rig: SpriteRig, player: PlayerState, epoch: number): void {
     const weapon = WEAPONS[player.weapon] ?? WEAPONS[DEFAULT_WEAPON];
-    if (weapon?.tags.classPool === "caster")
-      this.spawnCasterSource(weapon, rig.x, rig.y, player.aimDir);
-    // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
-    // this descriptor path, including the authoritative affix-adjusted cadence.
-    if (!weapon || weapon.gun) return;
+    if (!weapon) return;
     const swing = swingDescriptorFor(
       weapon,
       weapon.cooldown * lootCooldownMult(player.weaponAffix),
     );
+    if (weapon.tags.classPool === "caster" && !weapon.performance?.aura) {
+      const delay = weapon.performance?.vfxAt === "impact" ? swing.impactSeconds * 1000 : 0;
+      if (delay > 0)
+        this.time.delayedCall(delay, () => this.spawnCasterSource(weapon, rig.x, rig.y, player.aimDir));
+      else this.spawnCasterSource(weapon, rig.x, rig.y, player.aimDir);
+    }
+    // Guns use projectile/muzzle state instead of a melee swing. Cast/tome and ordinary melee rigs share
+    // this descriptor path, including the authoritative affix-adjusted cadence.
+    if (weapon.gun || weapon.performance?.aura) return;
     rig.triggerSwing(epoch, player.aimDir, swing);
     this.playWeaponSourceAudio(weapon, rig.x, player.id === this.room?.sessionId);
   }
@@ -3600,7 +3608,7 @@ export class ArenaScene extends Phaser.Scene {
   ): void {
     const recipe = resolveCasterVfxRecipe(weapon);
     if (!recipe) return;
-    const reach = weaponMuzzleReach(weapon);
+    const reach = weaponPerformanceEmitterReach(weapon) || weaponMuzzleReach(weapon);
     spawnCasterCast(
       this,
       actorX + Math.cos(angle) * reach,
@@ -6575,7 +6583,7 @@ export class ArenaScene extends Phaser.Scene {
             prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
           )
         : fx
-          ? makeBullet(this, pr)
+          ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1)
           : isThrownProjectileKind(pr.kind)
             ? makeThrownWeapon(this, pr)
             : baseKind(pr.kind) === "magma" // §41 scatter balls carry ":<element>" (frost/void/… casters)
@@ -6729,7 +6737,19 @@ export class ArenaScene extends Phaser.Scene {
         const py = c.y + pr.vy * dtSec;
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
-      if (isThrownProjectileKind(pr.kind)) c.rotation += dtSec * 22; // spin the thrown implement
+      if (isThrownProjectileKind(pr.kind)) {
+        const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
+        (payload ?? c).rotation += dtSec * 22; // the launched implement is always its own held sprite
+        const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
+        const weapon = WEAPONS[weaponId];
+        const arcHeight = weapon?.groundZone?.grenadeArcHeight ?? 0;
+        if (payload && arcHeight > 0 && weapon?.thrown) {
+          const totalTicks = Math.max(1, Math.round((weapon.thrown.range / weapon.thrown.speed) * 1000 / TICK_MS));
+          const ageTicks = (room.state.tick - pr.bornTick) >>> 0;
+          const progress = Phaser.Math.Clamp(ageTicks / totalTicks, 0, 1);
+          payload.y = -Math.sin(progress * Math.PI) * arcHeight;
+        }
+      }
       if (baseKind(pr.kind) === "fireball") this.ultimateVfx.trackComet(id, c.x, c.y, pr.vx, pr.vy);
       if (
         !pr.hostile &&
@@ -6788,7 +6808,18 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.room) return;
     const state = this.room.state.zones;
     state.forEach((zone, id) => {
-      if (this.zones.has(id)) return;
+      const existing = this.zones.get(id);
+      if (existing) {
+        if (existing.getData("weaponGroundZone") === true) syncGroundZonePatch(existing, zone);
+        return;
+      }
+      if (zone.kind === ZoneKind.Weapon) {
+        const patch = makeGroundZonePatch(this, zone);
+        patch.setAlpha(0);
+        this.tweens.add({ targets: patch, alpha: 1, duration: 160 });
+        this.zones.set(id, patch);
+        return;
+      }
       const rx = zone.radius;
       const ry = zone.radius * 0.62; // top-down squish
       // §8/§15: UNPARRYABLE zones speak RED/ORANGE danger (never white/neon-friendly). Reads as a
@@ -9278,13 +9309,15 @@ export class ArenaScene extends Phaser.Scene {
       const beam = this.room?.state.beams.get(id);
       const beamChannelLive =
         beam?.phase === BeamPhase.Charging || beam?.phase === BeamPhase.Active;
-      const localBeamHeld =
+      const localChannelHeld =
         isSelf &&
         !!pl?.alive &&
         !this.pointerOverInteractiveUi &&
-        !!(pl && WEAPONS[pl.weapon]?.beam) &&
+        !!(pl && (WEAPONS[pl.weapon]?.beam || WEAPONS[pl.weapon]?.performance?.continuous)) &&
+        (!WEAPONS[pl.weapon]?.performance?.aura ||
+          Math.floor(Number(pl.dualWield?.weaponResource?.valueQ) || 0) > 0) &&
         pointer.rightButtonDown();
-      anim.fireHeld = pl?.attackHeld === true || beamChannelLive || localBeamHeld;
+      anim.fireHeld = pl?.attackHeld === true || beamChannelLive || localChannelHeld;
       if (pl) {
         const ultimateTick = isSelf ? (this.room?.state.tick ?? 0) : remoteUltimateTick;
         const ultimatePhase = isSelf
@@ -9710,7 +9743,12 @@ export class ArenaScene extends Phaser.Scene {
     )
       return;
     const weapon = WEAPONS[self.weapon] ?? WEAPONS[DEFAULT_WEAPON];
-    if (weapon?.beam) return;
+    if (
+      weapon?.beam ||
+      weapon?.groundZone?.trigger === "channel" ||
+      weapon?.performance?.aura
+    )
+      return;
     // Schema 30: thrown weapons + guns bill the Drive bar — don't animate/fire when the next shot is
     // unaffordable (the server's spend seam rejects it too). Replaces the retired `charges` gate.
     if (weapon?.thrown || weapon?.gun) {
@@ -9772,9 +9810,14 @@ export class ArenaScene extends Phaser.Scene {
       cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
-    if (weapon?.tags.classPool === "caster" && rig) {
-      this.spawnCasterSource(weapon, rig.x, rig.y, Math.atan2(this.selfAim.y, this.selfAim.x));
-      this.lastSelfMuzzleAt = this.time.now;
+    if (weapon?.tags.classPool === "caster" && rig && !weapon.performance?.aura) {
+      const cue = () => {
+        this.spawnCasterSource(weapon, rig.x, rig.y, Math.atan2(this.selfAim.y, this.selfAim.x));
+        this.lastSelfMuzzleAt = this.time.now;
+      };
+      if (weapon.performance?.vfxAt === "impact" && swing)
+        this.time.delayedCall(swing.impactSeconds * 1000, cue);
+      else cue();
     }
     if (weapon?.quake && swing) {
       // Epicenter = cursor, clamped to QUAKE_REACH from the character — the SAME shared clamp (in WORLD
@@ -14772,7 +14815,10 @@ export class ArenaScene extends Phaser.Scene {
       !!self?.alive &&
       !this.inputModalBlocked(self) &&
       !this.pointerOverInteractiveUi &&
-      !!weapon?.beam &&
+      !!(weapon?.beam ||
+        weapon?.performance?.aura ||
+        weapon?.groundZone?.trigger === "channel" ||
+        weapon?.performance?.continuous) &&
       this.input.activePointer.rightButtonDown();
     const rising = held && !this.beamPredictionHeld;
     if (rising && self && weapon?.beam) {
@@ -14926,9 +14972,10 @@ export class ArenaScene extends Phaser.Scene {
     predictTick: boolean,
   ): void {
     if (!this.room || !this.predictor) return;
+    const beamHeld = cmd.fireHeld && !!weapon?.beam;
     const beamWasHeld = this.beamPredictionHeld;
     if (
-      cmd.fireHeld &&
+      beamHeld &&
       self &&
       weapon?.beam &&
       this.beamPredictionFadeAt < 0 &&
@@ -14944,8 +14991,8 @@ export class ArenaScene extends Phaser.Scene {
       if (!beamWasHeld)
         this.audio.play("beam:charge", { x: self.x, amt: 1, ownerId: this.room.sessionId });
     }
-    this.beamPredictionHeld = cmd.fireHeld;
-    this.stepBeamPrediction(cmd, self, weapon);
+    this.beamPredictionHeld = beamHeld;
+    this.stepBeamPrediction({ ...cmd, fireHeld: beamHeld }, self, weapon);
     this.room.send("input", cmd);
     if (predictTick) this.predictor.tick(cmd);
   }
@@ -14983,7 +15030,12 @@ export class ArenaScene extends Phaser.Scene {
       !levelWindowOpen &&
       !this.levelWinInputReleaseLatch &&
       !this.pointerOverInteractiveUi &&
-      !!weapon?.beam &&
+      !!(
+        weapon?.beam ||
+        weapon?.groundZone?.trigger === "channel" ||
+        weapon?.performance?.aura ||
+        weapon?.performance?.continuous
+      ) &&
       this.input.activePointer.rightButtonDown();
     const aim = this.currentBeamAim();
     const slideHeld =

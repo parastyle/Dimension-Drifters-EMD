@@ -24,7 +24,7 @@ describe("Drive formula v1", () => {
     expect(WEAPON_RESOURCE_IDS).toEqual([...WEAPON_RESOURCE_IDS].sort());
     expect(Object.keys(WEAPON_RESOURCE_PROFILES)).toEqual(WEAPON_RESOURCE_IDS);
 
-    const census = { melee: 0, thrown: 0, gun: 0, cast: 0, beam: 0 };
+    const census = { melee: 0, thrown: 0, gun: 0, cast: 0, beam: 0, zone: 0 };
     for (const id of WEAPON_RESOURCE_IDS) {
       const profile = WEAPON_RESOURCE_PROFILES[id]!;
       census[profile.delivery]++;
@@ -36,7 +36,7 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 177, thrown: 10, gun: 114, cast: 2, beam: 23 });
+    expect(census).toEqual({ melee: 175, thrown: 11, gun: 114, cast: 2, beam: 22, zone: 2 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {
@@ -58,12 +58,14 @@ describe("Drive formula v1", () => {
     expect(WEAPON_RESOURCE_FROZEN_MEDIANS).toEqual({
       "melee:melee": 21.4,
       "melee:thrown": 54.4768,
+      "caster:thrown": 54.4768,
       "ranged:gun": 58.752,
       "caster:cast": 126.8185,
       "caster:melee": 51.072,
       "caster:gun": 61.0667,
       "ranged:beam": 31.0259,
       "caster:beam": 20.9549,
+      "caster:zone": 20.9549,
     });
     expect(WEAPON_RESOURCE_OVERRIDES).toEqual({
       "gravediggers-spade": {
@@ -159,7 +161,7 @@ describe("Drive formula v1", () => {
         max: values.at(-1),
       };
     };
-    expect(bands("melee")).toEqual({ min: 4, median: 13.25, max: 35 });
+    expect(bands("melee")).toEqual({ min: 4, median: 13.5, max: 35 });
     expect(bands("thrown")).toEqual({ min: 11.25, median: 15, max: 22.5 });
     expect(bands("gun")).toEqual({ min: 1.25, median: 10.75, max: 35 });
     expect(bands("cast")).toEqual({ min: 7, median: 14.75, max: 14.75 });
@@ -182,5 +184,20 @@ describe("Drive formula v1", () => {
     }
     // The revive-capable Spade remains an audited utility exception, not a naked baseline row.
     expect(WEAPON_RESOURCE_PROFILES["gravediggers-spade"]?.override).toBe(1.15);
+  });
+});
+
+describe("W-ZONE continuous Drive hooks", () => {
+  it("prices both held ground zones through the fixed ignition/drain channel", () => {
+    for (const id of ["x2-gravewax-seance-globe", "x2-snakeoil-tincture-scepter"]) {
+      const profile = WEAPON_RESOURCE_PROFILES[id];
+      expect(profile?.delivery).toBe("zone");
+      expect(profile?.branch).toBe("zone");
+      expect(profile?.neutralCost).toBe(0);
+      expect(profile?.ignitionCost).toBe(DRIVE_BEAM_IGNITION_COST);
+      expect(profile?.grossDrainPerSecond).toBe(DRIVE_BEAM_GROSS_DRAIN_PER_SECOND);
+      expect(profile?.netDrainPerSecond).toBe(DRIVE_BEAM_NET_DRAIN_PER_SECOND);
+      expect(profile?.restartThreshold).toBe(DRIVE_BEAM_RESTART_THRESHOLD);
+    }
   });
 });

@@ -31,12 +31,14 @@ export const WEAPON_RESOURCE_SIZE_FACTORS = Object.freeze({
 export const WEAPON_RESOURCE_FROZEN_MEDIANS = Object.freeze({
   "melee:melee": 21.4,
   "melee:thrown": 54.4768,
+  "caster:thrown": 54.4768,
   "ranged:gun": 58.752,
   "caster:cast": 126.8185,
   "caster:melee": 51.072,
   "caster:gun": 61.0667,
   "ranged:beam": 31.0259,
   "caster:beam": 20.9549,
+  "caster:zone": 20.9549,
 } as const);
 
 export type WeaponResourceBucket = keyof typeof WEAPON_RESOURCE_FROZEN_MEDIANS;
@@ -83,7 +85,7 @@ export interface WeaponResourceProfile {
   readonly zeroToNextActionSeconds: number;
   readonly holdToEmptySeconds: number;
   readonly repeatedCyclePower: number;
-  readonly branch: "tap" | "beam";
+  readonly branch: "tap" | "beam" | "zone";
   readonly ignitionCost: number;
   readonly grossDrainPerSecond: number;
   readonly netDrainPerSecond: number;
@@ -104,6 +106,7 @@ function pierceTargets(pierce: number | undefined): number {
 }
 
 function effectiveRange(weapon: WeaponDef, delivery: WeaponDelivery): number {
+  if (delivery === "zone") return weapon.groundZone?.placementRange ?? weapon.range;
   if (delivery === "beam") return weapon.beam?.range ?? weapon.range;
   if (delivery === "gun") return weapon.gun?.range ?? weapon.range;
   if (delivery === "cast") return weapon.cast?.range ?? weapon.range;
@@ -137,17 +140,23 @@ export function resourceEffectivePower(
   const delivery = weaponDeliveryFor(weapon);
   const interval = Math.max(0.001, neutralAcceptedInterval);
   let budget = 0;
-  if (delivery === "beam") {
-    const beam = weapon.beam!;
+  if (delivery === "beam" || delivery === "zone") {
+    const beam = weapon.beam;
+    const zone = weapon.groundZone;
     // The learned early-vent/full-overheat estimator is normalized to the shared v1 duty cycle. Width and
     // aggregate coverage are bounded like the existing curation grammar; beam price itself is mechanical.
-    const coverage = 1 + Math.min(0.4, Math.max(0, beam.width) / 160);
-    const active = Math.min(1.25, Math.max(0.05, beam.overheat.maxChannelSeconds));
-    const recovery =
-      Math.max(1.5, beam.overheat.lockSeconds) +
-      0.35 / Math.max(0.001, beam.overheat.coolPerSecond);
+    const width = beam?.width ?? (zone?.initialRadius ?? 24) * 2;
+    const dps = beam?.damagePerSecond ?? zone?.damagePerSecond ?? 0;
+    const reach = beam?.range ?? zone?.placementRange ?? weapon.range;
+    const active = beam
+      ? Math.min(1.25, Math.max(0.05, beam.overheat.maxChannelSeconds))
+      : 1.25;
+    const recovery = beam
+      ? Math.max(1.5, beam.overheat.lockSeconds) + 0.35 / Math.max(0.001, beam.overheat.coolPerSecond)
+      : 1.5 + (zone?.lingerSeconds ?? 0);
+    const coverage = 1 + Math.min(0.4, Math.max(0, width) / 160);
     return (
-      (beam.damagePerSecond * coverage * reachCredit(beam.range) * active) / (active + recovery)
+      (dps * coverage * reachCredit(reach) * active) / (active + recovery)
     );
   }
   if (delivery === "thrown") {
@@ -178,7 +187,7 @@ export function driveCostForProfile(
   profile: WeaponResourceProfile,
   effectiveInterval: number,
 ): number {
-  if (profile.branch === "beam") return 0;
+  if (profile.branch === "beam" || profile.branch === "zone") return 0;
   const interval = Math.max(0.001, effectiveInterval);
   const powerCost = DRIVE_FLOOR_REGEN_PER_SECOND * interval * profile.load;
   const legacyCost = (profile.legacyNeutralCost * interval) / profile.neutralAcceptedInterval;
@@ -193,7 +202,7 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
   const power = resourceEffectivePower(weapon, t0);
   const median = WEAPON_RESOURCE_FROZEN_MEDIANS[bucket];
   const override = WEAPON_RESOURCE_OVERRIDES[weapon.id];
-  if (delivery === "beam") {
+  if (delivery === "beam" || delivery === "zone") {
     return Object.freeze({
       formulaVersion: WEAPON_RESOURCE_FORMULA_VERSION,
       weaponId: weapon.id,
@@ -215,7 +224,7 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
       holdToEmptySeconds:
         (DRIVE_CAPACITY - DRIVE_BEAM_IGNITION_COST) / DRIVE_BEAM_NET_DRAIN_PER_SECOND,
       repeatedCyclePower: power,
-      branch: "beam",
+      branch: delivery,
       ignitionCost: DRIVE_BEAM_IGNITION_COST,
       grossDrainPerSecond: DRIVE_BEAM_GROSS_DRAIN_PER_SECOND,
       netDrainPerSecond: DRIVE_BEAM_NET_DRAIN_PER_SECOND,

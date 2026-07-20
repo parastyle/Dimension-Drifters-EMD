@@ -460,6 +460,7 @@ import {
   weaponEntryInstances,
   weaponEntryPhysicalSize,
   weaponMuzzleReach,
+  weaponPerformanceEmitterReach,
   weaponRarityId,
   weaponResourceProfile,
   weaponSetBonus,
@@ -494,6 +495,8 @@ import {
   ZONE_RADIUS,
   ZONE_TTL,
   ZONER_DROP_INTERVAL,
+  ZoneKind,
+  ZoneStyle,
   ZoneState,
 } from "@dd/shared";
 import { type Client, Room } from "colyseus";
@@ -612,12 +615,54 @@ interface WeaponResourceLedger {
   cooldown: number;
 }
 
-type WeaponSpendReason = "tap" | "beam-ignite" | "beam-active" | "beam-cancel";
+type WeaponSpendReason =
+  | "tap"
+  | "beam-ignite"
+  | "beam-active"
+  | "beam-cancel"
+  | "aura-active";
+
+const GROUND_ZONE_ENTITY_CAP = 48;
+const GROUND_ZONE_OWNER_CAP = 4;
+
+interface ZoneRuntime {
+  ttl: number;
+  hostile: boolean;
+  ownerId: string;
+  weaponId: string;
+  damagePerSecond: number;
+  tickRate: number;
+  tickAccumulator: number;
+  slowMultiplier: number;
+  slowSeconds: number;
+  refreshedTick: number;
+  crit: number;
+}
 
 interface WeaponSpendResult {
   accepted: boolean;
   debit: number;
   beamEmpty: boolean;
+}
+
+interface PendingScatterVolley {
+  t: number;
+  originX: number;
+  originY: number;
+  sweepX: number;
+  sweepY: number;
+  baseAng: number;
+  count: number;
+  spread: number;
+  speed: number;
+  range: number;
+  damage: number;
+  pierce: number;
+  explode?: { radius: number; damage: number };
+  crit: number;
+  sourcePlayerId: string;
+  sourceWeaponId: string;
+  kind: string;
 }
 
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
@@ -854,6 +899,12 @@ interface CombatState {
   beamCrit: number;
   beamHitIds: Set<string>;
   beamPendingDamage: Map<string, number>;
+  /** Authored garlic-style aura channel. It shares input heartbeat + Drive authority with beams. */
+  auraActive: boolean;
+  auraInputWasHeld: boolean;
+  auraRequireRelease: boolean;
+  auraPulseT: number;
+  auraCrit: number;
   /** §ULT precise meter + buffered action + accepted immutable runtime. */
   ultChargeF: number;
   ultBuffer: number;
@@ -1066,6 +1117,8 @@ export class GameRoom extends Room<ArenaState> {
       firstCollisionX?: number;
       firstCollisionY?: number;
       firstStep: boolean;
+      /** Landing-trigger ground zone; skips airborne contact and blooms when travel truth expires. */
+      landingZoneDamage?: number;
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -1073,8 +1126,11 @@ export class GameRoom extends Room<ArenaState> {
   private hostileProjectileCount = 0;
   /** Per-zoner puddle-drop cooldown (sec), keyed by enemy id; pruned with the enemy. */
   private readonly zonerDropCd = new Map<string, number>();
-  /** Per-zone remaining lifetime (sec), keyed by zone id. */
-  private readonly zoneMeta = new Map<string, number>();
+  /** Private damage/lifetime/channel truth for every synced zone row. */
+  private readonly zoneMeta = new Map<string, ZoneRuntime>();
+  private readonly activeGroundZones = new Map<string, string>();
+  private readonly groundZoneInputWasHeld = new Map<string, boolean>();
+  private readonly enemyZoneSlow = new Map<string, { multiplier: number; untilTick: number }>();
   /** §15 duelist (ronin) combo state per enemy id: phase + timer + swings left + the CURRENT windup's
    *  duration (`wind`, for the 0→1 telegraph ramp — `windup` for the first hit, `swingGap` after). Each hit
    *  now telegraphs (no standalone "swing" phase). §51 widened with the tick-anchored TOUGH-COMBO fields
@@ -1156,6 +1212,8 @@ export class GameRoom extends Room<ArenaState> {
     sourcePlayerId: string;
     sourceWeaponId: string;
   }[] = [];
+  /** Accepted scatter descriptors waiting for an authored impact epoch (Cinderchoke downswing). */
+  private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
@@ -1377,7 +1435,13 @@ export class GameRoom extends Room<ArenaState> {
       "attack",
       (client, message: { aimX?: number; aimY?: number; tx?: number; ty?: number }) => {
         const held = this.state.players.get(client.sessionId);
-        if (held && WEAPONS[held.weapon]?.beam) return;
+        if (
+          held &&
+          (WEAPONS[held.weapon]?.beam ||
+            WEAPONS[held.weapon]?.groundZone?.trigger === "channel" ||
+            WEAPONS[held.weapon]?.performance?.aura)
+        )
+          return;
         if (!this.takeAction(client)) return; // §44 action budget
         const c = this.combat.get(client.sessionId);
         const player = this.state.players.get(client.sessionId);
@@ -2207,6 +2271,9 @@ export class GameRoom extends Room<ArenaState> {
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.zoneMeta.clear();
+    this.activeGroundZones.clear();
+    this.groundZoneInputWasHeld.clear();
+    this.enemyZoneSlow.clear();
     this.comboState.clear();
     this.duelTokens.clear(); // §51 no duel claim may ghost-carry into the fresh run
     this.dodgeState.clear(); // §15 v0.113
@@ -2217,6 +2284,7 @@ export class GameRoom extends Room<ArenaState> {
     this.ultimateFissures.length = 0;
     this.meleeSwings.clear();
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
+    this.pendingScatterVolleys.length = 0;
     this.pickupGrace.clear();
     if (this.earnedPickups.size > 0) {
       this.earnedPickups.clear();
@@ -2903,6 +2971,10 @@ export class GameRoom extends Room<ArenaState> {
     if (c.beamPhase !== 0 || c.beamDescriptor) {
       this.cancelBeam(player, player.id, c, true, true);
     }
+    c.auraActive = false;
+    c.auraInputWasHeld = false;
+    c.auraRequireRelease = false;
+    c.auraPulseT = 0;
     if (this.belt) {
       const slot = player.slots[player.activeSlot];
       if (slot && slot.weapon !== player.weapon) {
@@ -4292,6 +4364,11 @@ export class GameRoom extends Room<ArenaState> {
       beamCrit: 0,
       beamHitIds: new Set<string>(),
       beamPendingDamage: new Map<string, number>(),
+      auraActive: false,
+      auraInputWasHeld: false,
+      auraRequireRelease: false,
+      auraPulseT: 0,
+      auraCrit: 0,
       ultChargeF: 0,
       ultBuffer: 0,
       ultAccrualThisTick: 0,
@@ -4478,16 +4555,21 @@ export class GameRoom extends Room<ArenaState> {
       const dt = Math.max(0, continuousDt);
       const concurrentRegen = dt > 0 ? c.drive.tickCreditF / dt : DRIVE_FLOOR_REGEN_PER_SECOND;
       requested = (DRIVE_BEAM_NET_DRAIN_PER_SECOND + concurrentRegen) * dt;
+    } else if (reason === "aura-active") {
+      const dt = Math.max(0, continuousDt);
+      const concurrentRegen = dt > 0 ? c.drive.tickCreditF / dt : DRIVE_FLOOR_REGEN_PER_SECOND;
+      requested = ((weapon.performance?.aura?.resourcePerSecond ?? 0) + concurrentRegen) * dt;
     } else {
       requested = DRIVE_BEAM_CANCEL_COST;
     }
     if (!Number.isFinite(requested) || requested < 0) return result;
 
     const available = this.drivePendingValue(c);
-    const partial = reason === "beam-active" || reason === "beam-cancel";
+    const partial =
+      reason === "beam-active" || reason === "beam-cancel" || reason === "aura-active";
     if (!partial && available + 1e-9 < requested) return result;
     const debit = partial ? Math.min(available, requested) : requested;
-    if (reason === "beam-active" && debit <= 1e-9) return result;
+    if ((reason === "beam-active" || reason === "aura-active") && debit <= 1e-9) return result;
     if (c.drive.tickOpen) {
       c.drive.tickDebitF += debit;
     } else {
@@ -4501,7 +4583,8 @@ export class GameRoom extends Room<ArenaState> {
     );
     result.accepted = true;
     result.debit = debit;
-    result.beamEmpty = reason === "beam-active" && available - debit <= 1e-9;
+    result.beamEmpty =
+      (reason === "beam-active" || reason === "aura-active") && available - debit <= 1e-9;
     return result;
   }
 
@@ -5816,6 +5899,20 @@ export class GameRoom extends Room<ArenaState> {
       }
       if (offSlot) this.stepPairedOffWeaponResources(player, offSlot, dt);
 
+      if (weapon?.performance?.aura) {
+        c.attackBuffer = 0;
+        this.state.beams.delete(id);
+        this.stepPlayerAura(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
+        return;
+      }
+      if (weapon?.groundZone?.trigger === "channel") {
+        c.attackBuffer = 0;
+        this.state.beams.delete(id);
+        this.stepPlayerGroundZone(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
+        return;
+      }
+      this.activeGroundZones.delete(id);
+      this.groundZoneInputWasHeld.set(id, false);
       if (weapon?.beam) {
         c.attackBuffer = 0;
         this.stepPlayerBeam(player, id, c, weapon, dt, acting && c.stance !== STANCE_SLIDE);
@@ -5825,6 +5922,11 @@ export class GameRoom extends Room<ArenaState> {
       if (!nonBeamHeld) c.drive.beamRequireRelease = false;
       c.beamInputWasHeld = nonBeamHeld;
       this.state.beams.delete(id);
+      if (weapon?.performance?.continuous && nonBeamHeld && acting && c.stance !== STANCE_SLIDE) {
+        // Presentation-only latch refresh: accepted beats still own attackSeq and all damage cadence.
+        player.attackTick = this.state.tick;
+        player.attackHeld = true;
+      }
 
       // §7 v0.105 de-clunk: a BUFFERED attack is live while its window hasn't decayed; the tick fires it the
       // instant the cooldown drains (a press one tick early is honoured, not eaten), and consuming it zeroes
@@ -5997,6 +6099,15 @@ export class GameRoom extends Room<ArenaState> {
         this.pendingQuakes.splice(i, 1);
       }
     }
+    for (let i = this.pendingScatterVolleys.length - 1; i >= 0; i--) {
+      const volley = this.pendingScatterVolleys[i];
+      if (!volley) continue;
+      volley.t -= dt;
+      if (volley.t <= 0) {
+        this.emitScatterVolley(volley);
+        this.pendingScatterVolleys.splice(i, 1);
+      }
+    }
 
     // 4.7 §ULT immutable-epoch action machines settle before enemy targeting reads player positions.
     this.stepUltimates(dt);
@@ -6031,6 +6142,7 @@ export class GameRoom extends Room<ArenaState> {
       // generic pass only chases/kites the rest (ranged spitters kite). §16 v0.109 the boss is stepped by
       // its BossController (which owns movement), so skip it here to avoid a double-move.
       if (!kind || effectiveMelee(kind) || id === this.bossId) return;
+      const zoneSlow = this.enemyGroundZoneSlow(id);
       const target = this.nearestDoorDecoy(enemy) ?? nearestPoint(enemy, bodies);
       // §15 v0.113 DODGE-ROLL (rangers): if a player has closed inside `dodge.range` and the roll is off
       // cooldown, burst AWAY from them for `duration` sec — evasive repositioning that overrides the kite.
@@ -6051,7 +6163,7 @@ export class GameRoom extends Room<ArenaState> {
         }
         if (ds.t > 0) {
           ds.t -= dt;
-          const rollSpeed = kind.dodge.distance / kind.dodge.duration;
+          const rollSpeed = (kind.dodge.distance / kind.dodge.duration) * zoneSlow;
           const r = kind.radius;
           enemy.x = clamp(enemy.x + ds.dx * rollSpeed * dt, r, ARENA_WIDTH - r);
           enemy.y = clamp(enemy.y + ds.dy * rollSpeed * dt, r, ARENA_HEIGHT - r);
@@ -6065,11 +6177,11 @@ export class GameRoom extends Room<ArenaState> {
         ? stepEnemyKite(
             { x: enemy.x, y: enemy.y },
             target,
-            kind.speed,
+            kind.speed * zoneSlow,
             kind.ranged.preferredRange,
             dt,
           )
-        : stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed, dt);
+        : stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed * zoneSlow, dt);
       enemy.x = next.x;
       enemy.y = next.y;
       this.updateEnemyGrid(id, enemy);
@@ -7536,7 +7648,14 @@ export class GameRoom extends Room<ArenaState> {
     // Scatter shot (§14 WYSIWYG): fling real magma projectiles that each deal an INT-scaled hit + explode.
     // Fired as live projectiles (server-authoritative) — they advance + detonate ON CONTACT in
     // stepProjectiles, so the secondary VFX damage where it actually touches an enemy (#6).
-    if (weapon.scatter) this.fireScatter(player, c, weapon, hand);
+    if (weapon.scatter)
+      this.fireScatter(
+        player,
+        c,
+        weapon,
+        hand,
+        weapon.performance?.vfxAt === "impact" ? swing.impactSeconds : 0,
+      );
 
     // §6 REZ (Gravedigger's Spade): the swing REVIVES the nearest downed ally within range (at 30% HP).
     if (weapon.rez) this.tryRez(player, weapon.rez.radius);
@@ -7586,6 +7705,200 @@ export class GameRoom extends Room<ArenaState> {
     const input = this.inputs.get(id);
     if (!input?.held.fireHeld) return false;
     return (this.state.tick - input.lastFreshFireTick) >>> 0 < BEAM_STALE_INPUT_TICKS;
+  }
+
+  /** Server-authoritative character-centered aura. Drive pays the authored net drain every fixed step;
+   * damage receives only the funded fraction of the final step and the channel release-locks at empty. */
+  private stepPlayerAura(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    weapon: WeaponDef,
+    dt: number,
+    acting: boolean,
+  ): void {
+    const aura = weapon.performance?.aura;
+    if (!aura) return;
+    const held = this.beamHeld(id);
+    const rising = held && !c.auraInputWasHeld;
+    if (!held) {
+      c.auraActive = false;
+      c.auraRequireRelease = false;
+      c.auraPulseT = 0;
+      c.auraInputWasHeld = false;
+      return;
+    }
+    if (!acting || c.auraRequireRelease || (!c.auraActive && !rising)) {
+      c.auraActive = false;
+      c.auraInputWasHeld = held;
+      return;
+    }
+
+    const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+    const spend = this.trySpendWeaponResource(
+      player,
+      c,
+      weapon,
+      instanceId,
+      CombatDelivery.Aura,
+      0,
+      dt,
+      1,
+      dt,
+      "aura-active",
+    );
+    if (!spend.accepted) {
+      c.auraActive = false;
+      c.auraRequireRelease = true;
+      c.auraPulseT = 0;
+      player.attackHeld = false;
+      c.auraInputWasHeld = held;
+      return;
+    }
+
+    if (!c.auraActive) {
+      c.auraActive = true;
+      c.auraPulseT = 0;
+      c.auraCrit = this.weaponCritChance(player, c);
+      this.stampAttackBeat(player);
+    } else {
+      player.attackTick = this.state.tick;
+      player.attackHeld = true;
+    }
+    const regenPerSecond = dt > 0 ? c.drive.tickCreditF / dt : 0;
+    const fundedDt = Math.min(
+      dt,
+      spend.debit / Math.max(1e-9, aura.resourcePerSecond + regenPerSecond),
+    );
+    const damagePerSecond =
+      aura.damagePerSecond * this.heldDamageMult(weapon, weapon.scalingGrades, player);
+    c.auraPulseT += fundedDt;
+    while (c.auraPulseT + 1e-9 >= aura.tickRate) {
+      c.auraPulseT -= aura.tickRate;
+      this.detonate(
+        player.x,
+        player.y,
+        aura.radius,
+        damagePerSecond * aura.tickRate,
+        c.auraCrit,
+        player.id,
+        weapon.id,
+        CombatDelivery.Aura,
+      );
+    }
+    if (spend.beamEmpty) {
+      if (c.auraPulseT > 1e-9) {
+        this.detonate(
+          player.x,
+          player.y,
+          aura.radius,
+          damagePerSecond * c.auraPulseT,
+          c.auraCrit,
+          player.id,
+          weapon.id,
+          CombatDelivery.Aura,
+        );
+      }
+      c.auraActive = false;
+      c.auraRequireRelease = true;
+      c.auraPulseT = 0;
+      player.attackHeld = false;
+    }
+    c.auraInputWasHeld = held;
+  }
+
+  private zoneTarget(player: PlayerState, c: CombatState, placementRange: number): Vec2 {
+    const dx = c.targetX - player.x;
+    const dy = c.targetY - player.y;
+    const length = Math.hypot(dx, dy);
+    const scale = length > placementRange && length > 0 ? placementRange / length : 1;
+    let x = player.x + dx * scale;
+    let y = player.y + dy * scale;
+    if (this.belt && this.beltLevel) {
+      x = clamp(x, 0, ARENA_WIDTH);
+      y = clampBeltFloorY(this.beltLevel, x, y);
+    } else {
+      const safe = nearestGroundPx(this.map, x, y);
+      x = safe.x;
+      y = safe.y;
+    }
+    return { x, y };
+  }
+
+  /** Hold-to-grow authority. One ZoneState row changes only its radius; input remains the normal heartbeat. */
+  private stepPlayerGroundZone(
+    player: PlayerState,
+    id: string,
+    c: CombatState,
+    weapon: WeaponDef,
+    dt: number,
+    acting: boolean,
+  ): void {
+    const def = weapon.groundZone;
+    if (!def || def.trigger !== "channel") return;
+    const held = this.beamHeld(id);
+    const wasHeld = this.groundZoneInputWasHeld.get(id) ?? false;
+    let zoneId = this.activeGroundZones.get(id);
+    if (!acting || !held) {
+      this.activeGroundZones.delete(id);
+      this.groundZoneInputWasHeld.set(id, held);
+      return;
+    }
+    if (!zoneId && held && !wasHeld) {
+      const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+      const ignition = this.trySpendWeaponResource(
+        player,
+        c,
+        weapon,
+        instanceId,
+        CombatDelivery.Zone,
+        0,
+        BEAM_RECOVERY_SECONDS,
+        1,
+        0,
+        "beam-ignite",
+      );
+      if (ignition.accepted) {
+        const target = this.zoneTarget(player, c, def.placementRange);
+        const zone = this.spawnWeaponGroundZoneAt(
+          player,
+          weapon,
+          target.x,
+          target.y,
+          def.damagePerSecond * this.heldDamageMult(weapon, def.scalingGrades, player),
+          this.weaponCritChance(player, c),
+        );
+        zoneId = zone?.id;
+        if (zoneId) {
+          this.activeGroundZones.set(id, zoneId);
+          this.stampAttackBeat(player);
+        }
+      }
+    }
+    if (zoneId) {
+      const zone = this.state.zones.get(zoneId);
+      const meta = this.zoneMeta.get(zoneId);
+      const instanceId = player.slots[player.activeSlot]?.instanceId || weapon.id;
+      const spend = this.trySpendWeaponResource(
+        player,
+        c,
+        weapon,
+        instanceId,
+        CombatDelivery.Zone,
+        0,
+        dt,
+        1,
+        dt,
+        "beam-active",
+      );
+      if (!zone || !meta || !spend.accepted) {
+        this.activeGroundZones.delete(id);
+      } else {
+        zone.radius = Math.min(def.maxRadius, zone.radius + def.growthPerSecond * dt);
+        meta.refreshedTick = this.state.tick;
+      }
+    }
+    this.groundZoneInputWasHeld.set(id, held);
   }
 
   /** Charge → authoritative ignition → sustained swept damage → recovery/overheat. */
@@ -7714,6 +8027,18 @@ export class GameRoom extends Room<ArenaState> {
             c.beamPulseT = 0;
             c.beamQuantumT = 0;
             c.beamCrit = this.weaponCritChance(player, c);
+            if (weapon.groundZone?.trigger === "attack") {
+              const target = this.zoneTarget(player, c, weapon.groundZone.placementRange);
+              this.spawnWeaponGroundZoneAt(
+                player,
+                weapon,
+                target.x,
+                target.y,
+                weapon.groundZone.damagePerSecond *
+                  this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player),
+                c.beamCrit,
+              );
+            }
             const row = this.state.beams.get(id);
             if (row) row.phaseStartTick = this.state.tick;
             this.stepActiveBeam(player, id, c, descriptor, dt);
@@ -8385,6 +8710,9 @@ export class GameRoom extends Room<ArenaState> {
     this.hostileProjectileCount = 0;
     this.state.zones.clear();
     this.zoneMeta.clear();
+    this.activeGroundZones.clear();
+    this.groundZoneInputWasHeld.clear();
+    this.enemyZoneSlow.clear();
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();
     this.comboState.clear();
@@ -9654,14 +9982,82 @@ export class GameRoom extends Room<ArenaState> {
   }
 
   /** §16 drop a corrosive DoT puddle (reuses ZoneState + the zoner DoT machinery) at a boss-authored spot. */
+  private spawnWeaponGroundZoneAt(
+    player: PlayerState,
+    weapon: WeaponDef,
+    x: number,
+    y: number,
+    damagePerSecond: number,
+    crit = 0,
+  ): ZoneState | undefined {
+    const def = weapon.groundZone;
+    if (!def || this.state.zones.size >= GROUND_ZONE_ENTITY_CAP) return undefined;
+    const owned: ZoneState[] = [];
+    this.state.zones.forEach((row) => {
+      if (row.kind === ZoneKind.Weapon && row.ownerId === player.id) owned.push(row);
+    });
+    owned.sort((a, b) => a.bornTick - b.bornTick || a.id.localeCompare(b.id));
+    while (owned.length >= GROUND_ZONE_OWNER_CAP) {
+      const oldest = owned.shift();
+      if (!oldest) break;
+      this.state.zones.delete(oldest.id);
+      this.zoneMeta.delete(oldest.id);
+    }
+    const zone = new ZoneState();
+    zone.id = `z${this.zoneSeq++}`;
+    zone.x = clamp(x, 0, ARENA_WIDTH);
+    zone.y = clamp(y, 0, ARENA_HEIGHT);
+    zone.radius = def.initialRadius;
+    zone.kind = ZoneKind.Weapon;
+    zone.style =
+      def.style === "nether"
+        ? ZoneStyle.Nether
+        : def.style === "ice"
+          ? ZoneStyle.Ice
+          : ZoneStyle.Poison;
+    zone.ownerId = player.id;
+    zone.weaponId = weapon.id;
+    zone.seed = ((this.zoneSeq * 40503) ^ this.state.tick) & 0xffff;
+    zone.maxRadius = def.maxRadius;
+    zone.bornTick = this.state.tick;
+    this.state.zones.set(zone.id, zone);
+    this.zoneMeta.set(zone.id, {
+      ttl: def.lingerSeconds,
+      hostile: false,
+      ownerId: player.id,
+      weaponId: weapon.id,
+      damagePerSecond: Math.max(0, damagePerSecond),
+      tickRate: def.tickRate,
+      tickAccumulator: 0,
+      slowMultiplier: def.slowMultiplier ?? 1,
+      slowSeconds: def.slowSeconds ?? 0,
+      refreshedTick: this.state.tick,
+      crit,
+    });
+    return zone;
+  }
+
   private dropBossZone(x: number, y: number, radius: number, ttl: number): void {
+    if (this.state.zones.size >= GROUND_ZONE_ENTITY_CAP) return;
     const zone = new ZoneState();
     zone.id = `z${this.zoneSeq++}`;
     zone.x = x;
     zone.y = y;
     zone.radius = radius;
     this.state.zones.set(zone.id, zone);
-    this.zoneMeta.set(zone.id, ttl); // §15 zoneMeta stores the remaining TTL as a plain number
+    this.zoneMeta.set(zone.id, {
+      ttl,
+      hostile: true,
+      ownerId: "",
+      weaponId: "",
+      damagePerSecond: ZONE_DPS * depthDamageScale(this.state.depth),
+      tickRate: 0.05,
+      tickAccumulator: 0,
+      slowMultiplier: 1,
+      slowSeconds: 0,
+      refreshedTick: -1,
+      crit: 0,
+    });
   }
 
   /** §16 conjure one boss ADD at a telegraphed spot (HP scaled to living count × depth), tracked so the
@@ -9801,6 +10197,7 @@ export class GameRoom extends Room<ArenaState> {
     sourceWeaponId = "",
     delivery = 0,
     firstCollisionFrom?: Vec2,
+    landingZoneDamage?: number,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
@@ -9820,6 +10217,7 @@ export class GameRoom extends Room<ArenaState> {
     pr.y = from.y;
     pr.vx = (dx / len) * speed;
     pr.vy = (dy / len) * speed;
+    pr.bornTick = this.state.tick;
     pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
@@ -9841,6 +10239,7 @@ export class GameRoom extends Room<ArenaState> {
       firstCollisionX: firstCollisionFrom?.x,
       firstCollisionY: firstCollisionFrom?.y,
       firstStep: true,
+      landingZoneDamage,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -10016,6 +10415,11 @@ export class GameRoom extends Room<ArenaState> {
       player.id,
       weapon.id,
       CombatDelivery.Thrown,
+      undefined,
+      weapon.groundZone?.trigger === "landing"
+        ? weapon.groundZone.damagePerSecond *
+          this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+        : undefined,
     );
   }
 
@@ -10027,6 +10431,7 @@ export class GameRoom extends Room<ArenaState> {
     c: CombatState,
     weapon: WeaponDef,
     hand: DualWieldHand = 0,
+    delaySeconds = 0,
   ): void {
     const sc = weapon.scatter;
     if (!sc) return;
@@ -10050,27 +10455,54 @@ export class GameRoom extends Room<ArenaState> {
     // the classic bare "magma".
     const el = weapon.tags.element;
     const kind = el && el !== "physical" ? `magma:${el}` : "magma";
-    for (let i = 0; i < sc.count; i++) {
+    const emitterReach = weaponPerformanceEmitterReach(weapon);
+    const volley: PendingScatterVolley = {
+      t: Math.max(0, delaySeconds),
+      originX: player.x + aim.x * emitterReach,
+      originY: player.y + aim.y * emitterReach,
+      sweepX: player.x,
+      sweepY: player.y,
+      baseAng,
+      count: sc.count,
+      spread: sc.spread,
+      speed: sc.speed,
+      range: sc.range,
+      damage: ballDmg,
+      pierce,
+      explode,
+      crit,
+      sourcePlayerId: player.id,
+      sourceWeaponId: weapon.id,
+      kind,
+    };
+    if (volley.t > 0) this.pendingScatterVolleys.push(volley);
+    else this.emitScatterVolley(volley);
+  }
+
+  private emitScatterVolley(volley: PendingScatterVolley): void {
+    for (let i = 0; i < volley.count; i++) {
       // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
       // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
-      const spread = sc.count > 1 ? (i / (sc.count - 1) - 0.5) * 2 * sc.spread : 0;
-      const ang = baseAng + spread + (Math.random() - 0.5) * 0.12;
-      const spd = sc.speed * (0.85 + Math.random() * 0.3);
+      const spread =
+        volley.count > 1 ? (i / (volley.count - 1) - 0.5) * 2 * volley.spread : 0;
+      const ang = volley.baseAng + spread + (Math.random() - 0.5) * 0.12;
+      const spd = volley.speed * (0.85 + Math.random() * 0.3);
       this.fireProjectile(
-        { x: player.x, y: player.y },
-        { x: player.x + Math.cos(ang), y: player.y + Math.sin(ang) },
+        { x: volley.originX, y: volley.originY },
+        { x: volley.originX + Math.cos(ang), y: volley.originY + Math.sin(ang) },
         spd,
-        ballDmg,
+        volley.damage,
         false,
-        kind,
-        pierce,
-        sc.range / spd, // expire after travelling ~range (then explode)
-        explode,
+        volley.kind,
+        volley.pierce,
+        volley.range / spd, // expire after travelling ~range (then explode)
+        volley.explode,
         0,
-        crit,
-        player.id,
-        weapon.id,
+        volley.crit,
+        volley.sourcePlayerId,
+        volley.sourceWeaponId,
         CombatDelivery.Scatter,
+        { x: volley.sweepX, y: volley.sweepY },
       );
     }
   }
@@ -10656,6 +11088,16 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §15 duelists (ronin): close to `melee.approach`, telegraph `windup`, then swing `hits` times (each
    *  an arc hit toward the nearest player), then `recover`. Movement + the combo state machine. */
+  private enemyGroundZoneSlow(enemyId: string): number {
+    const slow = this.enemyZoneSlow.get(enemyId);
+    if (!slow) return 1;
+    if (this.state.tick >= slow.untilTick) {
+      this.enemyZoneSlow.delete(enemyId);
+      return 1;
+    }
+    return slow.multiplier;
+  }
+
   private stepDuelists(dt: number, bodies: Vec2[]): void {
     for (const [id, dead] of this.comboState) {
       if (!this.state.enemies.has(id)) {
@@ -10674,6 +11116,7 @@ export class GameRoom extends Room<ArenaState> {
       // rusher/swarm/zoner (so the attack telegraphs + is parryable). Spitters/boss/dummies → no lunge.
       const m = effectiveMelee(kind);
       if (!m || !kind) return;
+      const moveSpeed = kind.speed * this.enemyGroundZoneSlow(id);
       let st = this.comboState.get(id);
       if (!st) {
         st = { phase: "idle", t: 0, hits: 0, wind: 0 };
@@ -10693,13 +11136,13 @@ export class GameRoom extends Room<ArenaState> {
         : Number.POSITIVE_INFINITY;
       // Move toward the target only while idle + out of reach; the combo advances via LUNGES (below).
       if (st.phase === "idle" && target && dist > m.approach) {
-        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed, dt);
+        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed, dt);
         enemy.x = next.x;
         enemy.y = next.y;
       }
       // §20 Sekiro lean-in: creep slowly forward DURING a windup so the wind-up reads as "stepping into it".
       if (st.phase === "windup" && !st.strike && target && dist > m.range * 0.45) {
-        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, kind.speed * 0.28, dt);
+        const next = stepEnemyChase({ x: enemy.x, y: enemy.y }, target, moveSpeed * 0.28, dt);
         enemy.x = next.x;
         enemy.y = next.y;
       }
@@ -10913,6 +11356,7 @@ export class GameRoom extends Room<ArenaState> {
     dt: number,
   ): void {
     const tick = this.state.tick;
+    const moveSpeed = kind.speed * this.enemyGroundZoneSlow(id);
     const def = st.comboId ? TOUGH_COMBOS[st.comboId] : undefined;
     const committed = st.targetId ? this.state.players.get(st.targetId) : undefined;
     const live = committed?.alive ? committed : undefined;
@@ -10940,7 +11384,7 @@ export class GameRoom extends Room<ArenaState> {
       ) {
         // G12: the victim is already claimed (or 4 performances run arena-wide) — stalk the ring-out
         // orbit, visibly waiting a turn instead of stacking an unreadable committed crossfire.
-        if (dist > COMBO_RINGOUT_ORBIT + 40) this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+        if (dist > COMBO_RINGOUT_ORBIT + 40) this.moveComboEnemyToward(enemy, prey, moveSpeed, dt);
         return;
       }
       if (kind.comboLeap) {
@@ -10948,11 +11392,11 @@ export class GameRoom extends Room<ArenaState> {
         // authored 4s cooldown; outside it they close until a legal fixed-duration arc is available.
         if ((st.leapCd ?? 0) <= 0 && dist <= COMBO_LEAP_RANGE)
           this.commitCombo(enemy, id, kind, st, prey, true);
-        else this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+        else this.moveComboEnemyToward(enemy, prey, moveSpeed, dt);
       } else if (dist <= m.approach) {
         this.commitCombo(enemy, id, kind, st, prey, false);
       } else {
-        this.moveComboEnemyToward(enemy, prey, kind.speed, dt);
+        this.moveComboEnemyToward(enemy, prey, moveSpeed, dt);
       }
     } else if (st.phase === "leapwind") {
       // The OFFER: deep crouch in place while the white duel ring fades in at the FIXED landing point.
@@ -11976,8 +12420,9 @@ export class GameRoom extends Room<ArenaState> {
           consumed = true;
         });
         if (consumed && !reflected) doomed.push(id);
-      } else {
-        // Friendly projectile: damage each fresh enemy it touches until pierce runs out.
+      } else if (meta.landingZoneDamage === undefined) {
+        // Friendly projectile: damage each fresh enemy it touches until pierce runs out. Landing grenades
+        // stay airborne for their complete server-owned flight and apply only their ground-zone payload.
         const kills: string[] = [];
         if (sweptFriendly) {
           this.enemyGrid.queryAabb(
@@ -12095,6 +12540,19 @@ export class GameRoom extends Room<ArenaState> {
           meta.sourceWeaponId ?? "",
           meta.delivery ?? 0,
         );
+      if (pr && meta?.landingZoneDamage !== undefined) {
+        const owner = this.state.players.get(meta.sourcePlayerId ?? "");
+        const weapon = WEAPONS[meta.sourceWeaponId ?? ""];
+        if (owner && weapon?.groundZone?.trigger === "landing")
+          this.spawnWeaponGroundZoneAt(
+            owner,
+            weapon,
+            pr.x,
+            pr.y,
+            meta.landingZoneDamage,
+            meta.crit ?? 0,
+          );
+      }
       this.removeProjectile(id);
     }
   }
@@ -12217,13 +12675,29 @@ export class GameRoom extends Room<ArenaState> {
         this.zonerDropCd.set(id, cd);
         return;
       }
+      if (this.state.zones.size >= GROUND_ZONE_ENTITY_CAP) {
+        this.zonerDropCd.set(id, ZONER_DROP_INTERVAL);
+        return;
+      }
       const zone = new ZoneState();
       zone.id = `z${this.zoneSeq++}`;
       zone.x = enemy.x;
       zone.y = enemy.y;
       zone.radius = ZONE_RADIUS * (enemy.tough ? 1.4 : 1);
       this.state.zones.set(zone.id, zone);
-      this.zoneMeta.set(zone.id, ZONE_TTL);
+      this.zoneMeta.set(zone.id, {
+        ttl: ZONE_TTL,
+        hostile: true,
+        ownerId: "",
+        weaponId: "",
+        damagePerSecond: ZONE_DPS * depthDamageScale(this.state.depth),
+        tickRate: 0.05,
+        tickAccumulator: 0,
+        slowMultiplier: 1,
+        slowSeconds: 0,
+        refreshedTick: -1,
+        crit: 0,
+      });
       this.zonerDropCd.set(id, ZONER_DROP_INTERVAL);
     });
   }
@@ -12232,14 +12706,35 @@ export class GameRoom extends Room<ArenaState> {
   private stepZones(dt: number): void {
     const doomed: string[] = [];
     this.state.zones.forEach((zone, id) => {
-      const ttl = (this.zoneMeta.get(id) ?? 0) - dt;
-      this.zoneMeta.set(id, ttl);
-      if (ttl <= 0) {
+      const rawMeta = this.zoneMeta.get(id) as ZoneRuntime | number | undefined;
+      const meta: ZoneRuntime | undefined =
+        typeof rawMeta === "number"
+          ? {
+              ttl: rawMeta,
+              hostile: true,
+              ownerId: "",
+              weaponId: "",
+              damagePerSecond: ZONE_DPS * depthDamageScale(this.state.depth),
+              tickRate: 0.05,
+              tickAccumulator: 0,
+              slowMultiplier: 1,
+              slowSeconds: 0,
+              refreshedTick: -1,
+              crit: 0,
+            }
+          : rawMeta;
+      if (!meta) {
+        doomed.push(id);
+        return;
+      }
+      if (typeof rawMeta === "number") this.zoneMeta.set(id, meta);
+      if (meta.refreshedTick !== this.state.tick) meta.ttl -= dt;
+      if (meta.ttl <= 0) {
         doomed.push(id);
         return;
       }
       const r2 = zone.radius * zone.radius;
-      this.state.players.forEach((player) => {
+      if (meta.hostile) this.state.players.forEach((player) => {
         // §8/§15: zoner puddles are UNPARRYABLE — only the §12 level-up invincibility skips them,
         // NOT parry i-frames. You must walk out of the puddle.
         if (!player.alive || this.inLevelWindow(player)) return;
@@ -12247,13 +12742,50 @@ export class GameRoom extends Room<ArenaState> {
         const dy = player.y - zone.y;
         if (dx * dx + dy * dy <= r2) {
           // Enemy-created zoner puddles are not authored neutral ground hazards.
-          this.damagePlayer(player, ZONE_DPS * depthDamageScale(this.state.depth) * dt, "enemy");
+          this.damagePlayer(player, meta.damagePerSecond * dt, "enemy");
         }
       });
+      if (meta.hostile) return;
+      meta.tickAccumulator += dt;
+      while (meta.tickAccumulator + 1e-9 >= meta.tickRate) {
+        meta.tickAccumulator -= meta.tickRate;
+        const kills: string[] = [];
+        this.enemyGrid.queryRadius(zone.x, zone.y, zone.radius + MAX_ENEMY_RADIUS, this.enemyCandidates);
+        for (const enemyId of this.enemyCandidates) {
+          const enemy = this.state.enemies.get(enemyId);
+          if (!enemy) continue;
+          const bodyRadius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
+          const dx = enemy.x - zone.x;
+          const dy = enemy.y - zone.y;
+          if (dx * dx + dy * dy > (zone.radius + bodyRadius) ** 2) continue;
+          if (meta.damagePerSecond > 0)
+            this.damageEnemy(
+              enemy,
+              enemyId,
+              meta.damagePerSecond * meta.tickRate,
+              kills,
+              meta.crit,
+              meta.ownerId,
+              meta.weaponId,
+              CombatDelivery.Zone,
+              zone.x,
+              zone.y,
+            );
+          if (meta.slowMultiplier < 1 && meta.slowSeconds > 0)
+            this.enemyZoneSlow.set(enemyId, {
+              multiplier: meta.slowMultiplier,
+              untilTick:
+                (this.state.tick + Math.ceil((meta.slowSeconds * 1000) / TICK_MS)) >>> 0,
+            });
+        }
+        for (const enemyId of kills) this.state.enemies.delete(enemyId);
+      }
     });
     for (const id of doomed) {
       this.state.zones.delete(id);
       this.zoneMeta.delete(id);
+      for (const [ownerId, activeId] of this.activeGroundZones)
+        if (activeId === id) this.activeGroundZones.delete(ownerId);
     }
   }
 
@@ -12603,6 +13135,9 @@ export class GameRoom extends Room<ArenaState> {
     this.hostileProjectileCount = 0;
     this.state.zones.clear();
     this.zoneMeta.clear();
+    this.activeGroundZones.clear();
+    this.groundZoneInputWasHeld.clear();
+    this.enemyZoneSlow.clear();
     this.state.telegraphs.clear();
     this.enemyFireCd.clear();
     this.zonerDropCd.clear();

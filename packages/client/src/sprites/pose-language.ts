@@ -1619,6 +1619,162 @@ export function sampleFlourish(input: FlourishInput, out: FlourishSample): Flour
 export type PoseActionPhase = "idle" | "anticipation" | "active" | "recovery";
 export type PoseBeamPhase = "charging" | "active" | "overheated" | "cooling";
 
+export type WeaponPerformanceSpec = NonNullable<WeaponDef["performance"]>;
+
+export interface WeaponPerformanceInput {
+  spec: WeaponPerformanceSpec;
+  timeS: number;
+  aimLocal: number;
+  phase: PoseActionPhase;
+  phaseT: number;
+  fireHeld: boolean;
+  reducedMotion: boolean;
+}
+
+export interface WeaponPerformanceSample {
+  active: boolean;
+  weaponAngle: number;
+  handX: number;
+  handY: number;
+  handBlend: number;
+  offsetX: number;
+  offsetY: number;
+  ownership: number;
+}
+
+export function weaponPerformanceSpecFor(
+  def: WeaponDef | undefined,
+): WeaponPerformanceSpec | undefined {
+  return def?.performance;
+}
+
+export function createWeaponPerformanceInput(): WeaponPerformanceInput {
+  return {
+    spec: { hold: "steady", action: "hold" },
+    timeS: 0,
+    aimLocal: 0,
+    phase: "idle",
+    phaseT: 0,
+    fireHeld: false,
+    reducedMotion: false,
+  };
+}
+
+export function createWeaponPerformanceSample(): WeaponPerformanceSample {
+  return {
+    active: false,
+    weaponAngle: 0,
+    handX: 0,
+    handY: 0,
+    handBlend: 0,
+    offsetX: 0,
+    offsetY: 0,
+    ownership: 0,
+  };
+}
+
+function clearWeaponPerformanceSample(out: WeaponPerformanceSample): void {
+  out.active = false;
+  out.weaponAngle = 0;
+  out.handX = 0;
+  out.handY = 0;
+  out.handBlend = 0;
+  out.offsetX = 0;
+  out.offsetY = 0;
+  out.ownership = 0;
+}
+
+/**
+ * Allocation-free authored hold/action sampler. Every overhead and shake performance enters this one
+ * vocabulary; weapon records only tune its amplitude/frequency or select the downswing phase.
+ */
+export function sampleWeaponPerformance(
+  input: WeaponPerformanceInput,
+  out: WeaponPerformanceSample,
+): WeaponPerformanceSample {
+  clearWeaponPerformanceSample(out);
+  const { spec } = input;
+  const phaseT = clamp01(input.phaseT);
+  let angle = input.aimLocal - 0.12;
+  let handX = Math.cos(input.aimLocal) * 0.12;
+  let handY = Math.sin(input.aimLocal) * 0.12 - 0.04;
+
+  switch (spec.hold) {
+    case "upright":
+      angle = -Math.PI / 2;
+      handX = 0.08;
+      handY = -0.08;
+      break;
+    case "hanging-chain":
+      angle = Math.PI / 2;
+      handX = 0.1;
+      handY = -0.05;
+      break;
+    case "aim-forward":
+      angle = input.aimLocal;
+      handX = Math.cos(input.aimLocal) * 0.15;
+      handY = Math.sin(input.aimLocal) * 0.15 - 0.08;
+      break;
+    case "overhead":
+      angle = -Math.PI / 2;
+      handX = 0;
+      handY = -0.4;
+      break;
+    default:
+      break;
+  }
+
+  // Upright records preserve their ordinary authored attack and only replace the neutral equilibrium.
+  if (spec.action === "default-swing" && input.phase !== "idle") return out;
+
+  let actionOwn = input.phase === "idle" ? 0.88 : 1;
+  let shakeWeight = 0;
+  if (spec.action === "overhead-downswing") {
+    if (input.phase === "anticipation") {
+      const raise = smoothstep01(phaseT);
+      handY = mix(-0.08, -0.4, raise);
+      angle = mix(input.aimLocal - 0.12, -Math.PI / 2, raise);
+      shakeWeight = raise;
+    } else if (input.phase === "active") {
+      const swing = smoothstep01(phaseT);
+      handX = mix(0, Math.cos(input.aimLocal) * 0.16, swing);
+      handY = mix(-0.4, Math.sin(input.aimLocal) * 0.16 - 0.03, swing);
+      angle = mix(-Math.PI / 2, input.aimLocal + 0.7, swing);
+    } else if (input.phase === "recovery") {
+      const settle = smoothstep01(phaseT);
+      handX = mix(Math.cos(input.aimLocal) * 0.16, 0, settle);
+      handY = mix(Math.sin(input.aimLocal) * 0.16 - 0.03, -0.4, settle);
+      angle = mix(input.aimLocal + 0.7, -Math.PI / 2, settle);
+      actionOwn = 1 - 0.12 * settle;
+    }
+  } else if (spec.action === "recoil" && input.phase !== "idle") {
+    const kick = input.phase === "active" ? Math.sin(Math.PI * phaseT) : 1 - smoothstep01(phaseT);
+    out.offsetX -= Math.cos(input.aimLocal) * 0.065 * kick;
+    out.offsetY -= Math.sin(input.aimLocal) * 0.065 * kick;
+  } else if (spec.action === "shake") {
+    shakeWeight = spec.continuous ? (input.fireHeld ? 1 : 0) : input.phase === "idle" ? 0 : 1;
+  }
+
+  if (spec.shake && shakeWeight > 0 && !input.reducedMotion) {
+    const omega = input.timeS * Math.PI * 2 * spec.shake.frequencyHz;
+    const amplitude = (spec.shake.amplitudePx / 76) * shakeWeight;
+    const lateralX = -Math.sin(input.aimLocal);
+    const lateralY = Math.cos(input.aimLocal);
+    const tremor = Math.sin(omega);
+    out.offsetX += lateralX * amplitude * tremor;
+    out.offsetY += lateralY * amplitude * tremor;
+    angle += Math.cos(omega * 0.83) * spec.shake.rotationRad * shakeWeight;
+  }
+
+  out.active = true;
+  out.weaponAngle = angle;
+  out.handX = handX;
+  out.handY = handY;
+  out.handBlend = 1;
+  out.ownership = actionOwn;
+  return out;
+}
+
 export interface PoseLanguageInput {
   spec: WeaponPoseSpec;
   timeS: number;

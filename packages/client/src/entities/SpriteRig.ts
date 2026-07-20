@@ -140,6 +140,8 @@ import {
   createPoseLanguageInput,
   createPoseLanguageSample,
   createPoseVariantSelection,
+  createWeaponPerformanceInput,
+  createWeaponPerformanceSample,
   FLOURISH_DUAL_AFTER_ECHO_MS,
   FLOURISH_DUAL_DRAW_ECHO_MS,
   FLOURISH_DUAL_STOW_ECHO_MS,
@@ -163,12 +165,15 @@ import {
   sampleFlourish,
   sampleMovementPosture,
   samplePoseLanguage,
+  sampleWeaponPerformance,
   twoHandedPoseFor,
   twoHandPoseAuthorityFrom,
   WEAPON_FLOURISH_SPECS,
   type WeaponFlourishSpec,
+  type WeaponPerformanceSpec,
   type WeaponPoseSpec,
   weaponFlourishSpecFor,
+  weaponPerformanceSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
 import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
@@ -1769,6 +1774,9 @@ export class SpriteRig {
   private readonly poseVariants = createPoseVariantSelection();
   private poseLeadSpec?: WeaponPoseSpec;
   private poseOffSpec?: WeaponPoseSpec;
+  private performanceSpec?: WeaponPerformanceSpec;
+  private readonly performanceInput = createWeaponPerformanceInput();
+  private readonly performanceSample = createWeaponPerformanceSample();
   private poseTwoHanded = false;
   private readonly movementPostureInput: MovementPostureInput = createMovementPostureInput();
   private readonly movementPostureSample: MovementPostureSample = createMovementPostureSample();
@@ -2023,6 +2031,8 @@ export class SpriteRig {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   /** Two-ellipse blur fake: a soft halo appears only as altitude separates the core from the card. */
   private readonly shadowHalo: Phaser.GameObjects.Ellipse;
+  private readonly auraGlow: Phaser.GameObjects.Ellipse;
+  private readonly auraRing: Phaser.GameObjects.Ellipse;
   private readonly pairGlint: Phaser.GameObjects.Rectangle;
 
   constructor(
@@ -2141,7 +2151,16 @@ export class SpriteRig {
     this.shadow = scene.add
       .ellipse(0, TARGET_BODY_H * 0.42, TARGET_BODY_H * 0.6, TARGET_BODY_H * 0.22, 0x000000, 0.3)
       .setOrigin(0.5);
-    order.unshift(this.shadowHalo, this.shadow);
+    this.auraGlow = scene.add
+      .ellipse(0, TARGET_BODY_H * 0.18, 2, 2, 0x33e6ff, 0)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    this.auraRing = scene.add
+      .ellipse(0, TARGET_BODY_H * 0.18, 2, 2)
+      .setStrokeStyle(3, 0x33e6ff, 0)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false);
+    order.unshift(this.shadowHalo, this.shadow, this.auraGlow, this.auraRing);
 
     this.observedSourceRing = scene.add
       .ellipse(0, 0, 20, 12)
@@ -2645,6 +2664,8 @@ export class SpriteRig {
     const stack: Phaser.GameObjects.GameObject[] = [
       this.shadowHalo,
       this.shadow,
+      this.auraGlow,
+      this.auraRing,
       this.slideAfterimageB,
       this.slideAfterimageA,
     ];
@@ -2751,6 +2772,7 @@ export class SpriteRig {
     const offDef = this.weapons[1]?.def;
     this.poseLeadSpec = leadDef ? weaponPoseSpecFor(leadDef, this.poseVariants) : undefined;
     this.poseOffSpec = offDef ? weaponPoseSpecFor(offDef, this.poseVariants) : undefined;
+    this.performanceSpec = weaponPerformanceSpecFor(leadDef);
     if (leadDef) this.movementPostureInput.spec = movementPostureFor(leadDef);
     this.flourishLeadSpec = leadDef ? weaponFlourishSpecFor(leadDef) : undefined;
     this.flourishOffSpec = offDef ? weaponFlourishSpecFor(offDef) : undefined;
@@ -7971,6 +7993,7 @@ export class SpriteRig {
       }
     } else if (
       this.weaponDef &&
+      !this.performanceSpec?.suppressSwing &&
       (this.weapons.length > 0 || (CLIENT_VISUAL_COMBOS && this.weaponDef.id === "fists"))
     ) {
       const def = this.swingWeaponDef ?? this.weaponDef;
@@ -8716,7 +8739,7 @@ export class SpriteRig {
     }
 
     let poseBeamPhase: PoseBeamPhase | undefined;
-    if (this.weaponDef?.beam) {
+    if (this.weaponDef?.beam || this.weaponDef?.groundZone?.trigger === "channel") {
       if (anim.fireHeld) {
         poseBeamPhase = rangedAimBlend < 0.94 ? "charging" : "active";
         if (posePhase === "idle") {
@@ -8727,6 +8750,26 @@ export class SpriteRig {
         poseBeamPhase = "cooling";
         posePhase = "recovery";
         posePhaseT = 1 - rangedAimBlend;
+      }
+    }
+
+    let performancePoseActive = false;
+    if (this.performanceSpec) {
+      this.performanceInput.spec = this.performanceSpec;
+      this.performanceInput.timeS = t;
+      this.performanceInput.aimLocal = heldAimLocal;
+      this.performanceInput.phase = posePhase;
+      this.performanceInput.phaseT = posePhaseT;
+      this.performanceInput.fireHeld = anim.fireHeld === true;
+      this.performanceInput.reducedMotion = anim.reducedMotion === true || outsidePaperView;
+      sampleWeaponPerformance(this.performanceInput, this.performanceSample);
+      performancePoseActive = this.performanceSample.active;
+      if (performancePoseActive) {
+        weaponAngle = this.performanceSample.weaponAngle;
+        this.swingOffX += this.performanceSample.offsetX * TARGET_BODY_H;
+        this.swingOffY += this.performanceSample.offsetY * TARGET_BODY_H;
+        ownFront = Math.max(ownFront, this.performanceSample.ownership);
+        if (this.poseTwoHanded) ownBack = Math.max(ownBack, this.performanceSample.ownership);
       }
     }
 
@@ -9091,6 +9134,12 @@ export class SpriteRig {
         const targetY = this.body.y + this.posePoint.y * TARGET_BODY_H;
         hx += (targetX - hx) * poseHandSample.offBlend;
         hy += (targetY - hy) * poseHandSample.offBlend;
+      }
+      if (hnd.front && performancePoseActive) {
+        const targetX = this.body.x + this.performanceSample.handX * TARGET_BODY_H;
+        const targetY = this.body.y + this.performanceSample.handY * TARGET_BODY_H;
+        hx += (targetX - hx) * this.performanceSample.handBlend;
+        hy += (targetY - hy) * this.performanceSample.handBlend;
       }
       if (
         rangedAimBlend > 0 &&
@@ -9656,6 +9705,24 @@ export class SpriteRig {
     this.updateSlideAfterimages(sceneNow, anim.reducedMotion === true || outsidePaperView);
     // §5/§20 the grounded shadow shrinks + fades as the rig rises, so height reads as altitude (the gap
     // between the lifted art and the planted shadow). The shadow itself never lifts.
+    const aura = this.performanceSpec?.aura;
+    const auraActive = !!aura && anim.fireHeld === true && !this.downed;
+    this.auraGlow.setVisible(auraActive);
+    this.auraRing.setVisible(auraActive);
+    if (aura && auraActive) {
+      const pulse = anim.reducedMotion === true ? 0 : Math.sin(t * Math.PI * 4.4) * 0.035;
+      const inverseRigScale = 1 / Math.max(0.01, this.baseScale || 1);
+      const diameter = aura.radius * 2 * (1 + pulse) * inverseRigScale;
+      this.auraGlow
+        .setFillStyle(aura.color, 0.13)
+        .setDisplaySize(diameter, diameter * 0.56)
+        .setAlpha(0.72);
+      this.auraRing
+        .setStrokeStyle(3, aura.color, 0.72)
+        .setDisplaySize(diameter * 0.96, diameter * 0.54)
+        .setAlpha(0.82);
+    }
+
     let shrink = Math.max(0.34, 1 - this.hopPx / 560);
     if (this.moveStance === STANCE_DASH) shrink = Math.max(0.85, shrink);
     if (this.moveStance === STANCE_SLIDE) shrink = Math.max(0.88, shrink) * 1.08;

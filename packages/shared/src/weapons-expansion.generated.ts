@@ -1130,7 +1130,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 112,
     "halfArc": 0.75,
     "cooldown": 0.34,
-    "displayLength": 60,
+    "displayLength": 120,
     "swingArc": 2.3,
     "gripFrac": 0.14,
     "tags": {
@@ -1246,7 +1246,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 104,
     "halfArc": 0.85,
     "cooldown": 0.3,
-    "displayLength": 60,
+    "displayLength": 120,
     "swingArc": 3,
     "gripFrac": 0.15,
     "tags": {
@@ -8831,6 +8831,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "shake",
+      "continuous": true,
+      "suppressSwing": true,
+      "shake": {
+        "amplitudePx": 3,
+        "rotationRad": 0.05,
+        "frequencyHz": 12
+      }
+    },
     "requirements": {
       "int": 9
     },
@@ -9396,6 +9407,19 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "chargeMul": 0.55,
         "channelMul": 0.35
       }
+    },
+    "groundZone": {
+      "trigger": "attack",
+      "style": "ice",
+      "initialRadius": 56,
+      "maxRadius": 56,
+      "growthPerSecond": 0,
+      "lingerSeconds": 1.25,
+      "damagePerSecond": 0,
+      "tickRate": 0.1,
+      "placementRange": 640,
+      "slowMultiplier": 0.55,
+      "slowSeconds": 0.65
     }
   },
   "x2-emberleaf-chapbook": {
@@ -9424,6 +9448,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "performance": {
+      "hold": "steady",
+      "action": "page-flip",
+      "continuous": true,
+      "suppressSwing": true
     },
     "requirements": {
       "int": 5
@@ -9586,6 +9616,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A charred ironwood stave crowned with a fused mass of melted tallow candles, their wax-clogged wicks belching a coughing fan of greasy fire.",
+    "performance": {
+      "hold": "steady",
+      "action": "shake",
+      "continuous": true,
+      "suppressSwing": true,
+      "shake": {
+        "amplitudePx": 2.5,
+        "rotationRad": 0.045,
+        "frequencyHz": 10
+      }
+    },
     "requirements": {
       "int": 9
     },
@@ -9671,7 +9712,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 130,
     "halfArc": 0.6,
     "cooldown": 0.4,
-    "displayLength": 56,
+    "displayLength": 90,
     "swingArc": 2,
     "gripFrac": 0.16,
     "tags": {
@@ -9907,6 +9948,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A scuffed iron staff ending in a flared blunderbuss mouth packed with rune-etched shot, coughing a wide spray of splintering ice slivers.",
+    "performance": {
+      "hold": "aim-forward",
+      "action": "recoil",
+      "suppressSwing": true,
+      "emitter": "spout"
+    },
     "requirements": {
       "int": 8,
       "dex": 4
@@ -10040,7 +10087,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 120,
     "halfArc": 0.9,
     "cooldown": 0.7,
-    "displayLength": 88,
+    "displayLength": 264,
     "swingArc": 2.8,
     "gripFrac": 0.14,
     "tags": {
@@ -10172,8 +10219,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "delivery": "ground-zone",
+      "fireMode": "hold",
       "element": "toxic",
       "classPool": "caster",
       "family": "scepter",
@@ -10188,11 +10235,20 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 6,
       "luk": 5
     },
-    "chainLightning": {
-      "jumps": 4,
-      "range": 190,
-      "damage": 5,
-      "falloff": 0.8
+    "groundZone": {
+      "trigger": "channel",
+      "style": "poison",
+      "initialRadius": 32,
+      "maxRadius": 125,
+      "growthPerSecond": 72,
+      "lingerSeconds": 2.4,
+      "damagePerSecond": 11.9047619,
+      "tickRate": 0.1,
+      "placementRange": 125,
+      "scalingGrades": {
+        "int": "A",
+        "luk": "C"
+      }
     }
   },
   "x2-mesa-spine-thunder-stave": {
@@ -10582,6 +10638,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "overhead",
+      "action": "overhead-downswing",
+      "suppressSwing": true,
+      "shake": {
+        "amplitudePx": 3,
+        "rotationRad": 0.055,
+        "frequencyHz": 11
+      },
+      "vfxAt": "impact"
+    },
     "requirements": {
       "int": 7
     },
@@ -10668,6 +10735,24 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "performance": {
+      "hold": "overhead",
+      "action": "shake",
+      "continuous": true,
+      "suppressSwing": true,
+      "shake": {
+        "amplitudePx": 3.5,
+        "rotationRad": 0.065,
+        "frequencyHz": 13
+      },
+      "aura": {
+        "radius": 150,
+        "damagePerSecond": 18,
+        "resourcePerSecond": 20,
+        "tickRate": 0.2,
+        "color": 3401471
+      }
+    },
     "requirements": {
       "int": 7
     },
@@ -10706,6 +10791,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "LUK"
       ]
+    },
+    "performance": {
+      "hold": "hanging-chain",
+      "action": "hold",
+      "suppressSwing": true
     },
     "requirements": {
       "int": 9
@@ -10774,7 +10864,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "beam",
+      "delivery": "ground-zone",
       "fireMode": "hold",
       "element": "void",
       "classPool": "caster",
@@ -10787,24 +10877,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 11
     },
-    "beam": {
+    "groundZone": {
+      "trigger": "channel",
+      "style": "nether",
+      "initialRadius": 36,
+      "maxRadius": 220,
+      "growthPerSecond": 128,
+      "lingerSeconds": 2,
       "damagePerSecond": 60,
       "tickRate": 0.1,
-      "width": 48,
-      "range": 640,
-      "chargeSeconds": 0.65,
-      "sweepLagSeconds": 0.22,
-      "overheat": {
-        "maxChannelSeconds": 1.25,
-        "heatPerSecond": 0.6,
-        "coolPerSecond": 0.35,
-        "ignitionHeat": 0.25,
-        "lockSeconds": 1.5,
-        "restartHeat": 0.35
-      },
-      "movement": {
-        "chargeMul": 0.55,
-        "channelMul": 0.35
+      "placementRange": 240,
+      "scalingGrades": {
+        "int": "S"
       }
     }
   },
@@ -11356,6 +11440,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing"
+    },
     "requirements": {
       "int": 9,
       "con": 5
@@ -11471,7 +11559,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "toxic",
       "classPool": "caster",
@@ -11486,19 +11574,31 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": 7,
       "dex": 4
     },
-    "scatter": {
-      "count": 7,
-      "spread": 0.5,
+    "thrown": {
       "speed": 420,
       "range": 240,
       "damage": 4,
+      "charges": 3,
+      "refillSeconds": 1.5,
+      "pierce": 1,
+      "scalingGrades": {
+        "int": "B"
+      }
+    },
+    "groundZone": {
+      "trigger": "landing",
+      "style": "poison",
+      "initialRadius": 44,
+      "maxRadius": 44,
+      "growthPerSecond": 0,
+      "lingerSeconds": 4.5,
+      "damagePerSecond": 11.1111111,
+      "tickRate": 0.1,
+      "placementRange": 240,
       "scalingGrades": {
         "int": "B"
       },
-      "explode": {
-        "radius": 44,
-        "damage": 4
-      }
+      "grenadeArcHeight": 120
     }
   },
   "x2-thunderpost-fetish": {
@@ -11667,6 +11767,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "CON"
       ]
+    },
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing"
     },
     "requirements": {
       "int": 11,

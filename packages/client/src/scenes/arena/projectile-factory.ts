@@ -95,10 +95,12 @@ export function makeThrownWeapon(
       ? scene.add.image(0, 0, tx.key, tx.frame).setScale((weapon?.displayLength ?? part.w) / part.w)
       : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
   const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
+  const payload = scene.add.container(0, 0, [glow, blade]);
   return scene.add
-    .container(pr.x, pr.y, [glow, blade])
+    .container(pr.x, pr.y, [payload])
     .setDepth(99000)
-    .setData("spriteId", spriteId ?? "");
+    .setData("spriteId", spriteId ?? "")
+    .setData("arcPayload", payload);
 }
 
 /** Scatter ball (§14 WYSIWYG) — a real damaging projectile that explodes on impact, rendered as PAINTED
@@ -174,6 +176,7 @@ export function makeCounter(
 export function makeBullet(
   scene: Phaser.Scene,
   pr: { x: number; y: number; vx: number; vy: number; kind: string },
+  visualScale = 1,
 ): Phaser.GameObjects.Container {
   const fx = gunFx(pr.kind); // handles the ":element" colour suffix
   const k = baseKind(pr.kind); // shape switches on the base kind (element-agnostic)
@@ -230,5 +233,8 @@ export function makeBullet(
     if (k === "ricochet")
       items.push(scene.add.circle(0, 0, 7).setStrokeStyle(1.5, fx.color, 0.9).setBlendMode(ADD));
   }
-  return scene.add.container(pr.x, pr.y, items).setDepth(99000);
+  return scene.add
+    .container(pr.x, pr.y, items)
+    .setScale(Math.max(0.1, visualScale))
+    .setDepth(99000);
 }
