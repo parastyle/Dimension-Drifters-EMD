@@ -15,6 +15,7 @@ const REPO = resolve(here, "../..");
 const PUBLIC_DIR = resolve(REPO, "packages/client/public");
 const PUBLIC_REL = "../../packages/client/public";
 const sharedDist = resolve(REPO, "packages/shared/dist/index.js");
+const GEAR_MANIFEST = resolve(REPO, "tools/artkit/out/gear/gear-parts-manifest.json");
 
 if (isCheck && !existsSync(sharedDist)) {
   console.warn(
@@ -102,6 +103,31 @@ function normalizedDelivery(weapon) {
   return "melee";
 }
 
+function readJson(path, fallback) {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return fallback;
+  }
+}
+
+const gearManifest = readJson(GEAR_MANIFEST, { slots: [], missing: [] });
+const installedGearIds = new Set(
+  (gearManifest.slots ?? []).flatMap((slot) => (slot.items ?? []).map((item) => item.id)),
+);
+const missingGearIds = new Set(
+  (gearManifest.missing ?? [])
+    .map((path) => String(path).match(/\/([^/]+)\.png$/)?.[1])
+    .filter(Boolean),
+);
+
+function explicitArtStatus({ ready, intentional = false, rendering = false, expected = true }) {
+  if (rendering) return "rendering";
+  if (ready) return "ready";
+  if (intentional || !expected) return "artless";
+  return "unavailable";
+}
+
 function bossNameFor(kind) {
   const def = shared.bossDefFor?.(kind);
   if (def && def.kind !== kind) return `${prettyId(kind)} - ${def.name}`;
@@ -131,14 +157,15 @@ const weapons = weaponIds.map((id) => {
   const family = weapon?.tags?.family ?? "untyped";
   const delivery = normalizedDelivery(weapon);
   const grip = weapon?.tags?.grip ?? (weapon?.twoHanded ? "2H" : "1H");
+  const thumb =
+    firstExistingPublic(join("sprites", id, "part-1.png"), join("cards", `${id}.jpg`)) ||
+    rigThumbnail(id);
   return {
     key: id,
     id,
     copyId: id,
     name: weapon?.name ?? prettyId(id),
-    thumb:
-      firstExistingPublic(join("sprites", id, "part-1.png"), join("cards", `${id}.jpg`)) ||
-      rigThumbnail(id),
+    thumb,
     glyph: "W",
     facts: [family, delivery, grip],
     keywords: [
@@ -154,10 +181,13 @@ const weapons = weaponIds.map((id) => {
       "rarity loot",
     ].filter(Boolean),
     family,
+    weaponClass: weapon?.tags?.classPool ?? "weapon",
     delivery,
     grip,
+    element: weapon?.tags?.element ?? "physical",
     rarityCapable: true,
     source: weapon?.expansion ? "expansion" : "base",
+    artStatus: explicitArtStatus({ ready: Boolean(thumb) }),
     action: "launch",
     path: `/?dev=weapon:${encodeURIComponent(id)}`,
     actionLabel: "Open in Testing Grounds",
@@ -168,12 +198,15 @@ const gear = GEAR_IDS.map((id) => {
   const item = GEAR_CATALOG[id];
   const slot = kebab(item.slot);
   const set = item.legacySetId ?? item.originPool ?? "utility";
+  const thumb = firstExistingPublic(join("sprites", "gear", slot, `${item.artKey}.png`));
+  const intentionalArtless = id.startsWith("blank-drifter-");
+  const expectedArt = !intentionalArtless;
   return {
     key: id,
     id,
     copyId: id,
     name: item.name,
-    thumb: firstExistingPublic(join("sprites", "gear", slot, `${item.artKey}.png`)),
+    thumb,
     glyph: "G",
     facts: [prettyId(slot), item.rarity, prettyId(set)],
     keywords: [
@@ -190,11 +223,41 @@ const gear = GEAR_IDS.map((id) => {
     rarity: item.rarity,
     set,
     gearClass: item.gearClass,
+    ownership: intentionalArtless
+      ? "Default blank"
+      : item.legacySetId
+        ? "Player catalog"
+        : "Pool / utility",
+    artStatus: explicitArtStatus({
+      ready: installedGearIds.has(id) || Boolean(thumb),
+      intentional: intentionalArtless,
+      expected: expectedArt || missingGearIds.has(id),
+    }),
     action: "launch",
     path: `/?dev=gear:${encodeURIComponent(id)}`,
     actionLabel: "Equip in Testing Grounds",
   };
 });
+
+const gearSetMembers = new Map();
+for (const item of gear) {
+  if (!gearSetMembers.has(item.set)) gearSetMembers.set(item.set, []);
+  gearSetMembers.get(item.set).push(item);
+}
+const playerCompletableSets = new Set(
+  [...gearSetMembers.entries()]
+    .filter(([setId, members]) => setId !== "blank-drifter" && members.length === 8)
+    .map(([setId]) => setId),
+);
+for (const item of gear) {
+  const members = gearSetMembers.get(item.set) ?? [];
+  item.playerCompletableSet = playerCompletableSets.has(item.set);
+  item.setSize = members.length;
+  item.setArtReady = members.filter((member) => member.artStatus === "ready").length;
+  item.setMissingArt = members
+    .filter((member) => member.artStatus !== "ready" && member.artStatus !== "artless")
+    .map((member) => prettyId(member.slot));
+}
 
 const dimensionBosses = new Map(
   Object.values(DIMENSIONS).map((dimension) => [dimension.boss, dimension.name]),
@@ -453,13 +516,29 @@ const catalogs = {
   characters,
   sounds,
 };
+const expectedArtCatalogs = new Set([
+  "weapons",
+  "gear",
+  "bosses",
+  "pets",
+  "dimensions",
+  "characters",
+]);
+for (const [categoryId, items] of Object.entries(catalogs)) {
+  for (const item of items) {
+    item.artStatus ??= explicitArtStatus({
+      ready: Boolean(item.thumb),
+      expected: expectedArtCatalogs.has(categoryId),
+    });
+  }
+}
 const categoryMeta = [
   {
     id: "weapons",
     label: "Weapons",
     key: "1",
     glyph: "W",
-    description: "Live weapon catalog - click to equip in Testing Grounds.",
+    description: "Full weapon-definition catalog. Select a card to inspect; launch is explicit.",
   },
   {
     id: "gear",
@@ -467,7 +546,7 @@ const categoryMeta = [
     key: "2",
     glyph: "G",
     description:
-      "Wardrobe catalog - click to own the closet and equip that piece in Testing Grounds.",
+      "Wardrobe definitions, twelve complete eight-piece sets, pools, rarity, and art readiness.",
   },
   {
     id: "bosses",
@@ -531,241 +610,290 @@ const DATA = {
 };
 const embeddedData = JSON.stringify(DATA).replace(/</g, "\\u003c");
 
-const html = `<!doctype html>
+const PORTAL_STYLE = String.raw`
+  :root {
+    --bg:#080A0D; --surface-0:#0E1117; --surface-1:#11141A; --surface-2:#171A21;
+    --surface-3:#20242C; --border:#39414D; --stitch:#59616D; --text-primary:#F4EAD7;
+    --text-secondary:#B9B2A6; --text-muted:#8F8A84; --accent:#49D9E8; --action:#F2C66D;
+    --success:#8EE28F; --warning:#FFAA55; --danger:#FF6B6B; --common:#9AA5B1;
+    --uncommon:#59C96B; --rare:#4AA3FF; --really-rare:#2FD6C3; --legendary:#FFA53A;
+    --ultimate:#FF4A6A; --cursed:#A06BFF; --sans:"Segoe UI Variable","Segoe UI",Arial,sans-serif;
+    --mono:"Cascadia Mono",Consolas,monospace; --rail-width:264px; --inspector-width:420px;
+    color-scheme:dark;
+  }
+  * { box-sizing:border-box; }
+  html,body { width:100%; height:100%; margin:0; overflow:hidden; }
+  body {
+    min-width:320px; color:var(--text-primary);
+    background:radial-gradient(circle at 70% -10%,rgba(73,217,232,.09),transparent 42%),
+      linear-gradient(115deg,rgba(255,255,255,.018),transparent 34%),var(--bg);
+    font:500 16px/22px var(--sans);
+  }
+  button,input,select { font:inherit; }
+  button,input,select,a { min-height:44px; }
+  button,select { color:inherit; }
+  button { cursor:pointer; }
+  button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible {
+    outline:3px solid var(--accent); outline-offset:2px; box-shadow:0 0 0 1px var(--bg);
+  }
+  .skip-link { position:fixed; left:12px; top:-72px; z-index:100; padding:10px 14px; color:var(--bg); background:var(--accent); border-radius:8px; font-weight:700; }
+  .skip-link:focus { top:12px; }
+  .app { display:grid; grid-template-columns:var(--rail-width) minmax(0,1fr) var(--inspector-width); grid-template-rows:84px minmax(0,1fr); width:100vw; height:100vh; }
+  .rail { grid-row:1/3; min-width:0; overflow-y:auto; padding:24px 16px; border-right:1px solid var(--border); background:linear-gradient(180deg,rgba(17,20,26,.99),rgba(8,10,13,.99)); }
+  .brand { display:flex; align-items:center; gap:12px; padding:0 8px 24px; }
+  .brand-mark { position:relative; display:grid; place-items:center; flex:0 0 48px; width:48px; height:48px; color:var(--accent); border:1px solid var(--border); border-radius:12px; background:var(--surface-2); font:700 16px/20px var(--mono); }
+  .brand-mark::after { content:""; position:absolute; inset:7px; border:1px dashed var(--stitch); border-radius:6px; transform:rotate(45deg); }
+  .brand-copy { min-width:0; }
+  .brand-title { font-size:18px; line-height:24px; font-weight:700; }
+  .brand-sub,.nav-label,.eyebrow,.mono { font-family:var(--mono); }
+  .brand-sub { margin-top:2px; color:var(--text-muted); font-size:14px; line-height:20px; }
+  .nav-label { padding:0 8px 8px; color:var(--text-muted); font-size:14px; line-height:20px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+  .places,.category-nav { display:grid; gap:4px; }
+  .places { margin-bottom:24px; }
+  .place-link,.nav-item { min-width:0; border:1px solid transparent; border-radius:8px; color:var(--text-secondary); background:transparent; text-decoration:none; }
+  .place-link { display:flex; align-items:center; padding:0 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .place-link:hover,.nav-item:hover { color:var(--text-primary); border-color:var(--border); background:var(--surface-2); }
+  .nav-item { width:100%; display:grid; grid-template-columns:36px minmax(0,1fr) auto; align-items:center; gap:8px; padding:4px 8px; text-align:left; }
+  .nav-item.active { color:var(--text-primary); border-color:var(--accent); background:#10252B; }
+  .nav-glyph { display:grid; place-items:center; width:32px; height:32px; color:var(--accent); border:1px solid var(--border); border-radius:8px; background:var(--surface-0); font:700 14px/20px var(--mono); }
+  .nav-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:650; }
+  .nav-count { color:var(--text-muted); font:600 14px/20px var(--mono); font-variant-numeric:tabular-nums; }
+  .rail-footer { margin:24px 8px 0; padding-top:16px; border-top:1px solid var(--border); }
+  .service { display:flex; align-items:center; gap:8px; color:var(--text-secondary); font:700 14px/20px var(--mono); }
+  .service svg { width:20px; height:20px; }
+  .rail-hint { margin-top:12px; color:var(--text-muted); font:500 14px/20px var(--mono); }
+  .topbar { grid-column:2/4; display:grid; grid-template-columns:minmax(280px,360px) minmax(0,1fr) auto; align-items:center; gap:12px; min-width:0; padding:16px 24px; border-bottom:1px solid var(--border); background:rgba(14,17,23,.98); }
+  .search-wrap { position:relative; min-width:0; }
+  .search-icon { position:absolute; left:14px; top:50%; translate:0 -50%; color:var(--accent); font:700 14px/20px var(--mono); pointer-events:none; }
+  #search { width:100%; height:52px; padding:0 54px 0 44px; color:var(--text-primary); caret-color:var(--accent); border:1px solid var(--border); border-radius:8px; background:var(--surface-0); }
+  #search::placeholder { color:var(--text-muted); }
+  .shortcut { position:absolute; right:12px; top:50%; translate:0 -50%; padding:2px 7px; color:var(--text-muted); border:1px solid var(--border); border-radius:4px; font:700 14px/20px var(--mono); }
+  .filters { min-width:0; display:flex; align-items:center; gap:8px; overflow-x:auto; padding:4px 2px; scrollbar-width:thin; }
+  .select-chip { flex:0 0 auto; display:flex; align-items:center; gap:6px; min-height:44px; padding:0 8px 0 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+  .select-chip span { color:var(--text-muted); font-size:14px; font-weight:700; }
+  .select-chip select { min-width:72px; max-width:166px; border:0; outline:0; background:transparent; }
+  .select-chip option { color:var(--text-primary); background:var(--surface-1); }
+  .toggle-chip,.clear-filters,.density button,.button { min-height:44px; padding:0 12px; border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); background:var(--surface-2); font-weight:650; }
+  .toggle-chip.active { color:var(--accent); border-color:var(--accent); background:#10252B; }
+  .clear-filters { flex:0 0 auto; }
+  .top-actions { display:flex; align-items:center; gap:12px; }
+  .density { display:flex; gap:4px; padding:0 4px; border:1px solid var(--border); border-radius:8px; background:var(--surface-0); }
+  .density button { min-height:44px; border-color:transparent; background:transparent; font-size:14px; }
+  .density button.active { color:var(--bg); background:var(--accent); }
+  .result-count { min-width:118px; color:var(--text-secondary); font:700 14px/20px var(--mono); text-align:right; font-variant-numeric:tabular-nums; }
+  .library { grid-column:2; grid-row:2; min-width:0; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) 60px; background:var(--surface-0); }
+  .library-head { display:flex; align-items:end; justify-content:space-between; gap:16px; padding:18px 24px 14px; }
+  .library-head h1 { margin:2px 0 0; font-size:24px; line-height:30px; }
+  .section-copy { max-width:720px; margin:2px 0 0; color:var(--text-secondary); font-size:14px; line-height:20px; }
+  .section-stat { color:var(--text-muted); font:700 14px/20px var(--mono); text-align:right; font-variant-numeric:tabular-nums; }
+  .grid-viewport { min-width:0; min-height:0; overflow:auto; padding:0 24px 24px; outline:none; }
+  .grid-spacer { position:relative; width:100%; min-height:100%; }
+  .grid-window { position:absolute; inset:0 0 auto 0; }
+  .card { position:absolute; display:grid; grid-template-rows:minmax(0,1fr) auto; min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:8px; background:linear-gradient(145deg,rgba(255,255,255,.035),transparent 42%),var(--surface-2); contain:strict; cursor:pointer; transition:transform .14s ease,border-color .14s ease,background .14s ease; }
+  .card::after { content:""; position:absolute; inset:7px; border:1px dashed rgba(89,97,109,.36); border-radius:5px; pointer-events:none; }
+  .card:hover { transform:translateY(-2px); border-color:var(--stitch); background-color:var(--surface-3); }
+  .card.selected { border:2px solid var(--accent); background-color:var(--surface-3); }
+  .card.focused { box-shadow:inset 0 0 0 3px var(--accent),inset 0 0 0 4px var(--bg); }
+  .thumb { position:relative; min-height:0; overflow:hidden; display:grid; place-items:center; margin:8px 8px 0; border-radius:6px; background:radial-gradient(circle,#303944,#12161C 72%); }
+  .thumb-glyph { color:var(--stitch); font:700 32px/36px var(--mono); }
+  .thumb img { position:absolute; inset:0; width:100%; height:100%; padding:8px; object-fit:contain; }
+  .thumb.tile img { padding:0; object-fit:cover; opacity:.9; }
+  .card-category { position:absolute; left:8px; top:8px; z-index:2; min-height:28px; display:flex; align-items:center; padding:0 8px; color:var(--bg); border-radius:4px; background:var(--accent); font:700 14px/20px var(--mono); text-transform:uppercase; }
+  .card-info { min-width:0; padding:8px 12px 12px; }
+  .card-name { display:-webkit-box; overflow:hidden; color:var(--text-primary); font-size:16px; line-height:20px; font-weight:700; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .card-id { overflow:hidden; margin-top:2px; color:var(--text-muted); font:500 14px/20px var(--mono); text-overflow:ellipsis; white-space:nowrap; }
+  .card-meta { min-width:0; display:flex; align-items:center; gap:8px; margin-top:6px; overflow:hidden; }
+  .card-meta .rarity-mark { margin:0; }
+  .fact { overflow:hidden; color:var(--text-secondary); font-size:14px; line-height:20px; text-overflow:ellipsis; white-space:nowrap; }
+  .compact .card-info { padding:6px 10px 9px; }
+  .compact .thumb { margin:6px 6px 0; }
+  .compact .card-meta { margin-top:2px; }
+  .command-rail { display:flex; align-items:center; justify-content:center; padding:8px 16px; color:var(--text-secondary); border-top:1px solid var(--border); background:var(--surface-1); font:650 14px/20px var(--mono); text-align:center; }
+  .inspector { grid-column:3; grid-row:2; min-width:0; min-height:0; overflow-y:auto; padding:24px; border-left:1px solid var(--border); background:var(--surface-1); }
+  .inspector-close.button { display:none; float:right; }
+  .inspector h2 { margin:4px 0 8px; font-size:24px; line-height:30px; }
+  .inspector-id { color:var(--text-muted); font:500 14px/20px var(--mono); overflow-wrap:anywhere; }
+  .status-chip { display:inline-flex; align-items:center; gap:6px; min-height:28px; color:var(--text-muted); font-size:14px; line-height:20px; font-weight:700; }
+  .status-chip svg { flex:0 0 20px; width:20px; height:20px; }
+  .status-chip.ready,.service.connected { color:var(--success); }
+  .status-chip.rendering,.service.checking { color:var(--warning); }
+  .status-chip.unavailable,.service.offline { color:var(--danger); }
+  .inspector-art { position:relative; min-height:220px; display:grid; place-items:center; margin:16px 0; overflow:hidden; border:1px solid var(--border); border-radius:8px; background:radial-gradient(circle,#303944,#11141A 70%); }
+  .inspector-art::after { content:""; position:absolute; inset:8px; border:1px dashed rgba(89,97,109,.45); border-radius:5px; pointer-events:none; }
+  .inspector-art img { width:100%; height:220px; padding:16px; object-fit:contain; }
+  .inspector-art.tile img { padding:0; object-fit:cover; }
+  .art-placeholder { max-width:240px; padding:24px; color:var(--text-muted); text-align:center; }
+  .rarity-mark { display:flex; align-items:center; gap:8px; min-height:28px; margin:8px 0; font-size:14px; font-weight:800; }
+  .rarity-mark svg { height:16px; }
+  .rarity-common{color:var(--common)} .rarity-uncommon{color:var(--uncommon)} .rarity-rare{color:var(--rare)}
+  .rarity-really-rare{color:var(--really-rare)} .rarity-legendary{color:var(--legendary)}
+  .rarity-ultimate{color:var(--ultimate)} .rarity-cursed{color:var(--cursed)}
+  .facts-list { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 12px; margin:16px 0; padding:16px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+  .facts-list dt { color:var(--text-muted); }
+  .facts-list dd { margin:0; color:var(--text-primary); font-weight:700; text-align:right; overflow-wrap:anywhere; }
+  .set-block { margin:16px 0; padding:16px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); }
+  .set-block h3 { margin:0 0 4px; font-size:18px; line-height:24px; }
+  .set-stitches { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin:12px 0 8px; }
+  .set-stitch { height:12px; border:1px dashed var(--stitch); border-radius:4px; }
+  .set-stitch.ready { border-style:solid; border-color:var(--success); background:var(--success); }
+  .inspector-actions { position:sticky; bottom:-24px; display:grid; gap:8px; margin:20px -24px -24px; padding:16px 24px 24px; background:linear-gradient(transparent,var(--surface-1) 18%); }
+  .button { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+  .button.primary { min-height:52px; color:var(--action); border-color:#8B713D; background:#342B1A; }
+  .button.secondary:hover { color:var(--accent); border-color:var(--accent); }
+  .button-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .empty { display:grid; place-items:center; min-height:240px; padding:32px; color:var(--text-secondary); border:1px dashed var(--stitch); border-radius:8px; text-align:center; }
+  .empty strong { display:block; margin-bottom:8px; color:var(--text-primary); font-size:18px; line-height:24px; }
+  #toast { position:fixed; left:50%; bottom:24px; z-index:120; max-width:min(560px,calc(100vw - 32px)); padding:12px 16px; translate:-50% 18px; opacity:0; pointer-events:none; color:var(--text-primary); border:1px solid var(--accent); border-radius:8px; background:var(--surface-1); font:600 14px/20px var(--mono); transition:opacity .15s ease,translate .15s ease; }
+  #toast.show { opacity:1; translate:-50% 0; }
+  @media (max-width:1439px) {
+    :root { --rail-width:88px; --inspector-width:360px; }
+    .app { grid-template-rows:72px minmax(0,1fr); }
+    .rail { padding:16px 8px; }
+    .brand { justify-content:center; padding-inline:0; }
+    .brand-copy,.nav-label,.nav-name,.nav-count,.places,.rail-hint { display:none; }
+    .nav-item { display:flex; justify-content:center; padding:4px; }
+    .nav-glyph { width:40px; height:40px; }
+    .rail-footer { margin-inline:0; }
+    .service span { display:none; }
+    .service { justify-content:center; }
+    .topbar { grid-template-columns:minmax(240px,300px) minmax(0,1fr) auto; padding:10px 16px; gap:8px; }
+    .library { grid-template-rows:auto minmax(0,1fr) 52px; }
+    .library-head { padding:12px 16px 10px; }
+    .section-copy { display:none; }
+    .grid-viewport { padding:0 16px 16px; }
+    .inspector { padding:16px; }
+    .inspector-actions { bottom:-16px; margin:16px -16px -16px; padding:16px; }
+    .density button { padding-inline:8px; }
+  }
+  @media (max-width:1100px) {
+    .app { grid-template-columns:88px minmax(0,1fr); }
+    .topbar { grid-column:2; }
+    .inspector { position:fixed; z-index:70; top:72px; right:0; bottom:0; width:min(420px,calc(100vw - 88px)); box-shadow:-18px 0 36px rgba(0,0,0,.45); }
+    .inspector.closed { display:none; }
+    .inspector-close.button { display:inline-flex; }
+  }
+  @media (max-width:760px) {
+    :root { --rail-width:64px; }
+    .app { grid-template-columns:64px minmax(0,1fr); grid-template-rows:124px minmax(0,1fr); }
+    .brand { display:none; }
+    .topbar { grid-template-columns:minmax(0,1fr) auto; grid-template-rows:52px 44px; align-content:center; }
+    .filters { grid-column:1/3; }
+    .result-count { display:none; }
+    .inspector { top:124px; width:calc(100vw - 64px); }
+    .library-head { align-items:center; }
+    .section-stat { display:none; }
+    .button-row { grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.001ms!important; } }
+`;
+
+const PORTAL_SCRIPT = String.raw`
+  "use strict";
+  const PREF_KEY="ddDevPortal.armoryPanel";
+  const STATUS={ready:{label:"READY",icon:"check"},rendering:{label:"ART RENDERING",icon:"hourglass"},unavailable:{label:"UNAVAILABLE",icon:"warning"},artless:{label:"ARTLESS",icon:"circle"}};
+  const RARITIES={Common:{count:1,className:"common",hollow:false},Uncommon:{count:2,className:"uncommon",hollow:false},Rare:{count:3,className:"rare",hollow:false},"Really Rare":{count:4,className:"really-rare",hollow:false},Legendary:{count:5,className:"legendary",hollow:false},Ultimate:{count:6,className:"ultimate",hollow:false},Cursed:{count:6,className:"cursed",hollow:true}};
+  const FILTERS={
+    weapons:[{key:"weaponClass",label:"Class"},{key:"family",label:"Family"},{key:"delivery",label:"Delivery",order:["melee","gun","thrown","beam","cast"]},{key:"grip",label:"Grip",order:["1H","2H","dual","mounted"]},{key:"element",label:"Element"},{key:"source",label:"Source",order:["base","expansion"]},{key:"rarityCapable",label:"Rarity-capable",type:"toggle"}],
+    gear:[{key:"slot",label:"Slot"},{key:"rarity",label:"Rarity",order:["Common","Uncommon","Rare","Really Rare","Legendary","Ultimate","Cursed"]},{key:"set",label:"Set / pool"},{key:"gearClass",label:"Class"},{key:"ownership",label:"Ownership"}],
+    bosses:[{key:"size",label:"Size",order:["duelist","large","colossal"]},{key:"type",label:"Type"}],
+    pets:[{key:"stage",label:"Stage",order:["1","2","3"]},{key:"species",label:"Pet"}],
+    dimensions:[{key:"kind",label:"Kind",order:["dimension","belt level"]},{key:"boss",label:"Boss"}],
+    ultimates:[{key:"family",label:"Family"},{key:"variant",label:"Variant"}],
+    augments:[{key:"tag",label:"Tag"},{key:"delivery",label:"Delivery"},{key:"stackable",label:"Stacks"}],
+    characters:[{key:"quirk",label:"Quirk"},{key:"peak",label:"Peak"}],
+    sounds:[{key:"soundCategory",label:"Category"},{key:"priority",label:"Priority"}]
+  };
+  const SORTS=[{value:"az",label:"A-Z"},{value:"za",label:"Z-A"},{value:"id",label:"ID"}];
+  const categoryById=Object.fromEntries(DATA.categories.map(function(category){return[category.id,category]}));
+  const validCategories=new Set(DATA.categories.map(function(category){return category.id}));
+  const search=document.getElementById("search");
+  const filtersNode=document.getElementById("filters");
+  const viewport=document.getElementById("gridViewport");
+  const spacer=document.getElementById("gridSpacer");
+  const windowNode=document.getElementById("gridWindow");
+  const inspector=document.getElementById("inspector");
+  const saved=readPrefs();
+  const state={category:validCategories.has(saved.category)?saved.category:DATA.categories[0].id,query:"",density:saved.density==="compact"?"compact":"comfortable",filters:saved.filters&&typeof saved.filters==="object"?saved.filters:{},artStatus:typeof saved.artStatus==="string"?saved.artStatus:"",selectedKey:"",focusKey:"",focusIndex:0,results:[],columns:1,rowPitch:208,cardHeight:196,gap:12};
+  let scope=state.category;
+  let renderFrame=0;
+  let toastTimer=0;
+  function readPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||"{}")}catch(_error){return{}}}
+  function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({category:state.category,density:state.density,filters:state.filters,artStatus:state.artStatus}))}catch(_error){}}
+  function normalize(value){return String(value==null?"":value).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"")}
+  function entryKey(entry){return entry.category+":"+entry.item.key}
+  function domId(entry){return"asset-"+entryKey(entry).replace(/[^a-z0-9_-]/gi,"-")}
+  function searchable(item){if(!item._search)item._search=normalize([item.name,item.id,item.idSuffix,...(item.facts||[]),...(item.keywords||[])].join(" "));return item._search}
+  function subsequenceScore(needle,haystack){let at=0,gaps=0,previous=-1;for(let i=0;i<needle.length;i+=1){const found=haystack.indexOf(needle[i],at);if(found<0)return-1;if(previous>=0)gaps+=found-previous-1;previous=found;at=found+1}return Math.max(1,48-gaps-Math.max(0,haystack.length-needle.length)*.015)}
+  function fuzzyScore(item,query){const terms=normalize(query).trim().split(/\s+/).filter(Boolean);if(!terms.length)return 0;const haystack=searchable(item),name=normalize(item.name),id=normalize(item.id);let score=0;for(const term of terms){if(name===term||id===term)score+=260;else if(name.startsWith(term)||id.startsWith(term))score+=190;else{const index=haystack.indexOf(term);if(index>=0)score+=120-Math.min(index,80)*.35;else{const fuzzy=Math.max(subsequenceScore(term,name),subsequenceScore(term,id),subsequenceScore(term,haystack));if(fuzzy<0)return-1;score+=fuzzy}}}return score}
+  function activeFilters(categoryId){if(!state.filters[categoryId])state.filters[categoryId]={};return state.filters[categoryId]}
+  function filterItem(item,categoryId,applyCategoryFilters){if(state.artStatus&&item.artStatus!==state.artStatus)return false;if(!applyCategoryFilters)return true;const values=activeFilters(categoryId);return(FILTERS[categoryId]||[]).every(function(definition){const selected=values[definition.key];if(definition.type==="toggle")return!selected||Boolean(item[definition.key]);return!selected||String(item[definition.key])===String(selected)})}
+  function compareEntries(a,b,sort){if(sort==="za")return b.item.name.localeCompare(a.item.name);if(sort==="id")return a.item.id.localeCompare(b.item.id);return a.item.name.localeCompare(b.item.name)}
+  function categoryResults(categoryId,applyCategoryFilters){const query=state.query.trim();return DATA.catalogs[categoryId].map(function(item){return{item:item,score:fuzzyScore(item,query),category:categoryId}}).filter(function(entry){return entry.score>=0&&filterItem(entry.item,categoryId,applyCategoryFilters)})}
+  function currentResults(){if(scope==="all")return DATA.categories.flatMap(function(category){return categoryResults(category.id,false)}).sort(function(a,b){return b.score-a.score||a.item.name.localeCompare(b.item.name)});const values=activeFilters(state.category);return categoryResults(state.category,true).sort(function(a,b){return compareEntries(a,b,values.sort||"az")})}
+  function svgIcon(kind){const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");svg.setAttribute("viewBox","0 0 24 24");svg.setAttribute("aria-hidden","true");svg.setAttribute("fill","none");svg.setAttribute("stroke","currentColor");svg.setAttribute("stroke-width","2");svg.setAttribute("stroke-linecap","round");svg.setAttribute("stroke-linejoin","round");const add=function(name,attrs){const part=document.createElementNS(ns,name);Object.entries(attrs).forEach(function(pair){part.setAttribute(pair[0],pair[1])});svg.appendChild(part)};if(kind==="check")add("path",{d:"M5 12l4 4L19 6"});else if(kind==="hourglass")add("path",{d:"M7 3h10M7 21h10M8 3c0 5 3 5 4 9-1 4-4 4-4 9M16 3c0 5-3 5-4 9 1 4 4 4 4 9"});else if(kind==="warning")add("path",{d:"M12 3L2.8 20h18.4L12 3zM12 9v5M12 17h.01"});else add("circle",{cx:"12",cy:"12",r:"8"});return svg}
+  function statusChip(status){const value=STATUS[status]?status:"artless",chip=document.createElement("span");chip.className="status-chip "+value;chip.append(svgIcon(STATUS[value].icon),document.createTextNode(STATUS[value].label));return chip}
+  function rarityMark(rarity){const meta=RARITIES[rarity];if(!meta)return null;const wrap=document.createElement("div");wrap.className="rarity-mark rarity-"+meta.className;const label=document.createElement("span");label.textContent=rarity.toUpperCase();const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg");svg.setAttribute("viewBox","0 0 "+meta.count*15+" 14");svg.setAttribute("width",String(meta.count*15));svg.setAttribute("aria-label",meta.count+(meta.hollow?" hollow diamonds":" filled diamonds"));for(let index=0;index<meta.count;index+=1){const diamond=document.createElementNS(ns,"polygon");diamond.setAttribute("points",(index*15+7)+",1 "+(index*15+13)+",7 "+(index*15+7)+",13 "+(index*15+1)+",7");diamond.setAttribute("fill",meta.hollow?"none":"currentColor");diamond.setAttribute("stroke","currentColor");diamond.setAttribute("stroke-width","1.5");if(meta.hollow)diamond.setAttribute("stroke-dasharray","2 1");svg.appendChild(diamond)}wrap.append(label,svg);return wrap}
+  function pretty(value){return String(value||"").replace(/[-_/]+/g," ").replace(/\b\w/g,function(letter){return letter.toUpperCase()})}
+  function toast(message){const node=document.getElementById("toast");node.textContent=message;node.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){node.classList.remove("show")},1900)}
+  async function copyText(value){try{if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error("clipboard unavailable");await navigator.clipboard.writeText(value)}catch(_error){const area=document.createElement("textarea");area.value=value;area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.select();document.execCommand("copy");area.remove()}}
+  function openGame(path){window.open(DATA.gameUrl.replace(/\/$/,"")+(path||"/"),"_blank","noopener")}
+  function activateEntry(entry){if(!entry)return;const item=entry.item;if(item.action==="launch"||item.action==="closet"||item.action==="menu")openGame(item.action==="menu"?"/":item.path);else if(item.action==="audio"&&item.href)window.open(item.href,"_blank","noopener");else void copyText(item.copyId).then(function(){toast((item.unavailable||categoryById[entry.category].label+" ID")+" copied")})}
+  function button(label,className,action){const node=document.createElement("button");node.type="button";node.className="button "+className;node.textContent=label;node.addEventListener("click",action);return node}
+  function selectedEntry(){return state.results.find(function(entry){return entryKey(entry)===state.selectedKey})||null}
+  function factLabel(categoryId,index){const labels={weapons:["Family","Delivery","Grip"],gear:["Slot","Rarity","Set / pool"],bosses:["Size","Encounter","Source"],pets:["Stage","Level band","Bonus"],dimensions:["Kind","Boss","Rooms"],ultimates:["Family","Attribute","Variant"],augments:["Tag","Delivery","Stacking"],characters:["Quirk","Spread","Peak"],sounds:["Category","Duration","Takes"]};return labels[categoryId]?.[index]||"Fact "+(index+1)}
+  function renderInspector(entry){
+    const content=document.getElementById("inspectorContent");content.replaceChildren();
+    if(!entry){const empty=document.createElement("div");empty.className="empty";empty.textContent="No matches. Clear filters to restore the catalog.";content.appendChild(empty);inspector.classList.remove("closed");return}
+    const item=entry.item,category=categoryById[entry.category],eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent=category.label.slice(0,-1)+" definition";
+    const title=document.createElement("h2");title.textContent=item.name;const id=document.createElement("div");id.className="inspector-id";id.textContent=(item.idPrefix?item.idPrefix+" ":"")+item.id+(item.idSuffix?" · "+item.idSuffix:"");content.append(eyebrow,title,id,statusChip(item.artStatus));
+    if(item.rarity){const rarity=rarityMark(item.rarity);if(rarity)content.appendChild(rarity)}
+    const art=document.createElement("div");art.className="inspector-art"+(entry.category==="dimensions"?" tile":"");
+    if(item.thumb){const image=document.createElement("img");image.src=item.thumb;image.alt=item.name+" art";image.addEventListener("error",function(){image.remove();const error=document.createElement("div");error.className="art-placeholder";error.textContent="Preview failed to load. Text metadata remains available.";art.appendChild(error)});art.appendChild(image)}else{const placeholder=document.createElement("div");placeholder.className="art-placeholder";placeholder.textContent=item.artStatus==="artless"?"This definition is intentionally artless.":item.artStatus==="rendering"?"Art is still rendering.":"Expected art is unavailable.";art.appendChild(placeholder)}content.appendChild(art);
+    const facts=document.createElement("dl");facts.className="facts-list";(item.facts||[]).forEach(function(value,index){const dt=document.createElement("dt"),dd=document.createElement("dd");dt.textContent=factLabel(entry.category,index);dd.textContent=value;facts.append(dt,dd)});content.appendChild(facts);
+    if(entry.category==="gear"&&item.playerCompletableSet){const set=document.createElement("section");set.className="set-block";const heading=document.createElement("h3");heading.textContent=pretty(item.set);const summary=document.createElement("div");summary.className="mono";summary.textContent=item.setSize+"/8 defined · "+item.setArtReady+"/8 art ready";const stitches=document.createElement("div");stitches.className="set-stitches";stitches.setAttribute("aria-label",item.setArtReady+" of 8 set pieces have ready art");for(let index=0;index<8;index+=1){const stitch=document.createElement("span");stitch.className="set-stitch"+(index<item.setArtReady?" ready":"");stitches.appendChild(stitch)}const missing=document.createElement("div");missing.className="section-copy";missing.textContent=item.setMissingArt.length?"Art unavailable: "+item.setMissingArt.join(", "):"Complete eight-piece catalog pair · all art ready";set.append(heading,summary,stitches,missing);content.appendChild(set)}
+    const actions=document.createElement("div");actions.className="inspector-actions";actions.appendChild(button(item.actionLabel,"primary",function(){activateEntry(entry)}));const row=document.createElement("div");row.className="button-row";row.appendChild(button("Copy ID","secondary",function(){void copyText(item.copyId).then(function(){toast("Copied "+item.copyId)})}));if(item.path)row.appendChild(button("Copy deep link","secondary",function(){const link=DATA.gameUrl.replace(/\/$/,"")+item.path;void copyText(link).then(function(){toast("Deep link copied")})}));else row.appendChild(button("Copy name","secondary",function(){void copyText(item.name).then(function(){toast("Name copied")})}));actions.appendChild(row);content.appendChild(actions);inspector.classList.remove("closed")
+  }
+  function uniqueOptions(categoryId,key,order){const found=[...new Set(DATA.catalogs[categoryId].map(function(item){return item[key]}).filter(function(value){return value!==undefined&&value!==null&&value!==""}).map(String))];if(order){const rank=new Map(order.map(function(value,index){return[String(value),index]}));found.sort(function(a,b){return(rank.get(a)??999)-(rank.get(b)??999)||a.localeCompare(b)})}else found.sort(function(a,b){return a.localeCompare(b)});return found}
+  function makeSelect(definition,options,value,onChange){const wrap=document.createElement("label");wrap.className="select-chip";const label=document.createElement("span");label.textContent=definition.label;const select=document.createElement("select");select.setAttribute("aria-label",definition.label+" filter");if(!definition.noAll){const all=document.createElement("option");all.value="";all.textContent="All";select.appendChild(all)}options.forEach(function(optionValue){const option=document.createElement("option");option.value=optionValue.value??optionValue;option.textContent=optionValue.label??pretty(optionValue);select.appendChild(option)});select.value=value||(definition.noAll?(options[0]?.value??options[0]):"");select.addEventListener("change",function(){onChange(select.value)});wrap.append(label,select);return wrap}
+  function renderFilters(){filtersNode.replaceChildren();filtersNode.appendChild(makeSelect({label:"Art status"},Object.keys(STATUS).map(function(value){return{value:value,label:STATUS[value].label}}),state.artStatus,function(value){state.artStatus=value;savePrefs();resetAndRender()}));if(scope!=="all"){const categoryId=state.category,values=activeFilters(categoryId);(FILTERS[categoryId]||[]).forEach(function(definition){if(definition.type==="toggle"){const toggle=document.createElement("button");toggle.type="button";toggle.className="toggle-chip"+(values[definition.key]?" active":"");toggle.textContent=definition.label;toggle.setAttribute("aria-pressed",values[definition.key]?"true":"false");toggle.addEventListener("click",function(){values[definition.key]=!values[definition.key];savePrefs();resetAndRender()});filtersNode.appendChild(toggle)}else filtersNode.appendChild(makeSelect(definition,uniqueOptions(categoryId,definition.key,definition.order),values[definition.key],function(value){values[definition.key]=value;savePrefs();resetAndRender()}))});filtersNode.appendChild(makeSelect({key:"sort",label:"Sort",noAll:true},SORTS,values.sort||"az",function(value){values.sort=value;savePrefs();resetAndRender()}))}const categoryValues=scope==="all"?{}:activeFilters(state.category);const hasFilters=Boolean(state.query||state.artStatus||Object.entries(categoryValues).some(function(pair){return pair[0]!=="sort"&&Boolean(pair[1])}));if(hasFilters){const clear=document.createElement("button");clear.type="button";clear.className="clear-filters";clear.textContent="Clear";clear.addEventListener("click",clearFilters);filtersNode.appendChild(clear)}}
+  function renderNav(){const nav=document.getElementById("categoryNav");nav.replaceChildren();DATA.categories.forEach(function(category){const node=document.createElement("button");node.type="button";node.className="nav-item"+(scope!=="all"&&category.id===state.category?" active":"");node.setAttribute("aria-current",scope!=="all"&&category.id===state.category?"page":"false");node.setAttribute("aria-label",category.label+", "+category.count+" items, key "+category.key);const glyph=document.createElement("span");glyph.className="nav-glyph";glyph.textContent=category.glyph;const name=document.createElement("span");name.className="nav-name";name.textContent=category.label;const count=document.createElement("span");count.className="nav-count";count.textContent=category.count;node.append(glyph,name,count);node.addEventListener("click",function(){selectCategory(category.id)});nav.appendChild(node)})}
+  function createCard(entry,index,left,top,width){const item=entry.item,category=categoryById[entry.category],card=document.createElement("article");card.id=domId(entry);card.className="card"+(entryKey(entry)===state.selectedKey?" selected":"")+(index===state.focusIndex?" focused":"");card.setAttribute("role","option");card.setAttribute("aria-selected",entryKey(entry)===state.selectedKey?"true":"false");card.setAttribute("aria-rowindex",String(Math.floor(index/state.columns)+1));card.setAttribute("aria-colindex",String(index%state.columns+1));card.setAttribute("aria-posinset",String(index+1));card.setAttribute("aria-setsize",String(state.results.length));card.setAttribute("aria-label",item.name+". "+STATUS[item.artStatus].label+". Select to inspect.");card.style.left=left+"px";card.style.top=top+"px";card.style.width=width+"px";card.style.height=state.cardHeight+"px";const thumb=document.createElement("div");thumb.className="thumb"+(entry.category==="dimensions"?" tile":"");const glyph=document.createElement("span");glyph.className="thumb-glyph";glyph.textContent=item.glyph||category.glyph;thumb.appendChild(glyph);if(item.thumb){const image=document.createElement("img");image.src=item.thumb;image.alt="";image.loading="lazy";image.decoding="async";image.addEventListener("error",function(){image.remove()});thumb.appendChild(image)}if(scope==="all"){const badge=document.createElement("span");badge.className="card-category";badge.textContent=category.label;thumb.appendChild(badge)}const info=document.createElement("div");info.className="card-info";const title=document.createElement("div");title.className="card-name";title.textContent=item.name;title.title=item.name;const id=document.createElement("div");id.className="card-id";id.textContent=item.id+(item.idSuffix?" · "+item.idSuffix:"");const meta=document.createElement("div");meta.className="card-meta";if(item.rarity){const rarity=rarityMark(item.rarity);if(rarity)meta.appendChild(rarity)}else meta.appendChild(statusChip(item.artStatus));if(item.facts?.[0]){const fact=document.createElement("span");fact.className="fact";fact.textContent=item.facts[0];meta.appendChild(fact)}info.append(title,id,meta);card.append(thumb,info);card.addEventListener("click",function(){state.focusIndex=index;state.focusKey=entryKey(entry);state.selectedKey=entryKey(entry);viewport.focus();renderInspector(entry);renderWindow()});return card}
+  function measureGrid(){state.gap=window.innerWidth<1440?8:12;state.cardHeight=state.density==="compact"?156:196;state.rowPitch=state.cardHeight+state.gap;const width=Math.max(1,viewport.clientWidth-(window.innerWidth<1440?32:48)),target=state.density==="compact"?220:264;state.columns=Math.max(1,Math.floor((width+state.gap)/(target+state.gap)));viewport.setAttribute("aria-colcount",String(state.columns));viewport.setAttribute("aria-rowcount",String(Math.ceil(state.results.length/state.columns)))}
+  function renderWindow(){measureGrid();const rows=Math.ceil(state.results.length/state.columns);spacer.style.height=Math.max(viewport.clientHeight,rows*state.rowPitch-state.gap)+"px";windowNode.replaceChildren();if(!state.results.length){const empty=document.createElement("div");empty.className="empty";empty.style.position="absolute";empty.style.inset="0";const wrap=document.createElement("div"),strong=document.createElement("strong"),copy=document.createElement("div"),clear=button("Clear filters","secondary",clearFilters);strong.textContent="No matches";copy.textContent="Clear search and filters to restore the catalog.";clear.style.marginTop="16px";wrap.append(strong,copy,clear);empty.appendChild(wrap);windowNode.appendChild(empty);updateDebug(0);return}const overscan=2,firstRow=Math.max(0,Math.floor(viewport.scrollTop/state.rowPitch)-overscan),lastRow=Math.min(rows,Math.ceil((viewport.scrollTop+viewport.clientHeight)/state.rowPitch)+overscan),start=firstRow*state.columns,end=Math.min(state.results.length,lastRow*state.columns);if(document.activeElement===viewport&&(state.focusIndex<start||state.focusIndex>=end)){state.focusIndex=Math.min(state.results.length-1,start);state.focusKey=entryKey(state.results[state.focusIndex])}const available=viewport.clientWidth-(window.innerWidth<1440?32:48),columnWidth=(available-state.gap*(state.columns-1))/state.columns,fragment=document.createDocumentFragment();for(let index=start;index<end;index+=1){const row=Math.floor(index/state.columns),column=index%state.columns;fragment.appendChild(createCard(state.results[index],index,column*(columnWidth+state.gap),row*state.rowPitch,columnWidth))}windowNode.appendChild(fragment);const active=state.results[state.focusIndex];if(active)viewport.setAttribute("aria-activedescendant",domId(active));updateDebug(end-start)}
+  function updateDebug(mountedCards){window.__PORTAL_DEBUG__={scope:scope,category:state.category,query:state.query,visible:state.results.length,mountedCards:mountedCards,columns:state.columns,selected:state.selectedKey,totals:Object.fromEntries(DATA.categories.map(function(category){return[category.id,category.count]}))}}
+  function syncSelection(){let selectedIndex=state.results.findIndex(function(entry){return entryKey(entry)===state.selectedKey});if(selectedIndex<0){selectedIndex=0;state.selectedKey=state.results[0]?entryKey(state.results[0]):""}const focusIndex=state.results.findIndex(function(entry){return entryKey(entry)===state.focusKey});state.focusIndex=focusIndex>=0?focusIndex:Math.max(0,selectedIndex);state.focusKey=state.results[state.focusIndex]?entryKey(state.results[state.focusIndex]):""}
+  function render(){state.results=currentResults();syncSelection();document.body.classList.toggle("compact",state.density==="compact");document.querySelectorAll("[data-density]").forEach(function(node){const active=node.dataset.density===state.density;node.classList.toggle("active",active);node.setAttribute("aria-pressed",active?"true":"false")});renderNav();renderFilters();const activeCategory=categoryById[state.category],total=scope==="all"?DATA.categories.reduce(function(sum,category){return sum+category.count},0):activeCategory.count;document.getElementById("resultCount").textContent=state.results.length+" / "+total;document.getElementById("eyebrow").textContent=scope==="all"?"Global fuzzy search":"Catalog "+activeCategory.key+" of "+DATA.categories.length;document.getElementById("sectionTitle").textContent=scope==="all"?"Search results":activeCategory.label;document.getElementById("sectionCopy").textContent=scope==="all"?"Matches across every generated catalog. Select a card to inspect it; launch remains a separate action.":activeCategory.description;document.getElementById("sectionStat").textContent=state.results.length===total?total+" definitions":state.results.length+" matches · "+total+" total";renderInspector(selectedEntry());renderWindow();document.documentElement.dataset.portalReady="true"}
+  function scheduleRender(){cancelAnimationFrame(renderFrame);renderFrame=requestAnimationFrame(render)}
+  function resetAndRender(){viewport.scrollTop=0;scheduleRender()}
+  function clearFilters(){search.value="";state.query="";state.artStatus="";scope=state.category;const sort=activeFilters(state.category).sort||"az";state.filters[state.category]={sort:sort};savePrefs();resetAndRender()}
+  function selectCategory(categoryId){if(!validCategories.has(categoryId))return;state.category=categoryId;state.query="";search.value="";scope=categoryId;state.selectedKey="";state.focusKey="";savePrefs();resetAndRender()}
+  function moveFocus(nextIndex,select){if(!state.results.length)return;state.focusIndex=Math.max(0,Math.min(state.results.length-1,nextIndex));const entry=state.results[state.focusIndex];state.focusKey=entryKey(entry);if(select){state.selectedKey=state.focusKey;renderInspector(entry)}const row=Math.floor(state.focusIndex/state.columns),top=row*state.rowPitch;if(top<viewport.scrollTop)viewport.scrollTop=top;else if(top+state.cardHeight>viewport.scrollTop+viewport.clientHeight)viewport.scrollTop=top+state.cardHeight-viewport.clientHeight;renderWindow()}
+  function setServiceState(service,state,label){const text=document.createElement("span");text.textContent=label;service.className="service "+state;service.replaceChildren(svgIcon(state==="connected"?"check":state==="checking"?"hourglass":"warning"),text)}
+  async function probeGame(){const service=document.getElementById("serviceState");setServiceState(service,"checking","CHECKING localhost:5180");const controller=new AbortController(),timer=setTimeout(function(){controller.abort()},2500);try{await fetch(DATA.gameUrl,{method:"HEAD",mode:"no-cors",cache:"no-store",signal:controller.signal});setServiceState(service,"connected","CONNECTED localhost:5180")}catch(_error){setServiceState(service,"offline","OFFLINE localhost:5180")}finally{clearTimeout(timer)}}
+  search.addEventListener("input",function(){state.query=search.value;scope=state.query.trim()?"all":state.category;state.selectedKey="";state.focusKey="";resetAndRender()});
+  document.querySelectorAll("[data-density]").forEach(function(node){node.addEventListener("click",function(){state.density=node.dataset.density;savePrefs();resetAndRender()})});
+  viewport.addEventListener("scroll",function(){cancelAnimationFrame(renderFrame);renderFrame=requestAnimationFrame(renderWindow)},{passive:true});
+  viewport.addEventListener("keydown",function(event){let next=state.focusIndex;if(event.key==="ArrowRight")next+=1;else if(event.key==="ArrowLeft")next-=1;else if(event.key==="ArrowDown")next+=state.columns;else if(event.key==="ArrowUp")next-=state.columns;else if(event.key==="Home")next=0;else if(event.key==="End")next=state.results.length-1;else if(event.key==="PageDown")next+=state.columns*Math.max(1,Math.floor(viewport.clientHeight/state.rowPitch));else if(event.key==="PageUp")next-=state.columns*Math.max(1,Math.floor(viewport.clientHeight/state.rowPitch));else if(event.key==="Enter"){event.preventDefault();if(event.shiftKey)activateEntry(selectedEntry());else moveFocus(state.focusIndex,true);return}else if(event.key===" "){event.preventDefault();moveFocus(state.focusIndex,true);return}else return;event.preventDefault();moveFocus(next,false)});
+  document.getElementById("closeInspector").addEventListener("click",function(){inspector.classList.add("closed");viewport.focus()});
+  document.addEventListener("keydown",function(event){const target=event.target,typing=target&&(target.matches("input,textarea,select,button")||target.isContentEditable);if(!typing&&event.key==="/"){event.preventDefault();search.focus();search.select();return}if(!typing&&event.key==="Escape"&&window.innerWidth<=1100){inspector.classList.add("closed");viewport.focus();return}if(typing||event.altKey||event.ctrlKey||event.metaKey)return;const category=DATA.categories.find(function(candidate){return candidate.key===event.key});if(category)selectCategory(category.id)});
+  new ResizeObserver(function(){renderWindow()}).observe(viewport);
+  render(); void probeGame(); setInterval(probeGame,15000);
+`;
+
+const ARMORY_PORTAL_HTML = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <title>Dimension Drifters - Dev Portal</title>
-  <style>
-    :root {
-      --bg: #080b10;
-      --rail: #0d1119;
-      --surface: #121824;
-      --surface-2: #171f2d;
-      --surface-3: #0b1018;
-      --line: #273245;
-      --line-hot: #3a5269;
-      --ink: #eef2ed;
-      --muted: #8d9aab;
-      --cyan: #42dded;
-      --cyan-soft: rgba(66, 221, 237, 0.13);
-      --ember: #ff9f43;
-      --violet: #a685ff;
-      --danger: #ff6f7d;
-      --mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-      --sans: Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-      --rail-w: 236px;
-      --card-min: 246px;
-      --card-thumb: 76px;
-      --card-pad: 13px;
-    }
-    * { box-sizing: border-box; }
-    html { background: var(--bg); scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      min-width: 320px;
-      min-height: 100vh;
-      color: var(--ink);
-      background:
-        radial-gradient(900px 620px at 88% -10%, rgba(54, 110, 132, 0.14), transparent 64%),
-        linear-gradient(135deg, rgba(255,255,255,0.015) 25%, transparent 25%) 0 0 / 24px 24px,
-        var(--bg);
-      font-family: var(--sans);
-      font-size: 14px;
-    }
-    button, input, select { font: inherit; }
-    button, select { color: inherit; }
-    button { -webkit-tap-highlight-color: transparent; }
-    .skip-link {
-      position: fixed; left: 12px; top: -60px; z-index: 100;
-      padding: 9px 13px; color: #061014; background: var(--cyan); border-radius: 7px;
-    }
-    .skip-link:focus { top: 12px; }
-    .app { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); min-height: 100vh; }
-    .rail {
-      position: sticky; top: 0; z-index: 30; align-self: start;
-      height: 100vh; min-width: 0; overflow: auto;
-      border-right: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(18, 25, 38, 0.98), rgba(9, 13, 20, 0.99));
-      padding: 18px 14px 14px;
-    }
-    .brand { display: flex; align-items: center; gap: 11px; padding: 2px 6px 18px; }
-    .brand-mark {
-      position: relative; display: grid; place-items: center; flex: 0 0 39px; height: 39px;
-      border: 1px solid rgba(66, 221, 237, 0.5); border-radius: 10px;
-      color: var(--cyan); background: linear-gradient(145deg, rgba(66,221,237,.14), rgba(166,133,255,.07));
-      box-shadow: inset 0 0 20px rgba(66,221,237,.05), 0 0 24px rgba(66,221,237,.05);
-      font: 800 12px/1 var(--mono); letter-spacing: -.1em;
-    }
-    .brand-mark::after { content: ""; position: absolute; inset: 5px; border: 1px solid rgba(255,255,255,.08); border-radius: 6px; transform: rotate(45deg); }
-    .brand-copy { min-width: 0; }
-    .brand-title { font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-    .brand-sub { margin-top: 3px; color: var(--muted); font: 10px/1.25 var(--mono); text-transform: uppercase; letter-spacing: .12em; }
-    .places { display: grid; gap: 3px; margin-bottom: 18px; }
-    .place-link {
-      min-width: 0; overflow: hidden; padding: 7px 8px; border: 1px solid transparent; border-radius: 8px;
-      color: #aeb8c5; text-decoration: none; text-overflow: ellipsis; white-space: nowrap;
-      font: 11px/1.2 var(--mono);
-    }
-    .place-link:hover, .place-link:focus-visible { color: var(--ink); border-color: #31455b; background: rgba(66,221,237,.08); outline: none; }
-    .nav-label { padding: 0 8px 7px; color: #667588; font: 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .15em; }
-    .category-nav { display: grid; gap: 3px; }
-    .nav-item {
-      width: 100%; min-width: 0; display: grid; grid-template-columns: 27px minmax(0, 1fr) auto; align-items: center; gap: 7px;
-      border: 1px solid transparent; border-radius: 9px; padding: 8px 8px;
-      color: #aeb8c5; background: transparent; text-align: left; cursor: pointer;
-      transition: color .15s ease, background .15s ease, border-color .15s ease;
-    }
-    .nav-item:hover { color: var(--ink); background: rgba(255,255,255,.035); }
-    .nav-item.active { color: var(--ink); border-color: #31455b; background: linear-gradient(90deg, rgba(66,221,237,.13), rgba(66,221,237,.025)); }
-    .nav-glyph { color: var(--cyan); font: 700 11px/25px var(--mono); text-align: center; border: 1px solid #2b3b4d; border-radius: 7px; background: #0a1018; }
-    .nav-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; font-size: 12px; }
-    .nav-count { color: #758499; font: 10px/1 var(--mono); }
-    .nav-key { display: inline-block; min-width: 16px; margin-left: 4px; padding: 2px 3px; color: #607084; border: 1px solid #273449; border-radius: 4px; font: 9px/1 var(--mono); text-align: center; }
-    .rail-footer { margin: 20px 6px 0; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.07); }
-    .game-link { display: flex; align-items: center; gap: 8px; color: #a5b3c3; text-decoration: none; font: 11px/1.2 var(--mono); }
-    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px rgba(66,221,237,.6); }
-    .rail-hint { margin-top: 9px; color: #667488; font: 10px/1.45 var(--mono); }
-    .workspace { min-width: 0; }
-    .topbar {
-      position: sticky; top: 0; z-index: 20;
-      border-bottom: 1px solid rgba(44,57,76,.92);
-      background: rgba(8, 12, 18, .91); backdrop-filter: blur(13px);
-    }
-    .topbar-main {
-      min-width: 0; display: grid; grid-template-columns: minmax(300px, 1fr) auto; align-items: center; gap: 16px;
-      padding: 15px clamp(20px, 3vw, 38px) 11px;
-    }
-    .search-wrap { position: relative; min-width: 0; }
-    .search-icon { position: absolute; left: 13px; top: 50%; translate: 0 -50%; color: #718298; font: 14px/1 var(--mono); pointer-events: none; }
-    #search {
-      width: 100%; min-width: 0; height: 42px; padding: 0 96px 0 38px;
-      color: var(--ink); caret-color: var(--cyan); outline: none;
-      border: 1px solid #2b394b; border-radius: 10px;
-      background: rgba(10,15,23,.92); box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
-    }
-    #search:focus { border-color: #3b8390; box-shadow: 0 0 0 3px rgba(66,221,237,.09); }
-    #search::placeholder { color: #66758a; }
-    .search-shortcut { position: absolute; right: 10px; top: 50%; translate: 0 -50%; padding: 4px 7px; border: 1px solid #2b394b; border-radius: 5px; color: #718096; background: #0d131d; font: 10px/1 var(--mono); }
-    .top-actions { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-    .density { display: flex; padding: 3px; border: 1px solid #29384b; border-radius: 9px; background: #0a1018; }
-    .density button { border: 0; border-radius: 6px; padding: 7px 9px; color: #718096; background: transparent; cursor: pointer; font: 10px/1 var(--mono); text-transform: uppercase; }
-    .density button.active { color: #081014; background: var(--cyan); font-weight: 800; }
-    .result-count { min-width: 112px; color: #91a0b2; font: 11px/1.2 var(--mono); text-align: right; }
-    .filters { min-height: 45px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 clamp(20px, 3vw, 38px) 11px; }
-    .filter-lead { color: #718096; font: 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; margin-right: 2px; }
-    .select-chip { position: relative; display: inline-flex; align-items: center; gap: 5px; min-width: 0; height: 29px; padding: 0 7px 0 10px; border: 1px solid #2b394b; border-radius: 999px; background: #0d141e; }
-    .select-chip span { color: #708096; font: 9px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; pointer-events: none; }
-    .select-chip select { max-width: 180px; min-width: 52px; border: 0; outline: 0; padding: 0 16px 0 0; color: #cbd4de; background: transparent; cursor: pointer; font-size: 11px; }
-    .select-chip option { color: #e8edf1; background: #111824; }
-    .toggle-chip, .clear-filters, .scope-button {
-      height: 29px; border: 1px solid #2b394b; border-radius: 999px; padding: 0 11px; color: #8c9aad; background: #0d141e; cursor: pointer; font: 10px/1 var(--mono);
-    }
-    .toggle-chip.active { color: var(--cyan); border-color: #3a6872; background: var(--cyan-soft); }
-    .clear-filters { border-color: transparent; background: transparent; }
-    .clear-filters:hover { color: var(--ink); border-color: #2b394b; }
-    .scope-note { color: #738399; font: 11px/1.3 var(--mono); }
-    .scope-button { color: var(--cyan); border-color: #31515c; background: rgba(66,221,237,.07); }
-    .content { width: 100%; max-width: 1680px; min-width: 0; padding: 27px clamp(20px, 3vw, 38px) 64px; margin: 0 auto; }
-    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
-    .eyebrow { color: var(--cyan); font: 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .18em; }
-    h1 { margin: 7px 0 0; font-size: clamp(24px, 2.4vw, 35px); line-height: 1.03; letter-spacing: -.035em; }
-    .section-copy { max-width: 620px; margin: 8px 0 0; color: #8e9bad; line-height: 1.45; }
-    .section-stat { flex: 0 0 auto; color: #738399; font: 11px/1.35 var(--mono); text-align: right; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--card-min)), 1fr)); gap: 13px; align-items: stretch; }
-    .card {
-      position: relative; min-width: 0; min-height: 104px; display: grid; grid-template-columns: var(--card-thumb) minmax(0, 1fr); gap: 13px;
-      padding: var(--card-pad); overflow: hidden; isolation: isolate;
-      border: 1px solid #263246; border-radius: 12px; outline: none;
-      background: linear-gradient(145deg, rgba(24,32,46,.97), rgba(14,20,30,.98));
-      box-shadow: 0 7px 22px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.025);
-      cursor: pointer; contain: content;
-      transition: translate .14s ease, border-color .14s ease, background .14s ease;
-    }
-    .card::after { content: ""; position: absolute; inset: auto -30px -54px auto; width: 100px; height: 100px; z-index: -1; border-radius: 50%; background: rgba(66,221,237,.035); }
-    .card:hover, .card:focus-visible { translate: 0 -2px; border-color: #3d6b76; background: linear-gradient(145deg, rgba(28,39,54,.98), rgba(15,23,34,.98)); }
-    .card:focus-visible { box-shadow: 0 0 0 3px rgba(66,221,237,.11); }
-    .thumb {
-      position: relative; width: var(--card-thumb); height: var(--card-thumb); display: grid; place-items: center; align-self: center; overflow: hidden;
-      border: 1px solid #2b384c; border-radius: 10px;
-      background:
-        linear-gradient(135deg, rgba(66,221,237,.08), transparent 55%),
-        repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 7px),
-        #0a1018;
-    }
-    .thumb-glyph { color: #486072; font: 800 25px/1 var(--mono); text-shadow: 0 0 24px rgba(66,221,237,.22); }
-    .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; padding: 5px; object-fit: contain; image-rendering: auto; }
-    .thumb.tile img { padding: 0; object-fit: cover; opacity: .86; }
-    .card-body { min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-    .card-top { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 7px; }
-    .card-name { overflow: hidden; color: #edf1ee; font-weight: 740; font-size: 13px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
-    .copy-id { width: 28px; height: 28px; margin: -5px -5px 0 0; border: 1px solid transparent; border-radius: 7px; color: #76879a; background: transparent; cursor: pointer; font: 14px/1 var(--mono); }
-    .copy-id:hover, .copy-id:focus-visible { color: var(--cyan); border-color: #32465a; background: #0b121b; outline: none; }
-    .card-id { min-width: 0; overflow: hidden; margin-top: 3px; color: #718096; font: 10px/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
-    .card-id .id-suffix { color: #a685ff; }
-    .facts { display: flex; min-width: 0; flex-wrap: wrap; gap: 4px; margin-top: 11px; }
-    .fact { max-width: 100%; overflow: hidden; padding: 3px 7px; border: 1px solid #2b394b; border-radius: 999px; color: #9ba8b7; background: #0c121b; font: 9px/1.15 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
-    .card-category { position: absolute; left: 7px; top: 7px; z-index: 2; padding: 3px 5px; color: #061014; border-radius: 5px; background: rgba(66,221,237,.86); font: 8px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
-    .empty { grid-column: 1 / -1; padding: 64px 24px; border: 1px dashed #2b394b; border-radius: 14px; color: #7f8ea2; text-align: center; }
-    .empty strong { display: block; margin-bottom: 7px; color: #c6d0d9; font-size: 15px; }
-    .no-image .thumb-glyph { color: #587185; }
-    .compact { --card-min: 211px; --card-thumb: 54px; --card-pad: 9px; }
-    .compact .card { min-height: 78px; gap: 10px; border-radius: 10px; }
-    .compact .card-name { font-size: 12px; }
-    .compact .facts { margin-top: 7px; }
-    .compact .fact:nth-child(n+3) { display: none; }
-    #toast {
-      position: fixed; left: 50%; bottom: 22px; z-index: 90; translate: -50% 14px;
-      max-width: min(520px, calc(100vw - 32px)); padding: 10px 14px;
-      border: 1px solid #3e6070; border-radius: 9px; color: #dffaff; background: rgba(12,25,34,.97);
-      box-shadow: 0 14px 34px rgba(0,0,0,.42); opacity: 0; pointer-events: none;
-      font: 11px/1.35 var(--mono); transition: opacity .16s ease, translate .16s ease;
-    }
-    #toast.show { opacity: 1; translate: -50% 0; }
-    @media (max-width: 860px) {
-      :root { --rail-w: 78px; }
-      .rail { padding-inline: 9px; }
-      .brand { justify-content: center; padding-inline: 0; }
-      .brand-copy, .nav-label, .nav-name, .nav-count, .nav-key, .rail-footer, .places { display: none; }
-      .nav-item { display: flex; justify-content: center; padding-inline: 0; }
-      .nav-glyph { width: 31px; }
-      .topbar-main { grid-template-columns: minmax(0,1fr); gap: 9px; }
-      .top-actions { justify-content: space-between; }
-      .result-count { min-width: 0; }
-    }
-    @media (max-width: 570px) {
-      :root { --rail-w: 0px; }
-      .app { display: block; }
-      .rail { position: static; width: 100%; height: auto; padding: 8px 10px; border: 0; border-bottom: 1px solid var(--line); }
-      .brand { display: none; }
-      .category-nav { display: flex; overflow-x: auto; gap: 5px; }
-      .nav-item { flex: 0 0 auto; width: 39px; }
-      .topbar { top: 0; }
-      .topbar-main, .filters, .content { padding-inline: 14px; }
-      .search-shortcut { display: none; }
-      #search { padding-right: 12px; }
-      .density button { padding-inline: 7px; }
-      .section-head { display: block; }
-      .section-stat { margin-top: 10px; text-align: left; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; }
-    }
-  </style>
+  <title>Dimension Drifters - Developer Portal</title>
+  <style>${PORTAL_STYLE}</style>
 </head>
 <body>
-  <a class="skip-link" href="#catalog">Skip to catalog</a>
+  <a class="skip-link" href="#gridViewport">Skip to catalog</a>
   <div class="app" id="app">
-    <aside class="rail" aria-label="Asset categories">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">DD</div>
-        <div class="brand-copy">
-          <div class="brand-title">Dev Portal</div>
-          <div class="brand-sub">Dimension Drifters</div>
-        </div>
-      </div>
+    <aside class="rail" aria-label="Developer navigation">
+      <div class="brand"><div class="brand-mark" aria-hidden="true">DD</div><div class="brand-copy"><div class="brand-title">Developer Portal</div><div class="brand-sub">Dimension Drifters</div></div></div>
       <div class="nav-label">Places</div>
       <nav class="places" aria-label="Developer places">
         <a class="place-link" href="http://localhost:5180/?closet=1" target="_blank" rel="noopener">Game</a>
@@ -775,544 +903,28 @@ const html = `<!doctype html>
         <a class="place-link" href="../artkit/out/gear/hat-contact-sheet.png" target="_blank" rel="noopener">Hat contact sheet</a>
       </nav>
       <div class="nav-label">Catalogs</div>
-      <nav class="category-nav" id="categoryNav"></nav>
-      <div class="rail-footer">
-        <a class="game-link" href="http://localhost:5180" target="_blank" rel="noopener">
-          <span class="status-dot" aria-hidden="true"></span><span>localhost:5180</span>
-        </a>
-        <div class="rail-hint">Keys 1-9 jump catalogs<br />/ focuses global search</div>
-      </div>
+      <nav class="category-nav" id="categoryNav" aria-label="Asset catalogs"></nav>
+      <div class="rail-footer"><div class="service checking" id="serviceState" aria-live="polite"><span>CHECKING localhost:5180</span></div><div class="rail-hint">1-9 catalogs<br />/ global search<br />Shift+Enter launch</div></div>
     </aside>
-    <div class="workspace">
-      <header class="topbar">
-        <div class="topbar-main">
-          <div class="search-wrap">
-            <span class="search-icon" aria-hidden="true">&gt;_</span>
-            <input id="search" type="search" autocomplete="off" spellcheck="false" aria-label="Search every asset catalog" placeholder="Search every asset - name, id, family, tag..." />
-            <span class="search-shortcut" aria-hidden="true">/</span>
-          </div>
-          <div class="top-actions">
-            <div class="density" role="group" aria-label="Card density">
-              <button type="button" data-density="comfortable">Comfortable</button>
-              <button type="button" data-density="compact">Compact</button>
-            </div>
-            <div class="result-count" id="resultCount" aria-live="polite"></div>
-          </div>
-        </div>
-        <div class="filters" id="filters" aria-label="Catalog filters"></div>
-      </header>
-      <main class="content" id="catalog" tabindex="-1">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow" id="eyebrow">Asset catalog</div>
-            <h1 id="sectionTitle"></h1>
-            <p class="section-copy" id="sectionCopy"></p>
-          </div>
-          <div class="section-stat" id="sectionStat"></div>
-        </div>
-        <div class="grid" id="grid"></div>
-      </main>
-    </div>
+    <header class="topbar">
+      <div class="search-wrap"><span class="search-icon" aria-hidden="true">/_</span><input id="search" type="search" autocomplete="off" spellcheck="false" aria-label="Search every asset catalog" placeholder="Search names, IDs, families, tags..." /><span class="shortcut" aria-hidden="true">/</span></div>
+      <div class="filters" id="filters" aria-label="Catalog filters"></div>
+      <div class="top-actions"><div class="density" role="group" aria-label="Card density"><button type="button" data-density="comfortable">Comfort</button><button type="button" data-density="compact">Compact</button></div><div class="result-count" id="resultCount" aria-live="polite"></div></div>
+    </header>
+    <main class="library" id="catalog">
+      <div class="library-head"><div><div class="eyebrow" id="eyebrow">Asset catalog</div><h1 id="sectionTitle"></h1><p class="section-copy" id="sectionCopy"></p></div><div class="section-stat" id="sectionStat"></div></div>
+      <div class="grid-viewport" id="gridViewport" role="grid" aria-label="Asset results" aria-rowcount="0" aria-colcount="1" tabindex="0"><div class="grid-spacer" id="gridSpacer"><div class="grid-window" id="gridWindow"></div></div></div>
+      <footer class="command-rail">Arrows navigate · Enter select · Shift+Enter launch · / search · 1-9 catalogs</footer>
+    </main>
+    <aside class="inspector" id="inspector" aria-label="Selected asset inspector"><button type="button" class="button secondary inspector-close" id="closeInspector" aria-label="Close inspector">Close</button><div id="inspectorContent"></div></aside>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script>
-    "use strict";
-    const DATA = ${embeddedData};
-    const PREF_KEY = "ddDevPortal.v2";
-    const FILTERS = {
-      weapons: [
-        { key: "family", label: "Family" },
-        { key: "delivery", label: "Delivery", order: ["melee", "gun", "thrown", "beam", "cast"] },
-        { key: "grip", label: "Grip", order: ["1H", "2H", "dual", "mounted"] },
-        { key: "rarityCapable", label: "Rarity loot", type: "toggle" },
-      ],
-      gear: [
-        { key: "slot", label: "Slot" },
-        { key: "rarity", label: "Rarity", order: ["Common", "Uncommon", "Rare", "Really Rare", "Ultimate"] },
-        { key: "set", label: "Set" },
-      ],
-      bosses: [
-        { key: "size", label: "Size", order: ["duelist", "large", "colossal"] },
-        { key: "type", label: "Type" },
-      ],
-      pets: [{ key: "stage", label: "Stage", order: ["1", "2", "3"] }, { key: "species", label: "Pet" }],
-      dimensions: [{ key: "kind", label: "Kind", order: ["dimension", "belt level"] }, { key: "boss", label: "Boss" }],
-      ultimates: [{ key: "family", label: "Family" }, { key: "variant", label: "Variant", order: ["STR", "DEX", "INT", "CON", "LUK"] }],
-      augments: [{ key: "tag", label: "Tag" }, { key: "delivery", label: "Delivery" }, { key: "stackable", label: "Stacks" }],
-      characters: [{ key: "quirk", label: "Quirk" }, { key: "peak", label: "Peak" }],
-      sounds: [{ key: "soundCategory", label: "Category" }, { key: "priority", label: "Priority" }],
-    };
-    const SORTS = [
-      { value: "az", label: "A-Z" },
-      { value: "za", label: "Z-A" },
-      { value: "id", label: "ID" },
-    ];
-    const categoryById = Object.fromEntries(DATA.categories.map(function (category) { return [category.id, category]; }));
-    const validCategories = new Set(DATA.categories.map(function (category) { return category.id; }));
-
-    function readPrefs() {
-      try { return JSON.parse(localStorage.getItem(PREF_KEY) || "{}"); }
-      catch (_error) { return {}; }
-    }
-    const saved = readPrefs();
-    const state = {
-      category: validCategories.has(saved.category) ? saved.category : DATA.categories[0].id,
-      query: typeof saved.query === "string" ? saved.query : "",
-      density: saved.density === "compact" ? "compact" : "comfortable",
-      filters: saved.filters && typeof saved.filters === "object" ? saved.filters : {},
-    };
-    let scope = state.query ? "all" : state.category;
-    let renderFrame = 0;
-    let toastTimer = 0;
-    const search = document.getElementById("search");
-    const grid = document.getElementById("grid");
-    const filters = document.getElementById("filters");
-    search.value = state.query;
-
-    function savePrefs() {
-      try { localStorage.setItem(PREF_KEY, JSON.stringify(state)); }
-      catch (_error) { /* A blocked file-origin store should not break the portal. */ }
-    }
-
-    function normalize(value) {
-      return String(value == null ? "" : value).toLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "");
-    }
-
-    function searchable(item) {
-      if (item._search) return item._search;
-      item._search = normalize([item.name, item.id, item.idSuffix, ...(item.facts || []), ...(item.keywords || [])].join(" "));
-      return item._search;
-    }
-
-    function subsequenceScore(needle, haystack) {
-      let at = 0;
-      let gaps = 0;
-      let previous = -1;
-      for (let i = 0; i < needle.length; i += 1) {
-        const found = haystack.indexOf(needle[i], at);
-        if (found < 0) return -1;
-        if (previous >= 0) gaps += found - previous - 1;
-        previous = found;
-        at = found + 1;
-      }
-      return Math.max(1, 48 - gaps - Math.max(0, haystack.length - needle.length) * 0.015);
-    }
-
-    function fuzzyScore(item, query) {
-      const terms = normalize(query).trim().split(/\\s+/).filter(Boolean);
-      if (!terms.length) return 0;
-      const haystack = searchable(item);
-      const name = normalize(item.name);
-      const id = normalize(item.id);
-      let score = 0;
-      for (const term of terms) {
-        if (name === term || id === term) score += 260;
-        else if (name.startsWith(term) || id.startsWith(term)) score += 190;
-        else {
-          const index = haystack.indexOf(term);
-          if (index >= 0) score += 120 - Math.min(index, 80) * 0.35;
-          else {
-            const fuzzy = Math.max(subsequenceScore(term, name), subsequenceScore(term, id), subsequenceScore(term, haystack));
-            if (fuzzy < 0) return -1;
-            score += fuzzy;
-          }
-        }
-      }
-      return score;
-    }
-
-    function activeFilters(categoryId) {
-      if (!state.filters[categoryId]) state.filters[categoryId] = {};
-      return state.filters[categoryId];
-    }
-
-    function filterItem(item, categoryId) {
-      const values = activeFilters(categoryId);
-      return (FILTERS[categoryId] || []).every(function (definition) {
-        const selected = values[definition.key];
-        if (definition.type === "toggle") return !selected || Boolean(item[definition.key]);
-        return !selected || String(item[definition.key]) === String(selected);
-      });
-    }
-
-    function categoryResults(categoryId, applyCategoryFilters) {
-      const query = state.query.trim();
-      return DATA.catalogs[categoryId]
-        .map(function (item) { return { item: item, score: fuzzyScore(item, query) }; })
-        .filter(function (entry) { return entry.score >= 0 && (!applyCategoryFilters || filterItem(entry.item, categoryId)); });
-    }
-
-    function compareEntries(a, b, sort) {
-      if (sort === "za") return b.item.name.localeCompare(a.item.name);
-      if (sort === "id") return a.item.id.localeCompare(b.item.id);
-      return a.item.name.localeCompare(b.item.name);
-    }
-
-    function currentResults() {
-      if (scope === "all") {
-        return DATA.categories.flatMap(function (category) {
-          return categoryResults(category.id, false).map(function (entry) { return { ...entry, category: category.id }; });
-        }).sort(function (a, b) { return b.score - a.score || a.item.name.localeCompare(b.item.name); });
-      }
-      const values = activeFilters(state.category);
-      return categoryResults(state.category, true)
-        .map(function (entry) { return { ...entry, category: state.category }; })
-        .sort(function (a, b) { return compareEntries(a, b, values.sort || "az"); });
-    }
-
-    function toast(message) {
-      const node = document.getElementById("toast");
-      node.textContent = message;
-      node.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(function () { node.classList.remove("show"); }, 1900);
-    }
-
-    async function copyText(value) {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(value);
-        else throw new Error("clipboard unavailable");
-      } catch (_error) {
-        const area = document.createElement("textarea");
-        area.value = value;
-        area.style.position = "fixed";
-        area.style.opacity = "0";
-        document.body.appendChild(area);
-        area.select();
-        document.execCommand("copy");
-        area.remove();
-      }
-    }
-
-    function openGame(path) {
-      window.open(DATA.gameUrl.replace(/\\/$/, "") + (path || "/"), "_blank", "noopener");
-    }
-
-    function activateCard(item, categoryId) {
-      if (item.action === "launch") {
-        openGame(item.path);
-        return;
-      }
-      if (item.action === "closet") {
-        openGame(item.path);
-        void copyText(item.copyId).then(function () { toast("Gear ID copied - closet unlocked in new tab"); });
-        return;
-      }
-      if (item.action === "audio" && item.href) {
-        window.open(item.href, "_blank", "noopener");
-        return;
-      }
-      if (item.action === "menu") {
-        openGame("/");
-        void copyText(item.copyId).then(function () { toast((item.unavailable || "No direct deep-link") + " - ID copied, game opened"); });
-        return;
-      }
-      void copyText(item.copyId).then(function () { toast((item.unavailable || categoryById[categoryId].label + " ID") + " copied"); });
-    }
-
-    function makeCard(entry) {
-      const item = entry.item;
-      const category = categoryById[entry.category];
-      const card = document.createElement("article");
-      card.className = "card" + (item.thumb ? "" : " no-image");
-      card.tabIndex = 0;
-      card.setAttribute("role", "link");
-      card.setAttribute("aria-label", item.name + ". " + item.actionLabel);
-      card.title = item.actionLabel;
-      card.addEventListener("click", function () { activateCard(item, entry.category); });
-      card.addEventListener("keydown", function (event) {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          activateCard(item, entry.category);
-        }
-      });
-
-      const thumb = document.createElement("div");
-      thumb.className = "thumb" + (entry.category === "dimensions" ? " tile" : "");
-      const glyph = document.createElement("span");
-      glyph.className = "thumb-glyph";
-      glyph.textContent = item.glyph || category.glyph;
-      thumb.appendChild(glyph);
-      if (item.thumb) {
-        const image = document.createElement("img");
-        image.src = item.thumb;
-        image.alt = "";
-        image.loading = "lazy";
-        image.decoding = "async";
-        image.addEventListener("error", function () { image.remove(); card.classList.add("no-image"); });
-        thumb.appendChild(image);
-      }
-      if (scope === "all") {
-        const badge = document.createElement("span");
-        badge.className = "card-category";
-        badge.textContent = category.label;
-        thumb.appendChild(badge);
-      }
-      card.appendChild(thumb);
-
-      const body = document.createElement("div");
-      body.className = "card-body";
-      const top = document.createElement("div");
-      top.className = "card-top";
-      const title = document.createElement("div");
-      title.className = "card-name";
-      title.textContent = item.name;
-      title.title = item.name;
-      const copy = document.createElement("button");
-      copy.type = "button";
-      copy.className = "copy-id";
-      copy.textContent = "⧉";
-      copy.title = "Copy ID";
-      copy.setAttribute("aria-label", "Copy " + item.name + " ID");
-      copy.addEventListener("click", function (event) {
-        event.stopPropagation();
-        void copyText(item.copyId).then(function () { toast("Copied " + item.copyId); });
-      });
-      top.append(title, copy);
-      body.appendChild(top);
-      const id = document.createElement("div");
-      id.className = "card-id";
-      id.textContent = (item.idPrefix ? item.idPrefix + " " : "") + item.id;
-      if (item.idSuffix) {
-        const suffix = document.createElement("span");
-        suffix.className = "id-suffix";
-        suffix.textContent = " · " + item.idSuffix;
-        id.appendChild(suffix);
-      }
-      body.appendChild(id);
-      const facts = document.createElement("div");
-      facts.className = "facts";
-      (item.facts || []).slice(0, 3).forEach(function (value) {
-        const fact = document.createElement("span");
-        fact.className = "fact";
-        fact.textContent = value;
-        fact.title = value;
-        facts.appendChild(fact);
-      });
-      body.appendChild(facts);
-      card.appendChild(body);
-      return card;
-    }
-
-    function uniqueOptions(categoryId, key, order) {
-      const found = [...new Set(DATA.catalogs[categoryId].map(function (item) { return item[key]; }).filter(function (value) { return value !== undefined && value !== null && value !== ""; }).map(String))];
-      if (order) {
-        const rank = new Map(order.map(function (value, index) { return [String(value), index]; }));
-        found.sort(function (a, b) { return (rank.get(a) ?? 999) - (rank.get(b) ?? 999) || a.localeCompare(b); });
-      } else found.sort(function (a, b) { return a.localeCompare(b); });
-      return found;
-    }
-
-    function makeSelect(categoryId, definition, options) {
-      const values = activeFilters(categoryId);
-      const wrap = document.createElement("label");
-      wrap.className = "select-chip";
-      const label = document.createElement("span");
-      label.textContent = definition.label;
-      const select = document.createElement("select");
-      select.setAttribute("aria-label", definition.label + " filter");
-      if (!definition.noAll) {
-        const all = document.createElement("option");
-        all.value = "";
-        all.textContent = "All";
-        select.appendChild(all);
-      }
-      options.forEach(function (value) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = definition.key === "stage" ? "Stage " + value : value;
-        select.appendChild(option);
-      });
-      if (options.includes(String(values[definition.key] ?? ""))) select.value = String(values[definition.key]);
-      else values[definition.key] = "";
-      select.addEventListener("change", function () {
-        values[definition.key] = select.value;
-        savePrefs();
-        scheduleRender();
-      });
-      wrap.append(label, select);
-      return wrap;
-    }
-
-    function renderFilters() {
-      filters.replaceChildren();
-      if (scope === "all") {
-        const note = document.createElement("span");
-        note.className = "scope-note";
-        note.textContent = "Searching all catalogs. Choose a category to compose filters.";
-        filters.appendChild(note);
-        return;
-      }
-      const categoryId = state.category;
-      const values = activeFilters(categoryId);
-      const lead = document.createElement("span");
-      lead.className = "filter-lead";
-      lead.textContent = "Filter";
-      filters.appendChild(lead);
-      (FILTERS[categoryId] || []).forEach(function (definition) {
-        if (definition.type === "toggle") {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "toggle-chip" + (values[definition.key] ? " active" : "");
-          button.textContent = definition.label;
-          button.setAttribute("aria-pressed", values[definition.key] ? "true" : "false");
-          button.addEventListener("click", function () {
-            values[definition.key] = !values[definition.key];
-            savePrefs();
-            scheduleRender();
-          });
-          filters.appendChild(button);
-        } else filters.appendChild(makeSelect(categoryId, definition, uniqueOptions(categoryId, definition.key, definition.order)));
-      });
-      filters.appendChild(makeSelect(categoryId, { key: "sort", label: "Sort", noAll: true }, SORTS.map(function (sort) { return sort.value; })));
-      const sortSelect = filters.querySelector('select[aria-label="Sort filter"]');
-      if (sortSelect) {
-        [...sortSelect.options].forEach(function (option) {
-          const sort = SORTS.find(function (candidate) { return candidate.value === option.value; });
-          if (sort) option.textContent = sort.label;
-        });
-        sortSelect.value = values.sort || "az";
-      }
-      const hasFilters = (FILTERS[categoryId] || []).some(function (definition) { return Boolean(values[definition.key]); });
-      if (hasFilters) {
-        const clear = document.createElement("button");
-        clear.type = "button";
-        clear.className = "clear-filters";
-        clear.textContent = "Clear filters";
-        clear.addEventListener("click", function () {
-          state.filters[categoryId] = { sort: values.sort || "az" };
-          savePrefs();
-          scheduleRender();
-        });
-        filters.appendChild(clear);
-      }
-      if (state.query) {
-        const all = document.createElement("button");
-        all.type = "button";
-        all.className = "scope-button";
-        all.textContent = "Search all catalogs";
-        all.addEventListener("click", function () { scope = "all"; scheduleRender(); });
-        filters.appendChild(all);
-      }
-    }
-
-    function renderNav() {
-      const nav = document.getElementById("categoryNav");
-      nav.replaceChildren();
-      DATA.categories.forEach(function (category) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "nav-item" + (scope !== "all" && category.id === state.category ? " active" : "");
-        button.dataset.category = category.id;
-        button.setAttribute("aria-current", scope !== "all" && category.id === state.category ? "page" : "false");
-        const glyph = document.createElement("span");
-        glyph.className = "nav-glyph";
-        glyph.textContent = category.glyph;
-        const name = document.createElement("span");
-        name.className = "nav-name";
-        name.textContent = category.label;
-        const trail = document.createElement("span");
-        trail.className = "nav-count";
-        trail.textContent = category.count;
-        const key = document.createElement("kbd");
-        key.className = "nav-key";
-        key.textContent = category.key;
-        trail.appendChild(key);
-        button.append(glyph, name, trail);
-        button.addEventListener("click", function () { selectCategory(category.id); });
-        nav.appendChild(button);
-      });
-    }
-
-    function selectCategory(categoryId) {
-      if (!validCategories.has(categoryId)) return;
-      state.category = categoryId;
-      scope = categoryId;
-      savePrefs();
-      window.scrollTo({ top: 0, behavior: "instant" });
-      scheduleRender();
-    }
-
-    function render() {
-      const results = currentResults();
-      const activeCategory = categoryById[state.category];
-      document.body.classList.toggle("compact", state.density === "compact");
-      document.querySelectorAll("[data-density]").forEach(function (button) {
-        const active = button.dataset.density === state.density;
-        button.classList.toggle("active", active);
-        button.setAttribute("aria-pressed", active ? "true" : "false");
-      });
-      renderNav();
-      renderFilters();
-
-      const total = scope === "all" ? DATA.categories.reduce(function (sum, category) { return sum + category.count; }, 0) : activeCategory.count;
-      document.getElementById("resultCount").textContent = results.length + " / " + total + " visible";
-      document.getElementById("eyebrow").textContent = scope === "all" ? "Global fuzzy search" : "Asset catalog " + activeCategory.key + "/" + DATA.categories.length;
-      document.getElementById("sectionTitle").textContent = scope === "all" ? "Search results" : activeCategory.label;
-      document.getElementById("sectionCopy").textContent = scope === "all"
-        ? "Matches across every generated catalog. Choose a rail category to narrow and compose its filters."
-        : activeCategory.description;
-      document.getElementById("sectionStat").textContent = results.length === total ? total + " catalog entries" : results.length + " matches · " + total + " total";
-
-      const fragment = document.createDocumentFragment();
-      if (!results.length) {
-        const empty = document.createElement("div");
-        empty.className = "empty";
-        const strong = document.createElement("strong");
-        strong.textContent = "No assets match";
-        const detail = document.createElement("span");
-        detail.textContent = "Try a shorter search or clear one of the category filters.";
-        empty.append(strong, detail);
-        fragment.appendChild(empty);
-      } else results.forEach(function (entry) { fragment.appendChild(makeCard(entry)); });
-      grid.replaceChildren(fragment);
-      document.documentElement.dataset.portalReady = "true";
-      window.__PORTAL_DEBUG__ = {
-        scope: scope,
-        category: state.category,
-        query: state.query,
-        visible: results.length,
-        totals: Object.fromEntries(DATA.categories.map(function (category) { return [category.id, category.count]; })),
-      };
-    }
-
-    function scheduleRender() {
-      cancelAnimationFrame(renderFrame);
-      renderFrame = requestAnimationFrame(render);
-    }
-
-    search.addEventListener("input", function () {
-      const wasEmpty = !state.query.trim();
-      state.query = search.value;
-      if (state.query.trim() && wasEmpty) scope = "all";
-      if (!state.query.trim() && scope === "all") scope = state.category;
-      savePrefs();
-      scheduleRender();
-    });
-    document.querySelectorAll("[data-density]").forEach(function (button) {
-      button.addEventListener("click", function () {
-        state.density = button.dataset.density;
-        savePrefs();
-        scheduleRender();
-      });
-    });
-    document.addEventListener("keydown", function (event) {
-      const target = event.target;
-      const typing = target && (target.matches("input, textarea, select") || target.isContentEditable);
-      if (!typing && event.key === "/") {
-        event.preventDefault();
-        search.focus();
-        search.select();
-        return;
-      }
-      if (typing || event.altKey || event.ctrlKey || event.metaKey) return;
-      const category = DATA.categories.find(function (candidate) { return candidate.key === event.key; });
-      if (category) selectCategory(category.id);
-    });
-    render();
-  </script>
+  <script>const DATA=${embeddedData};${PORTAL_SCRIPT}</script>
 </body>
 </html>`;
+
+
+const html = ARMORY_PORTAL_HTML;
 
 if (!isCheck) mkdirSync(here, { recursive: true });
 emit(resolve(here, "index.html"), html, "tools/portal/index.html");

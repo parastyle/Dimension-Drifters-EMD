@@ -1,19 +1,49 @@
-// Weaponsmith V2 — the painted-vs-engine authoring pipeline.
-// Per weapon, a 4-up showcase: [weapon sprite] · [painted Codex VFX] · [engine VFX] · [combined attack].
-// You author TWO prompts (what to PAINT, what the ENGINE does); they save to a file; you ping Claude,
-// who audits the painted prompt against the art rules + generates it, and builds the engine VFX from
-// the other. Each panel has an ✎ edit button → notes → saved for a redo. Guns + casters = engine-only.
-const $ = (s, r = document) => r.querySelector(s);
-const el = (h) => {
-  const d = document.createElement("div");
-  d.innerHTML = h;
-  return d.firstElementChild;
+// Weaponsmith Armory Panel - full-catalog production workspace.
+// The editor keeps exactly two persistent Phaser/WebGL previews: Engine and Combined.
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const api = async (path, options) => {
+  const response = await fetch(path, options);
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`);
+  return payload;
 };
-const api = async (p, opt) => (await fetch(p, opt)).json();
-const status = (m) => {
-  $("#status").innerHTML = m || "";
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+const pretty = (value) =>
+  String(value || "")
+    .replaceAll("generated-default", "Generated")
+    .replaceAll("bespoke-file", "Bespoke")
+    .replaceAll(/[-_/]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const ART_STATUS = {
+  ready: { label: "READY", icon: '<path d="M5 12l4 4L19 6" />' },
+  rendering: {
+    label: "ART RENDERING",
+    icon: '<path d="M7 3h10M7 21h10M8 3c0 5 3 5 4 9-1 4-4 4-4 9M16 3c0 5-3 5-4 9 1 4 4 4 4 9" />',
+  },
+  unavailable: {
+    label: "UNAVAILABLE",
+    icon: '<path d="M12 3L2.8 20h18.4L12 3zM12 9v5M12 17h.01" />',
+  },
+  artless: { label: "ARTLESS", icon: '<circle cx="12" cy="12" r="8" />' },
 };
-const esc = (s) => (s || "").replace(/</g, "&lt;");
+const iconSvg = (body) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+const statusChipHtml = (status) => {
+  const key = ART_STATUS[status] ? status : "artless";
+  return `<span class="status-chip ${key}">${iconSvg(ART_STATUS[key].icon)}${ART_STATUS[key].label}</span>`;
+};
+const assignmentLabel = (assignment) => {
+  if (assignment?.status === "bespoke-file") return "Bespoke";
+  if (assignment?.status === "generated-default") return "Generated";
+  return "None";
+};
 
 const state = {
   weapon: null,
@@ -22,28 +52,26 @@ const state = {
   rot: 0,
   displayLength: 90,
   vfxRadius: 74,
-  vfxOrigin: { x: 0, y: 0 }, // §14 authored VFX spawn offset (game px) from the weapon anchor
-  spawnAtCursor: false, // §14 spawn the VFX at the in-game cursor (greatsword-quake style) instead
-  originPlacing: false, // UI: "click the preview to place the origin" mode is active
+  vfxOrigin: { x: 0, y: 0 },
+  spawnAtCursor: false,
+  originPlacing: false,
   candidates: [],
   vfxSubject: null,
   weaponArt: null,
   engineOnly: false,
   paintedVfx: false,
-  description: "", // living "what it does" doc (Claude-maintained, user-editable)
+  description: "",
   author: { painted: "", engine: "", mechanics: "", edits: {} },
+  viewTab: "combined",
+  dirtyFields: new Set(),
 };
 
-// ---- WYSIWYG engines (Phaser/WebGL). TWO persistent instances — one for the ENGINE-only panel
-// (painted hero suppressed) and one for the COMBINED panel (painted + engine). Canvases are
-// re-parented into their panels each render so we never leak WebGL contexts. ----
-const HAVE_ENGINE = !!(window.VFXEngine && window.Phaser);
-const engines = {}; // key -> { engine, wrap }
+const HAVE_ENGINE = Boolean(window.VFXEngine && window.Phaser);
+const engines = {};
 function ensureEngine(key, heroEnabled) {
   if (!engines[key]) {
     const wrap = document.createElement("div");
     wrap.style.cssText = "position:absolute;inset:0";
-    // The Combined panel runs the ATTACK scene (drifter swings the weapon into an enemy; VFX on hit).
     const engine = window.VFXEngine.makePreview(wrap, key === "combined" ? { attack: true } : {});
     engine.setHeroEnabled(heroEnabled);
     engines[key] = { engine, wrap };
@@ -54,614 +82,758 @@ const heroUrl = () =>
   state.suite["hero-skin"]?.on && state.image && state.paintedVfx
     ? `/art/${state.vfxSubject}/${state.image}`
     : null;
-function mountPanelEngine(key, stageSel, heroEnabled) {
+function mountPanelEngine(key, stageSelector, heroEnabled) {
   if (!HAVE_ENGINE) return;
   const { engine, wrap } = ensureEngine(key, heroEnabled);
-  const stage = $(stageSel);
+  const stage = $(stageSelector);
   if (!stage) return;
   stage.appendChild(wrap);
   engine.refresh();
   engine.setHeroEnabled(heroEnabled);
   engine.setSuite(state.suite, state.rot);
-  if (engine.setVfxRadius) engine.setVfxRadius(state.vfxRadius); // §14 fixed VFX size
+  engine.setVfxRadius?.(state.vfxRadius);
   engine.setHero(heroUrl());
   if (key === "combined" && engine.setActors) {
     engine.setActors("/art/dust-ranger/candidate-1.keyed.png", "/art/dummy/candidate-1.keyed.png");
     engine.setWeaponSprite(state.weaponArt, {
-      thrown: !!state.weapon?.thrown,
+      thrown: Boolean(state.weapon?.thrown),
       displayLength: state.displayLength,
     });
   }
-  if (engine.setScatter) engine.setScatter(state.weapon?.scatter || null); // CODE-14 scatter-shot source
+  engine.setScatter?.(state.weapon?.scatter || null);
   engine.replay();
+  updateDebug();
 }
 function pushAllEngines() {
-  for (const key of Object.keys(engines)) {
-    const { engine } = engines[key];
+  for (const { engine } of Object.values(engines)) {
     engine.setSuite(state.suite, state.rot);
-    if (engine.setVfxRadius) engine.setVfxRadius(state.vfxRadius);
+    engine.setVfxRadius?.(state.vfxRadius);
     engine.setHero(heroUrl());
     engine.replay();
   }
 }
 function pushHeroAll() {
-  for (const key of Object.keys(engines)) engines[key].engine.setHero(heroUrl());
+  for (const { engine } of Object.values(engines)) engine.setHero(heroUrl());
 }
 function pushRotAll() {
-  for (const key of Object.keys(engines)) engines[key].engine.setRot(state.rot);
+  for (const { engine } of Object.values(engines)) engine.setRot(state.rot);
 }
-
-// Auto-presets are STRIPPED (V1 rethink): a weapon starts with NOTHING. Engine VFX exists only once
-// authored (Claude builds the suite from your engine prompt; saved into assignments/<weapon-id>.json).
 function defaultSuite() {
   const suite = {};
-  for (const [lid, layer] of Object.entries(window.VFXLAYERS.LAYERS)) {
+  for (const [layerId, layer] of Object.entries(window.VFXLAYERS?.LAYERS || {})) {
     const params = {};
-    for (const pp of layer.params) params[pp.key] = pp.def;
-    suite[lid] = { on: false, params };
+    for (const parameter of layer.params) params[parameter.key] = parameter.def;
+    suite[layerId] = { on: false, params };
   }
   return suite;
 }
 
-// ---- weapon list (grouped by class) ----
-const CLASS_LABEL = {
-  sword: "⚔ Swords",
-  gun: "▤ Guns",
-  launcher: "◎ Launchers",
-  staff: "✦ Staffs",
-  melee: "⚒ Melee",
-  ranged: "➹ Ranged",
-  caster: "✷ Casters",
-  weapon: "Weapons",
-};
+const FILTER_IDS = [
+  ["classFilter", "cls"],
+  ["familyFilter", "family"],
+  ["deliveryFilter", "delivery"],
+  ["gripFilter", "grip"],
+  ["elementFilter", "element"],
+  ["sourceFilter", "source"],
+];
+const ROW_HEIGHT = 68;
 let allWeapons = [];
-async function loadList() {
-  allWeapons = await api("/api/weapons");
-  renderList();
-}
+let filteredWeapons = [];
+let listFocusIndex = 0;
+let selectionRequest = 0;
+let listRenderFrame = 0;
 
-function renderList() {
-  const query = $("#weaponSearch").value.trim().toLowerCase();
-  const statusFilter = $("#assignmentFilter").value;
-  const weapons = allWeapons.filter((weapon) => {
-    const matchesQuery =
-      !query ||
-      [weapon.name, weapon.id, weapon.cls, weapon.grip, weapon.family, ...(weapon.tags || [])]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(query));
-    const matchesStatus = statusFilter === "all" || weapon.assignment?.status === statusFilter;
-    return matchesQuery && matchesStatus;
-  });
-  const list = $("#list");
-  list.innerHTML = "";
-  $("#listCount").textContent = `${weapons.length} of ${allWeapons.length} weapons`;
-  let lastCls = null;
-  for (const w of weapons) {
-    if (w.cls !== lastCls) {
-      lastCls = w.cls;
-      list.appendChild(el(`<div class="grp">${CLASS_LABEL[w.cls] || w.cls}</div>`));
-    }
-    const tags = [w.grip, w.family].filter(Boolean).join(" · ");
-    const node = el(`<div class="wp" data-id="${w.id}">
-      ${w.candidateCount ? `<span class="dot">${w.candidateCount}</span>` : ""}
-      <b>${w.name}</b><small>${tags}${w.assigned?.author?.pending ? " · ⏳" : w.assigned?.suite ? " · ✓" : ""}</small></div>`);
-    const assignment = w.assignment || { status: "none", label: "none" };
-    node.appendChild(
-      el(`<span class="assignment-badge ${assignment.status}">${assignment.label}</span>`),
+function populateFilterOptions() {
+  for (const [selectId, key] of FILTER_IDS) {
+    const select = $(`#${selectId}`);
+    const previous = select.value;
+    select.replaceChildren(new Option("All", "all"));
+    const values = [...new Set(allWeapons.map((weapon) => weapon[key]).filter(Boolean).map(String))].sort(
+      (a, b) => a.localeCompare(b),
     );
-    node.onclick = () => selectWeapon(w.id);
-    list.appendChild(node);
+    for (const value of values) select.appendChild(new Option(pretty(value), value));
+    select.value = values.includes(previous) ? previous : "all";
   }
 }
+function listMatches(weapon) {
+  const query = $("#weaponSearch").value.trim().toLowerCase();
+  const queryValues = [
+    weapon.name,
+    weapon.id,
+    weapon.cls,
+    weapon.grip,
+    weapon.family,
+    weapon.delivery,
+    weapon.element,
+    weapon.source,
+    ...(weapon.tags || []),
+  ];
+  if (query && !queryValues.filter(Boolean).some((value) => String(value).toLowerCase().includes(query)))
+    return false;
+  for (const [selectId, key] of FILTER_IDS) {
+    const selected = $(`#${selectId}`).value;
+    if (selected !== "all" && String(weapon[key]) !== selected) return false;
+  }
+  const assignment = $("#assignmentFilter").value;
+  if (assignment !== "all" && weapon.assignment?.status !== assignment) return false;
+  const art = $("#artFilter").value;
+  return art === "all" || weapon.artStatus === art;
+}
+function filterWeapons() {
+  filteredWeapons = allWeapons.filter(listMatches);
+  const selectedIndex = filteredWeapons.findIndex((weapon) => weapon.id === state.weapon?.id);
+  if (selectedIndex >= 0) listFocusIndex = selectedIndex;
+  else listFocusIndex = Math.min(listFocusIndex, Math.max(0, filteredWeapons.length - 1));
+  $("#listCount").textContent = `${filteredWeapons.length} / ${allWeapons.length}`;
+  $("#listViewport").setAttribute("aria-setsize", String(filteredWeapons.length));
+}
+function scheduleListWindow() {
+  cancelAnimationFrame(listRenderFrame);
+  listRenderFrame = requestAnimationFrame(renderListWindow);
+}
+function renderListWindow() {
+  const viewport = $("#listViewport");
+  const spacer = $("#listSpacer");
+  const windowNode = $("#listWindow");
+  spacer.style.height = `${Math.max(viewport.clientHeight, filteredWeapons.length * ROW_HEIGHT)}px`;
+  windowNode.replaceChildren();
+  if (!filteredWeapons.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = "<strong>No matches</strong><span>Clear one or more filters to restore the roster.</span>";
+    empty.style.height = `${viewport.clientHeight}px`;
+    windowNode.appendChild(empty);
+    updateDebug(0);
+    return;
+  }
+  const visibleRows = Math.ceil(viewport.clientHeight / ROW_HEIGHT);
+  const start = Math.max(0, Math.floor(viewport.scrollTop / ROW_HEIGHT) - 2);
+  const end = Math.min(filteredWeapons.length, start + Math.min(30, visibleRows + 4));
+  if (document.activeElement === viewport && (listFocusIndex < start || listFocusIndex >= end)) {
+    listFocusIndex = start;
+  }
+  const fragment = document.createDocumentFragment();
+  for (let index = start; index < end; index += 1) {
+    const weapon = filteredWeapons[index];
+    const row = document.createElement("div");
+    row.id = `weapon-option-${weapon.id}`;
+    row.className =
+      "weapon-option" +
+      (weapon.id === state.weapon?.id ? " selected" : "") +
+      (index === listFocusIndex ? " focused" : "");
+    row.style.top = `${index * ROW_HEIGHT + 2}px`;
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", weapon.id === state.weapon?.id ? "true" : "false");
+    row.setAttribute("aria-posinset", String(index + 1));
+    row.setAttribute("aria-setsize", String(filteredWeapons.length));
+    row.innerHTML = `<div><div class="weapon-name">${escapeHtml(weapon.name)}</div><div class="weapon-meta">${escapeHtml(pretty(weapon.cls))} · ${escapeHtml(pretty(weapon.family))} · ${escapeHtml(pretty(weapon.delivery))}</div></div><div class="option-chips"><span class="assignment-badge ${weapon.assignment?.status || "none"}">${assignmentLabel(weapon.assignment)}</span>${statusChipHtml(weapon.artStatus)}</div>`;
+    row.addEventListener("click", () => {
+      listFocusIndex = index;
+      void selectWeapon(weapon.id);
+      viewport.focus();
+    });
+    fragment.appendChild(row);
+  }
+  windowNode.appendChild(fragment);
+  const focused = filteredWeapons[listFocusIndex];
+  if (focused) viewport.setAttribute("aria-activedescendant", `weapon-option-${focused.id}`);
+  updateDebug(end - start);
+}
+function renderList({ ensureSelection = true } = {}) {
+  filterWeapons();
+  renderListWindow();
+  if (
+    ensureSelection &&
+    filteredWeapons.length &&
+    !filteredWeapons.some((weapon) => weapon.id === state.weapon?.id)
+  ) {
+    void selectWeapon(filteredWeapons[0].id);
+  }
+}
+async function loadList() {
+  try {
+    allWeapons = await api("/api/weapons");
+    populateFilterOptions();
+    renderList();
+  } catch (error) {
+    showStatus(`Catalog error: ${error.message}`);
+  }
+}
+function moveListFocus(nextIndex, select = false) {
+  if (!filteredWeapons.length) return;
+  listFocusIndex = Math.max(0, Math.min(filteredWeapons.length - 1, nextIndex));
+  const viewport = $("#listViewport");
+  const top = listFocusIndex * ROW_HEIGHT;
+  if (top < viewport.scrollTop) viewport.scrollTop = top;
+  else if (top + ROW_HEIGHT > viewport.scrollTop + viewport.clientHeight)
+    viewport.scrollTop = top + ROW_HEIGHT - viewport.clientHeight;
+  renderListWindow();
+  if (select) void selectWeapon(filteredWeapons[listFocusIndex].id);
+}
 
-// ---- select a weapon ----
-async function selectWeapon(id) {
-  for (const n of document.querySelectorAll(".wp")) n.classList.toggle("sel", n.dataset.id === id);
-  const w = await api(`/api/weapon/${id}`);
-  state.weapon = w;
-  const saveButton = $("#save");
-  saveButton.textContent = w.assignment?.hasFile ? "Save weapon" : "Create assignment";
-  saveButton.title = w.assignment?.hasFile
-    ? "Update this weapon's bespoke assignment file"
-    : "Create a bespoke assignment file from the values shown";
-  state.vfxSubject = w.vfxSubject;
-  state.candidates = w.candidates;
-  state.weaponArt = w.weaponArt;
-  state.engineOnly = !!w.engineOnly;
-  state.paintedVfx = !!w.paintedVfx;
-  state.displayLength = w.displayLength || 90;
-  state.vfxRadius = w.vfxRadius || 74;
-  const a = w.assigned || {};
+function resetSelectedState(weapon) {
+  state.weapon = weapon;
+  state.vfxSubject = weapon.vfxSubject;
+  state.candidates = weapon.candidates;
+  state.weaponArt = weapon.weaponArt;
+  state.engineOnly = Boolean(weapon.engineOnly);
+  state.paintedVfx = Boolean(weapon.paintedVfx);
+  state.displayLength = weapon.displayLength || 90;
+  state.vfxRadius = weapon.vfxRadius || 74;
+  const assigned = weapon.assigned || {};
   state.vfxOrigin =
-    a.vfxOrigin && typeof a.vfxOrigin.x === "number" ? { ...a.vfxOrigin } : { x: 0, y: 0 };
-  state.spawnAtCursor = !!a.spawnAtCursor;
+    assigned.vfxOrigin && typeof assigned.vfxOrigin.x === "number"
+      ? { ...assigned.vfxOrigin }
+      : { x: 0, y: 0 };
+  state.spawnAtCursor = Boolean(assigned.spawnAtCursor);
   state.originPlacing = false;
-  state.image = a.image || w.candidates[0] || null;
+  state.image = assigned.image || weapon.candidates[0] || null;
   state.suite = defaultSuite();
-  if (a.suite) {
-    for (const lid in a.suite) {
-      if (state.suite[lid]) {
-        state.suite[lid].on = a.suite[lid].on;
-        Object.assign(state.suite[lid].params, a.suite[lid].params || {});
-      }
+  if (assigned.suite) {
+    for (const layerId in assigned.suite) {
+      if (!state.suite[layerId]) continue;
+      state.suite[layerId].on = assigned.suite[layerId].on;
+      Object.assign(state.suite[layerId].params, assigned.suite[layerId].params || {});
     }
   }
-  // Painted weapons always show their painting in the Combined panel; engine layers come from the
-  // saved suite (or Claude's authoring). (Guns/casters have no painted hero.)
-  // Painted weapons show their painting in Combined — EXCEPT a scatter-cluster (CODE-14): that art is
-  // dissected into flung balls by the `magma-scatter` layer, so showing it whole as a static hero is wrong.
-  if (w.paintedVfx && !w.scatter) state.suite["hero-skin"].on = true;
-  state.rot = a.rot || 0;
-  state.description = a.description || "";
+  if (weapon.paintedVfx && !weapon.scatter && state.suite["hero-skin"])
+    state.suite["hero-skin"].on = true;
+  state.rot = assigned.rot || 0;
+  state.description = assigned.description || "";
   state.author = {
-    painted: a.author?.painted || "",
-    engine: a.author?.engine || "",
-    mechanics: a.author?.mechanics || "",
-    edits: a.author?.edits || {},
-    pending: a.author?.pending,
+    painted: assigned.author?.painted || "",
+    engine: assigned.author?.engine || "",
+    mechanics: assigned.author?.mechanics || "",
+    edits: assigned.author?.edits || {},
+    pending: assigned.author?.pending,
   };
-  renderMain(w);
-  mountPanelEngine("engine", "#stageEngine", false);
-  mountPanelEngine("combined", "#stageCombined", true);
+  state.dirtyFields.clear();
+  updateDirtyState();
+}
+async function selectWeapon(id) {
+  const request = ++selectionRequest;
+  try {
+    const weapon = await api(`/api/weapon/${encodeURIComponent(id)}`);
+    if (request !== selectionRequest) return;
+    resetSelectedState(weapon);
+    const index = filteredWeapons.findIndex((candidate) => candidate.id === id);
+    if (index >= 0) listFocusIndex = index;
+    updateHeader();
+    renderWorkspace();
+    renderList({ ensureSelection: false });
+    mountPanelEngine("engine", "#stageEngine", false);
+    mountPanelEngine("combined", "#stageCombined", true);
+    setViewTab(state.viewTab);
+  } catch (error) {
+    showStatus(`Selection error: ${error.message}`);
+  }
 }
 
-function renderMain(w) {
-  const eo = state.engineOnly;
-  const paintedPanel = eo
-    ? `<div class="ph">Engine-only class<br><span class="muted">(${w.cls} — no painted VFX for now)</span></div>`
-    : state.paintedVfx && state.image
-      ? `<img id="paintedImg" src="/art/${state.vfxSubject}/${state.image}" />`
-      : `<div class="ph">No painted VFX yet —<br>write the <b>Painted</b> prompt below + Save, then ping Claude.</div>`;
+function showStatus(message, timeout = 0) {
+  $("#status").textContent = message || "";
+  if (timeout) setTimeout(() => $("#status") && ($("#status").textContent = ""), timeout);
+}
+function updateHeader() {
+  const weapon = state.weapon;
+  $("#selectedHeader").textContent = weapon ? `${weapon.id} · ${ART_STATUS[weapon.artStatus]?.label || "ARTLESS"}` : "No selection";
+  $("#save").disabled = !weapon;
+  $("#launchSelected").disabled = !weapon;
+  if (weapon) {
+    $("#save").textContent = weapon.assignment?.hasFile ? "Save weapon" : "Create assignment";
+    $("#launchSelected").title = `Open ${weapon.name} in Testing Grounds`;
+  }
+}
+function markDirty(field) {
+  state.dirtyFields.add(field);
+  updateDirtyState();
+}
+function clearDirty(...fields) {
+  for (const field of fields) state.dirtyFields.delete(field);
+  updateDirtyState();
+}
+function updateDirtyState() {
+  const node = $("#dirtyState");
+  if (!node) return;
+  const dirty = state.dirtyFields.size > 0;
+  node.className = `dirty-state ${dirty ? "dirty" : "saved"}`;
+  node.textContent = dirty ? `${state.dirtyFields.size} unsaved` : "Saved";
+}
 
-  $("#main").innerHTML = `
-    <div class="row" style="align-items:center;justify-content:space-between">
-      <div><h1 style="margin:0;font-size:18px">${w.name} ${eo ? '<span class="muted" style="font-size:12px">· engine-only</span>' : ""}</h1>
-        <div class="stats" style="margin-top:6px">
-          <span>${w.cls} · ${w.grip}</span><span>dmg <b>${w.damage ?? "—"}</b></span><span>cd <b>${w.cooldown ?? "—"}s</b></span>
-          <span class="muted">${state.paintedVfx ? `painted: ${w.vfxSubject}` : "no painted subject"}</span>
-          ${state.author.pending ? '<span class="pending">⏳ awaiting Claude</span>' : ""}</div></div>
-    </div>
-
-    <div class="showcase3">
-      ${panel("weapon", "Weapon", state.weaponArt ? `<img src="${state.weaponArt}" />` : `<div class="ph">no sprite</div>`)}
-      ${panel("painted", "Painted VFX", paintedPanel)}
-      ${panel("engine", "Engine VFX", `<div class="stage" id="stageEngine"></div>`)}
-    </div>
-
-    <div class="abox ${eo ? "disabled" : ""}" style="margin-top:10px">
-      <h3>① Painted VFX — your words</h3>
-      <div class="hint">${eo ? "Disabled for this class (engine-only)." : "Describe the EFFECT to paint (not the weapon). Claude audits it against the art rules (faces right · no baked particles/glow · simple flat-cel · uses the weapon as reference · doesn't draw the weapon) before generating."}</div>
-      <textarea id="aPainted" ${eo ? "disabled" : ""} placeholder="e.g. a short, brutal rusty cleave-gash arc, chunky, a few orange sparks…">${esc(state.author.painted)}</textarea>
-    </div>
-
-    <div class="enginework">
-      <div class="ework-left panel">
-        <div class="ptitle"><span>Combined · attack</span><span class="sp"></span><button data-edit="combined">✎ edit</button></div>
-        <div class="pbody" id="combinedBody"><div class="stage" id="stageCombined"></div>
-          <div id="originOverlay" class="originoverlay"></div>
-          <div id="originMark" class="originmark"></div></div>
-        <div class="pedit" data-pedit="combined">
-          <textarea placeholder="What's wrong with the combined attack?">${esc(state.author.edits?.combined || "")}</textarea>
-          <div class="erow"><button data-savepanel="combined" class="primary">Save note</button><span class="muted" data-panelstatus="combined"></span></div>
+function paintedView() {
+  if (state.engineOnly)
+    return '<div class="preview-placeholder">ARTLESS · this engine-only definition intentionally has no Painted VFX asset.</div>';
+  if (state.paintedVfx && state.image)
+    return `<img id="paintedImg" src="/art/${escapeHtml(state.vfxSubject)}/${escapeHtml(state.image)}" alt="Selected Painted VFX" />`;
+  if (state.weapon?.artStatus === "rendering")
+    return '<div class="preview-placeholder">ART RENDERING · the requested Painted VFX is still in flight.</div>';
+  if (state.weapon?.artStatus === "unavailable")
+    return '<div class="preview-placeholder">UNAVAILABLE · a promised Painted VFX asset could not be loaded.</div>';
+  return '<div class="preview-placeholder">ARTLESS · no Painted VFX has been requested for this definition.</div>';
+}
+function renderStudio() {
+  const weapon = state.weapon;
+  $("#studio").innerHTML = `
+    <div class="studio-heading"><div><div class="eyebrow">Dominant live preview</div><h2>${escapeHtml(weapon.name)}</h2></div>${statusChipHtml(weapon.artStatus)}</div>
+    <div class="preview-shell">
+      <div>
+        <div class="view-tabs" role="tablist" aria-label="Preview view">
+          ${["weapon", "painted", "engine", "combined"].map((tab) => `<button type="button" class="view-tab" data-view-tab="${tab}" role="tab">${pretty(tab)}</button>`).join("")}
         </div>
-        <div class="rotrow" style="padding:7px 9px 2px">
-          <button id="replay">↻ Replay</button>
-          <span class="muted" style="margin-left:6px">Rotate painted:</span>
-          <button id="rotL">⟲</button><span id="rotVal" class="rotval">${state.rot}°</span><button id="rotR">⟳</button><button id="rot0">0</button>
-        </div>
-        <div class="rotrow" style="padding:0 9px 4px">
-          <span class="muted" title="§10 displayLength — the weapon's in-game on-screen size">Weapon size:</span>
-          <input id="wsize" type="range" min="40" max="360" step="5" value="${state.displayLength}" style="flex:1;accent-color:var(--rust)"/>
-          <span id="wsizeVal" class="rotval">${state.displayLength}</span>
-          <label class="muted" title="§10 delivery — RMB hurls a spinning projectile instead of a melee swing" style="display:flex;align-items:center;gap:4px;margin-left:10px">
-            <input id="wthrown" type="checkbox" ${state.weapon?.thrown ? "checked" : ""}/>Thrown</label>
-        </div>
-        <div class="rotrow" style="padding:0 9px 8px">
-          <span class="muted" title="§14 fixed VFX/AoE size (px) — static per weapon, NEVER scaled by level/stat/augment">VFX size:</span>
-          <input id="vfxsize" type="range" min="40" max="200" step="2" value="${state.vfxRadius}" style="flex:1;accent-color:var(--gold)"/>
-          <span id="vfxsizeVal" class="rotval">${state.vfxRadius}</span>
-        </div>
-        <div class="rotrow" style="padding:0 9px 8px;flex-wrap:wrap">
-          <span class="muted" title="§14 where this weapon's VFX spawns — click ⌖ then click the preview to place the origin">VFX origin:</span>
-          <button id="originPick" type="button">⌖ place</button>
-          <span id="originVal" class="rotval" style="min-width:64px">${state.vfxOrigin.x},${state.vfxOrigin.y}</span>
-          <button id="originReset" type="button">reset</button>
-          <label class="muted" title="§14 spawn the VFX at the IN-GAME cursor (like the greatsword quake) instead of at the weapon" style="display:flex;align-items:center;gap:4px;margin-left:8px">
-            <input id="spawnCursor" type="checkbox" ${state.spawnAtCursor ? "checked" : ""}/>at cursor</label>
-        </div>
-      </div>
-      <div class="ework-right">
-        <div class="abox">
-          <h3>② Engine VFX — your words</h3>
-          <div class="hint">Describe the engine MOTION (sparks, dust, muzzle flash, bullets, impact, glow, how it enters/exits). Claude turns your words into the in-world VFX.</div>
-          <textarea id="aEngine" placeholder="e.g. on hit, a burst of orange sparks + a quick dust puff + a small white flash, no grow-in…">${esc(state.author.engine)}</textarea>
-          <div style="margin-top:8px"><button id="saveAuthor" class="primary">Save &amp; request Claude</button> <span id="authorStatus" class="muted"></span></div>
-        </div>
-        <div class="abox" style="margin-top:12px">
-          <h3>③ Abilities &amp; Mechanics</h3>
-          <div class="hint">What the weapon DOES (not how it looks). Claude keeps the description current as it builds behavior; tell it what to make happen and it implements the mechanic (server + VFX). Per §14, abilities scale DAMAGE but never size/AoE.</div>
-          <label class="alabel">Description — what it does <span class="muted">(editable · Claude keeps this in sync)</span></label>
-          <textarea id="aDesc" placeholder="(empty — Claude fills this in as the weapon's behavior is built)">${esc(state.description)}</textarea>
-          <div style="margin:6px 0 12px"><button id="saveDesc">💾 Save description</button> <span id="descStatus" class="muted"></span></div>
-          <label class="alabel">Make it happen — notes for Claude</label>
-          <textarea id="aMech" placeholder="e.g. the meteors from Wyrmtooth need to explode on impact — small fiery AoE that also damages nearby enemies…">${esc(state.author.mechanics || "")}</textarea>
-          <div style="margin-top:8px"><button id="saveMech" class="primary">Save &amp; request Claude</button> <span id="mechStatus" class="muted"></span></div>
+        <div class="preview-square">
+          <div class="view-surface" data-view-surface="weapon">${state.weaponArt ? `<img src="${escapeHtml(state.weaponArt)}" alt="${escapeHtml(weapon.name)} weapon sprite" />` : '<div class="preview-placeholder">UNAVAILABLE · weapon sprite could not be loaded.</div>'}</div>
+          <div class="view-surface" data-view-surface="painted">${paintedView()}</div>
+          <div class="view-surface" data-view-surface="engine"><div class="stage" id="stageEngine"></div></div>
+          <div class="view-surface" data-view-surface="combined"><div class="stage" id="stageCombined"></div><div id="originOverlay" class="originoverlay"></div><div id="originMark" class="originmark"></div></div>
+          <div class="preview-toolbar"><button type="button" class="button" id="replay">Replay · Q</button><button type="button" class="button" id="rotateLeft">Rotate -15°</button><span id="rotVal" class="metric">${state.rot}°</span><button type="button" class="button" id="rotateRight">Rotate +15°</button></div>
         </div>
       </div>
     </div>
+    <div class="reference-strip" aria-label="Reference thumbnails">
+      <button type="button" class="reference-card" data-reference="weapon"><span class="reference-thumb">${state.weaponArt ? `<img src="${escapeHtml(state.weaponArt)}" alt="" />` : "No art"}</span><span><span class="reference-title">Weapon</span><span class="hint">Installed game sprite</span></span></button>
+      <button type="button" class="reference-card" data-reference="painted"><span class="reference-thumb">${state.paintedVfx && state.image ? `<img src="/art/${escapeHtml(state.vfxSubject)}/${escapeHtml(state.image)}" alt="" />` : ART_STATUS[state.weapon.artStatus]?.label || "ARTLESS"}</span><span><span class="reference-title">Painted</span><span class="hint">Selected candidate</span></span></button>
+      <button type="button" class="reference-card" data-reference="engine"><span class="reference-thumb">VFX</span><span><span class="reference-title">Engine</span><span class="hint">Persistent live context</span></span></button>
+    </div>`;
+  wireStudio();
+}
+function setViewTab(tab) {
+  state.viewTab = ["weapon", "painted", "engine", "combined"].includes(tab) ? tab : "combined";
+  $$(`[data-view-tab]`).forEach((button) => {
+    const active = button.dataset.viewTab === state.viewTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+    button.tabIndex = active ? 0 : -1;
+  });
+  $$(`[data-view-surface]`).forEach((surface) =>
+    surface.classList.toggle("active", surface.dataset.viewSurface === state.viewTab),
+  );
+  $$(`[data-reference]`).forEach((button) =>
+    button.classList.toggle("active", button.dataset.reference === state.viewTab),
+  );
+  requestAnimationFrame(() => {
+    if (state.viewTab === "engine") engines.engine?.engine.refresh();
+    if (state.viewTab === "combined") engines.combined?.engine.refresh();
+  });
+}
+function stepRotation(delta) {
+  state.rot = (((state.rot + delta) % 360) + 360) % 360;
+  $("#rotVal").textContent = `${state.rot}°`;
+  $("#rotationValue") && ($("#rotationValue").textContent = `${state.rot}°`);
+  pushRotAll();
+  markDirty("rotation");
+}
+function wireStudio() {
+  $$(`[data-view-tab]`).forEach((button) => (button.onclick = () => setViewTab(button.dataset.viewTab)));
+  $$(`[data-reference]`).forEach((button) => (button.onclick = () => setViewTab(button.dataset.reference)));
+  $("#replay").onclick = pushAllEngines;
+  $("#rotateLeft").onclick = () => stepRotation(-15);
+  $("#rotateRight").onclick = () => stepRotation(15);
+}
 
-    <details class="adv">
-      <summary>Painted candidates / reroll ${eo ? "(n/a)" : ""}</summary>
-      <div class="cands" id="cands" style="margin-top:8px"></div>
-      <div class="reroll" ${eo ? 'style="display:none"' : ""}>
-        <div class="muted" style="margin-bottom:6px">Reroll the painted candidates (Codex):</div>
-        <textarea id="prompt" rows="2">${esc(w.prompt)}</textarea>
-        <div style="margin-top:8px"><button id="reroll" class="primary">⟳ Reroll 3</button> <span id="rerollStatus" class="muted"></span></div>
-        <pre class="log" id="rerollLog"></pre>
-      </div>
-    </details>
-  `;
+function renderInspector() {
+  const weapon = state.weapon;
+  const assignment = weapon.assignment || { status: "none", hasFile: false };
+  $("#inspector").innerHTML = `
+    <div class="inspector-header"><div class="eyebrow">Selected definition</div><h2>${escapeHtml(weapon.name)}</h2><div class="inspector-id">${escapeHtml(weapon.id)}</div>${statusChipHtml(weapon.artStatus)}</div>
+    <details class="accordion" open><summary>Overview</summary><div class="accordion-body"><dl class="facts-list"><dt>Class</dt><dd>${escapeHtml(pretty(weapon.cls))}</dd><dt>Family</dt><dd>${escapeHtml(pretty(weapon.family))}</dd><dt>Delivery</dt><dd>${escapeHtml(pretty(weapon.delivery))}</dd><dt>Grip</dt><dd>${escapeHtml(pretty(weapon.grip))}</dd><dt>Element</dt><dd>${escapeHtml(pretty(weapon.element))}</dd><dt>Source</dt><dd>${escapeHtml(pretty(weapon.source))}</dd><dt>Damage</dt><dd>${weapon.damage ?? "—"}</dd><dt>Cooldown</dt><dd>${weapon.cooldown ?? "—"}s</dd></dl></div></details>
+    <details class="accordion" open><summary>Assignment</summary><div class="accordion-body"><div class="control-row"><span id="selectedAssignmentStatus" class="assignment-badge ${assignment.status}">${assignmentLabel(assignment)}</span>${assignment.hasFile ? "" : '<button type="button" id="createAssignment" class="button secondary">Create assignment</button>'}</div><div class="hint">Assignment state and art state are separate. Generated defaults are not bespoke files.</div></div></details>
+    <details class="accordion"><summary>Origin / Scale / Thrown</summary><div class="accordion-body">
+      <label class="field">Weapon size<div class="control-row"><input id="wsize" type="range" min="40" max="360" step="5" value="${state.displayLength}" /><span id="wsizeVal" class="metric">${state.displayLength}</span></div></label>
+      <label class="field">VFX size<div class="control-row"><input id="vfxsize" type="range" min="40" max="240" step="2" value="${state.vfxRadius}" /><span id="vfxsizeVal" class="metric">${state.vfxRadius}</span></div></label>
+      <div class="field">Painted rotation<div class="control-row"><button type="button" class="button" id="rotL">-15°</button><span id="rotationValue" class="metric">${state.rot}°</span><button type="button" class="button" id="rotR">+15°</button><button type="button" class="button" id="rot0">Reset</button></div></div>
+      <div class="field">VFX origin<div class="control-row"><button type="button" class="button" id="originPick">Place on Combined</button><span id="originVal" class="metric">${state.vfxOrigin.x},${state.vfxOrigin.y}</span><button type="button" class="button" id="originReset">Reset</button></div></div>
+      <label class="control-row"><input id="wthrown" type="checkbox" ${weapon.thrown ? "checked" : ""} /> Thrown delivery</label>
+      <label class="control-row"><input id="spawnCursor" type="checkbox" ${state.spawnAtCursor ? "checked" : ""} /> Spawn VFX at cursor</label>
+    </div></details>
+    <details class="accordion"><summary>Prompt</summary><div class="accordion-body">
+      <label class="field">Painted VFX prompt<textarea id="aPainted" ${state.engineOnly ? "disabled" : ""} placeholder="Describe the effect to paint, not the weapon.">${escapeHtml(state.author.painted)}</textarea></label>
+      <label class="field">Engine VFX prompt<textarea id="aEngine" placeholder="Describe motion, particles, timing, and impact.">${escapeHtml(state.author.engine)}</textarea></label>
+      <div class="control-row"><button type="button" id="saveAuthor" class="button primary">Save prompts & request</button><span id="authorStatus" class="hint"></span></div>
+      <label class="field">Description<textarea id="aDesc" placeholder="Living description of what this weapon does.">${escapeHtml(state.description)}</textarea></label>
+      <div class="control-row"><button type="button" id="saveDesc" class="button secondary">Save description</button><span id="descStatus" class="hint"></span></div>
+      <label class="field">Abilities and mechanics request<textarea id="aMech" placeholder="Describe behavior to implement.">${escapeHtml(state.author.mechanics)}</textarea></label>
+      <div class="control-row"><button type="button" id="saveMech" class="button primary">Save mechanics & request</button><span id="mechStatus" class="hint"></span></div>
+      ${["weapon", "painted", "engine", "combined"].map((key) => `<label class="field">${pretty(key)} review note<textarea data-edit-note="${key}" placeholder="What should change in this view?">${escapeHtml(state.author.edits?.[key] || "")}</textarea><span><button type="button" class="button secondary" data-savepanel="${key}">Save ${pretty(key)} note</button> <span class="hint" data-panelstatus="${key}"></span></span></label>`).join("")}
+    </div></details>
+    <details class="accordion"><summary>Candidate history</summary><div class="accordion-body"><div id="cands" class="candidate-grid"></div>${state.engineOnly ? '<div class="hint">Painted candidates are intentionally disabled for this engine-only class.</div>' : `<label class="field">Reroll prompt<textarea id="prompt">${escapeHtml(weapon.prompt)}</textarea></label><div class="control-row"><button type="button" id="reroll" class="button primary">Reroll 3 candidates</button><span id="rerollStatus" class="hint"></span></div><pre class="log" id="rerollLog" hidden></pre>`}</div></details>
+    <div class="inspector-actions"><button type="button" id="inspectorLaunch" class="button secondary">Open in Testing Grounds</button><button type="button" id="inspectorSave" class="button primary">${assignment.hasFile ? "Save weapon" : "Create assignment"}</button></div>`;
+  renderCandidates();
+  wireInspector();
+}
+function renderWorkspace() {
+  renderStudio();
+  renderInspector();
+}
 
-  const assignment = w.assignment || { status: "none", label: "none", hasFile: false };
-  const assignmentAction = el(`<div style="display:flex;align-items:center;gap:8px">
-    <span class="assignment-badge ${assignment.status}" id="selectedAssignmentStatus">${assignment.label}</span>
-    ${assignment.hasFile ? "" : '<button type="button" id="createAssignment">Create assignment</button>'}
-  </div>`);
-  $("#main .row").appendChild(assignmentAction);
-  const createAssignment = $("#createAssignment");
-  if (createAssignment) createAssignment.onclick = () => $("#save").click();
-
-  if (!eo) renderCandidates();
-  wirePanelEdits();
-  $("#replay").onclick = () => pushAllEngines();
-  $("#rotL").onclick = () => stepRot(-15);
-  $("#rotR").onclick = () => stepRot(15);
+function wireInspector() {
+  $("#createAssignment") && ($("#createAssignment").onclick = saveAll);
+  $("#inspectorLaunch").onclick = launchSelected;
+  $("#inspectorSave").onclick = saveAll;
+  $("#rotL").onclick = () => stepRotation(-15);
+  $("#rotR").onclick = () => stepRotation(15);
   $("#rot0").onclick = () => {
     state.rot = 0;
+    $("#rotationValue").textContent = "0°";
     $("#rotVal").textContent = "0°";
     pushRotAll();
+    markDirty("rotation");
   };
-  const ws = $("#wsize");
-  if (ws) {
-    ws.oninput = (e) => {
-      state.displayLength = +e.target.value;
-      $("#wsizeVal").textContent = state.displayLength;
-      engines.combined?.engine?.setWeaponSprite(state.weaponArt, {
-        thrown: !!state.weapon?.thrown,
-        displayLength: state.displayLength,
-      });
-    };
-    ws.onchange = saveSize; // persist on release
-  }
-  const wt = $("#wthrown");
-  if (wt) {
-    wt.onchange = (e) => {
-      state.weapon.thrown = e.target.checked;
-      engines.combined?.engine?.setWeaponSprite(state.weaponArt, {
-        thrown: !!state.weapon.thrown,
-        displayLength: state.displayLength,
-      });
-      api("/api/save", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ weaponId: state.weapon.id, thrown: e.target.checked }),
-      });
-    };
-  }
-  const vs = $("#vfxsize");
-  if (vs) {
-    vs.oninput = (e) => {
-      state.vfxRadius = +e.target.value;
-      $("#vfxsizeVal").textContent = state.vfxRadius;
-      for (const k of Object.keys(engines)) engines[k].engine.setVfxRadius?.(state.vfxRadius);
-    };
-    vs.onchange = saveVfxRadius; // persist on release
-  }
-  wireOrigin(); // §14 VFX-origin picker (click-to-place + at-cursor)
-  const aPainted = $("#aPainted");
-  if (aPainted) aPainted.oninput = (e) => (state.author.painted = e.target.value);
-  $("#aEngine").oninput = (e) => (state.author.engine = e.target.value);
+  const weaponSize = $("#wsize");
+  weaponSize.oninput = (event) => {
+    state.displayLength = Number(event.target.value);
+    $("#wsizeVal").textContent = state.displayLength;
+    engines.combined?.engine.setWeaponSprite(state.weaponArt, {
+      thrown: Boolean(state.weapon?.thrown),
+      displayLength: state.displayLength,
+    });
+    markDirty("weapon size");
+  };
+  weaponSize.onchange = saveSize;
+  const vfxSize = $("#vfxsize");
+  vfxSize.oninput = (event) => {
+    state.vfxRadius = Number(event.target.value);
+    $("#vfxsizeVal").textContent = state.vfxRadius;
+    for (const { engine } of Object.values(engines)) engine.setVfxRadius?.(state.vfxRadius);
+    markDirty("VFX size");
+  };
+  vfxSize.onchange = saveVfxRadius;
+  $("#wthrown").onchange = async (event) => {
+    state.weapon.thrown = event.target.checked;
+    engines.combined?.engine.setWeaponSprite(state.weaponArt, {
+      thrown: Boolean(state.weapon.thrown),
+      displayLength: state.displayLength,
+    });
+    await saveFields({ thrown: event.target.checked });
+  };
+  wireOrigin();
+  $("#aPainted") &&
+    ($("#aPainted").oninput = (event) => {
+      state.author.painted = event.target.value;
+      markDirty("painted prompt");
+    });
+  $("#aEngine").oninput = (event) => {
+    state.author.engine = event.target.value;
+    markDirty("engine prompt");
+  };
+  $("#aDesc").oninput = (event) => {
+    state.description = event.target.value;
+    markDirty("description");
+  };
+  $("#aMech").oninput = (event) => {
+    state.author.mechanics = event.target.value;
+    markDirty("mechanics");
+  };
   $("#saveAuthor").onclick = saveAuthor;
-  $("#aDesc").oninput = (e) => (state.description = e.target.value);
-  $("#aMech").oninput = (e) => (state.author.mechanics = e.target.value);
   $("#saveDesc").onclick = saveDescription;
   $("#saveMech").onclick = saveMechanics;
-  const rr = $("#reroll");
-  if (rr) rr.onclick = doReroll;
-}
-
-function panel(key, title, inner) {
-  return `<div class="panel" data-panel="${key}">
-    <div class="ptitle"><span>${title}</span><span class="sp"></span><button data-edit="${key}">✎ edit</button></div>
-    <div class="pbody">${inner}</div>
-    <div class="pedit" data-pedit="${key}">
-      <textarea placeholder="What's wrong / what to change for the ${title.toLowerCase()}?">${esc(state.author.edits?.[key] || "")}</textarea>
-      <div class="erow"><button data-savepanel="${key}" class="primary">Save note</button><span class="muted" data-panelstatus="${key}"></span></div>
-    </div>
-  </div>`;
-}
-
-function wirePanelEdits() {
-  for (const b of document.querySelectorAll("[data-edit]")) {
-    b.onclick = () => $(`[data-pedit="${b.dataset.edit}"]`).classList.toggle("open");
-  }
-  for (const b of document.querySelectorAll("[data-savepanel]")) {
-    b.onclick = async () => {
-      const key = b.dataset.savepanel;
-      const txt = $(`[data-pedit="${key}"] textarea`).value;
-      state.author.edits[key] = txt;
-      const st = $(`[data-panelstatus="${key}"]`);
-      st.textContent = "saving…";
-      await api("/api/author", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ weaponId: state.weapon.id, edits: { [key]: txt }, pending: true }),
-      });
-      st.textContent = "✓ saved — ping Claude";
-      loadList();
+  $$(`[data-edit-note]`).forEach((textarea) => {
+    textarea.oninput = () => {
+      state.author.edits[textarea.dataset.editNote] = textarea.value;
+      markDirty(`${textarea.dataset.editNote} note`);
     };
-  }
-}
-
-async function saveAuthor() {
-  if (!state.weapon) return;
-  $("#authorStatus").innerHTML = `<span class="spin"></span> saving…`;
-  await api("/api/author", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      weaponId: state.weapon.id,
-      painted: state.author.painted,
-      engine: state.author.engine,
-      pending: true,
-    }),
   });
-  state.author.pending = true;
-  $("#authorStatus").textContent = "✓ saved — now tell Claude to process it";
-  loadList();
+  $$(`[data-savepanel]`).forEach((button) => (button.onclick = () => savePanelNote(button.dataset.savepanel)));
+  $("#reroll") && ($("#reroll").onclick = doReroll);
 }
 
-// Persist the living description (no pending flag — a plain doc edit, not a behavior request).
-async function saveDescription() {
-  if (!state.weapon) return;
-  $("#descStatus").textContent = "saving…";
-  await api("/api/author", {
+async function saveFields(fields) {
+  if (!state.weapon) return null;
+  const response = await api("/api/save", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ weaponId: state.weapon.id, description: state.description }),
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ weaponId: state.weapon.id, ...fields }),
   });
-  $("#descStatus").textContent = "✓ saved";
-  setTimeout(() => {
-    const s = $("#descStatus");
-    if (s) s.textContent = "";
-  }, 1500);
+  state.weapon.assigned = response.assigned;
+  state.weapon.assignment = response.assignment;
+  return response;
 }
-
-// Save the abilities/mechanics REQUEST + the current description, and flag it pending so Claude knows
-// to implement it (weapons.ts behavior block + server resolve + VFX), then update the description.
-async function saveMechanics() {
-  if (!state.weapon) return;
-  $("#mechStatus").innerHTML = `<span class="spin"></span> saving…`;
-  await api("/api/author", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      weaponId: state.weapon.id,
-      mechanics: state.author.mechanics,
-      description: state.description,
-      pending: true,
-    }),
-  });
-  state.author.pending = true;
-  $("#mechStatus").textContent = "✓ saved — now tell Claude to make it happen";
-  loadList();
-}
-
-const stepRot = (d) => {
-  state.rot = (((state.rot + d) % 360) + 360) % 360;
-  $("#rotVal").textContent = `${state.rot}°`;
-  pushRotAll();
-};
-
-// Persist the weapon size (§10 displayLength). Canonical for coded weapons lives in weapons.ts; this
-// stores the tool's authored value (ping Claude to sync it into weapons.ts when you're happy).
 async function saveSize() {
-  if (!state.weapon) return;
-  await api("/api/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ weaponId: state.weapon.id, displayLength: state.displayLength }),
-  });
-  status(`✓ size ${state.displayLength}`);
-  setTimeout(() => status(""), 1500);
+  await saveFields({ displayLength: state.displayLength });
+  clearDirty("weapon size");
+  showStatus(`Saved weapon size ${state.displayLength}`, 1600);
 }
-
-// Persist the FIXED VFX size (§14 vfxRadius, px). Static per weapon — never scaled by level/stat/augment.
-// Reaches the game after re-running `node tools/artkit/build-weapon-vfx.mjs` (bakes it into the client).
 async function saveVfxRadius() {
-  if (!state.weapon) return;
-  await api("/api/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ weaponId: state.weapon.id, vfxRadius: state.vfxRadius }),
-  });
-  status(`✓ VFX size ${state.vfxRadius}`);
-  setTimeout(() => status(""), 1500);
+  await saveFields({ vfxRadius: state.vfxRadius });
+  clearDirty("VFX size");
+  showStatus(`Saved VFX size ${state.vfxRadius}`, 1600);
 }
 
-// §14 VFX-origin picker. The Combined preview maps to ±ORIGIN_RANGE game px across its half-width, so a
-// click anywhere in the preview becomes a game-px offset from the weapon anchor (eyeballed; tune in-game).
 const ORIGIN_RANGE = 160;
 function positionOriginMark() {
-  const m = $("#originMark");
-  if (!m) return;
-  const leftPct = 50 + (state.vfxOrigin.x / ORIGIN_RANGE) * 50;
-  const topPct = 50 + (state.vfxOrigin.y / ORIGIN_RANGE) * 50;
-  m.style.left = `${leftPct}%`;
-  m.style.top = `${topPct}%`;
-  const show = state.originPlacing || state.vfxOrigin.x !== 0 || state.vfxOrigin.y !== 0;
-  m.style.display = show ? "block" : "none";
+  const mark = $("#originMark");
+  if (!mark) return;
+  mark.style.left = `${50 + (state.vfxOrigin.x / ORIGIN_RANGE) * 50}%`;
+  mark.style.top = `${50 + (state.vfxOrigin.y / ORIGIN_RANGE) * 50}%`;
+  mark.style.display =
+    state.originPlacing || state.vfxOrigin.x !== 0 || state.vfxOrigin.y !== 0 ? "block" : "none";
 }
 function setOriginPlacing(on) {
   state.originPlacing = on;
-  const ov = $("#originOverlay");
-  if (ov) ov.classList.toggle("active", on);
-  const btn = $("#originPick");
-  if (btn) btn.classList.toggle("primary", on);
+  $("#originOverlay")?.classList.toggle("active", on);
+  $("#originPick")?.classList.toggle("primary", on);
   positionOriginMark();
 }
 function wireOrigin() {
-  const ov = $("#originOverlay");
-  const pick = $("#originPick");
-  const reset = $("#originReset");
-  const cur = $("#spawnCursor");
-  if (pick) pick.onclick = () => setOriginPlacing(!state.originPlacing);
-  if (ov)
-    ov.onclick = (e) => {
-      if (!state.originPlacing) return;
-      const r = ov.getBoundingClientRect();
-      const fx = (e.clientX - r.left) / r.width - 0.5; // [-0.5, 0.5]
-      const fy = (e.clientY - r.top) / r.height - 0.5;
-      state.vfxOrigin = {
-        x: Math.round(fx * 2 * ORIGIN_RANGE),
-        y: Math.round(fy * 2 * ORIGIN_RANGE),
-      };
-      $("#originVal").textContent = `${state.vfxOrigin.x},${state.vfxOrigin.y}`;
-      setOriginPlacing(false);
-      saveVfxOrigin();
+  $("#originPick").onclick = () => {
+    setViewTab("combined");
+    setOriginPlacing(!state.originPlacing);
+  };
+  $("#originOverlay").onclick = async (event) => {
+    if (!state.originPlacing) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    state.vfxOrigin = {
+      x: Math.round(((event.clientX - rect.left) / rect.width - 0.5) * 2 * ORIGIN_RANGE),
+      y: Math.round(((event.clientY - rect.top) / rect.height - 0.5) * 2 * ORIGIN_RANGE),
     };
-  if (reset)
-    reset.onclick = () => {
-      state.vfxOrigin = { x: 0, y: 0 };
-      $("#originVal").textContent = "0,0";
-      positionOriginMark();
-      saveVfxOrigin();
-    };
-  if (cur)
-    cur.onchange = (e) => {
-      state.spawnAtCursor = e.target.checked;
-      saveVfxOrigin();
-    };
+    $("#originVal").textContent = `${state.vfxOrigin.x},${state.vfxOrigin.y}`;
+    setOriginPlacing(false);
+    await saveVfxOrigin();
+  };
+  $("#originReset").onclick = async () => {
+    state.vfxOrigin = { x: 0, y: 0 };
+    $("#originVal").textContent = "0,0";
+    positionOriginMark();
+    await saveVfxOrigin();
+  };
+  $("#spawnCursor").onchange = async (event) => {
+    state.spawnAtCursor = event.target.checked;
+    await saveVfxOrigin();
+  };
   positionOriginMark();
 }
-
-// Persist the authored VFX origin + spawn-at-cursor flag. Reaches the game after re-running
-// `node tools/artkit/build-weapon-vfx.mjs` (bakes them into weapon-vfx.generated.ts).
 async function saveVfxOrigin() {
-  if (!state.weapon) return;
-  await api("/api/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      weaponId: state.weapon.id,
-      vfxOrigin: state.vfxOrigin,
-      spawnAtCursor: state.spawnAtCursor,
-    }),
-  });
-  status(
-    `✓ origin ${state.vfxOrigin.x},${state.vfxOrigin.y}${state.spawnAtCursor ? " · at cursor" : ""}`,
+  await saveFields({ vfxOrigin: state.vfxOrigin, spawnAtCursor: state.spawnAtCursor });
+  showStatus(
+    `Saved origin ${state.vfxOrigin.x},${state.vfxOrigin.y}${state.spawnAtCursor ? " at cursor" : ""}`,
+    1600,
   );
-  setTimeout(() => status(""), 1500);
 }
 
 function renderCandidates() {
-  const c = $("#cands");
-  if (!c) return;
-  c.innerHTML = "";
+  const container = $("#cands");
+  if (!container) return;
+  container.replaceChildren();
   if (!state.candidates.length) {
-    c.innerHTML = `<div class="muted">No painted candidates yet.</div>`;
+    container.innerHTML = '<div class="hint">No Painted VFX candidates yet.</div>';
     return;
   }
   for (const file of state.candidates) {
-    const node = el(
-      `<div class="cand ${file === state.image ? "sel" : ""}"><img src="/art/${state.vfxSubject}/${file}" /><span class="tick">✓</span></div>`,
-    );
+    const node = document.createElement("button");
+    node.type = "button";
+    node.className = `cand${file === state.image ? " sel" : ""}`;
+    node.setAttribute("aria-label", `${file === state.image ? "Selected" : "Select"} candidate ${file}`);
+    node.innerHTML = `<img src="/art/${escapeHtml(state.vfxSubject)}/${escapeHtml(file)}" alt="${escapeHtml(file)}" /><span class="tick">✓</span>`;
     node.onclick = () => {
       state.image = file;
       renderCandidates();
-      const pi = $("#paintedImg");
-      if (pi) pi.src = `/art/${state.vfxSubject}/${file}`;
+      const painted = $("#paintedImg");
+      if (painted) painted.src = `/art/${state.vfxSubject}/${file}`;
       pushHeroAll();
+      markDirty("candidate");
     };
-    c.appendChild(node);
+    container.appendChild(node);
   }
 }
-
-// ---- reroll painted candidates ----
 async function doReroll() {
-  const btn = $("#reroll");
-  btn.disabled = true;
-  const prompt = $("#prompt").value;
-  $("#rerollStatus").innerHTML = `<span class="spin"></span> Codex…`;
-  $("#rerollLog").style.display = "block";
-  const { jobId, error } = await api("/api/reroll", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ weaponId: state.weapon.id, prompt, candidates: 3 }),
-  });
-  if (error) {
-    $("#rerollStatus").textContent = `error: ${error}`;
-    btn.disabled = false;
-    return;
+  const button = $("#reroll");
+  button.disabled = true;
+  $("#rerollStatus").innerHTML = '<span class="spin"></span> requesting candidates';
+  $("#rerollLog").hidden = false;
+  try {
+    const { jobId } = await api("/api/reroll", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ weaponId: state.weapon.id, prompt: $("#prompt").value, candidates: 3 }),
+    });
+    const poll = setInterval(async () => {
+      try {
+        const job = await api(`/api/job/${jobId}`);
+        $("#rerollLog").textContent = job.log || "";
+        if (job.status === "running") return;
+        clearInterval(poll);
+        button.disabled = false;
+        if (job.status === "done") {
+          state.candidates = job.candidates;
+          state.weapon.artStatus = job.candidates.length ? "ready" : "unavailable";
+          if (!state.candidates.includes(state.image)) state.image = state.candidates[0] || null;
+          $("#rerollStatus").textContent = `${job.candidates.length} candidates ready`;
+          renderWorkspace();
+          mountPanelEngine("engine", "#stageEngine", false);
+          mountPanelEngine("combined", "#stageCombined", true);
+          setViewTab(state.viewTab);
+          await loadList();
+        } else $("#rerollStatus").textContent = "Generation failed; log retained.";
+      } catch (error) {
+        clearInterval(poll);
+        button.disabled = false;
+        $("#rerollStatus").textContent = error.message;
+      }
+    }, 1500);
+  } catch (error) {
+    button.disabled = false;
+    $("#rerollStatus").textContent = error.message;
   }
-  const poll = setInterval(async () => {
-    const j = await api(`/api/job/${jobId}`);
-    $("#rerollLog").textContent = j.log || "";
-    if (j.status === "running") {
-      $("#rerollStatus").innerHTML = `<span class="spin"></span> generating…`;
-      return;
-    }
-    clearInterval(poll);
-    btn.disabled = false;
-    if (j.status === "done") {
-      state.candidates = j.candidates;
-      if (!state.candidates.includes(state.image)) state.image = state.candidates[0] || null;
-      $("#rerollStatus").textContent = `✓ ${j.candidates.length} candidates`;
-      renderCandidates();
-      const pi = $("#paintedImg");
-      if (pi && state.image) pi.src = `/art/${state.vfxSubject}/${state.image}`;
-      pushHeroAll();
-      loadList();
-    } else $("#rerollStatus").textContent = "failed — see log";
-  }, 1500);
 }
 
-// ---- save the engine suite + rotation (the authored result) ----
-$("#save").onclick = async () => {
-  if (!state.weapon) return;
-  status(`<span class="spin"></span> saving…`);
-  const suite = {};
-  for (const lid in state.suite)
-    suite[lid] = { on: state.suite[lid].on, params: state.suite[lid].params };
-  const r = await api("/api/save", {
+async function saveAuthorPayload(payload) {
+  return api("/api/author", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      weaponId: state.weapon.id,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ weaponId: state.weapon.id, ...payload }),
+  });
+}
+async function saveAuthor() {
+  $("#authorStatus").innerHTML = '<span class="spin"></span> saving';
+  await saveAuthorPayload({ painted: state.author.painted, engine: state.author.engine, pending: true });
+  state.author.pending = true;
+  clearDirty("painted prompt", "engine prompt");
+  $("#authorStatus").textContent = "Saved and requested";
+  await loadList();
+}
+async function saveDescription() {
+  $("#descStatus").textContent = "Saving...";
+  await saveAuthorPayload({ description: state.description });
+  clearDirty("description");
+  $("#descStatus").textContent = "Saved";
+}
+async function saveMechanics() {
+  $("#mechStatus").innerHTML = '<span class="spin"></span> saving';
+  await saveAuthorPayload({
+    mechanics: state.author.mechanics,
+    description: state.description,
+    pending: true,
+  });
+  state.author.pending = true;
+  clearDirty("mechanics", "description");
+  $("#mechStatus").textContent = "Saved and requested";
+  await loadList();
+}
+async function savePanelNote(key) {
+  const note = $(`[data-edit-note="${key}"]`).value;
+  state.author.edits[key] = note;
+  const output = $(`[data-panelstatus="${key}"]`);
+  output.textContent = "Saving...";
+  await saveAuthorPayload({ edits: { [key]: note }, pending: true });
+  clearDirty(`${key} note`);
+  output.textContent = "Saved and requested";
+  await loadList();
+}
+
+async function saveAll() {
+  if (!state.weapon) return;
+  showStatus("Saving weapon...");
+  $("#save").disabled = true;
+  try {
+    const suite = {};
+    for (const layerId in state.suite)
+      suite[layerId] = { on: state.suite[layerId].on, params: state.suite[layerId].params };
+    const response = await saveFields({
       image: state.image,
       suite,
       rot: state.rot,
       displayLength: state.displayLength,
       vfxRadius: state.vfxRadius,
-    }),
-  });
-  status(r.ok ? `✓ saved ${state.weapon.name}` : "save failed");
-  if (r.ok) {
-    state.weapon.assigned = r.assigned;
-    state.weapon.assignment = r.assignment;
-    $("#save").textContent = "Save weapon";
-    const assignmentBadge = $("#selectedAssignmentStatus");
-    if (assignmentBadge) {
-      assignmentBadge.className = `assignment-badge ${r.assignment.status}`;
-      assignmentBadge.textContent = r.assignment.label;
-    }
-    $("#createAssignment")?.remove();
+      thrown: Boolean(state.weapon.thrown),
+      vfxOrigin: state.vfxOrigin,
+      spawnAtCursor: state.spawnAtCursor,
+    });
+    await saveAuthorPayload({
+      painted: state.author.painted,
+      engine: state.author.engine,
+      mechanics: state.author.mechanics,
+      description: state.description,
+      edits: state.author.edits,
+    });
+    state.weapon.assigned = response.assigned;
+    state.weapon.assignment = response.assignment;
+    state.dirtyFields.clear();
+    updateDirtyState();
+    updateHeader();
+    showStatus(`Saved ${state.weapon.name}`, 2200);
+    renderInspector();
+    await loadList();
+  } catch (error) {
+    showStatus(`Save failed: ${error.message}`);
+  } finally {
+    $("#save").disabled = false;
   }
-  loadList();
-  setTimeout(() => status(""), 2500);
-};
+}
+function launchSelected() {
+  if (!state.weapon) return;
+  window.open(
+    `http://localhost:5180/?dev=weapon:${encodeURIComponent(state.weapon.id)}`,
+    "_blank",
+    "noopener",
+  );
+}
+function updateDebug(mountedRows = $("#listWindow")?.children.length || 0) {
+  window.__WEAPONSMITH_DEBUG__ = {
+    total: allWeapons.length,
+    filtered: filteredWeapons.length,
+    mountedRows,
+    selected: state.weapon?.id || null,
+    previewContexts: Object.keys(engines).length,
+    viewTab: state.viewTab,
+    dirty: [...state.dirtyFields],
+  };
+  document.documentElement.dataset.weaponsmithReady =
+    state.weapon && Object.keys(engines).length === 2 ? "true" : "loading";
+}
 
-$("#weaponSearch").addEventListener("input", renderList);
-$("#assignmentFilter").addEventListener("change", renderList);
+$("#save").onclick = saveAll;
+$("#launchSelected").onclick = launchSelected;
+for (const [selectId] of FILTER_IDS) $(`#${selectId}`).addEventListener("change", () => renderList());
+$("#assignmentFilter").addEventListener("change", () => renderList());
+$("#artFilter").addEventListener("change", () => renderList());
+$("#weaponSearch").addEventListener("input", () => renderList());
 $("#refreshList").addEventListener("click", loadList);
-loadList();
+$("#clearListFilters").addEventListener("click", () => {
+  $("#weaponSearch").value = "";
+  for (const [selectId] of FILTER_IDS) $(`#${selectId}`).value = "all";
+  $("#assignmentFilter").value = "all";
+  $("#artFilter").value = "all";
+  renderList();
+});
+$("#listViewport").addEventListener(
+  "scroll",
+  () => scheduleListWindow(),
+  { passive: true },
+);
+$("#listViewport").addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown") moveListFocus(listFocusIndex + 1);
+  else if (event.key === "ArrowUp") moveListFocus(listFocusIndex - 1);
+  else if (event.key === "Home") moveListFocus(0);
+  else if (event.key === "End") moveListFocus(filteredWeapons.length - 1);
+  else if (event.key === "PageDown")
+    moveListFocus(listFocusIndex + Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)));
+  else if (event.key === "PageUp")
+    moveListFocus(listFocusIndex - Math.max(1, Math.floor($("#listViewport").clientHeight / ROW_HEIGHT)));
+  else if (event.key === "Enter" || event.key === " ") moveListFocus(listFocusIndex, true);
+  else return;
+  event.preventDefault();
+});
+document.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const editing =
+    target &&
+    (target.matches("input, textarea, select, button") || target.isContentEditable);
+  if (editing || event.altKey || event.ctrlKey || event.metaKey) return;
+  const key = event.key.toLowerCase();
+  if (key === "z") {
+    event.preventDefault();
+    moveListFocus(listFocusIndex - 1, true);
+  } else if (key === "x") {
+    event.preventDefault();
+    moveListFocus(listFocusIndex + 1, true);
+  } else if (key === "q") {
+    event.preventDefault();
+    pushAllEngines();
+  } else if (key === "e") {
+    event.preventDefault();
+    launchSelected();
+  } else if (key === "/") {
+    event.preventDefault();
+    $("#weaponSearch").focus();
+  }
+});
+new ResizeObserver(() => renderListWindow()).observe($("#listViewport"));
+void loadList();

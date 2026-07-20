@@ -99,6 +99,7 @@ function readBaseWeaponDefs() {
         classPool: stringField(body, "classPool") ?? "weapon",
         family: stringField(body, "family") ?? "weapon",
         grip: stringField(body, "grip") ?? "1H",
+        delivery: stringField(body, "delivery"),
         element: stringField(body, "element"),
         size: stringField(body, "size"),
         rangeBand: stringField(body, "rangeBand"),
@@ -129,6 +130,8 @@ function weaponView(weapon) {
     cls: tags.classPool ?? "weapon",
     grip: tags.grip ?? (weapon.twoHanded ? "2H" : "1H"),
     family: tags.family ?? "weapon",
+    delivery: tags.delivery ?? (weapon.thrown ? "thrown" : weapon.gun ? "projectile" : "melee"),
+    element: tags.element ?? "physical",
     tags: Object.values(tags).flat().filter(Boolean),
     coded: true,
   };
@@ -220,6 +223,17 @@ function subjectPrompt(vfxSubject) {
 // --- reroll jobs (async; UI polls) ----------------------------------------------------------
 const jobs = new Map();
 let jobSeq = 0;
+
+function weaponArtState(weapon, assigned, candidateCount) {
+  const engineOnly = weapon.cls === "gun" || weapon.cls === "staff" || weapon.cls === "caster";
+  if (engineOnly) return "artless";
+  if ([...jobs.values()].some((job) => job.weaponId === weapon.id && job.status === "running"))
+    return "rendering";
+  if (assigned?.author?.pending) return "rendering";
+  if (candidateCount > 0) return "ready";
+  if (assigned?.image) return "unavailable";
+  return "artless";
+}
 
 function startReroll({ weaponId, prompt, candidates = 4 }) {
   const vfxSubject = vfxSubjectFor(weaponId);
@@ -321,10 +335,12 @@ const server = createServer(async (req, res) => {
         readWeapons().map((w) => {
           const vfx = vfxSubjectFor(w.id);
           const assigned = assignments[w.id] || null;
+          const candidateCount = listCandidates(vfx).length;
           return {
             ...w,
             vfxSubject: vfx,
-            candidateCount: listCandidates(vfx).length,
+            candidateCount,
+            artStatus: weaponArtState(w, assigned, candidateCount),
             assignment: assignmentView(w, assigned),
             assigned,
           };
@@ -351,6 +367,7 @@ const server = createServer(async (req, res) => {
         weaponArt: ownArt[0] ? `/art/${id}/${ownArt[0]}` : (installedArt?.url ?? null),
         engineOnly,
         paintedVfx,
+        artStatus: weaponArtState(w, assignment, cands.length),
         // Effective on-screen size (§10): a tool override wins, else the coded value, else a M default.
         displayLength: assignment?.displayLength ?? w.displayLength ?? 90,
         // Effective fixed VFX size (§14): tool override → coded value → calibrated default (74).
