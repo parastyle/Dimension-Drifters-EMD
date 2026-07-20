@@ -1,36 +1,3 @@
-#!/usr/bin/env node
-
-// artkit/gen-gear.mjs — GEAR_SOCKET_FRAME_V1 boilerplate + launch wardrobe art.
-//
-// MASTERS FIRST: the blank boilerplate identity master is rendered before its body/head/hand/foot
-// cutouts. Every gear render then receives that approved boilerplate plus the launch set's existing
-// portrait and body sprite as identity references.
-//
-// RESUMABLE: green-field masters under tools/artkit/out/gear/masters are kept and reinstalled without
-// another image call. Installs stay on the full 1024x1024 source canvas (NO trim) so every pivot remains
-// canvas-authored. Each slot owns a stale-tolerant lock, allowing disjoint slot shards to run in parallel.
-//
-// MACHINE MANIFEST: tools/artkit/out/gear/gear-parts-manifest.json
-//
-// ART LAWS (owner direction 2026-07-18)
-// - Measured legacy body alpha W:H (blade-twins, boothill, Asha, Cordell, Neon, Odette):
-//   0.750, 0.560, 0.530, 0.988, 0.542, 0.530; median 0.551. Visual head/headwear
-//   zones span 0.32-0.40 of body-sprite height (median about 0.36).
-// - Rejected boilerplate body measured 362x516 (0.702 W:H); its separate 200px head was only
-//   0.552 of the 362px torso width. The approved master head zone itself was already about 0.36 high.
-// - Boilerplate target: torso W:H 0.58-0.62; shoulder:hip width 0.95-1.05; head:torso
-//   width 0.82-0.90; head zone 0.36-0.39 of the assembled head+torso height. No belly flare.
-// - The rig is side-profile only (semantic right; runtime mirrors). Shirt/cloak = one visible-side
-//   panel; pants = lower-bean wrap; each boot/glove = one blob-cover; hat = profile brim; glasses =
-//   one lens + arm; facial hair = cheek/jaw attachment. Never generate a frontal/back garment read.
-//
-// Usage:
-//   node tools/artkit/gen-gear.mjs --stage=boilerplate
-//   node tools/artkit/gen-gear.mjs --slot=hats
-//   node tools/artkit/gen-gear.mjs --slot=boots [--only=ash-walker-boots]
-//   node tools/artkit/gen-gear.mjs --validate-only
-//   node tools/artkit/gen-gear.mjs --force --slot=hats --only=thornwatch-hat
-
 import { createHash } from "node:crypto";
 import {
   copyFileSync,
@@ -53,12 +20,11 @@ import {
   MIGRATION_EXPECTED,
   PART_FRAMES,
   REPLACEMENT_CONTRACT_ID,
-  REPLACEMENT_HEAD_IDS,
   VALIDATION_THRESHOLDS,
   assertMigrationPlan,
-  buildCanonicalBodyMasks,
   buildMigrationPlan,
   describeMask,
+  dilateMask,
   erodeMask,
   hashJson,
   hashRgbaCrop,
@@ -72,7 +38,7 @@ import {
   validateHeadAccessory,
   validatePairedReplacements,
   validateReplacementHeadSockets,
-  validateTorsoPatch,
+  validateTorsoReplacement,
 } from "./lib/gear-replacement-contract.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -82,12 +48,15 @@ const MASTERS = resolve(OUT, "masters");
 const LOGS = resolve(OUT, "logs");
 const LOCKS = resolve(OUT, "locks");
 const MANIFEST_PATH = resolve(OUT, "gear-parts-manifest.json");
+const REUSE_VERDICTS_PATH = resolve(OUT, "torso-head-reuse-verdicts.json");
+const FLEET_STATE_PATH = resolve(OUT, "torso-head-fleet-state.json");
 const SYSTEMS_DOC = resolve(REPO, "docs/metagame-panel/gear-systems.md");
 const GEAR_CATALOG_SOURCE = resolve(REPO, "packages/shared/src/gear.ts");
 const CONCEPTS_FILE = resolve(HERE, "subjects.concepts.json");
 const SPRITES = resolve(REPO, "packages/client/public/sprites");
 const BOILERPLATE_DST = resolve(SPRITES, "boilerplate");
 const GEAR_DST = resolve(SPRITES, "gear");
+const ART_INSTALL = resolve(OUT, "installed");
 const PORTRAITS = resolve(REPO, "packages/client/public/ui/portraits");
 
 const CANVAS = Object.freeze({ width: 1024, height: 1024 });
@@ -96,6 +65,9 @@ const BODY_HEIGHT_L = 512;
 const FRAME_ID = "GEAR_SOCKET_FRAME_V1";
 const STACK_BAND_ID = "HAT_STACK_BAND_V1";
 const OUTLINE = Object.freeze({ color: "#101014", rgba: [0x10, 0x10, 0x14, 0xff], baseWidth: 4, referenceCanvas: 512 });
+// Display-only fit correction. Keep this out of loadReplacementContext() so changing the mounted
+// head size never changes the replacement contract revision or causes an art rerender.
+const HEAD_MOUNT_SCALE = 0.85;
 const CONNECTOR_TOLERANCE = Object.freeze({ pixels: 4, degrees: 2 });
 const PROPORTION_LAW = Object.freeze({
   // OWNER FIT-CHECK CORRECTION 2026-07-18: the measured legacy 0.58-0.62 W:H is the ratio of a
@@ -110,11 +82,23 @@ const PROPORTION_LAW = Object.freeze({
   headZoneShare: "0.36-0.39",
 });
 
+let reuseVerdicts = {
+  schemaVersion: 1,
+  contractId: REPLACEMENT_CONTRACT_ID,
+  evaluatedAt: null,
+  items: {},
+};
+if (existsSync(REUSE_VERDICTS_PATH)) {
+  try {
+    const prior = JSON.parse(readFileSync(REUSE_VERDICTS_PATH, "utf8"));
+    if (prior.contractId === REPLACEMENT_CONTRACT_ID) reuseVerdicts = prior;
+  } catch {}
+}
+
 mkdirSync(MASTERS, { recursive: true });
 mkdirSync(LOGS, { recursive: true });
 mkdirSync(LOCKS, { recursive: true });
-mkdirSync(BOILERPLATE_DST, { recursive: true });
-mkdirSync(GEAR_DST, { recursive: true });
+mkdirSync(ART_INSTALL, { recursive: true });
 
 configureCodex({
   perChatRoot: resolve(HERE, ".artkit-codex-homes"),
@@ -127,6 +111,10 @@ function repoPath(path) {
 
 function sha256(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+function mountScaleForPart(componentId, receiverId) {
+  return componentId === "head" || receiverId === "head" ? HEAD_MOUNT_SCALE : 1;
 }
 
 function slug(value) {
@@ -191,8 +179,7 @@ const RECEIVERS = [
   { id: "head", xL: 0, yL: -0.38, parent: "body", parentTransform: "final body card", plane: "hat" },
   { id: "face.eyes", xL: 0.08, yL: -0.29, parent: "body", parentTransform: "final body card", plane: "glasses" },
   { id: "face.mouth", xL: 0.11, yL: -0.20, parent: "body", parentTransform: "final body card", plane: "facialHair" },
-  { id: "torso", xL: 0, yL: -0.04, parent: "body", parentTransform: "final body card", plane: "shirt" },
-  { id: "legs", xL: 0, yL: 0.29, parent: "body", parentTransform: "final body card", plane: "pants" },
+  { id: "torso", xL: 0, yL: -0.04, parent: "body", parentTransform: "final body card", plane: "torso" },
   { id: "back", xL: -0.12, yL: -0.04, parent: "body", parentTransform: "final body card", plane: "cloakFar" },
   { id: "hand-l", xL: 0, yL: 0, parent: "hand-l", parentTransform: "final procedural hand image", raw: { x: 384, y: 522 }, plane: "backGlove" },
   { id: "hand-r", xL: 0, yL: 0, parent: "hand-r", parentTransform: "final procedural hand image", raw: { x: 640, y: 522 }, plane: "frontGlove" },
@@ -219,9 +206,9 @@ const Z_ORDER = [
   { plane: -40, id: "bakedFeet", law: "two retained baked foot sprites" },
   { plane: -30, id: "behindBody", law: "far held weapon sentinel" },
   { plane: -20, id: "bakedBackHand", law: "retained baked back hand with existing weapon ordering" },
-  { plane: 0, id: "bakedBody", law: "base + pants + shirt RenderTexture" },
+  { plane: 0, id: "bakedBody", law: "winning complete torso replacement" },
   { plane: 10, id: "bakedHead", law: "winning head + facialHair + glasses RenderTexture" },
-  { plane: 20, id: "hat", law: "legal overlay-hat/prestige-cap spring-chain segments" },
+  { plane: 20, id: "hat", law: "legal overlay-hat spring-chain segments" },
   { plane: 30, id: "frontWeapon", law: "normal held weapon below its owning front hand" },
   { plane: 40, id: "bakedFrontHand", law: "retained baked front hand with existing weapon ordering" },
   { plane: 60, id: "protectedVfx", law: "source tells, pair glint, gameplay VFX anchors, and label" },
@@ -240,6 +227,20 @@ const HAT_STACK_BAND = Object.freeze({
 
 const SLOT_SPECS = [
   {
+    id: "head", directory: "heads", docHeader: null, receivers: ["head"], componentIds: ["head"],
+    sourcePivots: [PART_FRAMES.head.pivotSource], desiredAnchor: [PART_FRAMES.head.outputOrigin.x, PART_FRAMES.head.outputOrigin.y],
+    maxPartBox: { width: PART_FRAMES.head.crop[2], height: PART_FRAMES.head.crop[3] }, planeIds: ["bakedHead"],
+    artDirection: "ONE complete replacement head in the set identity ON the attached base head silhouette; full floating neckless head, profile view, one visible side, house style, chroma green",
+    profileLaw: "REPLACEMENT HEAD: one complete screen-right floating head replacement with one final exterior contour. Cover the default head core, remain neckless, preserve the canonical eyes/mouth accessory stocks and hat mount, and contain no separate boilerplate head, body, shoulders, topper, or mask-over-head double silhouette.",
+  },
+  {
+    id: "torso", directory: "torso", docHeader: null, receivers: ["torso"], componentIds: ["torso"],
+    sourcePivots: [PART_FRAMES.body.pivotSource], desiredAnchor: [PART_FRAMES.body.outputOrigin.x, PART_FRAMES.body.outputOrigin.y],
+    maxPartBox: { width: PART_FRAMES.body.crop[2], height: PART_FRAMES.body.crop[3] }, planeIds: ["bakedBody"],
+    artDirection: "ONE complete dressed torso card in the set identity ON the attached base torso silhouette — the full garment from collar to hem covering the whole card; the lower region wears the set's legwear look; profile view, one visible side; house style; chroma green",
+    profileLaw: "One connected screen-right dressed torso card from collar through hem, conforming to the attached base torso silhouette; no head, neck, arms, hands, feet, or cloak.",
+  },
+  {
     id: "boots", directory: "boots", docHeader: "Boots", receivers: ["foot-l", "foot-r"], componentIds: ["boot-l", "boot-r"],
     sourcePivots: [PART_FRAMES["foot-l"].pivotSource, PART_FRAMES["foot-r"].pivotSource], maxPartBox: { width: 190, height: 190 }, planeIds: ["bakedFeet", "bakedFeet"],
     artDirection: "a matched far/near rig pair of boots or footwear, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached foot, with no toes, heel, sole perspective, or frontal shoe construction",
@@ -250,18 +251,6 @@ const SLOT_SPECS = [
     sourcePivots: [PART_FRAMES["hand-l"].pivotSource, PART_FRAMES["hand-r"].pivotSource], maxPartBox: { width: 180, height: 180 }, planeIds: ["bakedBackHand", "bakedFrontHand"],
     artDirection: "a matched far/near rig pair of gloves, gauntlets, or wraps, two separated complete paper islands; each island is one screen-right profile blob-cover fitted to one detached hand, with no fingers, thumb, palm, or frontal glove construction",
     profileLaw: "GLOVES: each piece is a single screen-right profile cover for one soft hand-blob. Preserve the rounded lump silhouette; no fingers, thumb, palm anatomy, or frontal glove display. The two islands are the far/near rig pieces, not opposite-facing gloves.",
-  },
-  {
-    id: "shirt", directory: "shirt", docHeader: "Shirt", receivers: ["torso"], componentIds: ["torso-panel"],
-    sourcePivots: [{ x: 512, y: 492 }], desiredAnchor: [0.5, 0.62], maxPartBox: { width: 320, height: 272 }, planeIds: ["bakedBody"],
-    artDirection: "one isolated visible-side profile torso panel with a modest hidden neck/shoulder overlap; shirts, jackets, vests, coats, and robes show only the single side worn in profile, never a complete front or back",
-    profileLaw: "SHIRT/TORSO GARMENT: render ONLY the one visible-side profile panel as worn. Collar, lapel/closure, sleeve root, and hem must read from the side. No open-front interior, paired lapels, symmetric front, second side panel, or back-of-garment; no head, arms, hands, pants, or cloak.",
-  },
-  {
-    id: "pants", directory: "pants", docHeader: "Pants", receivers: ["legs"], componentIds: ["legs-panel"],
-    sourcePivots: [{ x: 512, y: 660 }], desiredAnchor: [0.5, 0.78], maxPartBox: { width: 320, height: 181 }, planeIds: ["bakedBody"],
-    artDirection: "one isolated screen-right profile lower-bean wrap with a modest hidden waistband overlap; it wraps the lower torso zone and never splits into two frontal trouser legs",
-    profileLaw: "PANTS: one profile silhouette wrapping the lower torso/bean zone. The body has no legs: use a waistband plus one continuous lower-bean cover, with side-view folds/hem only. No two-leg frontal split, crotch, separate leg tubes, torso, boots, feet, or cloak.",
   },
   {
     id: "cloak", directory: "cloak", docHeader: "Cloak", receivers: ["back"], componentIds: ["far-cloth"],
@@ -290,10 +279,11 @@ const SLOT_SPECS = [
 ];
 
 const SLOT_ALIASES = new Map([
+  ["head", "head"], ["heads", "head"],
+  ["torso", "torso"], ["torsos", "torso"],
   ["boots", "boots"], ["boot", "boots"],
   ["gloves", "gloves"], ["glove", "gloves"],
-  ["shirt", "shirt"], ["shirts", "shirt"],
-  ["pants", "pants"], ["pant", "pants"],
+  ["shirt", "torso"], ["shirts", "torso"],
   ["cloak", "cloak"], ["cloaks", "cloak"],
   ["glasses", "glasses"], ["glass", "glasses"],
   ["facial-hair", "facialHair"], ["facialhair", "facialHair"], ["facialHair", "facialHair"],
@@ -446,24 +436,140 @@ function catalogItems() {
   return items;
 }
 
-const ITEMS = catalogItems();
+function parseLaunchPairDescriptions() {
+  const text = readFileSync(SYSTEMS_DOC, "utf8");
+  const start = text.indexOf("| Set | Boots | Gloves | Shirt | Pants | Cloak | Glasses | Facial hair | Hat |");
+  const end = text.indexOf("\n### Full-set bonuses", start);
+  if (start < 0 || end < 0) throw new Error("Could not locate the 12x8 launch content table in gear-systems.md");
+  const concepts = loadConcepts();
+  const lines = text.slice(start, end).split(/\r?\n/).filter((line) => line.startsWith("|"));
+  const headers = lines[0].slice(1, -1).split("|").map((cell) => cell.trim());
+  const slotHeaders = new Map([
+    ["boots", "Boots"], ["gloves", "Gloves"], ["shirt", "Shirt"], ["pants", "Pants"],
+    ["cloak", "Cloak"], ["glasses", "Glasses"], ["facialHair", "Facial hair"], ["hat", "Hat"],
+  ]);
+  const sets = new Map();
+  for (const line of lines.slice(2)) {
+    const cells = line.slice(1, -1).split("|").map((cell) => cell.trim());
+    const setName = cells[0];
+    const setId = slug(setName);
+    const sourceCharacterId = SET_SOURCES.get(setName);
+    const concept = loadConcepts().get(sourceCharacterId);
+    if (!sourceCharacterId || !concept) throw new Error(`No identity source mapped for launch set ${setName}`);
+    const slots = {};
+    for (const [slot, header] of slotHeaders) {
+      const cell = cells[headers.indexOf(header)];
+      const parsed = cell?.match(/^(.*?)\s+\(([^)]+)\)\s+.+?\s+(.*)$/u);
+      if (!parsed) throw new Error(`Could not parse ${setName}/${header}: ${cell}`);
+      slots[slot] = { legacyArtId: slug(parsed[1]), name: parsed[1].trim(), rarity: parsed[2].trim(), effect: parsed[3].trim() };
+    }
+    sets.set(setId, {
+      setId,
+      setName,
+      sourceCharacterId,
+      sourceCharacterName: concept.name,
+      identityBrief: concept.prompt,
+      slots,
+      torso: {
+        ...slots.shirt,
+        effect: `Upper garment identity: ${slots.shirt.name} — ${slots.shirt.effect}. Lower region legwear identity: ${slots.pants.name} — ${slots.pants.effect}.`,
+      },
+      head: {
+        legacyArtId: null,
+        name: `${setName} Head`,
+        rarity: slots.hat.rarity,
+        effect: `A complete replacement head translating ${concept.name}'s defining face, mask, helmet, hair, materials, palette, and motifs into the canonical floating-head silhouette.`,
+      },
+    });
+  }
+  if (sets.size !== MIGRATION_EXPECTED.setPairs) throw new Error(`Launch table contract drift: expected 12 sets, found ${sets.size}`);
+  return sets;
+}
+
+let CATALOG_STATE = null;
+
+function pairCatalogItems() {
+  const catalog = readGearCatalog(GEAR_CATALOG_SOURCE);
+  const launchSets = parseLaunchPairDescriptions();
+  const catalogSlots = new Set(catalog.map((item) => item.slot));
+  const pairCatalogLanded = catalogSlots.has("torso") && catalogSlots.has("head") && !catalogSlots.has("pants");
+  let projectedHeadRows = [];
+  let activeCatalog;
+  if (pairCatalogLanded) {
+    activeCatalog = catalog
+      .filter((item) => !item.id.startsWith("blank-drifter-") && item.slot !== "pants")
+      .filter((item) => item.slot !== "torso" || launchSets.has(item.setId));
+  } else {
+    const legacyLaunch = catalog
+      .filter((item) => !item.id.startsWith("blank-drifter-") && item.slot !== "pants")
+      .filter((item) => item.slot !== "shirt" || launchSets.has(item.setId))
+      .map((item) => item.slot === "shirt" ? { ...item, slot: "torso" } : item);
+    projectedHeadRows = [...launchSets.values()].map((set) => ({
+      id: `${set.setId}-head`,
+      name: set.head.name,
+      slot: "head",
+      rarity: set.head.rarity,
+      effect: set.head.effect,
+      setId: set.setId,
+      originPool: null,
+      catalogProjection: true,
+    }));
+    activeCatalog = [...legacyLaunch, ...projectedHeadRows];
+  }
+  CATALOG_STATE = Object.freeze({
+    pairCatalogLanded,
+    mode: pairCatalogLanded ? "catalog-v2" : "pending-parallel-catalog-projection",
+    projectedHeadIds: projectedHeadRows.map((item) => item.id),
+    retiredCatalogRowsIgnored: catalog.filter((item) => item.slot === "pants").map((item) => item.id),
+    retiredStarterShirtsIgnored: catalog.filter((item) => item.slot === "shirt" && !launchSets.has(item.setId)).map((item) => item.id),
+    nonPairTorsoRowsIgnored: catalog.filter((item) => item.slot === "torso" && !item.id.startsWith("blank-drifter-") && !launchSets.has(item.setId)).map((item) => item.id),
+  });
+
+  const items = [];
+  for (const catalogItem of activeCatalog) {
+    const spec = SLOT_SPECS.find((candidate) => candidate.id === catalogItem.slot);
+    if (!spec) throw new Error(`Catalog item ${catalogItem.id} has unsupported art slot ${catalogItem.slot}`);
+    const set = launchSets.get(catalogItem.setId);
+    const launch = catalogItem.slot === "torso"
+      ? set?.torso
+      : catalogItem.slot === "head"
+        ? set?.head
+        : set?.slots[catalogItem.slot];
+    if (launch) {
+      items.push({
+        ...catalogItem,
+        legacyArtId: launch.legacyArtId,
+        artDescription: launch.effect,
+        setName: set.setName,
+        slotDirectory: spec.directory,
+        sourceCharacterId: set.sourceCharacterId,
+        sourceCharacterName: set.sourceCharacterName,
+        identityBrief: set.identityBrief,
+        expectedReferenceCount: 3,
+      });
+      continue;
+    }
+    const artDescription = CATALOG_ONLY_ART_DESCRIPTIONS.get(catalogItem.id);
+    if (!artDescription) throw new Error(`Catalog item ${catalogItem.id} needs an honest art description`);
+    items.push({
+      ...catalogItem,
+      legacyArtId: null,
+      artDescription,
+      setName: "Trading Post starter gear",
+      slotDirectory: spec.directory,
+      sourceCharacterId: null,
+      sourceCharacterName: "the Trading Post starter line",
+      identityBrief: artDescription,
+      expectedReferenceCount: 1,
+    });
+  }
+  return items;
+}
+
+const ITEMS = pairCatalogItems();
 const MIGRATION_PLAN = assertMigrationPlan(buildMigrationPlan(ITEMS));
 
-const REPLACEMENT_HEAD_SPEC = Object.freeze({
-  id: "replacementHead",
-  directory: "heads",
-  receivers: ["head"],
-  componentIds: ["head"],
-  sourcePivots: [PART_FRAMES.head.pivotSource],
-  desiredAnchor: [PART_FRAMES.head.outputOrigin.x, PART_FRAMES.head.outputOrigin.y],
-  maxPartBox: { width: PART_FRAMES.head.crop[2] - 16, height: PART_FRAMES.head.crop[3] - 16 },
-  planeIds: ["bakedHead"],
-  artDirection: "one complete final alternative-head card replacing the blank floating head, with the Demon Mask or Unbending Greathelm identity built into the head silhouette rather than layered over a hidden base head",
-  profileLaw: "REPLACEMENT HEAD: one complete screen-right floating head replacement with one final exterior contour. It must cover the default head core, remain neckless, preserve the canonical eyes/mouth accessory stocks and hat mount, and contain no separate boilerplate head, body, shoulders, tower topper, or mask-over-head double silhouette.",
-});
-
 function specForVariant(item, variant) {
-  if (variant.renderRole === "replace-head") return REPLACEMENT_HEAD_SPEC;
   return SLOT_SPECS.find((candidate) => candidate.id === item.slot);
 }
 
@@ -529,19 +635,27 @@ function parseOptions(argv) {
     only: null,
     force: false,
     validateOnly: false,
+    reuseOnly: false,
+    syncClient: false,
+    finalizeFleet: false,
     maxJobs: Number.POSITIVE_INFINITY,
+    maxAttempts: 3,
   };
   for (const arg of argv) {
     if (arg === "--force") options.force = true;
     else if (arg === "--validate-only") options.validateOnly = true;
+    else if (arg === "--reuse-only") options.reuseOnly = true;
+    else if (arg === "--sync-client") { options.syncClient = true; options.reuseOnly = true; }
+    else if (arg === "--finalize-fleet") options.finalizeFleet = true;
     else if (arg === "--boilerplate") options.stage = "boilerplate";
     else if (arg.startsWith("--stage=")) options.stage = arg.slice(8);
     else if (arg.startsWith("--slot=")) options.slot = arg.slice(7);
     else if (arg.startsWith("--only=")) options.only = arg.slice(7);
     else if (arg.startsWith("--max-jobs=")) options.maxJobs = Number(arg.slice(11));
+    else if (arg.startsWith("--max-attempts=")) options.maxAttempts = Number(arg.slice(15));
     else if (arg === "--help" || arg === "-h") {
-      console.log("Usage: node tools/artkit/gen-gear.mjs --stage=boilerplate | --slot=<boots|gloves|shirt|pants|cloak|glasses|facial-hair|hats>");
-      console.log("       add [--only=<item-id>] [--force] [--max-jobs=N] or use --validate-only");
+      console.log("Usage: node tools/artkit/gen-gear.mjs --stage=boilerplate | --slot=<heads|torso|boots|gloves|cloak|glasses|facial-hair|hats>");
+      console.log("       add [--only=<item-id>] [--force] [--max-jobs=N] [--max-attempts=3], --reuse-only, --sync-client, --finalize-fleet, or --validate-only");
       process.exit(0);
     } else throw new Error(`Unknown argument: ${arg}`);
   }
@@ -553,6 +667,11 @@ function parseOptions(argv) {
     options.stage = "gear";
   }
   if (Number.isNaN(options.maxJobs) || options.maxJobs < 1) throw new Error(`--max-jobs must be >= 1`);
+  if (!Number.isInteger(options.maxAttempts) || options.maxAttempts < 1 || options.maxAttempts > 3) {
+    throw new Error(`--max-attempts must be an integer from 1 to 3`);
+  }
+  if (options.finalizeFleet && !options.reuseOnly) throw new Error("--finalize-fleet requires --reuse-only so it cannot launch image calls");
+  if (options.syncClient && options.finalizeFleet) throw new Error("--sync-client cannot be combined with --finalize-fleet");
   return options;
 }
 
@@ -577,7 +696,33 @@ function rawRenderJobPath(job) {
 }
 
 function installedRenderJobPath(job) {
-  return resolve(GEAR_DST, job.directory, `${job.item.id}.png`);
+  const root = job.renderRole === "replace-torso" || job.renderRole === "replace-head" ? ART_INSTALL : GEAR_DST;
+  return resolve(root, job.directory, `${job.item.id}.png`);
+}
+
+const clientSyncStats = { copied: 0, current: 0 };
+
+function syncInstalledRenderJobToClient(job, source = installedRenderJobPath(job)) {
+  const destination = resolve(GEAR_DST, job.item.slotDirectory, `${job.item.id}.png`);
+  if (source === destination) return false;
+  if (!existsSync(source)) return false;
+  const sourceSha256 = sha256(source);
+  if (existsSync(destination) && sha256(destination) === sourceSha256) {
+    clientSyncStats.current++;
+    return false;
+  }
+  mkdirSync(dirname(destination), { recursive: true });
+  const next = `${destination}.${process.pid}.${Date.now()}.tmp.png`;
+  copyFileSync(source, next);
+  try {
+    renameSync(next, destination);
+  } catch {
+    rmSync(destination, { force: true });
+    renameSync(next, destination);
+  }
+  clientSyncStats.copied++;
+  console.log(`CLIENT SYNC ${repoPath(destination)} sha256=${sourceSha256}`);
+  return true;
 }
 
 function codexLogPath(_kind, directory, id) {
@@ -588,8 +733,8 @@ function statusLogPath(_kind, directory, id) {
   return resolve(LOGS, directory, `${id}.install.json`);
 }
 
-function renderJobLogPath(job) {
-  return codexLogPath("gear", job.directory, job.item.id);
+function renderJobLogPath(job, attempt = null) {
+  return codexLogPath("gear", job.directory, attempt == null ? job.item.id : `${job.item.id}.attempt-${attempt}`);
 }
 
 function renderJobStatusPath(job) {
@@ -619,15 +764,39 @@ function legacyItemReferenceBlock(item) {
 }
 
 function baseReferenceIdsForRole(renderRole) {
-  if (renderRole === "body-patch") return ["body"];
+  if (renderRole === "replace-torso") return ["body"];
   if (renderRole === "replace-hand") return ["hand-l", "hand-r"];
   if (renderRole === "replace-foot") return ["foot-l", "foot-r"];
-  if (["head-accessory", "replace-head", "prestige-cap", "overlay-hat"].includes(renderRole)) return ["head"];
+  if (["head-accessory", "replace-head", "overlay-hat"].includes(renderRole)) return ["head"];
   return [];
+}
+
+// STRAGGLER SURGERY 2026-07-19: these themes repeatedly overruled the replacement layout with a
+// handsome costume close-up or a conventional shoe. Give only those items a proven sibling whose
+// geometry is binding; identity still comes from the item's portrait/body references and prose.
+const STRAGGLER_LAYOUT_REFERENCES = new Map([
+  ["thornwatch-boots", "ash-walker-boots"],
+  ["unbending-boots", "ash-walker-boots"],
+]);
+
+const STRAGGLER_PROMPT_NUDGES = new Map([
+  ["thornwatch-boots", "THE LAYOUT LAW OVERRIDES HERALDIC SHOE DESIGN. Each piece is a dense, solid, squat rounded foot-blob cover like the passing sibling, not a real shoe: no ankle opening, cuff hole, tall shaft, toe cap projection, heel, or sole. Paint green, silver, gold, and thorn motifs across that filled blob."],
+  ["unbending-boots", "THE LAYOUT LAW OVERRIDES GREATHELM AND SABATON FLOURISH. Each piece is a dense, solid, squat rounded foot-blob cover like the passing sibling, never a tall greave or conventional boot: no ankle opening, shaft, toe box, heel, sole, or hollow armor construction."],
+]);
+
+function exactPivotCoverageLaw(spec) {
+  return spec.sourcePivots
+    .map((pivot) => `opaque material MUST cover canvas point (${pivot.x},${pivot.y})`)
+    .join("; ");
 }
 
 function referenceBundleForJob(job) {
   const entries = [];
+  const fullObjectBase = job.renderRole === "replace-torso" ? "body" : job.renderRole === "replace-head" ? "head" : null;
+  if (fullObjectBase) entries.push({
+    path: installedBoilerplatePath(fullObjectBase),
+    description: `canonical untrimmed base ${fullObjectBase}.png in ${FRAME_ID}; this is the binding silhouette, source placement, pivot, and full-object fit target`,
+  });
   if (job.item.sourceCharacterId) {
     entries.push({
       path: resolve(PORTRAITS, `${job.item.sourceCharacterId}.jpg`),
@@ -635,14 +804,25 @@ function referenceBundleForJob(job) {
     });
     entries.push({
       path: resolve(SPRITES, job.item.sourceCharacterId, "body.png"),
-      description: "canonical shipped body-sprite identity reference; translate its item identity into the new rig without copying its whole-body anatomy",
+      description: "canonical shipped body-sprite identity reference; translate its set identity into the new rig without copying its whole-body anatomy",
     });
   }
-  entries.push({
-    path: installedBoilerplatePath("identity-master"),
-    description: `approved blank identity master; preserve its ${PROPORTION_LAW.torsoWidthHeight} squat torso, large floating head, semantic-right profile, and socket placement without painting its pixels`,
-  });
-  for (const id of baseReferenceIdsForRole(job.renderRole)) {
+  if (job.renderRole === "replace-foot" && STRAGGLER_LAYOUT_REFERENCES.has(job.item.id)) {
+    const passingLayoutPath = resolve(MASTERS, job.directory, `${STRAGGLER_LAYOUT_REFERENCES.get(job.item.id)}.png`);
+    if (existsSync(passingLayoutPath)) {
+      entries.push({
+        path: passingLayoutPath,
+        description: "APPROVED PASSING REPLACE-FOOT TOPOLOGY EXAMPLE; copy only its two dense, solid, squat rounded blob silhouettes and separation, never its Ash-Walker colors, wraps, buckle, materials, or costume identity",
+      });
+    }
+  }
+  if (!fullObjectBase) {
+    entries.push({
+      path: installedBoilerplatePath("identity-master"),
+      description: `approved blank identity master; preserve its ${PROPORTION_LAW.torsoWidthHeight} squat torso, large floating head, semantic-right profile, and socket placement without painting its pixels`,
+    });
+  }
+  for (const id of fullObjectBase ? [] : baseReferenceIdsForRole(job.renderRole)) {
     entries.push({
       path: installedBoilerplatePath(id),
       description: `canonical untrimmed ${id}.png target card in ${FRAME_ID}; render on this exact source placement, scale, silhouette, and pivot while omitting its bare pixels from the output`,
@@ -652,8 +832,9 @@ function referenceBundleForJob(job) {
 }
 
 function itemReferenceBlock(job, bundle) {
+  const entries = bundle.entries.map((entry, index) => `- Image ${index + 1}: ${entry.description}.`).join("\n");
   return `REFERENCE IMAGES — IDENTITY AND EXACT-FRAME FIT
-${bundle.entries.map((entry, index) => `- Image ${index + 1}: ${entry.description}.`).join("\n")}`;
+${entries}`;
 }
 
 function executionBlock() {
@@ -667,7 +848,7 @@ function executionBlock() {
 
 function chromaOutputBlock() {
   return `OUTPUT FORMAT — BINDING
-- Exactly 1024x1024 PNG. Perfectly flat fully opaque uniform pure #00ff00 background for local chroma-key removal.
+- Exactly 1024x1024 PNG with a 1:1 SQUARE OUTER CANVAS regardless of any inner subject/card aspect ratio. Perfectly flat fully opaque uniform pure #00ff00 background for local chroma-key removal.
 - No gradient, lighting variation, floor plane, contact/cast shadow, reflection, transparency, checkerboard, vignette, border, text, guide, watermark, UI, environment, aura, particles, or VFX.
 - Never use #00ff00 or chroma-like lime in the art. Crisp opaque paper edges and generous uninterrupted green padding.`;
 }
@@ -800,26 +981,22 @@ ${chromaOutputBlock()}
 Before returning verify: exactly ${paired ? "two matched wearable islands" : "one wearable island"}; ${item.name} unmistakably belongs to ${item.sourceCharacterName}; strict screen-right profile; slot-specific visible-side law obeyed; new slim-capsule/large-head fit with no belly room; every source pivot covered; stack law obeyed if a hat; no boilerplate pixels, anatomy, shadow, prop, text, or VFX.`;
 }
 
-function replacementAuthoringBlock(job) {
-  const bodyCrop = JSON.stringify(PART_FRAMES.body.crop);
+function replacementAuthoringBlock(job, bundle) {
   const headCrop = JSON.stringify(PART_FRAMES.head.crop);
+  const replacementLayoutImage = bundle.entries.findIndex((entry) => entry.description.includes("APPROVED PASSING REPLACE-FOOT")) + 1;
   switch (job.renderRole) {
-    case "body-patch":
-      return job.item.slot === "shirt"
-        ? `SHIRT / body-patch: Render the garment ON canonical body.png at its exact source placement and fixed bake frame ${bodyCrop}. Output garment pixels only—upper-torso material, collars, lapels, closures, sleeve roots, and hem; no oatmeal/body pixels. Alpha 0 outside shirtAllowed; alpha >=240 across at least 99.5% of shirtRequired; optional pixels only in the lower hem allowance; no generated exterior rim.`
-        : `PANTS / body-patch: Render the garment ON canonical body.png at its exact source placement and fixed bake frame ${bodyCrop}. Output garment pixels only—one continuous lower-bean garment and waistband; no oatmeal/body pixels, legs, crotch, or tubes. Alpha 0 outside pantsAllowed; alpha >=240 across at least 99.5% of pantsRequired; optional pixels only in the upper waistband allowance; no generated exterior rim.`;
+    case "replace-torso":
+      return `ONE complete dressed torso card in ${job.item.setName} identity ON Image 1, the attached base torso silhouette — the full garment from collar to hem covering the whole card; the lower region wears the set's legwear look; profile view, one visible side; house style; chroma green.`;
     case "replace-hand":
       return `GLOVES / replace-hand: Render TWO complete final dressed blob replacements ON the exact canonical hand frames: hand-l ${JSON.stringify(PART_FRAMES["hand-l"].crop)} at (384,522), hand-r ${JSON.stringify(PART_FRAMES["hand-r"].crop)} at (640,522). No bare hand pixels, fingers, thumb, or palm. Each covers >=98% of its base core, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
     case "replace-foot":
-      return `BOOTS / replace-foot: Render TWO complete final dressed foot-blob replacements ON the exact canonical foot frames: foot-l ${JSON.stringify(PART_FRAMES["foot-l"].crop)} at (448,736), foot-r ${JSON.stringify(PART_FRAMES["foot-r"].crop)} at (576,736). No bare foot pixels, toes, heel block, sole perspective, or leg. Each covers >=98% of its base core, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
+      return `BOOTS / replace-foot: Render TWO complete final dressed foot-blob replacements ON the exact canonical foot frames: foot-l ${JSON.stringify(PART_FRAMES["foot-l"].crop)} at (448,736), foot-r ${JSON.stringify(PART_FRAMES["foot-r"].crop)} at (576,736). Before the generated 8px outline, left opaque stock stays inside x=361..502 and y=649..822; right opaque stock stays inside x=521..662 and y=649..822. ${replacementLayoutImage > 0 ? `Image ${replacementLayoutImage} is the BINDING topology example: copy its dense squat filled-blob proportions and two-island separation, then repaint every pixel as ${job.item.name}.` : ""} No bare foot pixels, ankle/cuff opening, toes, heel block, toe-box projection, sole perspective, boot shaft, or leg. Each rounded blob blankets the base foot core, covers >=98% of it, stays one connected island inside its frame and side clip, and owns one final outer contour.`;
     case "head-accessory":
       return job.item.slot === "glasses"
         ? `GLASSES / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside face-eyes envelope ${JSON.stringify(FACE_ENVELOPES.eyes)}, cover face.eyes (553,364) with solid material, and show exactly one semantic-right lens/frame plus temple arm—no head pixels or second frontal lens.`
         : `FACIAL HAIR / head-accessory: Render ON canonical head.png at its exact source placement and fixed head frame ${headCrop}, but output accessory pixels only. Stay inside mouth/jaw envelope ${JSON.stringify(FACE_ENVELOPES.mouthJaw)}, cover face.mouth (568,410) with solid material, and show one near-side cheek/jaw attachment—no head pixels or mirrored far cheek.`;
     case "replace-head":
-      return `REPLACEMENT HEAD: Render one COMPLETE final alternative-head card ON canonical head.png at its exact source placement and fixed frame ${headCrop}. ${job.item.name} IS the head; never draw it over copied boilerplate-head pixels and do not include its prestige cap. Cover >=98% of the default head core, remain neckless and one connected island, preserve opaque support beneath face.eyes (553,364) and face.mouth (568,410), preserve hat mount (512,317) within 4px, and own one final outer contour.`;
-    case "prestige-cap":
-      return `PRESTIGE CAP: Render one SMALL hat-like topper derived from ${job.item.name}'s crest/horn/helm language on the canonical head mount. This is a legal ${STACK_BAND_ID} segment, never a second head, mask, helmet shell, face, or replacement-head card. It independently passes pivot stock, mount band, stack envelope, central crown path, semantic-right profile, and readability at scales 1.0, 0.82, and 0.24.`;
+      return `REPLACEMENT HEAD: Render ONE complete final head card ON Image 1, canonical head.png, at exact fixed frame ${headCrop}. ${job.item.name} IS the head; never draw it over copied boilerplate-head pixels. Cover >=98% of the default head core, remain neckless and one connected island, preserve opaque support beneath face.eyes (553,364) and face.mouth (568,410), preserve hat mount (512,317) within 4px, and own one final outer contour. No body, shoulders, topper, separate mask layer, or double silhouette.`;
     default:
       throw new Error(`No creative replacement prompt contract for ${job.renderRole}`);
   }
@@ -828,13 +1005,18 @@ function replacementAuthoringBlock(job) {
 function promptForRenderJob(job, bundle) {
   const { item, spec } = job;
   const paired = spec.sourcePivots.length === 2;
-  const hatBlock = job.renderRole === "prestige-cap"
-    ? `HAT PRESTIGE STACK LAW — ${STACK_BAND_ID}
-- Pivot (${HAT_STACK_BAND.sourcePivot.x},${HAT_STACK_BAND.sourcePivot.y}) is solid ordinary base stock.
-- Solid stock crosses mount band ${JSON.stringify(HAT_STACK_BAND.mountStockBand)}; the complete outlined silhouette stays inside ${JSON.stringify(HAT_STACK_BAND.silhouetteEnvelope)}; a central crown path stays within x=${HAT_STACK_BAND.crownCenterBand.left}..${HAT_STACK_BAND.crownCenterBand.right}.`
-    : "";
+  const pivotCoverageLaw = exactPivotCoverageLaw(spec);
+  const stragglerNudge = STRAGGLER_PROMPT_NUDGES.get(item.id) ?? null;
+  const fitBlock = `INVISIBLE MANNEQUIN FIT LAW
+- Exact canonical base-part placement wins over the legacy anatomy. Torso fit remains ${PROPORTION_LAW.torsoWidthHeight} W:H with shoulder:hip ${PROPORTION_LAW.shoulderHipWidth}; head fit remains ${PROPORTION_LAW.headTorsoWidth} of torso width; hands and feet remain near-featureless blobs.
+- ${paired ? "Exactly TWO separated matched components, one around each named pivot." : "Exactly ONE connected primary island."}`;
+  const identityBlock = `IDENTITY LOCK
+- Preserve ${item.sourceCharacterName}'s exact visual grammar and ${item.name}'s distinctive construction; do not substitute a generic item.
+- No extra gear, held prop, shadow, portrait, label, text, environment, aura, particles, VFX, or baked glow.`;
+  const finalCheck = `Before returning verify: exact-frame replacement contract obeyed; ${paired ? "two separated matched islands" : "one primary island"}; strict semantic-right profile; every pivot covered where the role requires stock; no undersized base-revealing object; no unrelated anatomy, shadow, prop, text, or VFX.`;
+  const openingLine = `Generate ONE standalone raster source image for Dimension Drifters. This ticket targets only ${item.name}, render role ${job.renderRole}, from ${item.setName}.`;
   return `# CHAT ISOLATION — GEAR REPLACEMENT ${job.key}
-Generate ONE standalone raster source image for Dimension Drifters. This ticket targets only ${item.name}, render role ${job.renderRole}, from ${item.setName}.
+${openingLine}
 
 ${executionBlock()}
 
@@ -844,36 +1026,31 @@ Use case: identity-preserve
 Asset type: game-ready untrimmed replacement-contract source
 Primary request: ${spec.artDirection}.
 Item identity: ${item.artDescription}.
+${stragglerNudge ? `Item-specific layout correction: ${stragglerNudge}` : ""}
 Legacy provenance: ${item.identityBrief}
 Systems flavor only: ${item.effect}
 
 REPLACEMENT AUTHORING CONTRACT — BINDING
-${replacementAuthoringBlock(job)}
+${replacementAuthoringBlock(job, bundle)}
 
 PROFILE LAW — BINDING
 - ${spec.profileLaw}
 - Strict semantic-right side profile with the house-style slight high top-down pitch. Do not complete a hidden far side, front, or back merely because a legacy reference shows it.
 
-INVISIBLE MANNEQUIN FIT LAW
-- Exact canonical base-part placement wins over the legacy anatomy. Torso fit remains ${PROPORTION_LAW.torsoWidthHeight} W:H with shoulder:hip ${PROPORTION_LAW.shoulderHipWidth}; head fit remains ${PROPORTION_LAW.headTorsoWidth} of torso width; hands and feet remain near-featureless blobs.
-- ${paired ? "Exactly TWO separated matched components, one around each named pivot." : "Exactly ONE connected primary island."}
+${fitBlock}
 
 ${houseStyleBlock()}
 
-IDENTITY LOCK
-- Preserve ${item.sourceCharacterName}'s exact visual grammar and ${item.name}'s distinctive construction; do not substitute a generic item.
-- No extra gear, held prop, shadow, portrait, label, text, environment, aura, particles, VFX, or baked glow.
+${identityBlock}
 
 FUSION REGISTRATION — ${FRAME_ID}
 - Source canvas ${CANVAS.width}x${CANVAS.height}; body root (${BODY_ROOT_SOURCE.x},${BODY_ROOT_SOURCE.y}); semantic facing right; runtime owns mirroring; output remains untrimmed.
 - Receivers: ${JSON.stringify(spec.receivers.map((id) => receiver(id)))}.
-- Authored pivots: ${JSON.stringify(spec.sourcePivots)}; every named pivot must lie in ordinary opaque stock before installation.
-
-${hatBlock}
+- Authored pivots: ${JSON.stringify(spec.sourcePivots)}; ${pivotCoverageLaw}. These are literal source-canvas pixels, not approximate visual centers; every named pivot must lie well inside ordinary opaque stock before installation.
 
 ${chromaOutputBlock()}
 
-Before returning verify: exact-frame replacement contract obeyed; ${paired ? "two separated matched islands" : "one primary island"}; strict semantic-right profile; every pivot covered where the role requires stock; no undersized base-revealing garment; no unrelated anatomy, shadow, prop, text, or VFX.`;
+${finalCheck} Final literal-point check: ${pivotCoverageLaw}.`;
 }
 
 function alphaBounds(data, width, height, threshold = 8, region = null) {
@@ -1172,17 +1349,6 @@ function countOpaqueInRect(data, rect, threshold = 64) {
   return count;
 }
 
-function clipRgbaToMask(rgba, mask) {
-  if (rgba.length !== mask.length * 4) throw new Error("body-patch clip mask dimensions do not match RGBA data");
-  let clippedPixels = 0;
-  for (let index = 0; index < mask.length; index++) {
-    if (mask[index] || rgba[index * 4 + 3] === 0) continue;
-    rgba.fill(0, index * 4, index * 4 + 4);
-    clippedPixels++;
-  }
-  return clippedPixels;
-}
-
 function verifyHatStackBand(data, bounds) {
   const band = HAT_STACK_BAND;
   const pivotAlpha = data[(band.sourcePivot.y * CANVAS.width + band.sourcePivot.x) * 4 + 3];
@@ -1226,13 +1392,6 @@ let replacementContextPromise = null;
 async function loadReplacementContext() {
   if (replacementContextPromise) return replacementContextPromise;
   replacementContextPromise = (async () => {
-    const bodyMaster = rawBoilerplatePath("body");
-    if (!existsSync(bodyMaster)) throw new Error(`Replacement contract requires preserved pre-outline source ${repoPath(bodyMaster)}`);
-    const decodedBody = await decodeAndKey(bodyMaster);
-    const bodyPart = BOILERPLATE_PARTS.find((part) => part.id === "body");
-    const registeredBody = await registerSingle(decodedBody.data, bodyPart.pivot, bodyPart.desiredAnchor, bodyPart.maxPartBox);
-    const preOutlineBodyAlpha = rgbaAlpha(registeredBody);
-    const masks = buildCanonicalBodyMasks(preOutlineBodyAlpha, CANVAS.width, CANVAS.height);
     const baseRgba = {};
     const baseAlpha = {};
     const baseSilhouettes = {};
@@ -1255,18 +1414,20 @@ async function loadReplacementContext() {
         fixedCropSha256: hashRgbaCrop(data, CANVAS.width, CANVAS.height, PART_FRAMES[partId].crop),
       };
     }
+    const torsoAllowed = dilateMask(
+      baseSilhouettes.body,
+      CANVAS.width,
+      CANVAS.height,
+      VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx,
+    );
     const canonicalMasks = {
-      source: "registered pre-outline boilerplate body alpha >=64",
-      sourceMasterFile: repoPath(bodyMaster),
-      sourceMasterSha256: sha256(bodyMaster),
-      verticalNormalization: "v=(sourceY-324)/375",
-      bodyFill: describeMask(masks.bodyFill),
-      shirtRequired: { ...describeMask(masks.shirtRequired), rule: "bodyFill && v<=0.62" },
-      shirtAllowed: { ...describeMask(masks.shirtAllowed), rule: "bodyFill && v<=0.72" },
-      pantsRequired: { ...describeMask(masks.pantsRequired), rule: "bodyFill && v>=0.60" },
-      pantsAllowed: { ...describeMask(masks.pantsAllowed), rule: "bodyFill && v>=0.52" },
+      source: "installed boilerplate complete-part alpha",
+      torsoAllowed: {
+        ...describeMask(torsoAllowed),
+        rule: `base body alpha>${VALIDATION_THRESHOLDS.visibleAlpha} dilated by ${VALIDATION_THRESHOLDS.torsoSilhouetteTolerancePx}px`,
+      },
       replacementCores: Object.fromEntries(
-        ["head", "hand-l", "hand-r", "foot-l", "foot-r"].map((partId) => [
+        ["body", "head", "hand-l", "hand-r", "foot-l", "foot-r"].map((partId) => [
           partId,
           { ...describeMask(cores[partId]), rule: "boilerplate alpha>=64 eroded by circular radius 4px" },
         ]),
@@ -1281,7 +1442,7 @@ async function loadReplacementContext() {
       baseSources,
     });
     return {
-      masks,
+      torsoAllowed,
       baseRgba,
       baseAlpha,
       baseSilhouettes,
@@ -1298,7 +1459,7 @@ async function loadReplacementContext() {
         baseSources,
         compositionOrders: COMPOSITION_ORDERS,
         thresholds: VALIDATION_THRESHOLDS,
-        torsoOverlapLaw: "pants optional from v=0.52; pants required from v=0.60; shirt required through v=0.62; shirt optional through v=0.72; body,pants,shirt order makes shirt win v=0.60..0.62",
+        torsoLaw: "one complete replace-torso object; >=90% base-core coverage; one island; base silhouette + 12px collar/hem tolerance; no zones",
       },
     };
   })();
@@ -1306,7 +1467,7 @@ async function loadReplacementContext() {
 }
 
 function roleUsesGeneratedOutline(renderRole) {
-  return ["replace-hand", "replace-foot", "replace-head", "prestige-cap", "overlay-hat", "cloak-far"].includes(renderRole);
+  return ["replace-torso", "replace-hand", "replace-foot", "replace-head", "overlay-hat", "cloak-far"].includes(renderRole);
 }
 
 function singleContentFrameForJob(job) {
@@ -1314,8 +1475,9 @@ function singleContentFrameForJob(job) {
   if (job.renderRole === "head-accessory") {
     return job.item.slot === "glasses" ? FACE_ENVELOPES.eyes : FACE_ENVELOPES.mouthJaw;
   }
-  if (job.renderRole === "replace-head") {
-    const [left, top, width, height] = PART_FRAMES.head.crop;
+  if (job.renderRole === "replace-torso" || job.renderRole === "replace-head") {
+    const frame = job.renderRole === "replace-torso" ? PART_FRAMES.body : PART_FRAMES.head;
+    const [left, top, width, height] = frame.crop;
     const inset = generatedOutlineRadius();
     return { left: left + inset, top: top + inset, width: width - inset * 2, height: height - inset * 2 };
   }
@@ -1330,14 +1492,16 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
     throw new Error(`Outline: role ${job.renderRole} requires generated radius ${expectedOutlineRadius}, got ${generatedOutlineRadius}`);
   }
   let gateReport;
-  if (job.renderRole === "body-patch") {
-    gateReport = validateTorsoPatch({
+  if (job.renderRole === "replace-torso") {
+    gateReport = validateTorsoReplacement({
       alpha,
       width: CANVAS.width,
       height: CANVAS.height,
-      slot: job.item.slot,
-      masks: context.masks,
-      baseSilhouette: context.baseSilhouettes.body,
+      frame: PART_FRAMES.body.crop,
+      coreMask: context.cores.body,
+      allowedMask: context.torsoAllowed,
+      pivot: PART_FRAMES.body.pivotSource,
+      partBox: job.spec.maxPartBox,
       generatedOutlineRadius,
     });
   } else if (job.renderRole === "replace-hand" || job.renderRole === "replace-foot") {
@@ -1377,7 +1541,7 @@ async function validateReplacementData(job, rgba, generatedOutlineRadius = 0) {
       mouthPivot: receiver("face.mouth").raw,
       hatMount: HAT_STACK_BAND.sourcePivot,
     });
-  } else if (job.renderRole === "prestige-cap" || job.renderRole === "overlay-hat") {
+  } else if (job.renderRole === "overlay-hat") {
     const bounds = alphaBounds(rgba, CANVAS.width, CANVAS.height);
     if (!bounds) throw new Error("File/frame: hat contains no visible alpha");
     const stackBandVerification = verifyHatStackBand(rgba, bounds);
@@ -1442,12 +1606,6 @@ async function processAndInstall({ raw, dst, pivots, desiredAnchor, maxPartBox, 
         registrationPartBox,
         singleContentFrameForJob(replacementJob),
       );
-  if (replacementJob?.renderRole === "body-patch") {
-    const context = await loadReplacementContext();
-    const allowed = replacementJob.item.slot === "shirt" ? context.masks.shirtAllowed : context.masks.pantsAllowed;
-    const clippedPixels = clipRgbaToMask(registered, allowed);
-    if (clippedPixels > 0) console.log(`CLIP body-patch: ${clippedPixels}px outside ${replacementJob.item.slot}Allowed`);
-  }
   scrubAlphaSpecks(registered, CANVAS.width, CANVAS.height, "post-registration", 0);
   const outlined = replacementJob && !roleUsesGeneratedOutline(replacementJob.renderRole)
     ? { data: registered, radius: 0, rimPixels: 0 }
@@ -1566,6 +1724,140 @@ function currentRenderInstall(job, context) {
   }
 }
 
+function reuseCandidateForJob(job) {
+  if (job.renderRole === "replace-torso") {
+    return resolve(GEAR_DST, "shirt", `${job.item.id}.png`);
+  }
+  if (job.renderRole === "replace-head") {
+    return resolve(GEAR_DST, "heads", `${job.item.setId}-hat.png`);
+  }
+  return null;
+}
+
+function persistReuseVerdict(job, verdict) {
+  let onDisk = null;
+  try {
+    const parsed = JSON.parse(readFileSync(REUSE_VERDICTS_PATH, "utf8"));
+    if (parsed.contractId === REPLACEMENT_CONTRACT_ID) onDisk = parsed;
+  } catch {}
+  if (onDisk) {
+    reuseVerdicts = {
+      ...onDisk,
+      ...reuseVerdicts,
+      items: { ...(onDisk.items ?? {}), ...(reuseVerdicts.items ?? {}) },
+    };
+  }
+  reuseVerdicts.evaluatedAt = new Date().toISOString();
+  reuseVerdicts.catalogState = CATALOG_STATE;
+  reuseVerdicts.items[job.item.id] = {
+    id: job.item.id,
+    setId: job.item.setId,
+    renderRole: job.renderRole,
+    ...verdict,
+  };
+  atomicJson(REUSE_VERDICTS_PATH, reuseVerdicts);
+}
+
+async function tryReusePairRender(job, context) {
+  const candidate = reuseCandidateForJob(job);
+  if (!candidate || !existsSync(candidate)) {
+    persistReuseVerdict(job, { verdict: "no-candidate", candidate: candidate ? repoPath(candidate) : null });
+    return false;
+  }
+  try {
+    await inspectInstalled(candidate, job.spec.sourcePivots, componentRegionsForSpec(job.spec), false, job);
+    const dst = installedRenderJobPath(job);
+    mkdirSync(dirname(dst), { recursive: true });
+    copyFileSync(candidate, dst);
+    const inspected = await inspectInstalled(dst, job.spec.sourcePivots, componentRegionsForSpec(job.spec), false, job);
+    syncInstalledRenderJobToClient(job, dst);
+    const bundle = referenceBundleForJob(job);
+    atomicJson(renderJobStatusPath(job), {
+      schemaVersion: 2,
+      id: job.item.id,
+      name: job.item.name,
+      setId: job.item.setId,
+      sourceCharacterId: job.item.sourceCharacterId,
+      renderRole: job.renderRole,
+      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+      installedAt: new Date().toISOString(),
+      installedFile: repoPath(dst),
+      installedSha256: inspected.image.sha256,
+      sourcePivots: job.spec.sourcePivots,
+      identityReferences: bundle.paths.map(repoPath),
+      alphaBounds: inspected.bounds,
+      outline: { ...OUTLINE, radius: 8, reusedAuthoredRim: true },
+      validation: inspected.replacementValidation,
+      reusedFrom: repoPath(candidate),
+      renderAttempts: 0,
+    });
+    persistReuseVerdict(job, {
+      verdict: "kept",
+      candidate: repoPath(candidate),
+      installedFile: repoPath(dst),
+      coreCoverage: inspected.replacementValidation?.gates?.coreCoverage ?? null,
+    });
+    console.log(`REUSE PASS ${job.key} <- ${repoPath(candidate)}`);
+    return true;
+  } catch (error) {
+    persistReuseVerdict(job, { verdict: "rerender", candidate: repoPath(candidate), error: error.message });
+    console.log(`REUSE FAIL ${job.key}: ${error.message}`);
+    return false;
+  }
+}
+
+async function tryInstallExistingMaster(job, context) {
+  const raw = rawRenderJobPath(job);
+  if (!existsSync(raw)) return false;
+  const dst = installedRenderJobPath(job);
+  try {
+    const installed = await processAndInstall({
+      raw,
+      dst,
+      pivots: job.spec.sourcePivots,
+      desiredAnchor: job.spec.desiredAnchor ?? [0.5, 0.5],
+      maxPartBox: job.spec.maxPartBox,
+      pairedSpec: job.spec.sourcePivots.length === 2 ? job.spec : null,
+      hat: false,
+      replacementJob: job,
+    });
+    syncInstalledRenderJobToClient(job, dst);
+    const bundle = referenceBundleForJob(job);
+    const prior = reuseVerdicts.items[job.item.id] ?? {};
+    atomicJson(renderJobStatusPath(job), {
+      schemaVersion: 2,
+      id: job.item.id,
+      name: job.item.name,
+      setId: job.item.setId,
+      sourceCharacterId: job.item.sourceCharacterId,
+      renderRole: job.renderRole,
+      replacementContract: { id: REPLACEMENT_CONTRACT_ID, revision: context.revision },
+      installedAt: new Date().toISOString(),
+      installedFile: repoPath(dst),
+      installedSha256: installed.installedSha256,
+      sourcePivots: job.spec.sourcePivots,
+      identityReferences: bundle.paths.map(repoPath),
+      alphaBounds: installed.bounds,
+      outline: installed.outline,
+      validation: installed.replacementValidation,
+      renderAttempts: prior.renderAttempts ?? 0,
+      attemptFailures: prior.attemptFailures ?? [],
+      installedFromExistingMaster: repoPath(raw),
+    });
+    persistReuseVerdict(job, {
+      ...prior,
+      verdict: "rerendered",
+      installedFile: repoPath(dst),
+      installedFromExistingMaster: repoPath(raw),
+    });
+    console.log(`EXISTING MASTER PASS ${job.key} <- ${repoPath(raw)}`);
+    return true;
+  } catch (error) {
+    console.log(`EXISTING MASTER FAIL ${job.key}: ${error.message}`);
+    return false;
+  }
+}
+
 async function renderIfNeeded({ key, raw, dst, refs, prompt, logPath, force, resumeCurrent = null }) {
   mkdirSync(dirname(raw), { recursive: true });
   mkdirSync(dirname(logPath), { recursive: true });
@@ -1586,6 +1878,7 @@ async function renderIfNeeded({ key, raw, dst, refs, prompt, logPath, force, res
     harvestTo,
     stdoutFile: logPath,
   });
+  const produced = existsSync(harvestTo);
   if (disallowedRenderLog(logPath)) {
     if (existsSync(harvestTo)) {
       const rejected = resolve(OUT, "rejected", `${key.replaceAll("/", "-")}-${Date.now()}.png`);
@@ -1593,13 +1886,13 @@ async function renderIfNeeded({ key, raw, dst, refs, prompt, logPath, force, res
       renameSync(harvestTo, rejected);
       console.log(`REJECTED ${key}: blocked image call or code-drawn fallback moved to ${repoPath(rejected)}`);
     }
-    return { rendered: true, code: code || 1, rejected: true };
+    return { rendered: true, code: code || 1, rejected: true, produced };
   }
   if (harvestTo !== raw && existsSync(harvestTo)) {
     copyFileSync(harvestTo, raw);
     rmSync(harvestTo, { force: true });
   }
-  return { rendered: true, code };
+  return { rendered: true, code, produced };
 }
 
 async function runBoilerplate(options) {
@@ -1783,7 +2076,7 @@ async function runSlot(options, slotSpec) {
   for (const job of jobs) {
     const raw = rawRenderJobPath(job);
     const dst = installedRenderJobPath(job);
-    const current = job.creativeRender && currentRenderInstall(job, context);
+    let current = job.creativeRender && currentRenderInstall(job, context);
     if (!job.creativeRender) {
       if (!existsSync(dst)) {
         console.log(`VALIDATE FAIL ${job.key}: preserved ${job.renderRole} is missing`);
@@ -1805,48 +2098,57 @@ async function runSlot(options, slotSpec) {
       }
       continue;
     }
+    if (!options.validateOnly && !current && !options.force) current = await tryInstallExistingMaster(job, context);
+    if (!options.validateOnly && !current && !options.force) current = await tryReusePairRender(job, context);
+    if (!options.validateOnly && options.reuseOnly && !current) {
+      console.log(`REUSE-ONLY PENDING ${job.key}`);
+      continue;
+    }
     if (options.validateOnly && !current) {
       console.log(`MIGRATION PENDING ${job.key} role=${job.renderRole}`);
       continue;
     }
     if (!options.validateOnly && !current && creativeCallsStarted >= options.maxJobs) continue;
-    if (!options.validateOnly) {
+    if (!options.validateOnly && (options.force || !current)) {
       const bundle = referenceBundleForJob(job);
       if (bundle.paths.length !== bundle.entries.length) {
         console.log(`RENDER FAIL ${job.key}: exact-frame identity reference missing`);
         failures++;
         continue;
       }
-      const shouldRender = options.force || !current;
-      if (shouldRender) creativeCallsStarted++;
-      const render = await renderIfNeeded({
-        key: job.key,
-        raw,
-        dst,
-        refs: bundle.paths,
-        prompt: promptForRenderJob(job, bundle),
-        logPath: renderJobLogPath(job),
-        force: options.force,
-        resumeCurrent: current,
-      });
-      if (render.code !== 0 || render.rejected || (render.rendered && !existsSync(raw))) {
-        console.log(`RENDER FAIL ${job.key} exit=${render.code}`);
-        failures++;
-        continue;
-      }
-      if (render.rendered) {
+      creativeCallsStarted++;
+      const attemptFailures = [];
+      let installed = null;
+      for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
+        console.log(`ATTEMPT ${job.key} ${attempt}/${options.maxAttempts}`);
+        const render = await renderIfNeeded({
+          key: `${job.key}/attempt-${attempt}`,
+          raw,
+          dst,
+          refs: bundle.paths,
+          prompt: promptForRenderJob(job, bundle),
+          logPath: renderJobLogPath(job, attempt),
+          force: true,
+          resumeCurrent: false,
+        });
+        if (render.code !== 0 || render.rejected || !render.produced || !existsSync(raw)) {
+          const reason = `image generation exit=${render.code} rejected=${Boolean(render.rejected)} produced=${Boolean(render.produced)}`;
+          attemptFailures.push({ attempt, stage: "render", error: reason });
+          console.log(`RENDER FAIL ${job.key} attempt=${attempt}: ${reason}`);
+          continue;
+        }
         try {
-          const installed = await processAndInstall({
+          installed = await processAndInstall({
             raw,
             dst,
             pivots: job.spec.sourcePivots,
             desiredAnchor: job.spec.desiredAnchor ?? [0.5, 0.5],
             maxPartBox: job.spec.maxPartBox,
             pairedSpec: job.spec.sourcePivots.length === 2 ? job.spec : null,
-            hat: job.renderRole === "prestige-cap",
+            hat: false,
             replacementJob: job,
           });
-          const bundleForLog = referenceBundleForJob(job);
+          syncInstalledRenderJobToClient(job, dst);
           atomicJson(renderJobStatusPath(job), {
             schemaVersion: 2,
             id: job.item.id,
@@ -1859,25 +2161,47 @@ async function runSlot(options, slotSpec) {
             installedFile: repoPath(dst),
             installedSha256: installed.installedSha256,
             sourcePivots: job.spec.sourcePivots,
-            identityReferences: bundleForLog.paths.map(repoPath),
+            identityReferences: bundle.paths.map(repoPath),
             alphaBounds: installed.bounds,
             outline: installed.outline,
             validation: installed.replacementValidation,
+            renderAttempts: attempt,
+            attemptFailures,
+            renderLog: repoPath(renderJobLogPath(job, attempt)),
           });
           console.log(`INSTALLED ${repoPath(dst)} role=${job.renderRole} bounds=${installed.bounds.width}x${installed.bounds.height}@${installed.bounds.left},${installed.bounds.top}`);
+          persistReuseVerdict(job, {
+            verdict: "rerendered",
+            candidate: reuseCandidateForJob(job) && existsSync(reuseCandidateForJob(job)) ? repoPath(reuseCandidateForJob(job)) : null,
+            installedFile: repoPath(dst),
+            renderAttempts: attempt,
+            attemptFailures,
+          });
+          break;
         } catch (error) {
-          console.log(`INSTALL FAIL ${job.key}: ${error.message}`);
-          failures++;
-          continue;
+          attemptFailures.push({ attempt, stage: "install", error: error.message });
+          console.log(`INSTALL FAIL ${job.key} attempt=${attempt}: ${error.message}`);
         }
       }
+      if (!installed) {
+        persistReuseVerdict(job, {
+          verdict: "survivor-after-3",
+          candidate: reuseCandidateForJob(job) && existsSync(reuseCandidateForJob(job)) ? repoPath(reuseCandidateForJob(job)) : null,
+          renderAttempts: options.maxAttempts,
+          attemptFailures,
+        });
+        console.log(`SURVIVOR ${job.key}: exhausted ${options.maxAttempts} attempt(s)`);
+        failures++;
+        continue;
+      }
+      current = true;
     }
     try {
       const inspected = await inspectInstalled(
         dst,
         job.spec.sourcePivots,
         componentRegionsForSpec(job.spec),
-        job.renderRole === "prestige-cap",
+        false,
         job,
       );
       console.log(`VALID ${job.key} role=${job.renderRole} opaque=${inspected.image.opaquePixelCount} pivotAlpha=${inspected.parts.map((part) => part.pivotAlpha).join(",")}${inspected.stackBandVerification ? ` stack=${inspected.stackBandVerification.verified}` : ""}`);
@@ -1980,21 +2304,16 @@ async function emitHatContactSheet() {
 }
 
 function compositeProofState(manifest) {
-  const shirts = manifest.slots.find((slot) => slot.id === "shirt")?.items ?? [];
-  const pants = manifest.slots.find((slot) => slot.id === "pants")?.items ?? [];
-  const glasses = manifest.slots.find((slot) => slot.id === "glasses")?.items ?? [];
-  const facialHair = manifest.slots.find((slot) => slot.id === "facialHair")?.items ?? [];
-  const replacementHeads = manifest.slots.find((slot) => slot.id === "hat")?.items.filter((item) => item.renderRole === "replace-head") ?? [];
-  const ready = shirts.length === 15 && pants.length === 12 && glasses.length === 15 && facialHair.length === 12 && replacementHeads.length === 2;
+  const torsos = manifest.slots.find((slot) => slot.id === "torso")?.items ?? [];
+  const heads = manifest.slots.find((slot) => slot.id === "head")?.items ?? [];
+  const ready = torsos.length === MIGRATION_EXPECTED.torsoItems && heads.length === MIGRATION_EXPECTED.headItems;
   return {
     ready,
-    body: { blank: 1, everyShirtWithRepresentativePants: shirts.length * 3, expectedEveryShirtWithRepresentativePants: 45 },
-    head: { replacementHeadAccessoryCartesian: replacementHeads.length * 9, expectedReplacementHeadAccessoryCartesian: 18 },
-    towers: { replacementHeadPrestigeCases: replacementHeads.length * 4, expectedReplacementHeadPrestigeCases: 8, prestigeValues: [0, 1, 11, 30] },
+    body: { blank: 1, completeTorsos: torsos.length, expectedCompleteTorsos: MIGRATION_EXPECTED.torsoItems },
+    head: { completeHeads: heads.length, expectedCompleteHeads: MIGRATION_EXPECTED.headItems },
     laws: {
-      representativePants: ["blank", "set-matched-or-blank", "widest"],
-      glasses: ["blank", "set-matched", "widest"],
-      facialHair: ["blank", "set-matched", "tallest"],
+      torso: "one complete replacement object; no zone or separate pants layer",
+      head: "one complete replacement object; accessories remain compatible overlays",
     },
   };
 }
@@ -2071,51 +2390,26 @@ async function towerProofTile(head, prestige) {
 async function emitGearReplacementContactSheet(manifest) {
   const proof = compositeProofState(manifest);
   if (!proof.ready) throw new Error(`Composite proof is incomplete: ${JSON.stringify(proof)}`);
-  const context = await loadReplacementContext();
   const bodyPath = installedBoilerplatePath("body");
-  const shirts = manifest.slots.find((slot) => slot.id === "shirt").items;
-  const pants = manifest.slots.find((slot) => slot.id === "pants").items;
+  const torsos = manifest.slots.find((slot) => slot.id === "torso").items;
+  const heads = manifest.slots.find((slot) => slot.id === "head").items;
   const glasses = manifest.slots.find((slot) => slot.id === "glasses").items;
   const facialHair = manifest.slots.find((slot) => slot.id === "facialHair").items;
-  const replacementHeads = manifest.slots.find((slot) => slot.id === "hat").items.filter((item) => item.renderRole === "replace-head");
-  const widestPants = [...pants].sort((a, b) => b.alphaBounds.width - a.alphaBounds.width)[0];
-  const widestGlasses = [...glasses].sort((a, b) => b.alphaBounds.width - a.alphaBounds.width)[0];
-  const tallestFacialHair = [...facialHair].sort((a, b) => b.alphaBounds.height - a.alphaBounds.height)[0];
   const tiles = [];
   const blankBody = await compositeFullCanvas([bodyPath]);
   tiles.push(await contactTile(blankBody, PART_FRAMES.body.crop, "BLANK BODY", "base silhouette"));
-  for (const shirt of shirts) {
-    const matchedPants = pants.find((pantsItem) => pantsItem.setId === shirt.setId) ?? null;
-    for (const [label, pantsItem] of [["blank", null], ["matched", matchedPants], ["widest", widestPants]]) {
-      const canvas = await compositeFullCanvas([
-        bodyPath,
-        pantsItem ? resolve(REPO, pantsItem.installedFile) : null,
-        resolve(REPO, shirt.installedFile),
-      ]);
-      await assertBodyCompositeSilhouette(canvas, context, `${shirt.id}/${label}`);
-      tiles.push(await contactTile(canvas, PART_FRAMES.body.crop, shirt.id, `pants:${pantsItem?.id ?? "blank"}`));
-    }
+  for (const torso of torsos) {
+    tiles.push(await contactTile(resolve(REPO, torso.installedFile), PART_FRAMES.body.crop, torso.id, "complete replace-torso"));
   }
-  for (const head of replacementHeads) {
-    const matchedGlasses = glasses.find((item) => item.setId === head.setId) ?? widestGlasses;
-    const matchedFacialHair = facialHair.find((item) => item.setId === head.setId) ?? tallestFacialHair;
-    const glassesCases = [null, matchedGlasses, widestGlasses];
-    const hairCases = [null, matchedFacialHair, tallestFacialHair];
-    for (const glassesItem of glassesCases) {
-      for (const hairItem of hairCases) {
-        const canvas = await compositeFullCanvas([
-          resolve(REPO, head.replacementInstalledFile),
-          hairItem ? resolve(REPO, hairItem.installedFile) : null,
-          glassesItem ? resolve(REPO, glassesItem.installedFile) : null,
-        ]);
-        tiles.push(await contactTile(canvas, PART_FRAMES.head.crop, head.id, `hair:${hairItem?.id ?? "blank"} glasses:${glassesItem?.id ?? "blank"}`));
-      }
-    }
-  }
-  for (const head of replacementHeads) {
-    for (const prestige of [0, 1, 11, 30]) {
-      tiles.push(await towerProofTile(head, prestige));
-    }
+  for (const head of heads) {
+    const glassesItem = glasses.find((item) => item.setId === head.setId) ?? null;
+    const hairItem = facialHair.find((item) => item.setId === head.setId) ?? null;
+    const canvas = await compositeFullCanvas([
+      resolve(REPO, head.installedFile),
+      hairItem ? resolve(REPO, hairItem.installedFile) : null,
+      glassesItem ? resolve(REPO, glassesItem.installedFile) : null,
+    ]);
+    tiles.push(await contactTile(canvas, PART_FRAMES.head.crop, head.id, `matched accessories`));
   }
   const columns = 8;
   const rows = Math.ceil(tiles.length / columns);
@@ -2161,7 +2455,7 @@ async function buildManifest() {
           ? { frame: FRAME_ID, socket: "body", xL: 0, yL: 0, raw: BODY_ROOT_SOURCE }
           : receiver(part.receiver),
         restAngle: 0,
-        mountScale: 1,
+        mountScale: mountScaleForPart(part.id, part.receiver),
         plane: Z_ORDER.find((plane) => plane.id === part.planeId)?.plane ?? 0,
         alphaBounds: boundsManifest(inspected.bounds),
         image: inspected.image,
@@ -2207,7 +2501,7 @@ async function buildManifest() {
             pivotTrimmed: spec.sourcePivots[index],
             receiverAnchor: receiver(spec.receivers[index]),
             restAngle: 0,
-            mountScale: 1,
+            mountScale: mountScaleForPart(id, spec.receivers[index]),
             plane: Z_ORDER.find((plane) => plane.id === spec.planeIds[index])?.plane ?? 0,
             spring: spec.id === "hat" ? { preset: "hat-jiggle", hz: 5.2, dampingRatio: 0.58, maxDeg: 9, dragGain: 0.70 } : null,
             alphaBounds: boundsManifest(inspected.parts[index].bounds),
@@ -2290,7 +2584,7 @@ async function buildManifest() {
 }
 
 function fixedFrameIdForJobPart(job, index) {
-  if (job.renderRole === "body-patch") return "body";
+  if (job.renderRole === "replace-torso") return "body";
   if (job.renderRole === "head-accessory" || job.renderRole === "replace-head") return "head";
   if (job.renderRole === "replace-hand") return index === 0 ? "hand-l" : "hand-r";
   if (job.renderRole === "replace-foot") return index === 0 ? "foot-l" : "foot-r";
@@ -2315,7 +2609,7 @@ function manifestPartsForJob(result) {
     const frameId = fixedFrameIdForJobPart(job, index);
     const frame = frameId ? PART_FRAMES[frameId] : null;
     return {
-      id: job.renderRole === "prestige-cap" ? "prestige-cap" : id,
+      id,
       renderRole: job.renderRole,
       parent: receiver(job.spec.receivers[index]).parent,
       receiver: job.spec.receivers[index],
@@ -2324,9 +2618,9 @@ function manifestPartsForJob(result) {
       authoringPivotSource: job.spec.sourcePivots[index],
       receiverAnchor: receiver(job.spec.receivers[index]),
       restAngle: 0,
-      mountScale: 1,
+      mountScale: mountScaleForPart(id, job.spec.receivers[index]),
       plane: Z_ORDER.find((plane) => plane.id === job.spec.planeIds[index])?.plane ?? 0,
-      spring: ["overlay-hat", "prestige-cap"].includes(job.renderRole)
+      spring: job.renderRole === "overlay-hat"
         ? { preset: "hat-jiggle", hz: 5.2, dampingRatio: 0.58, maxDeg: 9, dragGain: 0.70 }
         : null,
       fixedFrame: frameId,
@@ -2341,7 +2635,7 @@ function manifestPartsForJob(result) {
   });
 }
 
-async function buildManifestV2() {
+async function buildManifestV2({ includeValidatedPairInstalls = false } = {}) {
   const context = await loadReplacementContext();
   const invalid = [];
   const installedPaths = new Set();
@@ -2349,17 +2643,20 @@ async function buildManifestV2() {
 
   for (const job of RENDER_JOBS) {
     const path = installedRenderJobPath(job);
-    const eligible = job.creativeRender ? currentRenderInstall(job, context) : existsSync(path);
+    const eligible = job.creativeRender
+      ? currentRenderInstall(job, context) || (includeValidatedPairInstalls && existsSync(path))
+      : existsSync(path);
     if (!eligible) continue;
     try {
       const inspected = await inspectInstalled(
         path,
         job.spec.sourcePivots,
         componentRegionsForSpec(job.spec),
-        ["overlay-hat", "prestige-cap"].includes(job.renderRole),
+        job.renderRole === "overlay-hat",
         job,
       );
       const result = { job, path, inspected };
+      syncInstalledRenderJobToClient(job, path);
       resultByKey.set(job.key, result);
       installedPaths.add(repoPath(path));
     } catch (error) {
@@ -2403,7 +2700,7 @@ async function buildManifestV2() {
           ? { frame: FRAME_ID, socket: "body", xL: 0, yL: 0, raw: BODY_ROOT_SOURCE }
           : receiver(part.receiver),
         restAngle: 0,
-        mountScale: 1,
+        mountScale: mountScaleForPart(part.id, part.receiver),
         plane: Z_ORDER.find((plane) => plane.id === part.planeId)?.plane ?? 0,
         fixedCrop: frame.crop,
         outputOrigin: frame.outputOrigin,
@@ -2428,14 +2725,13 @@ async function buildManifestV2() {
       const jobs = renderJobsForItem(item);
       const results = jobs.map((job) => resultByKey.get(job.key));
       if (results.some((result) => !result)) continue;
-      const primary = renderRoleForItem(item) === "replace-head"
-        ? results.find((result) => result.job.renderRole === "prestige-cap")
-        : results[0];
-      const replacement = results.find((result) => result.job.renderRole === "replace-head") ?? null;
+      const primary = results[0];
       const parts = results.flatMap(manifestPartsForJob);
       installedItemCount++;
       installedPartCount += parts.length;
       const identityReferences = referenceBundleForJob(primary.job).paths.map(repoPath);
+      let status = null;
+      try { status = JSON.parse(readFileSync(renderJobStatusPath(primary.job), "utf8")); } catch {}
       rows.push({
         id: item.id,
         name: item.name,
@@ -2450,18 +2746,10 @@ async function buildManifestV2() {
         renderRole: renderRoleForItem(item),
         texture: `${item.id}.png`,
         installedFile: repoPath(primary.path),
-        renderLog: repoPath(renderJobLogPath(primary.job)),
+        renderLog: status?.renderLog ?? repoPath(renderJobLogPath(primary.job)),
         sourceRevision: primary.inspected.image.sha256,
         alphaBounds: boundsManifest(primary.inspected.bounds),
         image: primary.inspected.image,
-        ...(replacement ? {
-          replacementTexture: `heads/${item.id}.png`,
-          replacementInstalledFile: repoPath(replacement.path),
-          replacementRenderLog: repoPath(renderJobLogPath(replacement.job)),
-          replacementSourceRevision: replacement.inspected.image.sha256,
-          replacementAlphaBounds: boundsManifest(replacement.inspected.bounds),
-          replacementImage: replacement.inspected.image,
-        } : {}),
         parts,
         validation: Object.fromEntries(results.map((result) => [result.job.renderRole, result.inspected.replacementValidation])),
         stackBandVerification: primary.inspected.stackBandVerification,
@@ -2486,7 +2774,8 @@ async function buildManifestV2() {
   }
 
   const expectedGear = new Set(RENDER_JOBS.map((job) => repoPath(installedRenderJobPath(job))));
-  const actualGear = new Set(listPngs(GEAR_DST).map(repoPath));
+  const activeDirectories = new Set(RENDER_JOBS.map((job) => dirname(installedRenderJobPath(job))));
+  const actualGear = new Set([...activeDirectories].flatMap((directory) => listPngs(directory)).map(repoPath));
   const missing = [...expectedGear].filter((path) => !installedPaths.has(path)).sort();
   const extras = [...actualGear].filter((path) => !expectedGear.has(path)).sort();
   const socketReference = installedBoilerplatePath("socket-reference");
@@ -2496,10 +2785,34 @@ async function buildManifestV2() {
       CREATIVE_RENDER_JOBS.filter((job) => job.item.id === id).every((job) => resultByKey.has(job.key))
     )),
   );
+  const pairResults = CREATIVE_RENDER_JOBS.map((job) => resultByKey.get(job.key)).filter(Boolean);
+  const keptCreativeIds = [];
+  const rerenderedCreativeIds = [];
+  for (const result of pairResults) {
+    let status = null;
+    try { status = JSON.parse(readFileSync(renderJobStatusPath(result.job), "utf8")); } catch {}
+    (status?.reusedFrom ? keptCreativeIds : rerenderedCreativeIds).push(result.job.item.id);
+  }
+  const pairInvalid = invalid.filter((row) => ["replace-torso", "replace-head"].includes(row.renderRole));
+  const pairMissing = CREATIVE_RENDER_JOBS
+    .filter((job) => !resultByKey.has(job.key))
+    .map((job) => ({ id: job.item.id, renderRole: job.renderRole, file: repoPath(installedRenderJobPath(job)) }));
+  let finalizedFleet = null;
+  try {
+    const state = JSON.parse(readFileSync(FLEET_STATE_PATH, "utf8"));
+    const installedIds = [...completedCreativeIds].sort();
+    const survivorIds = pairMissing.map((row) => row.id).sort();
+    if (state.contractId === REPLACEMENT_CONTRACT_ID
+      && JSON.stringify([...state.installedIds].sort()) === JSON.stringify(installedIds)
+      && JSON.stringify([...state.survivorIds].sort()) === JSON.stringify(survivorIds)) {
+      finalizedFleet = state;
+    }
+  } catch {}
   return {
     schemaVersion: 2,
     generator: "tools/artkit/gen-gear.mjs",
     contentSource: "packages/shared/src/gear.ts#GEAR_CATALOG",
+    catalogState: CATALOG_STATE,
     blankArtRule: "blank-drifter-* catalog rows mean wearing nothing and intentionally have no wearable PNG or manifest item",
     renderContractSource: "docs/gear-replacement-panel/blueprint.md#2-art-authoring-contract-for-bot-2",
     replacementContract: context.manifest,
@@ -2509,9 +2822,24 @@ async function buildManifestV2() {
       preservedOverlayHatIds: MIGRATION_PLAN.preserved.filter((job) => job.renderRole === "overlay-hat").map((job) => job.item.id),
       preservedCloakIds: MIGRATION_PLAN.preserved.filter((job) => job.renderRole === "cloak-far").map((job) => job.item.id),
       completedRerenderItems: completedCreativeIds.size,
-      completedRenderCalls: completedCreative.length,
-      pendingRenderCalls: MIGRATION_EXPECTED.renderCalls - completedCreative.length,
+      completedRenderCalls: finalizedFleet ? finalizedFleet.attemptedItems : completedCreative.length,
+      pendingRenderCalls: finalizedFleet ? 0 : MIGRATION_EXPECTED.renderCalls - completedCreative.length,
       completedComponentParts: completedCreative.reduce((sum, job) => sum + job.componentParts, 0),
+      reuseVerdicts: {
+        file: repoPath(REUSE_VERDICTS_PATH),
+        kept: keptCreativeIds,
+        rerendered: rerenderedCreativeIds,
+        survivors: finalizedFleet?.survivorIds
+          ?? Object.values(reuseVerdicts.items).filter((row) => row.verdict === "survivor-after-3").map((row) => row.id),
+      },
+      renderFleet: finalizedFleet,
+      validation: {
+        expectedItems: MIGRATION_EXPECTED.rerenderItems,
+        installedItems: pairResults.length,
+        missing: pairMissing,
+        invalid: pairInvalid,
+        verified: pairResults.length === MIGRATION_EXPECTED.rerenderItems && pairMissing.length === 0 && pairInvalid.length === 0,
+      },
     },
     compositeProof: compositeProofState({ slots: slotRows }),
     socketFrame: {
@@ -2531,9 +2859,9 @@ async function buildManifestV2() {
       ...OUTLINE,
       radiusRule: "radiusPx=max(1,round(baseWidth*max(canvasWidth,canvasHeight)/referenceCanvas))",
       installedRadius: 8,
-      completeCardRoles: ["replace-head", "replace-hand", "replace-foot", "overlay-hat", "prestige-cap", "cloak-far"],
-      zeroGeneratedRimRoles: ["body-patch", "head-accessory"],
-      law: "complete cards receive one generated #101014 exterior rim; torso patches receive none; head accessories retain authored local contours",
+      completeCardRoles: ["replace-torso", "replace-head", "replace-hand", "replace-foot", "overlay-hat", "cloak-far"],
+      zeroGeneratedRimRoles: ["head-accessory"],
+      law: "complete cards receive one generated #101014 exterior rim; head accessories retain authored local contours",
     },
     zOrder: Z_ORDER,
     boilerplate: {
@@ -2544,11 +2872,11 @@ async function buildManifestV2() {
       socketReference: existsSync(socketReference) ? { installedFile: repoPath(socketReference), sha256: sha256(socketReference) } : null,
       missing: BOILERPLATE_PARTS.map((part) => installedBoilerplatePath(part.id)).filter((path) => !existsSync(path)).map(repoPath),
     },
-    expectedItemCount: MIGRATION_EXPECTED.finalNonblankItems,
+    expectedItemCount: MIGRATION_PLAN.counts.finalNonblankItems,
     installedItemCount,
-    expectedRoleTextureCount: MIGRATION_EXPECTED.finalRoleTextures,
+    expectedRoleTextureCount: MIGRATION_PLAN.counts.finalRoleTextures,
     installedRoleTextureCount,
-    expectedPartCount: MIGRATION_EXPECTED.finalManifestParts,
+    expectedPartCount: MIGRATION_PLAN.counts.finalManifestParts,
     installedPartCount,
     slots: slotRows,
     missing,
@@ -2557,38 +2885,78 @@ async function buildManifestV2() {
   };
 }
 
-async function emitManifest({ write = true } = {}) {
+async function emitManifest({ write = true, includeValidatedPairInstalls = false } = {}) {
   const release = write ? acquireLock("manifest") : () => {};
   try {
-    const manifest = await buildManifestV2();
+    const manifest = await buildManifestV2({ includeValidatedPairInstalls });
     if (write) atomicJson(MANIFEST_PATH, manifest);
     console.log(`${write ? "MANIFEST" : "MANIFEST V2 PREVIEW (not written)"} ${repoPath(MANIFEST_PATH)} items=${manifest.installedItemCount}/${manifest.expectedItemCount} roleTextures=${manifest.installedRoleTextureCount}/${manifest.expectedRoleTextureCount} parts=${manifest.installedPartCount}/${manifest.expectedPartCount} missing=${manifest.missing.length} extras=${manifest.extras.length} invalid=${manifest.invalid.length}`);
-    console.log(`MIGRATION PLAN rerenderItems=${MIGRATION_EXPECTED.rerenderItems} calls=${MIGRATION_EXPECTED.renderCalls} componentParts=${MIGRATION_EXPECTED.rerenderComponentParts} preservedHats=${MIGRATION_EXPECTED.preservedOverlayHats} preservedCloaks=${MIGRATION_EXPECTED.preservedCloaks} finalItems=${MIGRATION_EXPECTED.finalNonblankItems} finalRoleTextures=${MIGRATION_EXPECTED.finalRoleTextures} finalManifestParts=${MIGRATION_EXPECTED.finalManifestParts}`);
+    console.log(`MIGRATION PLAN setPairs=${MIGRATION_EXPECTED.setPairs} torsos=${MIGRATION_EXPECTED.torsoItems} heads=${MIGRATION_EXPECTED.headItems} calls=${MIGRATION_EXPECTED.renderCalls} reusableHeads=${MIGRATION_EXPECTED.reusableHeadRenders} newHeads=${MIGRATION_EXPECTED.newHeadRenders} catalog=${CATALOG_STATE.mode}`);
     console.log(`MIGRATION STATE completedItems=${manifest.migration.completedRerenderItems}/${MIGRATION_EXPECTED.rerenderItems} completedCalls=${manifest.migration.completedRenderCalls}/${MIGRATION_EXPECTED.renderCalls} pendingCalls=${manifest.migration.pendingRenderCalls} completedComponents=${manifest.migration.completedComponentParts}/${MIGRATION_EXPECTED.rerenderComponentParts}`);
+    console.log(`MIGRATION VALIDATION installed=${manifest.migration.validation.installedItems}/${manifest.migration.validation.expectedItems} missing=${manifest.migration.validation.missing.length} invalid=${manifest.migration.validation.invalid.length} verified=${manifest.migration.validation.verified}`);
     return manifest;
   } finally {
     release();
   }
 }
 
+function finalizeMigrationFleet(manifest) {
+  const installedIds = CREATIVE_RENDER_JOBS
+    .map((job) => job.item.id)
+    .filter((id) => !manifest.migration.validation.missing.some((row) => row.id === id));
+  const survivorIds = manifest.migration.validation.missing.map((row) => row.id);
+  const state = {
+    schemaVersion: 1,
+    contractId: REPLACEMENT_CONTRACT_ID,
+    finalizedAt: new Date().toISOString(),
+    expectedItems: MIGRATION_EXPECTED.rerenderItems,
+    attemptedItems: MIGRATION_EXPECTED.rerenderItems,
+    installedItems: installedIds.length,
+    survivorItems: survivorIds.length,
+    installedIds,
+    survivorIds,
+    law: "All pair items were attempted; missing items exhausted the per-item cap and are survivors, not pending renders.",
+  };
+  atomicJson(FLEET_STATE_PATH, state);
+  console.log(`FLEET FINALIZED ${repoPath(FLEET_STATE_PATH)} installed=${state.installedItems}/${state.expectedItems} survivors=${state.survivorItems} pending=0`);
+  return state;
+}
+
 const options = parseOptions(process.argv.slice(2));
 const releases = [];
-const requestedSpecs = options.stage === "gear"
+const migrationValidationDefault = options.validateOnly && options.stage === "all" && options.slot == null;
+const requestedSpecs = options.syncClient
+  ? []
+  : migrationValidationDefault
+  ? SLOT_SPECS.filter((spec) => ["head", "torso"].includes(spec.id))
+  : options.stage === "gear"
   ? (options.slot ? SLOT_SPECS.filter((spec) => spec.id === options.slot) : SLOT_SPECS)
   : options.stage === "all" ? SLOT_SPECS : [];
-if (!options.validateOnly) {
+if (!options.validateOnly && !options.syncClient) {
   if (options.stage === "boilerplate" || options.stage === "all") releases.push(acquireLock("boilerplate"));
-  for (const spec of requestedSpecs) releases.push(acquireLock(`slot-${spec.directory}`));
+  for (const spec of requestedSpecs) releases.push(acquireLock(options.only ? `item-${options.only}` : `slot-${spec.directory}`));
 }
 
 let failures = 0;
 try {
   console.log(`GEAR ART RUN stage=${options.stage} slots=${requestedSpecs.map((spec) => spec.directory).join(",") || "none"} force=${options.force} validateOnly=${options.validateOnly}`);
-  if (options.stage === "boilerplate" || options.stage === "all") failures += await runBoilerplate(options);
+  if (!options.syncClient && !migrationValidationDefault && (options.stage === "boilerplate" || options.stage === "all")) failures += await runBoilerplate(options);
   for (const spec of requestedSpecs) failures += await runSlot(options, spec);
-  const manifest = await emitManifest({ write: !options.validateOnly });
-  if (manifest.extras.length > 0 || manifest.invalid.length > 0) failures++;
-  if (!options.validateOnly && manifest.slots.find((slot) => slot.id === "hat")?.installedItemCount === 12) {
+  let manifest = await emitManifest({
+    write: !options.validateOnly,
+    includeValidatedPairInstalls: options.syncClient,
+  });
+  console.log(`CLIENT SYNC SUMMARY copied=${clientSyncStats.copied} current=${clientSyncStats.current}`);
+  if (options.finalizeFleet) {
+    finalizeMigrationFleet(manifest);
+    manifest = await emitManifest({ write: true });
+  }
+  if (migrationValidationDefault) {
+    if (!manifest.migration.validation.verified) failures++;
+  } else if (options.syncClient) {
+    if (manifest.migration.validation.invalid.length > 0) failures++;
+  } else if (manifest.extras.length > 0 || manifest.invalid.length > 0) failures++;
+  if (!options.validateOnly && !options.syncClient && manifest.slots.find((slot) => slot.id === "hat")?.installedItemCount === 12) {
     try {
       const sheet = await emitHatContactSheet();
       if (sheet) console.log(`HAT CONTACT SHEET ${repoPath(sheet)}`);
@@ -2598,13 +2966,14 @@ try {
     }
   }
   if (!options.validateOnly
-    && manifest.installedItemCount === MIGRATION_EXPECTED.finalNonblankItems
-    && manifest.installedRoleTextureCount === MIGRATION_EXPECTED.finalRoleTextures
+    && !options.syncClient
+    && manifest.installedItemCount === MIGRATION_PLAN.counts.finalNonblankItems
+    && manifest.installedRoleTextureCount === MIGRATION_PLAN.counts.finalRoleTextures
     && manifest.invalid.length === 0
     && manifest.extras.length === 0) {
     try {
       const sheet = await emitGearReplacementContactSheet(manifest);
-      console.log(`REPLACEMENT CONTACT SHEET ${repoPath(sheet.path)} tiles=${sheet.tileCount} bodyCases=${sheet.proof.body.everyShirtWithRepresentativePants + sheet.proof.body.blank} headCases=${sheet.proof.head.replacementHeadAccessoryCartesian} towerCases=${sheet.proof.towers.replacementHeadPrestigeCases}`);
+      console.log(`REPLACEMENT CONTACT SHEET ${repoPath(sheet.path)} tiles=${sheet.tileCount} torsoCases=${sheet.proof.body.completeTorsos + sheet.proof.body.blank} headCases=${sheet.proof.head.completeHeads}`);
     } catch (error) {
       console.log(`REPLACEMENT CONTACT SHEET FAIL: ${error.message}`);
       failures++;

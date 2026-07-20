@@ -7043,19 +7043,19 @@ export class SpriteRig {
     const localX = (spec.source.receiverAnchor.xL - anchor.xL) * manifest.socketFrame.bodyHeightL;
     const localY = (spec.source.receiverAnchor.yL - anchor.yL) * manifest.socketFrame.bodyHeightL;
     const headMountScale = headSource.source.mountScale || 1;
-    const basisScaleX = head.scaleX / headMountScale;
-    const basisScaleY = head.scaleY / headMountScale;
-    const dx = localX * basisScaleX;
-    const dy = localY * basisScaleY;
+    const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
+    const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
+    const dx = localX * parentScaleX;
+    const dy = localY * parentScaleY;
     const cosine = Math.cos(head.rotation);
     const sine = Math.sin(head.rotation);
-    const determinantSign = basisScaleX * basisScaleY < 0 ? -1 : 1;
+    const determinantSign = parentScaleX * parentScaleY < 0 ? -1 : 1;
     attachment.image
       .setPosition(head.x + cosine * dx - sine * dy, head.y + sine * dx + cosine * dy)
       .setRotation(head.rotation + determinantSign * (spec.rotation + attachment.angle))
       .setScale(
-        basisScaleX * spec.source.mountScale * spec.stackScale,
-        basisScaleY * spec.source.mountScale * spec.stackScale,
+        parentScaleX * spec.source.mountScale * spec.stackScale,
+        parentScaleY * spec.source.mountScale * spec.stackScale,
       )
       .setVisible(true);
   }

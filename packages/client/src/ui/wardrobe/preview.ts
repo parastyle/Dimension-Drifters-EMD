@@ -552,7 +552,7 @@ export class WardrobeCharacterPreview {
       scaleX = (head.scaleX / headMountScale) * spec.source.mountScale * spec.stackScale;
       scaleY = (head.scaleY / headMountScale) * spec.source.mountScale * spec.stackScale;
       rotation = head.rotation + spec.rotation;
-    } else if (spec.source.receiver === "head") {
+    } else if (["head", "face.eyes", "face.mouth"].includes(spec.source.receiver)) {
       const source = head.boilerplate;
       if (!source || !this.manifest) return undefined;
       const anchor = source.source.receiverAnchor;
@@ -561,16 +561,16 @@ export class WardrobeCharacterPreview {
       const localY =
         (spec.source.receiverAnchor.yL - anchor.yL) * this.manifest.socketFrame.bodyHeightL;
       const headMountScale = source.source.mountScale || 1;
-      const basisScaleX = head.scaleX / headMountScale;
-      const basisScaleY = head.scaleY / headMountScale;
-      const dx = localX * basisScaleX;
-      const dy = localY * basisScaleY;
+      const parentScaleX = spec.source.receiver === "head" ? head.scaleX / headMountScale : head.scaleX;
+      const parentScaleY = spec.source.receiver === "head" ? head.scaleY / headMountScale : head.scaleY;
+      const dx = localX * parentScaleX;
+      const dy = localY * parentScaleY;
       const cosine = Math.cos(head.rotation);
       const sine = Math.sin(head.rotation);
       x = head.x + cosine * dx - sine * dy;
       y = head.y + sine * dx + cosine * dy;
-      scaleX = basisScaleX * spec.source.mountScale * spec.stackScale;
-      scaleY = basisScaleY * spec.source.mountScale * spec.stackScale;
+      scaleX = parentScaleX * spec.source.mountScale * spec.stackScale;
+      scaleY = parentScaleY * spec.source.mountScale * spec.stackScale;
       rotation = head.rotation + spec.rotation;
     } else if (isBakedPartId(spec.source.receiver)) {
       const receiver = this.partNodes.get(spec.source.receiver);
