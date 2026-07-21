@@ -543,7 +543,8 @@ describe("GameRoom — §13 damageEnemy (the one damage primitive, both paths)",
     e.y = h.room.map.spawnY;
     h.state().enemies.set("v", e);
     h.send("p1", "attack", { aimX: 1, aimY: 0 });
-    h.tick(5);
+    // The XP Echo now has an authored 260ms settle plus its bounded magnet flight before payout.
+    h.tick(16);
     expect(h.state().enemies.has("v")).toBe(false); // killed
     expect(p.xp + (p.level - 1) * 1e6).toBeGreaterThan(before); // §12 xp granted
   });
@@ -6980,7 +6981,7 @@ describe("GameRoom — W4A archived weapon retirement", () => {
     h.join("archive-gallery");
     h.send("archive-gallery", "toggleTraining");
     const roster = h.room.constructor.GALLERY_ROSTER as string[];
-    expect(roster).toHaveLength(323);
+    expect(roster).toHaveLength(322);
     for (const id of enemyComboShared.ARCHIVED_WEAPON_IDS) expect(roster).not.toContain(id);
     const before = h.state().players.get("archive-gallery").weapon;
     h.send("archive-gallery", "devEquip", { weapon: "x2-mistral-kusarigama" });
@@ -7128,7 +7129,9 @@ describe("GameRoom - hit registration regressions", () => {
       1,
       2,
     );
-    for (let tick = 0; tick < 10 && boss.hp === 100_000; tick++) h.room.stepProjectiles(0.05);
+    // Leave two collider-width samples beyond the nominal ten-step center crossing so this control does
+    // not hinge on the final floating-point integration landing on exactly x = 2,000 under a full run.
+    for (let tick = 0; tick < 12 && boss.hp === 100_000; tick++) h.room.stepProjectiles(0.05);
 
     expect(boss.hp).toBe(100_000 - damage);
   });

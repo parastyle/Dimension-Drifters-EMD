@@ -646,6 +646,7 @@ export class BeamRenderer {
         nowMs,
         beltY0,
         beltYScale,
+        beam?.conePolish,
       );
       return;
     }
@@ -724,6 +725,7 @@ export class BeamRenderer {
     nowMs: number,
     beltY0: number,
     beltYScale: number,
+    polish?: BeamVfxRecipe["conePolish"],
   ): void {
     const c = Math.cos(pose.angle);
     const s = Math.sin(pose.angle);
@@ -752,12 +754,15 @@ export class BeamRenderer {
         .closePath()
         .fillPath();
     };
-    drawSheet(1, edgeColor, flavor === "magma" ? 0.2 : 0.16);
-    drawSheet(0.86, chromaColor, flavor === "magma" ? 0.42 : 0.36);
-    drawSheet(0.48, coreColor, 0.28);
+    const sheets = polish?.sheets ?? 3;
+    for (let index = sheets; index >= 1; index--) {
+      const fraction = 0.38 + (index / sheets) * 0.62;
+      const color = index === 1 ? coreColor : index % 2 === 0 ? chromaColor : edgeColor;
+      drawSheet(fraction, color, (flavor === "magma" ? 0.14 : 0.11) + index / sheets * 0.08);
+    }
 
     const phase = nowMs * (flavor === "magma" ? 0.0024 : 0.0032) + entry.seed * Math.PI * 2;
-    const ribs = 7;
+    const ribs = polish?.ribs ?? 7;
     for (let index = 1; index <= ribs; index++) {
       const f = ((index / ribs + phase / (Math.PI * 2)) % 1 + 1) % 1;
       const centerX = pose.originX + c * pose.length * f;
@@ -771,6 +776,33 @@ export class BeamRenderer {
           centerX + s * half,
           this.projectY(centerY - c * half, beltY0, beltYScale),
         );
+    }
+    if (flavor === "ice" && polish) {
+      for (let index = 0; index < polish.meltParticles; index++) {
+        const f = ((index / polish.meltParticles + nowMs * 0.00042) % 1 + 1) % 1;
+        const lateral = Math.sin(phase * 0.7 + index * 2.31) * halfEnd * f * 0.72;
+        const x = pose.originX + c * pose.length * f - s * lateral;
+        const y = pose.originY + s * pose.length * f + c * lateral + 3 + 9 * f;
+        this.graphics.fillStyle(index % 2 ? 0x6fd6ff : 0xe8fbff, 0.36).fillCircle(
+          x,
+          this.projectY(y, beltY0, beltYScale),
+          1.5 + (index % 3) * 0.55,
+        );
+      }
+      const endX = pose.originX + c * pose.length;
+      const endY = pose.originY + s * pose.length;
+      for (let index = 0; index < polish.residuePatches; index++) {
+        const lateral = (index / Math.max(1, polish.residuePatches - 1) - 0.5) * halfEnd * 1.55;
+        const jitter = Math.sin(entry.seed * 9 + index * 3.17) * 7;
+        this.graphics
+          .fillStyle(index % 2 ? 0x9eeaff : 0xdaf8ff, 0.13)
+          .fillEllipse(
+            endX - s * lateral + c * jitter,
+            this.projectY(endY + c * lateral + s * jitter, beltY0, beltYScale),
+            18 + (index % 3) * 7,
+            (6 + (index % 2) * 3) * beltYScale,
+          );
+      }
     }
   }
 

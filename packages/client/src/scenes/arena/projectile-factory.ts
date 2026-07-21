@@ -30,6 +30,7 @@ export type GunFx = { color: number; size: number; style: string; trail: number;
 /** §9 per-bullet-kind visual config — colour + muzzle-flash size + trail style. Each gun's `bulletKind`
  *  (server-synced on `ProjectileState.kind`) keys this, so each gun looks distinct without extra sync. */
 export const GUN_FX: Record<string, GunFx> = {
+  "fire-plume": { color: 0xff6a22, size: 31, style: "boom", trail: 46, trailW: 18 },
   slug: { color: 0xffb24a, size: 23, style: "heavy", trail: 26, trailW: 9 }, // revolver: fat hot slug
   pellet: { color: 0xff6a2a, size: 19, style: "boom", trail: 16, trailW: 6 }, // shotgun: red-hot buckshot
   tracer: { color: 0xfff0a0, size: 13, style: "rapid", trail: 44, trailW: 5 }, // gatling: pale tracer streak
@@ -247,6 +248,14 @@ export function makeBullet(
       ease: "Linear",
     });
     scene.tweens.add({ targets: fuse, alpha: 0.3, duration: 90, yoyo: true, repeat: -1 }); // sputtering fuse
+  } else if (k === "fire-plume") {
+    // Mauler payload: a dense taper of overlapping flame lobes with an ember-white leading core.
+    items.push(
+      scene.add.ellipse(-18, 0, 46, 22, 0x8f1e10, 0.56).setRotation(ang).setBlendMode(ADD),
+      scene.add.ellipse(-8, 0, 38, 17, fx.color, 0.82).setRotation(ang).setBlendMode(ADD),
+      scene.add.ellipse(2, 0, 22, 11, 0xffb23b, 0.94).setRotation(ang).setBlendMode(ADD),
+      scene.add.circle(7, 0, 3.2, 0xfff0c4).setBlendMode(ADD),
+    );
   } else if (recipe?.projectile === "electric-bolt" || k === "spark") {
     items.push(scene.add.circle(0, 0, 11, fx.color, 0.34).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, 6, fx.color, 0.82).setBlendMode(ADD));
@@ -262,10 +271,12 @@ export function makeBullet(
     if (k === "spark")
       items.push(scene.add.circle(0, 0, 10).setStrokeStyle(1, 0xffffff, 0.55).setBlendMode(ADD));
   }
+  const payload = scene.add.container(0, 0, items);
   return scene.add
-    .container(pr.x, pr.y, items)
+    .container(pr.x, pr.y, [payload])
     .setScale(Math.max(0.1, visualScale))
-    .setDepth(99000);
+    .setDepth(99000)
+    .setData("arcPayload", payload);
 }
 
 /** Gun-owned identity art layered over a velocity trail; null keeps the generic bullet renderer. */

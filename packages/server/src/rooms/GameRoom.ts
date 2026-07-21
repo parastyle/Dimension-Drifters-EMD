@@ -463,9 +463,11 @@ import {
   WEAPON_IDS,
   WEAPON_PACK_MAX_CAPACITY,
   WEAPONS,
+  projectileWaveformPositionAt,
   type WeaponBankCuratorInputV1,
   type WeaponBankEntryV1,
   type WeaponDef,
+  type ProjectileWaveformDef,
   type WeaponMuzzleOffset,
   type WeaponInstanceV1,
   type WeaponProvenance,
@@ -686,6 +688,13 @@ interface PendingWeaponLunge {
   aimX: number;
   aimY: number;
   distancePx: number;
+  durationSeconds: number;
+  invulnerable: boolean;
+  elapsedSeconds?: number;
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
 }
 
 /** A committed thrown beat whose authored in-hand draw must finish before projectile release. */
@@ -703,6 +712,7 @@ interface PendingWeaponThrow {
   crit: number;
   landingDamagePerSecond?: number;
   ricochet?: { hops: number; range: number };
+  arcHeight?: number;
 }
 
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
@@ -909,6 +919,8 @@ interface CombatState {
   parryChainT: number;
   /** Exact accepted parry epoch; boss counters never mistake slide/ultimate i-frames for a white answer. */
   parryOpenedTick: number;
+  /** Exclusive tick bound for weapon-lunge i-frames. Kept separate so they never count as a parry. */
+  weaponLungeIFrameUntilTick: number;
   /** Graveside Manner's bounded event receipt; no per-tick allocation or synced counter. */
   killHealWindowStart: number;
   killHealWindowAmount: number;
@@ -1177,6 +1189,13 @@ export class GameRoom extends Room<ArenaState> {
       /** Enemy-to-enemy redirects left for an authored thrown ricochet. */
       ricochetHops?: number;
       ricochetRange?: number;
+      /** Authoritative curved-flight state; velocity remains the straight launch basis. */
+      waveform?: {
+        originX: number;
+        originY: number;
+        elapsedSeconds: number;
+        definition: ProjectileWaveformDef;
+      };
     }
   >();
   /** §16 arena-wide HOSTILE-projectile rail. Maintained on spawn/removal/reflection so both the generic
@@ -1270,6 +1289,7 @@ export class GameRoom extends Room<ArenaState> {
     crit: number;
     sourcePlayerId: string;
     sourceWeaponId: string;
+    zoneDamagePerSecond?: number;
   }[] = [];
   /** Accepted scatter descriptors waiting for an authored impact epoch (Cinderchoke downswing). */
   private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
@@ -4447,6 +4467,7 @@ export class GameRoom extends Room<ArenaState> {
       parryChain: 0,
       parryChainT: 0,
       parryOpenedTick: 0xffffffff,
+      weaponLungeIFrameUntilTick: 0,
       killHealWindowStart: -999,
       killHealWindowAmount: 0,
       vh: 0,
@@ -4709,6 +4730,14 @@ export class GameRoom extends Room<ArenaState> {
     return slideContactInvulnerable(c.stance, c.slidePhase, c.slidePhaseTick);
   }
 
+  /** Thunderhead's accepted lunge is immunity only through its exclusive server tick bound. */
+  private weaponLungeInvulnerable(c: CombatState): boolean {
+    return (
+      c.weaponLungeIFrameUntilTick !== 0 &&
+      !tickReached(this.state.tick, c.weaponLungeIFrameUntilTick)
+    );
+  }
+
   private noteSlideDodge(player: PlayerState): void {
     player.dodgedSeq = (player.dodgedSeq + 1) & 0xff;
   }
@@ -4721,6 +4750,9 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const c = this.combat.get(player.id);
     let left = Math.max(0, amount);
+    // Weapon-lunge i-frames are a pure phase: no HP loss, pressure, parry reward, or defensive proc.
+    // Pit recovery remains authoritative and cannot be bypassed by attacking over a ledge.
+    if (c && kind !== "pit" && this.weaponLungeInvulnerable(c) && left > 0) return;
     if (
       player.ultPhase === UltimatePhase.Windup &&
       ultimateFamilyForCode(player.ultArchetype) === UltimateFamily.Seismarch
@@ -6244,6 +6276,20 @@ export class GameRoom extends Room<ArenaState> {
           q.sourceWeaponId,
           CombatDelivery.Quake,
         );
+        if (q.zoneDamagePerSecond !== undefined) {
+          const owner = this.state.players.get(q.sourcePlayerId);
+          const weapon = WEAPONS[q.sourceWeaponId];
+          if (owner && weapon?.groundZone?.trigger === "impact") {
+            this.spawnWeaponGroundZoneAt(
+              owner,
+              weapon,
+              q.x,
+              q.y,
+              q.zoneDamagePerSecond,
+              q.crit,
+            );
+          }
+        }
         this.pendingQuakes.splice(i, 1);
       }
     }
@@ -6435,6 +6481,7 @@ export class GameRoom extends Room<ArenaState> {
         if (!player.alive || this.inLevelWindow(player)) return; // invincible in the §12 level window
         const pcc = this.combat.get(player.id);
         if ((pcc?.invuln ?? 0) > 0) return; // parry i-frames
+        if (pcc && this.weaponLungeInvulnerable(pcc)) return;
         if ((pcc?.juggleMercy ?? 0) > 0) return; // §51 G10 touchdown mercy — a juggle can't chain into the horde
         const reach = kind.radius + PLAYER_RADIUS;
         const dx = enemy.x - player.x;
@@ -7677,6 +7724,8 @@ export class GameRoom extends Room<ArenaState> {
         aimX: Math.cos(aim0),
         aimY: Math.sin(aim0),
         distancePx: authoredLunge.distancePx,
+        durationSeconds: authoredLunge.durationSeconds ?? TICK_MS / 1000,
+        invulnerable: authoredLunge.invulnerable === true,
       });
     }
 
@@ -7840,6 +7889,16 @@ export class GameRoom extends Room<ArenaState> {
         crit: attackCrit,
         sourcePlayerId: player.id,
         sourceWeaponId: weapon.id,
+        zoneDamagePerSecond:
+          weapon.groundZone?.trigger === "impact"
+            ? weapon.groundZone.damagePerSecond *
+              this.heldDamageMult(
+                weapon,
+                weapon.groundZone.scalingGrades,
+                player,
+                hand,
+              )
+            : undefined,
       });
     }
 
@@ -8010,31 +8069,54 @@ export class GameRoom extends Room<ArenaState> {
     c.auraInputWasHeld = held;
   }
 
-  /** Resolve an accepted lunge at active start. Cursor intent was normalized and captured at acceptance;
-   * the final endpoint passes through the same bounds, POI, pit, gate, and deck validator as other moves. */
+  /** Resolve an accepted lunge across its authored active window. Cursor intent is captured at acceptance;
+   * the endpoint is validated once and every intermediate displacement stays on that accepted segment. */
   private stepPendingWeaponLunges(dt: number): void {
     for (const [playerId, lunge] of this.pendingWeaponLunges) {
-      lunge.t -= dt;
-      if (lunge.t > 0) continue;
-      this.pendingWeaponLunges.delete(playerId);
       const player = this.state.players.get(playerId);
       const combat = this.combat.get(playerId);
-      if (!player?.alive || !combat || player.weapon !== lunge.weaponId) continue;
-      const destination = this.navValidDest(
-        player,
-        combat,
-        player.x + lunge.aimX * lunge.distancePx,
-        player.y + lunge.aimY * lunge.distancePx,
-        lunge.distancePx,
+      if (!player?.alive || !combat || player.weapon !== lunge.weaponId) {
+        if (combat) combat.weaponLungeIFrameUntilTick = this.state.tick;
+        this.pendingWeaponLunges.delete(playerId);
+        continue;
+      }
+      if (lunge.elapsedSeconds === undefined) {
+        lunge.t = Math.max(0, lunge.t - dt);
+        if (lunge.t > 1e-9) continue;
+        const destination = this.navValidDest(
+          player,
+          combat,
+          player.x + lunge.aimX * lunge.distancePx,
+          player.y + lunge.aimY * lunge.distancePx,
+          lunge.distancePx,
+        );
+        const dx = destination.x - player.x;
+        const dy = destination.y - player.y;
+        // A pit/obstacle correction may slide sideways, but it may never turn the authored lunge backward.
+        if (dx * lunge.aimX + dy * lunge.aimY <= 0) {
+          this.pendingWeaponLunges.delete(playerId);
+          continue;
+        }
+        lunge.elapsedSeconds = 0;
+        lunge.startX = player.x;
+        lunge.startY = player.y;
+        lunge.endX = destination.x;
+        lunge.endY = destination.y;
+        if (lunge.invulnerable) {
+          combat.weaponLungeIFrameUntilTick =
+            (this.state.tick + ticksFromSeconds(lunge.durationSeconds)) >>> 0;
+        }
+      }
+      lunge.elapsedSeconds = Math.min(
+        lunge.durationSeconds,
+        (lunge.elapsedSeconds ?? 0) + dt,
       );
-      const dx = destination.x - player.x;
-      const dy = destination.y - player.y;
-      // A pit/obstacle correction may slide sideways, but it may never turn the authored lunge backward.
-      if (dx * lunge.aimX + dy * lunge.aimY <= 0) continue;
-      player.x = destination.x;
-      player.y = destination.y;
-      combat.lastGroundX = destination.x;
-      combat.lastGroundY = destination.y;
+      const progress = lunge.elapsedSeconds / lunge.durationSeconds;
+      player.x = (lunge.startX ?? player.x) + ((lunge.endX ?? player.x) - (lunge.startX ?? player.x)) * progress;
+      player.y = (lunge.startY ?? player.y) + ((lunge.endY ?? player.y) - (lunge.startY ?? player.y)) * progress;
+      combat.lastGroundX = player.x;
+      combat.lastGroundY = player.y;
+      if (progress >= 1) this.pendingWeaponLunges.delete(playerId);
     }
   }
 
@@ -10131,6 +10213,8 @@ export class GameRoom extends Room<ArenaState> {
       const dx = p.x - x;
       const dy = p.y - y;
       if (dx * dx + dy * dy > r2) return;
+      const combat = this.combat.get(p.id);
+      if (combat && this.weaponLungeInvulnerable(combat)) return;
       this.damagePlayer(p, damage, "enemy"); // §16 unparryable — dodge it, don't block it
       const d = Math.hypot(dx, dy) || 1;
       const k = addImpulse(p, (dx / d) * knockback, (dy / d) * knockback);
@@ -10613,6 +10697,8 @@ export class GameRoom extends Room<ArenaState> {
     firstCollisionFrom?: Vec2,
     landingZoneDamage?: number,
     targetRicochet?: { hops: number; range: number },
+    projectileWaveform?: ProjectileWaveformDef,
+    arcHeight = 0,
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
     // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
@@ -10639,6 +10725,8 @@ export class GameRoom extends Room<ArenaState> {
     pr.sourcePlayerId = sourcePlayerId;
     pr.sourceWeaponId = sourceWeaponId;
     pr.explodeR = explode?.radius ?? 0; // §14 WYSIWYG: client renders a blast of exactly this radius
+    pr.arcHeight = Math.max(0, arcHeight);
+    pr.flightTicks = Math.min(0xffff, ticksFromSeconds(ttl));
     this.state.projectiles.set(pr.id, pr);
     this.projectileMeta.set(pr.id, {
       ttl,
@@ -10662,6 +10750,14 @@ export class GameRoom extends Room<ArenaState> {
       landingZoneDamage,
       ricochetHops: targetRicochet?.hops,
       ricochetRange: targetRicochet?.range,
+      waveform: projectileWaveform
+        ? {
+            originX: from.x,
+            originY: from.y,
+            elapsedSeconds: 0,
+            definition: projectileWaveform,
+          }
+        : undefined,
     });
     if (hostile) this.hostileProjectileCount++;
   }
@@ -10854,6 +10950,10 @@ export class GameRoom extends Room<ArenaState> {
           weapon.id,
           CombatDelivery.Gun,
           player, // swept collision begins at the holder body even for laterally offset barrels
+          undefined,
+          undefined,
+          undefined,
+          g.arcHeight ?? 0,
         );
       }
     }
@@ -10965,6 +11065,9 @@ export class GameRoom extends Room<ArenaState> {
         weapon.id,
         CombatDelivery.Cast,
         player,
+        undefined,
+        undefined,
+        cast.projectileWaveform,
       );
     };
     // The authored volley is one accepted payload split evenly over a bounded simultaneous fan.
@@ -11016,6 +11119,7 @@ export class GameRoom extends Room<ArenaState> {
         ricochet: t.ricochetHops
           ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
           : undefined,
+        arcHeight: t.arcHeight ?? weapon.groundZone?.grenadeArcHeight,
       });
       return;
     }
@@ -11042,6 +11146,8 @@ export class GameRoom extends Room<ArenaState> {
       t.ricochetHops
         ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
         : undefined,
+      undefined,
+      t.arcHeight ?? weapon.groundZone?.grenadeArcHeight ?? 0,
     );
   }
 
@@ -11069,6 +11175,8 @@ export class GameRoom extends Room<ArenaState> {
       undefined,
       pending.landingDamagePerSecond,
       pending.ricochet,
+      undefined,
+      pending.arcHeight ?? 0,
     );
   }
 
@@ -13035,8 +13143,23 @@ export class GameRoom extends Room<ArenaState> {
         meta.firstCollisionY = undefined;
         meta.firstStep = false;
       }
-      pr.x += pr.vx * dt;
-      pr.y += pr.vy * dt;
+      if (meta?.waveform) {
+        meta.waveform.elapsedSeconds += dt;
+        const sample = projectileWaveformPositionAt(
+          meta.waveform.originX,
+          meta.waveform.originY,
+          pr.vx,
+          pr.vy,
+          meta.waveform.elapsedSeconds,
+          meta.waveform.definition,
+        );
+        pr.x = sample.x;
+        pr.y = sample.y;
+      } else {
+        pr.x += pr.vx * dt;
+        pr.y += pr.vy * dt;
+      }
+      pr.flightAgeTicks = Math.min(0xffff, pr.flightAgeTicks + 1);
       if (meta) meta.ttl -= dt;
       if (!meta || meta.ttl <= 0) {
         doomed.push(id);
@@ -13104,6 +13227,7 @@ export class GameRoom extends Room<ArenaState> {
           // §12 level-up invincibility: the bullet phases harmlessly through (not a parry — no reflect).
           if (this.inLevelWindow(player)) return;
           const pc = this.combat.get(player.id);
+          if (pc && this.weaponLungeInvulnerable(pc)) return;
           // §8 v0.117 PROJECTILE PARRY: a bullet caught inside the parry i-frame window is DEFLECTED into a
           // friendly counter-shot rocketed back at the horde — the block lands with UMPH, not a silent phase.
           if ((pc?.invuln ?? 0) > 0 && pc) {

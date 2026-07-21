@@ -35,7 +35,7 @@ const GRIPS = new Set(["1H", "2H", "dual", "mounted"]);
 const HANDLING_TAGS = new Set(["lever", "pump", "pistol"]);
 const SECONDARY_GRIP_ROLES = new Set([
   "under-barrel", "lever", "crank", "pump", "vertical-foregrip", "shoulder-RPG",
-  "two-hand-rifle",
+  "two-hand-rifle", "shaft", "handle",
 ]);
 const SIZES = new Set(["S", "M", "L", "XL"]);
 const BANDS = new Set(["close", "mid", "long"]);
@@ -45,9 +45,9 @@ const KINDS = new Set([
 ]);
 const SWING_STYLES = new Set(["arc", "orbit", "chop", "pivot", "thrust", "spin", "punch"]);
 const BULLET_KINDS = new Set([
-  "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade",
+  "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade", "fire-plume",
 ]);
-const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
+const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark", "artillery"]);
 const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "cannonball", "fireball"]);
 const MUZZLE_MODES = new Set(["parallel", "cycle"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
@@ -82,7 +82,7 @@ const STATS_KEYS = new Set(["damage", "range", "halfArc", "cooldown", "displayLe
 const BEHAVIOR_KEYS = {
   edge: new Set(["kind"]),
   thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "scalingGrades", "zone"]),
-  quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
+  quake: new Set(["kind", "radius", "damage", "scalingGrades", "zone"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
   scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
@@ -104,7 +104,7 @@ const SECONDARY_GRIP_KEYS = new Set(["x", "y", "role"]);
 const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "growthPerSecond",
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
-const ZONE_TRIGGERS = new Set(["channel", "attack", "landing"]);
+const ZONE_TRIGGERS = new Set(["channel", "attack", "landing", "impact"]);
 const ZONE_STYLES = new Set(["nether", "poison", "poison-smoke", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
@@ -118,10 +118,11 @@ const EFFECT_RECIPES = new Set([
   "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
-  "cinderbrand-magma-impact",
+  "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
+  "low-close-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
 const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions"]);
@@ -169,7 +170,7 @@ const KATANA_BURST_KEYS = new Set(["radius", "damage"]);
 const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
   "carryAngleRad", "preThrowRevolutions", "lunge", "twirl", "holdScaling", "strideTap",
-  "emitter", "vfxAt", "aura",
+  "emitter", "vfxAt", "aura", "comboForwardPx", "edgeLeadFlip", "throwHeightPx", "frontflip",
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
@@ -180,8 +181,8 @@ const PERFORMANCE_ACTIONS = new Set([
   "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
-const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx"]);
-const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction"]);
+const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx", "durationSeconds", "invulnerable"]);
+const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction", "visualRevolutions"]);
 const PERFORMANCE_HOLD_SCALING_KEYS = new Set(["cadence"]);
 const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
 const PERFORMANCE_AURA_KEYS = new Set([
@@ -267,12 +268,12 @@ function reqs(r, path) {
   return Object.keys(out).length ? out : undefined;
 }
 /** Nested explode block (scatter/gun) — validated + fully emitted (scalingGrades included). */
-function explodeOf(e, path, rMax) {
+function explodeOf(e, path, rMax, damageMax = 30) {
   if (e === undefined) return undefined;
   checkKeys(e, EXPLODE_KEYS, path);
   const out = {
     radius: num(e.radius, 30, rMax, 56, `${path}.radius`),
-    damage: num(e.damage, 1, 30, 6, `${path}.damage`),
+    damage: num(e.damage, 1, damageMax, 6, `${path}.damage`),
   };
   const g = grades(e.scalingGrades, `${path}.scalingGrades`, undefined);
   if (g) out.scalingGrades = g;
@@ -458,12 +459,24 @@ function performanceOf(p) {
     out.windupSeconds = num(p.windupSeconds, 0.1, 0.75, 0.5, "performance.windupSeconds");
   if (p.carryForwardPx !== undefined)
     out.carryForwardPx = num(p.carryForwardPx, 0, 80, 0, "performance.carryForwardPx");
+  if (p.comboForwardPx !== undefined)
+    out.comboForwardPx = num(p.comboForwardPx, 0, 120, 0, "performance.comboForwardPx");
   if (p.carryAngleRad !== undefined)
     out.carryAngleRad = num(p.carryAngleRad, -Math.PI, Math.PI, 0, "performance.carryAngleRad");
   if (p.preThrowRevolutions !== undefined)
     out.preThrowRevolutions = num(
       p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
     );
+  if (p.edgeLeadFlip !== undefined) {
+    if (typeof p.edgeLeadFlip !== "boolean") fail("performance.edgeLeadFlip is not a boolean");
+    else out.edgeLeadFlip = p.edgeLeadFlip;
+  }
+  if (p.throwHeightPx !== undefined)
+    out.throwHeightPx = num(p.throwHeightPx, 0, 80, 0, "performance.throwHeightPx");
+  if (p.frontflip !== undefined) {
+    if (typeof p.frontflip !== "boolean") fail("performance.frontflip is not a boolean");
+    else out.frontflip = p.frontflip;
+  }
   if (p.shake !== undefined) {
     if (!p.shake || typeof p.shake !== "object" || Array.isArray(p.shake)) {
       fail("performance.shake is not an object");
@@ -482,8 +495,21 @@ function performanceOf(p) {
     } else {
       checkKeys(p.lunge, PERFORMANCE_LUNGE_KEYS, "performance.lunge");
       out.lunge = {
-        distancePx: num(p.lunge.distancePx, 48, 180, 120, "performance.lunge.distancePx"),
+        distancePx: num(p.lunge.distancePx, 48, 720, 120, "performance.lunge.distancePx"),
       };
+      if (p.lunge.durationSeconds !== undefined)
+        out.lunge.durationSeconds = num(
+          p.lunge.durationSeconds,
+          0.05,
+          0.6,
+          0.2,
+          "performance.lunge.durationSeconds",
+        );
+      if (p.lunge.invulnerable !== undefined) {
+        if (typeof p.lunge.invulnerable !== "boolean")
+          fail("performance.lunge.invulnerable is not a boolean");
+        else out.lunge.invulnerable = p.lunge.invulnerable;
+      }
     }
   }
   if (p.twirl !== undefined) {
@@ -496,6 +522,10 @@ function performanceOf(p) {
         pivot: enumOf(p.twirl.pivot, new Set(["shaft-midpoint", "grip"]), "performance.twirl.pivot"),
         direction: enumOf(p.twirl.direction, new Set(["forward", "alternate"]), "performance.twirl.direction"),
       };
+      if (p.twirl.visualRevolutions !== undefined)
+        out.twirl.visualRevolutions = num(
+          p.twirl.visualRevolutions, 1, 4, 1, "performance.twirl.visualRevolutions",
+        );
     }
   }
   if (p.holdScaling !== undefined) {
@@ -656,6 +686,7 @@ function mapWeapon(w) {
   const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
   const isGun = !isBeam && (kind === "gun" || type === "ranged");
   const isSingleShotGun = SINGLE_SHOT_GUN_IDS.has(w.id);
+  const isCalamityHowitzer = w.id === "x2-calamity-howitzer";
   const isGroundZone = kind === "groundZone";
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
@@ -834,9 +865,21 @@ function mapWeapon(w) {
       damage: num(b.damage, 1, isSingleShotGun ? 120 : 40, damage, "behavior.damage"),
       projectileSpeed: num(b.projectileSpeed, 400, 4000, 900, "behavior.projectileSpeed"),
       range: num(b.range ?? s.range, 280, 1100, 620, "behavior.range"),
-      fireRate: num(b.fireRate, 0.05, isSingleShotGun ? 1.5 : 0.9, 0.3, "behavior.fireRate"),
+      fireRate: num(
+        b.fireRate,
+        0.05,
+        isCalamityHowitzer ? 3 : isSingleShotGun ? 1.5 : 0.9,
+        0.3,
+        "behavior.fireRate",
+      ),
       magazine: int(b.magazine, 1, 80, 8, "behavior.magazine"),
-      reloadSeconds: num(b.reloadSeconds, 0.6, 3, 1.4, "behavior.reloadSeconds"),
+      reloadSeconds: num(
+        b.reloadSeconds,
+        0.6,
+        isCalamityHowitzer ? 5 : 3,
+        1.4,
+        "behavior.reloadSeconds",
+      ),
       bulletKind: b.bulletKind === undefined ? "slug"
         : enumOf(b.bulletKind, BULLET_KINDS, "behavior.bulletKind"),
       muzzle: b.muzzle === undefined ? "punch"
@@ -859,7 +902,7 @@ function mapWeapon(w) {
     }
     if (b.projectileVisualScale !== undefined)
       def.gun.projectileVisualScale = num(
-        b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
+        b.projectileVisualScale, 0.5, 12, 1, "behavior.projectileVisualScale",
       );
     if (b.projectileColor !== undefined)
       def.gun.projectileColor = int(
@@ -913,7 +956,12 @@ function mapWeapon(w) {
     if (mc !== undefined) def.gun.muzzleColor = mc;
     const gg = grades(b.scalingGrades, "behavior.scalingGrades", undefined);
     if (gg) def.gun.scalingGrades = gg;
-    const ex = explodeOf(b.explode, "behavior.explode", 140);
+    const ex = explodeOf(
+      b.explode,
+      "behavior.explode",
+      isCalamityHowitzer ? 220 : 140,
+      isCalamityHowitzer ? 60 : 30,
+    );
     if (ex) def.gun.explode = ex;
   } else if (kind === "glovePair") {
     def.glovePair = {

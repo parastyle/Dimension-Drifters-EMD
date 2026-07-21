@@ -80,6 +80,11 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
     url: PROJECTILE_SPRITES["brimstone-rocket-warhead"].url,
     displayLength: 50,
   }),
+  "x2-calamity-howitzer": Object.freeze({
+    spriteId: "calamity-howitzer-battleship-shell",
+    url: PROJECTILE_SPRITES["calamity-howitzer-battleship-shell"].url,
+    displayLength: 92,
+  }),
 });
 
 export function preloadGeneratedGunProjectiles(scene: Phaser.Scene): void {

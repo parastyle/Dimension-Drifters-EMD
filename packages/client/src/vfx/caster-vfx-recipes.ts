@@ -73,6 +73,12 @@ export interface BeamVfxRecipe {
   /** Static waveform phase; cosine is also available as an identity-level shorthand. */
   readonly ripplePhaseRad?: number;
   readonly flickerHz: number;
+  readonly conePolish?: {
+    readonly sheets: number;
+    readonly ribs: number;
+    readonly meltParticles: number;
+    readonly residuePatches: number;
+  };
   readonly particleElement: CasterVfxElement;
   readonly bodyParticle: CasterParticleShape;
   readonly coreParticle: CasterParticleShape;
@@ -129,6 +135,8 @@ export interface CasterTextureProjectileRecipe {
   readonly frameHeight?: number;
   readonly flutterRadians?: number;
   readonly flutterMs?: number;
+  /** Right-facing source art mirrors horizontally on leftward shots instead of rotating upside down. */
+  readonly mirrorLeft?: boolean;
 }
 
 export interface CasterPaintedImpactRecipe {
@@ -181,6 +189,11 @@ const ELEMENT_PALETTES: Readonly<Record<CasterVfxElement, CasterVfxPalette>> = O
 /** Exact owner-note palette exceptions; mechanics keep their normal element typing. */
 export const CASTER_VFX_PALETTE_OVERRIDES: Readonly<Partial<Record<string, CasterVfxPalette>>> =
   Object.freeze({
+    "x-staff-storm-rod": Object.freeze({
+      core: 0xe8fbff,
+      mid: 0x4aa8ff,
+      shadow: 0x173f91,
+    }),
     "x2-thunderhead-stormfists": Object.freeze({
       core: 0xffffff,
       mid: 0x33e6ff,
@@ -210,6 +223,7 @@ export const CASTER_TEXTURE_PROJECTILES: Readonly<
     displayLength: 48,
     flutterRadians: 0.18,
     flutterMs: 230,
+    mirrorLeft: true,
   }),
   "x2-gravesinger-s-hex-wand": Object.freeze({
     textureKey: "caster:gravesinger-hex",
@@ -406,6 +420,7 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     rippleAmplitude: 0.14,
     rippleFrequency: 5,
     flickerHz: 7,
+    conePolish: Object.freeze({ sheets: 5, ribs: 11, meltParticles: 7, residuePatches: 5 }),
     particleElement: "frost",
     bodyParticle: "wisp",
     coreParticle: "shard",
@@ -592,26 +607,6 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     bodyFrame: 5,
     coreFrame: 7,
     impact: Object.freeze({ points: 9, rings: 0, radiusScale: 1.22, spin: -2.6 }),
-  }),
-  "x2-gilded-hourglass-frost-scepter": Object.freeze({
-    signature: "gilded-hourglass-waist",
-    widthProfile: "hourglass",
-    edgeColor: 0xa77924,
-    accentColor: 0x8bdfff,
-    coreColor: 0xfff2c7,
-    edgeWidth: 0.95,
-    chromaWidth: 0.68,
-    coreWidth: 0.18,
-    ripple: "pulse-train",
-    rippleAmplitude: 0.15,
-    rippleFrequency: 4,
-    flickerHz: 5,
-    particleElement: "frost",
-    bodyParticle: "mote",
-    coreParticle: "ring",
-    bodyFrame: 2,
-    coreFrame: 5,
-    impact: Object.freeze({ points: 4, rings: 3, radiusScale: 0.82, spin: -0.32 }),
   }),
   "x2-riftglass-prism-lantern": Object.freeze({
     signature: "riftglass-prismatic-saw",

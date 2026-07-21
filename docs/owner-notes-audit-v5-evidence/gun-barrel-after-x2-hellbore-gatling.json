@@ -3,20 +3,20 @@
     "phase": "after",
     "weaponId": "x2-hellbore-gatling",
     "baseURL": "http://127.0.0.1:5173",
-    "capturedAt": "2026-07-21T15:55:06.732Z",
+    "capturedAt": "2026-07-21T16:50:51.870Z",
     "expectedOffset": {
       "forward": -2,
       "lateral": -12
     },
-    "originDeltaPx": 0.7070539235463832,
-    "shotAngleRad": 0.1244922602674957,
+    "originDeltaPx": 0.04755509073472906,
+    "shotAngleRad": 0.06847022608490262,
     "browserErrors": [],
     "unexpectedBrowserErrors": [],
     "screenshot": "docs\\owner-notes-audit-v5-evidence\\gun-barrel-after-x2-hellbore-gatling.png"
   },
   "start": {
     "attackSeq": 0,
-    "tick": 46,
+    "tick": 45,
     "player": {
       "x": 2400,
       "y": 2420
@@ -29,21 +29,21 @@
     "integratedSteps": 5,
     "row": {
       "id": "p0",
-      "x": 2751.468994140625,
-      "y": 2434.159912109375,
-      "vx": 813.6538696289062,
-      "vy": 101.8201675415039,
+      "x": 2752.515869140625,
+      "y": 2421.97802734375,
+      "vx": 818.07861328125,
+      "vy": 56.10172653198242,
       "bornTick": 48
     },
     "recoveredOrigin": {
-      "x": 2548.0555267333984,
-      "y": 2408.704870223999
+      "x": 2547.9962158203125,
+      "y": 2407.9525957107544
     },
     "paintedMuzzle": {
       "x": 2548,
       "y": 2408
     },
-    "originDeltaPx": 0.7070539235463832,
-    "shotAngleRad": 0.1244922602674957
+    "originDeltaPx": 0.04755509073472906,
+    "shotAngleRad": 0.06847022608490262
   }
 }

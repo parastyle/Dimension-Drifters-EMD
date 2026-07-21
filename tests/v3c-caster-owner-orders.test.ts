@@ -70,7 +70,7 @@ describe("owner-notes V3C caster orders", () => {
     const aura = resolveWeaponAuraVfxRecipe(definition);
     expect(aura).toMatchObject({
       packs: ["shock-wisp", "shock-splat", "shock-bolt"],
-      count: 12,
+      count: 16,
     });
     expect(definition.performance?.aura?.damagePerSecond).toBeCloseTo(
       definition.damage / definition.cooldown,
@@ -166,7 +166,7 @@ describe("owner-notes V3C caster orders", () => {
   it("widens Sporebound's server radius while scaling its painted aura up", () => {
     const definition = weapon("x2-sporebound-witchglobe");
     expect(definition.performance?.aura).toMatchObject({
-      radius: 210,
+      radius: 252,
       damagePerSecond: 12.1,
       damageType: "bio",
     });

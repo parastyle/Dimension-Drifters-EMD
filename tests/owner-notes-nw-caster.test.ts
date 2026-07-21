@@ -73,14 +73,14 @@ describe("owner-notes NW-CASTER contracts", () => {
       action: "spin",
       continuous: true,
       suppressSwing: true,
-      aura: { radius: 160, damagePerSecond: 14.3, tickRate: 0.2 },
+      aura: { radius: 200, damagePerSecond: 14.3, tickRate: 0.2 },
     });
     expect(sporebound.performance).toMatchObject({
       hold: "overhead",
       action: "shake",
       continuous: true,
       suppressSwing: true,
-      aura: { radius: 210, damagePerSecond: 12.1, tickRate: 0.2, damageType: "bio" },
+      aura: { radius: 252, damagePerSecond: 12.1, tickRate: 0.2, damageType: "bio" },
     });
     expect(galvanic.performance?.aura?.damagePerSecond).toBeCloseTo(
       galvanic.damage / galvanic.cooldown,
@@ -93,7 +93,7 @@ describe("owner-notes NW-CASTER contracts", () => {
 
     for (const definition of [galvanic, sporebound]) {
       const aura = resolveWeaponAuraVfxRecipe(definition);
-      expect(aura?.count, definition.id).toBeLessThanOrEqual(12);
+      expect(aura?.count, definition.id).toBeLessThanOrEqual(16);
       for (const pack of aura?.packs ?? []) expect(PARTICLE_PACKS[pack], pack).toBeDefined();
     }
     const spinA = performanceSample(galvanic.id, { timeS: 0.1 });
@@ -117,13 +117,13 @@ describe("owner-notes NW-CASTER contracts", () => {
     expect(weapon("x2-marshlight-bog-censer-wand").performance?.emitter).toBe("spout");
   });
 
-  it("authors Stormfists as a blue, two-hand lunge-punch with a three-fist-length displacement", () => {
+  it("authors Stormfists as a blue, two-hand lunge-punch with the V5R fourfold displacement", () => {
     const stormfists = weapon("x2-thunderhead-stormfists");
     expect(stormfists.performance).toMatchObject({
       action: "lunge-punch",
       windupSeconds: 0.3,
       suppressSwing: true,
-      lunge: { distancePx: 120 },
+      lunge: { distancePx: 480, durationSeconds: 0.2, invulnerable: true },
     });
     expect(CASTER_VFX_PALETTE_OVERRIDES[stormfists.id]).toEqual({
       core: 0xffffff,

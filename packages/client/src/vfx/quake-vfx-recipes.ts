@@ -32,6 +32,8 @@ export interface QuakeVfxRecipe {
   readonly particleCount: number;
   readonly effectCountMultiplier: number;
   readonly shake: number;
+  /** Owner-authored impact replaces every debris/spark layer with smoke while retaining its radius cue. */
+  readonly smokeOnly?: true;
   readonly palette: {
     readonly hot: number;
     readonly mid: number;
@@ -225,5 +227,6 @@ export function resolveQuakeVfxRecipe(
     ...elemental,
     ...shape,
     effectCountMultiplier: weapon.id === "x2-godsbone-pillar" ? 2 : 1,
+    ...(weapon.id === "x2-anvil-drop" ? { smokeOnly: true as const } : {}),
   });
 }

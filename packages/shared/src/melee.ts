@@ -1544,9 +1544,10 @@ export function swingDescriptorFor(def: WeaponDef, effectiveCooldown: number): S
       [activeStartFrac, activeEndFrac] = [0.14, 0.38];
       break;
     case "orbit": {
-      const travel = Math.max(0, def.swingArc) + 2.4;
+      const timingArc = Math.max(0, def.timingSwingArc ?? def.swingArc);
+      const travel = timingArc + 2.4;
       activeStartFrac = inverseSmoothstep(1.5 / travel);
-      activeEndFrac = inverseSmoothstep((1.5 + Math.max(0, def.swingArc)) / travel);
+      activeEndFrac = inverseSmoothstep((1.5 + timingArc) / travel);
       break;
     }
     case "spin":

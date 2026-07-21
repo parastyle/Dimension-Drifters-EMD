@@ -85,7 +85,6 @@ import {
   VastagharFoot,
   VastagharMode,
   type WeaponDef,
-  type WeaponSecondaryGripRole,
   weaponHasHandlingTag,
 } from "@dd/shared";
 import Phaser from "phaser";
@@ -101,6 +100,7 @@ import {
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
 import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
+import { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 import {
   type AlternativeHeadTextureSelection,
   assembleBoilerplate,
@@ -146,8 +146,10 @@ import {
   createPoseVariantSelection,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
+  comboPresentationStyleFor,
   comboWeaponThicknessSign,
   continuousWhirlPhase,
+  edgeLeadScaleY,
   FLOURISH_DUAL_AFTER_ECHO_MS,
   FLOURISH_DUAL_DRAW_ECHO_MS,
   FLOURISH_DUAL_STOW_ECHO_MS,
@@ -542,10 +544,7 @@ export function resolveSecondaryGripPosition(
   return out;
 }
 
-/** Pump and lever hands must stay on the foreground side of the gun's painted layer. */
-export function secondaryGripHandRendersAbove(role: WeaponSecondaryGripRole | undefined): boolean {
-  return role === "pump" || role === "lever" || role === "crank" || role === "vertical-foregrip";
-}
+export { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 
 /** ArenaScene owns these presentation services. The rig consumes them structurally so the accepted remote
  * beat can share the existing authored dispatcher without widening the scene API or duplicating VFX data. */
@@ -4444,6 +4443,7 @@ export class SpriteRig {
         authoredPrimary?.y ?? state?.originY ?? weapon.closedOriginY,
       );
       weapon.semanticRotation = weapon.img.rotation;
+      weapon.img.scaleY *= edgeLeadScaleY(weapon.def.performance?.edgeLeadFlip);
       weapon.img.rotation += state?.artAngle ?? 0;
     }
   }
@@ -8408,7 +8408,9 @@ export class SpriteRig {
         const bodyBaseScaleX = this.body.scaleX;
         const bodyBaseScaleY = this.body.scaleY;
         let swingChannelsRouted = false;
-        const poseStyle = comboPose ? (family === "rake" ? "pivot" : family) : style;
+        const poseStyle = comboPose
+          ? comboPresentationStyleFor(family, comboPose.motion)
+          : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
         if (def.performance?.twirl) {
@@ -8981,6 +8983,24 @@ export class SpriteRig {
             backWeaponAngle = mixAngle(backWeaponAngle, ready, holdT);
         }
 
+        const comboForwardPx = def.performance?.comboForwardPx ?? 0;
+        if (comboPose && comboForwardPx > 0) {
+          const drive =
+            comboForwardPx *
+            actionOwnershipAt(
+              tt,
+              comboPose.timing.activeStart,
+              comboPose.timing.activeEnd,
+              comboPose.timing.followEnd,
+            );
+          this.swingOffX += Math.cos(aimLocal) * drive;
+          this.swingOffY += Math.sin(aimLocal) * drive;
+          if (comboPose.hand === "both") {
+            this.swingBackOffX += Math.cos(aimLocal) * drive;
+            this.swingBackOffY += Math.sin(aimLocal) * drive;
+          }
+        }
+
         // Once grace lapses, blend every additive fake-3D contribution back to the exact resting frame.
         // Active/held poses run at 1; orbit/spin never enter comboPose and remain completely unchanged.
         if (comboPose && poseBlend < 1) {
@@ -9109,6 +9129,8 @@ export class SpriteRig {
       this.performanceInput.gait = gait;
       this.performanceInput.stridePhase = legPh;
       sampleWeaponPerformance(this.performanceInput, this.performanceSample);
+      this.root.rotation += this.performanceSample.wholeBodyRotation;
+      this.attackLiftPx += this.performanceSample.wholeBodyLift * TARGET_BODY_H;
       performancePoseActive = this.performanceSample.active;
       if (performancePoseActive) {
         weaponAngle = this.performanceSample.weaponAngle;
@@ -9937,7 +9959,9 @@ export class SpriteRig {
             : tt < a
               ? (tt * tt) / (a * (2 - a))
               : (2 * tt - a) / (2 - a);
-          const turns = Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
+          const turns =
+            twirl?.visualRevolutions ??
+            Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
           th = azAim + spinDirection * turns * Math.PI * 2 * e;
         } else {
           const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out

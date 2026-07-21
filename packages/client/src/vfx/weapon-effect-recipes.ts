@@ -31,6 +31,8 @@ export interface WeaponEffectRecipe {
   readonly swingCount?: number;
   readonly swingScaleMode?: "blade-length";
   readonly swingScaleMultiplier?: number;
+  /** Spread the authored particles over the complete melee radius instead of one blade sample. */
+  readonly radialDistribution?: "full-circle";
   /** Painted 96-pack display width as a fraction of the weapon's held display length. */
   readonly swingParticleDominance?: number;
   readonly additive?: boolean;
@@ -40,6 +42,32 @@ export interface WeaponEffectRecipe {
   readonly quakeExplosionElement?: "void";
   readonly quakeExplosionPaintedOnlyWeaponIds?: readonly string[];
   readonly musicalNotes?: true;
+}
+
+export interface WeaponEffectRadialPoint {
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+}
+
+/** Stable full-radius samples used by continuous one-way spins; the actor remains the anchor. */
+export function weaponEffectRadialPoints(
+  x: number,
+  y: number,
+  radius: number,
+  count: number,
+  phase = 0,
+): readonly WeaponEffectRadialPoint[] {
+  const total = Math.max(1, Math.trunc(count));
+  const safeRadius = Math.max(0, radius);
+  return Array.from({ length: total }, (_, index) => {
+    const angle = phase + (index / total) * Math.PI * 2;
+    return {
+      x: x + Math.cos(angle) * safeRadius,
+      y: y + Math.sin(angle) * safeRadius,
+      angle,
+    };
+  });
 }
 
 export const WEAPON_EFFECT_RECIPES = Object.freeze({
@@ -140,7 +168,9 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     emitter: "blade",
     classification: "weapon-motion",
     swingPack: "holy-bolt",
-    swingCount: 8,
+    swingCount: 20,
+    swingScaleMode: "blade-length",
+    swingScaleMultiplier: 1.35,
     additive: true,
   }),
   "dustreaper-continuous-edge": Object.freeze({
@@ -161,7 +191,19 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingPack: "void-wisp",
     swingCount: 24,
     swingParticleDominance: 0.52,
+    radialDistribution: "full-circle",
     additive: true,
+  }),
+  "hollow-harvest-circle": Object.freeze({
+    id: "hollow-harvest-circle",
+    weaponId: "x2-hollow-harvest",
+    emitter: "blade",
+    classification: "weapon-motion",
+    swingPack: "sand-wisp",
+    swingCount: 18,
+    swingParticleDominance: 0.32,
+    radialDistribution: "full-circle",
+    additive: false,
   }),
   "stormfist-blue-lunge": Object.freeze({
     id: "stormfist-blue-lunge",
@@ -260,6 +302,18 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     impactAnchor: "target",
     swingCount: 10,
     additive: true,
+  }),
+  "cinderchoke-fire-impact": Object.freeze({
+    id: "cinderchoke-fire-impact",
+    weaponId: "x2-cinderchoke-brazier-orb",
+    emitter: "body",
+    classification: "impact",
+    impactPack: "fire-splat",
+    impactAnchor: "target",
+    swingCount: 18,
+    swingScaleMultiplier: 1.7,
+    additive: true,
+    suppressQuakeVfx: true,
   }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
@@ -369,11 +423,12 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
   "x2-galvanic-liber-of-storms": Object.freeze({
     weaponId: "x2-galvanic-liber-of-storms",
     packs: Object.freeze(["shock-wisp", "shock-splat", "shock-bolt"]),
-    count: 12,
-    particleDominance: 0.4,
+    count: 16,
+    particleDominance: 0.46,
     minParticlePx: 30,
-    maxParticlePx: 48,
-    extent: 0.96,
+    maxParticlePx: 64,
+    particleReferenceMultiplier: 1.4,
+    extent: 1,
     spinHz: 1.2,
   }),
   "x2-sporebound-witchglobe": Object.freeze({

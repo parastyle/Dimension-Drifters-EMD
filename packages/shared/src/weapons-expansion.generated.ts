@@ -227,6 +227,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.54
+      },
+      "secondary": {
+        "x": 0.2,
+        "y": 0.54,
+        "role": "shaft"
+      }
+    },
+    "stance": "low-close-hilt",
     "comboFamily": "chop",
     "comboVariant": "voltfang-rise",
     "requirements": {
@@ -275,6 +287,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR",
         "DEX"
       ]
+    },
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "comboForwardPx": 34
     },
     "requirements": {
       "str": 6
@@ -433,6 +450,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "DEX"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.13,
+        "y": 0.5
+      }
+    },
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "edgeLeadFlip": true
     },
     "requirements": {
       "dex": 12
@@ -1653,9 +1681,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "description": "A mirror-bright knightly battleaxe with a deep hooked beard and a vow-script throat, a balanced and disciplined cleave that splits a line clean through.",
     "swingStyle": "spin",
     "performance": {
-      "hold": "steady",
+      "hold": "upright",
       "action": "default-swing",
-      "continuous": true
+      "continuous": true,
+      "carryForwardPx": 10,
+      "carryAngleRad": -1.34
     },
     "requirements": {
       "str": 8,
@@ -1898,6 +1928,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboFamily": "chop",
     "comboVariant": "reliquary-down-stab",
     "suppressVfx": true,
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing",
+      "carryForwardPx": 14,
+      "carryAngleRad": -1.32
+    },
     "requirements": {
       "str": 9,
       "dex": 6
@@ -2027,6 +2063,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "DEX"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.08,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.45,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "effectRecipe": "nullspike-impact-circle",
     "effectEmitter": "tip",
@@ -2279,7 +2326,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "throw-release",
-      "preThrowRevolutions": 0
+      "preThrowRevolutions": 0,
+      "throwHeightPx": 28
     },
     "requirements": {
       "dex": 6,
@@ -2374,6 +2422,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "authoritativeCombo": true,
+    "comboFamily": "thrust",
+    "comboVariant": "marrowpike-triple-stab",
     "requirements": {
       "str": 7,
       "dex": 5
@@ -2410,6 +2461,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "preThrowRevolutions": 0,
+      "throwHeightPx": 28
+    },
     "requirements": {
       "dex": 7,
       "int": 5
@@ -2421,7 +2478,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "damage": 11,
       "charges": 3,
       "refillSeconds": 1.7,
-      "pierce": 2
+      "pierce": 2,
+      "rotation": "point-forward"
     }
   },
   "x2-blightfork-glaive": {
@@ -3651,7 +3709,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "twirl": {
         "plane": "screen-circle",
         "pivot": "shaft-midpoint",
-        "direction": "forward"
+        "direction": "forward",
+        "visualRevolutions": 2
       }
     },
     "requirements": {
@@ -3731,6 +3790,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "description": "A scythe lashed together from a curved rib-bone blade and a femur haft bound in cracked sinew, its yellowed edge whistling thin and clean through a wide killing sweep.",
     "swingStyle": "spin",
+    "effectRecipe": "hollow-harvest-circle",
+    "effectEmitter": "blade",
+    "effectTiming": "swing-midpoint",
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -3887,6 +3949,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "Twin handheld rakes grown from a single shard of violet quartz each, their faceted talons humming with caged arcane light as they tear in glittering paired arcs.",
+    "authoritativeCombo": true,
+    "comboFamily": "rake",
+    "comboVariant": "frostfang-forward-rend",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "lunge": {
+        "distancePx": 64,
+        "durationSeconds": 0.18
+      }
+    },
     "requirements": {
       "dex": 6,
       "int": 5
@@ -4009,6 +4082,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "archived": true,
     "description": "A mirror-bright sabre whose blade dissolves into a flowing chain of silver links mid-length, snapping fluidly between a rigid cut and a long whipping reach with each pristine strike.",
     "requirements": {
       "dex": 10
@@ -7934,10 +8008,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "fireRate": 0.7,
       "magazine": 5,
       "reloadSeconds": 1.8,
-      "bulletKind": "ricochet",
+      "bulletKind": "grenade",
       "muzzle": "boom",
       "recoil": 0.003,
-      "bounces": 2,
+      "projectileVisualScale": 1.35,
+      "arcHeight": 112,
       "explode": {
         "radius": 62,
         "damage": 9
@@ -8100,9 +8175,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "fireRate": 0.82,
       "magazine": 4,
       "reloadSeconds": 2.2,
-      "bulletKind": "slug",
+      "bulletKind": "fire-plume",
       "muzzle": "heavy",
       "recoil": 0.004,
+      "projectileVisualScale": 1.4,
+      "projectileColor": 16738858,
       "pierce": 3
     }
   },
@@ -8449,18 +8526,20 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "con": 8
     },
     "gun": {
-      "damage": 16,
+      "damage": 22,
       "projectileSpeed": 700,
       "range": 900,
-      "fireRate": 0.9,
+      "fireRate": 2.2,
       "magazine": 2,
-      "reloadSeconds": 3,
+      "reloadSeconds": 3.4,
       "bulletKind": "slug",
-      "muzzle": "heavy",
+      "muzzle": "artillery",
       "recoil": 0.004,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1.35,
       "explode": {
-        "radius": 70,
-        "damage": 14
+        "radius": 150,
+        "damage": 32
       }
     }
   },
@@ -9748,7 +9827,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "heavy",
       "recoil": 0.0038,
       "projectileArt": "generated",
-      "projectileVisualScale": 1.25,
+      "projectileVisualScale": 1.75,
       "pierce": 3,
       "muzzleColor": 3397375,
       "scalingGrades": {
@@ -10026,7 +10105,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "direction": "forward"
       },
       "aura": {
-        "radius": 160,
+        "radius": 200,
         "damagePerSecond": 14.3,
         "resourcePerSecond": 18,
         "tickRate": 0.2,
@@ -11480,7 +11559,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "beam",
+      "delivery": "ground-zone",
       "fireMode": "hold",
       "element": "frost",
       "classPool": "caster",
@@ -11495,25 +11574,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 9
     },
-    "beam": {
+    "groundZone": {
+      "trigger": "channel",
+      "style": "ice",
+      "initialRadius": 36,
+      "maxRadius": 95,
+      "growthPerSecond": 72,
+      "lingerSeconds": 2,
       "damagePerSecond": 38.46153846153846,
       "tickRate": 0.15,
-      "width": 48,
-      "range": 640,
-      "chargeSeconds": 0.65,
-      "sweepLagSeconds": 0.22,
-      "overheat": {
-        "maxChannelSeconds": 1.25,
-        "heatPerSecond": 0.6,
-        "coolPerSecond": 0.35,
-        "ignitionHeat": 0.25,
-        "lockSeconds": 1.5,
-        "restartHeat": 0.35
-      },
-      "movement": {
-        "chargeMul": 0.55,
-        "channelMul": 0.35
-      }
+      "placementRange": 640,
+      "slowMultiplier": 0.5,
+      "slowSeconds": 0.3
     }
   },
   "x2-wormwood-hex-stave": {
@@ -11721,6 +11793,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "effectRecipe": "cinderchoke-fire-impact",
+    "effectEmitter": "body",
+    "effectTiming": "impact",
     "performance": {
       "hold": "steady",
       "action": "overhead-downswing",
@@ -11933,7 +12008,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "frequencyHz": 13
       },
       "aura": {
-        "radius": 210,
+        "radius": 252,
         "damagePerSecond": 12.1,
         "resourcePerSecond": 18,
         "tickRate": 0.2,
@@ -12388,6 +12463,19 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "quake": {
       "radius": 140,
       "damage": 11
+    },
+    "groundZone": {
+      "trigger": "impact",
+      "style": "ice",
+      "initialRadius": 140,
+      "maxRadius": 140,
+      "growthPerSecond": 0,
+      "lingerSeconds": 3,
+      "damagePerSecond": 0,
+      "tickRate": 0.2,
+      "placementRange": 300,
+      "slowMultiplier": 0.55,
+      "slowSeconds": 0.3
     }
   },
   "x2-hexbinder-s-iron-orrery": {
@@ -12651,6 +12739,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.22,
+        "y": 0.77
+      },
+      "secondary": {
+        "x": 0.48,
+        "y": 0.77,
+        "role": "handle"
+      }
     },
     "requirements": {
       "int": 11
@@ -13648,6 +13747,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "spark",
       "muzzle": "spark",
       "recoil": 0.0008,
+      "projectileVisualScale": 10,
       "projectileColor": 11619327,
       "pierce": 2,
       "muzzleColor": 11619327
@@ -14157,7 +14257,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "suppressSwing": true,
       "windupSeconds": 0.3,
       "lunge": {
-        "distancePx": 120
+        "distancePx": 480,
+        "durationSeconds": 0.2,
+        "invulnerable": true
       }
     },
     "requirements": {
@@ -15531,6 +15633,65 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
+  "marrowpike-triple-stab": [
+    {
+      "name": "left tine",
+      "motion": "jab",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.38,
+        "impact": 0.29,
+        "followEnd": 0.58
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 0.94,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "right tine",
+      "motion": "jab",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.36,
+        "impact": 0.27,
+        "followEnd": 0.56
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 0.97,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "marrow point",
+      "motion": "impale",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.43,
+        "impact": 0.32,
+        "followEnd": 0.62
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
   "blightfork-jab": [
     {
       "name": "blight jab",
@@ -15670,6 +15831,107 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "damageMultiplier": 1,
         "knockback": 0,
         "deltaAngle": 6.283185307179586
+      }
+    }
+  ],
+  "frostfang-forward-rend": [
+    {
+      "name": "frostfang lead",
+      "motion": "rake",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.5,
+        "impact": 0.32,
+        "followEnd": 0.66
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "frostfang return",
+      "motion": "rake",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.48,
+        "impact": 0.3,
+        "followEnd": 0.64
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "crystal cross",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.5,
+        "impact": 0.34,
+        "followEnd": 0.68,
+        "secondaryActiveStart": 0.18,
+        "secondaryActiveEnd": 0.56
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 0.9,
+        "rangeMultiplier": 1.04,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "driving rake",
+      "motion": "rake",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.48,
+        "impact": 0.29,
+        "followEnd": 0.62
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.08,
+        "rangeMultiplier": 1.06,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "frostfang finish",
+      "motion": "scissor",
+      "direction": 0,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.52,
+        "impact": 0.36,
+        "followEnd": 0.7,
+        "secondaryActiveStart": 0.19,
+        "secondaryActiveEnd": 0.58
+      },
+      "path": {
+        "kind": "dual-sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1.08,
+        "damageMultiplier": 1,
+        "knockback": 0
       }
     }
   ],

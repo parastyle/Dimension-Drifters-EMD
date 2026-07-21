@@ -1,7 +1,10 @@
 import {
   isWornWeapon,
   meleeComboSelectionFor,
+  type MeleeComboFamily,
+  type MeleeComboMotion,
   swingStyleFor,
+  type SwingStyle,
   type MeleeComboStep,
   type WeaponDef,
   type WeaponStanceId,
@@ -1353,10 +1356,38 @@ export const NAMED_WEAPON_STANCES: Readonly<Record<WeaponStanceId, NamedWeaponSt
       restAngleRad: -0.2,
       gripSpacing: 0.18,
     }),
+    "low-close-hilt": Object.freeze({
+      ...BLADE_SIZE_STANCES.standard,
+      id: "low-close-hilt",
+      angleReference: "aim",
+      handReference: "aim",
+      restAngleRad: -0.2,
+      handForward: -0.03,
+      handLateral: 0.18,
+      gripSpacing: 0.13,
+      bodyTurn: 0.055,
+    }),
   });
 
 export function namedWeaponStanceFor(def: WeaponDef | undefined): NamedWeaponStance | undefined {
   return def?.stance ? NAMED_WEAPON_STANCES[def.stance] : undefined;
+}
+
+/** A combo's authored motion wins over its broad family when the two intentionally diverge. */
+export function comboPresentationStyleFor(
+  family: MeleeComboFamily | "none",
+  motion: MeleeComboMotion,
+): SwingStyle {
+  if (motion === "impale" || motion === "jab" || motion === "lunge" || motion === "disengage")
+    return "thrust";
+  if (motion === "rake" || motion === "scissor") return "pivot";
+  if (family === "rake") return "pivot";
+  return family === "none" ? "arc" : family;
+}
+
+/** Flip across the sprite's semantic blade axis, leaving its +X tip and grip fixed in both facings. */
+export function edgeLeadScaleY(edgeLeadFlip: boolean | undefined): 1 | -1 {
+  return edgeLeadFlip ? -1 : 1;
 }
 
 /** Image-origin transform that pins the physical shaft midpoint to the character centre at every angle. */
@@ -1773,6 +1804,8 @@ export interface WeaponPerformanceSample {
   offsetX: number;
   offsetY: number;
   ownership: number;
+  wholeBodyRotation: number;
+  wholeBodyLift: number;
 }
 
 export function weaponPerformanceSpecFor(
@@ -1809,6 +1842,8 @@ export function createWeaponPerformanceSample(): WeaponPerformanceSample {
     offsetX: 0,
     offsetY: 0,
     ownership: 0,
+    wholeBodyRotation: 0,
+    wholeBodyLift: 0,
   };
 }
 
@@ -1825,6 +1860,8 @@ function clearWeaponPerformanceSample(out: WeaponPerformanceSample): void {
   out.offsetX = 0;
   out.offsetY = 0;
   out.ownership = 0;
+  out.wholeBodyRotation = 0;
+  out.wholeBodyLift = 0;
 }
 
 /**
@@ -1892,6 +1929,18 @@ export function sampleWeaponPerformance(
   const restHandX = handX;
   const restHandY = handY;
 
+  if (spec.frontflip && input.phase !== "idle") {
+    const flipProgress =
+      input.phase === "anticipation"
+        ? phaseT * 0.18
+        : input.phase === "active"
+          ? 0.18 + phaseT * 0.6
+          : 0.78 + phaseT * 0.22;
+    const easedFlip = flipProgress - Math.sin(flipProgress * Math.PI * 2) / (Math.PI * 2);
+    out.wholeBodyRotation = input.reducedMotion ? 0 : -Math.PI * 2 * easedFlip;
+    out.wholeBodyLift = Math.sin(Math.PI * flipProgress) * 0.26;
+  }
+
   // Upright records preserve their ordinary authored attack and only replace the neutral equilibrium.
   if (spec.action === "default-swing" && input.phase !== "idle") return out;
 
@@ -1929,6 +1978,10 @@ export function sampleWeaponPerformance(
     out.backHandX = cosine * forward + sine * lateral;
     out.backHandY = sine * forward - cosine * lateral - 0.04;
     out.backHandBlend = 1;
+    const throwLift = (spec.throwHeightPx ?? 0) / 76;
+    const heightEnvelope = wind ? e : release ? 1 : 1 - e;
+    handY -= throwLift * heightEnvelope;
+    out.backHandY -= throwLift * heightEnvelope;
     const drawTurns = (spec.preThrowRevolutions ?? 0) * Math.PI * 2;
     // A turn that only changes angle aliases at its start/end. Orbit the in-hand grip through the same
     // authored revolution so Coilshot's complete twirl and the thrown release both read between key poses.

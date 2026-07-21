@@ -407,17 +407,20 @@ export function makeCasterProjectile(
   let paintedIdentity = false;
   const textureRecipe = recipe.textureProjectile;
   if (textureRecipe && scene.textures.exists(textureRecipe.textureKey)) {
+    const mirrorLeft = textureRecipe.mirrorLeft === true && projectile.vx < 0;
+    const spriteAngle = mirrorLeft ? angle - Math.PI : angle;
     const sprite = scene.add
       .image(0, 0, textureRecipe.textureKey, textureRecipe.frame)
       .setOrigin(0.5)
-      .setRotation(angle);
+      .setFlipX(mirrorLeft)
+      .setRotation(spriteAngle);
     const frame = sprite.frame;
     const width = Math.max(1, frame.realWidth || frame.width);
     sprite.setScale(textureRecipe.displayLength / width);
     if (!reducedMotion && textureRecipe.flutterRadians && textureRecipe.flutterMs) {
       scene.tweens.add({
         targets: sprite,
-        rotation: angle + textureRecipe.flutterRadians,
+        rotation: spriteAngle + textureRecipe.flutterRadians,
         duration: textureRecipe.flutterMs,
         yoyo: true,
         repeat: -1,

@@ -47,6 +47,7 @@ describe("V3M twirl geometry and held cadence", () => {
       plane: "screen-circle",
       pivot: "shaft-midpoint",
       direction: "forward",
+      visualRevolutions: 2,
     });
   });
 

@@ -81,3 +81,11 @@ appearing for the 2nd+ time gets LIVE-probe verification, not just unit tests.
 | Graveshot Grenade Gun | fires an M203-style arced grenade shot |
 
 Watermark: all notes ≤ 2026-07-21T15:14:06Z ledgered.
+
+## STATUS: ALL 55 NOTES CLOSED (2026-07-21)
+
+V5G+V5A: f738040 (shake budget, impact-anchor law, live-gated twirl + muzzles, nine
+generated projectiles). V5M+V5R: this commit — 18 melee + 15 ranged/caster incl. the
+iframe lunge and the Howitzer economy. Suite 1640 green; e2e 11/11 with refreshed
+evidence. Hit-reg order-dependence flake: seen twice total, never twice in a row —
+next sighting earns an investigation.

@@ -3,6 +3,7 @@ import { paintedParticlePixels, particleBurst } from "./particles.js";
 import {
   TESLA_WARP_VFX_RECIPE,
   type WeaponEffectRecipe,
+  weaponEffectRadialPoints,
   weaponSwingIdentityScale,
   weaponSwingIdentitySizePx,
 } from "./weapon-effect-recipes.js";
@@ -90,6 +91,32 @@ export function spawnWeaponSwingIdentity(
       sink: recipe.noGore ? 18 : 0,
     });
   if (recipe.musicalNotes) spawnMusicalNoteParticles(scene, x, y, angle);
+}
+
+export function spawnWeaponRadialIdentity(
+  scene: Phaser.Scene,
+  recipe: WeaponEffectRecipe,
+  x: number,
+  y: number,
+  radius: number,
+  phase: number,
+  bladeLength = 0,
+): void {
+  if (recipe.radialDistribution !== "full-circle" || !recipe.swingPack) return;
+  const points = weaponEffectRadialPoints(x, y, radius, recipe.swingCount ?? 12, phase);
+  const paintedSize = weaponSwingIdentitySizePx(recipe, bladeLength);
+  for (const point of points) {
+    particleBurst(scene, recipe.swingPack, point.x, point.y, {
+      count: 1,
+      dirRad: point.angle + Math.PI / 2,
+      spread: 0.7,
+      speed: 82,
+      scaleContract: paintedParticlePixels(paintedSize),
+      lifeMs: 440,
+      additive: recipe.additive,
+      sink: recipe.additive ? 0 : 16,
+    });
+  }
 }
 
 /** Bell notation is a small procedural particle family so it stays readable without a bespoke bitmap. */

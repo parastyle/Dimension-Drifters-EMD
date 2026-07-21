@@ -114,12 +114,12 @@ describe("GameRoom — V3C caster authority", () => {
 
     for (let i = 0; i < 4; i++) fundAuraStep(room, player, combat, definition);
 
-    expect(aura.radius).toBe(210);
+    expect(aura.radius).toBe(252);
     expect(target.hp).toBeLessThan(10_000);
     expect(detonate).toHaveBeenCalledWith(
       player.x,
       player.y,
-      210,
+      252,
       expect.any(Number),
       expect.any(Number),
       player.id,

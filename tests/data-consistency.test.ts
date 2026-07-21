@@ -359,19 +359,21 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
       } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
         const singleShot = singleShotGunIds.has(w.id);
+        const calamityHowitzer = w.id === "x2-calamity-howitzer";
+        const faradayer = w.id === "x2-tesla-faradayer";
         checkFields(w.id, def.gun, b, {
           damage: { num: [1, singleShot ? 120 : 40] },
           projectileSpeed: { num: [400, 4000] },
           range: { num: [280, 1100] },
-          fireRate: { num: [0.05, singleShot ? 1.5 : 0.9] },
+          fireRate: { num: [0.05, calamityHowitzer ? 3 : singleShot ? 1.5 : 0.9] },
           magazine: { int: [1, 80] },
-          reloadSeconds: { num: [0.6, 3] },
+          reloadSeconds: { num: [0.6, calamityHowitzer ? 5 : 3] },
           bulletKind: { eq: true },
           muzzle: { eq: true },
           muzzleColor: { int: [0, 0xffffff] },
           projectileColor: { int: [0, 0xffffff] },
           projectileArt: { eq: true },
-          projectileVisualScale: { num: [0.5, 4] },
+          projectileVisualScale: { num: [0.5, faradayer ? 12 : 4] },
           muzzleMode: { eq: true },
           dualMuzzleSeparation: { num: [0, 64] },
           sonicBoomRing: { eq: true },
@@ -385,8 +387,8 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           expect(def.gun?.muzzleOffsets, `${w.id}.gun.muzzleOffsets`).toEqual(b.muzzleOffsets);
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
-            radius: { num: [30, 140] },
-            damage: { num: [1, 30] },
+            radius: { num: [30, calamityHowitzer ? 220 : 140] },
+            damage: { num: [1, calamityHowitzer ? 60 : 30] },
             scalingGrades: { grades: true },
           });
       } else if (kind === "thrown") {

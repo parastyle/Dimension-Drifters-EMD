@@ -176,6 +176,22 @@ Subject: one original angular arc-violet rune shaped like a compact pointed hex-
 Composition/framing: centered near-square emblem in flat orthographic view, forward point faces RIGHT, entire rune visible with even padding.
 ${commonPrompt}`,
   },
+  {
+    id: "calamity-howitzer-battleship-shell",
+    weaponId: "x2-calamity-howitzer",
+    reference: resolve(repo, "packages/client/public/sprites/x2-calamity-howitzer/part-1.png"),
+    maxWidth: 240,
+    maxHeight: 112,
+    minAspect: 1.8,
+    maxAspect: 5,
+    prompt: `Use case: stylized-concept
+Asset type: Dimension Drifters in-flight projectile sprite
+Primary request: Generate one brand-new enormous battleship artillery shell inspired by the Calamity Howitzer in Image 1; use the cannon as a palette and engineering reference, never as a crop source.
+Input images: Image 1 is a style, palette, material, and caliber-weight reference only; it is not an edit target and no pixels should be copied or cropped.
+Subject: one complete colossal naval shell with a blunt faceted gunmetal nose, fat brass explosive casing, two dark steel driving bands, a heavy extraction base, and a tiny hazard-red marking; it must read much larger and heavier than ordinary ammunition.
+Composition/framing: flat orthographic full side-profile, perfectly horizontal, shell nose points RIGHT, entire shell visible with generous padding.
+${commonPrompt}`,
+  },
 ];
 
 const options = { only: undefined, force: false, maxAttempts: 3 };

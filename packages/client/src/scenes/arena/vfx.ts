@@ -484,8 +484,9 @@ export function spawnMuzzleFlash(
     .setDepth(99500)
     .setBlendMode(Phaser.BlendModes.ADD);
   // "boom" (shotgun) splays the side prongs into a fat cone over a big soft blast disc; "punch" stays tight.
-  if (style === "boom") g.fillStyle(color, 0.26).fillCircle(0, 0, size * 1.15);
-  const side = style === "boom" ? 1.45 : 0.95;
+  if (style === "boom" || style === "artillery")
+    g.fillStyle(color, style === "artillery" ? 0.36 : 0.26).fillCircle(0, 0, size * 1.15);
+  const side = style === "artillery" ? 1.8 : style === "boom" ? 1.45 : 0.95;
   const prongs: [number, number, number][] = [
     [0, style === "punch" ? 2.9 : 2.5, 0.22],
     [-0.46, 1.6, 0.16],
@@ -539,33 +540,33 @@ export function spawnMuzzleFlash(
   const jitter = style === "rapid" ? (Math.random() - 0.5) * 0.5 : 0;
   g.setPosition(x, y).setRotation(ang + jitter);
   // "heavy" (revolver) — a dark recoil-smoke puff drifts up-barrel under the flash.
-  if (style === "heavy") {
+  if (style === "heavy" || style === "artillery") {
     const smoke = scene.add
       .circle(
         x + Math.cos(ang) * size * 0.5,
         y + Math.sin(ang) * size * 0.5,
-        size * 0.5,
+        size * (style === "artillery" ? 0.85 : 0.5),
         0x2a2018,
         0.4,
       )
       .setDepth(99450);
     scene.tweens.add({
       targets: smoke,
-      scale: 2,
+      scale: style === "artillery" ? 3.1 : 2,
       alpha: 0,
       x: smoke.x + Math.cos(ang) * 16,
       y: smoke.y + Math.sin(ang) * 16 - 6,
-      duration: 340,
+      duration: style === "artillery" ? 720 : 340,
       onComplete: () => smoke.destroy(),
     });
   }
-  const grow = style === "boom" ? 1.55 : 1.3;
+  const grow = style === "artillery" ? 2.1 : style === "boom" ? 1.55 : 1.3;
   scene.tweens.add({
     targets: g,
     alpha: 0,
     scaleX: grow,
     scaleY: grow,
-    duration: style === "rapid" ? 70 : style === "boom" ? 135 : 105,
+    duration: style === "rapid" ? 70 : style === "artillery" ? 185 : style === "boom" ? 135 : 105,
     ease: "Quad.out",
     onComplete: () => g.destroy(),
   });
@@ -595,19 +596,19 @@ export function spawnMuzzleFlash(
       ease: "Quad.easeIn",
       onComplete: () => casing.destroy(),
     });
-    if (style === "heavy" || style === "boom") {
+    if (style === "heavy" || style === "boom" || style === "artillery") {
       particleBurst(
         scene,
         "steel-wisp",
         x + Math.cos(ang) * size * 0.6,
         y + Math.sin(ang) * size * 0.6,
         {
-          count: 1,
+          count: style === "artillery" ? 6 : 1,
           dirRad: ang - Math.PI / 2 + (Math.random() - 0.5) * 0.6, // curls upward off the barrel
-          spread: 0.2,
-          speed: 40,
-          scaleContract: paintedParticlePixels(48),
-          lifeMs: 700,
+          spread: style === "artillery" ? 0.48 : 0.2,
+          speed: style === "artillery" ? 75 : 40,
+          scaleContract: paintedParticlePixels(style === "artillery" ? 72 : 48),
+          lifeMs: style === "artillery" ? 980 : 700,
         },
       );
     }
@@ -954,6 +955,30 @@ export function spawnQuake(
 ): void {
   // §49 every quake gets the rock pack; gravekeeper/tombstone/grave semantics trade it for bone/soul art.
   const variant = resolveQuakeVfxRecipe(weapon);
+  if (variant?.smokeOnly) {
+    spawnQuakeDangerEllipse(
+      scene,
+      x,
+      y,
+      quake.radius,
+      projectionYScale,
+      variant.palette.ground,
+      520,
+    );
+    particleBurst(scene, "sand-wisp", x, y, {
+      count: 18,
+      dirRad: -Math.PI / 2,
+      spread: Math.PI * 2,
+      speed: quake.radius * 0.72,
+      lifeMs: 620,
+      scaleContract: paintedParticleDominance(quake.radius, 0.62, 44, 92),
+      depth: 99999,
+      additive: false,
+      sink: -22,
+    });
+    shakeVia(scene, 220, variant.shake, "player-weapon");
+    return;
+  }
   const grave =
     !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
   for (let i = 0; i < (variant?.effectCountMultiplier ?? 1); i++)

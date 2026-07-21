@@ -154,7 +154,7 @@ describe("GameRoom — NW-CASTER authority contracts", () => {
     room.resolveSwing(player, combat, weapon, swing);
     expect(player.x).toBe(startX);
     expect(room.pendingWeaponLunges.size).toBe(1);
-    expect(room.pendingWeaponLunges.get(player.id)?.distancePx).toBe(120);
+    expect(room.pendingWeaponLunges.get(player.id)?.distancePx).toBe(480);
 
     room.stepPendingWeaponLunges(swing.activeStartSeconds + 0.01);
 

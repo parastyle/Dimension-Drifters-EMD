@@ -13,6 +13,12 @@ export const PROJECTILE_SPRITES = {
     height: 80,
     source: "edited",
   },
+  "calamity-howitzer-battleship-shell": {
+    url: "projectiles/calamity-howitzer-battleship-shell.png",
+    width: 256,
+    height: 87,
+    source: "generated",
+  },
   "ghostbolt-crossbow-arrow": {
     url: "projectiles/ghostbolt-crossbow-arrow.png",
     width: 240,

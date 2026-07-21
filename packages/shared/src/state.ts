@@ -524,6 +524,12 @@ export class ProjectileState extends Schema {
   @type("string") sourcePlayerId = "";
   /** Immutable launch weapon. Recipe art resolves from this id even after the owner swaps weapons. */
   @type("string") sourceWeaponId = "";
+  /** Server-authored ballistic lift. The server flight clock below prevents client stat inference. */
+  @type("number") arcHeight = 0;
+  /** Complete authoritative flight duration in 50ms simulation ticks. */
+  @type("uint16") flightTicks = 0;
+  /** Server-advanced flight age; clients use this for ballistic and waveform phases. */
+  @type("uint16") flightAgeTicks = 0;
 }
 
 /** One stable, friendly player-beam presentation row. Damage stays private to the server; this is the

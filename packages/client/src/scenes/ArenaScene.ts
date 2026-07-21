@@ -263,6 +263,7 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
+import { sampleProjectileWaveformFromAuthoritative } from "./arena/projectile-waveform.js";
 import {
   makeCasterProjectile,
   preloadCasterPaintedArt,
@@ -310,6 +311,7 @@ import {
   spawnTeslaWarpArrival,
   spawnTeslaWarpDeparture,
   spawnWeaponProjectileImpact,
+  spawnWeaponRadialIdentity,
   spawnWeaponSwingIdentity,
 } from "../vfx/weapon-effect-vfx.js";
 import { type XpMotePoint, type XpMoteReceipt, XpMoteRenderer } from "../vfx/xp-motes.js";
@@ -3716,7 +3718,19 @@ export class ArenaScene extends Phaser.Scene {
         cueSeconds,
       );
       const renderY = impactAnchored && this.belt ? this.beltY(point.y) : point.y;
-      spawnWeaponSwingIdentity(this, recipe, point.x, renderY, point.angle, weapon.displayLength);
+      if (recipe.radialDistribution === "full-circle") {
+        spawnWeaponRadialIdentity(
+          this,
+          recipe,
+          rig.x,
+          rig.y,
+          meleeReach(weapon),
+          point.angle,
+          weapon.displayLength,
+        );
+      } else {
+        spawnWeaponSwingIdentity(this, recipe, point.x, renderY, point.angle, weapon.displayLength);
+      }
     });
   }
 
@@ -6786,7 +6800,7 @@ export class ArenaScene extends Phaser.Scene {
                   ang,
                   fx.size,
                   fx.color,
-                  fx.style,
+                  flashWeapon?.gun?.muzzle ?? fx.style,
                 );
                 if (flashWeapon?.gun?.sonicBoomRing)
                   spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
@@ -6897,7 +6911,25 @@ export class ArenaScene extends Phaser.Scene {
     room.state.projectiles.forEach((pr, id) => {
       const c = this.projectiles.get(id);
       if (!c) return;
-      if (this.belt) {
+      const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
+      const weapon = WEAPONS[weaponId];
+      const waveform = weapon?.cast?.projectileWaveform;
+      if (waveform) {
+        const authoritativeElapsed = pr.flightAgeTicks * (TICK_MS / 1000);
+        const displayElapsed = Math.max(
+          authoritativeElapsed,
+          ((c.getData("waveformElapsed") as number | undefined) ?? authoritativeElapsed) + dtSec,
+        );
+        const sample = sampleProjectileWaveformFromAuthoritative(
+          pr,
+          waveform,
+          authoritativeElapsed,
+          displayElapsed,
+        );
+        c.setData("waveformElapsed", displayElapsed);
+        if (this.belt) c.setData("beltWorldY", sample.y);
+        c.setPosition(sample.x, sample.y);
+      } else if (this.belt) {
         // §36 belt: dead-reckon in WORLD space. x is never projected (container x == world x), but projectBelt
         // overwrites the container y with the projected SCREEN y every frame — so read the WORLD y back from
         // the tracked data (not c.y) or the projection compounds and bullets drift toward the deck back,
@@ -6911,8 +6943,6 @@ export class ArenaScene extends Phaser.Scene {
         const py = c.y + pr.vy * dtSec;
         c.setPosition(Phaser.Math.Linear(px, pr.x, 0.18), Phaser.Math.Linear(py, pr.y, 0.18));
       }
-      const weaponId = (c.getData("sourceWeapon") as string | undefined) ?? "";
-      const weapon = WEAPONS[weaponId];
       const thrown = isThrownProjectileKind(pr.kind);
       const payload = c.getData("arcPayload") as Phaser.GameObjects.Container | undefined;
       if (thrown) {
@@ -6921,15 +6951,10 @@ export class ArenaScene extends Phaser.Scene {
           rotating.rotation = Math.atan2(pr.vy, pr.vx);
         else rotating.rotation += dtSec * 22;
       }
-      const arcHeight = thrown
-        ? (weapon?.thrown?.arcHeight ?? weapon?.groundZone?.grenadeArcHeight ?? 0)
-        : (weapon?.gun?.arcHeight ?? 0);
-      const flight = thrown
-        ? weapon?.thrown && { range: weapon.thrown.range, speed: weapon.thrown.speed }
-        : weapon?.gun && { range: weapon.gun.range, speed: weapon.gun.projectileSpeed };
-      if (payload && arcHeight > 0 && flight) {
-        const totalTicks = Math.max(1, Math.round(((flight.range / flight.speed) * 1000) / TICK_MS));
-        const ageTicks = (room.state.tick - pr.bornTick) >>> 0;
+      const arcHeight = pr.arcHeight ?? 0;
+      if (payload && arcHeight > 0 && pr.flightTicks > 0) {
+        const totalTicks = pr.flightTicks;
+        const ageTicks = pr.flightAgeTicks;
         const progress = Phaser.Math.Clamp(ageTicks / totalTicks, 0, 1);
         payload.y = -Math.sin(progress * Math.PI) * arcHeight;
         if (!thrown) payload.rotation += dtSec * 3.4;
@@ -10137,7 +10162,7 @@ export class ArenaScene extends Phaser.Scene {
               ang,
               fx.size,
               fx.color,
-              fx.style,
+              weapon.gun.muzzle ?? fx.style,
             );
             if (weapon.gun.sonicBoomRing)
               spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);

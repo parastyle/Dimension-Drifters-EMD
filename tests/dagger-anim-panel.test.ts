@@ -42,7 +42,7 @@ describe("dagger/claw full-body attack routing", () => {
       const definition = weapon(id);
       expect(meleeComboSelectionFor(definition), id).toMatchObject({
         family: "rake",
-        variant: "claw",
+        variant: id === "x2-frostfang-rakes" ? "frostfang-forward-rend" : "claw",
       });
     }
     expect(isWornWeapon(weapon("x2-frostfang-rakes"))).toBe(false);
@@ -60,11 +60,15 @@ describe("dagger/claw full-body attack routing", () => {
   it("keeps the accepted lead/off/both visual cadence", () => {
     for (const id of CLOSE_BLADE_IDS) {
       const selection = meleeComboSelectionFor(weapon(id));
+      const expectedHands =
+        id === "x2-frostfang-rakes"
+          ? ["lead", "off", "both", "lead", "both"]
+          : ["lead", "off", "both"];
       expect(
         selection?.sequence.map((step) => step.hand),
         id,
-      ).toEqual(["lead", "off", "both"]);
-      expect(selection?.sequence).toHaveLength(3);
+      ).toEqual(expectedHands);
+      expect(selection?.sequence).toHaveLength(expectedHands.length);
     }
   });
 

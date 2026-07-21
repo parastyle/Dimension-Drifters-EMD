@@ -245,8 +245,10 @@ describe("driftblade-model panel", () => {
       "arc/mournveil-fan-spin": ["x2-mournveil-scythe"],
       "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
+      "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
+      "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
         "x2-buckhorn-boarspear",
@@ -295,7 +297,7 @@ describe("driftblade-model panel", () => {
       "arc/default": 113,
       "chop/default": 8,
       "rake/dagger": 1,
-      "rake/claw": 5,
+      "rake/claw": 4,
     });
   });
 

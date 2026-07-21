@@ -1,0 +1,255 @@
+import {
+  createWeaponBankV1,
+  meleeComboSelectionFor,
+  salvageArchivedWeaponBank,
+  swingDescriptorFor,
+  WEAPONS,
+} from "@dd/shared";
+import { describe, expect, it } from "vitest";
+import {
+  comboPresentationStyleFor,
+  createWeaponPerformanceInput,
+  createWeaponPerformanceSample,
+  edgeLeadScaleY,
+  namedWeaponStanceFor,
+  sampleWeaponPerformance,
+} from "../packages/client/src/sprites/pose-language.js";
+import { resolveQuakeVfxRecipe } from "../packages/client/src/vfx/quake-vfx-recipes.js";
+import {
+  resolveWeaponEffectRecipe,
+  weaponEffectRadialPoints,
+  weaponEffectCuePoint,
+} from "../packages/client/src/vfx/weapon-effect-recipes.js";
+
+function weapon(id: string) {
+  const value = WEAPONS[id];
+  if (!value) throw new Error(`Missing V5M weapon ${id}`);
+  return value;
+}
+
+describe("V5M melee owner orders", () => {
+  it("carries Reverent farther forward without changing its damage or cadence", () => {
+    const reverent = weapon("x2-reverent-broadsword");
+    expect(reverent.performance?.comboForwardPx).toBe(34);
+    expect({ damage: reverent.damage, cooldown: reverent.cooldown }).toEqual({
+      damage: 8,
+      cooldown: 0.4,
+    });
+  });
+
+  it("makes Sanctified Headsman's holy slash both denser and blade-scale dominant", () => {
+    const recipe = resolveWeaponEffectRecipe(weapon("x2-sanctified-headsman"));
+    expect(recipe).toMatchObject({
+      swingPack: "holy-bolt",
+      swingCount: 20,
+      swingScaleMode: "blade-length",
+      swingScaleMultiplier: 1.35,
+    });
+  });
+
+  it("flips Mirage's painted edge while preserving the +X grip-to-tip axis in both facings", () => {
+    const mirage = weapon("x2-mirage-hardlight-saber");
+    expect(mirage.performance?.edgeLeadFlip).toBe(true);
+    expect(mirage.gripPoints?.primary).toEqual({ x: 0.13, y: 0.5 });
+    expect([1, -1].map(() => edgeLeadScaleY(mirage.performance?.edgeLeadFlip))).toEqual([-1, -1]);
+  });
+
+  it("keeps both Voltfang hands close together and low on the authored handle", () => {
+    const voltfang = weapon("x2-voltfang-tachi");
+    expect(namedWeaponStanceFor(voltfang)).toMatchObject({
+      id: "low-close-hilt",
+      handLateral: 0.18,
+      gripSpacing: 0.13,
+    });
+    expect(voltfang.gripPoints).toEqual({
+      primary: { x: 0.1, y: 0.54 },
+      secondary: { x: 0.2, y: 0.54, role: "shaft" },
+    });
+  });
+
+  it("authors Frostfang as a five-beat, DPS-neutral forward-carrying rake combo", () => {
+    const frostfang = weapon("x2-frostfang-rakes");
+    const combo = meleeComboSelectionFor(frostfang);
+    expect(frostfang.authoritativeCombo).toBe(true);
+    expect(combo?.sequence).toHaveLength(5);
+    expect(combo?.sequence.map((step) => step.motion)).toEqual([
+      "rake",
+      "rake",
+      "scissor",
+      "rake",
+      "scissor",
+    ]);
+    expect(combo?.sequence.every((step) => step.path.damageMultiplier === 1)).toBe(true);
+    expect(frostfang.performance?.lunge).toEqual({ distancePx: 64, durationSeconds: 0.18 });
+  });
+
+  it("distributes Gravechain smoke and Hollow Harvest dust over their complete spin radius", () => {
+    const grave = resolveWeaponEffectRecipe(weapon("x2-gravechain-scythe"));
+    const hollow = resolveWeaponEffectRecipe(weapon("x2-hollow-harvest"));
+    expect(grave).toMatchObject({
+      swingPack: "void-wisp",
+      swingCount: 24,
+      radialDistribution: "full-circle",
+    });
+    expect(hollow).toMatchObject({
+      swingPack: "sand-wisp",
+      swingCount: 18,
+      radialDistribution: "full-circle",
+    });
+    const points = weaponEffectRadialPoints(10, 20, 100, 4);
+    expect(points).toHaveLength(4);
+    for (const point of points)
+      expect(Math.hypot(point.x - 10, point.y - 20)).toBeCloseTo(100, 8);
+    expect(points.map((point) => [Math.round(point.x), Math.round(point.y)])).toEqual([
+      [110, 20],
+      [10, 120],
+      [-90, 20],
+      [10, -80],
+    ]);
+  });
+
+  it("speeds up Mournveil presentation with two visual turns and unchanged authoritative arc", () => {
+    const mournveil = weapon("x2-mournveil-scythe");
+    expect(mournveil.performance?.twirl?.visualRevolutions).toBe(2);
+    expect(mournveil.swingArc).toBeCloseTo(Math.PI * 2, 10);
+  });
+
+  it("archives Quicksilver and salvages owned copies through the idempotent join migration", () => {
+    const quicksilver = weapon("x2-quicksilver-chainblade");
+    const bank = createWeaponBankV1();
+    bank.stash.push({
+      kind: "single",
+      entryId: "wi_quicksilver_archive1",
+      weapon: {
+        instanceId: "wi_quicksilver_archive1",
+        weaponId: quicksilver.id,
+        rarity: "rare",
+        affix: "keen",
+        provenance: "enemy-drop",
+        sourceWorldTier: 3,
+      },
+    });
+    bank.lastCarry = {
+      placements: [{ entryId: "wi_quicksilver_archive1", zone: "active", start: 0 }],
+      activeEntryId: "wi_quicksilver_archive1",
+    };
+
+    const first = salvageArchivedWeaponBank(bank);
+    const second = salvageArchivedWeaponBank(bank);
+
+    expect(quicksilver.archived).toBe(true);
+    expect(first).toMatchObject({ salvagedInstances: 1, affectedEntries: 1 });
+    expect(first.payout).toBeGreaterThan(0);
+    expect(bank.stash).toEqual([]);
+    expect(bank.lastCarry).toEqual({ placements: [], activeEntryId: "" });
+    expect(second).toMatchObject({ payout: 0, salvagedInstances: 0, affectedEntries: 0 });
+  });
+
+  it("rests Iron Vow and Reliquary upright-forward, then presents Reliquary downslash into stab", () => {
+    const ironVow = weapon("x2-iron-vow-bearded-axe");
+    const reliquary = weapon("x2-reliquary-halberd");
+    expect(ironVow.performance).toMatchObject({
+      hold: "upright",
+      carryForwardPx: 10,
+      carryAngleRad: -1.34,
+    });
+    expect(reliquary.performance).toMatchObject({
+      hold: "upright",
+      carryForwardPx: 14,
+      carryAngleRad: -1.32,
+    });
+    const combo = meleeComboSelectionFor(reliquary);
+    expect(combo?.sequence.map((step) => step.motion)).toEqual(["overhead", "impale"]);
+    expect(comboPresentationStyleFor(combo!.family, combo!.sequence[0]!.motion)).toBe("chop");
+    expect(comboPresentationStyleFor(combo!.family, combo!.sequence[1]!.motion)).toBe("thrust");
+  });
+
+  it("raises Frostgig and Sunlance over the shoulder and keeps both projectiles point-forward", () => {
+    for (const id of ["x2-frostgig-harpoon", "x2-sunlance-javelin-pike"]) {
+      const thrown = weapon(id);
+      expect(thrown.performance).toMatchObject({
+        action: "throw-release",
+        preThrowRevolutions: 0,
+        throwHeightPx: 28,
+      });
+      expect(thrown.thrown?.rotation).toBe("point-forward");
+    }
+    const input = createWeaponPerformanceInput();
+    input.spec = weapon("x2-frostgig-harpoon").performance!;
+    input.phase = "active";
+    input.phaseT = 0.5;
+    const raised = { ...sampleWeaponPerformance(input, createWeaponPerformanceSample()) };
+    input.spec = { ...input.spec, throwHeightPx: 0 };
+    const ordinary = sampleWeaponPerformance(input, createWeaponPerformanceSample());
+    expect(raised.handY).toBeLessThan(ordinary.handY);
+    expect(raised.backHandY).toBeLessThan(ordinary.backHandY);
+  });
+
+  it("authors Marrowpike's three server capsule stabs at neutral per-beat damage", () => {
+    const marrowpike = weapon("x2-marrowpike-ranseur");
+    const combo = meleeComboSelectionFor(marrowpike);
+    expect(marrowpike.authoritativeCombo).toBe(true);
+    expect(combo?.sequence.map((step) => step.motion)).toEqual(["jab", "jab", "impale"]);
+    expect(combo?.sequence.every((step) =>
+      step.path.kind === "capsule" && step.path.damageMultiplier === 1,
+    )).toBe(true);
+  });
+
+  it("places Nullspike's far hand on the painted purple handle", () => {
+    expect(weapon("x2-nullspike-pike").gripPoints?.secondary).toEqual({
+      x: 0.45,
+      y: 0.5,
+      role: "shaft",
+    });
+  });
+
+  it("anchors Cinderbrand magma at the authoritative impact point", () => {
+    const cinderbrand = weapon("x2-cinderbrand-pike");
+    const recipe = resolveWeaponEffectRecipe(cinderbrand);
+    const swing = swingDescriptorFor(cinderbrand, cinderbrand.cooldown);
+    const point = weaponEffectCuePoint(
+      recipe!,
+      cinderbrand,
+      { x: 0, y: 0 },
+      { x: 80, y: 25 },
+      0,
+      swing,
+      swing.impactSeconds,
+    );
+    expect(cinderbrand.effectTiming).toBe("impact");
+    expect(recipe).toMatchObject({
+      classification: "impact",
+      impactPack: "fire-splat",
+      impactAnchor: "target",
+    });
+    expect(point).toMatchObject({ x: 80, y: 25 });
+  });
+
+  it("performs a full Gravedigger frontflip without moving legacy active damage timing", () => {
+    const spade = weapon("gravediggers-spade");
+    const descriptor = swingDescriptorFor(spade, spade.cooldown);
+    const legacy = swingDescriptorFor(
+      { ...spade, swingArc: 2.7, timingSwingArc: undefined },
+      spade.cooldown,
+    );
+    expect(spade.swingArc).toBeCloseTo(Math.PI * 2, 10);
+    expect(descriptor.activeStartSeconds).toBeCloseTo(legacy.activeStartSeconds, 10);
+    expect(descriptor.activeEndSeconds).toBeCloseTo(legacy.activeEndSeconds, 10);
+
+    const input = createWeaponPerformanceInput();
+    input.spec = spade.performance!;
+    input.phase = "recovery";
+    input.phaseT = 1;
+    const sample = sampleWeaponPerformance(input, createWeaponPerformanceSample());
+    expect(sample.wholeBodyRotation).toBeCloseTo(-Math.PI * 2, 10);
+    expect(sample.wholeBodyLift).toBeCloseTo(0, 10);
+  });
+
+  it("marks Anvil-Drop as smoke-only while retaining the budgeted hammer-slam shake", () => {
+    expect(resolveQuakeVfxRecipe(weapon("x2-anvil-drop"))).toMatchObject({
+      variant: "hammer-slam",
+      smokeOnly: true,
+      shake: 0.018,
+    });
+  });
+});

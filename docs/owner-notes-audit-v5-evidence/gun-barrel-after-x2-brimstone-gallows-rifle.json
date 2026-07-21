@@ -3,20 +3,20 @@
     "phase": "after",
     "weaponId": "x2-brimstone-gallows-rifle",
     "baseURL": "http://127.0.0.1:5173",
-    "capturedAt": "2026-07-21T15:55:02.243Z",
+    "capturedAt": "2026-07-21T16:50:47.705Z",
     "expectedOffset": {
       "forward": -2,
       "lateral": -17
     },
-    "originDeltaPx": 0.12555121958583737,
-    "shotAngleRad": -0.10136267649485554,
+    "originDeltaPx": 0.13967226052061102,
+    "shotAngleRad": -0.0906052962761853,
     "browserErrors": [],
     "unexpectedBrowserErrors": [],
     "screenshot": "docs\\owner-notes-audit-v5-evidence\\gun-barrel-after-x2-brimstone-gallows-rifle.png"
   },
   "start": {
     "attackSeq": 0,
-    "tick": 47,
+    "tick": 46,
     "player": {
       "x": 2400,
       "y": 2420
@@ -24,26 +24,26 @@
     "rawMuzzleReach": 103.49999999999999
   },
   "live": {
-    "currentTick": 54,
+    "currentTick": 52,
     "ageTicks": 4,
     "integratedSteps": 5,
     "row": {
       "id": "p0",
-      "x": 2737.326416015625,
-      "y": 2380.1082817174747,
-      "vx": 895.3804931640625,
-      "vy": -91.07027435302734,
-      "bornTick": 50
+      "x": 2737.556396484375,
+      "y": 2382.5035581082866,
+      "vx": 896.308349609375,
+      "vy": -81.43324279785156,
+      "bornTick": 48
     },
     "recoveredOrigin": {
-      "x": 2513.4812927246094,
-      "y": 2402.8758503057315
+      "x": 2513.4793090820312,
+      "y": 2402.8618688077495
     },
     "paintedMuzzle": {
       "x": 2513.5,
       "y": 2403
     },
-    "originDeltaPx": 0.12555121958583737,
-    "shotAngleRad": -0.10136267649485554
+    "originDeltaPx": 0.13967226052061102,
+    "shotAngleRad": -0.0906052962761853
   }
 }

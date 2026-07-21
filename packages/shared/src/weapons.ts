@@ -44,7 +44,9 @@ export type WeaponSecondaryGripRole =
   | "pump"
   | "vertical-foregrip"
   | "shoulder-RPG"
-  | "two-hand-rifle";
+  | "two-hand-rifle"
+  | "shaft"
+  | "handle";
 
 export interface WeaponGripPoints {
   primary: WeaponGripAnchor;
@@ -252,16 +254,19 @@ export type WeaponEffectRecipeId =
   | "witherleaf-tip-spores"
   | "snakeoil-tip-sparks"
   | "gravechain-dominant-spin"
+  | "hollow-harvest-circle"
   | "void-caster-explosion"
   | "hexbloom-toxic-impact"
-  | "cinderbrand-magma-impact";
+  | "cinderbrand-magma-impact"
+  | "cinderchoke-fire-impact";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
 export type WeaponStanceId =
   | "hasso-no-kamae"
   | "tachi-no-tori"
   | "blade-forward-high-hilt"
-  | "two-hands-on-hilt";
+  | "two-hands-on-hilt"
+  | "low-close-hilt";
 
 /** Parameterized enemy movement status shared by direct hits and Frostquill-style ground zones. */
 export interface EnemyHitStatusDef {
@@ -272,10 +277,47 @@ export interface EnemyHitStatusDef {
   seconds: number;
 }
 
+/** Deterministic lateral sine path shared by authoritative projectile motion and client rendering. */
+export interface ProjectileWaveformDef {
+  /** Peak perpendicular displacement from the straight launch ray, in world pixels. */
+  amplitudePx: number;
+  /** Complete twizzle cycles per second. */
+  frequencyHz: number;
+  /** Optional stable launch phase; zero keeps the projectile exactly on its muzzle at t=0. */
+  phaseRad?: number;
+}
+
+export interface ProjectileWaveformSample {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Beam-ripple sine math applied to a projectile's world path. Pure so server and client cannot drift. */
+export function projectileWaveformPositionAt(
+  originX: number,
+  originY: number,
+  velocityX: number,
+  velocityY: number,
+  elapsedSeconds: number,
+  waveform: ProjectileWaveformDef,
+): ProjectileWaveformSample {
+  const speed = Math.hypot(velocityX, velocityY) || 1;
+  const dirX = velocityX / speed;
+  const dirY = velocityY / speed;
+  const phase =
+    elapsedSeconds * Math.PI * 2 * waveform.frequencyHz + (waveform.phaseRad ?? 0);
+  const launchOffset = Math.sin(waveform.phaseRad ?? 0);
+  const offset = waveform.amplitudePx * (Math.sin(phase) - launchOffset);
+  return {
+    x: originX + velocityX * elapsedSeconds - dirY * offset,
+    y: originY + velocityY * elapsedSeconds + dirX * offset,
+  };
+}
+
 /** Shared server-owned ground patch. The client renders the footprint from small authored texture chunks;
  * radius is gameplay truth and never inferred from renderer geometry. */
 export interface GroundZoneDef {
-  trigger: "channel" | "attack" | "landing";
+  trigger: "channel" | "attack" | "landing" | "impact";
   style: "nether" | "poison" | "poison-smoke" | "ice";
   initialRadius: number;
   maxRadius: number;
@@ -331,8 +373,16 @@ export interface WeaponPerformanceDef {
   windupSeconds?: number;
   /** Extra local carry clearance for oversized upright props, in final rendered pixels. */
   carryForwardPx?: number;
+  /** Presentation-only forward drive layered onto accepted melee combo ownership. */
+  comboForwardPx?: number;
   /** Optional neutral carry angle in local screen radians (zero points forward). */
   carryAngleRad?: number;
+  /** Sprite-art correction for a blade painted with its cutting edge trailing the semantic motion. */
+  edgeLeadFlip?: boolean;
+  /** Presentation-only hand lift for an over-shoulder throw, in final rendered pixels. */
+  throwHeightPx?: number;
+  /** Full-character forward somersault layered over the ordinary accepted melee swing. */
+  frontflip?: boolean;
   /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
   preThrowRevolutions?: number;
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
@@ -344,12 +394,18 @@ export interface WeaponPerformanceDef {
   /** Authored forward displacement resolved from the accepted aim by the server at active start. */
   lunge?: {
     distancePx: number;
+    /** Server-owned travel time; the displacement is advanced over this exact fixed-step window. */
+    durationSeconds?: number;
+    /** Damage immunity is active only while the authored lunge clock is live; it never counts as a parry. */
+    invulnerable?: boolean;
   };
   /** Full-circle attack geometry shared by overhead twirls and ground-plane Garen whirlwinds. */
   twirl?: {
     plane: "screen-circle" | "ground-whirlwind";
     pivot: "shaft-midpoint" | "grip";
     direction: "forward" | "alternate";
+    /** Presentation turns per accepted beat; authoritative damage remains the authored swing arc. */
+    visualRevolutions?: number;
   };
   /** Hold cadence remains server-owned; total accepted swings are `1 + floor(held/cadence)`. */
   holdScaling?: {
@@ -435,6 +491,8 @@ export interface WeaponDef {
   vfxRadius?: number;
   /** Visual sweep of the swing animation (radians). */
   swingArc: number;
+  /** Optional legacy presentation-clock arc when authoritative damage is intentionally widened. */
+  timingSwingArc?: number;
   /**
    * §40 which SWING ANIMATION STYLE this weapon plays (cosmetic — damage geometry is unchanged). One weapon,
    * one animation; omitted → derived from the weapon's shape: quake→chop (overhead slam), worn claws/
@@ -600,6 +658,8 @@ export interface WeaponDef {
       count: number;
       spread: number;
     };
+    /** Server/client shared sine path. The server moves and collides on this curve; the client samples it. */
+    projectileWaveform?: ProjectileWaveformDef;
   };
   /** Charge, ignite once, then sustain one server-authoritative swept capsule until release/overheat. */
   beam?: BeamDef;
@@ -648,7 +708,7 @@ export interface WeaponDef {
     projectileArt?: GunProjectileArt;
     /** Client-only in-flight projectile scale. Never enters the fixed server hit radius. */
     projectileVisualScale?: number;
-    /** Cosmetic ballistic lift; the authoritative server trajectory and collision remain planar. */
+    /** Server-authored ballistic lift descriptor and flight clock; clients render this exact arc. */
     arcHeight?: number;
     /** Client muzzle-flash style: "heavy" | "boom" | "rapid" | "punch" | "spark". */
     muzzle: string;
@@ -1174,9 +1234,11 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     halfArc: 0.95,
     cooldown: 0.6, // a heavy, deliberate dig
     displayLength: 124,
-    swingArc: 2.7,
+    swingArc: Math.PI * 2,
+    timingSwingArc: 2.7,
     gripFrac: 0.1,
     twoHanded: true,
+    performance: { hold: "steady", action: "default-swing", frontflip: true },
     durability: 90,
     rez: { radius: REZ_RADIUS }, // §6 the swing revives a downed ally in range
     tags: {
@@ -1668,6 +1730,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       pierce: 3,
       bulletKind: "orb",
       scalingGrades: { int: "B" },
+      projectileWaveform: { amplitudePx: 34, frequencyHz: 4 },
     },
     tags: {
       grip: "2H",

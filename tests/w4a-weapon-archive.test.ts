@@ -30,16 +30,17 @@ const ARCHIVE_IDS = [
   "x2-locust-flail",
   "x2-mistral-kusarigama",
   "x2-nine-tail-razorlash",
+  "x2-quicksilver-chainblade",
   "x2-snakebite-lash",
 ] as const;
 
 describe("W4A weapon archive contracts", () => {
-  it("keeps six durable catalog rows while excluding them from every active acquisition census", () => {
+  it("keeps seven durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
     expect(WEAPON_CATALOG_IDS).toHaveLength(329);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(323);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(6);
-    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(292);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(322);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(7);
+    expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(291);
     expect(WEAPON_RESOURCE_IDS).toHaveLength(329);
 
     const provenances: WeaponProvenance[] = [
@@ -70,13 +71,13 @@ describe("W4A weapon archive contracts", () => {
     for (const id of ARCHIVE_IDS) expect(wielded, id).not.toContain(id);
   });
 
-  it("regenerates the portal and default Weaponsmith listing with 323 active rows", () => {
+  it("regenerates the portal and default Weaponsmith listing with 322 active rows", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":323');
-    expect(smith).toContain("Search 323 active weapons");
-    expect(smith).toContain('aria-setsize="323"');
+    expect(portal).toContain('"count":322');
+    expect(smith).toContain("Search 322 active weapons");
+    expect(smith).toContain('aria-setsize="322"');
     expect(smithServer).toContain("definition.archived === true");
     for (const id of ARCHIVE_IDS) {
       expect(portal, id).not.toContain(`/?dev=weapon:${id}`);

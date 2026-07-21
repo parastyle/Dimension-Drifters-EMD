@@ -272,6 +272,11 @@
         { "name": "voltage rise", "motion": "rising-ward", "direction": -1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.43, "impact": 0.29, "followEnd": 0.61 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
         { "name": "thunder fall", "motion": "thunder-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.16, "activeEnd": 0.48, "impact": 0.34, "followEnd": 0.66 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
       ],
+      "stance": "low-close-hilt",
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.54 },
+        "secondary": { "x": 0.2, "y": 0.54, "role": "shaft" }
+      },
       "id": "x2-voltfang-tachi"
     },
     {
@@ -310,6 +315,11 @@
         "displayLength": 108,
         "swingArc": 2.7,
         "gripFrac": 0.12
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "comboForwardPx": 34
       },
       "id": "x2-reverent-broadsword"
     },
@@ -483,6 +493,14 @@
         "displayLength": 110,
         "swingArc": 2.3,
         "gripFrac": 0.13
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "edgeLeadFlip": true
+      },
+      "gripPoints": {
+        "primary": { "x": 0.13, "y": 0.5 }
       },
       "id": "x2-mirage-hardlight-saber"
     },
@@ -1987,9 +2005,11 @@
       },
       "swingStyle": "spin",
       "performance": {
-        "hold": "steady",
+        "hold": "upright",
         "action": "default-swing",
-        "continuous": true
+        "continuous": true,
+        "carryForwardPx": 10,
+        "carryAngleRad": -1.34
       },
       "id": "x2-iron-vow-bearded-axe"
     },
@@ -2260,6 +2280,12 @@
         { "name": "reliquary falls", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.14, "activeEnd": 0.45, "impact": 0.32, "followEnd": 0.74 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
         { "name": "relic point", "motion": "impale", "direction": 1, "hand": "both", "timing": { "activeStart": 0.08, "activeEnd": 0.4, "impact": 0.28, "followEnd": 0.68 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
       ],
+      "performance": {
+        "hold": "upright",
+        "action": "default-swing",
+        "carryForwardPx": 14,
+        "carryAngleRad": -1.32
+      },
       "suppressVfx": true,
       "id": "x2-reliquary-halberd"
     },
@@ -2402,6 +2428,10 @@
       "effectRecipe": "nullspike-impact-circle",
       "effectEmitter": "tip",
       "effectTiming": "impact",
+      "gripPoints": {
+        "primary": { "x": 0.08, "y": 0.5 },
+        "secondary": { "x": 0.45, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-nullspike-pike"
     },
     {
@@ -2682,7 +2712,8 @@
       "performance": {
         "hold": "steady",
         "action": "throw-release",
-        "preThrowRevolutions": 0
+        "preThrowRevolutions": 0,
+        "throwHeightPx": 28
       },
       "id": "x2-frostgig-harpoon"
     },
@@ -2775,6 +2806,14 @@
         "str": 7,
         "dex": 5
       },
+      "comboFamily": "thrust",
+      "comboVariant": "marrowpike-triple-stab",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "left tine", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.38, "impact": 0.29, "followEnd": 0.58 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 0.94, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "right tine", "motion": "jab", "direction": -1, "hand": "both", "timing": { "activeStart": 0.08, "activeEnd": 0.36, "impact": 0.27, "followEnd": 0.56 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 0.97, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "marrow point", "motion": "impale", "direction": 1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.43, "impact": 0.32, "followEnd": 0.62 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "id": "x2-marrowpike-ranseur"
     },
     {
@@ -2802,7 +2841,8 @@
         "damage": 11,
         "charges": 3,
         "refillSeconds": 1.7,
-        "pierce": 2
+        "pierce": 2,
+        "rotation": "point-forward"
       },
       "stats": {
         "damage": 8,
@@ -2820,6 +2860,12 @@
       "requirements": {
         "dex": 7,
         "int": 5
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "preThrowRevolutions": 0,
+        "throwHeightPx": 28
       },
       "id": "x2-sunlance-javelin-pike"
     },
@@ -4197,7 +4243,7 @@
         "hold": "steady",
         "action": "default-swing",
         "continuous": true,
-        "twirl": { "plane": "screen-circle", "pivot": "shaft-midpoint", "direction": "forward" }
+        "twirl": { "plane": "screen-circle", "pivot": "shaft-midpoint", "direction": "forward", "visualRevolutions": 2 }
       }
     },
     {
@@ -4281,6 +4327,9 @@
         "kind": "edge"
       },
       "swingStyle": "spin",
+      "effectRecipe": "hollow-harvest-circle",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
       "performance": {
         "hold": "steady",
         "action": "default-swing",
@@ -4448,6 +4497,21 @@
       "id": "x2-frostfang-rakes",
       "behavior": {
         "kind": "edge"
+      },
+      "comboFamily": "rake",
+      "comboVariant": "frostfang-forward-rend",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "frostfang lead", "motion": "rake", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.1, "activeEnd": 0.5, "impact": 0.32, "followEnd": 0.66 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "frostfang return", "motion": "rake", "direction": -1, "hand": "off", "timing": { "activeStart": 0.08, "activeEnd": 0.48, "impact": 0.3, "followEnd": 0.64 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "crystal cross", "motion": "scissor", "direction": 0, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.5, "impact": 0.34, "followEnd": 0.68, "secondaryActiveStart": 0.18, "secondaryActiveEnd": 0.56 }, "path": { "kind": "dual-sweep", "arcMultiplier": 0.9, "rangeMultiplier": 1.04, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "driving rake", "motion": "rake", "direction": 1, "hand": "lead", "timing": { "activeStart": 0.08, "activeEnd": 0.48, "impact": 0.29, "followEnd": 0.62 }, "path": { "kind": "sweep", "arcMultiplier": 1.08, "rangeMultiplier": 1.06, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "frostfang finish", "motion": "scissor", "direction": 0, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.52, "impact": 0.36, "followEnd": 0.7, "secondaryActiveStart": 0.19, "secondaryActiveEnd": 0.58 }, "path": { "kind": "dual-sweep", "arcMultiplier": 1, "rangeMultiplier": 1.08, "damageMultiplier": 1, "knockback": 0 } }
+      ],
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "lunge": { "distancePx": 64, "durationSeconds": 0.18 }
       }
     },
     {
@@ -4577,6 +4641,7 @@
       "requirements": {
         "dex": 10
       },
+      "archived": true,
       "id": "x2-quicksilver-chainblade",
       "behavior": {
         "kind": "edge"
@@ -8362,10 +8427,11 @@
         "range": 600,
         "fireRate": 0.7,
         "pierce": 1,
-        "bounces": 2,
         "magazine": 5,
         "reloadSeconds": 1.8,
-        "bulletKind": "ricochet",
+        "bulletKind": "grenade",
+        "projectileVisualScale": 1.35,
+        "arcHeight": 112,
         "muzzle": "boom",
         "recoil": 0.003,
         "explode": {
@@ -8518,7 +8584,9 @@
         "pierce": 3,
         "magazine": 4,
         "reloadSeconds": 2.2,
-        "bulletKind": "slug",
+        "bulletKind": "fire-plume",
+        "projectileVisualScale": 1.4,
+        "projectileColor": 16738858,
         "muzzle": "heavy",
         "recoil": 0.004
       },
@@ -8861,19 +8929,21 @@
       "cardartAction": "the long barrel recoiling violently as a huge arc-shell launches in a smoking parabola, a thunderous ember-orange muzzle-blast",
       "behavior": {
         "kind": "gun",
-        "damage": 16,
+        "damage": 22,
         "projectileSpeed": 700,
         "range": 900,
-        "fireRate": 0.9,
+        "fireRate": 2.2,
         "pierce": 1,
         "magazine": 2,
-        "reloadSeconds": 3,
+        "reloadSeconds": 3.4,
         "bulletKind": "slug",
-        "muzzle": "heavy",
+        "projectileArt": "generated",
+        "projectileVisualScale": 1.35,
+        "muzzle": "artillery",
         "recoil": 0.004,
         "explode": {
-          "radius": 70,
-          "damage": 14
+          "radius": 150,
+          "damage": 32
         }
       },
       "stats": {
@@ -10163,7 +10233,7 @@
         "reloadSeconds": 2,
         "bulletKind": "slug",
         "projectileArt": "generated",
-        "projectileVisualScale": 1.25,
+        "projectileVisualScale": 1.75,
         "muzzle": "heavy",
         "muzzleColor": 3397375,
         "recoil": 0.0038,
@@ -10453,9 +10523,9 @@
           "pivot": "grip",
           "direction": "forward"
         },
-        "aura": {
-          "radius": 160,
-          "damagePerSecond": 14.3,
+          "aura": {
+            "radius": 200,
+            "damagePerSecond": 14.3,
           "resourcePerSecond": 18,
           "tickRate": 0.2,
           "color": 3401471
@@ -11921,10 +11991,20 @@
       "paletteAccent": "#3C6E6A",
       "cardartAction": "tilted forward, the hourglass throat pouring a slow continuous beam of creeping pale-teal numbing frost across the line of sight",
       "behavior": {
-        "kind": "beam",
-        "damage": 5,
-        "range": 700,
-        "tickRate": 0.13
+        "kind": "groundZone",
+        "zone": {
+          "trigger": "channel",
+          "style": "ice",
+          "initialRadius": 36,
+          "maxRadius": 95,
+          "growthPerSecond": 72,
+          "lingerSeconds": 2,
+          "damagePerSecond": 38.46153846153846,
+          "tickRate": 0.15,
+          "placementRange": 640,
+          "slowMultiplier": 0.5,
+          "slowSeconds": 0.3
+        }
       },
       "stats": {
         "damage": 5,
@@ -12175,6 +12255,9 @@
         },
         "vfxAt": "impact"
       },
+      "effectRecipe": "cinderchoke-fire-impact",
+      "effectEmitter": "body",
+      "effectTiming": "impact",
       "id": "x2-cinderchoke-brazier-orb"
     },
     {
@@ -12390,9 +12473,9 @@
           "rotationRad": 0.065,
           "frequencyHz": 13
         },
-        "aura": {
-          "radius": 210,
-          "damagePerSecond": 12.1,
+          "aura": {
+            "radius": 252,
+            "damagePerSecond": 12.1,
           "resourcePerSecond": 18,
           "tickRate": 0.2,
           "color": 10288955,
@@ -12838,7 +12921,20 @@
       "behavior": {
         "kind": "quake",
         "radius": 140,
-        "damage": 11
+        "damage": 11,
+        "zone": {
+          "trigger": "impact",
+          "style": "ice",
+          "initialRadius": 140,
+          "maxRadius": 140,
+          "growthPerSecond": 0,
+          "lingerSeconds": 3,
+          "damagePerSecond": 0,
+          "tickRate": 0.2,
+          "placementRange": 300,
+          "slowMultiplier": 0.55,
+          "slowSeconds": 0.3
+        }
       },
       "id": "x2-frostbite-snowglobe"
     },
@@ -13101,6 +13197,17 @@
         "displayLength": 148,
         "swingArc": 2.3,
         "gripFrac": 0.1
+      },
+      "gripPoints": {
+        "primary": {
+          "x": 0.22,
+          "y": 0.77
+        },
+        "secondary": {
+          "x": 0.48,
+          "y": 0.77,
+          "role": "handle"
+        }
       },
       "id": "x2-idol-of-the-pale-verdict"
     },
@@ -14303,6 +14410,7 @@
         "magazine": 12,
         "reloadSeconds": 1.2,
         "bulletKind": "spark",
+        "projectileVisualScale": 10,
         "projectileColor": 11619327,
         "muzzle": "spark",
         "muzzleColor": 11619327,
@@ -14813,7 +14921,9 @@
         "suppressSwing": true,
         "windupSeconds": 0.3,
         "lunge": {
-          "distancePx": 120
+          "distancePx": 480,
+          "durationSeconds": 0.2,
+          "invulnerable": true
         }
       },
       "effectRecipe": "stormfist-blue-lunge",
