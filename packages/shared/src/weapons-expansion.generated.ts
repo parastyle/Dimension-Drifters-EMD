@@ -621,6 +621,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "effectRecipe": "dustreaper-continuous-edge",
     "effectEmitter": "blade",
+    "effectTiming": "impact",
     "requirements": {
       "str": 13
     },
@@ -10725,6 +10726,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.5,
+        "role": "shaft"
+      }
+    },
     "description": "A charred ironwood stave crowned with a fused mass of melted tallow candles, their wax-clogged wicks belching a coughing fan of greasy fire.",
     "performance": {
       "hold": "steady",
@@ -10839,6 +10851,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.16,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.5,
+        "role": "shaft"
+      }
+    },
     "description": "A slim femur wand strung with finger-bone charms and knotted black hair, its splintered tip spitting a forking purple curse that leaps soul to soul.",
     "performance": {
       "hold": "shoulder-launcher",
@@ -10937,6 +10960,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "description": "A tall white-gold staff topped with a fan of radiant sun-rays around a clear focusing lens, pouring out a steady searing ray of holy light.",
     "requirements": {
@@ -11051,6 +11085,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.08,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.5,
+        "role": "shaft"
+      }
+    },
     "description": "A massive iron-shod stave capped with a forge-anvil head veined in cooling magma, slammed butt-first to crack the earth in a ring of fire.",
     "requirements": {
       "int": 10,
@@ -11090,6 +11135,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "DEX"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.42,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "description": "A scuffed iron staff ending in a flared blunderbuss mouth packed with rune-etched shot, coughing a wide spray of splintering ice slivers.",
     "performance": {
@@ -11335,6 +11391,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.5,
+        "role": "shaft"
+      }
+    },
     "description": "A tall ivory shepherd's crozier sheathed in everlasting frost, its curled crook planted to bloom a consecrated ring of killing ice across the ground.",
     "requirements": {
       "int": 10
@@ -11431,6 +11498,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "description": "A sun-bleached cactus-rib stave fitted with a copper lightning-rod tip and a coil of bare wire, channeling a steady forked lance of caught storm.",
     "requirements": {
@@ -11531,6 +11609,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "gripPoints": {
+      "primary": {
+        "x": 0.08,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.5,
+        "role": "shaft"
+      }
+    },
     "description": "A jagged obsidian staff crowned with a ring of black teeth around a starless pit, butted into the earth to collapse a hungry crater of devouring dark.",
     "requirements": {
       "int": 13
@@ -11614,6 +11703,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.38,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "description": "A twisted wormwood stave hung with shriveled gourds of distilled blight, shaken to scatter a burst of splitting venom-pods that rupture into corrosive pools.",
     "requirements": {
@@ -13414,6 +13514,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.1,
+        "y": 0.5
+      },
+      "secondary": {
+        "x": 0.4,
+        "y": 0.5,
+        "role": "shaft"
+      }
     },
     "requirements": {
       "int": 11

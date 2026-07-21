@@ -16,55 +16,34 @@ import {
 import type Phaser from "phaser";
 import { RENDER_DPR } from "../render-dpr.js";
 import { preloadFxPacks } from "./fx-composer.js";
-import { PARTICLE_PACKS } from "./particle-manifest.js";
 import { paintedSwingDisplayWidth } from "./painted-particle-scale.js";
+import { PARTICLE_PACKS } from "./particle-manifest.js";
 import "./vfx-render.js"; // sets globalThis.VFXRENDER
 import "./vfx-layers.js"; // sets globalThis.VFXLAYERS
+import {
+  HEADSMAN_PROTOTYPES,
+  headsmanExtensionGeometry,
+  headsmanExtensionReveal,
+  headsmanPrototypeFromSearch,
+  SANCTIFIED_HEADSMAN_ID,
+} from "./headsman-prototypes.js";
+import { KATANA_SLASH_ASSIGNMENTS } from "./katana-slash.generated.js";
+import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "./muzzle-flash-catalog.js";
 import { WEAPON_VFX, type WeaponVfx } from "./weapon-vfx.generated.js";
+import {
+  RIFTCALLER_DELETED_AURA_LAYERS,
+  ELEMENT_PAINT as SYSTEMIC_ELEMENT_PAINT,
+  splitWeaponVfxSuite,
+  weaponVfxSuiteFor,
+} from "./weapon-vfx-suite.js";
 
 const DEG = Math.PI / 180;
 // Longest canonical emitter life is 900ms (embers top out at 880, scatter at 780). The authored draw
 // finishes at the swing pose end, but the surface must stay put + visible until this tail dies naturally.
 const PARTICLE_TAIL_MS = 900;
 
-// §35/§36 ELEMENT + ARCHETYPE-DRIVEN fallback VFX: the +300 expansion weapons carry no authored suite, so an
-// un-authored swing would otherwise look identical across all of them. Instead we synthesize a suite that
-// reflects BOTH the weapon's ELEMENT (hue + a matching flourish — fire embers, shock arcs, holy sigils…) AND
-// its physical ARCHETYPE (a rapier/spear THRUSTS, a greatsword CLEAVES with a shockwave, a dual-grip does an
-// X twin-slash, a light blade leaves speed-lines) — so every one of the 300 reads unique with zero per-weapon
-// authoring. It composes the SAME authored layers the Weaponsmith exposes, so it stays WYSIWYG. Hue (0 red →
-// spectrum) feeds the renderer's lerpHue.
+// The fallback suite itself lives in weapon-vfx-suite.ts so runtime and whole-catalog tests share one path.
 type Suite = WeaponVfx["suite"];
-const ELEMENT_HUE: Record<string, number> = {
-  physical: 0.55,
-  fire: 0.03,
-  frost: 0.54,
-  shock: 0.63,
-  holy: 0.13,
-  toxic: 0.32,
-  void: 0.8,
-  arcane: 0.72,
-};
-const ELEMENT_PAINT: Record<string, number> = {
-  physical: 0,
-  fire: 1,
-  frost: 2,
-  shock: 3,
-  holy: 4,
-  toxic: 5,
-  void: 6,
-  arcane: 7,
-};
-const ELEMENT_COLOR: Record<string, number> = {
-  physical: 0xd6dde6,
-  fire: 0xff6a2a,
-  frost: 0x6fd6ff,
-  shock: 0xffe24a,
-  holy: 0xffe6a0,
-  toxic: 0x9cff3b,
-  void: 0xb14bff,
-  arcane: 0x8f6aff,
-};
 const PER_PACK_IDS = [
   "steel-wisp",
   "steel-bolt",
@@ -85,131 +64,10 @@ const PER_PACK_IDS = [
 ] as const;
 const PER_LAYER_IDS = new Set(["blade-trail", "twin-slash", "thrust-streak"]);
 
-/** The element FLOURISH (motion-agnostic sparks/rings/embers) overlaid on top of whatever swing SHAPE the
- *  archetype picked — this is the layer that says "fire" / "holy" / "void" regardless of the weapon's shape. */
-function elementFlourish(element: string, h: number): Suite {
-  switch (element) {
-    case "fire":
-      return {
-        "ember-rain": { on: true, params: { count: 14, color: h } },
-        "impact-flash": { on: true, params: { intensity: 0.6 } },
-      };
-    case "shock":
-      return {
-        "arc-bolt": { on: true, params: { color: h } },
-        "shockwave-ring": { on: true, params: { color: h } },
-      };
-    case "frost":
-      return {
-        "hit-spark": { on: true, params: { count: 16, color: h } },
-        "impact-flash": { on: true, params: { intensity: 0.5 } },
-      };
-    case "holy":
-      return {
-        "sigil-ring": { on: true, params: { color: h, size: 1 } },
-        "impact-flash": { on: true, params: { intensity: 0.65 } },
-      };
-    case "toxic":
-      return {
-        "ember-rain": { on: true, params: { count: 12, color: h } },
-        "hit-spark": { on: true, params: { count: 10, color: h } },
-      };
-    case "void":
-      return {
-        "shockwave-ring": { on: true, params: { color: h } },
-        "sigil-ring": { on: true, params: { color: h, size: 1.1 } },
-      };
-    case "arcane":
-      return {
-        "sigil-ring": { on: true, params: { color: h, size: 1.2 } },
-        "arc-bolt": { on: true, params: { color: h } },
-      };
-    default:
-      return {}; // physical → the steel swing shape carries it, no elemental overlay
-  }
-}
-
-/** Build a weapon's fallback PER suite from descriptor style, grip, size, and material hints. */
-function buildWeaponSuite(
-  element: string,
-  style: SwingDescriptor["style"],
-  tags?: WeaponDef["tags"],
-): Suite {
-  const h = ELEMENT_HUE[element] ?? 0.55;
-  const heavy =
-    style === "chop" ||
-    (tags?.grip === "2H" && (tags?.size === "L" || tags?.size === "XL"));
-  // Only a "long" reach band is a true polearm/spear/whip THRUST; "mid" is an ordinary sword (→ default arc).
-  const reachy = style === "thrust";
-  const dual = tags?.grip === "dual";
-  const fast = tags?.size === "S"; // daggers / knives / light blades → snappy speed-lines
-  const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test((tags?.family ?? "").toLowerCase());
-  const blunt = /mace|maul|warhammer|hammer|gauntlet|fist|knuckle/.test(
-    (tags?.family ?? "").toLowerCase(),
-  );
-  const perParams = {
-    reach: 1,
-    paint: ELEMENT_PAINT[element] ?? 0,
-    history: 1,
-    bodyAlpha: energy ? 0.52 : heavy || blunt ? 0.78 : 0.72,
-    lipAlpha: energy ? 0.72 : heavy || blunt ? 0.36 : reachy ? 0.58 : 0.54,
-    lipColor: ELEMENT_COLOR[element] ?? 0xd6dde6,
-    color: h,
-  };
-  let base: Suite;
-  // §41 NOTE: the old fallbacks also layered "edge-trail" (a thin trailing arc line) on most swings — it
-  // read as "a weird narrow white line" (user), so it's dropped from every fallback. Authored suites keep it.
-  if (dual) {
-    // twin blades → an X twin-slash
-    base = {
-      "twin-slash": { on: true, params: perParams },
-    };
-  } else if (reachy) {
-    // spear / polearm → a long forward THRUST streak
-    base = {
-      "thrust-streak": { on: true, params: perParams },
-    };
-  } else if (heavy) {
-    // greatsword / maul → a WIDE cleave with a ground shockwave
-    base = {
-      "blade-trail": { on: true, params: perParams },
-      "cleave-flash": { on: true, params: { intensity: 0.85 } },
-      "shockwave-ring": { on: true, params: { color: h } },
-    };
-  } else if (fast) {
-    // dagger / light blade → a crisp crescent + speed-line blade-trail
-    base = {
-      "blade-trail": { on: true, params: perParams },
-    };
-  } else {
-    // ordinary sword — the clean crescent alone (the safe default for everything unclassified)
-    base = {
-      "blade-trail": { on: true, params: perParams },
-    };
-  }
-  if (energy) base["impact-flash"] = { on: true, params: { intensity: 0.6 } }; // plasma/laser glow pop
-  return { ...base, ...elementFlourish(element, h) };
-}
-
-/** Memoized per-weapon fallback suites (built once per weapon id; element-only if the id is unknown). */
-const FALLBACK_CACHE = new Map<string, Suite>();
-function fallbackSuiteFor(
-  weaponId: string,
-  element: string,
-  style: SwingDescriptor["style"],
-): Suite {
-  const key = weaponId || `el:${element}:${style}`;
-  let s = FALLBACK_CACHE.get(key);
-  if (!s) {
-    s = buildWeaponSuite(element, style, WEAPONS[weaponId]?.tags);
-    FALLBACK_CACHE.set(key, s);
-  }
-  return s;
-}
-
 interface Surface {
   container: Phaser.GameObjects.Container;
   S: VfxSurface;
+  headsmanExtension: Phaser.GameObjects.Image;
   busy: boolean;
   generation: number;
   activeTween?: Phaser.Tweens.Tween;
@@ -217,11 +75,19 @@ interface Surface {
   scatterKey?: string;
 }
 
+interface WeaponBladeTipPose {
+  readonly x: number;
+  readonly y: number;
+  readonly angle: number;
+  readonly physicalBladeLength: number;
+}
+
 interface PerRuntimeSurface {
   perQuality?: 4 | 8 | 12;
   perLongTailFired?: boolean;
   perBody?: Phaser.GameObjects.Rope;
   perLip?: Phaser.GameObjects.Rope;
+  muzzleFlashImg?: Phaser.GameObjects.Image;
   per?: {
     swing: SwingDescriptor;
     reach: number;
@@ -232,6 +98,18 @@ interface PerRuntimeSurface {
     grip?: WeaponDef["tags"]["grip"];
     family?: string;
     paint: number;
+    slashArt?: {
+      readonly key: string;
+      readonly url: string;
+      readonly frame: number;
+      readonly frames: number;
+    };
+    muzzleFlashArt?: {
+      readonly key: string;
+      readonly url: string;
+      readonly frame: number;
+      readonly originX: number;
+    };
     originX: number;
     originY: number;
     edgeProgress(elapsedSeconds: number): number;
@@ -311,6 +189,18 @@ export class VfxPlayer {
         });
       }
     }
+    for (const assignment of Object.values(KATANA_SLASH_ASSIGNMENTS)) {
+      scene.load.spritesheet(assignment.key, assignment.url, {
+        frameWidth: 96,
+        frameHeight: 96,
+      });
+    }
+    scene.load.spritesheet(MUZZLE_FLASH_SHEET.key, MUZZLE_FLASH_SHEET.url, {
+      frameWidth: MUZZLE_FLASH_SHEET.frameWidth,
+      frameHeight: MUZZLE_FLASH_SHEET.frameHeight,
+    });
+    for (const prototype of HEADSMAN_PROTOTYPES)
+      scene.load.image(prototype.textureKey, prototype.url);
   }
 
   /** Stop every owner of a surface before reassigning it. Generation checks are still required: Phaser can
@@ -325,8 +215,10 @@ export class VfxPlayer {
     const per = perRuntime(surf.S);
     per.perBody?.setVisible(false);
     per.perLip?.setVisible(false);
+    per.muzzleFlashImg?.setVisible(false);
     per.perLongTailFired = false;
     per.per = undefined;
+    surf.headsmanExtension.setVisible(false);
     (surf.S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
     const emitters = surf.S as unknown as Record<string, { killAll(): unknown } | undefined>;
     for (const key of ["eSpark", "eEmber", "eSoftAdd", "eSoftNorm", "eStreak", "eScatter"])
@@ -361,7 +253,14 @@ export class VfxPlayer {
         container.add(heroImg);
         S.heroImg = heroImg;
         globalThis.VFXRENDER.attachSurface(this.scene, S);
-        surf = { container, S, busy: false, generation: 0 };
+        // Keep the owner-review blade as a top-level world image. The bloom-root filter can disappear on
+        // scaled/high-DPI cameras, while this long comparison-critical silhouette must remain WYSIWYG.
+        const headsmanExtension = this.scene.add
+          .image(0, 0, "vfx-blank")
+          .setOrigin(0, 0.5)
+          .setDepth(99001)
+          .setVisible(false);
+        surf = { container, S, headsmanExtension, busy: false, generation: 0 };
         this.pool.push(surf);
       }
     }
@@ -383,25 +282,124 @@ export class VfxPlayer {
     radius: number,
     swing: SwingDescriptor,
     element = "physical",
+    targetX = x,
+    targetY = y,
+    sourceBladePose?: () => WeaponBladeTipPose | undefined,
+    partition?: {
+      readonly suite: Suite;
+      readonly anchor: "source" | "target";
+      readonly authored: boolean;
+    },
   ): void {
     const VR = globalThis.VFXRENDER;
     if (!VR) return;
-    const vfx: WeaponVfx | undefined = WEAPON_VFX[weaponId];
+    const resolvedSuite = weaponVfxSuiteFor(weaponId, element, swing.style);
+    const vfx: WeaponVfx | undefined = resolvedSuite.vfx;
+    const weapon = WEAPONS[weaponId];
+    const authored = resolvedSuite.authored;
+    if (!partition) {
+      const rawSuite = resolvedSuite.suite;
+      const deleted =
+        weaponId === "x2-riftcaller-naginata"
+          ? new Set<string>(RIFTCALLER_DELETED_AURA_LAYERS)
+          : undefined;
+      const suite = Object.fromEntries(
+        Object.entries(rawSuite).filter(([layerId, layer]) => layer.on && !deleted?.has(layerId)),
+      ) as Suite;
+      if (vfx?.spawnAtCursor) {
+        this.playSwing(
+          weaponId,
+          x,
+          y,
+          aimRad,
+          radius,
+          swing,
+          element,
+          targetX,
+          targetY,
+          sourceBladePose,
+          {
+            suite,
+            anchor: "target",
+            authored,
+          },
+        );
+        return;
+      }
+      const split = splitWeaponVfxSuite(suite);
+      // The Headsman's review extension is a source-anchored weapon treatment in its own right. Keep
+      // a source surface even when the authored suite happens to contain only target-anchored layers.
+      if (Object.keys(split.source).length > 0 || weaponId === SANCTIFIED_HEADSMAN_ID)
+        this.playSwing(
+          weaponId,
+          x,
+          y,
+          aimRad,
+          radius,
+          swing,
+          element,
+          targetX,
+          targetY,
+          sourceBladePose,
+          {
+            suite: split.source,
+            anchor: "source",
+            authored,
+          },
+        );
+      if (Object.keys(split.target).length > 0)
+        this.playSwing(
+          weaponId,
+          x,
+          y,
+          aimRad,
+          radius,
+          swing,
+          element,
+          targetX,
+          targetY,
+          sourceBladePose,
+          {
+            suite: split.target,
+            anchor: "target",
+            authored,
+          },
+        );
+      return;
+    }
     const surf = this.acquire();
     const generation = surf.generation;
     const S = surf.S;
-    const weapon = WEAPONS[weaponId];
-    const authored = !!(vfx?.suite && Object.keys(vfx.suite).length > 0);
+    const headsmanPrototype =
+      partition.anchor === "source" && weaponId === SANCTIFIED_HEADSMAN_ID
+        ? headsmanPrototypeFromSearch(
+            globalThis.location?.search ?? "",
+            globalThis.location?.hash ?? "",
+          )
+        : undefined;
+    const headsmanGeometry =
+      headsmanPrototype && weapon ? headsmanExtensionGeometry(weapon) : undefined;
+    const headsmanActor =
+      headsmanPrototype && weapon
+        ? {
+            x: x - Math.cos(aimRad) * weapon.range * 0.6,
+            y: y - Math.sin(aimRad) * weapon.range * 0.6,
+          }
+        : undefined;
     // Authored suite wins; else a synthesized ELEMENT + ARCHETYPE fallback (§35/§36) so every un-authored
     // expansion weapon reads unique by both its element AND its physical shape (thrust / cleave / twin / fast).
-    S.suite = authored ? (vfx?.suite as Suite) : fallbackSuiteFor(weaponId, element, swing.style);
+    S.suite = partition.suite;
     S.fired = {};
     S.R = vfx?.vfxRadius ?? radius; // authored fixed size wins
     const swingArc = weapon?.swingArc ?? Math.PI * 0.7;
     const perRot = authored ? (vfx?.rot ?? 0) * DEG : 0;
-    const perOrigin = authored && !vfx?.spawnAtCursor && weapon;
+    const perOrigin = partition.anchor === "source" && authored && weapon;
     const perAnchorX = perOrigin ? -weapon.range * 0.6 - (vfx?.vfxOrigin?.x ?? 0) : 0;
     const perAnchorY = perOrigin ? -(vfx?.vfxOrigin?.y ?? 0) : 0;
+    const katanaSlash = KATANA_SLASH_ASSIGNMENTS[weaponId as keyof typeof KATANA_SLASH_ASSIGNMENTS];
+    const muzzleFlash = weapon?.gun
+      ? muzzleFlashAssignmentFor(weaponId, weapon.gun.muzzle)
+      : undefined;
     perRuntime(S).per = {
       swing,
       reach: weapon ? meleeReach(weapon) : radius,
@@ -411,7 +409,18 @@ export class VfxPlayer {
       paintedWidthPx: paintedSwingDisplayWidth(weapon),
       grip: weapon?.tags.grip,
       family: weapon?.tags.family,
-      paint: ELEMENT_PAINT[element] ?? 0,
+      paint: SYSTEMIC_ELEMENT_PAINT[element] ?? 0,
+      slashArt: katanaSlash
+        ? { key: katanaSlash.key, url: katanaSlash.url, frame: 0, frames: 10 }
+        : undefined,
+      muzzleFlashArt: muzzleFlash
+        ? {
+            key: MUZZLE_FLASH_SHEET.key,
+            url: MUZZLE_FLASH_SHEET.url,
+            frame: muzzleFlash.frame,
+            originX: MUZZLE_FLASH_SHEET.originX,
+          }
+        : undefined,
       originX: perAnchorX * Math.cos(perRot) + perAnchorY * Math.sin(perRot),
       originY: -perAnchorX * Math.sin(perRot) + perAnchorY * Math.cos(perRot),
       edgeProgress: (elapsedSeconds) => swingEdgeProgress(swing, elapsedSeconds),
@@ -436,16 +445,16 @@ export class VfxPlayer {
     }
     // §14 authored VFX ORIGIN: shift the spawn by the placed offset, rotated into the aim frame so the
     // anchor stays consistent whichever way the weapon points (no offset = spawn at the strike point).
-    let ox = x;
-    let oy = y;
-    if (!authored && !vfx?.spawnAtCursor && weapon) {
+    let ox = partition.anchor === "target" ? targetX : x;
+    let oy = partition.anchor === "target" ? targetY : y;
+    if (partition.anchor === "source" && !authored && weapon) {
       // Arena's existing fallback call supplies its historical 60%-reach strike point. Recover the rendered
       // wielder center here so PER and the descriptor's radial blade segment share one origin.
       const strikeOffset = weapon.range * 0.6;
       ox -= Math.cos(aimRad) * strikeOffset;
       oy -= Math.sin(aimRad) * strikeOffset;
     }
-    const o = authored ? vfx?.vfxOrigin : undefined;
+    const o = partition.anchor === "source" && authored ? vfx?.vfxOrigin : undefined;
     if (o && (o.x || o.y)) {
       const c = Math.cos(aimRad);
       const s = Math.sin(aimRad);
@@ -456,6 +465,25 @@ export class VfxPlayer {
       .setPosition(ox, oy)
       .setRotation(aimRad + (authored ? (vfx?.rot ?? 0) * DEG : 0))
       .setVisible(true);
+    const audit = globalThis as unknown as {
+      __ddV6GAnchorCapture?: boolean;
+      __ddV6GAnchorEvents?: Array<Record<string, unknown>>;
+    };
+    if (audit.__ddV6GAnchorCapture) {
+      audit.__ddV6GAnchorEvents ??= [];
+      const events = audit.__ddV6GAnchorEvents;
+      events.push({
+        kind: "weapon-vfx-suite",
+        weaponId,
+        anchor: partition.anchor,
+        x: ox,
+        y: oy,
+        targetX,
+        targetY,
+        layerIds: Object.keys(partition.suite),
+      });
+      if (events.length > 256) events.splice(0, events.length - 256);
+    }
     const activeSeconds = Math.max(0, swing.activeEndSeconds - swing.activeStartSeconds);
     const followSeconds = Math.min(
       Math.max(0, swing.poseSeconds - swing.activeEndSeconds),
@@ -480,6 +508,36 @@ export class VfxPlayer {
         S.gfxAdd?.clear();
         VR.renderHero(this.scene, S, p);
         VR.renderLayers(S, p, "all", 1);
+        if (headsmanPrototype && headsmanGeometry && headsmanActor) {
+          const elapsedSeconds = p * swing.poseSeconds;
+          const reveal = headsmanExtensionReveal(swing, elapsedSeconds);
+          if (reveal > 0) {
+            const edgeProgress = swingEdgeProgress(swing, elapsedSeconds);
+            const heldTip = sourceBladePose?.();
+            const extensionAngle =
+              heldTip?.angle ?? aimRad + bladeAngleAt(0, swingArc, edgeProgress);
+            const extensionStartX =
+              heldTip?.x ??
+              headsmanActor.x + Math.cos(extensionAngle) * headsmanGeometry.extensionStart;
+            const extensionStartY =
+              heldTip?.y ??
+              headsmanActor.y + Math.sin(extensionAngle) * headsmanGeometry.extensionStart;
+            const physicalBladeLength =
+              heldTip?.physicalBladeLength ?? headsmanGeometry.physicalBladeLength;
+            surf.headsmanExtension
+              .setTexture(headsmanPrototype.textureKey)
+              .setPosition(extensionStartX, extensionStartY)
+              .setRotation(extensionAngle)
+              .setDisplaySize(
+                physicalBladeLength * 2 * reveal,
+                physicalBladeLength * headsmanPrototype.thicknessScale,
+              )
+              .setAlpha(Math.min(1, 0.5 + reveal * 0.5))
+              .setVisible(true);
+          } else {
+            surf.headsmanExtension.setVisible(false);
+          }
+        }
       },
       onComplete: () => {
         if (surf.generation !== generation) return;
@@ -488,6 +546,7 @@ export class VfxPlayer {
         const per = perRuntime(S);
         per.perBody?.setVisible(false);
         per.perLip?.setVisible(false);
+        surf.headsmanExtension.setVisible(false);
         (S.heroImg as Phaser.GameObjects.Image | undefined)?.setVisible(false);
         const release = (): void => {
           if (surf.generation !== generation) return;

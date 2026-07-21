@@ -3544,6 +3544,32 @@ export const SPRITES = {
       }
     ]
   },
+  "gravewarden-buster": {
+    "id": "gravewarden-buster",
+    "kind": "weapon",
+    "canvas": {
+      "w": 262,
+      "h": 262
+    },
+    "body": {
+      "cx": 137.49,
+      "cy": 130.61,
+      "w": 256,
+      "h": 73
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 73,
+        "cx": 137.49,
+        "cy": 130.61,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "grull": {
     "id": "grull",
     "kind": "character",

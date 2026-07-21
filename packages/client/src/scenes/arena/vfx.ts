@@ -1,9 +1,6 @@
 import { isThrownProjectileKind, type WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
-import {
-  budgetedCameraShakeIntensity,
-  type CameraShakeSource,
-} from "../../camera-shake.js";
+import { budgetedCameraShakeIntensity, type CameraShakeSource } from "../../camera-shake.js";
 import { type FxPackName, playFxPack } from "../../vfx/fx-composer.js";
 import { FX_GRAVE_CALL } from "../../vfx/fx-pack-grave-call.js";
 import { FX_HOLY_SMITE } from "../../vfx/fx-pack-holy-smite.js";
@@ -11,18 +8,14 @@ import { FX_LIGHTNING_BALL } from "../../vfx/fx-pack-lightning-ball.js";
 import { FX_QUAKE_BURST } from "../../vfx/fx-pack-quake-burst.js";
 import { FX_TOXIC_BURST } from "../../vfx/fx-pack-toxic-burst.js";
 import { FX_VOID_IMPLOSION } from "../../vfx/fx-pack-void-implosion.js";
+import { MUZZLE_FLASH_SHEET, muzzleFlashAssignmentFor } from "../../vfx/muzzle-flash-catalog.js";
 import {
   elementPack,
   paintedParticleDominance,
   paintedParticlePixels,
   particleBurst,
 } from "../../vfx/particles.js";
-import {
-  resolveQuakeVfxRecipe,
-  type QuakeVfxRecipe,
-} from "../../vfx/quake-vfx-recipes.js";
-import { blendHex } from "./draw-util.js";
-import { gunFx } from "./projectile-factory.js";
+import { type QuakeVfxRecipe, resolveQuakeVfxRecipe } from "../../vfx/quake-vfx-recipes.js";
 
 /**
  * Transient combat VFX factories, extracted from ArenaScene. Each is a pure spawner: it takes the scene
@@ -60,61 +53,60 @@ interface TelegraphForeshadowRecipe {
  * installed composer packs, never a whole impact pack: cracks/stains live on the ground while cores/rings
  * gather at the source. The numeric tag values mirror the existing wire without extending the schema.
  */
-const TELEGRAPH_FORESHADOW_RECIPES: Record<number, TelegraphForeshadowRecipe> =
-  {
-    0: {
-      texture: FX_QUAKE_BURST[6],
-      element: "steel",
-      particleShape: "mote",
-      ground: true,
-    },
-    1: {
-      texture: FX_TOXIC_BURST[8],
-      element: "toxic",
-      particleShape: "wisp",
-      ground: true,
-    },
-    2: {
-      texture: FX_GRAVE_CALL[8],
-      element: "arcane",
-      particleShape: "mote",
-      ground: true,
-    },
-    3: {
-      texture: FX_LIGHTNING_BALL[2],
-      element: "shock",
-      particleShape: "mote",
-      ground: false,
-      additive: true,
-    },
-    4: {
-      texture: FX_LIGHTNING_BALL[2],
-      element: "shock",
-      particleShape: "spark",
-      ground: false,
-      additive: true,
-    },
-    5: {
-      texture: FX_VOID_IMPLOSION[3],
-      element: "void",
-      particleShape: "mote",
-      ground: true,
-      additive: true,
-    },
-    6: {
-      texture: FX_HOLY_SMITE[6],
-      element: "holy",
-      particleShape: "spark",
-      ground: false,
-      additive: true,
-    },
-    7: {
-      texture: FX_QUAKE_BURST[6],
-      element: "steel",
-      particleShape: "mote",
-      ground: true,
-    },
-  };
+const TELEGRAPH_FORESHADOW_RECIPES: Record<number, TelegraphForeshadowRecipe> = {
+  0: {
+    texture: FX_QUAKE_BURST[6],
+    element: "steel",
+    particleShape: "mote",
+    ground: true,
+  },
+  1: {
+    texture: FX_TOXIC_BURST[8],
+    element: "toxic",
+    particleShape: "wisp",
+    ground: true,
+  },
+  2: {
+    texture: FX_GRAVE_CALL[8],
+    element: "arcane",
+    particleShape: "mote",
+    ground: true,
+  },
+  3: {
+    texture: FX_LIGHTNING_BALL[2],
+    element: "shock",
+    particleShape: "mote",
+    ground: false,
+    additive: true,
+  },
+  4: {
+    texture: FX_LIGHTNING_BALL[2],
+    element: "shock",
+    particleShape: "spark",
+    ground: false,
+    additive: true,
+  },
+  5: {
+    texture: FX_VOID_IMPLOSION[3],
+    element: "void",
+    particleShape: "mote",
+    ground: true,
+    additive: true,
+  },
+  6: {
+    texture: FX_HOLY_SMITE[6],
+    element: "holy",
+    particleShape: "spark",
+    ground: false,
+    additive: true,
+  },
+  7: {
+    texture: FX_QUAKE_BURST[6],
+    element: "steel",
+    particleShape: "mote",
+    ground: true,
+  },
+};
 
 interface TelegraphForeshadowEntry {
   seenFrame: number;
@@ -175,8 +167,7 @@ export class TelegraphForeshadowPool {
     t: number,
     projectionYScale: number,
   ): void {
-    const recipe =
-      TELEGRAPH_FORESHADOW_RECIPES[kindTag] ?? TELEGRAPH_FORESHADOW_RECIPES[0];
+    const recipe = TELEGRAPH_FORESHADOW_RECIPES[kindTag] ?? TELEGRAPH_FORESHADOW_RECIPES[0];
     if (!recipe) return;
     let entry = this.entries.get(id);
     if (!entry) {
@@ -223,12 +214,8 @@ export class TelegraphForeshadowPool {
       }
     }
 
-    const projectedRot = Math.atan2(
-      Math.sin(rot) * projectionYScale,
-      Math.cos(rot),
-    );
-    const sourceOffset =
-      kindTag === 4 ? Math.min(18, Math.max(5, b * 0.28)) : 0;
+    const projectedRot = Math.atan2(Math.sin(rot) * projectionYScale, Math.cos(rot));
+    const sourceOffset = kindTag === 4 ? Math.min(18, Math.max(5, b * 0.28)) : 0;
     const px = x + Math.cos(projectedRot) * sourceOffset;
     const py = y + Math.sin(projectedRot) * sourceOffset;
     const view = this.scene.cameras.main.worldView;
@@ -244,10 +231,7 @@ export class TelegraphForeshadowPool {
       const load = Phaser.Math.Clamp((t - 0.08) / 0.57, 0, 1);
       let diameter: number;
       if (kindTag === 3 || kindTag === 4 || kindTag === 6) {
-        diameter = Math.max(
-          30,
-          Math.min(92, kindTag === 4 ? b * 1.7 : a * 0.5),
-        );
+        diameter = Math.max(30, Math.min(92, kindTag === 4 ? b * 1.7 : a * 0.5));
       } else if (shape === 5) {
         diameter = Math.max(36, Math.min(76, a * 1.5));
       } else {
@@ -258,9 +242,7 @@ export class TelegraphForeshadowPool {
       image
         .setPosition(px, py)
         .setScale(scale, scale * (recipe.ground ? projectionYScale : 1))
-        .setRotation(
-          projectedRot + (entry.hash - 0.5) * (recipe.ground ? 0.7 : 0.16),
-        )
+        .setRotation(projectedRot + (entry.hash - 0.5) * (recipe.ground ? 0.7 : 0.16))
         .setAlpha(0.06 + load * (recipe.ground ? 0.2 : 0.3))
         .setVisible(visible);
     }
@@ -312,11 +294,7 @@ export class TelegraphForeshadowPool {
     const bit = newestMilestone(pending);
     entry.milestoneMask |= pending;
     const count = bit === 4 ? 4 : 3;
-    if (
-      !visible ||
-      this.particleSpend + count >
-        TelegraphForeshadowPool.MAX_PARTICLES_PER_FRAME
-    )
+    if (!visible || this.particleSpend + count > TelegraphForeshadowPool.MAX_PARTICLES_PER_FRAME)
       return;
     this.particleSpend += count;
 
@@ -342,22 +320,16 @@ export class TelegraphForeshadowPool {
       y += Math.sin(ang) * dist * projectionYScale;
       dir = Math.atan2(centerY - y, centerX - x);
     }
-    particleBurst(
-      this.scene,
-      elementPack(recipe.element, recipe.particleShape),
-      x,
-      y,
-      {
-        count,
-        dirRad: dir,
-        spread: kindTag === 6 ? 0.16 : 0.3,
-        speed: bit === 4 ? 150 : 105,
-        scaleContract: paintedParticlePixels(bit === 4 ? 28.8 : 23.04),
-        lifeMs: bit === 4 ? 390 : 460,
-        additive: recipe.additive,
-        depth: recipe.ground ? 2.5 : 99971,
-      },
-    );
+    particleBurst(this.scene, elementPack(recipe.element, recipe.particleShape), x, y, {
+      count,
+      dirRad: dir,
+      spread: kindTag === 6 ? 0.16 : 0.3,
+      speed: bit === 4 ? 150 : 105,
+      scaleContract: paintedParticlePixels(bit === 4 ? 28.8 : 23.04),
+      lifeMs: bit === 4 ? 390 : 460,
+      additive: recipe.additive,
+      depth: recipe.ground ? 2.5 : 99971,
+    });
   }
 
   private releaseImage(entry: TelegraphForeshadowEntry): void {
@@ -376,9 +348,13 @@ function impactTextureKey(element: ImpactElement): string {
 /** Queue the eight optional 6-frame IMPACT strips. Like optional terrain, HTTP-200 HTML stubs take a
  *  silent decode-error path; a missing strip is remembered game-wide and the procedural hit stack survives. */
 export function preloadImpactFlipbooks(scene: Phaser.Scene): void {
+  if (!scene.textures.exists(MUZZLE_FLASH_SHEET.key))
+    scene.load.spritesheet(MUZZLE_FLASH_SHEET.key, MUZZLE_FLASH_SHEET.url, {
+      frameWidth: MUZZLE_FLASH_SHEET.frameWidth,
+      frameHeight: MUZZLE_FLASH_SHEET.frameHeight,
+    });
   scene.load.on("loaderror", (file: Phaser.Loader.File) => {
-    if (file.key.startsWith("vfx:impact:"))
-      missingImpactFlipbooks.add(file.key);
+    if (file.key.startsWith("vfx:impact:")) missingImpactFlipbooks.add(file.key);
   });
   for (const element of IMPACT_ELEMENTS) {
     const key = impactTextureKey(element);
@@ -411,9 +387,7 @@ export function spawnImpactFlipbook(
   radius: number,
   element?: string,
 ): boolean {
-  const resolved: ImpactElement = (
-    IMPACT_ELEMENTS as readonly string[]
-  ).includes(element ?? "")
+  const resolved: ImpactElement = (IMPACT_ELEMENTS as readonly string[]).includes(element ?? "")
     ? (element as ImpactElement)
     : "steel";
   const textureKey = impactTextureKey(resolved);
@@ -435,9 +409,7 @@ export function spawnImpactFlipbook(
     .setDisplaySize(radius * 2, radius * 2)
     .setBlendMode(Phaser.BlendModes.ADD)
     .setDepth(IMPACT_DEPTH);
-  sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
-    sprite.destroy(),
-  );
+  sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => sprite.destroy());
   sprite.play(animKey);
   return true;
 }
@@ -457,17 +429,10 @@ function shakeVia(
     shakeCam?: (d: number, i: number, source: CameraShakeSource) => void;
   };
   if (typeof s.shakeCam === "function") s.shakeCam(duration, intensity, source);
-  else
-    scene.cameras.main.shake(
-      duration,
-      budgetedCameraShakeIntensity(intensity, source),
-      true,
-    );
+  else scene.cameras.main.shake(duration, budgetedCameraShakeIntensity(intensity, source), true);
 }
 
-/** §9 per-gun MUZZLE FLASH — the shaped 8-prong caged-fire star (the same geometry as the engine
- *  `drawMuzzleFlash`) drawn at the barrel, sized + tinted per gun, with a hot core + white centre, then
- *  faded out fast. Cheap (one Graphics + a tween) so it survives the gatling's fire rate. */
+/** V6G4 per-gun generated muzzle art, frame-assigned by weapon and rooted at the guarded barrel point. */
 export function spawnMuzzleFlash(
   scene: Phaser.Scene,
   x: number,
@@ -476,90 +441,21 @@ export function spawnMuzzleFlash(
   size: number,
   color: number,
   style = "heavy",
+  weaponId?: string,
 ): void {
-  const hot = blendHex(color, 0xffffff, 0.55);
-  const TAU = Math.PI * 2;
+  const assignment = muzzleFlashAssignmentFor(weaponId, style);
+  if (!scene.textures.exists(MUZZLE_FLASH_SHEET.key)) return;
   const g = scene.add
-    .graphics()
+    .sprite(x, y, MUZZLE_FLASH_SHEET.key, assignment.frame)
+    .setOrigin(MUZZLE_FLASH_SHEET.originX, 0.5)
+    .setDisplaySize(size * 3.7, size * 2.35)
+    .setTint(color)
     .setDepth(99500)
     .setBlendMode(Phaser.BlendModes.ADD);
-  // "boom" (shotgun) splays the side prongs into a fat cone over a big soft blast disc; "punch" stays tight.
-  if (style === "boom" || style === "artillery")
-    g.fillStyle(color, style === "artillery" ? 0.36 : 0.26).fillCircle(0, 0, size * 1.15);
-  const side = style === "artillery" ? 1.8 : style === "boom" ? 1.45 : 0.95;
-  const prongs: [number, number, number][] = [
-    [0, style === "punch" ? 2.9 : 2.5, 0.22],
-    [-0.46, 1.6, 0.16],
-    [0.46, 1.6, 0.16],
-    [-side, 0.95, 0.12],
-    [side, 0.95, 0.12],
-    [Math.PI, 0.6, 0.12],
-    [Math.PI - 0.7, 0.5, 0.1],
-    [Math.PI + 0.7, 0.5, 0.1],
-  ];
-  for (const [a, lm, wm] of prongs) {
-    const len = size * lm;
-    const w = size * wm;
-    const tx = Math.cos(a) * len;
-    const ty = Math.sin(a) * len;
-    const n = a + Math.PI / 2;
-    g.fillStyle(color, 0.5);
-    g.fillTriangle(
-      Math.cos(n) * w,
-      Math.sin(n) * w,
-      -Math.cos(n) * w,
-      -Math.sin(n) * w,
-      tx,
-      ty,
-    );
-    g.fillStyle(hot, 0.55);
-    g.fillTriangle(
-      Math.cos(n) * w * 0.45,
-      Math.sin(n) * w * 0.45,
-      -Math.cos(n) * w * 0.45,
-      -Math.sin(n) * w * 0.45,
-      Math.cos(a) * len * 0.7,
-      Math.sin(a) * len * 0.7,
-    );
-  }
-  g.fillStyle(hot, 0.9).fillCircle(0, 0, size * 0.32);
-  g.fillStyle(0xffffff, 0.95).fillCircle(0, 0, size * 0.17);
-  // "spark" (ricochet) — a few thin electric streaks crackle out from the muzzle.
-  if (style === "spark") {
-    for (let i = 0; i < 5; i++) {
-      const a = Math.random() * TAU;
-      const L = size * (0.8 + Math.random() * 0.9);
-      g.lineStyle(1.4, color, 0.85);
-      g.beginPath();
-      g.moveTo(Math.cos(a) * size * 0.3, Math.sin(a) * size * 0.3);
-      g.lineTo(Math.cos(a) * L, Math.sin(a) * L);
-      g.strokePath();
-    }
-  }
-  // "rapid" (gatling) — small per-shot rotation jitter so a held stream flickers instead of stacking.
+  // Rapid fire gets slight per-shot rotation jitter so a held stream flickers instead of stacking.
   const jitter = style === "rapid" ? (Math.random() - 0.5) * 0.5 : 0;
-  g.setPosition(x, y).setRotation(ang + jitter);
+  g.setRotation(ang + jitter);
   // "heavy" (revolver) — a dark recoil-smoke puff drifts up-barrel under the flash.
-  if (style === "heavy" || style === "artillery") {
-    const smoke = scene.add
-      .circle(
-        x + Math.cos(ang) * size * 0.5,
-        y + Math.sin(ang) * size * 0.5,
-        size * (style === "artillery" ? 0.85 : 0.5),
-        0x2a2018,
-        0.4,
-      )
-      .setDepth(99450);
-    scene.tweens.add({
-      targets: smoke,
-      scale: style === "artillery" ? 3.1 : 2,
-      alpha: 0,
-      x: smoke.x + Math.cos(ang) * 16,
-      y: smoke.y + Math.sin(ang) * 16 - 6,
-      duration: style === "artillery" ? 720 : 340,
-      onComplete: () => smoke.destroy(),
-    });
-  }
   const grow = style === "artillery" ? 2.1 : style === "boom" ? 1.55 : 1.3;
   scene.tweens.add({
     targets: g,
@@ -577,13 +473,7 @@ export function spawnMuzzleFlash(
     const side = Math.random() < 0.5 ? 1 : -1; // eject to either side
     const ej = ang + (side * Math.PI) / 2 + (Math.random() - 0.5) * 0.4;
     const casing = scene.add
-      .rectangle(
-        x - Math.cos(ang) * size * 0.4,
-        y - Math.sin(ang) * size * 0.4,
-        5,
-        2.5,
-        0xd8a94e,
-      )
+      .rectangle(x - Math.cos(ang) * size * 0.4, y - Math.sin(ang) * size * 0.4, 5, 2.5, 0xd8a94e)
       .setStrokeStyle(0.8, 0x8a6a2a)
       .setDepth(99450);
     scene.tweens.add({
@@ -625,48 +515,34 @@ export function spawnBulletImpact(
   kind: string,
   ang = 0,
 ): void {
-  const fx = gunFx(kind);
-  // §41 PAINTED element burst on top of the procedural impact — the ":element" bullet-kind suffix picks the
-  // pack (fire embers, frost shards, arcane motes for the caster orb…); physical bullets throw steel motes.
-  {
-    const ci = kind.indexOf(":");
-    const el = ci < 0 ? undefined : kind.slice(ci + 1);
-    const shape = kind.startsWith("orb") ? "mote" : "shard";
-    particleBurst(scene, elementPack(el, shape), x, y, {
-      count: 3,
-      dirRad: ang + Math.PI, // spray back against the flight direction
-      spread: 0.8,
-      speed: 160,
-      scaleContract: paintedParticlePixels(32.64),
-      lifeMs: 300,
-      additive: shape === "mote",
-      sink: 8,
+  const ci = kind.indexOf(":");
+  const el = ci < 0 ? undefined : kind.slice(ci + 1);
+  const shape = kind.startsWith("orb") ? "mote" : "shard";
+  particleBurst(scene, elementPack(el, shape), x, y, {
+    count: 3,
+    dirRad: ang + Math.PI, // spray back against the flight direction
+    spread: 0.8,
+    speed: 160,
+    scaleContract: paintedParticlePixels(32.64),
+    lifeMs: 300,
+    additive: shape === "mote",
+    sink: 8,
+  });
+  const flash = (radiusPx: number, scale: number, duration: number) =>
+    particleBurst(scene, elementPack(el, "splat"), x, y, {
+      count: 1,
+      speed: 0,
+      scaleContract: paintedParticlePixels(radiusPx * scale * 2),
+      lifeMs: duration,
+      additive: true,
     });
-  }
-  const ADD = Phaser.BlendModes.ADD;
-  const flash = (r: number, sc: number, dur: number) => {
-    const f = scene.add
-      .circle(x, y, r, 0xfff0d0, 0.9)
-      .setBlendMode(ADD)
-      .setDepth(99400);
-    scene.tweens.add({
-      targets: f,
-      scale: sc,
-      alpha: 0,
-      duration: dur,
-      onComplete: () => f.destroy(),
-    });
-  };
   if (kind === "pellet") {
     flash(5, 1.8, 120); // cheap — a 7-pellet volley shouldn't spawn 35 objects
     return;
   }
   if (kind === "nail") {
     flash(5, 1.6, 110);
-    const dart = scene.add
-      .rectangle(x, y, 9, 2, 0xd6dde6, 0.95)
-      .setRotation(ang)
-      .setDepth(98500);
+    const dart = scene.add.rectangle(x, y, 9, 2, 0xd6dde6, 0.95).setRotation(ang).setDepth(98500);
     scene.tweens.add({
       targets: dart,
       alpha: 0,
@@ -677,82 +553,39 @@ export function spawnBulletImpact(
   }
   if (kind === "ricochet") {
     flash(6, 2, 130);
-    for (let i = 0; i < 4; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const s = scene.add
-        .rectangle(x, y, 12, 1.6, 0x5dd6ff, 0.95)
-        .setRotation(a)
-        .setBlendMode(ADD)
-        .setDepth(99400);
-      scene.tweens.add({
-        targets: s,
-        x: x + Math.cos(a) * 18,
-        y: y + Math.sin(a) * 18,
-        alpha: 0,
-        duration: 150,
-        onComplete: () => s.destroy(),
-      });
-    }
+    particleBurst(scene, "shock-bolt", x, y, {
+      count: 4,
+      speed: 105,
+      scaleContract: paintedParticlePixels(24),
+      lifeMs: 170,
+      additive: true,
+    });
     return;
   }
   // slug (heavy thump + dust ring) and default (tracer): flash + radial sparks + lingering scorch.
   const heavy = kind === "slug";
   flash(heavy ? 9 : 7, heavy ? 2.8 : 2.1, 160);
   if (heavy) {
-    const dust = scene.add
-      .circle(x, y, 5, 0x6b5a44, 0)
-      .setStrokeStyle(2, 0x6b5a44, 0.5)
-      .setDepth(98200);
-    scene.tweens.add({
-      targets: dust,
-      scale: 3,
-      alpha: 0,
-      duration: 280,
-      onComplete: () => dust.destroy(),
+    particleBurst(scene, "sand-wisp", x, y, {
+      count: 3,
+      speed: 58,
+      scaleContract: paintedParticlePixels(32),
+      lifeMs: 280,
+      additive: false,
     });
   }
-  for (let i = 0; i < 3; i++) {
-    const a = Math.random() * Math.PI * 2;
-    const s = scene.add
-      .rectangle(x, y, 11, 2, fx.color, 0.9)
-      .setRotation(a)
-      .setBlendMode(ADD)
-      .setDepth(99400);
-    scene.tweens.add({
-      targets: s,
-      x: x + Math.cos(a) * 16,
-      y: y + Math.sin(a) * 16,
-      alpha: 0,
-      duration: 170,
-      onComplete: () => s.destroy(),
-    });
-  }
-  const scorch = scene.add.circle(x, y, 4, 0x161009, 0.5).setDepth(98000);
-  scene.tweens.add({
-    targets: scorch,
-    alpha: 0,
-    duration: 1100,
-    onComplete: () => scorch.destroy(),
+  particleBurst(scene, "steel-splat", x, y, {
+    count: 1,
+    speed: 0,
+    scaleContract: paintedParticlePixels(18),
+    lifeMs: 760,
+    additive: false,
   });
 }
 
 /** §41 element accent colours for the explosion composite (flash/ring/disc tint). Fire is the default. */
-const FIRE_TINT = { hot: 0xffe6b0, mid: 0xff8a2b };
-const EXPLODE_TINT: Record<string, { hot: number; mid: number }> = {
-  fire: FIRE_TINT,
-  frost: { hot: 0xe8fbff, mid: 0x6fd6ff },
-  shock: { hot: 0xfffbe0, mid: 0xffe24a },
-  holy: { hot: 0xfff8e8, mid: 0xffe6a0 },
-  toxic: { hot: 0xeaffd0, mid: 0x9cff3b },
-  void: { hot: 0xe8d0ff, mid: 0xb14bff },
-  arcane: { hot: 0xe6dcff, mid: 0x8f6aff },
-};
-
 /** §49 blast tier/element dispatch: <100 keeps the established stack; ≥160 is the universal NUKE beat. */
-function explosionPack(
-  radius: number,
-  element: string,
-): FxPackName | undefined {
+function explosionPack(radius: number, element: string): FxPackName | undefined {
   if (radius < 100) return undefined;
   if (radius >= 160) return "nuke";
   switch (element) {
@@ -788,10 +621,7 @@ export function spawnWeaponKillFx(
   const family = weaponSemantic(weapon);
   let pack: FxPackName | undefined;
   if (weapon.chainLightning || /storm|tesla/.test(family)) pack = "storm-call";
-  else if (
-    weapon.tags.classPool === "melee" &&
-    /buzzsaw|buzzcutter|sawblade/.test(family)
-  )
+  else if (weapon.tags.classPool === "melee" && /buzzsaw|buzzcutter|sawblade/.test(family))
     pack = "buzzsaw-wake";
   else if (/anchor|tide|harpoon/.test(family)) pack = "tide-crash";
   return pack ? playFxPack(scene, pack, x, y, { intensity: 42 }) : false;
@@ -810,7 +640,6 @@ export function spawnExplosion(
   element: string,
   shakeSource: CameraShakeSource,
 ): void {
-  const tint = EXPLODE_TINT[element] ?? FIRE_TINT;
   const pack = explosionPack(radius, element);
   if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
   // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
@@ -845,101 +674,27 @@ export function spawnExplosion(
     lifeMs: 340,
     additive: true,
   });
-  // Lingering scorch footprint (reads as the blast having HAPPENED, after the light fades).
-  const scorch = scene.add
-    .circle(x, y, radius * 0.55, 0x120c08, 0.4)
-    .setDepth(2);
-  scene.tweens.add({
-    targets: scorch,
-    alpha: 0,
-    duration: 2600,
-    onComplete: () => scorch.destroy(),
+  // The footprint and hot core are painted splats too; no perfect engine disc survives the burst.
+  particleBurst(scene, elementPack(element, "splat"), x, y, {
+    count: 2,
+    speed: 0,
+    scaleContract: paintedParticleDominance(radius, 1.18, 64, 128),
+    lifeMs: 1100,
+    additive: false,
   });
   // Radius-scaled kick through the scene's prioritized shake.
   shakeVia(scene, 200, Math.min(0.02, 0.006 + radius / 9000), shakeSource);
-  spawnExplosionCore(scene, x, y, radius, tint);
-}
-
-/** The procedural explosion composite (flash + shockwave + footprint + sparks), element-tinted. */
-function spawnExplosionCore(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  radius: number,
-  tint: { hot: number; mid: number },
-): void {
-  const flash = scene.add
-    .circle(x, y, radius * 0.5, tint.hot, 0.9)
-    .setDepth(99002)
-    .setBlendMode(Phaser.BlendModes.ADD);
-  scene.tweens.add({
-    targets: flash,
-    scale: 1.6,
-    alpha: 0,
-    duration: 220,
-    ease: "Quad.easeOut",
-    onComplete: () => flash.destroy(),
-  });
-  const ring = scene.add
-    .circle(x, y, radius)
-    .setStrokeStyle(4, tint.mid, 0.95)
-    .setScale(0.2)
-    .setDepth(99002)
-    .setBlendMode(Phaser.BlendModes.ADD);
-  scene.tweens.add({
-    targets: ring,
-    scale: 1,
-    alpha: 0,
-    duration: 300,
-    ease: "Quad.easeOut",
-    onComplete: () => ring.destroy(),
-  });
-  const disc = scene.add
-    .circle(x, y, radius, tint.mid, 0.3)
-    .setDepth(99001)
-    .setBlendMode(Phaser.BlendModes.ADD);
-  scene.tweens.add({
-    targets: disc,
-    alpha: 0,
-    scale: 1.05,
-    duration: 260,
-    ease: "Quad.easeOut",
-    onComplete: () => disc.destroy(),
-  });
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.random() * 0.5;
-    const spark = scene.add
-      .circle(x, y, 2.5, tint.hot, 0.9)
-      .setDepth(99002)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    scene.tweens.add({
-      targets: spark,
-      x: x + Math.cos(a) * radius * 1.1,
-      y: y + Math.sin(a) * radius * 1.1,
-      alpha: 0,
-      duration: 240 + Math.random() * 120,
-      ease: "Quad.easeOut",
-      onComplete: () => spark.destroy(),
-    });
-  }
 }
 
 /** Small impact splat where a projectile hit or expired (green spit / amber thrown implement). */
-export function spawnSplat(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-  kind?: string,
-): void {
-  const color = kind && isThrownProjectileKind(kind) ? 0xffb23b : 0xc9ff5e;
-  const ring = scene.add.circle(x, y, 7, color, 0.7).setDepth(99001);
-  scene.tweens.add({
-    targets: ring,
-    scale: 2.2,
-    alpha: 0,
-    duration: 230,
-    ease: "Quad.easeOut",
-    onComplete: () => ring.destroy(),
+export function spawnSplat(scene: Phaser.Scene, x: number, y: number, kind?: string): void {
+  const thrown = kind && isThrownProjectileKind(kind);
+  particleBurst(scene, thrown ? "fire-splat" : "toxic-splat", x, y, {
+    count: 2,
+    speed: 34,
+    scaleContract: paintedParticlePixels(28),
+    lifeMs: 230,
+    additive: false,
   });
 }
 
@@ -956,15 +711,7 @@ export function spawnQuake(
   // §49 every quake gets the rock pack; gravekeeper/tombstone/grave semantics trade it for bone/soul art.
   const variant = resolveQuakeVfxRecipe(weapon);
   if (variant?.smokeOnly) {
-    spawnQuakeDangerEllipse(
-      scene,
-      x,
-      y,
-      quake.radius,
-      projectionYScale,
-      variant.palette.ground,
-      520,
-    );
+    spawnQuakeDangerPaint(scene, x, y, quake.radius, projectionYScale, variant.element, 520);
     particleBurst(scene, "sand-wisp", x, y, {
       count: 18,
       dirRad: -Math.PI / 2,
@@ -979,18 +726,11 @@ export function spawnQuake(
     shakeVia(scene, 220, variant.shake, "player-weapon");
     return;
   }
-  const grave =
-    !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
+  const grave = !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
   for (let i = 0; i < (variant?.effectCountMultiplier ?? 1); i++)
-    playFxPack(
-      scene,
-      variant?.pack ?? (grave ? "grave-call" : "quake-burst"),
-      x,
-      y,
-      {
-        intensity: quake.radius,
-      },
-    );
+    playFxPack(scene, variant?.pack ?? (grave ? "grave-call" : "quake-burst"), x, y, {
+      intensity: quake.radius,
+    });
   if (quake.vfx && scene.textures.exists(quake.vfx.image)) {
     spawnQuakeHero(scene, x, y, quake.radius, quake.vfx, projectionYScale);
   } else if (variant) {
@@ -1008,36 +748,25 @@ function spawnQuakeVariant(
   recipe: QuakeVfxRecipe,
   projectionYScale: number,
 ): void {
-  spawnQuakeDangerEllipse(
+  spawnQuakeDangerPaint(
     scene,
     x,
     y,
     radius,
     projectionYScale,
-    recipe.palette.mid,
+    recipe.element,
     recipe.variant === "double-ripple" ? 520 : 400,
   );
 
-  const ground = scene.add
-    .ellipse(
-      x,
-      y,
+  particleBurst(scene, elementPack(recipe.element, "splat"), x, y, {
+    count: recipe.variant === "double-ripple" ? 2 : 1,
+    speed: 0,
+    lifeMs: recipe.variant === "double-ripple" ? 540 : 360,
+    scaleContract: paintedParticlePixels(
       radius * (recipe.variant === "faultline-crack" ? 1.9 : 1.55),
-      radius *
-        (recipe.variant === "hammer-slam" ? 0.58 : 0.82) *
-        projectionYScale,
-      recipe.palette.ground,
-      0.42,
-    )
-    .setScale(recipe.variant === "hammer-slam" ? 0.12 : 0.3)
-    .setDepth(99997);
-  scene.tweens.add({
-    targets: ground,
-    scale: recipe.variant === "aftershock-eruption" ? 1.18 : 1,
-    alpha: 0,
-    duration: recipe.variant === "double-ripple" ? 540 : 360,
-    ease: "Quad.easeOut",
-    onComplete: () => ground.destroy(),
+    ),
+    depth: 99997,
+    additive: false,
   });
 
   const burst = (
@@ -1053,11 +782,7 @@ function spawnQuakeVariant(
         lifeMs: recipe.variant === "aftershock-eruption" ? 620 : 430,
         scaleContract: paintedParticleDominance(
           radius,
-          recipe.variant === "hammer-slam"
-            ? 0.9
-            : recipe.variant === "double-ripple"
-              ? 1.1
-              : 0.74,
+          recipe.variant === "hammer-slam" ? 0.9 : recipe.variant === "double-ripple" ? 1.1 : 0.74,
           56,
           112,
         ),
@@ -1069,8 +794,7 @@ function spawnQuakeVariant(
   };
 
   burst(recipe.primaryShape, 0);
-  if (recipe.pulseDelayMs > 0)
-    burst(recipe.secondaryShape, recipe.pulseDelayMs);
+  if (recipe.pulseDelayMs > 0) burst(recipe.secondaryShape, recipe.pulseDelayMs);
 
   if (recipe.variant === "faultline-crack") {
     const crack = scene.add.graphics().setDepth(99999);
@@ -1092,25 +816,26 @@ function spawnQuakeVariant(
   shakeVia(scene, 220 + recipe.pulseDelayMs, recipe.shake, "player-weapon");
 }
 
-/** QK-1: the authoritative radius directly defines the danger ellipse before any decorative art is added. */
-function spawnQuakeDangerEllipse(
+/** QK-1: a broken painted rim directly communicates the authoritative radius. */
+function spawnQuakeDangerPaint(
   scene: Phaser.Scene,
   x: number,
   y: number,
   radius: number,
   projectionYScale: number,
-  color = 0xffb23b,
+  element = "steel",
   duration = 400,
 ): void {
-  const ry = radius * projectionYScale;
-  const ring = scene.add
-    .ellipse(x, y, radius * 2, ry * 2)
-    .setScale(0.2)
-    .setStrokeStyle(5, color, 0.9)
-    .setDepth(99998);
+  const key = `ptcl:${elementPack(element, "ring")}`;
+  if (!scene.textures.exists(key)) return;
+  const ring = scene.add.image(x, y, key, 0).setDepth(99998).setBlendMode(Phaser.BlendModes.ADD);
+  const targetScaleX = (radius * 2) / Math.max(1, ring.width);
+  const targetScaleY = (radius * 2 * projectionYScale) / Math.max(1, ring.height);
+  ring.setScale(targetScaleX * 0.2, targetScaleY * 0.2);
   scene.tweens.add({
     targets: ring,
-    scale: 1,
+    scaleX: targetScaleX,
+    scaleY: targetScaleY,
     alpha: 0,
     duration,
     ease: "Cubic.easeOut",
@@ -1128,7 +853,7 @@ export function spawnQuakeHero(
   vfx: NonNullable<NonNullable<WeaponDef["quake"]>["vfx"]>,
   projectionYScale = 1,
 ): void {
-  spawnQuakeDangerEllipse(scene, x, y, radius, projectionYScale);
+  spawnQuakeDangerPaint(scene, x, y, radius, projectionYScale);
   // Hero sprite scaled so its width spans the AoE diameter × the authored visual radius.
   // Ground art follows the same belt projection as its authoritative footprint; it remains decoration.
   const src = scene.textures.get(vfx.image).getSourceImage();
@@ -1153,75 +878,42 @@ export function spawnQuakeHero(
     onComplete: () => hero.destroy(),
   });
 
-  // Engine dust kicked up (param 0..1).
+  // Painted dust kicked up (param 0..1).
   if (vfx.dust > 0) {
-    const dust = scene.add
-      .ellipse(
-        x,
-        y,
-        radius * 1.8,
-        radius * projectionYScale,
-        0x6e7042,
-        0.36 * vfx.dust,
-      )
-      .setScale(0.4)
-      .setDepth(4);
-    scene.tweens.add({
-      targets: dust,
-      scale: 1.1,
-      alpha: 0,
-      duration: 500,
-      ease: "Quad.easeOut",
-      onComplete: () => dust.destroy(),
+    particleBurst(scene, "sand-wisp", x, y, {
+      count: Math.max(2, Math.round(8 * vfx.dust)),
+      speed: radius * 0.22,
+      lifeMs: 500,
+      scaleContract: paintedParticleDominance(radius, 0.5, 28, 62),
+      depth: 4,
+      additive: false,
+      sink: -10,
     });
   }
 
-  // Engine debris bits flung outward with gravity arcs (param = count).
+  // Painted debris shards flung outward (param = count).
   const n = Math.round(vfx.debris);
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + Math.random() * 0.6;
-    const dist = radius * (0.5 + Math.random() * 0.55);
-    const sz = 4 + Math.random() * 6;
-    const bit = scene.add
-      .rectangle(x, y, sz, sz * 0.8, Math.random() < 0.5 ? 0x4a5159 : 0x2b3037)
-      .setStrokeStyle(1.5, 0x13161a)
-      .setDepth(8);
-    scene.tweens.add({
-      targets: bit,
-      x: x + Math.cos(a) * dist,
-      y:
-        y +
-        Math.sin(a) * dist * 0.55 * projectionYScale -
-        (18 + Math.random() * 34),
-      angle: Math.random() * 360,
-      alpha: 0,
-      scale: 0.4,
-      duration: 380 + Math.random() * 220,
-      ease: "Quad.easeOut",
-      onComplete: () => bit.destroy(),
+  if (n > 0) {
+    particleBurst(scene, "steel-shard", x, y, {
+      count: n,
+      speed: radius * 1.05,
+      lifeMs: 500,
+      scaleContract: paintedParticlePixels(24),
+      depth: 8,
+      additive: false,
+      sink: -30,
     });
   }
 
-  // Engine impact flash (param 0..1) — kept subtle per the authored value.
+  // Painted impact flash (param 0..1), kept subtle per the authored value.
   if (vfx.flash > 0) {
-    const flash = scene.add
-      .ellipse(
-        x,
-        y,
-        radius * 2.2,
-        radius * 1.2 * projectionYScale,
-        0xffcaa0,
-        0.7 * vfx.flash,
-      )
-      .setBlendMode(Phaser.BlendModes.SCREEN)
-      .setDepth(5);
-    scene.tweens.add({
-      targets: flash,
-      alpha: 0,
-      scale: 1.25,
-      duration: 240,
-      ease: "Cubic.easeOut",
-      onComplete: () => flash.destroy(),
+    particleBurst(scene, "fire-splat", x, y, {
+      count: 1,
+      speed: 0,
+      lifeMs: 240,
+      scaleContract: paintedParticlePixels(radius * 2.2 * vfx.flash),
+      depth: 5,
+      additive: true,
     });
   }
 
@@ -1236,40 +928,16 @@ export function spawnQuakeProcedural(
   radius: number,
   projectionYScale = 1,
 ): void {
-  spawnQuakeDangerEllipse(scene, x, y, radius, projectionYScale);
-  const dust = scene.add
-    .ellipse(
-      x,
-      y,
-      radius * 1.5,
-      radius * 0.75 * projectionYScale,
-      0x6e7042,
-      0.4,
-    )
-    .setScale(0.25)
-    .setDepth(99997);
-  scene.tweens.add({
-    targets: dust,
-    scale: 1,
-    alpha: 0,
-    duration: 340,
-    ease: "Quad.easeOut",
-    onComplete: () => dust.destroy(),
+  spawnQuakeDangerPaint(scene, x, y, radius, projectionYScale);
+  particleBurst(scene, "sand-wisp", x, y, {
+    count: 9,
+    speed: radius * 0.72,
+    lifeMs: 380,
+    scaleContract: paintedParticleDominance(radius, 0.42, 24, 52),
+    depth: 99999,
+    additive: false,
+    sink: -18,
   });
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * Math.PI * 2;
-    const p = scene.add.circle(x, y, 6, 0x8a6a3a, 0.75).setDepth(99999);
-    scene.tweens.add({
-      targets: p,
-      x: x + Math.cos(a) * radius * 0.72,
-      y: y + Math.sin(a) * radius * 0.72 * projectionYScale - 18,
-      alpha: 0,
-      scale: 0.3,
-      duration: 380,
-      ease: "Quad.easeOut",
-      onComplete: () => p.destroy(),
-    });
-  }
   shakeVia(scene, 220, 0.012, "player-weapon");
 }
 
@@ -1294,18 +962,12 @@ function damageNumberPool(scene: Phaser.Scene): DamageNumberPool {
   pool = { free: [], frame: -1, sameFrame: new Map() };
   DAMAGE_NUMBER_POOLS.set(scene, pool);
   // Phaser reuses Scene instances: never retain destroyed Text from the old display list across a restart.
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () =>
-    DAMAGE_NUMBER_POOLS.delete(scene),
-  );
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => DAMAGE_NUMBER_POOLS.delete(scene));
   return pool;
 }
 
 /** Apply the original magnitude/crit bands to a pooled label; returns whether it gets the big-hit pop. */
-function styleDamageNumber(
-  text: Phaser.GameObjects.Text,
-  amount: number,
-  crit: boolean,
-): boolean {
+function styleDamageNumber(text: Phaser.GameObjects.Text, amount: number, crit: boolean): boolean {
   const dmg = Math.max(1, Math.round(amount));
   let size = 13;
   let color = "#d9b45a";
@@ -1357,11 +1019,7 @@ export function spawnDamageNumber(
     // of Text canvases for the same enemy in the same render frame. Crit styling wins if any source crit.
     existing.amount += amount;
     existing.crit ||= crit;
-    const big = styleDamageNumber(
-      existing.text,
-      existing.amount,
-      existing.crit,
-    );
+    const big = styleDamageNumber(existing.text, existing.amount, existing.crit);
     if (big) existing.text.setScale(existing.crit ? 1.9 : 1.6);
     return;
   }
@@ -1433,33 +1091,22 @@ export function spawnSonicBoomRing(
   scene: Phaser.Scene,
   x: number,
   y: number,
-  angle: number,
-  color = 0xffe6a0,
+  _angle: number,
+  _color = 0xffe6a0,
 ): void {
-  const ring = scene.add
-    .ellipse(x, y, 20, 12)
-    .setStrokeStyle(2.5, color, 0.92)
-    .setRotation(angle)
-    .setDepth(99999)
-    .setBlendMode(Phaser.BlendModes.ADD);
-  scene.tweens.add({
-    targets: ring,
-    scaleX: 3.4,
-    scaleY: 2.5,
-    alpha: 0,
-    duration: 190,
-    ease: "Quad.easeOut",
-    onComplete: () => ring.destroy(),
+  particleBurst(scene, "shock-ring", x, y, {
+    count: 1,
+    speed: 0,
+    lifeMs: 190,
+    scaleContract: paintedParticlePixels(68),
+    depth: 99999,
+    additive: true,
   });
 }
 
 /** §17 "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a pit
  *  fall (player or enemy) reads as falling, not just a flat poof. Cosmetic, client-local. */
-export function spawnFallStreak(
-  scene: Phaser.Scene,
-  x: number,
-  y: number,
-): void {
+export function spawnFallStreak(scene: Phaser.Scene, x: number, y: number): void {
   const puff = scene.add.circle(x, y, 11, 0x1a140f, 0.6).setDepth(99998);
   scene.tweens.add({
     targets: puff,

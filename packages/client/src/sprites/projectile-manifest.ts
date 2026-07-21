@@ -19,6 +19,12 @@ export const PROJECTILE_SPRITES = {
     height: 87,
     source: "generated",
   },
+  "coyotes-grin-throwing-blade": {
+    url: "projectiles/coyotes-grin-throwing-blade.png",
+    width: 192,
+    height: 73,
+    source: "generated",
+  },
   "ghostbolt-crossbow-arrow": {
     url: "projectiles/ghostbolt-crossbow-arrow.png",
     width: 240,

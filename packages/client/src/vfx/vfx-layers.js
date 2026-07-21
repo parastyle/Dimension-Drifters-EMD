@@ -21,6 +21,7 @@
     "hero-skin": {
       label: "Painted VFX (Codex art)",
       trigger: "impact",
+      anchor: "target",
       needsHero: true,
       params: [P("size", "Size", 0.5, 1.6, 1), P("rise", "Grow-in", 0, 1, 0)],
     },
@@ -28,6 +29,7 @@
     "slash-arc": {
       label: "Slash arc",
       trigger: "swing",
+      anchor: "weapon",
       params: [
         P("reach", "Reach", 0.5, 1.4, 1),
         P("width", "Width", 2, 10, 6, 1),
@@ -37,6 +39,7 @@
     "twin-slash": {
       label: "Painted twin-edge ribbon",
       trigger: "swing",
+      anchor: "weapon",
       params: [
         P("reach", "Reach (shorten only)", 0.5, 1, 1),
         P("paint", "Paint set", 0, 7, 0, 1),
@@ -49,6 +52,7 @@
     "edge-trail": {
       label: "Edge trail (afterglow)",
       trigger: "swing",
+      anchor: "weapon",
       params: [
         P("reach", "Reach", 0.6, 1.6, 1.1),
         P("color", "Hue", 0, 1, 0.55),
@@ -58,6 +62,7 @@
     "blade-trail": {
       label: "Painted edge ribbon",
       trigger: "swing",
+      anchor: "weapon",
       params: [
         P("reach", "Reach (shorten only)", 0.5, 1, 1),
         P("paint", "Paint set", 0, 7, 0, 1),
@@ -70,6 +75,7 @@
     "thrust-streak": {
       label: "Painted thrust ribbon",
       trigger: "swing",
+      anchor: "weapon",
       params: [
         P("reach", "Reach (shorten only)", 0.5, 1, 1),
         P("paint", "Paint set", 0, 7, 0, 1),
@@ -82,16 +88,19 @@
     "drift-petals": {
       label: "Drift petals / motes",
       trigger: "swing",
+      anchor: "weapon",
       params: [P("count", "Count", 3, 16, 8, 1), P("color", "Hue", 0, 1, 0.6)],
     },
     "cleave-flash": {
       label: "Cleave flash",
       trigger: "hit",
+      anchor: "target",
       params: [P("intensity", "Intensity", 0, 1, 0.8)],
     },
     "saw-sparks": {
       label: "Saw sparks (sustained)",
       trigger: "channel",
+      anchor: "weapon",
       params: [P("count", "Sparks", 10, 160, 40, 1), P("color", "Hue", 0, 1, 0.06)],
     },
     // scatter-shot: flings a painted CLUSTER's dissected sprites (e.g. magma balls) outward as distinct
@@ -99,6 +108,7 @@
     "magma-scatter": {
       label: "Scatter shot (painted balls)",
       trigger: "hit",
+      anchor: "target",
       needsScatter: true,
       params: [
         P("count", "Balls", 2, 10, 8, 1),
@@ -109,106 +119,131 @@
     "hit-spark": {
       label: "Hit sparks",
       trigger: "hit",
+      anchor: "target",
       params: [P("count", "Sparks", 6, 90, 24, 1), P("color", "Hue", 0, 1, 0.08)],
     },
     "blood-mist": {
       label: "Blood mist",
       trigger: "hit",
+      anchor: "target",
       params: [P("amount", "Amount", 0, 1, 0.7)],
     },
     // ranged (guns)
     "muzzle-flash": {
       label: "Muzzle flash",
       trigger: "fire",
+      anchor: "muzzle",
       params: [P("size", "Size", 0.4, 1.8, 1), P("color", "Hue", 0, 1, 0.12)],
     },
     tracer: {
       label: "Bullet tracer",
       trigger: "fire",
+      anchor: "muzzle",
       params: [P("count", "Rounds", 1, 8, 3, 1), P("color", "Hue", 0, 1, 0.12)],
     },
     "pellet-spread": {
       label: "Pellet spread",
       trigger: "fire",
+      anchor: "muzzle",
       params: [P("count", "Pellets", 4, 16, 9, 1), P("spread", "Spread", 0.1, 0.8, 0.4)],
     },
     "shell-eject": {
       label: "Shell eject",
       trigger: "fire",
+      anchor: "muzzle",
       params: [P("count", "Shells", 1, 5, 2, 1)],
     },
     "barrel-spin": {
       label: "Barrel spin-up",
       trigger: "charge",
+      anchor: "weapon",
       params: [P("color", "Hue", 0, 1, 0.08)],
     },
     // launchers
     "lob-arc": {
       label: "Lob arc (projectile)",
       trigger: "flight",
+      anchor: "flight",
       params: [P("height", "Arc height", 0.4, 1.6, 1), P("color", "Hue", 0, 1, 0.1)],
     },
     "fire-burst": {
       label: "Fire burst (explosion)",
       trigger: "blast",
+      anchor: "target",
       params: [P("size", "Size", 0.5, 1.6, 1), P("color", "Hue", 0, 1, 0.06)],
     },
     // caster (staffs)
     "charge-glow": {
       label: "Charge glow",
       trigger: "charge",
+      anchor: "weapon",
       params: [P("size", "Size", 0.3, 1.2, 0.7), P("color", "Hue", 0, 1, 0.6)],
     },
     beam: {
       label: "Beam",
       trigger: "channel",
+      anchor: "weapon",
       params: [P("width", "Width", 2, 16, 7, 1), P("color", "Hue", 0, 1, 0.5)],
     },
     "arc-bolt": {
       label: "Lightning bolt",
       trigger: "cast",
+      anchor: "target",
       params: [P("color", "Hue", 0, 1, 0.72), P("jag", "Jag", 0.1, 0.6, 0.3)],
     },
     "sigil-ring": {
       label: "Sigil ring (rune)",
       trigger: "cast",
+      anchor: "target",
       params: [P("color", "Hue", 0, 1, 0.62), P("size", "Size", 0.5, 1.4, 1)],
     },
     "aura-pulse": {
       label: "Aura pulse (buff)",
       trigger: "aura",
+      anchor: "character",
       params: [P("color", "Hue", 0, 1, 0.3), P("rings", "Rings", 1, 4, 2, 1)],
     },
     "ember-rain": {
       label: "Ember rain",
       trigger: "cast",
+      anchor: "target",
       params: [P("count", "Embers", 6, 30, 16, 1), P("color", "Hue", 0, 1, 0.08)],
     },
     // ground / area (shared by slams + launchers)
     "spin-trail": {
       label: "Spin trail (projectile)",
       trigger: "flight",
+      anchor: "flight",
       params: [P("color", "Hue", 0, 1, 0.1)],
     },
     "throw-dust": {
       label: "Throw dust",
       trigger: "throw",
+      anchor: "weapon",
       params: [P("amount", "Amount", 0, 1, 0.6)],
     },
     "dust-cloud": {
       label: "Dust cloud",
       trigger: "slam",
+      anchor: "target",
       params: [P("amount", "Amount", 0, 1, 0.8)],
     },
-    debris: { label: "Flung debris", trigger: "slam", params: [P("count", "Count", 4, 40, 18, 1)] },
+    debris: {
+      label: "Flung debris",
+      trigger: "slam",
+      anchor: "target",
+      params: [P("count", "Count", 4, 40, 18, 1)],
+    },
     "shockwave-ring": {
       label: "Shockwave ring",
       trigger: "slam",
+      anchor: "target",
       params: [P("color", "Hue", 0, 1, 0.1)],
     },
     "impact-flash": {
       label: "Impact flash",
       trigger: "impact",
+      anchor: "target",
       params: [P("intensity", "Intensity", 0, 1, 0.4)],
     },
   };

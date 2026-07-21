@@ -53,8 +53,8 @@ import {
   GROUND_EPSILON,
   generateArena,
   getDimension,
-  gunMuzzleReach,
   gunMuzzleOffsetsForShot,
+  gunMuzzleReach,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -63,7 +63,6 @@ import {
   isPetId,
   isPitAtPx,
   isThrownProjectileKind,
-  thrownProjectileRotationPolicy,
   LEVELUP_WINDOW_SECONDS,
   landingThumpTier,
   lootCooldownMult,
@@ -119,6 +118,7 @@ import {
   TgShape,
   TICK_MS,
   TOUGH_SCALE,
+  thrownProjectileRotationPolicy,
   ULT_RECOVERY_TICKS,
   UltimateFamily,
   UltimatePhase,
@@ -144,10 +144,7 @@ import {
 import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
-import {
-  budgetedCameraShakeIntensity,
-  type CameraShakeSource,
-} from "../camera-shake.js";
+import { budgetedCameraShakeIntensity, type CameraShakeSource } from "../camera-shake.js";
 import {
   CombatFeedback,
   type CombatReceiptRows,
@@ -263,7 +260,6 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
-import { sampleProjectileWaveformFromAuthoritative } from "./arena/projectile-waveform.js";
 import {
   makeCasterProjectile,
   preloadCasterPaintedArt,
@@ -279,14 +275,15 @@ import {
   parryDoublePulseStrength,
 } from "../vfx/colorblind-assist.js";
 import { playFxPack } from "../vfx/fx-composer.js";
-import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import { preloadGeneratedGunProjectiles } from "../vfx/gun-projectile-art.js";
+import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
 import {
   enemyComboLeapHeight,
   enemyComboLeapVelocity,
   enemyComboOfferPhase,
   JumpEffectRenderer,
 } from "../vfx/jump-effects.js";
+import { pageProjectileArtFor, preloadPageProjectileArt } from "../vfx/page-projectile-art.js";
 import {
   elementPack,
   paintedParticlePixels,
@@ -358,6 +355,7 @@ import {
   makeSpit,
   makeThrownWeapon,
 } from "./arena/projectile-factory.js";
+import { sampleProjectileWaveformFromAuthoritative } from "./arena/projectile-waveform.js";
 import {
   preloadImpactFlipbooks,
   spawnBulletImpact,
@@ -1270,13 +1268,7 @@ export class ArenaScene extends Phaser.Scene {
       const barrelIndex = barrelMatch ? Number(barrelMatch[1]) : 0;
       const offset = offsets[barrelIndex] ?? offsets[0];
       if (offset) {
-        const muzzle = offsetWeaponMuzzle(
-          out.x,
-          out.y,
-          Math.cos(angle),
-          Math.sin(angle),
-          offset,
-        );
+        const muzzle = offsetWeaponMuzzle(out.x, out.y, Math.cos(angle), Math.sin(angle), offset);
         out.x = muzzle.x;
         out.y = muzzle.y;
       }
@@ -1869,6 +1861,7 @@ export class ArenaScene extends Phaser.Scene {
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
     preloadCasterPaintedArt(this);
     preloadGeneratedGunProjectiles(this);
+    preloadPageProjectileArt(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {
       // §29 sky-carrier alone owns its four room backdrops + deck; themed levels must not download them.
@@ -3679,14 +3672,10 @@ export class ArenaScene extends Phaser.Scene {
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (weapon.gun || weapon.performance?.aura) return;
     rig.triggerSwing(epoch, player.aimDir, swing);
-    this.cueWeaponSwingIdentity(
-      rig,
-      weapon,
-      player.aimDir,
-      rig.activeSwing ?? swing,
-      undefined,
-      { x: player.x, y: player.y },
-    );
+    this.cueWeaponSwingIdentity(rig, weapon, player.aimDir, rig.activeSwing ?? swing, undefined, {
+      x: player.x,
+      y: player.y,
+    });
     if (weapon.chainLightning) {
       const aim = { x: Math.cos(player.aimDir), y: Math.sin(player.aimDir) };
       this.spawnChain(rig.x, rig.y, aim, weapon, rig.activeSwing ?? swing);
@@ -3718,6 +3707,31 @@ export class ArenaScene extends Phaser.Scene {
         cueSeconds,
       );
       const renderY = impactAnchored && this.belt ? this.beltY(point.y) : point.y;
+      const audit = globalThis as unknown as {
+        __ddV6GAnchorCapture?: boolean;
+        __ddV6GAnchorEvents?: Array<Record<string, unknown>>;
+      };
+      if (audit.__ddV6GAnchorCapture) {
+        audit.__ddV6GAnchorEvents ??= [];
+        const events = audit.__ddV6GAnchorEvents;
+        events.push({
+          kind: "weapon-effect-recipe",
+          weaponId: weapon.id,
+          recipeId: recipe.id,
+          anchor: impactAnchored ? "target" : recipe.emitter,
+          x: point.x,
+          y: renderY,
+          targetX: targetWorld?.x,
+          targetY: targetWorld
+            ? this.belt
+              ? this.beltY(targetWorld.y)
+              : targetWorld.y
+            : undefined,
+          pack: recipe.impactPack ?? recipe.swingPack,
+          count: recipe.swingCount,
+        });
+        if (events.length > 256) events.splice(0, events.length - 256);
+      }
       if (recipe.radialDistribution === "full-circle") {
         spawnWeaponRadialIdentity(
           this,
@@ -6786,13 +6800,7 @@ export class ArenaScene extends Phaser.Scene {
             }
             if (!casterRecipe) {
               for (const muzzleOffset of gunMuzzleOffsetsForShot(flashWeapon, p.attackSeq)) {
-                const muzzle = offsetWeaponMuzzle(
-                  center.x,
-                  center.y,
-                  aimX,
-                  aimY,
-                  muzzleOffset,
-                );
+                const muzzle = offsetWeaponMuzzle(center.x, center.y, aimX, aimY, muzzleOffset);
                 spawnMuzzleFlash(
                   this,
                   muzzle.x,
@@ -6801,6 +6809,7 @@ export class ArenaScene extends Phaser.Scene {
                   fx.size,
                   fx.color,
                   flashWeapon?.gun?.muzzle ?? fx.style,
+                  flashWeapon?.id,
                 );
                 if (flashWeapon?.gun?.sonicBoomRing)
                   spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
@@ -6859,9 +6868,7 @@ export class ArenaScene extends Phaser.Scene {
                   c.y,
                   er,
                   element,
-                  ultimateProjectile || c.getData("hostile") === true
-                    ? "world"
-                    : "player-weapon",
+                  ultimateProjectile || c.getData("hostile") === true ? "world" : "player-weapon",
                 );
             } finally {
               this.ultimateExplosionShakeScale = 1;
@@ -10062,13 +10069,9 @@ export class ArenaScene extends Phaser.Scene {
         if (!this.room) return;
         const quakeIdentity = resolveWeaponEffectRecipe(weapon);
         if (quakeIdentity?.quakeExplosionPaintedOnlyWeaponIds?.includes(weapon.id))
-          playFxPack(
-            this,
-            "void-implosion",
-            ep.x,
-            this.belt ? this.beltY(ep.y) : ep.y,
-            { radius: quake.radius },
-          );
+          playFxPack(this, "void-implosion", ep.x, this.belt ? this.beltY(ep.y) : ep.y, {
+            radius: quake.radius,
+          });
         else if (quakeIdentity?.quakeExplosionElement)
           spawnExplosion(
             this,
@@ -10163,6 +10166,7 @@ export class ArenaScene extends Phaser.Scene {
               fx.size,
               fx.color,
               weapon.gun.muzzle ?? fx.style,
+              weapon.id,
             );
             if (weapon.gun.sonicBoomRing)
               spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
@@ -10195,6 +10199,7 @@ export class ArenaScene extends Phaser.Scene {
       // cursor" (Weaponsmith), the VFX erupts at the clamped cursor (greatsword-quake style) instead.
       const rx = rig?.x ?? self.x;
       const ry = rig?.y ?? self.y;
+      const bladePose = rig ? () => rig.leadWeaponTipPose() : undefined;
       if (this.vfxPlayer.spawnsAtCursor(weapon.id)) {
         // §37 clamp in WORLD space (selfWy, not the projected rig y — mixed spaces skewed the radius), then
         // belt-project the epicenter for the draw so the eruption sits ON the cursor, not below it.
@@ -10209,9 +10214,28 @@ export class ArenaScene extends Phaser.Scene {
           // matching the remote observed-signature path.
           rig?.activeSwing ?? swing,
           true,
+          undefined,
+          bladePose,
         );
       } else {
-        this.spawnSlash(rx, ry, this.selfAim, weapon, rig?.activeSwing ?? swing);
+        const ep = clampQuakeEpicenter(
+          { x: rx, y: selfWy },
+          { x: cwx, y: cwy },
+          meleeReach(weapon),
+        );
+        this.spawnSlash(
+          rx,
+          ry,
+          this.selfAim,
+          weapon,
+          rig?.activeSwing ?? swing,
+          false,
+          {
+            x: ep.x,
+            y: this.belt ? this.beltY(ep.y) : ep.y,
+          },
+          bladePose,
+        );
       }
       // Chain-lightning on-hit proc (§10) — teal bolt leaps to the nearest enemies (server owns the damage).
       if (weapon.chainLightning)
@@ -10800,13 +10824,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const impactRecipe = resolveWeaponEffectRecipe(WEAPONS[event.weaponId]);
     if (fullReceipt && impactRecipe?.impactAnchor === "target")
-      spawnWeaponProjectileImpact(
-        this,
-        impactRecipe,
-        x,
-        y,
-        Math.atan2(event.dirY, event.dirX),
-      );
+      spawnWeaponProjectileImpact(this, impactRecipe, x, y, Math.atan2(event.dirY, event.dirX));
 
     if (fullReceipt) {
       if (mode === "shimmer") rig?.flash(350, reducedFlash ? 0xdedede : color);
@@ -11040,25 +11058,15 @@ export class ArenaScene extends Phaser.Scene {
       }
     }
     if (this.feedbackShakeIntensity > 0)
-      this.shakeCam(
-        this.feedbackShakeDuration,
-        this.feedbackShakeIntensity,
-        "player-weapon",
-      );
+      this.shakeCam(this.feedbackShakeDuration, this.feedbackShakeIntensity, "player-weapon");
     if (
       Math.hypot(this.feedbackPunchX, this.feedbackPunchY) > 0 &&
       now - this.lastCameraPunchAt >= 90
     ) {
       // Directional hit-confirm punch is camera motion too; budget it beside stochastic shake so a future
       // receipt cannot restore the heavy player-weapon jolt through this non-Phaser channel.
-      this.cameraPunchX = budgetedCameraShakeIntensity(
-        this.feedbackPunchX,
-        "player-weapon",
-      );
-      this.cameraPunchY = budgetedCameraShakeIntensity(
-        this.feedbackPunchY,
-        "player-weapon",
-      );
+      this.cameraPunchX = budgetedCameraShakeIntensity(this.feedbackPunchX, "player-weapon");
+      this.cameraPunchY = budgetedCameraShakeIntensity(this.feedbackPunchY, "player-weapon");
       this.lastCameraPunchAt = now;
     }
   }
@@ -14745,7 +14753,7 @@ export class ArenaScene extends Phaser.Scene {
     ];
     const weaponEffectRecipe = resolveWeaponEffectRecipe(weapon);
     if (weaponEffectRecipe?.chain === "scattered-pages") {
-      spawnScatteredPages(this, nodes, vfx.life);
+      spawnScatteredPages(this, nodes, vfx.life, weapon.id);
       return;
     }
     const g = this.add.graphics();
@@ -14784,12 +14792,34 @@ export class ArenaScene extends Phaser.Scene {
     weapon: WeaponDef,
     swing: SwingDescriptor,
     exact = false,
+    target?: Readonly<{ x: number; y: number }>,
+    sourceBladePose?: () =>
+      | { x: number; y: number; angle: number; physicalBladeLength: number }
+      | undefined,
   ): void {
     if (weapon.suppressVfx) return;
     const ang = Math.atan2(aim.y, aim.x);
     if (weapon.tags.classPool === "melee" && weapon.performance?.action === "page-flip") {
       this.spawnPageFlutterArc(x, y, ang, weapon);
       return;
+    }
+    const effectRecipe = resolveWeaponEffectRecipe(weapon);
+    if (effectRecipe?.chain === "scattered-pages") {
+      // Twin Whispervolumes must visibly fire a page even when the arc finds no chain seed. A confirmed
+      // chain still adds its own page trail through `spawnChain`; this lead volley is presentation-only.
+      const source = weaponEffectEmitterPoint(
+        weapon,
+        { x, y },
+        ang,
+        swing,
+        swing.activeStartSeconds,
+      );
+      spawnScatteredPages(
+        this,
+        [source, { x: source.x + aim.x * weapon.range, y: source.y + aim.y * weapon.range }],
+        weapon.chainLightning?.vfx?.life ?? 180,
+        weapon.id,
+      );
     }
     // §14 `exact` (cursor-spawn) places the VFX right at (x,y); otherwise it sits ~60% along the swing reach.
     const reach = exact ? 0 : (weapon.range ?? 100) * 0.6;
@@ -14805,6 +14835,9 @@ export class ArenaScene extends Phaser.Scene {
       VFX_RADIUS_DEFAULT,
       swing,
       weapon.tags?.element,
+      target?.x ?? sx,
+      target?.y ?? sy,
+      sourceBladePose,
     );
   }
 
@@ -14814,21 +14847,16 @@ export class ArenaScene extends Phaser.Scene {
   /** Verdigris's paper is the melee tell: page scraps trace the authored sweep instead of layering an
    * unrelated generic slash over the open-book attack. Damage remains the server's swept edge. */
   private spawnPageFlutterArc(x: number, y: number, aimAngle: number, weapon: WeaponDef): void {
+    const art = pageProjectileArtFor(weapon.id);
+    if (!art || !this.textures.exists(art.textureKey)) return;
     const count = 9;
     for (let i = 0; i < count; i++) {
       const progress = (i + 0.5) / count;
       const angle = aimAngle - weapon.swingArc * 0.5 + weapon.swingArc * progress;
       const radius = weapon.range * (0.28 + progress * 0.58);
       const page = this.add
-        .rectangle(
-          x + Math.cos(angle) * radius,
-          y + Math.sin(angle) * radius,
-          11 + (i % 3) * 2,
-          7 + ((i + 1) % 2) * 2,
-          i % 2 === 0 ? 0xe8e4d8 : 0xcfc6ae,
-          0.92,
-        )
-        .setStrokeStyle(1, i % 3 === 0 ? 0x9cff3b : 0x6e7042, 0.78)
+        .image(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, art.textureKey)
+        .setDisplaySize(art.displayWidth, art.displayHeight)
         .setRotation(angle + (i % 2 === 0 ? 0.28 : -0.32))
         .setDepth(100100);
       this.tweens.add({
@@ -15246,6 +15274,8 @@ export class ArenaScene extends Phaser.Scene {
       predicted = this.predictedBeam;
     }
     this.updateBeamFeedback(room.state.beams, room.sessionId);
+    const seraphCursor =
+      weapon?.id === "x2-seraph-s-knuckle-reliquary" ? this.currentBeamAim() : undefined;
     this.beamRenderer.update(
       room.state.beams,
       room.sessionId,
@@ -15256,6 +15286,7 @@ export class ArenaScene extends Phaser.Scene {
       predicted,
       prefersReducedPaperMotion() || this.feedbackSettings.flashes === "reduced",
       this.writeBeamMuzzlePose,
+      seraphCursor ? { x: seraphCursor.targetX, y: seraphCursor.targetY } : undefined,
     );
     this.beamPredictionHeld = held;
   }

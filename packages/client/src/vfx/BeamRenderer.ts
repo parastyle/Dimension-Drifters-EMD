@@ -49,6 +49,34 @@ export interface BeamMuzzlePose {
   y: number;
 }
 
+export interface BeamCursorTarget {
+  x: number;
+  y: number;
+}
+
+export interface BeamCursorPose {
+  originX: number;
+  originY: number;
+  angle: number;
+  length: number;
+}
+
+export function seraphBeamCursorPose(
+  origin: Readonly<BeamMuzzlePose>,
+  cursor: Readonly<BeamCursorTarget>,
+  authoritativeLength: number,
+): BeamCursorPose {
+  const dx = cursor.x - origin.x;
+  const dy = cursor.y - origin.y;
+  const distance = Math.hypot(dx, dy);
+  return {
+    originX: origin.x,
+    originY: origin.y,
+    angle: distance > 0.001 ? Math.atan2(dy, dx) : 0,
+    length: Math.min(Math.max(0, authoritativeLength), distance),
+  };
+}
+
 export type BeamMuzzlePoseWriter = (
   ownerId: string,
   weaponId: string,
@@ -263,6 +291,7 @@ export class BeamRenderer {
     predicted?: PredictedBeamCharge,
     reducedMotion = false,
     writeMuzzlePose?: BeamMuzzlePoseWriter,
+    localCursorTarget?: BeamCursorTarget,
   ): void {
     this.groundLight.clear();
     this.graphics.clear();
@@ -293,6 +322,7 @@ export class BeamRenderer {
         beltYScale,
         reducedMotion,
         writeMuzzlePose,
+        localCursorTarget,
       );
     });
     if (predicted && !hasAuthoritativeSelf) {
@@ -374,6 +404,7 @@ export class BeamRenderer {
     beltYScale: number,
     reducedMotion: boolean,
     writeMuzzlePose: BeamMuzzlePoseWriter | undefined,
+    localCursorTarget: BeamCursorTarget | undefined,
   ): void {
     entry.ignitionT = Math.max(0, entry.ignitionT - dt);
     entry.releaseT = Math.max(0, entry.releaseT - dt);
@@ -384,7 +415,15 @@ export class BeamRenderer {
       recipe?.beam?.accentColor ??
       COLOR[row.element] ??
       DEFAULT_COLOR;
-    const pose = this.resolveDrawPose(entry, row, rowKey, local, dt, writeMuzzlePose);
+    const pose = this.resolveDrawPose(
+      entry,
+      row,
+      rowKey,
+      local,
+      dt,
+      writeMuzzlePose,
+      localCursorTarget,
+    );
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
 
     if (row.phase === BeamPhase.Charging) {
@@ -505,6 +544,7 @@ export class BeamRenderer {
     local: boolean,
     dt: number,
     writeMuzzlePose: BeamMuzzlePoseWriter | undefined,
+    localCursorTarget: BeamCursorTarget | undefined,
   ): BeamDrawPose {
     if (!entry.poseReady) {
       entry.poseReady = true;
@@ -552,6 +592,36 @@ export class BeamRenderer {
     ) {
       originX = this.muzzlePose.x;
       originY = this.muzzlePose.y;
+    }
+    if (local && row.weaponId === "x2-seraph-s-knuckle-reliquary" && localCursorTarget) {
+      const cursorPose = seraphBeamCursorPose(
+        { x: originX, y: originY },
+        localCursorTarget,
+        entry.renderLength,
+      );
+      this.drawPose.originX = cursorPose.originX;
+      this.drawPose.originY = cursorPose.originY;
+      this.drawPose.angle = cursorPose.angle;
+      this.drawPose.length = cursorPose.length;
+      const audit = globalThis as unknown as {
+        __ddV6GAnchorCapture?: boolean;
+        __ddV6GAnchorEvents?: Array<Record<string, unknown>>;
+      };
+      if (audit.__ddV6GAnchorCapture) {
+        audit.__ddV6GAnchorEvents ??= [];
+        const events = audit.__ddV6GAnchorEvents;
+        events.push({
+          kind: "beam-cursor-endpoint",
+          weaponId: row.weaponId,
+          anchor: "target",
+          x: cursorPose.originX + Math.cos(cursorPose.angle) * cursorPose.length,
+          y: cursorPose.originY + Math.sin(cursorPose.angle) * cursorPose.length,
+          targetX: localCursorTarget.x,
+          targetY: localCursorTarget.y,
+        });
+        if (events.length > 256) events.splice(0, events.length - 256);
+      }
+      return this.drawPose;
     }
     this.drawPose.originX = originX;
     this.drawPose.originY = originY;
@@ -758,13 +828,13 @@ export class BeamRenderer {
     for (let index = sheets; index >= 1; index--) {
       const fraction = 0.38 + (index / sheets) * 0.62;
       const color = index === 1 ? coreColor : index % 2 === 0 ? chromaColor : edgeColor;
-      drawSheet(fraction, color, (flavor === "magma" ? 0.14 : 0.11) + index / sheets * 0.08);
+      drawSheet(fraction, color, (flavor === "magma" ? 0.14 : 0.11) + (index / sheets) * 0.08);
     }
 
     const phase = nowMs * (flavor === "magma" ? 0.0024 : 0.0032) + entry.seed * Math.PI * 2;
     const ribs = polish?.ribs ?? 7;
     for (let index = 1; index <= ribs; index++) {
-      const f = ((index / ribs + phase / (Math.PI * 2)) % 1 + 1) % 1;
+      const f = (((index / ribs + phase / (Math.PI * 2)) % 1) + 1) % 1;
       const centerX = pose.originX + c * pose.length * f;
       const centerY = pose.originY + s * pose.length * f;
       const half = halfEnd * f * (0.72 + 0.12 * Math.sin(phase + index));
@@ -779,15 +849,13 @@ export class BeamRenderer {
     }
     if (flavor === "ice" && polish) {
       for (let index = 0; index < polish.meltParticles; index++) {
-        const f = ((index / polish.meltParticles + nowMs * 0.00042) % 1 + 1) % 1;
+        const f = (((index / polish.meltParticles + nowMs * 0.00042) % 1) + 1) % 1;
         const lateral = Math.sin(phase * 0.7 + index * 2.31) * halfEnd * f * 0.72;
         const x = pose.originX + c * pose.length * f - s * lateral;
         const y = pose.originY + s * pose.length * f + c * lateral + 3 + 9 * f;
-        this.graphics.fillStyle(index % 2 ? 0x6fd6ff : 0xe8fbff, 0.36).fillCircle(
-          x,
-          this.projectY(y, beltY0, beltYScale),
-          1.5 + (index % 3) * 0.55,
-        );
+        this.graphics
+          .fillStyle(index % 2 ? 0x6fd6ff : 0xe8fbff, 0.36)
+          .fillCircle(x, this.projectY(y, beltY0, beltYScale), 1.5 + (index % 3) * 0.55);
       }
       const endX = pose.originX + c * pose.length;
       const endY = pose.originY + s * pose.length;
@@ -911,13 +979,16 @@ export class BeamRenderer {
     const rings = beam?.impact.rings ?? 1;
     for (let ring = 0; ring < rings; ring++) {
       const radius = ringRadius * (1 + ring * 0.34);
-      this.graphics
-        .lineStyle(
-          Math.max(1, lineWidth - ring * 0.35),
-          ring % 2 === 0 ? (beam?.coreColor ?? 0xffffff) : (beam?.accentColor ?? color),
-          (0.55 + pulse * 0.4) / (1 + ring * 0.22),
-        )
-        .strokeEllipse(endX, endY, radius * 2, radius * 2 * beltYScale);
+      this.drawOrganicRim(
+        endX,
+        endY,
+        radius,
+        radius * beltYScale,
+        ring % 2 === 0 ? (beam?.coreColor ?? 0xffffff) : (beam?.accentColor ?? color),
+        (0.55 + pulse * 0.4) / (1 + ring * 0.22),
+        Math.max(1, lineWidth - ring * 0.35),
+        phase + ring * 0.83,
+      );
     }
     this.graphics
       .fillStyle(beam?.accentColor ?? color, 0.42 + redline * 0.28)
@@ -947,6 +1018,36 @@ export class BeamRenderer {
         )
         .lineBetween(endX + c * inner, endY + s * inner, endX + c * outer, endY + s * outer);
     }
+  }
+
+  private drawOrganicRim(
+    x: number,
+    y: number,
+    radiusX: number,
+    radiusY: number,
+    color: number,
+    alpha: number,
+    width: number,
+    phase: number,
+  ): void {
+    const steps = 36;
+    this.graphics.lineStyle(width, color, alpha);
+    let drawing = false;
+    for (let index = 0; index <= steps; index++) {
+      const gap = index % 8 === 0 || index % 8 === 7;
+      const angle = phase + (index / steps) * Math.PI * 2;
+      const wobble = 1 + Math.sin(index * 2.31 + phase) * 0.07;
+      const px = x + Math.cos(angle) * radiusX * wobble;
+      const py = y + Math.sin(angle) * radiusY * wobble;
+      if (gap) {
+        if (drawing) this.graphics.strokePath();
+        drawing = false;
+      } else if (!drawing) {
+        this.graphics.beginPath().moveTo(px, py);
+        drawing = true;
+      } else this.graphics.lineTo(px, py);
+    }
+    if (drawing) this.graphics.strokePath();
   }
 
   private drawElementPattern(

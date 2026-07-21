@@ -1,0 +1,54 @@
+{
+  "label": "riftcaller",
+  "weaponId": "x2-riftcaller-naginata",
+  "baseURL": "http://127.0.0.1:5173",
+  "capturedAt": "2026-07-21T19:34:32.139Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2614.966796875,
+      "y": 2389.3310546875
+    }
+  },
+  "endpointDelta": 0,
+  "actorDelta": 217.14351927994218,
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-riftcaller-naginata",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2614.966796875,
+      "targetY": 2389.3310546875,
+      "layerIds": [
+        "blade-trail"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-riftcaller-naginata",
+      "anchor": "target",
+      "x": 2614.966796875,
+      "y": 2389.3310546875,
+      "targetX": 2614.966796875,
+      "targetY": 2389.3310546875,
+      "layerIds": [
+        "cleave-flash"
+      ]
+    }
+  ],
+  "assertions": {
+    "targetAnchor": true,
+    "cursorDeltaOk": true,
+    "awayFromActor": true,
+    "dustreaperFlame": true,
+    "riftcallerAuraDeleted": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v6g1-riftcaller.png"
+}

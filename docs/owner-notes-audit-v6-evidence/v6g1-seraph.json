@@ -1,0 +1,93 @@
+{
+  "label": "seraph",
+  "weaponId": "x2-seraph-s-knuckle-reliquary",
+  "baseURL": "http://127.0.0.1:5173",
+  "capturedAt": "2026-07-21T19:34:37.577Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2618.309326171875,
+      "y": 2385.1689453125
+    }
+  },
+  "endpointDelta": 0,
+  "actorDelta": 213.13994844722316,
+  "events": [
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2612.028076171875,
+      "y": 2388.82080078125,
+      "targetX": 2612.028076171875,
+      "targetY": 2388.82080078125
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2611.7841796875,
+      "y": 2388.962646484375,
+      "targetX": 2611.7841796875,
+      "targetY": 2388.962646484375
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2611.49560546875,
+      "y": 2389.047119140625,
+      "targetX": 2611.49560546875,
+      "targetY": 2389.047119140625
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2611.423583984375,
+      "y": 2389.178955078125,
+      "targetX": 2611.423583984375,
+      "targetY": 2389.178955078125
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2611.192626953125,
+      "y": 2389.284423828125,
+      "targetX": 2611.192626953125,
+      "targetY": 2389.284423828125
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2611.068359375,
+      "y": 2389.37890625,
+      "targetX": 2611.068359375,
+      "targetY": 2389.37890625
+    },
+    {
+      "kind": "beam-cursor-endpoint",
+      "weaponId": "x2-seraph-s-knuckle-reliquary",
+      "anchor": "target",
+      "x": 2610.939697265625,
+      "y": 2389.45361328125,
+      "targetX": 2610.939697265625,
+      "targetY": 2389.45361328125
+    }
+  ],
+  "assertions": {
+    "targetAnchor": true,
+    "cursorDeltaOk": true,
+    "awayFromActor": true,
+    "dustreaperFlame": true,
+    "riftcallerAuraDeleted": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v6g1-seraph.png"
+}

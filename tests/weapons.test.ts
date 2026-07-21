@@ -387,10 +387,8 @@ describe("Gravedigger's Spade — §6 rez carrier", () => {
     expect(spade?.tags.classPool).toBe("melee");
   });
 
-  it("borrows a placeholder sprite (a different real weapon) until bespoke art lands", () => {
-    expect(spade?.sprite).toBeTruthy();
-    expect(spade?.sprite).not.toBe("gravediggers-spade");
-    expect(WEAPONS[spade?.sprite ?? ""]).toBeDefined(); // the placeholder is a real weapon id
+  it("uses the bespoke Gravewarden Buster sprite while preserving its stable gameplay id", () => {
+    expect(spade?.sprite).toBe("gravewarden-buster");
   });
 
   it("is in the cyclable roster (so it spawns as a Testing-Grounds pickup)", () => {
@@ -520,10 +518,7 @@ describe("beam weapons — hard panel laws", () => {
   it("normalizes DPS by actual dt and shares output above three contacts", () => {
     expect(beamDamageForStep(40, 0.05, 1)).toBeCloseTo(2, 8);
     expect(beamDamageForStep(40, 0.05, 4)).toBeCloseTo(1.5, 8);
-    expect(beamDamageForStep(40, 0.05, 100) * 100).toBeCloseTo(
-      40 * 0.05 * BEAM_TARGET_CAP,
-      8,
-    );
+    expect(beamDamageForStep(40, 0.05, 100) * 100).toBeCloseTo(40 * 0.05 * BEAM_TARGET_CAP, 8);
   });
 
   it("reports beam DPS as its own scaled card damage source", () => {

@@ -1,0 +1,55 @@
+{
+  "label": "wendigo",
+  "weaponId": "x2-wendigo-claws",
+  "baseURL": "http://127.0.0.1:5173",
+  "capturedAt": "2026-07-21T19:34:22.431Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2611.384521484375,
+      "y": 2390.72412109375
+    }
+  },
+  "endpointDelta": 0,
+  "actorDelta": 104.99999999999999,
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-wendigo-claws",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2504.007251130727,
+      "targetY": 2405.595427384686,
+      "layerIds": [
+        "twin-slash"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-wendigo-claws",
+      "anchor": "target",
+      "x": 2504.007251130727,
+      "y": 2405.595427384686,
+      "targetX": 2504.007251130727,
+      "targetY": 2405.595427384686,
+      "layerIds": [
+        "hit-spark",
+        "impact-flash"
+      ]
+    }
+  ],
+  "assertions": {
+    "targetAnchor": true,
+    "cursorDeltaOk": true,
+    "awayFromActor": true,
+    "dustreaperFlame": true,
+    "riftcallerAuraDeleted": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v6g1-wendigo.png"
+}

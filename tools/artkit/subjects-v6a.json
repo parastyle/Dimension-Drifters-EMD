@@ -1,0 +1,121 @@
+[
+  {
+    "id": "gravewarden-buster",
+    "name": "Gravewarden Buster",
+    "kind": "weapon",
+    "prompt": "Use case: stylized-concept. Asset type: Dimension Drifters held weapon identity sprite. Generate one original heroic oversized buster-class greatblade for a western-gothic grave warden. It is a single complete two-handed weapon at rest: a broad coffin-tapered gunmetal blade, clipped asymmetrical shoulders, a simple brass grave-bell crossguard, a long dark leather two-hand grip, and a compact shovel-spade pommel. Keep the silhouette simple, powerful, and instantly readable, with 4-6 flat colors and restrained chipped wear. It must be an original design with no trademark likeness: do not copy any recognizable video-game sword, do not use a rectangular industrial blade, circular holes, a motorcycle-like guard, or recognizable branded proportions. No character, hand, scene, text, logo, blood, glow, particles, smoke, or motion VFX. One weapon only, fully visible with generous green padding.",
+    "palette": {
+      "primary": "weathered gunmetal and bone-steel",
+      "accent": "aged brass and grave-cloth burgundy"
+    },
+    "tags": [
+      "weapon",
+      "greatblade",
+      "western-gothic",
+      "original-design"
+    ]
+  },
+  {
+    "id": "v6a-headsman-proto-1-radiant-edge",
+    "name": "Sanctified Headsman Prototype 1 — Radiant Verdict",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: holy magic blade-extension VFX sprite. Generate one standalone, very long holy executioner-blade extension pointing RIGHT. This is only the additional magical blade beyond the physical weapon tip: begin at the LEFT with a narrow flat attachment neck and extend into one connected 4.5:1 broad cleaver blade with a decisive clipped point on the RIGHT. Treatment: SOLID radiant verdict — dense ivory-gold core, saturated golden cutting edge, a few hand-painted white-hot nicks, and a strong clean silhouette. It should feel like one materialized blade, not a slash arc. No weapon, handle, character, scene, text, symbols, circles, halo, panel, border, duplicate, or contact sheet. Keep the complete extension visible with generous chroma padding.",
+    "palette": {
+      "primary": "ivory-white and radiant gold",
+      "accent": "warm amber"
+    },
+    "tags": [
+      "weapon-vfx",
+      "holy",
+      "blade-extension",
+      "solid"
+    ]
+  },
+  {
+    "id": "v6a-headsman-proto-2-ghost-blade",
+    "name": "Sanctified Headsman Prototype 2 — Pale Procession",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: holy magic blade-extension VFX sprite. Generate one standalone, very long holy executioner-blade extension pointing RIGHT. This is only the additional magical blade beyond the physical weapon tip: begin at the LEFT with a narrow flat attachment neck and extend into one connected 4.5:1 broad cleaver blade with a hooked executioner tip on the RIGHT. Treatment: TRANSLUCENT GHOST-BLADE — pale champagne-gold outer contour, milky semi-transparent-looking interior painted with sparse layered afterimage bands and a bright spectral cutting lip. Preserve a readable full blade silhouette while making it feel weightless and haunted. It must not resemble the solid prototype. No weapon, handle, character, scene, text, symbols, circles, halo, panel, border, duplicate, or contact sheet. Keep the complete extension visible with generous chroma padding.",
+    "palette": {
+      "primary": "pale champagne and ghost ivory",
+      "accent": "soft antique gold"
+    },
+    "tags": [
+      "weapon-vfx",
+      "holy",
+      "blade-extension",
+      "spectral"
+    ]
+  },
+  {
+    "id": "v6a-headsman-proto-3-particle-weave",
+    "name": "Sanctified Headsman Prototype 3 — Woven Litany",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: holy magic blade-extension VFX sprite. Generate one standalone, very long holy executioner-blade extension pointing RIGHT. This is only the additional magical blade beyond the physical weapon tip: begin at the LEFT with a narrow attachment spark-knot and extend across a 4.5:1 cleaver silhouette. Treatment: PARTICLE-WOVEN LITANY — the blade body is built from many connected hand-painted gold light threads, short prayer-stroke motes, and braided luminous filaments, with intentional breathing gaps and a sharp coherent white-gold cutting edge. It must read as energy being woven into a blade, not a solid slab, ghost sheet, or ordinary slash arc. No weapon, handle, character, scene, readable text, circles, halo, panel, border, duplicate, or contact sheet. Keep every strand and the complete silhouette visible with generous chroma padding.",
+    "palette": {
+      "primary": "woven gold light and warm white",
+      "accent": "small amber sparks"
+    },
+    "tags": [
+      "weapon-vfx",
+      "holy",
+      "blade-extension",
+      "particle-woven"
+    ]
+  },
+  {
+    "id": "v6a-headsman-proto-4-cathedral-glass",
+    "name": "Sanctified Headsman Prototype 4 — Cathedral Ruin",
+    "kind": "vfx",
+    "styleRef": "out/x2-sanctified-headsman/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: holy magic blade-extension VFX sprite. Generate one standalone, very long holy executioner-blade extension pointing RIGHT. This is only the additional magical blade beyond the physical weapon tip: begin at the LEFT with a narrow leaded attachment neck and extend into one connected 4.5:1 jagged cleaver blade with a broken cathedral-window point on the RIGHT. Treatment: STAINED-GLASS SHARD BLADE — large irregular translucent-looking panes of amber, ruby, cobalt, and ivory divided by thick dark lead lines, with several tiny floating glass chips contained close to the silhouette and a bright gold cutting rim. It must feel architectural, fractured, and materially distinct from the other treatments. No weapon, handle, character, scene, readable text, circles, halo, panel, border, duplicate, or contact sheet. Keep the complete extension and all chips visible with generous chroma padding.",
+    "palette": {
+      "primary": "amber and ivory cathedral glass",
+      "accent": "ruby and cobalt shards"
+    },
+    "tags": [
+      "weapon-vfx",
+      "holy",
+      "blade-extension",
+      "stained-glass"
+    ]
+  },
+  {
+    "id": "v6a-twin-whisper-page",
+    "name": "Twin Whispervolumes — Whisper Page",
+    "kind": "vfx",
+    "styleRef": "out/x2-twin-whispervolumes/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: recognizable flying page projectile sprite. Generate one actual loose parchment page, not a procedural shape: a complete small ivory folio leaf in a dynamic fluttering three-quarter view, broad page face clearly visible, RIGHT edge leading, LEFT corners trailing. Include a charcoal outline, visibly curled corners, a torn lower edge, 5-7 rows of dark hand-painted pseudo-script marks, one tiny cyan shock-rune accent, and restrained blue-gray edge shadow. The marks must look like writing but must not form readable words. One page only. No book, weapon, character, scene, extra pages, rectangles, panel, border, glow, text label, watermark, or contact sheet. Keep the entire page visible with generous chroma padding.",
+    "palette": {
+      "primary": "ivory parchment and charcoal ink",
+      "accent": "cold cyan"
+    },
+    "tags": [
+      "projectile-vfx",
+      "page",
+      "spellbook",
+      "shock"
+    ]
+  },
+  {
+    "id": "v6a-verdigris-grand-page",
+    "name": "Verdigris Grand Grimoire — Grand Page",
+    "kind": "vfx",
+    "styleRef": "out/x2-verdigris-grand-grimoire/identity-ref.png",
+    "prompt": "Use case: stylized-concept. Asset type: recognizable giant melee page projectile sprite. Generate one actual heavy grimoire page, not a procedural shape: a complete wide ancient parchment leaf in a forceful fluttering three-quarter view, broad page face clearly visible, RIGHT edge leading, LEFT edge trailing. Include a thick charcoal outline, curled and ragged corners, fibrous bone parchment, many rows of dark pseudo-script marks, a large original green alchemical diagram, and oxidized verdigris stains at two corners. The marks must look like writing but must not form readable words. The page must have a bold silhouette that remains recognizable when rendered at seven times the ordinary page scale. One page only. No book, weapon, character, scene, extra pages, rectangles, panel, border, glow, text label, watermark, or contact sheet. Keep the entire page visible with generous chroma padding.",
+    "palette": {
+      "primary": "bone parchment and charcoal ink",
+      "accent": "verdigris green"
+    },
+    "tags": [
+      "projectile-vfx",
+      "page",
+      "grimoire",
+      "toxic",
+      "seven-times-scale"
+    ]
+  }
+]

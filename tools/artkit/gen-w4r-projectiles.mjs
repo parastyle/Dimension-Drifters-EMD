@@ -33,6 +33,22 @@ Avoid: copying, cropping, or tracing pixels from Image 1; photorealism; perspect
 
 const jobs = [
   {
+    id: "coyotes-grin-throwing-blade",
+    weaponId: "x2-coyote-s-grin",
+    reference: resolve(repo, "packages/client/public/sprites/x2-coyote-s-grin/part-5.png"),
+    maxWidth: 176,
+    maxHeight: 88,
+    minAspect: 2,
+    maxAspect: 5.5,
+    prompt: `Use case: stylized-concept
+Asset type: Dimension Drifters in-flight thrown-weapon projectile sprite
+Primary request: Generate one brand-new single Coyote's Grin throwing blade inspired by Image 1; the existing paired weapon art is only a visual reference and must never be cropped, detached, traced, or copied.
+Input images: Image 1 is a style, palette, material, and blade-language reference only; it is not an edit target and no pixels should be copied or cropped.
+Subject: one complete original western-gothic throwing knife with a compact brass sun-disc pommel, dark crisscross-wrapped grip, asymmetrical gunmetal guard, and a broad slightly hooked chipped steel blade. It must be exactly ONE knife, not twins, a sheet, a panel, or a contact sheet.
+Composition/framing: flat orthographic full side-profile, perfectly horizontal, blade tip points RIGHT, entire knife visible with generous padding.
+${commonPrompt}`,
+  },
+  {
     id: "widowmaker-arbalest-arrow",
     weaponId: "x2-widowmaker-arbalest",
     reference: resolve(repo, "packages/client/public/sprites/x2-widowmaker-arbalest/part-1.png"),

@@ -75,12 +75,7 @@ export interface WeaponMuzzleOffset {
 }
 
 export type GunMuzzleMode = "parallel" | "cycle";
-export type GunProjectileArt =
-  | "weapon-crop"
-  | "generated"
-  | "arrow"
-  | "cannonball"
-  | "fireball";
+export type GunProjectileArt = "weapon-crop" | "generated" | "arrow" | "cannonball" | "fireball";
 
 export const CENTER_MUZZLE_OFFSET: Readonly<WeaponMuzzleOffset> = Object.freeze({
   forward: 0,
@@ -187,9 +182,7 @@ export function serverSeededGunPelletVolley(
   const admitted = Math.max(0, Math.min(requestedCount, Math.trunc(availableRows)));
   return Object.freeze({
     requestedCount,
-    angles: Object.freeze(
-      Array.from({ length: admitted }, () => rng.range(-Math.PI, Math.PI)),
-    ),
+    angles: Object.freeze(Array.from({ length: admitted }, () => rng.range(-Math.PI, Math.PI))),
   });
 }
 
@@ -304,8 +297,7 @@ export function projectileWaveformPositionAt(
   const speed = Math.hypot(velocityX, velocityY) || 1;
   const dirX = velocityX / speed;
   const dirY = velocityY / speed;
-  const phase =
-    elapsedSeconds * Math.PI * 2 * waveform.frequencyHz + (waveform.phaseRad ?? 0);
+  const phase = elapsedSeconds * Math.PI * 2 * waveform.frequencyHz + (waveform.phaseRad ?? 0);
   const launchOffset = Math.sin(waveform.phaseRad ?? 0);
   const offset = waveform.amplitudePx * (Math.sin(phase) - launchOffset);
   return {
@@ -887,10 +879,7 @@ export function weaponAttackCooldown(weapon: WeaponDef): number {
 }
 
 /** Inclusive swing count for a continuous hold: the press itself is beat one, then one per cadence. */
-export function holdScaledSwingCount(
-  heldSeconds: number,
-  cadenceSeconds: number,
-): number {
+export function holdScaledSwingCount(heldSeconds: number, cadenceSeconds: number): number {
   const held = Math.max(0, heldSeconds);
   const cadence = Math.max(0.001, cadenceSeconds);
   const completedCadences = Math.floor((held + cadence * 1e-9) / cadence);
@@ -932,8 +921,7 @@ export function pairDamagePerUse(weapon: WeaponDef): number {
     const pelletCount = weapon.gun.randomPellets ? 1 : Math.max(1, weapon.gun.pellets ?? 1);
     return Math.max(
       0,
-      (weapon.gun.damage * pelletCount +
-        (weapon.gun.explode?.damage ?? 0)) *
+      (weapon.gun.damage * pelletCount + (weapon.gun.explode?.damage ?? 0)) *
         Math.max(1, weapon.gun.burst?.count ?? 1),
     );
   }
@@ -1220,20 +1208,20 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       scaling: ["STR"],
     },
   },
-  // §6/§15 #10 GRAVEDIGGER'S SPADE — the M0 REZ carrier. A heavy 2H digging spade: a real (if modest) STR
-  // melee whose swing REVIVES a downed ally within REZ_RADIUS at 30% HP. Bespoke spade art is pending
-  // (CODE-21) — for now it borrows the tombstone-greatsword sprite (heavy 2H haft) via `sprite`.
+  // §6/§15 #10 GRAVEWARDEN BUSTER — the stable M0 rez-carrier id now presents an original heroic
+  // greatblade. Its full-frontflip descriptor and cadence remain unchanged; V6A only widens the
+  // complete-circle damage radius and replaces the former tombstone placeholder art.
   "gravediggers-spade": {
     id: "gravediggers-spade",
-    name: "Gravedigger's Spade",
-    sprite: "tombstone-greatsword", // placeholder art until a bespoke spade is generated
+    name: "Gravewarden Buster",
+    sprite: "gravewarden-buster",
     scalingGrades: { str: "B" },
     requirements: { str: 5 },
     damage: 8,
-    range: 150,
+    range: 210,
     halfArc: 0.95,
     cooldown: 0.6, // a heavy, deliberate dig
-    displayLength: 124,
+    displayLength: 164,
     swingArc: Math.PI * 2,
     timingSwingArc: 2.7,
     gripFrac: 0.1,
@@ -1683,6 +1671,10 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     displayLength: 128,
     swingArc: 1.1,
     gripFrac: 0.12,
+    gripPoints: {
+      primary: { x: 0.12, y: 0.5 },
+      secondary: { x: 0.4, y: 0.5, role: "shaft" },
+    },
     twoHanded: true,
     vfxRadius: 60,
     cast: {
@@ -1720,6 +1712,10 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     displayLength: 116,
     swingArc: 1.0,
     gripFrac: 0.14,
+    gripPoints: {
+      primary: { x: 0.14, y: 0.5 },
+      secondary: { x: 0.42, y: 0.5, role: "shaft" },
+    },
     twoHanded: true,
     vfxRadius: 56,
     cast: {
@@ -1994,9 +1990,7 @@ export const WEAPON_CATALOG_IDS = Object.keys(WEAPONS).filter((id) => id !== FIS
 /** Retired rows remain addressable forever, but never enter acquisition or ordinary presentation pools. */
 export const ARCHIVED_WEAPON_IDS = WEAPON_CATALOG_IDS.filter((id) => WEAPONS[id]?.archived);
 /** The ordinary catalog surface: base + expansion, excluding archived rows. */
-export const ACTIVE_WEAPON_CATALOG_IDS = WEAPON_CATALOG_IDS.filter(
-  (id) => !WEAPONS[id]?.archived,
-);
+export const ACTIVE_WEAPON_CATALOG_IDS = WEAPON_CATALOG_IDS.filter((id) => !WEAPONS[id]?.archived);
 /** ACTIVE curated arsenal (Q/E cycle) — excludes fists, expansion, and archived definitions. */
 export const WEAPON_IDS = Object.keys(WEAPONS).filter(
   (id) => id !== FISTS_WEAPON && !WEAPONS[id]?.expansion && !WEAPONS[id]?.archived,
@@ -2050,9 +2044,7 @@ export function thrownProjectileRotationPolicy(
   source: string | Pick<WeaponDef, "thrown"> | undefined,
 ): "spin" | "point-forward" | undefined {
   const weapon =
-    typeof source === "string"
-      ? WEAPONS[thrownProjectileWeaponId(source) ?? ""]
-      : source;
+    typeof source === "string" ? WEAPONS[thrownProjectileWeaponId(source) ?? ""] : source;
   return weapon?.thrown ? (weapon.thrown.rotation ?? "spin") : undefined;
 }
 

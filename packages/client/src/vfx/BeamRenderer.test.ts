@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("phaser", () => ({ default: {} }));
 
-import { beamPaintFor, beamVisualWidth } from "./BeamRenderer.js";
+import { beamPaintFor, beamVisualWidth, seraphBeamCursorPose } from "./BeamRenderer.js";
 
 describe("BeamRenderer presentation laws", () => {
   it("breathes strictly within the authoritative swept-band width at every heat state", () => {
@@ -22,5 +22,15 @@ describe("BeamRenderer presentation laws", () => {
     expect(beamPaintFor("nature").id).toBe("nature");
     expect(beamPaintFor("solar").id).toBe("fire");
     expect(beamPaintFor("shadow").id).toBe("void");
+  });
+
+  it("terminates Seraph at the cursor while retaining the authoritative collision cap", () => {
+    expect(seraphBeamCursorPose({ x: 10, y: 20 }, { x: 110, y: 20 }, 640)).toEqual({
+      originX: 10,
+      originY: 20,
+      angle: 0,
+      length: 100,
+    });
+    expect(seraphBeamCursorPose({ x: 10, y: 20 }, { x: 1010, y: 20 }, 640).length).toBe(640);
   });
 });

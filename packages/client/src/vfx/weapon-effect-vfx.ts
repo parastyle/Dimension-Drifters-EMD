@@ -1,4 +1,5 @@
-import Phaser from "phaser";
+import type Phaser from "phaser";
+import { pageProjectileArtFor } from "./page-projectile-art.js";
 import { paintedParticlePixels, particleBurst } from "./particles.js";
 import {
   TESLA_WARP_VFX_RECIPE,
@@ -56,15 +57,14 @@ export function spawnWeaponProjectileImpact(
     additive: recipe.additive,
   });
   if (recipe.projectile === "electric-bolt") {
-    const ring = scene.add.circle(x, y, 12).setStrokeStyle(3, 0x2f8fff, 0.9).setDepth(99501);
-    ring.setBlendMode(Phaser.BlendModes.ADD);
-    scene.tweens.add({
-      targets: ring,
-      scale: 3.1,
-      alpha: 0,
-      duration: 260,
-      ease: "Quad.easeOut",
-      onComplete: () => ring.destroy(),
+    particleBurst(scene, "shock-splat", x, y, {
+      count: 2,
+      dirRad: angle,
+      spread: Math.PI * 2,
+      speed: 34,
+      scaleContract: paintedParticlePixels(54),
+      lifeMs: 300,
+      additive: true,
     });
   }
 }
@@ -153,12 +153,15 @@ export function spawnMusicalNoteParticles(
   }
 }
 
-/** Procedural loose sheets match the existing tome/page glyph vocabulary; no bitmap asset is needed. */
+/** Literal Codex-rendered page sprites along Twin Whispervolumes' chain path. */
 export function spawnScatteredPages(
   scene: Phaser.Scene,
   nodes: readonly { x: number; y: number }[],
   lifeMs: number,
+  weaponId = "x2-twin-whispervolumes",
 ): void {
+  const art = pageProjectileArtFor(weaponId);
+  if (!art || !scene.textures.exists(art.textureKey)) return;
   for (let link = 0; link < nodes.length - 1; link++) {
     const from = nodes[link];
     const to = nodes[link + 1];
@@ -172,15 +175,12 @@ export function spawnScatteredPages(
       const nx = -Math.sin(angle);
       const ny = Math.cos(angle);
       const page = scene.add
-        .rectangle(
+        .image(
           from.x + (to.x - from.x) * t + nx * lateral,
           from.y + (to.y - from.y) * t + ny * lateral,
-          10,
-          7,
-          0xe8e4d8,
-          0.95,
+          art.textureKey,
         )
-        .setStrokeStyle(1, 0x5a6472, 0.9)
+        .setDisplaySize(art.displayWidth, art.displayHeight)
         .setRotation(angle + (Math.random() - 0.5) * 1.2)
         .setDepth(99500);
       scene.tweens.add({

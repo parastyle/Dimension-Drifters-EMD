@@ -786,6 +786,7 @@
       },
       "effectRecipe": "dustreaper-continuous-edge",
       "effectEmitter": "blade",
+      "effectTiming": "impact",
       "id": "x2-dustreaper-zweihander"
     },
     {
@@ -11197,6 +11198,10 @@
           "frequencyHz": 10
         }
       },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.38, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-tallowtongue-pyre-stave"
     },
     {
@@ -11304,6 +11309,10 @@
         "int": "A",
         "luk": "C"
       },
+      "gripPoints": {
+        "primary": { "x": 0.16, "y": 0.5 },
+        "secondary": { "x": 0.42, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-gravesinger-s-hex-wand"
     },
     {
@@ -11388,6 +11397,10 @@
       },
       "scalingGrades": {
         "int": "S"
+      },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.4, "y": 0.5, "role": "shaft" }
       },
       "id": "x2-sunmote-reliquary-staff"
     },
@@ -11494,6 +11507,10 @@
         "int": "A",
         "str": "C"
       },
+      "gripPoints": {
+        "primary": { "x": 0.08, "y": 0.5 },
+        "secondary": { "x": 0.38, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-anvil-heart-quake-maul-staff"
     },
     {
@@ -11552,6 +11569,10 @@
       "scalingGrades": {
         "int": "A",
         "dex": "D"
+      },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.42, "y": 0.5, "role": "shaft" }
       },
       "id": "x2-hollowbarrel-spell-scattergun-staff"
     },
@@ -11769,6 +11790,10 @@
       "scalingGrades": {
         "int": "A"
       },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.4, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-saint-bough-frost-crozier"
     },
     {
@@ -11876,6 +11901,10 @@
       "scalingGrades": {
         "int": "S"
       },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.4, "y": 0.5, "role": "shaft" }
+      },
       "id": "x2-mesa-spine-thunder-stave"
     },
     {
@@ -11965,6 +11994,10 @@
       },
       "scalingGrades": {
         "int": "S"
+      },
+      "gripPoints": {
+        "primary": { "x": 0.08, "y": 0.5 },
+        "secondary": { "x": 0.38, "y": 0.5, "role": "shaft" }
       },
       "id": "x2-obsidian-maw-void-staff"
     },
@@ -12068,6 +12101,10 @@
       },
       "scalingGrades": {
         "int": "A"
+      },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.38, "y": 0.5, "role": "shaft" }
       },
       "id": "x2-wormwood-hex-stave"
     },
@@ -14004,6 +14041,10 @@
         "displayLength": 144,
         "swingArc": 1.3,
         "gripFrac": 0.1
+      },
+      "gripPoints": {
+        "primary": { "x": 0.1, "y": 0.5 },
+        "secondary": { "x": 0.4, "y": 0.5, "role": "shaft" }
       },
       "id": "x2-sanctum-brazier-staff"
     },

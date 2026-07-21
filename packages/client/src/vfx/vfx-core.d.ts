@@ -49,7 +49,12 @@ declare global {
   interface VfxLayers {
     LAYERS: Record<
       string,
-      { label: string; trigger: string; params: { key: string; def: number }[] }
+      {
+        label: string;
+        trigger: string;
+        anchor: "character" | "weapon" | "muzzle" | "flight" | "target";
+        params: { key: string; def: number }[];
+      }
     >;
     ORDER: string[];
     CYCLE: number;

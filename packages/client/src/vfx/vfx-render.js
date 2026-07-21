@@ -203,6 +203,32 @@
     }
     return false;
   }
+
+  // Broken, pressure-varied painted rim. Unlike a perfect engine ellipse this deliberately leaves gaps and
+  // feathers the radius, so area punctuation reads as a hand-painted burst/scorch instead of debug geometry.
+  function paintBrokenRim(gx, rx, ry, color, alpha, width, phase = 0, gapStride = 7) {
+    const steps = 42;
+    let drawing = false;
+    gx.lineStyle(width, color, alpha);
+    for (let i = 0; i <= steps; i++) {
+      const gap = i % gapStride === gapStride - 1 || i % gapStride === 0;
+      const a = phase + (i / steps) * TAU;
+      const wobble = 1 + Math.sin(i * 2.17 + phase * 3.1) * 0.055 + Math.sin(i * 0.73) * 0.035;
+      const x = Math.cos(a) * rx * wobble;
+      const y = Math.sin(a) * ry * wobble;
+      if (gap) {
+        if (drawing) gx.strokePath();
+        drawing = false;
+        continue;
+      }
+      if (!drawing) {
+        gx.beginPath();
+        gx.moveTo(x, y);
+        drawing = true;
+      } else gx.lineTo(x, y);
+    }
+    if (drawing) gx.strokePath();
+  }
   function requestPerWispArt(S, art) {
     const scene = S.scene;
     if (scene?.textures?.exists(art.key)) return true;
@@ -231,10 +257,15 @@
     }
     return false;
   }
-  function resolvePerTexture(S, meta, paint, shape) {
+  function resolvePerTexture(S, meta, paint, shape, progress = 0) {
     if (shape === "wisp") {
-      const art = PER_WISP_ART[meta.swing?.comboVariant];
-      if (art && requestPerWispArt(S, art)) return { key: art.key, frame: art.frame, ready: true };
+      const art = meta.slashArt || PER_WISP_ART[meta.swing?.comboVariant];
+      if (art && requestPerWispArt(S, art)) {
+        const frame = meta.slashArt
+          ? Math.min(art.frames - 1, Math.max(0, Math.floor(clamp01(progress) * art.frames)))
+          : art.frame;
+        return { key: art.key, frame, ready: true };
+      }
     }
     const key = `ptcl:${paint.id}-${shape}`;
     return {
@@ -337,19 +368,10 @@
     const tailQ = Math.max(0, headQ - historyQ);
     const headAngle = startAngle + arc * headQ;
     let tailAngle = startAngle + arc * tailQ;
-    if (Math.abs(headAngle - tailAngle) < 0.003)
-      tailAngle = headAngle - (arc < 0 ? -0.003 : 0.003);
+    if (Math.abs(headAngle - tailAngle) < 0.003) tailAngle = headAngle - (arc < 0 ? -0.003 : 0.003);
     const radius = Math.max(width / 2, reach - width / 2 + radiusOffset);
     const pathLength = Math.max(width, radius * Math.abs(headAngle - tailAngle));
-    const scale = preparePerRope(
-      rope,
-      key,
-      textureFrame,
-      quality,
-      width,
-      pathLength,
-      tintMode,
-    );
+    const scale = preparePerRope(rope, key, textureFrame, quality, width, pathLength, tintMode);
     const points = rope.points;
     for (let i = 0; i < points.length; i++) {
       const f = i / (points.length - 1);
@@ -358,8 +380,10 @@
       // is byte-identical to the shipped f² ramp; every treatment stays AT or UNDER the `alpha` ceiling.
       let r = radius;
       let a = alpha * (endStyle === "open" ? f : f * f); // "open": the arc bleeds past the tear-off
-      if (endStyle === "squared" && f >= 0.9) a = alpha; // flat bright cut, no tip taper
-      else if (endStyle === "torn" && f >= 0.8) a *= i % 2 === 0 ? 0.45 : 1; // jagged dying edge
+      if (endStyle === "squared" && f >= 0.9)
+        a = alpha; // flat bright cut, no tip taper
+      else if (endStyle === "torn" && f >= 0.8)
+        a *= i % 2 === 0 ? 0.45 : 1; // jagged dying edge
       else if (endStyle === "hooked" && f >= 0.85) r -= width * 0.55 * ((f - 0.85) / 0.15); // inward curl
       points[i].x = (Math.cos(angle) * r) / scale;
       points[i].y = (Math.sin(angle) * r) / scale;
@@ -425,15 +449,7 @@
       rope.setVisible(false);
       return false;
     }
-    const scale = preparePerRope(
-      rope,
-      key,
-      textureFrame,
-      quality,
-      width,
-      pathLength,
-      1 /* FILL */,
-    );
+    const scale = preparePerRope(rope, key, textureFrame, quality, width, pathLength, 1 /* FILL */);
     const nx = -dy / pathLength;
     const ny = dx / pathLength;
     const points = rope.points;
@@ -465,7 +481,12 @@
     const style = swing?.style || meta.style || (profile === "thrust" ? "thrust" : "arc");
     const energy = /energy|plasma|laser|beam|photon|volt|light|neon/.test(family);
     const blunt = /mace|maul|warhammer|hammer|gauntlet|fist|knuckle/.test(family);
-    const bodyMax = bounded(params.bodyAlpha, energy ? 0.52 : style === "chop" || blunt ? 0.78 : 0.72, 0, 0.78);
+    const bodyMax = bounded(
+      params.bodyAlpha,
+      energy ? 0.52 : style === "chop" || blunt ? 0.78 : 0.72,
+      0,
+      0.78,
+    );
     const lipMax = bounded(
       params.lipAlpha,
       energy ? 0.72 : style === "chop" || blunt ? 0.36 : profile === "thrust" ? 0.58 : 0.54,
@@ -561,15 +582,46 @@
       );
     } else if (profile === "twin") {
       const lobeWidth = frame.bodyWidth * 0.58;
-      drawPerFallbackArc(gfx, frame.reach, lobeWidth, tail, head, color, frame.bodyAlpha, quality, -frame.bodyWidth * 0.03);
+      drawPerFallbackArc(
+        gfx,
+        frame.reach,
+        lobeWidth,
+        tail,
+        head,
+        color,
+        frame.bodyAlpha,
+        quality,
+        -frame.bodyWidth * 0.03,
+      );
       if (quality > 4 && frame.q > 0.12) {
         const rearQ = frame.q - 0.12;
         const rearHead = frame.startAngle + frame.arc * rearQ;
         const rearTail = rearHead - (frame.arc < 0 ? -frame.historyAngle : frame.historyAngle);
-        drawPerFallbackArc(gfx, frame.reach, lobeWidth, rearTail, rearHead, color, frame.bodyAlpha * 0.42, quality, -frame.bodyWidth * 0.39);
+        drawPerFallbackArc(
+          gfx,
+          frame.reach,
+          lobeWidth,
+          rearTail,
+          rearHead,
+          color,
+          frame.bodyAlpha * 0.42,
+          quality,
+          -frame.bodyWidth * 0.39,
+        );
       }
     } else {
-      drawPerFallbackArc(gfx, frame.reach, frame.bodyWidth, tail, head, color, frame.bodyAlpha, quality, 0, fallbackEnd);
+      drawPerFallbackArc(
+        gfx,
+        frame.reach,
+        frame.bodyWidth,
+        tail,
+        head,
+        color,
+        frame.bodyAlpha,
+        quality,
+        0,
+        fallbackEnd,
+      );
     }
     gfx.restore();
   }
@@ -580,8 +632,9 @@
     const quality = S.perQuality === 4 || S.perQuality === 8 ? S.perQuality : 12;
     const bodyShape = profile === "thrust" ? "bolt" : "wisp";
     const secondShape = profile === "twin" ? "wisp" : "bolt";
-    const bodyTexture = resolvePerTexture(S, meta, paint, bodyShape);
-    const secondTexture = quality <= 4 ? undefined : resolvePerTexture(S, meta, paint, secondShape);
+    const bodyTexture = resolvePerTexture(S, meta, paint, bodyShape, p);
+    const secondTexture =
+      quality <= 4 ? undefined : resolvePerTexture(S, meta, paint, secondShape, p);
     const bodyReady = bodyTexture.ready;
     const secondReady = quality <= 4 || secondTexture?.ready;
     const frame = S.perFrame;
@@ -725,52 +778,26 @@
       gx.fillCircle(x, y, r * (0.25 + f * 0.85));
     }
   }
-  // A real MUZZLE FLASH (not a soft oval): a sharp asymmetric multi-prong star of caged fire pointing
-  // down-barrel (+x), with a white-hot core. `t` = 0..1 intensity (fades over the brief flash window).
-  function drawMuzzleFlash(S, x, y, r, color, t) {
-    if (t <= 0) return;
-    const gx = S.gfxAdd;
-    const hot = blend(color, 0xffffff, 0.55);
-    // prongs: [angle, length-mult, width-mult] — 1 long down-barrel, diagonals, a few short side/back spikes
-    const prongs = [
-      [0, 2.5, 0.22],
-      [-0.46, 1.6, 0.16],
-      [0.46, 1.6, 0.16],
-      [-0.95, 0.95, 0.12],
-      [0.95, 0.95, 0.12],
-      [Math.PI, 0.6, 0.12],
-      [Math.PI - 0.7, 0.5, 0.1],
-      [Math.PI + 0.7, 0.5, 0.1],
-    ];
-    for (const [a, lm, wm] of prongs) {
-      const len = r * lm * (0.45 + t * 0.65);
-      const w = r * wm * t;
-      const tx = x + Math.cos(a) * len,
-        ty = y + Math.sin(a) * len;
-      const n = a + Math.PI / 2;
-      gx.fillStyle(color, 0.45 * t);
-      gx.fillTriangle(
-        x + Math.cos(n) * w,
-        y + Math.sin(n) * w,
-        x - Math.cos(n) * w,
-        y - Math.sin(n) * w,
-        tx,
-        ty,
-      );
-      gx.fillStyle(hot, 0.5 * t); // hot inner streak
-      gx.fillTriangle(
-        x + Math.cos(n) * w * 0.45,
-        y + Math.sin(n) * w * 0.45,
-        x - Math.cos(n) * w * 0.45,
-        y - Math.sin(n) * w * 0.45,
-        x + Math.cos(a) * len * 0.7,
-        y + Math.sin(a) * len * 0.7,
-      );
+  function drawGeneratedMuzzleFlash(S, meta, x, y, r, t) {
+    const art = meta?.muzzleFlashArt;
+    if (!art || !S.scene?.textures?.exists(art.key)) return false;
+    let image = S.muzzleFlashImg;
+    if (!image) {
+      image = S.scene.add
+        .image(x, y, art.key, art.frame)
+        .setOrigin(art.originX, 0.5)
+        .setBlendMode(1 /* Phaser.BlendModes.ADD */);
+      S.container?.add(image);
+      S.muzzleFlashImg = image;
     }
-    gx.fillStyle(hot, 0.85 * t);
-    gx.fillCircle(x, y, r * 0.32 * (0.55 + t * 0.5));
-    gx.fillStyle(0xffffff, 0.9 * t);
-    gx.fillCircle(x, y, r * 0.17 * (0.5 + t * 0.5));
+    const scale = (r * 2.6 * (0.7 + t * 0.3)) / (192 * 0.75);
+    image
+      .setTexture(art.key, art.frame)
+      .setPosition(x, y)
+      .setScale(scale)
+      .setAlpha(t)
+      .setVisible(t > 0);
+    return true;
   }
 
   const R = {
@@ -835,10 +862,8 @@
       if (a <= 0) return;
       const sc = clamp01((p - 0.2) / 0.4);
       const gx = S.gfxAdd;
-      gx.lineStyle(4, lerpHue(o.params.color), (1 - sc) * 0.9);
-      gx.beginPath();
-      gx.ellipse(0, 0, g.R * (0.3 + sc * 1.4), g.R * (0.3 + sc * 1.4) * 0.55, 0, 0, TAU);
-      gx.strokePath();
+      const radius = g.R * (0.3 + sc * 1.4);
+      paintBrokenRim(gx, radius, radius * 0.55, lerpHue(o.params.color), (1 - sc) * 0.9, 4, p);
     },
     "aura-pulse": (S, g, p, o) => {
       const col = lerpHue(o.params.color),
@@ -846,10 +871,8 @@
       for (let i = 0; i < n; i++) {
         const tp = clamp01((p - i * 0.12) / 0.6);
         if (tp <= 0) continue;
-        S.gfxAdd.lineStyle(3, col, 0.6 * (1 - tp));
-        S.gfxAdd.beginPath();
-        S.gfxAdd.arc(0, 0, g.R * 0.3 + tp * g.R * 1.2, 0, TAU);
-        S.gfxAdd.strokePath();
+        const radius = g.R * 0.3 + tp * g.R * 1.2;
+        paintBrokenRim(S.gfxAdd, radius, radius * 0.92, col, 0.6 * (1 - tp), 3, p + i, 8);
       }
     },
     "sigil-ring": (S, g, p, o) => {
@@ -859,13 +882,8 @@
         rr = g.R * 0.9 * o.params.size,
         rot = p * 3,
         gx = S.gfxAdd;
-      gx.lineStyle(2, col, a * 0.85);
-      gx.beginPath();
-      gx.arc(0, 0, rr, 0, TAU);
-      gx.strokePath();
-      gx.beginPath();
-      gx.arc(0, 0, rr * 0.7, 0, TAU);
-      gx.strokePath();
+      paintBrokenRim(gx, rr, rr * 0.94, col, a * 0.85, 2.4, rot, 6);
+      paintBrokenRim(gx, rr * 0.7, rr * 0.64, col, a * 0.58, 1.5, -rot * 0.7, 9);
       for (let i = 0; i < 6; i++) {
         const ang = rot + (i / 6) * TAU,
           c = Math.cos(ang),
@@ -930,12 +948,12 @@
         S.gfxAdd.strokePath();
       }
     },
-    // MUZZLE FLASH (graphics star pointing down-barrel +x) + a one-shot burst of hot sparks + smoke.
+    // Generated muzzle-flash image plus a one-shot burst of hot sparks and smoke.
     "muzzle-flash": (S, g, p, o) => {
       const mx = g.R * 0.95,
         col = lerpHue(o.params.color),
         sz = o.params.size;
-      drawMuzzleFlash(S, mx, 0, g.R * 0.85 * sz, col, burst(p, 0.17, 0.075));
+      drawGeneratedMuzzleFlash(S, S.per, mx, 0, g.R * 0.85 * sz, burst(p, 0.17, 0.075));
       if (S._mzP === undefined || p < S._mzP) S._mzFired = false; // cycle/play restart → re-arm
       S._mzP = p;
       if (!S._mzFired && p >= 0.14) {
@@ -1018,7 +1036,7 @@
           life: 320,
         }),
     },
-    // (muzzle-flash is now a GRAPHICS layer in R — a shaped star + sparks + smoke, not a soft oval.)
+    // The muzzle-flash image is owned by R; emitter-only texture dispatch remains below.
     tracer: {
       at: 0.14,
       add: true,

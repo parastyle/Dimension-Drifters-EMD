@@ -99,8 +99,6 @@ import {
   fistGunShotHandOffset,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
-import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
-import { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 import {
   type AlternativeHeadTextureSelection,
   assembleBoilerplate,
@@ -130,6 +128,7 @@ import {
   type GearTextureBakeLease,
   gearTextureBakeCacheForScene,
 } from "../sprites/gear-texture-baker.js";
+import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
 import { SPRITES, type SpriteManifest } from "../sprites/manifest.js";
 import {
   aimRelativePoint,
@@ -137,6 +136,9 @@ import {
   type BladeSizeClass,
   type BladeSizeStance,
   bladeSizeClassFor,
+  comboPresentationStyleFor,
+  comboWeaponThicknessSign,
+  continuousWhirlPhase,
   createFlourishInput,
   createFlourishSample,
   createMovementPostureInput,
@@ -146,9 +148,6 @@ import {
   createPoseVariantSelection,
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
-  comboPresentationStyleFor,
-  comboWeaponThicknessSign,
-  continuousWhirlPhase,
   edgeLeadScaleY,
   FLOURISH_DUAL_AFTER_ECHO_MS,
   FLOURISH_DUAL_DRAW_ECHO_MS,
@@ -188,6 +187,7 @@ import {
   weaponPerformanceSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
+import { secondaryGripHandRendersAbove } from "../sprites/secondary-grip.js";
 import { tomeOpenArtFor, tomeOpenRotationForAim } from "../sprites/tome-open-art.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { paintedParticleDominance, paintedParticleScale } from "../vfx/particles.js";
@@ -448,10 +448,7 @@ export function idleFlourishEligibleEpoch(
   recoveryEndsAtMs = activityAtMs,
 ): number {
   const quietBeginsAtMs = weaponHasHandlingTag(def, "pistol")
-    ? Math.max(
-        activityAtMs,
-        Number.isFinite(recoveryEndsAtMs) ? recoveryEndsAtMs : activityAtMs,
-      )
+    ? Math.max(activityAtMs, Number.isFinite(recoveryEndsAtMs) ? recoveryEndsAtMs : activityAtMs)
     : activityAtMs;
   return (
     quietBeginsAtMs +
@@ -2955,6 +2952,31 @@ export class SpriteRig {
 
   heldWeaponDef(hand: 0 | 1): WeaponDef | undefined {
     return this.weapons[hand]?.def;
+  }
+
+  /** Current world-space tip of the lead held sprite. Presentation VFX use this instead of re-deriving the
+   * rig's orbit/foreshortening/facing law, so an attached extension cannot drift away from the real blade. */
+  leadWeaponTipPose():
+    | { x: number; y: number; angle: number; physicalBladeLength: number }
+    | undefined {
+    const held = this.weapons[0];
+    if (!held) return undefined;
+    const image = held.img;
+    const matrix = image.getWorldTransformMatrix();
+    const localTipX = image.width - image.displayOriginX;
+    const localTipY = image.height * 0.5 - image.displayOriginY;
+    const x = matrix.a * localTipX + matrix.c * localTipY + matrix.tx;
+    const y = matrix.b * localTipX + matrix.d * localTipY + matrix.ty;
+    const pixelsPerSourcePixel = Math.hypot(matrix.a, matrix.b);
+    return {
+      x,
+      y,
+      angle: Math.atan2(matrix.b, matrix.a),
+      physicalBladeLength: Math.max(
+        1,
+        (1 - held.def.gripFrac) * image.width * pixelsPerSourcePixel,
+      ),
+    };
   }
 
   /** Refresh descriptor references without allocating; dev showroom changes become visible next frame. */
@@ -8408,9 +8430,7 @@ export class SpriteRig {
         const bodyBaseScaleX = this.body.scaleX;
         const bodyBaseScaleY = this.body.scaleY;
         let swingChannelsRouted = false;
-        const poseStyle = comboPose
-          ? comboPresentationStyleFor(family, comboPose.motion)
-          : style;
+        const poseStyle = comboPose ? comboPresentationStyleFor(family, comboPose.motion) : style;
         // KNOWN STAGE-1 RESIDUAL: every signed reverse/dual/overhead comboPose below is presentation-only;
         // server damage still advances once through its untouched centered, positive single-sweep descriptor.
         if (def.performance?.twirl) {
@@ -9250,15 +9270,10 @@ export class SpriteRig {
       crossfallOwnsFlourish ||
       brace > 0 ||
       (!hasAimedFiringWeapon && (ownFront > 0.01 || ownBack > 0.01 || ownFeet > 0.01));
-    const strongerFlourishOwner =
-      hardFlourishOwner ||
-      posePhase !== "idle" ||
-      rangedAimBlend > 0;
+    const strongerFlourishOwner = hardFlourishOwner || posePhase !== "idle" || rangedAimBlend > 0;
     const activePistolIdleTwirl =
       pistolIdleTwirl &&
-      this.flourishChannels.some(
-        (channel) => channel.active && channel.moment === "idle-settle",
-      );
+      this.flourishChannels.some((channel) => channel.active && channel.moment === "idle-settle");
     if (
       (activePistolIdleTwirl ? hardFlourishOwner : strongerFlourishOwner) &&
       (this.flourishChannels[0].active || this.flourishChannels[1].active)
@@ -9366,9 +9381,7 @@ export class SpriteRig {
     this.flourishHeadY = 0;
     const renderPistolIdleTwirl =
       pistolIdleTwirl &&
-      this.flourishChannels.some(
-        (channel) => channel.active && channel.moment === "idle-settle",
-      );
+      this.flourishChannels.some((channel) => channel.active && channel.moment === "idle-settle");
     if (!(renderPistolIdleTwirl ? hardFlourishOwner : strongerFlourishOwner)) {
       const leadBaseAngle = weaponAngle;
       const offBaseAngle = Number.isNaN(backWeaponAngle)
@@ -9954,14 +9967,14 @@ export class SpriteRig {
           // CHAINED spin (spammed/held trigger) is pure linear — since each spin is integer revolutions, the
           // next one starts exactly where this one ends, angle- AND speed-continuous. One endless whirlwind.
           const a = 0.18; // ease-in fraction (C1-continuous into the linear run)
-          const e = this.swingChained || performanceWhirlActive
-            ? tt
-            : tt < a
-              ? (tt * tt) / (a * (2 - a))
-              : (2 * tt - a) / (2 - a);
+          const e =
+            this.swingChained || performanceWhirlActive
+              ? tt
+              : tt < a
+                ? (tt * tt) / (a * (2 - a))
+                : (2 * tt - a) / (2 - a);
           const turns =
-            twirl?.visualRevolutions ??
-            Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
+            twirl?.visualRevolutions ?? Math.max(1, Math.round(def.swingArc / (Math.PI * 2)));
           th = azAim + spinDirection * turns * Math.PI * 2 * e;
         } else {
           const e = tt * tt * (3 - 2 * tt); // smoothstep — wind in, whip through, settle out

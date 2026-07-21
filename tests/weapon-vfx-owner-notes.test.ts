@@ -162,9 +162,7 @@ describe("owner-notes W-VFX weapon identities", () => {
       if (!recipe) throw new Error("Missing revised shock-aura recipe");
       for (const pack of recipe.packs) expect(PARTICLE_PACKS[pack]).toBeDefined();
     }
-    expect(TESLA_WARP_VFX_RECIPE.departurePacks).not.toEqual(
-      TESLA_WARP_VFX_RECIPE.arrivalPacks,
-    );
+    expect(TESLA_WARP_VFX_RECIPE.departurePacks).not.toEqual(TESLA_WARP_VFX_RECIPE.arrivalPacks);
     for (const pack of [
       ...TESLA_WARP_VFX_RECIPE.departurePacks,
       ...TESLA_WARP_VFX_RECIPE.arrivalPacks,
@@ -285,14 +283,17 @@ describe("owner-notes W-VFX weapon identities", () => {
     ).toBe(1);
   });
 
-  it("retains Dustreaper's smooth G3 three-beat sentence with a continuous edge accent", () => {
+  it("retains Dustreaper's smooth G3 three-beat sentence with a 30x target flame accent", () => {
     const { definition, selection } = combo("x2-dustreaper-zweihander");
     expect(selection.variant).toBe("claymore-breach");
     expect(selection.sequence).toHaveLength(3);
     expect(new Set(selection.sequence.map((step) => step.motion)).size).toBe(3);
     expect(resolveWeaponEffectRecipe(definition)).toMatchObject({
       id: "dustreaper-continuous-edge",
-      swingPack: "sand-wisp",
+      classification: "impact",
+      impactPack: "fire-wisp",
+      impactAnchor: "target",
+      swingCount: 150,
       emitter: "blade",
     });
   });

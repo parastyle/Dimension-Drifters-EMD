@@ -148,10 +148,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     additive: false,
     noGore: true,
     suppressQuakeVfx: true,
-    reuseWeaponIds: Object.freeze([
-      "x2-quarry-splitter-bardiche",
-      "x2-buckhorn-boarspear",
-    ]),
+    reuseWeaponIds: Object.freeze(["x2-quarry-splitter-bardiche", "x2-buckhorn-boarspear"]),
   }),
   "cinderbrand-fire-slash": Object.freeze({
     id: "cinderbrand-fire-slash",
@@ -177,11 +174,12 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "dustreaper-continuous-edge",
     weaponId: "x2-dustreaper-zweihander",
     emitter: "blade",
-    classification: "weapon-motion",
-    swingPack: "sand-wisp",
-    swingCount: 5,
+    classification: "impact",
+    impactPack: "fire-wisp",
+    impactAnchor: "target",
+    swingCount: 150,
     swingParticleDominance: 0.34,
-    additive: false,
+    additive: true,
   }),
   "gravechain-dominant-spin": Object.freeze({
     id: "gravechain-dominant-spin",
@@ -330,7 +328,9 @@ export function resolveWeaponEffectRecipe(
 }
 
 export function shouldSpawnLegacyQuakeVfx(weapon: WeaponDef | undefined): boolean {
-  return weapon?.suppressVfx !== true && resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true;
+  return (
+    weapon?.suppressVfx !== true && resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true
+  );
 }
 
 /** Impact cues use the authoritative quake placement reach when they detonate a quake; direct melee cues
@@ -376,8 +376,7 @@ export function weaponSwingIdentitySizePx(
   bladeLength = 0,
 ): number {
   const multiplier = recipe?.swingScaleMultiplier ?? 1;
-  if (recipe?.swingScaleMode === "blade-length" && bladeLength > 0)
-    return bladeLength * multiplier;
+  if (recipe?.swingScaleMode === "blade-length" && bladeLength > 0) return bladeLength * multiplier;
   if (bladeLength <= 0) return (recipe?.noGore ? 32.64 : 44.16) * multiplier;
   const dominance = recipe?.swingParticleDominance ?? (recipe?.noGore ? 0.22 : 0.28);
   return Math.max(28, Math.min(84, bladeLength * dominance)) * multiplier;

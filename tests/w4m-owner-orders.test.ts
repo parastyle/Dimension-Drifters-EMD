@@ -148,7 +148,7 @@ describe("W4M melee/caster iteration orders", () => {
     const definition = weapon("x2-dustreaper-zweihander");
     const recipe = resolveWeaponEffectRecipe(definition);
     expect(weaponSwingIdentitySizePx(recipe, definition.displayLength)).toBeCloseTo(78.2, 5);
-    expect(recipe?.swingCount).toBe(5);
+    expect(recipe?.swingCount).toBe(150); // V6G: the ordered 30x flame density remains size-contract-safe.
   });
 
   it("gives Coilshot a visible in-hand orbit during its complete pre-throw turn", () => {
@@ -162,7 +162,9 @@ describe("W4M melee/caster iteration orders", () => {
     input.spec = { ...spec, preThrowRevolutions: 0 };
     const control = { ...sampleWeaponPerformance(input, out) };
     expect(spec.preThrowRevolutions).toBe(1);
-    expect(Math.hypot(twirled.handX - control.handX, twirled.handY - control.handY)).toBeCloseTo(0.2);
+    expect(Math.hypot(twirled.handX - control.handX, twirled.handY - control.handY)).toBeCloseTo(
+      0.2,
+    );
   });
 
   it("opens Riftstep with a damage-neutral tsuki capsule from blade-forward stance", () => {

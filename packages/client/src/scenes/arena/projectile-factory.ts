@@ -12,6 +12,7 @@ import {
   GUN_GENERATED_PROJECTILES,
   GUN_PROJECTILE_ART_PACKS,
   GUN_SPRITE_PROJECTILES,
+  THROWN_GENERATED_PROJECTILES,
 } from "../../vfx/gun-projectile-art.js";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 import { elementPack } from "../../vfx/particles.js";
@@ -93,19 +94,31 @@ export function makeThrownWeapon(
   const spriteId = thrownProjectileSpriteId(pr.kind);
   const part = spriteId ? SPRITES[spriteId as keyof typeof SPRITES]?.parts[0] : undefined;
   const tx = part && spriteId ? partTexture(scene, spriteId, part.role) : null;
+  const generated = weaponId ? THROWN_GENERATED_PROJECTILES[weaponId] : undefined;
+  const generatedSprite = generated ? PROJECTILE_SPRITES[generated.spriteId] : undefined;
   // Missing or rolling-client art keeps a visible payload, but never substitutes another weapon sprite.
   const blade =
-    part && tx
-      ? scene.add.image(0, 0, tx.key, tx.frame).setScale((weapon?.displayLength ?? part.w) / part.w)
-      : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
-  const glow = scene.add.ellipse(0, 0, 76, 76, 0xffb23b, 0.18);
-  const payload = scene.add.container(0, 0, [glow, blade]);
+    generated &&
+    generatedSprite &&
+    weaponId &&
+    scene.textures.exists(`thrown-generated:${weaponId}`)
+      ? scene.add
+          .image(0, 0, `thrown-generated:${weaponId}`)
+          .setScale(generated.displayLength / generatedSprite.width)
+      : part && tx
+        ? scene.add
+            .image(0, 0, tx.key, tx.frame)
+            .setScale((weapon?.displayLength ?? part.w) / part.w)
+        : scene.add.rectangle(0, 0, 80, 30, 0xcfc6ae);
+  // No blanket amber/yellow halo: thrown payload identity art must stand on its own.
+  const payload = scene.add.container(0, 0, [blade]);
   if (thrownProjectileRotationPolicy(pr.kind) === "point-forward")
     payload.setRotation(Math.atan2(pr.vy, pr.vx));
   return scene.add
     .container(pr.x, pr.y, [payload])
     .setDepth(99000)
     .setData("spriteId", spriteId ?? "")
+    .setData("projectileSprite", generated?.spriteId ?? "")
     .setData("arcPayload", payload);
 }
 

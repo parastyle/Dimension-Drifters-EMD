@@ -14,6 +14,8 @@ export interface GeneratedGunProjectileRecipe {
   readonly displayLength: number;
 }
 
+export type GeneratedThrownProjectileRecipe = GeneratedGunProjectileRecipe;
+
 /** Legacy explicit own-sprite crop. New projectile identity work must use generated art below. */
 export const GUN_SPRITE_PROJECTILES: Readonly<Partial<Record<string, GunSpriteProjectileRecipe>>> =
   Object.freeze({
@@ -87,9 +89,23 @@ export const GUN_GENERATED_PROJECTILES: Readonly<
   }),
 });
 
+/** Generated standalone thrown identities. They supersede the held-sprite fallback without ever cropping
+ * the held weapon, which is essential for Coyote's Grin's historically tiled source sheet. */
+export const THROWN_GENERATED_PROJECTILES: Readonly<
+  Partial<Record<string, GeneratedThrownProjectileRecipe>>
+> = Object.freeze({
+  "x2-coyote-s-grin": Object.freeze({
+    spriteId: "coyotes-grin-throwing-blade",
+    url: PROJECTILE_SPRITES["coyotes-grin-throwing-blade"].url,
+    displayLength: 72,
+  }),
+});
+
 export function preloadGeneratedGunProjectiles(scene: Phaser.Scene): void {
   for (const [weaponId, recipe] of Object.entries(GUN_GENERATED_PROJECTILES))
     if (recipe) scene.load.image(`gun-generated:${weaponId}`, recipe.url);
+  for (const [weaponId, recipe] of Object.entries(THROWN_GENERATED_PROJECTILES))
+    if (recipe) scene.load.image(`thrown-generated:${weaponId}`, recipe.url);
 }
 
 /** Non-crop projectile identities resolve to existing painted particle packs. */

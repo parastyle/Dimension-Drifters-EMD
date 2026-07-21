@@ -1,0 +1,55 @@
+{
+  "label": "revenant",
+  "weaponId": "x2-revenant-knuckle",
+  "baseURL": "http://127.0.0.1:5173",
+  "capturedAt": "2026-07-21T19:34:27.181Z",
+  "setup": {
+    "actor": {
+      "x": 2400,
+      "y": 2420
+    },
+    "target": {
+      "x": 2610.95703125,
+      "y": 2399.17431640625
+    }
+  },
+  "endpointDelta": 0,
+  "actorDelta": 109.99999999999987,
+  "events": [
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "source",
+      "x": 2400,
+      "y": 2420,
+      "targetX": 2509.46787588202,
+      "targetY": 2409.1933284551337,
+      "layerIds": [
+        "twin-slash"
+      ]
+    },
+    {
+      "kind": "weapon-vfx-suite",
+      "weaponId": "x2-revenant-knuckle",
+      "anchor": "target",
+      "x": 2509.46787588202,
+      "y": 2409.1933284551337,
+      "targetX": 2509.46787588202,
+      "targetY": 2409.1933284551337,
+      "layerIds": [
+        "shockwave-ring",
+        "sigil-ring"
+      ]
+    }
+  ],
+  "assertions": {
+    "targetAnchor": true,
+    "cursorDeltaOk": true,
+    "awayFromActor": true,
+    "dustreaperFlame": true,
+    "riftcallerAuraDeleted": true
+  },
+  "browserErrors": [],
+  "unexpectedBrowserErrors": [],
+  "screenshot": "docs\\owner-notes-audit-v6-evidence\\v6g1-revenant.png"
+}
