@@ -8494,8 +8494,9 @@ export class SpriteRig {
           // §45 CHOP: shoulder diagonal → reverse rising load → execution slam. Each variation retains the
           // existing lift/drive/squash vocabulary, but its section-B fractions and end guard are authored.
           const pose = comboPose ?? MELEE_COMBO_SEQUENCES.chop[0];
-          const raiseA = -Math.PI / 2 - 0.85; // up + tilted behind the head
-          const slamA = 0.85 + lookY * 0.25; // down-forward (biased a touch by the cursor's vertical)
+          const reverse = pose?.motion === "reverse-chop";
+          const raiseA = reverse ? -Math.PI / 2 + 0.85 : -Math.PI / 2 - 0.85;
+          const slamA = (reverse ? Math.PI - 0.85 : 0.85) + lookY * 0.25;
           const lowGuardA = slamA - 0.18;
           const lift = TARGET_BODY_H * 0.2;
           if (pose?.motion === "rising-chop") {
@@ -8531,7 +8532,7 @@ export class SpriteRig {
             const b = pose?.timing.activeEnd ?? CHOP_IMPACT_FRAC;
             const follow = pose?.timing.followEnd ?? 0.66;
             const coilA = execution ? raiseA : -Math.PI / 2 - 0.35; // hang overhead vs weapon shoulder
-            const fromA = execution ? raiseA : lowGuardA;
+            const fromA = execution ? raiseA : pose?.motion === "rest-downswing" ? restA : lowGuardA;
             if (tt < a) {
               const p = tt / a;
               const e = p * (2 - p);

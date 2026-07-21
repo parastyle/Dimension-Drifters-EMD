@@ -100,7 +100,10 @@ describe("owner-notes V3C caster orders", () => {
       timing: step.timing,
       path: step.path,
     });
-    expect(coyoteCombo?.sequence.map(signature)).toEqual(sparkCombo?.sequence.map(signature));
+    expect(coyoteCombo?.sequence).toHaveLength(8);
+    expect(coyoteCombo?.sequence.slice(0, 4).map(signature)).toEqual(
+      sparkCombo?.sequence.map(signature),
+    );
     const coyoteSparks = resolveWeaponAuraVfxRecipe(coyote);
     const sparkSparks = resolveWeaponAuraVfxRecipe(sparkknuckle);
     expect(coyoteSparks && { ...coyoteSparks, weaponId: undefined }).toEqual(

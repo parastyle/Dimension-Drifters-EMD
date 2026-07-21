@@ -1,0 +1,32 @@
+{
+  "weaponId": "x2-saintspar-lochaber",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-21T20:49:09.899Z",
+  "secondAttackSeq": 3,
+  "authoritativeAttackSeq": 4,
+  "peakTipY": -0.6608874433806552,
+  "assertions": {
+    "authoritativeBeat": true,
+    "secondComboStep": true,
+    "secondMotion": true,
+    "reverseDirection": true,
+    "upwardFrame": true
+  },
+  "screenshots": [
+    "docs\\owner-notes-audit-v6-evidence\\v6m\\saintspar-second-hit-start.png",
+    "docs\\owner-notes-audit-v6-evidence\\v6m\\saintspar-second-hit-upward.png"
+  ],
+  "frames": [
+    {
+      "attackSeq": 2,
+      "rigAttackSeq": 3,
+      "sceneNow": 2139.919999999999,
+      "phase": 0.41427556818181765,
+      "motion": "rising-chop",
+      "comboStep": 1,
+      "direction": -1,
+      "rotation": -2.4195920143737464,
+      "tipYProjection": -0.6608874433806552
+    }
+  ]
+}

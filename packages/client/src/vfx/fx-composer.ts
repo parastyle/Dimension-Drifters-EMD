@@ -178,6 +178,8 @@ export interface PlayFxPackOpts {
   intensity?: number;
   /** Alias for intensity when the call site naturally owns a radius. `radius` wins when both are supplied. */
   radius?: number;
+  /** Optional multiplicative tint used by explicit owner-authored color passes. */
+  tint?: number;
 }
 
 interface FrameBudget {
@@ -223,11 +225,13 @@ function imageAt(
   y: number,
   depth: number,
   additive = false,
+  tint?: number,
 ): Phaser.GameObjects.Image | undefined {
   const key = textures[index];
   if (!key || missingFxTextures.has(key) || !scene.textures.exists(key)) return undefined;
   try {
     const img = scene.add.image(x, y, key).setDepth(depth);
+    if (tint !== undefined) img.setTint(tint);
     if (additive) img.setBlendMode(Phaser.BlendModes.ADD);
     return img;
   } catch {
@@ -256,7 +260,7 @@ export function playFxPack(
 
   const flashBand = (band: ComponentBand | undefined, baseDuration: number): void => {
     band?.indexes.forEach((index, order) => {
-      const img = imageAt(scene, textures, index, x, y, 99520 + order, band.additive);
+      const img = imageAt(scene, textures, index, x, y, 99520 + order, band.additive, opts.tint);
       if (!img) return;
       const targetScale = sc * (0.82 + ((index * 17) % 5) * 0.045);
       img.setScale(targetScale * 0.42).setAlpha(0.98).setRotation((Math.random() - 0.5) * 0.22);
@@ -276,7 +280,16 @@ export function playFxPack(
   flashBand(plan.hot, 285);
 
   plan.rings?.indexes.forEach((index, order) => {
-    const img = imageAt(scene, textures, index, x, y, 99490 + order, plan.rings?.additive);
+    const img = imageAt(
+      scene,
+      textures,
+      index,
+      x,
+      y,
+      99490 + order,
+      plan.rings?.additive,
+      opts.tint,
+    );
     if (!img) return;
     const targetScale = sc * (1.02 + order * 0.1);
     img.setScale(targetScale * 0.2).setAlpha(0.88).setRotation(Math.random() * Math.PI * 2);
@@ -295,7 +308,7 @@ export function playFxPack(
   // would reassemble the source spread and defeat the entire reason shrapnel was harvested as islands.
   const shards = plan.shrapnel ?? [];
   shards.forEach((index, order) => {
-    const img = imageAt(scene, textures, index, x, y, 99505 + order);
+    const img = imageAt(scene, textures, index, x, y, 99505 + order, false, opts.tint);
     if (!img) return;
     const step = (Math.PI * 2) / Math.max(1, shards.length);
     const ang = order * step + Math.random() * step * 0.72;
@@ -331,7 +344,16 @@ export function playFxPack(
   });
 
   plan.wisps?.indexes.forEach((index, order) => {
-    const img = imageAt(scene, textures, index, x, y, 99470 + order, plan.wisps?.additive);
+    const img = imageAt(
+      scene,
+      textures,
+      index,
+      x,
+      y,
+      99470 + order,
+      plan.wisps?.additive,
+      opts.tint,
+    );
     if (!img) return;
     const wispScale = sc * (0.42 + ((index * 11) % 5) * 0.045);
     const dx = (Math.random() - 0.5) * radius * 0.44;
@@ -364,7 +386,7 @@ export function playFxPack(
   });
 
   plan.ground?.forEach((index, order) => {
-    const img = imageAt(scene, textures, index, x, y, 5 + order);
+    const img = imageAt(scene, textures, index, x, y, 5 + order, false, opts.tint);
     if (!img) return;
     const groundScale = sc * (0.78 + order * 0.08);
     img.setScale(groundScale * 0.72).setAlpha(0.62).setRotation(Math.random() * Math.PI * 2);

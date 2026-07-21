@@ -49,8 +49,6 @@ const KATANAS = [
   ["x2-voltfang-tachi", "crosscut", "#ffe24a", "forked thunder cross-cut"],
   ["x2-cinderfang-wakizashi-pair", "crosscut", "#ff6a2a", "ember twin cross-cut"],
   ["x2-stormpetal-odachi", "inkstroke", "#ff9ecf", "petal-fiber ink stroke"],
-  ["drift-wakizashi-kagewake", "inkstroke", "#f4f7ff", "blackglass white ink"],
-  ["drift-wakizashi-hushglass", "seam", "#62d9e8", "smoked-glass hush seam"],
   ["drift-katana-stillwater-edict", "ripple", "#b9e7ff", "stillwater judicial ripple"],
   ["drift-katana-stormthread", "crosscut", "#56a7ff", "blue storm-thread cross-cut"],
   ["drift-katana-riftstep", "seam", "#b14bff", "violet rift-step seam"],

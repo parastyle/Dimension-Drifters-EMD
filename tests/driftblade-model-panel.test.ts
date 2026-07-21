@@ -234,6 +234,9 @@ describe("driftblade-model panel", () => {
         "x2-wickfire-fauchard",
       ],
       "chop/bardiche-hookbreak": ["x2-permafrost-bardiche", "x2-quarry-splitter-bardiche"],
+      "chop/cinderbrand-alternating-chops": ["x2-cinderbrand-cleaver"],
+      "chop/dustdevil-chop-stab": ["x2-dustdevil-glaive"],
+      "chop/reapers-tithe-rest-and-orbit": ["x2-reaper-s-tithe"],
       "arc/hero-spin": [
         "rattler-sabre",
         "x-sword-neon-katana",
@@ -247,7 +250,6 @@ describe("driftblade-model panel", () => {
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "rake/frostfang-forward-rend": ["x2-frostfang-rakes"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
-      "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
       "thrust/marrowpike-triple-stab": ["x2-marrowpike-ranseur"],
       "thrust/stinger": [
         "x2-bonewhisper-jian",
@@ -294,8 +296,8 @@ describe("driftblade-model panel", () => {
     });
     expect(defaultCounts).toEqual({
       "punch/default": 19,
-      "arc/default": 113,
-      "chop/default": 8,
+      "arc/default": 114,
+      "chop/default": 7,
       "rake/dagger": 1,
       "rake/claw": 4,
     });

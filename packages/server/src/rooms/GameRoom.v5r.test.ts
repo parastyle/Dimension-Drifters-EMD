@@ -57,7 +57,7 @@ function equip(player: AnyRoom, combat: AnyRoom, id: string) {
 }
 
 describe("GameRoom — V5R ranged/caster authority", () => {
-  it("bounds Stormfists immunity to the four 50ms lunge ticks and validates its 480px endpoint", () => {
+  it("bounds Stormfists immunity to its one 50ms lunge tick and validates its 480px endpoint", () => {
     const { room, player, combat } = fixture("stormfists");
     const weapon = equip(player, combat, "x2-thunderhead-stormfists");
     const swing = swingDescriptorFor(weapon, weapon.cooldown);
@@ -70,21 +70,17 @@ describe("GameRoom — V5R ranged/caster authority", () => {
     expect(player.hp).toBe(player.maxHp - 7);
     player.hp = player.maxHp;
 
-    while (room.pendingWeaponLunges.get(player.id)?.elapsedSeconds === undefined) {
+    while (combat.weaponLungeIFrameUntilTick <= room.state.tick) {
       room.state.tick++;
       room.stepPendingWeaponLunges(0.05);
     }
     const activeStartTick = room.state.tick;
-    expect(combat.weaponLungeIFrameUntilTick - activeStartTick).toBe(4);
+    expect(combat.weaponLungeIFrameUntilTick - activeStartTick).toBe(1);
 
-    for (let index = 0; index < 4; index++) {
+    for (let index = 0; index < 1; index++) {
       expect(room.weaponLungeInvulnerable(combat), `active tick ${index}`).toBe(true);
       room.damagePlayer(player, 9, "enemy");
       expect(player.hp).toBe(player.maxHp);
-      if (index < 3) {
-        room.state.tick++;
-        room.stepPendingWeaponLunges(0.05);
-      }
     }
 
     expect(room.pendingWeaponLunges.size).toBe(0);

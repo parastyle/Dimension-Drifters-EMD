@@ -248,6 +248,8 @@ export type WeaponEffectRecipeId =
   | "snakeoil-tip-sparks"
   | "gravechain-dominant-spin"
   | "hollow-harvest-circle"
+  | "abyssal-whirlwind-vortex"
+  | "drowned-anchor-deluge"
   | "void-caster-explosion"
   | "hexbloom-toxic-impact"
   | "cinderbrand-magma-impact"
@@ -349,6 +351,7 @@ export type WeaponPerformanceAction =
   | "spin"
   | "recoil"
   | "lunge-punch"
+  | "jab"
   | "overhead-downswing"
   | "throw-release";
 
@@ -367,6 +370,8 @@ export interface WeaponPerformanceDef {
   carryForwardPx?: number;
   /** Presentation-only forward drive layered onto accepted melee combo ownership. */
   comboForwardPx?: number;
+  /** Presentation origin shift for authored weapon-motion VFX, measured along accepted aim. */
+  vfxForwardPx?: number;
   /** Optional neutral carry angle in local screen radians (zero points forward). */
   carryAngleRad?: number;
   /** Sprite-art correction for a blade painted with its cutting edge trailing the semantic motion. */
@@ -377,6 +382,16 @@ export interface WeaponPerformanceDef {
   frontflip?: boolean;
   /** Full hand revolutions during a thrown weapon's anticipation/draw phase. */
   preThrowRevolutions?: number;
+  /** Authoritative one-hit sweep performed during a thrown weapon's accepted draw twirl. */
+  preThrowDamage?: {
+    damage: number;
+    range: number;
+  };
+  /** Server-owned forward walking displacement advanced during each accepted held melee beat. */
+  forwardDrift?: {
+    speedPxPerSecond: number;
+    durationSeconds: number;
+  };
   /** Parameterized in-place motion; shared by every shake-capable hold state. */
   shake?: {
     amplitudePx: number;
@@ -710,6 +725,8 @@ export interface WeaponDef {
     projectileColor?: number;
     /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
     recoil?: number;
+    /** Server-only body displacement multiplier. Does not amplify camera or held-pose shake. */
+    userKnockbackMultiplier?: number;
     /** Ordered local barrel tips. Parallel lanes emit together; cycle selects one per accepted beat. */
     muzzleOffsets?: WeaponMuzzleOffset[];
     muzzleMode?: GunMuzzleMode;
@@ -1133,6 +1150,14 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
       grades: def.thrown.scalingGrades ?? def.scalingGrades,
       count: 1,
     });
+    if (def.performance?.preThrowDamage) {
+      out.push({
+        label: "draw twirl",
+        base: def.performance.preThrowDamage.damage,
+        grades: def.thrown.scalingGrades ?? def.scalingGrades,
+        count: 1,
+      });
+    }
   } else {
     out.push({ label: "hit", base: def.damage, grades: def.scalingGrades, count: 1 });
   }
@@ -1261,6 +1286,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       charges: 3,
       refillSeconds: 1.5,
       pierce: 2,
+      arcHeight: 124,
     },
     tags: {
       grip: "1H",
@@ -1443,10 +1469,13 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     range: 172,
     halfArc: 1.1,
     cooldown: 0.95,
-    displayLength: 165,
+    displayLength: 247.5,
     swingArc: 3.1,
     gripFrac: 0.1,
     twoHanded: true,
+    effectRecipe: "drowned-anchor-deluge",
+    effectEmitter: "blade",
+    effectTiming: "swing-midpoint",
     tags: {
       grip: "2H",
       size: "L",

@@ -1380,6 +1380,8 @@ export function comboPresentationStyleFor(
 ): SwingStyle {
   if (motion === "impale" || motion === "jab" || motion === "lunge" || motion === "disengage")
     return "thrust";
+  if (motion === "rest-downswing") return "chop";
+  if (motion === "waist-orbit") return "spin";
   if (motion === "rake" || motion === "scissor") return "pivot";
   if (family === "rake") return "pivot";
   return family === "none" ? "arc" : family;
@@ -2023,6 +2025,25 @@ export function sampleWeaponPerformance(
     handY = sine * forward + cosine * lateral - 0.04;
     out.backHandX = cosine * forward + sine * lateral;
     out.backHandY = sine * forward - cosine * lateral - 0.04;
+    out.backHandBlend = 1;
+    angle = input.aimLocal;
+    out.backWeaponAngle = input.aimLocal;
+  } else if (spec.action === "jab" && input.phase !== "idle") {
+    const eased = smoothstep01(phaseT);
+    const leadForward =
+      input.phase === "anticipation"
+        ? mix(0.1, -0.18, eased)
+        : input.phase === "active"
+          ? mix(-0.18, 0.42, eased)
+          : mix(0.42, 0.1, eased);
+    const supportForward = leadForward - 0.28;
+    const cosine = Math.cos(input.aimLocal);
+    const sine = Math.sin(input.aimLocal);
+    const lateral = 0.045;
+    handX = cosine * leadForward - sine * lateral;
+    handY = sine * leadForward + cosine * lateral - 0.04;
+    out.backHandX = cosine * supportForward + sine * lateral;
+    out.backHandY = sine * supportForward - cosine * lateral - 0.04;
     out.backHandBlend = 1;
     angle = input.aimLocal;
     out.backWeaponAngle = input.aimLocal;

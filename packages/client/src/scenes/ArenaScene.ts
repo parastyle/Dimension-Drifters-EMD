@@ -3706,7 +3706,19 @@ export class ArenaScene extends Phaser.Scene {
         swing,
         cueSeconds,
       );
-      const renderY = impactAnchored && this.belt ? this.beltY(point.y) : point.y;
+      const vfxForwardPx = impactAnchored ? 0 : (weapon.performance?.vfxForwardPx ?? 0);
+      const motionOrigin = {
+        x: rig.x + Math.cos(aimAngle) * vfxForwardPx,
+        y: rig.y + Math.sin(aimAngle) * vfxForwardPx,
+      };
+      const motionPoint = impactAnchored
+        ? point
+        : {
+            ...point,
+            x: point.x + Math.cos(aimAngle) * vfxForwardPx,
+            y: point.y + Math.sin(aimAngle) * vfxForwardPx,
+          };
+      const renderY = impactAnchored && this.belt ? this.beltY(motionPoint.y) : motionPoint.y;
       const audit = globalThis as unknown as {
         __ddV6GAnchorCapture?: boolean;
         __ddV6GAnchorEvents?: Array<Record<string, unknown>>;
@@ -3719,7 +3731,7 @@ export class ArenaScene extends Phaser.Scene {
           weaponId: weapon.id,
           recipeId: recipe.id,
           anchor: impactAnchored ? "target" : recipe.emitter,
-          x: point.x,
+          x: motionPoint.x,
           y: renderY,
           targetX: targetWorld?.x,
           targetY: targetWorld
@@ -3736,14 +3748,21 @@ export class ArenaScene extends Phaser.Scene {
         spawnWeaponRadialIdentity(
           this,
           recipe,
-          rig.x,
-          rig.y,
+          motionOrigin.x,
+          motionOrigin.y,
           meleeReach(weapon),
-          point.angle,
+          motionPoint.angle,
           weapon.displayLength,
         );
       } else {
-        spawnWeaponSwingIdentity(this, recipe, point.x, renderY, point.angle, weapon.displayLength);
+        spawnWeaponSwingIdentity(
+          this,
+          recipe,
+          motionPoint.x,
+          renderY,
+          motionPoint.angle,
+          weapon.displayLength,
+        );
       }
     });
   }
@@ -6869,6 +6888,7 @@ export class ArenaScene extends Phaser.Scene {
                   er,
                   element,
                   ultimateProjectile || c.getData("hostile") === true ? "world" : "player-weapon",
+                  sourceWeapon?.id,
                 );
             } finally {
               this.ultimateExplosionShakeScale = 1;

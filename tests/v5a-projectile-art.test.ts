@@ -27,7 +27,7 @@ const V5A_PROJECTILES = [
   ["x2-quill-storm-repeater", "quill-storm-repeater-arrow", 44],
   ["x2-mesa-hand-cannon", "mesa-hand-cannon-50cal", 52.5],
   ["x-gun-hand-mortar", "hand-mortar-shell", 80],
-  ["x2-ghostbolt-crossbow", "ghostbolt-crossbow-arrow", 72],
+  ["x2-ghostbolt-crossbow", "ghostbolt-crossbow-arrow", 216],
   ["x2-leviathan-harpoon-gun", "leviathan-harpoon-gun-harpoon", 96],
   ["x2-hexbore-voidmaw", "hexbore-voidmaw-rune", 67.2],
   ["x2-brimstone-rocket-tube", "brimstone-rocket-warhead", 65],
@@ -120,7 +120,7 @@ describe("V5A generated projectile identity art", () => {
     expect(WEAPONS["x-gun-hand-mortar"]?.gun?.projectileVisualScale).toBe(5);
     expect(WEAPONS["x2-brimstone-rocket-tube"]?.gun).toMatchObject({
       projectileVisualScale: 1.3,
-      explode: { radius: 140, damage: 13 },
+      explode: { radius: 220, damage: 13 },
     });
     expect(WEAPONS["x2-widowmaker-arbalest"]?.gun?.projectileVisualScale).toBe(3);
   });

@@ -13,8 +13,8 @@ const CASTERS = Object.values(WEAPONS).filter((weapon) => weapon.tags.classPool 
 const BEAMS = Object.values(WEAPONS).filter((weapon) => weapon.beam);
 
 describe("caster VFX recipe resolver", () => {
-  it("resolves every one of the 97 caster ids to a complete non-default recipe", () => {
-    expect(CASTERS).toHaveLength(97);
+  it("resolves every one of the 96 caster ids to a complete non-default recipe", () => {
+    expect(CASTERS).toHaveLength(96);
     const resolved = CASTERS.map((weapon) => [weapon, resolveCasterVfxRecipe(weapon)] as const);
     const missing = resolved.filter(([, recipe]) => !recipe).map(([weapon]) => weapon.id);
     expect(missing).toEqual([]);

@@ -73,6 +73,7 @@ export type MeleeComboMotion =
   | "slash"
   | "overhead"
   | "shoulder-chop"
+  | "reverse-chop"
   | "rising-chop"
   | "execution-slam"
   | "rake"
@@ -108,7 +109,9 @@ export type MeleeComboMotion =
   | "petalfall"
   | "coil-drag"
   | "thunder-fall"
-  | "splinter-fall";
+  | "splinter-fall"
+  | "rest-downswing"
+  | "waist-orbit";
 export type MeleeComboHand = "lead" | "off" | "both";
 /** Dual-wield's six-beat presentation bar. Crossfall stays presentation-only server-side: its accepted
  * damage event remains one lead-hand sweep, while clients render the authored `both` pose. */

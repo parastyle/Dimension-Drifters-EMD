@@ -186,7 +186,7 @@ describe("V5R ranged/caster owner orders", () => {
     const stormfists = weapon("x2-thunderhead-stormfists");
     expect(stormfists.performance).toMatchObject({
       windupSeconds: 0.3,
-      lunge: { distancePx: 480, durationSeconds: 0.2, invulnerable: true },
+      lunge: { distancePx: 480, durationSeconds: 0.05, invulnerable: true },
     });
     expect(stormfists.performance?.lunge?.distancePx / 120).toBe(4);
     expect((stormfists.damage + (stormfists.quake?.damage ?? 0)) / stormfists.cooldown).toBe(17.5);

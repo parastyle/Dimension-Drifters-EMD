@@ -148,10 +148,10 @@ describe("Drowned Anchor straight-streak regression", () => {
   it("keeps the diagnosed diameter stroke legacy-only and paints nondegenerate anchor geometry", () => {
     const anchor = weapon("x-sword-anchor");
     const swing = swingDescriptorFor(anchor, anchor.cooldown);
-    expect(anchor).toMatchObject({ displayLength: 165, gripFrac: 0.1, swingArc: 3.1 });
+    expect(anchor).toMatchObject({ displayLength: 247.5, gripFrac: 0.1, swingArc: 3.1 });
     expect(swing.style).toBe("orbit");
     expect(swing.comboRibbon).toBeUndefined();
-    expect(meleeReach(anchor)).toBe(172);
+    expect(meleeReach(anchor)).toBeCloseTo(245.55, 8);
 
     const legacyGfx = new GeometryGraphics();
     renderLayer("cleave-flash-legacy", surfaceFor(anchor, swing, legacyGfx), 0.3, {

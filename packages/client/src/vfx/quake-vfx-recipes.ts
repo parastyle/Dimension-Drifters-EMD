@@ -21,7 +21,10 @@ export type QuakeVfxElement =
 
 export interface QuakeVfxRecipe {
   readonly variant: QuakeVfxVariantId;
+  /** Gameplay element remains coherent with the weapon definition. */
   readonly element: QuakeVfxElement;
+  /** Optional presentation-only palette override; never changes damage typing. */
+  readonly visualElement?: QuakeVfxElement;
   /** Stable visual signature used by the V3X clone-cap test. */
   readonly signature: string;
   readonly pack: FxPackName;
@@ -32,6 +35,8 @@ export interface QuakeVfxRecipe {
   readonly particleCount: number;
   readonly effectCountMultiplier: number;
   readonly shake: number;
+  /** Optional whole-pack tint for an owner-authored color pass that retains the original motion recipe. */
+  readonly packTint?: number;
   /** Owner-authored impact replaces every debris/spark layer with smoke while retaining its radius cue. */
   readonly smokeOnly?: true;
   readonly palette: {
@@ -217,16 +222,22 @@ export function resolveQuakeVfxRecipe(
       weapon.id as keyof typeof ANVIL_QUAKE_VARIANT_ASSIGNMENTS
     ];
   if (!variant) return undefined;
-  const element = quakeElement(weapon);
-  const elemental = ELEMENT_RECIPES[element];
+  const gameplayElement = quakeElement(weapon);
+  const visualElement: QuakeVfxElement =
+    weapon.id === "x2-dust-devil-cyclone-orb" ? "arcane" : gameplayElement;
+  const elemental = ELEMENT_RECIPES[gameplayElement];
+  const visualPalette = ELEMENT_RECIPES[visualElement].palette;
   const shape = VARIANT_RECIPES[variant];
   return Object.freeze({
     variant,
-    element,
-    signature: `${element}/${variant}/${elemental.pack}/${shape.primaryShape}/${shape.pulseDelayMs}`,
+    element: gameplayElement,
+    ...(visualElement !== gameplayElement ? { visualElement } : {}),
+    signature: `${visualElement}/${variant}/${elemental.pack}/${shape.primaryShape}/${shape.pulseDelayMs}`,
     ...elemental,
+    palette: visualPalette,
     ...shape,
     effectCountMultiplier: weapon.id === "x2-godsbone-pillar" ? 2 : 1,
+    ...(weapon.id === "x2-dust-devil-cyclone-orb" ? { packTint: 0xb14bff } : {}),
     ...(weapon.id === "x2-anvil-drop" ? { smokeOnly: true as const } : {}),
   });
 }

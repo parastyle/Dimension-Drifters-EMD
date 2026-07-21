@@ -199,6 +199,11 @@ export const CASTER_VFX_PALETTE_OVERRIDES: Readonly<Partial<Record<string, Caste
       mid: 0x33e6ff,
       shadow: 0x245b91,
     }),
+    "x2-fulgurite-storm-sphere": Object.freeze({
+      core: 0xe8fbff,
+      mid: 0x3f9dff,
+      shadow: 0x173f91,
+    }),
   });
 
 /** Legacy caster crop retained only where no projectile-identity regeneration was ordered. */
@@ -232,6 +237,14 @@ export const CASTER_TEXTURE_PROJECTILES: Readonly<
     frameWidth: 627,
     frameHeight: 627,
     displayLength: 72,
+  }),
+  "x2-glyphward-manuscript": Object.freeze({
+    textureKey: "caster:glyphward-holy-feather",
+    url: "vfx/packs/holy-smite/fx-holy-smite-07.png",
+    displayLength: 64,
+    flutterRadians: 0.12,
+    flutterMs: 120,
+    mirrorLeft: true,
   }),
 });
 
@@ -451,12 +464,12 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
   "x2-null-grimoire-of-the-hollow-page": Object.freeze({
     signature: "hollow-page-aperture-ray",
     widthProfile: "ribbon",
-    edgeColor: 0x220833,
-    accentColor: 0x9d4dff,
-    coreColor: 0xe8d4ff,
-    edgeWidth: 0.96,
-    chromaWidth: 0.72,
-    coreWidth: 0.2,
+    edgeColor: 0xb14bff,
+    accentColor: 0x6d1fd1,
+    coreColor: 0x030106,
+    edgeWidth: 1,
+    chromaWidth: 0.68,
+    coreWidth: 0.48,
     ripple: "sine",
     rippleAmplitude: 0.18,
     rippleFrequency: 3.5,

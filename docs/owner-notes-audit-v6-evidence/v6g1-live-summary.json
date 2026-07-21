@@ -1,24 +1,24 @@
 {
-  "baseURL": "http://127.0.0.1:5173",
-  "capturedAt": "2026-07-21T19:34:43.568Z",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-21T20:48:48.810Z",
   "results": [
     {
       "label": "wendigo",
       "weaponId": "x2-wendigo-claws",
-      "baseURL": "http://127.0.0.1:5173",
-      "capturedAt": "2026-07-21T19:34:22.431Z",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-21T20:48:26.602Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2611.384521484375,
-          "y": 2390.72412109375
+          "x": 2612.00244140625,
+          "y": 2422.508544921875
         }
       },
       "endpointDelta": 0,
-      "actorDelta": 104.99999999999999,
+      "actorDelta": 105.0000000000002,
       "events": [
         {
           "kind": "weapon-vfx-suite",
@@ -26,8 +26,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2504.007251130727,
-          "targetY": 2405.595427384686,
+          "targetX": 2504.9926501962586,
+          "targetY": 2421.2423384265626,
           "layerIds": [
             "twin-slash"
           ]
@@ -36,10 +36,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-wendigo-claws",
           "anchor": "target",
-          "x": 2504.007251130727,
-          "y": 2405.595427384686,
-          "targetX": 2504.007251130727,
-          "targetY": 2405.595427384686,
+          "x": 2504.9926501962586,
+          "y": 2421.2423384265626,
+          "targetX": 2504.9926501962586,
+          "targetY": 2421.2423384265626,
           "layerIds": [
             "hit-spark",
             "impact-flash"
@@ -60,20 +60,20 @@
     {
       "label": "revenant",
       "weaponId": "x2-revenant-knuckle",
-      "baseURL": "http://127.0.0.1:5173",
-      "capturedAt": "2026-07-21T19:34:27.181Z",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-21T20:48:31.851Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2610.95703125,
-          "y": 2399.17431640625
+          "x": 2610.9912109375,
+          "y": 2397.555908203125
         }
       },
       "endpointDelta": 0,
-      "actorDelta": 109.99999999999987,
+      "actorDelta": 110.00000000000013,
       "events": [
         {
           "kind": "weapon-vfx-suite",
@@ -81,8 +81,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2509.46787588202,
-          "targetY": 2409.1933284551337,
+          "targetX": 2509.382877610024,
+          "targetY": 2408.3644473379845,
           "layerIds": [
             "twin-slash"
           ]
@@ -91,10 +91,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-revenant-knuckle",
           "anchor": "target",
-          "x": 2509.46787588202,
-          "y": 2409.1933284551337,
-          "targetX": 2509.46787588202,
-          "targetY": 2409.1933284551337,
+          "x": 2509.382877610024,
+          "y": 2408.3644473379845,
+          "targetX": 2509.382877610024,
+          "targetY": 2408.3644473379845,
           "layerIds": [
             "shockwave-ring",
             "sigil-ring"
@@ -115,20 +115,20 @@
     {
       "label": "riftcaller",
       "weaponId": "x2-riftcaller-naginata",
-      "baseURL": "http://127.0.0.1:5173",
-      "capturedAt": "2026-07-21T19:34:32.139Z",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-21T20:48:37.031Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2614.966796875,
-          "y": 2389.3310546875
+          "x": 2614.42919921875,
+          "y": 2389.832275390625
         }
       },
       "endpointDelta": 0,
-      "actorDelta": 217.14351927994218,
+      "actorDelta": 216.54092704544667,
       "events": [
         {
           "kind": "weapon-vfx-suite",
@@ -136,8 +136,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2614.966796875,
-          "targetY": 2389.3310546875,
+          "targetX": 2614.42919921875,
+          "targetY": 2389.832275390625,
           "layerIds": [
             "blade-trail"
           ]
@@ -146,10 +146,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-riftcaller-naginata",
           "anchor": "target",
-          "x": 2614.966796875,
-          "y": 2389.3310546875,
-          "targetX": 2614.966796875,
-          "targetY": 2389.3310546875,
+          "x": 2614.42919921875,
+          "y": 2389.832275390625,
+          "targetX": 2614.42919921875,
+          "targetY": 2389.832275390625,
           "layerIds": [
             "cleave-flash"
           ]
@@ -169,83 +169,83 @@
     {
       "label": "seraph",
       "weaponId": "x2-seraph-s-knuckle-reliquary",
-      "baseURL": "http://127.0.0.1:5173",
-      "capturedAt": "2026-07-21T19:34:37.577Z",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-21T20:48:42.643Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2618.309326171875,
-          "y": 2385.1689453125
+          "x": 2605.90673828125,
+          "y": 2393.592041015625
         }
       },
       "endpointDelta": 0,
-      "actorDelta": 213.13994844722316,
+      "actorDelta": 211.61661145641003,
       "events": [
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2612.028076171875,
-          "y": 2388.82080078125,
-          "targetX": 2612.028076171875,
-          "targetY": 2388.82080078125
+          "x": 2609.0009765625,
+          "y": 2390.876708984375,
+          "targetX": 2609.0009765625,
+          "targetY": 2390.876708984375
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2611.7841796875,
-          "y": 2388.962646484375,
-          "targetX": 2611.7841796875,
-          "targetY": 2388.962646484375
+          "x": 2609.12109375,
+          "y": 2390.771240234375,
+          "targetX": 2609.12109375,
+          "targetY": 2390.771240234375
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2611.49560546875,
-          "y": 2389.047119140625,
-          "targetX": 2611.49560546875,
-          "targetY": 2389.047119140625
+          "x": 2609.302734375,
+          "y": 2390.720947265625,
+          "targetX": 2609.302734375,
+          "targetY": 2390.720947265625
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2611.423583984375,
-          "y": 2389.178955078125,
-          "targetX": 2611.423583984375,
-          "targetY": 2389.178955078125
+          "x": 2609.29296875,
+          "y": 2390.58154296875,
+          "targetX": 2609.29296875,
+          "targetY": 2390.58154296875
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2611.192626953125,
-          "y": 2389.284423828125,
-          "targetX": 2611.192626953125,
-          "targetY": 2389.284423828125
+          "x": 2609.376708984375,
+          "y": 2390.548095703125,
+          "targetX": 2609.376708984375,
+          "targetY": 2390.548095703125
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2611.068359375,
-          "y": 2389.37890625,
-          "targetX": 2611.068359375,
-          "targetY": 2389.37890625
+          "x": 2609.4736328125,
+          "y": 2390.4619140625,
+          "targetX": 2609.4736328125,
+          "targetY": 2390.4619140625
         },
         {
           "kind": "beam-cursor-endpoint",
           "weaponId": "x2-seraph-s-knuckle-reliquary",
           "anchor": "target",
-          "x": 2610.939697265625,
-          "y": 2389.45361328125,
-          "targetX": 2610.939697265625,
-          "targetY": 2389.45361328125
+          "x": 2609.537109375,
+          "y": 2390.40625,
+          "targetX": 2609.537109375,
+          "targetY": 2390.40625
         }
       ],
       "assertions": {
@@ -262,20 +262,20 @@
     {
       "label": "dustreaper",
       "weaponId": "x2-dustreaper-zweihander",
-      "baseURL": "http://127.0.0.1:5173",
-      "capturedAt": "2026-07-21T19:34:43.463Z",
+      "baseURL": "http://127.0.0.1:5180",
+      "capturedAt": "2026-07-21T20:48:48.705Z",
       "setup": {
         "actor": {
           "x": 2400,
           "y": 2420
         },
         "target": {
-          "x": 2615.564208984375,
-          "y": 2387.495361328125
+          "x": 2606.984619140625,
+          "y": 2385.542236328125
         }
       },
       "endpointDelta": 0,
-      "actorDelta": 218.00110029595822,
+      "actorDelta": 209.83319574856685,
       "events": [
         {
           "kind": "weapon-vfx-suite",
@@ -283,8 +283,8 @@
           "anchor": "source",
           "x": 2400,
           "y": 2420,
-          "targetX": 2615.564208984375,
-          "targetY": 2387.495361328125,
+          "targetX": 2606.984619140625,
+          "targetY": 2385.542236328125,
           "layerIds": [
             "blade-trail"
           ]
@@ -293,10 +293,10 @@
           "kind": "weapon-vfx-suite",
           "weaponId": "x2-dustreaper-zweihander",
           "anchor": "target",
-          "x": 2615.564208984375,
-          "y": 2387.495361328125,
-          "targetX": 2615.564208984375,
-          "targetY": 2387.495361328125,
+          "x": 2606.984619140625,
+          "y": 2385.542236328125,
+          "targetX": 2606.984619140625,
+          "targetY": 2385.542236328125,
           "layerIds": [
             "cleave-flash",
             "shockwave-ring"
@@ -307,10 +307,10 @@
           "weaponId": "x2-dustreaper-zweihander",
           "recipeId": "dustreaper-continuous-edge",
           "anchor": "target",
-          "x": 2615.564208984375,
-          "y": 2387.495361328125,
-          "targetX": 2615.564208984375,
-          "targetY": 2387.495361328125,
+          "x": 2606.984619140625,
+          "y": 2385.542236328125,
+          "targetX": 2606.984619140625,
+          "targetY": 2385.542236328125,
           "pack": "fire-wisp",
           "count": 150
         }

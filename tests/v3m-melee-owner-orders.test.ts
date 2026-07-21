@@ -118,7 +118,7 @@ describe("V3M flight, impact, and locomotion anchors", () => {
 
 describe("V3M exact combo and VFX orders", () => {
   it.each([
-    ["x2-dustdevil-glaive", 2, ["jab", "slash"]],
+    ["x2-dustdevil-glaive", 2, ["overhead", "impale"]],
     ["x2-blightfork-glaive", 1, ["jab"]],
     ["x2-saintspar-lochaber", 2, ["overhead", "rising-chop"]],
     ["x2-reliquary-halberd", 2, ["overhead", "impale"]],

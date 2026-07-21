@@ -123,7 +123,7 @@ describe("owner-notes NW-CASTER contracts", () => {
       action: "lunge-punch",
       windupSeconds: 0.3,
       suppressSwing: true,
-      lunge: { distancePx: 480, durationSeconds: 0.2, invulnerable: true },
+      lunge: { distancePx: 480, durationSeconds: 0.05, invulnerable: true },
     });
     expect(CASTER_VFX_PALETTE_OVERRIDES[stormfists.id]).toEqual({
       core: 0xffffff,

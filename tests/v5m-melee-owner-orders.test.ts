@@ -83,7 +83,7 @@ describe("V5M melee owner orders", () => {
     expect(frostfang.performance?.lunge).toEqual({ distancePx: 64, durationSeconds: 0.18 });
   });
 
-  it("distributes Gravechain smoke and Hollow Harvest dust over their complete spin radius", () => {
+  it("distributes Gravechain smoke and Hollow Harvest organic fire over their complete spin radius", () => {
     const grave = resolveWeaponEffectRecipe(weapon("x2-gravechain-scythe"));
     const hollow = resolveWeaponEffectRecipe(weapon("x2-hollow-harvest"));
     expect(grave).toMatchObject({
@@ -92,8 +92,8 @@ describe("V5M melee owner orders", () => {
       radialDistribution: "full-circle",
     });
     expect(hollow).toMatchObject({
-      swingPack: "sand-wisp",
-      swingCount: 18,
+      swingPack: "fire-splat",
+      swingCount: 24,
       radialDistribution: "full-circle",
     });
     const points = weaponEffectRadialPoints(10, 20, 100, 4);

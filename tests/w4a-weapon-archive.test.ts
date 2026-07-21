@@ -25,6 +25,8 @@ import {
 import { resolveQuakeVfxRecipe } from "../packages/client/src/vfx/quake-vfx-recipes.js";
 
 const ARCHIVE_IDS = [
+  "drift-wakizashi-hushglass",
+  "drift-wakizashi-kagewake",
   "x2-dust-devil-flail",
   "x2-ferrous-serpent",
   "x2-locust-flail",
@@ -33,13 +35,17 @@ const ARCHIVE_IDS = [
   "x2-quicksilver-chainblade",
   "x2-snakebite-lash",
 ] as const;
+const CURATED_ARCHIVE_IDS = new Set([
+  "drift-wakizashi-hushglass",
+  "drift-wakizashi-kagewake",
+]);
 
 describe("W4A weapon archive contracts", () => {
-  it("keeps seven durable catalog rows while excluding them from every active acquisition census", () => {
+  it("keeps nine durable catalog rows while excluding them from every active acquisition census", () => {
     expect([...ARCHIVED_WEAPON_IDS].sort()).toEqual([...ARCHIVE_IDS].sort());
     expect(WEAPON_CATALOG_IDS).toHaveLength(329);
-    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(322);
-    expect(ARCHIVED_WEAPON_IDS).toHaveLength(7);
+    expect(ACTIVE_WEAPON_CATALOG_IDS).toHaveLength(320);
+    expect(ARCHIVED_WEAPON_IDS).toHaveLength(9);
     expect(ACTIVE_EXPANSION_WEAPON_IDS).toHaveLength(291);
     expect(WEAPON_RESOURCE_IDS).toHaveLength(329);
 
@@ -51,7 +57,8 @@ describe("W4A weapon archive contracts", () => {
     ];
     for (const id of ARCHIVE_IDS) {
       expect(WEAPONS[id]?.archived, id).toBe(true);
-      expect(EXPANSION_WEAPON_IDS, id).toContain(id);
+      if (CURATED_ARCHIVE_IDS.has(id)) expect(EXPANSION_WEAPON_IDS, id).not.toContain(id);
+      else expect(EXPANSION_WEAPON_IDS, id).toContain(id);
       expect(ACTIVE_EXPANSION_WEAPON_IDS, id).not.toContain(id);
       expect(ACTIVE_WEAPON_CATALOG_IDS, id).not.toContain(id);
       expect(WEAPON_IDS, id).not.toContain(id);
@@ -71,13 +78,13 @@ describe("W4A weapon archive contracts", () => {
     for (const id of ARCHIVE_IDS) expect(wielded, id).not.toContain(id);
   });
 
-  it("regenerates the portal and default Weaponsmith listing with 322 active rows", () => {
+  it("regenerates the portal and default Weaponsmith listing with 320 active rows", () => {
     const portal = readFileSync("tools/portal/index.html", "utf8");
     const smith = readFileSync("tools/weaponsmith/public/index.html", "utf8");
     const smithServer = readFileSync("tools/weaponsmith/server.mjs", "utf8");
-    expect(portal).toContain('"count":322');
-    expect(smith).toContain("Search 322 active weapons");
-    expect(smith).toContain('aria-setsize="322"');
+    expect(portal).toContain('"count":320');
+    expect(smith).toContain("Search 320 active weapons");
+    expect(smith).toContain('aria-setsize="320"');
     expect(smithServer).toContain("definition.archived === true");
     for (const id of ARCHIVE_IDS) {
       expect(portal, id).not.toContain(`/?dev=weapon:${id}`);

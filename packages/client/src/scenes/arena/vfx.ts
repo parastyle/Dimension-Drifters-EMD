@@ -16,6 +16,7 @@ import {
   particleBurst,
 } from "../../vfx/particles.js";
 import { type QuakeVfxRecipe, resolveQuakeVfxRecipe } from "../../vfx/quake-vfx-recipes.js";
+import { resolveProjectileExplosionVfxRecipe } from "../../vfx/projectile-explosion-vfx-recipes.js";
 
 /**
  * Transient combat VFX factories, extracted from ArenaScene. Each is a pure spawner: it takes the scene
@@ -639,44 +640,48 @@ export function spawnExplosion(
   radius: number,
   element: string,
   shakeSource: CameraShakeSource,
+  weaponId?: string,
 ): void {
-  const pack = explosionPack(radius, element);
+  const recipe = resolveProjectileExplosionVfxRecipe(weaponId);
+  const visualElement = recipe?.element ?? element;
+  const pack = recipe?.pack ?? explosionPack(radius, visualElement);
   if (pack) playFxPack(scene, pack, x, y, { intensity: radius });
   // PAINTED eruption (§41): element shards blasted out past the rim, embers/motes inside, smoke wisps
   // rising and lingering, plus ONE painted ring frame punched up as the halo. All degrade to no-ops
   // pre-load; the procedural composite below always renders.
-  particleBurst(scene, elementPack(element, "shard"), x, y, {
-    count: Math.round(6 + radius / 22),
+  particleBurst(scene, elementPack(visualElement, "shard"), x, y, {
+    count: Math.round((6 + radius / 22) * (recipe?.shardCountMultiplier ?? 1)),
     speed: radius * 2.6,
     scaleContract: paintedParticleDominance(radius, 0.66, 40, 76),
     lifeMs: 420,
     sink: 14,
   });
-  particleBurst(scene, elementPack(element, "mote"), x, y, {
+  particleBurst(scene, elementPack(visualElement, "mote"), x, y, {
     count: 6,
     speed: radius * 1.4,
     scaleContract: paintedParticleDominance(radius, 0.48, 30, 58),
     lifeMs: 360,
     additive: true,
   });
-  particleBurst(scene, elementPack(element, "wisp"), x, y, {
-    count: 3,
+  particleBurst(scene, elementPack(visualElement, "wisp"), x, y, {
+    count: Math.round(3 * (recipe?.wispCountMultiplier ?? 1)),
     dirRad: -Math.PI / 2, // smoke drifts UP
     spread: 0.5,
     speed: 55,
     scaleContract: paintedParticleDominance(radius, 0.84, 52, 88),
     lifeMs: 900,
   });
-  particleBurst(scene, elementPack(element, "ring"), x, y, {
-    count: 1,
-    speed: 0,
-    scaleContract: paintedParticleDominance(radius, 1.6, 72, 144),
-    lifeMs: 340,
-    additive: true,
-  });
+  if (recipe?.paintedHalo !== false)
+    particleBurst(scene, elementPack(visualElement, "ring"), x, y, {
+      count: 1,
+      speed: 0,
+      scaleContract: paintedParticleDominance(radius, 1.6, 72, 144),
+      lifeMs: 340,
+      additive: true,
+    });
   // The footprint and hot core are painted splats too; no perfect engine disc survives the burst.
-  particleBurst(scene, elementPack(element, "splat"), x, y, {
-    count: 2,
+  particleBurst(scene, elementPack(visualElement, "splat"), x, y, {
+    count: recipe?.footprintCount ?? 2,
     speed: 0,
     scaleContract: paintedParticleDominance(radius, 1.18, 64, 128),
     lifeMs: 1100,
@@ -730,6 +735,7 @@ export function spawnQuake(
   for (let i = 0; i < (variant?.effectCountMultiplier ?? 1); i++)
     playFxPack(scene, variant?.pack ?? (grave ? "grave-call" : "quake-burst"), x, y, {
       intensity: quake.radius,
+      tint: variant?.packTint,
     });
   if (quake.vfx && scene.textures.exists(quake.vfx.image)) {
     spawnQuakeHero(scene, x, y, quake.radius, quake.vfx, projectionYScale);
@@ -748,17 +754,18 @@ function spawnQuakeVariant(
   recipe: QuakeVfxRecipe,
   projectionYScale: number,
 ): void {
+  const visualElement = recipe.visualElement ?? recipe.element;
   spawnQuakeDangerPaint(
     scene,
     x,
     y,
     radius,
     projectionYScale,
-    recipe.element,
+    visualElement,
     recipe.variant === "double-ripple" ? 520 : 400,
   );
 
-  particleBurst(scene, elementPack(recipe.element, "splat"), x, y, {
+  particleBurst(scene, elementPack(visualElement, "splat"), x, y, {
     count: recipe.variant === "double-ripple" ? 2 : 1,
     speed: 0,
     lifeMs: recipe.variant === "double-ripple" ? 540 : 360,
@@ -774,7 +781,7 @@ function spawnQuakeVariant(
     delay: number,
   ): void => {
     scene.time.delayedCall(delay, () => {
-      particleBurst(scene, elementPack(recipe.element, shape), x, y, {
+      particleBurst(scene, elementPack(visualElement, shape), x, y, {
         count:
           (shape === "ring" ? recipe.ringCount : recipe.particleCount) *
           recipe.effectCountMultiplier,

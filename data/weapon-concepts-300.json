@@ -3,9 +3,9 @@
   "source": "design-300-weapons workflow (15 agents)",
   "count": 310,
   "byType": {
-    "melee": 108,
+    "melee": 109,
     "ranged": 106,
-    "caster": 96
+    "caster": 95
   },
   "weapons": [
     {
@@ -747,6 +747,12 @@
         "swingArc": 2.3,
         "gripFrac": 0.15
       },
+      "performance": {
+        "hold": "steady",
+        "action": "default-swing",
+        "comboForwardPx": 38,
+        "vfxForwardPx": 38
+      },
       "id": "x2-cinderfang-wakizashi-pair"
     },
     {
@@ -1157,19 +1163,42 @@
       "paletteAccent": "#FF8A2B",
       "cardartAction": "swung in a slow ground-cleaving arc, the heat-cracked bit flaring and trailing an ember-orange smear",
       "swingStyle": "chop",
+      "comboFamily": "chop",
+      "comboVariant": "cinderbrand-alternating-chops",
+      "authoritativeCombo": true,
+      "comboBar": [
+        {
+          "name": "left forge chop",
+          "motion": "shoulder-chop",
+          "direction": 1,
+          "hand": "both",
+          "timing": { "activeStart": 0.08, "activeEnd": 0.4, "impact": 0.31, "followEnd": 0.58 },
+          "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        },
+        {
+          "name": "right forge chop",
+          "motion": "reverse-chop",
+          "direction": -1,
+          "hand": "both",
+          "timing": { "activeStart": 0.08, "activeEnd": 0.4, "impact": 0.31, "followEnd": 0.58 },
+          "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        }
+      ],
       "performance": {
         "hold": "steady",
-        "action": "overhead-downswing"
+        "action": "overhead-downswing",
+        "continuous": true,
+        "forwardDrift": { "speedPxPerSecond": 72, "durationSeconds": 0.3333333333333333 }
       },
       "effectRecipe": "cinderbrand-fire-slash",
       "effectEmitter": "blade",
       "effectTiming": "swing-midpoint",
       "finishNote": "battle-worn",
       "stats": {
-        "damage": 12,
+        "damage": 5.555555555555555,
         "range": 158,
         "halfArc": 1,
-        "cooldown": 0.72,
+        "cooldown": 0.3333333333333333,
         "displayLength": 140,
         "swingArc": 3,
         "gripFrac": 0.1
@@ -1188,10 +1217,10 @@
         "spread": 0.45,
         "speed": 360,
         "range": 210,
-        "damage": 5,
+        "damage": 2.314814814814815,
         "explode": {
           "radius": 54,
-          "damage": 6
+          "damage": 2.7777777777777777
         },
         "scalingGrades": {
           "int": "B"
@@ -2100,13 +2129,14 @@
         "dex": 7,
         "str": 6
       },
-      "comboFamily": "thrust",
-      "comboVariant": "dustdevil-jab-slash",
+      "comboFamily": "chop",
+      "comboVariant": "dustdevil-chop-stab",
       "authoritativeCombo": true,
       "comboBar": [
-        { "name": "dust jab", "motion": "jab", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
-        { "name": "devil slash", "motion": "slash", "direction": -1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.4, "impact": 0.27, "followEnd": 0.58 }, "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+        { "name": "dust chop", "motion": "overhead", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.23, "followEnd": 0.5 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "devil stab", "motion": "impale", "direction": -1, "hand": "both", "timing": { "activeStart": 0.12, "activeEnd": 0.4, "impact": 0.27, "followEnd": 0.58 }, "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
       ],
+      "performance": { "hold": "upright", "action": "default-swing", "carryAngleRad": -1.25, "carryForwardPx": 14 },
       "id": "x2-dustdevil-glaive"
     },
     {
@@ -2173,12 +2203,13 @@
       "behavior": {
         "kind": "edge"
       },
+      "swingStyle": "arc",
       "stats": {
         "damage": 9,
         "range": 200,
         "halfArc": 1,
         "cooldown": 0.58,
-        "displayLength": 145,
+        "displayLength": 290,
         "swingArc": 3,
         "gripFrac": 0.1
       },
@@ -2197,7 +2228,7 @@
       "type": "melee",
       "family": "spear",
       "theme": "lightning-tapped telegraph lance",
-      "element": "shock",
+      "element": "toxic",
       "grip": "2H",
       "size": "L",
       "rangeBand": "mid",
@@ -3070,6 +3101,7 @@
         "charges": 3,
         "refillSeconds": 0.6,
         "pierce": 1,
+        "arcHeight": 132,
         "rotation": "spin"
       },
       "performance": {
@@ -3262,7 +3294,20 @@
       "paletteAccent": "#3C6E6A",
       "cardartAction": "swung in a tight arc, the venom-tipped spikes flicking a fine dull-teal toxin mist off the impact",
       "behavior": {
-        "kind": "edge"
+        "kind": "thrown",
+        "speed": 620,
+        "range": 480,
+        "damage": 9,
+        "charges": 3,
+        "refillSeconds": 1.2,
+        "pierce": 1,
+        "rotation": "spin"
+      },
+      "performance": {
+        "hold": "steady",
+        "action": "throw-release",
+        "suppressSwing": true,
+        "preThrowRevolutions": 0.5
       },
       "stats": {
         "damage": 9,
@@ -4085,6 +4130,13 @@
       "behavior": {
         "kind": "edge"
       },
+      "comboFamily": "chop",
+      "comboVariant": "reapers-tithe-rest-and-orbit",
+      "authoritativeCombo": true,
+      "comboBar": [
+        { "name": "tithe from rest", "motion": "rest-downswing", "direction": 1, "hand": "both", "timing": { "activeStart": 0.13, "activeEnd": 0.42, "impact": 0.3, "followEnd": 0.6 }, "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } },
+        { "name": "reaper waist orbit", "motion": "waist-orbit", "direction": 1, "hand": "both", "timing": { "activeStart": 0.1, "activeEnd": 0.78, "impact": 0.44, "followEnd": 0.88 }, "path": { "kind": "sweep", "arcMultiplier": 1.9634954084936207, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 } }
+      ],
       "performance": {
         "hold": "walking-staff",
         "action": "default-swing",
@@ -4183,6 +4235,7 @@
         "charges": 3,
         "refillSeconds": 0.6,
         "pierce": 1,
+        "arcHeight": 112,
         "rotation": "spin"
       },
       "performance": {
@@ -4671,7 +4724,7 @@
         "kind": "thrown",
         "speed": 700,
         "range": 480,
-        "damage": 12,
+        "damage": 8,
         "charges": 3,
         "refillSeconds": 1.8,
         "pierce": 2,
@@ -4682,7 +4735,8 @@
         "action": "throw-release",
         "suppressSwing": true,
         "windupSeconds": 0.36,
-        "preThrowRevolutions": 1
+        "preThrowRevolutions": 1,
+        "preThrowDamage": { "damage": 4, "range": 150 }
       },
       "stats": {
         "damage": 9,
@@ -8271,7 +8325,7 @@
         "muzzle": "boom",
         "recoil": 0.0038,
         "explode": {
-          "radius": 140,
+          "radius": 220,
           "damage": 13
         }
       },
@@ -8942,6 +8996,7 @@
         "projectileVisualScale": 1.35,
         "muzzle": "artillery",
         "recoil": 0.004,
+        "userKnockbackMultiplier": 2,
         "explode": {
           "radius": 150,
           "damage": 32
@@ -9553,6 +9608,7 @@
         "reloadSeconds": 1.5,
         "bulletKind": "tracer",
         "projectileArt": "generated",
+        "projectileVisualScale": 3,
         "muzzle": "spark",
         "muzzleColor": 11627775,
         "recoil": 0.0018,
@@ -10239,7 +10295,7 @@
         "muzzleColor": 3397375,
         "recoil": 0.0038,
         "explode": {
-          "radius": 64,
+          "radius": 220,
           "damage": 10
         },
         "scalingGrades": {
@@ -10321,7 +10377,7 @@
         "count": 6,
         "spread": 0.5,
         "speed": 380,
-        "range": 230,
+        "range": 420,
         "damage": 5,
         "explode": {
           "radius": 56,
@@ -10818,7 +10874,7 @@
     },
     {
       "name": "Abyssal Apocrypha",
-      "type": "caster",
+      "type": "melee",
       "family": "grimoire",
       "theme": "void scatter forbidden-text",
       "element": "void",
@@ -10833,25 +10889,25 @@
       "palettePrimary": "#22252B",
       "paletteAccent": "#B14BFF",
       "cardartAction": "wrenched open against its chains, flinging a scatter of inky arc-violet void-orbs that arc out and implode into dark blasts",
-      "behavior": {
-        "kind": "scatter",
-        "count": 5,
-        "spread": 0.5,
-        "speed": 340,
-        "range": 220,
-        "damage": 6,
-        "explode": {
-          "radius": 66,
-          "damage": 7
-        }
+      "behavior": { "kind": "edge" },
+      "swingStyle": "spin",
+      "effectRecipe": "abyssal-whirlwind-vortex",
+      "effectEmitter": "blade",
+      "effectTiming": "swing-midpoint",
+      "performance": {
+        "hold": "steady",
+        "action": "spin",
+        "continuous": true,
+        "twirl": { "plane": "ground-whirlwind", "pivot": "grip", "direction": "forward", "visualRevolutions": 2 },
+        "holdScaling": { "cadence": "weapon-cooldown" }
       },
       "stats": {
         "damage": 10,
-        "range": 160,
-        "halfArc": 0.95,
+        "range": 240,
+        "halfArc": 3.141592653589793,
         "cooldown": 0.7,
         "displayLength": 142,
-        "swingArc": 2.9,
+        "swingArc": 6.283185307179586,
         "gripFrac": 0.1
       },
       "scalingGrades": {
@@ -10881,11 +10937,12 @@
       "paletteAccent": "#FF8A2B",
       "cardartAction": "held open as a bright ember-gold smite leaps from the initial-letter and chains down a line of enemies",
       "behavior": {
-        "kind": "chainLightning",
-        "jumps": 3,
-        "range": 190,
-        "damage": 6,
-        "falloff": 0.85
+        "kind": "scatter",
+        "count": 10,
+        "spread": 0.56,
+        "speed": 720,
+        "range": 420,
+        "damage": 1.5435
       },
       "stats": {
         "damage": 8,
@@ -12389,7 +12446,12 @@
         "jumps": 4,
         "range": 200,
         "damage": 6,
-        "falloff": 0.8
+        "falloff": 0.8,
+        "vfx": {
+          "color": 0.6,
+          "jag": 0.3,
+          "life": 180
+        }
       },
       "performance": {
         "hold": "overhead",
@@ -13398,9 +13460,10 @@
         }
       ],
       "performance": {
-        "hold": "steady",
-        "action": "default-swing",
-        "continuous": true
+        "hold": "aim-forward",
+        "action": "jab",
+        "continuous": true,
+        "suppressSwing": true
       },
       "id": "x2-thunderpost-fetish"
     },
@@ -13604,6 +13667,11 @@
             "int": "C"
           }
         }
+      },
+      "performance": {
+        "hold": "aim-forward",
+        "action": "jab",
+        "suppressSwing": true
       },
       "stats": {
         "damage": 6,
@@ -14345,10 +14413,10 @@
       "paletteAccent": "#FF8A2B",
       "cardartAction": "the great fist slammed down, a ground-cracking ring of ember-orange fire erupting outward in a heavy quake",
       "stats": {
-        "damage": 6,
+        "damage": 3.8823529411764706,
         "range": 200,
         "halfArc": 1.05,
-        "cooldown": 0.85,
+        "cooldown": 0.55,
         "displayLength": 140,
         "swingArc": 3,
         "gripFrac": 0.1
@@ -14356,7 +14424,7 @@
       "behavior": {
         "kind": "quake",
         "radius": 170,
-        "damage": 9
+        "damage": 5.823529411764706
       },
       "scalingGrades": {
         "int": "A",
@@ -14550,6 +14618,7 @@
         "magazine": 14,
         "reloadSeconds": 1.3,
         "bulletKind": "tracer",
+        "projectileColor": 11619327,
         "muzzle": "spark",
         "recoil": 0.001
       },
@@ -14905,7 +14974,7 @@
         "range": 400,
         "halfArc": 0.35,
         "cooldown": 0.5,
-        "displayLength": 52,
+        "displayLength": 92.04,
         "swingArc": 2.2,
         "gripFrac": 0.15
       },
@@ -14963,7 +15032,7 @@
         "windupSeconds": 0.3,
         "lunge": {
           "distancePx": 480,
-          "durationSeconds": 0.2,
+          "durationSeconds": 0.05,
           "invulnerable": true
         }
       },
@@ -15045,10 +15114,10 @@
       "paletteAccent": "#3C6E6A",
       "cardartAction": "a flick of the wrist sending a wild crackling spark-bolt that caroms off the walls hunting for foes",
       "stats": {
-        "damage": 3,
+        "damage": 1.0588235294117647,
         "range": 150,
         "halfArc": 0.5,
-        "cooldown": 0.34,
+        "cooldown": 0.12,
         "displayLength": 56,
         "swingArc": 2.2,
         "gripFrac": 0.15
@@ -15061,6 +15130,7 @@
       "swingStyle": "punch",
       "comboFamily": "punch",
       "comboVariant": "coyote-voltage-boxing",
+      "authoritativeCombo": true,
       "comboBar": [
         {
           "name": "lead rising hook",
@@ -15093,6 +15163,38 @@
           "hand": "off",
           "timing": { "activeStart": 0.2, "activeEnd": 0.5, "impact": 0.46, "followEnd": 0.68 },
           "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        },
+        {
+          "name": "flash jab five",
+          "motion": "jab",
+          "direction": 1,
+          "hand": "lead",
+          "timing": { "activeStart": 0.08, "activeEnd": 0.3, "impact": 0.22, "followEnd": 0.42 },
+          "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        },
+        {
+          "name": "flash cross six",
+          "motion": "cross",
+          "direction": -1,
+          "hand": "off",
+          "timing": { "activeStart": 0.08, "activeEnd": 0.3, "impact": 0.22, "followEnd": 0.42 },
+          "path": { "kind": "capsule", "arcMultiplier": 0, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        },
+        {
+          "name": "wheel hook seven",
+          "motion": "hook",
+          "direction": 1,
+          "hand": "lead",
+          "timing": { "activeStart": 0.09, "activeEnd": 0.32, "impact": 0.24, "followEnd": 0.44 },
+          "path": { "kind": "sweep", "arcMultiplier": 1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 0 }
+        },
+        {
+          "name": "monk flurry thunder finish",
+          "motion": "haymaker",
+          "direction": -1,
+          "hand": "off",
+          "timing": { "activeStart": 0.1, "activeEnd": 0.34, "impact": 0.26, "followEnd": 0.46 },
+          "path": { "kind": "sweep", "arcMultiplier": -1, "rangeMultiplier": 1, "damageMultiplier": 1, "knockback": 8 }
         }
       ],
       "performance": {
@@ -15175,6 +15277,7 @@
       "requirements": { "dex": 6 },
       "sprite": "driftblade",
       "expansion": false,
+      "archived": true,
       "comboFamily": "chop",
       "comboVariant": "katana-kagewake",
       "katanaHook": { "kind": "pair-half", "summary": "A one-handed pair-half that joins the six-beat dual-melee cadence." },
@@ -15210,6 +15313,7 @@
       "requirements": { "dex": 7, "luk": 3 },
       "sprite": "driftblade",
       "expansion": false,
+      "archived": true,
       "comboFamily": "chop",
       "comboVariant": "katana-hushglass",
       "katanaHook": { "kind": "draw-opener", "summary": "The first beat after the chain resets is a heavy silent draw.", "openerDamageMultiplier": 1.38 },
@@ -15292,7 +15396,7 @@
       "palettePrimary": "#203451",
       "paletteAccent": "#65D9FF",
       "cardartAction": "seven quickdraw arcs sewing a single rising thunderhead around the wielder",
-      "stats": { "damage": 5.4, "range": 146, "halfArc": 0.86, "cooldown": 0.29, "displayLength": 136, "swingArc": 2.58, "gripFrac": 0.13 },
+      "stats": { "damage": 5.4, "range": 146, "halfArc": 0.86, "cooldown": 0.29, "displayLength": 272, "swingArc": 2.58, "gripFrac": 0.13 },
       "behavior": { "kind": "edge" },
       "comboBar": [
         { "name": "First Stitch", "motion": "draw-cut", "direction": -1, "hand": "lead", "timing": { "activeStart": 0.09, "activeEnd": 0.32, "impact": 0.21, "followEnd": 0.5 }, "path": { "kind": "sweep", "arcMultiplier": 0.78, "rangeMultiplier": 0.96, "damageMultiplier": 0.92, "knockback": 5 }, "ribbon": { "profile": "hooked-comma", "radialStart": 0.22, "radialEnd": 0.94, "widthMultiplier": 0.62, "end": "clean" } },

@@ -200,13 +200,18 @@ export function stepImpulse(
 
 /** Add an impulse to a velocity, capped at `IMPULSE_MAX` so a rapid-fire stream / pile-up can't fling a
  *  body across the arena. PURE. */
-export function addImpulse(vel: Impulse, ix: number, iy: number): Impulse {
+export function addImpulse(
+  vel: Impulse,
+  ix: number,
+  iy: number,
+  maxImpulse = IMPULSE_MAX,
+): Impulse {
   let vx = vel.vx + ix;
   let vy = vel.vy + iy;
   const sp = Math.hypot(vx, vy);
-  if (sp > IMPULSE_MAX) {
-    vx = (vx / sp) * IMPULSE_MAX;
-    vy = (vy / sp) * IMPULSE_MAX;
+  if (sp > maxImpulse) {
+    vx = (vx / sp) * maxImpulse;
+    vy = (vy / sp) * maxImpulse;
   }
   return { vx, vy };
 }

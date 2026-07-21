@@ -586,6 +586,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "comboForwardPx": 38,
+      "vfxForwardPx": 38
+    },
     "requirements": {
       "dex": 8
     },
@@ -904,10 +910,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "str": "B",
       "int": "C"
     },
-    "damage": 12,
+    "damage": 5.555555555555555,
     "range": 158,
     "halfArc": 1,
-    "cooldown": 0.72,
+    "cooldown": 0.3333333333333333,
     "displayLength": 140,
     "swingArc": 3,
     "gripFrac": 0.1,
@@ -915,7 +921,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "grip": "2H",
       "size": "L",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "fire",
       "classPool": "melee",
       "family": "cleaver",
@@ -926,13 +932,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A massive smithy cleaver pulled glowing from the forge, its broad bit veined with dull molten-orange heat-cracks that smear embers on every fall.",
+    "authoritativeCombo": true,
     "swingStyle": "chop",
+    "comboFamily": "chop",
+    "comboVariant": "cinderbrand-alternating-chops",
     "effectRecipe": "cinderbrand-fire-slash",
     "effectEmitter": "blade",
     "effectTiming": "swing-midpoint",
     "performance": {
       "hold": "steady",
-      "action": "overhead-downswing"
+      "action": "overhead-downswing",
+      "continuous": true,
+      "forwardDrift": {
+        "speedPxPerSecond": 72,
+        "durationSeconds": 0.3333333333333333
+      }
     },
     "requirements": {
       "str": 9,
@@ -945,13 +959,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "spread": 0.45,
       "speed": 360,
       "range": 210,
-      "damage": 5,
+      "damage": 2.314814814814815,
       "scalingGrades": {
         "int": "B"
       },
       "explode": {
         "radius": 54,
-        "damage": 6
+        "damage": 2.7777777777777777
       }
     }
   },
@@ -1769,9 +1783,15 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "authoritativeCombo": true,
-    "comboFamily": "thrust",
-    "comboVariant": "dustdevil-jab-slash",
+    "comboFamily": "chop",
+    "comboVariant": "dustdevil-chop-stab",
     "suppressVfx": true,
+    "performance": {
+      "hold": "upright",
+      "action": "default-swing",
+      "carryForwardPx": 14,
+      "carryAngleRad": -1.25
+    },
     "requirements": {
       "dex": 7,
       "str": 6
@@ -1830,7 +1850,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 200,
     "halfArc": 1,
     "cooldown": 0.58,
-    "displayLength": 145,
+    "displayLength": 290,
     "swingArc": 3,
     "gripFrac": 0.1,
     "tags": {
@@ -1847,6 +1867,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "STR"
       ]
     },
+    "swingStyle": "arc",
     "requirements": {
       "dex": 8,
       "str": 5
@@ -1874,7 +1895,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "size": "L",
       "delivery": "melee-arc",
       "fireMode": "tap-charge",
-      "element": "shock",
+      "element": "toxic",
       "classPool": "melee",
       "family": "spear",
       "rangeBand": "mid",
@@ -2688,6 +2709,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "charges": 3,
       "refillSeconds": 0.6,
       "pierce": 1,
+      "arcHeight": 132,
       "rotation": "spin"
     }
   },
@@ -2843,7 +2865,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "toxic",
       "classPool": "melee",
@@ -2854,11 +2876,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "DEX"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "preThrowRevolutions": 0.5
+    },
     "requirements": {
       "str": 6,
       "dex": 4
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 620,
+      "range": 480,
+      "damage": 9,
+      "charges": 3,
+      "refillSeconds": 1.2,
+      "pierce": 1,
+      "rotation": "spin"
+    }
   },
   "x2-pendulum-of-the-pyre": {
     "id": "x2-pendulum-of-the-pyre",
@@ -3557,6 +3594,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A long farmhand's scythe gone to war, its sweeping crescent blade notched and oil-darkened, balanced for wide ground-reaping arcs that fell a whole row at once.",
+    "authoritativeCombo": true,
+    "comboFamily": "chop",
+    "comboVariant": "reapers-tithe-rest-and-orbit",
     "performance": {
       "hold": "walking-staff",
       "action": "default-swing",
@@ -3667,6 +3707,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "charges": 3,
       "refillSeconds": 0.6,
       "pierce": 1,
+      "arcHeight": 112,
       "rotation": "spin"
     }
   },
@@ -4125,7 +4166,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "throw-release",
       "suppressSwing": true,
       "windupSeconds": 0.36,
-      "preThrowRevolutions": 1
+      "preThrowRevolutions": 1,
+      "preThrowDamage": {
+        "damage": 4,
+        "range": 150
+      }
     },
     "requirements": {
       "str": 7
@@ -4134,7 +4179,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "thrown": {
       "speed": 700,
       "range": 480,
-      "damage": 12,
+      "damage": 8,
       "charges": 3,
       "refillSeconds": 1.8,
       "pierce": 2,
@@ -7849,7 +7894,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "projectileArt": "generated",
       "projectileVisualScale": 1.3,
       "explode": {
-        "radius": 140,
+        "radius": 220,
         "damage": 13
       }
     }
@@ -8538,6 +8583,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "recoil": 0.004,
       "projectileArt": "generated",
       "projectileVisualScale": 1.35,
+      "userKnockbackMultiplier": 2,
       "explode": {
         "radius": 150,
         "damage": 32
@@ -9155,6 +9201,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "muzzle": "spark",
       "recoil": 0.0018,
       "projectileArt": "generated",
+      "projectileVisualScale": 3,
       "pierce": 6,
       "muzzleColor": 11627775,
       "scalingGrades": {
@@ -9836,7 +9883,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "dex": "C"
       },
       "explode": {
-        "radius": 64,
+        "radius": 220,
         "damage": 10
       }
     }
@@ -9924,7 +9971,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "count": 6,
       "spread": 0.5,
       "speed": 380,
-      "range": 230,
+      "range": 420,
       "damage": 5,
       "explode": {
         "radius": 56,
@@ -10395,40 +10442,48 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "luk": "D"
     },
     "damage": 10,
-    "range": 160,
-    "halfArc": 0.95,
+    "range": 240,
+    "halfArc": 1.4,
     "cooldown": 0.7,
     "displayLength": 142,
-    "swingArc": 2.9,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.1,
     "tags": {
       "grip": "2H",
       "size": "L",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "void",
-      "classPool": "caster",
+      "classPool": "melee",
       "family": "grimoire",
       "rangeBand": "mid",
       "scaling": [
         "INT"
       ]
     },
+    "swingStyle": "spin",
+    "effectRecipe": "abyssal-whirlwind-vortex",
+    "effectEmitter": "blade",
+    "effectTiming": "swing-midpoint",
+    "performance": {
+      "hold": "steady",
+      "action": "spin",
+      "continuous": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "forward",
+        "visualRevolutions": 2
+      },
+      "holdScaling": {
+        "cadence": "weapon-cooldown"
+      }
+    },
     "requirements": {
       "int": 13
     },
     "twoHanded": true,
-    "scatter": {
-      "count": 5,
-      "spread": 0.5,
-      "speed": 340,
-      "range": 220,
-      "damage": 6,
-      "explode": {
-        "radius": 66,
-        "damage": 7
-      }
-    }
+    "durability": 90
   },
   "x2-glyphward-manuscript": {
     "id": "x2-glyphward-manuscript",
@@ -10460,11 +10515,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "requirements": {
       "int": 9
     },
-    "chainLightning": {
-      "jumps": 3,
-      "range": 190,
-      "damage": 6,
-      "falloff": 0.85
+    "scatter": {
+      "count": 10,
+      "spread": 0.56,
+      "speed": 720,
+      "range": 420,
+      "damage": 1.5435
     }
   },
   "x2-frostquill-compendium": {
@@ -12026,7 +12082,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "jumps": 4,
       "range": 200,
       "damage": 6,
-      "falloff": 0.8
+      "falloff": 0.8,
+      "vfx": {
+        "color": 0.6,
+        "jag": 0.3,
+        "life": 180
+      }
     }
   },
   "x2-coffin-nail-rosary-orb": {
@@ -12952,9 +13013,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "comboFamily": "arc",
     "comboVariant": "thunderpost-storm-cadence",
     "performance": {
-      "hold": "steady",
-      "action": "default-swing",
-      "continuous": true
+      "hold": "aim-forward",
+      "action": "jab",
+      "continuous": true,
+      "suppressSwing": true
     },
     "requirements": {
       "int": 9
@@ -13150,6 +13212,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "y": 0.56,
         "role": "two-hand-rifle"
       }
+    },
+    "performance": {
+      "hold": "aim-forward",
+      "action": "jab",
+      "suppressSwing": true
     },
     "requirements": {
       "int": 8,
@@ -13744,10 +13811,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": "A",
       "str": "C"
     },
-    "damage": 6,
+    "damage": 3.8823529411764706,
     "range": 200,
     "halfArc": 1.05,
-    "cooldown": 0.85,
+    "cooldown": 0.55,
     "displayLength": 140,
     "swingArc": 3,
     "gripFrac": 0.1,
@@ -13772,7 +13839,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "quake": {
       "radius": 170,
-      "damage": 9
+      "damage": 5.823529411764706
     }
   },
   "x2-frostknuckle-rimewrap": {
@@ -13950,6 +14017,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.001,
+      "projectileColor": 11619327,
       "pierce": 2
     }
   },
@@ -14289,7 +14357,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 400,
     "halfArc": 0.35,
     "cooldown": 0.5,
-    "displayLength": 52,
+    "displayLength": 92.04,
     "swingArc": 2.2,
     "gripFrac": 0.15,
     "tags": {
@@ -14369,7 +14437,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "windupSeconds": 0.3,
       "lunge": {
         "distancePx": 480,
-        "durationSeconds": 0.2,
+        "durationSeconds": 0.05,
         "invulnerable": true
       }
     },
@@ -14433,10 +14501,10 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": "B",
       "luk": "C"
     },
-    "damage": 3,
+    "damage": 1.0588235294117647,
     "range": 150,
     "halfArc": 0.5,
-    "cooldown": 0.34,
+    "cooldown": 0.12,
     "displayLength": 56,
     "swingArc": 2.2,
     "gripFrac": 0.15,
@@ -14454,6 +14522,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "authoritativeCombo": true,
     "swingStyle": "punch",
     "comboFamily": "punch",
     "comboVariant": "coyote-voltage-boxing",
@@ -14544,6 +14613,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "archived": true,
     "description": "The first short blade cut from the Driftblade's discarded shadow. It asks for a second sword and leaves no room between question and answer.",
     "sprite": "driftblade",
     "sizeClass": "short",
@@ -14588,6 +14658,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "archived": true,
     "description": "Its smoky blade hoards the sound of being drawn. The stolen note returns in the opening cut.",
     "sprite": "driftblade",
     "sizeClass": "short",
@@ -14666,7 +14737,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 146,
     "halfArc": 0.86,
     "cooldown": 0.29,
-    "displayLength": 136,
+    "displayLength": 272,
     "swingArc": 2.58,
     "gripFrac": 0.13,
     "tags": {
@@ -15433,6 +15504,46 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
+  "cinderbrand-alternating-chops": [
+    {
+      "name": "left forge chop",
+      "motion": "shoulder-chop",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.4,
+        "impact": 0.31,
+        "followEnd": 0.58
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "right forge chop",
+      "motion": "reverse-chop",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.4,
+        "impact": 0.31,
+        "followEnd": 0.58
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
   "hollowmoon-eclipse": [
     {
       "name": "hollow draw",
@@ -15624,10 +15735,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
-  "dustdevil-jab-slash": [
+  "dustdevil-chop-stab": [
     {
-      "name": "dust jab",
-      "motion": "jab",
+      "name": "dust chop",
+      "motion": "overhead",
       "direction": 1,
       "hand": "both",
       "timing": {
@@ -15637,16 +15748,16 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.5
       },
       "path": {
-        "kind": "capsule",
-        "arcMultiplier": 0,
+        "kind": "sweep",
+        "arcMultiplier": 1,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
       }
     },
     {
-      "name": "devil slash",
-      "motion": "slash",
+      "name": "devil stab",
+      "motion": "impale",
       "direction": -1,
       "hand": "both",
       "timing": {
@@ -15656,8 +15767,8 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.58
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": -1,
+        "kind": "capsule",
+        "arcMultiplier": 0,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
@@ -15877,6 +15988,46 @@ export const GENERATED_MELEE_COMBO_BARS = {
       "path": {
         "kind": "sweep",
         "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
+  "reapers-tithe-rest-and-orbit": [
+    {
+      "name": "tithe from rest",
+      "motion": "rest-downswing",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.42,
+        "impact": 0.3,
+        "followEnd": 0.6
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "reaper waist orbit",
+      "motion": "waist-orbit",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.78,
+        "impact": 0.44,
+        "followEnd": 0.88
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1.9634954084936207,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
@@ -16358,6 +16509,82 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
         "knockback": 0
+      }
+    },
+    {
+      "name": "flash jab five",
+      "motion": "jab",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.3,
+        "impact": 0.22,
+        "followEnd": 0.42
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "flash cross six",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.08,
+        "activeEnd": 0.3,
+        "impact": 0.22,
+        "followEnd": 0.42
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "wheel hook seven",
+      "motion": "hook",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.09,
+        "activeEnd": 0.32,
+        "impact": 0.24,
+        "followEnd": 0.44
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "monk flurry thunder finish",
+      "motion": "haymaker",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.1,
+        "activeEnd": 0.34,
+        "impact": 0.26,
+        "followEnd": 0.46
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 8
       }
     }
   ],

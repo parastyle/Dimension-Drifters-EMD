@@ -43,7 +43,7 @@ describe("NW-MELEE owner-note catalog contracts", () => {
 
   it("keeps the ordered combo reads while every new beat preserves base damage", () => {
     expect(motions("x2-glacier-headtaker").slice(0, 2)).toEqual(["overhead", "rising-chop"]);
-    expect(motions("x2-dustdevil-glaive").slice(0, 2)).toEqual(["jab", "slash"]);
+    expect(motions("x2-dustdevil-glaive").slice(0, 2)).toEqual(["overhead", "impale"]);
     expect(motions("x2-saintspar-lochaber").slice(0, 2)).toEqual([
       "overhead",
       "rising-chop",

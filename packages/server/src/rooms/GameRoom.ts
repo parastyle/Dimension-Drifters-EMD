@@ -180,6 +180,7 @@ import {
   HIT_KNOCKBACK_IMPULSE,
   hasAugment,
   IMPULSE_FRICTION,
+  IMPULSE_MAX,
   INPUT_MSGS_PER_TICK,
   INPUT_QUEUE_MAX,
   IRON_STANCE_IFRAME_PER,
@@ -5440,9 +5441,11 @@ export class GameRoom extends Room<ArenaState> {
     row.delivery = delivery;
     const sourceWeapon = WEAPONS[sourceWeaponId];
     row.element =
-      delivery === CombatDelivery.Aura && sourceWeapon?.performance?.aura?.damageType
-        ? sourceWeapon.performance.aura.damageType
-        : (sourceWeapon?.tags.element ?? "physical");
+      delivery === CombatDelivery.Chain
+        ? "shock"
+        : delivery === CombatDelivery.Aura && sourceWeapon?.performance?.aura?.damageType
+          ? sourceWeapon.performance.aura.damageType
+          : (sourceWeapon?.tags.element ?? "physical");
     row.dirX = len > 1e-6 ? dx / len : 0;
     row.dirY = len > 1e-6 ? dy / len : 0;
     row.damage = Math.max(0, damage);
@@ -7726,6 +7729,18 @@ export class GameRoom extends Room<ArenaState> {
         distancePx: authoredLunge.distancePx,
         durationSeconds: authoredLunge.durationSeconds ?? TICK_MS / 1000,
         invulnerable: authoredLunge.invulnerable === true,
+      });
+    } else if (weapon.performance?.forwardDrift && hand === 0) {
+      const drift = weapon.performance.forwardDrift;
+      this.pendingWeaponLunges.set(player.id, {
+        t: 0,
+        playerId: player.id,
+        weaponId: weapon.id,
+        aimX: Math.cos(aim0),
+        aimY: Math.sin(aim0),
+        distancePx: drift.speedPxPerSecond * drift.durationSeconds,
+        durationSeconds: drift.durationSeconds,
+        invulnerable: false,
       });
     }
 
@@ -10960,8 +10975,17 @@ export class GameRoom extends Room<ArenaState> {
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
     // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
     // so a slow heavy gun punches once while a gatling stream accumulates a steady shove (capped).
-    const kick = GUN_RECOIL_IMPULSE * ((g.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE);
-    const r = addImpulse(player, -aim.x * kick, -aim.y * kick);
+    const displacementMultiplier = g.userKnockbackMultiplier ?? 1;
+    const kick =
+      GUN_RECOIL_IMPULSE *
+      ((g.recoil ?? GUN_RECOIL_BASELINE) / GUN_RECOIL_BASELINE) *
+      displacementMultiplier;
+    const r = addImpulse(
+      player,
+      -aim.x * kick,
+      -aim.y * kick,
+      IMPULSE_MAX * Math.max(1, displacementMultiplier),
+    );
     player.vx = r.vx;
     player.vy = r.vy;
   }
@@ -11094,11 +11118,37 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const t = weapon.thrown;
     if (!t) return;
-    const dmg = t.damage * this.heldDamageMult(weapon, t.scalingGrades, player, hand); // §14 source grades × §11 req penalty
+    const damageMultiplier = this.heldDamageMult(weapon, t.scalingGrades, player, hand);
+    const dmg = t.damage * damageMultiplier; // §14 source grades × §11 req penalty
     const ttl = t.range / t.speed;
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
     const drawSeconds = weapon.performance?.windupSeconds ?? 0;
     if ((weapon.performance?.preThrowRevolutions ?? 0) > 0 && drawSeconds > 0) {
+      const attackCrit = this.weaponCritChance(player, c);
+      const drawDamage = weapon.performance?.preThrowDamage;
+      if (drawDamage) {
+        this.meleeSwings.set(`${player.id}:prethrow:${hand}`, {
+          playerId: player.id,
+          swing: {
+            effectiveCooldown: drawSeconds,
+            style: "spin",
+            poseSeconds: drawSeconds,
+            activeStartSeconds: 0,
+            activeEndSeconds: drawSeconds,
+            impactSeconds: drawSeconds * 0.5,
+          },
+          aim0: Math.atan2(aim.y, aim.x),
+          range: drawDamage.range,
+          swingArc: Math.PI * 2 * (weapon.performance?.preThrowRevolutions ?? 1),
+          halfWidth: MELEE_BLADE_HALFWIDTH,
+          edgeDamage: drawDamage.damage * damageMultiplier,
+          toughDamageMultiplier: 1,
+          weaponId: weapon.id,
+          crit: attackCrit,
+          elapsed: 0,
+          hit: new Set<string>(),
+        });
+      }
       this.pendingWeaponThrows.push({
         t: drawSeconds,
         playerId: player.id,
@@ -11110,7 +11160,7 @@ export class GameRoom extends Room<ArenaState> {
         damage: dmg,
         pierce: t.pierce,
         kind: thrownProjectileKindFor(weapon),
-        crit: this.weaponCritChance(player, c),
+        crit: attackCrit,
         landingDamagePerSecond:
           weapon.groundZone?.trigger === "landing"
             ? weapon.groundZone.damagePerSecond *

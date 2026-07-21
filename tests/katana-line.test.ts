@@ -39,12 +39,14 @@ const sequence = (id: (typeof LINE)[number][0]) => {
 };
 
 describe("Driftblade katana line", () => {
-  it("ships ten active, loot-eligible katana definitions with the sanctioned size census", () => {
+  it("keeps ten durable katana definitions, with the archived pair excluded from active loot", () => {
     const sizes: Record<string, number> = {};
     for (const [id, sizeClass, hook] of LINE) {
       const def = weapon(id);
-      expect(WEAPON_IDS, `${id} active`).toContain(id);
-      expect(DROP_POOL, `${id} loot eligible`).toContain(id);
+      const archived = id === "drift-wakizashi-kagewake" || id === "drift-wakizashi-hushglass";
+      expect(WEAPON_IDS.includes(id), `${id} active`).toBe(!archived);
+      expect(DROP_POOL.includes(id), `${id} loot eligible`).toBe(!archived);
+      expect(def.archived === true, `${id} archived`).toBe(archived);
       expect(def.expansion, `${id} curated`).toBe(false);
       expect(def.tags.family, `${id} pose family`).toBe("katana");
       expect(def.sizeClass, `${id}.sizeClass`).toBe(sizeClass);

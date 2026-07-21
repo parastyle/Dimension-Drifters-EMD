@@ -88,6 +88,7 @@ const BEHAVIOR_KEYS = {
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst",
+    "userKnockbackMultiplier",
     "randomPellets",
     "muzzleOffsets", "muzzleMode", "dualMuzzleSeparation", "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
@@ -119,6 +120,7 @@ const EFFECT_RECIPES = new Set([
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
   "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
   "cinderbrand-magma-impact", "cinderchoke-fire-impact", "hollow-harvest-circle",
+  "abyssal-whirlwind-vortex", "drowned-anchor-deluge",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
@@ -131,13 +133,13 @@ const CONE_STREAM_FLAVORS = new Set(["ice", "magma"]);
 const MUZZLE_OFFSET_KEYS = new Set(["forward", "lateral"]);
 const WEAPON_MUZZLE_COUNT_CAP = 6;
 const COMBO_MOTIONS = new Set([
-  "slash", "overhead", "shoulder-chop", "rising-chop", "execution-slam", "rake", "scissor",
+  "slash", "overhead", "shoulder-chop", "reverse-chop", "rising-chop", "execution-slam", "rake", "scissor",
   "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
   "spin-release", "pommel-bash", "true-charged-slam", "falling-gate", "backswing-wheel",
   "runaway-cleave", "highland-gate", "rising-ward", "bind-break-cast-off", "long-reap",
   "shaft-switch", "compass-rose", "headsmans-drop", "hook-and-haul", "gallows-turn", "draw-cut",
   "guard-check", "sentence-fall", "choked-turn", "petalfall", "coil-drag", "thunder-fall",
-  "splinter-fall",
+  "splinter-fall", "rest-downswing", "waist-orbit",
 ]);
 const COMBO_HANDS = new Set(["lead", "off", "both"]);
 const COMBO_PATHS = new Set(["sweep", "fan", "dual-sweep", "capsule"]);
@@ -171,17 +173,20 @@ const PERFORMANCE_KEYS = new Set([
   "hold", "action", "continuous", "suppressSwing", "windupSeconds", "carryForwardPx", "shake",
   "carryAngleRad", "preThrowRevolutions", "lunge", "twirl", "holdScaling", "strideTap",
   "emitter", "vfxAt", "aura", "comboForwardPx", "edgeLeadFlip", "throwHeightPx", "frontflip",
+  "vfxForwardPx", "preThrowDamage", "forwardDrift",
 ]);
 const PERFORMANCE_HOLDS = new Set([
   "upright", "hanging-chain", "drag-at-feet", "steady", "aim-forward", "overhead", "shoulder-launcher",
   "walking-staff",
 ]);
 const PERFORMANCE_ACTIONS = new Set([
-  "default-swing", "hold", "page-flip", "shake", "spin", "recoil", "lunge-punch",
+  "default-swing", "hold", "page-flip", "shake", "spin", "recoil", "lunge-punch", "jab",
   "overhead-downswing", "throw-release",
 ]);
 const PERFORMANCE_SHAKE_KEYS = new Set(["amplitudePx", "rotationRad", "frequencyHz"]);
 const PERFORMANCE_LUNGE_KEYS = new Set(["distancePx", "durationSeconds", "invulnerable"]);
+const PERFORMANCE_PRE_THROW_DAMAGE_KEYS = new Set(["damage", "range"]);
+const PERFORMANCE_FORWARD_DRIFT_KEYS = new Set(["speedPxPerSecond", "durationSeconds"]);
 const PERFORMANCE_TWIRL_KEYS = new Set(["plane", "pivot", "direction", "visualRevolutions"]);
 const PERFORMANCE_HOLD_SCALING_KEYS = new Set(["cadence"]);
 const PERFORMANCE_STRIDE_TAP_KEYS = new Set(["amplitudePx", "phaseOffset"]);
@@ -316,8 +321,8 @@ function comboBarOf(w) {
     fail("comboBar is not an array");
     return undefined;
   }
-  if (w.comboBar.length < 1 || w.comboBar.length > 7)
-    fail(`comboBar has ${w.comboBar.length} beats; authored bars require 1..7`);
+  if (w.comboBar.length < 1 || w.comboBar.length > 8)
+    fail(`comboBar has ${w.comboBar.length} beats; authored bars require 1..8`);
   const out = [];
   for (let i = 0; i < w.comboBar.length; i++) {
     const step = w.comboBar[i];
@@ -461,12 +466,36 @@ function performanceOf(p) {
     out.carryForwardPx = num(p.carryForwardPx, 0, 80, 0, "performance.carryForwardPx");
   if (p.comboForwardPx !== undefined)
     out.comboForwardPx = num(p.comboForwardPx, 0, 120, 0, "performance.comboForwardPx");
+  if (p.vfxForwardPx !== undefined)
+    out.vfxForwardPx = num(p.vfxForwardPx, 0, 120, 0, "performance.vfxForwardPx");
   if (p.carryAngleRad !== undefined)
     out.carryAngleRad = num(p.carryAngleRad, -Math.PI, Math.PI, 0, "performance.carryAngleRad");
   if (p.preThrowRevolutions !== undefined)
     out.preThrowRevolutions = num(
       p.preThrowRevolutions, 0, 3, 0, "performance.preThrowRevolutions",
     );
+  if (p.preThrowDamage !== undefined) {
+    if (!p.preThrowDamage || typeof p.preThrowDamage !== "object" || Array.isArray(p.preThrowDamage)) {
+      fail("performance.preThrowDamage is not an object");
+    } else {
+      checkKeys(p.preThrowDamage, PERFORMANCE_PRE_THROW_DAMAGE_KEYS, "performance.preThrowDamage");
+      out.preThrowDamage = {
+        damage: num(p.preThrowDamage.damage, 0.1, 60, 1, "performance.preThrowDamage.damage"),
+        range: num(p.preThrowDamage.range, 20, 360, 100, "performance.preThrowDamage.range"),
+      };
+    }
+  }
+  if (p.forwardDrift !== undefined) {
+    if (!p.forwardDrift || typeof p.forwardDrift !== "object" || Array.isArray(p.forwardDrift)) {
+      fail("performance.forwardDrift is not an object");
+    } else {
+      checkKeys(p.forwardDrift, PERFORMANCE_FORWARD_DRIFT_KEYS, "performance.forwardDrift");
+      out.forwardDrift = {
+        speedPxPerSecond: num(p.forwardDrift.speedPxPerSecond, 8, 240, 60, "performance.forwardDrift.speedPxPerSecond"),
+        durationSeconds: num(p.forwardDrift.durationSeconds, 0.05, 0.75, 0.3, "performance.forwardDrift.durationSeconds"),
+      };
+    }
+  }
   if (p.edgeLeadFlip !== undefined) {
     if (typeof p.edgeLeadFlip !== "boolean") fail("performance.edgeLeadFlip is not a boolean");
     else out.edgeLeadFlip = p.edgeLeadFlip;
@@ -687,6 +716,12 @@ function mapWeapon(w) {
   const isGun = !isBeam && (kind === "gun" || type === "ranged");
   const isSingleShotGun = SINGLE_SHOT_GUN_IDS.has(w.id);
   const isCalamityHowitzer = w.id === "x2-calamity-howitzer";
+  const explosionRadiusMax =
+    w.id === "x2-brimstone-rocket-tube" || w.id === "x2-tidehook-bombarpoon"
+      ? 220
+      : isCalamityHowitzer
+        ? 220
+        : 140;
   const isGroundZone = kind === "groundZone";
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
@@ -908,6 +943,14 @@ function mapWeapon(w) {
       def.gun.projectileColor = int(
         b.projectileColor, 0, 0xffffff, 0, "behavior.projectileColor",
       );
+    if (b.userKnockbackMultiplier !== undefined)
+      def.gun.userKnockbackMultiplier = num(
+        b.userKnockbackMultiplier,
+        0.25,
+        4,
+        1,
+        "behavior.userKnockbackMultiplier",
+      );
     if (b.arcHeight !== undefined)
       def.gun.arcHeight = num(b.arcHeight, 24, 180, 96, "behavior.arcHeight");
     if (b.burst !== undefined) {
@@ -959,7 +1002,7 @@ function mapWeapon(w) {
     const ex = explodeOf(
       b.explode,
       "behavior.explode",
-      isCalamityHowitzer ? 220 : 140,
+      explosionRadiusMax,
       isCalamityHowitzer ? 60 : 30,
     );
     if (ex) def.gun.explode = ex;

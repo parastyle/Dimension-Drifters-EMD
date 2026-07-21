@@ -1,20 +1,20 @@
 {
   "label": "riftcaller",
   "weaponId": "x2-riftcaller-naginata",
-  "baseURL": "http://127.0.0.1:5173",
-  "capturedAt": "2026-07-21T19:34:32.139Z",
+  "baseURL": "http://127.0.0.1:5180",
+  "capturedAt": "2026-07-21T20:48:37.031Z",
   "setup": {
     "actor": {
       "x": 2400,
       "y": 2420
     },
     "target": {
-      "x": 2614.966796875,
-      "y": 2389.3310546875
+      "x": 2614.42919921875,
+      "y": 2389.832275390625
     }
   },
   "endpointDelta": 0,
-  "actorDelta": 217.14351927994218,
+  "actorDelta": 216.54092704544667,
   "events": [
     {
       "kind": "weapon-vfx-suite",
@@ -22,8 +22,8 @@
       "anchor": "source",
       "x": 2400,
       "y": 2420,
-      "targetX": 2614.966796875,
-      "targetY": 2389.3310546875,
+      "targetX": 2614.42919921875,
+      "targetY": 2389.832275390625,
       "layerIds": [
         "blade-trail"
       ]
@@ -32,10 +32,10 @@
       "kind": "weapon-vfx-suite",
       "weaponId": "x2-riftcaller-naginata",
       "anchor": "target",
-      "x": 2614.966796875,
-      "y": 2389.3310546875,
-      "targetX": 2614.966796875,
-      "targetY": 2389.3310546875,
+      "x": 2614.42919921875,
+      "y": 2389.832275390625,
+      "targetX": 2614.42919921875,
+      "targetY": 2389.832275390625,
       "layerIds": [
         "cleave-flash"
       ]
