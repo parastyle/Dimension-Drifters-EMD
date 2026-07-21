@@ -84,3 +84,18 @@ GENERATED, never cropped.
 | Tidehook Bombarpoon | much bigger ICE explosion |
 
 Watermark: all notes ≤ 2026-07-21T18:01:07Z ledgered.
+
+## V6.1 — OWNER FOLLOW-UP (in chat, 2026-07-21 evening)
+
+- **HEADSMAN DECISION: Prototype 2 — Pale Procession.** Fix before shipping: the extension must
+  START UNDERNEATH the physical blade (overlapping its lower portion) so the join is seamless —
+  the owner sees a gap at speed. Reach: owner did not elect a reach change; visual-only stands.
+- **NEW LINE — BRUTALIST ELEMENTAL GREATSWORDS (6):** two-handed big swords carrying the
+  blade-extension effect, one per element: ICE, FIRE, ELECTRICITY, VOID, LIGHT, ROCK. Silhouettes
+  modeled on a "brutalist standard" — FFVII-buster-adjacent but trademark-distinct. Full pipeline
+  like the katana/auto-rifle lines; each element gets its own extension treatment derived from the
+  Headsman mechanism.
+- **BUG — CURSOR CIRCLES (investigate live):** "Im seeing a circle special effect on cursor for
+  alot of weapons... they're kind ugly" — new since the impact-anchor sweep; likely a generic
+  impact-ring recipe (or clamp visualization) the sweep attached broadly, violating the
+  simple-geometry law. Root-cause, replace with organic per-element impact art or remove.
