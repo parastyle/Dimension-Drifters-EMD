@@ -99,3 +99,13 @@ Watermark: all notes ≤ 2026-07-21T18:01:07Z ledgered.
   alot of weapons... they're kind ugly" — new since the impact-anchor sweep; likely a generic
   impact-ring recipe (or clamp visualization) the sweep attached broadly, violating the
   simple-geometry law. Root-cause, replace with organic per-element impact art or remove.
+
+## V6.2 — OWNER INSIGHT (chat): THE INVISIBLE ART PROBLEM
+
+"so thats what those tiny ant sized particles are... we've made all these special effects and
+rendered them so tiny I had no idea they were even there." — The systemic truth behind weeks of
+VFX notes: the art library (141 assets) is good; the PRESENTATION layer displays most of it near
+raw-texture scale. Order: a catalog-wide particle-readability pass — every recipe's on-screen size
+measured against a role-based floor (trail/burst/impact/aura each get a minimum % of character
+height), enforced through the W4G2 scale contract as law, with per-family live captures for owner
+review. Runs after V6M/V6C + the V6.1 pair.
