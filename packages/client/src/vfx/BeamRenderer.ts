@@ -52,6 +52,8 @@ export interface BeamMuzzlePose {
 export type BeamMuzzlePoseWriter = (
   ownerId: string,
   weaponId: string,
+  rowKey: string,
+  angle: number,
   out: BeamMuzzlePose,
 ) => boolean;
 
@@ -283,6 +285,7 @@ export class BeamRenderer {
       this.drawRow(
         entry,
         row,
+        rowKey,
         ownerId === selfId,
         nowMs,
         dt,
@@ -300,7 +303,15 @@ export class BeamRenderer {
         entry.lip.setVisible(false);
         let originX = predicted.originX;
         let originY = predicted.originY;
-        if (writeMuzzlePose?.(predicted.ownerId, predicted.weaponId, this.muzzlePose)) {
+        if (
+          writeMuzzlePose?.(
+            predicted.ownerId,
+            predicted.weaponId,
+            predicted.ownerId,
+            predicted.angle,
+            this.muzzlePose,
+          )
+        ) {
           originX = this.muzzlePose.x;
           originY = this.muzzlePose.y;
         }
@@ -355,6 +366,7 @@ export class BeamRenderer {
   private drawRow(
     entry: BeamEntry,
     row: BeamRenderState,
+    rowKey: string,
     local: boolean,
     nowMs: number,
     dt: number,
@@ -372,7 +384,7 @@ export class BeamRenderer {
       recipe?.beam?.accentColor ??
       COLOR[row.element] ??
       DEFAULT_COLOR;
-    const pose = this.resolveDrawPose(entry, row, local, dt, writeMuzzlePose);
+    const pose = this.resolveDrawPose(entry, row, rowKey, local, dt, writeMuzzlePose);
     const oy = this.projectY(pose.originY, beltY0, beltYScale);
 
     if (row.phase === BeamPhase.Charging) {
@@ -489,6 +501,7 @@ export class BeamRenderer {
   private resolveDrawPose(
     entry: BeamEntry,
     row: BeamRenderState,
+    rowKey: string,
     local: boolean,
     dt: number,
     writeMuzzlePose: BeamMuzzlePoseWriter | undefined,
@@ -534,7 +547,9 @@ export class BeamRenderer {
 
     let originX = entry.renderOriginX;
     let originY = entry.renderOriginY;
-    if (writeMuzzlePose?.(entry.ownerId, row.weaponId, this.muzzlePose)) {
+    if (
+      writeMuzzlePose?.(entry.ownerId, row.weaponId, rowKey, entry.renderAngle, this.muzzlePose)
+    ) {
       originX = this.muzzlePose.x;
       originY = this.muzzlePose.y;
     }

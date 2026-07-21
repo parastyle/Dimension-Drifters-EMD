@@ -36,7 +36,7 @@ describe("Drive formula v1", () => {
         expect(profile.neutralCost % DRIVE_COST_QUANTUM).toBe(0);
       }
     }
-    expect(census).toEqual({ melee: 169, thrown: 16, gun: 116, cast: 2, beam: 21, zone: 2 });
+    expect(census).toEqual({ melee: 169, thrown: 16, gun: 115, cast: 2, beam: 21, zone: 3 });
   });
 
   it("pins every coefficient, frozen median, and the bounded utility overrides", () => {
@@ -64,6 +64,7 @@ describe("Drive formula v1", () => {
       "caster:melee": 51.072,
       "caster:gun": 61.0667,
       "ranged:beam": 31.0259,
+      "ranged:zone": 20.9549,
       "caster:beam": 20.9549,
       "caster:zone": 20.9549,
     });

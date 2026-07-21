@@ -18,6 +18,7 @@ export interface WeaponEffectRecipe {
   readonly chain?: "scattered-pages";
   readonly noGore?: boolean;
   readonly suppressQuakeVfx?: boolean;
+  readonly quakeExplosionElement?: "void";
   readonly musicalNotes?: true;
 }
 
@@ -159,6 +160,32 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     noGore: true,
     suppressQuakeVfx: true,
   }),
+  "witherleaf-tip-spores": Object.freeze({
+    id: "witherleaf-tip-spores",
+    weaponId: "x2-witherleaf-bestiary",
+    emitter: "tip",
+    swingPack: "toxic-wisp",
+    swingCount: 7,
+    swingScaleMultiplier: 0.65,
+    additive: false,
+  }),
+  "snakeoil-tip-sparks": Object.freeze({
+    id: "snakeoil-tip-sparks",
+    weaponId: "x2-snakeoil-tincture-scepter",
+    emitter: "tip",
+    swingPack: "toxic-spark",
+    swingCount: 5,
+    swingScaleMultiplier: 0.36,
+    additive: true,
+  }),
+  "void-caster-explosion": Object.freeze({
+    id: "void-caster-explosion",
+    weaponId: "x2-cairn-of-hollow-names",
+    reuseWeaponIds: Object.freeze(["x2-vagrant-s-wishing-marble"]),
+    emitter: "body",
+    suppressQuakeVfx: true,
+    quakeExplosionElement: "void",
+  }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
 export function resolveWeaponEffectRecipe(
@@ -217,19 +244,27 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
   }),
   "x2-galvanic-liber-of-storms": Object.freeze({
     weaponId: "x2-galvanic-liber-of-storms",
-    packs: Object.freeze(["arcane-wisp", "arcane-bolt", "arcane-spark"]),
-    count: 8,
-    scale: 0.14,
-    extent: 0.9,
+    packs: Object.freeze(["shock-wisp", "shock-splat", "shock-bolt"]),
+    count: 12,
+    scale: 0.16,
+    extent: 0.96,
     spinHz: 1.2,
   }),
   "x2-sporebound-witchglobe": Object.freeze({
     weaponId: "x2-sporebound-witchglobe",
     packs: Object.freeze(["toxic-wisp", "toxic-splat", "toxic-mote"]),
     count: 8,
-    scale: 0.13,
-    extent: 0.86,
+    scale: 0.18,
+    extent: 1,
     spinHz: 0.72,
+  }),
+  "x2-coyote-trickster-s-sparkmitt": Object.freeze({
+    weaponId: "x2-coyote-trickster-s-sparkmitt",
+    packs: Object.freeze(["shock-spark"]),
+    count: 4,
+    scale: 0.085,
+    extent: 0.58,
+    spinHz: 1.7,
   }),
 } as const satisfies Record<string, WeaponAuraVfxRecipe>);
 

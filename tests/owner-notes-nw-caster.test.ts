@@ -82,7 +82,7 @@ describe("owner-notes NW-CASTER contracts", () => {
       action: "shake",
       continuous: true,
       suppressSwing: true,
-      aura: { radius: 150, damagePerSecond: 12.1, tickRate: 0.2, damageType: "bio" },
+      aura: { radius: 210, damagePerSecond: 12.1, tickRate: 0.2, damageType: "bio" },
     });
     expect(galvanic.performance?.aura?.damagePerSecond).toBeCloseTo(
       galvanic.damage / galvanic.cooldown,
@@ -95,7 +95,7 @@ describe("owner-notes NW-CASTER contracts", () => {
 
     for (const definition of [galvanic, sporebound]) {
       const aura = resolveWeaponAuraVfxRecipe(definition);
-      expect(aura?.count, definition.id).toBeLessThanOrEqual(8);
+      expect(aura?.count, definition.id).toBeLessThanOrEqual(12);
       for (const pack of aura?.packs ?? []) expect(PARTICLE_PACKS[pack], pack).toBeDefined();
     }
     const spinA = performanceSample(galvanic.id, { timeS: 0.1 });

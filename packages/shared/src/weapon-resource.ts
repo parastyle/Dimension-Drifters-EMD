@@ -37,6 +37,7 @@ export const WEAPON_RESOURCE_FROZEN_MEDIANS = Object.freeze({
   "caster:melee": 51.072,
   "caster:gun": 61.0667,
   "ranged:beam": 31.0259,
+  "ranged:zone": 20.9549,
   "caster:beam": 20.9549,
   "caster:zone": 20.9549,
 } as const);

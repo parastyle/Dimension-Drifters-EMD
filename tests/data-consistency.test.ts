@@ -306,7 +306,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         );
         expect(def.beam?.tickRate, `${w.id}.beam.tickRate`).toBe(normalizedTick);
         expect(def.beam?.width, `${w.id}.beam.width`).toBe(
-          clamp((b.width ?? sizeWidth) as number, 24, 64),
+          clamp((b.width ?? sizeWidth) as number, 4, 64),
         );
         expect(def.beam?.range, `${w.id}.beam.range`).toBe(
           clamp((b.range ?? s.range ?? 520) as number, 240, 640),
@@ -333,11 +333,33 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           expect(def.beam?.scalingGrades, `${w.id}.beam.scalingGrades`).toEqual(
             upGrades(b.scalingGrades as Grades),
           );
+        if (b.muzzleOffsets)
+          expect(def.beam?.muzzleOffsets, `${w.id}.beam.muzzleOffsets`).toEqual(b.muzzleOffsets);
+      } else if (kind === "groundZone") {
+        const zone = b.zone as Behavior | undefined;
+        expect(def.groundZone, `${w.id}.groundZone`).toBeDefined();
+        if (zone) {
+          checkFields(w.id, def.groundZone, zone, {
+            trigger: { eq: true },
+            style: { eq: true },
+            initialRadius: { num: [12, 240] },
+            maxRadius: { num: [12, 320] },
+            growthPerSecond: { num: [0, 240] },
+            lingerSeconds: { num: [0.25, 8] },
+            damagePerSecond: { num: [0, 120] },
+            tickRate: { num: [0.05, 1] },
+            placementRange: { num: [40, 900] },
+            slowMultiplier: { num: [0.1, 1] },
+            slowSeconds: { num: [0.05, 4] },
+            grenadeArcHeight: { num: [24, 240] },
+            scalingGrades: { grades: true },
+          });
+        }
       } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
         checkFields(w.id, def.gun, b, {
           damage: { num: [1, 40] },
-          projectileSpeed: { num: [400, 1600] },
+          projectileSpeed: { num: [400, 4000] },
           range: { num: [280, 1100] },
           fireRate: { num: [0.05, 0.9] },
           magazine: { int: [1, 80] },
@@ -346,12 +368,19 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
           muzzle: { eq: true },
           muzzleColor: { int: [0, 0xffffff] },
           projectileColor: { int: [0, 0xffffff] },
+          projectileArt: { eq: true },
+          projectileVisualScale: { num: [0.5, 4] },
+          muzzleMode: { eq: true },
+          dualMuzzleSeparation: { num: [0, 64] },
+          sonicBoomRing: { eq: true },
           recoil: { num: [0.0004, 0.005] },
           pellets: { int: [1, 12], absentAs: 1 },
           pierce: { int: [1, 6], absentAs: 1 },
           bounces: { int: [0, 6], absentAs: 0 },
           scalingGrades: { grades: true },
         });
+        if (b.muzzleOffsets)
+          expect(def.gun?.muzzleOffsets, `${w.id}.gun.muzzleOffsets`).toEqual(b.muzzleOffsets);
         if (b.explode)
           checkFields(w.id, def.gun?.explode, b.explode as Behavior, {
             radius: { num: [30, 140] },

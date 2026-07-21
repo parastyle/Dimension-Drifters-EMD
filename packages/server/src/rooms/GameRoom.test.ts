@@ -829,10 +829,9 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     expect(dipped).toBe(true);
   });
 
-  it("§43 the HAILSHOT HAND-MAUL's recovered explosive gun fires — the sibling-block data-loss stays fixed", () => {
-    // This weapon shipped as a default 6-damage slug for months: its authored 16-damage explosive gun
-    // lived in a `gun` block NEXT TO behavior, which the old generator silently ignored (Sol audit P0).
-    // Prove the recovered kit end-to-end in the sim: the shell explodes, catching a dummy OFF the line.
+  it("§43 the HAILSHOT HAND-MAUL's recovered direct cannonball fires without an explosion", () => {
+    // This weapon shipped as a default 6-damage slug for months because its authored gun lived beside
+    // behavior. V3R keeps the recovered kit but moves the old blast payload into the direct cannonball.
     const h = training();
     const p = h.state().players.get("p1");
     p.weapon = "x2-hailshot-hand-maul";
@@ -840,15 +839,14 @@ describe("GameRoom — §17 pitfall + terrain-death + §9 gun cadence", () => {
     const dummy = [...h.state().enemies.values()].find((e: { kind: string }) => e.kind === "dummy");
     if (!dummy) throw new Error("no training dummy");
     const hp0 = dummy.hp;
-    // Shell expires ~muzzle reach + range 540 past spawn; 45px off the line, only the 60px blast reaches.
-    // §50 pinned geometry + cleared landmarks — same RNG flake class as the mortar test above.
+    // Pin the dummy on the direct line: the owner order explicitly removes the old off-line blast.
     h.room.map.pois.length = 0;
     h.room.map.tiles.fill(TILE_GROUND);
     dummy.x = 2400;
     dummy.y = 2400;
-    p.x = dummy.x - 630;
-    p.y = dummy.y + 45;
-    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: p.x + 600, ty: p.y });
+    p.x = dummy.x - 300;
+    p.y = dummy.y;
+    h.send("p1", "attack", { aimX: 1, aimY: 0, tx: dummy.x, ty: dummy.y });
     let dipped = false;
     for (let i = 0; i < 44 && !dipped; i++) {
       h.tick(1);
@@ -6939,11 +6937,13 @@ describe("GameRoom - hit registration regressions", () => {
     combat.targetX = bossX + 500;
     combat.targetY = bossY;
     h.room.fireGun(player, combat, weapon);
-    const projectile = [...h.state().projectiles.values()].at(-1);
-    if (!projectile) throw new Error("point-blank gun did not create a projectile");
-    const projectileMeta = h.room.projectileMeta.get(projectile.id);
-    if (projectileMeta) projectileMeta.crit = 0;
-    const expectedDamage = projectileMeta?.damage;
+    const projectiles = [...h.state().projectiles.values()];
+    if (!projectiles.length) throw new Error("point-blank gun did not create a projectile");
+    const expectedDamage = projectiles.reduce((sum, projectile) => {
+      const projectileMeta = h.room.projectileMeta.get(projectile.id);
+      if (projectileMeta) projectileMeta.crit = 0;
+      return sum + (projectileMeta?.damage ?? 0);
+    }, 0);
     if (!(expectedDamage > 0)) throw new Error("point-blank projectile needs positive damage");
 
     h.room.stepProjectiles(0.05);
@@ -7326,6 +7326,7 @@ describe("GameRoom - NB projectile contracts", () => {
     if (!weapon?.cast) throw new Error("Arcanist cast fixture is required");
     const { h, player } = projectileRoom("arcanist", weaponId);
     const cadence = enemyComboShared.weaponAttackCooldown(weapon);
+    const projectileCount = weapon.cast.volley?.count ?? 1;
 
     expect(cadence).toBe(weapon.cast.cooldown);
     for (let shot = 0; shot < 4; shot++) {
@@ -7339,7 +7340,9 @@ describe("GameRoom - NB projectile contracts", () => {
       });
       h.tick(1);
       expect(player.attackSeq, `accepted shot ${shot + 1}`).toBe(attackSeq + 1);
-      expect(h.room.projectileSeq, `projectile for shot ${shot + 1}`).toBe(projectileSeq + 1);
+      expect(h.room.projectileSeq, `volley for shot ${shot + 1}`).toBe(
+        projectileSeq + projectileCount,
+      );
       h.tick(Math.ceil(cadence / 0.05));
     }
   });

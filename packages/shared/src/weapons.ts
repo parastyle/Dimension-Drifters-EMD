@@ -50,6 +50,21 @@ export interface WeaponGripPoints {
   secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
 }
 
+/** Local displacement from the ordinary +X barrel tip, in fixed display/world pixels. */
+export interface WeaponMuzzleOffset {
+  forward: number;
+  lateral: number;
+}
+
+export type GunMuzzleMode = "parallel" | "cycle";
+export type GunProjectileArt = "weapon-crop" | "arrow" | "cannonball" | "fireball";
+
+export const CENTER_MUZZLE_OFFSET: Readonly<WeaponMuzzleOffset> = Object.freeze({
+  forward: 0,
+  lateral: 0,
+});
+export const WEAPON_MUZZLE_COUNT_CAP = 6;
+
 /** One declarative Driftblade-line identity hook. The server resolves these fields from the accepted
  * combo beat; the Drive/loot estimators price the same authored multipliers and finisher burst. */
 export interface KatanaHookDef {
@@ -108,10 +123,14 @@ export interface BeamDef {
     count: number;
     spread: number;
   };
+  /** Fixed parallel barrel lanes. They share one angle and differ only by their muzzle origin. */
+  muzzleOffsets?: WeaponMuzzleOffset[];
   scalingGrades?: Partial<Record<Attr, Grade>>;
 }
 
 export const PRISM_BEAM_MAX_RAYS = 7;
+/** Per accepted cast, before Arc Split augments; keeps authored volleys inside the friendly entity budget. */
+export const CAST_VOLLEY_PROJECTILE_CAP = 6;
 export const FRIENDLY_BEAM_ENTITY_CAP = 32;
 
 /** Satellite rows use only the budget left after reserving one primary beam row per player. */
@@ -163,7 +182,10 @@ export type WeaponEffectRecipeId =
   | "thunderhead-electric-codex"
   | "sermon-musical-notes"
   | "nullspike-impact-circle"
-  | "quarry-quad-spatter";
+  | "quarry-quad-spatter"
+  | "witherleaf-tip-spores"
+  | "snakeoil-tip-sparks"
+  | "void-caster-explosion";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
 export type WeaponStanceId =
@@ -185,7 +207,7 @@ export interface EnemyHitStatusDef {
  * radius is gameplay truth and never inferred from renderer geometry. */
 export interface GroundZoneDef {
   trigger: "channel" | "attack" | "landing";
-  style: "nether" | "poison" | "ice";
+  style: "nether" | "poison" | "poison-smoke" | "ice";
   initialRadius: number;
   maxRadius: number;
   growthPerSecond: number;
@@ -461,6 +483,8 @@ export interface WeaponDef {
     count: number;
     /** Cone half-angle (radians) the projectiles spread across, centred on aim. */
     spread: number;
+    /** Server-owned heading policy. Radial random samples every shard independently across 360 degrees. */
+    aim?: "cone" | "radial-random";
     /** Projectile speed, px/sec. */
     speed: number;
     /** Travel distance before a projectile expires (and explodes), px. */
@@ -488,7 +512,7 @@ export interface WeaponDef {
    * (§38 classes) finally has a weapon that reads it. Per §14 size/speed are FIXED; only damage scales.
    */
   cast?: {
-    /** Damage per bolt, before scaling. */
+    /** Damage per accepted cast, before scaling. Authored volleys split this total across their bolts. */
     damage: number;
     /** Bolt speed, px/sec (slower + bigger than a bullet, so it reads "arcane", not "gunfire"). */
     speed: number;
@@ -502,6 +526,11 @@ export interface WeaponDef {
     bulletKind: string;
     /** Per-source scaling (§14) — INT-forward for casters. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
+    /** Bounded simultaneous fan; `spread` is its half-angle around the accepted server aim. */
+    volley?: {
+      count: number;
+      spread: number;
+    };
   };
   /** Charge, ignite once, then sustain one server-authoritative swept capsule until release/overheat. */
   beam?: BeamDef;
@@ -540,6 +569,8 @@ export interface WeaponDef {
     reloadSeconds: number;
     /** Client bullet visual: "slug" | "pellet" | "tracer" | "nail" | "ricochet". */
     bulletKind: string;
+    /** Authored in-flight identity; own-sprite crops resolve through the checked-in client registry. */
+    projectileArt?: GunProjectileArt;
     /** Client-only in-flight projectile scale. Never enters the fixed server hit radius. */
     projectileVisualScale?: number;
     /** Cosmetic ballistic lift; the authoritative server trajectory and collision remain planar. */
@@ -552,6 +583,13 @@ export interface WeaponDef {
     projectileColor?: number;
     /** Recoil camera-kick intensity per shot (heavy slugs punch, the gatling barely buzzes). ~0.0006–0.004. */
     recoil?: number;
+    /** Ordered local barrel tips. Parallel lanes emit together; cycle selects one per accepted beat. */
+    muzzleOffsets?: WeaponMuzzleOffset[];
+    muzzleMode?: GunMuzzleMode;
+    /** Full lateral separation between the two held copies of a default `dual` weapon. */
+    dualMuzzleSeparation?: number;
+    /** Presentation recipe: an expanding sonic ring at every authoritative launch origin. */
+    sonicBoomRing?: boolean;
     /** Per-source scaling (§14 WYSIWYG) — the bullet's grades; omitted = the weapon's edge grades. */
     scalingGrades?: Partial<Record<Attr, Grade>>;
     /** AoE on bullet death (explosive rounds). Omitted → bullets don't blast. */
@@ -629,6 +667,48 @@ export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): 
 
 /** Shared held-implement tip for bullets, caster bolts, and beams. */
 export const weaponMuzzleReach = gunMuzzleReach;
+
+/** Ordered per-copy muzzle data. Missing authoring remains the legacy centre-tip lane. */
+export function weaponMuzzleOffsets(
+  weapon: Pick<WeaponDef, "gun"> | undefined,
+): readonly WeaponMuzzleOffset[] {
+  const offsets = weapon?.gun?.muzzleOffsets;
+  return offsets?.length ? offsets : [CENTER_MUZZLE_OFFSET];
+}
+
+/** Authoritative gun lanes for one accepted beat. `acceptedSeq` is one-based like PlayerState.attackSeq. */
+export function gunMuzzleOffsetsForShot(
+  weapon: Pick<WeaponDef, "dual" | "gun"> | undefined,
+  acceptedSeq: number,
+): WeaponMuzzleOffset[] {
+  const authored = weaponMuzzleOffsets(weapon);
+  const perCopy =
+    weapon?.gun?.muzzleMode === "cycle"
+      ? [authored[(Math.max(1, acceptedSeq >>> 0) - 1) % authored.length]!]
+      : authored;
+  const separation = weapon?.dual ? Math.max(0, weapon.gun?.dualMuzzleSeparation ?? 0) : 0;
+  if (separation <= 0) return perCopy.map((offset) => ({ ...offset }));
+  const half = separation / 2;
+  const out: WeaponMuzzleOffset[] = [];
+  for (const copyOffset of [-half, half])
+    for (const offset of perCopy)
+      out.push({ forward: offset.forward, lateral: offset.lateral + copyOffset });
+  return out;
+}
+
+/** Rotate one local muzzle displacement through an accepted world-space aim. */
+export function offsetWeaponMuzzle(
+  tipX: number,
+  tipY: number,
+  aimX: number,
+  aimY: number,
+  offset: Readonly<WeaponMuzzleOffset>,
+): { x: number; y: number } {
+  return {
+    x: tipX + aimX * offset.forward - aimY * offset.lateral,
+    y: tipY + aimY * offset.forward + aimX * offset.lateral,
+  };
+}
 
 /** Painted +X emitter reach for authored spouts. Both client punctuation and server projectile spawn call
  * this exact seam; a zero return means the weapon retains its legacy source-origin policy. */
@@ -1458,13 +1538,14 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
     twoHanded: true,
     vfxRadius: 60,
     cast: {
-      damage: 16, // a heavy line-clearing bolt
+      damage: 16, // total volley payload; split three ways below so cadence DPS stays unchanged
       speed: 620,
       range: 720,
       cooldown: 0.62,
       pierce: 99, // tears through the whole line
       bulletKind: "orb",
       scalingGrades: { int: "A" },
+      volley: { count: 3, spread: 0.16 },
     },
     tags: {
       grip: "2H",
@@ -1632,6 +1713,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       bulletKind: "tracer",
       muzzle: "rapid",
       muzzleColor: 0xfff0a0,
+      muzzleOffsets: [{ forward: -2, lateral: -13 }],
       recoil: 0.0006, // a faint buzz — held steady so you can walk the stream onto targets
       scalingGrades: { dex: "B" },
     },

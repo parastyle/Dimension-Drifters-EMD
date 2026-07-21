@@ -297,7 +297,7 @@ describe("weapon performance pose states", () => {
   const expected = {
     "x2-cairn-of-hollow-names": ["upright", "default-swing"],
     "x2-rotgrove-totem": ["upright", "default-swing"],
-    "x2-coffin-nail-rosary-orb": ["hanging-chain", "hold"],
+    "x2-coffin-nail-rosary-orb": ["hanging-chain", "default-swing"],
     "x2-emberleaf-chapbook": ["steady", "page-flip"],
     "x2-tallowtongue-pyre-stave": ["steady", "shake"],
     "x2-hollowbarrel-spell-scattergun-staff": ["aim-forward", "recoil"],
@@ -351,7 +351,7 @@ describe("weapon performance pose states", () => {
     input.spec = performance("x2-rotgrove-totem");
     const control = { ...sampleWeaponPerformance(input, out) };
 
-    expect(cairn.handX - control.handX).toBeCloseTo(36 / 76);
+    expect(cairn.handX - control.handX).toBeCloseTo(54 / 76);
     input.spec = performance("x2-cairn-of-hollow-names");
     input.phase = "active";
     expect(sampleWeaponPerformance(input, out).active).toBe(false);
@@ -388,7 +388,7 @@ describe("weapon performance pose states", () => {
     expect(hatchet.weaponAngle).toBe(-Math.PI / 2);
   });
 
-  it("lets upright holds yield to the ordinary swing while authored holds retain ownership", () => {
+  it("lets upright and hanging-chain rest poses yield to their ordinary attack swings", () => {
     const input = createWeaponPerformanceInput();
     const out = createWeaponPerformanceSample();
     input.phase = "active";
@@ -397,6 +397,8 @@ describe("weapon performance pose states", () => {
     expect(sampleWeaponPerformance(input, out).active).toBe(false);
 
     input.spec = performance("x2-coffin-nail-rosary-orb");
+    expect(sampleWeaponPerformance(input, out).active).toBe(false);
+    input.phase = "idle";
     expect(sampleWeaponPerformance(input, out).active).toBe(true);
     expect(out.weaponAngle).toBe(Math.PI / 2);
   });

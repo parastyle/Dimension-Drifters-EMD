@@ -397,7 +397,7 @@ export class EnemyState extends Schema {
 /** A lingering corrosive puddle dropped by a zoner (§15) — DoTs players standing inside. */
 /** Append-only compact ground-zone wire taxonomy. */
 export const ZoneKind = { Hostile: 0, Weapon: 1 } as const;
-export const ZoneStyle = { Legacy: 0, Nether: 1, Poison: 2, Ice: 3 } as const;
+export const ZoneStyle = { Legacy: 0, Nether: 1, Poison: 2, Ice: 3, PoisonSmoke: 4 } as const;
 
 export class ZoneState extends Schema {
   @type("string") id = "";

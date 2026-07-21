@@ -96,8 +96,8 @@ describe("owner-notes NR REDO iteration contracts", () => {
     const cairn = weapon("x2-cairn-of-hollow-names");
     const cairnIdle = performanceSample(cairn.id, "idle", 0);
     const rotgroveIdle = performanceSample("x2-rotgrove-totem", "idle", 0);
-    expect(cairn.performance?.carryForwardPx).toBe(36);
-    expect(cairnIdle.handX - rotgroveIdle.handX).toBeCloseTo(36 / 76, 8);
+    expect(cairn.performance?.carryForwardPx).toBe(54);
+    expect(cairnIdle.handX - rotgroveIdle.handX).toBeCloseTo(54 / 76, 8);
   });
 
   it("uses painted electric departure and arrival punctuation for Cogwright warp", () => {

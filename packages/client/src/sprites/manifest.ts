@@ -12010,23 +12010,33 @@ export const SPRITES = {
     "id": "x2-scattershell-duster",
     "kind": "weapon",
     "canvas": {
-      "w": 339,
-      "h": 339
+      "w": 253,
+      "h": 128
     },
     "body": {
-      "cx": 174,
-      "cy": 166.7,
-      "w": 256,
-      "h": 225
+      "cx": 126.5,
+      "cy": 64,
+      "w": 253,
+      "h": 128
     },
     "parts": [
       {
         "role": "part-1",
         "file": "part-1.png",
-        "w": 256,
-        "h": 225,
-        "cx": 174,
-        "cy": 166.7,
+        "w": 253,
+        "h": 128,
+        "cx": 126.5,
+        "cy": 64,
+        "ox": 0,
+        "oy": 0
+      },
+      {
+        "role": "part-2",
+        "file": "part-2.png",
+        "w": 253,
+        "h": 128,
+        "cx": 126.5,
+        "cy": 64,
         "ox": 0,
         "oy": 0
       }

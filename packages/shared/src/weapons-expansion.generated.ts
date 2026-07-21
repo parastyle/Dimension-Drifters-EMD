@@ -2962,7 +2962,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": 5
     },
     "gun": {
-      "damage": 16,
+      "damage": 24,
       "projectileSpeed": 720,
       "range": 540,
       "fireRate": 0.55,
@@ -2971,10 +2971,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
-      "explode": {
-        "radius": 60,
-        "damage": 8
-      }
+      "projectileArt": "cannonball",
+      "projectileVisualScale": 1.6
     }
   },
   "x2-gravelthroat-repeater": {
@@ -4109,7 +4107,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.45,
-    "displayLength": 56,
+    "displayLength": 74.48,
     "swingArc": 1.8,
     "gripFrac": 0.16,
     "tags": {
@@ -4382,7 +4380,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "beam": {
       "damagePerSecond": 75,
       "tickRate": 0.1,
-      "width": 48,
+      "width": 8,
       "range": 560,
       "chargeSeconds": 0.65,
       "sweepLagSeconds": 0.22,
@@ -4689,6 +4687,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
+      "muzzleOffsets": [
+        {
+          "forward": 0,
+          "lateral": -5
+        },
+        {
+          "forward": 0,
+          "lateral": 5
+        }
+      ],
+      "muzzleMode": "parallel",
       "muzzleColor": 16747563,
       "explode": {
         "radius": 56,
@@ -5297,7 +5306,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "twoHanded": true,
     "gun": {
       "damage": 16,
-      "projectileSpeed": 1400,
+      "projectileSpeed": 3200,
       "range": 900,
       "fireRate": 0.85,
       "magazine": 4,
@@ -5305,6 +5314,18 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
+      "muzzleOffsets": [
+        {
+          "forward": 0,
+          "lateral": -5
+        },
+        {
+          "forward": 0,
+          "lateral": 5
+        }
+      ],
+      "muzzleMode": "parallel",
+      "sonicBoomRing": true,
       "pierce": 5,
       "muzzleColor": 16747563
     }
@@ -6355,7 +6376,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 320,
     "halfArc": 0.58,
     "cooldown": 0.5,
-    "displayLength": 94,
+    "displayLength": 131.6,
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
@@ -6488,8 +6509,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "ground-zone",
+      "fireMode": "hold",
       "element": "toxic",
       "classPool": "ranged",
       "family": "blunderbuss",
@@ -6505,22 +6526,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 4,
-      "projectileSpeed": 600,
+      "damage": 5,
+      "projectileSpeed": 900,
       "range": 320,
-      "fireRate": 0.62,
-      "magazine": 4,
-      "reloadSeconds": 1.6,
-      "bulletKind": "pellet",
-      "muzzle": "boom",
-      "recoil": 0.003,
-      "pellets": 8,
-      "spread": 0.45,
-      "muzzleColor": 10288955,
-      "explode": {
-        "radius": 44,
-        "damage": 3
-      }
+      "fireRate": 0.3,
+      "magazine": 8,
+      "reloadSeconds": 1.4,
+      "bulletKind": "slug",
+      "muzzle": "punch",
+      "recoil": 0.0016
+    },
+    "groundZone": {
+      "trigger": "channel",
+      "style": "poison-smoke",
+      "initialRadius": 32,
+      "maxRadius": 150,
+      "growthPerSecond": 100,
+      "lingerSeconds": 1.6,
+      "damagePerSecond": 90.3225806451613,
+      "tickRate": 0.1,
+      "placementRange": 320
     }
   },
   "x2-quicksilver-streetsweeper": {
@@ -6632,7 +6657,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 6,
+      "damage": 40,
       "projectileSpeed": 820,
       "range": 380,
       "fireRate": 0.64,
@@ -6641,8 +6666,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "pellet",
       "muzzle": "punch",
       "recoil": 0.0032,
-      "pellets": 7,
-      "spread": 0.31,
+      "muzzleOffsets": [
+        {
+          "forward": 0,
+          "lateral": -4
+        },
+        {
+          "forward": 0,
+          "lateral": 4
+        }
+      ],
+      "muzzleMode": "parallel",
       "muzzleColor": 16757307
     }
   },
@@ -7613,6 +7647,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
+      "projectileArt": "weapon-crop",
+      "projectileVisualScale": 1.3,
       "explode": {
         "radius": 70,
         "damage": 13
@@ -8027,6 +8063,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0038,
+      "projectileArt": "cannonball",
+      "projectileVisualScale": 4,
       "explode": {
         "radius": 70,
         "damage": 12
@@ -8119,7 +8157,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "dual": true,
     "gun": {
-      "damage": 4,
+      "damage": 24,
       "projectileSpeed": 720,
       "range": 400,
       "fireRate": 0.46,
@@ -8128,11 +8166,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "pellet",
       "muzzle": "boom",
       "recoil": 0.003,
-      "pellets": 6,
-      "spread": 0.5,
+      "muzzleOffsets": [
+        {
+          "forward": 0,
+          "lateral": -4
+        },
+        {
+          "forward": 0,
+          "lateral": 4
+        }
+      ],
+      "muzzleMode": "parallel",
+      "dualMuzzleSeparation": 26,
       "explode": {
         "radius": 42,
-        "damage": 4
+        "damage": 24
       }
     }
   },
@@ -8173,7 +8221,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "beam": {
       "damagePerSecond": 33.333333333333336,
       "tickRate": 0.1,
-      "width": 64,
+      "width": 6,
       "range": 620,
       "chargeSeconds": 0.65,
       "sweepLagSeconds": 0.35,
@@ -8188,7 +8236,33 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "movement": {
         "chargeMul": 0.55,
         "channelMul": 0.35
-      }
+      },
+      "muzzleOffsets": [
+        {
+          "forward": 0,
+          "lateral": -13
+        },
+        {
+          "forward": 0,
+          "lateral": -8
+        },
+        {
+          "forward": 0,
+          "lateral": -3
+        },
+        {
+          "forward": 0,
+          "lateral": 3
+        },
+        {
+          "forward": 0,
+          "lateral": 8
+        },
+        {
+          "forward": 0,
+          "lateral": 13
+        }
+      ]
     }
   },
   "x2-calamity-howitzer": {
@@ -8397,6 +8471,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "boom",
       "recoil": 0.0028,
+      "projectileArt": "fireball",
+      "projectileVisualScale": 1.45,
       "bounces": 3,
       "explode": {
         "radius": 58,
@@ -8565,6 +8641,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0035,
+      "projectileArt": "weapon-crop",
       "pierce": 5,
       "muzzleColor": 14803168,
       "scalingGrades": {
@@ -8614,6 +8691,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0008,
+      "projectileArt": "arrow",
       "muzzleColor": 13013344,
       "scalingGrades": {
         "dex": "B"
@@ -8855,7 +8933,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.3,
-    "displayLength": 86,
+    "displayLength": 172,
     "swingArc": 1.8,
     "gripFrac": 0.15,
     "tags": {
@@ -9044,6 +9122,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "spark",
       "recoil": 0.0011,
+      "muzzleOffsets": [
+        {
+          "forward": -3,
+          "lateral": -9
+        },
+        {
+          "forward": 0,
+          "lateral": 0
+        },
+        {
+          "forward": -3,
+          "lateral": 9
+        }
+      ],
+      "muzzleMode": "cycle",
       "pierce": 3,
       "muzzleColor": 15239408,
       "scalingGrades": {
@@ -9316,6 +9409,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.004,
+      "projectileArt": "weapon-crop",
       "pierce": 6,
       "muzzleColor": 11627775,
       "scalingGrades": {
@@ -9760,6 +9854,11 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "action": "spin",
       "continuous": true,
       "suppressSwing": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "forward"
+      },
       "aura": {
         "radius": 160,
         "damagePerSecond": 14.3,
@@ -9805,6 +9904,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "scaling": [
         "INT"
       ]
+    },
+    "effectRecipe": "witherleaf-tip-spores",
+    "effectEmitter": "tip",
+    "effectTiming": "active-start",
+    "performance": {
+      "hold": "steady",
+      "action": "shake",
+      "continuous": true,
+      "suppressSwing": true,
+      "shake": {
+        "amplitudePx": 3.2,
+        "rotationRad": 0.06,
+        "frequencyHz": 14
+      },
+      "emitter": "spout"
     },
     "requirements": {
       "int": 8
@@ -10770,7 +10884,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 95,
     "halfArc": 0.5,
     "cooldown": 0.36,
-    "displayLength": 92,
+    "displayLength": 184,
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
@@ -11016,6 +11130,16 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A tarnished medicine-show scepter topped with a corked tonic bottle of luminous green miracle-cure, flicking a chaining splash of corrosive quackery foe to foe.",
+    "effectRecipe": "snakeoil-tip-sparks",
+    "effectEmitter": "tip",
+    "effectTiming": "active-start",
+    "performance": {
+      "hold": "steady",
+      "action": "hold",
+      "continuous": true,
+      "suppressSwing": true,
+      "emitter": "spout"
+    },
     "requirements": {
       "int": 6,
       "luk": 5
@@ -11302,6 +11426,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "LUK"
       ]
     },
+    "effectRecipe": "void-caster-explosion",
+    "effectEmitter": "body",
     "requirements": {
       "int": 6
     },
@@ -11483,6 +11609,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "spin",
+      "continuous": true,
+      "suppressSwing": true
+    },
     "requirements": {
       "int": 8
     },
@@ -11492,6 +11624,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "speed": 420,
       "range": 260,
       "damage": 6,
+      "aim": "radial-random",
       "explode": {
         "radius": 48,
         "damage": 5
@@ -11586,8 +11719,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "performance": {
       "hold": "hanging-chain",
-      "action": "hold",
-      "suppressSwing": true
+      "action": "default-swing"
     },
     "requirements": {
       "int": 9
@@ -11635,7 +11767,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "frequencyHz": 13
       },
       "aura": {
-        "radius": 150,
+        "radius": 210,
         "damagePerSecond": 12.1,
         "resourcePerSecond": 18,
         "tickRate": 0.2,
@@ -12410,8 +12542,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "groundZone": {
       "trigger": "landing",
       "style": "poison",
-      "initialRadius": 44,
-      "maxRadius": 44,
+      "initialRadius": 84,
+      "maxRadius": 84,
       "growthPerSecond": 0,
       "lingerSeconds": 4.5,
       "damagePerSecond": 11.1111111,
@@ -12451,6 +12583,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT",
         "LUK"
       ]
+    },
+    "comboFamily": "arc",
+    "comboVariant": "thunderpost-storm-cadence",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true
     },
     "requirements": {
       "int": 9
@@ -12592,10 +12731,12 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
+    "effectRecipe": "void-caster-explosion",
+    "effectEmitter": "body",
     "performance": {
       "hold": "upright",
       "action": "default-swing",
-      "carryForwardPx": 36
+      "carryForwardPx": 54
     },
     "requirements": {
       "int": 11,
@@ -13935,6 +14076,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "swingStyle": "punch",
+    "comboFamily": "punch",
+    "comboVariant": "coyote-voltage-boxing",
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -15166,6 +15309,103 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
+  "thunderpost-storm-cadence": [
+    {
+      "name": "post draw",
+      "motion": "draw-cut",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.12,
+        "activeEnd": 0.4,
+        "impact": 0.27,
+        "followEnd": 0.58
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "forking return",
+      "motion": "guard-check",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.42,
+        "impact": 0.29,
+        "followEnd": 0.6
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "copper rise",
+      "motion": "rising-ward",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.14,
+        "activeEnd": 0.44,
+        "impact": 0.31,
+        "followEnd": 0.62
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "stormwheel",
+      "motion": "compass-rose",
+      "direction": -1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.15,
+        "activeEnd": 0.46,
+        "impact": 0.33,
+        "followEnd": 0.64
+      },
+      "path": {
+        "kind": "fan",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "thunderpost fall",
+      "motion": "thunder-fall",
+      "direction": 1,
+      "hand": "both",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.5,
+        "impact": 0.37,
+        "followEnd": 0.7
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
   "wyrmskull-sword": [
     {
       "name": "fang cut",
@@ -15226,6 +15466,84 @@ export const GENERATED_MELEE_COMBO_BARS = {
     }
   ],
   "sparkknuckle-voltage-boxing": [
+    {
+      "name": "lead rising hook",
+      "motion": "hook",
+      "direction": 1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.16,
+        "activeEnd": 0.43,
+        "impact": 0.4,
+        "followEnd": 0.57
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": 1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "rear voltage cross",
+      "motion": "cross",
+      "direction": -1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.13,
+        "activeEnd": 0.39,
+        "impact": 0.36,
+        "followEnd": 0.54
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "off-side body hook",
+      "motion": "hook",
+      "direction": -1,
+      "hand": "lead",
+      "timing": {
+        "activeStart": 0.18,
+        "activeEnd": 0.46,
+        "impact": 0.43,
+        "followEnd": 0.59
+      },
+      "path": {
+        "kind": "sweep",
+        "arcMultiplier": -1,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    },
+    {
+      "name": "thunder cross finisher",
+      "motion": "cross",
+      "direction": 1,
+      "hand": "off",
+      "timing": {
+        "activeStart": 0.2,
+        "activeEnd": 0.5,
+        "impact": 0.46,
+        "followEnd": 0.68
+      },
+      "path": {
+        "kind": "capsule",
+        "arcMultiplier": 0,
+        "rangeMultiplier": 1,
+        "damageMultiplier": 1,
+        "knockback": 0
+      }
+    }
+  ],
+  "coyote-voltage-boxing": [
     {
       "name": "lead rising hook",
       "motion": "hook",

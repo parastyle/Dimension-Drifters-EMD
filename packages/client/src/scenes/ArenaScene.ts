@@ -54,6 +54,7 @@ import {
   generateArena,
   getDimension,
   gunMuzzleReach,
+  gunMuzzleOffsetsForShot,
   hasAugment,
   INTERP_DELAY_MS,
   INTERP_SNAP_ENEMY,
@@ -73,6 +74,7 @@ import {
   type MoveStance,
   meleeReach,
   nextUpgradeCost,
+  offsetWeaponMuzzle,
   PARRY_CHAIN_CD,
   PARRY_CHAIN_RIPOSTE_AT,
   PARRY_CHAIN_WINDOW,
@@ -333,6 +335,7 @@ import {
   gunFx,
   makeBullet,
   makeCounter,
+  makeGunIdentityProjectile,
   makeMagma,
   makeSpit,
   makeThrownWeapon,
@@ -346,6 +349,7 @@ import {
   spawnMuzzleFlash,
   spawnPoof,
   spawnQuake,
+  spawnSonicBoomRing,
   spawnSplat,
   spawnWeaponKillFx,
   TelegraphForeshadowPool,
@@ -1234,12 +1238,31 @@ export class ArenaScene extends Phaser.Scene {
   private readonly writeBeamMuzzlePose = (
     ownerId: string,
     weaponId: string,
+    rowKey: string,
+    angle: number,
     out: BeamMuzzlePose,
   ): boolean => {
     const rig = this.blobs.get(ownerId);
     if (!rig || rig.heldWeaponDef(0)?.id !== weaponId || !rig.writeWeaponMuzzle(0, out))
       return false;
     if (this.belt) out.y = BELT_Y0 + (out.y - BELT_Y0) / BELT_FORESHORTEN;
+    const offsets = WEAPONS[weaponId]?.beam?.muzzleOffsets;
+    if (offsets?.length) {
+      const barrelMatch = /:barrel:(\d+)$/.exec(rowKey);
+      const barrelIndex = barrelMatch ? Number(barrelMatch[1]) : 0;
+      const offset = offsets[barrelIndex] ?? offsets[0];
+      if (offset) {
+        const muzzle = offsetWeaponMuzzle(
+          out.x,
+          out.y,
+          Math.cos(angle),
+          Math.sin(angle),
+          offset,
+        );
+        out.x = muzzle.x;
+        out.y = muzzle.y;
+      }
+    }
     return true;
   };
   private readonly beamAimCommand = { aimX: 1, aimY: 0, targetX: 0, targetY: 0 };
@@ -6635,8 +6658,17 @@ export class ArenaScene extends Phaser.Scene {
           (!!sourceWeapon.gun && projectileKind === baseKind(sourceWeapon.gun.bulletKind)));
       const casterRecipe = casterOwnsKind ? resolveCasterVfxRecipe(sourceWeapon) : undefined;
       const fx = comet ? gunFx("orb:fire") : GUN_FX[projectileKind];
+      const gunIdentity = sourceWeapon?.gun
+        ? makeGunIdentityProjectile(
+            this,
+            pr,
+            sourceWeaponId,
+            sourceWeapon.gun.projectileVisualScale ?? 1,
+          )
+        : null;
       const container =
-        weaponEffectRecipe?.projectile === "electric-bolt"
+        gunIdentity ??
+        (weaponEffectRecipe?.projectile === "electric-bolt"
           ? makeBullet(this, pr, sourceWeapon?.gun?.projectileVisualScale ?? 1, weaponEffectRecipe)
           : weaponEffectRecipe?.projectile === "crystal-shard-orb"
             ? makeMagma(this, pr, weaponEffectRecipe)
@@ -6656,7 +6688,7 @@ export class ArenaScene extends Phaser.Scene {
                     ? makeMagma(this, pr)
                     : pr.kind === "counter" || pr.kind === "deflect"
                       ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
-                      : makeSpit(this, pr);
+                      : makeSpit(this, pr));
       container.setData("kind", pr.kind);
       container.setData("weaponEffectRecipe", weaponEffectRecipe);
       container.setData("ultimateProjectile", comet);
@@ -6687,20 +6719,38 @@ export class ArenaScene extends Phaser.Scene {
           const p = room.state.players.get(shooter);
           if (p && !suppressed) {
             const ang = Math.atan2(pr.vy, pr.vx);
-            // Flash at the shooter's RENDERED barrel tip (per-gun reach × the holder's rig scale) — the
-            // rig, not raw state, so the flash doesn't float off the barrel by the render offset.
+            const aimX = Math.cos(ang);
+            const aimY = Math.sin(ang);
             const srig = this.blobs.get(shooter);
-            const reach = gunMuzzleReach(WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON]); // §29 fixed-size weapon
-            if (!casterRecipe)
-              spawnMuzzleFlash(
-                this,
-                (srig?.x ?? p.x) + Math.cos(ang) * reach,
-                (srig?.y ?? p.y) + Math.sin(ang) * reach,
-                ang,
-                fx.size,
-                fx.color,
-                fx.style,
-              );
+            const flashWeapon = sourceWeapon ?? WEAPONS[p.weapon] ?? WEAPONS[DEFAULT_WEAPON];
+            const center = { x: srig?.x ?? p.x, y: srig?.y ?? p.y };
+            if (!srig?.writeWeaponMuzzle(0, center)) {
+              const reach = gunMuzzleReach(flashWeapon);
+              center.x += aimX * reach;
+              center.y += aimY * reach;
+            }
+            if (!casterRecipe) {
+              for (const muzzleOffset of gunMuzzleOffsetsForShot(flashWeapon, p.attackSeq)) {
+                const muzzle = offsetWeaponMuzzle(
+                  center.x,
+                  center.y,
+                  aimX,
+                  aimY,
+                  muzzleOffset,
+                );
+                spawnMuzzleFlash(
+                  this,
+                  muzzle.x,
+                  muzzle.y,
+                  ang,
+                  fx.size,
+                  fx.color,
+                  fx.style,
+                );
+                if (flashWeapon?.gun?.sonicBoomRing)
+                  spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
+              }
+            }
             // §19 a REMOTE shooter's gun sound (self already played its predicted shot at click time —
             // `suppressed` gates this the same way it gates the flash, so self never double-fires).
             if (!comet) this.audio.play(`shot:${baseKind(pr.kind)}`, { x: p.x });
@@ -9931,7 +9981,16 @@ export class ArenaScene extends Phaser.Scene {
       const quake = weapon.quake;
       this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
-        if (shouldSpawnLegacyQuakeVfx(weapon))
+        const quakeIdentity = resolveWeaponEffectRecipe(weapon);
+        if (quakeIdentity?.quakeExplosionElement)
+          spawnExplosion(
+            this,
+            ep.x,
+            this.belt ? this.beltY(ep.y) : ep.y,
+            quake.radius,
+            quakeIdentity.quakeExplosionElement,
+          );
+        else if (shouldSpawnLegacyQuakeVfx(weapon))
           spawnQuake(
             this,
             ep.x,
@@ -9992,21 +10051,33 @@ export class ArenaScene extends Phaser.Scene {
       if (rig) {
         const ang = Math.atan2(this.selfAim.y, this.selfAim.x);
         if (weapon.tags.classPool !== "caster") {
-          const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
           // §35 tint the predicted muzzle flash to the weapon's element too (matches the bullet).
           const el = weapon.tags?.element;
           const fx = gunFx(
             el && el !== "physical" ? `${weapon.gun.bulletKind}:${el}` : weapon.gun.bulletKind,
           );
-          spawnMuzzleFlash(
-            this,
-            rig.x + Math.cos(ang) * reach,
-            rig.y + Math.sin(ang) * reach,
-            ang,
-            fx.size,
-            fx.color,
-            fx.style,
-          );
+          const aimX = Math.cos(ang);
+          const aimY = Math.sin(ang);
+          const center = { x: rig.x, y: rig.y };
+          if (!rig.writeWeaponMuzzle(0, center)) {
+            const reach = gunMuzzleReach(weapon);
+            center.x += aimX * reach;
+            center.y += aimY * reach;
+          }
+          for (const offset of gunMuzzleOffsetsForShot(weapon, this.localPredictedAttackSeq)) {
+            const muzzle = offsetWeaponMuzzle(center.x, center.y, aimX, aimY, offset);
+            spawnMuzzleFlash(
+              this,
+              muzzle.x,
+              muzzle.y,
+              ang,
+              fx.size,
+              fx.color,
+              fx.style,
+            );
+            if (weapon.gun.sonicBoomRing)
+              spawnSonicBoomRing(this, muzzle.x, muzzle.y, ang, fx.color);
+          }
         }
         this.audio.play(`shot:${weapon.gun.bulletKind}`, { x: rig.x }); // §19 predicted shot sound
         this.lastSelfMuzzleAt = this.time.now;

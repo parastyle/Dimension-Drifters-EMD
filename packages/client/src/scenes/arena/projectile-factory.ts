@@ -7,6 +7,7 @@ import {
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
+import { GUN_PROJECTILE_ART_PACKS, GUN_SPRITE_PROJECTILES } from "../../vfx/gun-projectile-art.js";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 import { elementPack } from "../../vfx/particles.js";
 import type { WeaponEffectRecipe } from "../../vfx/weapon-effect-recipes.js";
@@ -260,4 +261,74 @@ export function makeBullet(
     .container(pr.x, pr.y, items)
     .setScale(Math.max(0.1, visualScale))
     .setDepth(99000);
+}
+
+/** Gun-owned identity art layered over a velocity trail; null keeps the generic bullet renderer. */
+export function makeGunIdentityProjectile(
+  scene: Phaser.Scene,
+  pr: { x: number; y: number; vx: number; vy: number; kind: string },
+  weaponId: string,
+  visualScale = 1,
+): Phaser.GameObjects.Container | null {
+  const weapon = WEAPONS[weaponId];
+  const art = weapon?.gun?.projectileArt;
+  if (!art) return null;
+  const fx = gunFx(pr.kind);
+  const angle = Math.atan2(pr.vy, pr.vx);
+  const trail = scene.add
+    .ellipse(-Math.cos(angle) * 13, -Math.sin(angle) * 13, 30, 7, fx.color, 0.4)
+    .setRotation(angle)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const glow = scene.add
+    .ellipse(0, 0, 28, 18, fx.color, 0.24)
+    .setRotation(angle)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  const children: Phaser.GameObjects.GameObject[] = [trail, glow];
+  if (art === "weapon-crop") {
+    const recipe = GUN_SPRITE_PROJECTILES[weaponId];
+    const manifest = recipe ? SPRITES[recipe.spriteId as keyof typeof SPRITES] : undefined;
+    const part = manifest?.parts.find((candidate) => candidate.role === recipe?.partRole);
+    if (!recipe || !part) {
+      trail.destroy();
+      glow.destroy();
+      return null;
+    }
+    const texture = partTexture(scene, recipe.spriteId, recipe.partRole);
+    if (!scene.textures.exists(texture.key)) {
+      trail.destroy();
+      glow.destroy();
+      return null;
+    }
+    const crop = recipe.crop;
+    children.push(
+      scene.add
+        .image(0, 0, texture.key, texture.frame)
+        .setCrop(crop.x, crop.y, crop.width, crop.height)
+        .setOrigin((crop.x + crop.width * 0.5) / part.w, (crop.y + crop.height * 0.5) / part.h)
+        .setScale(recipe.displayLength / crop.width)
+        .setRotation(angle),
+    );
+  } else {
+    const packId = GUN_PROJECTILE_ART_PACKS[art];
+    const pack = PARTICLE_PACKS[packId];
+    if (!pack || !scene.textures.exists(`ptcl:${packId}`)) {
+      trail.destroy();
+      glow.destroy();
+      return null;
+    }
+    const displayLength = art === "arrow" ? 38 : art === "cannonball" ? 34 : 40;
+    children.push(
+      scene.add
+        .image(0, 0, `ptcl:${packId}`, 0)
+        .setScale(displayLength / pack.frameWidth)
+        .setRotation(angle),
+    );
+  }
+  const payload = scene.add.container(0, 0, children);
+  return scene.add
+    .container(pr.x, pr.y, [payload])
+    .setScale(Math.max(0.1, visualScale))
+    .setDepth(99000)
+    .setData("arcPayload", payload)
+    .setData("projectileArt", art);
 }

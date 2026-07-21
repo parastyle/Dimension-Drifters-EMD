@@ -62,6 +62,8 @@ import {
   bossDefFor,
   bossSpawnAt,
   type CarrySelectionV1,
+  CAST_VOLLEY_PROJECTILE_CAP,
+  CENTER_MUZZLE_OFFSET,
   CHAIN_MAX_RANGE,
   type ChainCandidate,
   COMBAT_RECEIPT_CAP,
@@ -168,6 +170,7 @@ import {
   generateArena,
   getDimension,
   gunMuzzleReach,
+  gunMuzzleOffsetsForShot,
   HAIRTRIGGER_MAX,
   HAIRTRIGGER_WINDOW,
   HARVEST_CAP,
@@ -285,6 +288,7 @@ import {
   poundDamage,
   prevWeapon,
   prismaticBeamRayOffsets,
+  offsetWeaponMuzzle,
   QUAKE_REACH,
   type QuirkDef,
   type QuirkEffect,
@@ -456,6 +460,7 @@ import {
   type WeaponBankCuratorInputV1,
   type WeaponBankEntryV1,
   type WeaponDef,
+  type WeaponMuzzleOffset,
   type WeaponInstanceV1,
   type WeaponProvenance,
   WORM_MAX_SEGMENTS,
@@ -653,6 +658,7 @@ interface PendingScatterVolley {
   sweepX: number;
   sweepY: number;
   baseAng: number;
+  aimMode: "cone" | "radial-random";
   count: number;
   spread: number;
   speed: number;
@@ -910,6 +916,12 @@ interface CombatState {
   beamPreviousLength: number;
   /** Server-chosen Prism-Lantern fan. Index zero is the ordinary primary beam row. */
   beamRayOffsets: number[];
+  /** Fixed authored barrel lane per replicated row; centre-tip for ordinary/prismatic beams. */
+  beamMuzzleOffsets: WeaponMuzzleOffset[];
+  beamPreviousOriginsX: number[];
+  beamPreviousOriginsY: number[];
+  beamCurrentOriginsX: number[];
+  beamCurrentOriginsY: number[];
   beamPreviousLengths: number[];
   beamCurrentLengths: number[];
   beamTeleportSeq: number;
@@ -4393,6 +4405,11 @@ export class GameRoom extends Room<ArenaState> {
       beamPreviousY: player.y,
       beamPreviousLength: 0,
       beamRayOffsets: [0],
+      beamMuzzleOffsets: [{ ...CENTER_MUZZLE_OFFSET }],
+      beamPreviousOriginsX: [player.x],
+      beamPreviousOriginsY: [player.y],
+      beamCurrentOriginsX: [player.x],
+      beamCurrentOriginsY: [player.y],
       beamPreviousLengths: [0],
       beamCurrentLengths: [0],
       beamTeleportSeq: player.teleportSeq,
@@ -8109,6 +8126,13 @@ export class GameRoom extends Room<ArenaState> {
       // Charging owns one primary row. The satellite budget is admitted atomically at ignition so several
       // simultaneous Prism-Lantern charges cannot all reserve the same room capacity.
       c.beamRayOffsets = [0];
+      c.beamMuzzleOffsets = [
+        { ...(weapon.beam.muzzleOffsets?.[0] ?? CENTER_MUZZLE_OFFSET) },
+      ];
+      c.beamPreviousOriginsX = [player.x];
+      c.beamPreviousOriginsY = [player.y];
+      c.beamCurrentOriginsX = [player.x];
+      c.beamCurrentOriginsY = [player.y];
       c.beamPreviousLengths = [0];
       c.beamCurrentLengths = [0];
       c.beamPhase = 1;
@@ -8119,9 +8143,16 @@ export class GameRoom extends Room<ArenaState> {
       c.beamPendingDamage.clear();
       c.beamAngle = Math.atan2(c.aimY, c.aimX);
       c.beamPreviousAngle = c.beamAngle;
-      const muzzle = this.writeBeamMuzzle(player, weapon.id, c.beamAngle);
+      const muzzle = this.writeBeamMuzzle(
+        player,
+        weapon.id,
+        c.beamAngle,
+        c.beamMuzzleOffsets[0],
+      );
       c.beamPreviousX = muzzle.x;
       c.beamPreviousY = muzzle.y;
+      c.beamPreviousOriginsX[0] = muzzle.x;
+      c.beamPreviousOriginsY[0] = muzzle.y;
       c.beamPreviousLength = this.clipBeamLength(
         c.beamPreviousX,
         c.beamPreviousY,
@@ -8167,6 +8198,8 @@ export class GameRoom extends Room<ArenaState> {
         // pose, never sweeps the whole anticipation path as a retroactive hit.
         c.beamPreviousX = chargeRow.originX;
         c.beamPreviousY = chargeRow.originY;
+        c.beamPreviousOriginsX[0] = chargeRow.originX;
+        c.beamPreviousOriginsY[0] = chargeRow.originY;
         c.beamPreviousAngle = c.beamAngle;
         c.beamPreviousLength = this.clipBeamLength(
           chargeRow.originX,
@@ -8201,24 +8234,44 @@ export class GameRoom extends Room<ArenaState> {
           if (!ignition.accepted) {
             this.cancelBeam(player, id, c, false, false);
           } else {
-            const randomRays = weapon.beam.randomRays;
-            const admittedCount = randomRays
-              ? admittedPrismaticBeamRayCount(randomRays.count, this.beamSatelliteCount())
-              : 1;
+            const fixedMuzzles = weapon.beam.muzzleOffsets;
+            const randomRays = fixedMuzzles?.length ? undefined : weapon.beam.randomRays;
+            const authoredCount = fixedMuzzles?.length ?? randomRays?.count ?? 1;
+            const admittedCount = admittedPrismaticBeamRayCount(
+              authoredCount,
+              this.beamSatelliteCount(),
+            );
             c.beamRayOffsets = randomRays
               ? prismaticBeamRayOffsets(admittedCount, randomRays.spread, descriptor.startSeq)
-              : [0];
+              : new Array(admittedCount).fill(0);
+            c.beamMuzzleOffsets = fixedMuzzles?.length
+              ? fixedMuzzles.slice(0, admittedCount).map((offset) => ({ ...offset }))
+              : new Array(admittedCount).fill(undefined).map(() => ({ ...CENTER_MUZZLE_OFFSET }));
+            c.beamPreviousOriginsX = new Array(admittedCount);
+            c.beamPreviousOriginsY = new Array(admittedCount);
+            c.beamCurrentOriginsX = new Array(admittedCount);
+            c.beamCurrentOriginsY = new Array(admittedCount);
             c.beamPreviousLengths = new Array(c.beamRayOffsets.length);
             c.beamCurrentLengths = new Array(c.beamRayOffsets.length).fill(0);
             for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+              const rayMuzzle = this.writeBeamMuzzle(
+                player,
+                descriptor.weaponId,
+                c.beamAngle,
+                c.beamMuzzleOffsets[ray],
+              );
+              c.beamPreviousOriginsX[ray] = rayMuzzle.x;
+              c.beamPreviousOriginsY[ray] = rayMuzzle.y;
               c.beamPreviousLengths[ray] = this.clipBeamLength(
-                c.beamPreviousX,
-                c.beamPreviousY,
+                rayMuzzle.x,
+                rayMuzzle.y,
                 c.beamAngle + (c.beamRayOffsets[ray] ?? 0),
                 descriptor.range,
                 descriptor.width / 2,
               );
             }
+            c.beamPreviousX = c.beamPreviousOriginsX[0] ?? c.beamPreviousX;
+            c.beamPreviousY = c.beamPreviousOriginsY[0] ?? c.beamPreviousY;
             c.beamPreviousLength = c.beamPreviousLengths[0] ?? c.beamPreviousLength;
             c.drive.beamLockEndTick = 0;
             c.drive.beamRecoveryEndTick = 0;
@@ -8307,8 +8360,11 @@ export class GameRoom extends Room<ArenaState> {
     c.beamPreviousY = this.beamCurrentY;
     c.beamPreviousAngle = c.beamAngle;
     c.beamPreviousLength = this.beamCurrentLength;
-    for (let ray = 0; ray < c.beamRayOffsets.length; ray++)
+    for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
+      c.beamPreviousOriginsX[ray] = c.beamCurrentOriginsX[ray] ?? this.beamCurrentX;
+      c.beamPreviousOriginsY[ray] = c.beamCurrentOriginsY[ray] ?? this.beamCurrentY;
       c.beamPreviousLengths[ray] = c.beamCurrentLengths[ray] ?? length;
+    }
     if (spend.beamEmpty) this.finishBeam(player, id, c, true);
   }
 
@@ -8440,8 +8496,13 @@ export class GameRoom extends Room<ArenaState> {
     rayIndex = 0,
   ): BeamState {
     const offset = c.beamRayOffsets[rayIndex] ?? 0;
-    const rowKey =
-      rayIndex === 0 ? id : `${id}:prism:${rayIndex}:${Math.round(offset * 1_000_000)}`;
+    const fixedBarrels =
+      (WEAPONS[descriptor.weaponId]?.beam?.muzzleOffsets?.length ?? 0) > 1;
+    const rowKey = rayIndex === 0
+      ? id
+      : fixedBarrels
+        ? `${id}:barrel:${rayIndex}`
+        : `${id}:prism:${rayIndex}:${Math.round(offset * 1_000_000)}`;
     let row = this.state.beams.get(rowKey);
     if (!row) {
       row = new BeamState();
@@ -8449,7 +8510,12 @@ export class GameRoom extends Room<ArenaState> {
       this.state.beams.set(rowKey, row);
     }
     if (row.phase !== phase) row.phaseStartTick = this.state.tick;
-    const muzzle = this.writeBeamMuzzle(player, descriptor.weaponId, c.beamAngle);
+    const muzzle = this.writeBeamMuzzle(
+      player,
+      descriptor.weaponId,
+      c.beamAngle,
+      c.beamMuzzleOffsets[rayIndex],
+    );
     const originX = muzzle.x;
     const originY = muzzle.y;
     row.weaponId = descriptor.weaponId;
@@ -8468,8 +8534,8 @@ export class GameRoom extends Room<ArenaState> {
     row.heat = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
     row.intensity = Math.max(0, Math.min(1, intensity));
     row.element = WEAPONS[descriptor.weaponId]?.tags.element ?? "physical";
-    row.previousOriginX = c.beamPreviousX;
-    row.previousOriginY = c.beamPreviousY;
+    row.previousOriginX = c.beamPreviousOriginsX[rayIndex] ?? c.beamPreviousX;
+    row.previousOriginY = c.beamPreviousOriginsY[rayIndex] ?? c.beamPreviousY;
     row.previousLength = c.beamPreviousLengths[rayIndex] ?? c.beamPreviousLength;
     if (this.state.beams.size > FRIENDLY_BEAM_ENTITY_CAP)
       throw new Error(`friendly beam entity cap exceeded: ${this.state.beams.size}`);
@@ -8481,10 +8547,20 @@ export class GameRoom extends Room<ArenaState> {
     player: PlayerState,
     weaponId: string,
     angle: number,
+    offset: Readonly<WeaponMuzzleOffset> = CENTER_MUZZLE_OFFSET,
   ): { x: number; y: number } {
     const reach = weaponMuzzleReach(WEAPONS[weaponId], characterScale(player.character));
-    this.beamMuzzleScratch.x = player.x + Math.cos(angle) * reach;
-    this.beamMuzzleScratch.y = player.y + Math.sin(angle) * reach;
+    const aimX = Math.cos(angle);
+    const aimY = Math.sin(angle);
+    const muzzle = offsetWeaponMuzzle(
+      player.x + aimX * reach,
+      player.y + aimY * reach,
+      aimX,
+      aimY,
+      offset,
+    );
+    this.beamMuzzleScratch.x = muzzle.x;
+    this.beamMuzzleScratch.y = muzzle.y;
     return this.beamMuzzleScratch;
   }
 
@@ -8555,28 +8631,35 @@ export class GameRoom extends Room<ArenaState> {
     descriptor: BeamDescriptor,
     dt: number,
   ): number {
-    const muzzle = this.writeBeamMuzzle(player, descriptor.weaponId, c.beamAngle);
-    const currentX = muzzle.x;
-    const currentY = muzzle.y;
     const angularDelta = shortestAngleDelta(c.beamPreviousAngle, c.beamAngle);
-    const originTravel = Math.hypot(currentX - c.beamPreviousX, currentY - c.beamPreviousY);
-    const samples = beamSweepSampleCount(
-      originTravel,
-      angularDelta,
-      descriptor.range,
-      descriptor.width / 2,
-    );
     c.beamHitIds.clear();
     for (let ray = 0; ray < c.beamRayOffsets.length; ray++) {
       const rayOffset = c.beamRayOffsets[ray] ?? 0;
+      const muzzle = this.writeBeamMuzzle(
+        player,
+        descriptor.weaponId,
+        c.beamAngle,
+        c.beamMuzzleOffsets[ray],
+      );
+      const currentX = muzzle.x;
+      const currentY = muzzle.y;
+      const previousX = c.beamPreviousOriginsX[ray] ?? c.beamPreviousX;
+      const previousY = c.beamPreviousOriginsY[ray] ?? c.beamPreviousY;
+      const originTravel = Math.hypot(currentX - previousX, currentY - previousY);
+      const samples = beamSweepSampleCount(
+        originTravel,
+        angularDelta,
+        descriptor.range,
+        descriptor.width / 2,
+      );
       let minX = Number.POSITIVE_INFINITY;
       let minY = Number.POSITIVE_INFINITY;
       let maxX = Number.NEGATIVE_INFINITY;
       let maxY = Number.NEGATIVE_INFINITY;
       for (let sample = 0; sample <= samples; sample++) {
         const f = sample / samples;
-        const sx = c.beamPreviousX + (currentX - c.beamPreviousX) * f;
-        const sy = c.beamPreviousY + (currentY - c.beamPreviousY) * f;
+        const sx = previousX + (currentX - previousX) * f;
+        const sy = previousY + (currentY - previousY) * f;
         const angle = c.beamPreviousAngle + angularDelta * f + rayOffset;
         const length = this.clipBeamLength(sx, sy, angle, descriptor.range, descriptor.width / 2);
         this.beamSampleX[sample] = sx;
@@ -8653,6 +8736,8 @@ export class GameRoom extends Room<ArenaState> {
           }
         }
       }
+      c.beamCurrentOriginsX[ray] = currentX;
+      c.beamCurrentOriginsY[ray] = currentY;
       c.beamCurrentLengths[ray] = this.beamSampleLength[samples]!;
     }
     let wormHitCount = 0;
@@ -8670,8 +8755,8 @@ export class GameRoom extends Room<ArenaState> {
       if (allowCrit) c.beamQuantumT -= BEAM_CRIT_QUANTUM_SECONDS;
       this.flushBeamDamage(c, allowCrit, player.id);
     }
-    this.beamCurrentX = currentX;
-    this.beamCurrentY = currentY;
+    this.beamCurrentX = c.beamCurrentOriginsX[0] ?? c.beamPreviousX;
+    this.beamCurrentY = c.beamCurrentOriginsY[0] ?? c.beamPreviousY;
     this.beamCurrentLength = c.beamCurrentLengths[0] ?? 0;
     return this.beamCurrentLength;
   }
@@ -10243,7 +10328,9 @@ export class GameRoom extends Room<ArenaState> {
     zone.radius = def.initialRadius;
     zone.kind = ZoneKind.Weapon;
     zone.style =
-      def.style === "nether"
+      def.style === "poison-smoke"
+        ? ZoneStyle.PoisonSmoke
+        : def.style === "nether"
         ? ZoneStyle.Nether
         : def.style === "ice"
           ? ZoneStyle.Ice
@@ -10582,13 +10669,18 @@ export class GameRoom extends Room<ArenaState> {
   ): void {
     const g = weapon.gun;
     if (!g) return;
-    const dmg = g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand);
+    const muzzleOffsets = gunMuzzleOffsetsForShot(weapon, player.attackSeq);
+    const parallelDivisor = g.muzzleMode === "parallel" ? muzzleOffsets.length : 1;
+    const dmg =
+      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) /
+      parallelDivisor;
     const explode = g.explode
       ? {
           radius: g.explode.radius,
           damage:
             g.explode.damage *
-            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player, hand),
+            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player, hand) /
+            parallelDivisor,
         }
       : undefined;
     const pellets = Math.max(1, g.pellets ?? 1);
@@ -10604,8 +10696,8 @@ export class GameRoom extends Room<ArenaState> {
     // §9 spawn from the BARREL TIP (player centre + aim × the gun's own muzzle reach), not the body. Scale
     // by the holder's rig size (§7) so the shot lands exactly on the rendered tip, not short of it.
     const reach = gunMuzzleReach(weapon); // §29 fixed-size weapon → fixed muzzle reach
-    const mx = player.x + aim.x * reach;
-    const my = player.y + aim.y * reach;
+    const centerMx = player.x + aim.x * reach;
+    const centerMy = player.y + aim.y * reach;
     const crit = this.weaponCritChance(player, c); // §ULT Door rider consumes once per trigger pull
     // §35 encode the weapon's ELEMENT onto the bullet kind ("tracer:fire") so the client tints the bullet to
     // its element — a fire and a frost gun read distinct even sharing a bullet shape. Physical = no suffix.
@@ -10619,29 +10711,33 @@ export class GameRoom extends Room<ArenaState> {
       : el && el !== "physical"
         ? `${g.bulletKind}:${el}`
         : g.bulletKind;
-    for (let i = 0; i < pellets; i++) {
-      // Shotguns fan evenly across the cone; single-shot guns jitter within their inaccuracy.
-      const ang =
-        pellets > 1
-          ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
-          : baseAng + (Math.random() - 0.5) * 2 * spread;
-      this.fireProjectile(
-        { x: mx, y: my },
-        { x: mx + Math.cos(ang), y: my + Math.sin(ang) },
-        g.projectileSpeed,
-        dmg,
-        false,
-        bulletKind,
-        pierce, // §38 base + Hollow-Points
-        ttl,
-        explode,
-        bounces, // §38 base + Ricochet Rounds
-        crit,
-        player.id,
-        weapon.id,
-        CombatDelivery.Gun,
-        player,
-      );
+    // Resolve inaccuracy once per pellet so simultaneous barrel lanes remain exactly parallel.
+    const angles = Array.from({ length: pellets }, (_, i) =>
+      pellets > 1
+        ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
+        : baseAng + (Math.random() - 0.5) * 2 * spread,
+    );
+    for (const muzzleOffset of muzzleOffsets) {
+      const muzzle = offsetWeaponMuzzle(centerMx, centerMy, aim.x, aim.y, muzzleOffset);
+      for (const ang of angles) {
+        this.fireProjectile(
+          muzzle,
+          { x: muzzle.x + Math.cos(ang), y: muzzle.y + Math.sin(ang) },
+          g.projectileSpeed,
+          dmg,
+          false,
+          bulletKind,
+          pierce, // §38 base + Hollow-Points
+          ttl,
+          explode,
+          bounces, // §38 base + Ricochet Rounds
+          crit,
+          player.id,
+          weapon.id,
+          CombatDelivery.Gun,
+          player, // swept collision begins at the holder body even for laterally offset barrels
+        );
+      }
     }
     // §20 RECOIL pushback (Stage A): the shot kicks the body BACKWARD along aim, scaled by the gun's
     // authored `recoil` (which already differentiates a heavy revolver from a light gatling). Per-shot,
@@ -10664,8 +10760,13 @@ export class GameRoom extends Room<ArenaState> {
     if (!cast) return;
     // §38 CASTER signature augments: Overcharge boosts bolt damage, Arc Split adds forked bolts (per stack).
     const dmgMul = 1 + AUG_CAST_DMG_PER * countAugment(player.augments, "overcharge");
-    const dmg =
+    const totalDamage =
       cast.damage * this.heldCastDamageMult(weapon, cast.scalingGrades, player, hand) * dmgMul;
+    const volleyCount = Math.max(
+      1,
+      Math.min(CAST_VOLLEY_PROJECTILE_CAP, Math.trunc(cast.volley?.count ?? 1)),
+    );
+    const projectileDamage = totalDamage / volleyCount;
     const forks = Math.min(
       AUG_CAST_SPLIT_MAX,
       AUG_CAST_SPLIT_PER * countAugment(player.augments, "arc-split"),
@@ -10680,15 +10781,12 @@ export class GameRoom extends Room<ArenaState> {
     const el = weapon.tags?.element;
     const bulletKind = el && el !== "physical" ? `orb:${el}` : "orb";
     const baseAng = Math.atan2(aim.y, aim.x);
-    // The main bolt + `forks` extra bolts fanned symmetrically around aim (Arc Split).
-    for (let i = 0; i <= forks; i++) {
-      const ang =
-        baseAng + (i === 0 ? 0 : (i % 2 === 1 ? 1 : -1) * Math.ceil(i / 2) * AUG_CAST_SPLIT_SPREAD);
+    const emit = (ang: number): void => {
       this.fireProjectile(
         { x: mx, y: my },
         { x: mx + Math.cos(ang), y: my + Math.sin(ang) },
         cast.speed,
-        dmg,
+        projectileDamage,
         false,
         bulletKind,
         cast.pierce ?? 99,
@@ -10701,6 +10799,19 @@ export class GameRoom extends Room<ArenaState> {
         CombatDelivery.Cast,
         player,
       );
+    };
+    // The authored volley is one accepted payload split evenly over a bounded simultaneous fan.
+    const volleySpread = cast.volley?.spread ?? 0;
+    for (let i = 0; i < volleyCount; i++) {
+      const offset =
+        volleyCount > 1 ? (i / (volleyCount - 1) - 0.5) * 2 * volleySpread : 0;
+      emit(baseAng + offset);
+    }
+    // Arc Split remains extra projectiles; volley weapons add the forks just outside their authored fan.
+    for (let i = 1; i <= forks; i++) {
+      const direction = i % 2 === 1 ? 1 : -1;
+      const ring = Math.ceil(i / 2);
+      emit(baseAng + direction * (volleySpread + ring * AUG_CAST_SPLIT_SPREAD));
     }
   }
 
@@ -10825,6 +10936,7 @@ export class GameRoom extends Room<ArenaState> {
       sweepX: player.x,
       sweepY: player.y,
       baseAng,
+      aimMode: sc.aim ?? "cone",
       count: sc.count,
       spread: sc.spread,
       speed: sc.speed,
@@ -10843,10 +10955,13 @@ export class GameRoom extends Room<ArenaState> {
 
   private emitScatterVolley(volley: PendingScatterVolley): void {
     for (let i = 0; i < volley.count; i++) {
-      // Fan evenly across the cone, plus a little angle + speed jitter so the cluster reads organic.
-      // (Server-authoritative: the client renders the synced positions, so this RNG is purely cosmetic.)
+      // Cone volleys fan around aim; radial sprays sample a fresh full-circle heading per shard. This RNG
+      // is server-owned because it changes projectile travel and therefore collision authority.
       const spread = volley.count > 1 ? (i / (volley.count - 1) - 0.5) * 2 * volley.spread : 0;
-      const ang = volley.baseAng + spread + (Math.random() - 0.5) * 0.12;
+      const ang =
+        volley.aimMode === "radial-random"
+          ? Math.random() * Math.PI * 2
+          : volley.baseAng + spread + (Math.random() - 0.5) * 0.12;
       const spd = volley.speed * (0.85 + Math.random() * 0.3);
       this.fireProjectile(
         { x: volley.originX, y: volley.originY },

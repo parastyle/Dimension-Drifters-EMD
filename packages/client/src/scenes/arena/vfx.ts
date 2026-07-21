@@ -1277,6 +1277,31 @@ export function spawnPoof(scene: Phaser.Scene, x: number, y: number): void {
   });
 }
 
+/** Railgun launch signature: one short-lived pressure ring rooted at the accepted barrel lane. */
+export function spawnSonicBoomRing(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  angle: number,
+  color = 0xffe6a0,
+): void {
+  const ring = scene.add
+    .ellipse(x, y, 20, 12)
+    .setStrokeStyle(2.5, color, 0.92)
+    .setRotation(angle)
+    .setDepth(99999)
+    .setBlendMode(Phaser.BlendModes.ADD);
+  scene.tweens.add({
+    targets: ring,
+    scaleX: 3.4,
+    scaleY: 2.5,
+    alpha: 0,
+    duration: 190,
+    ease: "Quad.easeOut",
+    onComplete: () => ring.destroy(),
+  });
+}
+
 /** §17 "fell into the void" VFX — a dark puff that SINKS + a few dust motes that drop DOWNWARD, so a pit
  *  fall (player or enemy) reads as falling, not just a flat poof. Cosmetic, client-local. */
 export function spawnFallStreak(

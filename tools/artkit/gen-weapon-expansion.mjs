@@ -48,6 +48,8 @@ const BULLET_KINDS = new Set([
   "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade",
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
+const PROJECTILE_ARTS = new Set(["weapon-crop", "arrow", "cannonball", "fireball"]);
+const MUZZLE_MODES = new Set(["parallel", "cycle"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
 const BEAM_GUN_IDS = new Set([
@@ -75,12 +77,13 @@ const BEHAVIOR_KEYS = {
   thrown: new Set(["kind", "speed", "range", "damage", "charges", "refillSeconds", "pierce", "arcHeight", "rotation", "ricochetHops", "ricochetRange", "scalingGrades", "zone"]),
   quake: new Set(["kind", "radius", "damage", "scalingGrades"]),
   chainLightning: new Set(["kind", "jumps", "range", "damage", "falloff", "scalingGrades", "vfx"]),
-  scatter: new Set(["kind", "count", "spread", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
+  scatter: new Set(["kind", "count", "spread", "aim", "speed", "range", "damage", "pierce", "scalingGrades", "explode"]),
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
-    "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst"]),
+    "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst",
+    "muzzleOffsets", "muzzleMode", "dualMuzzleSeparation", "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "randomRays", "scalingGrades", "zone"]),
+    "randomRays", "muzzleOffsets", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "auraColor", "auraRadius"]),
   warp: new Set(["kind", "burstRadius"]),
@@ -94,7 +97,7 @@ const ZONE_KEYS = new Set(["trigger", "style", "initialRadius", "maxRadius", "gr
   "lingerSeconds", "damagePerSecond", "tickRate", "placementRange", "scalingGrades",
   "slowMultiplier", "slowSeconds", "grenadeArcHeight"]);
 const ZONE_TRIGGERS = new Set(["channel", "attack", "landing"]);
-const ZONE_STYLES = new Set(["nether", "poison", "ice"]);
+const ZONE_STYLES = new Set(["nether", "poison", "poison-smoke", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
 const EFFECT_EMITTERS = new Set(["body", "tip", "blade"]);
@@ -105,12 +108,15 @@ const EFFECT_RECIPES = new Set([
   "choir-iron-flame-slash", "hangman-blood-spatter", "dustreaper-continuous-edge",
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
   "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
-  "quarry-quad-spatter",
+  "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
+  "void-caster-explosion",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
+const MUZZLE_OFFSET_KEYS = new Set(["forward", "lateral"]);
+const WEAPON_MUZZLE_COUNT_CAP = 6;
 const COMBO_MOTIONS = new Set([
   "slash", "overhead", "shoulder-chop", "rising-chop", "execution-slam", "rake", "scissor",
   "jab", "cross", "hook", "haymaker", "lunge", "disengage", "impale", "fulcrum-flip", "stinger",
@@ -172,6 +178,7 @@ const PERFORMANCE_AURA_KEYS = new Set([
 const HIT_STATUS_KEYS = new Set(["kind", "multiplier", "seconds"]);
 const HIT_STATUS_KINDS = new Set(["slow"]);
 const THROWN_ROTATIONS = new Set(["spin", "point-forward"]);
+const SCATTER_AIMS = new Set(["cone", "radial-random"]);
 
 const checkKeys = (obj, allowed, path) => {
   for (const k of Object.keys(obj)) if (!allowed.has(k)) fail(`unknown key ${path}.${k}`);
@@ -584,6 +591,26 @@ function gripPointsOf(points) {
   return out;
 }
 
+function muzzleOffsetsOf(offsets, path = "behavior.muzzleOffsets") {
+  if (offsets === undefined) return undefined;
+  if (!Array.isArray(offsets) || offsets.length === 0 || offsets.length > WEAPON_MUZZLE_COUNT_CAP) {
+    fail(`${path} must contain 1..${WEAPON_MUZZLE_COUNT_CAP} offsets`);
+    return undefined;
+  }
+  return offsets.map((offset, index) => {
+    const entryPath = `${path}[${index}]`;
+    if (!offset || typeof offset !== "object" || Array.isArray(offset)) {
+      fail(`${entryPath} is not an object`);
+      return { forward: 0, lateral: 0 };
+    }
+    checkKeys(offset, MUZZLE_OFFSET_KEYS, entryPath);
+    return {
+      forward: num(offset.forward, -64, 64, 0, `${entryPath}.forward`),
+      lateral: num(offset.lateral, -64, 64, 0, `${entryPath}.lateral`),
+    };
+  });
+}
+
 function handlingTagsOf(tags) {
   if (tags === undefined) return undefined;
   if (!Array.isArray(tags) || tags.length === 0) {
@@ -738,7 +765,7 @@ function mapWeapon(w) {
     def.beam = {
       damagePerSecond: baseBeamDamage / sourceTick,
       tickRate: beamTick(b.tickRate ?? b.fireRate, "behavior.tickRate"),
-      width: num(b.width, 24, 64, sizeWidth, "behavior.width"),
+      width: num(b.width, 4, 64, sizeWidth, "behavior.width"),
       range: num(b.range ?? s.range, 240, 640, 520, "behavior.range"),
       chargeSeconds: num(b.chargeSeconds, 0.65, 1.25, 0.65, "behavior.chargeSeconds"),
       sweepLagSeconds: num(b.sweepLagSeconds, 0.05, 0.35, sizeLag, "behavior.sweepLagSeconds"),
@@ -765,10 +792,12 @@ function mapWeapon(w) {
         };
       }
     }
+    const muzzleOffsets = muzzleOffsetsOf(b.muzzleOffsets);
+    if (muzzleOffsets) def.beam.muzzleOffsets = muzzleOffsets;
   } else if (isGun) {
     def.gun = {
       damage: num(b.damage, 1, 40, damage, "behavior.damage"),
-      projectileSpeed: num(b.projectileSpeed, 400, 1600, 900, "behavior.projectileSpeed"),
+      projectileSpeed: num(b.projectileSpeed, 400, 4000, 900, "behavior.projectileSpeed"),
       range: num(b.range ?? s.range, 280, 1100, 620, "behavior.range"),
       fireRate: num(b.fireRate, 0.05, 0.9, 0.3, "behavior.fireRate"),
       magazine: int(b.magazine, 1, 80, 8, "behavior.magazine"),
@@ -779,6 +808,20 @@ function mapWeapon(w) {
         : enumOf(b.muzzle, MUZZLES, "behavior.muzzle"),
       recoil: num(b.recoil, 0.0004, 0.005, 0.0016, "behavior.recoil"),
     };
+    if (b.projectileArt !== undefined)
+      def.gun.projectileArt = enumOf(b.projectileArt, PROJECTILE_ARTS, "behavior.projectileArt");
+    const muzzleOffsets = muzzleOffsetsOf(b.muzzleOffsets);
+    if (muzzleOffsets) def.gun.muzzleOffsets = muzzleOffsets;
+    if (b.muzzleMode !== undefined)
+      def.gun.muzzleMode = enumOf(b.muzzleMode, MUZZLE_MODES, "behavior.muzzleMode");
+    if (b.dualMuzzleSeparation !== undefined)
+      def.gun.dualMuzzleSeparation = num(
+        b.dualMuzzleSeparation, 0, 64, 0, "behavior.dualMuzzleSeparation",
+      );
+    if (b.sonicBoomRing !== undefined) {
+      if (typeof b.sonicBoomRing !== "boolean") fail("behavior.sonicBoomRing is not a boolean");
+      else def.gun.sonicBoomRing = b.sonicBoomRing;
+    }
     if (b.projectileVisualScale !== undefined)
       def.gun.projectileVisualScale = num(
         b.projectileVisualScale, 0.5, 4, 1, "behavior.projectileVisualScale",
@@ -877,6 +920,7 @@ function mapWeapon(w) {
       range: num(b.range, 150, 700, 360, "behavior.range"),
       damage: num(b.damage, 1, 24, 5, "behavior.damage"),
     };
+    if (b.aim !== undefined) def.scatter.aim = enumOf(b.aim, SCATTER_AIMS, "behavior.aim");
     const pierce = int(b.pierce, 1, 5, 1, "behavior.pierce");
     if (pierce > 1) def.scatter.pierce = pierce;
     const g = grades(b.scalingGrades, "behavior.scalingGrades", undefined);

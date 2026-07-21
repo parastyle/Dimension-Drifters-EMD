@@ -1382,6 +1382,26 @@ export function twirlDirectionForBeat(
   return direction === "alternate" && (attackBeat & 1) === 0 ? -1 : 1;
 }
 
+/** Continuous caster whirl phase routed into the same ground-plane orbit used by Garen-style blades. */
+export function continuousWhirlPhase(
+  spec: WeaponPerformanceSpec | undefined,
+  fireHeld: boolean,
+  reducedMotion: boolean,
+  timeS: number,
+  cadenceSeconds: number,
+): number {
+  if (
+    !spec ||
+    spec.action !== "spin" ||
+    spec.twirl?.plane !== "ground-whirlwind" ||
+    !fireHeld ||
+    reducedMotion
+  )
+    return -1;
+  const cadence = Math.max(0.1, cadenceSeconds);
+  return ((timeS / cadence) % 1 + 1) % 1;
+}
+
 /** A reverse rising chop turns the painted axe head over before the upward return swipe. */
 export function comboWeaponThicknessSign(
   step: Pick<MeleeComboStep, "motion" | "direction"> | undefined,

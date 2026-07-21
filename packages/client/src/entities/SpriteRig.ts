@@ -145,6 +145,7 @@ import {
   createWeaponPerformanceInput,
   createWeaponPerformanceSample,
   comboWeaponThicknessSign,
+  continuousWhirlPhase,
   FLOURISH_DUAL_AFTER_ECHO_MS,
   FLOURISH_DUAL_DRAW_ECHO_MS,
   FLOURISH_DUAL_STOW_ECHO_MS,
@@ -183,7 +184,7 @@ import {
   weaponPerformanceSpecFor,
   weaponPoseSpecFor,
 } from "../sprites/pose-language.js";
-import { tomeOpenArtFor } from "../sprites/tome-open-art.js";
+import { tomeOpenArtFor, tomeOpenRotationForAim } from "../sprites/tome-open-art.js";
 import { PARTICLE_PACKS } from "../vfx/particle-manifest.js";
 import { screenTrueScaleX } from "../vfx/screen-true-transform.js";
 import { resolveWeaponAuraVfxRecipe } from "../vfx/weapon-effect-recipes.js";
@@ -1314,6 +1315,7 @@ interface TomeVisualState {
   readonly closedTextureKey: string;
   readonly closedFrame?: string;
   readonly displayLength: number;
+  readonly openRotationOffsetRad: number;
   readonly openGeometry?: WeaponArtStateGeometry;
   readonly pages: readonly [TomePageQuad, TomePageQuad];
   readonly scraps: readonly [TomeScrap, TomeScrap];
@@ -2303,7 +2305,7 @@ export class SpriteRig {
       .setOrigin(0.15, 0.5)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false);
-    this.paintedAuraParticles = Array.from({ length: 8 }, (_, index) =>
+    this.paintedAuraParticles = Array.from({ length: 12 }, (_, index) =>
       scene.add
         .image(0, 0, "ptcl:shock-spark", index % (PARTICLE_PACKS["shock-spark"]?.count ?? 1))
         .setBlendMode(Phaser.BlendModes.ADD)
@@ -4152,6 +4154,7 @@ export class SpriteRig {
       closedTextureKey: closedTexture.key,
       closedFrame: closedTexture.frame,
       displayLength: def.displayLength,
+      openRotationOffsetRad: tomeOpenRotationForAim(spriteId, 0),
       openGeometry: heldWeapon.artGeometry?.open,
       pages: [makePage(0xf1d09a), makePage(0xe5bd80)],
       scraps: [makeScrap(0xe9c88f), makeScrap(0xdab276)],
@@ -8754,7 +8757,11 @@ export class SpriteRig {
           this.body.y += (2.5 + 2.5 * heavy) * s * drive * commitScale;
           if (heavy || pose?.motion === "haymaker")
             this.body.scaleY *= 1 - 0.06 * drive * commitScale;
-          if (poseVariant === "sparkknuckle-voltage-boxing" && pose?.timing.impact !== undefined) {
+          if (
+            (poseVariant === "sparkknuckle-voltage-boxing" ||
+              poseVariant === "coyote-voltage-boxing") &&
+            pose?.timing.impact !== undefined
+          ) {
             const impactFrame = Math.max(0, 1 - Math.abs(tt - pose.timing.impact) / 0.055);
             const snap = impactFrame * impactFrame;
             this.pairWeaponScaleX[pose.hand === "off" ? 1 : 0] = 1 + snap * 0.28;
@@ -9035,6 +9042,7 @@ export class SpriteRig {
     }
 
     let performancePoseActive = false;
+    let performanceWhirlActive = false;
     if (this.performanceSpec) {
       this.performanceInput.spec = this.performanceSpec;
       this.performanceInput.timeS = t;
@@ -9055,6 +9063,18 @@ export class SpriteRig {
         this.swingOffY += this.performanceSample.offsetY * TARGET_BODY_H;
         ownFront = Math.max(ownFront, this.performanceSample.ownership);
         if (this.poseTwoHanded) ownBack = Math.max(ownBack, this.performanceSample.ownership);
+      }
+      const whirlPhase = continuousWhirlPhase(
+        this.performanceSpec,
+        anim.fireHeld === true,
+        anim.reducedMotion === true || outsidePaperView,
+        t,
+        this.weaponDef?.cooldown ?? 0.4,
+      );
+      if (whirlPhase >= 0) {
+        this.orbitT = whirlPhase;
+        this.orbitSpin = true;
+        performanceWhirlActive = true;
       }
     }
 
@@ -9840,7 +9860,7 @@ export class SpriteRig {
           // CHAINED spin (spammed/held trigger) is pure linear — since each spin is integer revolutions, the
           // next one starts exactly where this one ends, angle- AND speed-continuous. One endless whirlwind.
           const a = 0.18; // ease-in fraction (C1-continuous into the linear run)
-          const e = this.swingChained
+          const e = this.swingChained || performanceWhirlActive
             ? tt
             : tt < a
               ? (tt * tt) / (a * (2 - a))
@@ -9948,7 +9968,7 @@ export class SpriteRig {
         // §41 spins HOLD the whirl to the very end (each revolution set lands facing-normal, so there's no
         // pop) — and a CHAINED spin skips the entry ramp entirely, keeping the body whirling through spam.
         const spinT = this.orbitSpin
-          ? this.swingChained
+          ? this.swingChained || performanceWhirlActive
             ? 1
             : Math.min(1, this.orbitT / 0.12)
           : Math.sin(Math.PI * Math.min(1, this.orbitT / 0.9)); // rises, peaks mid-swing, settles
@@ -9989,7 +10009,9 @@ export class SpriteRig {
       // just rides its hand, so blade + both hands travel together.
       w.img.setPosition(w.hand.img.x, w.hand.img.y);
       w.img.rotation =
-        (i === 1 && !Number.isNaN(backWeaponAngle) ? backWeaponAngle : weaponAngle) + off;
+        (i === 1 && !Number.isNaN(backWeaponAngle) ? backWeaponAngle : weaponAngle) +
+        off +
+        (i === 0 && this.tome?.openVisible ? this.tome.openRotationOffsetRad : 0);
       // Fixed on-screen weapon size: counter the rig's baseScale (characterScale/tough size-up) so the same
       // weapon reads the SAME size in every hand — the root mirror still flips it for facing.
       const ownsSwingScale = this.swingHand === "both" || this.swingHand === i;

@@ -1,5 +1,5 @@
 import { ZoneStyle } from "@dd/shared";
-import Phaser from "phaser";
+import type Phaser from "phaser";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 
 export const GROUND_ZONE_CHUNK_CAP = 24;
@@ -31,7 +31,8 @@ function randomStep(state: { value: number }): number {
   return state.value / 0x100000000;
 }
 
-function packForStyle(style: number): "void-splat" | "toxic-splat" | "frost-splat" {
+function packForStyle(style: number): "void-splat" | "toxic-splat" | "frost-splat" | "toxic-wisp" {
+  if (style === ZoneStyle.PoisonSmoke) return "toxic-wisp";
   if (style === ZoneStyle.Nether) return "void-splat";
   if (style === ZoneStyle.Ice) return "frost-splat";
   return "toxic-splat";
@@ -48,8 +49,13 @@ export function groundZoneChunkPlan(
   const frameCount = PARTICLE_PACKS[packForStyle(style)]?.count ?? 12;
   const chunks: GroundZoneChunk[] = [];
   for (let i = 0; i < GROUND_ZONE_CHUNK_CAP; i++) {
-    const radial = Math.sqrt((i + 0.35 + randomStep(rng) * 0.3) / GROUND_ZONE_CHUNK_CAP);
-    const angle = i * 2.3999632297 + (randomStep(rng) - 0.5) * 0.9;
+    const smokeRing = style === ZoneStyle.PoisonSmoke;
+    const radial = smokeRing
+      ? 0.78 + randomStep(rng) * 0.18
+      : Math.sqrt((i + 0.35 + randomStep(rng) * 0.3) / GROUND_ZONE_CHUNK_CAP);
+    const angle = smokeRing
+      ? (i / GROUND_ZONE_CHUNK_CAP) * Math.PI * 2 + (randomStep(rng) - 0.5) * 0.16
+      : i * 2.3999632297 + (randomStep(rng) - 0.5) * 0.9;
     const distance = radial * radius * 0.86;
     const scale = 0.24 + randomStep(rng) * 0.34;
     chunks.push({
@@ -105,8 +111,17 @@ export function syncGroundZonePatch(
   const images = container.getData("groundZoneImages") as Phaser.GameObjects.Image[] | undefined;
   if (!chunks || !images) return;
   for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i]!;
-    const image = images[i]!;
+    const chunk = chunks[i];
+    const image = images[i];
+    if (!chunk || !image) continue;
+    if (row.style === ZoneStyle.PoisonSmoke) {
+      const growth = Math.max(0, Math.min(1, row.radius / Math.max(12, row.maxRadius)));
+      image.setPosition(chunk.x * growth, chunk.y * growth);
+      image.setScale(chunk.scale * (0.7 + growth * 0.3));
+      image.setVisible(row.radius > 0);
+      image.setAlpha(0.48 + growth * 0.28);
+      continue;
+    }
     const edge = row.radius - chunk.revealRadius;
     image.setVisible(edge >= 0);
     if (edge >= 0) image.setAlpha(0.54 + Math.min(0.24, edge / 64));

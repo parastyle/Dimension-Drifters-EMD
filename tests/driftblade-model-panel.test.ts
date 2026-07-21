@@ -243,7 +243,9 @@ describe("driftblade-model panel", () => {
         "x2-toxinwell-khopesh",
       ],
       "arc/mournveil-fan-spin": ["x2-mournveil-scythe"],
+      "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
       "arc/wyrmskull-sword": ["x2-wyrmskull-reliquary"],
+      "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
       "thrust/stinger": [
@@ -289,7 +291,7 @@ describe("driftblade-model panel", () => {
       ],
     });
     expect(defaultCounts).toEqual({
-      "punch/default": 20,
+      "punch/default": 19,
       "arc/default": 113,
       "chop/default": 8,
       "rake/dagger": 1,
