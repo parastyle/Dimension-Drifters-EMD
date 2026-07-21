@@ -8,6 +8,7 @@ import {
 } from "../packages/client/src/sprites/pose-language.js";
 import {
   CASTER_SPRITE_PROJECTILES,
+  CASTER_TEXTURE_PROJECTILES,
   CASTER_VFX_PALETTE_OVERRIDES,
   resolveCasterVfxRecipe,
 } from "../packages/client/src/vfx/caster-vfx-recipes.js";
@@ -42,10 +43,10 @@ function performanceSample(
 }
 
 describe("owner-notes NW-CASTER contracts", () => {
-  it("derives only Cryo-Bracer's icicle and Plague-Orb's locust from their own weapon art", () => {
+  it("keeps Cryo/Saintskull crops and the re-derived shell-free Plague locust explicit", () => {
     expect(Object.keys(CASTER_SPRITE_PROJECTILES).sort()).toEqual([
-      "x2-locust-glass-plague-orb",
       "x2-permafrost-cryo-bracer",
+      "x2-saintskull-monstrance",
     ]);
 
     const cryo = resolveCasterVfxRecipe(weapon("x2-permafrost-cryo-bracer"));
@@ -57,14 +58,14 @@ describe("owner-notes NW-CASTER contracts", () => {
     });
 
     const locust = resolveCasterVfxRecipe(weapon("x2-locust-glass-plague-orb"));
-    expect(locust?.spriteProjectile).toMatchObject({
-      spriteId: "x2-locust-glass-plague-orb",
-      partRole: "part-1",
-      crop: { x: 132, y: 45, width: 104, height: 62 },
-      displayLength: 38,
+    expect(locust?.spriteProjectile).toBeUndefined();
+    expect(locust?.textureProjectile).toMatchObject({
+      textureKey: "caster:plague-locust",
+      displayLength: 48,
       flutterRadians: 0.18,
       flutterMs: 230,
     });
+    expect(CASTER_TEXTURE_PROJECTILES[locust?.weaponId ?? ""]).toBeDefined();
   });
 
   it("keeps Galvanic's orbit and Sporebound's BIO aura DPS-neutral and within the retained-art budget", () => {

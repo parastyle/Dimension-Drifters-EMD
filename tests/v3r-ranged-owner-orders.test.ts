@@ -10,7 +10,7 @@ import { gunMuzzleOffsetsForShot, WEAPONS } from "../packages/shared/src/index.j
 
 const OWN_SPRITE_PROJECTILES = [
   "x2-grave-anchor-harpoon",
-  "x2-widowmaker-arbalest",
+  "x2-hexbore-voidmaw",
   "x2-brimstone-rocket-tube",
 ] as const;
 

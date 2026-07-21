@@ -92,6 +92,7 @@ import {
   clipPoiRayLength,
   comboStepForChain,
   coneAngles,
+  coneStreamHitsCircle,
   countAugment,
   countWeaponCopies,
   critChanceFor,
@@ -162,6 +163,7 @@ import {
   enemyHpScale,
   FISTS_WEAPON,
   FRIENDLY_BEAM_ENTITY_CAP,
+  FRIENDLY_PROJECTILE_ENTITY_CAP,
   GEAR_IDS,
   type GearRunRuntime,
   GROUND_EPSILON,
@@ -225,6 +227,7 @@ import {
   type MoveStance,
   meleeComboSelectionFor,
   meleeReach,
+  mixSeeds,
   nearestGroundPx,
   nearestPoint,
   nextCharacter,
@@ -357,6 +360,7 @@ import {
   sanitizeMetaLevels,
   scripValue,
   selectChainTargets,
+  serverSeededGunPelletVolley,
   shortestAngleDelta,
   slideContactInvulnerable,
   slideGroundNextSpeed,
@@ -8565,8 +8569,11 @@ export class GameRoom extends Room<ArenaState> {
     row.angle = c.beamAngle + offset;
     row.effectiveLength = length;
     row.length = length;
-    row.width = descriptor.width;
-    row.halfWidth = descriptor.width / 2;
+    row.width =
+      descriptor.coneHalfAngle > 0
+        ? Math.max(descriptor.width, 2 * length * Math.tan(descriptor.coneHalfAngle))
+        : descriptor.width;
+    row.halfWidth = row.width / 2;
     // Schema-30 compatibility alias only. Gameplay never reads this field; the shared bar is the heat.
     row.heat = 1 - this.drivePendingValue(c) / DRIVE_CAPACITY;
     row.intensity = Math.max(0, Math.min(1, intensity));
@@ -8711,7 +8718,10 @@ export class GameRoom extends Room<ArenaState> {
         maxX = Math.max(maxX, sx, ex);
         maxY = Math.max(maxY, sy, ey);
       }
-      const broadPad = descriptor.width / 2 + MAX_ENEMY_RADIUS;
+      const broadPad =
+        descriptor.coneHalfAngle > 0
+          ? descriptor.range * Math.sin(descriptor.coneHalfAngle) + MAX_ENEMY_RADIUS
+          : descriptor.width / 2 + MAX_ENEMY_RADIUS;
       this.enemyGrid.queryAabb(
         minX - broadPad,
         minY - broadPad,
@@ -8724,18 +8734,27 @@ export class GameRoom extends Room<ArenaState> {
         if (!enemy || enemy.hp <= 0) continue;
         const radius = ENEMY_KINDS[enemy.kind]?.radius ?? ENEMY_RADIUS;
         for (let sample = 0; sample <= samples; sample++) {
-          if (
-            bladeHitsCircleXY(
-              this.beamSampleX[sample]!,
-              this.beamSampleY[sample]!,
-              this.beamSampleEndX[sample]!,
-              this.beamSampleEndY[sample]!,
-              enemy.x,
-              enemy.y,
-              radius,
-              descriptor.width / 2,
-            )
-          ) {
+          const hit =
+            descriptor.coneHalfAngle > 0
+              ? coneStreamHitsCircle(
+                  { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
+                  c.beamPreviousAngle + angularDelta * (sample / samples) + rayOffset,
+                  this.beamSampleLength[sample]!,
+                  descriptor.coneHalfAngle,
+                  { x: enemy.x, y: enemy.y },
+                  radius,
+                )
+              : bladeHitsCircleXY(
+                  this.beamSampleX[sample]!,
+                  this.beamSampleY[sample]!,
+                  this.beamSampleEndX[sample]!,
+                  this.beamSampleEndY[sample]!,
+                  enemy.x,
+                  enemy.y,
+                  radius,
+                  descriptor.width / 2,
+                );
+          if (hit) {
             c.beamHitIds.add(enemyId);
             break;
           }
@@ -8745,27 +8764,36 @@ export class GameRoom extends Room<ArenaState> {
       const runtime = this.bossController?.wormRuntime;
       if (runtime) {
         this.wormSegmentGrid.queryAabb(
-          minX - descriptor.width / 2 - 52,
-          minY - descriptor.width / 2 - 52,
-          maxX + descriptor.width / 2 + 52,
-          maxY + descriptor.width / 2 + 52,
+          minX - broadPad - 52,
+          minY - broadPad - 52,
+          maxX + broadPad + 52,
+          maxY + broadPad + 52,
           this.wormSegmentCandidates,
         );
         for (const slot of this.wormSegmentCandidates) {
           if (rayWormHitCount >= 2) break;
           for (let sample = 0; sample <= samples; sample++) {
-            if (
-              bladeHitsCircleXY(
-                this.beamSampleX[sample]!,
-                this.beamSampleY[sample]!,
-                this.beamSampleEndX[sample]!,
-                this.beamSampleEndY[sample]!,
-                runtime.x[slot]!,
-                runtime.y[slot]!,
-                runtime.segmentRadius(slot),
-                descriptor.width / 2,
-              )
-            ) {
+            const hit =
+              descriptor.coneHalfAngle > 0
+                ? coneStreamHitsCircle(
+                    { x: this.beamSampleX[sample]!, y: this.beamSampleY[sample]! },
+                    c.beamPreviousAngle + angularDelta * (sample / samples) + rayOffset,
+                    this.beamSampleLength[sample]!,
+                    descriptor.coneHalfAngle,
+                    { x: runtime.x[slot]!, y: runtime.y[slot]! },
+                    runtime.segmentRadius(slot),
+                  )
+                : bladeHitsCircleXY(
+                    this.beamSampleX[sample]!,
+                    this.beamSampleY[sample]!,
+                    this.beamSampleEndX[sample]!,
+                    this.beamSampleEndY[sample]!,
+                    runtime.x[slot]!,
+                    runtime.y[slot]!,
+                    runtime.segmentRadius(slot),
+                    descriptor.width / 2,
+                  );
+            if (hit) {
               c.beamHitIds.add(`worm:${slot}:${runtime.segmentGeneration(slot)}`);
               rayWormHitCount++;
               break;
@@ -10558,10 +10586,13 @@ export class GameRoom extends Room<ArenaState> {
     targetRicochet?: { hops: number; range: number },
   ): void {
     // §16 the documented budget is ARENA-wide: reject generic spitters here too. Friendly player fire is
-    // deliberately uncapped; a reflected hostile shot changes sides and frees its slot immediately.
+    // and friendly rows each have an explicit ceiling; a reflected hostile shot changes sides and frees
+    // its hostile slot immediately before competing for friendly admission.
+    const friendlyCount = this.state.projectiles.size - this.hostileProjectileCount;
     if (
       this.state.outcome !== "active" ||
-      (hostile && this.hostileProjectileCount >= BOSS_PROJECTILE_BUDGET)
+      (hostile && this.hostileProjectileCount >= BOSS_PROJECTILE_BUDGET) ||
+      (!hostile && friendlyCount >= FRIENDLY_PROJECTILE_ENTITY_CAP)
     )
       return;
     const dx = to.x - from.x;
@@ -10708,18 +10739,6 @@ export class GameRoom extends Room<ArenaState> {
     if (!g) return;
     const muzzleOffsets = gunMuzzleOffsetsForShot(weapon, player.attackSeq);
     const parallelDivisor = g.muzzleMode === "parallel" ? muzzleOffsets.length : 1;
-    const dmg =
-      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) /
-      parallelDivisor;
-    const explode = g.explode
-      ? {
-          radius: g.explode.radius,
-          damage:
-            g.explode.damage *
-            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player, hand) /
-            parallelDivisor,
-        }
-      : undefined;
     const pellets = Math.max(1, g.pellets ?? 1);
     const spread = g.spread ?? 0;
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
@@ -10748,12 +10767,45 @@ export class GameRoom extends Room<ArenaState> {
       : el && el !== "physical"
         ? `${g.bulletKind}:${el}`
         : g.bulletKind;
-    // Resolve inaccuracy once per pellet so simultaneous barrel lanes remain exactly parallel.
-    const angles = Array.from({ length: pellets }, (_, i) =>
-      pellets > 1
-        ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
-        : baseAng + (Math.random() - 0.5) * 2 * spread,
+    // Resolve inaccuracy once per pellet so simultaneous barrel lanes remain exactly parallel. Gravelthroat's
+    // full-circle count/headings come from the server-minted room seed + accepted attack epoch, never a client roll or
+    // global Math.random. Admission is bounded before allocation and fireProjectile enforces the arena cap again.
+    const friendlyRows = this.state.projectiles.size - this.hostileProjectileCount;
+    const rowsPerLane = Math.floor(
+      Math.max(0, FRIENDLY_PROJECTILE_ENTITY_CAP - friendlyRows) /
+        Math.max(1, muzzleOffsets.length),
     );
+    const seededVolley = g.randomPellets
+      ? serverSeededGunPelletVolley(
+          g.randomPellets,
+          mixSeeds(this.state.seedHazard, player.attackSeq, this.projectileSeq),
+          rowsPerLane,
+        )
+      : undefined;
+    const angles = seededVolley
+      ? [...seededVolley.angles]
+      : Array.from({ length: pellets }, (_, i) =>
+          pellets > 1
+            ? baseAng + (i / (pellets - 1) - 0.5) * 2 * spread
+            : baseAng + (Math.random() - 0.5) * 2 * spread,
+        );
+    // Gravelthroat authors one six-damage trigger pool at 0.15s. Divide by the server-owned requested roll,
+    // not the admitted count: 1-10 directions preserve 40 baseline DPS, while an arena-cap truncation can
+    // only remove damage and can never concentrate the pool into the surviving entities.
+    const randomPelletDivisor = seededVolley?.requestedCount ?? 1;
+    const projectileDivisor = parallelDivisor * randomPelletDivisor;
+    const dmg =
+      (g.damage * this.heldDamageMult(weapon, g.scalingGrades, player, hand)) /
+      projectileDivisor;
+    const explode = g.explode
+      ? {
+          radius: g.explode.radius,
+          damage:
+            g.explode.damage *
+            this.heldDamageMult(weapon, g.explode.scalingGrades ?? g.scalingGrades, player, hand) /
+            projectileDivisor,
+        }
+      : undefined;
     for (const muzzleOffset of muzzleOffsets) {
       const muzzle = offsetWeaponMuzzle(centerMx, centerMy, aim.x, aim.y, muzzleOffset);
       for (const ang of angles) {
@@ -10787,6 +10839,55 @@ export class GameRoom extends Room<ArenaState> {
 
   /** §38 CASTER fire — conjure one piercing arcane BOLT down aim (INT-scaled, no ammo). Distinct from a gun
    *  (no magazine/spread; pierces the whole line) and from melee (ranged). Spawns from the same muzzle reach. */
+  /** Gun-contact version of the existing Venomtongue chain idiom. The projectile hit is the seed and is
+   * excluded from the extra links; every hop is selected and damaged on the server. */
+  private applyProjectileChain(
+    seed: EnemyState,
+    seedId: string,
+    meta: {
+      hit: Set<string>;
+      sourcePlayerId?: string;
+      sourceWeaponId?: string;
+      crit?: number;
+    },
+    kills: string[],
+  ): void {
+    const player = this.state.players.get(meta.sourcePlayerId ?? "");
+    const weapon = WEAPONS[meta.sourceWeaponId ?? ""];
+    const chain = weapon?.chainLightning;
+    if (!player || !weapon?.gun || !chain) return;
+    const candidates: ChainCandidate[] = [];
+    this.state.enemies.forEach((enemy, enemyId) => {
+      if (enemyId !== seedId && enemy.hp > 0)
+        candidates.push({ id: enemyId, x: enemy.x, y: enemy.y });
+    });
+    const links = selectChainTargets(
+      { x: seed.x, y: seed.y },
+      candidates,
+      chain.jumps,
+      Math.min(chain.range, CHAIN_MAX_RANGE),
+      meta.hit,
+    );
+    const power = this.heldDamageMult(weapon, chain.scalingGrades, player, 0);
+    for (let index = 0; index < links.length; index++) {
+      const link = links[index]!;
+      const enemy = this.state.enemies.get(link.id);
+      if (!enemy || enemy.hp <= 0) continue;
+      this.damageEnemy(
+        enemy,
+        link.id,
+        chain.damage * chain.falloff ** index * power,
+        kills,
+        meta.crit ?? 0,
+        player.id,
+        weapon.id,
+        CombatDelivery.Chain,
+        seed.x,
+        seed.y,
+      );
+    }
+  }
+
   private fireCast(
     player: PlayerState,
     c: CombatState,
@@ -13006,6 +13107,8 @@ export class GameRoom extends Room<ArenaState> {
               meta.sourceX ?? pr.x,
               meta.sourceY ?? pr.y,
             );
+            if (meta.delivery === CombatDelivery.Gun)
+              this.applyProjectileChain(enemy, eid, meta, kills);
             if (this.redirectThrownRicochet(pr, meta)) {
               targetRicocheted = true;
               break;

@@ -97,6 +97,7 @@ import {
 import {
   firingHandTarget,
   firingStanceFor,
+  fistGunShotHandOffset,
   usesAimedFiringStance,
 } from "../sprites/firing-stance.js";
 import { resolvedGunGripPoints } from "../sprites/gun-grip-points.js";
@@ -4372,8 +4373,9 @@ export class SpriteRig {
     const img = weapon.img;
     const rotation = img.rotation;
     const axisSign = img.scaleX < 0 ? -1 : 1;
-    const pageWidth = img.displayWidth * 0.43;
-    const pageHeight = img.displayHeight * 0.72;
+    const pageScale = tomeOpenArtFor(weapon.spriteId)?.pageScale ?? 1;
+    const pageWidth = img.displayWidth * 0.43 * pageScale;
+    const pageHeight = img.displayHeight * 0.72 * pageScale;
     const spineOffset = (0.5 - img.originX) * img.displayWidth * axisSign;
     const spineX = img.x + Math.cos(rotation) * spineOffset;
     const spineY = img.y + Math.sin(rotation) * spineOffset;
@@ -8275,20 +8277,33 @@ export class SpriteRig {
       if (recoilElapsed >= 0 && recoilElapsed < GUN_RECOIL_ACTIVE_MS) {
         const recoilDef = this.weapons[this.gunRecoilHand]?.def ?? this.weaponDef;
         const recoilStrength = Math.min(1.35, (recoilDef.gun?.recoil ?? 0.0017) / 0.004);
-        const recoil = Math.sin(Math.PI * (recoilElapsed / GUN_RECOIL_ACTIVE_MS)) * recoilStrength;
-        const kick = TARGET_BODY_H * 0.045 * recoil;
-        const kickX = -Math.cos(heldAimLocal) * kick;
-        const kickY = -Math.sin(heldAimLocal) * kick;
-        if (this.gunRecoilHand === 1 && this.weapons.length > 1) {
-          this.swingBackOffX = kickX;
-          this.swingBackOffY = kickY;
-          ownFront = 0.78;
+        const shotEnvelope = Math.sin(Math.PI * (recoilElapsed / GUN_RECOIL_ACTIVE_MS));
+        const recoil = shotEnvelope * recoilStrength;
+        if (firingStanceFor(recoilDef).family === "fist-gun" && this.weapons.length > 1) {
+          const lead = fistGunShotHandOffset(0, this.gunRecoilHand, heldAimLocal, shotEnvelope);
+          const off = fistGunShotHandOffset(1, this.gunRecoilHand, heldAimLocal, shotEnvelope);
+          this.swingOffX = lead.x * TARGET_BODY_H;
+          this.swingOffY = lead.y * TARGET_BODY_H;
+          this.swingBackOffX = off.x * TARGET_BODY_H;
+          this.swingBackOffY = off.y * TARGET_BODY_H;
+          if (this.gunRecoilHand === 0) ownBack = 0.78;
+          else ownFront = 0.78;
+          this.body.rotation += (this.gunRecoilHand === 1 ? -1 : 1) * 0.018 * recoil;
         } else {
-          this.swingOffX = kickX;
-          this.swingOffY = kickY;
-          ownBack = this.weapons.length > 1 ? 0.78 : ownBack;
+          const kick = TARGET_BODY_H * 0.045 * recoil;
+          const kickX = -Math.cos(heldAimLocal) * kick;
+          const kickY = -Math.sin(heldAimLocal) * kick;
+          if (this.gunRecoilHand === 1 && this.weapons.length > 1) {
+            this.swingBackOffX = kickX;
+            this.swingBackOffY = kickY;
+            ownFront = 0.78;
+          } else {
+            this.swingOffX = kickX;
+            this.swingOffY = kickY;
+            ownBack = this.weapons.length > 1 ? 0.78 : ownBack;
+          }
+          this.body.rotation += (this.gunRecoilHand === 1 ? -1 : 1) * 0.018 * recoil;
         }
-        this.body.rotation += (this.gunRecoilHand === 1 ? -1 : 1) * 0.018 * recoil;
       }
     } else if (
       this.weaponDef &&
@@ -10234,7 +10249,8 @@ export class SpriteRig {
             paintedParticleScale(
               packId,
               paintedParticleDominance(
-                this.weaponDef?.displayLength ?? auraRadius * 2,
+                (this.weaponDef?.displayLength ?? auraRadius * 2) *
+                  (paintedAura.particleReferenceMultiplier ?? 1),
                 paintedAura.particleDominance,
                 paintedAura.minParticlePx,
                 paintedAura.maxParticlePx,

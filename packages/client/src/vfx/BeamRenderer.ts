@@ -633,6 +633,22 @@ export class BeamRenderer {
       0xfff0a8,
       redline * 0.8,
     );
+    const coneStream = WEAPONS[row.weaponId]?.beam?.coneStream;
+    if (coneStream) {
+      this.drawConeStream(
+        entry,
+        pose,
+        visualWidth,
+        coneStream.flavor,
+        edgeColor,
+        chromaColor,
+        coreColor,
+        nowMs,
+        beltY0,
+        beltYScale,
+      );
+      return;
+    }
     const edgeWidth = visualWidth * (beam?.edgeWidth ?? 1);
     const chromaWidth = visualWidth * (beam?.chromaWidth ?? 0.68);
     const coreWidth = visualWidth * ((beam?.coreWidth ?? 0.22) + redline * 0.04);
@@ -693,6 +709,69 @@ export class BeamRenderer {
     }
     this.drawTerminus(entry, row, pose, edgeColor, visualWidth, nowMs, beltY0, beltYScale, beam);
     if (this.colorblindShapes) this.drawElementPattern(row, pose, beltY0, beltYScale);
+  }
+
+  /** W4R cone stream: three inset widening sheets plus advancing wave ribs. `visualWidth` is the
+   * authoritative end diameter replicated by the server, so the painted cone never exceeds its hit sector. */
+  private drawConeStream(
+    entry: BeamEntry,
+    pose: BeamDrawPose,
+    visualWidth: number,
+    flavor: "ice" | "magma",
+    edgeColor: number,
+    chromaColor: number,
+    coreColor: number,
+    nowMs: number,
+    beltY0: number,
+    beltYScale: number,
+  ): void {
+    const c = Math.cos(pose.angle);
+    const s = Math.sin(pose.angle);
+    const halfEnd = Math.max(3, visualWidth * 0.5);
+    const startHalf = Math.min(10, halfEnd * 0.08);
+    const drawSheet = (fraction: number, color: number, alpha: number) => {
+      const endHalf = halfEnd * fraction;
+      const baseHalf = startHalf * fraction;
+      const x0a = pose.originX - s * baseHalf;
+      const y0a = this.projectY(pose.originY + c * baseHalf, beltY0, beltYScale);
+      const x0b = pose.originX + s * baseHalf;
+      const y0b = this.projectY(pose.originY - c * baseHalf, beltY0, beltYScale);
+      const endX = pose.originX + c * pose.length;
+      const endY = pose.originY + s * pose.length;
+      const x1a = endX - s * endHalf;
+      const y1a = this.projectY(endY + c * endHalf, beltY0, beltYScale);
+      const x1b = endX + s * endHalf;
+      const y1b = this.projectY(endY - c * endHalf, beltY0, beltYScale);
+      this.graphics
+        .fillStyle(color, alpha)
+        .beginPath()
+        .moveTo(x0a, y0a)
+        .lineTo(x1a, y1a)
+        .lineTo(x1b, y1b)
+        .lineTo(x0b, y0b)
+        .closePath()
+        .fillPath();
+    };
+    drawSheet(1, edgeColor, flavor === "magma" ? 0.2 : 0.16);
+    drawSheet(0.86, chromaColor, flavor === "magma" ? 0.42 : 0.36);
+    drawSheet(0.48, coreColor, 0.28);
+
+    const phase = nowMs * (flavor === "magma" ? 0.0024 : 0.0032) + entry.seed * Math.PI * 2;
+    const ribs = 7;
+    for (let index = 1; index <= ribs; index++) {
+      const f = ((index / ribs + phase / (Math.PI * 2)) % 1 + 1) % 1;
+      const centerX = pose.originX + c * pose.length * f;
+      const centerY = pose.originY + s * pose.length * f;
+      const half = halfEnd * f * (0.72 + 0.12 * Math.sin(phase + index));
+      this.graphics
+        .lineStyle(flavor === "magma" ? 3 : 2, index % 2 ? chromaColor : coreColor, 0.5)
+        .lineBetween(
+          centerX - s * half,
+          this.projectY(centerY + c * half, beltY0, beltYScale),
+          centerX + s * half,
+          this.projectY(centerY - c * half, beltY0, beltYScale),
+        );
+    }
   }
 
   private drawRecipeTrace(

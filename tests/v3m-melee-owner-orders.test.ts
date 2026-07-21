@@ -121,7 +121,7 @@ describe("V3M exact combo and VFX orders", () => {
     ["x2-blightfork-glaive", 1, ["jab"]],
     ["x2-saintspar-lochaber", 2, ["overhead", "rising-chop"]],
     ["x2-reliquary-halberd", 2, ["overhead", "impale"]],
-    ["x2-wyrmskull-reliquary", 3, ["slash", "slash", "overhead"]],
+    ["x2-wyrmskull-reliquary", 3, ["jab", "jab", "impale"]],
     ["x2-hailwidow-katana", 3, ["shoulder-chop", "guard-check", "splinter-fall"]],
   ] as const)("authors %s as an exact %i-beat sequence", (id, count, motions) => {
     const definition = weapon(id);

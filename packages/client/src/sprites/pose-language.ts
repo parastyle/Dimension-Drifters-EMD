@@ -1853,6 +1853,10 @@ export function sampleWeaponPerformance(
       handX = 0.11;
       const tap = Math.max(0, Math.cos(input.stridePhase + (spec.strideTap?.phaseOffset ?? 0)));
       handY = -0.06 + (tap * (spec.strideTap?.amplitudePx ?? 8) * clamp01(input.gait)) / 76;
+      // Both hands actually close on the shaft: the lower grip follows the same planted staff line.
+      out.backHandX = handX;
+      out.backHandY = handY + 0.22;
+      out.backHandBlend = 1;
       break;
     }
     case "hanging-chain":
@@ -1883,6 +1887,7 @@ export function sampleWeaponPerformance(
     default:
       break;
   }
+  if (spec.carryAngleRad !== undefined && spec.hold !== "upright") angle = spec.carryAngleRad;
   const restAngle = angle;
   const restHandX = handX;
   const restHandY = handY;
@@ -1925,6 +1930,19 @@ export function sampleWeaponPerformance(
     out.backHandY = sine * forward - cosine * lateral - 0.04;
     out.backHandBlend = 1;
     const drawTurns = (spec.preThrowRevolutions ?? 0) * Math.PI * 2;
+    // A turn that only changes angle aliases at its start/end. Orbit the in-hand grip through the same
+    // authored revolution so Coilshot's complete twirl and the thrown release both read between key poses.
+    if (wind && drawTurns > 0) {
+      const orbitEnvelope = Math.sin(Math.PI * e);
+      const orbit = 0.13 * orbitEnvelope;
+      const orbitAngle = input.aimLocal + e * drawTurns;
+      const orbitX = Math.cos(orbitAngle) * orbit;
+      const orbitY = Math.sin(orbitAngle) * orbit;
+      handX += orbitX;
+      handY += orbitY;
+      out.backHandX -= orbitX * 0.42;
+      out.backHandY -= orbitY * 0.42;
+    }
     angle = wind
       ? mix(input.aimLocal - 0.15, input.aimLocal + Math.PI * 0.72 + drawTurns, e)
       : input.aimLocal;

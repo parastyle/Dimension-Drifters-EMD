@@ -30,6 +30,7 @@ export interface QuakeVfxRecipe {
   readonly pulseDelayMs: number;
   readonly ringCount: number;
   readonly particleCount: number;
+  readonly effectCountMultiplier: number;
   readonly shake: number;
   readonly palette: {
     readonly hot: number;
@@ -223,5 +224,6 @@ export function resolveQuakeVfxRecipe(
     signature: `${element}/${variant}/${elemental.pack}/${shape.primaryShape}/${shape.pulseDelayMs}`,
     ...elemental,
     ...shape,
+    effectCountMultiplier: weapon.id === "x2-godsbone-pillar" ? 2 : 1,
   });
 }

@@ -21,6 +21,7 @@ export interface WeaponEffectRecipe {
   readonly noGore?: boolean;
   readonly suppressQuakeVfx?: boolean;
   readonly quakeExplosionElement?: "void";
+  readonly quakeExplosionPaintedOnlyWeaponIds?: readonly string[];
   readonly musicalNotes?: true;
 }
 
@@ -122,6 +123,15 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     swingParticleDominance: 0.34,
     additive: false,
   }),
+  "gravechain-dominant-spin": Object.freeze({
+    id: "gravechain-dominant-spin",
+    weaponId: "x2-gravechain-scythe",
+    emitter: "blade",
+    swingPack: "void-wisp",
+    swingCount: 24,
+    swingParticleDominance: 0.52,
+    additive: true,
+  }),
   "stormfist-blue-lunge": Object.freeze({
     id: "stormfist-blue-lunge",
     weaponId: "x2-thunderhead-stormfists",
@@ -188,6 +198,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     emitter: "body",
     suppressQuakeVfx: true,
     quakeExplosionElement: "void",
+    quakeExplosionPaintedOnlyWeaponIds: Object.freeze(["x2-cairn-of-hollow-names"]),
   }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
@@ -236,6 +247,8 @@ export interface WeaponAuraVfxRecipe {
   readonly particleDominance: number;
   readonly minParticlePx: number;
   readonly maxParticlePx: number;
+  /** Optional W4M stage-up while retaining the W4G2 dominance ratio as the scale contract's basis. */
+  readonly particleReferenceMultiplier?: number;
   readonly extent: number;
   readonly spinHz: number;
 }
@@ -258,8 +271,9 @@ export const WEAPON_AURA_VFX_RECIPES = Object.freeze({
     count: 8,
     particleDominance: 0.44,
     minParticlePx: 30,
-    maxParticlePx: 44,
-    extent: 0.92,
+    maxParticlePx: 96,
+    particleReferenceMultiplier: 3,
+    extent: 0.96,
     spinHz: 1.05,
   }),
   "x2-galvanic-liber-of-storms": Object.freeze({

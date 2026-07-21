@@ -119,6 +119,28 @@ export interface CasterSpriteProjectileRecipe {
   readonly flutterMs?: number;
 }
 
+/** Standalone W4M projectile art. Generated sheets use fixed cells; derived cutouts use a single image. */
+export interface CasterTextureProjectileRecipe {
+  readonly textureKey: string;
+  readonly url: string;
+  readonly displayLength: number;
+  readonly frame?: number;
+  readonly frameWidth?: number;
+  readonly frameHeight?: number;
+  readonly flutterRadians?: number;
+  readonly flutterMs?: number;
+}
+
+export interface CasterPaintedImpactRecipe {
+  readonly textureKey: string;
+  readonly url: string;
+  readonly frameWidth: number;
+  readonly frameHeight: number;
+  readonly frames: readonly number[];
+  readonly displayLength: number;
+  readonly durationMs: number;
+}
+
 export interface CasterVfxImpactRecipe {
   readonly blossom: "radial" | "pages" | "square" | "axis" | "rings" | "star" | "ward" | "burst";
   readonly radius: number;
@@ -139,6 +161,8 @@ export interface CasterVfxRecipe {
   readonly source: CasterVfxSourceRecipe;
   readonly projectile: CasterVfxProjectileRecipe;
   readonly spriteProjectile?: CasterSpriteProjectileRecipe;
+  readonly textureProjectile?: CasterTextureProjectileRecipe;
+  readonly paintedImpact?: CasterPaintedImpactRecipe;
   readonly impact: CasterVfxImpactRecipe;
   readonly signature?: CasterVfxSignature;
   readonly beam?: BeamVfxRecipe;
@@ -174,13 +198,46 @@ export const CASTER_SPRITE_PROJECTILES: Readonly<
     crop: Object.freeze({ x: 121, y: 0, width: 135, height: 84 }),
     displayLength: 58,
   }),
-  "x2-locust-glass-plague-orb": Object.freeze({
-    spriteId: "x2-locust-glass-plague-orb",
+  "x2-saintskull-monstrance": Object.freeze({
+    spriteId: "x2-saintskull-monstrance",
     partRole: "part-1",
-    crop: Object.freeze({ x: 132, y: 45, width: 104, height: 62 }),
-    displayLength: 38,
+    crop: Object.freeze({ x: 100, y: 49, width: 88, height: 105 }),
+    displayLength: 96,
+  }),
+});
+
+/** Plague's bug is re-derived without the amber shell; Gravesinger uses its generated 2×2 painted sheet. */
+export const CASTER_TEXTURE_PROJECTILES: Readonly<
+  Partial<Record<string, CasterTextureProjectileRecipe>>
+> = Object.freeze({
+  "x2-locust-glass-plague-orb": Object.freeze({
+    textureKey: "caster:plague-locust",
+    url: "vfx/caster/plague-locust.png",
+    displayLength: 48,
     flutterRadians: 0.18,
     flutterMs: 230,
+  }),
+  "x2-gravesinger-s-hex-wand": Object.freeze({
+    textureKey: "caster:gravesinger-hex",
+    url: "vfx/caster/gravesinger-hex-sheet.png",
+    frame: 0,
+    frameWidth: 627,
+    frameHeight: 627,
+    displayLength: 72,
+  }),
+});
+
+export const CASTER_PAINTED_IMPACTS: Readonly<
+  Partial<Record<string, CasterPaintedImpactRecipe>>
+> = Object.freeze({
+  "x2-gravesinger-s-hex-wand": Object.freeze({
+    textureKey: "caster:gravesinger-hex",
+    url: "vfx/caster/gravesinger-hex-sheet.png",
+    frameWidth: 627,
+    frameHeight: 627,
+    frames: Object.freeze([1, 2, 3]),
+    displayLength: 180,
+    durationMs: 360,
   }),
 });
 
@@ -341,6 +398,46 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     bodyFrame: 7,
     coreFrame: 5,
     impact: Object.freeze({ points: 6, rings: 2, radiusScale: 0.92, spin: 1.4 }),
+  }),
+  "x2-permafrost-siege-lobber": Object.freeze({
+    signature: "permafrost-ice-cone-stream",
+    widthProfile: "tapered",
+    edgeColor: 0x173f58,
+    accentColor: 0x6fd6ff,
+    coreColor: 0xe8fbff,
+    edgeWidth: 1,
+    chromaWidth: 0.82,
+    coreWidth: 0.36,
+    ripple: "sine",
+    rippleAmplitude: 0.14,
+    rippleFrequency: 5,
+    flickerHz: 7,
+    particleElement: "frost",
+    bodyParticle: "wisp",
+    coreParticle: "shard",
+    bodyFrame: 6,
+    coreFrame: 4,
+    impact: Object.freeze({ points: 7, rings: 1, radiusScale: 0.78, spin: -1.6 }),
+  }),
+  "x2-doomsday-drum-cannon": Object.freeze({
+    signature: "doomsday-magma-cone-wave",
+    widthProfile: "tapered",
+    edgeColor: 0x3b0b08,
+    accentColor: 0xff5a24,
+    coreColor: 0xffd06a,
+    edgeWidth: 1,
+    chromaWidth: 0.84,
+    coreWidth: 0.4,
+    ripple: "pulse-train",
+    rippleAmplitude: 0.18,
+    rippleFrequency: 6,
+    flickerHz: 9,
+    particleElement: "fire",
+    bodyParticle: "wisp",
+    coreParticle: "orb",
+    bodyFrame: 4,
+    coreFrame: 2,
+    impact: Object.freeze({ points: 8, rings: 2, radiusScale: 0.9, spin: 1.8 }),
   }),
   "x2-null-grimoire-of-the-hollow-page": Object.freeze({
     signature: "hollow-page-aperture-ray",
@@ -625,26 +722,6 @@ export const BEAM_VFX_RECIPES: Readonly<Record<string, BeamVfxRecipe>> = Object.
     coreFrame: 0,
     impact: Object.freeze({ points: 4, rings: 0, radiusScale: 0.62, spin: 3.4 }),
   }),
-  "x2-saintskull-monstrance": Object.freeze({
-    signature: "saintskull-bone-star",
-    widthProfile: "tapered",
-    edgeColor: 0x71582c,
-    accentColor: 0xffd979,
-    coreColor: 0xfffff4,
-    edgeWidth: 0.97,
-    chromaWidth: 0.64,
-    coreWidth: 0.21,
-    ripple: "sawtooth",
-    rippleAmplitude: 0.11,
-    rippleFrequency: 4.5,
-    flickerHz: 5.5,
-    particleElement: "holy",
-    bodyParticle: "shard",
-    coreParticle: "ring",
-    bodyFrame: 4,
-    coreFrame: 1,
-    impact: Object.freeze({ points: 11, rings: 1, radiusScale: 1.16, spin: -0.8 }),
-  }),
   "x2-sanctum-brazier-staff": Object.freeze({
     signature: "sanctum-brazier-blueflame",
     widthProfile: "braided",
@@ -793,6 +870,8 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
   const grade = casterGrade(def.scalingGrades?.int);
   const damageTier = damageTierFor(def);
   const spriteProjectile = CASTER_SPRITE_PROJECTILES[def.id];
+  const textureProjectile = CASTER_TEXTURE_PROJECTILES[def.id];
+  const paintedImpact = CASTER_PAINTED_IMPACTS[def.id];
   const gradeIndex = grade === "pinnacle" ? 2 : grade === "master" ? 1 : 0;
   const damageIndex = damageTier === "nova" ? 2 : damageTier === "burst" ? 1 : 0;
   const sourceBase = FORM_SOURCE[form];
@@ -829,6 +908,8 @@ export function resolveCasterVfxRecipe(def: WeaponDef | undefined): CasterVfxRec
     source,
     projectile,
     ...(spriteProjectile ? { spriteProjectile } : {}),
+    ...(textureProjectile ? { textureProjectile } : {}),
+    ...(paintedImpact ? { paintedImpact } : {}),
     impact,
     ...(signature ? { signature } : {}),
     ...(beam ? { beam } : {}),

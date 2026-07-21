@@ -48,7 +48,7 @@ const BULLET_KINDS = new Set([
   "slug", "pellet", "tracer", "nail", "ricochet", "spark", "orb", "grenade",
 ]);
 const MUZZLES = new Set(["heavy", "boom", "rapid", "punch", "spark"]);
-const PROJECTILE_ARTS = new Set(["weapon-crop", "arrow", "cannonball", "fireball"]);
+const PROJECTILE_ARTS = new Set(["weapon-crop", "generated", "arrow", "cannonball", "fireball"]);
 const MUZZLE_MODES = new Set(["parallel", "cycle"]);
 // The first gun-beam wave is explicit, not inferred from every ranged weapon. V1 still uses heat only;
 // these ids differ from caster beams through their ranged class/art/pose, never a hidden magazine resource.
@@ -56,6 +56,8 @@ const BEAM_GUN_IDS = new Set([
   "x2-voltcaster-machine-pistol",
   "x2-mirage-coilrifle",
   "x2-stormcaller-tesla-gatling",
+  "x2-permafrost-siege-lobber",
+  "x2-doomsday-drum-cannon",
 ]);
 
 // Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
@@ -82,9 +84,10 @@ const BEHAVIOR_KEYS = {
   gun: new Set(["kind", "damage", "projectileSpeed", "range", "fireRate", "pellets", "spread", "pierce",
     "bounces", "magazine", "reloadSeconds", "bulletKind", "muzzle", "muzzleColor", "recoil",
     "projectileArt", "projectileVisualScale", "projectileColor", "arcHeight", "scalingGrades", "explode", "burst",
+    "randomPellets",
     "muzzleOffsets", "muzzleMode", "dualMuzzleSeparation", "sonicBoomRing", "width"]),
   beam: new Set(["kind", "damage", "range", "tickRate", "width", "chargeSeconds", "sweepLagSeconds",
-    "randomRays", "muzzleOffsets", "scalingGrades", "zone"]),
+    "randomRays", "muzzleOffsets", "coneStream", "scalingGrades", "zone"]),
   groundZone: new Set(["kind", "zone"]),
   glovePair: new Set(["kind", "auraColor", "auraRadius"]),
   warp: new Set(["kind", "burstRadius"]),
@@ -110,12 +113,15 @@ const EFFECT_RECIPES = new Set([
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
   "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
-  "void-caster-explosion",
+  "gravechain-dominant-spin", "void-caster-explosion",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
 ]);
 const RANDOM_RAY_KEYS = new Set(["count", "spread"]);
+const RANDOM_PELLET_KEYS = new Set(["min", "max", "directions"]);
+const CONE_STREAM_KEYS = new Set(["halfAngle", "flavor"]);
+const CONE_STREAM_FLAVORS = new Set(["ice", "magma"]);
 const MUZZLE_OFFSET_KEYS = new Set(["forward", "lateral"]);
 const WEAPON_MUZZLE_COUNT_CAP = 6;
 const COMBO_MOTIONS = new Set([
@@ -520,7 +526,7 @@ function performanceOf(p) {
     } else {
       checkKeys(p.aura, PERFORMANCE_AURA_KEYS, "performance.aura");
       out.aura = {
-        radius: num(p.aura.radius, 60, 260, 150, "performance.aura.radius"),
+        radius: num(p.aura.radius, 60, 450, 150, "performance.aura.radius"),
         damagePerSecond: num(p.aura.damagePerSecond, 1, 80, 18, "performance.aura.damagePerSecond"),
         resourcePerSecond: num(p.aura.resourcePerSecond, 1, 80, 20, "performance.aura.resourcePerSecond"),
         tickRate: num(p.aura.tickRate, 0.05, 0.5, 0.2, "performance.aura.tickRate"),
@@ -796,6 +802,27 @@ function mapWeapon(w) {
     }
     const muzzleOffsets = muzzleOffsetsOf(b.muzzleOffsets);
     if (muzzleOffsets) def.beam.muzzleOffsets = muzzleOffsets;
+    if (b.coneStream !== undefined) {
+      if (!b.coneStream || typeof b.coneStream !== "object" || Array.isArray(b.coneStream)) {
+        fail("behavior.coneStream is not an object");
+      } else {
+        checkKeys(b.coneStream, CONE_STREAM_KEYS, "behavior.coneStream");
+        def.beam.coneStream = {
+          halfAngle: num(
+            b.coneStream.halfAngle,
+            0.08,
+            0.9,
+            0.42,
+            "behavior.coneStream.halfAngle",
+          ),
+          flavor: enumOf(
+            b.coneStream.flavor,
+            CONE_STREAM_FLAVORS,
+            "behavior.coneStream.flavor",
+          ),
+        };
+      }
+    }
   } else if (isGun) {
     def.gun = {
       damage: num(b.damage, 1, 40, damage, "behavior.damage"),
@@ -849,6 +876,25 @@ function mapWeapon(w) {
     }
     const pellets = int(b.pellets, 1, 12, 1, "behavior.pellets");
     if (pellets > 1) def.gun.pellets = pellets;
+    if (b.randomPellets !== undefined) {
+      if (!b.randomPellets || typeof b.randomPellets !== "object" || Array.isArray(b.randomPellets)) {
+        fail("behavior.randomPellets is not an object");
+      } else {
+        checkKeys(b.randomPellets, RANDOM_PELLET_KEYS, "behavior.randomPellets");
+        if (b.pellets !== undefined) fail("behavior.randomPellets cannot be combined with behavior.pellets");
+        const min = int(b.randomPellets.min, 1, 10, 1, "behavior.randomPellets.min");
+        const max = int(b.randomPellets.max, min, 10, 10, "behavior.randomPellets.max");
+        def.gun.randomPellets = {
+          min,
+          max,
+          directions: enumOf(
+            b.randomPellets.directions,
+            new Set(["radial"]),
+            "behavior.randomPellets.directions",
+          ),
+        };
+      }
+    }
     // Accuracy is independent of pellet count. The old conditional silently erased every authored
     // one-projectile spread (including Coyote Stinger), making those guns laser-accurate at runtime.
     if (b.spread !== undefined)

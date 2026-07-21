@@ -97,8 +97,7 @@ const PACK_PLANS: Record<FxPackName, PackPlan> = {
     core: { indexes: [2], additive: true }, // pillar; shards precede it at 0–1 in the extracted spread
     hot: { indexes: [6, 8, 9], additive: true },
     rings: { indexes: [3], additive: true },
-    shrapnel: [0, 1, 4, 5],
-    wisps: { indexes: [7] }, // feather
+    shrapnel: [0, 1, 4, 5, 7], // the feather is shard-sized, not the old oversized wisp role
   },
   "toxic-burst": {
     core: { indexes: [0], additive: true },

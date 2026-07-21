@@ -18,6 +18,7 @@ import {
   REZ_RADIUS,
 } from "./constants.js";
 import type { Attr } from "./leveling.js";
+import { makeRng } from "./rng.js";
 import { GENERATED_WEAPONS } from "./weapons-expansion.generated.js";
 
 /** Driftblade-line silhouette lane consumed by the stance-by-size flourish wave. This is intentionally
@@ -57,7 +58,12 @@ export interface WeaponMuzzleOffset {
 }
 
 export type GunMuzzleMode = "parallel" | "cycle";
-export type GunProjectileArt = "weapon-crop" | "arrow" | "cannonball" | "fireball";
+export type GunProjectileArt =
+  | "weapon-crop"
+  | "generated"
+  | "arrow"
+  | "cannonball"
+  | "fireball";
 
 export const CENTER_MUZZLE_OFFSET: Readonly<WeaponMuzzleOffset> = Object.freeze({
   forward: 0,
@@ -125,6 +131,12 @@ export interface BeamDef {
   };
   /** Fixed parallel barrel lanes. They share one angle and differ only by their muzzle origin. */
   muzzleOffsets?: WeaponMuzzleOffset[];
+  /** Reusable continuous cone-stream specialization. It retains beam charge/heat/tick authority while
+   * replacing the ray capsule with a widening cone and flavor-specific presentation. */
+  coneStream?: {
+    halfAngle: number;
+    flavor: "ice" | "magma";
+  };
   scalingGrades?: Partial<Record<Attr, Grade>>;
 }
 
@@ -132,6 +144,45 @@ export const PRISM_BEAM_MAX_RAYS = 7;
 /** Per accepted cast, before Arc Split augments; keeps authored volleys inside the friendly entity budget. */
 export const CAST_VOLLEY_PROJECTILE_CAP = 6;
 export const FRIENDLY_BEAM_ENTITY_CAP = 32;
+/** Friendly bullets share one arena-wide ceiling. A trigger admits only the remaining rows. */
+export const FRIENDLY_PROJECTILE_ENTITY_CAP = 192;
+/** Owner-authored random pellet fans are capped independently before the arena budget is consulted. */
+export const RANDOM_GUN_PELLET_CAP = 10;
+
+export interface ServerSeededGunPelletVolley {
+  readonly requestedCount: number;
+  readonly angles: readonly number[];
+}
+
+/**
+ * Server-seeded random pellet descriptor. The server owns the seed and only replicates admitted projectile
+ * rows; clients never predict the roll. Every heading is sampled independently across the full circle.
+ */
+export function serverSeededGunPelletVolley(
+  randomPellets: Readonly<{ min: number; max: number; directions: "radial" }>,
+  seed: number,
+  availableRows = RANDOM_GUN_PELLET_CAP,
+): ServerSeededGunPelletVolley {
+  const min = Math.max(1, Math.min(RANDOM_GUN_PELLET_CAP, Math.trunc(randomPellets.min)));
+  const max = Math.max(min, Math.min(RANDOM_GUN_PELLET_CAP, Math.trunc(randomPellets.max)));
+  const rng = makeRng(seed);
+  const requestedCount = rng.int(min, max);
+  const admitted = Math.max(0, Math.min(requestedCount, Math.trunc(availableRows)));
+  return Object.freeze({
+    requestedCount,
+    angles: Object.freeze(
+      Array.from({ length: admitted }, () => rng.range(-Math.PI, Math.PI)),
+    ),
+  });
+}
+
+export function expectedRandomGunPelletCount(
+  randomPellets: Readonly<{ min: number; max: number }>,
+): number {
+  const min = Math.max(1, Math.min(RANDOM_GUN_PELLET_CAP, Math.trunc(randomPellets.min)));
+  const max = Math.max(min, Math.min(RANDOM_GUN_PELLET_CAP, Math.trunc(randomPellets.max)));
+  return (min + max) / 2;
+}
 
 /** Satellite rows use only the budget left after reserving one primary beam row per player. */
 export function admittedPrismaticBeamRayCount(
@@ -185,6 +236,7 @@ export type WeaponEffectRecipeId =
   | "quarry-quad-spatter"
   | "witherleaf-tip-spores"
   | "snakeoil-tip-sparks"
+  | "gravechain-dominant-spin"
   | "void-caster-explosion";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
@@ -557,6 +609,12 @@ export interface WeaponDef {
     };
     /** Bullets per trigger pull — >1 = a shotgun SPREAD volley (one ammo spends all pellets). Default 1. */
     pellets?: number;
+    /** Server-seeded pellet count and full-circle headings. Mutually exclusive with fixed `pellets`. */
+    randomPellets?: {
+      min: number;
+      max: number;
+      directions: "radial";
+    };
     /** Cone half-angle (radians): pellet spread for shotguns, or muzzle inaccuracy for autos. Default 0. */
     spread?: number;
     /** Enemies a single bullet cuts through before dying (default 1). */
@@ -791,9 +849,12 @@ export function pairEligible(lead: WeaponDef | undefined, off: WeaponDef | undef
  * actual source still resolves its own grades/rarity/affix and receipt independently. */
 export function pairDamagePerUse(weapon: WeaponDef): number {
   if (weapon.gun) {
+    // A random-pellet gun authors one trigger damage pool. The server divides that pool by the
+    // server-seeded roll, so count variance changes coverage, never total admitted trigger damage.
+    const pelletCount = weapon.gun.randomPellets ? 1 : Math.max(1, weapon.gun.pellets ?? 1);
     return Math.max(
       0,
-      (weapon.gun.damage * Math.max(1, weapon.gun.pellets ?? 1) +
+      (weapon.gun.damage * pelletCount +
         (weapon.gun.explode?.damage ?? 0)) *
         Math.max(1, weapon.gun.burst?.count ?? 1),
     );
@@ -984,18 +1045,19 @@ export function weaponDamageSources(def: WeaponDef): DamageSource[] {
       count: 1,
     });
   } else if (def.gun) {
+    const pelletCount = def.gun.randomPellets ? 1 : Math.max(1, def.gun.pellets ?? 1);
     out.push({
       label: "shot",
       base: def.gun.damage,
       grades: def.gun.scalingGrades ?? def.scalingGrades,
-      count: (def.gun.pellets ?? 1) * (def.gun.burst?.count ?? 1),
+      count: pelletCount * (def.gun.burst?.count ?? 1),
     });
     if (def.gun.explode) {
       out.push({
         label: "blast",
         base: def.gun.explode.damage,
         grades: def.gun.explode.scalingGrades ?? def.gun.scalingGrades ?? def.scalingGrades,
-        count: (def.gun.pellets ?? 1) * (def.gun.burst?.count ?? 1),
+        count: pelletCount * (def.gun.burst?.count ?? 1),
       });
     }
   } else if (def.thrown) {
@@ -1798,11 +1860,22 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       bounces: 3, // caroms off the arena walls
       magazine: 8,
       reloadSeconds: 1.2,
-      bulletKind: "ricochet",
+      bulletKind: "spark",
       muzzle: "spark",
       muzzleColor: 0x5dd6ff,
+      projectileColor: 0x3f9dff,
       recoil: 0.002,
       scalingGrades: { dex: "C", luk: "C" },
+    },
+    // W4R: Venomtongue's three-hop idiom, recolored/effect-typed through this weapon's shock identity.
+    // Direct single-target DPS remains the original 8 / .34; the chain is documented multi-target utility.
+    chainLightning: {
+      jumps: 3,
+      range: 190,
+      damage: 3,
+      falloff: 0.75,
+      scalingGrades: { dex: "C", luk: "C" },
+      vfx: { color: 0.58, jag: 0.3, life: 210 },
     },
     tags: {
       grip: "1H",

@@ -1,7 +1,11 @@
 import Phaser from "phaser";
 import { partTexture } from "../entities/SpriteRig.js";
 import { SPRITES } from "../sprites/manifest.js";
-import type { CasterVfxRecipe } from "./caster-vfx-recipes.js";
+import {
+  CASTER_PAINTED_IMPACTS,
+  CASTER_TEXTURE_PROJECTILES,
+  type CasterVfxRecipe,
+} from "./caster-vfx-recipes.js";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
 import {
   elementPack,
@@ -24,6 +28,24 @@ interface CasterFrameSpend {
 }
 
 const FRAME_SPEND = new WeakMap<Phaser.Scene, CasterFrameSpend>();
+
+/** Queue the standalone derived/generated caster art once; weapon-owned crop art remains lazily loaded. */
+export function preloadCasterPaintedArt(scene: Phaser.Scene): void {
+  const queued = new Set<string>();
+  for (const art of [
+    ...Object.values(CASTER_TEXTURE_PROJECTILES),
+    ...Object.values(CASTER_PAINTED_IMPACTS),
+  ]) {
+    if (!art || queued.has(art.textureKey) || scene.textures.exists(art.textureKey)) continue;
+    queued.add(art.textureKey);
+    if ("frameWidth" in art && art.frameWidth && art.frameHeight)
+      scene.load.spritesheet(art.textureKey, art.url, {
+        frameWidth: art.frameWidth,
+        frameHeight: art.frameHeight,
+      });
+    else scene.load.image(art.textureKey, art.url);
+  }
+}
 
 function punctuationAllowance(scene: Phaser.Scene, requestedParticles: number): number {
   // Phaser's wall clock is monotonic during a scene. A 60 Hz bucket keeps simultaneous patch edges bounded
@@ -382,8 +404,31 @@ export function makeCasterProjectile(
     .setRotation(angle)
     .setBlendMode(Phaser.BlendModes.ADD);
   const children: Phaser.GameObjects.GameObject[] = [trail, glow];
+  let paintedIdentity = false;
+  const textureRecipe = recipe.textureProjectile;
+  if (textureRecipe && scene.textures.exists(textureRecipe.textureKey)) {
+    const sprite = scene.add
+      .image(0, 0, textureRecipe.textureKey, textureRecipe.frame)
+      .setOrigin(0.5)
+      .setRotation(angle);
+    const frame = sprite.frame;
+    const width = Math.max(1, frame.realWidth || frame.width);
+    sprite.setScale(textureRecipe.displayLength / width);
+    if (!reducedMotion && textureRecipe.flutterRadians && textureRecipe.flutterMs) {
+      scene.tweens.add({
+        targets: sprite,
+        rotation: angle + textureRecipe.flutterRadians,
+        duration: textureRecipe.flutterMs,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.inOut",
+      });
+    }
+    children.push(sprite);
+    paintedIdentity = true;
+  }
   const spriteRecipe = recipe.spriteProjectile;
-  if (spriteRecipe) {
+  if (!paintedIdentity && spriteRecipe) {
     const manifest = SPRITES[spriteRecipe.spriteId as keyof typeof SPRITES];
     const part = manifest?.parts.find((candidate) => candidate.role === spriteRecipe.partRole);
     const texture = partTexture(scene, spriteRecipe.spriteId, spriteRecipe.partRole);
@@ -406,9 +451,10 @@ export function makeCasterProjectile(
         });
       }
       children.push(sprite);
+      paintedIdentity = true;
     }
   }
-  if (!spriteRecipe || children.length === 2) {
+  if (!paintedIdentity) {
     const packId = elementPack(recipe.element, recipe.projectile.particleShape);
     const pack = PARTICLE_PACKS[packId];
     if (pack && scene.textures.exists(`ptcl:${packId}`)) {
@@ -429,7 +475,9 @@ export function makeCasterProjectile(
   const container = scene.add
     .container(projectile.x, projectile.y, [payload])
     .setDepth(99000)
-    .setScale(visualScale);
+    // A painted sheet owns its display size directly; the legacy procedural-shell multiplier must not
+    // enlarge the new Gravesinger cells a second time.
+    .setScale(textureRecipe ? 1 : visualScale);
   container.setData("casterRecipe", recipe);
   container.setData("ang", angle);
   container.setData("arcPayload", payload);
@@ -517,6 +565,30 @@ export function spawnCasterImpact(
   const requested = reducedMotion ? Math.min(2, recipe.impact.particles) : recipe.impact.particles;
   const allowed = punctuationAllowance(scene, requested);
   if (allowed < 0) return false;
+  const paintedImpact = recipe.paintedImpact;
+  if (paintedImpact && scene.textures.exists(paintedImpact.textureKey)) {
+    const firstFrame = paintedImpact.frames[0] ?? 0;
+    const image = scene.add
+      .image(x, y, paintedImpact.textureKey, firstFrame)
+      .setDepth(99500)
+      .setRotation(angle)
+      .setScale(paintedImpact.displayLength / paintedImpact.frameWidth);
+    for (let i = 1; i < paintedImpact.frames.length; i++) {
+      scene.time.delayedCall((paintedImpact.durationMs * i) / paintedImpact.frames.length, () => {
+        if (image.active) image.setFrame(paintedImpact.frames[i] ?? firstFrame);
+      });
+    }
+    scene.tweens.add({
+      targets: image,
+      alpha: 0,
+      scale: image.scale * (reducedMotion ? 1.05 : 1.22),
+      rotation: reducedMotion ? angle : angle + 0.12,
+      duration: reducedMotion ? Math.min(190, paintedImpact.durationMs) : paintedImpact.durationMs,
+      ease: "Quad.easeOut",
+      onComplete: () => image.destroy(),
+    });
+    return true;
+  }
   const graphics = scene.add
     .graphics()
     .setPosition(x, y)

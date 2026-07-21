@@ -7,7 +7,11 @@ import {
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
-import { GUN_PROJECTILE_ART_PACKS, GUN_SPRITE_PROJECTILES } from "../../vfx/gun-projectile-art.js";
+import {
+  GUN_GENERATED_PROJECTILES,
+  GUN_PROJECTILE_ART_PACKS,
+  GUN_SPRITE_PROJECTILES,
+} from "../../vfx/gun-projectile-art.js";
 import { PARTICLE_PACKS } from "../../vfx/particle-manifest.js";
 import { elementPack } from "../../vfx/particles.js";
 import type { WeaponEffectRecipe } from "../../vfx/weapon-effect-recipes.js";
@@ -242,7 +246,7 @@ export function makeBullet(
       ease: "Linear",
     });
     scene.tweens.add({ targets: fuse, alpha: 0.3, duration: 90, yoyo: true, repeat: -1 }); // sputtering fuse
-  } else if (recipe?.projectile === "electric-bolt") {
+  } else if (recipe?.projectile === "electric-bolt" || k === "spark") {
     items.push(scene.add.circle(0, 0, 11, fx.color, 0.34).setBlendMode(ADD));
     items.push(scene.add.circle(0, 0, 6, fx.color, 0.82).setBlendMode(ADD));
     items.push(scene.add.rectangle(0, 0, 20, 3, 0xbfe8ff).setRotation(ang).setBlendMode(ADD));
@@ -308,6 +312,17 @@ export function makeGunIdentityProjectile(
         .setScale(recipe.displayLength / crop.width)
         .setRotation(angle),
     );
+  } else if (art === "generated") {
+    const recipe = GUN_GENERATED_PROJECTILES[weaponId];
+    const textureKey = `gun-generated:${weaponId}`;
+    if (!recipe || !scene.textures.exists(textureKey)) {
+      trail.destroy();
+      glow.destroy();
+      return null;
+    }
+    const projectile = scene.add.image(0, 0, textureKey).setRotation(angle);
+    projectile.setScale(recipe.displayLength / Math.max(1, projectile.width));
+    children.push(projectile);
   } else {
     const packId = GUN_PROJECTILE_ART_PACKS[art];
     const pack = PARTICLE_PACKS[packId];

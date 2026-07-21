@@ -87,3 +87,10 @@ Archive mechanism: retired from drops/catalog UIs, owned copies auto-salvage to 
 Gravelthroat randomness server-seeded. All else verbatim.
 
 Watermark: all notes ≤ 2026-07-21T02:29:31Z ledgered.
+
+## STATUS: ALL 53 NOTES CLOSED (2026-07-21 morning)
+
+W4G+W4A: 4141c54 (recovered from the overnight hang; live-proven twirl + tiny-VFX system
+fix + archive system). W4M+W4R: this commit — 18 melee/caster iterations + 15 ranged
+orders incl. the generated arbalest arrow and the shared cone-stream delivery (ice
+flamethrower, magma wave). Suite 1601 green; e2e 9/9; codegen + assets in sync.

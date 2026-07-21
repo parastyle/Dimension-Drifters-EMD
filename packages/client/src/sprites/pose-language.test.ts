@@ -351,7 +351,7 @@ describe("weapon performance pose states", () => {
     input.spec = performance("x2-rotgrove-totem");
     const control = { ...sampleWeaponPerformance(input, out) };
 
-    expect(cairn.handX - control.handX).toBeCloseTo(54 / 76);
+    expect(cairn.handX - control.handX).toBeCloseTo(24 / 76);
     input.spec = performance("x2-cairn-of-hollow-names");
     input.phase = "active";
     expect(sampleWeaponPerformance(input, out).active).toBe(false);

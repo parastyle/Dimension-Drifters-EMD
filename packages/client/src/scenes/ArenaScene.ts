@@ -259,7 +259,12 @@ import {
   type BeamRenderState,
   type PredictedBeamCharge,
 } from "../vfx/BeamRenderer.js";
-import { makeCasterProjectile, spawnCasterCast, spawnCasterImpact } from "../vfx/caster-vfx.js";
+import {
+  makeCasterProjectile,
+  preloadCasterPaintedArt,
+  spawnCasterCast,
+  spawnCasterImpact,
+} from "../vfx/caster-vfx.js";
 import { type CasterVfxRecipe, resolveCasterVfxRecipe } from "../vfx/caster-vfx-recipes.js";
 import {
   colorblindShapesEnabled,
@@ -270,6 +275,7 @@ import {
 } from "../vfx/colorblind-assist.js";
 import { playFxPack } from "../vfx/fx-composer.js";
 import { HitEffectRenderer, IMPACT_RING_DEPTH, SPEED_LINE_DEPTH } from "../vfx/hit-effects.js";
+import { preloadGeneratedGunProjectiles } from "../vfx/gun-projectile-art.js";
 import {
   enemyComboLeapHeight,
   enemyComboLeapVelocity,
@@ -1854,6 +1860,8 @@ export class ArenaScene extends Phaser.Scene {
       this.load.multiatlas(SPRITE_ATLAS, "sprites/dd-sprites.json", "sprites");
     }
     preloadParticlePacks(this); // §41 the painted element×shape particle packs (Codex factory)
+    preloadCasterPaintedArt(this);
+    preloadGeneratedGunProjectiles(this);
     preloadImpactFlipbooks(this); // optional per-element 6-frame hit blooms; missing strips stay silent
     if (this.belt) {
       // §29 sky-carrier alone owns its four room backdrops + deck; themed levels must not download them.
@@ -6806,7 +6814,7 @@ export class ArenaScene extends Phaser.Scene {
                 this.lastUltimateWeatherShakeAt = this.time.now;
             }
             try {
-              spawnExplosion(this, c.x, c.y, er, element);
+              if (!casterRecipe?.paintedImpact) spawnExplosion(this, c.x, c.y, er, element);
             } finally {
               this.ultimateExplosionShakeScale = 1;
             }
@@ -9991,7 +9999,15 @@ export class ArenaScene extends Phaser.Scene {
       this.time.delayedCall(swing.impactSeconds * 1000, () => {
         if (!this.room) return;
         const quakeIdentity = resolveWeaponEffectRecipe(weapon);
-        if (quakeIdentity?.quakeExplosionElement)
+        if (quakeIdentity?.quakeExplosionPaintedOnlyWeaponIds?.includes(weapon.id))
+          playFxPack(
+            this,
+            "void-implosion",
+            ep.x,
+            this.belt ? this.beltY(ep.y) : ep.y,
+            { radius: quake.radius },
+          );
+        else if (quakeIdentity?.quakeExplosionElement)
           spawnExplosion(
             this,
             ep.x,
@@ -10621,6 +10637,48 @@ export class ArenaScene extends Phaser.Scene {
     this.damageNumberRenderer.add(event, this.time.now);
   }
 
+  /** Receipt-owned lightning link. The server receipt's direction is measured from the projectile-contact
+   * seed to this hop, so the arc remains authoritative without inventing a client-side target chain. */
+  private spawnChainLightningReceipt(event: HitContactEvent, x: number, y: number): void {
+    const color = WEAPONS[event.weaponId]?.gun?.projectileColor ?? 0x5dd6ff;
+    const length = 90;
+    const dirLength = Math.hypot(event.dirX, event.dirY) || 1;
+    const dx = event.dirX / dirLength;
+    const dy = event.dirY / dirLength;
+    const startX = x - dx * length;
+    const startY = y - dy * length;
+    const points: Array<{ x: number; y: number }> = [];
+    for (let index = 0; index <= 7; index++) {
+      const fraction = index / 7;
+      const jitter =
+        index === 0 || index === 7
+          ? 0
+          : Math.sin(event.tick * 0.91 + index * 4.37 + event.targetId.length) * 8;
+      points.push({
+        x: startX + dx * length * fraction - dy * jitter,
+        y: startY + dy * length * fraction + dx * jitter,
+      });
+    }
+    const graphics = this.add
+      .graphics()
+      .setDepth(IMPACT_RING_DEPTH + 1)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const stroke = (width: number, strokeColor: number, alpha: number) => {
+      graphics.lineStyle(width, strokeColor, alpha).beginPath().moveTo(points[0]!.x, points[0]!.y);
+      for (let index = 1; index < points.length; index++)
+        graphics.lineTo(points[index]!.x, points[index]!.y);
+      graphics.strokePath();
+    };
+    stroke(7, color, 0.28);
+    stroke(2, 0xe9f7ff, 0.92);
+    this.tweens.add({
+      targets: graphics,
+      alpha: 0,
+      duration: Math.max(90, WEAPONS[event.weaponId]?.chainLightning?.vfx?.life ?? 160),
+      onComplete: () => graphics.destroy(),
+    });
+  }
+
   private onCombatFeedbackContact(event: HitContactEvent): void {
     if (event.finalBlow && event.sourcePlayerId)
       this.petRigs.get(event.sourcePlayerId)?.onOwnerKill(this.time.now);
@@ -10632,6 +10690,8 @@ export class ArenaScene extends Phaser.Scene {
     const rig = this.enemies.get(event.targetId);
     const reducedFlash = this.feedbackSettings.flashes === "reduced";
     const color = ArenaScene.ELEMENT_SPARK[event.element] ?? 0xd6dde6;
+    if (event.delivery === CombatDelivery.Chain && this.feedbackSettings.hitSparks)
+      this.spawnChainLightningReceipt(event, x, y);
     this.ultimateVfx.onReceipt({
       sourcePlayerId: event.sourcePlayerId,
       targetId: event.targetId,

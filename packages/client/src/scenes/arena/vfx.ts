@@ -943,15 +943,16 @@ export function spawnQuake(
   const variant = resolveQuakeVfxRecipe(weapon);
   const grave =
     !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
-  playFxPack(
-    scene,
-    variant?.pack ?? (grave ? "grave-call" : "quake-burst"),
-    x,
-    y,
-    {
-      intensity: quake.radius,
-    },
-  );
+  for (let i = 0; i < (variant?.effectCountMultiplier ?? 1); i++)
+    playFxPack(
+      scene,
+      variant?.pack ?? (grave ? "grave-call" : "quake-burst"),
+      x,
+      y,
+      {
+        intensity: quake.radius,
+      },
+    );
   if (quake.vfx && scene.textures.exists(quake.vfx.image)) {
     spawnQuakeHero(scene, x, y, quake.radius, quake.vfx, projectionYScale);
   } else if (variant) {
@@ -1007,7 +1008,9 @@ function spawnQuakeVariant(
   ): void => {
     scene.time.delayedCall(delay, () => {
       particleBurst(scene, elementPack(recipe.element, shape), x, y, {
-        count: shape === "ring" ? recipe.ringCount : recipe.particleCount,
+        count:
+          (shape === "ring" ? recipe.ringCount : recipe.particleCount) *
+          recipe.effectCountMultiplier,
         speed: shape === "ring" ? 0 : radius * 1.2,
         lifeMs: recipe.variant === "aftershock-eruption" ? 620 : 430,
         scaleContract: paintedParticleDominance(

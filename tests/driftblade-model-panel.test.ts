@@ -244,7 +244,6 @@ describe("driftblade-model panel", () => {
       ],
       "arc/mournveil-fan-spin": ["x2-mournveil-scythe"],
       "arc/thunderpost-storm-cadence": ["x2-thunderpost-fetish"],
-      "arc/wyrmskull-sword": ["x2-wyrmskull-reliquary"],
       "punch/coyote-voltage-boxing": ["x2-coyote-trickster-s-sparkmitt"],
       "thrust/blightfork-jab": ["x2-blightfork-glaive"],
       "thrust/dustdevil-jab-slash": ["x2-dustdevil-glaive"],
@@ -261,6 +260,7 @@ describe("driftblade-model panel", () => {
         "x2-venomtongue-trident",
       ],
       "thrust/verdict-procession": ["x2-verdict-longsword"],
+      "thrust/wyrmskull-spear-jabs": ["x2-wyrmskull-reliquary"],
       "chop/pommel": ["x2-mauler-slug-thrower", "x2-slughammer-breachgun", "x2-thunderhead-sledge"],
       "chop/quake-mauler": [
         "x2-anvil-drop",

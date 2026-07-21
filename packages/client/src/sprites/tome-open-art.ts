@@ -3,6 +3,8 @@ export interface TomeOpenArt {
   readonly url: string;
   /** Painted direction of the open fore-edge in texture-local radians (+X = 0). */
   readonly openingDirectionRad?: number;
+  /** Multiplier for detached page-turn quads; the held book scale remains unchanged. */
+  readonly pageScale?: number;
 }
 
 /**
@@ -38,6 +40,7 @@ const TOME_OPEN_ART: Readonly<Record<string, TomeOpenArt>> = {
   "x2-verdigris-grand-grimoire": {
     textureKey: "tome-open:x2-verdigris-grand-grimoire",
     url: "sprites/x2-verdigris-grand-grimoire/open.png",
+    pageScale: 7,
   },
 };
 

@@ -182,7 +182,7 @@ describe("owner-notes V3C caster orders", () => {
 
   it("moves Cairn farther forward and replaces its quake with a purple explosion", () => {
     const definition = weapon("x2-cairn-of-hollow-names");
-    expect(definition.performance?.carryForwardPx).toBe(54);
+    expect(definition.performance?.carryForwardPx).toBe(24);
     expect(resolveWeaponEffectRecipe(definition)).toMatchObject({
       id: "void-caster-explosion",
       quakeExplosionElement: "void",

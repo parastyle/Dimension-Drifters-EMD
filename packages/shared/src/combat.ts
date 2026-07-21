@@ -276,6 +276,8 @@ export interface BeamDescriptor {
   readonly tickRate: number;
   readonly width: number;
   readonly range: number;
+  /** Positive only for the reusable cone-stream specialization; zero keeps ordinary ray geometry. */
+  readonly coneHalfAngle: number;
   readonly sweepLagSeconds: number;
   readonly maxTurnRate: number;
   readonly maxChannelSeconds: number;
@@ -308,6 +310,9 @@ export function beamDescriptorFor(
     tickRate: Math.min(0.25, Math.max(0.05, Math.round(beam.tickRate / 0.05) * 0.05)),
     width: Math.min(BEAM_MAX_WIDTH, Math.max(1, beam.width)),
     range: Math.min(BEAM_MAX_RANGE, Math.max(1, beam.range)),
+    coneHalfAngle: beam.coneStream
+      ? Math.min(0.9, Math.max(0.08, beam.coneStream.halfAngle))
+      : 0,
     sweepLagSeconds: Math.max(0.001, beam.sweepLagSeconds / Math.max(1, sweepControlMultiplier)),
     maxTurnRate: BEAM_MAX_TURN_RATE,
     maxChannelSeconds: Math.min(BEAM_MAX_CHANNEL_SECONDS, beam.overheat.maxChannelSeconds),
@@ -359,6 +364,30 @@ export function beamSweepSampleCount(
 export function beamStepDamage(damagePerSecond: number, dt: number, targetCount: number): number {
   if (targetCount <= 0 || damagePerSecond <= 0 || dt <= 0) return 0;
   return damagePerSecond * dt * Math.min(1, BEAM_AGGREGATE_TARGET_CAP / targetCount);
+}
+
+/** Circle-vs-sector test used by the authoritative cone stream and append-only geometry gates. */
+export function coneStreamHitsCircle(
+  origin: Vec2,
+  angle: number,
+  range: number,
+  halfAngle: number,
+  target: Vec2,
+  targetRadius: number,
+): boolean {
+  const dx = target.x - origin.x;
+  const dy = target.y - origin.y;
+  const distance = Math.hypot(dx, dy);
+  const radius = Math.max(0, targetRadius);
+  if (distance > Math.max(0, range) + radius) return false;
+  if (distance <= radius) return true;
+  const forward = dx * Math.cos(angle) + dy * Math.sin(angle);
+  if (forward < -radius) return false;
+  const angularRadius = Math.asin(Math.min(1, radius / distance));
+  return (
+    Math.abs(shortestAngleDelta(angle, Math.atan2(dy, dx))) <=
+    Math.max(0, halfAngle) + angularRadius
+  );
 }
 
 /** A chain / nearest-target candidate: a position with a stable id (enemy id). */

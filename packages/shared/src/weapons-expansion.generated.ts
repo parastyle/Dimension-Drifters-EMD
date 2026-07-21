@@ -978,13 +978,13 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "halfArc": 0.95,
     "cooldown": 0.62,
     "displayLength": 132,
-    "swingArc": 2.9,
+    "swingArc": 6.283185307179586,
     "gripFrac": 0.1,
     "tags": {
       "grip": "2H",
       "size": "L",
       "delivery": "melee-arc",
-      "fireMode": "tap-charge",
+      "fireMode": "hold",
       "element": "shock",
       "classPool": "melee",
       "family": "axe",
@@ -995,6 +995,17 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "description": "A broad two-hand battleaxe with copper conduits chasing its bit, every wide swing snapping a fork of blue current to the nearest foes.",
+    "swingStyle": "spin",
+    "performance": {
+      "hold": "steady",
+      "action": "default-swing",
+      "continuous": true,
+      "twirl": {
+        "plane": "ground-whirlwind",
+        "pivot": "grip",
+        "direction": "forward"
+      }
+    },
     "requirements": {
       "str": 7,
       "dex": 5
@@ -1057,7 +1068,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 110,
     "halfArc": 0.72,
     "cooldown": 0.32,
-    "displayLength": 58,
+    "displayLength": 63.8,
     "swingArc": 2.3,
     "gripFrac": 0.15,
     "tags": {
@@ -1078,7 +1089,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "throw-release",
-      "suppressSwing": true
+      "suppressSwing": true,
+      "carryAngleRad": -1.2217304763960306
     },
     "requirements": {
       "dex": 6
@@ -2579,7 +2591,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "1H",
       "size": "M",
-      "delivery": "melee-arc",
+      "delivery": "thrown",
       "fireMode": "tap-charge",
       "element": "holy",
       "classPool": "melee",
@@ -2590,11 +2602,26 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "CON"
       ]
     },
+    "performance": {
+      "hold": "steady",
+      "action": "throw-release",
+      "suppressSwing": true,
+      "preThrowRevolutions": 0.5
+    },
     "requirements": {
       "str": 7,
       "con": 5
     },
-    "durability": 75
+    "durability": 75,
+    "thrown": {
+      "speed": 720,
+      "range": 520,
+      "damage": 11,
+      "charges": 3,
+      "refillSeconds": 0.6,
+      "pierce": 1,
+      "rotation": "spin"
+    }
   },
   "x2-quicksilver-censer": {
     "id": "x2-quicksilver-censer",
@@ -3011,17 +3038,20 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 4,
+      "damage": 6,
       "projectileSpeed": 680,
       "range": 400,
-      "fireRate": 0.6,
-      "magazine": 3,
+      "fireRate": 0.15,
+      "magazine": 30,
       "reloadSeconds": 1.7,
       "bulletKind": "pellet",
       "muzzle": "boom",
       "recoil": 0.0035,
-      "pellets": 6,
-      "spread": 0.32
+      "randomPellets": {
+        "min": 1,
+        "max": 10,
+        "directions": "radial"
+      }
     }
   },
   "x2-dustdevil-warmaul": {
@@ -3505,6 +3535,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "description": "A spectral reaper's scythe of blackened iron, its haft wrapped in rusted grave-chain and its crescent blade trailing wisps of devouring violet void that drink the light at the edge.",
     "swingStyle": "spin",
+    "effectRecipe": "gravechain-dominant-spin",
+    "effectEmitter": "blade",
     "performance": {
       "hold": "steady",
       "action": "default-swing",
@@ -3512,7 +3544,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "twirl": {
         "plane": "ground-whirlwind",
         "pivot": "grip",
-        "direction": "alternate"
+        "direction": "forward"
       }
     },
     "requirements": {
@@ -3553,7 +3585,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "steady",
       "action": "throw-release",
-      "preThrowRevolutions": 0.75
+      "suppressSwing": true,
+      "preThrowRevolutions": 1
     },
     "requirements": {
       "dex": 8
@@ -4628,7 +4661,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.3,
-    "displayLength": 56,
+    "displayLength": 112,
     "swingArc": 1.8,
     "gripFrac": 0.16,
     "tags": {
@@ -4651,7 +4684,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": 11
     },
     "gun": {
-      "damage": 6,
+      "damage": 1,
       "projectileSpeed": 880,
       "range": 540,
       "fireRate": 0.12,
@@ -4660,7 +4693,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "rapid",
       "recoil": 0.0009,
-      "spread": 0.07,
+      "pellets": 6,
+      "spread": 0.22,
       "muzzleColor": 15264472
     }
   },
@@ -4826,6 +4860,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "ricochet",
       "muzzle": "spark",
       "recoil": 0.002,
+      "projectileColor": 4169215,
       "spread": 0.03,
       "pierce": 2,
       "bounces": 3,
@@ -5663,7 +5698,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 320,
     "halfArc": 0.5,
     "cooldown": 0.4,
-    "displayLength": 116,
+    "displayLength": 150.8,
     "swingArc": 1.8,
     "gripFrac": 0.14,
     "tags": {
@@ -7521,6 +7556,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.004,
+      "projectileArt": "cannonball",
+      "projectileVisualScale": 4,
+      "projectileColor": 8357776,
       "explode": {
         "radius": 64,
         "damage": 12
@@ -7754,20 +7792,21 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "gun": {
-      "damage": 4,
+      "damage": 9,
       "projectileSpeed": 700,
       "range": 400,
       "fireRate": 0.72,
       "magazine": 4,
       "reloadSeconds": 1.9,
-      "bulletKind": "pellet",
+      "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0036,
-      "pellets": 9,
+      "projectileVisualScale": 2,
+      "pellets": 4,
       "spread": 0.4,
       "explode": {
         "radius": 40,
-        "damage": 3
+        "damage": 6.75
       }
     }
   },
@@ -7947,8 +7986,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "XL",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "fire",
       "classPool": "ranged",
       "family": "heavy-ordnance",
@@ -7963,19 +8002,28 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "dex": 7
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 7,
-      "projectileSpeed": 640,
+    "beam": {
+      "damagePerSecond": 38.23529411764706,
+      "tickRate": 0.1,
+      "width": 28,
       "range": 560,
-      "fireRate": 0.34,
-      "magazine": 12,
-      "reloadSeconds": 2.2,
-      "bulletKind": "slug",
-      "muzzle": "boom",
-      "recoil": 0.0026,
-      "explode": {
-        "radius": 56,
-        "damage": 6
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.12,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      },
+      "coneStream": {
+        "halfAngle": 0.48,
+        "flavor": "magma"
       }
     }
   },
@@ -8165,6 +8213,9 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "boom",
       "recoil": 0.0034,
+      "projectileArt": "weapon-crop",
+      "projectileVisualScale": 1.4,
+      "projectileColor": 11619327,
       "pierce": 2,
       "explode": {
         "radius": 66,
@@ -8437,8 +8488,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "2H",
       "size": "L",
-      "delivery": "projectile",
-      "fireMode": "auto",
+      "delivery": "beam",
+      "fireMode": "hold",
       "element": "frost",
       "classPool": "ranged",
       "family": "heavy-ordnance",
@@ -8453,19 +8504,28 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "str": 6
     },
     "twoHanded": true,
-    "gun": {
-      "damage": 10,
-      "projectileSpeed": 560,
-      "range": 620,
-      "fireRate": 0.76,
-      "magazine": 5,
-      "reloadSeconds": 2,
-      "bulletKind": "slug",
-      "muzzle": "boom",
-      "recoil": 0.0032,
-      "explode": {
-        "radius": 64,
-        "damage": 9
+    "beam": {
+      "damagePerSecond": 25,
+      "tickRate": 0.1,
+      "width": 24,
+      "range": 440,
+      "chargeSeconds": 0.65,
+      "sweepLagSeconds": 0.12,
+      "overheat": {
+        "maxChannelSeconds": 1.25,
+        "heatPerSecond": 0.6,
+        "coolPerSecond": 0.35,
+        "ignitionHeat": 0.25,
+        "lockSeconds": 1.5,
+        "restartHeat": 0.35
+      },
+      "movement": {
+        "chargeMul": 0.55,
+        "channelMul": 0.35
+      },
+      "coneStream": {
+        "halfAngle": 0.42,
+        "flavor": "ice"
       }
     }
   },
@@ -8651,7 +8711,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 82,
     "halfArc": 0.55,
     "cooldown": 0.6,
-    "displayLength": 150,
+    "displayLength": 225,
     "swingArc": 1.8,
     "gripFrac": 0.1,
     "tags": {
@@ -8694,7 +8754,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0035,
-      "projectileArt": "weapon-crop",
+      "projectileArt": "generated",
+      "projectileVisualScale": 1.15,
       "pierce": 5,
       "muzzleColor": 14803168,
       "scalingGrades": {
@@ -8714,7 +8775,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.34,
-    "displayLength": 110,
+    "displayLength": 165,
     "swingArc": 1.8,
     "gripFrac": 0.13,
     "tags": {
@@ -8934,7 +8995,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 82,
     "halfArc": 0.55,
     "cooldown": 0.5,
-    "displayLength": 144,
+    "displayLength": 216,
     "swingArc": 1.8,
     "gripFrac": 0.1,
     "tags": {
@@ -8966,6 +9027,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "tracer",
       "muzzle": "spark",
       "recoil": 0.0018,
+      "projectileArt": "arrow",
       "pierce": 6,
       "muzzleColor": 11627775,
       "scalingGrades": {
@@ -9210,7 +9272,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.6,
     "cooldown": 0.62,
-    "displayLength": 116,
+    "displayLength": 174,
     "swingArc": 1.8,
     "gripFrac": 0.13,
     "tags": {
@@ -9242,6 +9304,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "boom",
       "recoil": 0.0026,
+      "projectileArt": "arrow",
       "pellets": 6,
       "spread": 0.38,
       "pierce": 2,
@@ -9381,7 +9444,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 80,
     "halfArc": 0.5,
     "cooldown": 0.28,
-    "displayLength": 66,
+    "displayLength": 99,
     "swingArc": 1.8,
     "gripFrac": 0.16,
     "tags": {
@@ -9411,6 +9474,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "nail",
       "muzzle": "rapid",
       "recoil": 0.0007,
+      "projectileArt": "arrow",
       "pierce": 2,
       "muzzleColor": 13619126,
       "scalingGrades": {
@@ -9636,6 +9700,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "slug",
       "muzzle": "heavy",
       "recoil": 0.0038,
+      "projectileArt": "generated",
+      "projectileVisualScale": 1.25,
       "pierce": 3,
       "muzzleColor": 3397375,
       "scalingGrades": {
@@ -10475,7 +10541,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "int": "S"
     },
     "damage": 13,
-    "range": 200,
+    "range": 400,
     "halfArc": 1,
     "cooldown": 0.85,
     "displayLength": 240,
@@ -10630,7 +10696,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "range": 130,
     "halfArc": 0.6,
     "cooldown": 0.4,
-    "displayLength": 90,
+    "displayLength": 180,
     "swingArc": 2,
     "gripFrac": 0.16,
     "tags": {
@@ -11724,7 +11790,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "frequencyHz": 13
       },
       "aura": {
-        "radius": 150,
+        "radius": 450,
         "damagePerSecond": 18,
         "resourcePerSecond": 20,
         "tickRate": 0.2,
@@ -12672,8 +12738,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "tags": {
       "grip": "mounted",
       "size": "M",
-      "delivery": "beam",
-      "fireMode": "hold",
+      "delivery": "projectile",
+      "fireMode": "auto",
       "element": "holy",
       "classPool": "caster",
       "family": "relic/totem",
@@ -12682,28 +12748,24 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
         "INT"
       ]
     },
+    "performance": {
+      "hold": "aim-forward",
+      "action": "recoil",
+      "suppressSwing": true
+    },
     "requirements": {
       "int": 13
     },
-    "beam": {
-      "damagePerSecond": 90,
-      "tickRate": 0.1,
-      "width": 48,
-      "range": 640,
-      "chargeSeconds": 0.65,
-      "sweepLagSeconds": 0.22,
-      "overheat": {
-        "maxChannelSeconds": 1.25,
-        "heatPerSecond": 0.6,
-        "coolPerSecond": 0.35,
-        "ignitionHeat": 0.25,
-        "lockSeconds": 1.5,
-        "restartHeat": 0.35
-      },
-      "movement": {
-        "chargeMul": 0.55,
-        "channelMul": 0.35
-      }
+    "gun": {
+      "damage": 9.675,
+      "projectileSpeed": 560,
+      "range": 760,
+      "fireRate": 0.1,
+      "magazine": 80,
+      "reloadSeconds": 0.6,
+      "bulletKind": "orb",
+      "muzzle": "boom",
+      "recoil": 0.0012
     }
   },
   "x2-gravewax-twin-idols": {
@@ -12789,7 +12851,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     "performance": {
       "hold": "upright",
       "action": "default-swing",
-      "carryForwardPx": 54
+      "carryForwardPx": 24,
+      "carryAngleRad": -1.2217304763960306
     },
     "requirements": {
       "int": 11,
@@ -13017,8 +13080,8 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       ]
     },
     "authoritativeCombo": true,
-    "comboFamily": "arc",
-    "comboVariant": "wyrmskull-sword",
+    "comboFamily": "thrust",
+    "comboVariant": "wyrmskull-spear-jabs",
     "requirements": {
       "int": 10
     },
@@ -13537,6 +13600,7 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
       "bulletKind": "spark",
       "muzzle": "spark",
       "recoil": 0.0008,
+      "projectileColor": 11619327,
       "pierce": 2,
       "muzzleColor": 11619327
     }
@@ -15640,62 +15704,65 @@ export const GENERATED_MELEE_COMBO_BARS = {
       }
     }
   ],
-  "wyrmskull-sword": [
+  "wyrmskull-spear-jabs": [
     {
-      "name": "fang cut",
-      "motion": "slash",
+      "name": "fang jab",
+      "motion": "jab",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.14,
-        "activeEnd": 0.42,
-        "impact": 0.29,
-        "followEnd": 0.6
+        "activeStart": 0.12,
+        "activeEnd": 0.38,
+        "impact": 0.26,
+        "followEnd": 0.56
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": 1,
+        "kind": "capsule",
+        "arcMultiplier": 0.42,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
-        "knockback": 0
+        "knockback": 0,
+        "deltaAngle": 0
       }
     },
     {
-      "name": "skull return",
-      "motion": "slash",
+      "name": "snout jab",
+      "motion": "jab",
       "direction": -1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.14,
-        "activeEnd": 0.42,
-        "impact": 0.29,
-        "followEnd": 0.6
+        "activeStart": 0.12,
+        "activeEnd": 0.38,
+        "impact": 0.26,
+        "followEnd": 0.56
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": -1,
+        "kind": "capsule",
+        "arcMultiplier": 0.42,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
-        "knockback": 0
+        "knockback": 0,
+        "deltaAngle": 0
       }
     },
     {
-      "name": "wyrm sentence",
-      "motion": "overhead",
+      "name": "wyrm impalement",
+      "motion": "impale",
       "direction": 1,
       "hand": "both",
       "timing": {
-        "activeStart": 0.18,
-        "activeEnd": 0.5,
-        "impact": 0.36,
-        "followEnd": 0.68
+        "activeStart": 0.17,
+        "activeEnd": 0.48,
+        "impact": 0.34,
+        "followEnd": 0.66
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": 1,
+        "kind": "capsule",
+        "arcMultiplier": 0.5,
         "rangeMultiplier": 1,
         "damageMultiplier": 1,
-        "knockback": 0
+        "knockback": 0,
+        "deltaAngle": 0
       }
     }
   ],
@@ -16437,10 +16504,10 @@ export const GENERATED_MELEE_COMBO_BARS = {
   ],
   "katana-riftstep": [
     {
-      "name": "Near Shore",
-      "motion": "draw-cut",
+      "name": "Near Shore Tsuki",
+      "motion": "jab",
       "direction": 1,
-      "hand": "lead",
+      "hand": "both",
       "timing": {
         "activeStart": 0.13,
         "activeEnd": 0.38,
@@ -16448,14 +16515,15 @@ export const GENERATED_MELEE_COMBO_BARS = {
         "followEnd": 0.58
       },
       "path": {
-        "kind": "sweep",
-        "arcMultiplier": 0.84,
+        "kind": "capsule",
+        "arcMultiplier": 0.42,
         "rangeMultiplier": 0.98,
         "damageMultiplier": 0.98,
-        "knockback": 6
+        "knockback": 6,
+        "deltaAngle": 0
       },
       "ribbon": {
-        "profile": "open-c",
+        "profile": "guard-plane",
         "radialStart": 0.24,
         "radialEnd": 0.98,
         "widthMultiplier": 0.68,

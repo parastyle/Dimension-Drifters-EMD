@@ -237,3 +237,19 @@ export function firingHandTarget(
   if (stance.family === "fist-gun") y = Math.max(y, FIST_GUN_CHEST_CAP_Y);
   return { x, y };
 }
+
+/** Alternating worn emitters sell each accepted shot as a punch: the firing fist leads while its mate
+ * reloads behind the chest line. Coordinates stay body-relative so the rig can apply them at final scale. */
+export function fistGunShotHandOffset(
+  hand: 0 | 1,
+  strikingHand: 0 | 1,
+  aimLocal: number,
+  shotEnvelope: number,
+): { x: number; y: number } {
+  const strength = Math.max(0, Math.min(1, shotEnvelope));
+  const distance = (hand === strikingHand ? 0.2 : -0.055) * strength;
+  return {
+    x: Math.cos(aimLocal) * distance,
+    y: Math.sin(aimLocal) * distance,
+  };
+}

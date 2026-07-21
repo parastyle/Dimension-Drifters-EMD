@@ -10,7 +10,7 @@ describe("owner ledger W-SIZE", () => {
     expect(WEAPONS["x2-saloon-tomahawk"]?.displayLength).toBe(60 * 2);
   });
 
-  it("sets Gravesinger to the current caster-family median of 90 px", () => {
+  it("sets Gravesinger to twice the current caster-family median", () => {
     const lengths = Object.values(WEAPONS)
       .filter((weapon) => weapon.tags.classPool === "caster")
       .map((weapon) => weapon.displayLength)
@@ -21,6 +21,6 @@ describe("owner ledger W-SIZE", () => {
     const median = lengths.length % 2 === 1 ? upper : (lower + upper) / 2;
     expect(lengths).toHaveLength(97);
     expect(median).toBe(90);
-    expect(WEAPONS["x2-gravesinger-s-hex-wand"]?.displayLength).toBe(median);
+    expect(WEAPONS["x2-gravesinger-s-hex-wand"]?.displayLength).toBe(median * 2);
   });
 });
