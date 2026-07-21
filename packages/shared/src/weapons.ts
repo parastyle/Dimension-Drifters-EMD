@@ -51,6 +51,21 @@ export interface WeaponGripPoints {
   secondary?: WeaponGripAnchor & { role: WeaponSecondaryGripRole };
 }
 
+/** Shared fallback because render mounting and authoritative muzzle reach must resolve the same pivot. */
+export const DEFAULT_TWO_HAND_GUN_GRIPS: Readonly<WeaponGripPoints> = Object.freeze({
+  primary: Object.freeze({ x: 0.3, y: 0.66 }),
+  secondary: Object.freeze({ x: 0.7, y: 0.68, role: "two-hand-rifle" }),
+});
+
+export function resolvedGunGripPoints(
+  definition: Pick<WeaponDef, "beam" | "gripPoints" | "gun" | "tags">,
+): Readonly<WeaponGripPoints> | undefined {
+  if (definition.gripPoints) return definition.gripPoints;
+  if (!definition.gun && !definition.beam) return undefined;
+  if (definition.tags.grip !== "2H" && definition.tags.grip !== "mounted") return undefined;
+  return DEFAULT_TWO_HAND_GUN_GRIPS;
+}
+
 /** Local displacement from the ordinary +X barrel tip, in fixed display/world pixels. */
 export interface WeaponMuzzleOffset {
   forward: number;
@@ -216,7 +231,7 @@ export function prismaticBeamRayOffsets(count: number, spread: number, seed: num
 }
 
 export type WeaponEffectEmitter = "body" | "tip" | "blade";
-export type WeaponEffectTiming = "active-start" | "swing-midpoint";
+export type WeaponEffectTiming = "active-start" | "swing-midpoint" | "impact";
 export type WeaponEffectRecipeId =
   | "galvanic-blue-burst"
   | "riftglass-rainbow-volley"
@@ -237,7 +252,9 @@ export type WeaponEffectRecipeId =
   | "witherleaf-tip-spores"
   | "snakeoil-tip-sparks"
   | "gravechain-dominant-spin"
-  | "void-caster-explosion";
+  | "void-caster-explosion"
+  | "hexbloom-toxic-impact"
+  | "cinderbrand-magma-impact";
 
 /** Named, reusable neutral guards. These are authored as pose-language vocabulary rather than id checks. */
 export type WeaponStanceId =
@@ -726,7 +743,8 @@ export function weaponHasHandlingTag(weapon: WeaponDef | undefined, tag: GunHand
 export const GUN_HAND_FORWARD = 12;
 export function gunMuzzleReach(weapon: WeaponDef | undefined, renderScale = 1): number {
   if (!weapon) return GUN_HAND_FORWARD * renderScale;
-  return renderScale * (GUN_HAND_FORWARD + (1 - weapon.gripFrac) * weapon.displayLength);
+  const renderedGripX = resolvedGunGripPoints(weapon)?.primary.x ?? weapon.gripFrac;
+  return renderScale * (GUN_HAND_FORWARD + (1 - renderedGripX) * weapon.displayLength);
 }
 
 /** Shared held-implement tip for bullets, caster bolts, and beams. */
@@ -1736,6 +1754,7 @@ const BASE_WEAPONS: Record<string, WeaponDef> = {
       magazine: 3,
       reloadSeconds: 1.8,
       bulletKind: "grenade",
+      projectileArt: "generated",
       projectileVisualScale: 5,
       muzzle: "boom",
       muzzleColor: 0xffb24a,

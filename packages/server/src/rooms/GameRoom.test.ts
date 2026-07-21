@@ -97,6 +97,35 @@ function makeRoom(options?: { dimensionId?: string; bossRush?: boolean; belt?: b
   };
 }
 
+describe("GameRoom — Coilshot authored pre-throw draw", () => {
+  it("releases the authoritative projectile only after the visible revolution window", () => {
+    const h = makeRoom();
+    h.join("coilshot-draw");
+    const player = h.state().players.get("coilshot-draw");
+    const combat = h.room.combat.get(player.id);
+    const weapon = WEAPONS["x2-coilshot-meteor"];
+    if (!weapon?.thrown) throw new Error("Coilshot thrown fixture is required");
+    player.weapon = weapon.id;
+    combat.lastWeapon = weapon.id;
+    combat.aimX = 1;
+    combat.aimY = 0;
+    combat.targetX = player.x + weapon.thrown.range;
+    combat.targetY = player.y;
+
+    h.room.throwWeapon(player, combat, weapon);
+    expect(h.state().projectiles.size).toBe(0);
+    expect(h.room.pendingWeaponThrows).toHaveLength(1);
+    h.tick(7);
+    expect(h.state().projectiles.size).toBe(0);
+    h.tick(1);
+    expect(
+      [...h.state().projectiles.values()].some(
+        (projectile: { sourceWeaponId?: string }) => projectile.sourceWeaponId === weapon.id,
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("GameRoom — join/leave + host", () => {
   it("a join adds a living, full-HP player on the spawn disc; the first joiner is host", () => {
     const h = makeRoom();

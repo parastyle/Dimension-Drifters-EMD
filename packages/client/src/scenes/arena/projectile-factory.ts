@@ -7,6 +7,7 @@ import {
 import Phaser from "phaser";
 import { partTexture } from "../../entities/SpriteRig.js";
 import { SPRITES } from "../../sprites/manifest.js";
+import { PROJECTILE_SPRITES } from "../../sprites/projectile-manifest.js";
 import {
   GUN_GENERATED_PROJECTILES,
   GUN_PROJECTILE_ART_PACKS,
@@ -315,13 +316,14 @@ export function makeGunIdentityProjectile(
   } else if (art === "generated") {
     const recipe = GUN_GENERATED_PROJECTILES[weaponId];
     const textureKey = `gun-generated:${weaponId}`;
-    if (!recipe || !scene.textures.exists(textureKey)) {
+    const sprite = recipe ? PROJECTILE_SPRITES[recipe.spriteId] : undefined;
+    if (!recipe || !sprite || !scene.textures.exists(textureKey)) {
       trail.destroy();
       glow.destroy();
       return null;
     }
     const projectile = scene.add.image(0, 0, textureKey).setRotation(angle);
-    projectile.setScale(recipe.displayLength / Math.max(1, projectile.width));
+    projectile.setScale(recipe.displayLength / Math.max(1, sprite.width));
     children.push(projectile);
   } else {
     const packId = GUN_PROJECTILE_ART_PACKS[art];
@@ -345,5 +347,6 @@ export function makeGunIdentityProjectile(
     .setScale(Math.max(0.1, visualScale))
     .setDepth(99000)
     .setData("arcPayload", payload)
+    .setData("projectileSprite", GUN_GENERATED_PROJECTILES[weaponId]?.spriteId)
     .setData("projectileArt", art);
 }

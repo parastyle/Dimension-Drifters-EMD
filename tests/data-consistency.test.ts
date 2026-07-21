@@ -161,6 +161,7 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
   const concepts = (readJson("../data/weapon-concepts-300.json") as { weapons: Concept[] }).weapons;
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   const iclamp = (v: number, lo: number, hi: number) => Math.round(clamp(v, lo, hi));
+  const singleShotGunIds = new Set(["x2-saintskull-monstrance"]);
 
   const upGrades = (g: Grades) =>
     g && Object.fromEntries(Object.entries(g).map(([a, v]) => [a, v.toUpperCase()]));
@@ -357,11 +358,12 @@ describe("§43 expansion codegen: every authored gameplay field survives into th
         }
       } else if (kind === "gun" || ranged) {
         expect(def.gun, `${w.id}.gun`).toBeDefined();
+        const singleShot = singleShotGunIds.has(w.id);
         checkFields(w.id, def.gun, b, {
-          damage: { num: [1, 40] },
+          damage: { num: [1, singleShot ? 120 : 40] },
           projectileSpeed: { num: [400, 4000] },
           range: { num: [280, 1100] },
-          fireRate: { num: [0.05, 0.9] },
+          fireRate: { num: [0.05, singleShot ? 1.5 : 0.9] },
           magazine: { int: [1, 80] },
           reloadSeconds: { num: [0.6, 3] },
           bulletKind: { eq: true },

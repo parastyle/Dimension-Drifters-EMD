@@ -1,15 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { SPRITES } from "../packages/client/src/sprites/manifest.js";
 import { BEAM_VFX_RECIPES } from "../packages/client/src/vfx/caster-vfx-recipes.js";
-import {
-  GUN_GENERATED_PROJECTILES,
-  GUN_SPRITE_PROJECTILES,
-} from "../packages/client/src/vfx/gun-projectile-art.js";
+import { GUN_GENERATED_PROJECTILES } from "../packages/client/src/vfx/gun-projectile-art.js";
 import {
   coneStreamHitsCircle,
   expectedRandomGunPelletCount,
   gunMuzzleReach,
+  resolvedGunGripPoints,
   serverSeededGunPelletVolley,
   WEAPONS,
 } from "../packages/shared/src/index.js";
@@ -57,8 +54,9 @@ describe("W4R ranged owner orders", () => {
       const weapon = WEAPONS[weaponId];
       expect(weapon?.displayLength, weaponId).toBe(displayLength);
       expect(weapon?.gun?.projectileArt, weaponId).toMatch(/^(arrow|generated)$/);
+      const renderedGripX = weapon ? resolvedGunGripPoints(weapon)?.primary.x ?? weapon.gripFrac : 0;
       expect(gunMuzzleReach(weapon), weaponId).toBeCloseTo(
-        12 + (1 - (weapon?.gripFrac ?? 0)) * displayLength,
+        12 + (1 - renderedGripX) * displayLength,
         8,
       );
     }
@@ -123,33 +121,25 @@ describe("W4R ranged owner orders", () => {
     for (const [weaponId, filename] of [
       ["x2-widowmaker-arbalest", "widowmaker-arbalest-arrow.png"],
       ["x2-tidehook-bombarpoon", "tidehook-bombarpoon-harpoon.png"],
+      ["x2-hexbore-voidmaw", "hexbore-voidmaw-rune.png"],
     ] as const) {
       expect(WEAPONS[weaponId]?.gun?.projectileArt).toBe("generated");
       expect(GUN_GENERATED_PROJECTILES[weaponId]?.url).toBe(`projectiles/${filename}`);
       const path = `packages/client/public/projectiles/${filename}`;
       expect(existsSync(path), path).toBe(true);
       const png = projectilePng(path);
-      expect(png.width).toBeGreaterThan(png.height * 2);
+      if (weaponId !== "x2-hexbore-voidmaw") expect(png.width).toBeGreaterThan(png.height * 2);
       expect(png.colorType).toBe(6);
     }
   });
 
-  it("crops Hexbore's barrel rune and keeps the crop inside its own source sprite", () => {
+  it("replaces Hexbore's rejected barrel crop with generated rune art", () => {
     const weaponId = "x2-hexbore-voidmaw";
-    const recipe = GUN_SPRITE_PROJECTILES[weaponId];
-    const part = recipe
-      ? SPRITES[recipe.spriteId as keyof typeof SPRITES]?.parts.find(
-          (candidate) => candidate.role === recipe.partRole,
-        )
-      : undefined;
     expect(WEAPONS[weaponId]?.gun).toMatchObject({
-      projectileArt: "weapon-crop",
+      projectileArt: "generated",
       projectileColor: 0xb14bff,
     });
-    expect(recipe?.spriteId).toBe(weaponId);
-    if (!recipe || !part) throw new Error("Hexbore rune crop registration is required");
-    expect(recipe.crop.x + recipe.crop.width).toBeLessThanOrEqual(part.w);
-    expect(recipe.crop.y + recipe.crop.height).toBeLessThanOrEqual(part.h);
+    expect(GUN_GENERATED_PROJECTILES[weaponId]?.spriteId).toBe("hexbore-voidmaw-rune");
   });
 
   it("registers both reusable cone streams and retains Mirage's purple double helix", () => {

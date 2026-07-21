@@ -8,11 +8,7 @@ import {
 import { PARTICLE_PACKS } from "../packages/client/src/vfx/particle-manifest.js";
 import { gunMuzzleOffsetsForShot, WEAPONS } from "../packages/shared/src/index.js";
 
-const OWN_SPRITE_PROJECTILES = [
-  "x2-grave-anchor-harpoon",
-  "x2-hexbore-voidmaw",
-  "x2-brimstone-rocket-tube",
-] as const;
+const OWN_SPRITE_PROJECTILES = ["x2-grave-anchor-harpoon"] as const;
 
 function pngDimensions(path: string): { width: number; height: number } {
   const bytes = readFileSync(path);
@@ -21,7 +17,7 @@ function pngDimensions(path: string): { width: number; height: number } {
 }
 
 describe("V3R ranged owner orders", () => {
-  it("registers every reference-image projectile as a bounded crop of its own sprite", () => {
+  it("retains only the legacy Grave-Anchor bounded crop", () => {
     for (const weaponId of OWN_SPRITE_PROJECTILES) {
       const weapon = WEAPONS[weaponId];
       const recipe = GUN_SPRITE_PROJECTILES[weaponId];
@@ -42,7 +38,7 @@ describe("V3R ranged owner orders", () => {
   });
 
   it("routes arrows, cannonballs, and fireballs through installed painted packs", () => {
-    expect(WEAPONS["x2-quill-storm-repeater"]?.gun?.projectileArt).toBe("arrow");
+    expect(WEAPONS["x2-quill-storm-repeater"]?.gun?.projectileArt).toBe("generated");
     expect(WEAPONS["x2-hailshot-hand-maul"]?.gun?.projectileArt).toBe("cannonball");
     expect(WEAPONS["x2-sanctus-siege-bombard"]?.gun?.projectileArt).toBe("cannonball");
     expect(WEAPONS["x2-boneyard-ricochet-mortar"]?.gun?.projectileArt).toBe("fireball");

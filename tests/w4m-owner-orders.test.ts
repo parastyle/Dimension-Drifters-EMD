@@ -48,17 +48,13 @@ describe("W4M melee/caster iteration orders", () => {
     }
   });
 
-  it("uses the shell-free, right-facing Plague bug and character-sized Saintskull crop", () => {
+  it("uses the shell-free, right-facing Plague bug and removes Saintskull's rejected crop", () => {
     expect(CASTER_SPRITE_PROJECTILES["x2-locust-glass-plague-orb"]).toBeUndefined();
     expect(CASTER_TEXTURE_PROJECTILES["x2-locust-glass-plague-orb"]).toMatchObject({
       textureKey: "caster:plague-locust",
       displayLength: 48,
     });
-    expect(CASTER_SPRITE_PROJECTILES["x2-saintskull-monstrance"]).toMatchObject({
-      spriteId: "x2-saintskull-monstrance",
-      crop: { x: 100, y: 49, width: 88, height: 105 },
-      displayLength: 96,
-    });
+    expect(CASTER_SPRITE_PROJECTILES["x2-saintskull-monstrance"]).toBeUndefined();
   });
 
   it("triples Fulgurite's authoritative radius and stages up its painted scale contract", () => {
@@ -78,19 +74,22 @@ describe("W4M melee/caster iteration orders", () => {
     ).toBe(96);
   });
 
-  it("replaces Saintskull's beam with a DPS-neutral authoritative skull projectile", () => {
+  it("replaces Saintskull's beam with a documented 90-DPS one-second single skull shot", () => {
     const definition = weapon("x2-saintskull-monstrance");
     expect(definition.beam).toBeUndefined();
     expect(definition.gun).toMatchObject({
       projectileSpeed: 560,
       range: 760,
-      fireRate: 0.1,
-      magazine: 80,
+      damage: 90,
+      fireRate: 1,
+      magazine: 1,
       reloadSeconds: 0.6,
       bulletKind: "orb",
+      projectileArt: "generated",
     });
-    const gun = definition.gun!;
-    expect((gun.damage * gun.magazine) / (gun.fireRate * gun.magazine + gun.reloadSeconds)).toBe(90);
+    const gun = definition.gun;
+    if (!gun) throw new Error("Saintskull gun fixture required");
+    expect(gun.damage / gun.fireRate).toBe(90);
   });
 
   it("carries Cairn closer with a 20-degree forward lean and painted-purple-only impact", () => {
@@ -163,7 +162,7 @@ describe("W4M melee/caster iteration orders", () => {
     input.spec = { ...spec, preThrowRevolutions: 0 };
     const control = { ...sampleWeaponPerformance(input, out) };
     expect(spec.preThrowRevolutions).toBe(1);
-    expect(Math.hypot(twirled.handX - control.handX, twirled.handY - control.handY)).toBeCloseTo(0.13);
+    expect(Math.hypot(twirled.handX - control.handX, twirled.handY - control.handY)).toBeCloseTo(0.2);
   });
 
   it("opens Riftstep with a damage-neutral tsuki capsule from blade-forward stance", () => {

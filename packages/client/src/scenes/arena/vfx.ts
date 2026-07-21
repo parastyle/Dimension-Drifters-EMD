@@ -1,5 +1,9 @@
 import { isThrownProjectileKind, type WeaponDef } from "@dd/shared";
 import Phaser from "phaser";
+import {
+  budgetedCameraShakeIntensity,
+  type CameraShakeSource,
+} from "../../camera-shake.js";
 import { type FxPackName, playFxPack } from "../../vfx/fx-composer.js";
 import { FX_GRAVE_CALL } from "../../vfx/fx-pack-grave-call.js";
 import { FX_HOLY_SMITE } from "../../vfx/fx-pack-holy-smite.js";
@@ -447,10 +451,18 @@ function shakeVia(
   scene: Phaser.Scene,
   duration: number,
   intensity: number,
+  source: CameraShakeSource,
 ): void {
-  const s = scene as unknown as { shakeCam?: (d: number, i: number) => void };
-  if (typeof s.shakeCam === "function") s.shakeCam(duration, intensity);
-  else scene.cameras.main.shake(duration, intensity, true);
+  const s = scene as unknown as {
+    shakeCam?: (d: number, i: number, source: CameraShakeSource) => void;
+  };
+  if (typeof s.shakeCam === "function") s.shakeCam(duration, intensity, source);
+  else
+    scene.cameras.main.shake(
+      duration,
+      budgetedCameraShakeIntensity(intensity, source),
+      true,
+    );
 }
 
 /** §9 per-gun MUZZLE FLASH — the shaped 8-prong caged-fire star (the same geometry as the engine
@@ -794,7 +806,8 @@ export function spawnExplosion(
   x: number,
   y: number,
   radius: number,
-  element = "fire",
+  element: string,
+  shakeSource: CameraShakeSource,
 ): void {
   const tint = EXPLODE_TINT[element] ?? FIRE_TINT;
   const pack = explosionPack(radius, element);
@@ -842,7 +855,7 @@ export function spawnExplosion(
     onComplete: () => scorch.destroy(),
   });
   // Radius-scaled kick through the scene's prioritized shake.
-  shakeVia(scene, 200, Math.min(0.02, 0.006 + radius / 9000));
+  shakeVia(scene, 200, Math.min(0.02, 0.006 + radius / 9000), shakeSource);
   spawnExplosionCore(scene, x, y, radius, tint);
 }
 
@@ -1051,7 +1064,7 @@ function spawnQuakeVariant(
     });
   }
 
-  shakeVia(scene, 220 + recipe.pulseDelayMs, recipe.shake);
+  shakeVia(scene, 220 + recipe.pulseDelayMs, recipe.shake, "player-weapon");
 }
 
 /** QK-1: the authoritative radius directly defines the danger ellipse before any decorative art is added. */
@@ -1187,7 +1200,7 @@ export function spawnQuakeHero(
     });
   }
 
-  shakeVia(scene, 220, 0.02 * vfx.shake);
+  shakeVia(scene, 220, 0.02 * vfx.shake, "player-weapon");
 }
 
 /** Procedural quake fallback (golden ground shockwave) for quake weapons without a VFX skin. */
@@ -1232,7 +1245,7 @@ export function spawnQuakeProcedural(
       onComplete: () => p.destroy(),
     });
   }
-  shakeVia(scene, 220, 0.012);
+  shakeVia(scene, 220, 0.012, "player-weapon");
 }
 
 interface DamageNumberEntry {

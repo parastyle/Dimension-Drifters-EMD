@@ -442,6 +442,15 @@ describe("NW melee and thrown pose orders", () => {
     const twirled = { ...sampleWeaponPerformance(input, out) };
 
     expect(coilshot.preThrowRevolutions).toBe(1);
+    expect(coilshot.windupSeconds).toBe(0.36);
     expect(twirled.weaponAngle - untwirled.weaponAngle).toBeCloseTo(Math.PI * 2);
+    const sampledAngles = [0, 0.25, 0.5, 0.75, 1].map((phaseT) => {
+      input.phaseT = phaseT;
+      input.spec = coilshot;
+      return sampleWeaponPerformance(input, out).weaponAngle;
+    });
+    expect(Math.max(...sampledAngles) - Math.min(...sampledAngles)).toBeGreaterThanOrEqual(
+      Math.PI * 2,
+    );
   });
 });

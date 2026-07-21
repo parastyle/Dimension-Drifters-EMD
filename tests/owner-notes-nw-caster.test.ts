@@ -43,11 +43,8 @@ function performanceSample(
 }
 
 describe("owner-notes NW-CASTER contracts", () => {
-  it("keeps Cryo/Saintskull crops and the re-derived shell-free Plague locust explicit", () => {
-    expect(Object.keys(CASTER_SPRITE_PROJECTILES).sort()).toEqual([
-      "x2-permafrost-cryo-bracer",
-      "x2-saintskull-monstrance",
-    ]);
+  it("keeps only Cryo's legacy crop and the re-derived shell-free Plague locust explicit", () => {
+    expect(Object.keys(CASTER_SPRITE_PROJECTILES).sort()).toEqual(["x2-permafrost-cryo-bracer"]);
 
     const cryo = resolveCasterVfxRecipe(weapon("x2-permafrost-cryo-bracer"));
     expect(cryo?.spriteProjectile).toMatchObject({

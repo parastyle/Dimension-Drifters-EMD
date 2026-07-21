@@ -1,4 +1,14 @@
-import type { WeaponDef, WeaponEffectEmitter, WeaponEffectRecipeId } from "@dd/shared";
+import {
+  clampQuakeEpicenter,
+  meleeReach,
+  QUAKE_REACH,
+  type SwingDescriptor,
+  type WeaponDef,
+  type WeaponEffectEmitter,
+  type WeaponEffectEmitterPoint,
+  type WeaponEffectRecipeId,
+  weaponEffectEmitterPoint,
+} from "@dd/shared";
 import { PARTICLE_PACKS } from "./particle-manifest.js";
 
 export interface WeaponEffectRecipe {
@@ -6,6 +16,13 @@ export interface WeaponEffectRecipe {
   readonly weaponId: string;
   readonly reuseWeaponIds?: readonly string[];
   readonly emitter: WeaponEffectEmitter;
+  /** V5G2 audit class. Only `impact` cues may use the cursor/target anchor. */
+  readonly classification:
+    | "impact"
+    | "projectile-impact"
+    | "weapon-motion"
+    | "character-action"
+    | "chain-path";
   readonly projectile?: "electric-bolt" | "crystal-shard-orb";
   readonly projectileColor?: number;
   readonly impactPack?: string;
@@ -30,6 +47,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "galvanic-blue-burst",
     weaponId: "x2-galvanic-overcasters",
     emitter: "tip",
+    classification: "projectile-impact",
     projectile: "electric-bolt",
     projectileColor: 0x2f8fff,
     impactPack: "shock-bolt",
@@ -39,6 +57,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "riftglass-rainbow-volley",
     weaponId: "x2-riftglass-prism-lantern",
     emitter: "tip",
+    classification: "projectile-impact",
     impactPack: "arcane-shard",
     additive: true,
   }),
@@ -46,12 +65,14 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "whispervolume-page-scatter",
     weaponId: "x2-twin-whispervolumes",
     emitter: "tip",
+    classification: "chain-path",
     chain: "scattered-pages",
   }),
   "riftcleaver-crystal-shards": Object.freeze({
     id: "riftcleaver-crystal-shards",
     weaponId: "x2-riftcleaver-greatblade",
     emitter: "blade",
+    classification: "weapon-motion",
     projectile: "crystal-shard-orb",
     impactPack: "arcane-shard",
     swingPack: "arcane-shard",
@@ -62,6 +83,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "verdict-tip-procession",
     weaponId: "x2-verdict-longsword",
     emitter: "tip",
+    classification: "weapon-motion",
     swingPack: "holy-bolt",
     swingCount: 5,
     additive: true,
@@ -70,7 +92,9 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "tombwarden-dark-slash",
     weaponId: "x2-tombwarden-claymore",
     emitter: "blade",
-    swingPack: "void-bolt",
+    classification: "impact",
+    impactPack: "void-bolt",
+    impactAnchor: "target",
     swingCount: 8,
     swingScaleMode: "blade-length",
     additive: true,
@@ -80,6 +104,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "choir-iron-flame-slash",
     weaponId: "x2-choir-iron-greataxe",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "fire-bolt",
     swingCount: 9,
     additive: true,
@@ -88,7 +113,9 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "hangman-blood-spatter",
     weaponId: "x2-hangman-s-greatcleaver",
     emitter: "blade",
-    swingPack: "blood-splat",
+    classification: "impact",
+    impactPack: "blood-splat",
+    impactAnchor: "target",
     swingCount: 8,
     additive: false,
     noGore: true,
@@ -102,6 +129,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "cinderbrand-fire-slash",
     weaponId: "x2-cinderbrand-cleaver",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "fire-bolt",
     swingCount: 8,
     additive: true,
@@ -110,6 +138,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "sanctified-holy-slash",
     weaponId: "x2-sanctified-headsman",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "holy-bolt",
     swingCount: 8,
     additive: true,
@@ -118,6 +147,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "dustreaper-continuous-edge",
     weaponId: "x2-dustreaper-zweihander",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "sand-wisp",
     swingCount: 5,
     swingParticleDominance: 0.34,
@@ -127,6 +157,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "gravechain-dominant-spin",
     weaponId: "x2-gravechain-scythe",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "void-wisp",
     swingCount: 24,
     swingParticleDominance: 0.52,
@@ -136,6 +167,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "stormfist-blue-lunge",
     weaponId: "x2-thunderhead-stormfists",
     emitter: "body",
+    classification: "character-action",
     swingPack: "arcane-bolt",
     swingCount: 8,
     additive: true,
@@ -144,6 +176,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "thunderhead-electric-codex",
     weaponId: "x2-thunderhead-voulge",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "shock-spark",
     swingCount: 18,
     additive: true,
@@ -152,6 +185,8 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "sermon-musical-notes",
     weaponId: "x2-sermon-bell",
     emitter: "body",
+    classification: "impact",
+    impactAnchor: "target",
     musicalNotes: true,
     suppressQuakeVfx: true,
   }),
@@ -159,6 +194,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "nullspike-impact-circle",
     weaponId: "x2-nullspike-pike",
     emitter: "tip",
+    classification: "impact",
     impactPack: "void-ring",
     impactAnchor: "target",
     additive: true,
@@ -167,6 +203,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "quarry-quad-spatter",
     weaponId: "x2-quarry-splitter-bardiche",
     emitter: "blade",
+    classification: "weapon-motion",
     swingPack: "blood-splat",
     swingCount: 8,
     swingScaleMultiplier: 4,
@@ -177,6 +214,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "witherleaf-tip-spores",
     weaponId: "x2-witherleaf-bestiary",
     emitter: "tip",
+    classification: "weapon-motion",
     swingPack: "toxic-wisp",
     swingCount: 7,
     swingScaleMultiplier: 0.65,
@@ -186,6 +224,7 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     id: "snakeoil-tip-sparks",
     weaponId: "x2-snakeoil-tincture-scepter",
     emitter: "tip",
+    classification: "weapon-motion",
     swingPack: "toxic-spark",
     swingCount: 5,
     swingScaleMultiplier: 0.36,
@@ -196,9 +235,31 @@ export const WEAPON_EFFECT_RECIPES = Object.freeze({
     weaponId: "x2-cairn-of-hollow-names",
     reuseWeaponIds: Object.freeze(["x2-vagrant-s-wishing-marble"]),
     emitter: "body",
+    classification: "impact",
+    impactAnchor: "target",
     suppressQuakeVfx: true,
     quakeExplosionElement: "void",
     quakeExplosionPaintedOnlyWeaponIds: Object.freeze(["x2-cairn-of-hollow-names"]),
+  }),
+  "hexbloom-toxic-impact": Object.freeze({
+    id: "hexbloom-toxic-impact",
+    weaponId: "x2-hexbloom-rapier",
+    emitter: "tip",
+    classification: "impact",
+    impactPack: "toxic-splat",
+    impactAnchor: "target",
+    swingCount: 8,
+    additive: false,
+  }),
+  "cinderbrand-magma-impact": Object.freeze({
+    id: "cinderbrand-magma-impact",
+    weaponId: "x2-cinderbrand-pike",
+    emitter: "tip",
+    classification: "impact",
+    impactPack: "fire-splat",
+    impactAnchor: "target",
+    swingCount: 10,
+    additive: true,
   }),
 } as const satisfies Record<WeaponEffectRecipeId, WeaponEffectRecipe>);
 
@@ -218,12 +279,41 @@ export function shouldSpawnLegacyQuakeVfx(weapon: WeaponDef | undefined): boolea
   return weapon?.suppressVfx !== true && resolveWeaponEffectRecipe(weapon)?.suppressQuakeVfx !== true;
 }
 
+/** Impact cues use the authoritative quake placement reach when they detonate a quake; direct melee cues
+ * use the rendered/hit-tested edge reach. Both are fixed weapon radii, never an unconstrained cursor. */
+export function weaponEffectImpactReach(weapon: WeaponDef): number {
+  return weapon.quake ? QUAKE_REACH : meleeReach(weapon);
+}
+
+/** V5G2 single anchor resolver for every weapon-effect cue. Motion/channel recipes keep their authored
+ * body/tip/blade emitter; hit/impact recipes move to the cursor, clamped inside the weapon's real reach. */
+export function weaponEffectCuePoint(
+  recipe: WeaponEffectRecipe,
+  weapon: WeaponDef,
+  actor: Readonly<{ x: number; y: number }>,
+  target: Readonly<{ x: number; y: number }> | undefined,
+  aimAngle: number,
+  swing: SwingDescriptor,
+  elapsedSeconds: number,
+): WeaponEffectEmitterPoint {
+  if (recipe.impactAnchor !== "target")
+    return weaponEffectEmitterPoint(weapon, actor, aimAngle, swing, elapsedSeconds);
+  const reach = weaponEffectImpactReach(weapon);
+  const desired = target ?? {
+    x: actor.x + Math.cos(aimAngle) * reach,
+    y: actor.y + Math.sin(aimAngle) * reach,
+  };
+  const point = clampQuakeEpicenter(actor, desired, reach);
+  return { ...point, angle: aimAngle };
+}
+
 export function weaponSwingIdentityScale(
   recipe: WeaponEffectRecipe | undefined,
   bladeLength = 0,
 ): number {
-  if (!recipe?.swingPack) return 0.46;
-  const frameWidth = PARTICLE_PACKS[recipe.swingPack]?.frameWidth ?? 96;
+  const cuePack = recipe?.impactAnchor === "target" ? recipe.impactPack : recipe?.swingPack;
+  if (!cuePack) return 0.46;
+  const frameWidth = PARTICLE_PACKS[cuePack]?.frameWidth ?? 96;
   return weaponSwingIdentitySizePx(recipe, bladeLength) / frameWidth;
 }
 

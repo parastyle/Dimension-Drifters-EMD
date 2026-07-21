@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "phase": "after",
+    "weaponId": "x2-stormspur-coil-carbine",
+    "baseURL": "http://127.0.0.1:5173",
+    "capturedAt": "2026-07-21T15:54:57.841Z",
+    "expectedOffset": {
+      "forward": -2,
+      "lateral": -10
+    },
+    "originDeltaPx": 0.3939440415700582,
+    "shotAngleRad": -0.007027018709371805,
+    "browserErrors": [],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v5-evidence\\gun-barrel-after-x2-stormspur-coil-carbine.png"
+  },
+  "start": {
+    "attackSeq": 0,
+    "tick": 45,
+    "player": {
+      "x": 2400,
+      "y": 2420
+    },
+    "rawMuzzleReach": 119.42199999999998
+  },
+  "live": {
+    "currentTick": 53,
+    "ageTicks": 5,
+    "integratedSteps": 6,
+    "row": {
+      "id": "p0",
+      "x": 2904.4424936758355,
+      "y": 2407.7577081496684,
+      "vx": 1249.9691162109375,
+      "vy": -8.783700942993164,
+      "bornTick": 48
+    },
+    "recoveredOrigin": {
+      "x": 2529.451758812554,
+      "y": 2410.3928184325664
+    },
+    "paintedMuzzle": {
+      "x": 2529.422,
+      "y": 2410
+    },
+    "originDeltaPx": 0.3939440415700582,
+    "shotAngleRad": -0.007027018709371805
+  }
+}

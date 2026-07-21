@@ -80,7 +80,8 @@ describe("NW-MELEE owner-note catalog contracts", () => {
     });
     expect(resolveWeaponEffectRecipe(weapon("x2-buckhorn-boarspear"))).toMatchObject({
       id: "hangman-blood-spatter",
-      swingPack: "blood-splat",
+      impactPack: "blood-splat",
+      impactAnchor: "target",
       emitter: "blade",
     });
     expect(shouldSpawnLegacyQuakeVfx(weapon("x2-quarry-splitter-bardiche"))).toBe(false);

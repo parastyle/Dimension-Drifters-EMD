@@ -145,6 +145,10 @@ import { Client, type Room } from "colyseus.js";
 import Phaser from "phaser";
 import { AudioBus } from "../audio/AudioBus.js";
 import {
+  budgetedCameraShakeIntensity,
+  type CameraShakeSource,
+} from "../camera-shake.js";
+import {
   CombatFeedback,
   type CombatReceiptRows,
   type DamageNumberEvent,
@@ -299,6 +303,7 @@ import {
   resolveWeaponEffectRecipe,
   shouldSpawnLegacyQuakeVfx,
   type WeaponEffectRecipe,
+  weaponEffectCuePoint,
 } from "../vfx/weapon-effect-recipes.js";
 import {
   spawnScatteredPages,
@@ -2403,7 +2408,11 @@ export class ArenaScene extends Phaser.Scene {
         this.hitStop(stopMs, true);
         // Sunspite's authoritative explosion pack owns its one camera kick.
         if (family !== UltimateFamily.SunspiteComet)
-          this.shakeCam(75, this.feedbackSettings.flashes === "reduced" ? 0.00225 : 0.0045);
+          this.shakeCam(
+            75,
+            this.feedbackSettings.flashes === "reduced" ? 0.00225 : 0.0045,
+            "world",
+          );
       },
     });
     // §TELEGRAPH the exact, quality-invariant footprint sits with ground gameplay markings, not over actors.
@@ -3645,7 +3654,7 @@ export class ArenaScene extends Phaser.Scene {
       const arrivalY = this.belt ? this.beltY(player.y) : player.y;
       if (player.id !== this.room?.sessionId) spawnTeslaWarpDeparture(this, rig.x, rig.y);
       spawnTeslaWarpArrival(this, player.x, arrivalY);
-      spawnExplosion(this, player.x, arrivalY, weapon.warp.burstRadius, "shock");
+      spawnExplosion(this, player.x, arrivalY, weapon.warp.burstRadius, "shock", "player-weapon");
       this.audio.play("shot:spark", {
         x: player.x,
         amt: player.id === this.room?.sessionId ? 1 : 0.65,
@@ -3668,7 +3677,14 @@ export class ArenaScene extends Phaser.Scene {
     // this descriptor path, including the authoritative affix-adjusted cadence.
     if (weapon.gun || weapon.performance?.aura) return;
     rig.triggerSwing(epoch, player.aimDir, swing);
-    this.cueWeaponSwingIdentity(rig, weapon, player.aimDir, rig.activeSwing ?? swing);
+    this.cueWeaponSwingIdentity(
+      rig,
+      weapon,
+      player.aimDir,
+      rig.activeSwing ?? swing,
+      undefined,
+      { x: player.x, y: player.y },
+    );
     if (weapon.chainLightning) {
       const aim = { x: Math.cos(player.aimDir), y: Math.sin(player.aimDir) };
       this.spawnChain(rig.x, rig.y, aim, weapon, rig.activeSwing ?? swing);
@@ -3681,19 +3697,26 @@ export class ArenaScene extends Phaser.Scene {
     weapon: WeaponDef,
     aimAngle: number,
     swing: SwingDescriptor,
+    targetWorld?: Readonly<{ x: number; y: number }>,
+    actorWorld?: Readonly<{ x: number; y: number }>,
   ): void {
     const recipe = resolveWeaponEffectRecipe(weapon);
-    if (!recipe?.swingPack && !recipe?.musicalNotes) return;
+    if (!recipe?.swingPack && !recipe?.impactPack && !recipe?.musicalNotes) return;
     const cueSeconds = weaponEffectCueSeconds(weapon, swing);
     this.time.delayedCall(cueSeconds * 1000, () => {
-      const point = weaponEffectEmitterPoint(
+      const impactAnchored = recipe.impactAnchor === "target";
+      const actor = impactAnchored && actorWorld ? actorWorld : { x: rig.x, y: rig.y };
+      const point = weaponEffectCuePoint(
+        recipe,
         weapon,
-        { x: rig.x, y: rig.y },
+        actor,
+        targetWorld,
         aimAngle,
         swing,
         cueSeconds,
       );
-      spawnWeaponSwingIdentity(this, recipe, point.x, point.y, point.angle, weapon.displayLength);
+      const renderY = impactAnchored && this.belt ? this.beltY(point.y) : point.y;
+      spawnWeaponSwingIdentity(this, recipe, point.x, renderY, point.angle, weapon.displayLength);
     });
   }
 
@@ -4122,7 +4145,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (id === selfId) {
         this.cameras.main.flash(170, 90, 16, 16);
-        this.shakeCam(150, 0.006);
+        this.shakeCam(150, 0.006, "world");
         this.audio.play("fall"); // §19 void whoosh + a thud on the snap-back landing
         this.offerContextHint("pitFall");
       }
@@ -5500,7 +5523,7 @@ export class ArenaScene extends Phaser.Scene {
             x: presentation.markerX,
             amt: visible ? 0.72 : 0.24,
           });
-          if (visible && !reducedMotion) this.shakeCam(85, 0.0042);
+          if (visible && !reducedMotion) this.shakeCam(85, 0.0042, "world");
         }
         presentation.markerId = "";
       }
@@ -5527,7 +5550,7 @@ export class ArenaScene extends Phaser.Scene {
       }
       if (empowermentEnded && presentation.pendingStagger) {
         rig.triggerEnemyComboStagger(this.animClock);
-        if (visible && !reducedMotion) this.shakeCam(70, 0.0036);
+        if (visible && !reducedMotion) this.shakeCam(70, 0.0036, "world");
       }
       presentation.pendingStagger = false;
     }
@@ -6376,23 +6399,23 @@ export class ArenaScene extends Phaser.Scene {
         // shake + boom by the crater RADIUS (baseline 150px) so the colossus's 220px world-enders shake the
         // screen harder than a normal slam — a big body hits like a big body (WYSIWYG weight).
         const scale = Math.max(0.8, Math.min(1.7, c.a / 150));
-        spawnExplosion(this, c.x, impactY, Math.max(24, c.a));
-        this.shakeCam(200 * scale, 0.014 * scale);
+        spawnExplosion(this, c.x, impactY, Math.max(24, c.a), "fire", "world");
+        this.shakeCam(200 * scale, 0.014 * scale, "world");
         this.audio.play("bossslam", { x: c.x, amt: Math.min(1, scale) }); // §19 the deep boom under the shake
       } else if (c.kindTag === TelegraphKindTag.Pool) {
         // corrosive pool — the puddle (a ZoneState) renders itself; just a soft splash, no shake/boom.
-        spawnExplosion(this, c.x, impactY, Math.min(40, c.a * 0.4));
+        spawnExplosion(this, c.x, impactY, Math.min(40, c.a * 0.4), "fire", "world");
       } else if (c.kindTag === TelegraphKindTag.Summon || c.kindTag === TelegraphKindTag.Radial) {
         // summon marker / bullet-burst pre-flash — a small pop where the adds/bullets erupt, no shake/boom.
-        spawnExplosion(this, c.x, impactY, 22);
+        spawnExplosion(this, c.x, impactY, 22, "fire", "world");
       } else if (c.kindTag === TelegraphKindTag.Quake) {
         // §33 FOOTFALL QUAKE landing — the giant's step hits: a big shock ring + dust burst + a HEAVY, low
         // screen-quake and the deep boom. The whole screen jolts so the footstep reads as a footstep.
         const ix = c.x;
         const iy = impactY;
-        spawnExplosion(this, ix, iy, Math.max(40, c.a * 0.5));
+        spawnExplosion(this, ix, iy, Math.max(40, c.a * 0.5), "fire", "world");
         this.spawnImpactRing(ix, iy);
-        this.shakeCam(280, 0.03); // heavier + longer than a slam — the ground itself buckles
+        this.shakeCam(280, 0.03, "world"); // heavier + longer than a slam — the ground itself buckles
         this.audio.play("bossslam", { x: c.x, amt: 1 });
       }
       // kindTag 4 (beam/dash) + 5 (ring) end silently — the sweeping/expanding hazard was its own visual.
@@ -6707,6 +6730,7 @@ export class ArenaScene extends Phaser.Scene {
                       ? makeCounter(this, pr) // §8 parry projectile (bounce-back counter OR Superman side-glance)
                       : makeSpit(this, pr));
       container.setData("kind", pr.kind);
+      container.setData("hostile", pr.hostile);
       container.setData("weaponEffectRecipe", weaponEffectRecipe);
       container.setData("ultimateProjectile", comet);
       // §8 v0.117 a BASE-parry "deflect" spark glances off + FADES OUT (bullet-off-Superman): tween its
@@ -6814,7 +6838,17 @@ export class ArenaScene extends Phaser.Scene {
                 this.lastUltimateWeatherShakeAt = this.time.now;
             }
             try {
-              if (!casterRecipe?.paintedImpact) spawnExplosion(this, c.x, c.y, er, element);
+              if (!casterRecipe?.paintedImpact)
+                spawnExplosion(
+                  this,
+                  c.x,
+                  c.y,
+                  er,
+                  element,
+                  ultimateProjectile || c.getData("hostile") === true
+                    ? "world"
+                    : "player-weapon",
+                );
             } finally {
               this.ultimateExplosionShakeScale = 1;
             }
@@ -7371,7 +7405,7 @@ export class ArenaScene extends Phaser.Scene {
         if (!(vastaghar.active && boss.kind === "world-titan")) {
           const rs = ENEMY_KINDS[boss.kind]?.renderScale ?? 1;
           const titanic = rs >= 5;
-          this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011);
+          this.shakeCam(titanic ? 700 : 360, titanic ? 0.02 : 0.011, "world");
           this.cameras.main.flash(titanic ? 420 : 240, titanic ? 130 : 80, titanic ? 32 : 20, 18);
           this.audio.play("bossslam", { x: boss.x, amt: 1 });
         }
@@ -9718,13 +9752,13 @@ export class ArenaScene extends Phaser.Scene {
       );
       this.audio.play("pound:hit", { x, amt: localAmt });
       if (isSelf) {
-        this.shakeCam(90, 0.0072);
+        this.shakeCam(90, 0.0072, "world");
       } else {
         const self = this.room ? this.blobs.get(this.room.sessionId) : undefined;
         const falloff = self
           ? Math.max(0, 1 - Math.hypot(blob.x - self.x, blob.y - self.y) / 760)
           : 0;
-        if (falloff > 0) this.shakeCam(90 * falloff, 0.0072 * falloff);
+        if (falloff > 0) this.shakeCam(90 * falloff, 0.0072 * falloff, "world");
       }
     }
 
@@ -9756,7 +9790,8 @@ export class ArenaScene extends Phaser.Scene {
       if (landingStance !== STANCE_POUND && !authoritativePound)
         this.audio.play("land", { x, amt: (tier / 3) * localAmt });
       if (landingStance === STANCE_DASH) this.audio.play("leap:skid", { x, amt: localAmt });
-      else if (tier === 3 && landingStance !== STANCE_POUND && isSelf) this.shakeCam(75, 0.0045);
+      else if (tier === 3 && landingStance !== STANCE_POUND && isSelf)
+        this.shakeCam(75, 0.0045, "world");
     }
 
     if (visible && stance === STANCE_POUND && vh < 0)
@@ -9923,13 +9958,6 @@ export class ArenaScene extends Phaser.Scene {
     // uses. Guns don't melee-swing — the shot is the muzzle flash.
     if (!weapon?.gun && !weapon?.warp && swing) {
       rig?.triggerSwing(this.time.now, Math.atan2(this.selfAim.y, this.selfAim.x), swing);
-      if (weapon && rig)
-        this.cueWeaponSwingIdentity(
-          rig,
-          weapon,
-          Math.atan2(this.selfAim.y, this.selfAim.x),
-          rig.activeSwing ?? swing,
-        );
     }
     if (
       weapon &&
@@ -9974,6 +10002,15 @@ export class ArenaScene extends Phaser.Scene {
       cwy = wp.y;
       selfWy = rig?.y ?? self.y;
     }
+    if (weapon && rig && !weapon.gun && !weapon.warp && swing)
+      this.cueWeaponSwingIdentity(
+        rig,
+        weapon,
+        Math.atan2(this.selfAim.y, this.selfAim.x),
+        rig.activeSwing ?? swing,
+        { x: cwx, y: cwy },
+        { x: rig.x, y: selfWy },
+      );
     if (weapon?.warp && rig) spawnTeslaWarpDeparture(this, rig.x, rig.y);
     if (weapon?.tags.classPool === "caster" && !weapon.warp && rig && !weapon.performance?.aura) {
       const cue = () => {
@@ -10014,6 +10051,7 @@ export class ArenaScene extends Phaser.Scene {
             this.belt ? this.beltY(ep.y) : ep.y,
             quake.radius,
             quakeIdentity.quakeExplosionElement,
+            "player-weapon",
           );
         else if (shouldSpawnLegacyQuakeVfx(weapon))
           spawnQuake(
@@ -10067,7 +10105,8 @@ export class ArenaScene extends Phaser.Scene {
       // is capped to the fire-rate so a fast auto's kicks decay before the next shot (no jitter stacking).
       this.shakeCam(
         Math.min(70, weapon.gun.fireRate * 700),
-        (weapon.gun.recoil ?? 0.0017) * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE,
+        weapon.gun.recoil ?? 0.0017,
+        "player-weapon",
       );
       // §4 v0.107 PREDICTED muzzle flash: fire feedback on the CLICK at the rendered barrel (the old
       // path waited a full round-trip for the synced projectile — ~60-125ms of "did it fire?" online).
@@ -10978,14 +11017,23 @@ export class ArenaScene extends Phaser.Scene {
     if (this.feedbackShakeIntensity > 0)
       this.shakeCam(
         this.feedbackShakeDuration,
-        this.feedbackShakeIntensity * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE,
+        this.feedbackShakeIntensity,
+        "player-weapon",
       );
     if (
       Math.hypot(this.feedbackPunchX, this.feedbackPunchY) > 0 &&
       now - this.lastCameraPunchAt >= 90
     ) {
-      this.cameraPunchX = this.feedbackPunchX;
-      this.cameraPunchY = this.feedbackPunchY;
+      // Directional hit-confirm punch is camera motion too; budget it beside stochastic shake so a future
+      // receipt cannot restore the heavy player-weapon jolt through this non-Phaser channel.
+      this.cameraPunchX = budgetedCameraShakeIntensity(
+        this.feedbackPunchX,
+        "player-weapon",
+      );
+      this.cameraPunchY = budgetedCameraShakeIntensity(
+        this.feedbackPunchY,
+        "player-weapon",
+      );
       this.lastCameraPunchAt = now;
     }
   }
@@ -11041,17 +11089,18 @@ export class ArenaScene extends Phaser.Scene {
     const scaledIntensity = intensity * falloff;
     if (!this.vastagharShakeBudget.accept(this.time.now, scaledDuration, scaledIntensity, tier))
       return;
-    this.shakeCam(scaledDuration, scaledIntensity);
+    this.shakeCam(scaledDuration, scaledIntensity, "world");
   }
 
-  /** Owner ruling 2026-07-18: shake MADE BY THE PLAYER'S OWN WEAPONS (gun recoil, hit-confirm
-   *  receipt feel, beam ignite/overheat) runs at 2% of its authored amplitude. World shakes —
-   *  bosses, pounds, damage taken, enemy combos, ultimates — keep full weight. */
-  static readonly PLAYER_WEAPON_SHAKE_SCALE = 0.02;
-
-  shakeCam(duration: number, intensity: number): void {
+  /** V5G1 global camera mixer. Every caller declares its origin; only player-weapon requests spend the
+   * owner-mandated 5% amplitude budget. World shakes (bosses, movement, hurt, enemy attacks, ultimates) are
+   * intentionally unchanged, and priority compares the final admitted amplitudes. */
+  shakeCam(duration: number, rawIntensity: number, source: CameraShakeSource): void {
     const motionScale = prefersReducedPaperMotion() ? 0 : (this.feedbackSettings?.screenShake ?? 1);
-    intensity *= motionScale * this.ultimateExplosionShakeScale;
+    const intensity =
+      budgetedCameraShakeIntensity(rawIntensity, source) *
+      motionScale *
+      this.ultimateExplosionShakeScale;
     if (intensity <= 0) return;
     const now = this.time.now;
     if (now >= this.shakeUntil || intensity >= this.shakeIntensity) {
@@ -11466,7 +11515,7 @@ export class ArenaScene extends Phaser.Scene {
         this.time.now - this.lastHurt > 180
       ) {
         this.blobs.get(selfId)?.flash();
-        this.shakeCam(100, 0.005);
+        this.shakeCam(100, 0.005, "world");
         // §19 a muffled "oof" scaled by the damage taken; §20 punch the low-HP vignette on the hit.
         this.audio.play("hurt", {
           amt: Math.min(1, (this.prevSelfHp - self.hp) / self.maxHp / 0.2),
@@ -15211,7 +15260,7 @@ export class ArenaScene extends Phaser.Scene {
             amt: local ? 1 : 0.4,
             ownerId,
           });
-          if (local) this.shakeCam(55, 0.0028 * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE);
+          if (local) this.shakeCam(55, 0.0028, "player-weapon");
         } else if (row.phase === BeamPhase.Overheated) {
           this.audio.play("beam:overheat", {
             x: row.originX,
@@ -15219,7 +15268,7 @@ export class ArenaScene extends Phaser.Scene {
             ownerId,
           });
           if (local) {
-            this.shakeCam(120, 0.006 * ArenaScene.PLAYER_WEAPON_SHAKE_SCALE);
+            this.shakeCam(120, 0.006, "player-weapon");
             this.offerContextHint("beamOverheat");
           }
         } else if (

@@ -355,6 +355,7 @@
       },
       "effectRecipe": "tombwarden-dark-slash",
       "effectEmitter": "blade",
+      "effectTiming": "impact",
       "id": "x2-tombwarden-claymore"
     },
     {
@@ -394,6 +395,9 @@
         "swingArc": 2.2,
         "gripFrac": 0.14
       },
+      "effectRecipe": "hexbloom-toxic-impact",
+      "effectEmitter": "tip",
+      "effectTiming": "impact",
       "id": "x2-hexbloom-rapier"
     },
     {
@@ -1838,6 +1842,7 @@
       },
       "effectRecipe": "hangman-blood-spatter",
       "effectEmitter": "blade",
+      "effectTiming": "impact",
       "id": "x2-hangman-s-greatcleaver"
     },
     {
@@ -2121,6 +2126,9 @@
         "str": 9,
         "dex": 6
       },
+      "effectRecipe": "cinderbrand-magma-impact",
+      "effectEmitter": "tip",
+      "effectTiming": "impact",
       "id": "x2-cinderbrand-pike"
     },
     {
@@ -2393,6 +2401,7 @@
       },
       "effectRecipe": "nullspike-impact-circle",
       "effectEmitter": "tip",
+      "effectTiming": "impact",
       "id": "x2-nullspike-pike"
     },
     {
@@ -2418,7 +2427,7 @@
       },
       "effectRecipe": "hangman-blood-spatter",
       "effectEmitter": "blade",
-      "effectTiming": "swing-midpoint",
+      "effectTiming": "impact",
       "stats": {
         "damage": 11,
         "range": 200,
@@ -3397,7 +3406,7 @@
       },
       "effectRecipe": "sermon-musical-notes",
       "effectEmitter": "body",
-      "effectTiming": "swing-midpoint",
+      "effectTiming": "impact",
       "id": "x2-sermon-bell"
     },
     {
@@ -4606,6 +4615,7 @@
         "hold": "steady",
         "action": "throw-release",
         "suppressSwing": true,
+        "windupSeconds": 0.36,
         "preThrowRevolutions": 1
       },
       "stats": {
@@ -4859,9 +4869,17 @@
         "magazine": 5,
         "reloadSeconds": 1.7,
         "bulletKind": "slug",
+        "projectileArt": "generated",
+        "projectileVisualScale": 1.25,
         "muzzle": "boom",
         "muzzleColor": 11028526,
-        "recoil": 0.004
+        "recoil": 0.004,
+        "muzzleOffsets": [
+          {
+            "forward": 0,
+            "lateral": -6
+          }
+        ]
       },
       "stats": {
         "damage": 7,
@@ -5125,7 +5143,7 @@
         "damage": 11,
         "projectileSpeed": 1000,
         "range": 700,
-        "fireRate": 0.4,
+        "fireRate": 1,
         "pellets": 1,
         "spread": 0,
         "pierce": 2,
@@ -5179,7 +5197,7 @@
         "damage": 12,
         "projectileSpeed": 960,
         "range": 660,
-        "fireRate": 0.4,
+        "fireRate": 1,
         "pellets": 1,
         "spread": 0,
         "pierce": 3,
@@ -7932,6 +7950,10 @@
       "element": "physical",
       "finish": "battle-worn",
       "grip": "2H",
+      "gripPoints": {
+        "primary": { "x": 0.08, "y": 0.65 },
+        "secondary": { "x": 0.22, "y": 0.44, "role": "vertical-foregrip" }
+      },
       "size": "XL",
       "rangeBand": "mid",
       "scaling": [
@@ -7962,7 +7984,8 @@
         "reloadSeconds": 2.8,
         "bulletKind": "tracer",
         "muzzle": "rapid",
-        "recoil": 0.0007
+        "recoil": 0.0007,
+        "muzzleOffsets": [{ "forward": -2, "lateral": -12 }]
       },
       "stats": {
         "damage": 4,
@@ -8177,12 +8200,12 @@
         "magazine": 2,
         "reloadSeconds": 2.8,
         "bulletKind": "slug",
-        "projectileArt": "weapon-crop",
+        "projectileArt": "generated",
         "projectileVisualScale": 1.3,
         "muzzle": "boom",
         "recoil": 0.0038,
         "explode": {
-          "radius": 70,
+          "radius": 140,
           "damage": 13
         }
       },
@@ -8625,10 +8648,21 @@
       "type": "ranged",
       "family": "heavy-ordnance",
       "theme": "dark-iron cannon firing collapsing void shells",
-      "element": "void",
-      "finish": "arcane",
-      "grip": "2H",
-      "size": "L",
+  "element": "void",
+  "finish": "arcane",
+  "grip": "2H",
+  "gripPoints": {
+    "primary": {
+      "x": 0.2,
+      "y": 0.72
+    },
+    "secondary": {
+      "x": 0.55,
+      "y": 0.42,
+      "role": "under-barrel"
+    }
+  },
+  "size": "L",
       "rangeBand": "long",
       "scaling": [
         "INT"
@@ -8653,7 +8687,7 @@
         "magazine": 4,
         "reloadSeconds": 2,
         "bulletKind": "slug",
-        "projectileArt": "weapon-crop",
+        "projectileArt": "generated",
         "projectileVisualScale": 1.4,
         "projectileColor": 11619327,
         "muzzle": "boom",
@@ -9167,7 +9201,7 @@
         "reloadSeconds": 1.8,
         "bulletKind": "slug",
         "projectileArt": "generated",
-        "projectileVisualScale": 1.15,
+        "projectileVisualScale": 3,
         "muzzle": "heavy",
         "muzzleColor": 14803168,
         "recoil": 0.0035,
@@ -9220,7 +9254,7 @@
         "magazine": 24,
         "reloadSeconds": 1.6,
         "bulletKind": "nail",
-        "projectileArt": "arrow",
+        "projectileArt": "generated",
         "muzzle": "rapid",
         "muzzleColor": 13013344,
         "recoil": 0.0008,
@@ -9275,6 +9309,7 @@
         "magazine": 3,
         "reloadSeconds": 1.9,
         "bulletKind": "slug",
+        "projectileArt": "generated",
         "muzzle": "heavy",
         "muzzleColor": 3960426,
         "recoil": 0.0034,
@@ -9446,7 +9481,7 @@
         "magazine": 6,
         "reloadSeconds": 1.5,
         "bulletKind": "tracer",
-        "projectileArt": "arrow",
+        "projectileArt": "generated",
         "muzzle": "spark",
         "muzzleColor": 11627775,
         "recoil": 0.0018,
@@ -13247,16 +13282,17 @@
       "artPrompt": "Weapon-only in-world sprite (no character, no background scene): an ornate gilded monstrance — a sunburst-rayed gold display-frame clutching a polished bone saint-skull at its center, ringed with tiny crystal beads, mounted on a short ceremonial brass stem. Reliquary frontier regalia. Flat orthographic full side-profile, ~4-6 colours. Faces RIGHT: the sunburst skull-display/business end to the RIGHT, the short mounting-stem on the LEFT.",
       "palettePrimary": "#C49A5A",
       "paletteAccent": "#E8E4D8",
-      "cardartAction": "leveled as a sustained searing holy-gold ray pours from the skull's mouth, the sunburst rays blazing white at the rim",
+      "cardartAction": "releasing one massive holy skull to the right, the gilded sunburst snapping bright at the single-shot launch",
       "behavior": {
         "kind": "gun",
-        "damage": 9.675,
+        "damage": 90,
         "projectileSpeed": 560,
         "range": 760,
-        "fireRate": 0.1,
-        "magazine": 80,
+        "fireRate": 1,
+        "magazine": 1,
         "reloadSeconds": 0.6,
         "bulletKind": "orb",
+        "projectileArt": "generated",
         "muzzle": "boom",
         "recoil": 0.0012
       },
@@ -15372,7 +15408,8 @@
         "bulletKind": "tracer",
         "muzzle": "rapid",
         "muzzleColor": 16747051,
-        "recoil": 0.0011
+        "recoil": 0.0011,
+        "muzzleOffsets": [{ "forward": -2, "lateral": -14 }]
       },
       "stats": {
         "damage": 5,
@@ -15420,7 +15457,8 @@
         "bulletKind": "spark",
         "muzzle": "spark",
         "muzzleColor": 3401471,
-        "recoil": 0.0007
+        "recoil": 0.0007,
+        "muzzleOffsets": [{ "forward": -2, "lateral": -10 }]
       },
       "stats": {
         "damage": 4,
@@ -15468,7 +15506,8 @@
         "bulletKind": "tracer",
         "muzzle": "heavy",
         "muzzleColor": 16734770,
-        "recoil": 0.0018
+        "recoil": 0.0018,
+        "muzzleOffsets": [{ "forward": -2, "lateral": -17 }]
       },
       "stats": {
         "damage": 8,

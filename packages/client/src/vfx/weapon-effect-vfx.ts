@@ -77,8 +77,9 @@ export function spawnWeaponSwingIdentity(
   bladeLength = 0,
 ): void {
   if (!recipe) return;
-  if (recipe.swingPack)
-    particleBurst(scene, recipe.swingPack, x, y, {
+  const cuePack = recipe.impactAnchor === "target" ? recipe.impactPack : recipe.swingPack;
+  if (cuePack)
+    particleBurst(scene, cuePack, x, y, {
       count: recipe.swingCount ?? 6,
       dirRad: angle,
       spread: recipe.noGore ? 0.75 : 0.42,

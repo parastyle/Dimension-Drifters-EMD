@@ -13,6 +13,7 @@ const manifestPaths = {
   cards: resolve(ROOT, "packages/client/src/sprites/card-manifest.ts"),
   pois: resolve(ROOT, "packages/client/src/sprites/poi-manifest.ts"),
   decals: resolve(ROOT, "packages/client/src/sprites/decal-manifest.ts"),
+  projectiles: resolve(ROOT, "packages/client/src/sprites/projectile-manifest.ts"),
   particles: resolve(ROOT, "packages/client/src/vfx/particle-manifest.ts"),
   weaponVfx: resolve(ROOT, "packages/client/src/vfx/weapon-vfx.generated.ts"),
 };
@@ -151,6 +152,13 @@ const decals = extractArrayStrings(
 );
 for (const id of decals) recordAsset(`decals/${id}.png`, `decal-manifest.ts ${id}`);
 
+const projectileUrls = extractPropertyStrings(
+  readSource(manifestPaths.projectiles, "projectile-manifest.ts"),
+  ["url"],
+  "projectile-manifest.ts",
+);
+for (const url of projectileUrls) recordAsset(url, "projectile-manifest.ts");
+
 const particleUrls = extractPropertyStrings(
   readSource(manifestPaths.particles, "particle-manifest.ts"),
   ["url"],
@@ -200,7 +208,8 @@ if (parseFailures.length > 0 || missingEntries.length > 0 || missingFrames.lengt
     `✓ asset check passed — ${sprites.length} sprite entries / ${spritePartCount} parts ` +
       `(${expansionPartCount} expansion parts checked loose), ${atlasFrames.length} atlas frames, ` +
       `${cards.length} cards, ${pois.length} POIs, ${decals.length} decals, ` +
-      `${particleUrls.length} particle URLs, ${weaponVfxUrls.length} weapon-VFX URLs` +
+      `${projectileUrls.length} projectile URLs, ${particleUrls.length} particle URLs, ` +
+      `${weaponVfxUrls.length} weapon-VFX URLs` +
       `${orphanFrames.length > 0 ? `; ${orphanFrames.length} orphan frame warning(s)` : ""}`,
   );
 }

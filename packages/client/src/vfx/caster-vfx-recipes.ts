@@ -188,7 +188,7 @@ export const CASTER_VFX_PALETTE_OVERRIDES: Readonly<Partial<Record<string, Caste
     }),
   });
 
-/** Codex-reference crops derived directly from each weapon's own checked-in sprite. */
+/** Legacy caster crop retained only where no projectile-identity regeneration was ordered. */
 export const CASTER_SPRITE_PROJECTILES: Readonly<
   Partial<Record<string, CasterSpriteProjectileRecipe>>
 > = Object.freeze({
@@ -197,12 +197,6 @@ export const CASTER_SPRITE_PROJECTILES: Readonly<
     partRole: "part-1",
     crop: Object.freeze({ x: 121, y: 0, width: 135, height: 84 }),
     displayLength: 58,
-  }),
-  "x2-saintskull-monstrance": Object.freeze({
-    spriteId: "x2-saintskull-monstrance",
-    partRole: "part-1",
-    crop: Object.freeze({ x: 100, y: 49, width: 88, height: 105 }),
-    displayLength: 96,
   }),
 });
 

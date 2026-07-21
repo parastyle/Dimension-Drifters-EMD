@@ -315,9 +315,9 @@ export class WormBossVfx {
     const falloff = clamp01(1 - Math.hypot(x - cx, y - cy) / 760);
     if (falloff <= 0) return;
     const host = this.scene as Phaser.Scene & {
-      shakeCam?: (duration: number, amount: number) => void;
+      shakeCam?: (duration: number, amount: number, source: "world") => void;
     };
-    if (host.shakeCam) host.shakeCam(duration, intensity * falloff);
+    if (host.shakeCam) host.shakeCam(duration, intensity * falloff, "world");
     else camera.shake(duration, intensity * falloff, true);
     this.lastShakeAt = nowMs;
   }

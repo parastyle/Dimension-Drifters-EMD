@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "phase": "after",
+    "weaponId": "x2-hellbore-gatling",
+    "baseURL": "http://127.0.0.1:5173",
+    "capturedAt": "2026-07-21T15:55:06.732Z",
+    "expectedOffset": {
+      "forward": -2,
+      "lateral": -12
+    },
+    "originDeltaPx": 0.7070539235463832,
+    "shotAngleRad": 0.1244922602674957,
+    "browserErrors": [],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v5-evidence\\gun-barrel-after-x2-hellbore-gatling.png"
+  },
+  "start": {
+    "attackSeq": 0,
+    "tick": 46,
+    "player": {
+      "x": 2400,
+      "y": 2420
+    },
+    "rawMuzzleReach": 138
+  },
+  "live": {
+    "currentTick": 52,
+    "ageTicks": 4,
+    "integratedSteps": 5,
+    "row": {
+      "id": "p0",
+      "x": 2751.468994140625,
+      "y": 2434.159912109375,
+      "vx": 813.6538696289062,
+      "vy": 101.8201675415039,
+      "bornTick": 48
+    },
+    "recoveredOrigin": {
+      "x": 2548.0555267333984,
+      "y": 2408.704870223999
+    },
+    "paintedMuzzle": {
+      "x": 2548,
+      "y": 2408
+    },
+    "originDeltaPx": 0.7070539235463832,
+    "shotAngleRad": 0.1244922602674957
+  }
+}

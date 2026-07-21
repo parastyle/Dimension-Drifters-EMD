@@ -59,6 +59,10 @@ const BEAM_GUN_IDS = new Set([
   "x2-permafrost-siege-lobber",
   "x2-doomsday-drum-cannon",
 ]);
+// Owner-ordered heavy single shots use gun behavior, but deliberately sit outside the catalog's
+// common semi-auto damage/cadence bands. Keep the exception declarative so source data, generated
+// WeaponDef cadence, and independent codegen validation agree.
+const SINGLE_SHOT_GUN_IDS = new Set(["x2-saintskull-monstrance"]);
 
 // Key whitelists — an authored key outside these is a FAILURE, never a silent drop.
 const TOP_KEYS = new Set([
@@ -105,7 +109,7 @@ const ZONE_STYLES = new Set(["nether", "poison", "poison-smoke", "ice"]);
 const SIZE_CLASSES = new Set(["short", "standard", "long", "great", "colossal"]);
 const COMBO_FAMILIES = new Set(["arc", "chop", "rake", "punch", "thrust"]);
 const EFFECT_EMITTERS = new Set(["body", "tip", "blade"]);
-const EFFECT_TIMINGS = new Set(["active-start", "swing-midpoint"]);
+const EFFECT_TIMINGS = new Set(["active-start", "swing-midpoint", "impact"]);
 const EFFECT_RECIPES = new Set([
   "galvanic-blue-burst", "riftglass-rainbow-volley", "whispervolume-page-scatter",
   "riftcleaver-crystal-shards", "verdict-tip-procession", "tombwarden-dark-slash",
@@ -113,7 +117,8 @@ const EFFECT_RECIPES = new Set([
   "cinderbrand-fire-slash", "sanctified-holy-slash", "stormfist-blue-lunge",
   "thunderhead-electric-codex", "sermon-musical-notes", "nullspike-impact-circle",
   "quarry-quad-spatter", "witherleaf-tip-spores", "snakeoil-tip-sparks",
-  "gravechain-dominant-spin", "void-caster-explosion",
+  "gravechain-dominant-spin", "void-caster-explosion", "hexbloom-toxic-impact",
+  "cinderbrand-magma-impact",
 ]);
 const STANCES = new Set([
   "hasso-no-kamae", "tachi-no-tori", "blade-forward-high-hilt", "two-hands-on-hilt",
@@ -650,6 +655,7 @@ function mapWeapon(w) {
   const rangeBand = enumOf(w.rangeBand, BANDS, "rangeBand");
   const isBeam = kind === "beam" || BEAM_GUN_IDS.has(w.id);
   const isGun = !isBeam && (kind === "gun" || type === "ranged");
+  const isSingleShotGun = SINGLE_SHOT_GUN_IDS.has(w.id);
   const isGroundZone = kind === "groundZone";
 
   // Edge/swing baseline (required even for guns — the held-swing fields).
@@ -697,7 +703,7 @@ function mapWeapon(w) {
       fireMode: isGroundZone || isBeam || kind === "glovePair" ||
         (type === "melee" && w.performance?.continuous === true)
         ? "hold"
-        : isGun
+        : isGun && !isSingleShotGun
           ? "auto"
           : "tap-charge",
       element: typeof w.element === "string" ? w.element : "physical",
@@ -825,10 +831,10 @@ function mapWeapon(w) {
     }
   } else if (isGun) {
     def.gun = {
-      damage: num(b.damage, 1, 40, damage, "behavior.damage"),
+      damage: num(b.damage, 1, isSingleShotGun ? 120 : 40, damage, "behavior.damage"),
       projectileSpeed: num(b.projectileSpeed, 400, 4000, 900, "behavior.projectileSpeed"),
       range: num(b.range ?? s.range, 280, 1100, 620, "behavior.range"),
-      fireRate: num(b.fireRate, 0.05, 0.9, 0.3, "behavior.fireRate"),
+      fireRate: num(b.fireRate, 0.05, isSingleShotGun ? 1.5 : 0.9, 0.3, "behavior.fireRate"),
       magazine: int(b.magazine, 1, 80, 8, "behavior.magazine"),
       reloadSeconds: num(b.reloadSeconds, 0.6, 3, 1.4, "behavior.reloadSeconds"),
       bulletKind: b.bulletKind === undefined ? "slug"

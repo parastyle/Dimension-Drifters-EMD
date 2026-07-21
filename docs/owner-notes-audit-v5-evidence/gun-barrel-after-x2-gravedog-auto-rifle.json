@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "phase": "after",
+    "weaponId": "x2-gravedog-auto-rifle",
+    "baseURL": "http://127.0.0.1:5173",
+    "capturedAt": "2026-07-21T15:54:53.480Z",
+    "expectedOffset": {
+      "forward": -2,
+      "lateral": -14
+    },
+    "originDeltaPx": 0.14006787748021057,
+    "shotAngleRad": -0.06310041770506776,
+    "browserErrors": [],
+    "unexpectedBrowserErrors": [],
+    "screenshot": "docs\\owner-notes-audit-v5-evidence\\gun-barrel-after-x2-gravedog-auto-rifle.png"
+  },
+  "start": {
+    "attackSeq": 0,
+    "tick": 44,
+    "player": {
+      "x": 2400,
+      "y": 2420
+    },
+    "rawMuzzleReach": 91.08
+  },
+  "live": {
+    "currentTick": 53,
+    "ageTicks": 5,
+    "integratedSteps": 6,
+    "row": {
+      "id": "p0",
+      "x": 2800.5020666052346,
+      "y": 2387.22119140625,
+      "vx": 998.0098266601562,
+      "vy": -63.05855178833008,
+      "bornTick": 48
+    },
+    "recoveredOrigin": {
+      "x": 2501.099118607188,
+      "y": 2406.138756942749
+    },
+    "paintedMuzzle": {
+      "x": 2501.08,
+      "y": 2406
+    },
+    "originDeltaPx": 0.14006787748021057,
+    "shotAngleRad": -0.06310041770506776
+  }
+}

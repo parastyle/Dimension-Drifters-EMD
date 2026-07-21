@@ -164,7 +164,7 @@ describe("Drive formula v1", () => {
     };
     expect(bands("melee")).toEqual({ min: 4, median: 14, max: 35 });
     expect(bands("thrown")).toEqual({ min: 11.25, median: 15, max: 22.5 });
-    expect(bands("gun")).toEqual({ min: 1.25, median: 10, max: 35 });
+    expect(bands("gun")).toEqual({ min: 1.25, median: 11.25, max: 35 });
     expect(bands("cast")).toEqual({ min: 7, median: 14.75, max: 14.75 });
   });
 

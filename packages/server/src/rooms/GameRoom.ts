@@ -688,6 +688,23 @@ interface PendingWeaponLunge {
   distancePx: number;
 }
 
+/** A committed thrown beat whose authored in-hand draw must finish before projectile release. */
+interface PendingWeaponThrow {
+  t: number;
+  playerId: string;
+  weaponId: string;
+  aimX: number;
+  aimY: number;
+  speed: number;
+  range: number;
+  damage: number;
+  pierce: number;
+  kind: string;
+  crit: number;
+  landingDamagePerSecond?: number;
+  ricochet?: { hops: number; range: number };
+}
+
 /** One server-private Drive authority. The result row is reused so the 20 Hz seam allocates nothing. */
 interface DriveRuntime {
   valueF: number;
@@ -1258,6 +1275,8 @@ export class GameRoom extends Room<ArenaState> {
   private readonly pendingScatterVolleys: PendingScatterVolley[] = [];
   /** Accepted punch lunges waiting for active start; final displacement is validated by server navigation. */
   private readonly pendingWeaponLunges = new Map<string, PendingWeaponLunge>();
+  /** Accepted authored draws waiting for their visible pre-throw revolution to complete. */
+  private readonly pendingWeaponThrows: PendingWeaponThrow[] = [];
   /** §9/§13 per-DROPPED-pickup grace timer (sec): while > 0 the pickup can't be re-grabbed, so a weapon
    *  dropped at your feet doesn't snap straight back. Keyed by pickup id; only set for player drops. */
   private readonly pickupGrace = new Map<string, number>();
@@ -2334,6 +2353,7 @@ export class GameRoom extends Room<ArenaState> {
     this.pendingQuakes.length = 0; // §40.2 no landed-blade detonation may carry across a run boundary
     this.pendingScatterVolleys.length = 0;
     this.pendingWeaponLunges.clear();
+    this.pendingWeaponThrows.length = 0;
     this.pickupGrace.clear();
     if (this.earnedPickups.size > 0) {
       this.earnedPickups.clear();
@@ -6235,6 +6255,15 @@ export class GameRoom extends Room<ArenaState> {
         this.emitScatterVolley(volley);
         this.pendingScatterVolleys.splice(i, 1);
       }
+    }
+    for (let i = this.pendingWeaponThrows.length - 1; i >= 0; i--) {
+      const pending = this.pendingWeaponThrows[i];
+      if (!pending) continue;
+      pending.t -= dt;
+      if (pending.t > 0) continue;
+      const player = this.state.players.get(pending.playerId);
+      if (player?.alive) this.emitWeaponThrow(pending, player.x, player.y);
+      this.pendingWeaponThrows.splice(i, 1);
     }
 
     // 4.7 §ULT immutable-epoch action machines settle before enemy targeting reads player positions.
@@ -10965,6 +10994,31 @@ export class GameRoom extends Room<ArenaState> {
     const dmg = t.damage * this.heldDamageMult(weapon, t.scalingGrades, player, hand); // §14 source grades × §11 req penalty
     const ttl = t.range / t.speed;
     const aim = this.aimDir(player, c); // §37 aim at the cursor POINT, not the rig-derived vector
+    const drawSeconds = weapon.performance?.windupSeconds ?? 0;
+    if ((weapon.performance?.preThrowRevolutions ?? 0) > 0 && drawSeconds > 0) {
+      this.pendingWeaponThrows.push({
+        t: drawSeconds,
+        playerId: player.id,
+        weaponId: weapon.id,
+        aimX: aim.x,
+        aimY: aim.y,
+        speed: t.speed,
+        range: t.range,
+        damage: dmg,
+        pierce: t.pierce,
+        kind: thrownProjectileKindFor(weapon),
+        crit: this.weaponCritChance(player, c),
+        landingDamagePerSecond:
+          weapon.groundZone?.trigger === "landing"
+            ? weapon.groundZone.damagePerSecond *
+              this.heldDamageMult(weapon, weapon.groundZone.scalingGrades, player, hand)
+            : undefined,
+        ricochet: t.ricochetHops
+          ? { hops: t.ricochetHops, range: t.ricochetRange ?? Math.min(t.range, 320) }
+          : undefined,
+      });
+      return;
+    }
     this.fireProjectile(
       { x: player.x, y: player.y },
       { x: player.x + aim.x, y: player.y + aim.y },
@@ -10996,6 +11050,28 @@ export class GameRoom extends Room<ArenaState> {
    *  from the player's attributes at swing time). Cone/speed/range/blast radius are FIXED (§14). */
   /** Redirect one spent thrown impact toward the nearest fresh enemy. Selection is server-owned and uses
    * the same greedy nearest-target primitive as chain lightning. */
+  private emitWeaponThrow(pending: PendingWeaponThrow, originX: number, originY: number): void {
+    this.fireProjectile(
+      { x: originX, y: originY },
+      { x: originX + pending.aimX, y: originY + pending.aimY },
+      pending.speed,
+      pending.damage,
+      false,
+      pending.kind,
+      pending.pierce,
+      pending.range / pending.speed,
+      undefined,
+      0,
+      pending.crit,
+      pending.playerId,
+      pending.weaponId,
+      CombatDelivery.Thrown,
+      undefined,
+      pending.landingDamagePerSecond,
+      pending.ricochet,
+    );
+  }
+
   private redirectThrownRicochet(
     pr: ProjectileState,
     meta: {

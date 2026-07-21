@@ -8,11 +8,15 @@ const baseURL = process.env.DD_E2E_BASE_URL ?? "http://localhost:5180";
 const expectedOffsets = {
   "x2-coyote-stinger": { forward: -1, lateral: -7 },
   "x2-hollowpoint-hex": { forward: -1, lateral: -5 },
+  "x2-gravedog-auto-rifle": { forward: -2, lateral: -14 },
+  "x2-stormspur-coil-carbine": { forward: -2, lateral: -10 },
+  "x2-brimstone-gallows-rifle": { forward: -2, lateral: -17 },
+  "x2-hellbore-gatling": { forward: -2, lateral: -12 },
 };
 const expectedOffset = expectedOffsets[weaponId] ?? { forward: 0, lateral: 0 };
-const evidenceRoot = path.resolve("docs/owner-notes-audit-v4-evidence");
-const jsonPath = path.join(evidenceRoot, `gun-barrel-${phase}.json`);
-const screenshotPath = path.join(evidenceRoot, `gun-barrel-${phase}.png`);
+const evidenceRoot = path.resolve("docs/owner-notes-audit-v5-evidence");
+const jsonPath = path.join(evidenceRoot, `gun-barrel-${phase}-${weaponId}.json`);
+const screenshotPath = path.join(evidenceRoot, `gun-barrel-${phase}-${weaponId}.png`);
 
 await mkdir(evidenceRoot, { recursive: true });
 const browser = await chromium.launch({
@@ -172,7 +176,7 @@ try {
   };
   await writeFile(jsonPath, `${JSON.stringify({ summary, start, live }, null, 2)}\n`);
   console.log(JSON.stringify(summary, null, 2));
-  if (unexpectedBrowserErrors.length > 0) process.exitCode = 1;
+  if (unexpectedBrowserErrors.length > 0 || live.originDeltaPx > 3) process.exitCode = 1;
 } catch (error) {
   console.error(JSON.stringify({ phase, weaponId, browserErrors }, null, 2));
   throw error;

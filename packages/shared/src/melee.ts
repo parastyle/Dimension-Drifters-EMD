@@ -1688,9 +1688,10 @@ export function weaponEffectEmitterFor(def: WeaponDef | undefined): WeaponEffect
 
 /** One authored cue clock shared by client accents and server-owned secondary projectiles. */
 export function weaponEffectCueSeconds(def: WeaponDef | undefined, swing: SwingDescriptor): number {
-  return def?.effectTiming === "swing-midpoint"
-    ? (swing.activeStartSeconds + swing.activeEndSeconds) * 0.5
-    : swing.activeStartSeconds;
+  if (def?.effectTiming === "impact") return swing.impactSeconds;
+  if (def?.effectTiming === "swing-midpoint")
+    return (swing.activeStartSeconds + swing.activeEndSeconds) * 0.5;
+  return swing.activeStartSeconds;
 }
 
 /** Shared origin seam. Blade emitters sample the same swept edge angle as authoritative melee collision. */

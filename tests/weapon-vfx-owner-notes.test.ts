@@ -21,6 +21,8 @@ import {
   resolveWeaponEffectRecipe,
   TESLA_WARP_VFX_RECIPE,
   WEAPON_EFFECT_RECIPES,
+  weaponEffectCuePoint,
+  weaponEffectImpactReach,
 } from "../packages/client/src/vfx/weapon-effect-recipes.js";
 import { GENERATED_MELEE_COMBO_BARS } from "../packages/shared/src/weapons-expansion.generated.js";
 
@@ -81,10 +83,16 @@ describe("owner-notes W-VFX weapon identities", () => {
       if (recipe.impactPack) expect(PARTICLE_PACKS[recipe.impactPack], recipe.id).toBeDefined();
       if (recipe.swingPack) expect(PARTICLE_PACKS[recipe.swingPack], recipe.id).toBeDefined();
     }
-    expect(WEAPON_EFFECT_RECIPES["tombwarden-dark-slash"].swingPack).toBe("void-bolt");
+    expect(WEAPON_EFFECT_RECIPES["tombwarden-dark-slash"]).toMatchObject({
+      impactPack: "void-bolt",
+      impactAnchor: "target",
+      classification: "impact",
+    });
     expect(WEAPON_EFFECT_RECIPES["choir-iron-flame-slash"].swingPack).toBe("fire-bolt");
     expect(WEAPON_EFFECT_RECIPES["hangman-blood-spatter"]).toMatchObject({
-      swingPack: "blood-splat",
+      impactPack: "blood-splat",
+      impactAnchor: "target",
+      classification: "impact",
       noGore: true,
       additive: false,
     });
@@ -95,6 +103,45 @@ describe("owner-notes W-VFX weapon identities", () => {
       impactPack: "shock-bolt",
     });
     expect(WEAPON_EFFECT_RECIPES["whispervolume-page-scatter"].chain).toBe("scattered-pages");
+  });
+
+  it("classifies every effect recipe and clamps all hit punctuation to weapon impact reach", () => {
+    const moved = [
+      "x2-hexbloom-rapier",
+      "x2-sermon-bell",
+      "x2-tombwarden-claymore",
+      "x2-hangman-s-greatcleaver",
+      "x2-cinderbrand-pike",
+    ] as const;
+    for (const recipe of Object.values(WEAPON_EFFECT_RECIPES)) {
+      if (recipe.classification === "impact") expect(recipe.impactAnchor, recipe.id).toBe("target");
+      else expect(recipe.impactAnchor, recipe.id).not.toBe("target");
+    }
+    for (const definition of Object.values(WEAPONS)) {
+      const recipe = resolveWeaponEffectRecipe(definition);
+      if (recipe?.classification === "impact" && (recipe.impactPack || recipe.musicalNotes))
+        expect(definition.effectTiming, definition.id).toBe("impact");
+    }
+    for (const weaponId of moved) {
+      const definition = weapon(weaponId);
+      const recipe = resolveWeaponEffectRecipe(definition);
+      if (!recipe) throw new Error(`Missing impact recipe for ${weaponId}`);
+      const swing = swingDescriptorFor(definition, definition.cooldown);
+      const reach = weaponEffectImpactReach(definition);
+      const point = weaponEffectCuePoint(
+        recipe,
+        definition,
+        { x: 100, y: 200 },
+        { x: 100 + reach * 3, y: 200 },
+        0,
+        swing,
+        swing.impactSeconds,
+      );
+      expect(definition.effectTiming, weaponId).toBe("impact");
+      expect(recipe).toMatchObject({ classification: "impact", impactAnchor: "target" });
+      expect(point.x, weaponId).toBeCloseTo(100 + reach, 8);
+      expect(point.y, weaponId).toBeCloseTo(200, 8);
+    }
   });
 
   it("uses retained Codex particle art for both revised shock auras and both Tesla warp beats", () => {

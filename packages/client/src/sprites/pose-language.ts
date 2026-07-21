@@ -1934,7 +1934,9 @@ export function sampleWeaponPerformance(
     // authored revolution so Coilshot's complete twirl and the thrown release both read between key poses.
     if (wind && drawTurns > 0) {
       const orbitEnvelope = Math.sin(Math.PI * e);
-      const orbit = 0.13 * orbitEnvelope;
+      // One sixth of a body-height was too easy to read as hand jitter at the old 51ms draw. The authored
+      // windup now exposes the entire path; this broad orbit makes the meteor head visibly circle the hand.
+      const orbit = 0.2 * orbitEnvelope;
       const orbitAngle = input.aimLocal + e * drawTurns;
       const orbitX = Math.cos(orbitAngle) * orbit;
       const orbitY = Math.sin(orbitAngle) * orbit;

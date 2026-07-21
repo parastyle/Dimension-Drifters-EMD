@@ -70,8 +70,8 @@ describe("NB bug squad weapon contracts", () => {
   it("sizes Tombwarden's replacement slash to the blade and suppresses its legacy quake explosion", () => {
     const tombwarden = WEAPONS["x2-tombwarden-claymore"];
     const recipe = resolveWeaponEffectRecipe(tombwarden);
-    if (!tombwarden || !recipe?.swingPack) throw new Error("Tombwarden recipe fixture is required");
-    const frameWidth = PARTICLE_PACKS[recipe.swingPack]?.frameWidth;
+    if (!tombwarden || !recipe?.impactPack) throw new Error("Tombwarden recipe fixture is required");
+    const frameWidth = PARTICLE_PACKS[recipe.impactPack]?.frameWidth;
     if (!frameWidth) throw new Error("Tombwarden particle pack fixture is required");
 
     expect(weaponSwingIdentityScale(recipe, tombwarden.displayLength) * frameWidth).toBeCloseTo(

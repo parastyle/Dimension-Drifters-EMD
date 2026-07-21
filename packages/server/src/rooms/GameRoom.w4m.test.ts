@@ -1,6 +1,7 @@
 import {
   CombatDelivery,
   EnemyState,
+  gunMuzzleReach,
   TILE_GROUND,
   thrownProjectileSpriteId,
   WEAPONS,
@@ -111,6 +112,23 @@ describe("GameRoom — W4M server authority", () => {
       delivery: CombatDelivery.Gun,
     });
     expect(meta?.ttl).toBeCloseTo(760 / 560);
+  });
+
+  it("spawns Mesa's authoritative .50-cal round six pixels above the ordinary barrel lane", () => {
+    const { room, player, combat } = makeRoom("mesa-high-muzzle");
+    const weapon = equip(player, combat, "x2-mesa-hand-cannon");
+    if (!weapon.gun) throw new Error("Mesa projectile fixture is required");
+
+    room.fireGun(player, combat, weapon);
+
+    const projectile = [...room.state.projectiles.values()][0];
+    expect(projectile?.x).toBeCloseTo(player.x + gunMuzzleReach(weapon), 6);
+    expect(projectile?.y).toBeCloseTo(player.y - 6, 6);
+    expect(projectile && room.projectileMeta.get(projectile.id)).toMatchObject({
+      firstCollisionX: player.x,
+      firstCollisionY: player.y,
+      sourceWeaponId: weapon.id,
+    });
   });
 
   it("launches Hangman's Gavel through the own-sprite thrown path", () => {
