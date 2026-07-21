@@ -1,10 +1,10 @@
 {
   "generated": "2026-06-17",
   "source": "design-300-weapons workflow (15 agents)",
-  "count": 307,
+  "count": 310,
   "byType": {
     "melee": 108,
-    "ranged": 103,
+    "ranged": 106,
     "caster": 96
   },
   "weapons": [
@@ -15278,6 +15278,150 @@
         { "name": "Find the Join", "motion": "guard-check", "direction": -1, "hand": "both", "timing": { "activeStart": 0.34, "activeEnd": 0.65, "impact": 0.51, "followEnd": 0.84 }, "path": { "kind": "capsule", "arcMultiplier": 0.78, "rangeMultiplier": 0.92, "damageMultiplier": 0.9, "knockback": 38 }, "ribbon": { "profile": "guard-plane", "radialStart": 0.08, "radialEnd": 0.82, "widthMultiplier": 1.12, "end": "squared" } },
         { "name": "World Opens", "motion": "sentence-fall", "direction": 1, "hand": "both", "timing": { "activeStart": 0.38, "activeEnd": 0.8, "impact": 0.66, "followEnd": 0.96 }, "path": { "kind": "sweep", "arcMultiplier": 1.5, "rangeMultiplier": 1.22, "damageMultiplier": 1.7, "knockback": 80 }, "ribbon": { "profile": "massed-wedge", "radialStart": 0.04, "radialEnd": 1, "widthMultiplier": 1.35, "end": "clean" } }
       ]
+    },
+    {
+      "id": "x2-gravedog-auto-rifle",
+      "name": "Gravedog Auto-Rifle",
+      "description": "A dustland company gun whose dogged action keeps cycling after finer rifles have swallowed the trail.",
+      "type": "ranged",
+      "family": "auto-rifle",
+      "theme": "dustland gunmetal workhorse with a taped vertical foregrip",
+      "element": "physical",
+      "finish": "battle-worn",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": { "x": 0.18, "y": 0.54 },
+        "secondary": { "x": 0.5, "y": 0.72, "role": "vertical-foregrip" }
+      },
+      "size": "L",
+      "rangeBand": "mid",
+      "scaling": ["DEX", "STR"],
+      "scalingGrades": { "dex": "B", "str": "D" },
+      "requirements": { "dex": 8, "str": 5 },
+      "palettePrimary": "#3A4049",
+      "paletteAccent": "#B77A45",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Gravedog Auto-Rifle, a rugged dustland automatic rifle in worn dark gunmetal, a riveted receiver, vented barrel shroud, straight box magazine, short weathered walnut stock, and a prominent tape-wrapped vertical foregrip under the barrel. One complete connected weapon, flat orthographic full side-profile, muzzle points RIGHT and stock points LEFT, readable western-gothic silhouette, restrained 5-colour game art.",
+      "cardartAction": "braced behind its taped foregrip and walking a steady amber tracer line through a veil of dust",
+      "behavior": {
+        "kind": "gun",
+        "damage": 5,
+        "projectileSpeed": 1000,
+        "range": 650,
+        "fireRate": 0.16,
+        "spread": 0.07,
+        "pierce": 1,
+        "magazine": 24,
+        "reloadSeconds": 1.6,
+        "bulletKind": "tracer",
+        "muzzle": "rapid",
+        "muzzleColor": 16747051,
+        "recoil": 0.0011
+      },
+      "stats": {
+        "damage": 5,
+        "range": 236,
+        "halfArc": 0.52,
+        "cooldown": 0.32,
+        "displayLength": 132,
+        "swingArc": 1.8,
+        "gripFrac": 0.18
+      }
+    },
+    {
+      "id": "x2-stormspur-coil-carbine",
+      "name": "Stormspur Coil Carbine",
+      "description": "Copper windings kick each shot from the saddle with the dry blue snap of a storm finding ground.",
+      "type": "ranged",
+      "family": "auto-rifle",
+      "theme": "storm-element coil carbine with an insulated vertical foregrip",
+      "element": "shock",
+      "finish": "pristine",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": { "x": 0.17, "y": 0.53 },
+        "secondary": { "x": 0.48, "y": 0.7, "role": "vertical-foregrip" }
+      },
+      "size": "M",
+      "rangeBand": "long",
+      "scaling": ["DEX", "INT"],
+      "scalingGrades": { "dex": "A", "int": "C" },
+      "requirements": { "dex": 10, "int": 5 },
+      "palettePrimary": "#273848",
+      "paletteAccent": "#33E6FF",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Stormspur Coil Carbine, a lean frontier automatic carbine with a storm-dark steel receiver, exposed copper induction coils around a narrow barrel, a compact cyan ceramic accumulator, forked muzzle brake, skeletal saddle stock, and a distinct insulated vertical foregrip. One complete connected weapon, flat orthographic full side-profile, muzzle RIGHT and stock LEFT, western-gothic coilgun rather than modern tactical rifle, crisp 5-6 colour game art.",
+      "cardartAction": "held by its insulated foregrip while a fast chain of cyan sparks spits from the forked muzzle",
+      "behavior": {
+        "kind": "gun",
+        "damage": 4,
+        "projectileSpeed": 1250,
+        "range": 720,
+        "fireRate": 0.12,
+        "spread": 0.045,
+        "pierce": 1,
+        "magazine": 21,
+        "reloadSeconds": 1.45,
+        "bulletKind": "spark",
+        "muzzle": "spark",
+        "muzzleColor": 3401471,
+        "recoil": 0.0007
+      },
+      "stats": {
+        "damage": 4,
+        "range": 260,
+        "halfArc": 0.48,
+        "cooldown": 0.28,
+        "displayLength": 116,
+        "swingArc": 1.8,
+        "gripFrac": 0.17
+      }
+    },
+    {
+      "id": "x2-brimstone-gallows-rifle",
+      "name": "Brimstone Gallows-Rifle",
+      "description": "A furnace-jacketed heavy rifle built to make every burst sound like the trapdoor opening.",
+      "type": "ranged",
+      "family": "auto-rifle",
+      "theme": "brimstone heavy automatic rifle with an iron vertical foregrip",
+      "element": "fire",
+      "finish": "scorched",
+      "grip": "2H",
+      "gripPoints": {
+        "primary": { "x": 0.15, "y": 0.55 },
+        "secondary": { "x": 0.52, "y": 0.74, "role": "vertical-foregrip" }
+      },
+      "size": "L",
+      "rangeBand": "mid",
+      "scaling": ["STR", "DEX"],
+      "scalingGrades": { "str": "B", "dex": "C" },
+      "requirements": { "str": 10, "dex": 7 },
+      "palettePrimary": "#28282B",
+      "paletteAccent": "#FF5A32",
+      "artPrompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Brimstone Gallows-Rifle, a heavy western-gothic automatic rifle of blackened iron with a broad furnace-jacketed barrel, ember-red heat slits, slab receiver, thick coffin-shaped magazine, iron shoulder stock, gallows-brace details, and a long squared vertical foregrip. One complete connected weapon, flat orthographic full side-profile, muzzle RIGHT and stock LEFT, brutal readable silhouette, 5-6 colour game art with no emitted glow.",
+      "cardartAction": "leaned into the iron foregrip as a slow heavy burst hammers out in red-orange furnace flashes",
+      "behavior": {
+        "kind": "gun",
+        "damage": 8,
+        "projectileSpeed": 900,
+        "range": 620,
+        "fireRate": 0.25,
+        "spread": 0.11,
+        "pierce": 1,
+        "magazine": 18,
+        "reloadSeconds": 2.1,
+        "bulletKind": "tracer",
+        "muzzle": "heavy",
+        "muzzleColor": 16734770,
+        "recoil": 0.0018
+      },
+      "stats": {
+        "damage": 8,
+        "range": 224,
+        "halfArc": 0.56,
+        "cooldown": 0.4,
+        "displayLength": 150,
+        "swingArc": 1.8,
+        "gripFrac": 0.15
+      }
     }
   ]
 }

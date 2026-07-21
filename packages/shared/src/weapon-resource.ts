@@ -277,7 +277,7 @@ export function deriveWeaponResourceProfile(weapon: WeaponDef): WeaponResourcePr
   });
 }
 
-/** Deterministic, reviewable formula output for all 326 catalog weapons (fists are runtime-only). */
+/** Deterministic, reviewable formula output for all 329 catalog weapons (fists are runtime-only). */
 export const WEAPON_RESOURCE_IDS = Object.freeze(
   Object.keys(WEAPONS)
     .filter((id) => id !== "fists")
@@ -299,9 +299,9 @@ export function weaponResourceProfile(weaponId: string): WeaponResourceProfile |
   return weaponId === "fists" ? FISTS_RESOURCE_PROFILE : WEAPON_RESOURCE_PROFILES[weaponId];
 }
 
-if (WEAPON_RESOURCE_IDS.length !== 326) {
+if (WEAPON_RESOURCE_IDS.length !== 329) {
   throw new Error(
-    `Drive formula expected 326 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
+    `Drive formula expected 329 catalog weapons, received ${WEAPON_RESOURCE_IDS.length}`,
   );
 }
 if (Object.keys(WEAPON_RESOURCE_OVERRIDES).length > 15) {

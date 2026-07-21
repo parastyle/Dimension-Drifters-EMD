@@ -1,0 +1,13 @@
+{
+  "vfxSubject": "vfx-x2-gravedog-auto-rifle",
+  "image": null,
+  "suite": {
+    "muzzle-flash": { "on": true, "params": { "size": 0.84, "color": 0.09 } },
+    "tracer": { "on": true, "params": { "count": 3, "color": 0.09 } },
+    "shell-eject": { "on": true, "params": { "count": 1 } }
+  },
+  "rot": 0,
+  "notes": "Controlled amber workhorse bursts; the gun recipe supplies rapid muzzle timing and physical tracers.",
+  "vfxRadius": 72,
+  "displayLength": 132
+}

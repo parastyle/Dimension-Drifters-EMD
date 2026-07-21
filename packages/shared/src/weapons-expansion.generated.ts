@@ -14625,6 +14625,183 @@ export const GENERATED_WEAPONS: Record<string, WeaponDef> = {
     },
     "twoHanded": true,
     "durability": 90
+  },
+  "x2-gravedog-auto-rifle": {
+    "id": "x2-gravedog-auto-rifle",
+    "name": "Gravedog Auto-Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "B",
+      "str": "D"
+    },
+    "damage": 5,
+    "range": 236,
+    "halfArc": 0.52,
+    "cooldown": 0.32,
+    "displayLength": 132,
+    "swingArc": 1.8,
+    "gripFrac": 0.18,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "physical",
+      "classPool": "ranged",
+      "family": "auto-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "DEX",
+        "STR"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.18,
+        "y": 0.54
+      },
+      "secondary": {
+        "x": 0.5,
+        "y": 0.72,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A dustland company gun whose dogged action keeps cycling after finer rifles have swallowed the trail.",
+    "requirements": {
+      "dex": 8,
+      "str": 5
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 5,
+      "projectileSpeed": 1000,
+      "range": 650,
+      "fireRate": 0.16,
+      "magazine": 24,
+      "reloadSeconds": 1.6,
+      "bulletKind": "tracer",
+      "muzzle": "rapid",
+      "recoil": 0.0011,
+      "muzzleColor": 16747051
+    }
+  },
+  "x2-stormspur-coil-carbine": {
+    "id": "x2-stormspur-coil-carbine",
+    "name": "Stormspur Coil Carbine",
+    "expansion": true,
+    "scalingGrades": {
+      "dex": "A",
+      "int": "C"
+    },
+    "damage": 4,
+    "range": 260,
+    "halfArc": 0.48,
+    "cooldown": 0.28,
+    "displayLength": 116,
+    "swingArc": 1.8,
+    "gripFrac": 0.17,
+    "tags": {
+      "grip": "2H",
+      "size": "M",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "shock",
+      "classPool": "ranged",
+      "family": "auto-rifle",
+      "rangeBand": "long",
+      "scaling": [
+        "DEX",
+        "INT"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.17,
+        "y": 0.53
+      },
+      "secondary": {
+        "x": 0.48,
+        "y": 0.7,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "Copper windings kick each shot from the saddle with the dry blue snap of a storm finding ground.",
+    "requirements": {
+      "dex": 10,
+      "int": 5
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 4,
+      "projectileSpeed": 1250,
+      "range": 720,
+      "fireRate": 0.12,
+      "magazine": 21,
+      "reloadSeconds": 1.45,
+      "bulletKind": "spark",
+      "muzzle": "spark",
+      "recoil": 0.0007,
+      "muzzleColor": 3401471
+    }
+  },
+  "x2-brimstone-gallows-rifle": {
+    "id": "x2-brimstone-gallows-rifle",
+    "name": "Brimstone Gallows-Rifle",
+    "expansion": true,
+    "scalingGrades": {
+      "str": "B",
+      "dex": "C"
+    },
+    "damage": 8,
+    "range": 224,
+    "halfArc": 0.56,
+    "cooldown": 0.4,
+    "displayLength": 150,
+    "swingArc": 1.8,
+    "gripFrac": 0.15,
+    "tags": {
+      "grip": "2H",
+      "size": "L",
+      "delivery": "projectile",
+      "fireMode": "auto",
+      "element": "fire",
+      "classPool": "ranged",
+      "family": "auto-rifle",
+      "rangeBand": "mid",
+      "scaling": [
+        "STR",
+        "DEX"
+      ]
+    },
+    "gripPoints": {
+      "primary": {
+        "x": 0.15,
+        "y": 0.55
+      },
+      "secondary": {
+        "x": 0.52,
+        "y": 0.74,
+        "role": "vertical-foregrip"
+      }
+    },
+    "description": "A furnace-jacketed heavy rifle built to make every burst sound like the trapdoor opening.",
+    "requirements": {
+      "str": 10,
+      "dex": 7
+    },
+    "twoHanded": true,
+    "gun": {
+      "damage": 8,
+      "projectileSpeed": 900,
+      "range": 620,
+      "fireRate": 0.25,
+      "magazine": 18,
+      "reloadSeconds": 2.1,
+      "bulletKind": "tracer",
+      "muzzle": "heavy",
+      "recoil": 0.0018,
+      "muzzleColor": 16734770
+    }
   }
 };
 

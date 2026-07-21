@@ -1,0 +1,13 @@
+{
+  "vfxSubject": "vfx-x2-brimstone-gallows-rifle",
+  "image": null,
+  "suite": {
+    "muzzle-flash": { "on": true, "params": { "size": 1.34, "color": 0.03 } },
+    "tracer": { "on": true, "params": { "count": 2, "color": 0.03 } },
+    "shell-eject": { "on": true, "params": { "count": 2 } }
+  },
+  "rot": 0,
+  "notes": "Heavy ember-red salvos; the gun recipe supplies heavy muzzle timing, fire tint, and deliberate tracers.",
+  "vfxRadius": 86,
+  "displayLength": 150
+}

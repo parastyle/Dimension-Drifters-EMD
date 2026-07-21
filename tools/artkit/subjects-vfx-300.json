@@ -139,14 +139,14 @@
     "name": "Boothill Hatchet — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-boothill-hatchet/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Boothill Hatchet, a physical axe) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Boothill Hatchet, a physical axe) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-gallows-splitter",
     "name": "Gallows Splitter — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-gallows-splitter/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Gallows Splitter, a physical axe) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Gallows Splitter, a physical axe) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-cinderbrand-cleaver",
@@ -188,7 +188,7 @@
     "name": "Hollowmoon Reaver — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-hollowmoon-reaver/identity-ref.png",
-    "prompt": "The SCATTER BLAST the weapon in Image 1 (a Hollowmoon Reaver, a void axe) makes — a wide cone of several pellets/shards spraying out to the RIGHT from a muzzle flash, with a puff of smoke. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Hollowmoon Reaver, a void axe) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-sluicebox-maul-axe",
@@ -239,7 +239,7 @@
     "name": "Quicksilver Skinning Cleaver — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-quicksilver-skinning-cleaver/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Quicksilver Skinning Cleaver, a physical cleaver) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Quicksilver Skinning Cleaver, a physical cleaver) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-witchwood-splitter",
@@ -289,8 +289,7 @@
     "name": "Dustdevil Glaive — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-dustdevil-glaive/identity-ref.png",
-    "prompt": "The ground-slam SHOCKWAVE the weapon in Image 1 (a Dustdevil Glaive, a physical glaive) makes when hammered straight DOWN — a rough RING of a FEW (6–10) big, bold, chunky angular slabs tilting UP and erupting outward around a central impact point, with a little flung debris and dust. Thin dark radiating crack-lines are fine (cracks in whatever floor is underneath) but do NOT fill them with any colour. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect.",
-    "vfxOrientation": "ground"
+    "prompt": "The CUT the weapon in Image 1 (a Dustdevil Glaive, a physical glaive) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-cinderbrand-pike",
@@ -325,7 +324,7 @@
     "name": "Venomtongue Trident — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-venomtongue-trident/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Venomtongue Trident, a toxic spear) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Venomtongue Trident, a toxic spear) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-hexglyph-partisan",
@@ -542,7 +541,7 @@
     "name": "Carrion Cudgel — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-carrion-cudgel/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Carrion Cudgel, a toxic mace) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Carrion Cudgel, a toxic mace) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-hoarfrost-piledriver",
@@ -614,7 +613,7 @@
     "name": "Hailspur Sickle — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-hailspur-sickle/identity-ref.png",
-    "prompt": "The CUT the weapon in Image 1 (a Hailspur Sickle, a frost exotic-melee) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, pale cyan frost + ice-shards. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Hailspur Sickle, a frost exotic-melee) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, pale cyan frost + ice-shards. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-mournveil-scythe",
@@ -1029,7 +1028,7 @@
     "name": "Spore-Spitter Blunderbuss — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-spore-spitter-blunderbuss/identity-ref.png",
-    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Spore-Spitter Blunderbuss, a toxic blunderbuss) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Spore-Spitter Blunderbuss, a toxic blunderbuss) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-quicksilver-streetsweeper",
@@ -1543,7 +1542,7 @@
     "name": "Verdigris Grand Grimoire — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-verdigris-grand-grimoire/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Verdigris Grand Grimoire, a toxic grimoire) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Verdigris Grand Grimoire, a toxic grimoire) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-tallowtongue-pyre-stave",
@@ -1564,14 +1563,14 @@
     "name": "Gravesinger's Hex-Wand — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-gravesinger-s-hex-wand/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Gravesinger's Hex-Wand, a arcane wand) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Gravesinger's Hex-Wand, a arcane wand) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-cogwright-s-tesla-rod",
     "name": "Cogwright's Tesla-Rod — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-cogwright-s-tesla-rod/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Cogwright's Tesla-Rod, a shock wand) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Cogwright's Tesla-Rod, a shock wand) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-sunmote-reliquary-staff",
@@ -1644,7 +1643,7 @@
     "name": "Snakeoil Tincture Scepter — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-snakeoil-tincture-scepter/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Snakeoil Tincture Scepter, a toxic scepter) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Snakeoil Tincture Scepter, a toxic scepter) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-mesa-spine-thunder-stave",
@@ -1746,7 +1745,7 @@
     "name": "Gravewax Seance-Globe — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-gravewax-seance-globe/identity-ref.png",
-    "prompt": "The BEAM the weapon in Image 1 (a Gravewax Seance-Globe, a void orb) makes when it fires — one straight bright energy beam lancing to the RIGHT with a hot white core and a soft outer glow. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Gravewax Seance-Globe, a void orb) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-mesa-heart-geodes",
@@ -1797,7 +1796,7 @@
     "name": "Locust-Glass Plague-Orb — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-locust-glass-plague-orb/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Locust-Glass Plague-Orb, a toxic orb) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The SCATTER BLAST the weapon in Image 1 (a Locust-Glass Plague-Orb, a toxic orb) makes — a wide cone of several pellets/shards spraying out to the RIGHT from a muzzle flash, with a puff of smoke. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-pearl-of-penance-censer",
@@ -1863,7 +1862,7 @@
     "name": "Carrion Effigy — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-carrion-effigy/identity-ref.png",
-    "prompt": "The SCATTER BLAST the weapon in Image 1 (a Carrion Effigy, a toxic relic/totem) makes — a wide cone of several pellets/shards spraying out to the RIGHT from a muzzle flash, with a puff of smoke. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The IMPACT the weapon in Image 1 (a Carrion Effigy, a toxic relic/totem) makes when the thrown weapon lands — one sharp impact-splat with a short spin-streak and a few flung flecks. Frozen at its peak, sickly lime-green. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-thunderpost-fetish",
@@ -1936,7 +1935,7 @@
     "name": "Voidwell Idol — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-voidwell-idol/identity-ref.png",
-    "prompt": "The BEAM the weapon in Image 1 (a Voidwell Idol, a void relic/totem) makes when it fires — one straight bright energy beam lancing to the RIGHT with a hot white core and a soft outer glow. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Voidwell Idol, a void relic/totem) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, arc-violet energy. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-spitfire-censer-wand",
@@ -1979,7 +1978,7 @@
     "name": "Sparkknuckle Hex-Mitt — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-sparkknuckle-hex-mitt/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Sparkknuckle Hex-Mitt, a shock gauntlet) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Sparkknuckle Hex-Mitt, a shock gauntlet) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-cinderpalm-brand-glove",
@@ -2015,7 +2014,7 @@
     "name": "Tesla Faradayer — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-tesla-faradayer/identity-ref.png",
-    "prompt": "The CHAIN-LIGHTNING the weapon in Image 1 (a Tesla Faradayer, a shock gauntlet) makes — one jagged forking lightning bolt arcing to the RIGHT toward a target, crackling, a couple of small branch-sparks. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Tesla Faradayer, a shock gauntlet) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-hellmouth-palmcaster",
@@ -2108,7 +2107,7 @@
     "name": "Coyote Trickster's Sparkmitt — signature VFX",
     "kind": "vfx",
     "styleRef": "out/x2-coyote-trickster-s-sparkmitt/identity-ref.png",
-    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Coyote Trickster's Sparkmitt, a shock gauntlet) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+    "prompt": "The CUT the weapon in Image 1 (a Coyote Trickster's Sparkmitt, a shock gauntlet) makes the instant it strikes — one bold, sharp slash-arc sweeping to the RIGHT, violent and clean, with a few sparks/flecks flung off the edge. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   },
   {
     "id": "vfx-x2-permafrost-cryo-bracer",
@@ -2116,5 +2115,26 @@
     "kind": "vfx",
     "styleRef": "out/x2-permafrost-cryo-bracer/identity-ref.png",
     "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Permafrost Cryo-Bracer, a frost gauntlet) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, pale cyan frost + ice-shards. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+  },
+  {
+    "id": "vfx-x2-gravedog-auto-rifle",
+    "name": "Gravedog Auto-Rifle — signature VFX",
+    "kind": "vfx",
+    "styleRef": "out/x2-gravedog-auto-rifle/identity-ref.png",
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Gravedog Auto-Rifle, a physical auto-rifle) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, to match the weapon's own colours. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+  },
+  {
+    "id": "vfx-x2-stormspur-coil-carbine",
+    "name": "Stormspur Coil Carbine — signature VFX",
+    "kind": "vfx",
+    "styleRef": "out/x2-stormspur-coil-carbine/identity-ref.png",
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Stormspur Coil Carbine, a shock auto-rifle) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, crackling teal-white sparks. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
+  },
+  {
+    "id": "vfx-x2-brimstone-gallows-rifle",
+    "name": "Brimstone Gallows-Rifle — signature VFX",
+    "kind": "vfx",
+    "styleRef": "out/x2-brimstone-gallows-rifle/identity-ref.png",
+    "prompt": "The MUZZLE BLAST the weapon in Image 1 (a Brimstone Gallows-Rifle, a fire auto-rifle) makes when it FIRES — a single sharp muzzle flash with a short bright bullet/tracer streak shooting to the RIGHT and a small puff of smoke. Frozen at its peak, hot ember-orange + smoke. Render on a perfectly flat fully-opaque #00ff00 chroma field with NOTHING else behind or beneath it — NO ground, NO floor disc, NO dirt, NO background, NO terrain (it composites ON TOP of the live arena floor at runtime, so any baked ground would show as a wrong solid blob). SIMPLE flat-cel CHUNKY shapes, thick black outlines, MINIMAL interior detail to match the game's bold character art; do NOT draw the weapon itself — only the effect."
   }
 ]

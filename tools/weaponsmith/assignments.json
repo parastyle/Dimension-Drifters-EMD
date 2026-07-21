@@ -1976,5 +1976,95 @@
     "notes": "Two clipped cyan iaijutsu ribbons. Physical spark particle pack is reused on impact.",
     "vfxRadius": 68,
     "displayLength": 72
+  },
+  "x2-brimstone-gallows-rifle": {
+    "vfxSubject": "vfx-x2-brimstone-gallows-rifle",
+    "image": null,
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 1.34,
+          "color": 0.03
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 2,
+          "color": 0.03
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 2
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Heavy ember-red salvos; the gun recipe supplies heavy muzzle timing, fire tint, and deliberate tracers.",
+    "vfxRadius": 86,
+    "displayLength": 150
+  },
+  "x2-gravedog-auto-rifle": {
+    "vfxSubject": "vfx-x2-gravedog-auto-rifle",
+    "image": null,
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 0.84,
+          "color": 0.09
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 3,
+          "color": 0.09
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 1
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Controlled amber workhorse bursts; the gun recipe supplies rapid muzzle timing and physical tracers.",
+    "vfxRadius": 72,
+    "displayLength": 132
+  },
+  "x2-stormspur-coil-carbine": {
+    "vfxSubject": "vfx-x2-stormspur-coil-carbine",
+    "image": null,
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 0.72,
+          "color": 0.52
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 4,
+          "color": 0.52
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 1
+        }
+      }
+    },
+    "rot": 0,
+    "notes": "Tight cyan coil pulses; the gun recipe supplies spark rounds, spark muzzle geometry, and fast cadence.",
+    "vfxRadius": 68,
+    "displayLength": 116
   }
 }

@@ -1,0 +1,13 @@
+{
+  "vfxSubject": "vfx-x2-stormspur-coil-carbine",
+  "image": null,
+  "suite": {
+    "muzzle-flash": { "on": true, "params": { "size": 0.72, "color": 0.52 } },
+    "tracer": { "on": true, "params": { "count": 4, "color": 0.52 } },
+    "shell-eject": { "on": true, "params": { "count": 1 } }
+  },
+  "rot": 0,
+  "notes": "Tight cyan coil pulses; the gun recipe supplies spark rounds, spark muzzle geometry, and fast cadence.",
+  "vfxRadius": 68,
+  "displayLength": 116
+}

@@ -8,6 +8,10 @@ import { FX_QUAKE_BURST } from "../../vfx/fx-pack-quake-burst.js";
 import { FX_TOXIC_BURST } from "../../vfx/fx-pack-toxic-burst.js";
 import { FX_VOID_IMPLOSION } from "../../vfx/fx-pack-void-implosion.js";
 import { elementPack, particleBurst } from "../../vfx/particles.js";
+import {
+  resolveQuakeVfxRecipe,
+  type QuakeVfxRecipe,
+} from "../../vfx/quake-vfx-recipes.js";
 import { blendHex } from "./draw-util.js";
 import { gunFx } from "./projectile-factory.js";
 
@@ -931,16 +935,111 @@ export function spawnQuake(
   projectionYScale = 1,
 ): void {
   // §49 every quake gets the rock pack; gravekeeper/tombstone/grave semantics trade it for bone/soul art.
+  const variant = resolveQuakeVfxRecipe(weapon);
   const grave =
     !!weapon && /gravekeeper|tombstone|grave/.test(weaponSemantic(weapon));
-  playFxPack(scene, grave ? "grave-call" : "quake-burst", x, y, {
-    intensity: quake.radius,
-  });
+  playFxPack(
+    scene,
+    variant?.pack ?? (grave ? "grave-call" : "quake-burst"),
+    x,
+    y,
+    {
+      intensity: quake.radius,
+    },
+  );
   if (quake.vfx && scene.textures.exists(quake.vfx.image)) {
     spawnQuakeHero(scene, x, y, quake.radius, quake.vfx, projectionYScale);
+  } else if (variant) {
+    spawnQuakeVariant(scene, x, y, quake.radius, variant, projectionYScale);
   } else {
     spawnQuakeProcedural(scene, x, y, quake.radius, projectionYScale);
   }
+}
+
+function spawnQuakeVariant(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  radius: number,
+  recipe: QuakeVfxRecipe,
+  projectionYScale: number,
+): void {
+  spawnQuakeDangerEllipse(
+    scene,
+    x,
+    y,
+    radius,
+    projectionYScale,
+    recipe.palette.mid,
+    recipe.variant === "double-ripple" ? 520 : 400,
+  );
+
+  const ground = scene.add
+    .ellipse(
+      x,
+      y,
+      radius * (recipe.variant === "faultline-crack" ? 1.9 : 1.55),
+      radius *
+        (recipe.variant === "hammer-slam" ? 0.58 : 0.82) *
+        projectionYScale,
+      recipe.palette.ground,
+      0.42,
+    )
+    .setScale(recipe.variant === "hammer-slam" ? 0.12 : 0.3)
+    .setDepth(99997);
+  scene.tweens.add({
+    targets: ground,
+    scale: recipe.variant === "aftershock-eruption" ? 1.18 : 1,
+    alpha: 0,
+    duration: recipe.variant === "double-ripple" ? 540 : 360,
+    ease: "Quad.easeOut",
+    onComplete: () => ground.destroy(),
+  });
+
+  const burst = (
+    shape: QuakeVfxRecipe["primaryShape"] | QuakeVfxRecipe["secondaryShape"],
+    delay: number,
+  ): void => {
+    scene.time.delayedCall(delay, () => {
+      particleBurst(scene, elementPack(recipe.element, shape), x, y, {
+        count: shape === "ring" ? recipe.ringCount : recipe.particleCount,
+        speed: shape === "ring" ? 0 : radius * 1.2,
+        lifeMs: recipe.variant === "aftershock-eruption" ? 620 : 430,
+        scale:
+          recipe.variant === "hammer-slam"
+            ? 0.8
+            : recipe.variant === "double-ripple"
+              ? 1
+              : 0.65,
+        depth: 99999,
+        additive: true,
+        sink: recipe.variant === "aftershock-eruption" ? -18 : 4,
+      });
+    });
+  };
+
+  burst(recipe.primaryShape, 0);
+  if (recipe.pulseDelayMs > 0)
+    burst(recipe.secondaryShape, recipe.pulseDelayMs);
+
+  if (recipe.variant === "faultline-crack") {
+    const crack = scene.add.graphics().setDepth(99999);
+    crack.lineStyle(4, recipe.palette.hot, 0.9);
+    crack.beginPath();
+    crack.moveTo(x - radius * 0.72, y + radius * 0.14 * projectionYScale);
+    crack.lineTo(x - radius * 0.25, y - radius * 0.08 * projectionYScale);
+    crack.lineTo(x + radius * 0.08, y + radius * 0.1 * projectionYScale);
+    crack.lineTo(x + radius * 0.76, y - radius * 0.18 * projectionYScale);
+    crack.strokePath();
+    scene.tweens.add({
+      targets: crack,
+      alpha: 0,
+      duration: 460,
+      onComplete: () => crack.destroy(),
+    });
+  }
+
+  shakeVia(scene, 220 + recipe.pulseDelayMs, recipe.shake);
 }
 
 /** QK-1: the authoritative radius directly defines the danger ellipse before any decorative art is added. */
@@ -950,18 +1049,20 @@ function spawnQuakeDangerEllipse(
   y: number,
   radius: number,
   projectionYScale: number,
+  color = 0xffb23b,
+  duration = 400,
 ): void {
   const ry = radius * projectionYScale;
   const ring = scene.add
     .ellipse(x, y, radius * 2, ry * 2)
     .setScale(0.2)
-    .setStrokeStyle(5, 0xffb23b, 0.9)
+    .setStrokeStyle(5, color, 0.9)
     .setDepth(99998);
   scene.tweens.add({
     targets: ring,
     scale: 1,
     alpha: 0,
-    duration: 400,
+    duration,
     ease: "Cubic.easeOut",
     onComplete: () => ring.destroy(),
   });

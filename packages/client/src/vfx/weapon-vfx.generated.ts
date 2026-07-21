@@ -449,6 +449,84 @@ export const WEAPON_VFX: Record<string, WeaponVfx> = {
     "rot": 0,
     "vfxRadius": 68
   },
+  "x2-brimstone-gallows-rifle": {
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 1.34,
+          "color": 0.03
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 2,
+          "color": 0.03
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 2
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 86
+  },
+  "x2-gravedog-auto-rifle": {
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 0.84,
+          "color": 0.09
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 3,
+          "color": 0.09
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 1
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 72
+  },
+  "x2-stormspur-coil-carbine": {
+    "suite": {
+      "muzzle-flash": {
+        "on": true,
+        "params": {
+          "size": 0.72,
+          "color": 0.52
+        }
+      },
+      "tracer": {
+        "on": true,
+        "params": {
+          "count": 4,
+          "color": 0.52
+        }
+      },
+      "shell-eject": {
+        "on": true,
+        "params": {
+          "count": 1
+        }
+      }
+    },
+    "rot": 0,
+    "vfxRadius": 68
+  },
   "x2-permafrost-bardiche": {
     "suite": {},
     "rot": 0,

@@ -107,3 +107,10 @@ Arcane Lance triple = split volley, DPS unchanged. Frostgig = point-first no-tum
 new weapons. All else verbatim.
 
 Watermark: all notes ≤ 2026-07-20T23:48:31Z ledgered.
+
+## STATUS: ALL 75 NOTES CLOSED (2026-07-21 early)
+
+V3G+V3M: 8a49904. V3C+V3R: 8f3d939. V3X: this commit — quake-VFX variant family
+distributed, catalog grows 326 -> 329 with the three foregrip auto rifles (Brimstone
+Gallows Rifle, Stormspur Coil-Carbine, and kin), fully rendered + registered. Suite
+1545 green, beam e2e green, all codegen/asset checks in sync.

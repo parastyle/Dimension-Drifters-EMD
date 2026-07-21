@@ -6319,5 +6319,71 @@
       "long"
     ],
     "cardartAction": "raised into a black thunderhead as branching cyber-cyan bolts converge on the forked crown and fire forward in a rapid storm volley"
+  },
+  {
+    "id": "x2-gravedog-auto-rifle",
+    "name": "Gravedog Auto-Rifle",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Gravedog Auto-Rifle, a rugged dustland automatic rifle in worn dark gunmetal, a riveted receiver, vented barrel shroud, straight box magazine, short weathered walnut stock, and a prominent tape-wrapped vertical foregrip under the barrel. One complete connected weapon, flat orthographic full side-profile, muzzle points RIGHT and stock points LEFT, readable western-gothic silhouette, restrained 5-colour game art.",
+    "palette": {
+      "primary": "#3A4049",
+      "accent": "#B77A45"
+    },
+    "tags": [
+      "weapon",
+      "ranged",
+      "auto-rifle",
+      "physical",
+      "2H",
+      "L",
+      "mid",
+      "vertical-foregrip"
+    ],
+    "cardartAction": "braced behind its taped foregrip and walking a steady amber tracer line through a veil of dust"
+  },
+  {
+    "id": "x2-stormspur-coil-carbine",
+    "name": "Stormspur Coil Carbine",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Stormspur Coil Carbine, a lean frontier automatic carbine with a storm-dark steel receiver, exposed copper induction coils around a narrow barrel, a compact cyan ceramic accumulator, forked muzzle brake, skeletal saddle stock, and a distinct insulated vertical foregrip. One complete connected weapon, flat orthographic full side-profile, muzzle RIGHT and stock LEFT, western-gothic coilgun rather than modern tactical rifle, crisp 5-6 colour game art.",
+    "palette": {
+      "primary": "#273848",
+      "accent": "#33E6FF"
+    },
+    "tags": [
+      "weapon",
+      "ranged",
+      "auto-rifle",
+      "shock",
+      "2H",
+      "M",
+      "long",
+      "vertical-foregrip"
+    ],
+    "cardartAction": "held by its insulated foregrip while a fast chain of cyan sparks spits from the forked muzzle"
+  },
+  {
+    "id": "x2-brimstone-gallows-rifle",
+    "name": "Brimstone Gallows-Rifle",
+    "tier": "medium",
+    "dimension": "cross-dimension",
+    "prompt": "Weapon-only in-world sprite (no character, no hands, no background scene): Brimstone Gallows-Rifle, a heavy western-gothic automatic rifle of blackened iron with a broad furnace-jacketed barrel, ember-red heat slits, slab receiver, thick coffin-shaped magazine, iron shoulder stock, gallows-brace details, and a long squared vertical foregrip. One complete connected weapon, flat orthographic full side-profile, muzzle RIGHT and stock LEFT, brutal readable silhouette, 5-6 colour game art with no emitted glow.",
+    "palette": {
+      "primary": "#28282B",
+      "accent": "#FF5A32"
+    },
+    "tags": [
+      "weapon",
+      "ranged",
+      "auto-rifle",
+      "fire",
+      "2H",
+      "L",
+      "mid",
+      "vertical-foregrip"
+    ],
+    "cardartAction": "leaned into the iron foregrip as a slow heavy burst hammers out in red-orange furnace flashes"
   }
 ]

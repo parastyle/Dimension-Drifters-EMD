@@ -6426,6 +6426,32 @@ export const SPRITES = {
       }
     ]
   },
+  "x2-brimstone-gallows-rifle": {
+    "id": "x2-brimstone-gallows-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 286,
+      "h": 143
+    },
+    "body": {
+      "cx": 142.03,
+      "cy": 64.32,
+      "w": 256,
+      "h": 85
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 85,
+        "cx": 142.03,
+        "cy": 64.32,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
   "x2-brimstone-rocket-tube": {
     "id": "x2-brimstone-rocket-tube",
     "kind": "weapon",
@@ -8693,6 +8719,32 @@ export const SPRITES = {
         "h": 14,
         "cx": 110.49,
         "cy": 130.62,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-gravedog-auto-rifle": {
+    "id": "x2-gravedog-auto-rifle",
+    "kind": "weapon",
+    "canvas": {
+      "w": 284,
+      "h": 136
+    },
+    "body": {
+      "cx": 137.18,
+      "cy": 59.64,
+      "w": 256,
+      "h": 93
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 93,
+        "cx": 137.18,
+        "cy": 59.64,
         "ox": 0,
         "oy": 0
       }
@@ -12639,6 +12691,32 @@ export const SPRITES = {
         "h": 23,
         "cx": 117.67,
         "cy": 130.82,
+        "ox": 0,
+        "oy": 0
+      }
+    ]
+  },
+  "x2-stormspur-coil-carbine": {
+    "id": "x2-stormspur-coil-carbine",
+    "kind": "weapon",
+    "canvas": {
+      "w": 300,
+      "h": 113
+    },
+    "body": {
+      "cx": 143.1,
+      "cy": 47.51,
+      "w": 256,
+      "h": 63
+    },
+    "parts": [
+      {
+        "role": "part-1",
+        "file": "part-1.png",
+        "w": 256,
+        "h": 63,
+        "cx": 143.1,
+        "cy": 47.51,
         "ox": 0,
         "oy": 0
       }
